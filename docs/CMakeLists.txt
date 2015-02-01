@@ -56,9 +56,10 @@
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 file(MAKE_DIRECTORY ${HTML_OUTPUT_DIR})
 
+set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 find_package(Sphinx 1.2.3 COMPONENTS pygments)
 
-add_subdirectory(man)
 add_subdirectory(old-html)
 add_subdirectory(doxygen)
 
@@ -90,6 +91,7 @@ if (SPHINX_FOUND)
         download.rst
         online.rst
         install-guide/main.rst
+        man/gromacs.7.rst
         user-guide/main.rst
         user-guide/introduction.rst
         user-guide/getting-started.rst
@@ -111,11 +113,6 @@ if (SPHINX_FOUND)
             VERBATIM)
         list(APPEND SPHINX_INPUT_FILES ${SPHINX_INPUT_DIR}/${_file})
     endforeach()
-    # TODO: This might be better as a custom command.
-    add_custom_target(sphinx-input-dir
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}
-        COMMENT "Creating Sphinx input directory"
-        VERBATIM)
     gmx_add_custom_output_target(sphinx-input OUTPUT STAMP
         DEPENDS ${SPHINX_INPUT_FILES})
     gmx_add_custom_output_target(sphinx-programs OUTPUT STAMP
@@ -124,8 +121,9 @@ if (SPHINX_FOUND)
         DEPENDS gmx
         WORKING_DIRECTORY ${SPHINX_INPUT_DIR}
         COMMENT "Generating reStructuredText help")
-    add_dependencies(sphinx-input sphinx-input-dir)
-    add_dependencies(sphinx-programs sphinx-input-dir)
+    # This dependency ensures that the directories exist before the
+    # executable tries to write things there.
+    add_dependencies(sphinx-programs sphinx-input)
 
     # Make the INSTALL file for CPack for the tarball. This gets put
     # into the tarball via the CPack rules below, which requires that
@@ -202,7 +200,33 @@ if (SPHINX_FOUND)
         VERBATIM
         )
     add_dependencies(webpage-sphinx sphinx-input sphinx-programs)
+
+    add_custom_target(man
+        COMMAND
+            ${SPHINX_EXECUTABLE}
+            -q -b man
+            -d ${SPHINX_CACHE_DIR}
+            -t do_man
+            ${SPHINX_INPUT_DIR}
+            ${CMAKE_CURRENT_BINARY_DIR}/man
+        COMMENT "Building man pages with Sphinx"
+        VERBATIM)
+    add_dependencies(man sphinx-input sphinx-programs)
+    if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)
+        set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/man)
+    endif()
 endif()
+if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
+    install(DIRECTORY ${MAN_PAGE_DIR}/
+        DESTINATION ${MAN_INSTALL_DIR}/man1
+        COMPONENT man OPTIONAL
+        FILES_MATCHING PATTERN "*.1")
+    install(DIRECTORY ${MAN_PAGE_DIR}/
+        DESTINATION ${MAN_INSTALL_DIR}/man7
+        COMPONENT man OPTIONAL
+        FILES_MATCHING PATTERN "*.7")
+endif()
+gmx_cpack_add_generated_source_directory(man)
 
 set(HTML_BUILD_IS_POSSIBLE OFF)
 # We can only configure to build the webpage if the user asked for it,
