@@ -408,10 +408,6 @@ void SynopsisFormatter::start(const char *name)
             lineLength_ = 78;
             file.writeString(name);
             break;
-        case eHelpOutputFormat_Man:
-            lineLength_ = 70;
-            file.writeString(name);
-            break;
         case eHelpOutputFormat_Rst:
             lineLength_ = 74;
             indent_    += 4;
@@ -631,23 +627,14 @@ void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
     ConstArrayRef<const char *>::const_iterator i;
     for (i = bugs_.begin(); i != bugs_.end(); ++i)
     {
-        const char *const bug = *i;
-        // TODO: The context should be able to do this also for console output, but
-        // that requires a lot more elaborate parser for the markup.
-        if (context.outputFormat() != eHelpOutputFormat_Man)
-        {
-            TextLineWrapperSettings settings;
-            settings.setIndent(2);
-            settings.setFirstLineIndent(0);
-            settings.setLineLength(78);
-            context.outputFile().writeLine(
-                    context.substituteMarkupAndWrapToString(
-                            settings, formatString("* %s", bug)));
-        }
-        else
-        {
-            context.writeTextBlock(formatString("\n- %s", bug));
-        }
+        const char *const       bug = *i;
+        TextLineWrapperSettings settings;
+        settings.setIndent(2);
+        settings.setFirstLineIndent(0);
+        settings.setLineLength(78);
+        context.outputFile().writeLine(
+                context.substituteMarkupAndWrapToString(
+                        settings, formatString("* %s", bug)));
     }
 }
 
