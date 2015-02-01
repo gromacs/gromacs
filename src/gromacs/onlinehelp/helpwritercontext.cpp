@@ -127,71 +127,6 @@ const t_sandr sandrTty[] = {
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
     { "[BR]", "\n"},
-    /* [UL], [LI], [ul] cannot be implemented properly with the current
-     * approach. */
-    { "[GRK]", "" },
-    { "[grk]", "" }
-};
-
-//! List of replacements for man page output.
-const t_sandr sandrMan[] = {
-    { "\\*", "*" },
-    { "\\=", "=" },
-    { "[TT]", "\\fB" },
-    { "[tt]", "\\fR" },
-    { "[BB]", "\\fB" },
-    { "[bb]", "\\fR" },
-    { "[IT]", "\\fI" },
-    { "[it]", "\\fR" },
-    { "[MATH]", "" },
-    { "[math]", "" },
-    { "[CHEVRON]", "<" },
-    { "[chevron]", ">" },
-    { "[MAG]", "|" },
-    { "[mag]", "|" },
-    { "[INT]", "integral" },
-    { "[FROM]", " from " },
-    { "[from]", "" },
-    { "[TO]", " to " },
-    { "[to]", " of" },
-    { "[int]", "" },
-    { "[SUM]", "sum" },
-    { "[sum]", "" },
-    { "[SUB]", "_" },
-    { "[sub]", "" },
-    { "[SQRT]", "sqrt(" },
-    { "[sqrt]", ")", },
-    { "[EXP]", "exp(" },
-    { "[exp]", ")" },
-    { "[LN]", "ln(" },
-    { "[ln]", ")" },
-    { "[LOG]", "log(" },
-    { "[log]", ")" },
-    { "[COS]", "cos(" },
-    { "[cos]", ")" },
-    { "[SIN]", "sin(" },
-    { "[sin]", ")" },
-    { "[TAN]", "tan(" },
-    { "[tan]", ")" },
-    { "[COSH]", "cosh(" },
-    { "[cosh]", ")" },
-    { "[SINH]", "sinh(" },
-    { "[sinh]", ")" },
-    { "[TANH]", "tanh(" },
-    { "[tanh]", ")" },
-    { "[PAR]", "\n\n" },
-    { "\n ",    "\n" },
-    // The following three work only in the specific context in which they are
-    // currently used.
-    { "[UL]", "" },
-    { "[LI]", "\n- " },
-    { "[ul]", "" },
-    { "<",    "" },
-    { ">",    "" },
-    { "^",    "" },
-    { "#",    "" },
-    { "[BR]", "\n"},
-    { "-",    "\\-"},
     { "[GRK]", "" },
     { "[grk]", "" }
 };
@@ -426,9 +361,6 @@ void HelpLinks::addLink(const std::string &linkName,
         case eHelpOutputFormat_Console:
             replacement = repall(displayName, sandrTty);
             break;
-        case eHelpOutputFormat_Man:
-            replacement = repall(displayName, sandrMan);
-            break;
         case eHelpOutputFormat_Rst:
             replacement = formatString(
                         ":doc:`%s <%s>`", repall(displayName, sandrTty).c_str(),
@@ -572,13 +504,6 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
             result = replaceLinks(result);
             return wrapper->wrap(result);
         }
-        case eHelpOutputFormat_Man:
-        {
-            // Needs to be done first to avoid '-' -> '\-' messing up the links.
-            result = replaceLinks(result);
-            result = repall(result, sandrMan);
-            return wrapper->wrap(result);
-        }
         case eHelpOutputFormat_Rst:
         {
             result = repall(result, sandrRst);
@@ -667,9 +592,6 @@ void HelpWriterContext::writeTitle(const std::string &title) const
             file.writeLine(toUpperCase(title));
             file.writeLine();
             break;
-        case eHelpOutputFormat_Man:
-            file.writeLine(formatString(".SH %s", toUpperCase(title).c_str()));
-            break;
         case eHelpOutputFormat_Rst:
             file.writeLine(title);
             file.writeLine(std::string(title.length(), '-'));
@@ -705,12 +627,6 @@ void HelpWriterContext::writeOptionItem(const std::string &name,
             // TODO: Generalize this when there is need for it; the current,
             // special implementation is in CommandLineHelpWriter.
             GMX_THROW(NotImplementedError("Option item formatting for console output not implemented"));
-            break;
-        case eHelpOutputFormat_Man:
-            file.writeLine(formatString(".BI \"\\%s\" \" %s\"", name.c_str(), args.c_str()));
-            file.writeString("    ");
-            writeTextBlock(description);
-            file.writeLine();
             break;
         case eHelpOutputFormat_Rst:
         {
