@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -428,8 +428,8 @@ int gmx_trjcat(int argc, char *argv[])
         "If the [TT]-demux[tt] option is given, the N trajectories that are",
         "read, are written in another order as specified in the [TT].xvg[tt] file.",
         "The [TT].xvg[tt] file should contain something like:[PAR]",
-        "[TT]0  0  1  2  3  4  5[BR]",
-        "2  1  0  2  3  5  4[tt][BR]",
+        "[TT]0  0  1  2  3  4  5[tt][BR]",
+        "[TT]2  1  0  2  3  5  4[tt][BR]",
         "Where the first number is the time, and subsequent numbers point to",
         "trajectory indices.",
         "The frames corresponding to the numbers present at the first line",

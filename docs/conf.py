@@ -168,29 +168,6 @@ rst_epilog += """
 .. _sample mdp file: ../online/mdp.html
 .. _download: ../download.html
 
-.. TODO Consider generating these (e.g. with the commandline module that also generates the link targets). For now,
-   the Jenkins link checker will keep things working.
-
-.. _gmx bar: ../programs/gmx-bar.html
-.. _gmx energy: ../programs/gmx-energy.html
-.. _gmx convert-tpr: ../programs/gmx-convert-tpr.html
-.. _gmx dipoles: ../programs/gmx-dipoles.html
-.. _gmx tune_pme: ../programs/gmx-tune_pme.html
-.. _gmx do_dssp: ../programs/gmx-do_dssp.html
-.. _gmx view: ../programs/gmx-view.html
-.. _gmx eneconv: ../programs/gmx-eneconv.html
-.. _gmx wham: ../programs/gmx-wham.html
-.. _gmx grompp: ../programs/gmx-grompp.html
-.. _gmx solvate: ../programs/gmx-solvate.html
-.. _gmx editconf: ../programs/gmx-editconf.html
-.. _gmx pdb2gmx: ../programs/gmx-pdb2gmx.html
-.. _gmx trjconv: ../programs/gmx-trjconv.html
-.. _gmx trjcat: ../programs/gmx-trjcat.html
-.. _gmx eneconv: ../programs/gmx-eneconv.html
-.. _gmx mdrun: ../programs/gmx-mdrun.html
-.. _mdrun: ../programs/gmx-mdrun.html
-.. _mdrun_mpi: ../programs/gmx-mdrun.html
-
 .. _pdb: ../online/pdb.html
 .. _gro: ../online/gro.html
 .. _top: ../online/top.html
