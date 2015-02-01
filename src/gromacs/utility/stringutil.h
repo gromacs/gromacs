@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -340,7 +340,7 @@ class TextLineWrapperSettings
          *  - No maximum line width (only explicit line breaks).
          *  - No indentation.
          *  - No continuation characters.
-         *  - Ignore whitespace after an explicit newline.
+         *  - Ignore whitespace before and after an explicit newline.
          */
         TextLineWrapperSettings();
 
@@ -382,6 +382,19 @@ class TextLineWrapperSettings
         void setStripLeadingWhitespace(bool bStrip)
         {
             bStripLeadingWhitespace_ = bStrip;
+        }
+        /*! \brief
+         * Sets whether to remove spaces before an explicit newline.
+         *
+         * \param[in] bStrip  If true, spaces before a newline are ignored.
+         *
+         * Even if not removed, such space is not counted towards the line
+         * length.
+         * The default is to strip such whitespace.
+         */
+        void setStripTrailingWhitespace(bool bStrip)
+        {
+            bStripTrailingWhitespace_ = bStrip;
         }
         /*! \brief
          * Sets a continuation marker for wrapped lines.
@@ -431,6 +444,8 @@ class TextLineWrapperSettings
         int                     firstLineIndent_;
         //! Whether to ignore or preserve space after a newline.
         bool                    bStripLeadingWhitespace_;
+        //! Whether to ignore or preserve space before a newline.
+        bool                    bStripTrailingWhitespace_;
         //! If not \c '\0', mark each wrapping point with this character.
         char                    continuationChar_;
 

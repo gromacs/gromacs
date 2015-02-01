@@ -639,7 +639,7 @@ int gmx_rmsdist(int argc, char *argv[])
         "of atom pairs with 1/r^3 and 1/r^6 averaged distance below the",
         "maximum distance ([TT]-max[tt], which will default to 0.6 in this case)",
         "can be generated, by default averaging over equivalent hydrogens",
-        "(all triplets of hydrogens named *[123]). Additionally a list of",
+        "(all triplets of hydrogens named \\*[123]). Additionally a list of",
         "equivalent atoms can be supplied ([TT]-equiv[tt]), each line containing",
         "a set of equivalent atoms specified as residue number and name and",
         "atom name; e.g.:[PAR]",
