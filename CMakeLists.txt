@@ -688,12 +688,12 @@ set(build_help_default AUTO)
 if (SOURCE_IS_SOURCE_DISTRIBUTION)
     set(build_help_default OFF)
 endif()
-gmx_option_trivalue(GMX_BUILD_HELP "Build man pages, HTML help, and completions automatically (requires that compiled binaries can be executed on the build host)" ${build_help_default})
-mark_as_advanced(GMX_BUILD_HELP)
+gmx_option_trivalue(GMX_BUILD_HELP "Build completions automatically (requires that compiled binaries can be executed on the build host) and install man pages if available (needs to be built separately)" ${build_help_default})
+mark_as_advanced(GMX_BUILD_COMPLETIONS)
 if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
     message(FATAL_ERROR
-        "Rebuilding HTML and man pages or shell completions is not supported "
-        "for in-source builds from a source distribution. "
+        "Rebuilding shell completions is not supported for in-source builds "
+        "from a source distribution. "
         "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
 endif()
 
