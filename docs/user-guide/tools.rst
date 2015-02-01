@@ -3,14 +3,22 @@ Command-line tools
 
 |Gromacs| includes many tools for preparing, running and analysing
 molecular dynamics simulations. These are all structured as part of the
-gmx wrapper binary, and invoked with commands like `gmx grompp`_. mdrun_
-is the only other binary that
+gmx wrapper binary, and invoked with commands like :ref:`gmx grompp`.
+:ref:`mdrun <gmx mdrun>` is the only other binary that
 :ref:`can be built <building just the mdrun binary>`; in the normal
 build it can be run with ``gmx mdrun``. Documentation for these can
-be found at the links below.
+be found at the links below:
 
--  Tools documentation `by name <../programs/byname.html>`_
--  Tools documentation `by topic <../programs/bytopic.html>`_
+.. toctree::
+
+   /programs/byname
+   /programs/bytopic
+
+.. toctree::
+   :hidden:
+   :glob:
+
+   /programs/gmx-*
 
 Common options and behaviour
 ----------------------------

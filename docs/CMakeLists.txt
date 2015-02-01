@@ -113,6 +113,15 @@ if (SPHINX_FOUND)
     endforeach()
     gmx_add_custom_output_target(sphinx-input OUTPUT STAMP
         DEPENDS ${SPHINX_INPUT_FILES})
+    gmx_add_custom_output_target(sphinx-programs OUTPUT STAMP
+        COMMAND ${CMAKE_COMMAND} -E make_directory programs
+        COMMAND gmx -quiet help -export rst
+        DEPENDS gmx
+        WORKING_DIRECTORY ${SPHINX_INPUT_DIR}
+        COMMENT "Generating reStructuredText help")
+    # This dependency ensures that the directories exist before the
+    # executable tries to write things there.
+    add_dependencies(sphinx-programs sphinx-input)
 
     # Make the INSTALL file for CPack for the tarball. This gets put
     # into the tarball via the CPack rules below, which requires that
@@ -182,7 +191,7 @@ if (SPHINX_FOUND)
         COMMENT "Building HTML documentation with Sphinx"
         VERBATIM
         )
-    add_dependencies(webpage-sphinx sphinx-input)
+    add_dependencies(webpage-sphinx sphinx-input sphinx-programs)
 endif()
 
 set(HTML_BUILD_IS_POSSIBLE OFF)

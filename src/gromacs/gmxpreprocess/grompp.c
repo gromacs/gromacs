@@ -1447,18 +1447,11 @@ int gmx_grompp(int argc, char *argv[])
         "#include <filename>[PAR]",
         "The functioning of these statements in your topology may be modulated by",
         "using the following two flags in your [TT].mdp[tt] file:[PAR]",
-        "[TT]define = -DVARIABLE1 -DVARIABLE2[BR]",
-        "include = -I/home/john/doe[tt][BR]",
+        "[TT]define = -DVARIABLE1 -DVARIABLE2[tt][BR]",
+        "[TT]include = -I/home/john/doe[tt][BR]",
         "For further information a C-programming textbook may help you out.",
         "Specifying the [TT]-pp[tt] flag will get the pre-processed",
         "topology file written out so that you can verify its contents.[PAR]",
-
-        /* cpp has been unnecessary for some time, hasn't it?
-            "If your system does not have a C-preprocessor, you can still",
-            "use [TT]grompp[tt], but you do not have access to the features ",
-            "from the cpp. Command line options to the C-preprocessor can be given",
-            "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
-         */
 
         "When using position restraints a file with restraint coordinates",
         "can be supplied with [TT]-r[tt], otherwise restraining will be done",

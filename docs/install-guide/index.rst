@@ -54,7 +54,7 @@ appropriate value instead of ``xxx`` :
 * ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
 * ``-DGMX_MPI=on`` to build using `MPI support`_
 * ``-DGMX_GPU=on`` to build using nvcc to run with an NVIDIA `native GPU acceleration`_
-* ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which mdrun_ will run
+* ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which :ref:`gmx mdrun` will run
 * ``-DGMX_BUILD_MDRUN_ONLY=on`` for `building only mdrun`_, e.g. for compute cluster back-end nodes
 * ``-DGMX_DOUBLE=on`` to run |Gromacs| in double precision (slower, and not normally useful)
 * ``-DCMAKE_PREFIX_PATH=xxx`` to add a non-standard location for CMake to `search for libraries, headers or programs`_
@@ -193,7 +193,7 @@ different options and parallelization schemes for the actual
 simulations you want to run. You will still get *good*,
 performance with the default build and runtime options, but if you
 truly want to push your hardware to the performance limit, the days of
-just blindly starting programs with mdrun_ are gone.
+just blindly starting programs with :ref:`gmx mdrun` are gone.
 
 CMake
 -----
@@ -285,7 +285,7 @@ Optional build components
   matrix manipulation, but they do not provide any benefits for normal
   simulations. Configuring these are discussed at
   `linear algebra libraries`_.
-* The built-in |Gromacs| trajectory viewer `gmx view`_ requires X11 and
+* The built-in |Gromacs| trajectory viewer :ref:`gmx view` requires X11 and
   Motif/Lesstif libraries and header files. You may prefer to use
   third-party software for visualization, such as VMD_ or PyMol_.
 * An external TNG library for trajectory-file handling can be used,
@@ -466,15 +466,15 @@ highest number in the list is generally the one you should choose:
 8. ``Sparc64_HPC_ACE`` Fujitsu machines like the K computer have this.
 
 The CMake configure system will check that the compiler you have
-chosen can target the architecture you have chosen. mdrun_ will check
+chosen can target the architecture you have chosen. :ref:`gmx mdrun` will check
 further at runtime, so if in doubt, choose the lowest setting you
-think might work, and see what mdrun_ says. The configure system also
+think might work, and see what :ref:`gmx mdrun` says. The configure system also
 works around many known issues in many versions of common HPC
 compilers. However, since the options also enable general compiler
 flags for the platform in question, you can end up in situations
 where e.g. an ``AVX_128_FMA`` binary will just crash on any
 Intel machine, since the code will try to execute general illegal
-instructions (inserted by the compiler) before mdrun_ gets to the
+instructions (inserted by the compiler) before :ref:`gmx mdrun` gets to the
 architecture detection routines.
 
 A further ``GMX_SIMD=Reference`` option exists, which is a special
@@ -597,16 +597,16 @@ architectures does not support the ``RDTSCP`` instruction.  However, we
 discourage attempts to use a single |Gromacs| installation when the
 execution environment is heterogeneous, such as a mix of AVX and
 earlier hardware, because this will lead to programs (especially
-mdrun_) that run slowly on the new hardware. Building two full
+:ref:`gmx mdrun`) that run slowly on the new hardware. Building two full
 installations and locally managing how to call the correct one
 (e.g. using the module system) is the recommended
 approach. Alternatively, as at the moment the |Gromacs| tools do not
 make strong use of SIMD acceleration, it can be convenient to create
 an installation with tools portable across different x86 machines, but
-with separate mdrun_ binaries for each architecture. To achieve this,
+with separate :ref:`gmx mdrun` binaries for each architecture. To achieve this,
 one can first build a full installation with the
 least-common-denominator SIMD instruction set, e.g. ``-DGMX_SIMD=SSE2``,
-then build separate mdrun_ binaries for each architecture present in
+then build separate :ref:`gmx mdrun` binaries for each architecture present in
 the heterogeneous environment. By using custom binary and library
 suffixes for the mdrun-only builds, these can be installed to the
 same location as the "generic" tools installation.
@@ -641,7 +641,7 @@ Changing the names of |Gromacs| binaries and libraries
 It is sometimes convenient to have different versions of the same
 |Gromacs| programs installed. The most common use cases have been single
 and double precision, and with and without MPI. This mechanism can
-also be used to install side-by-side multiple versions of mdrun_
+also be used to install side-by-side multiple versions of :ref:`gmx mdrun`
 optimized for different CPU architectures, as mentioned previously.
 
 By default, |Gromacs| will suffix programs and libraries for such builds
@@ -725,14 +725,14 @@ Building only mdrun
 Past versions of the build system offered "mdrun" and "install-mdrun"
 targets (similarly for other programs too) to build and install only
 the mdrun program, respectively. Such a build is useful when the
-configuration is only relevant for mdrun_ (such as with
+configuration is only relevant for :ref:`gmx mdrun` (such as with
 parallelization options for MPI, SIMD, GPUs, or on BlueGene or Cray),
 or the length of time for the compile-link-install cycle is relevant
 when developing.
 
 This is now supported with the ``cmake`` option
 ``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a cut-down version of
-``libgromacs`` and/or the mdrun_ program (according to whether shared
+``libgromacs`` and/or the :ref:`gmx mdrun` program (according to whether shared
 or static). Naturally, now ``make install`` installs only those
 products. By default, mdrun-only builds will default to static linking
 against |Gromacs| libraries, because this is generally a good idea for
@@ -842,7 +842,7 @@ directory:
     source /your/installation/prefix/here/bin/GMXRC
     ./gmxtest.pl all -np 2
 
-If your mdrun_ program has been suffixed in a non-standard way, then
+If your :ref:`gmx mdrun` program has been suffixed in a non-standard way, then
 the ``./gmxtest.pl -mdrun`` option will let you specify that name to the
 test machinery. You can use ``./gmxtest.pl -double`` to test the
 double-precision version. You can use ``./gmxtest.pl -crosscompiling``
@@ -857,7 +857,7 @@ Testing |Gromacs| for performance
 We are still working on a set of benchmark systems for testing
 the performance of |Gromacs|. Until that is ready, we recommend that
 you try a few different parallelization options, and experiment with
-tools such as `gmx tune_pme`_.
+tools such as :ref:`gmx tune_pme`.
 
 Having difficulty?
 ------------------
