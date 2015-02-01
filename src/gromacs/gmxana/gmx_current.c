@@ -890,7 +890,7 @@ int gmx_current(int argc, char *argv[])
         "Option [TT]-temp[tt] sets the temperature required for the computation of the static dielectric constant.",
         "[PAR]",
         "Option [TT]-eps[tt] controls the dielectric constant of the surrounding medium for simulations using",
-        "a Reaction Field or dipole corrections of the Ewald summation ([TT]-eps[tt]=0 corresponds to",
+        "a Reaction Field or dipole corrections of the Ewald summation ([TT]-eps[tt]\\=0 corresponds to",
         "tin-foil boundary conditions).",
         "[PAR]",
         "[TT]-[no]nojump[tt] unfolds the coordinates to allow free diffusion. This is required to get a continuous",
