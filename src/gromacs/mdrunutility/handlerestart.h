@@ -39,20 +39,15 @@
  * infrastructure for mdrun that does not suit any other module.
  */
 /*! \libinternal \file
+ * \brief This file declares a function and class used by mdrun to
+ * manage the details of doing restarts (ie. reading checkpoints,
+ * whether it can or should append output files).
  *
- * \brief This file declares functions for mdrun to call to manage the
- * details of doing a restart (ie. reading checkpoints, appending
- * output files).
- *
- * \todo There may be other code in runner.cpp etc. that can usefully
- * live here
- *
- * \author Berk Hess <hess@kth.se>
- * \author Erik Lindahl <erik@kth.se>
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
  * \inlibraryapi
  * \ingroup module_mdrunutility
+ * \inlibraryapi
  */
 
 #ifndef GMX_MDRUNUTILITY_HANDLERESTART_H
@@ -60,32 +55,63 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/utility/basedefinitions.h"
 
-/*! \brief Handle startup of mdrun, particularly regarding -cpi and -append
+namespace gmx
+{
+
+/*! \internal
+ * \brief POD class that reports how mdrun will manage restarting
+ * and appending. */
+class RestartInformation
+{
+    public:
+        //! Whether mdrun will start from the -cpi file
+        bool bWillStartFromCpt_;
+        //! Whether mdrun will append to files
+        bool bWillAppendFiles_;
+};
+
+/*! \brief Handle mdrun restart from checkpoint
  *
- * If there is a checkpoint file, then prepare to start from that
- * state. If there is also appending, then organize the file naming
- * accordingly, if possible. Issues various fatal errors if the input
- * conditions are inconsistent or broken. \p fnm is updated with
- * suffix strings for part numbers if we are doing a restart from
- * checkpoint and are not appending.
+ * Use an input checkpoint file only if it is valid (and consistent
+ * among all simulations) and the names of output files used in the
+ * run that generated it are consistent with those found on disk and
+ * present on the mdrun command line. If a checkpoint file is found,
+ * and all other conditions are consistent, use it for the restart,
+ * otherwise give a fatal error. If a checkpoint file is not found,
+ * proceed normally.
+ *
+ * Append to output files only if an input checkpoint file is used,
+ * the previous job part didn't number the output files with part
+ * numbers, and the user requested appending.
+ *
+ * Give a fatal error if members of a multi-simulation are not
+ * starting from the same part.
  *
  * Does communication to coordinate behaviour between all ranks of a
  * simulation, and/or simulations.
  *
- * \param[in]    cr                 Communication structure
- * \param[in]    bTryToAppendFiles  Whether mdrun -append was used
- * \param[in]    NFILE              Size of fnm struct
+ * \param[in]    nfile              Size of fnm struct
  * \param[inout] fnm                Filename parameters to mdrun
- * \param[out]   bDoAppendFiles     Whether mdrun will append to files
- * \param[out]   bStartFromCpt      Whether mdrun will start from the -cpi file
+ * \param[in]    cr                 Communication structure
+ * \param[in]    bTryToAppendFiles  Whether mdrun -append was used (including by default)
+ *
+ * \throws std::bad_alloc          if out of memory
+ * \throws APIError                if constructor was passed empty \p fnm
+ * \throws InternalError           if the contents of the list of output filenames in the checkpoint file do not conform to expectations
+ * \throws InconsistentInputError  if the output files on disk are an empty or only partial match for the names in the checkpoint, or if checkpoint file is missing and a log file exists
+ * \throws FileIOError             if checkpoint file exists but cannot be read
+ *
+ * \returns A RestartInfo object whose members describe how mdrun will
+ * operate. If mdrun will be doing a restart from checkpoint without
+ * appending, \p fnm is updated with suffix strings for part numbers.
  */
-void handleRestart(t_commrec *cr,
-                   gmx_bool   bTryToAppendFiles,
-                   const int  NFILE,
-                   t_filenm   fnm[],
-                   gmx_bool  *bDoAppendFiles,
-                   gmx_bool  *bStartFromCpt);
+RestartInformation
+handleRestart(const int  nfile,
+              t_filenm   fnm[],
+              t_commrec *cr,
+              bool       bTryToAppendFiles);
+
+} // namespace
 
 #endif
