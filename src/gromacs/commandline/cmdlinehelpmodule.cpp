@@ -406,109 +406,6 @@ void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpMod
 }
 
 /********************************************************************
- * HelpExportMan
- */
-
-/*! \internal \brief
- * Implements export for man pages.
- *
- * \ingroup module_commandline
- */
-class HelpExportMan : public HelpExportInterface
-{
-    public:
-        //! Initializes man page exporter.
-        explicit HelpExportMan(const CommandLineHelpModuleImpl &helpModule)
-            : links_(eHelpOutputFormat_Man)
-        {
-            initProgramLinks(&links_, helpModule);
-        }
-
-        virtual void startModuleExport() {}
-        virtual void exportModuleHelp(
-            const CommandLineModuleInterface &module,
-            const std::string                &tag,
-            const std::string                &displayName);
-        virtual void finishModuleExport() {}
-
-        virtual void startModuleGroupExport();
-        virtual void exportModuleGroup(const char                *title,
-                                       const ModuleGroupContents &modules);
-        virtual void finishModuleGroupExport();
-
-    private:
-        HelpLinks                links_;
-        boost::scoped_ptr<File>  man7File_;
-        std::string              man7Footer_;
-};
-
-void HelpExportMan::exportModuleHelp(
-        const CommandLineModuleInterface &module,
-        const std::string                &tag,
-        const std::string                &displayName)
-{
-    File file("man1/" + tag + ".1", "w");
-
-    // TODO: It would be nice to remove the VERSION prefix from the version
-    // string to make it shorter.
-    file.writeLine(formatString(".TH %s 1 \"\" \"%s\" \"GROMACS Manual\"\n",
-                                tag.c_str(), gmx_version()));
-    file.writeLine(".SH NAME");
-    file.writeLine(formatString("%s - %s", tag.c_str(),
-                                module.shortDescription()));
-    file.writeLine();
-
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Man, &links_);
-    context.setModuleDisplayName(displayName);
-    module.writeHelp(context);
-
-    file.writeLine(".SH SEE ALSO");
-    file.writeLine(".BR gromacs(7)");
-    file.writeLine();
-    file.writeLine("More information about \\fBGROMACS\\fR is available at <\\fIhttp://www.gromacs.org/\\fR>.");
-}
-
-void HelpExportMan::startModuleGroupExport()
-{
-    const char *const programListPlaceholder = "@PROGMANPAGES@";
-
-    const std::string man7Template = gmx::File::readToString("man7/gromacs.7.in");
-    const size_t      index        = man7Template.find(programListPlaceholder);
-    GMX_RELEASE_ASSERT(index != std::string::npos,
-                       "gromacs.7.in must contain a @PROGMANPAGES@ line");
-    std::string header = man7Template.substr(0, index);
-    man7Footer_ = man7Template.substr(index + std::strlen(programListPlaceholder));
-    header      = replaceAll(header, "@VERSION@", gmx_version());
-    man7File_.reset(new File("man7/gromacs.7", "w"));
-    man7File_->writeLine(header);
-}
-
-void HelpExportMan::exportModuleGroup(const char                *title,
-                                      const ModuleGroupContents &modules)
-{
-    man7File_->writeLine(formatString(".Sh \"%s\"", title));
-    man7File_->writeLine(formatString(".IX Subsection \"%s\"", title));
-    man7File_->writeLine(".Vb");
-    man7File_->writeLine(".ta 16n");
-
-    ModuleGroupContents::const_iterator module;
-    for (module = modules.begin(); module != modules.end(); ++module)
-    {
-        const std::string &tag(module->first);
-        man7File_->writeLine(formatString("\\&  %s\t%s",
-                                          tag.c_str(), module->second));
-    }
-
-    man7File_->writeLine(".Ve");
-}
-
-void HelpExportMan::finishModuleGroupExport()
-{
-    man7File_->writeLine(man7Footer_);
-    man7File_->close();
-}
-
-/********************************************************************
  * HelpExportHtml
  */
 
@@ -578,6 +475,7 @@ class HelpExportReStructuredText : public HelpExportInterface
     private:
         HelpLinks                links_;
         boost::scoped_ptr<File>  indexFile_;
+        boost::scoped_ptr<File>  manPagesFile_;
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(
@@ -601,6 +499,8 @@ void HelpExportReStructuredText::startModuleExport()
     indexFile_.reset(new File("programs/byname.rst", "w"));
     indexFile_->writeLine("Tools by Name");
     indexFile_->writeLine("=============");
+    manPagesFile_.reset(new File("conf-man.py", "w"));
+    manPagesFile_->writeLine("man_pages = [");
 }
 
 void HelpExportReStructuredText::exportModuleHelp(
@@ -618,17 +518,33 @@ void HelpExportReStructuredText::exportModuleHelp(
     CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_);
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
+
+    file.writeLine();
+    file.writeLine(".. only:: man");
+    file.writeLine();
+    file.writeLine("   See also");
+    file.writeLine("   --------");
+    file.writeLine("   :manpage:`gromacs(7)`");
+    file.writeLine();
+    file.writeLine("   More information about |Gromacs| is available at <http://www.gromacs.org/>.");
     file.close();
 
     indexFile_->writeLine(formatString("* :doc:`%s <%s>` - %s",
                                        displayName.c_str(), tag.c_str(),
                                        module.shortDescription()));
+    manPagesFile_->writeLine(
+            formatString("    ('programs/%s', '%s', \"%s\", '', 1),",
+                         tag.c_str(), tag.c_str(), module.shortDescription()));
 }
 
 void HelpExportReStructuredText::finishModuleExport()
 {
     indexFile_->close();
     indexFile_.reset();
+    manPagesFile_->writeLine("    ('man/gromacs.7', 'gromacs', 'molecular dynamics simulation suite', '', 7)");
+    manPagesFile_->writeLine("]");
+    manPagesFile_->close();
+    manPagesFile_.reset();
 }
 
 void HelpExportReStructuredText::startModuleGroupExport()
@@ -830,7 +746,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     // Add internal topics lazily here.
     addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)));
 
-    const char *const exportFormats[] = { "man", "html", "rst", "completion" };
+    const char *const exportFormats[] = { "html", "rst", "completion" };
     std::string       exportFormat;
     Options           options(NULL, NULL);
     options.addOption(StringOption("export").store(&exportFormat)
@@ -839,11 +755,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (!exportFormat.empty())
     {
         boost::scoped_ptr<HelpExportInterface> exporter;
-        if (exportFormat == "man")
-        {
-            exporter.reset(new HelpExportMan(*impl_));
-        }
-        else if (exportFormat == "html")
+        if (exportFormat == "html")
         {
             exporter.reset(new HelpExportHtml());
         }

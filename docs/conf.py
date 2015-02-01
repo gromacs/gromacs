@@ -109,7 +109,8 @@ release = gmx_version_string_full
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+if not tags.has('do_man'):
+    exclude_patterns = ['man']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -318,10 +319,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', 'gromacs', u'Gromacs Documentation',
-     [u'Gromacs development team'], 1)
-]
+execfile('conf-man.py')
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
