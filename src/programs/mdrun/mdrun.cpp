@@ -178,7 +178,7 @@ int gmx_mdrun(int argc, char *argv[])
         "[PAR]",
         "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
         "file is written at the first neighbor search step where the run time",
-        "exceeds [TT]-maxh[tt]*0.99 hours. This option is particularly useful in",
+        "exceeds [TT]-maxh[tt]\\*0.99 hours. This option is particularly useful in",
         "combination with setting [TT]nsteps[tt] to -1 either in the mdp or using the",
         "similarly named command line option. This results in an infinite run,",
         "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)"
