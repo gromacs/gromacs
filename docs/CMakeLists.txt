@@ -56,10 +56,11 @@
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 file(MAKE_DIRECTORY ${HTML_OUTPUT_DIR})
 
+set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 find_package(PythonInterp)
 find_package(Sphinx 1.2.3 COMPONENTS pygments)
 
-add_subdirectory(man)
 add_subdirectory(old-html)
 add_subdirectory(doxygen)
 
@@ -91,6 +92,7 @@ if (SPHINX_FOUND)
         download.rst
         online.rst
         install-guide/index.rst
+        man/gromacs.7.rst
         user-guide/index.rst
         user-guide/getting-started.rst
         user-guide/cutoff-schemes.rst
@@ -192,7 +194,34 @@ if (SPHINX_FOUND)
         VERBATIM
         )
     add_dependencies(webpage-sphinx sphinx-input sphinx-programs)
+
+    add_custom_target(man
+        COMMAND
+            ${SPHINX_EXECUTABLE}
+            -q -b man
+            -w sphinx-man.log
+            -d ${SPHINX_CACHE_DIR}
+            -t do_man
+            ${SPHINX_INPUT_DIR}
+            ${CMAKE_CURRENT_BINARY_DIR}/man
+        COMMENT "Building man pages with Sphinx"
+        VERBATIM)
+    add_dependencies(man sphinx-input sphinx-programs)
+    if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)
+        set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/man)
+    endif()
 endif()
+if (SOURCE_IS_SOURCE_DISTRIBUTION OR (GMX_BUILD_HELP AND SPHINX_FOUND))
+    install(DIRECTORY ${MAN_PAGE_DIR}/
+        DESTINATION ${MAN_INSTALL_DIR}/man1
+        COMPONENT man OPTIONAL
+        FILES_MATCHING PATTERN "*.1")
+    install(DIRECTORY ${MAN_PAGE_DIR}/
+        DESTINATION ${MAN_INSTALL_DIR}/man7
+        COMPONENT man OPTIONAL
+        FILES_MATCHING PATTERN "*.7")
+endif()
+gmx_cpack_add_generated_source_directory(man)
 
 set(HTML_BUILD_IS_POSSIBLE OFF)
 # We can only configure to build the webpage if the user asked for it,

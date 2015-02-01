@@ -48,31 +48,29 @@ if (BUILDING_SOURCE_PACKAGE)
     # directories to include to keep the probe file names at the same place.
     # And this does not detect if things have been built in the past, but are
     # outdated.
-    if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/man1/gmx-view.1" OR
+    if (NOT EXISTS "${CMAKE_BINARY_DIR}/docs/man/gmx-view.1" OR
         NOT EXISTS "${CMAKE_BINARY_DIR}/docs/install-guide/text/INSTALL" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/online/gro.html" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash" OR
-        NOT EXISTS "${CMAKE_BINARY_DIR}/docs/old-html/final/programs/gmx-view.html")
+        NOT EXISTS "${CMAKE_BINARY_DIR}/src/programs/completion/gmx-completion.bash")
         message(FATAL_ERROR
             "To create a complete source package, bash completions, "
-            "man and HTML pages, and INSTALL need to be generated. "
-            "Run 'make completion man html install-guide' to build "
-            "these parts. You can also configure with "
-            "GMX_BUILD_HELP=ON to automatically build the HTML parts.")
+            "man pages, and INSTALL need to be generated. "
+            "Run 'make completion man install-guide' to build "
+            "these parts (you will need Sphinx). You can also configure with "
+            "GMX_BUILD_HELP=ON to automatically build the completions.")
     endif()
 else()
-    # TODO: If GMX_BUILD_HELP is AUTO, it may happen that the generation fails,
-    # and things are silently left out.
+    # TODO: If GMX_BUILD_HELP is AUTO, it may happen that the generation
+    # fails, and things are silently left out.
     # Also, it is currently impossible to get these files into the binary
     # package for cross-compilation.  However, binary packages are not
     # currently used much, either...
     if (NOT CPACK_GMX_BUILD_HELP)
         message(WARNING
-            "To create a complete binary package, bash completions, and "
-            "man and HTML pages need to be generated. "
+            "To create a complete binary package, bash completions and "
+            "man pages need to be generated. "
             "You need to configure with GMX_BUILD_HELP=ON to include all "
             "in the binary package.")
-        # Building the man, html, ... targets is not sufficient because than the
+        # Building the man etc. targets is not sufficient because then the
         # install is still not done.
     endif()
 endif()
