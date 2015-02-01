@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -515,13 +515,52 @@ void HelpExportMan::finishModuleGroupExport()
 /*! \internal \brief
  * Implements export for HTML help.
  *
+ * This whole class can go once docs/old-html/ no longer requires header.html
+ * that it generates.
+ *
  * \ingroup module_commandline
  */
 class HelpExportHtml : public HelpExportInterface
 {
     public:
         //! Initializes HTML exporter.
-        explicit HelpExportHtml(const CommandLineHelpModuleImpl &helpModule);
+        HelpExportHtml();
+
+        virtual void startModuleExport() {}
+        virtual void exportModuleHelp(
+            const CommandLineModuleInterface & /*module*/,
+            const std::string                & /*tag*/,
+            const std::string                & /*displayName*/) {}
+        virtual void finishModuleExport() {}
+
+        virtual void startModuleGroupExport() {}
+        virtual void exportModuleGroup(const char                * /*title*/,
+                                       const ModuleGroupContents & /*modules*/) {}
+        virtual void finishModuleGroupExport() {}
+};
+
+HelpExportHtml::HelpExportHtml()
+{
+    std::string header = gmx::File::readToString("header.html.in");
+    header = replaceAll(header, "@VERSION@", gmx_version());
+    gmx::File::writeFileFromString("header.html", header);
+}
+
+/********************************************************************
+ * HelpExportReStructuredText
+ */
+
+/*! \internal \brief
+ * Implements export for web pages as reStructuredText.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportReStructuredText : public HelpExportInterface
+{
+    public:
+        //! Initializes reST exporter.
+        explicit HelpExportReStructuredText(
+            const CommandLineHelpModuleImpl &helpModule);
 
         virtual void startModuleExport();
         virtual void exportModuleHelp(
@@ -536,20 +575,15 @@ class HelpExportHtml : public HelpExportInterface
         virtual void finishModuleGroupExport();
 
     private:
-        void setupHeaderAndFooter();
-
-        void writeHtmlHeader(File *file, const std::string &title) const;
-        void writeHtmlFooter(File *file) const;
-
         HelpLinks                links_;
         boost::scoped_ptr<File>  indexFile_;
-        std::string              header_;
-        std::string              footer_;
 };
 
-HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
-    : links_(eHelpOutputFormat_Html)
+HelpExportReStructuredText::HelpExportReStructuredText(
+        const CommandLineHelpModuleImpl &helpModule)
+    : links_(eHelpOutputFormat_Rst)
 {
+#if 0       // TODO: Investigate how these links can be made to work again.
     File             linksFile("links.dat", "r");
     std::string      line;
     while (linksFile.readLine(&line))
@@ -557,63 +591,56 @@ HelpExportHtml::HelpExportHtml(const CommandLineHelpModuleImpl &helpModule)
         links_.addLink(line, "../online/" + line, line);
     }
     linksFile.close();
+#endif
     initProgramLinks(&links_, helpModule);
-    setupHeaderAndFooter();
 }
 
-void HelpExportHtml::setupHeaderAndFooter()
+void HelpExportReStructuredText::startModuleExport()
 {
-    header_ = gmx::File::readToString("header.html.in");
-    header_ = replaceAll(header_, "@VERSION@", gmx_version());
-    gmx::File::writeFileFromString("header.html", header_);
-    header_ = replaceAll(header_, "@ROOTPATH@", "../");
-    footer_ = gmx::File::readToString("footer.html");
+    indexFile_.reset(new File("programs/byname.rst", "w"));
+    indexFile_->writeLine("Tools by Name");
+    indexFile_->writeLine("=============");
 }
 
-void HelpExportHtml::startModuleExport()
-{
-    indexFile_.reset(new File("final/programs/byname.html", "w"));
-    writeHtmlHeader(indexFile_.get(), "GROMACS Programs by Name");
-    indexFile_->writeLine("<H3>GROMACS Programs Alphabetically</H3>");
-}
-
-void HelpExportHtml::exportModuleHelp(
+void HelpExportReStructuredText::exportModuleHelp(
         const CommandLineModuleInterface &module,
         const std::string                &tag,
         const std::string                &displayName)
 {
-    File file("final/programs/" + tag + ".html", "w");
-    writeHtmlHeader(&file, displayName);
-
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Html, &links_);
+    File file("programs/" + tag + ".rst", "w");
+    file.writeLine(formatString(".. _%s:", displayName.c_str()));
+    file.writeLine();
+    file.writeLine(displayName);
+    file.writeLine(std::string(displayName.length(), '-'));
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_);
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
-
-    writeHtmlFooter(&file);
     file.close();
 
-    indexFile_->writeLine(formatString("<a href=\"%s.html\">%s</a> - %s<br>",
-                                       tag.c_str(), displayName.c_str(),
+    indexFile_->writeLine(formatString("* :doc:`%s <%s>` - %s",
+                                       displayName.c_str(), tag.c_str(),
                                        module.shortDescription()));
 }
 
-void HelpExportHtml::finishModuleExport()
+void HelpExportReStructuredText::finishModuleExport()
 {
-    writeHtmlFooter(indexFile_.get());
     indexFile_->close();
+    indexFile_.reset();
 }
 
-void HelpExportHtml::startModuleGroupExport()
+void HelpExportReStructuredText::startModuleGroupExport()
 {
-    indexFile_.reset(new File("final/programs/bytopic.html", "w"));
-    writeHtmlHeader(indexFile_.get(), "GROMACS Programs by Topic");
-    indexFile_->writeLine("<H3>GROMACS Programs by Topic</H3>");
+    indexFile_.reset(new File("programs/bytopic.rst", "w"));
+    indexFile_->writeLine("Tools by Topic");
+    indexFile_->writeLine("==============");
 }
 
-void HelpExportHtml::exportModuleGroup(const char                *title,
-                                       const ModuleGroupContents &modules)
+void HelpExportReStructuredText::exportModuleGroup(
+        const char                *title,
+        const ModuleGroupContents &modules)
 {
-    indexFile_->writeLine(formatString("<H4>%s</H4>", title));
+    indexFile_->writeLine(title);
+    indexFile_->writeLine(std::string(std::strlen(title), '-'));
 
     ModuleGroupContents::const_iterator module;
     for (module = modules.begin(); module != modules.end(); ++module)
@@ -622,30 +649,21 @@ void HelpExportHtml::exportModuleGroup(const char                *title,
         std::string            displayName(tag);
         // TODO: This does not work if the binary name would contain a dash,
         // but that is not currently the case.
-        size_t                 dashPos = displayName.find('-');
+        const size_t           dashPos = displayName.find('-');
         GMX_RELEASE_ASSERT(dashPos != std::string::npos,
                            "There should always be at least one dash in the tag");
         displayName[dashPos] = ' ';
-        indexFile_->writeLine(formatString("<a href=\"%s.html\">%s</a> - %s<br>",
-                                           tag.c_str(), displayName.c_str(),
+        indexFile_->writeLine(formatString("* :doc:`%s <%s>` - %s",
+                                           displayName.c_str(), tag.c_str(),
                                            module->second));
     }
+    indexFile_->writeLine();
 }
 
-void HelpExportHtml::finishModuleGroupExport()
+void HelpExportReStructuredText::finishModuleGroupExport()
 {
-    writeHtmlFooter(indexFile_.get());
     indexFile_->close();
-}
-
-void HelpExportHtml::writeHtmlHeader(File *file, const std::string &title) const
-{
-    file->writeLine(replaceAll(header_, "@TITLE@", title));
-}
-
-void HelpExportHtml::writeHtmlFooter(File *file) const
-{
-    file->writeLine(footer_);
+    indexFile_.reset();
 }
 
 /********************************************************************
@@ -809,7 +827,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     // Add internal topics lazily here.
     addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)));
 
-    const char *const exportFormats[] = { "man", "html", "completion" };
+    const char *const exportFormats[] = { "man", "html", "rst", "completion" };
     std::string       exportFormat;
     Options           options(NULL, NULL);
     options.addOption(StringOption("export").store(&exportFormat)
@@ -824,7 +842,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         }
         else if (exportFormat == "html")
         {
-            exporter.reset(new HelpExportHtml(*impl_));
+            exporter.reset(new HelpExportHtml());
+        }
+        else if (exportFormat == "rst")
+        {
+            exporter.reset(new HelpExportReStructuredText(*impl_));
         }
         else if (exportFormat == "completion")
         {

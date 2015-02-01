@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -412,9 +412,12 @@ void SynopsisFormatter::start(const char *name)
             lineLength_ = 70;
             file.writeString(name);
             break;
-        case eHelpOutputFormat_Html:
-            lineLength_ = 78;
-            file.writeLine("<pre>");
+        case eHelpOutputFormat_Rst:
+            lineLength_ = 74;
+            indent_    += 4;
+            file.writeLine("::");
+            file.writeLine();
+            file.writeString("    ");
             file.writeString(name);
             break;
         default:
@@ -426,10 +429,6 @@ void SynopsisFormatter::finish()
 {
     File &file = context_.outputFile();
     file.writeLine();
-    if (context_.outputFormat() == eHelpOutputFormat_Html)
-    {
-        file.writeLine("</pre>");
-    }
     file.writeLine();
 }
 
@@ -446,13 +445,7 @@ void SynopsisFormatter::formatOption(const OptionInfo &option)
     fullOptionText.append("]");
     const int   totalLength = fullOptionText.size();
 
-    if (context_.outputFormat() == eHelpOutputFormat_Html)
-    {
-        value = replaceAll(value, "<", "&lt;");
-        value = replaceAll(value, ">", "&gt;");
-    }
-
-    File &file = context_.outputFile();
+    File       &file = context_.outputFile();
     currentLength_ += totalLength;
     if (currentLength_ >= lineLength_)
     {
@@ -635,17 +628,13 @@ void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
         return;
     }
     context.writeTitle("Known Issues");
-    if (context.outputFormat() != eHelpOutputFormat_Console)
-    {
-        context.writeTextBlock("[UL]");
-    }
     ConstArrayRef<const char *>::const_iterator i;
     for (i = bugs_.begin(); i != bugs_.end(); ++i)
     {
         const char *const bug = *i;
         // TODO: The context should be able to do this also for console output, but
         // that requires a lot more elaborate parser for the markup.
-        if (context.outputFormat() == eHelpOutputFormat_Console)
+        if (context.outputFormat() != eHelpOutputFormat_Man)
         {
             TextLineWrapperSettings settings;
             settings.setIndent(2);
@@ -653,16 +642,12 @@ void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
             settings.setLineLength(78);
             context.outputFile().writeLine(
                     context.substituteMarkupAndWrapToString(
-                            settings, formatString("* %s", bug)));
+                            settings, formatString("[LI] %s", bug)));
         }
         else
         {
-            context.writeTextBlock(formatString("[LI]%s", bug));
+            context.writeTextBlock(formatString("[LI] %s", bug));
         }
-    }
-    if (context.outputFormat() != eHelpOutputFormat_Console)
-    {
-        context.writeTextBlock("[ul]");
     }
 }
 
