@@ -109,8 +109,21 @@ if (SPHINX_FOUND)
             VERBATIM)
         list(APPEND SPHINX_INPUT_FILES ${SPHINX_INPUT_DIR}/${_file})
     endforeach()
+    # TODO: This might be better as a custom command.
+    add_custom_target(sphinx-input-dir
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}
+        COMMENT "Creating Sphinx input directory"
+        VERBATIM)
     gmx_add_custom_output_target(sphinx-input OUTPUT STAMP
         DEPENDS ${SPHINX_INPUT_FILES})
+    gmx_add_custom_output_target(sphinx-programs OUTPUT STAMP
+        COMMAND ${CMAKE_COMMAND} -E make_directory programs
+        COMMAND gmx -quiet help -export rst
+        DEPENDS gmx
+        WORKING_DIRECTORY ${SPHINX_INPUT_DIR}
+        COMMENT "Generating reStructuredText help")
+    add_dependencies(sphinx-input sphinx-input-dir)
+    add_dependencies(sphinx-programs sphinx-input-dir)
 
     # Make the INSTALL file for CPack for the tarball. This gets put
     # into the tarball via the CPack rules below, which requires that
@@ -186,7 +199,7 @@ if (SPHINX_FOUND)
         COMMENT "Building HTML documentation with Sphinx"
         VERBATIM
         )
-    add_dependencies(webpage-sphinx sphinx-input)
+    add_dependencies(webpage-sphinx sphinx-input sphinx-programs)
 endif()
 
 set(HTML_BUILD_IS_POSSIBLE OFF)

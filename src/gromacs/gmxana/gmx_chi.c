@@ -1334,7 +1334,7 @@ int gmx_chi(int argc, char *argv[])
         { "-binwidth", FALSE, etINT, {&ndeg},
           "bin width for histograms (degrees)" },
         { "-core_rotamer", FALSE, etREAL, {&core_frac},
-          "only the central [TT]-core_rotamer[tt]*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
+          "only the central [TT]-core_rotamer[tt]\\*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
         { "-maxchi", FALSE, etENUM, {maxchistr},
           "calculate first ndih [GRK]chi[grk] dihedrals" },
         { "-normhisto", FALSE, etBOOL, {&bNormHisto},

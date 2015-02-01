@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2170,7 +2170,7 @@ int gmx_tune_pme(int argc, char *argv[])
         "After calling [gmx-mdrun] several times, detailed performance information",
         "is available in the output file [TT]perf.out[tt].",
         "[BB]Note[bb] that during the benchmarks, a couple of temporary files are written",
-        "(options [TT]-b[tt]*), these will be automatically deleted after each test.[PAR]",
+        "(options [TT]-b*[tt]), these will be automatically deleted after each test.[PAR]",
         "If you want the simulation to be started automatically with the",
         "optimized parameters, use the command line option [TT]-launch[tt].[PAR]",
         "Basic support for GPU-enabled [TT]mdrun[tt] exists. Give a string containing the IDs",

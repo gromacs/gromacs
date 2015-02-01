@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,6 @@ include(gmxCustomCommandUtilities)
 
 set(OUTPUT_DIR final)
 
-set(HTML_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${OUTPUT_DIR})
 if (GMX_BUILD_HELP)
     # Unlike the man and completion targets, this target is not built
     # automatically with GMX_BUILD_HELP=AUTO, since most people will not
@@ -67,12 +66,4 @@ if (GMX_BUILD_HELP)
     endif()
     set_directory_properties(PROPERTIES
         ADDITIONAL_MAKE_CLEAN_FILES "${OUTPUT_DIR};header.html")
-    set(HTML_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_DIR})
 endif()
-
-if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP_FORCE)
-    install(DIRECTORY ${HTML_PAGE_DIR}/
-        DESTINATION ${DATA_INSTALL_DIR}/html
-        COMPONENT html)
-endif()
-gmx_cpack_add_generated_source_directory(${OUTPUT_DIR})
