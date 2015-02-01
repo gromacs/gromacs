@@ -178,7 +178,7 @@ int gmx_mdrun(int argc, char *argv[])
         "[PAR]",
         "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
         "file is written at the first neighbor search step where the run time",
-        "exceeds [TT]-maxh[tt]*0.99 hours.",
+        "exceeds [TT]-maxh[tt]\\*0.99 hours.",
         "[PAR]",
         "When [TT]mdrun[tt] receives a TERM signal, it will set nsteps to the current",
         "step plus one. When [TT]mdrun[tt] receives an INT signal (e.g. when ctrl+C is",
