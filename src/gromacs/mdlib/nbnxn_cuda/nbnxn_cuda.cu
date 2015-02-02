@@ -295,7 +295,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
     cu_timers_t         *t       = cu_nb->timers;
     cudaStream_t         stream  = cu_nb->stream[iloc];
 
-    bool                 bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = cu_nb->bDoTime;
 
@@ -422,7 +422,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
     bool             bDoTime = cu_nb->bDoTime;
     cudaStream_t     stream  = cu_nb->stream[iloc];
 
-    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* don't launch copy-back if there was no work to do */
@@ -578,7 +578,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     wallclock_gpu_t *timings  = cu_nb->timings;
     nb_staging       nbst     = cu_nb->nbst;
 
-    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
