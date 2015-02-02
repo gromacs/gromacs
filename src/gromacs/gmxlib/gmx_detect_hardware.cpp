@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -248,7 +248,7 @@ check_use_of_rdtscp_on_this_cpu(FILE                *fplog,
         md_print_warn(cr, fplog, "The current CPU can measure timings more accurately than the code in\n"
                       "%s was configured to use. This might affect your simulation\n"
                       "speed as accurate timings are needed for load-balancing.\n"
-                      "Please consider rebuilding %s with the GMX_USE_RDTSCP=OFF CMake option.\n",
+                      "Please consider rebuilding %s with the GMX_USE_RDTSCP=ON CMake option.\n",
                       ShortProgram(), ShortProgram());
     }
 }
