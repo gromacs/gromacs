@@ -107,6 +107,10 @@ typedef struct nonbonded_verlet_t {
                                                  used for the 8x8x8 CUDA kernels    */
 } nonbonded_verlet_t;
 
+/*! \brief Getter for bUseGPU */
+gmx_bool
+usingGpu(nonbonded_verlet_t *nbv);
+
 #ifdef __cplusplus
 }
 #endif
