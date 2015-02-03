@@ -950,7 +950,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * down according to the Drude temperature set in the .mdp file
  */
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md, 
-                          t_state *state, rvec f[], tensor force_vir)
+                          t_state *state, rvec f[])
 {
 
     int     i, j, m, n;
@@ -1243,28 +1243,10 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 fac = ma*(1.0/(dt*0.5));
                 svmul(fac, dva, f[ia]);
 
-                /* Update virial related to heavy atom motion */
-                for (m=0; m<DIM; m++)
-                {
-                    for (n=0; n<DIM; n++)
-                    {
-                        force_vir[m][n] += state->x[ia][m]*f[ia][n];
-                    }
-                }
-
                 /* Update force on Drude */
                 rvec_sub(vnewb, vinitb, dvb);
                 fac = mb*(1.0/(dt*0.5));
                 svmul(fac, dvb, f[ib]);
-
-                /* Update virial related to Drude motion */
-                for (m=0; m<DIM; m++)
-                {
-                    for (n=0; n<DIM; n++)
-                    {
-                        force_vir[m][n] += state->x[ib][m]*f[ib][n];
-                    }
-                }
 
                 if (debug)
                 {

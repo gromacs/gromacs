@@ -1536,7 +1536,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (ir->bDrude && ir->drude->bHardWall)
                 {
-                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f, force_vir);
+                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f);
                 }
 
                 if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
@@ -1583,7 +1583,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     if (ir->bDrude && ir->drude->bHardWall)
                     {
-                        apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f, force_vir);
+                        apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f);
                     }
 
                 }
