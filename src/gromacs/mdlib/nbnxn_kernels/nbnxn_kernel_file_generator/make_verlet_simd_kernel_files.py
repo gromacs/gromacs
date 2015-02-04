@@ -133,6 +133,14 @@ EnergiesComputationDict = {
 
 # This is OK as an unordered dict
 VerletKernelTypeDict = {
+    '4x4xn' : {
+        'Define' : 'GMX_NBNXN_SIMD_4X4XN',
+        'WidthSetup' : '/* Include the full-width SIMD macros */\n',
+        'WidthCheck' : ('#if !(GMX_SIMD_REAL_WIDTH == 16)\n' \
+                        '#error "unsupported SIMD width"\n' \
+                        '#endif\n'),
+        'UnrollSize' : 4,
+    },
     '2xnn' : {
         'Define' : 'GMX_NBNXN_SIMD_2XNN',
         'WidthSetup' : '/* Include the full-width SIMD macros */\n',
