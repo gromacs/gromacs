@@ -113,6 +113,16 @@ gmx_mm_transpose_sum4h_pr(gmx_simd_float_t a, gmx_simd_float_t b)
     return _mm512_castsi512_ps(_mm512_permutevar_epi32(_mm512_setr4_epi32(0, 8, 4, 12), _mm512_castps_si512(a)));
 }
 
+/* Sum the elements of quarters of input in store in first 4 elements of output */
+static gmx_inline __m512
+gmx_mm_transpose_sum4q_pr(gmx_simd_float_t a)
+{
+    a = _mm512_add_ps(a, _mm512_swizzle_ps(a, _MM_SWIZ_REG_CDAB));
+    a = _mm512_add_ps(a, _mm512_swizzle_ps(a, _MM_SWIZ_REG_BADC));
+    return _mm512_castsi512_ps(_mm512_setr4_epi32(0,4,8,12), _mm512_permutevar_epi32(_mm512_castps_si512(a)));
+}
+
+
 static gmx_inline void
 gmx_pr_to_2hpr(gmx_simd_float_t a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 {

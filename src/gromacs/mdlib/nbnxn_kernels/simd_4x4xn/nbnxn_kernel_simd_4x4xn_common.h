@@ -42,28 +42,25 @@
 #endif
 
 #ifndef GMX_SIMD_J_UNROLL_SIZE
-#error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 2xnn kernel common header file"
+#error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4x4xn kernel common header file"
 #endif
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
 
-/* The stride of all the atom data arrays is equal to half the SIMD width */
+/* The stride of all the atom data arrays is equal to quarter of the SIMD width */
 #define STRIDE     UNROLLJ
 
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
 
 static gmx_inline void gmx_simdcall
-gmx_load_simd_2xnn_interactions(int                  excl,
+gmx_load_simd_4x4xn_interactions(int                 excl,
                                 gmx_exclfilter       filter_S0,
-                                gmx_exclfilter       filter_S2,
-                                gmx_simd_bool_t     *interact_S0,
-                                gmx_simd_bool_t     *interact_S2)
+                                gmx_simd_bool_t     *interact_S0)
 {
     /* Load integer interaction mask */
     gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
     *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
-    *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
 }
 
 /* All functionality defines are set here, except for:

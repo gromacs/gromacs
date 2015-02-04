@@ -1,3 +1,4 @@
+//TODO: check that all S2 are gone (other than where S1/S3 are also used (for I))
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -93,29 +94,26 @@
     gmx_simd_real_t  shY_S;
     gmx_simd_real_t  shZ_S;
     gmx_simd_real_t  ix_S0, iy_S0, iz_S0;
-    gmx_simd_real_t  ix_S2, iy_S2, iz_S2;
     gmx_simd_real_t  fix_S0, fiy_S0, fiz_S0;
-    gmx_simd_real_t  fix_S2, fiy_S2, fiz_S2;
     /* We use an i-force SIMD register width of 4 */
     /* The simd4 stuff might be defined in nbnxn_kernel_simd_utils.h */
     gmx_simd4_real_t fix_S, fiy_S, fiz_S;
 
     gmx_simd_real_t  diagonal_jmi_S;
 #if UNROLLI == UNROLLJ
-    gmx_simd_bool_t  diagonal_mask_S0, diagonal_mask_S2;
-#else
-    gmx_simd_bool_t  diagonal_mask0_S0, diagonal_mask0_S2;
-    gmx_simd_bool_t  diagonal_mask1_S0, diagonal_mask1_S2;
+    gmx_simd_bool_t  diagonal_mask_S0;
+#else //currently not supported. Not sure this makes sense
+    gmx_simd_bool_t  diagonal_mask0_S0;
+    gmx_simd_bool_t  diagonal_mask1_S0;
 #endif
 
     unsigned            *exclusion_filter;
-    gmx_exclfilter       filter_S0, filter_S2;
+    gmx_exclfilter       filter_S0;
 
     gmx_simd_real_t      zero_S = gmx_simd_set1_r(0.0);
 
     gmx_simd_real_t      one_S = gmx_simd_set1_r(1.0);
     gmx_simd_real_t      iq_S0 = gmx_simd_setzero_r();
-    gmx_simd_real_t      iq_S2 = gmx_simd_setzero_r();
 
 #ifdef CALC_COUL_RF
     gmx_simd_real_t      mrc_3_S;
@@ -133,7 +131,6 @@
 #endif
     /* Thread-local working buffers for force and potential lookups */
     int               ti0_array[2*GMX_SIMD_REAL_WIDTH], *ti0 = NULL;
-    int               ti2_array[2*GMX_SIMD_REAL_WIDTH], *ti2 = NULL;
 #ifdef CALC_ENERGIES
     gmx_simd_real_t   mhalfsp_S;
 #endif
@@ -174,21 +171,17 @@
     const real       *ljc;
 
     gmx_simd_real_t   hsig_i_S0, seps_i_S0;
-    gmx_simd_real_t   hsig_i_S2, seps_i_S2;
 #else
 #ifdef FIX_LJ_C
-    real              pvdw_array[2*UNROLLI*UNROLLJ+GMX_SIMD_REAL_WIDTH];
+    real              pvdw_array[4*UNROLLI*UNROLLJ+GMX_SIMD_REAL_WIDTH];
     real             *pvdw_c6, *pvdw_c12;
     gmx_simd_real_t   c6_S0, c12_S0;
-    gmx_simd_real_t   c6_S2, c12_S2;
 #endif
 
 #if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
     const real       *ljc;
 
     gmx_simd_real_t   c6s_S0, c12s_S0;
-    gmx_simd_real_t   c6s_S2  = gmx_simd_setzero_r();
-    gmx_simd_real_t   c12s_S2 = gmx_simd_setzero_r();
 #endif
 #endif /* LJ_COMB_LB */
 
@@ -222,19 +215,16 @@
     diagonal_mask_S0  = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
     diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
     diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask_S2  = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
 #else
-#if 2*UNROLLI == UNROLLJ
+#if 2*UNROLLI == UNROLLJ //not supported
     diagonal_mask0_S0 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
     diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
     diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask0_S2 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
     diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
     diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
     diagonal_mask1_S0 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
     diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
     diagonal_jmi_S    = gmx_simd_sub_r(diagonal_jmi_S, one_S);
-    diagonal_mask1_S2 = gmx_simd_cmplt_r(zero_S, diagonal_jmi_S);
 #endif
 #endif
 
@@ -253,8 +243,7 @@
      * Since we only check bits, the actual value they represent does not
      * matter, as long as both filter and mask data are treated the same way.
      */
-    filter_S0 = gmx_load_exclusion_filter(exclusion_filter + 0*2*UNROLLJ*filter_stride);
-    filter_S2 = gmx_load_exclusion_filter(exclusion_filter + 1*2*UNROLLJ*filter_stride);
+    filter_S0 = gmx_load_exclusion_filter(exclusion_filter);
 
 #ifdef CALC_COUL_RF
     /* Reaction-field constants */
@@ -268,7 +257,6 @@
 #ifdef CALC_COUL_TAB
     /* Generate aligned table index pointers */
     ti0 = prepare_table_load_buffer(ti0_array);
-    ti2 = prepare_table_load_buffer(ti2_array);
 
     invtsp_S  = gmx_simd_set1_r(ic->tabq_scale);
 #ifdef CALC_ENERGIES
@@ -390,7 +378,7 @@
     egps_jshift  = 2*nbat->neg_2log;
     egps_jmask   = (1<<egps_jshift) - 1;
     egps_jstride = (UNROLLJ>>1)*UNROLLJ;
-    /* Major division is over i-particle energy groups, determine the stride */
+    /* Major division is over i-particle energy grgit oups, determine the stride */
     Vstride_i    = nbat->nenergrp*(1<<nbat->neg_2log)*egps_jstride;
 #endif
 
@@ -415,8 +403,8 @@
 #if UNROLLJ <= 4
         sci              = ci*STRIDE;
         scix             = sci*DIM;
-        sci2             = sci*2;
-#else
+        sci2             = sci*2;  //TODO: Does this need to be sci4?
+#else //Not supported
         sci              = (ci>>1)*STRIDE;
         scix             = sci*DIM + (ci & 1)*(STRIDE>>1);
         sci2             = sci*2 + (ci & 1)*(STRIDE>>1);
@@ -519,17 +507,11 @@
         sciy             = scix + STRIDE;
         sciz             = sciy + STRIDE;
         gmx_load1p1_pr(&ix_S0, x+scix);
-        gmx_load1p1_pr(&ix_S2, x+scix+2);
         gmx_load1p1_pr(&iy_S0, x+sciy);
-        gmx_load1p1_pr(&iy_S2, x+sciy+2);
         gmx_load1p1_pr(&iz_S0, x+sciz);
-        gmx_load1p1_pr(&iz_S2, x+sciz+2);
         ix_S0          = gmx_simd_add_r(ix_S0, shX_S);
-        ix_S2          = gmx_simd_add_r(ix_S2, shX_S);
         iy_S0          = gmx_simd_add_r(iy_S0, shY_S);
-        iy_S2          = gmx_simd_add_r(iy_S2, shY_S);
         iz_S0          = gmx_simd_add_r(iz_S0, shZ_S);
-        iz_S2          = gmx_simd_add_r(iz_S2, shZ_S);
 
         if (do_coul)
         {
@@ -538,28 +520,16 @@
             facel_S    = gmx_simd_set1_r(facel);
 
             gmx_load1p1_pr(&iq_S0, q+sci);
-            gmx_load1p1_pr(&iq_S2, q+sci+2);
             iq_S0      = gmx_simd_mul_r(facel_S, iq_S0);
-            iq_S2      = gmx_simd_mul_r(facel_S, iq_S2);
         }
 
 #ifdef LJ_COMB_LB
         gmx_load1p1_pr(&hsig_i_S0, ljc+sci2+0);
-        gmx_load1p1_pr(&hsig_i_S2, ljc+sci2+2);
         gmx_load1p1_pr(&seps_i_S0, ljc+sci2+STRIDE+0);
-        gmx_load1p1_pr(&seps_i_S2, ljc+sci2+STRIDE+2);
 #else
 #ifdef LJ_COMB_GEOM
         gmx_load1p1_pr(&c6s_S0, ljc+sci2+0);
-        if (!half_LJ)
-        {
-            gmx_load1p1_pr(&c6s_S2, ljc+sci2+2);
-        }
         gmx_load1p1_pr(&c12s_S0, ljc+sci2+STRIDE+0);
-        if (!half_LJ)
-        {
-            gmx_load1p1_pr(&c12s_S2, ljc+sci2+STRIDE+2);
-        }
 #else
         nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*nbfp_stride;
         nbfp1     = nbfp_ptr + type[sci+1]*nbat->ntype*nbfp_stride;
@@ -573,10 +543,6 @@
 #ifdef LJ_EWALD_GEOM
         /* We need the geometrically combined C6 for the PME grid correction */
         gmx_load1p1_pr(&c6s_S0, ljc+sci2+0);
-        if (!half_LJ)
-        {
-            gmx_load1p1_pr(&c6s_S2, ljc+sci2+2);
-        }
 #endif
 
         /* Zero the potential energy for this list */
@@ -585,11 +551,8 @@
 
         /* Clear i atom forces */
         fix_S0           = gmx_simd_setzero_r();
-        fix_S2           = gmx_simd_setzero_r();
         fiy_S0           = gmx_simd_setzero_r();
-        fiy_S2           = gmx_simd_setzero_r();
         fiz_S0           = gmx_simd_setzero_r();
-        fiz_S2           = gmx_simd_setzero_r();
 
         cjind = cjind0;
 
