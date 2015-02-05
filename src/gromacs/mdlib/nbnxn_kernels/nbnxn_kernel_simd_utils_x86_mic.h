@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@ typedef __m512 gmx_mm_hpr; /* high half is ignored */
 static gmx_inline void
 gmx_load_hpr(gmx_mm_hpr *a, const real *b)
 {
-    *a = _mm512_loadunpacklo_ps(_mm512_undefined_ps(), b);
+    *a = _mm512_castpd_ps(_mm512_extload_pd((const double*)b, _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
 }
 
 /* Set all entries in half-width SIMD register *a to b */
@@ -76,13 +76,14 @@ gmx_load1p1_pr(gmx_simd_float_t *a, const real *b)
 static gmx_inline void
 gmx_loaddh_pr(gmx_simd_float_t *a, const real *b)
 {
-    *a = _mm512_permute4f128_ps(_mm512_loadunpacklo_ps(_mm512_undefined_ps(), b), PERM_LOW2HIGH);
+    *a = _mm512_castpd_ps(_mm512_extload_pd((const double*)b, _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
 }
 
 /* Store half-width SIMD register b into half width aligned memory a */
 static gmx_inline void
 gmx_store_hpr(real *a, gmx_mm_hpr b)
 {
+    assert((size_t)a%32 == 0);
     _mm512_mask_packstorelo_ps(a, mask_loh, b);
 }
 
@@ -102,10 +103,15 @@ gmx_sum4_hpr(gmx_simd_float_t a, gmx_simd_float_t b)
 static gmx_inline __m512
 gmx_mm_transpose_sum4h_pr(gmx_simd_float_t a, gmx_simd_float_t b)
 {
-    return _mm512_setr4_ps(_mm512_mask_reduce_add_ps(mask_loh, a),
-                           _mm512_mask_reduce_add_ps(mask_hih, a),
-                           _mm512_mask_reduce_add_ps(mask_loh, b),
-                           _mm512_mask_reduce_add_ps(mask_hih, b));
+    a = _mm512_add_ps(a, _mm512_swizzle_ps(a, _MM_SWIZ_REG_CDAB));
+    a = _mm512_add_ps(a, _mm512_swizzle_ps(a, _MM_SWIZ_REG_BADC));
+    a = _mm512_add_ps(a, _mm512_permute4f128_ps(a, _MM_PERM_CDAB));
+
+    b = _mm512_add_ps(b, _mm512_swizzle_ps(b, _MM_SWIZ_REG_CDAB));
+    b = _mm512_add_ps(b, _mm512_swizzle_ps(b, _MM_SWIZ_REG_BADC));
+    a = _mm512_mask_add_ps(a, _mm512_int2mask(0xF0F0), b, _mm512_permute4f128_ps(b, _MM_PERM_CDAB));
+
+    return _mm512_castsi512_ps(_mm512_permutevar_epi32(_mm512_setr4_epi32(0, 8, 4, 12), _mm512_castps_si512(a)));
 }
 
 static gmx_inline void
