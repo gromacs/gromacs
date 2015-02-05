@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <math.h>
 
 #include <immintrin.h>
@@ -206,9 +207,9 @@
    Doesn't use mask other than where required. No side effect expected for operating on the (unused) upper 8.
  */
 #define gmx_simd_dint32_t          __m512i
-#define gmx_simd_load_di(m)        _mm512_mask_loadunpacklo_epi32(_mm512_undefined_epi32(), mask_loh, m)
+#define gmx_simd_load_di(m)        _mm512_extload_epi64(m, _MM_UPCONV_EPI64_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE)
 #define gmx_simd_set1_di           _mm512_set1_epi32
-#define gmx_simd_store_di(m, a)    _mm512_mask_packstorelo_epi32(m, mask_loh, a)
+#define gmx_simd_store_di          gmx_simd_store_di_mic
 #define gmx_simd_loadu_di          gmx_simd_loadu_di_mic
 #define gmx_simd_storeu_di         gmx_simd_storeu_di_mic
 #define gmx_simd_extract_di        gmx_simd_extract_di_mic
@@ -266,10 +267,10 @@
    set the upper 12 to zero. */
 #define gmx_simd4_float_t           __m512
 #define gmx_simd4_mask              _mm512_int2mask(0xF)
-#define gmx_simd4_load_f(m)         _mm512_mask_loadunpacklo_ps(_mm512_undefined_ps(), gmx_simd4_mask, m)
+#define gmx_simd4_load_f(m)         _mm512_mask_extload_ps(_mm512_undefined_ps(), gmx_simd4_mask, m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE)
 #define gmx_simd4_load1_f(m)        _mm512_mask_extload_ps(_mm512_undefined_ps(), gmx_simd4_mask, m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE)
 #define gmx_simd4_set1_f            _mm512_set1_ps
-#define gmx_simd4_store_f(m, a)     _mm512_mask_packstorelo_ps(m, gmx_simd4_mask, a)
+#define gmx_simd4_store_f           gmx_simd4_store_f_mic
 #define gmx_simd4_loadu_f           gmx_simd4_loadu_f_mic
 #define gmx_simd4_storeu_f          gmx_simd4_storeu_f_mic
 #define gmx_simd4_setzero_f         _mm512_setzero_ps
@@ -309,10 +310,10 @@
  ****************************************************/
 #define gmx_simd4_double_t          __m512d
 #define gmx_simd4_mask              _mm512_int2mask(0xF)
-#define gmx_simd4_load_d(m)         _mm512_mask_loadunpacklo_pd(_mm512_undefined_pd(), gmx_simd4_mask, m)
+#define gmx_simd4_load_d(m)         _mm512_mask_extload_pd(_mm512_undefined_pd(), gmx_simd4_mask, m, _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE)
 #define gmx_simd4_load1_d(m)        _mm512_mask_extload_pd(_mm512_undefined_pd(), gmx_simd4_mask, m, _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE)
 #define gmx_simd4_set1_d            _mm512_set1_pd
-#define gmx_simd4_store_d(m, a)     _mm512_mask_packstorelo_pd(m, gmx_simd4_mask, a)
+#define gmx_simd4_store_d           gmx_simd4_store_d_mic
 #define gmx_simd4_loadu_d           gmx_simd4_loadu_d_mic
 #define gmx_simd4_storeu_d          gmx_simd4_storeu_d_mic
 #define gmx_simd4_setzero_d         _mm512_setzero_pd
@@ -396,6 +397,13 @@ gmx_simd_storeu_d_mic(double * m, __m512d s)
 }
 
 /* load store dint32 */
+static gmx_inline void gmx_simdcall
+gmx_simd_store_di_mic(gmx_int32_t * m, __m512i s)
+{
+    assert((size_t)m%32 == 0);
+    _mm512_mask_packstorelo_epi32(m, mask_loh, s);
+}
+
 static gmx_inline __m512i gmx_simdcall
 gmx_simd_loadu_di_mic(const gmx_int32_t * m)
 {
@@ -410,6 +418,13 @@ gmx_simd_storeu_di_mic(gmx_int32_t * m, __m512i s)
 }
 
 /* load store simd4 */
+static gmx_inline void gmx_simdcall
+gmx_simd4_store_f_mic(float * m, __m512 s)
+{
+    assert((size_t)m%16 == 0);
+    _mm512_mask_packstorelo_ps(m, gmx_simd4_mask, s);
+}
+
 static gmx_inline __m512 gmx_simdcall
 gmx_simd4_loadu_f_mic(const float * m)
 {
@@ -421,6 +436,13 @@ gmx_simd4_storeu_f_mic(float * m, __m512 s)
 {
     _mm512_mask_packstorelo_ps(m, gmx_simd4_mask, s);
     _mm512_mask_packstorehi_ps(m+16, gmx_simd4_mask, s);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd4_store_d_mic(double * m, __m512d s)
+{
+    assert((size_t)m%32 == 0);
+    _mm512_mask_packstorelo_pd(m, gmx_simd4_mask, s);
 }
 
 static gmx_inline __m512d gmx_simdcall
