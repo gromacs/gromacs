@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,8 @@
 #include "gmxpre.h"
 
 #include "simd.h"
+
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -94,13 +96,14 @@ const gmx_simd_int32_t iSimd_0xCCCCCCCC = setSimdIntFrom1I(0xCCCCCCCC);
 
 #ifdef GMX_SIMD_HAVE_REAL
 ::std::vector<real>
-simdReal2Vector(const gmx_simd_real_t simd)
+simdReal2Vector(const gmx_simd_real_t simd, size_t maxWidthToReturn)
 {
     real                mem[GMX_SIMD_REAL_WIDTH*2];
     real *              p = gmx_simd_align_r(mem);
 
+    GMX_ASSERT(maxWidthToReturn <= GMX_SIMD_REAL_WIDTH, "Max width to return for simdReal2Vector conversion must be <= GMX_SIMD_REAL_WIDTH");
     gmx_simd_store_r(p, simd);
-    std::vector<real>   v(p, p+GMX_SIMD_REAL_WIDTH);
+    std::vector<real>   v(p, p+maxWidthToReturn);
 
     return v;
 }
@@ -151,6 +154,13 @@ SimdTest::compareSimdRealEq(const char * refExpr, const char * tstExpr,
                             const gmx_simd_real_t ref, const gmx_simd_real_t tst)
 {
     return compareVectorEq(refExpr, tstExpr, simdReal2Vector(ref), simdReal2Vector(tst));
+}
+
+testing::AssertionResult
+SimdTest::compareSimdRealNEq(const char * refExpr, const char * tstExpr, const char * /*nExpr*/,
+                             const gmx_simd_real_t ref, const gmx_simd_real_t tst, size_t n)
+{
+    return compareVectorEq(refExpr, tstExpr, simdReal2Vector(ref, n), simdReal2Vector(tst, n));
 }
 
 #endif  // GMX_SIMD_HAVE_REAL
