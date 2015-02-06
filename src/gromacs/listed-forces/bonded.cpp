@@ -1025,13 +1025,6 @@ angles_noener_simd(int nbonds,
             coeff[s]                     = forceparams[type].harmonic.krA;
             coeff[GMX_SIMD_REAL_WIDTH+s] = forceparams[type].harmonic.rA*DEG2RAD;
 
-            /* Store the non PBC corrected distances packed and aligned */
-            for (m = 0; m < DIM; m++)
-            {
-                dr[s +      m *GMX_SIMD_REAL_WIDTH] = x[ai[s]][m] - x[aj[s]][m];
-                dr[s + (DIM+m)*GMX_SIMD_REAL_WIDTH] = x[ak[s]][m] - x[aj[s]][m];
-            }
-
             /* At the end fill the arrays with identical entries */
             if (iu + nfa1 < nbonds)
             {
@@ -1039,15 +1032,14 @@ angles_noener_simd(int nbonds,
             }
         }
 
+        /* Store the non PBC corrected distances packed and aligned */
+        gmx_simd_gather_rvec_dist_two_index(x, ai, aj, dr,
+                                            &rijx_S, &rijy_S, &rijz_S); 
+        gmx_simd_gather_rvec_dist_two_index(x, ak, aj, dr,
+                                            &rkjx_S, &rkjy_S, &rkjz_S);
+
         k_S       = gmx_simd_load_r(coeff);
         theta0_S  = gmx_simd_load_r(coeff+GMX_SIMD_REAL_WIDTH);
-
-        rijx_S    = gmx_simd_load_r(dr + 0*GMX_SIMD_REAL_WIDTH);
-        rijy_S    = gmx_simd_load_r(dr + 1*GMX_SIMD_REAL_WIDTH);
-        rijz_S    = gmx_simd_load_r(dr + 2*GMX_SIMD_REAL_WIDTH);
-        rkjx_S    = gmx_simd_load_r(dr + 3*GMX_SIMD_REAL_WIDTH);
-        rkjy_S    = gmx_simd_load_r(dr + 4*GMX_SIMD_REAL_WIDTH);
-        rkjz_S    = gmx_simd_load_r(dr + 5*GMX_SIMD_REAL_WIDTH);
 
         pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, &pbc_simd);
         pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, &pbc_simd);
@@ -1440,7 +1432,6 @@ dih_angle_simd(const rvec *x,
                real *p,
                real *q)
 {
-    int             s, m;
     gmx_simd_real_t rijx_S, rijy_S, rijz_S;
     gmx_simd_real_t rkjx_S, rkjy_S, rkjz_S;
     gmx_simd_real_t rklx_S, rkly_S, rklz_S;
@@ -1463,25 +1454,13 @@ dih_angle_simd(const rvec *x,
     /* The value of the last significant bit (GMX_REAL_EPS is half of that) */
     real_eps_S  = gmx_simd_set1_r(2*GMX_REAL_EPS);
 
-    for (s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
-    {
-        for (m = 0; m < DIM; m++)
-        {
-            dr[s + (0*DIM + m)*GMX_SIMD_REAL_WIDTH] = x[ai[s]][m] - x[aj[s]][m];
-            dr[s + (1*DIM + m)*GMX_SIMD_REAL_WIDTH] = x[ak[s]][m] - x[aj[s]][m];
-            dr[s + (2*DIM + m)*GMX_SIMD_REAL_WIDTH] = x[ak[s]][m] - x[al[s]][m];
-        }
-    }
-
-    rijx_S = gmx_simd_load_r(dr + 0*GMX_SIMD_REAL_WIDTH);
-    rijy_S = gmx_simd_load_r(dr + 1*GMX_SIMD_REAL_WIDTH);
-    rijz_S = gmx_simd_load_r(dr + 2*GMX_SIMD_REAL_WIDTH);
-    rkjx_S = gmx_simd_load_r(dr + 3*GMX_SIMD_REAL_WIDTH);
-    rkjy_S = gmx_simd_load_r(dr + 4*GMX_SIMD_REAL_WIDTH);
-    rkjz_S = gmx_simd_load_r(dr + 5*GMX_SIMD_REAL_WIDTH);
-    rklx_S = gmx_simd_load_r(dr + 6*GMX_SIMD_REAL_WIDTH);
-    rkly_S = gmx_simd_load_r(dr + 7*GMX_SIMD_REAL_WIDTH);
-    rklz_S = gmx_simd_load_r(dr + 8*GMX_SIMD_REAL_WIDTH);
+    /* Store the non PBC corrected distances packed and aligned */
+    gmx_simd_gather_rvec_dist_two_index(x, ai, aj, dr,
+                                        &rijx_S, &rijy_S, &rijz_S); 
+    gmx_simd_gather_rvec_dist_two_index(x, ak, aj, dr + 3*GMX_SIMD_REAL_WIDTH,
+                                        &rkjx_S, &rkjy_S, &rkjz_S);
+    gmx_simd_gather_rvec_dist_two_index(x, ak, al, dr + 6*GMX_SIMD_REAL_WIDTH,
+                                        &rklx_S, &rkly_S, &rklz_S);
 
     pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc);
     pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc);

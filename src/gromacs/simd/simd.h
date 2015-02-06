@@ -448,6 +448,14 @@ gmx_simd4_align_d(double *p)
 #    define gmx_simd4_blendv_r               gmx_simd4_blendv_d
 #    define gmx_simd4_reduce_r               gmx_simd4_reduce_d
 
+#    if (defined GMX_SIMD4_HAVE_MASKLOAD3) || (defined DOXYGEN)
+#        define gmx_simd4_maskload3_r        gmx_simd4_maskload3_d
+#    endif
+#    if (defined GMX_SIMD4_HAVE_SIMD_TRANSPOSES) || (defined DOXYGEN)
+#        define gmx_simd4_transpose_to_simd_r  gmx_simd4_transpose_to_simd_d
+#        define gmx_simd_transpose_to_simd4_r  gmx_simd_transpose_to_simd4_d
+#    endif
+
 /* Memory allocation */
 #    define gmx_simd_align_r                 gmx_simd_align_d
 #    define gmx_simd_align_i                 gmx_simd_align_di
@@ -1515,6 +1523,30 @@ gmx_simd4_align_d(double *p)
  * \copydetails gmx_simd4_align_f
  */
 #    define gmx_simd4_align_r                gmx_simd4_align_f
+
+#    if (defined GMX_SIMD4_HAVE_MASKLOAD3) || (defined DOXYGEN)
+/*! \brief Load 3 elements to a SIMD4 real, zero the last element.
+ *
+ * \copydetails gmx_simd4_maskload3_f
+ */
+#        define gmx_simd4_maskload3_r        gmx_simd4_maskload3_f
+#    endif
+
+#    if (defined GMX_SIMD4_HAVE_SIMD_TRANSPOSES) || (defined DOXYGEN)
+/*! \brief Transpose SIMD4 vectors to 4 SIMD vectors.
+ *
+ * \copydetails gmx_simd4_transpose_to_simd_f
+ */
+#        define gmx_simd4_transpose_to_simd_r  gmx_simd4_transpose_to_simd_f
+#    endif
+
+#    if (defined GMX_SIMD4_HAVE_SIMD_TRANSPOSES) || (defined DOXYGEN)
+/*! \brief Transpose 4 SIMD vectors to SIMD4 vectors.
+ *
+ * \copydetails gmx_simd_transpose_to_simd4_f
+ */
+#        define gmx_simd_transpose_to_simd4_r  gmx_simd_transpose_to_simd4_f
+#    endif
 
 /*! \} */
 
