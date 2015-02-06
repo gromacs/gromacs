@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 namespace
@@ -245,11 +246,15 @@ TEST(SimdBootstrapTest, gmxSimdStoreUI)
  * float/double with special prefixes. Unfortunately, this means that some C++
  * compilers think an 8-wide normal real SIMD and a 4-wide SIMD4 real type
  * cannot be overloaded (e.g. with gcc using 256-bit AVX single precision).
+ *
+ * maxWidthForCheck contains the number of elements of the SIMD4
+ * vector that are loaded and stored, and thus should be checked. This
+ * value must be less than the SIMD4 width.
  */
 template <typename T, typename TSimd> void
 simd4LoadStoreTester(TSimd simd4LoadFn(T* mem), void simd4StoreFn(T* mem, TSimd),
                      T * simd4AlignFn(T *mem),
-                     const int loadOffset, const int storeOffset)
+                     const int loadOffset, const int storeOffset, int maxWidthForCheck = GMX_SIMD4_WIDTH)
 {
     /* We want simdWidth elements before the data to check we are not polluting
      * memory. Then we need 2*simdWidth storage to be able to extract an aligned
@@ -272,7 +277,8 @@ simd4LoadStoreTester(TSimd simd4LoadFn(T* mem), void simd4StoreFn(T* mem, TSimd)
 
     simd4StoreFn(pCopyDst, simd4LoadFn(pCopySrc));
 
-    for (i = 0; i < GMX_SIMD4_WIDTH; i++)
+    GMX_RELEASE_ASSERT(maxWidthForCheck <= GMX_SIMD4_WIDTH, "Can't check widths greater than the SIMD4 width");
+    for (i = 0; i < maxWidthForCheck; i++)
     {
         EXPECT_EQ(pCopySrc[i], pCopyDst[i]) << "SIMD4 load or store not moving data correctly for element " << i;
     }
@@ -335,6 +341,40 @@ TEST(SimdBootstrapTest, gmxSimd4StoreUR)
 }
 #    endif
 #endif
+
+/*! \brief Helper function to make some deliberately unaligned memory.
+ *
+ * This means that MaskLoad3 and MaskStore3 are tested to work on
+ * unaligned memory */
+static gmx_inline real *
+gmx_simd_unalign_r(real *p)
+{
+    return gmx_simd_align_r(p) + 1;
+}
+
+#if defined GMX_SIMD4_HAVE_MASKLOAD3 && defined GMX_SIMD4_HAVE_MASKSTORE3
+
+//! Wrapper for SIMD macro to load three adjacent reals
+gmx_simd4_real_t wrapperSimd4MaskLoad3R(real *m)
+{
+    return gmx_simd4_maskload3_r(m);
+}
+//! Wrapper for SIMD macro to store three adjacent reals
+void wrapperSimd4MaskStore3R(real *m, gmx_simd4_real_t s)
+{
+    gmx_simd4_maskstore3_r(m, s);
+}
+
+/* Test is disabled because valgrind 3.10.1 (and earlier) think the
+   _mm_maskstore_ps call used here is illegal. Run normally, the test
+   and real code is fine. Fix is present in valgrind trunk, so we can
+   enable this next time they release and we update Jenkins. */
+TEST(SimdBootstrapTest, DISABLED_gmxSimdMaskLoad3MaskStore3R)
+{
+    simd4LoadStoreTester(wrapperSimd4MaskLoad3R, wrapperSimd4MaskStore3R, gmx_simd_unalign_r, 0, 0, 3);
+}
+
+#endif /* defined GMX_SIMD4_HAVE_MASKLOAD3 && defined GMX_SIMD4_HAVE_MASKSTORE3 */
 
 /*! \} */
 /*! \endcond */

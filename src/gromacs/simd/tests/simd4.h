@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ class Simd4Test : public SimdBaseTest
     public:
         /*! \brief Compare two real SIMD4 variables for approximate equality.
          *
-         * This is an internal implementation routine. YOu should always use
+         * This is an internal implementation routine. You should always use
          * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
          *
          * This routine is designed according to the Google test specs, so the char
@@ -118,8 +118,8 @@ class Simd4Test : public SimdBaseTest
 
         /*! \brief Compare two real SIMD4 variables for exact equality.
          *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
+         * This is an internal implementation routine. You should always use
+         * GMX_EXPECT_SIMD4_REAL_EQ() instead.
          *
          * This routine is designed according to the Google test specs, so the char
          * strings will describe the arguments to the macro.
@@ -163,10 +163,10 @@ gmx_simd4_real_t   setSimd4RealFrom3R(real r0, real r1, real r2);
 gmx_simd4_real_t   setSimd4RealFrom1R(real value);
 
 /*! \brief Test if a SIMD4 real is bitwise identical to reference SIMD4 value. */
-#define GMX_EXPECT_SIMD4_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimd4RealEq, ref, tst)
+#define GMX_EXPECT_SIMD4_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimd4RealEq, (ref), (tst))
 
 /*! \brief Test if a SIMD4 real is within tolerance of reference SIMD4 value. */
-#define GMX_EXPECT_SIMD4_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimd4RealUlp, ref, tst)
+#define GMX_EXPECT_SIMD4_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimd4RealUlp, (ref), (tst))
 
 #endif  // GMX_SIMD4_HAVE_REAL
 
