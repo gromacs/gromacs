@@ -232,7 +232,10 @@ void ReadSqlite3(const char                       *sqlite_file,
                             {
                                 exper.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
                             }
-                            else if (strcasecmp(prop, "DeltaHform") == 0)
+                            else if ((strcasecmp(prop, "DeltaHform") == 0) ||
+                                     (strcasecmp(prop, "DeltaGform") == 0) ||
+                                     (strcasecmp(prop, "DeltaSform") == 0) ||
+                                     (strcasecmp(prop, "S0") == 0))
                             {
                                 exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
                             }
