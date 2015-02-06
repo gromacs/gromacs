@@ -2,12 +2,11 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -3593,7 +3592,7 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
     int  fft_my, fft_mz;
     int  buf_my = -1;
     int  nsx, nsy, nsz;
-    ivec localcopy_end;
+    ivec localcopy_end, commcopy_end;
     int  offx, offy, offz, x, y, z, i0, i0t;
     int  sx, sy, sz, fx, fy, fz, tx1, ty1, tz1, ox, oy, oz;
     gmx_bool bClearBufX, bClearBufY, bClearBufXY, bClearBuf;
@@ -3635,8 +3634,22 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
          * not beyond the local FFT grid.
          */
         localcopy_end[d] =
-            min(pmegrid->offset[d]+pmegrid->n[d]-(pmegrid->order-1),
+            min(pmegrid->offset[d] + pmegrid->n[d] - (pmegrid->order - 1),
                 local_fft_ndata[d]);
+
+        /* Determine up to where our thread needs to copy from the
+         * thread-local charge spreading grid to the communication buffer.
+         * Note: only relevant with communication, ignored otherwise.
+         */
+        commcopy_end[d]  = localcopy_end[d];
+        if (pmegrid->ci[d] == pmegrids->nc[d] - 1)
+        {
+            /* The last thread should copy up to the last pme grid line.
+             * When the rank-local FFT grid is narrower than pme-order,
+             * we need the max below to ensure copying of all data.
+             */
+            commcopy_end[d] = max(commcopy_end[d], pme->pme_order);
+        }
     }
 
     offx = pmegrid->offset[XX];
@@ -3667,17 +3680,11 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
         }
         pmegrid_g = &pmegrids->grid_th[fx*pmegrids->nc[YY]*pmegrids->nc[ZZ]];
         ox       += pmegrid_g->offset[XX];
-        /* Determine the end of our part of the source grid */
-        if (!bCommX)
-        {
-            /* Use our thread local source grid and target grid part */
-            tx1 = min(ox + pmegrid_g->n[XX], localcopy_end[XX]);
-        }
-        else
-        {
-            /* Use our thread local source grid and the spreading range */
-            tx1 = min(ox + pmegrid_g->n[XX], pme->pme_order);
-        }
+        /* Determine the end of our part of the source grid.
+         * Use our thread local source grid and target grid part
+         */
+        tx1 = min(ox + pmegrid_g->n[XX],
+                  !bCommX ? localcopy_end[XX] : commcopy_end[XX]);
 
         for (sy = 0; sy >= -pmegrids->nthread_comm[YY]; sy--)
         {
@@ -3692,17 +3699,11 @@ reduce_threadgrid_overlap(gmx_pme_t pme,
             }
             pmegrid_g = &pmegrids->grid_th[fy*pmegrids->nc[ZZ]];
             oy       += pmegrid_g->offset[YY];
-            /* Determine the end of our part of the source grid */
-            if (!bCommY)
-            {
-                /* Use our thread local source grid and target grid part */
-                ty1 = min(oy + pmegrid_g->n[YY], localcopy_end[YY]);
-            }
-            else
-            {
-                /* Use our thread local source grid and the spreading range */
-                ty1 = min(oy + pmegrid_g->n[YY], pme->pme_order);
-            }
+            /* Determine the end of our part of the source grid.
+             * Use our thread local source grid and target grid part
+             */
+            ty1 = min(oy + pmegrid_g->n[YY],
+                      !bCommY ? localcopy_end[YY] : commcopy_end[YY]);
 
             for (sz = 0; sz >= -pmegrids->nthread_comm[ZZ]; sz--)
             {
