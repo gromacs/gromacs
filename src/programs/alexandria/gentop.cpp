@@ -181,6 +181,7 @@ int alex_gentop(int argc, char *argv[])
     static char       *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
     static int         maxpot         = 0;
     static int         seed           = 0;
+    static int         nsymm          = 0;
     static const char *cqdist[]       = {
         NULL, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", NULL
     };
@@ -225,6 +226,8 @@ int alex_gentop(int argc, char *argv[])
           "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" },
+        { "-nsymm", FALSE, etINT, {&nsymm},
+          "Symmetry number of the molecule can be supplied here if you know there is an error in the input file" },
         { "-pbc",    FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions." },
         { "-seed",   FALSE, etINT,  {&seed},
@@ -427,7 +430,7 @@ int alex_gentop(int argc, char *argv[])
             molnm = (char *)"XXX";
         }
         ReadGauss(fn, mp, gap, bBabel, aps, pd, molnm, iupac, conf, basis,
-                  maxpot, bVerbose, gmx_poldata_get_force_field(pd));
+                  maxpot, nsymm, bVerbose, gmx_poldata_get_force_field(pd));
         mps.push_back(mp);
         mpi = mps.begin();
     }

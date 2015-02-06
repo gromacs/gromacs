@@ -66,6 +66,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     static char                     *molnm      = NULL, *iupac = NULL, *conf = (char *)"minimum", *basis = NULL;
     static const char               *forcefield = "GAFF";
     static int                       maxpot     = 0;
+    static int                       nsymm      = 0;
     static gmx_bool                  compress   = FALSE;
     static gmx_bool                  bBabel     = TRUE;
     t_pargs                          pa[]       = {
@@ -79,6 +80,8 @@ int alex_gauss2molprop(int argc, char *argv[])
 #endif
         { "-molnm", FALSE, etSTR, {&molnm},
           "Name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
+        { "-nsymm", FALSE, etINT, {&nsymm},
+          "Symmetry number of the molecule can be supplied here if you know there is an error in the input file" },
         { "-iupac", FALSE, etSTR, {&iupac},
           "IUPAC name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
         { "-conf",  FALSE, etSTR, {&conf},
@@ -119,7 +122,7 @@ int alex_gauss2molprop(int argc, char *argv[])
         alexandria::MolProp mmm;
 
         ReadGauss(fns[i], mmm, gap, bBabel, aps, pd, molnm, iupac, conf, basis,
-                  maxpot, bVerbose, gmx_poldata_get_force_field(pd));
+                  maxpot, nsymm, bVerbose, gmx_poldata_get_force_field(pd));
         mp.push_back(mmm);
     }
 

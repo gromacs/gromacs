@@ -91,6 +91,7 @@ set(ALEXANDRIA_SOURCES
         analyze.cpp
         mp2csv.cpp
         merge_mp.cpp
+        phase.cpp
         poldata_test.cpp
         molprop_test.cpp
         stringutil.cpp

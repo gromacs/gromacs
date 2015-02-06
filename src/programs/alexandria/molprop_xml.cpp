@@ -75,7 +75,7 @@ enum {
     exmlMULTIPLICITY, exmlCHARGE,
     exmlCATEGORY, exmlCATNAME, exmlEXPERIMENT,
     exmlPOLARIZABILITY, exmlENERGY, exmlDIPOLE, exmlQUADRUPOLE, exmlPOTENTIAL,
-    exmlNAME, exmlAVERAGE, exmlERROR, exmlTEMPERATURE,
+    exmlNAME, exmlAVERAGE, exmlERROR, exmlTEMPERATURE, exmlPHASE,
     exmlMETHOD, exmlREFERENCE, exmlTYPE, exmlSOURCE,
     exmlBOND, exmlAI, exmlAJ, exmlBONDORDER,
     exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
@@ -92,7 +92,7 @@ static const char *exml_names[exmlNR] = {
     "multiplicity", "charge",
     "category", "catname", "experiment",
     "polarizability", "energy", "dipole", "quadrupole", "potential",
-    "name", "average", "error", "temperature",
+    "name", "average", "error", "temperature", "phase",
     "method", "reference", "type", "source",
     "bond", "ai", "aj", "bondorder",
     "composition", "compname", "catom", "cname", "cnumber",
@@ -403,11 +403,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                         case exmlENERGY:
                             process_children(tree, xbuf);
                             if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                                NN(xbuf[exmlENERGY]) && NN(xbuf[exmlTEMPERATURE]))
+                                NN(xbuf[exmlENERGY]) && NN(xbuf[exmlTEMPERATURE]) &&
+                                NN(xbuf[exmlPHASE]))
                             {
                                 alexandria::MolecularEnergy me(xbuf[exmlTYPE],
                                                                xbuf[exmlUNIT],
                                                                my_atof(xbuf[exmlTEMPERATURE]),
+                                                               string2phase(xbuf[exmlPHASE]),
                                                                my_atof(xbuf[exmlENERGY]),
                                                                xbuf[exmlERROR] ? my_atof(xbuf[exmlERROR]) : 0.0);
                                 if (*bExperiment)
@@ -585,6 +587,7 @@ static void add_exper_properties(xmlNodePtr              exp,
         add_xml_string(child, exml_names[exmlTYPE], me_it->getType());
         add_xml_string(child, exml_names[exmlUNIT], me_it->getUnit());
         add_xml_double(child, exml_names[exmlTEMPERATURE], me_it->getTemperature());
+        add_xml_string(child, exml_names[exmlPHASE], phase2string(me_it->getPhase()));
     }
 
     for (alexandria::MolecularDipoleIterator mdp_it = exper.BeginDipole();

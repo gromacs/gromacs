@@ -232,9 +232,9 @@ void ReadSqlite3(const char                       *sqlite_file,
                             {
                                 exper.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
                             }
-                            else if (strcasecmp(prop, "DHf") == 0)
+                            else if (strcasecmp(prop, "DeltaHform") == 0)
                             {
-                                exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, value, error));
+                                exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
                             }
                             mpi->AddExperiment(exper);
                         }
@@ -252,9 +252,13 @@ void ReadSqlite3(const char                       *sqlite_file,
                             {
                                 calc.AddDipole(alexandria::MolecularDipole(prop, unit, temperature, 0, 0, 0, value, error));
                             }
-                            else if (strcasecmp(prop, "DHf") == 0)
+                            else if ((strcasecmp(prop, "DeltaHform") == 0) ||
+                                     (strcasecmp(prop, "DeltaGform") == 0) ||
+                                     (strcasecmp(prop, "DeltaSform") == 0) ||
+                                     (strcasecmp(prop, "S0") == 0))
+
                             {
-                                calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, value, error));
+                                calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
                             }
                             mpi->AddCalculation(calc);
                         }

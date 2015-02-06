@@ -88,6 +88,7 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 #include <openbabel/obmolecformat.h>
 #include <openbabel/mol.h>
 #include <openbabel/atom.h>
+#include <openbabel/data.h>
 #include <openbabel/residue.h>
 #include <openbabel/obiter.h>
 #include <openbabel/obconversion.h>
@@ -152,80 +153,11 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
     return NULL;
 }
 
-void translate_atomtypes(t_atoms *atoms, t_symtab *tab, const char *forcefield)
-{
-    //#define XHACK
-#ifdef XHACK
-    typedef struct {
-        const char *ob, *ax;
-    } t_xhack;
-    static const t_xhack xh[] = {
-        { "H", "HA" },
-        { "HC", "HA" },
-        { "H", "HA" },
-        { "HO", "HP" },
-        { "HS", "HP" },
-        { "HB", "HP" },
-        { "HN", "HP" },
-        { "C3", "CTA" },
-        { "C", "CA" },
-        { "C2", "CTR" },
-        { "Car", "CRA" },
-        { "C1", "CDI" },
-        { "Nr", "NPI2" },
-        { "N3", "NTE" },
-        { "Nox", "NTN" },
-        { "N2", "NTR" },
-        { "Npl", "NTE" },
-        { "O3", "OTE" },
-        { "O2", "OPI2" },
-        { "F", "F" }
-    };
-    int                  i, j, nxh = sizeof(xh)/sizeof(xh[0]);
-    for (i = 0; (i < atoms->nr); i++)
-    {
-        for (j = 0; (j < nxh); j++)
-        {
-            if (strcasecmp(xh[j].ob, *(atoms->atomtype[i])) == 0)
-            {
-                atoms->atomtype[i]  = put_symtab(tab, xh[j].ax);
-                atoms->atomtypeB[i] = atoms->atomtype[i];
-                break;
-            }
-        }
-        if (j == nxh)
-        {
-            gmx_fatal(FARGS, "No atom type translation found for %s",
-                      *(atoms->atomtype[i]));
-        }
-    }
-#else
-    OpenBabel::OBTypeTable obt;
-    std::string            src, dst;
-    int                    i;
-
-    if (NULL == forcefield)
-    {
-        return;
-    }
-    obt.SetFromType("INT");
-    if (obt.SetToType(forcefield))
-    {
-        for (i = 0; (i < atoms->nr); i++)
-        {
-            src.assign(*(atoms->atomtype[i]));
-            obt.Translate(src, dst);
-            atoms->atomtype[i]  = put_symtab(tab, dst.c_str());
-            atoms->atomtypeB[i] = atoms->atomtype[i];
-        }
-    }
-#endif
-}
-
 static void gmx_molprop_read_babel(const char *g98,
                                    alexandria::MolProp &mpt,
                                    char *molnm, char *iupac, char *conformation,
                                    char *basisset, int maxpot,
+                                   int nsymm,
                                    const char *forcefield)
 {
     /* Read a gaussian log file */
@@ -235,7 +167,7 @@ static void gmx_molprop_read_babel(const char *g98,
     OpenBabel::OBConversion   *conv;
     //OpenBabel::OBAtom *OBa;
     OpenBabel::OBBond         *OBb;
-    OpenBabel::OBPairData     *OBpd, *OBdhf;
+    OpenBabel::OBPairData     *OBpd;
     OpenBabel::OBVectorData   *dipole;
     OpenBabel::OBMatrixData   *quadrupole, *pol_tensor;
     OpenBabel::OBFreeGrid     *esp;
@@ -247,8 +179,6 @@ static void gmx_molprop_read_babel(const char *g98,
     const char *reference = "Ghahremanpour2015a", *unknown = "unknown";
     char       *program, *method, *basis, *charge_model, *ptr, *g98ptr;
     int         bondid;
-    double      dval;
-    int         k;
 
     conv = read_babel(g98, &mol);
     if (NULL == conv)
@@ -385,18 +315,51 @@ static void gmx_molprop_read_babel(const char *g98,
         mpt.SetIupac(unknown);
     }
 
-    double eTemp[1] = { 298.15 };
-
-    for (k = 0; (k < 1); k++)
     {
-        OBdhf = (OpenBabel::OBPairData *)mol.GetData("DHf(298.15K)");
-        if (NULL != OBdhf)
+        double temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T;
+        if (extract_thermochemistry(mol, false, &nsymm,
+                                    &temperature,
+                                    &DeltaHf0,
+                                    &DeltaHfT,
+                                    &DeltaGfT,
+                                    &DeltaSfT,
+                                    &S0T))
         {
-            value = OBdhf->GetValue();
-            dval  = convert2gmx(atof(value.c_str()), eg2cKcal_Mole);
-
-            alexandria::MolecularEnergy me("DHf", unit2string(eg2cKj_Mole), eTemp[k], dval, 0);
-            mpt.LastCalculation()->AddEnergy(me);
+            alexandria::MolecularEnergy me1("DeltaHform",
+                                            unit2string(eg2cKj_Mole),
+                                            0,
+                                            epGAS,
+                                            convert2gmx(DeltaHf0, eg2cKcal_Mole),
+                                            0);
+            mpt.LastCalculation()->AddEnergy(me1);
+            alexandria::MolecularEnergy me2("DeltaHform",
+                                            unit2string(eg2cKj_Mole),
+                                            temperature,
+                                            epGAS,
+                                            convert2gmx(DeltaHfT, eg2cKcal_Mole),
+                                            0);
+            mpt.LastCalculation()->AddEnergy(me2);
+            alexandria::MolecularEnergy me3("DeltaGform",
+                                            unit2string(eg2cKj_Mole),
+                                            temperature,
+                                            epGAS,
+                                            convert2gmx(DeltaGfT, eg2cKcal_Mole),
+                                            0);
+            mpt.LastCalculation()->AddEnergy(me3);
+            alexandria::MolecularEnergy me4("DeltaSform",
+                                            unit2string(eg2cJ_MolK),
+                                            temperature,
+                                            epGAS,
+                                            convert2gmx(DeltaSfT, eg2cCal_MolK),
+                                            0);
+            mpt.LastCalculation()->AddEnergy(me4);
+            alexandria::MolecularEnergy me5("S0",
+                                            unit2string(eg2cJ_MolK),
+                                            temperature,
+                                            epGAS,
+                                            convert2gmx(S0T, eg2cCal_MolK),
+                                            0);
+            mpt.LastCalculation()->AddEnergy(me5);
         }
     }
 
@@ -679,7 +642,7 @@ static int gmx_molprop_add_dhform(alexandria::MolProp &mpt,
 
     ee = convert2gmx(e0Hartree, eg2cHartree);
 
-    alexandria::MolecularEnergy me("DHf", unit2string(eg2cKj_Mole), 0.0, ee, 0);
+    alexandria::MolecularEnergy me("DelaHform", unit2string(eg2cKj_Mole), 0.0, epGAS, ee, 0);
     mpt.LastCalculation()->AddEnergy(me);
 
     if (bVerbose)
@@ -690,7 +653,7 @@ static int gmx_molprop_add_dhform(alexandria::MolProp &mpt,
 
     ee = convert2gmx(eTHartree, eg2cHartree);
 
-    alexandria::MolecularEnergy me2("DHf", unit2string(eg2cKj_Mole), 298.15, ee, 0);
+    alexandria::MolecularEnergy me2("DeltaHform", unit2string(eg2cKj_Mole), 298.15, epGAS, ee, 0);
     mpt.LastCalculation()->AddEnergy(me2);
 
     return 1;
@@ -1227,13 +1190,13 @@ static void gmx_molprop_read_log(const char *fn,
         else if (NULL != mp2ener)
         {
             ee = convert2gmx(atof(mp2ener), eg2cHartree);
-            alexandria::MolecularEnergy me("MP2", unit2string(eg2cKj_Mole), 0.0, ee, 0);
+            alexandria::MolecularEnergy me("MP2", unit2string(eg2cKj_Mole), 0.0, epGAS, ee, 0);
             calc.AddEnergy(me);
         }
         else if (NULL != hfener)
         {
             ee = convert2gmx(atof(hfener), eg2cHartree);
-            alexandria::MolecularEnergy me("HF", unit2string(eg2cKj_Mole), 0.0, ee, 0);
+            alexandria::MolecularEnergy me("HF", unit2string(eg2cKj_Mole), 0.0, epGAS, ee, 0);
             calc.AddEnergy(me);
         }
         mpt.AddCalculation(calc);
@@ -1260,14 +1223,14 @@ void ReadGauss(const char *g98,
                gmx_atomprop_t aps, gmx_poldata_t pd,
                char *molnm, char *iupac, char *conf,
                char *basis,
-               int maxpot, gmx_bool bVerbose,
+               int maxpot, int nsymm, gmx_bool bVerbose,
                const char *forcefield)
 {
 #ifdef HAVE_LIBOPENBABEL2
     if (bBabel)
     {
         gmx_molprop_read_babel(g98, mp, molnm, iupac, conf, basis,
-                               maxpot, forcefield);
+                               maxpot, nsymm, forcefield);
     }
     else
     {
@@ -1279,10 +1242,3 @@ void ReadGauss(const char *g98,
                          maxpot, bVerbose);
 #endif
 }
-
-#ifndef HAVE_LIBOPENBABEL2
-void translate_atomtypes(t_atoms *atoms, t_symtab *tab, const char *forcefield)
-{
-    fprintf(stderr, "The library function translate_atomtypes works only when OpenBabel is installed.\n");
-}
-#endif

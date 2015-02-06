@@ -409,7 +409,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
     }
     lt.printLine(catbuf);
 
-    catbuf.assign("R$^2$ (\\%%)");
+    catbuf.assign("R$^2$ (\\%)");
     for (k = 0; (k < qmc->n); k++)
     {
         if (gmx_stats_get_corr_coeff(lsqtot[k], &R) == estatsOK)

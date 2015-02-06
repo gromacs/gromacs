@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,10 @@ double convert2gmx(double x, int unit)
             return x*CAL2JOULE;
         case eg2cKj_Mole:
             return x;
+        case eg2cJ_MolK:
+            return x;
+        case eg2cCal_MolK:
+            return x*CAL2JOULE;
         case eg2cHartree:
             return x*ONE_4PI_EPS0/BOHR2NM;
         case eg2cHartree_e:
@@ -94,6 +98,10 @@ double gmx2convert(double x, int unit)
             return x/CAL2JOULE;
         case eg2cKj_Mole:
             return x;
+        case eg2cJ_MolK:
+            return x;
+        case eg2cCal_MolK:
+            return x/CAL2JOULE;
         case eg2cHartree:
             return x/(ONE_4PI_EPS0/BOHR2NM);
         case eg2cHartree_e:
@@ -117,7 +125,7 @@ double gmx2convert(double x, int unit)
 /* This has to have the same order as the enums. */
 static const char *eg2c_names[eg2cNR] = {
     "Angstrom", "Nm", "Pm", "Bohr", "Kcal_Mole",
-    "Kj_Mole",
+    "Kj_Mole", "J_MolK", "Cal_MolK",
     "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
     "Debye", "e", "Buckingham"
 };

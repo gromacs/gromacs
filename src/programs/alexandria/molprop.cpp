@@ -139,6 +139,7 @@ CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, type_.c_str());
         gmx_send_str(cr, dest, unit_.c_str());
         gmx_send_double(cr, dest, T_);
+        gmx_send_int(cr, dest, (int) eP_);
     }
     else if (NULL != debug)
     {
@@ -157,7 +158,8 @@ CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
     {
         type_.assign(gmx_recv_str(cr, src));
         unit_.assign(gmx_recv_str(cr, src));
-        T_ = gmx_recv_double(cr, src);
+        T_  = gmx_recv_double(cr, src);
+        eP_ = (ePhase) gmx_recv_int(cr, src);
     }
     else if (NULL != debug)
     {
@@ -390,7 +392,9 @@ void Experiment::MergeLow(Experiment *src)
         alexandria::MolecularEnergy me(mei->getType(),
                                        mei->getUnit(),
                                        mei->getTemperature(),
-                                       mei->getValue(), mei->getError());
+                                       mei->getPhase(),
+                                       mei->getValue(),
+                                       mei->getError());
         AddEnergy(me);
     }
 

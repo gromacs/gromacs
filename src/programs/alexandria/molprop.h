@@ -40,6 +40,7 @@
 #include <string.h>
 #include "gromacs/utility/real.h"
 #include "gromacs/topology/atomprop.h"
+#include "phase.h"
 #include "poldata.h"
 
 /*! \brief
@@ -262,7 +263,6 @@ class MolecularComposition
 //! Iterates over MolecularComposition items
 typedef std::vector<MolecularComposition>::iterator MolecularCompositionIterator;
 
-
 /*! \brief
  * Generic molecular property base clase
  *
@@ -273,6 +273,7 @@ class GenericProperty
 {
     private:
         std::string type_, unit_;
+        ePhase      eP_;
         double      T_;
     public:
         //! Empty constructor
@@ -285,8 +286,8 @@ class GenericProperty
          * \param[in] unit  Unit of the property
          * \param[in] T     Temperature
          */
-        GenericProperty(std::string type, std::string unit, double T)
-        { SetType(type); SetUnit(unit); setTemperature(T); }
+        GenericProperty(std::string type, std::string unit, double T, ePhase ep)
+        { SetType(type); SetUnit(unit); setTemperature(T); setPhase(ep); }
 
         //! Destructor
         ~GenericProperty() {};
@@ -300,6 +301,9 @@ class GenericProperty
         //! Return the temperature
         double getTemperature() { return T_; }
 
+        //! Return the phase
+        ePhase getPhase() { return eP_; }
+
         //! Set the type of the property
         void SetType(std::string type);
 
@@ -308,6 +312,8 @@ class GenericProperty
 
         //! Set the temperature of the property
         void setTemperature(double T) { T_ = T; }
+
+        void setPhase(ePhase ep) { eP_ = ep; }
 
         /*! \brief
          * Sends this object over an MPI connection
@@ -350,7 +356,7 @@ class MolecularQuadrupole : public GenericProperty
         //! Constructor initiating all elements of the quadrupole tensor
         MolecularQuadrupole(std::string type, std::string unit, double T,
                             double xx, double yy, double zz,
-                            double xy, double xz, double yz) : GenericProperty(type, unit, T) { Set(xx, yy, zz, xy, xz, yz); };
+                            double xy, double xz, double yz) : GenericProperty(type, unit, T, epGAS) { Set(xx, yy, zz, xy, xz, yz); };
 
         //! Destructor
         ~MolecularQuadrupole() {};
@@ -422,7 +428,7 @@ class MolecularPolarizability : public GenericProperty
         MolecularPolarizability(std::string type, std::string unit, double T,
                                 double xx, double yy, double zz,
                                 double xy, double xz, double yz,
-                                double average, double error) : GenericProperty(type, unit, T) { Set(xx, yy, zz, xy, xz, yz, average, error); };
+                                double average, double error) : GenericProperty(type, unit, T, epGAS) { Set(xx, yy, zz, xy, xz, yz, average, error); };
 
         //! Destructor
         ~MolecularPolarizability() {};
@@ -506,7 +512,7 @@ class MolecularEnergy : public GenericProperty
         MolecularEnergy() {};
 
         //! Constructor storing all properties related to this energy term
-        MolecularEnergy(std::string type, std::string unit, double T, double value, double error) : GenericProperty(type, unit, T) { Set(value, error); };
+        MolecularEnergy(std::string type, std::string unit, double T, ePhase ep, double value, double error) : GenericProperty(type, unit, T, ep) { Set(value, error); };
 
         //! Destructor
         ~MolecularEnergy() {};
@@ -567,7 +573,7 @@ class MolecularDipole : public GenericProperty
 
         //! Constructor storing all properties related to this dipole
         MolecularDipole(std::string type, std::string unit, double T,
-                        double x, double y, double z, double aver, double error) : GenericProperty(type, unit, T) { Set(x, y, z, aver, error); }
+                        double x, double y, double z, double aver, double error) : GenericProperty(type, unit, T, epGAS) { Set(x, y, z, aver, error); }
 
         //! Destructor
         ~MolecularDipole() {};
@@ -780,7 +786,7 @@ class AtomicCharge : public GenericProperty
         AtomicCharge() {}
 
         //! Constructor setting type, unit and charge itself
-        AtomicCharge(std::string type, std::string unit, double T, double q) : GenericProperty(type, unit, T) { SetQ(q); };
+        AtomicCharge(std::string type, std::string unit, double T, double q) : GenericProperty(type, unit, T, epGAS) { SetQ(q); };
 
         //! Destructor
         ~AtomicCharge() {};

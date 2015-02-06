@@ -129,6 +129,8 @@ class GaussAtomProp
  * \param[in] conformation  Conformation the molecule is in [ maybe NULL ]
  * \param[in] basisset   Basis set used for the calculation [ maybe NULL ]
  * \param[in] maxpot     Maximum number of electrostatic potential data points to store
+ * \param[in] nsymm      Symmetry number for this molecule. If zero it will be detected from
+ *                       the input.
  * \param[in] bVerbose   Whether or not to write to the terminal during processing
  * \param[in] forcefield One of the force fields supported by OpenBabel used for atomtypes
  * \ingroup module_alexandria
@@ -140,18 +142,8 @@ void ReadGauss(const char *g98,
                gmx_atomprop_t aps, gmx_poldata_t pd,
                char *molnm, char *iupac, char *conformation,
                char *basisset,
-               int maxpot, gmx_bool bVerbose,
+               int maxpot, int nsymm,
+               gmx_bool bVerbose,
                const char *forcefield);
-
-/*! \brief
- * Convert the OpenBabel atomtypes to atomtypes corresponding to a force field
- *
- * \param[out] atoms        Atoms structure containing the input and output types
- * \param[out] symtab       String handling structure
- * \param[in]    forcefield   Name of the desired force field
- * \todo Improve error handling, e.g. in case a non-existing force field is selected.
- * \ingroup module_alexandria
- */
-void translate_atomtypes(t_atoms *atoms, t_symtab *tab, const char *forcefield);
 
 #endif
