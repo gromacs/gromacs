@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -335,6 +335,37 @@ TEST(SimdBootstrapTest, gmxSimd4StoreUR)
 }
 #    endif
 #endif
+
+/*! \brief Helper function to make some deliberately unaligned memory.
+ *
+ * This means that MaskLoad3 and MaskStore3 are tested to work on
+ * unaligned memory */
+static gmx_inline real *
+gmx_simd_unalign_r(real *p)
+{
+    return gmx_simd_align_r(p) + 1;
+}
+
+#if defined GMX_SIMD4_HAVE_MASKLOAD3 && defined GMX_SIMD4_HAVE_MASKSTORE3
+
+//! Wrapper for SIMD macro to load aligned floating-point data.
+gmx_simd4_real_t wrapperSimdMaskLoad3R(real *m)
+{
+    return gmx_simd4_maskload3_r(m);
+}
+//! Wrapper for SIMD macro to store to aligned floating-point data.
+void wrapperSimdMaskStore3R(real *m, gmx_simd4_real_t s)
+{
+    gmx_simd4_maskstore3_r(m, s);
+}
+
+TEST(SimdBootstrapTest, gmxSimdMaskLoad3MaskStore3R)
+{
+    // Can't use simd4LoadStoreTester because we want to use a vector of length 3
+    simdLoadStoreTester(wrapperSimdMaskLoad3R, wrapperSimdMaskStore3R, gmx_simd_unalign_r, 0, 0, 3);
+}
+
+#endif /* defined GMX_SIMD4_HAVE_MASKLOAD3 && defined GMX_SIMD4_HAVE_MASKSTORE3 */
 
 /*! \} */
 /*! \endcond */

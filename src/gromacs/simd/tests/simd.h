@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,7 +157,7 @@ class SimdTest : public SimdBaseTest
 #ifdef GMX_SIMD_HAVE_REAL
         /*! \brief Compare two real SIMD variables for approximate equality.
          *
-         * This is an internal implementation routine. YOu should always use
+         * This is an internal implementation routine. You should always use
          * GMX_EXPECT_SIMD_REAL_NEAR() instead.
          *
          * This routine is designed according to the Google test specs, so the char
@@ -173,8 +173,8 @@ class SimdTest : public SimdBaseTest
 
         /*! \brief Compare two real SIMD variables for exact equality.
          *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD_REAL_NEAR() instead.
+         * This is an internal implementation routine. You should always use
+         * GMX_EXPECT_SIMD_REAL_EQ() instead.
          *
          * This routine is designed according to the Google test specs, so the char
          * strings will describe the arguments to the macro.
@@ -187,6 +187,22 @@ class SimdTest : public SimdBaseTest
         compareSimdRealEq(const char * refExpr, const char * tstExpr,
                           const gmx_simd_real_t ref, const gmx_simd_real_t tst);
 
+        /*! \brief Compare two real SIMD variables for exact equality
+         * in their first \c n elements only.
+         *
+         * This is an internal implementation routine. You should always use
+         * GMX_EXPECT_SIMD_REALN_EQ() instead.
+         *
+         * This routine is designed according to the Google test specs, so the char
+         * strings will describe the arguments to the macro.
+         *
+         * The comparison is applied to each element, and it returns true if each element
+         * in the SIMD test variable is within the class tolerances of the corresponding
+         * reference element.
+         */
+        testing::AssertionResult
+        compareSimdRealNEq(const char * refExpr, const char * tstExpr, const char * nExpr,
+                           const gmx_simd_real_t ref, const gmx_simd_real_t tst, size_t n);
 #endif
 
 #ifdef GMX_SIMD_HAVE_INT32
@@ -215,6 +231,13 @@ class SimdTest : public SimdBaseTest
  */
 std::vector<real> simdReal2Vector(const gmx_simd_real_t simd);
 
+/*! \brief Convert the first \c n elements of a SIMD real to std::vector<real>.
+ *
+ * The returned vector will have length \c n (which must be less than the SIMD width).
+ */
+std::vector<real> simdRealN2Vector(const gmx_simd_real_t simd4,
+                                   size_t                n);
+
 /*! \brief Return floating-point SIMD value from std::vector<real>.
  *
  * If the vector is longer than SIMD width, only the first elements will be used.
@@ -239,10 +262,15 @@ gmx_simd_real_t   setSimdRealFrom3R(real r0, real r1, real r2);
 gmx_simd_real_t   setSimdRealFrom1R(real value);
 
 /*! \brief Test if a SIMD real is bitwise identical to reference SIMD value. */
-#define GMX_EXPECT_SIMD_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdRealEq, ref, tst)
+#define GMX_EXPECT_SIMD_REAL_EQ(ref, tst)     EXPECT_PRED_FORMAT2(compareSimdRealEq, (ref), (tst))
+
+/*! \brief Test if the first \c n elements of SIMD real are bitwise
+ * identical to the corresponding elements of the reference SIMD
+ * value. */
+#define GMX_EXPECT_SIMD_REALN_EQ(ref, tst, n) EXPECT_PRED_FORMAT3(compareSimdRealNEq, (ref), (tst), (n))
 
 /*! \brief Test if a SIMD real is within tolerance of reference SIMD value. */
-#define GMX_EXPECT_SIMD_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimdRealUlp, ref, tst)
+#define GMX_EXPECT_SIMD_REAL_NEAR(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdRealUlp, (ref), (tst))
 
 #endif  // GMX_SIMD_HAVE_REAL
 
@@ -281,7 +309,7 @@ gmx_simd_int32_t   setSimdIntFrom1I(int value);
  * If the reference argument is a scalar integer it will be expanded into
  * the width of the SIMD register and tested against all elements.
  */
-#define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdInt32, ref, tst)
+#define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdInt32, (ref), (tst))
 
 #endif  // GMX_SIMD_HAVE_INT32
 
