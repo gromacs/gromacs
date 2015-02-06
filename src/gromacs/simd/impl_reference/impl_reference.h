@@ -141,6 +141,37 @@
 /*! \brief Defined if the implementation provides \ref gmx_simd4_double_t. */
 #define GMX_SIMD4_HAVE_DOUBLE
 
+/*! \brief Defined if the implementation provides masked loads of 3 elements
+ *
+ * The maskload should be able to load from unaligned memory and load
+ * 3 elements.
+ * With GMX_SIMD4_HAVE_FLOAT gmx_simd_maskload3_f should load 3 floats
+ * to gmx_simd4_float_t.
+ * With GMX_SIMD4_HAVE_DOUBLE gmx_simd_maskload3_d should load 3 doubles
+ * to gmx_simd4_double_t.
+ */
+#undef GMX_SIMD4_HAVE_MASKLOAD3
+
+/*! \brief Defined if the implementation provides masked stores of 3 elements
+ *
+ * The maskstore should be able to store two unaligned memory and store
+ * 3 elements.
+ * With GMX_SIMD4_HAVE_FLOAT gmx_simd_maskstore3_f should store 3 floats from
+ * gmx_simd4_float_t.
+ * With GMX_SIMD4_HAVE_DOUBLE gmx_simd_maskstore3_d should store 3 doubles from
+ * gmx_simd4_double_t.
+ */
+#undef GMX_SIMD4_HAVE_MASKSTORE3
+
+/*! \brief Defined if the implementation provides transpose operations between SIMD4 and SIMD registers.
+ *
+ * Implementations should be provided for both forward and backward transposes
+ * from w SIMD4 registers to 4 SIMD registers, where w is the SIMD width.
+ * With GMX_SIMD4_HAVE_FLOAT float implementations should be provided.
+ * With GMX_SIMD4_HAVE_DOUBLE double implementations should be provided.
+ */
+#undef GMX_SIMD4_HAVE_SIMD_TRANSPOSE
+
 #ifdef GMX_SIMD_REF_FLOAT_WIDTH
 #    define GMX_SIMD_FLOAT_WIDTH             GMX_SIMD_REF_FLOAT_WIDTH
 #else

@@ -35,7 +35,7 @@
 
 /*! \libinternal \file
  *
- * \brief SIMD operations corresponding to Gromacs rvec datatypes.
+ * \brief SIMD operations corresponding to operations on Gromacs rvec datatypes.
  *
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  *
