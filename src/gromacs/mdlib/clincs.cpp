@@ -381,60 +381,6 @@ static void lincs_update_atoms(struct gmx_lincsdata *li, int th,
 }
 
 #ifdef LINCS_SIMD
-/* Calculate distances between indexed atom coordinate pairs
- * and store the result in 3 SIMD registers through an aligned buffer.
- * Start from index is and load GMX_SIMD_REAL_WIDTH elements.
- * Note that pair_index must contain valid indices up to is+GMX_SIMD_REAL_WIDTH.
- */
-static gmx_inline void gmx_simdcall
-rvec_dist_to_simd(const rvec      *x,
-                  int              is,
-                  const int       *pair_index,
-                  real            *buf,
-                  gmx_simd_real_t *dx,
-                  gmx_simd_real_t *dy,
-                  gmx_simd_real_t *dz)
-{
-    int s, m;
-
-    for (s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
-    {
-        /* Store the non PBC corrected distances packed and aligned */
-        for (m = 0; m < DIM; m++)
-        {
-            buf[m*GMX_SIMD_REAL_WIDTH + s] =
-                x[pair_index[2*(is+s)]][m] - x[pair_index[2*(is+s) + 1]][m];
-        }
-    }
-    *dx = gmx_simd_load_r(buf + 0*GMX_SIMD_REAL_WIDTH);
-    *dy = gmx_simd_load_r(buf + 1*GMX_SIMD_REAL_WIDTH);
-    *dz = gmx_simd_load_r(buf + 2*GMX_SIMD_REAL_WIDTH);
-}
-
-/* Store a SIMD vector in GMX_SIMD_REAL_WIDTH rvecs through an aligned buffer */
-static gmx_inline void gmx_simdcall
-copy_simd_vec_to_rvec(gmx_simd_real_t  x,
-                      gmx_simd_real_t  y,
-                      gmx_simd_real_t  z,
-                      real            *buf,
-                      rvec            *v,
-                      int              is)
-{
-    int s, m;
-
-    gmx_simd_store_r(buf + 0*GMX_SIMD_REAL_WIDTH, x);
-    gmx_simd_store_r(buf + 1*GMX_SIMD_REAL_WIDTH, y);
-    gmx_simd_store_r(buf + 2*GMX_SIMD_REAL_WIDTH, z);
-
-    for (s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
-    {
-        for (m = 0; m < DIM; m++)
-        {
-            v[is + s][m] = buf[m*GMX_SIMD_REAL_WIDTH + s];
-        }
-    }
-}
-
 /* Calculate the constraint distance vectors r to project on from x.
  * Determine the right-hand side of the matrix equation using quantity f.
  * This function only differs from calc_dr_x_xp_simd below in that
@@ -463,7 +409,8 @@ calc_dr_x_f_simd(int                       b0,
         gmx_simd_real_t rx_S, ry_S, rz_S, n2_S, il_S;
         gmx_simd_real_t fx_S, fy_S, fz_S, ip_S, rhs_S;
 
-        rvec_dist_to_simd(x, bs, bla, vbuf1, &rx_S, &ry_S, &rz_S);
+        gmx_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf1,
+                                             &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 
@@ -474,9 +421,10 @@ calc_dr_x_f_simd(int                       b0,
         ry_S  = gmx_simd_mul_r(ry_S, il_S);
         rz_S  = gmx_simd_mul_r(rz_S, il_S);
 
-        copy_simd_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r, bs);
+        gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r + bs);
 
-        rvec_dist_to_simd(f, bs, bla, vbuf2, &fx_S, &fy_S, &fz_S);
+        gmx_simd_gather_rvec_dist_pair_index(f, bla + bs*2, vbuf2,
+                                             &fx_S, &fy_S, &fz_S);
 
         ip_S  = gmx_simd_iprod_r(rx_S, ry_S, rz_S,
                                  fx_S, fy_S, fz_S);
@@ -698,7 +646,8 @@ calc_dr_x_xp_simd(int                       b0,
         gmx_simd_real_t rx_S, ry_S, rz_S, n2_S, il_S;
         gmx_simd_real_t rxp_S, ryp_S, rzp_S, ip_S, rhs_S;
 
-        rvec_dist_to_simd(x, bs, bla, vbuf1, &rx_S, &ry_S, &rz_S);
+        gmx_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf1,
+                                             &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 
@@ -709,9 +658,10 @@ calc_dr_x_xp_simd(int                       b0,
         ry_S  = gmx_simd_mul_r(ry_S, il_S);
         rz_S  = gmx_simd_mul_r(rz_S, il_S);
 
-        copy_simd_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r, bs);
+        gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r + bs);
 
-        rvec_dist_to_simd(xp, bs, bla, vbuf2, &rxp_S, &ryp_S, &rzp_S);
+        gmx_simd_gather_rvec_dist_pair_index(xp, bla + bs*2, vbuf2,
+                                             &rxp_S, &ryp_S, &rzp_S);
 
         pbc_correct_dx_simd(&rxp_S, &ryp_S, &rzp_S, pbc_simd);
 
@@ -809,7 +759,8 @@ calc_dist_iter_simd(int                       b0,
         gmx_simd_real_t rx_S, ry_S, rz_S, n2_S;
         gmx_simd_real_t len_S, len2_S, dlen2_S, lc_S, blc_S;
 
-        rvec_dist_to_simd(x, bs, bla, vbuf, &rx_S, &ry_S, &rz_S);
+        gmx_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf,
+                                             &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 

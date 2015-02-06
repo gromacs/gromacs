@@ -73,6 +73,9 @@
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS
 #define GMX_SIMD4_HAVE_FLOAT
 #define GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD4_HAVE_MASKLOAD3
+#define GMX_SIMD4_HAVE_MASKSTORE3
+#define GMX_SIMD4_HAVE_SIMD_TRANSPOSES
 
 /* Implementation details */
 #define GMX_SIMD_FLOAT_WIDTH         8
@@ -178,6 +181,8 @@
 #define gmx_simd_store_d           _mm256_store_pd
 #define gmx_simd_loadu_d           _mm256_loadu_pd
 #define gmx_simd_storeu_d          _mm256_storeu_pd
+#define gmx_simd4_maskload3_d(a)   _mm256_maskload_pd(a, _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1))
+#define gmx_simd4_maskstore3_d(a, b) _mm256_maskstore_pd(a, _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1), b)
 #define gmx_simd_setzero_d         _mm256_setzero_pd
 #define gmx_simd_add_d             _mm256_add_pd
 #define gmx_simd_sub_d             _mm256_sub_pd
@@ -264,6 +269,8 @@
 #define gmx_simd4_store_f          _mm_store_ps
 #define gmx_simd4_loadu_f          _mm_loadu_ps
 #define gmx_simd4_storeu_f         _mm_storeu_ps
+#define gmx_simd4_maskload3_f(a)   _mm_maskload_ps(a, _mm_set_epi32(0, -1, -1, -1))
+#define gmx_simd4_maskstore3_f(a, b) _mm_maskstore_ps(a, _mm_set_epi32(0, -1, -1, -1), b)
 #define gmx_simd4_setzero_f        _mm_setzero_ps
 #define gmx_simd4_add_f            _mm_add_ps
 #define gmx_simd4_sub_f            _mm_sub_ps
@@ -295,6 +302,58 @@
 #define gmx_simd4_blendnotzero_f(a, sel)  _mm_andnot_ps(sel, a)
 #define gmx_simd4_blendv_f         _mm_blendv_ps
 #define gmx_simd4_reduce_f         gmx_simd4_reduce_f_avx_256
+
+static gmx_inline void gmx_simdcall
+gmx_simd_transpose4_f(gmx_simd_float_t *row0,
+                      gmx_simd_float_t *row1,
+                      gmx_simd_float_t *row2,
+                      gmx_simd_float_t *row3)
+{
+    __m256 tmp0, tmp1, tmp2, tmp3;
+
+    tmp0  = _mm256_unpacklo_ps(*row0, *row1);
+    tmp2  = _mm256_unpacklo_ps(*row2, *row3);
+    tmp1  = _mm256_unpackhi_ps(*row0, *row1);
+    tmp3  = _mm256_unpackhi_ps(*row2, *row3);
+    *row0 = _mm256_shuffle_ps(tmp0, tmp2, 0b0100010001000100);
+    *row1 = _mm256_shuffle_ps(tmp0, tmp2, 0b1110111011101110);
+    *row2 = _mm256_shuffle_ps(tmp1, tmp3, 0b0100010001000100);
+    *row3 = _mm256_shuffle_ps(tmp1, tmp3, 0b1110111011101110);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_to_simd_f(const gmx_simd4_float_t *a,
+                              gmx_simd_float_t        *row0,
+                              gmx_simd_float_t        *row1,
+                              gmx_simd_float_t        *row2,
+                              gmx_simd_float_t        *row3)
+{
+    *row0 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[0]), a[4], 1);
+    *row1 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[1]), a[5], 1);
+    *row2 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[2]), a[6], 1);
+    *row3 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[3]), a[7], 1);
+
+    gmx_simd_transpose4_f(row0, row1, row2, row3);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd_transpose_to_simd4_f(gmx_simd_float_t   row0,
+                              gmx_simd_float_t   row1,
+                              gmx_simd_float_t   row2,
+                              gmx_simd_float_t   row3,
+                              gmx_simd4_float_t *a)
+{
+    gmx_simd_transpose4_f(&row0, &row1, &row2, &row3);
+
+    a[0] = _mm256_extractf128_ps(row0, 0);
+    a[1] = _mm256_extractf128_ps(row1, 0);
+    a[2] = _mm256_extractf128_ps(row2, 0);
+    a[3] = _mm256_extractf128_ps(row3, 0);
+    a[4] = _mm256_extractf128_ps(row0, 1);
+    a[5] = _mm256_extractf128_ps(row1, 1);
+    a[6] = _mm256_extractf128_ps(row2, 1);
+    a[7] = _mm256_extractf128_ps(row3, 1);
+}
 
 /****************************************************
  *      DOUBLE PRECISION SIMD4 IMPLEMENTATION       *
@@ -340,6 +399,54 @@
 /* SIMD4 float/double conversion */
 #define gmx_simd4_cvt_f2d           _mm256_cvtps_pd
 #define gmx_simd4_cvt_d2f           _mm256_cvtpd_ps
+
+static gmx_inline void gmx_simdcall
+gmx_simd_transpose4_d(gmx_simd_double_t *row0,
+                      gmx_simd_double_t *row1,
+                      gmx_simd_double_t *row2,
+                      gmx_simd_double_t *row3)
+{
+    __m256d tmp0, tmp1, tmp2, tmp3;
+
+    tmp0  = _mm256_unpacklo_pd(*row0, *row1);
+    tmp2  = _mm256_unpacklo_pd(*row2, *row3);
+    tmp1  = _mm256_unpackhi_pd(*row0, *row1);
+    tmp3  = _mm256_unpackhi_pd(*row2, *row3);
+    *row0 = _mm256_permute2f128_pd(tmp0, tmp2, 0b00100000);
+    *row1 = _mm256_permute2f128_pd(tmp1, tmp3, 0b00100000);
+    *row2 = _mm256_permute2f128_pd(tmp0, tmp2, 0b00110001);
+    *row3 = _mm256_permute2f128_pd(tmp1, tmp3, 0b00110001);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_to_simd_d(const gmx_simd4_double_t *a,
+                              gmx_simd_double_t        *row0,
+                              gmx_simd_double_t        *row1,
+                              gmx_simd_double_t        *row2,
+                              gmx_simd_double_t        *row3)
+{
+    *row0 = a[0];
+    *row1 = a[1];
+    *row2 = a[2];
+    *row3 = a[3];
+
+    gmx_simd_transpose4_d(row0, row1, row2, row3);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd_transpose_to_simd4_d(gmx_simd_double_t   row0,
+                              gmx_simd_double_t   row1,
+                              gmx_simd_double_t   row2,
+                              gmx_simd_double_t   row3,
+                              gmx_simd4_double_t *a)
+{
+    a[0] = row0;
+    a[1] = row1;
+    a[2] = row2;
+    a[3] = row3;
+
+    gmx_simd_transpose4_d(&a[0], &a[1], &a[2], &a[3]);
+}
 
 /*********************************************************
  * SIMD SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
