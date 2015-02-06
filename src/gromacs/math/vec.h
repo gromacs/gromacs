@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,6 +118,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
@@ -878,6 +879,156 @@ static gmx_inline void matrix_convert(matrix box, const rvec vec, rvec angle)
 
 #define divide_err(a, b) _divide_err((a), (b), __FILE__, __LINE__)
 #define mod(a, b)    _mod((a), (b), __FILE__, __LINE__)
+
+
+#ifdef GMX_SIMD_HAVE_REAL
+
+/*! \brief Store differences between indexed rvecs in SIMD registers.
+ *
+ * Returns SIMD register with the difference vectors:
+ *     v[pair_index[i*2]] - v[pair_index[i*2 + 1]]
+ *
+ * \param v[in]               Array of rvecs
+ * \param pair_index[in]      Index pairs for GMX_SIMD_REAL_WIDTH vector pairs
+ * \parma buf_aligned[in,out] Aligned buffer of size 3*GMX_SIMD_REAL_WIDTH
+ * \param dx[out]             SIMD register with x difference
+ * \param dy[out]             SIMD register with y difference
+ * \param dz[out]             SIMD register with z difference
+ */
+static gmx_inline void gmx_simdcall
+gmx_simd_gather_rvec_dist_pair_index(const rvec      *v,
+                                     const int       *pair_index,
+                                     real gmx_unused *buf_aligned,
+                                     gmx_simd_real_t *dx,
+                                     gmx_simd_real_t *dy,
+                                     gmx_simd_real_t *dz)
+{
+#if defined GMX_SIMD4_HAVE_REAL && defined GMX_SIMD4_HAVE_MASKLOAD3 && defined GMX_SIMD4_HAVE_SIMD_TRANSPOSE
+    int              i;
+    gmx_simd4_real_t d[GMX_SIMD_REAL_WIDTH];
+    gmx_simd_real_t  tmp;
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        d[i] = gmx_simd4_sub_r(gmx_simd4_maskload3_r(&(v[pair_index[i*2 + 0]][0])),
+                               gmx_simd4_maskload3_r(&(v[pair_index[i*2 + 1]][0])));
+    }
+
+    gmx_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
+#else
+    int i, m;
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        /* Store the distances packed and aligned */
+        for (m = 0; m < DIM; m++)
+        {
+            buf_aligned[m*GMX_SIMD_REAL_WIDTH + i] =
+                v[pair_index[i*2]][m] - v[pair_index[i*2 + 1]][m];
+        }
+    }
+    *dx = gmx_simd_load_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH);
+    *dy = gmx_simd_load_r(buf_aligned + 1*GMX_SIMD_REAL_WIDTH);
+    *dz = gmx_simd_load_r(buf_aligned + 2*GMX_SIMD_REAL_WIDTH);
+#endif
+}
+
+/*! \brief Store differences between indexed rvecs in SIMD registers.
+ *
+ * Returns SIMD register with the difference vectors:
+ *     v[index0[i]] - v[index1[i]]
+ *
+ * \param v[in]               Array of rvecs
+ * \param index0[in]          Index into the vector array
+ * \param index1[in]          Index into the vector array
+ * \parma buf_aligned[in,out] Aligned buffer of size 3*GMX_SIMD_REAL_WIDTH
+ * \param dx[out]             SIMD register with x difference
+ * \param dy[out]             SIMD register with y difference
+ * \param dz[out]             SIMD register with z difference
+ */
+static gmx_inline void gmx_simdcall
+gmx_simd_gather_rvec_dist_two_index(const rvec      *v,
+                                    const int       *index0,
+                                    const int       *index1,
+                                    real gmx_unused *buf_aligned,
+                                    gmx_simd_real_t *dx,
+                                    gmx_simd_real_t *dy,
+                                    gmx_simd_real_t *dz)
+{
+#if defined GMX_SIMD4_HAVE_REAL && defined GMX_SIMD4_HAVE_MASKLOAD3 && defined GMX_SIMD4_HAVE_SIMD_TRANSPOSE
+    int              i;
+    gmx_simd4_real_t d[GMX_SIMD_REAL_WIDTH];
+    gmx_simd_real_t  tmp;
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        d[i] = gmx_simd4_sub_r(gmx_simd4_maskload3_r(&(v[index0[i]][0])),
+                               gmx_simd4_maskload3_r(&(v[index1[i]][0])));
+    }
+
+    gmx_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
+#else
+    int i, m;
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        /* Store the distances packed and aligned */
+        for (m = 0; m < DIM; m++)
+        {
+            buf_aligned[m*GMX_SIMD_REAL_WIDTH + i] =
+                v[index0[i]][m] - v[index1[i]][m];
+        }
+    }
+    *dx = gmx_simd_load_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH);
+    *dy = gmx_simd_load_r(buf_aligned + 1*GMX_SIMD_REAL_WIDTH);
+    *dz = gmx_simd_load_r(buf_aligned + 2*GMX_SIMD_REAL_WIDTH);
+#endif
+}
+
+/*! \brief Stores SIMD vector into multiple rvecs.
+ *
+ * \param x[in]               SIMD register with x-components of the vectors
+ * \param y[in]               SIMD register with y-components of the vectors
+ * \param z[in]               SIMD register with z-components of the vectors
+ * \parma buf_aligned[in,out] Aligned buffer of size 3*GMX_SIMD_REAL_WIDTH
+ * \param v[out]              Array of GMX_SIMD_REAL_WIDTH rvecs
+ */
+static gmx_inline void gmx_simdcall
+gmx_simd_store_vec_to_rvec(gmx_simd_real_t  x,
+                           gmx_simd_real_t  y,
+                           gmx_simd_real_t  z,
+                           real gmx_unused *buf_aligned,
+                           rvec            *v)
+{
+#if defined GMX_SIMD4_HAVE_REAL && defined GMX_SIMD4_HAVE_MASKSTORE3 && defined GMX_SIMD4_HAVE_SIMD_TRANSPOSE
+    int              i;
+    gmx_simd4_real_t s4[GMX_SIMD_REAL_WIDTH];
+    gmx_simd_real_t  zero = gmx_simd_setzero_r();
+
+    gmx_simd_transpose_to_simd4_r(x, y, z, zero, s4);
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        gmx_simd4_maskstore3_r(v[i], s4[i]);
+    }
+#else
+    int i, m;
+
+    gmx_simd_store_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH, x);
+    gmx_simd_store_r(buf_aligned + 1*GMX_SIMD_REAL_WIDTH, y);
+    gmx_simd_store_r(buf_aligned + 2*GMX_SIMD_REAL_WIDTH, z);
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        for (m = 0; m < DIM; m++)
+        {
+            v[i][m] = buf_aligned[m*GMX_SIMD_REAL_WIDTH + i];
+        }
+    }
+#endif
+}
+
+#endif /* GMX_SIMD_HAVE_REAL */
 
 #ifdef __cplusplus
 }
