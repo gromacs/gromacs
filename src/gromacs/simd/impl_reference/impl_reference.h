@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,6 +140,37 @@
 
 /*! \brief Defined if the implementation provides \ref gmx_simd4_double_t. */
 #define GMX_SIMD4_HAVE_DOUBLE
+
+/*! \brief Defined if the implementation provides loads of 3 elements
+ *
+ * The load should be able to load from unaligned memory and load exactly 3 elements
+ * without reading other memory.
+ * With GMX_SIMD4_HAVE_FLOAT gmx_simd_load3_f should load 3 floats
+ * to gmx_simd4_float_t.
+ * With GMX_SIMD4_HAVE_DOUBLE gmx_simd_load3_d should load 3 doubles
+ * to gmx_simd4_double_t.
+ */
+#undef GMX_SIMD4_HAVE_LOAD3
+
+/*! \brief Defined if the implementation provides stores of 3 elements
+ *
+ * The store should be able to store to unaligned memory and store exactly 3 elements
+ * without touching other memory.
+ * With GMX_SIMD4_HAVE_FLOAT gmx_simd_store3_f should store 3 floats from
+ * gmx_simd4_float_t.
+ * With GMX_SIMD4_HAVE_DOUBLE gmx_simd_store3_d should store 3 doubles from
+ * gmx_simd4_double_t.
+ */
+#undef GMX_SIMD4_HAVE_STORE3
+
+/*! \brief Defined if the implementation provides transpose operations between SIMD4 and SIMD registers.
+ *
+ * Implementations should be provided for both forward and backward transposes
+ * from w SIMD4 registers to 4 SIMD registers, where w is the SIMD width.
+ * With GMX_SIMD4_HAVE_FLOAT float implementations should be provided.
+ * With GMX_SIMD4_HAVE_DOUBLE double implementations should be provided.
+ */
+#undef GMX_SIMD4_HAVE_SIMD_TRANSPOSE
 
 #ifdef GMX_SIMD_REF_FLOAT_WIDTH
 #    define GMX_SIMD_FLOAT_WIDTH             GMX_SIMD_REF_FLOAT_WIDTH
