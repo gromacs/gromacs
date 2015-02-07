@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -413,8 +413,8 @@ int gmx_x2top(int argc, char *argv[])
         "[THISMODULE] generates a primitive topology from a coordinate file.",
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.",
-        "The program can also make an [TT].rtp[tt] entry, which you can then add",
-        "to the [TT].rtp[tt] database.[PAR]",
+        "The program can also make an [REF].rtp[ref] entry, which you can then add",
+        "to the [REF].rtp[ref] database.[PAR]",
         "When [TT]-param[tt] is set, equilibrium distances and angles",
         "and force constants will be printed in the topology for all",
         "interactions. The equilibrium distances and angles are taken",
@@ -497,7 +497,7 @@ int gmx_x2top(int argc, char *argv[])
         { "-pbc",    FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions." },
         { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
-          "Use the B-factor supplied in a [TT].pdb[tt] file for the atomic charges" },
+          "Use the B-factor supplied in a [REF].pdb[ref] file for the atomic charges" },
         { "-param", FALSE, etBOOL, {&bParam},
           "Print parameters in the output" },
         { "-round",  FALSE, etBOOL, {&bRound},

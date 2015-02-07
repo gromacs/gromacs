@@ -1095,9 +1095,9 @@ typedef struct {
 int gmx_pdb2gmx(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[THISMODULE] reads a [TT].pdb[tt] (or [TT].gro[tt]) file, reads",
+        "[THISMODULE] reads a [REF].pdb[ref] (or [REF].gro[ref]) file, reads",
         "some database files, adds hydrogens to the molecules and generates",
-        "coordinates in GROMACS (GROMOS), or optionally [TT].pdb[tt], format",
+        "coordinates in GROMACS (GROMOS), or optionally [REF].pdb[ref], format",
         "and a topology in GROMACS format.",
         "These files can subsequently be processed to generate a run input file.",
         "[PAR]",
@@ -1122,7 +1122,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "Check Chapter 5 of the manual for more information about file formats.",
         "[PAR]",
 
-        "Note that a [TT].pdb[tt] file is nothing more than a file format, and it",
+        "Note that a [REF].pdb[ref] file is nothing more than a file format, and it",
         "need not necessarily contain a protein structure. Every kind of",
         "molecule for which there is support in the database can be converted.",
         "If there is no support in the database, you can add it yourself.[PAR]",
@@ -1169,10 +1169,10 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "This can be turned off (no merging), all non-water chains can be merged into a",
         "single molecule, or the selection can be done interactively.[PAR]",
 
-        "[THISMODULE] will also check the occupancy field of the [TT].pdb[tt] file.",
+        "[THISMODULE] will also check the occupancy field of the [REF].pdb[ref] file.",
         "If any of the occupancies are not one, indicating that the atom is",
         "not resolved well in the structure, a warning message is issued.",
-        "When a [TT].pdb[tt] file does not originate from an X-ray structure determination",
+        "When a [REF].pdb[ref] file does not originate from an X-ray structure determination",
         "all occupancy fields may be zero. Either way, it is up to the user",
         "to verify the correctness of the input data (read the article!).[PAR]",
 
@@ -1184,9 +1184,9 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "from the input and before new hydrogens are added. This means that",
         "you should not use [TT]-ignh[tt].[PAR]",
 
-        "The [TT].gro[tt] and [TT].g96[tt] file formats do not support chain",
-        "identifiers. Therefore it is useful to enter a [TT].pdb[tt] file name at",
-        "the [TT]-o[tt] option when you want to convert a multi-chain [TT].pdb[tt] file.",
+        "The [REF].gro[ref] and [TT].g96[tt] file formats do not support chain",
+        "identifiers. Therefore it is useful to enter a [REF].pdb[ref] file name at",
+        "the [TT]-o[tt] option when you want to convert a multi-chain [REF].pdb[ref] file.",
         "[PAR]",
 
         "The option [TT]-vsite[tt] removes hydrogen and fast improper dihedral",
@@ -1361,13 +1361,13 @@ int gmx_pdb2gmx(int argc, char *argv[])
         { "-deuterate", FALSE, etBOOL, {&bDeuterate},
           "Change the mass of hydrogens to 2 amu" },
         { "-chargegrp", TRUE, etBOOL, {&bChargeGroups},
-          "Use charge groups in the [TT].rtp[tt] file"  },
+          "Use charge groups in the [REF].rtp[ref] file"  },
         { "-cmap", TRUE, etBOOL, {&bCmap},
-          "Use cmap torsions (if enabled in the [TT].rtp[tt] file)"  },
+          "Use cmap torsions (if enabled in the [REF].rtp[ref] file)"  },
         { "-renum", TRUE, etBOOL, {&bRenumRes},
           "Renumber the residues consecutively in the output"  },
         { "-rtpres", TRUE, etBOOL, {&bRTPresname},
-          "Use [TT].rtp[tt] entry names as residue names"  }
+          "Use [REF].rtp[ref] entry names as residue names"  }
     };
 #define NPARGS asize(pa)
 

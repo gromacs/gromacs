@@ -101,6 +101,7 @@ if (SPHINX_FOUND)
         user-guide/plotje.gif
         user-guide/xvgr.gif
         conf.py
+        links.dat
         )
     set(SPHINX_INPUT_FILES ${SPHINX_CONFIG_VARS_FILE})
     foreach(_file ${SPHINX_SOURCE_FILES})

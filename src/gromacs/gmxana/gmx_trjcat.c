@@ -426,15 +426,15 @@ int gmx_trjcat(int argc, char *argv[])
         "Obviously the file to append to has to be the one with lowest starting",
         "time since one can only append at the end of a file.[PAR]",
         "If the [TT]-demux[tt] option is given, the N trajectories that are",
-        "read, are written in another order as specified in the [TT].xvg[tt] file.",
-        "The [TT].xvg[tt] file should contain something like:[PAR]",
+        "read, are written in another order as specified in the [REF].xvg[ref] file.",
+        "The [REF].xvg[ref] file should contain something like:[PAR]",
         "[TT]0  0  1  2  3  4  5[tt][BR]",
         "[TT]2  1  0  2  3  5  4[tt][BR]",
         "Where the first number is the time, and subsequent numbers point to",
         "trajectory indices.",
         "The frames corresponding to the numbers present at the first line",
         "are collected into the output trajectory. If the number of frames in",
-        "the trajectory does not match that in the [TT].xvg[tt] file then the program",
+        "the trajectory does not match that in the [REF].xvg[ref] file then the program",
         "tries to be smart. Beware."
     };
     static gmx_bool bVels           = TRUE;

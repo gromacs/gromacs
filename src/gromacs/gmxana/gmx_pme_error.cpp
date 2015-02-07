@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1114,7 +1114,7 @@ int gmx_pme_error(int argc, char *argv[])
 
     t_pargs         pa[] = {
         { "-beta",     FALSE, etREAL, {&user_beta},
-          "If positive, overwrite ewald_beta from [TT].tpr[tt] file with this value" },
+          "If positive, overwrite ewald_beta from [REF].tpr[ref] file with this value" },
         { "-tune",     FALSE, etBOOL, {&bTUNE},
           "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space" },
         { "-self",     FALSE, etREAL, {&fracself},

@@ -48,7 +48,6 @@ if (GMX_BUILD_HELP)
     list(APPEND deps
          ${CMAKE_CURRENT_SOURCE_DIR}/BuildHtmlHelp.cmake
          ${CMAKE_CURRENT_SOURCE_DIR}/header.html.in
-         ${CMAKE_CURRENT_SOURCE_DIR}/links.dat
          )
 
     gmx_add_custom_output_target(html OUTPUT STAMP

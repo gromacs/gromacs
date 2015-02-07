@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -606,7 +606,7 @@ int gmx_make_edi(int argc, char *argv[])
         "[TT]-radcon[tt]: perform acceptance radius contraction along selected eigenvectors",
         "towards a target structure specified with [TT]-tar[tt].[PAR]",
         "NOTE: each eigenvector can be selected only once. [PAR]",
-        "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc. to [TT].xvg[tt] file[PAR]",
+        "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc. to [REF].xvg[ref] file[PAR]",
         "[TT]-slope[tt]: minimal slope in acceptance radius expansion. A new expansion",
         "cycle will be started if the spontaneous increase of the radius (in nm/step)",
         "is less than the value specified.[PAR]",
@@ -619,16 +619,16 @@ int gmx_make_edi(int argc, char *argv[])
         "lower as in a free MD simulation, especially on a large number of ranks and/or",
         "when the ED group contains a lot of atoms. [PAR]",
         "Please also note that if your ED group contains more than a single protein,",
-        "then the [TT].tpr[tt] file must contain the correct PBC representation of the ED group.",
+        "then the [REF].tpr[ref] file must contain the correct PBC representation of the ED group.",
         "Take a look on the initial RMSD from the reference structure, which is printed",
         "out at the start of the simulation; if this is much higher than expected, one",
         "of the ED molecules might be shifted by a box vector. [PAR]",
-        "All ED-related output of [TT]mdrun[tt] (specify with [TT]-eo[tt]) is written to a [TT].xvg[tt] file",
+        "All ED-related output of [TT]mdrun[tt] (specify with [TT]-eo[tt]) is written to a [REF].xvg[ref] file",
         "as a function of time in intervals of OUTFRQ steps.[PAR]",
         "[BB]Note[bb] that you can impose multiple ED constraints and flooding potentials in",
-        "a single simulation (on different molecules) if several [TT].edi[tt] files were concatenated",
-        "first. The constraints are applied in the order they appear in the [TT].edi[tt] file. ",
-        "Depending on what was specified in the [TT].edi[tt] input file, the output file contains for each ED dataset[PAR]",
+        "a single simulation (on different molecules) if several [REF].edi[ref] files were concatenated",
+        "first. The constraints are applied in the order they appear in the [REF].edi[ref] file. ",
+        "Depending on what was specified in the [REF].edi[ref] input file, the output file contains for each ED dataset[PAR]",
         "[TT]*[tt] the RMSD of the fitted molecule to the reference structure (for atoms involved in fitting prior to calculating the ED constraints)[BR]",
         "[TT]*[tt] projections of the positions onto selected eigenvectors[BR]",
         "[PAR][PAR]",
@@ -654,7 +654,7 @@ int gmx_make_edi(int argc, char *argv[])
         "[PAR]",
         "RESTART and FLOODING:",
         "If you want to restart a crashed flooding simulation please find the values deltaF and Efl in",
-        "the output file and manually put them into the [TT].edi[tt] file under DELTA_F0 and EFL_NULL."
+        "the output file and manually put them into the [REF].edi[ref] file under DELTA_F0 and EFL_NULL."
     };
 
     /* Save all the params in this struct and then save it in an edi file.
@@ -700,7 +700,7 @@ int gmx_make_edi(int argc, char *argv[])
         { "-flood",  FALSE, etSTR, {&evSelections[2]},
           "Indices of eigenvectors for flooding"},
         { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
-          "Freqency (in steps) of writing output in [TT].xvg[tt] file" },
+          "Freqency (in steps) of writing output in [REF].xvg[ref] file" },
         { "-slope", FALSE, etREAL, { &edi_params.slope},
           "Minimal slope in acceptance radius expansion"},
         { "-linstep", FALSE, etSTR, {&evParams[0]},

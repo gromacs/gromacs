@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -519,8 +519,8 @@ int gmx_editconf(int argc, char *argv[])
 {
     const char     *desc[] =
     {
-        "[THISMODULE] converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
-        "or [TT].pdb[tt].",
+        "[THISMODULE] converts generic structure format to [REF].gro[ref], [TT].g96[tt]",
+        "or [REF].pdb[ref].",
         "[PAR]",
         "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
         "[TT]-angles[tt]. Both [TT]-box[tt] and [TT]-d[tt]",
@@ -562,7 +562,7 @@ int gmx_editconf(int argc, char *argv[])
         "[PAR]",
         "Scaling is applied before any of the other operations are",
         "performed. Boxes and coordinates can be scaled to give a certain density (option",
-        "[TT]-density[tt]). Note that this may be inaccurate in case a [TT].gro[tt]",
+        "[TT]-density[tt]). Note that this may be inaccurate in case a [REF].gro[ref]",
         "file is given as input. A special feature of the scaling option is that when the",
         "factor -1 is given in one dimension, one obtains a mirror image,",
         "mirrored in one of the planes. When one uses -1 in three dimensions, ",
@@ -572,7 +572,7 @@ int gmx_editconf(int argc, char *argv[])
         "It is important that the box vectors at the bottom of your input file",
         "are correct when the periodicity is to be removed.",
         "[PAR]",
-        "When writing [TT].pdb[tt] files, B-factors can be",
+        "When writing [REF].pdb[ref] files, B-factors can be",
         "added with the [TT]-bf[tt] option. B-factors are read",
         "from a file with with following format: first line states number of",
         "entries in the file, next lines state an index",
@@ -583,7 +583,7 @@ int gmx_editconf(int argc, char *argv[])
         "a row of CA atoms with B-factors ranging from the minimum to the",
         "maximum value found, effectively making a legend for viewing.",
         "[PAR]",
-        "With the option [TT]-mead[tt] a special [TT].pdb[tt] ([TT].pqr[tt])",
+        "With the option [TT]-mead[tt] a special [REF].pdb[ref] ([REF].pqr[ref])",
         "file for the MEAD electrostatics",
         "program (Poisson-Boltzmann solver) can be made. A further prerequisite",
         "is that the input file is a run input file.",
@@ -598,7 +598,7 @@ int gmx_editconf(int argc, char *argv[])
         "with an optional center of rotation specified by [TT]-aligncenter[tt].",
         "[PAR]",
         "Finally, with option [TT]-label[tt], [TT]editconf[tt] can add a chain identifier",
-        "to a [TT].pdb[tt] file, which can be useful for analysis with e.g. Rasmol.",
+        "to a [REF].pdb[ref] file, which can be useful for analysis with e.g. Rasmol.",
         "[PAR]",
         "To convert a truncated octrahedron file produced by a package which uses",
         "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
@@ -702,7 +702,7 @@ int gmx_editconf(int argc, char *argv[])
         {
             "-conect", FALSE, etBOOL,
             { &bCONECT },
-            "Add CONECT records to a [TT].pdb[tt] file when written. Can only be done when a topology is present"
+            "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a topology is present"
         }
     };
 #define NPA asize(pa)

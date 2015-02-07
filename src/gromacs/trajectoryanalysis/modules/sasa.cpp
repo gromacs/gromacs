@@ -413,7 +413,7 @@ Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
         "See Eisenhaber F, Lijnzaad P, Argos P, Sander C, & Scharf M",
         "(1995) J. Comput. Chem. 16, 273-284 for the algorithm used.",
         "With [TT]-q[tt], the Connolly surface can be generated as well",
-        "in a [TT].pdb[tt] file where the nodes are represented as atoms",
+        "in a [REF].pdb[ref] file where the nodes are represented as atoms",
         "and the edges connecting the nearest nodes as CONECT records.",
         "[TT]-odg[tt] allows for estimation of solvation free energies",
         "from per-atom solvation energies per exposed surface area.[PAR]",
@@ -429,7 +429,7 @@ Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
         "The average and standard deviation of the area over the trajectory",
         "can be calculated per residue and atom (options [TT]-or[tt] and",
         "[TT]-oa[tt]).[PAR]",
-        //"In combination with the latter option an [TT].itp[tt] file can be",
+        //"In combination with the latter option an [REF].itp[ref] file can be",
         //"generated (option [TT]-i[tt])",
         //"which can be used to restrain surface atoms.[PAR]",
 
@@ -477,7 +477,7 @@ Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
     //options->addOption(DoubleOption("minarea").store(&minarea_)
     //                       .description("The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file (see help)"));
     options->addOption(BooleanOption("prot").store(&bIncludeSolute_)
-                           .description("Output the protein to the Connolly [TT].pdb[tt] file too"));
+                           .description("Output the protein to the Connolly [REF].pdb[ref] file too"));
     options->addOption(DoubleOption("dgs").store(&dgsDefault_)
                            .description("Default value for solvation free energy per area (kJ/mol/nm^2)"));
 
