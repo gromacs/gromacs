@@ -1925,14 +1925,14 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
 {
     immStatus    imm = immOK;
     unsigned int m, nwarn = 0;
-    double       value, dv0, dv298, error, vec[3];
+    double       value, dv0, dv298, T, error, vec[3];
     tensor       quadrupole;
     char        *myref, *mylot;
     int          ia;
 
     if (getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
                    lot, NULL, (char *)"elec",
-                   &value, &error, &myref, &mylot,
+                   &value, &error, &T, &myref, &mylot,
                    vec, quadrupole))
     {
         if (!bZero)
@@ -1972,7 +1972,8 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
         dip_weight = sqr(1.0/error);
     }
     if (getPropRef(MPO_DIPOLE, iqmQM,
-                   lot, NULL, (char *)"ESP", &value, &error, NULL, NULL, vec, quadrupole))
+                   lot, NULL, (char *)"ESP", &value, &error, &T,
+                   NULL, NULL, vec, quadrupole))
     {
         for (m = 0; (m < DIM); m++)
         {
@@ -1980,8 +1981,9 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
         }
     }
     if (getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
-                lot, NULL, (char *)"DHf(298.15K)", &value, NULL))
+                lot, NULL, (char *)"DeltaHform", &T, &value, NULL))
     {
+        gmx_fatal(FARGS, "Please rewrite code");
         Hform = value;
         Emol  = value;
         for (ia = 0; (ia < topology_->atoms.nr); ia++)

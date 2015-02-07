@@ -297,19 +297,23 @@ void gmx_molprop_stats_table(FILE                            *fp,
                 if ((i->hasMolecule(mpi->getIupac())) &&
                     (mpi->SearchCategory(i->getName()) == 1))
                 {
+                    double Texp, Tqm;
                     if ((mpi->getProp(mpo, iqmExp, NULL, NULL,
-                                      exp_type, &exp_val, NULL)) &&
+                                      exp_type, &exp_val, NULL, &Texp)) &&
                         (mpi->getProp(mpo, iqmQM, lot, NULL,
-                                      qmc->type[k], &qm_val, NULL)))
+                                      qmc->type[k], &qm_val, NULL, &Tqm)))
                     {
-                        if (debug)
+                        if (fabs(Texp - Tqm) < 0.05)
                         {
-                            fprintf(debug, "%s %s k = %d - TAB4\n",
-                                    mpi->getMolname().c_str(),
-                                    i->getName().c_str(), k);
+                            if (debug)
+                            {
+                                fprintf(debug, "%s %s k = %d - TAB4\n",
+                                        mpi->getMolname().c_str(),
+                                        i->getName().c_str(), k);
+                            }
+                            gmx_stats_add_point(lsq, exp_val, qm_val, 0, 0);
+                            nexpres = 1;
                         }
-                        gmx_stats_add_point(lsq, exp_val, qm_val, 0, 0);
-                        nexpres = 1;
                     }
                 }
             }
@@ -352,12 +356,18 @@ void gmx_molprop_stats_table(FILE                            *fp,
             if ((gmx_molselect_status(gms, mpi->getIupac().c_str()) == ims) &&
                 (mpi->HasComposition(alex)))
             {
+                double Texp, Tqm;
                 for (m = 0; (m < qmc->nconf); m++)
                 {
-                    if ((mpi->getProp(mpo, iqmExp, NULL, qmc->conf[m], exp_type, &exp_val, NULL)) &&
-                        (mpi->getProp(mpo, iqmQM, lot, qmc->conf[m], qmc->type[k], &qm_val, NULL)))
+                    if ((mpi->getProp(mpo, iqmExp, NULL, qmc->conf[m], exp_type,
+                                      &exp_val, NULL, &Texp)) &&
+                        (mpi->getProp(mpo, iqmQM, lot, qmc->conf[m], qmc->type[k], 
+                                      &qm_val, NULL, &Tqm)))
                     {
-                        gmx_stats_add_point(lsqtot[k], exp_val, qm_val, 0, 0);
+                        if (fabs(Texp - Tqm) < 0.05)
+                        {
+                            gmx_stats_add_point(lsqtot[k], exp_val, qm_val, 0, 0);
+                        }
                     }
                 }
             }
@@ -715,12 +725,12 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
                     }
                     if (bFound)
                     {
-                        double val;
-                        if (mpi->getProp(mpo, iqmExp, lot, NULL, exp_type, &val, NULL))
+                        double val, T;
+                        if (mpi->getProp(mpo, iqmExp, lot, NULL, exp_type, &val, NULL, &T))
                         {
                             nexp++;
                         }
-                        else if (mpi->getProp(mpo, iqmQM, lot, NULL, NULL, &val, NULL))
+                        else if (mpi->getProp(mpo, iqmQM, lot, NULL, NULL, &val, NULL, &T))
                         {
                             nqm++;
                         }
@@ -989,9 +999,9 @@ class ExpData
 {
     public:
         double      val_, err_;
-        std::string ref_, conf_, type_;
-        ExpData(double val, double err, std::string ref, std::string conf, std::string type)
-        { val_ = val; err_ = err; ref_ = ref; conf_ = conf; type_ = type; }
+        std::string ref_, conf_, type_, unit_;
+        ExpData(double val, double err, std::string ref, std::string conf, std::string type, std::string unit)
+        { val_ = val; err_ = err; ref_ = ref; conf_ = conf; type_ = type; unit_ = unit; }
 };
 
 class CalcData
@@ -1006,7 +1016,8 @@ class CalcData
 void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                             real rel_toler, real abs_toler,
                             std::vector<alexandria::MolProp> mp,
-                            t_qmcount *qmc, bool bPrintAll,
+                            t_qmcount *qmc,
+                            const char *exp_type, bool bPrintAll,
                             bool bPrintBasis, bool bPrintMultQ,
                             gmx_molselect_t gms, iMolSelect ims)
 {
@@ -1057,31 +1068,43 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                     case MPO_DIPOLE:
                         for (alexandria::MolecularDipoleIterator mdi = ei->BeginDipole(); (mdi < ei->EndDipole()); mdi++)
                         {
-                            ed.push_back(ExpData(mdi->getAver(),
-                                                 mdi->getError(),
-                                                 ei->getReference(),
-                                                 ei->getConformation(),
-                                                 mdi->getType()));
+                            if (mdi->getType().compare(exp_type) == 0)
+                            {
+                                ed.push_back(ExpData(mdi->getAver(),
+                                                     mdi->getError(),
+                                                     ei->getReference(),
+                                                     ei->getConformation(),
+                                                     mdi->getType(),
+                                                     mdi->getUnit()));
+                            }
                         }
                         break;
                     case MPO_POLARIZABILITY:
                         for (alexandria::MolecularPolarizabilityIterator mdi = ei->BeginPolar(); (mdi < ei->EndPolar()); mdi++)
                         {
-                            ed.push_back(ExpData(mdi->getAverage(),
-                                                 mdi->getError(),
-                                                 ei->getReference(),
-                                                 ei->getConformation(),
-                                                 mdi->getType()));
+                            if (mdi->getType().compare(exp_type) == 0)
+                            {
+                                ed.push_back(ExpData(mdi->getAverage(),
+                                                     mdi->getError(),
+                                                     ei->getReference(),
+                                                     ei->getConformation(),
+                                                     mdi->getType(),
+                                                     mdi->getUnit()));
+                            }
                         }
                         break;
                     case MPO_ENERGY:
                         for (mei = ei->BeginEnergy(); (mei < ei->EndEnergy()); mei++)
                         {
-                            ed.push_back(ExpData(mei->getValue(),
-                                                 mei->getError(),
-                                                 ei->getReference(),
-                                                 ei->getConformation(),
-                                                 mei->getType()));
+                            if (mei->getType().compare(exp_type) == 0)
+                            {
+                                ed.push_back(ExpData(mei->getValue(),
+                                                     mei->getError(),
+                                                     ei->getReference(),
+                                                     ei->getConformation(),
+                                                     mei->getType(),
+                                                     mei->getUnit()));
+                            }
                         }
                         break;
                     default:
@@ -1096,13 +1119,15 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                 max_nexp = 1;
             }
             int nqm = 0;
+            double T;
             for (nexp = 0; (nexp < max_nexp); nexp++)
             {
                 for (j = 0; (j < qmc->n); j++)
                 {
                     sprintf(lbuf, "%s/%s", qmc->method[j], qmc->basis[j]);
-                    if (mpi->getPropRef(mpo, iqmQM, lbuf, NULL, //conf_exp[nexp].c_str(),
-                                        qmc->type[j], &calc_val, &calc_err,
+                    if ((strcmp(qmc->type[j], exp_type) == 0) &&
+                        mpi->getPropRef(mpo, iqmQM, lbuf, NULL, //conf_exp[nexp].c_str(),
+                                        qmc->type[j], &calc_val, &calc_err, &T,
                                         NULL, NULL, dvec, quadrupole))
                     {
                         cd.push_back(CalcData(calc_val, calc_err, 1));

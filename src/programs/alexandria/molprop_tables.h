@@ -98,6 +98,7 @@ extern void gmx_molprop_category_table(FILE                    *fp,
  * \param[in] abs_toler If non-zero, takes prevalence over rel_toler, and indicates the absolute tolerance for this property for designating as an outlier
  * \param[in] mp    Array of molecules
  * \param[in] qmc   Statistics of quantum calculations
+ * \param[in] exp_type Which type of this property should we print?
  * \param[in] bPrintAll If set print also properties of molecules for which no experimental data is available
  * \param[in] bPrintBasis Print the basis set in the table header
  * \param[in] bPrintMultQ Print the multiplicity and total charge of the molecule
@@ -110,7 +111,7 @@ extern void gmx_molprop_category_table(FILE                    *fp,
 extern void gmx_molprop_prop_table(FILE *fp, MolPropObservable eprop,
                                    real rel_toler, real abs_toler,
                                    std::vector<alexandria::MolProp> mp,
-                                   t_qmcount *qmc,
+                                   t_qmcount *qmc, const char *exp_type,
                                    bool bPrintAll, bool bPrintBasis,
                                    bool bPrintMultQ, gmx_molselect_t gms, iMolSelect ims);
 

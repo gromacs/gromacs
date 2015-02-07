@@ -55,7 +55,7 @@ main(int argc, char *argv[])
         manager.addHelpTopic(gmx::createSelectionHelpTopic());
         manager.setQuiet(true);
         printf("\n                   Welcome to Alexandria\n\n");
-        printf("Copyright (c) 2014, David van der Spoel and Paul J. van Maaren\n");
+        printf("Copyright (c) 2014,2015 David van der Spoel and Paul J. van Maaren\n");
         printf("See http://folding.bmc.uu.se/ for details.\n\n");
         printf("Alexandria is free software under the Gnu Public License v 2.\n");
         printf("Read more at http://www.gnu.org/licenses/gpl-2.0.html\n\n");

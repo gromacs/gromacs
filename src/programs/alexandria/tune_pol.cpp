@@ -277,6 +277,7 @@ static int decompose_frag(FILE *fplog,
         }
         nusemol = 0;
         poltot  = 0;
+        double T;
         for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); )
         {
             iMolSelect ims  = gmx_molselect_status(gms, mpi->getIupac().c_str());
@@ -284,7 +285,7 @@ static int decompose_frag(FILE *fplog,
             pol             = 0;
             bool       bPol = mpi->getProp(MPO_POLARIZABILITY,
                                            bQM ? iqmBoth : iqmExp,
-                                           lot, NULL, NULL, &pol, NULL);
+                                           lot, NULL, NULL, &T, &pol, NULL);
             alexandria::MolecularCompositionIterator mci =
                 mpi->SearchMolecularComposition(alex);
 

@@ -1020,13 +1020,14 @@ class Experiment
          * \param[in]  mpo    Enum selecting the type of data to fetch
          * \param[out] value  The value of e.g. the energy
          * \param[out] error  The error in the value of e.g. the energy
+         * \param[out] T      Temperature
          * \param[out] vec    Vector data to be output, dipole or diagonal element of polarizability
          * \param[out] quadrupole The quadrupole tensor
          * \return true on success
          */
         bool getVal(const char *type, MolPropObservable mpo,
-                    double *value, double *error, double vec[3],
-                    tensor quadrupole);
+                    double *value, double *error, double *T,
+                    double vec[3], tensor quadrupole);
 
         //! Merge in another object - Low level function
         void MergeLow(Experiment *src);
@@ -1305,13 +1306,15 @@ class MolProp
 
         //! Convenience function
         bool getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
-                        const char *conf, const char *type, double *value, double *error,
+                        const char *conf, const char *type, 
+                        double *value, double *error, double *T,
                         char **ref, char **mylot,
                         double vec[3], tensor quadrupole);
 
         //! And another one
         bool getProp(MolPropObservable mpo, iqmType iQM, char *lot,
-                     char *conf, char *type, double *value, double *error);
+                     char *conf, char *type, 
+                     double *value, double *error, double *T);
 
         //! Add a classification category for this molecule
         void AddCategory(const char *category)

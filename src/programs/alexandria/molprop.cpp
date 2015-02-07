@@ -889,8 +889,8 @@ bool MolProp::HasComposition(std::string composition)
 }
 
 bool Experiment::getVal(const char *type, MolPropObservable mpo,
-                        double *value, double *error, double vec[3],
-                        tensor quad_polar)
+                        double *value, double *error, double *T,
+                        double vec[3], tensor quad_polar)
 {
     bool   done = false;
     double x, y, z;
@@ -903,6 +903,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
                 if ((NULL == type) || (strcasecmp(mei->getType().c_str(), type) == 0))
                 {
                     mei->get(value, error);
+                    *T   = mei->getTemperature();
                     done = true;
                 }
             }
@@ -916,6 +917,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
                     vec[XX] = x;
                     vec[YY] = y;
                     vec[ZZ] = z;
+                    *T      = mdp->getTemperature();
                     done    = true;
                 }
             }
@@ -936,6 +938,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
                     quad_polar[ZZ][XX] = 0;
                     quad_polar[ZZ][YY] = 0;
                     quad_polar[ZZ][ZZ] = zz;
+                    *T                 = mdp->getTemperature();
                     done               = true;
                 }
             }
@@ -956,6 +959,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
                     quad_polar[ZZ][XX] = 0;
                     quad_polar[ZZ][YY] = 0;
                     quad_polar[ZZ][ZZ] = zz;
+                    *T                 = mqi->getTemperature();
                     done               = true;
                 }
             }
@@ -967,7 +971,8 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
 }
 
 bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
-                         const char *conf, const char *type, double *value, double *error,
+                         const char *conf, const char *type, 
+                         double *value, double *error, double *T,
                          char **ref, char **mylot,
                          double vec[3], tensor quad_polar)
 {
@@ -985,7 +990,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
 
             if ((NULL == conf) || (strcasecmp(conf, expconf.c_str()) == 0))
             {
-                done = ei->getVal(type, mpo, value, error, vec, quad_polar);
+                done = ei->getVal(type, mpo, value, error, T, vec, quad_polar);
             }
             if (done)
             {
@@ -1019,7 +1024,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
 
                 if ((NULL == conf) || (strcasecmp(conf, conformation.c_str()) == 0))
                 {
-                    done = ci->getVal(type, mpo, value, error, vec, quad_polar);
+                    done = ci->getVal(type, mpo, value, error, T, vec, quad_polar);
                 }
                 if (done && (NULL != ref))
                 {
@@ -1036,13 +1041,14 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
 }
 
 bool MolProp::getProp(MolPropObservable mpo, iqmType iQM, char *lot,
-                      char *conf, char *type, double *value, double *error)
+                      char *conf, char *type, 
+                      double *value, double *error, double *T)
 {
     double myerror, vec[3];
     tensor quad;
     bool   bReturn;
 
-    bReturn = getPropRef(mpo, iQM, lot, conf, type, value, &myerror,
+    bReturn = getPropRef(mpo, iQM, lot, conf, type, value, &myerror, T,
                          NULL, NULL, vec, quad);
     if (NULL != error)
     {

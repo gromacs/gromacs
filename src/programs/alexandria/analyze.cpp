@@ -194,12 +194,17 @@ static void write_corr_xvg(const char *fn,
             ims = gmx_molselect_status(gms, mpi->getIupac().c_str());
             if ((ims == imsTrain) || (ims == imsTest))
             {
+                double Texp, Tqm;
                 for (k = 0; (k < qmc->nconf); k++)
                 {
-                    bool bExp = mpi->getProp(mpo, iqmExp, NULL, NULL, exp_type, &exp_val, NULL);
+                    bool bExp = mpi->getProp(mpo, iqmExp, NULL, NULL, 
+                                             exp_type,
+                                             &exp_val, NULL, &Texp);
                     bool bQM  = mpi->getProp(mpo, iqmQM, lbuf, qmc->conf[k],
-                                             qmc->type[i], &qm_val, &qm_error);
-                    if (bExp && bQM)
+                                             qmc->type[i], 
+                                             &qm_val, &qm_error, &Tqm);
+                    if (bExp && bQM && (strcmp(exp_type, qmc->type[i]) == 0) &&
+                        (fabs(Texp-Tqm) < 0.05))
                     {
                         fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
                         diff = fabs(qm_val-exp_val);
@@ -286,7 +291,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     t_qmcount                     *qmc;
     t_refcount                    *rc;
     const char                    *molname[2];
-    double                         value, error, vec[3];
+    double                         T, value, error, vec[3];
     tensor                         quadrupole;
 #define prev (1-cur)
     const char                    *iupac;
@@ -305,7 +310,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
         molname[cur] = mpi->getMolname().c_str();
         for (ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
         {
-            if (ei->getVal(exp_type, prop, &value, &error, vec, quadrupole))
+            if (ei->getVal(exp_type, prop, &value, &error, &T, vec, quadrupole))
             {
                 add_refc(rc, ei->getReference().c_str());
             }
@@ -353,9 +358,9 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     }
     if (bPropTable)
     {
-        gmx_molprop_prop_table(fp, prop, rtoler, atoler, mp, qmc, bPrintAll, bPrintBasis,
+        gmx_molprop_prop_table(fp, prop, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
                                bPrintMultQ, gms, imsTrain);
-        gmx_molprop_prop_table(fp, prop, rtoler, atoler, mp, qmc, bPrintAll, bPrintBasis,
+        gmx_molprop_prop_table(fp, prop, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
                                bPrintMultQ, gms, imsTest);
         if (NULL != selout)
         {
@@ -366,7 +371,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                 if ((NULL != iupac) && (strlen(iupac) > 0))
                 {
                     if (mpi->getPropRef(prop, iqmBoth, lot, NULL, NULL,
-                                        &value, &error, &ref, NULL,
+                                        &value, &error, &T, &ref, NULL,
                                         vec, quadrupole))
                     {
                         fprintf(gp, "%s|Train\n", iupac);

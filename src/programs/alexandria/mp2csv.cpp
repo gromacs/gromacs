@@ -42,7 +42,7 @@ static void gmx_molprop_csv(const char *fn,
     alexandria::MolPropIterator mpi;
     FILE                       *fp;
     int                         i, j, k, ll;
-    double                      d, err, vec[3];
+    double                      T, d, err, vec[3];
     tensor                      quadrupole;
     char                       *ref;
 #define NEMP 3
@@ -123,7 +123,7 @@ static void gmx_molprop_csv(const char *fn,
         for (k = 0; (k < NEMP); k++)
         {
             if (mpi->getPropRef(mpo[k], iqmExp,
-                                NULL, NULL, NULL, &d, &err, &ref, NULL, vec,
+                                NULL, NULL, NULL, &d, &err, &T, &ref, NULL, vec,
                                 quadrupole))
             {
                 fprintf(fp, ",\"%.4f\",\"%s\"", d, ref);
@@ -135,7 +135,7 @@ static void gmx_molprop_csv(const char *fn,
             }
             for (j = 0; (j < qmc[k]->n); j++)
             {
-                if (mpi->getProp(mpo[k], iqmQM, qmc[k]->lot[j], NULL, qmc[k]->type[j], &d, NULL))
+                if (mpi->getProp(mpo[k], iqmQM, qmc[k]->lot[j], NULL, qmc[k]->type[j], &T, &d, NULL))
                 {
                     fprintf(fp, ",\"%.4f\"", d);
                 }

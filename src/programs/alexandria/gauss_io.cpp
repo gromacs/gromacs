@@ -642,7 +642,7 @@ static int gmx_molprop_add_dhform(alexandria::MolProp &mpt,
 
     ee = convert2gmx(e0Hartree, eg2cHartree);
 
-    alexandria::MolecularEnergy me("DelaHform", unit2string(eg2cKj_Mole), 0.0, epGAS, ee, 0);
+    alexandria::MolecularEnergy me("DeltaHform", unit2string(eg2cKj_Mole), 0.0, epGAS, ee, 0);
     mpt.LastCalculation()->AddEnergy(me);
 
     if (bVerbose)
