@@ -1065,7 +1065,7 @@ int gmx_msd(int argc, char *argv[])
         "Note that this diffusion coefficient and error estimate are only",
         "accurate when the MSD is completely linear between",
         "[TT]-beginfit[tt] and [TT]-endfit[tt].[PAR]",
-        "Option [TT]-pdb[tt] writes a [TT].pdb[tt] file with the coordinates of the frame",
+        "Option [TT]-pdb[tt] writes a [REF].pdb[ref] file with the coordinates of the frame",
         "at time [TT]-tpdb[tt] with in the B-factor field the square root of",
         "the diffusion coefficient of the molecule.",
         "This option implies option [TT]-mol[tt]."

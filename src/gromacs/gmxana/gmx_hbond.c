@@ -3635,7 +3635,7 @@ int gmx_hbond(int argc, char *argv[])
         { "-smooth", FALSE, etREAL, {&smooth_tail_start},
           "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/[GRK]tau[grk])" },
         { "-dump",  FALSE, etINT, {&nDump},
-          "Dump the first N hydrogen bond ACFs in a single [TT].xvg[tt] file for debugging" },
+          "Dump the first N hydrogen bond ACFs in a single [REF].xvg[ref] file for debugging" },
         { "-max_hb", FALSE, etREAL, {&maxnhb},
           "Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly" },
         { "-merge", FALSE, etBOOL, {&bMerge},

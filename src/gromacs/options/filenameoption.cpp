@@ -298,9 +298,10 @@ std::string FileNameOptionStorage::formatExtraDescription() const
         result.append(":");
         for (int i = 0; i < typeHandler.extensionCount(); ++i)
         {
-            result.append(" ");
+            result.append(" [REF]");
             // Skip the dot.
             result.append(typeHandler.extension(i) + 1);
+            result.append("[ref]");
         }
     }
     return result;

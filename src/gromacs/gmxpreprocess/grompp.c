@@ -789,7 +789,7 @@ static void cont_status(const char *slog, const char *ener,
 
     /* Set the relative box lengths for preserving the box shape.
      * Note that this call can lead to differences in the last bit
-     * with respect to using gmx convert-tpr to create a [TT].tpx[tt] file.
+     * with respect to using gmx convert-tpr to create a [REF].tpx[ref] file.
      */
     set_box_rel(ir, state);
 
@@ -1446,7 +1446,7 @@ int gmx_grompp(int argc, char *argv[])
         "#include \"filename\"[BR]",
         "#include <filename>[PAR]",
         "The functioning of these statements in your topology may be modulated by",
-        "using the following two flags in your [TT].mdp[tt] file:[PAR]",
+        "using the following two flags in your [REF].mdp[ref] file:[PAR]",
         "[TT]define = -DVARIABLE1 -DVARIABLE2[tt][BR]",
         "[TT]include = -I/home/john/doe[tt][BR]",
         "For further information a C-programming textbook may help you out.",
@@ -1465,7 +1465,7 @@ int gmx_grompp(int argc, char *argv[])
         "unless the [TT]-time[tt] option is used. Only if this information",
         "is absent will the coordinates in the [TT]-c[tt] file be used.",
         "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
-        "in your [TT].mdp[tt] file. An energy file can be supplied with",
+        "in your [REF].mdp[ref] file. An energy file can be supplied with",
         "[TT]-e[tt] to read Nose-Hoover and/or Parrinello-Rahman coupling",
         "variables.[PAR]",
 
@@ -1476,7 +1476,7 @@ int gmx_grompp(int argc, char *argv[])
         "You then supply the old checkpoint file directly to [gmx-mdrun]",
         "with [TT]-cpi[tt]. If you wish to change the ensemble or things",
         "like output frequency, then supplying the checkpoint file to",
-        "[THISMODULE] with [TT]-t[tt] along with a new [TT].mdp[tt] file",
+        "[THISMODULE] with [TT]-t[tt] along with a new [REF].mdp[ref] file",
         "with [TT]-f[tt] is the recommended procedure.[PAR]",
 
         "By default, all bonded interactions which have constant energy due to",

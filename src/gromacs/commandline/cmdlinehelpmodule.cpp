@@ -396,11 +396,12 @@ void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpMod
         if (module->second->shortDescription() != NULL)
         {
             std::string linkName("[gmx-" + module->first + "]");
-            std::string targetName(
-                    formatString("%s-%s", program, module->first.c_str()));
+            const char *name = module->first.c_str();
+            std::string reference(
+                    formatString(":doc:`%s %s <%s-%s>`", program, name, program, name));
             std::string displayName(
-                    formatString("[TT]%s %s[tt]", program, module->first.c_str()));
-            links->addLink(linkName, targetName, displayName);
+                    formatString("[TT]%s %s[tt]", program, name));
+            links->addLink(linkName, reference, displayName);
         }
     }
 }
@@ -482,15 +483,16 @@ HelpExportReStructuredText::HelpExportReStructuredText(
         const CommandLineHelpModuleImpl &helpModule)
     : links_(eHelpOutputFormat_Rst)
 {
-#if 0       // TODO: Investigate how these links can be made to work again.
     File             linksFile("links.dat", "r");
     std::string      line;
     while (linksFile.readLine(&line))
     {
-        links_.addLink(line, "../online/" + line, line);
+        links_.addLink("[REF]." + line + "[ref]",
+                       formatString(":ref:`.%s <%s>`", line.c_str(), line.c_str()),
+                       line);
+        links_.addLink("[REF]" + line + "[ref]", formatString(":ref:`%s`", line.c_str()), line);
     }
     linksFile.close();
-#endif
     initProgramLinks(&links_, helpModule);
 }
 

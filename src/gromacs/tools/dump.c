@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -597,9 +597,9 @@ static void list_mtx(const char *fn)
 int gmx_dump(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[THISMODULE] reads a run input file ([TT].tpr[tt]),",
-        "a trajectory ([TT].trr[tt]/[TT].xtc[tt]/[TT]/tng[tt]), an energy",
-        "file ([TT].edr[tt]) or a checkpoint file ([TT].cpt[tt])",
+        "[THISMODULE] reads a run input file ([REF].tpr[ref]),",
+        "a trajectory ([REF].trr[ref]/[REF].xtc[ref]/[TT]/tng[tt]), an energy",
+        "file ([REF].edr[ref]) or a checkpoint file ([REF].cpt[ref])",
         "and prints that to standard output in a readable format.",
         "This program is essential for checking your run input file in case of",
         "problems.[PAR]",

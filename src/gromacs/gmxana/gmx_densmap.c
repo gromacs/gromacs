@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,9 @@ int gmx_densmap(int argc, char *argv[])
     const char        *desc[] = {
         "[THISMODULE] computes 2D number-density maps.",
         "It can make planar and axial-radial density maps.",
-        "The output [TT].xpm[tt] file can be visualized with for instance xv",
+        "The output [REF].xpm[ref] file can be visualized with for instance xv",
         "and can be converted to postscript with [TT]xpm2ps[tt].",
-        "Optionally, output can be in text form to a [TT].dat[tt] file with [TT]-od[tt], instead of the usual [TT].xpm[tt] file with [TT]-o[tt].",
+        "Optionally, output can be in text form to a [REF].dat[ref] file with [TT]-od[tt], instead of the usual [REF].xpm[ref] file with [TT]-o[tt].",
         "[PAR]",
         "The default analysis is a 2-D number-density map for a selected",
         "group of atoms in the x-y plane.",

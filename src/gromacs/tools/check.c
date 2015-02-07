@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -706,9 +706,9 @@ void chk_enx(const char *fn)
 int gmx_check(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[THISMODULE] reads a trajectory ([TT].tng[tt], [TT].trr[tt] or ",
-        "[TT].xtc[tt]), an energy file ([TT].edr[tt])",
-        "or an index file ([TT].ndx[tt])",
+        "[THISMODULE] reads a trajectory ([REF].tng[ref], [REF].trr[ref] or ",
+        "[REF].xtc[ref]), an energy file ([REF].edr[ref])",
+        "or an index file ([REF].ndx[ref])",
         "and prints out useful information about them.[PAR]",
         "Option [TT]-c[tt] checks for presence of coordinates,",
         "velocities and box in the file, for close contacts (smaller than",
@@ -718,12 +718,12 @@ int gmx_check(int argc, char *argv[])
         "no problem). If velocities are present, an estimated temperature",
         "will be calculated from them.[PAR]",
         "If an index file, is given its contents will be summarized.[PAR]",
-        "If both a trajectory and a [TT].tpr[tt] file are given (with [TT]-s1[tt])",
+        "If both a trajectory and a [REF].tpr[ref] file are given (with [TT]-s1[tt])",
         "the program will check whether the bond lengths defined in the tpr",
         "file are indeed correct in the trajectory. If not you may have",
         "non-matching files due to e.g. deshuffling or due to problems with",
         "virtual sites. With these flags, [TT]gmx check[tt] provides a quick check for such problems.[PAR]",
-        "The program can compare two run input ([TT].tpr[tt])",
+        "The program can compare two run input ([REF].tpr[ref])",
         "files",
         "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
         "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",

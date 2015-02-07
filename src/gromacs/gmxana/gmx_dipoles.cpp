@@ -1575,7 +1575,7 @@ int gmx_dipoles(int argc, char *argv[])
         { "-rcmax",    FALSE, etREAL, {&rcmax},
           "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterion based on the box length will be used." },
         { "-phi",      FALSE, etBOOL, {&bPhi},
-          "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [TT].xpm[tt] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted." },
+          "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [REF].xpm[ref] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted." },
         { "-nlevels",  FALSE, etINT, {&nlevels},
           "Number of colors in the cmap output" },
         { "-ndegrees", FALSE, etINT, {&ndegrees},

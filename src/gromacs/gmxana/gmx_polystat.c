@@ -127,7 +127,7 @@ int gmx_polystat(int argc, char *argv[])
         "are usually all trans and therefore only every second bond aligns.",
         "The persistence length is defined as number of bonds where",
         "the average cos reaches a value of 1/e. This point is determined",
-        "by a linear interpolation of log(<cos>)."
+        "by a linear interpolation of [LOG]<cos>[log]."
     };
     static gmx_bool bMW  = TRUE, bPC = FALSE;
     t_pargs         pa[] = {

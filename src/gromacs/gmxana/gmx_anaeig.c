@@ -992,8 +992,8 @@ int gmx_anaeig(int argc, char *argv[])
         "eigenvector [TT]-first[tt] will be written unless [TT]-first[tt] and",
         "[TT]-last[tt] have been set explicitly, in which case all eigenvectors",
         "will be written to separate files. Chain identifiers will be added",
-        "when writing a [TT].pdb[tt] file with two or three structures (you",
-        "can use [TT]rasmol -nmrpdb[tt] to view such a [TT].pdb[tt] file).[PAR]",
+        "when writing a [REF].pdb[ref] file with two or three structures (you",
+        "can use [TT]rasmol -nmrpdb[tt] to view such a [REF].pdb[ref] file).[PAR]",
 
         "  Overlap calculations between covariance analysis:[BR]",
         "  [BB]Note:[bb] the analysis should use the same fitting structure[PAR]",

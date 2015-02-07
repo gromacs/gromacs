@@ -1341,7 +1341,7 @@ int gmx_cluster(int argc, char *argv[])
     const char        *desc[] = {
         "[THISMODULE] can cluster structures using several different methods.",
         "Distances between structures can be determined from a trajectory",
-        "or read from an [TT].xpm[tt] matrix file with the [TT]-dm[tt] option.",
+        "or read from an [REF].xpm[ref] matrix file with the [TT]-dm[tt] option.",
         "RMS deviation after fitting or RMS deviation of atom-pair distances",
         "can be used to define the distance between structures.[PAR]",
 
@@ -1363,7 +1363,7 @@ int gmx_cluster(int argc, char *argv[])
         "ensemble of simulations or a pulling simulation. Obviously the user",
         "has to prepare the trajectory well (e.g. by not superimposing frames).",
         "The final result can be inspect visually by looking at the matrix",
-        "[TT].xpm[tt] file, which should vary smoothly from bottom to top.[PAR]",
+        "[REF].xpm[ref] file, which should vary smoothly from bottom to top.[PAR]",
 
         "diagonalization: diagonalize the RMSD matrix.[PAR]",
 
@@ -1480,7 +1480,7 @@ int gmx_cluster(int argc, char *argv[])
         { "-method", FALSE, etENUM, {methodname},
           "Method for cluster determination" },
         { "-minstruct", FALSE, etINT, {&minstruct},
-          "Minimum number of structures in cluster for coloring in the [TT].xpm[tt] file" },
+          "Minimum number of structures in cluster for coloring in the [REF].xpm[ref] file" },
         { "-binary", FALSE, etBOOL, {&bBinary},
           "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off "
           "is given by [TT]-cutoff[tt]" },

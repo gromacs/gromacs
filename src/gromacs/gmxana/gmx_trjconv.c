@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -601,35 +601,35 @@ int gmx_trjconv(int argc, char *argv[])
         "This assumes that the entries in the index file are frame numbers and",
         "dumps each group in the index file to a separate trajectory file.[BR]",
         "* select frames within a certain range of a quantity given",
-        "in an [TT].xvg[tt] file.[PAR]",
+        "in an [REF].xvg[ref] file.[PAR]",
 
         "[gmx-trjcat] is better suited for concatenating multiple trajectory files.",
         "[PAR]",
 
         "The following formats are supported for input and output:",
-        "[TT].xtc[tt], [TT].trr[tt], [TT].gro[tt], [TT].g96[tt]",
-        "and [TT].pdb[tt].",
+        "[REF].xtc[ref], [REF].trr[ref], [REF].gro[ref], [TT].g96[tt]",
+        "and [REF].pdb[ref].",
         "The file formats are detected from the file extension.",
-        "The precision of [TT].xtc[tt] and [TT].gro[tt] output is taken from the",
-        "input file for [TT].xtc[tt], [TT].gro[tt] and [TT].pdb[tt],",
+        "The precision of [REF].xtc[ref] and [REF].gro[ref] output is taken from the",
+        "input file for [REF].xtc[ref], [REF].gro[ref] and [REF].pdb[ref],",
         "and from the [TT]-ndec[tt] option for other input formats. The precision",
         "is always taken from [TT]-ndec[tt], when this option is set.",
-        "All other formats have fixed precision. [TT].trr[tt]",
+        "All other formats have fixed precision. [REF].trr[ref]",
         "output can be single or double precision, depending on the precision",
         "of the [THISMODULE] binary.",
         "Note that velocities are only supported in",
-        "[TT].trr[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
+        "[REF].trr[ref], [REF].gro[ref] and [TT].g96[tt] files.[PAR]",
 
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
-        "[TT].gro, .g96[tt] or [TT].pdb[tt] file. By default, all frames all written to one file.",
-        "[TT].pdb[tt] files with all frames concatenated can be viewed with",
+        "[TT].gro, .g96[tt] or [REF].pdb[ref] file. By default, all frames all written to one file.",
+        "[REF].pdb[ref] files with all frames concatenated can be viewed with",
         "[TT]rasmol -nmrpdb[tt].[PAR]",
 
         "It is possible to select part of your trajectory and write it out",
         "to a new trajectory file in order to save disk space, e.g. for leaving",
         "out the water from a trajectory of a protein in water.",
         "[BB]ALWAYS[bb] put the original trajectory on tape!",
-        "We recommend to use the portable [TT].xtc[tt] format for your analysis",
+        "We recommend to use the portable [REF].xtc[ref] format for your analysis",
         "to save disk space and to have portable files.[PAR]",
 
         "There are two options for fitting the trajectory to a reference",
@@ -706,7 +706,7 @@ int gmx_trjconv(int argc, char *argv[])
         "can reduce the number of frames while using low-pass frequency",
         "filtering, this reduces aliasing of high frequency motions.[PAR]",
 
-        "Using [TT]-trunc[tt] [THISMODULE] can truncate [TT].trr[tt] in place, i.e.",
+        "Using [TT]-trunc[tt] [THISMODULE] can truncate [REF].trr[ref] in place, i.e.",
         "without copying the file. This is useful when a run has crashed",
         "during disk I/O (i.e. full disk), or when two contiguous",
         "trajectories must be concatenated without having double frames.[PAR]",
@@ -714,7 +714,7 @@ int gmx_trjconv(int argc, char *argv[])
         "Option [TT]-dump[tt] can be used to extract a frame at or near",
         "one specific time from your trajectory.[PAR]",
 
-        "Option [TT]-drop[tt] reads an [TT].xvg[tt] file with times and values.",
+        "Option [TT]-drop[tt] reads an [REF].xvg[ref] file with times and values.",
         "When options [TT]-dropunder[tt] and/or [TT]-dropover[tt] are set,",
         "frames with a value below and above the value of the respective options",
         "will not be written."
@@ -845,7 +845,7 @@ int gmx_trjconv(int argc, char *argv[])
           { &dropover }, "Drop all frames above this value" },
         { "-conect", FALSE, etBOOL,
           { &bCONECT },
-          "Add conect records when writing [TT].pdb[tt] files. Useful "
+          "Add conect records when writing [REF].pdb[ref] files. Useful "
           "for visualization of non-standard molecules, e.g. "
           "coarse grained ones" }
     };

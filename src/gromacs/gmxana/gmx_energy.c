@@ -1865,7 +1865,7 @@ int gmx_energy(int argc, char *argv[])
         "[BB]Note[bb] that in most cases the energy files contains averages over all",
         "MD steps, or over many more points than the number of frames in",
         "energy file. This makes the [THISMODULE] statistics output more accurate",
-        "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
+        "than the [REF].xvg[ref] output. When exact averages are not present in the energy",
         "file, the statistics mentioned above are simply over the single, per-frame",
         "energy values.[PAR]",
 

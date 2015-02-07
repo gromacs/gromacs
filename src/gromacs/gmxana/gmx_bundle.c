@@ -204,7 +204,7 @@ int gmx_bundle(int argc, char *argv[])
         "[PAR]",
         "With option [TT]-oa[tt] the top, mid (or kink when [TT]-ok[tt] is set)",
         "and bottom points of each axis",
-        "are written to a [TT].pdb[tt] file each frame. The residue numbers correspond",
+        "are written to a [REF].pdb[ref] file each frame. The residue numbers correspond",
         "to the axis numbers. When viewing this file with Rasmol, use the",
         "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
         "display the reference axis."
