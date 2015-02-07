@@ -89,7 +89,8 @@ enum tpxv {
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
-    tpxv_RemoveObsoleteParameters1                           /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_SymmetryAveraging                                  /**< molecular averaging > */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -103,7 +104,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_RemoveObsoleteParameters1;
+static const int tpx_version = tpxv_SymmetryAveraging;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -761,6 +762,27 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
     }
 }
 
+static void do_ave(t_fileio *fio, t_ave *ave, gmx_bool bRead)
+{
+    int g;
+    t_avegrp *aveg;
+
+    gmx_fio_do_int(fio, ave->nave);
+    if (bRead)
+    {
+        snew(ave->grp, ave->nave);
+    }
+    for (g = 0; g < ave->nave; g++)
+    {
+        aveg = &ave->grp[g];
+        gmx_fio_do_int(fio, aveg->nat);
+        if (bRead)
+        {
+            snew(aveg->ind, aveg->nat);
+        }
+        gmx_fio_ndo_int(fio, aveg->ind, aveg->nat);
+    }
+}
 
 static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
 {
@@ -1569,6 +1591,25 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     else
     {
         ir->bRot = FALSE;
+    }
+
+
+    /* Enforced rotation */
+    if (file_version >= tpxv_SymmetryAveraging)
+    {
+        gmx_fio_do_int(fio, ir->bAve);
+        if (ir->bAve == TRUE)
+        {
+            if (bRead)
+            {
+                snew(ir->ave, 1);
+            }
+            do_ave(fio, ir->ave, bRead);
+        }
+    }
+    else
+    {
+        ir->bAve = FALSE;
     }
 
     /* Interactive molecular dynamics */

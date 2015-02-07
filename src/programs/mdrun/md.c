@@ -1084,6 +1084,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
+            /* averages the current forces and velocities on all the atoms in the same groups. */
+            if (ir->bAve)
+            {
+                do_averaging(state->v, f, ir->ave);
+            }
         }
 
         if (bVV && !bStartingFromCpt && !bRerunMD)

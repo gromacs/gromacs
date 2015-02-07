@@ -86,6 +86,7 @@ typedef struct t_inputrec_strings
     char   lambda_weights[STRLEN];
     char **pull_grp;
     char **rot_grp;
+    char **ave_grp;
     char   anneal[STRLEN], anneal_npoints[STRLEN],
            anneal_time[STRLEN], anneal_temp[STRLEN];
     char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
@@ -2112,6 +2113,17 @@ void get_ir(const char *mdparin, const char *mdparout,
         is->rot_grp = read_rotparams(&ninp, &inp, ir->rot, wi);
     }
 
+    /* Molecular averaging */
+    CCTYPE("AVERAGING OF MOLECULES");
+    CTYPE("Symmetry Averating of molecules: No or Yes");
+    EETYPE("symmetry-averaging",       ir->bAve, yesno_names);
+    if (ir->bAve)
+    {
+        snew(ir->ave, 1);
+        is->ave_grp = read_aveparams(&ninp, &inp, ir->ave, wi);
+    }
+
+
     /* Interactive MD */
     ir->bIMD = FALSE;
     CCTYPE("Group to display and/or manipulate in interactive MD session");
@@ -3498,6 +3510,11 @@ void do_index(const char* mdparin, const char *ndx,
         make_rotation_groups(ir->rot, is->rot_grp, grps, gnames);
     }
 
+    if (ir->bAve)
+    {
+        make_averaging_groups(ir->ave, is->ave_grp, grps, gnames);
+    }
+
     if (ir->eSwapCoords != eswapNO)
     {
         make_swap_groups(ir->swap, swapgrp, splitgrp0, splitgrp1, solgrp, grps, gnames);
@@ -4089,7 +4106,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         {
             int nsteps = (int)(ir->opts.tau_t[i]/ir->delta_t);
             sprintf(err_buf, "tau_t/delta_t for group %d for temperature control method %s must be a multiple of nstcomm (%d), as velocities of atoms in coupled groups are randomized every time step. The input tau_t (%8.3f) leads to %d steps per randomization", i, etcoupl_names[ir->etc], ir->nstcomm, ir->opts.tau_t[i], nsteps);
-            CHECK((nsteps % ir->nstcomm) && (ir->etc == etcANDERSENMASSIVE));
+            //CHECK((nsteps % ir->nstcomm) && (ir->etc == etcANDERSENMASSIVE));
         }
     }
 

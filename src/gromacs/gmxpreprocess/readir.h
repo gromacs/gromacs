@@ -156,9 +156,17 @@ void do_adress_index(t_adress *adress, gmx_groups_t *groups, char **gnames, t_gr
 char **read_rotparams(int *ninp_p, t_inpfile **inp, t_rot *rot, warninp_t wi);
 /* Reads enforced rotation parameters, returns a list of the rot group names */
 
+/* Reads enforced rotation parameters, returns a list of the rot group names */
 void make_rotation_groups(t_rot *rot, char **rotgnames,
                           t_blocka *grps, char **gnames);
 /* Process the rotation parameters after reading the index groups */
+
+/* reads molecular averaging parameters */
+char **read_aveparams(int *ninp_p, t_inpfile **inp, t_ave *ave, warninp_t wi);
+
+/* create averaging groups after reading the index groups */
+void make_averaging_groups(t_ave *ave, char **avenames,
+                           t_blocka *grps, char **gnames);
 
 void set_reference_positions(t_rot *rot, rvec *x, matrix box,
                              const char *fn, gmx_bool bSet, warninp_t wi);

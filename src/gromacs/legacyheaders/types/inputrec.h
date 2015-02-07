@@ -265,6 +265,7 @@ typedef struct {
     gmx_enfrotgrp_t enfrotgrp;     /* Stores non-inputrec rotation data per group   */
 } t_rotgrp;
 
+
 typedef struct {
     int          ngrp;       /* Number of rotation groups                     */
     int          nstrout;    /* Output frequency for main rotation outfile    */
@@ -272,6 +273,17 @@ typedef struct {
     t_rotgrp    *grp;        /* Groups to rotate                              */
     gmx_enfrot_t enfrot;     /* Stores non-inputrec enforced rotation data    */
 } t_rot;
+
+typedef struct {
+    int         nat;               /* Number of atoms in the group                  */
+    atom_id    *ind;               /* The global atoms numbers                      */
+} t_avegrp;
+
+/* averaging group */
+typedef struct {
+    int          nave;       /* Number of rotation groups                     */
+    t_avegrp    *grp;        /* Groups to average                             */
+} t_ave;
 
 /* Abstract type for IMD only defined in IMD.c */
 typedef struct gmx_IMD *t_gmx_IMD;
@@ -448,6 +460,8 @@ typedef struct {
     t_pull         *pull;                    /* The data for center of mass pulling          */
     gmx_bool        bRot;                    /* Calculate enforced rotation potential(s)?    */
     t_rot          *rot;                     /* The data for enforced rotation potentials    */
+    gmx_bool        bAve;                    /* force/vel Averaging of index groups.         */
+    t_ave          *ave;                     /* The data for averaging of force/velocity     */
     int             eSwapCoords;             /* Do ion/water position exchanges (CompEL)?    */
     t_swapcoords   *swap;
     gmx_bool        bIMD;                    /* Allow interactive MD sessions for this .tpr? */

@@ -802,6 +802,50 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
     wallcycle_sub_stop(wcycle, ewcsNONBONDED);
 }
 
+
+void do_averaging(rvec v[], rvec f[], t_ave *ave)
+{
+    /* average the forces and velocities of particles in the group
+       together.  No symmetry support yet. No resetting to positions,
+       so will only preserve existing symmetry. */
+
+    int g,i,d;
+    rvec sumf,sumv;
+    t_avegrp *aveg;
+
+    for (g = 0; g < ave->nave; g++) {
+        aveg = &ave->grp[g];
+        for (d = 0; d < DIM; d++)
+        {
+            sumf[d] = 0;
+            /* set the velocities to the first velocity */
+            sumv[d] = v[aveg->ind[0]][d];
+        }
+        /* Average the forces */
+        for (i = 0; i < aveg->nat; i++)
+        {
+            for (d = 0; d < DIM; d++)
+            {
+                sumf[d] += f[aveg->ind[i]][d];
+            }
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            sumf[d] /= aveg->nat;
+        }
+
+        for (i = 0; i < aveg->nat; i++)
+        {
+            for (d = 0; d < DIM; d++)
+            {
+                f[aveg->ind[i]][d] = sumf[d];
+                v[aveg->ind[i]][d] = sumv[d];
+            }
+        }
+    }
+}
+
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
                          gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
