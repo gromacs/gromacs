@@ -168,25 +168,7 @@ rst_epilog += """
 .. _webpage: http://www.gromacs.org
 .. _ftp site: ftp://ftp.gromacs.org/pub/gromacs/
 .. _tutorials: http://www.gromacs.org/Documentation/Tutorials
-.. _sample mdp file: ../online/mdp.html
 .. _download: ../download.html
-
-.. _pdb: ../online/pdb.html
-.. _gro: ../online/gro.html
-.. _top: ../online/top.html
-.. _cpt: ../online/cpt.html
-.. _trr: ../online/trr.html
-.. _xtc: ../online/xtc.html
-.. _tng: ../online/tng.html
-.. _tpr: ../online/tpr.html
-.. _ndx: ../online/ndx.html
-.. _mdp: ../online/mdp.html
-.. _log: ../online/log.html
-.. _xvg: ../online/xvg.html
-.. _xpm: ../online/xpm.html
-.. _eps: ../online/eps.html
-.. _edr: ../online/edr.html
-.. _rtp: ../online/rtp.html
 """.format(gmx_version_string=gmx_version_string, regressiontest_version=regressiontest_version)
 
 # -- Options for HTML output ----------------------------------------------

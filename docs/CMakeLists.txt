@@ -98,6 +98,8 @@ if (SPHINX_FOUND)
         user-guide/cutoff-schemes.rst
         user-guide/file-formats.rst
         user-guide/tools.rst
+        user-guide/plotje.gif
+        user-guide/xvgr.gif
         conf.py
         )
     set(SPHINX_INPUT_FILES ${SPHINX_CONFIG_VARS_FILE})
