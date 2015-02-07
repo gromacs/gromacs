@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1466,9 +1466,9 @@ int gmx_xpm2ps(int argc, char *argv[])
         { "-skip",    FALSE, etINT,  {&skip},
           "only write out every nr-th row and column" },
         { "-zeroline", FALSE, etBOOL, {&bZeroLine},
-          "insert line in [TT].xpm[tt] matrix where axis label is zero"},
+          "insert line in [REF].xpm[ref] matrix where axis label is zero"},
         { "-legoffset", FALSE, etINT, {&mapoffset},
-          "Skip first N colors from [TT].xpm[tt] file for the legend" },
+          "Skip first N colors from [REF].xpm[ref] file for the legend" },
         { "-combine", FALSE, etENUM, {combine}, "Combine two matrices" },
         { "-cmin",    FALSE, etREAL, {&cmin}, "Minimum for combination output" },
         { "-cmax",    FALSE, etREAL, {&cmax}, "Maximum for combination output" }

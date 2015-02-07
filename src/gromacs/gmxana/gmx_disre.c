@@ -662,7 +662,7 @@ int gmx_disre(int argc, char *argv[])
         "the time averaged values per restraint are given in the log file.[PAR]",
         "An index file may be used to select specific restraints for",
         "printing.[PAR]",
-        "When the optional [TT]-q[tt] flag is given a [TT].pdb[tt] file coloured by the",
+        "When the optional [TT]-q[tt] flag is given a [REF].pdb[ref] file coloured by the",
         "amount of average violations.[PAR]",
         "When the [TT]-c[tt] option is given, an index file will be read",
         "containing the frames in your trajectory corresponding to the clusters",

@@ -83,6 +83,8 @@ struct t_sandr
 const t_sandr sandrTty[] = {
     { "\\*", "*" },
     { "\\=", "=" },
+    { "[REF]", "" },
+    { "[ref]", "" },
     { "[TT]", "" },
     { "[tt]", "" },
     { "[BB]", "" },
@@ -362,9 +364,7 @@ void HelpLinks::addLink(const std::string &linkName,
             replacement = repall(displayName, sandrTty);
             break;
         case eHelpOutputFormat_Rst:
-            replacement = formatString(
-                        ":doc:`%s <%s>`", repall(displayName, sandrTty).c_str(),
-                        targetName.c_str());
+            replacement = targetName;
             break;
         default:
             GMX_RELEASE_ASSERT(false, "Output format not implemented for links");
@@ -508,6 +508,8 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         {
             result = repall(result, sandrRst);
             result = replaceLinks(result);
+            result = replaceAll(result, "[REF]", "");
+            result = replaceAll(result, "[ref]", "");
             return wrapper->wrap(result);
         }
         default:

@@ -531,8 +531,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         {
             options.addOption(
                     gmx::BooleanOption("w").store(&bView)
-                        .description("View output [TT].xvg[tt], [TT].xpm[tt], "
-                                     "[TT].eps[tt] and [TT].pdb[tt] files"));
+                        .description("View output [REF].xvg[ref], [REF].xpm[ref], "
+                                     "[REF].eps[ref] and [REF].pdb[ref] files"));
         }
 
         bool bXvgr = false;

@@ -101,7 +101,7 @@ int gmx_trjorder(int argc, char *argv[])
         "of the first n waters is made, the ordered trajectory can be used",
         "with any Gromacs program to analyze the n closest waters.",
         "[PAR]",
-        "If the output file is a [TT].pdb[tt] file, the distance to the reference target",
+        "If the output file is a [REF].pdb[ref] file, the distance to the reference target",
         "will be stored in the B-factor field in order to color with e.g. Rasmol.",
         "[PAR]",
         "With option [TT]-nshell[tt] the number of molecules within a shell",

@@ -605,7 +605,7 @@ int gmx_traj(int argc, char *argv[])
         "provided velocities are present in the trajectory file.",
         "This implies [TT]-com[tt].[PAR]",
         "Options [TT]-cv[tt] and [TT]-cf[tt] write the average velocities",
-        "and average forces as temperature factors to a [TT].pdb[tt] file with",
+        "and average forces as temperature factors to a [REF].pdb[ref] file with",
         "the average coordinates or the coordinates at [TT]-ctime[tt].",
         "The temperature factors are scaled such that the maximum is 10.",
         "The scaling can be changed with the option [TT]-scale[tt].",
@@ -614,7 +614,7 @@ int gmx_traj(int argc, char *argv[])
         "desired frame. When averaging over frames you might need to use",
         "the [TT]-nojump[tt] option to obtain the correct average coordinates.",
         "If you select either of these option the average force and velocity",
-        "for each atom are written to an [TT].xvg[tt] file as well",
+        "for each atom are written to an [REF].xvg[ref] file as well",
         "(specified with [TT]-av[tt] or [TT]-af[tt]).[PAR]",
         "Option [TT]-vd[tt] computes a velocity distribution, i.e. the",
         "norm of the vector is plotted. In addition in the same graph",
@@ -650,7 +650,7 @@ int gmx_traj(int argc, char *argv[])
         { "-ctime", FALSE, etREAL, {&ctime},
           "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
         { "-scale", FALSE, etREAL, {&scale},
-          "Scale factor for [TT].pdb[tt] output, 0 is autoscale" }
+          "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
     FILE           *outx   = NULL, *outv = NULL, *outf = NULL, *outb = NULL, *outt = NULL;
     FILE           *outekt = NULL, *outekr = NULL;

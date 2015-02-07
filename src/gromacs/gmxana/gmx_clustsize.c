@@ -301,7 +301,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             {
                 if (bTPRwarn)
                 {
-                    printf("You need a [TT].tpr[tt] file to analyse temperatures\n");
+                    printf("You need a [REF].tpr[ref] file to analyse temperatures\n");
                     bTPRwarn = FALSE;
                 }
             }
@@ -433,14 +433,14 @@ int gmx_clustsize(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[THISMODULE] computes the size distributions of molecular/atomic clusters in",
-        "the gas phase. The output is given in the form of an [TT].xpm[tt] file.",
-        "The total number of clusters is written to an [TT].xvg[tt] file.[PAR]",
+        "the gas phase. The output is given in the form of an [REF].xpm[ref] file.",
+        "The total number of clusters is written to an [REF].xvg[ref] file.[PAR]",
         "When the [TT]-mol[tt] option is given clusters will be made out of",
         "molecules rather than atoms, which allows clustering of large molecules.",
         "In this case an index file would still contain atom numbers",
         "or your calculation will die with a SEGV.[PAR]",
         "When velocities are present in your trajectory, the temperature of",
-        "the largest cluster will be printed in a separate [TT].xvg[tt] file assuming",
+        "the largest cluster will be printed in a separate [REF].xvg[ref] file assuming",
         "that the particles are free to move. If you are using constraints,",
         "please correct the temperature. For instance water simulated with SHAKE",
         "or SETTLE will yield a temperature that is 1.5 times too low. You can",
@@ -465,13 +465,13 @@ int gmx_clustsize(int argc, char *argv[])
         { "-cut",      FALSE, etREAL, {&cutoff},
           "Largest distance (nm) to be considered in a cluster" },
         { "-mol",      FALSE, etBOOL, {&bMol},
-          "Cluster molecules rather than atoms (needs [TT].tpr[tt] file)" },
+          "Cluster molecules rather than atoms (needs [REF].tpr[ref] file)" },
         { "-pbc",      FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions" },
         { "-nskip",    FALSE, etINT,  {&nskip},
           "Number of frames to skip between writing" },
         { "-nlevels",  FALSE, etINT,  {&nlevels},
-          "Number of levels of grey in [TT].xpm[tt] output" },
+          "Number of levels of grey in [REF].xpm[ref] output" },
         { "-ndf",      FALSE, etINT,  {&ndf},
           "Number of degrees of freedom of the entire system for temperature calculation. If not set, the number of atoms times three is used." },
         { "-rgblo",    FALSE, etRVEC, {rlo},

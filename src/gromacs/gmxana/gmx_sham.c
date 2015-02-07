@@ -872,7 +872,7 @@ int gmx_sham(int argc, char *argv[])
 {
     const char        *desc[] = {
         "[THISMODULE] makes multi-dimensional free-energy, enthalpy and entropy plots.",
-        "[THISMODULE] reads one or more [TT].xvg[tt] files and analyzes data sets.",
+        "[THISMODULE] reads one or more [REF].xvg[ref] files and analyzes data sets.",
         "The basic purpose of [THISMODULE] is to plot Gibbs free energy landscapes",
         "(option [TT]-ls[tt])",
         "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt]),",

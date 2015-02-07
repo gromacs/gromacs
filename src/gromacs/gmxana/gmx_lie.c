@@ -144,7 +144,7 @@ int gmx_lie(int argc, char *argv[])
         "To utilize [TT]g_lie[tt] correctly, two simulations are required: one with the",
         "molecule of interest bound to its receptor and one with the molecule in water.",
         "Both need to utilize [TT]energygrps[tt] such that Coul-SR(A-B), LJ-SR(A-B), etc. terms",
-        "are written to the [TT].edr[tt] file. Values from the molecule-in-water simulation",
+        "are written to the [REF].edr[ref] file. Values from the molecule-in-water simulation",
         "are necessary for supplying suitable values for -Elj and -Eqq."
     };
     static real        lie_lj = 0, lie_qq = 0, fac_lj = 0.181, fac_qq = 0.5;
