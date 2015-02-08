@@ -35,7 +35,7 @@
 # This directory provides a unified place for building all kinds of
 # GROMACS documentation. This includes some "static" content (Doxygen
 # code documentation, reference manual, install guide, old online HTML
-# pages), and content generated from the gmx program for the various
+# images), and content generated from the gmx program for the various
 # tools (man and HTML pages). It also provides the "webpage" target,
 # that combines all of the above (except man pages in man format) into
 # a form suitable for automated deployment to the GROMACS website. It
@@ -60,7 +60,6 @@ set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(Sphinx 1.2.3 COMPONENTS pygments)
 
-add_subdirectory(old-html)
 add_subdirectory(doxygen)
 
 option(GMX_BUILD_WEBPAGE "Whether to try to configure to build the GROMACS static webpages" OFF)
@@ -89,12 +88,12 @@ if (SPHINX_FOUND)
     set(SPHINX_SOURCE_FILES
         index.rst
         download.rst
-        online.rst
         install-guide/main.rst
         man/gromacs.7.rst
         user-guide/main.rst
         user-guide/introduction.rst
         user-guide/getting-started.rst
+        user-guide/flow.rst
         user-guide/cutoff-schemes.rst
         user-guide/file-formats.rst
         user-guide/tools.rst
@@ -241,11 +240,6 @@ if(GMX_BUILD_WEBPAGE)
     set(HTML_BUILD_IS_POSSIBLE ON)
     # Next, turn it off in any of the preconditions are unsatisified
 
-    if(NOT GMX_BUILD_HELP)
-        set(HTML_BUILD_IS_POSSIBLE OFF)
-        message(STATUS "Cannot build webpage without GMX_BUILD_HELP=on")
-    endif()
-
     if(NOT MANUAL_BUILD_IS_POSSIBLE)
         set(HTML_BUILD_IS_POSSIBLE OFF)
         message(STATUS "Cannot build webpage without being able to build the reference PDF manual")
@@ -266,6 +260,13 @@ if(GMX_BUILD_WEBPAGE)
         message(STATUS "Cannot build webpage without mscgen")
     endif()
 endif()
+
+# TODO Get rid of the remaining content in old-html
+add_custom_target(webpage-old-images
+    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/old-html ${HTML_OUTPUT_DIR}
+    COMMENT "Copying flowchart images"
+    VERBATIM
+    )
 
 if(HTML_BUILD_IS_POSSIBLE)
     # If building the webpage from the repo, then tarballs may not
@@ -309,24 +310,6 @@ if(HTML_BUILD_IS_POSSIBLE)
         VERBATIM
         )
 
-    # TODO Move content from the "old" html output into the new user
-    # guide, or delete, as appropriate.
-    if(NOT SOURCE_IS_SOURCE_DISTRIBUTION)
-        # TODO If content remains here once the user guide is in
-        # decent shape, try to make the generated HTML arrive directly
-        # in ${HTML_OUTPUT_DIR}
-        add_custom_target(webpage-html
-            ${CMAKE_COMMAND} -E copy_directory old-html/final ${HTML_OUTPUT_DIR}
-            )
-        add_dependencies(webpage-html html)
-    else()
-        # In the source distribution, the html pages are already
-        # built, so we can avoid making gmx via the html target
-        add_custom_target(webpage-html
-            ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/old-html/final ${HTML_OUTPUT_DIR}
-            )
-    endif()
-
     # The Doxygen configuration in doxygen/Doxyfile-common.cmakein
     # makes all the Doxygen output directly in
     # ${HTML_OUTPUT_DIR}/doxygen (and makes the directory if it needs
@@ -339,7 +322,7 @@ if(HTML_BUILD_IS_POSSIBLE)
            ${extra_webpage_dependencies}
         VERBATIM
         )
-    add_dependencies(webpage webpage-sphinx webpage-html doxygen-all)
+    add_dependencies(webpage webpage-sphinx webpage-old-images doxygen-all)
 else()
     add_custom_target(webpage
         COMMAND ${CMAKE_COMMAND} -E echo "Cannot build webpage because of missing requirements. Check cmake status output for reasons"

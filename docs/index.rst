@@ -17,8 +17,6 @@ Contents:
 
    user-guide/main
 
-   online
-
 * `Reference Manual`_ (PDF format)
 
 * Answers to `Frequently Asked Questions <http://www.gromacs.org/Documentation/FAQs>`_

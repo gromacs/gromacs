@@ -407,45 +407,6 @@ void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpMod
 }
 
 /********************************************************************
- * HelpExportHtml
- */
-
-/*! \internal
- * \brief
- * Implements export for HTML help.
- *
- * This whole class can go once docs/old-html/ no longer requires header.html
- * that it generates.
- *
- * \ingroup module_commandline
- */
-class HelpExportHtml : public HelpExportInterface
-{
-    public:
-        //! Initializes HTML exporter.
-        HelpExportHtml();
-
-        virtual void startModuleExport() {}
-        virtual void exportModuleHelp(
-            const CommandLineModuleInterface & /*module*/,
-            const std::string                & /*tag*/,
-            const std::string                & /*displayName*/) {}
-        virtual void finishModuleExport() {}
-
-        virtual void startModuleGroupExport() {}
-        virtual void exportModuleGroup(const char                * /*title*/,
-                                       const ModuleGroupContents & /*modules*/) {}
-        virtual void finishModuleGroupExport() {}
-};
-
-HelpExportHtml::HelpExportHtml()
-{
-    std::string header = gmx::File::readToString("header.html.in");
-    header = replaceAll(header, "@VERSION@", gmx_version());
-    gmx::File::writeFileFromString("header.html", header);
-}
-
-/********************************************************************
  * HelpExportReStructuredText
  */
 
@@ -758,7 +719,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     // Add internal topics lazily here.
     addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)));
 
-    const char *const exportFormats[] = { "html", "rst", "completion" };
+    const char *const exportFormats[] = { "rst", "completion" };
     std::string       exportFormat;
     Options           options(NULL, NULL);
     options.addOption(StringOption("export").store(&exportFormat)
@@ -767,11 +728,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (!exportFormat.empty())
     {
         boost::scoped_ptr<HelpExportInterface> exporter;
-        if (exportFormat == "html")
-        {
-            exporter.reset(new HelpExportHtml());
-        }
-        else if (exportFormat == "rst")
+        if (exportFormat == "rst")
         {
             exporter.reset(new HelpExportReStructuredText(*impl_));
         }

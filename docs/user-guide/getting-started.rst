@@ -1,6 +1,11 @@
 Getting started
 ===============
 
+.. toctree::
+   :hidden:
+
+   flow
+
 In this chapter we assume the reader is familiar with Molecular Dynamics and
 familiar with Unix, including the use of a text editor such as ``jot``, ``emacs``
 or ``vi``. We furthermore assume the |Gromacs| software is installed properly on
@@ -36,7 +41,7 @@ administrator for more information, and then follow the advice for
 
 Flowchart of typical simulation
 -------------------------------
-A typical simulation workflow with |Gromacs| is `illustrated here <../online/flow.html>`_.
+A typical simulation workflow with |Gromacs| is :doc:`illustrated here <flow>`.
 
 Important files
 ---------------
