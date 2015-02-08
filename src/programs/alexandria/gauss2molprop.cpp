@@ -68,16 +68,11 @@ int alex_gauss2molprop(int argc, char *argv[])
     static int                       maxpot     = 0;
     static int                       nsymm      = 0;
     static gmx_bool                  compress   = FALSE;
-    static gmx_bool                  bBabel     = TRUE;
     t_pargs                          pa[]       = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose terminal output." },
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML files" },
-#ifdef HAVE_LIBOPENBABEL2
-        { "-babel", FALSE, etBOOL, {&bBabel},
-          "Use the OpenBabel engine to process gaussian input files" },
-#endif
         { "-molnm", FALSE, etSTR, {&molnm},
           "Name of the molecule in *all* input files. Do not use if you have different molecules in the input files." },
         { "-nsymm", FALSE, etINT, {&nsymm},
@@ -121,7 +116,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     {
         alexandria::MolProp mmm;
 
-        ReadGauss(fns[i], mmm, gap, bBabel, aps, pd, molnm, iupac, conf, basis,
+        ReadGauss(fns[i], mmm, gap, aps, pd, molnm, iupac, conf, basis,
                   maxpot, nsymm, bVerbose, gmx_poldata_get_force_field(pd));
         mp.push_back(mmm);
     }

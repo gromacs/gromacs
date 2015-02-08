@@ -156,44 +156,38 @@ int alex_gentop(int argc, char *argv[])
         { efPDB, "-pdbdiff", "pdbdiff", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static real                      kb        = 4e5, kt = 400, kp = 5;
-    static real                      btol      = 0.2, qtol = 1e-10, zmin = 5, zmax = 100, delta_z = -1;
-    static real                      hfac      = 0, qweight = 1e-3, bhyper = 0.1;
-    static real                      th_toler  = 170, ph_toler = 5, watoms = 0, spacing = 0.1;
-    static real                      dbox      = 0.370424, penalty_fac = 1, epsr = 1;
-    static int                       nexcl     = 2;
-    static int                       maxiter   = 25000, maxcycle = 1;
-    static int                       nmol      = 1;
-    static real                      rDecrZeta = -1;
-    static gmx_bool                  bBabel    =
-#ifdef HAVE_LIBOPENBABEL2
-        TRUE;
-#else
-        FALSE;
-#endif
-    static gmx_bool    bRemoveDih     = FALSE, bQsym = TRUE, bZatype = TRUE, bFitCube = FALSE;
-    static gmx_bool    bParam         = FALSE, bH14 = TRUE, bRound = TRUE, bITP;
-    static const char *polaropt[]     = { NULL, "No", "AllAtom", "UnitedAtom", NULL };
-    static gmx_bool    bPairs         = FALSE, bPBC = TRUE;
-    static gmx_bool    bUsePDBcharge  = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
-    static gmx_bool    bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = TRUE, bEntropy = FALSE;
-    static gmx_bool    bGenVSites     = FALSE, bSkipVSites = TRUE;
-    static char       *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
-    static int         maxpot         = 0;
-    static int         seed           = 0;
-    static int         nsymm          = 0;
-    static const char *cqdist[]       = {
+    static real                      kb             = 4e5, kt = 400, kp = 5;
+    static real                      btol           = 0.2, qtol = 1e-10, zmin = 5, zmax = 100, delta_z = -1;
+    static real                      hfac           = 0, qweight = 1e-3, bhyper = 0.1;
+    static real                      th_toler       = 170, ph_toler = 5, watoms = 0, spacing = 0.1;
+    static real                      dbox           = 0.370424, penalty_fac = 1, epsr = 1;
+    static int                       nexcl          = 2;
+    static int                       maxiter        = 25000, maxcycle = 1;
+    static int                       nmol           = 1;
+    static real                      rDecrZeta      = -1;
+    static gmx_bool                  bRemoveDih     = FALSE, bQsym = TRUE, bZatype = TRUE, bFitCube = FALSE;
+    static gmx_bool                  bParam         = FALSE, bH14 = TRUE, bRound = TRUE, bITP;
+    static const char               *polaropt[]     = { NULL, "No", "AllAtom", "UnitedAtom", NULL };
+    static gmx_bool                  bPairs         = FALSE, bPBC = TRUE;
+    static gmx_bool                  bUsePDBcharge  = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
+    static gmx_bool                  bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = TRUE, bEntropy = FALSE;
+    static gmx_bool                  bGenVSites     = FALSE, bSkipVSites = TRUE;
+    static char                     *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
+    static int                       maxpot         = 0;
+    static int                       seed           = 0;
+    static int                       nsymm          = 0;
+    static const char               *cqdist[]       = {
         NULL, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", NULL
     };
-    static const char *cqgen[]       = {
+    static const char               *cqgen[]       = {
         NULL, "None", "EEM", "ESP", "RESP", NULL
     };
-    static const char *dihopt[] = { NULL, "No", "Single", "All", NULL };
-    static const char *cgopt[]  = { NULL, "Atom", "Group", "Neutral", NULL };
-    static const char *lot      = "B3LYP/aug-cc-pVTZ";
-    static const char *dzatoms  = "";
-    static const char *ff       = "alexandria";
-    t_pargs            pa[]     = {
+    static const char               *dihopt[] = { NULL, "No", "Single", "All", NULL };
+    static const char               *cgopt[]  = { NULL, "Atom", "Group", "Neutral", NULL };
+    static const char               *lot      = "B3LYP/aug-cc-pVTZ";
+    static const char               *dzatoms  = "";
+    static const char               *ff       = "alexandria";
+    t_pargs                          pa[]     = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
         { "-ff",     FALSE, etSTR,  {&ff},
@@ -202,10 +196,6 @@ int alex_gentop(int argc, char *argv[])
           "Read a molecule from the database rather than from a file" },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
-#ifdef HAVE_LIBOPENBABEL2
-        { "-babel", FALSE, etBOOL, {&bBabel},
-          "Use the OpenBabel engine to process gaussian input files" },
-#endif
         { "-nexcl", FALSE, etINT,  {&nexcl},
           "HIDDENNumber of exclusions. Check consistency of this option with the [TT]-pairs[tt] flag." },
         { "-H14",    FALSE, etBOOL, {&bH14},
@@ -429,7 +419,7 @@ int alex_gentop(int argc, char *argv[])
         {
             molnm = (char *)"XXX";
         }
-        ReadGauss(fn, mp, gap, bBabel, aps, pd, molnm, iupac, conf, basis,
+        ReadGauss(fn, mp, gap, aps, pd, molnm, iupac, conf, basis,
                   maxpot, nsymm, bVerbose, gmx_poldata_get_force_field(pd));
         mps.push_back(mp);
         mpi = mps.begin();

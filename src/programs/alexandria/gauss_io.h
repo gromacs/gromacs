@@ -121,7 +121,6 @@ class GaussAtomProp
  *                       that can be read by OpenBabel
  * \param[out] mpt       The MolProp
  * \param[in] gap        Helper data for reading atomization energies
- * \param[in] bBabel     Whether or not to use the OpenBabel library
  * \param[in] aps        Structure containing atomic data
  * \param[in] pd         The force field information
  * \param[in] molnm      Molecule name to override the one from the filename [ maybe NULL ]
@@ -138,7 +137,6 @@ class GaussAtomProp
 void ReadGauss(const char *g98,
                alexandria::MolProp &mpt,
                alexandria::GaussAtomProp &gap,
-               gmx_bool bBabel,
                gmx_atomprop_t aps, gmx_poldata_t pd,
                char *molnm, char *iupac, char *conformation,
                char *basisset,

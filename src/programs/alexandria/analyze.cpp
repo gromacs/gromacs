@@ -197,11 +197,11 @@ static void write_corr_xvg(const char *fn,
                 double Texp, Tqm;
                 for (k = 0; (k < qmc->nconf); k++)
                 {
-                    bool bExp = mpi->getProp(mpo, iqmExp, NULL, NULL, 
+                    bool bExp = mpi->getProp(mpo, iqmExp, NULL, NULL,
                                              exp_type,
                                              &exp_val, NULL, &Texp);
                     bool bQM  = mpi->getProp(mpo, iqmQM, lbuf, qmc->conf[k],
-                                             qmc->type[i], 
+                                             qmc->type[i],
                                              &qm_val, &qm_error, &Tqm);
                     if (bExp && bQM && (strcmp(exp_type, qmc->type[i]) == 0) &&
                         (fabs(Texp-Tqm) < 0.05))
@@ -428,7 +428,7 @@ int alex_analyze(int argc, char *argv[])
     };
 #define NFILE (sizeof(fnm)/sizeof(fnm[0]))
     static char                     *sort[]      = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", NULL };
-    static char                     *prop[]      = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"DHf(298.15K)", NULL };
+    static char                     *prop[]      = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", NULL };
     static char                     *fc_str      = (char *)"";
     static char                     *exp_type    = (char *)"";
     static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
