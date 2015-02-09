@@ -300,6 +300,45 @@ std::string toUpperCase(const std::string &text)
     return result;
 }
 
+/*! \brief
+ * Removes extra newlines from reStructuredText.
+ *
+ * \param[in] text  Input text.
+ * \returns   \p text with all sequences of more than two newlines replaced
+ *     with just two newlines.
+ *
+ * Does not throw.
+ */
+std::string removeExtraNewlinesRst(const std::string &text)
+{
+    // Start from 2, so that all newlines in the beginning get stripped off.
+    int         newlineCount = 2;
+    std::string result;
+    result.reserve(text.length());
+    for (size_t i = 0; i < text.length(); ++i)
+    {
+        if (text[i] == '\n')
+        {
+            ++newlineCount;
+            if (newlineCount > 2)
+            {
+                continue;
+            }
+        }
+        else
+        {
+            newlineCount = 0;
+        }
+        result.push_back(text[i]);
+    }
+    size_t last = result.find_last_not_of('\n');
+    if (last != std::string::npos)
+    {
+        result.resize(last + 1);
+    }
+    return result;
+}
+
 //! \}
 
 }   // namespace
@@ -502,7 +541,69 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         {
             result = repall(result, sandrTty);
             result = replaceLinks(result);
-            return wrapper->wrap(result);
+            std::string paragraph;
+            paragraph.reserve(result.length());
+            size_t      i        = 0;
+            bool        bFirst   = true;
+            bool        bLiteral = false;
+            while (i < result.length())
+            {
+                while (i < result.length() && result[i] == '\n')
+                {
+                    ++i;
+                }
+                if (i == result.length())
+                {
+                    break;
+                }
+                paragraph.clear();
+                for (; i < result.length(); ++i)
+                {
+                    if (result[i] == '\n')
+                    {
+                        if (i + 1 == result.length() || result[i + 1] == '\n')
+                        {
+                            break;
+                        }
+                        if (!bLiteral)
+                        {
+                            if (!std::isspace(result[i - 1]))
+                            {
+                                paragraph.push_back(' ');
+                            }
+                            continue;
+                        }
+                    }
+                    paragraph.push_back(result[i]);
+                }
+                if (endsWith(paragraph, "::"))
+                {
+                    bLiteral = true;
+                    if (paragraph.length() == 2)
+                    {
+                        continue;
+                    }
+                    if (paragraph[paragraph.length() - 3] == ' ')
+                    {
+                        paragraph.resize(paragraph.length() - 3);
+                    }
+                    else
+                    {
+                        paragraph.resize(paragraph.length() - 1);
+                    }
+                }
+                else
+                {
+                    bLiteral = false;
+                }
+                if (!bFirst)
+                {
+                    wrapper->wrap("\n\n");
+                }
+                wrapper->wrap(paragraph);
+                bFirst = false;
+            }
+            break;
         }
         case eHelpOutputFormat_Rst:
         {
@@ -510,7 +611,9 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
             result = replaceLinks(result);
             result = replaceAll(result, "[REF]", "");
             result = replaceAll(result, "[ref]", "");
-            return wrapper->wrap(result);
+            result = removeExtraNewlinesRst(result);
+            wrapper->wrap(result);
+            break;
         }
         default:
             GMX_THROW(InternalError("Invalid help output format"));

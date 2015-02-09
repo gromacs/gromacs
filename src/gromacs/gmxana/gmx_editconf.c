@@ -601,8 +601,10 @@ int gmx_editconf(int argc, char *argv[])
         "to a [REF].pdb[ref] file, which can be useful for analysis with e.g. Rasmol.",
         "[PAR]",
         "To convert a truncated octrahedron file produced by a package which uses",
-        "a cubic box with the corners cut off (such as GROMOS), use:[BR]",
-        "[TT]gmx editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out[tt][BR]",
+        "a cubic box with the corners cut off (such as GROMOS), use::",
+        "",
+        "  gmx editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out",
+        "",
         "where [TT]veclen[tt] is the size of the cubic box times [SQRT]3[sqrt]/2."
     };
     const char     *bugs[] =

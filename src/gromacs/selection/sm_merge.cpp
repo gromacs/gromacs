@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,11 +123,13 @@ static gmx_ana_selparam_t smparams_merge[] = {
 /** Help text for the merging selection modifiers. */
 static const char *help_merge[] = {
     "MERGING SELECTIONS[PAR]",
-
-    "[TT]POSEXPR merge POSEXPR [stride INT][tt][BR]",
-    "[TT]POSEXPR merge POSEXPR [merge POSEXPR ...][tt][BR]",
-    "[TT]POSEXPR plus POSEXPR [plus POSEXPR ...][tt][PAR]",
-
+    "",
+    "::",
+    "",
+    "  POSEXPR merge POSEXPR [stride INT]",
+    "  POSEXPR merge POSEXPR [merge POSEXPR ...]",
+    "  POSEXPR plus POSEXPR [plus POSEXPR ...]",
+    "",
     "Basic selection keywords can only create selections where each atom",
     "occurs at most once. The [TT]merge[tt] and [TT]plus[tt] selection",
     "keywords can be used to work around this limitation. Both create",

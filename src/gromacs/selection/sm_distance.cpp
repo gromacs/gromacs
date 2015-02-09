@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,12 +155,14 @@ static gmx_ana_selparam_t smparams_within[] = {
 
 /** Help text for the distance selection methods. */
 static const char *help_distance[] = {
-    "DISTANCE-BASED SELECTION KEYWORDS[PAR]",
-
-    "[TT]distance from POS [cutoff REAL][tt][BR]",
-    "[TT]mindistance from POS_EXPR [cutoff REAL][tt][BR]",
-    "[TT]within REAL of POS_EXPR[tt][PAR]",
-
+    "DISTANCE-BASED SELECTION KEYWORDS",
+    "",
+    "::",
+    "",
+    "  distance from POS [cutoff REAL]",
+    "  mindistance from POS_EXPR [cutoff REAL]",
+    "  within REAL of POS_EXPR",
+    "",
     "[TT]distance[tt] and [TT]mindistance[tt] calculate the distance from the",
     "given position(s), the only difference being in that [TT]distance[tt]",
     "only accepts a single position, while any number of positions can be",

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Console"><![CDATA[
+A quick brown
+fox jumps
+over a lazy
+dog.
+
+A quick brown
+fox jumps
+over a lazy
+dog.]]></String>
+  <String Name="reStructuredText"><![CDATA[
+A quick
+brown fox
+jumps over a
+lazy dog.
+
+A quick brown
+fox
+jumps over
+a lazy dog.]]></String>
+</ReferenceData>

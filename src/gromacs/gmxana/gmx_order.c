@@ -914,8 +914,7 @@ int gmx_order(int argc, char *argv[])
         "The tetrahedrality order parameters can be determined",
         "around an atom. Both angle an distance order parameters are calculated. See",
         "P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.",
-        "for more details.[BR]",
-        ""
+        "for more details."
     };
 
     static int         nslices       = 1;     /* nr of slices defined       */
