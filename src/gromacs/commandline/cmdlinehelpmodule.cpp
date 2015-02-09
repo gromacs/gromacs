@@ -171,9 +171,8 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
     // to determine such a set...
     writeSubTopicList(context,
                       "Additional help is available on the following topics:");
-    context.writeTextBlock(
-            "To access the help, use '[PROGRAM] help <topic>'.[BR]"
-            "For help on a command, use '[PROGRAM] help <command>'.");
+    context.writeTextBlock("To access the help, use '[PROGRAM] help <topic>'.");
+    context.writeTextBlock("For help on a command, use '[PROGRAM] help <command>'.");
 }
 
 /********************************************************************

@@ -445,7 +445,7 @@ Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
         "that are both too high."
     };
 
-    options->setDescription(concatenateStrings(desc));
+    options->setDescription(desc);
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
                            .store(&fnArea_).defaultBasename("area")

@@ -243,35 +243,10 @@ std::string joinStrings(const ContainerType &container, const char *separator)
     return joinStrings(container.begin(), container.end(), separator);
 }
 
-/*! \brief
- * Joins strings in an array to a single string.
- *
- * \param[in] sarray  Array of strings to concatenate.
- * \param[in] count   Number of elements in \p sarray to concatenate.
- * \returns   All strings in \p sarray joined, ensuring at least one space
- *      between the strings.
- * \throws    std::bad_alloc if out of memory.
- *
- * The strings in the \p sarray array are concatenated, adding a single space
- * between the strings if there is no whitespace in the end of a string.
- * Terminal whitespace is removed.
- */
-std::string concatenateStrings(const char * const *sarray, size_t count);
-/*! \brief
- * Convenience overload for joining strings in a C array (static data).
- *
- * \param[in] sarray  Array of strings to concatenate.
- * \tparam    count   Deduced number of elements in \p sarray.
- * \returns   All strings in \p sarray joined, ensuring at least one space
- *      between the strings.
- * \throws    std::bad_alloc if out of memory.
- *
- * \see concatenateStrings(const char * const *, size_t)
- */
 template <size_t count>
-std::string concatenateStrings(const char * const (&sarray)[count])
+std::string joinStrings(const char *const (&array)[count], const char *separator)
 {
-    return concatenateStrings(sarray, count);
+    return joinStrings(array, array + count, separator);
 }
 
 /*! \brief
@@ -387,7 +362,7 @@ class TextLineWrapperSettings
          *
          * If not removed, the space is added to the indentation set with
          * setIndent().
-         * The default is to strip such whitespace.
+         * The default is to not strip such whitespace.
          */
         void setStripLeadingWhitespace(bool bStrip)
         {
