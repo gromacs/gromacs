@@ -497,6 +497,7 @@ class OptionsListFormatter : public OptionsFormatterInterface
                 if (header_ != NULL)
                 {
                     context_.writeTextBlock(header_);
+                    context_.writeTextBlock("");
                 }
                 context_.writeOptionListStart();
             }

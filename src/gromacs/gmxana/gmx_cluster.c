@@ -1407,7 +1407,7 @@ int gmx_cluster(int argc, char *argv[])
         "for a selected set of clusters (with option [TT]-wcl[tt], depends on",
         "[TT]-nst[tt] and [TT]-rmsmin[tt]). The center of a cluster is the",
         "structure with the smallest average RMSD from all other structures",
-        "of the cluster.[BR]",
+        "of the cluster.",
     };
 
     FILE              *fp, *log;

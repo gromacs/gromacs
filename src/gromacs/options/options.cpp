@@ -154,7 +154,7 @@ void Options::setDescription(const std::string &desc)
 
 void Options::setDescription(const ConstArrayRef<const char *> &descArray)
 {
-    impl_->description_ = concatenateStrings(descArray.data(), descArray.size());
+    impl_->description_ = joinStrings(descArray, "\n");
 }
 
 void Options::addManager(OptionManagerInterface *manager)

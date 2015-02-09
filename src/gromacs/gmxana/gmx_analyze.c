@@ -1032,8 +1032,10 @@ int gmx_analyze(int argc, char *argv[])
         "much shorter than the time scale of the autocorrelation.[PAR]",
 
         "Option [TT]-cc[tt] plots the resemblance of set i with a cosine of",
-        "i/2 periods. The formula is:[BR]"
-        "[MATH]2 ([INT][FROM]0[from][TO]T[to][int] y(t) [COS]i [GRK]pi[grk] t[cos] dt)^2 / [INT][FROM]0[from][TO]T[to][int] y^2(t) dt[math][BR]",
+        "i/2 periods. The formula is::",
+        "",
+        "  [MATH]2 ([INT][FROM]0[from][TO]T[to][int] y(t) [COS]i [GRK]pi[grk] t[cos] dt)^2 / [INT][FROM]0[from][TO]T[to][int] y^2(t) dt[math]",
+        "",
         "This is useful for principal components obtained from covariance",
         "analysis, since the principal components of random diffusion are",
         "pure cosines.[PAR]",
@@ -1057,9 +1059,11 @@ int gmx_analyze(int argc, char *argv[])
         "These errors are plotted as a function of the block size.",
         "Also an analytical block average curve is plotted, assuming",
         "that the autocorrelation is a sum of two exponentials.",
-        "The analytical curve for the block average is:[BR]",
-        "[MATH]f(t) = [GRK]sigma[grk][TT]*[tt][SQRT]2/T (  [GRK]alpha[grk]   ([GRK]tau[grk][SUB]1[sub] (([EXP]-t/[GRK]tau[grk][SUB]1[sub][exp] - 1) [GRK]tau[grk][SUB]1[sub]/t + 1)) +[BR]",
-        "                       (1-[GRK]alpha[grk]) ([GRK]tau[grk][SUB]2[sub] (([EXP]-t/[GRK]tau[grk][SUB]2[sub][exp] - 1) [GRK]tau[grk][SUB]2[sub]/t + 1)))[sqrt][math],[BR]"
+        "The analytical curve for the block average is::",
+        "",
+        "  [MATH]f(t) = [GRK]sigma[grk][TT]*[tt][SQRT]2/T (  [GRK]alpha[grk]   ([GRK]tau[grk][SUB]1[sub] (([EXP]-t/[GRK]tau[grk][SUB]1[sub][exp] - 1) [GRK]tau[grk][SUB]1[sub]/t + 1)) +",
+        "                         (1-[GRK]alpha[grk]) ([GRK]tau[grk][SUB]2[sub] (([EXP]-t/[GRK]tau[grk][SUB]2[sub][exp] - 1) [GRK]tau[grk][SUB]2[sub]/t + 1)))[sqrt][math],",
+        "",
         "where T is the total time.",
         "[GRK]alpha[grk], [GRK]tau[grk][SUB]1[sub] and [GRK]tau[grk][SUB]2[sub] are obtained by fitting f^2(t) to error^2.",
         "When the actual block average is very close to the analytical curve,",
