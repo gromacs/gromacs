@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,25 +179,7 @@ TEST(JoinStringsTest, Works)
     gmx::ConstArrayRef<const char *> refToWords(words);
     EXPECT_EQ("The; quick; brown; fox", gmx::joinStrings(refToWords.begin(), refToWords.end(), "; "));
     EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(refToWords, "-"));
-}
-
-/********************************************************************
- * Tests for concatenateStrings()
- */
-
-//! Test fixture for gmx::concatenateStrings().
-typedef gmx::test::StringTestBase ConcatenateStringsTest;
-
-TEST_F(ConcatenateStringsTest, HandlesDifferentStringEndings)
-{
-    static const char * const strings[] = {
-        "First string",
-        "Second string ",
-        "Third string\n",
-        "Fourth string",
-        ""
-    };
-    checkText(gmx::concatenateStrings(strings), "CombinedStrings");
+    EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(words, "-"));
 }
 
 /********************************************************************
