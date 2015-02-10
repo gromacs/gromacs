@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -492,7 +492,7 @@ static void update_ee_sum(int nre,
 int gmx_eneconv(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[BR]",
+        "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[PAR]",
         "Concatenates several energy files in sorted order.",
         "In the case of double time frames, the one",
         "in the later file is used. By specifying [TT]-settime[tt] you will be",
@@ -500,7 +500,7 @@ int gmx_eneconv(int argc, char *argv[])
         "from the command line,",
         "such that the command [TT]gmx eneconv -f *.edr -o fixed.edr[tt] should do",
         "the trick. [PAR]",
-        "With [IT]one file[it] specified for [TT]-f[tt]:[BR]",
+        "With [IT]one file[it] specified for [TT]-f[tt]:[PAR]",
         "Reads one energy file and writes another, applying the [TT]-dt[tt],",
         "[TT]-offset[tt], [TT]-t0[tt] and [TT]-settime[tt] options and",
         "converting to a different format if necessary (indicated by file",

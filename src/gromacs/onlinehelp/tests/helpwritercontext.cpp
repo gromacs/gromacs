@@ -155,4 +155,22 @@ TEST_F(HelpWriterContextTest, FormatsLiteralText)
     testFormatting(text);
 }
 
+TEST_F(HelpWriterContextTest, FormatsBulletList)
+{
+    const char *const text[] = {
+        "Sample list:",
+        "",
+        " * first item",
+        " * second item that",
+        "   spans multiple lines",
+        " * third item that has a single long line",
+        "",
+        "Normal paragraph"
+    };
+    // Wrapping to rst with a fixed line length does not currently work
+    // correctly, but it is not used, either.
+    settings_.setLineLength(15);
+    testFormatting(text);
+}
+
 } // namespace
