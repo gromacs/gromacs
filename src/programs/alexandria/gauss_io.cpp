@@ -326,35 +326,35 @@ static void gmx_molprop_read_babel(const char *g98,
                                     &S0T))
         {
             alexandria::MolecularEnergy me1("DeltaHform",
-                                            unit2string(eg2cKj_Mole),
+                                            mpo_unit[MPO_ENERGY],
                                             0,
                                             epGAS,
                                             convert2gmx(DeltaHf0, eg2cKcal_Mole),
                                             0);
             mpt.LastCalculation()->AddEnergy(me1);
             alexandria::MolecularEnergy me2("DeltaHform",
-                                            unit2string(eg2cKj_Mole),
+                                            mpo_unit[MPO_ENERGY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaHfT, eg2cKcal_Mole),
                                             0);
             mpt.LastCalculation()->AddEnergy(me2);
             alexandria::MolecularEnergy me3("DeltaGform",
-                                            unit2string(eg2cKj_Mole),
+                                            mpo_unit[MPO_ENERGY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaGfT, eg2cKcal_Mole),
                                             0);
             mpt.LastCalculation()->AddEnergy(me3);
             alexandria::MolecularEnergy me4("DeltaSform",
-                                            unit2string(eg2cJ_MolK),
+                                            mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(DeltaSfT, eg2cCal_MolK),
                                             0);
             mpt.LastCalculation()->AddEnergy(me4);
             alexandria::MolecularEnergy me5("S0",
-                                            unit2string(eg2cJ_MolK),
+                                            mpo_unit[MPO_ENTROPY],
                                             temperature,
                                             epGAS,
                                             convert2gmx(S0T, eg2cCal_MolK),
@@ -573,7 +573,6 @@ int alexandria::GaussAtomProp::getValue(const char *element,
 {
     std::vector<alexandria::GaussAtomPropVal>::iterator g;
     int    found;
-    double ttol = 0.01; /* K */
 
     found = 0;
 
@@ -582,7 +581,7 @@ int alexandria::GaussAtomProp::getValue(const char *element,
         if ((0 == strcasecmp(g->getElement().c_str(), element)) &&
             (0 == strcasecmp(g->getMethod().c_str(), method)) &&
             (0 == strcasecmp(g->getDesc().c_str(), desc)) &&
-            (fabs(temp - g->getTemp()) < ttol))
+            bCheckTemperature(temp, g->getTemp()))
         {
             *value = g->getValue();
             found  = 1;
@@ -594,11 +593,8 @@ int alexandria::GaussAtomProp::getValue(const char *element,
 
 void ReadGauss(const char *g98,
                alexandria::MolProp &mp,
-               alexandria::GaussAtomProp &gap,
-               gmx_atomprop_t aps, gmx_poldata_t pd,
                char *molnm, char *iupac, char *conf,
-               char *basis,
-               int maxpot, int nsymm, gmx_bool bVerbose,
+               char *basis, int maxpot, int nsymm,
                const char *forcefield)
 {
 #ifdef HAVE_LIBOPENBABEL2

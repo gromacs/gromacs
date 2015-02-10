@@ -1925,35 +1925,25 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
 {
     immStatus    imm = immOK;
     unsigned int m, nwarn = 0;
-    double       value, dv0, dv298, T, error, vec[3];
+    double       value, dv0, dv298, T = -1, error, vec[3];
     tensor       quadrupole;
-    char        *myref, *mylot;
+    std::string  myref, mylot;
     int          ia;
 
     if (getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
                    lot, NULL, (char *)"elec",
-                   &value, &error, &T, &myref, &mylot,
+                   &value, &error, &T, myref, mylot,
                    vec, quadrupole))
     {
         if (!bZero)
         {
             imm = immZeroDip;
         }
-        if (NULL != myref)
-        {
-            sfree(myref);
-        }
-        if (NULL != mylot)
-        {
-            sfree(mylot);
-        }
     }
     else
     {
         dip_exp  = value;
         dip_err  = error;
-        lot      = mylot;
-        //ref      = myref;
         for (m = 0; (m < DIM); m++)
         {
             mu_exp[m] = vec[m];
@@ -1971,9 +1961,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
         }
         dip_weight = sqr(1.0/error);
     }
+    /* Check handling of LOT */
     if (getPropRef(MPO_DIPOLE, iqmQM,
-                   lot, NULL, (char *)"ESP", &value, &error, &T,
-                   NULL, NULL, vec, quadrupole))
+                   (char *)mylot.c_str(), NULL, (char *)"ESP", &value, &error, &T,
+                   myref, mylot, vec, quadrupole))
     {
         for (m = 0; (m < DIM); m++)
         {

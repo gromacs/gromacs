@@ -55,6 +55,7 @@ enum MolPropObservable {
     MPO_QUADRUPOLE,
     MPO_POLARIZABILITY,
     MPO_ENERGY,
+    MPO_ENTROPY,
     MPO_NR
 };
 
@@ -277,7 +278,7 @@ class GenericProperty
         double      T_;
     public:
         //! Empty constructor
-        GenericProperty() {};
+        GenericProperty() { T_ = 0; eP_ = epNR; };
 
         /*! \brief
          * Creates a new GenericProperty object.
@@ -1308,7 +1309,7 @@ class MolProp
         bool getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
                         const char *conf, const char *type, 
                         double *value, double *error, double *T,
-                        char **ref, char **mylot,
+                        std::string &ref, std::string &mylot,
                         double vec[3], tensor quadrupole);
 
         //! And another one
@@ -1467,6 +1468,17 @@ class MolProp
 };
 //! Iterates over MolProp items
 typedef std::vector<MolProp>::iterator MolPropIterator;
+
+/*! \brief Utility to compare temperatures
+ *
+ * Compares two temperatures
+ * \param[in] Tref The reference temperature
+ * \param[in] T    The temperature to be tested
+ * \return true if the reference T < 0, or the difference between the two
+ *              T is negligable. 
+ */
+bool bCheckTemperature(double Tref, double T);
+
 }
 
 #endif

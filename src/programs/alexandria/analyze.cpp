@@ -194,17 +194,17 @@ static void write_corr_xvg(const char *fn,
             ims = gmx_molselect_status(gms, mpi->getIupac().c_str());
             if ((ims == imsTrain) || (ims == imsTest))
             {
-                double Texp, Tqm;
                 for (k = 0; (k < qmc->nconf); k++)
                 {
-                    bool bExp = mpi->getProp(mpo, iqmExp, NULL, NULL,
-                                             exp_type,
-                                             &exp_val, NULL, &Texp);
-                    bool bQM  = mpi->getProp(mpo, iqmQM, lbuf, qmc->conf[k],
-                                             qmc->type[i],
-                                             &qm_val, &qm_error, &Tqm);
-                    if (bExp && bQM && (strcmp(exp_type, qmc->type[i]) == 0) &&
-                        (fabs(Texp-Tqm) < 0.05))
+                    double Texp = -1;
+                    bool   bExp = mpi->getProp(mpo, iqmExp, NULL, NULL,
+                                               exp_type,
+                                               &exp_val, NULL, &Texp);
+                    double Tqm  = Texp;
+                    bool   bQM  = mpi->getProp(mpo, iqmQM, lbuf, qmc->conf[k],
+                                               qmc->type[i],
+                                               &qm_val, &qm_error, &Tqm);
+                    if (bExp && bQM && (strcmp(exp_type, qmc->type[i]) == 0))
                     {
                         fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
                         diff = fabs(qm_val-exp_val);
@@ -295,7 +295,6 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     tensor                         quadrupole;
 #define prev (1-cur)
     const char                    *iupac;
-    char                          *ref;
 
     if (bCalcPol)
     {
@@ -348,12 +347,13 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     if (bStatsTable)
     {
         gmx_molprop_stats_table(fp, prop, mp, qmc, exp_type,
-                                outlier, catmin, cList, gms, imsTrain);
+                                outlier, cList, gms, imsTrain);
+        if (0)
         {
             alexandria::CategoryList cListTest;
             makeCategoryList(cListTest, mp, gms, imsTest);
             gmx_molprop_stats_table(fp, prop, mp, qmc, exp_type,
-                                    outlier, catmin, cListTest, gms, imsTest);
+                                    outlier, cListTest, gms, imsTest);
         }
     }
     if (bPropTable)
@@ -370,8 +370,9 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                 iupac = mpi->getIupac().c_str();
                 if ((NULL != iupac) && (strlen(iupac) > 0))
                 {
+                    std::string myref, mylot;
                     if (mpi->getPropRef(prop, iqmBoth, lot, NULL, NULL,
-                                        &value, &error, &T, &ref, NULL,
+                                        &value, &error, &T, myref, mylot,
                                         vec, quadrupole))
                     {
                         fprintf(gp, "%s|Train\n", iupac);
@@ -428,7 +429,7 @@ int alex_analyze(int argc, char *argv[])
     };
 #define NFILE (sizeof(fnm)/sizeof(fnm[0]))
     static char                     *sort[]      = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", NULL };
-    static char                     *prop[]      = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", NULL };
+    static char                     *prop[]      = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"entropy", NULL };
     static char                     *fc_str      = (char *)"";
     static char                     *exp_type    = (char *)"";
     static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
@@ -544,10 +545,9 @@ int alex_analyze(int argc, char *argv[])
     else
     {
         MolPropRead((const char *)mpname[0], mp);
+        generate_composition(mp, pd);
+        generate_formula(mp, ap);
     }
-    generate_composition(mp, pd);
-    generate_formula(mp, ap);
-
     if (mpsa != MPSA_NR)
     {
         MolPropSort(mp, mpsa, ap, gms);

@@ -34,12 +34,12 @@
 
 const char *mpo_name[MPO_NR] =
 {
-    "potential", "dipole", "quadrupole", "polarizability", "energy"
+    "potential", "dipole", "quadrupole", "polarizability", "energy", "entropy"
 };
 
 const char *mpo_unit[MPO_NR] =
 {
-    "e/nm", "D", "B", "\\AA$^3$", "kJ/mol"
+    "e/nm", "D", "B", "\\AA$^3$", "kJ/mol", "J/mol K"
 };
 
 const char *cs_name(CommunicationStatus cs)
@@ -894,13 +894,16 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
 {
     bool   done = false;
     double x, y, z;
-
+    double Told = *T;
+    
     switch (mpo)
     {
         case MPO_ENERGY:
+        case MPO_ENTROPY:
             for (MolecularEnergyIterator mei = BeginEnergy(); !done && (mei < EndEnergy()); mei++)
             {
-                if ((NULL == type) || (strcasecmp(mei->getType().c_str(), type) == 0))
+                if (((NULL == type) || (strcasecmp(mei->getType().c_str(), type) == 0)) &&
+                    bCheckTemperature(Told, mei->getTemperature()))
                 {
                     mei->get(value, error);
                     *T   = mei->getTemperature();
@@ -911,7 +914,8 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
         case MPO_DIPOLE:
             for (MolecularDipoleIterator mdp = BeginDipole(); !done && (mdp < EndDipole()); mdp++)
             {
-                if ((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0))
+                if (((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0))  &&
+                    bCheckTemperature(Told, mdp->getTemperature()))
                 {
                     mdp->get(&x, &y, &z, value, error);
                     vec[XX] = x;
@@ -925,7 +929,8 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
         case MPO_POLARIZABILITY:
             for (MolecularPolarizabilityIterator mdp = BeginPolar(); !done && (mdp < EndPolar()); mdp++)
             {
-                if ((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0))
+                if (((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0)) &&
+                    bCheckTemperature(Told, mdp->getTemperature()))
                 {
                     double xx, yy, zz, xy, xz, yz;
                     mdp->get(&xx, &yy, &zz, &xy, &xz, &yz, value, error);
@@ -946,7 +951,8 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
         case MPO_QUADRUPOLE:
             for (MolecularQuadrupoleIterator mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); mqi++)
             {
-                if ((NULL == type) || (strcasecmp(mqi->getType().c_str(), type) == 0))
+                if (((NULL == type) || (strcasecmp(mqi->getType().c_str(), type) == 0)) &&
+                    bCheckTemperature(Told, mqi->getTemperature()))
                 {
                     double xx, yy, zz, xy, xz, yz;
                     mqi->get(&xx, &yy, &zz, &xy, &xz, &yz);
@@ -970,69 +976,56 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
     return done;
 }
 
+bool bCheckTemperature(double Tref, double T)
+{
+    return (Tref < 0) || (fabs(T - Tref) < 0.05);
+}
+
 bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
                          const char *conf, const char *type, 
                          double *value, double *error, double *T,
-                         char **ref, char **mylot,
+                         std::string &ref, std::string &mylot,
                          double vec[3], tensor quad_polar)
 {
-    alexandria::ExperimentIterator  ei;
-    alexandria::CalculationIterator ci;
-    std::string                     reference, method, name, basisset, program, conformation, expconf;
     bool done = false;
+    double Told = *T;
 
     if ((iQM == iqmExp) || (iQM == iqmBoth))
     {
-        for (ei = BeginExperiment(); (ei < EndExperiment()); ei++)
+        for (alexandria::ExperimentIterator ei = BeginExperiment(); (ei < EndExperiment()); ++ei)
         {
-            reference = ei->getReference();
-            expconf   = ei->getConformation();
-
-            if ((NULL == conf) || (strcasecmp(conf, expconf.c_str()) == 0))
+            if ((NULL == conf) || (strcasecmp(conf, ei->getConformation().c_str()) == 0))
             {
-                done = ei->getVal(type, mpo, value, error, T, vec, quad_polar);
-            }
-            if (done)
-            {
-                break;
-            }
-        }
-        if (!done)
-        {
-            if (NULL != ref)
-            {
-                *ref = strdup(reference.c_str());
-            }
-            if (NULL != mylot)
-            {
-                *mylot = strdup("Experiment");
+                if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
+                    bCheckTemperature(Told, *T))
+                {
+                    ref = ei->getReference();
+                    mylot.assign("Experiment");
+                    done = true;
+                    break;
+                }
             }
         }
     }
 
     if ((!done) && ((iQM == iqmBoth) || (iQM == iqmQM)))
     {
-        if (NULL != lot)
+        for (alexandria::CalculationIterator ci = BeginCalculation(); (ci < EndCalculation()); ++ci)
         {
-            ci = getLotPropType(lot, mpo, type);
-            if (ci != EndCalculation())
+            char buf[256];
+            
+            snprintf(buf, sizeof(buf), "%s/%s", 
+                     ci->getMethod().c_str(), ci->getBasisset().c_str());
+            if (((NULL == lot) || (strcmp(lot, buf) == 0))  &&
+                ((NULL == conf) || (strcasecmp(conf, ci->getConformation().c_str()) == 0)))
             {
-                basisset     = ci->getBasisset();
-                method       = ci->getMethod();
-                reference    = ci->getReference();
-                conformation = ci->getConformation();
-
-                if ((NULL == conf) || (strcasecmp(conf, conformation.c_str()) == 0))
+                if  (ci->getVal(type, mpo, value, error, T, vec, quad_polar) &&
+                     bCheckTemperature(Told, *T))
                 {
-                    done = ci->getVal(type, mpo, value, error, T, vec, quad_polar);
-                }
-                if (done && (NULL != ref))
-                {
-                    *ref = strdup(reference.c_str());
-                }
-                if (done && (NULL != mylot))
-                {
-                    *mylot = strdup(lot);
+                    ref = ci->getReference();
+                    mylot.assign(lot);
+                    done = true;
+                    break;
                 }
             }
         }
@@ -1047,9 +1040,10 @@ bool MolProp::getProp(MolPropObservable mpo, iqmType iQM, char *lot,
     double myerror, vec[3];
     tensor quad;
     bool   bReturn;
+    std::string myref, mylot;
 
     bReturn = getPropRef(mpo, iQM, lot, conf, type, value, &myerror, T,
-                         NULL, NULL, vec, quad);
+                         myref, mylot, vec, quad);
     if (NULL != error)
     {
         *error = myerror;
@@ -1100,6 +1094,7 @@ CalculationIterator MolProp::getLotPropType(const char       *lot,
                         }
                         break;
                     case MPO_ENERGY:
+                    case MPO_ENTROPY:
                         for (MolecularEnergyIterator mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
                         {
                             done =  ((NULL == type) ||

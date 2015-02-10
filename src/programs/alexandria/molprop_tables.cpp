@@ -186,7 +186,6 @@ static void stats_header(alexandria::LongTable &lt,
 {
     char caption[STRLEN];
     char label[STRLEN];
-    char unit[32];
 
     lt.setColumns(1+qmc->n);
 
@@ -194,25 +193,8 @@ static void stats_header(alexandria::LongTable &lt,
     {
         if (0 == k)
         {
-            switch (mpo)
-            {
-                case MPO_POLARIZABILITY:
-                    sprintf(unit, "\\AA$^3$");
-                    break;
-                case MPO_DIPOLE:
-                    sprintf(unit, "D");
-                    break;
-                case MPO_QUADRUPOLE:
-                    sprintf(unit, "B");
-                    break;
-                case MPO_ENERGY:
-                    sprintf(unit, "kJ/mol");
-                    break;
-                default:
-                    gmx_fatal(FARGS, "Unknown property %s", mpo_name[mpo]);
-            }
             snprintf(caption, STRLEN, "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
-                     mpo_name[mpo], unit, ims_names[ims]);
+                     mpo_name[mpo], mpo_unit[mpo], ims_names[ims]);
             snprintf(label, STRLEN, "%s_rmsd", mpo_name[mpo]);
             lt.setCaption(caption);
             lt.setLabel(label);
@@ -255,14 +237,13 @@ void gmx_molprop_stats_table(FILE                            *fp,
                              t_qmcount                       *qmc,
                              char                            *exp_type,
                              double                           outlier,
-                             int                              catmin,
                              alexandria::CategoryList         cList,
                              gmx_molselect_t                  gms,
                              iMolSelect                       ims)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     std::vector<std::string>::iterator         si;
-    int                                        k, m, N;
+    int                                        k, N;
     double                                     exp_val, qm_val;
     real                                       rms, R, a, da, b, db, chi2;
     char                                       buf[256];
@@ -273,7 +254,7 @@ void gmx_molprop_stats_table(FILE                            *fp,
 
     if (0 == cList.nCategories())
     {
-        fprintf(stderr, "No categories. cList not initialized?\n");
+        fprintf(stderr, "No categories. cList not initialized? Not doing category statistics.\n");
         return;
     }
 
@@ -292,27 +273,35 @@ void gmx_molprop_stats_table(FILE                            *fp,
         {
             snprintf(lot, sizeof(lot), "%s/%s", qmc->method[k], qmc->basis[k]);
             lsq = gmx_stats_init();
-            for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+            if (strcmp(exp_type, qmc->type[k]) == 0)
             {
-                if ((i->hasMolecule(mpi->getIupac())) &&
-                    (mpi->SearchCategory(i->getName()) == 1))
+                for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
                 {
-                    double Texp, Tqm;
-                    if ((mpi->getProp(mpo, iqmExp, NULL, NULL,
-                                      exp_type, &exp_val, NULL, &Texp)) &&
-                        (mpi->getProp(mpo, iqmQM, lot, NULL,
-                                      qmc->type[k], &qm_val, NULL, &Tqm)))
+                    if ((i->hasMolecule(mpi->getIupac())) &&
+                        (mpi->SearchCategory(i->getName()) == 1))
                     {
-                        if (fabs(Texp - Tqm) < 0.05)
+                        double exp_err = 0;
+                        double Texp = -1;
+                        bool   bExp = mpi->getProp(mpo, iqmExp, NULL, NULL,
+                                                   exp_type, &exp_val, &exp_err, &Texp);
+                        if (bExp)
                         {
-                            if (debug)
+                            double qm_err = 0;
+                            double Tqm  = Texp;
+                            bool   bQM  = mpi->getProp(mpo, iqmQM, lot, NULL,
+                                                       qmc->type[k], &qm_val, &qm_err, &Tqm);
+                            //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
+                            if (bQM)
                             {
-                                fprintf(debug, "%s %s k = %d - TAB4\n",
-                                        mpi->getMolname().c_str(),
-                                        i->getName().c_str(), k);
+                                if (debug)
+                                {
+                                    fprintf(debug, "%s %s k = %d - TAB4\n",
+                                            mpi->getMolname().c_str(),
+                                            i->getName().c_str(), k);
+                                }
+                                gmx_stats_add_point(lsq, exp_val, qm_val, exp_err, qm_err);
+                                nexpres = 1;
                             }
-                            gmx_stats_add_point(lsq, exp_val, qm_val, 0, 0);
-                            nexpres = 1;
                         }
                     }
                 }
@@ -356,19 +345,16 @@ void gmx_molprop_stats_table(FILE                            *fp,
             if ((gmx_molselect_status(gms, mpi->getIupac().c_str()) == ims) &&
                 (mpi->HasComposition(alex)))
             {
-                double Texp, Tqm;
-                for (m = 0; (m < qmc->nconf); m++)
+                double exp_err, qm_err;
+                double Texp = -1;
+                bool   bExp = mpi->getProp(mpo, iqmExp, NULL, NULL, exp_type,
+                                           &exp_val, &exp_err, &Texp);
+                double Tqm  = Texp;
+                bool   bQM  = mpi->getProp(mpo, iqmQM, lot, NULL, qmc->type[k], 
+                                           &qm_val, &qm_err, &Tqm);
+                if (bExp && bQM)
                 {
-                    if ((mpi->getProp(mpo, iqmExp, NULL, qmc->conf[m], exp_type,
-                                      &exp_val, NULL, &Texp)) &&
-                        (mpi->getProp(mpo, iqmQM, lot, qmc->conf[m], qmc->type[k], 
-                                      &qm_val, NULL, &Tqm)))
-                    {
-                        if (fabs(Texp - Tqm) < 0.05)
-                        {
-                            gmx_stats_add_point(lsqtot[k], exp_val, qm_val, 0, 0);
-                        }
-                    }
+                    gmx_stats_add_point(lsqtot[k], exp_val, qm_val, exp_err, qm_err);
                 }
             }
         }
@@ -998,19 +984,20 @@ static int outside(real vexp, real vcalc, real rel_toler, real abs_toler)
 class ExpData
 {
     public:
-        double      val_, err_;
+        double      val_, err_, temp_;
         std::string ref_, conf_, type_, unit_;
-        ExpData(double val, double err, std::string ref, std::string conf, std::string type, std::string unit)
-        { val_ = val; err_ = err; ref_ = ref; conf_ = conf; type_ = type; unit_ = unit; }
+    
+        ExpData(double val, double err, double temp, std::string ref, std::string conf, std::string type, std::string unit)
+        { val_ = val; err_ = err; temp_ = temp; ref_ = ref; conf_ = conf; type_ = type; unit_ = unit; }
 };
 
 class CalcData
 {
     public:
-        double val_, err_;
+        double val_, err_, temp_;
         int    found_;
-        CalcData(double val, double err, int found)
-        { val_ = val; err_ = err; found_ = found; }
+        CalcData(double val, double err, double temp, int found)
+        { val_ = val; err_ = err; temp_ = temp; found_ = found; }
 };
 
 void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
@@ -1024,7 +1011,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
     alexandria::MolecularQuadrupoleIterator qi;
     alexandria::MolecularEnergyIterator     mei;
 
-    int                                     j, iprint = 0, nexp, max_nexp;
+    int                                     j, iprint = 0;
 #define BLEN 1024
     char                                    lbuf[BLEN], myline[BLEN], mylbuf[BLEN], vbuf[BLEN];
     double                                  calc_val, calc_err, vc;
@@ -1072,6 +1059,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                             {
                                 ed.push_back(ExpData(mdi->getAver(),
                                                      mdi->getError(),
+                                                     mdi->getTemperature(),
                                                      ei->getReference(),
                                                      ei->getConformation(),
                                                      mdi->getType(),
@@ -1086,6 +1074,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                             {
                                 ed.push_back(ExpData(mdi->getAverage(),
                                                      mdi->getError(),
+                                                     mdi->getTemperature(),
                                                      ei->getReference(),
                                                      ei->getConformation(),
                                                      mdi->getType(),
@@ -1094,12 +1083,14 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                         }
                         break;
                     case MPO_ENERGY:
+                    case MPO_ENTROPY:
                         for (mei = ei->BeginEnergy(); (mei < ei->EndEnergy()); mei++)
                         {
                             if (mei->getType().compare(exp_type) == 0)
                             {
                                 ed.push_back(ExpData(mei->getValue(),
                                                      mei->getError(),
+                                                     mei->getTemperature(),
                                                      ei->getReference(),
                                                      ei->getConformation(),
                                                      mei->getType(),
@@ -1112,31 +1103,31 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                         break;
                 }
             }
-            max_nexp = ed.size();
-            if (max_nexp <= 0)
-            {
-                // Why is this?
-                max_nexp = 1;
-            }
             int nqm = 0;
-            double T;
-            for (nexp = 0; (nexp < max_nexp); nexp++)
+            for (int nexp = 0; (nexp < (int)ed.size()); nexp++)
             {
                 for (j = 0; (j < qmc->n); j++)
                 {
+                    std::string ref, mylot;
+                    double T = ed[nexp].temp_;
                     sprintf(lbuf, "%s/%s", qmc->method[j], qmc->basis[j]);
                     if ((strcmp(qmc->type[j], exp_type) == 0) &&
-                        mpi->getPropRef(mpo, iqmQM, lbuf, NULL, //conf_exp[nexp].c_str(),
+                        mpi->getPropRef(mpo, iqmQM, lbuf, NULL,
                                         qmc->type[j], &calc_val, &calc_err, &T,
-                                        NULL, NULL, dvec, quadrupole))
+                                        ref, mylot, dvec, quadrupole))
                     {
-                        cd.push_back(CalcData(calc_val, calc_err, 1));
+                        cd.push_back(CalcData(calc_val, calc_err, T, 1));
                         nqm++;
                     }
                     else
                     {
-                        cd.push_back(CalcData(0, 0, 0));
+                        cd.push_back(CalcData(0, 0, 0, 0));
                     }
+                }
+                if (NULL != debug)
+                {
+                    fprintf(debug, "Found %d experiments and %d calculations for %s\n",
+                            (int)ed.size(), nqm, exp_type);
                 }
                 if ((bPrintAll || (ed.size() > 0))  && (nqm > 0))
                 {

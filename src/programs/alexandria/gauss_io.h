@@ -120,9 +120,6 @@ class GaussAtomProp
  * \param[in] g98        The gaussian log file, or in case OpenBabel is used anything
  *                       that can be read by OpenBabel
  * \param[out] mpt       The MolProp
- * \param[in] gap        Helper data for reading atomization energies
- * \param[in] aps        Structure containing atomic data
- * \param[in] pd         The force field information
  * \param[in] molnm      Molecule name to override the one from the filename [ maybe NULL ]
  * \param[in] iupac      IUPAC name to override the one from the filename [ maybe NULL ]
  * \param[in] conformation  Conformation the molecule is in [ maybe NULL ]
@@ -130,18 +127,14 @@ class GaussAtomProp
  * \param[in] maxpot     Maximum number of electrostatic potential data points to store
  * \param[in] nsymm      Symmetry number for this molecule. If zero it will be detected from
  *                       the input.
- * \param[in] bVerbose   Whether or not to write to the terminal during processing
  * \param[in] forcefield One of the force fields supported by OpenBabel used for atomtypes
  * \ingroup module_alexandria
  */
 void ReadGauss(const char *g98,
                alexandria::MolProp &mpt,
-               alexandria::GaussAtomProp &gap,
-               gmx_atomprop_t aps, gmx_poldata_t pd,
                char *molnm, char *iupac, char *conformation,
                char *basisset,
                int maxpot, int nsymm,
-               gmx_bool bVerbose,
                const char *forcefield);
 
 #endif

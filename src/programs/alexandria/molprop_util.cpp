@@ -364,18 +364,18 @@ void merge_xml(int nfile, char **filens,
         }
     }
     tmp = mpout.size();
-    if (debug)
+    if (NULL != debug)
     {
         fprintf(debug, "mpout.size() = %u mpout.max_size() = %u\n",
                 (unsigned int)mpout.size(), (unsigned int)mpout.max_size());
-    }
-    for (mpi = mpout.begin(); (mpi < mpout.end()); mpi++)
-    {
-        mpi->Dump(debug);
+        for (mpi = mpout.begin(); (mpi < mpout.end()); mpi++)
+        {
+            mpi->Dump(debug);
+        }
     }
     MolPropSort(mpout, MPSA_MOLNAME, NULL, NULL);
     merge_doubles(mpout, doubles, bForceMerge);
-    printf("There are %d total molecules before merging, %d after.\n",
+    printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout.size());
 
     if (outf)

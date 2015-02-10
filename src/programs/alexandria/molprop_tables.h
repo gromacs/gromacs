@@ -59,7 +59,7 @@ extern char *itoa(int f);
 extern void gmx_molprop_stats_table(FILE *fp, MolPropObservable eprop,
                                     std::vector<alexandria::MolProp> mp,
                                     t_qmcount *qmc, char *exp_type,
-                                    double outlier, int catmin,
+                                    double outlier,
                                     alexandria::CategoryList cList,
                                     gmx_molselect_t gms, iMolSelect ims);
 

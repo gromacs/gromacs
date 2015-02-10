@@ -122,12 +122,12 @@ static void gmx_molprop_csv(const char *fn,
                 mpi->getMass());
         for (k = 0; (k < NEMP); k++)
         {
+            std::string ref, mylot;
             if (mpi->getPropRef(mpo[k], iqmExp,
-                                NULL, NULL, NULL, &d, &err, &T, &ref, NULL, vec,
+                                NULL, NULL, NULL, &d, &err, &T, ref, mylot, vec,
                                 quadrupole))
             {
-                fprintf(fp, ",\"%.4f\",\"%s\"", d, ref);
-                sfree(ref);
+                fprintf(fp, ",\"%.4f\",\"%s\"", d, ref.c_str());
             }
             else
             {
