@@ -39,7 +39,7 @@
  * As the 4xn kernels are the "standard" kernels and some special operations
  * are required only here, we define those in nbnxn_kernel_simd_utils_...
  *
- * Half-width SIMD real type:
+ * Half-width SIMD real type: //TODO: check that all half-width is gone and update comment
  * gmx_mm_hpr
  *
  * Half-width SIMD operations
@@ -613,13 +613,13 @@
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
-        fix_S = gmx_mm_transpose_sum4h_pr(fix_S0, fix_S2);
+        fix_S = gmx_mm_transpose_sum4q_pr(fix_S0);
         gmx_simd4_store_r(f+scix, gmx_simd4_add_r(fix_S, gmx_simd4_load_r(f+scix)));
 
-        fiy_S = gmx_mm_transpose_sum4h_pr(fiy_S0, fiy_S2);
+        fiy_S = gmx_mm_transpose_sum4q_pr(fiy_S0);
         gmx_simd4_store_r(f+sciy, gmx_simd4_add_r(fiy_S, gmx_simd4_load_r(f+sciy)));
 
-        fiz_S = gmx_mm_transpose_sum4h_pr(fiz_S0, fiz_S2);
+        fiz_S = gmx_mm_transpose_sum4q_pr(fiz_S0);
         gmx_simd4_store_r(f+sciz, gmx_simd4_add_r(fiz_S, gmx_simd4_load_r(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES

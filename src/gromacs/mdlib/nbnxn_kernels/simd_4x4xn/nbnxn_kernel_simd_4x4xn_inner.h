@@ -98,32 +98,23 @@
 
     gmx_simd_real_t  jx_S, jy_S, jz_S;
     gmx_simd_real_t  dx_S0, dy_S0, dz_S0;
-    gmx_simd_real_t  dx_S2, dy_S2, dz_S2;
     gmx_simd_real_t  tx_S0, ty_S0, tz_S0;
-    gmx_simd_real_t  tx_S2, ty_S2, tz_S2;
     gmx_simd_real_t  rsq_S0, rinv_S0, rinvsq_S0;
-    gmx_simd_real_t  rsq_S2, rinv_S2, rinvsq_S2;
 #ifndef NBNXN_CUTOFF_USE_BLENDV
     /* wco: within cut-off, mask of all 1's or 0's */
     gmx_simd_bool_t  wco_S0;
-    gmx_simd_bool_t  wco_S2;
 #endif
 #ifdef VDW_CUTOFF_CHECK
     gmx_simd_bool_t  wco_vdw_S0;
-#ifndef HALF_LJ
-    gmx_simd_bool_t  wco_vdw_S2;
 #endif
 #endif
 
 #if (defined CALC_COULOMB && defined CALC_COUL_TAB) || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
     gmx_simd_real_t r_S0;
-    gmx_simd_real_t r_S2;
 #endif
 
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
     gmx_simd_real_t  rsw_S0, rsw2_S0, rsw2_r_S0;
-#ifndef HALF_LJ
-    gmx_simd_real_t  rsw_S2, rsw2_S2, rsw2_r_S2;
 #endif
 #endif
 
@@ -131,53 +122,42 @@
 #ifdef CHECK_EXCLS
     /* 1/r masked with the interaction mask */
     gmx_simd_real_t  rinv_ex_S0;
-    gmx_simd_real_t  rinv_ex_S2;
 #endif
     gmx_simd_real_t  jq_S;
     gmx_simd_real_t  qq_S0;
-    gmx_simd_real_t  qq_S2;
 #ifdef CALC_COUL_TAB
     /* The force (PME mesh force) we need to subtract from 1/r^2 */
     gmx_simd_real_t  fsub_S0;
-    gmx_simd_real_t  fsub_S2;
 #endif
 #ifdef CALC_COUL_EWALD
-    gmx_simd_real_t  brsq_S0, brsq_S2;
-    gmx_simd_real_t  ewcorr_S0, ewcorr_S2;
+    gmx_simd_real_t  brsq_S0, ewcorr_S0;
 #endif
 
     /* frcoul = (1/r - fsub)*r */
     gmx_simd_real_t  frcoul_S0;
-    gmx_simd_real_t  frcoul_S2;
 #ifdef CALC_COUL_TAB
     /* For tables: r, rs=r/sp, rf=floor(rs), frac=rs-rf */
     gmx_simd_real_t         rs_S0, rf_S0, frac_S0;
-    gmx_simd_real_t         rs_S2, rf_S2, frac_S2;
     /* Table index: rs truncated to an int */
-    gmx_simd_int32_t        ti_S0, ti_S2;
+    gmx_simd_int32_t        ti_S0;
     /* Linear force table values */
     gmx_simd_real_t         ctab0_S0, ctab1_S0;
-    gmx_simd_real_t         ctab0_S2, ctab1_S2;
 #ifdef CALC_ENERGIES
     /* Quadratic energy table value */
     gmx_simd_real_t  ctabv_S0;
-    gmx_simd_real_t  ctabv_S2;
 #endif
 #endif
 #if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
     /* The potential (PME mesh) we need to subtract from 1/r */
     gmx_simd_real_t  vc_sub_S0;
-    gmx_simd_real_t  vc_sub_S2;
 #endif
 #ifdef CALC_ENERGIES
     /* Electrostatic potential */
     gmx_simd_real_t  vcoul_S0;
-    gmx_simd_real_t  vcoul_S2;
 #endif
 #endif
     /* The force times 1/r */
     gmx_simd_real_t  fscal_S0;
-    gmx_simd_real_t  fscal_S2;
 
 #ifdef CALC_LJ
 #ifdef LJ_COMB_LB
@@ -186,12 +166,10 @@
     /* LJ sigma_ij and epsilon_ij */
     gmx_simd_real_t  sig_S0, eps_S0;
 #ifndef HALF_LJ
-    gmx_simd_real_t  sig_S2, eps_S2;
 #endif
 #ifdef CALC_ENERGIES
     gmx_simd_real_t  sig2_S0, sig6_S0;
 #ifndef HALF_LJ
-    gmx_simd_real_t  sig2_S2, sig6_S2;
 #endif
 #endif /* LJ_COMB_LB */
 #endif /* CALC_LJ */
@@ -209,7 +187,6 @@
     /* LJ C6 and C12 parameters, used with geometric comb. rule */
     gmx_simd_real_t  c6_S0, c12_S0;
 #ifndef HALF_LJ
-    gmx_simd_real_t  c6_S2, c12_S2;
 #endif
 #endif
 
@@ -217,24 +194,20 @@
 #ifndef LJ_COMB_LB
     gmx_simd_real_t  rinvsix_S0;
 #ifndef HALF_LJ
-    gmx_simd_real_t  rinvsix_S2;
 #endif
 #endif
 #ifdef LJ_COMB_LB
     gmx_simd_real_t  sir_S0, sir2_S0, sir6_S0;
 #ifndef HALF_LJ
-    gmx_simd_real_t  sir_S2, sir2_S2, sir6_S2;
 #endif
 #endif
 
     gmx_simd_real_t  FrLJ6_S0, FrLJ12_S0, frLJ_S0;
 #ifndef HALF_LJ
-    gmx_simd_real_t  FrLJ6_S2, FrLJ12_S2, frLJ_S2;
 #endif
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
     gmx_simd_real_t  VLJ6_S0, VLJ12_S0, VLJ_S0;
 #ifndef HALF_LJ
-    gmx_simd_real_t  VLJ6_S2, VLJ12_S2, VLJ_S2;
 #endif
 #endif
 #endif /* CALC_LJ */
@@ -254,9 +227,8 @@
     ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-    gmx_load_simd_2xnn_interactions(l_cj[cjind].excl,
-                                    filter_S0, filter_S2,
-                                    &interact_S0, &interact_S2);
+    gmx_load_simd_4x4xn_interactions(l_cj[cjind].excl,
+                                     filter_S0, &interact_S0);
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
@@ -268,17 +240,12 @@
     dx_S0       = gmx_simd_sub_r(ix_S0, jx_S);
     dy_S0       = gmx_simd_sub_r(iy_S0, jy_S);
     dz_S0       = gmx_simd_sub_r(iz_S0, jz_S);
-    dx_S2       = gmx_simd_sub_r(ix_S2, jx_S);
-    dy_S2       = gmx_simd_sub_r(iy_S2, jy_S);
-    dz_S2       = gmx_simd_sub_r(iz_S2, jz_S);
 
     /* rsq = dx*dx+dy*dy+dz*dz */
     rsq_S0      = gmx_simd_calc_rsq_r(dx_S0, dy_S0, dz_S0);
-    rsq_S2      = gmx_simd_calc_rsq_r(dx_S2, dy_S2, dz_S2);
 
 #ifndef NBNXN_CUTOFF_USE_BLENDV
     wco_S0      = gmx_simd_cmplt_r(rsq_S0, rc2_S);
-    wco_S2      = gmx_simd_cmplt_r(rsq_S2, rc2_S);
 #endif
 
 #ifdef CHECK_EXCLS
@@ -288,19 +255,16 @@
     if (cj == ci_sh)
     {
         wco_S0  = gmx_simd_and_b(wco_S0, diagonal_mask_S0);
-        wco_S2  = gmx_simd_and_b(wco_S2, diagonal_mask_S2);
     }
 #else
 #if UNROLLJ == 2*UNROLLI
     if (cj*2 == ci_sh)
     {
         wco_S0  = gmx_simd_and_b(wco_S0, diagonal_mask0_S0);
-        wco_S2  = gmx_simd_and_b(wco_S2, diagonal_mask0_S2);
     }
     else if (cj*2 + 1 == ci_sh)
     {
         wco_S0  = gmx_simd_and_b(wco_S0, diagonal_mask1_S0);
-        wco_S2  = gmx_simd_and_b(wco_S2, diagonal_mask1_S2);
     }
 #else
 #error "only UNROLLJ == UNROLLI*(1 or 2) currently supported in 2xnn kernels"
@@ -309,7 +273,6 @@
 #else /* EXCL_FORCES */
       /* No exclusion forces: remove all excluded atom pairs from the list */
     wco_S0      = gmx_simd_and_b(wco_S0, interact_S0);
-    wco_S2      = gmx_simd_and_b(wco_S2, interact_S2);
 #endif
 #endif
 

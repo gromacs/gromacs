@@ -47,6 +47,9 @@ static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
 /* Half-width SIMD real type */
 typedef __m512 gmx_mm_hpr; /* high half is ignored */
 
+/* Quarter-width SIMD real type */
+typedef __m512 gmx_mm_qpr; /* high 3/4 is ignored */
+
 /* Half-width SIMD operations */
 
 /* Load reals at half-width aligned pointer b into half-width SIMD register a */
@@ -56,9 +59,23 @@ gmx_load_hpr(gmx_mm_hpr *a, const real *b)
     *a = _mm512_castpd_ps(_mm512_extload_pd((const double*)b, _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
 }
 
+/* Load reals at quarter-width aligned pointer b into quarter-width SIMD register a */
+static gmx_inline void
+gmx_load_qpr(gmx_mm_qpr *a, const real *b)
+{
+    *a = _mm512_extload_ps(b, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE);
+}
+
 /* Set all entries in half-width SIMD register *a to b */
 static gmx_inline void
 gmx_set1_hpr(gmx_mm_hpr *a, real b)
+{
+    *a = _mm512_set1_ps(b);
+}
+
+/* Set all entries in quarter-width SIMD register *a to b */
+static gmx_inline void
+gmx_set1_qpr(gmx_mm_qpr *a, real b)
 {
     *a = _mm512_set1_ps(b);
 }
@@ -72,11 +89,28 @@ gmx_load1p1_pr(gmx_simd_float_t *a, const real *b)
                                 b+1, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE);
 }
 
+/* Load 4 at reals at 4-aligned pointer a into b. Repeat each element quarter-width times. */
+static gmx_inline void
+gmx_bcast4_repeat_pr(gmx_simd_float_t *a, const real *b)
+{
+    assert((size_t)a%16 == 0);
+    *a = _mm512_swizzle_ps(_mm512_loadunpacklo_ps(_mm512_undefined_ps(), _mm512_int2mask(0x1111), b), _MM_SWIZ_REG_AAAA);
+    //for avx512: *a=_mm512_shuffle_ps(_mm512_mask_expand_ps(_mm512_undefined_ps(), _mm512_int2mask(0x1111), b), _MM_PERM_AAAA);
+}
+
+
 /* Load reals at half-width aligned pointer b into two halves of a */
 static gmx_inline void
 gmx_loaddh_pr(gmx_simd_float_t *a, const real *b)
 {
     *a = _mm512_castpd_ps(_mm512_extload_pd((const double*)b, _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
+}
+
+/* Load reals at quarter-width aligned pointer b into four quarters of a */
+static gmx_inline void
+gmx_bcastq_pr(gmx_simd_float_t *a, const real *b)
+{
+    *a = _mm512_extload_ps(b, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE);
 }
 
 /* Store half-width SIMD register b into half width aligned memory a */
@@ -86,8 +120,19 @@ gmx_store_hpr(real *a, gmx_mm_hpr b)
     _mm512_mask_packstorelo_ps(a, mask_loh, b);
 }
 
+/* Store quarter-width SIMD register b into quarter width aligned memory a */
+static gmx_inline void
+gmx_store_qpr(real *a, gmx_mm_qpr b)
+{
+    _mm512_mask_packstorelo_ps(a, gmx_simd4_mask, b);
+}
+
+
 #define gmx_add_hpr _mm512_add_ps
 #define gmx_sub_hpr _mm512_sub_ps
+
+#define gmx_add_qpr _mm512_add_ps
+#define gmx_sub_qpr _mm512_sub_ps
 
 /* Sum over 4 half SIMD registers */
 static gmx_inline gmx_mm_hpr
@@ -96,6 +141,16 @@ gmx_sum4_hpr(gmx_simd_float_t a, gmx_simd_float_t b)
     a = _mm512_add_ps(a, b);
     b = _mm512_permute4f128_ps(a, PERM_HIGH2LOW);
     return _mm512_add_ps(a, b);
+}
+
+/* Sum over 4 quarters of SIMD registers*/
+static gmx_inline gmx_mm_qpr
+gmx_sum4_qpr(gmx_simd_float_t a)
+{
+    a = _mm512_permute4f128_ps(a, _MM_PERM_CDAB);
+    a = _mm512_add_ps(a, a);
+    b = _mm512_permute4f128_ps(a, _MM_PERM_BADC);
+    return _mm512_add_ps(a, a);
 }
 
 /* Sum the elements of halfs of each input register and store sums in out */
