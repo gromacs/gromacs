@@ -539,13 +539,15 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
     {
         case eHelpOutputFormat_Console:
         {
+            const int   baseFirstLineIndent = wrapper->settings().firstLineIndent();
+            const int   baseIndent          = wrapper->settings().indent();
             result = repall(result, sandrTty);
             result = replaceLinks(result);
             std::string paragraph;
             paragraph.reserve(result.length());
-            size_t      i        = 0;
-            bool        bFirst   = true;
-            bool        bLiteral = false;
+            size_t      i             = 0;
+            int         nextBreakSize = 0;
+            bool        bLiteral      = false;
             while (i < result.length())
             {
                 while (i < result.length() && result[i] == '\n')
@@ -556,13 +558,31 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
                 {
                     break;
                 }
+                const int breakSize     = nextBreakSize;
+                int       currentLine   = 0;
+                bool      bLineStart    = true;
+                int       currentIndent = 0;
+                int       firstIndent   = 0;
+                int       indent        = 0;
                 paragraph.clear();
-                for (; i < result.length(); ++i)
+                for (;; ++i)
                 {
-                    if (result[i] == '\n')
+                    if (result[i] == '\n' || i == result.length())
                     {
-                        if (i + 1 == result.length() || result[i + 1] == '\n')
+                        if (currentLine == 0)
                         {
+                            firstIndent = currentIndent;
+                        }
+                        else if (currentLine == 1)
+                        {
+                            indent = currentIndent;
+                        }
+                        ++currentLine;
+                        bLineStart    = true;
+                        currentIndent = 0;
+                        if (i + 1 >= result.length() || result[i + 1] == '\n')
+                        {
+                            nextBreakSize = 2;
                             break;
                         }
                         if (!bLiteral)
@@ -573,6 +593,30 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
                             }
                             continue;
                         }
+                    }
+                    else if (bLineStart)
+                    {
+                        if (std::isspace(result[i]))
+                        {
+                            ++currentIndent;
+                            continue;
+                        }
+                        else if (i + 1 < result.length()
+                                 && result[i] == '*' && result[i + 1] == ' ')
+                        {
+                            if (currentLine > 0)
+                            {
+                                while (i > 0 && result[i - 1] != '\n')
+                                {
+                                    --i;
+                                }
+                                paragraph     = stripString(paragraph);
+                                nextBreakSize = 1;
+                                break;
+                            }
+                            indent = currentIndent + 2;
+                        }
+                        bLineStart = false;
                     }
                     paragraph.push_back(result[i]);
                 }
@@ -596,12 +640,15 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
                 {
                     bLiteral = false;
                 }
-                if (!bFirst)
+                if (breakSize > 0)
                 {
-                    wrapper->wrap("\n\n");
+                    wrapper->wrap(std::string(breakSize, '\n'));
                 }
+                wrapper->settings().setFirstLineIndent(baseFirstLineIndent + firstIndent);
+                wrapper->settings().setIndent(baseIndent + indent);
                 wrapper->wrap(paragraph);
-                bFirst = false;
+                wrapper->settings().setFirstLineIndent(baseFirstLineIndent);
+                wrapper->settings().setIndent(baseIndent);
             }
             break;
         }
