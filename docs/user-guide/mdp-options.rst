@@ -11,82 +11,176 @@ A `sample mdp file`_ is available. This should be appropriate to start a normal 
 Preprocessing
 ^^^^^^^^^^^^^
 
-.. glossary::
+.. mdp:: include
 
-    include
-        directories to include in your topology. Format: ``-I/home/john/mylib -I../otherlib``
+   directories to include in your topology. Format: ``-I/home/john/mylib -I../otherlib``
 
-    define
-        defines to pass to the preprocessor, default is no defines. You can use any defines to control options in your customized topology files. Options that act on existing top_ file mechanisms include
+.. mdp:: define
 
-            ``-DFLEXIBLE`` will use flexible water instead of rigid water into your topology, this can be useful for normal mode analysis.
+   defines to pass to the preprocessor, default is no defines. You can use any
+   defines to control options in your customized topology files. Options that
+   act on existing top_ file mechanisms include
 
-            ``-DPOSRES`` will trigger the inclusion of ``posre.itp`` into your topology, used for implementing position restraints.
+      ``-DFLEXIBLE`` will use flexible water instead of rigid water into your topology, this can be useful for normal mode analysis.
+
+      ``-DPOSRES`` will trigger the inclusion of ``posre.itp`` into your topology, used for implementing position restraints.
 
 
 Run control
 ^^^^^^^^^^^
 
-.. glossary::
+.. mdp:: integrator
 
-    integrator
-        (Despite the name, this list includes algorithms that are not actually integrators over time. :term:`steep` and all entries following it are in this category)
+   (Despite the name, this list includes algorithms that are not actually
+   integrators over time. :mdp-value:`steep` and all entries following it are
+   in this category)
 
-        .. glossary::
+   .. mdp-value:: md
 
-            md
-                A leap-frog algorithm for integrating Newton's equations of motion.
+      A leap-frog algorithm for integrating Newton's equations of motion.
 
-            md-vv
-                A velocity Verlet algorithm for integrating Newton's equations of motion. For constant NVE simulations started from corresponding points in the same trajectory, the trajectories are analytically, but not binary, identical to the :term:`md` leap-frog integrator. The the kinetic energy, which is determined from the whole step velocities and is therefore slightly too high. The advantage of this integrator is more accurate, reversible Nose-Hoover and Parrinello-Rahman coupling integration based on Trotter expansion, as well as (slightly too small) full step velocity output. This all comes at the cost off extra computation, especially with constraints and extra communication in parallel. Note that for nearly all production simulations the :term:`md` integrator is accurate enough.
+   .. mdp-value:: md-vv
 
-            md-vv-avek
-                A velocity Verlet algorithm identical to :term:`md-vv`, except that the kinetic energy is determined as the average of the two half step kinetic energies as in the :term:`md` integrator, and this thus more accurate. With Nose-Hoover and/or Parrinello-Rahman coupling this comes with a slight increase in computational cost.
+      A velocity Verlet algorithm for integrating Newton's equations of motion.
+      For constant NVE simulations started from corresponding points in the
+      same trajectory, the trajectories are analytically, but not binary,
+      identical to the :mdp-value:`md` leap-frog integrator. The the kinetic energy,
+      which is determined from the whole step velocities and is therefore
+      slightly too high. The advantage of this integrator is more accurate,
+      reversible Nose-Hoover and Parrinello-Rahman coupling integration based
+      on Trotter expansion, as well as (slightly too small) full step velocity
+      output. This all comes at the cost off extra computation, especially with
+      constraints and extra communication in parallel. Note that for nearly all
+      production simulations the :mdp-value:`md` integrator is accurate enough.
 
-            sd
-                An accurate and efficient leap-frog stochastic dynamics integrator. With constraints, coordinates needs to be constrained twice per integration step. Depending on the computational cost of the force calculation, this can take a significant part of the simulation time. The temperature for one or more groups of atoms (:term:`tc-grps`) is set with :term:`ref-t`, the inverse friction constant for each group is set with :term:`tau-t`. The parameter :term:`tcoupl` is ignored. The random generator is initialized with :term:`ld-seed`. When used as a thermostat, an appropriate value for :term:`tau-t` is 2 ps, since this results in a friction that is lower than the internal friction of water, while it is high enough to remove excess heat NOTE: temperature deviations decay twice as fast as with a Berendsen thermostat with the same :term:`tau-t`.
+   .. mdp-value:: md-vv-avek
 
-            sd2
-                This used to be the default sd integrator, but is now deprecated. Four Gaussian random numbers are required per coordinate per step. With constraints, the temperature will be slightly too high.
+      A velocity Verlet algorithm identical to :mdp-value:`md-vv`, except that the
+      kinetic energy is determined as the average of the two half step kinetic
+      energies as in the :mdp-value:`md` integrator, and this thus more accurate.
+      With Nose-Hoover and/or Parrinello-Rahman coupling this comes with a
+      slight increase in computational cost.
 
-            bd
-                An Euler integrator for Brownian or position Langevin dynamics, the velocity is the force divided by a friction coefficient (:term:`bd-fric`) plus random thermal noise (:term:`ref-t`). When :term:`bd-fric` is 0, the friction coefficient for each particle is calculated as mass/ :term:`tau-t`, as for the integrator :term:`sd`. The random generator is initialized with :term:`ld-seed`.
+   .. mdp-value:: sd
 
-            steep
-                 A steepest descent algorithm for energy minimization. The maximum step size is :term:`emstep`, the tolerance is :term:`emtol`.
+      An accurate and efficient leap-frog stochastic dynamics integrator. With
+      constraints, coordinates needs to be constrained twice per integration
+      step. Depending on the computational cost of the force calculation, this
+      can take a significant part of the simulation time. The temperature for
+      one or more groups of atoms (:term:`tc-grps`) is set with :term:`ref-t`,
+      the inverse friction constant for each group is set with :term:`tau-t`.
+      The parameter :term:`tcoupl` is ignored. The random generator is
+      initialized with :mdp:`ld-seed`. When used as a thermostat, an
+      appropriate value for :term:`tau-t` is 2 ps, since this results in a
+      friction that is lower than the internal friction of water, while it is
+      high enough to remove excess heat NOTE: temperature deviations decay
+      twice as fast as with a Berendsen thermostat with the same :term:`tau-t`.
 
-            cg
-                 A conjugate gradient algorithm for energy minimization, the tolerance is :term:`emtol`. CG is more efficient when a steepest descent step is done every once in a while, this is determined by :term:`nstcgsteep`. For a minimization prior to a normal mode analysis, which requires a very high accuracy, GROMACS should be compiled in double precision.
+   .. mdp-value:: sd2
 
-            l-bfgs
-                 A quasi-Newtonian algorithm for energy minimization according to the low-memory Broyden-Fletcher-Goldfarb-Shanno approach. In practice this seems to converge faster than Conjugate Gradients, but due to the correction steps necessary it is not (yet) parallelized.
+      This used to be the default sd integrator, but is now deprecated. Four
+      Gaussian random numbers are required per coordinate per step. With
+      constraints, the temperature will be slightly too high.
 
-            nm
-                 Normal mode analysis is performed on the structure in the tpr_ file. GROMACS should be compiled in double precision.
+   .. mdp-value:: bd
 
-            tpi
-                 Test particle insertion. The last molecule in the topology is the test particle. A trajectory must be provided to ``mdrun -rerun``. This trajectory should not contain the molecule to be inserted. Insertions are performed :term:`nsteps` times in each frame at random locations and with random orientiations of the molecule. When :term:`nstlist` is larger than one, :term:`nstlist` insertions are performed in a sphere with radius :term:`rtpi` around a the same random location using the same neighborlist (and the same long-range energy when :term:`rvdw` or :term:`rcoulomb` > :term:`rlist`, which is only allowed for single-atom molecules). Since neighborlist construction is expensive, one can perform several extra insertions with the same list almost for free. The random seed is set with :term:`ld-seed`. The temperature for the Boltzmann weighting is set with :term:`ref-t`, this should match the temperature of the simulation of the original trajectory. Dispersion correction is implemented correctly for TPI. All relevant quantities are written to the file specified with ``mdrun -tpi``. The distribution of insertion energies is written to the file specified with ``mdrun -tpid``. No trajectory or energy file is written. Parallel TPI gives identical results to single-node TPI. For charged molecules, using PME with a fine grid is most accurate and also efficient, since the potential in the system only needs to be calculated once per frame.
+      An Euler integrator for Brownian or position Langevin dynamics, the
+      velocity is the force divided by a friction coefficient (:mdp:`bd-fric`)
+      plus random thermal noise (:term:`ref-t`). When :mdp`bd-fric` is 0, the
+      friction coefficient for each particle is calculated as mass/
+      :term:`tau-t`, as for the integrator :mdp-value:`sd`. The random generator is
+      initialized with :mdp:`ld-seed`.
 
-            tpic
-                Test particle insertion into a predefined cavity location. The procedure is the same as for :term:`tpi`, except that one coordinate extra is read from the trajectory, which is used as the insertion location. The molecule to be inserted should be centered at 0,0,0. Gromacs does not do this for you, since for different situations a different way of centering might be optimal. Also :term:`rtpi` sets the radius for the sphere around this location. Neighbor searching is done only once per frame, :term:`nstlist` is not used. Parallel :term:`tpic` gives identical results to single-rank :term:`tpic`.
+   .. mdp-value:: steep
 
-    tinit
+      A steepest descent algorithm for energy minimization. The maximum step
+      size is :term:`emstep`, the tolerance is :term:`emtol`.
+
+   .. mdp-value:: cg
+
+      A conjugate gradient algorithm for energy minimization, the tolerance is
+      :term:`emtol`. CG is more efficient when a steepest descent step is done
+      every once in a while, this is determined by :term:`nstcgsteep`. For a
+      minimization prior to a normal mode analysis, which requires a very high
+      accuracy, GROMACS should be compiled in double precision.
+
+   .. mdp-value:: l-bfgs
+
+      A quasi-Newtonian algorithm for energy minimization according to the
+      low-memory Broyden-Fletcher-Goldfarb-Shanno approach. In practice this
+      seems to converge faster than Conjugate Gradients, but due to the
+      correction steps necessary it is not (yet) parallelized.
+
+   .. mdp-value:: nm
+
+      Normal mode analysis is performed on the structure in the tpr_ file.
+      GROMACS should be compiled in double precision.
+
+   .. mdp-value:: tpi
+
+      Test particle insertion. The last molecule in the topology is the test
+      particle. A trajectory must be provided to ``mdrun -rerun``. This
+      trajectory should not contain the molecule to be inserted. Insertions are
+      performed :mdp:`nsteps` times in each frame at random locations and with
+      random orientiations of the molecule. When :term:`nstlist` is larger than
+      one, :term:`nstlist` insertions are performed in a sphere with radius
+      :term:`rtpi` around a the same random location using the same
+      neighborlist (and the same long-range energy when :term:`rvdw` or
+      :term:`rcoulomb` > :term:`rlist`, which is only allowed for single-atom
+      molecules). Since neighborlist construction is expensive, one can perform
+      several extra insertions with the same list almost for free. The random
+      seed is set with :mdp:`ld-seed`. The temperature for the Boltzmann
+      weighting is set with :term:`ref-t`, this should match the temperature of
+      the simulation of the original trajectory. Dispersion correction is
+      implemented correctly for TPI. All relevant quantities are written to the
+      file specified with ``mdrun -tpi``. The distribution of insertion
+      energies is written to the file specified with ``mdrun -tpid``. No
+      trajectory or energy file is written. Parallel TPI gives identical
+      results to single-node TPI. For charged molecules, using PME with a fine
+      grid is most accurate and also efficient, since the potential in the
+      system only needs to be calculated once per frame.
+
+   .. mdp-value:: tpic
+
+      Test particle insertion into a predefined cavity location. The procedure
+      is the same as for :mdp-value:`tpi`, except that one coordinate extra is read
+      from the trajectory, which is used as the insertion location. The
+      molecule to be inserted should be centered at 0,0,0. Gromacs does not do
+      this for you, since for different situations a different way of centering
+      might be optimal. Also :term:`rtpi` sets the radius for the sphere around
+      this location. Neighbor searching is done only once per frame,
+      :term:`nstlist` is not used. Parallel :mdp-value:`tpic` gives identical
+      results to single-rank :mdp-value:`tpic`.
+
+.. mdp:: tinit
+
         (0) \[ps\]
         starting time for your run (only makes sense for time-based integrators)
 
-    dt
+.. mdp:: dt
+
         (0.001) \[ps\]
         time step for integration (only makes sense for time-based integrators)
 
-    nsteps
+.. mdp:: nsteps
+
         (0)
         maximum number of steps to integrate or minimize, -1 is no maximum
 
-    init-step
-        (0)
-        The starting step. The time at an step i in a run is calculated as: t = :term:`tinit` + :term:`dt` * (:term:`init-step` + i). The free-energy lambda is calculated as: lambda = :term:`init-lambda` + :term:`delta-lambda` * (:term:`init-step` + i). Also non-equilibrium MD parameters can depend on the step number. Thus for exact restarts or redoing part of a run it might be necessary to set :term:`init-step` to the step number of the restart frame. `gmx convert-tpr`_ does this automatically.
+.. mdp:: init-step
 
-    comm-mode
+        (0)
+        The starting step. The time at an step i in a run is calculated as:
+        t = :mdp:`tinit` + :mdp:`dt` * (:mdp:`init-step` + i). The free-energy
+        lambda is calculated as: lambda = :term:`init-lambda` +
+        :term:`delta-lambda` * (:mdp:`init-step` + i). Also non-equilibrium MD
+        parameters can depend on the step number. Thus for exact restarts or
+        redoing part of a run it might be necessary to set :mdp:`init-step` to
+        the step number of the restart frame. `gmx convert-tpr`_ does this
+        automatically.
+
+.. mdp:: comm-mode
+
         Linear
             Remove center of mass translation
 
@@ -96,26 +190,32 @@ Run control
         None
             No restriction on the center of mass motion
 
-    nstcomm
+.. mdp:: nstcomm
+
         (100) \[steps\]
         frequency for center of mass motion removal
 
-    comm-grps
+.. mdp:: comm-grps
+
         group(s) for center of mass motion removal, default is the whole system
 
 
 Langevin dynamics
 ^^^^^^^^^^^^^^^^^
 
-.. glossary::
+.. mdp:: bd-fric
 
-    bd-fric
-        (0) \[amu ps-1\]
-        Brownian dynamics friction coefficient. When :term:`bd-fric` is 0, the friction coefficient for each particle is calculated as mass/ :term:`tau-t`.
+   (0) \[amu ps-1\]
+   Brownian dynamics friction coefficient. When :mdp:`bd-fric` is 0, the
+   friction coefficient for each particle is calculated as mass/ :term:`tau-t`.
 
-    ld-seed
-        (-1) \[integer\]
-        used to initialize random generator for thermal noise for stochastic and Brownian dynamics. When :term:`ld-seed` is set to -1, a pseudo random seed is used. When running BD or SD on multiple processors, each processor uses a seed equal to :term:`ld-seed` plus the processor number.
+.. mdp:: ld-seed
+
+   (-1) \[integer\]
+   used to initialize random generator for thermal noise for stochastic and
+   Brownian dynamics. When :mdp:`ld-seed` is set to -1, a pseudo random seed
+   is used. When running BD or SD on multiple processors, each processor uses a
+   seed equal to :mdp:`ld-seed` plus the processor number.
 
 
 Energy minimization
@@ -167,7 +267,8 @@ Test particle insertion
 .. glossary::
     rtpi
         (0.05) \[nm\]
-        the test particle insertion radius, see integrators :term:`tpi` and :term:`tpic`
+        the test particle insertion radius, see integrators :mdp-value:`tpi` and
+        :mdp-value:`tpic`
 
 
 Output control
@@ -282,7 +383,7 @@ Neighbor searching
 
     verlet-buffer-tolerance
         (0.005) \[kJ/mol/ps\]
-        Useful only with the :term:`Verlet` :term:`cutoff-scheme`. This sets the maximum allowed error for pair interactions per particle caused by the Verlet buffer, which indirectly sets :term:`rlist`. As both :term:`nstlist` and the Verlet buffer size are fixed (for performance reasons), particle pairs not in the pair list can occasionally get within the cut-off distance during :term:`nstlist` -1 steps. This causes very small jumps in the energy. In a constant-temperature ensemble, these very small energy jumps can be estimated for a given cut-off and :term:`rlist`. The estimate assumes a homogeneous particle distribution, hence the errors might be slightly underestimated for multi-phase systems. For longer pair-list life-time (:term:`nstlist` -1) * :term:`dt` the buffer is overestimated, because the interactions between particles are ignored. Combined with cancellation of errors, the actual drift of the total energy is usually one to two orders of magnitude smaller. Note that the generated buffer size takes into account that the GROMACS pair-list setup leads to a reduction in the drift by a factor 10, compared to a simple particle-pair based list. Without dynamics (energy minimization etc.), the buffer is 5% of the cut-off. For NVE simulations the initial temperature is used, unless this is zero, in which case a buffer of 10% is used. For NVE simulations the tolerance usually needs to be lowered to achieve proper energy conservation on the nanosecond time scale. To override the automated buffer setting, use :term:`verlet-buffer-tolerance` =-1 and set :term:`rlist` manually.
+        Useful only with the :term:`Verlet` :term:`cutoff-scheme`. This sets the maximum allowed error for pair interactions per particle caused by the Verlet buffer, which indirectly sets :term:`rlist`. As both :term:`nstlist` and the Verlet buffer size are fixed (for performance reasons), particle pairs not in the pair list can occasionally get within the cut-off distance during :term:`nstlist` -1 steps. This causes very small jumps in the energy. In a constant-temperature ensemble, these very small energy jumps can be estimated for a given cut-off and :term:`rlist`. The estimate assumes a homogeneous particle distribution, hence the errors might be slightly underestimated for multi-phase systems. For longer pair-list life-time (:term:`nstlist` -1) * :mdp:`dt` the buffer is overestimated, because the interactions between particles are ignored. Combined with cancellation of errors, the actual drift of the total energy is usually one to two orders of magnitude smaller. Note that the generated buffer size takes into account that the GROMACS pair-list setup leads to a reduction in the drift by a factor 10, compared to a simple particle-pair based list. Without dynamics (energy minimization etc.), the buffer is 5% of the cut-off. For NVE simulations the initial temperature is used, unless this is zero, in which case a buffer of 10% is used. For NVE simulations the tolerance usually needs to be lowered to achieve proper energy conservation on the nanosecond time scale. To override the automated buffer setting, use :term:`verlet-buffer-tolerance` =-1 and set :term:`rlist` manually.
 
     rlist
         (1) \[nm\]
@@ -519,7 +620,7 @@ Temperature coupling
             Temperature coupling by randomizing all particles at infrequent timesteps. Reference temperature and coupling groups are selected as above. :term:`tau-t` is the time between randomization of all molecules. Inhibits particle dynamics somewhat, but little or no ergodicity issues. Currently only implemented with velocity Verlet.
 
         v-rescale
-            Temperature coupling using velocity rescaling with a stochastic term (JCP 126, 014101). This thermostat is similar to Berendsen coupling, with the same scaling using :term:`tau-t`, but the stochastic term ensures that a proper canonical ensemble is generated. The random seed is set with :term:`ld-seed`. This thermostat works correctly even for :term:`tau-t` =0. For NVT simulations the conserved energy quantity is written to the energy and log file.
+            Temperature coupling using velocity rescaling with a stochastic term (JCP 126, 014101). This thermostat is similar to Berendsen coupling, with the same scaling using :term:`tau-t`, but the stochastic term ensures that a proper canonical ensemble is generated. The random seed is set with :mdp:`ld-seed`. This thermostat works correctly even for :term:`tau-t` =0. For NVT simulations the conserved energy quantity is written to the energy and log file.
 
     nsttcouple
         (-1)
@@ -527,7 +628,7 @@ Temperature coupling
 
     nh-chain-length
         (10)
-        The number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog :term:`md` integrator only supports 1. Data for the NH chain variables is not printed to the edr_ file, but can be using the ``GMX_NOSEHOOVER_CHAINS`` environment variable
+        The number of chained Nose-Hoover thermostats for velocity Verlet integrators, the leap-frog :mdp-value:`md` integrator only supports 1. Data for the NH chain variables is not printed to the edr_ file, but can be using the ``GMX_NOSEHOOVER_CHAINS`` environment variable
 
     tc-grps
         groups to couple to separate temperature baths
@@ -557,7 +658,7 @@ Pressure coupling
             Extended-ensemble pressure coupling where the box vectors are subject to an equation of motion. The equation of motion for the atoms is coupled to this. No instantaneous scaling takes place. As for Nose-Hoover temperature coupling the time constant :term:`tau-p` is the period of pressure fluctuations at equilibrium. This is probably a better method when you want to apply pressure scaling during data collection, but beware that you can get very large oscillations if you are starting from a different pressure. For simulations where the exact fluctation of the NPT ensemble are important, or if the pressure coupling time is very short it may not be appropriate, as the previous time step pressure is used in some steps of the GROMACS implementation for the current time step pressure.
 
         MTTK
-            Martyna-Tuckerman-Tobias-Klein implementation, only useable with :term:`md-vv` or :term:`md-vv-avek`, very similar to Parrinello-Rahman. As for Nose-Hoover temperature coupling the time constant :term:`tau-p` is the period of pressure fluctuations at equilibrium. This is probably a better method when you want to apply pressure scaling during data collection, but beware that you can get very large oscillations if you are starting from a different pressure. Currently (as of version 5.1), it only supports isotropic scaling, and only works without constraints.
+            Martyna-Tuckerman-Tobias-Klein implementation, only useable with :mdp-value:`md-vv` or :mdp-value:`md-vv-avek`, very similar to Parrinello-Rahman. As for Nose-Hoover temperature coupling the time constant :term:`tau-p` is the period of pressure fluctuations at equilibrium. This is probably a better method when you want to apply pressure scaling during data collection, but beware that you can get very large oscillations if you are starting from a different pressure. Currently (as of version 5.1), it only supports isotropic scaling, and only works without constraints.
 
     pcoupltype
         isotropic
@@ -640,7 +741,7 @@ Velocity generation
         Do not generate velocities. The velocities are set to zero when there are no velocities in the input structure file.
 
         yes
-        Generate velocities in `gmx grompp`_ according to a Maxwell distribution at temperature :term:`gen-temp`, with random seed :term:`gen-seed`. This is only meaningful with integrator :term:`md`.
+        Generate velocities in `gmx grompp`_ according to a Maxwell distribution at temperature :term:`gen-temp`, with random seed :term:`gen-seed`. This is only meaningful with integrator :mdp-value:`md`.
 
     gen-temp
         (300) \[K\]

@@ -50,6 +50,7 @@ import sys
 import os
 
 execfile('conf-vars.py')
+sys.path.append(gmx_sphinx_extension_path)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -67,6 +68,7 @@ execfile('conf-vars.py')
 extensions = [
     'sphinx.ext.pngmath',
     'sphinx.ext.ifconfig',
+    'gmxsphinx'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

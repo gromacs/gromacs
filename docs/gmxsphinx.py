@@ -32,14 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_sphinx_extension_path = '@SPHINX_EXTENSION_PATH@'
-gmx_version_string = '@GMX_VERSION_STRING@'
-gmx_version_string_full = '@GMX_VERSION_STRING_FULL@'
-regressiontest_version = '@REGRESSIONTEST_VERSION@'
-variables = [
-        ('GMX_CMAKE_MINIMUM_REQUIRED_VERSION', '@GMX_CMAKE_MINIMUM_REQUIRED_VERSION@'),
-        ('REQUIRED_CUDA_VERSION', '@REQUIRED_CUDA_VERSION@'),
-        ('REQUIRED_CUDA_COMPUTE_CAPABILITY', '@REQUIRED_CUDA_COMPUTE_CAPABILITY@'),
-        ('SOURCE_MD5SUM', '@SOURCE_MD5SUM@'),
-        ('REGRESSIONTESTS_MD5SUM', '@REGRESSIONTESTS_MD5SUM@')
-    ]
+def setup(app):
+    app.add_object_type('mdp', 'mdp', objname='mdp option')
+    app.add_object_type('mdp-value', 'mdp-value', objname='mdp value')
