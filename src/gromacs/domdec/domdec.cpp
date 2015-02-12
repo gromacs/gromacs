@@ -5563,7 +5563,7 @@ static float dd_f_imbal(gmx_domdec_t *dd)
 
 float dd_pme_f_ratio(gmx_domdec_t *dd)
 {
-    if (dd->comm->cycl_n[ddCyclPME] > 0)
+    if (dd->comm->load[0].mdf > 0 && dd->comm->cycl_n[ddCyclPME] > 0)
     {
         return dd->comm->load[0].pme/dd->comm->load[0].mdf;
     }
