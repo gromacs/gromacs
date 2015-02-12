@@ -1,0 +1,9 @@
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Verified+2: Jenkins Buildbot
+Verified+1: Roland Schulz <roland@rschulz.eu>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Thu, 12 Feb 2015 10:02:09 +0100
+Reviewed-on: https://gerrit.gromacs.org/4440
+Project: gromacs
+Branch: refs/heads/release-4-6
