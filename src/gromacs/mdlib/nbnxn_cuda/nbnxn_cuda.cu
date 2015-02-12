@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -327,7 +327,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
     cu_timers_t         *t       = cu_nb->timers;
     cudaStream_t         stream  = cu_nb->stream[iloc];
 
-    bool                 bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = cu_nb->bDoTime;
 
@@ -465,7 +465,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
     bool             bDoTime = cu_nb->bDoTime;
     cudaStream_t     stream  = cu_nb->stream[iloc];
 
-    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* don't launch copy-back if there was no work to do */
@@ -621,7 +621,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     wallclock_gpu_t *timings  = cu_nb->timings;
     nb_staging       nbst     = cu_nb->nbst;
 
-    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
