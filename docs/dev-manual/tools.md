@@ -139,6 +139,63 @@ build system dependencies for easier processing in CMake.</dd>
 Documentation generation
 ========================
 
+Building the GROMACS documentation
+----------------------------------
+
+For now, there are multiple components, formats and tools for the
+GROMACS documentation, which is aimed primarily at version-specific
+deployment of the complete documentation on the website.
+
+This is quite complex, because the dependencies for building the
+documentation must not get in the way of building the code
+(particularly when cross-compiling), and yet the code must build and
+run in order for some documentation to be generated. Also, man page
+documentation (and command-line completions) must be built from the
+wrapper binary, in order to be bundled into the tarball.
+
+The outputs of interest to most developers are generally produced in the
+<tt>docs/html</tt> subdirectory of the build tree.
+
+You need to enable at least some of the following CMake options:
+<dl>
+<dt><tt>GMX_BUILD_MANUAL</tt></dt>
+<dd>Option needed for trying to build the PDF reference manual
+(requires LaTeX and ImageMagick)</dd>
+<dt><tt>GMX_BUILD_HELP</tt></dt>
+<dd>Option that builds the \ref page_wrapperbinary and use it to generate
+input for Sphinx</dd>
+<dt><tt>GMX_BUILD_WEBPAGE</tt></dt>
+<dd>Option needed for compiling all the documentation into the webpage</dd>
+</dl>
+Documentation cannot be built if the CMake option
+<tt>GMX_BUILD_MDRUN_ONLY</tt> is enabled.
+
+The following make targets are the most useful:
+<dl>
+<dt><tt>manual</tt></dt>
+<dd>Builds the PDF reference manual</dd>
+<dt><tt>man</tt></dt>
+<dd>Makes man pages from the wrapper binary with Sphinx</dd>
+<dt><tt>doxygen-all</tt></dt>
+<dd>Makes the code documentation with Doxygen</dd>
+<dt><tt>install-guide</tt></dt>
+<dd>Makes the INSTALL file for the tarball with Sphinx</dd>
+<dt><tt>webpage-sphinx</tt></dt>
+<dd>Makes all the components of the GROMACS webpage that require Sphinx,
+including install guide and user guide.</dd>
+<dt><tt>webpage</tt></dt>
+<dd>Makes the complete GROMACS webpage, requires everything. When complete,
+you can browse <tt>docs/html/index.html</tt> to find everything.
+
+If built from a release tarball, the <tt>SOURCE_MD5SUM</tt>,
+<tt>SOURCE_TARBALL</tt>, <tt>REGRESSIONTESTS_MD5SUM</tt>, and
+<tt>REGRESSIONTESTS_TARBALL</tt> CMake variables can be set to pass in
+the md5sum values and names of those tarballs, for embedding into the
+final deployment to the GROMACS website.</dd>
+</dl>
+
+The following tools are used in building parts of the documentation.
+
 <dl>
 <dt>Doxygen</dt>
 <dd>Doxygen (<http://www.doxygen.org>) is used to extract documentation from
@@ -180,11 +237,12 @@ This script shares most of its implementation with the custom checkers, and is
 documented on the same page: \subpage page_dev_gmxtree.</dd>
 
 <dt>Sphinx</dt>
-<dd>Sphinx (<http://sphinx-doc.org/>) is used for building some
-parts of the documentation from reStructuredText source files.</dd>
+<dd>Sphinx (<http://sphinx-doc.org/>; at least version 1.23) is used
+for building some parts of the documentation from reStructuredText
+source files.</dd>
 
 <dt>latex</dt>
-<dd></dd>
+<dd>Also requires ImageMagick for converting graphics file formats</dd>
 
 <dt>linkchecker</dt>
 <dd></dd>
