@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,6 @@
 #include <limits.h>
 #include <stdlib.h>
 
-#include "gromacs/gmxpreprocess/calc_verletbuf.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/inputrec.h"
@@ -54,6 +53,7 @@
 #include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
@@ -2532,6 +2532,9 @@ static int search_QMstring(const char *s, int ng, const char *gn[])
 } /* search_QMstring */
 
 /* We would like gn to be const as well, but C doesn't allow this */
+/* TODO this is utility functionality (search for the index of a
+   string in a collection), so should be refactored and located more
+   centrally. */
 int search_string(const char *s, int ng, char *gn[])
 {
     int i;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,6 @@
 
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/readinp.h"
@@ -980,6 +979,32 @@ void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x)
         membed->fac[2] += membed->z_step;
     }
     resize(membed->r_ins, x, membed->pos_ins, membed->fac);
+}
+
+/* We would like gn to be const as well, but C doesn't allow this */
+/* TODO this is utility functionality (search for the index of a
+   string in a collection), so should be refactored and located more
+   centrally. Also, it nearly duplicates the same string in readir.c */
+static int search_string(const char *s, int ng, char *gn[])
+{
+    int i;
+
+    for (i = 0; (i < ng); i++)
+    {
+        if (gmx_strcasecmp(s, gn[i]) == 0)
+        {
+            return i;
+        }
+    }
+
+    gmx_fatal(FARGS,
+              "Group %s selected for embedding was not found in the index file.\n"
+              "Group names must match either [moleculetype] names or custom index group\n"
+              "names, in which case you must supply an index file to the '-n' option\n"
+              "of grompp.",
+              s);
+
+    return -1;
 }
 
 gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
