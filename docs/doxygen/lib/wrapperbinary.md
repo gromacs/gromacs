@@ -90,15 +90,13 @@ provides methods to add additional help topics.  Currently, this is used to
 expose some reference material for the selections (the same content that is
 accessible using `help` in the selection prompt).
 
-Help export for other formats
------------------------------
+Help in other formats
+---------------------
 
-The build system provides two targets, `make man` and `make html`, to generate
-man pages and online HTML help for the commands.  These targets are run
-automatically as part of `make` if `GMX_BUILD_HELP=ON` is set in CMake.
-Otherwise, they can be run manually.  Internally, these execute
-`gmx help -export` _format_, which triggers special handling in the internal
-help module.
+The build system provides a target, `make sphinx-programs`, that generates
+reStructuredText help for the commands, which in turn is used to generate man
+and HTML help.  Internally, this executes `gmx help -export rst`, which
+triggers special handling in the internal help module.
 
 If this option is set, the help module loops through all the modules in the
 binary, writing help for each into a separate file.  The help module writes
@@ -109,16 +107,7 @@ using a different help context than for console output).
 Additionally, a list of all the modules is generated (`gromacs.7` for man
 pages, and alphabetical and by-topic lists for the HTML pages).
 
-Part of the functionality depends on template files and other data files that
-the help module reads from `share/man/` and `share/html/` and uses to generate
-its output.
-
-Part of the HTML help is stored as partial HTML files under `share/html/`.
-To produce the full HTML pages, the `gmx help -export html` command creates
-`header.html` from a `header.html.in` template file.  This file is used by a
-separate CMake script that is run by `make html` to add headers and footers to
-these partial HTML files.
-The final HTML help is produced in `share/html/final/`.
+TODO: Document/link to existing documentation for targets that use the rst help
 
 Handling C %main() functions {#section_wrapperbinary_cmain}
 ----------------------------
