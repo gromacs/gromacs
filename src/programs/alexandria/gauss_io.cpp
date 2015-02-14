@@ -316,14 +316,16 @@ static void gmx_molprop_read_babel(const char *g98,
     }
 
     {
-        double temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T;
+        double temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T, CVT, CPT;
         if (extract_thermochemistry(mol, false, &nsymm,
                                     &temperature,
                                     &DeltaHf0,
                                     &DeltaHfT,
                                     &DeltaGfT,
                                     &DeltaSfT,
-                                    &S0T))
+                                    &S0T,
+                                    &CVT,
+                                    &CPT))
         {
             alexandria::MolecularEnergy me1("DeltaHform",
                                             mpo_unit[MPO_ENERGY],
@@ -360,6 +362,13 @@ static void gmx_molprop_read_babel(const char *g98,
                                             convert2gmx(S0T, eg2cCal_MolK),
                                             0);
             mpt.LastCalculation()->AddEnergy(me5);
+            alexandria::MolecularEnergy me6("cp",
+                                            mpo_unit[MPO_ENTROPY],
+                                            temperature,
+                                            epGAS,
+                                            convert2gmx(CPT, eg2cCal_MolK),
+                                            0);
+            mpt.LastCalculation()->AddEnergy(me6);
         }
     }
 

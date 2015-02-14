@@ -235,7 +235,8 @@ void ReadSqlite3(const char                       *sqlite_file,
                             else if ((strcasecmp(prop, "DeltaHform") == 0) ||
                                      (strcasecmp(prop, "DeltaGform") == 0) ||
                                      (strcasecmp(prop, "DeltaSform") == 0) ||
-                                     (strcasecmp(prop, "S0") == 0))
+                                     (strcasecmp(prop, "S0") == 0) ||
+                                     (strcasecmp(prop, "cp") == 0))
                             {
                                 exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
                             }
@@ -258,7 +259,8 @@ void ReadSqlite3(const char                       *sqlite_file,
                             else if ((strcasecmp(prop, "DeltaHform") == 0) ||
                                      (strcasecmp(prop, "DeltaGform") == 0) ||
                                      (strcasecmp(prop, "DeltaSform") == 0) ||
-                                     (strcasecmp(prop, "S0") == 0))
+                                     (strcasecmp(prop, "S0") == 0) ||
+                                     (strcasecmp(prop, "cp") == 0))
 
                             {
                                 calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
