@@ -153,6 +153,17 @@ void
                       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                       int gmx_unused *global_atom_index);
 
+/* As rbdihs(), when not needing energy or shift force, using SIMD to calculate many dihedrals at once. */
+void
+    rbdihs_noener_simd(int nbonds,
+                       const t_iatom forceatoms[], const t_iparams forceparams[],
+                       const rvec x[], rvec f[],
+                       const struct t_pbc *pbc,
+                       const struct t_graph gmx_unused *g,
+                       real gmx_unused lambda,
+                       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                       int gmx_unused *global_atom_index);
+
 #endif
 
 //! \endcond
