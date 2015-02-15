@@ -362,6 +362,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
     header_settings->rb[ebtsIDIHS].type  = 2; /* normal impropers */
     header_settings->rb[ebtsEXCLS].type  = 1; /* normal exclusions */
     header_settings->rb[ebtsCMAP].type   = 1; /* normal cmap torsions */
+    header_settings->rb[ebtsCONSTRAINTS].type   = 1; /* normal constraints */
 
     header_settings->bKeepAllGeneratedDihedrals    = FALSE;
     header_settings->nrexcl                        = 3;
@@ -393,10 +394,11 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
     if (gmx_strncasecmp("bondedtypes", header, 5) == 0)
     {
         get_a_line(in, line, STRLEN);
-        if ((nparam = sscanf(line, "%d %d %d %d %d %d %d %d",
+        if ((nparam = sscanf(line, "%d %d %d %d %d %d %d %d %d",
                              &header_settings->rb[ebtsBONDS].type, &header_settings->rb[ebtsANGLES].type,
                              &header_settings->rb[ebtsPDIHS].type, &header_settings->rb[ebtsIDIHS].type,
-                             &dum1, &header_settings->nrexcl, &dum2, &dum3)) < 4)
+                             &dum1, &header_settings->nrexcl, &dum2, &dum3,
+							 &header_settings->rb[ebtsCONSTRAINTS].type)) < 4)
         {
             gmx_fatal(FARGS, "need 4 to 8 parameters in the header of .rtp file %s at line:\n%s\n", rrdb, line);
         }
@@ -422,6 +424,11 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
         if (nparam < 8)
         {
             fprintf(stderr, "Using default: removing proper dihedrals found on the same bond as a proper dihedral\n");
+            header_settings->bRemoveDihedralIfWithImproper = TRUE;
+        }
+        if (nparam < 9)
+        {
+            fprintf(stderr, "Using default: constraints will be type 1.\n");
             header_settings->bRemoveDihedralIfWithImproper = TRUE;
         }
     }
@@ -465,7 +472,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
             else
             {
                 bt = get_bt(header);
-                if (bt != NOTSET)
+                if (bt != NOTSET || gmx_strncasecmp("constraints", header, 11) == 0)
                 {
                     /* header is an bonded directive */
                     bError = !read_bondeds(bt, in, line, &rrtp[nrtp]);

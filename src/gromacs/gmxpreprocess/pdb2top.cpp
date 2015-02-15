@@ -707,8 +707,8 @@ void write_top(FILE *out, char *pr, char *molname,
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
         print_bondeds(out, at->nr, d_bonds,      F_BONDS,    bts[ebtsBONDS], plist);
-        print_bondeds(out, at->nr, d_constraints, F_CONSTR,   0,              plist);
-        print_bondeds(out, at->nr, d_constraints, F_CONSTRNC, 0,              plist);
+        print_bondeds(out, at->nr, d_constraints, F_CONSTR,   bts[ebtsCONSTRAINTS], plist);
+        print_bondeds(out, at->nr, d_constraints, F_CONSTRNC, bts[ebtsCONSTRAINTS],  plist);
         print_bondeds(out, at->nr, d_pairs,      F_LJ14,     0,              plist);
         print_excl(out, at->nr, excls);
         print_bondeds(out, at->nr, d_angles,     F_ANGLES,   bts[ebtsANGLES], plist);
@@ -841,6 +841,41 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
     }
 }
 
+static void at2const(t_params *psb, t_hackblock *hb,
+                     t_atoms *atoms)
+{
+    int         resind, i, j;
+    atom_id     ai, aj;
+    const char *ptr;
+
+    if (debug)
+    {
+        ptr = "constraints";
+    }
+    else
+    {
+        ptr = "check";
+    }
+
+    fprintf(stderr, "Making constraints...\n");
+    i = 0;
+    for (resind = 0; (resind < atoms->nres) && (i < atoms->nr); resind++)
+    {
+        /* add constraints from list */
+        for (j = 0; j < hb[resind].rb[ebtsCONSTRAINTS].nb; j++)
+        {
+            ai = search_atom(hb[resind].rb[ebtsCONSTRAINTS].b[j].a[0], i, atoms,
+                             ptr, TRUE);
+            aj = search_atom(hb[resind].rb[ebtsCONSTRAINTS].b[j].a[1], i, atoms,
+                             ptr, TRUE);
+            if (ai != NO_ATID && aj != NO_ATID)
+            {
+                add_param(psb, ai, aj, NULL, hb[resind].rb[ebtsCONSTRAINTS].b[j].s);
+            }
+        }
+    }
+}
+
 static int pcompar(const void *a, const void *b)
 {
     t_param *pa, *pb;
@@ -870,7 +905,7 @@ static void clean_bonds(t_params *ps)
 
     if (ps->nr > 0)
     {
-        /* swap atomnumbers in bond if first larger than second: */
+        /* swap atomnumbers in bond/constraints if first larger than second: */
         for (i = 0; (i < ps->nr); i++)
         {
             if (ps->param[i].a[1] < ps->param[i].a[0])
@@ -898,12 +933,12 @@ static void clean_bonds(t_params *ps)
                 j++;
             }
         }
-        fprintf(stderr, "Number of bonds was %d, now %d\n", ps->nr, j);
+        fprintf(stderr, "number was %d, now %d.\n", ps->nr, j);
         ps->nr = j;
     }
     else
     {
-        fprintf(stderr, "No bonds\n");
+        fprintf(stderr, "there are none.\n");
     }
 }
 
@@ -1566,6 +1601,10 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              atoms, *x,
              long_bond_dist, short_bond_dist);
 
+	/* Make constraints */
+    at2const(&(plist[F_CONSTR]), hb,
+             atoms);
+
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]),
                atoms, nssbonds, ssbonds,
@@ -1586,8 +1625,11 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         }
     }
 
-    /* Cleanup bonds (sort and rm doubles) */
+    /* Cleanup bonds and constraints (sort and rm doubles) */
+	fprintf(stderr, "Cleaning up bonds...");
     clean_bonds(&(plist[F_BONDS]));
+	fprintf(stderr, "Cleaning up constraints...");
+    clean_bonds(&(plist[F_CONSTR]));
 
     snew(vsite_type, atoms->nr);
     for (i = 0; i < atoms->nr; i++)
@@ -1628,9 +1670,6 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
         do_h_mass(&(plist[F_BONDS]), vsite_type, atoms, mHmult, bDeuterate);
     }
     sfree(vsite_type);
-
-    /* Cleanup bonds (sort and rm doubles) */
-    /* clean_bonds(&(plist[F_BONDS]));*/
 
     fprintf(stderr,
             "There are %4d dihedrals, %4d impropers, %4d angles\n"

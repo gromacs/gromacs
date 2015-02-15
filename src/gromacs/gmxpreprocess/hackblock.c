@@ -47,8 +47,8 @@
 #include "gromacs/utility/smalloc.h"
 
 /* these MUST correspond to the enum in hackblock.h */
-const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
-const int   btsNiatoms[ebtsNR] = { 2,       3,        4,           4,           2,             5 };
+const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap", "constraints"};
+const int   btsNiatoms[ebtsNR] = { 2,       3,        4,           4,           2,             5 ,    2};
 
 static void free_t_bonded(t_rbonded *rb)
 {
