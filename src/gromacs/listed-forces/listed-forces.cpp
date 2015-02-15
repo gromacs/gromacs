@@ -319,6 +319,19 @@ calc_one_bond(int thread,
                 global_atom_index);
             v = 0;
         }
+#ifdef GMX_SIMD_HAVE_REAL
+        else if (ftype == F_RBDIHS &&
+                 !bCalcEnerVir && fr->efep == efepNO)
+        {
+            /* No energies, shift forces, dvdl */
+            rbdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+                               idef->iparams,
+                               (const rvec*)x, f,
+                               pbc, g, lambda[efptFTYPE], md, fcd,
+                               global_atom_index);
+            v = 0;
+        }
+#endif
         else
         {
             v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
