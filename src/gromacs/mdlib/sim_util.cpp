@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -211,11 +211,9 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
  * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
  *
  * Et[] contains the parameters for the time dependent
- * part of the field (not yet used).
+ * part of the field.
  * Ex[] contains the parameters for
- * the spatial dependent part of the field. You can have cool periodic
- * fields in principle, but only a constant field is supported
- * now.
+ * the spatial dependent part of the field.
  * The function should return the energy due to the electric field
  * (if any) but for now returns 0.
  *
@@ -226,7 +224,7 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
  * For neutral systems with many charged molecules the error is small.
  * But for systems with a net charge or a few charged molecules
  * the error can be significant when the field is high.
- * Solution: implement a self-consitent electric field into PME.
+ * Solution: implement a self-consistent electric field into PME.
  */
 static void calc_f_el(FILE *fp, int  start, int homenr,
                       real charge[], rvec f[],
@@ -2785,7 +2783,10 @@ void init_md(FILE *fplog,
             please_cite(fplog, "Goga2012");
         }
     }
-
+    if ((ir->et[XX].n > 0) || (ir->et[YY].n > 0) || (ir->et[ZZ].n > 0))
+    {
+        please_cite(fplog, "Caleman2008a");
+    }
     init_nrnb(nrnb);
 
     if (nfile != -1)
