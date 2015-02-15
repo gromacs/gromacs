@@ -2093,7 +2093,7 @@ pdihs_noener_simd(int nbonds,
  * the RB potential instead of a harmonic potential.
  * This function can replace rbdihs() when no energy and virial are needed.
  */
-static void
+void
 rbdihs_noener_simd(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
                    const rvec x[], rvec f[],
