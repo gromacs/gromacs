@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -293,8 +293,10 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     if ( (gpu_info->cuda_dev[gpuid].prop.major * 10 + gpu_info->cuda_dev[gpuid].prop.minor) >= 35 &&
          (0 == gmx_wcmatch( "*Tesla*", gpu_info->cuda_dev[gpuid].prop.name )))
     {
-        //TODO: Maybe need to think about something more user friendly here.
-        md_print_warn( fplog, "Could not set GPU clocks to the optimal value because application clocks handling not possible for %s due to missing NVML support.\n", gpu_info->cuda_dev[gpuid].prop.name );
+        md_print_warn( fplog, "NVML support was not found in CUDA library %d.%d, so your GPU of type %s cannot use application clock support to improve performance.\n",
+                       gpu_info->cuda_dev[gpuid].prop.major, );
+                       gpu_info->cuda_dev[gpuid].prop.minor, );
+                       gpu_info->cuda_dev[gpuid].prop.name );
     }
     return true;
 #else /* HAVE_NVML defined */
@@ -354,7 +356,7 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock && gpu_info->cuda_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED)
     {
         //TODO: Maybe need to think about something more user friendly here.
-        md_print_info( fplog, "Changing GPU clocks by setting application clocks for %s to (%d,%d)\n", gpu_info->cuda_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
+        md_print_info( fplog, "Changing GPU clock rates by setting application clocks for %s to (%d,%d)\n", gpu_info->cuda_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
         nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->cuda_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
         HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
         gpu_info->cuda_dev[gpuid].nvml_ap_clocks_changed = true;
