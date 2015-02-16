@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -347,7 +347,13 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     /* Shift the coordinates. Must be done before listed forces and PPPM,
      * but is also necessary for SHAKE and update, therefore it can NOT
      * go when no listed forces have to be evaluated.
+     *
+     * The shifting and PBC code is deliberately not timed, since with
+     * the Verlet scheme it only takes non-zero time with triclinic
+     * boxes, and even then the time is around a factor of 100 less
+     * than the next smallest counter.
      */
+
 
     /* Here sometimes we would not need to shift with NBFonly,
      * but we do so anyhow for consistency of the returned coordinates.
@@ -369,6 +375,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         ((flags & GMX_FORCE_LISTED)
          || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)))
     {
+        /* TODO There are no electrostatics methods that require this
+           transformation, when using the Verlet scheme, so update the
+           above conditional. */
         /* Since all atoms are in the rectangular or triclinic unit-cell,
          * only single box vector shifts (2 in x) are required.
          */
@@ -497,6 +506,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
             if (EEL_PME_EWALD(fr->eeltype) && fr->n_tpi == 0)
             {
+                /* This is not in a subcounter because it takes a
+                   negligible and constant-sized amount of time */
                 Vcorr_q += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
                                                    &dvdl_long_range_correction_q,
                                                    fr->vir_el_recip);

@@ -294,6 +294,10 @@ calc_one_bond(int thread,
     {
         if (ftype == F_CMAP)
         {
+            /* TODO The execution time for CMAP dihedrals might be
+               nice to account to its own subtimer, but first
+               wallcycle needs to be extended to support calling from
+               multiple threads. */
             v = cmap_dihs(nbn, iatoms+nb0,
                           idef->iparams, &idef->cmap_grid,
                           x, f, fshift,
@@ -361,6 +365,9 @@ calc_one_bond(int thread,
     }
     else
     {
+        /* TODO The execution time for pairs might be nice to account
+           to its own subtimer, but first wallcycle needs to be
+           extended to support calling from multiple threads. */
         v = do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
                      pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
     }
@@ -385,6 +392,7 @@ ftype_is_bonded_potential(int ftype)
 }
 
 void calc_listed(const gmx_multisim_t *ms,
+                 gmx_wallcycle        *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
                  rvec f[], t_forcerec *fr,
@@ -428,39 +436,55 @@ void calc_listed(const gmx_multisim_t *ms,
     }
 #endif
 
-    if (idef->il[F_POSRES].nr > 0)
+    if ((idef->il[F_POSRES].nr > 0) ||
+        (idef->il[F_FBPOSRES].nr > 0) ||
+        (idef->il[F_ORIRES].nr > 0) ||
+        (idef->il[F_DISRES].nr > 0))
     {
-        posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr);
-    }
+        /* TODO Use of restraints triggers further function calls
+           inside the loop over calc_one_bond(), but those are too
+           awkward to account to this subtimer properly in the present
+           code. We don't test / care much about performance with
+           restraints, anyway. */
+        wallcycle_sub_start(wcycle, ewcsRESTRAINTS);
 
-    if (idef->il[F_FBPOSRES].nr > 0)
-    {
-        fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr);
-    }
-
-    /* Do pre force calculation stuff which might require communication */
-    if (idef->il[F_ORIRES].nr)
-    {
-        enerd->term[F_ORIRESDEV] =
-            calc_orires_dev(ms, idef->il[F_ORIRES].nr,
-                            idef->il[F_ORIRES].iatoms,
-                            idef->iparams, md, x,
-                            pbc_null, fcd, hist);
-    }
-    if (idef->il[F_DISRES].nr)
-    {
-        calc_disres_R_6(idef->il[F_DISRES].nr,
-                        idef->il[F_DISRES].iatoms,
-                        idef->iparams, x, pbc_null,
-                        fcd, hist);
-#ifdef GMX_MPI
-        if (fcd->disres.nsystems > 1)
+        if (idef->il[F_POSRES].nr > 0)
         {
-            gmx_sum_sim(2*fcd->disres.nres, fcd->disres.Rt_6, ms);
+            posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr);
         }
+
+        if (idef->il[F_FBPOSRES].nr > 0)
+        {
+            fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr);
+        }
+
+        /* Do pre force calculation stuff which might require communication */
+        if (idef->il[F_ORIRES].nr > 0)
+        {
+            enerd->term[F_ORIRESDEV] =
+                calc_orires_dev(ms, idef->il[F_ORIRES].nr,
+                                idef->il[F_ORIRES].iatoms,
+                                idef->iparams, md, x,
+                                pbc_null, fcd, hist);
+        }
+        if (idef->il[F_DISRES].nr)
+        {
+            calc_disres_R_6(idef->il[F_DISRES].nr,
+                            idef->il[F_DISRES].iatoms,
+                            idef->iparams, x, pbc_null,
+                            fcd, hist);
+#ifdef GMX_MPI
+            if (fcd->disres.nsystems > 1)
+            {
+                gmx_sum_sim(2*fcd->disres.nres, fcd->disres.Rt_6, ms);
+            }
 #endif
+        }
+
+        wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
 
+    wallcycle_sub_start(wcycle, ewcsLISTED);
 #pragma omp parallel for num_threads(fr->nthreads) schedule(static)
     for (thread = 0; thread < fr->nthreads; thread++)
     {
@@ -504,15 +528,21 @@ void calc_listed(const gmx_multisim_t *ms,
             }
         }
     }
+    wallcycle_sub_stop(wcycle, ewcsLISTED);
+
     if (fr->nthreads > 1)
     {
+        wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
         reduce_thread_forces(fr->natoms_force, f, fr->fshift,
                              enerd->term, &enerd->grpp, dvdl,
                              fr->nthreads, fr->f_t,
                              fr->red_nblock, 1<<fr->red_ashift,
                              bCalcEnerVir,
                              force_flags & GMX_FORCE_DHDL);
+        wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
     }
+
+    /* Remaining code does not have enough flops to bother counting */
     if (force_flags & GMX_FORCE_DHDL)
     {
         for (i = 0; i < efptNR; i++)
@@ -623,14 +653,13 @@ do_force_listed(gmx_wallcycle        *wcycle,
         return;
     }
 
-    wallcycle_sub_start(wcycle, ewcsLISTED);
-
     if ((idef->il[F_POSRES].nr > 0) ||
         (idef->il[F_FBPOSRES].nr > 0))
     {
+        /* Not enough flops to bother counting */
         set_pbc(&pbc_full, fr->ePBC, box);
     }
-    calc_listed(ms, idef, x, hist, f, fr, pbc, &pbc_full,
+    calc_listed(ms, wcycle, idef, x, hist, f, fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
                 global_atom_index, flags);
 
@@ -639,10 +668,11 @@ do_force_listed(gmx_wallcycle        *wcycle,
      */
     if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL))
     {
-        posres_wrapper_lambda(fepvals, idef, &pbc_full, x, enerd, lambda, fr);
+        posres_wrapper_lambda(wcycle, fepvals, idef, &pbc_full, x, enerd, lambda, fr);
 
         if (idef->ilsort != ilsortNO_FE)
         {
+            wallcycle_sub_start(wcycle, ewcsLISTED_FEP);
             if (idef->ilsort != ilsortFE_SORTED)
             {
                 gmx_incons("The bonded interactions are not sorted for free energy");
@@ -661,9 +691,8 @@ do_force_listed(gmx_wallcycle        *wcycle,
                 sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             }
+            wallcycle_sub_stop(wcycle, ewcsLISTED_FEP);
         }
     }
     debug_gmx();
-
-    wallcycle_sub_stop(wcycle, ewcsLISTED);
 }
