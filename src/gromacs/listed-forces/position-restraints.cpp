@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,8 +53,11 @@
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
+
+struct gmx_wallcycle;
 
 namespace
 {
@@ -402,13 +405,14 @@ posres_wrapper(t_nrnb             *nrnb,
 }
 
 void
-posres_wrapper_lambda(const t_lambda     *fepvals,
-                      const t_idef       *idef,
-                      const struct t_pbc *pbc,
-                      const rvec          x[],
-                      gmx_enerdata_t     *enerd,
-                      real               *lambda,
-                      t_forcerec         *fr)
+posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
+                      const t_lambda       *fepvals,
+                      const t_idef         *idef,
+                      const struct t_pbc   *pbc,
+                      const rvec            x[],
+                      gmx_enerdata_t       *enerd,
+                      real                 *lambda,
+                      t_forcerec           *fr)
 {
     real  v;
     int   i;
@@ -418,6 +422,7 @@ posres_wrapper_lambda(const t_lambda     *fepvals,
         return;
     }
 
+    wallcycle_sub_start_nocount(wcycle, ewcsRESTRAINTS);
     for (i = 0; i < enerd->n_lambda; i++)
     {
         real dvdl_dum = 0, lambda_dum;
@@ -430,6 +435,7 @@ posres_wrapper_lambda(const t_lambda     *fepvals,
                             fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
         enerd->enerpart_lambda[i] += v;
     }
+    wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
 }
 
 /*! \brief Helper function that wraps calls to fbposres for
