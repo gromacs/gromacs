@@ -367,6 +367,7 @@ ftype_is_bonded_potential(int ftype)
 }
 
 void calc_listed(const gmx_multisim_t *ms,
+                 gmx_wallcycle        *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
                  rvec f[], t_forcerec *fr,
@@ -486,15 +487,23 @@ void calc_listed(const gmx_multisim_t *ms,
             }
         }
     }
+
     if (fr->nthreads > 1)
     {
+        wallcycle_sub_stop(wcycle, ewcsLISTED);
+
+        wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
         reduce_thread_forces(fr->natoms_force, f, fr->fshift,
                              enerd->term, &enerd->grpp, dvdl,
                              fr->nthreads, fr->f_t,
                              fr->red_nblock, 1<<fr->red_ashift,
                              bCalcEnerVir,
                              force_flags & GMX_FORCE_DHDL);
+        wallcycle_sub_stop(wcycle, ewcsLISTED_BUF_OPS);
+
+        wallcycle_sub_start_nocount(wcycle, ewcsLISTED);
     }
+
     if (force_flags & GMX_FORCE_DHDL)
     {
         for (i = 0; i < efptNR; i++)
@@ -612,7 +621,7 @@ do_force_listed(gmx_wallcycle        *wcycle,
     {
         set_pbc(&pbc_full, fr->ePBC, box);
     }
-    calc_listed(ms, idef, x, hist, f, fr, pbc, &pbc_full,
+    calc_listed(ms, wcycle, idef, x, hist, f, fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
                 global_atom_index, flags);
 

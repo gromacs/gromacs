@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1113,7 +1113,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* Start the force cycle counter.
-     * This counter is stopped in do_forcelow_level.
+     * This counter is stopped after do_force_lowlevel.
      * No parallel communication should occur while this counter is running,
      * since that will interfere with the dynamic load balancing.
      */
@@ -1220,7 +1220,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
 
         /* Add all the non-bonded force to the normal force array.
-         * This can be split into a local a non-local part when overlapping
+         * This can be split into a local and a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
         cycles_force += wallcycle_stop(wcycle, ewcFORCE);
@@ -1235,6 +1235,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if ((flags & GMX_FORCE_VIRIAL) &&
             nbv->grp[aloc].nbl_lists.nnbl > 1)
         {
+            /* This is not in a subcounter because it takes a
+               negligible and constant-sized amount of time */
             nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
                                                      fr->fshift);
         }
@@ -1758,7 +1760,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     }
 
     /* Start the force cycle counter.
-     * This counter is stopped in do_forcelow_level.
+     * This counter is stopped after do_force_lowlevel.
      * No parallel communication should occur while this counter is running,
      * since that will interfere with the dynamic load balancing.
      */

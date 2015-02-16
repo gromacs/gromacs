@@ -86,6 +86,7 @@ ftype_is_bonded_potential(int ftype);
  * Note that pbc_full is used only for position restraints, and is
  * not initialized if there are none. */
 void calc_listed(const gmx_multisim_t *ms,
+                 struct gmx_wallcycle *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
                  rvec f[], t_forcerec *fr,
