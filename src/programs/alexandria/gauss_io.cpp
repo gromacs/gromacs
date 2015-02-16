@@ -316,7 +316,7 @@ static void gmx_molprop_read_babel(const char *g98,
     }
 
     {
-        double temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T, CVT, CPT;
+        double              temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T, CVT, CPT;
         std::vector<double> Scomponents;
         if (extract_thermochemistry(mol, false, &nsymm,
                                     &temperature,
@@ -372,7 +372,7 @@ static void gmx_molprop_read_babel(const char *g98,
                                             0);
             mpt.LastCalculation()->AddEnergy(me6);
             const char *scomp[3] = { "Strans", "Srot", "Svib" };
-            for(int i = 0; (i<3); i++) 
+            for (int i = 0; (i < 3); i++)
             {
                 alexandria::MolecularEnergy mes(scomp[i],
                                                 mpo_unit[MPO_ENTROPY],
