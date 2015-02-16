@@ -44,7 +44,6 @@ static void gmx_molprop_csv(const char *fn,
     int                         i, j, k, ll;
     double                      T, d, err, vec[3];
     tensor                      quadrupole;
-    char                       *ref;
 #define NEMP 3
     MolPropObservable           mpo[NEMP]   = { MPO_DIPOLE, MPO_POLARIZABILITY, MPO_ENERGY  };
     const char                 *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
