@@ -54,7 +54,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
+
+typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
 namespace
 {
@@ -402,7 +405,8 @@ posres_wrapper(t_nrnb             *nrnb,
 }
 
 void
-posres_wrapper_lambda(const t_lambda     *fepvals,
+posres_wrapper_lambda(gmx_wallcycle        *wcycle,
+                      const t_lambda     *fepvals,
                       const t_idef       *idef,
                       const struct t_pbc *pbc,
                       const rvec          x[],
@@ -418,6 +422,7 @@ posres_wrapper_lambda(const t_lambda     *fepvals,
         return;
     }
 
+    wallcycle_sub_start_nocount(wcycle, ewcsRESTRAINTS);
     for (i = 0; i < enerd->n_lambda; i++)
     {
         real dvdl_dum = 0, lambda_dum;
@@ -430,6 +435,7 @@ posres_wrapper_lambda(const t_lambda     *fepvals,
                             fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
         enerd->enerpart_lambda[i] += v;
     }
+    wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
 }
 
 /*! \brief Helper function that wraps calls to fbposres for

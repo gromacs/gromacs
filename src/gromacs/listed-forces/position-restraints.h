@@ -57,6 +57,7 @@ extern "C" {
 #endif
 
 struct t_pbc;
+typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
 /*! \brief Helper function that wraps calls to posres */
 void
@@ -71,7 +72,8 @@ posres_wrapper(t_nrnb             *nrnb,
 /*! \brief Helper function that wraps calls to posres for free-energy
     pertubation */
 void
-posres_wrapper_lambda(const t_lambda     *fepvals,
+posres_wrapper_lambda(gmx_wallcycle        *wcycle,
+                      const t_lambda     *fepvals,
                       const t_idef       *idef,
                       const struct t_pbc *pbc,
                       const rvec          x[],
