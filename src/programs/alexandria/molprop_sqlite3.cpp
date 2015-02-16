@@ -146,7 +146,7 @@ void ReadSqlite3(const char                       *sqlite_file,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit,gp.temperature,gp.value,gp.error,gp.ref,ds.source FROM molecules as mol,gasproperty as gp,proptypes as pt, datasource as ds WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
+    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error,gp.ref,ds.source FROM molecules as mol,gasproperty as gp,proptypes as pt, datasource as ds WHERE ((mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, NULL));
 
