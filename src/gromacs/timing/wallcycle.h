@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,8 +66,15 @@ enum {
     ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
     ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
     ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
-    ewcsLISTED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
-    ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
+    ewcsLISTED,
+    ewcsLISTED_BUF_OPS,
+    ewcsNONBONDED,
+    ewcsSHIFT_X,
+    ewcsEWALD_CORRECTION,
+    ewcsEWALD_CHARGE_CORRECTION,
+    ewcsNB_X_BUF_OPS,
+    ewcsNB_F_BUF_OPS,
+    ewcsNB_FSHIFT_BUF_OPS,
     ewcsNR
 };
 
@@ -107,6 +114,9 @@ void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters);
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
 /* Set the start sub cycle count for ewcs */
+
+void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs);
+/* Set the start sub cycle count for ewcs without increasing the call count */
 
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 /* Stop the sub cycle count for ewcs */
