@@ -113,8 +113,15 @@ static const char *wcsn[ewcsNR] =
     "DD redist.", "DD NS grid + sort", "DD setup comm.",
     "DD make top.", "DD make constr.", "DD top. other",
     "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc.",
-    "Listed F", "Nonbonded F", "Ewald F correction",
-    "NB X buffer ops.", "NB F buffer ops."
+    "Listed F",
+    "Listed buffer ops.",
+    "Nonbonded F",
+    "Shift X",
+    "Ewald F correction",
+    "Ewald Q correction",
+    "NB X buffer ops.",
+    "NB F buffer ops.",
+    "NB virial buf. ops."
 };
 
 gmx_bool wallcycle_have_counter(void)
@@ -867,6 +874,13 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         }
     }
 
+    if (wc->wc_barrier)
+    {
+        md_print_warn(NULL, fplog,
+                      "MPI_Barrier was called before each cycle start/stop\n"
+                      "call, so timings are not those of real runs.\n");
+    }
+
     if (wc->wcc[ewcNB_XF_BUF_OPS].n > 0 &&
         (cyc_sum[ewcDOMDEC] > tot*0.1 ||
          cyc_sum[ewcNS] > tot*0.1))
@@ -930,6 +944,17 @@ void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs)
     }
 }
 
+void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs)
+{
+    if (wc == NULL)
+    {
+        return;
+    }
+
+    wallcycle_sub_start(wc, ewcs);
+    wc->wcsc[ewcs].n--;
+}
+
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
 {
     if (wc != NULL)
@@ -942,6 +967,9 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
 #else
 
 void wallcycle_sub_start(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
+{
+}
+void wallcycle_sub_start_nocount(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
 {
 }
 void wallcycle_sub_stop(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
