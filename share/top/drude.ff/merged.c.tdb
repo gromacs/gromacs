@@ -326,7 +326,7 @@
 [ add ]
  2  12  LP1 OT1 C   CA
     LP               0.0000 -0.31900   -1
- 1  8   OT  C   CA  N
+ 1  8   OT2 C   CA  N
     OD30D           15.5994  1.96331   -1
  1  2   HT2 OT2 C   CA
     HDP1A            1.0080  0.37400   -1
