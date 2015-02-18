@@ -414,7 +414,6 @@ check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
 
 check_include_files(regex.h      HAVE_POSIX_REGEX)
-check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 # TODO: It could be nice to inform the user if no regex support is found,
 # as selections won't be fully functional.
 
@@ -698,6 +697,8 @@ if(GMX_CXX11)
     set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
 endif()
 
+# Now we can test for CXX11_REGEX include file
+check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
