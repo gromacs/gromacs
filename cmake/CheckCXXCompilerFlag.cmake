@@ -49,8 +49,8 @@
 INCLUDE(CheckCXXSourceCompiles)
 
 MACRO (CHECK_CXX_COMPILER_FLAG _FLAG _RESULT)
-   SET(SAFE_CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS}")
-   SET(CMAKE_REQUIRED_DEFINITIONS "${_FLAG}")
+   SET(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+   SET(CMAKE_REQUIRED_FLAGS "${_FLAG}")
    CHECK_CXX_SOURCE_COMPILES("int main() { return 0;}" ${_RESULT}
      # Some compilers do not fail with a bad flag
      FAIL_REGEX "command line option .* is valid for .* but not for C\\\\+\\\\+" # GNU
@@ -73,6 +73,6 @@ MACRO (CHECK_CXX_COMPILER_FLAG _FLAG _RESULT)
      FAIL_REGEX "Warning: illegal option"                   # SunStudio 12
      FAIL_REGEX "[Ww]arning: Invalid"                       # Fujitsu
      )
-   SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
+   SET (CMAKE_REQUIRED_FLAGS "${SAFE_CMAKE_REQUIRED_FLAGS}")
 ENDMACRO (CHECK_CXX_COMPILER_FLAG)
 

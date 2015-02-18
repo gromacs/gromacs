@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
     if(NOT CXXFLAG_STD_CXX0X)
         set(CXX11_FLAG "")
     endif()
-    set(CMAKE_REQUIRED_DEFINITIONS "${CXX11_FLAG}")
+    set(CMAKE_REQUIRED_FLAGS "${CXX11_FLAG}")
     check_cxx_source_compiles(
 "#include <vector>
 #include <memory>
@@ -68,7 +68,7 @@ int main() {
   v2.push_back(A());  //requires default move constructor
   v2.push_back(A(new int(5))); //detects bug in ICC
 }" ${VARIABLE})
-    set(CMAKE_REQUIRED_DEFINITIONS "")
+    set(CMAKE_REQUIRED_FLAGS "")
     if(${VARIABLE})
         set(${FLAG} ${CXX11_FLAG})
     endif()
