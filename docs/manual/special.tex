@@ -180,7 +180,7 @@ a canonical ensemble of the initial state A and $\beta=1/k_B T$.
 The pull code applies forces or constraints between the centers
 of mass of one or more pairs of groups of atoms.
 Each pull reaction coordinate is called a ``coordinate'' and it operates
-on two pull groups. A pull group can be part of one or more pull
+on usually two, but sometimes more, pull groups. A pull group can be part of one or more pull
 coordinates. Furthermore, a coordinate can also operate on a single group
 and an absolute reference position in space.
 The distance between a pair of groups can be determined
@@ -305,6 +305,22 @@ as follows:
 \beq
 \ve{F}_{\!i} = \frac{w'_i \, m_i}{M} \, \ve{F}_{\!com}
 \eeq
+
+\subsubsection{Definition of the pull direction}
+
+The most common setup is to pull along the direction of the vector containing
+the two pull groups, this is selected with
+{\tt pull-coord?-geometry = distance}. You might want to pull along a certain
+vector instead, which is selected with {\tt pull-coord?-geometry = direction}.
+But this can cause unwanted torque forces in the system, unless you pull against a reference group with (nearly) fixed orientation, e.g. a membrane protein embedded in a membrane along x/y while pulling along z. If your reference group does not have a fixed orientation, you should probably use
+{\tt pull-coord?-geometry = direction-relative}, see \figref{pulldirrel}.
+
+\begin{figure}
+\centerline{\includegraphics[width=5cm]{plots/pulldirrel}}
+\caption{The pull setup for geometry {\tt direction-relative}. The ``normal'' pull groups are 1 and 2. Groups 3 and 4 define the pull direction and thus the direction of the normal pull forces (red). This leads to reaction forces (blue) on groups 3 and 4, which are perpendicular to the pull direction. Their magnitude is given by the ``normal'' pull force times the ratio of $d_p$ and the distance between groups 3 and 4.}
+\label{fi:pullref} 
+\end{figure}   
+
 
 \subsubsection{Limitations}
 There is one theoretical limitation:

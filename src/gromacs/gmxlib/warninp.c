@@ -74,12 +74,10 @@ warninp_t init_warning(gmx_bool bAllowWarnings, int maxwarning)
 
 void set_warning_line(warninp_t wi, const char *s, int line)
 {
-    if (s == NULL)
+    if (s != NULL)
     {
-        gmx_incons("Calling set_warning_line with NULL pointer");
+        strcpy(wi->filenm, s);
     }
-
-    strcpy(wi->filenm, s);
     wi->lineno = line;
 }
 

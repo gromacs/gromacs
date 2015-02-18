@@ -59,19 +59,20 @@ extern "C" {
 
 struct t_pbc;
 
-/*! \brief Get the distance to the reference and deviation for pull coord coord_ind.
+/*! \brief Get the deviation for pull coord coord_ind.
  *
- * \param[in]  pull         The pull group.
+ * This call updates some data in the pull coordinates in \param pull.
+ *
+ * \param[in]  pull         The pull struct.
  * \param[in]  coord_ind    Number of the pull coordinate.
  * \param[in]  pbc          Information structure about periodicity.
  * \param[in]  t            Time.
- * \param[out] dr           The pull coordinate difference vector.
  * \param[out] dev          The deviation from the reference distance.
  */
 void get_pull_coord_distance(const t_pull *pull,
                              int coord_ind,
                              const struct t_pbc *pbc, double t,
-                             dvec dr, double *dev);
+                             double *dev);
 
 
 /*! \brief Set the all the pull forces to zero.
