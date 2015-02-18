@@ -1690,7 +1690,7 @@ applicable pulling coordinate.
    their periodic image which is closest to
    :mdp:`pull-group1-pbcatom`. A value of 0 means that the middle
    atom (number wise) is used. This parameter is not used with
-   :mdp:`pull-geometry` cylinder. A value of -1 turns on cosine
+   :mdp:`pull-group1-geometry` cylinder. A value of -1 turns on cosine
    weighting, which is useful for a group of molecules in a periodic
    system, *e.g.* a water slab (see Engin et al. J. Chem. Phys. B
    2010).
@@ -1702,7 +1702,8 @@ applicable pulling coordinate.
    absolute reference of :mdp:`pull-coord1-origin` is used. With an
    absolute reference the system is no longer translation invariant
    and one should think about what to do with the center of mass
-   motion.
+   motion. Note that (only) for :mdp:`pull-coord1-geometry` =
+   :mdp-value:`direction-relative` four groups are required.
 
 .. mdp:: pull-coord1-type:
 
@@ -1747,6 +1748,18 @@ applicable pulling coordinate.
       than half the box size. With this geometry the box should not be
       dynamic (*e.g.* no pressure scaling) in the pull dimensions and
       the pull force is not added to virial.
+
+   .. mdp-value:: direction-relative
+
+      As :mdp-value:`direction`, but the pull vector is the vector
+      that points from the COM of a third to the COM of a fourth pull
+      group. This means that 4 groups need to be supplied in
+      :mdp:`pull-coord1-groups`. Note that the pull force will give
+      rise to a torque on the pull vector, which is turn leads to
+      forces perpendicular to the pull vector on the two groups
+      defining the vector. If you want a pull group to move between
+      the two groups defining the vector, simply use the union of
+      these two groups as the reference group.
 
    .. mdp-value:: cylinder
 

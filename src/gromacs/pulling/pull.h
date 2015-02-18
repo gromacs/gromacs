@@ -59,19 +59,20 @@ extern "C" {
 
 struct t_pbc;
 
-/*! \brief Get the distance to the reference and deviation for pull coord coord_ind.
+/*! \brief Get the deviation for pull coord coord_ind.
  *
- * \param[in]  pull         The pull group.
- * \param[in]  coord_ind    Number of the pull coordinate.
- * \param[in]  pbc          Information structure about periodicity.
- * \param[in]  t            Time.
- * \param[out] dr           The pull coordinate difference vector.
- * \param[out] dev          The deviation from the reference distance.
+ * This call updates some data in the pull coordinates in \p pull.
+ *
+ * \param[in,out] pull      The pull struct.
+ * \param[in]     coord_ind Number of the pull coordinate.
+ * \param[in]     pbc       Information structure about periodicity.
+ * \param[in]     t         Time.
+ * \param[out]    dev       The deviation from the reference distance.
  */
 void get_pull_coord_distance(const t_pull *pull,
                              int coord_ind,
                              const struct t_pbc *pbc, double t,
-                             dvec dr, double *dev);
+                             double *dev);
 
 
 /*! \brief Set the all the pull forces to zero.
@@ -83,14 +84,14 @@ void clear_pull_forces(t_pull *pull);
 
 /*! \brief Determine the COM pull forces and add them to f, return the potential
  *
- * \param[in] pull       The pull group.
- * \param[in] md         All atoms.
- * \param[in] pbc        Information struct about periodicity.
- * \param[in] cr         Struct for communication info.
- * \param[in] t          Time.
- * \param[in] lambda     The value of lambda in FEP calculations.
- * \param[in] x          Positions.
- * \param[in] f          Forces.
+ * \param[in,out] pull   The pull struct.
+ * \param[in]     md     All atoms.
+ * \param[in]     pbc    Information struct about periodicity.
+ * \param[in]     cr     Struct for communication info.
+ * \param[in]     t      Time.
+ * \param[in]     lambda The value of lambda in FEP calculations.
+ * \param[in]     x      Positions.
+ * \param[in]     f      Forces.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  * \param[out] dvdlambda Pull contribution to dV/d(lambda).
  *
@@ -104,13 +105,13 @@ real pull_potential(t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
 /*! \brief Constrain the coordinates xp in the directions in x
  * and also constrain v when v != NULL.
  *
- * \param[in] pull       The pull group.
- * \param[in] md         All atoms.
- * \param[in] pbc        Information struct about periodicity.
- * \param[in] cr         Struct for communication info.
- * \param[in] dt         The time step length.
- * \param[in] t          The time.
- * \param[in] x          Positions.
+ * \param[in,out] pull   The pull data.
+ * \param[in]     md     All atoms.
+ * \param[in]     pbc    Information struct about periodicity.
+ * \param[in]     cr     Struct for communication info.
+ * \param[in]     dt     The time step length.
+ * \param[in]     t      The time.
+ * \param[in]     x      Positions.
  * \param[in,out] xp     Updated x, can be NULL.
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
