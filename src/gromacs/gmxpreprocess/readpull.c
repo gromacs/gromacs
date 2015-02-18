@@ -129,7 +129,8 @@ static void init_pull_coord(t_pull_coord *pcrd,
     dvec   origin, vec;
     char   buf[STRLEN];
 
-    if (pcrd->eType == epullCONSTRAINT && pcrd->eGeom == epullgCYL)
+    if (pcrd->eType == epullCONSTRAINT && (pcrd->eGeom == epullgCYL ||
+                                           pcrd->eGeom == epullgDIRRELATIVE))
     {
         gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
                   epull_names[pcrd->eType],
@@ -145,6 +146,8 @@ static void init_pull_coord(t_pull_coord *pcrd,
         gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
 
+    /* Check and set the pull vector */
+    clear_dvec(vec);
     if (pcrd->eGeom == epullgDIST)
     {
         if (pcrd->init < 0)
@@ -160,10 +163,8 @@ static void init_pull_coord(t_pull_coord *pcrd,
          * be using direction. We will do this later, since an already planned
          * generalization of the pull code makes pull dim available here.
          */
-
-        clear_dvec(vec);
     }
-    else
+    else if (pcrd->eGeom != epullgDIRRELATIVE)
     {
         string2dvec(vec_buf, vec);
         if (dnorm2(vec) == 0)
@@ -258,20 +259,25 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     /* Read the pull coordinates */
     for (i = 1; i < pull->ncoord + 1; i++)
     {
+        int ngroup;
+
         pcrd = &pull->coord[i-1];
         sprintf(buf, "pull-coord%d-groups", i);
         STYPE(buf,              groups, "");
-        nscan = sscanf(groups, "%d %d %d", &pcrd->group[0], &pcrd->group[1], &idum);
-        if (nscan != 2)
-        {
-            fprintf(stderr, "ERROR: %s should contain %d pull group indices\n",
-                    buf, 2);
-            nerror++;
-        }
         sprintf(buf, "pull-coord%d-type", i);
         EETYPE(buf,             pcrd->eType, epull_names);
         sprintf(buf, "pull-coord%d-geometry", i);
         EETYPE(buf,             pcrd->eGeom, epullg_names);
+
+        nscan = sscanf(groups, "%d %d %d %d %d", &pcrd->group[0], &pcrd->group[1],  &pcrd->group[2], &pcrd->group[3], &idum);
+        ngroup = (pcrd->eGeom == epullgDIRRELATIVE) ? 4 : 2;
+        if (nscan != ngroup)
+        {
+            fprintf(stderr, "ERROR: %s should contain %d pull group indices\n",
+                    buf, ngroup);
+            nerror++;
+        }
+
         sprintf(buf, "pull-coord%d-dim", i);
         STYPE(buf,              dim_buf,     "Y Y Y");
         sprintf(buf, "pull-coord%d-origin", i);
@@ -426,7 +432,6 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
     int           c, m;
     double        t_start;
     real          init = 0;
-    dvec          dr;
     double        dev, value;
 
     init_pull(NULL, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
@@ -462,7 +467,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
             pcrd->init = 0;
         }
 
-        get_pull_coord_distance(pull, c, &pbc, t_start, dr, &dev);
+        get_pull_coord_distance(pull, c, &pbc, t_start, &dev);
         /* Calculate the value of the coordinate at t_start */
         value = pcrd->init + t_start*pcrd->rate + dev;
         fprintf(stderr, " %10.3f nm", value);
