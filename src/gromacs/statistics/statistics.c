@@ -226,7 +226,7 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         mse  = 0;
         for (i = 0; (i < N); i++)
         {
-            double dd = stats->x[i]-stats->y[i];
+            double dd = stats->y[i]-stats->x[i];
             d2 += dsqr(dd);
             
             mae += fabs(dd);
