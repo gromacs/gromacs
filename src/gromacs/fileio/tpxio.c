@@ -299,6 +299,11 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
     {
         gmx_fio_do_int(fio,  pcrd->eType);
         gmx_fio_do_int(fio,  pcrd->eGeom);
+        if (pcrd->eGeom == epullgDIRRELATIVE)
+        {
+            gmx_fio_do_int(fio, pcrd->group[2]);
+            gmx_fio_do_int(fio, pcrd->group[3]);
+        }
         gmx_fio_do_ivec(fio, pcrd->dim);
     }
     else
