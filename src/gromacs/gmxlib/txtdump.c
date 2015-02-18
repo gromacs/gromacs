@@ -634,6 +634,11 @@ static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
     fprintf(fp, "pull-coord %d:\n", c);
     PI("group[0]", pcrd->group[0]);
     PI("group[1]", pcrd->group[1]);
+    if (pcrd->eGeom == epullgDIRRELATIVE)
+    {
+        PI("group[2]", pcrd->group[2]);
+        PI("group[3]", pcrd->group[3]);
+    }
     PS("type", EPULLTYPE(pcrd->eType));
     PS("geometry", EPULLGEOM(pcrd->eGeom));
     pr_ivec(fp, indent, "dim", pcrd->dim, DIM, TRUE);
