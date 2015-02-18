@@ -45,7 +45,7 @@ MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
     if(NOT CXXFLAG_STD_CXX0X)
         set(CXX11_FLAG "")
     endif()
-    set(CMAKE_REQUIRED_DEFINITIONS "${CXX11_FLAG}")
+    set(CMAKE_REQUIRED_FLAGS "${CXX11_FLAG}")
     check_cxx_source_compiles(
 "#include <vector>
 #include <memory>
