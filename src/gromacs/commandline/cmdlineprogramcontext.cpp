@@ -243,9 +243,8 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
                                        bool              *bSourceLayout)
 {
     *bSourceLayout = false;
-    // If the input path is not absolute, the binary could not be found.
-    // Don't search anything.
-    if (Path::isAbsolute(binaryPath))
+    // Don't search anything if binary cannot be found.
+    if (Path::exists(binaryPath))
     {
         // Remove the executable name.
         std::string searchPath = Path::getParentPath(binaryPath);
