@@ -295,7 +295,7 @@ enum {
 };
 
 enum {
-    epullgDIST, epullgDIR, epullgCYL, epullgDIRPBC, epullgNR
+    epullgDIST, epullgDIR, epullgCYL, epullgDIRPBC, epullgDIRRELATIVE, epullgNR
 };
 
 /* Enforced rotation groups */
