@@ -1084,7 +1084,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-            /* averages the current forces and velocities on all the atoms in the same groups. */
+                /* averages the current forces and set the velocities to the first velocity on all the atoms in the same groups. */
             if (ir->bAve)
             {
                 do_averaging(state->v, f, ir->ave);
@@ -1552,6 +1552,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                               ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
+                /* averages the current forces and set the velocities to the first velocity on all the atoms in the same groups. */
+                /* we need to do it again here because the averages have been altered by sd. */
+                if (ir->bAve)
+                {
+                    do_averaging(state->v, f, ir->ave);
+                }
                 update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
                                    fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
