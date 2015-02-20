@@ -267,7 +267,7 @@ static void add_refc(t_refcount *rc, const char *ref)
 static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                 gmx_poldata_t pd,
                                 gmx_bool bCalcPol,
-                                MolPropObservable prop, char *exp_type,
+                                MolPropObservable mpo, char *exp_type,
                                 char *lot,
                                 real rtoler, real atoler, real outlier,
                                 char *fc_str, gmx_bool bPrintAll,
@@ -282,18 +282,13 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                 gmx_molselect_t gms,
                                 const char *selout)
 {
-    alexandria::MolPropIterator    mpi;
-    alexandria::ExperimentIterator ei;
     alexandria::CategoryList       cList;
-
     FILE                          *fp, *gp;
-    int                            i, ntot, cur = 0;
+    int                            i, ntot;
     t_qmcount                     *qmc;
     t_refcount                    *rc;
-    const char                    *molname[2];
     double                         T, value, error, vec[3];
     tensor                         quadrupole;
-#define prev (1-cur)
     const char                    *iupac;
 
     if (bCalcPol)
@@ -301,28 +296,23 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
         calc_frag_miller(pd, mp, gms);
     }
 
-    qmc = find_calculations(mp, prop, fc_str);
+    qmc = find_calculations(mp, mpo, fc_str);
 
     snew(rc, 1);
-    for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); ++mpi)
     {
-        molname[cur] = mpi->getMolname().c_str();
-        for (ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
+        for (alexandria::ExperimentIterator ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ++ei)
         {
-            if (ei->getVal(exp_type, prop, &value, &error, &T, vec, quadrupole))
+            T = -1;
+            if (ei->getVal(exp_type, mpo, &value, &error, &T, vec, quadrupole))
             {
                 add_refc(rc, ei->getReference().c_str());
             }
         }
-        if (debug && ((mpi > mp.begin()) && (strcasecmp(molname[cur], molname[prev]) == 0)))
-        {
-            fprintf(debug, "Double entry %s\n", molname[cur]);
-        }
-        cur = prev;
     }
 
     printf("--------------------------------------------------\n");
-    printf("      Some statistics for %s\n", mpo_name[prop]);
+    printf("      Some statistics for %s\n", mpo_name[mpo]);
     ntot = 0;
     for (i = 0; (i < rc->nref); i++)
     {
@@ -330,7 +320,8 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                rc->rcount[i], rc->refs[i]);
         ntot += rc->rcount[i];
     }
-    printf("There are %d entries with experimental data\n", ntot);
+    printf("There are %d entries with experimental %s of type %s\n", ntot,
+           mpo_name[mpo], exp_type);
     if (0 == ntot)
     {
         printf("   did you forget to pass the -exp_type flag?\n");
@@ -346,32 +337,32 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     fp = gmx_ffopen(texfn, "w");
     if (bStatsTable)
     {
-        gmx_molprop_stats_table(fp, prop, mp, qmc, exp_type,
+        gmx_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
                                 outlier, cList, gms, imsTrain);
         if (0)
         {
             alexandria::CategoryList cListTest;
             makeCategoryList(cListTest, mp, gms, imsTest);
-            gmx_molprop_stats_table(fp, prop, mp, qmc, exp_type,
+            gmx_molprop_stats_table(fp, mpo, mp, qmc, exp_type,
                                     outlier, cListTest, gms, imsTest);
         }
     }
     if (bPropTable)
     {
-        gmx_molprop_prop_table(fp, prop, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
+        gmx_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
                                bPrintMultQ, gms, imsTrain);
-        gmx_molprop_prop_table(fp, prop, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
+        gmx_molprop_prop_table(fp, mpo, rtoler, atoler, mp, qmc, exp_type, bPrintAll, bPrintBasis,
                                bPrintMultQ, gms, imsTest);
         if (NULL != selout)
         {
             gp = fopen(selout, "w");
-            for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+            for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
             {
                 iupac = mpi->getIupac().c_str();
                 if ((NULL != iupac) && (strlen(iupac) > 0))
                 {
                     std::string myref, mylot;
-                    if (mpi->getPropRef(prop, iqmBoth, lot, NULL, NULL,
+                    if (mpi->getPropRef(mpo, iqmBoth, lot, NULL, NULL,
                                         &value, &error, &T, myref, mylot,
                                         vec, quadrupole))
                     {
@@ -396,7 +387,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     }
     if (NULL != xvgfn)
     {
-        write_corr_xvg(xvgfn, mp, prop, qmc, rtoler, atoler, oenv, gms, exp_type);
+        write_corr_xvg(xvgfn, mp, mpo, qmc, rtoler, atoler, oenv, gms, exp_type);
     }
 }
 
