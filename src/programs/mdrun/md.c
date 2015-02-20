@@ -1225,6 +1225,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     | (bTemp ? CGLO_TEMPERATURE : 0)
                                     | (bPres ? CGLO_PRESSURE : 0)
                                     | (bPres ? CGLO_CONSTRAINT : 0)
+                                    | (bStopCM ? CGLO_STOPCM : 0)
                                     | ((iterate.bIterationActive) ? CGLO_ITERATE : 0)
                                     | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                     | CGLO_SCALEEKIN
