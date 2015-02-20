@@ -1162,6 +1162,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     | CGLO_ENERGY
                                     | (bTemp ? CGLO_TEMPERATURE : 0)
                                     | (bPres ? CGLO_PRESSURE : 0)
+                                    | (bStopCM ? CGLO_STOPCM : 0)
                                     | (bPres ? CGLO_CONSTRAINT : 0)
                                     | CGLO_SCALEEKIN
                                     );
