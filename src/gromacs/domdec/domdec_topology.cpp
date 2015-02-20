@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,10 @@
 
 #include "gmxpre.h"
 
+#include <stdlib.h>
 #include <string.h>
+
+#include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
@@ -101,6 +104,7 @@ typedef struct {
 typedef struct gmx_reverse_top {
     //! @cond Doxygen_Suppress
     gmx_bool         bExclRequired;   /**< Do we require all exclusions to be assigned? */
+    int              n_excl_at_max;   /**< The maximum number of exclusions one atom can have */
     gmx_bool         bConstr;         /**< Are there constraints in this revserse top?  */
     gmx_bool         bSettle;         /**< Are there settles in this revserse top?  */
     gmx_bool         bBCheck;         /**< All bonded interactions have to be assigned? */
@@ -465,13 +469,14 @@ static void global_atomnr_to_moltype_ind(gmx_reverse_top_t *rt, int i_gl,
 }
 
 /*! \brief Count the exclusions for all atoms in \p cgs */
-static int count_excls(const t_block *cgs, const t_blocka *excls,
-                       int *n_intercg_excl)
+static void count_excls(const t_block *cgs, const t_blocka *excls,
+                        int *n_excl, int *n_intercg_excl, int *n_excl_at_max)
 {
     int n, cg, at0, at1, at, excl, atj;
 
-    n               = 0;
+    *n_excl         = 0;
     *n_intercg_excl = 0;
+    *n_excl_at_max  = 0;
     for (cg = 0; cg < cgs->nr; cg++)
     {
         at0 = cgs->index[cg];
@@ -490,10 +495,11 @@ static int count_excls(const t_block *cgs, const t_blocka *excls,
                     }
                 }
             }
+
+            *n_excl_at_max = std::max(*n_excl_at_max,
+                                      excls->index[at+1] - excls->index[at]);
         }
     }
-
-    return n;
 }
 
 /*! \brief Run the reverse ilist generation and store it when \p bAssign = TRUE */
@@ -738,10 +744,6 @@ void dd_make_reverse_top(FILE *fplog,
                          gmx_vsite_t *vsite,
                          t_inputrec *ir, gmx_bool bBCheck)
 {
-    int             mb, nexcl, nexcl_icg;
-    gmx_molblock_t *molb;
-    gmx_moltype_t  *molt;
-
     if (fplog)
     {
         fprintf(fplog, "\nLinking all bonded interactions to atoms\n");
@@ -758,7 +760,9 @@ void dd_make_reverse_top(FILE *fplog,
                                        !dd->bInterCGcons, !dd->bInterCGsettles,
                                        bBCheck, &dd->nbonded_global);
 
-    if (dd->reverse_top->ril_mt_tot_size >= 200000 &&
+    gmx_reverse_top_t *rt = dd->reverse_top;
+
+    if (rt->ril_mt_tot_size >= 200000 &&
         mtop->mols.nr > 1 &&
         mtop->nmolblock == 1 && mtop->molblock[0].nmol == 1)
     {
@@ -774,18 +778,37 @@ void dd_make_reverse_top(FILE *fplog,
         }
     }
 
-    dd->reverse_top->bExclRequired = IR_EXCL_FORCES(*ir);
+    /* With the Verlet scheme, exclusions are handled in the non-bonded
+     * kernels and only exclusions inside the cut-off lead to exclusion
+     * forces. Since each atom pair is treated at most once in the non-bonded
+     * kernels, it doesn't matter if the exclusions for the same atom pair
+     * appear multiple times in the exclusion list. In contrast, the, old,
+     * group cut-off scheme loops over a list of exclusions, so there each
+     * excluded pair should appear exactly once.
+     */
+    rt->bExclRequired = (ir->cutoff_scheme == ecutsGROUP &&
+                         IR_EXCL_FORCES(*ir));
+
+    int nexcl, mb;
 
     nexcl              = 0;
     dd->n_intercg_excl = 0;
+    rt->n_excl_at_max  = 0;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
+        gmx_molblock_t *molb;
+        gmx_moltype_t  *molt;
+        int             n_excl_mol, n_excl_icg, n_excl_at_max;
+
         molb                = &mtop->molblock[mb];
         molt                = &mtop->moltype[molb->type];
-        nexcl              += molb->nmol*count_excls(&molt->cgs, &molt->excls, &nexcl_icg);
-        dd->n_intercg_excl += molb->nmol*nexcl_icg;
+        count_excls(&molt->cgs, &molt->excls,
+                    &n_excl_mol, &n_excl_icg, &n_excl_at_max);
+        nexcl              += molb->nmol*n_excl_mol;
+        dd->n_intercg_excl += molb->nmol*n_excl_icg;
+        rt->n_excl_at_max   = std::max(rt->n_excl_at_max, n_excl_at_max);
     }
-    if (dd->reverse_top->bExclRequired)
+    if (rt->bExclRequired)
     {
         dd->nbonded_global += nexcl;
         if (EEL_FULL(ir->coulombtype) && dd->n_intercg_excl > 0 && fplog)
@@ -1489,17 +1512,22 @@ static void set_no_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     }
 }
 
-/*! \brief Set the exclusion data for i-zone \p iz */
-static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
-                                const gmx_moltype_t *moltype,
-                                gmx_bool bRCheck, real rc2,
-                                int *la2lc, t_pbc *pbc_null, rvec *cg_cm,
-                                const int *cginfo,
-                                t_blocka *lexcls,
-                                int iz,
-                                int cg_start, int cg_end)
+/*! \brief Set the exclusion data for i-zone \p iz
+ *
+ * This is a legacy version for the group scheme of the same routine below.
+ * Here charge groups and distance checks to ensure unique exclusions
+ * are supported.
+ */
+static int make_exclusions_zone_cg(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
+                                   const gmx_moltype_t *moltype,
+                                   gmx_bool bRCheck, real rc2,
+                                   int *la2lc, t_pbc *pbc_null, rvec *cg_cm,
+                                   const int *cginfo,
+                                   t_blocka *lexcls,
+                                   int iz,
+                                   int cg_start, int cg_end)
 {
-    int             n, count, jla0, jla1, jla;
+    int             n_excl_at_max, n, count, jla0, jla1, jla;
     int             cg, la0, la1, la, a_gl, mb, mt, mol, a_mol, j, aj_mol;
     const t_blocka *excls;
     gmx_ga2la_t     ga2la;
@@ -1510,6 +1538,8 @@ static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     jla0 = dd->cgindex[zones->izone[iz].jcg0];
     jla1 = dd->cgindex[zones->izone[iz].jcg1];
 
+    n_excl_at_max = dd->reverse_top->n_excl_at_max;
+
     /* We set the end index, but note that we might not start at zero here */
     lexcls->nr = dd->cgindex[cg_end];
 
@@ -1517,12 +1547,9 @@ static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     count = 0;
     for (cg = cg_start; cg < cg_end; cg++)
     {
-        /* Here we assume the number of exclusions in one charge group
-         * is never larger than 1000.
-         */
-        if (n+1000 > lexcls->nalloc_a)
+        if (n + (cg_end - cg_start)*n_excl_at_max > lexcls->nalloc_a)
         {
-            lexcls->nalloc_a = over_alloc_large(n+1000);
+            lexcls->nalloc_a = over_alloc_large(n + (cg_end - cg_start)*n_excl_at_max);
             srenew(lexcls->a, lexcls->nalloc_a);
         }
         la0 = dd->cgindex[cg];
@@ -1627,6 +1654,85 @@ static int make_exclusions_zone(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
 
     return count;
 }
+
+/*! \brief Set the exclusion data for i-zone \p iz */
+static void make_exclusions_zone(gmx_domdec_t *dd,
+                                 gmx_domdec_zones_t *zones,
+                                 const gmx_moltype_t *moltype,
+                                 const int *cginfo,
+                                 t_blocka *lexcls,
+                                 int iz,
+                                 int at_start, int at_end)
+{
+    gmx_ga2la_t ga2la;
+    int         jla0, jla1;
+    int         n_excl_at_max, n, at;
+
+    ga2la = dd->ga2la;
+
+    jla0 = dd->cgindex[zones->izone[iz].jcg0];
+    jla1 = dd->cgindex[zones->izone[iz].jcg1];
+
+    n_excl_at_max = dd->reverse_top->n_excl_at_max;
+
+    /* We set the end index, but note that we might not start at zero here */
+    lexcls->nr = at_end;
+
+    n = lexcls->nra;
+    for (at = at_start; at < at_end; at++)
+    {
+        if (n + 1000 > lexcls->nalloc_a)
+        {
+            lexcls->nalloc_a = over_alloc_large(n + 1000);
+            srenew(lexcls->a, lexcls->nalloc_a);
+        }
+        if (GET_CGINFO_EXCL_INTER(cginfo[at]))
+        {
+            int             a_gl, mb, mt, mol, a_mol, j;
+            const t_blocka *excls;
+
+            if (n + n_excl_at_max > lexcls->nalloc_a)
+            {
+                lexcls->nalloc_a = over_alloc_large(n + n_excl_at_max);
+                srenew(lexcls->a, lexcls->nalloc_a);
+            }
+
+            /* Copy the exclusions from the global top */
+            lexcls->index[at] = n;
+            a_gl              = dd->gatindex[at];
+            global_atomnr_to_moltype_ind(dd->reverse_top, a_gl,
+                                         &mb, &mt, &mol, &a_mol);
+            excls = &moltype[mt].excls;
+            for (j = excls->index[a_mol]; j < excls->index[a_mol + 1]; j++)
+            {
+                int aj_mol, at_j, cell;
+
+                aj_mol = excls->a[j];
+
+                if (ga2la_get(ga2la, a_gl + aj_mol - a_mol, &at_j, &cell))
+                {
+                    /* This check is not necessary, but it can reduce
+                     * the number of exclusions in the list, which in turn
+                     * can speed up the pair list construction a bit.
+                     */
+                    if (at_j >= jla0 && at_j < jla1)
+                    {
+                        lexcls->a[n++] = at_j;
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* We don't need exclusions for this atom */
+            lexcls->index[at] = n;
+        }
+    }
+
+    lexcls->index[lexcls->nr] = n;
+    lexcls->nra               = n;
+}
+
 
 /*! \brief Ensure we have enough space in \p ba for \p nindex_max indices */
 static void check_alloc_index(t_blocka *ba, int nindex_max)
@@ -1817,13 +1923,26 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                     excl_t->nra = 0;
                 }
 
-                rt->th_work[thread].excl_count =
+                if (dd->cgindex[dd->ncg_tot] == dd->ncg_tot &&
+                    !rt->bExclRequired)
+                {
+                    /* No charge groups and no distance check required */
                     make_exclusions_zone(dd, zones,
-                                         mtop->moltype, bRCheck2B, rc2,
-                                         la2lc, pbc_null, cg_cm, cginfo,
+                                         mtop->moltype, cginfo,
                                          excl_t,
                                          iz,
                                          cg0t, cg1t);
+                }
+                else
+                {
+                    rt->th_work[thread].excl_count =
+                        make_exclusions_zone_cg(dd, zones,
+                                                mtop->moltype, bRCheck2B, rc2,
+                                                la2lc, pbc_null, cg_cm, cginfo,
+                                                excl_t,
+                                                iz,
+                                                cg0t, cg1t);
+                }
             }
         }
 
