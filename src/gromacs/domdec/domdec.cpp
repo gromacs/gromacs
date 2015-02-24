@@ -3911,7 +3911,7 @@ static void check_screw_box(matrix box)
     }
 }
 
-static void distribute_cg(FILE *fplog, gmx_int64_t step,
+static void distribute_cg(FILE *fplog,
                           matrix box, ivec tric_dir, t_block *cgs, rvec pos[],
                           gmx_domdec_t *dd)
 {
@@ -4065,18 +4065,33 @@ static void distribute_cg(FILE *fplog, gmx_int64_t step,
 
     if (fplog)
     {
-        char buf[22];
-        fprintf(fplog, "Charge group distribution at step %s:",
-                gmx_step_str(step, buf));
+        /* Here we avoid int overflows due to #atoms^2: use double, dsqr */
+        int    nat_sum, nat_min, nat_max;
+        double nat2_sum;
+
+        nat_sum  = 0;
+        nat2_sum = 0;
+        nat_min  = ma->nat[0];
+        nat_max  = ma->nat[0];
         for (i = 0; i < dd->nnodes; i++)
         {
-            fprintf(fplog, " %d", ma->ncg[i]);
+            nat_sum  += ma->nat[i];
+            nat2_sum += dsqr(ma->nat[i]);
+            nat_min   = std::min(nat_min, ma->nat[i]);
+            nat_max   = std::max(nat_max, ma->nat[i]);
         }
-        fprintf(fplog, "\n");
+        nat_sum  /= dd->nnodes;
+        nat2_sum /= dd->nnodes;
+
+        fprintf(fplog, "Atom distribution over %d domains: av %d stddev %d min %d max %d\n",
+                dd->nnodes,
+                nat_sum,
+                static_cast<int>(sqrt(nat2_sum - dsqr(nat_sum) + 0.5)),
+                nat_min, nat_max);
     }
 }
 
-static void get_cg_distribution(FILE *fplog, gmx_int64_t step, gmx_domdec_t *dd,
+static void get_cg_distribution(FILE *fplog, gmx_domdec_t *dd,
                                 t_block *cgs, matrix box, gmx_ddbox_t *ddbox,
                                 rvec pos[])
 {
@@ -4097,7 +4112,7 @@ static void get_cg_distribution(FILE *fplog, gmx_int64_t step, gmx_domdec_t *dd,
 
         set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbMASTER, npulse);
 
-        distribute_cg(fplog, step, box, ddbox->tric_dir, cgs, pos, dd);
+        distribute_cg(fplog, box, ddbox->tric_dir, cgs, pos, dd);
         for (i = 0; i < dd->nnodes; i++)
         {
             ma->ibuf[2*i]   = ma->ncg[i];
@@ -9466,7 +9481,7 @@ void dd_partition_system(FILE                *fplog,
         set_ddbox(dd, bMasterState, cr, ir, state_global->box,
                   TRUE, cgs_gl, state_global->x, &ddbox);
 
-        get_cg_distribution(fplog, step, dd, cgs_gl,
+        get_cg_distribution(fplog, dd, cgs_gl,
                             state_global->box, &ddbox, state_global->x);
 
         dd_distribute_state(dd, cgs_gl,
