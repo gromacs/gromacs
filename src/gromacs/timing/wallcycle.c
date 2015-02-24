@@ -333,6 +333,24 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
     return last;
 }
 
+void wallcycle_add(gmx_wallcycle_t wc, int ewc, gmx_uint64_t cycles, int steps)
+{
+    if (wc == NULL)
+    {
+        return;
+    }
+
+#ifdef GMX_MPI
+    if (wc->wc_barrier)
+    {
+        MPI_Barrier(wc->mpi_comm_mygroup);
+    }
+#endif
+
+    wc->wcc[ewc].c += (gmx_cycles_t)cycles;
+    wc->wcc[ewc].n += steps;
+}
+
 void wallcycle_reset_all(gmx_wallcycle_t wc)
 {
     int i;
@@ -939,12 +957,25 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
     }
 }
 
+void wallcycle_sub_add(gmx_wallcycle_t wc, int ewcs, gmx_uint64_t cycles, int steps)
+{
+    if (wc != NULL)
+    {
+        wc->wcsc[ewcs].c += (gmx_cycles_t)cycles;
+        wc->wcsc[ewcs].n += steps;
+    }
+}
+
 #else
 
 void wallcycle_sub_start(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
 {
 }
 void wallcycle_sub_stop(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
+{
+}
+void wallcycle_sub_add(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs,
+                       gmx_uint64_t gmx_unused cycles, int gmx_unused steps)
 {
 }
 
