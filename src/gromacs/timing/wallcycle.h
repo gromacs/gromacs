@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,6 +89,9 @@ void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */
 
+void wallcycle_add(gmx_wallcycle_t wc, int ewc, gmx_uint64_t cycles, int steps);
+/* Increment cycle count and steps for ewc without having to use start and stop */
+
 void wallcycle_reset_all(gmx_wallcycle_t wc);
 /* Resets all cycle counters to zero */
 
@@ -110,6 +113,9 @@ void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
 
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 /* Stop the sub cycle count for ewcs */
+
+void wallcycle_sub_add(gmx_wallcycle_t wc, int ewcs, gmx_uint64_t cycles, int steps);
+/* Increment cycle count and steps for ewcs without having to use start and stop */
 
 #ifdef __cplusplus
 }
