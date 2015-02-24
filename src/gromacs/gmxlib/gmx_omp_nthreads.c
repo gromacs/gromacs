@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -509,7 +509,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     }
 #endif
 
-    reportOpenmpSettings(fplog, cr, bOMP, bSepPME, bFullOmpSupport);
+    reportOpenmpSettings(fplog, cr, bOMP, bFullOmpSupport, bSepPME);
     issueOversubscriptionWarning(fplog, cr, bSepPME, nthreads_hw_avail, nppn);
 }
 
