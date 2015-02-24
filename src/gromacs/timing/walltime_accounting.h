@@ -68,14 +68,22 @@ void
 walltime_accounting_start(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
+ * Record resume time stamps. Assumes previous call to walltime_accounting_end()
+ * and resumes accounting (does not re-initialize counter).
+ */
+void
+walltime_accounting_resume(gmx_walltime_accounting_t walltime_accounting);
+
+/*! \brief
  * Measure and cache the elapsed wall-clock time since
- * walltime_accounting_start() */
+ * walltime_accounting_start() or walltime_accounting_resume() */
 void
 walltime_accounting_end(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
  * Measure and return the elapsed wall-clock time since
- * walltime_accounting_start() */
+ * walltime_accounting_start() or walltime_accounting_resume(), whichever was
+ * called last. */
 double
 walltime_accounting_get_current_elapsed_time(gmx_walltime_accounting_t walltime_accounting);
 
@@ -90,6 +98,10 @@ walltime_accounting_get_elapsed_time_over_all_threads(gmx_walltime_accounting_t 
 //! Get the cached initial time stamp for this node
 double
 walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_accounting);
+
+//! Get the cached last resume time stamp for this node
+double
+walltime_accounting_get_resume_time_stamp(gmx_walltime_accounting_t walltime_accounting);
 
 //! Get the number of integration steps done
 gmx_int64_t
