@@ -219,6 +219,16 @@ if (SPHINX_FOUND)
         set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/man)
     endif()
 endif()
+
+if (SOURCE_IS_SOURCE_DISTRIBUTION)
+  # When building from the tarball, default to installing the bundled man pages
+  if (GMX_BUILD_HELP AND SPHINX_FOUND)
+    set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/man)
+  else()
+    set(MAN_PAGE_DIR ${MAN_PAGE_DIR}/man)
+  endif()
+endif()
+
 if (SOURCE_IS_SOURCE_DISTRIBUTION OR (GMX_BUILD_HELP AND SPHINX_FOUND))
     install(DIRECTORY ${MAN_PAGE_DIR}/
         DESTINATION ${MAN_INSTALL_DIR}/man1
