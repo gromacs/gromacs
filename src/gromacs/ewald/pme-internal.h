@@ -193,25 +193,7 @@ typedef struct {
 
 struct pme_spline_work;
 
-typedef struct {
-    /* work data for solve_pme */
-    int      nalloc;
-    real *   mhx;
-    real *   mhy;
-    real *   mhz;
-    real *   m2;
-    real *   denom;
-    real *   tmp1_alloc;
-    real *   tmp1;
-    real *   tmp2;
-    real *   eterm;
-    real *   m2inv;
-
-    real     energy_q;
-    matrix   vir_q;
-    real     energy_lj;
-    matrix   vir_lj;
-} pme_work_t;
+struct pme_solve_work_t;
 
 typedef struct gmx_pme_t {
     int           ndecompdim; /* The number of decomposition dimensions */
@@ -298,7 +280,7 @@ typedef struct gmx_pme_t {
     int                   buf_nalloc;    /* The communication buffer size */
 
     /* thread local work data for solve_pme */
-    pme_work_t *work;
+    struct pme_solve_work_t *solve_work;
 
     /* Work data for sum_qgrid */
     real *   sum_qgrid_tmp;
