@@ -113,58 +113,6 @@
 #define GMX_CACHE_SEP 64
 
 
-static void realloc_work(pme_work_t *work, int nkx)
-{
-    int simd_width, i;
-
-    if (nkx > work->nalloc)
-    {
-        work->nalloc = nkx;
-        srenew(work->mhx, work->nalloc);
-        srenew(work->mhy, work->nalloc);
-        srenew(work->mhz, work->nalloc);
-        srenew(work->m2, work->nalloc);
-        /* Allocate an aligned pointer for SIMD operations, including extra
-         * elements at the end for padding.
-         */
-#ifdef PME_SIMD_SOLVE
-        simd_width = GMX_SIMD_REAL_WIDTH;
-#else
-        /* We can use any alignment, apart from 0, so we use 4 */
-        simd_width = 4;
-#endif
-        sfree_aligned(work->denom);
-        sfree_aligned(work->tmp1);
-        sfree_aligned(work->tmp2);
-        sfree_aligned(work->eterm);
-        snew_aligned(work->denom, work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->tmp1,  work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->tmp2,  work->nalloc+simd_width, simd_width*sizeof(real));
-        snew_aligned(work->eterm, work->nalloc+simd_width, simd_width*sizeof(real));
-        srenew(work->m2inv, work->nalloc);
-#ifndef NDEBUG
-        for (i = 0; i < work->nalloc+simd_width; i++)
-        {
-            work->denom[i] = 1; /* init to 1 to avoid 1/0 exceptions of simd padded elements */
-        }
-#endif
-    }
-}
-
-
-static void free_work(pme_work_t *work)
-{
-    sfree(work->mhx);
-    sfree(work->mhy);
-    sfree(work->mhz);
-    sfree(work->m2);
-    sfree_aligned(work->denom);
-    sfree_aligned(work->tmp1);
-    sfree_aligned(work->tmp2);
-    sfree_aligned(work->eterm);
-    sfree(work->m2inv);
-}
-
 static void setup_coordinate_communication(pme_atomcomm_t *atc)
 {
     int nslab, n, i;
@@ -216,11 +164,7 @@ int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
     sfree((*pmedata)->lb_buf1);
     sfree((*pmedata)->lb_buf2);
 
-    for (thread = 0; thread < (*pmedata)->nthread; thread++)
-    {
-        free_work(&(*pmedata)->work[thread]);
-    }
-    sfree((*pmedata)->work);
+    pme_free_all_work(&(*pmedata)->solve_work, (*pmedata)->nthread);
 
     sfree(*pmedata);
     *pmedata = NULL;
@@ -828,17 +772,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     pme->lb_buf2       = NULL;
     pme->lb_buf_nalloc = 0;
 
-    {
-        int thread;
-
-        /* Use fft5d, order after FFT is y major, z, x minor */
-
-        snew(pme->work, pme->nthread);
-        for (thread = 0; thread < pme->nthread; thread++)
-        {
-            realloc_work(&pme->work[thread], pme->nkx);
-        }
-    }
+    pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
     *pmedata = pme;
 
@@ -1275,11 +1209,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
              */
             if (grid_index < 2)
             {
-                get_pme_ener_vir_q(pme, pme->nthread, &energy_AB[grid_index], vir_AB[grid_index]);
+                get_pme_ener_vir_q(pme->solve_work, pme->nthread, &energy_AB[grid_index], vir_AB[grid_index]);
             }
             else
             {
-                get_pme_ener_vir_lj(pme, pme->nthread, &energy_AB[grid_index], vir_AB[grid_index]);
+                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy_AB[grid_index], vir_AB[grid_index]);
             }
         }
         bFirst = FALSE;
@@ -1454,7 +1388,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 /* This should only be called on the master thread and
                  * after the threads have synchronized.
                  */
-                get_pme_ener_vir_lj(pme, pme->nthread, &energy_AB[2+fep_state], vir_AB[2+fep_state]);
+                get_pme_ener_vir_lj(pme->solve_work, pme->nthread, &energy_AB[2+fep_state], vir_AB[2+fep_state]);
             }
 
             if (bCalcF)
