@@ -52,7 +52,7 @@
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/listed-forces/listed-forces.h"
-#include "gromacs/mdlib/forcerec-threading.h"
+#include "gromacs/listed-forces/listed-internal.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -342,65 +342,68 @@ const int maxBlockBits = BITMASK_SIZE;
 
 void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
 {
-    int t;
-    int ctot, c, b;
+    bonded_threading_t *bt;
+    int                 t;
+    int                 ctot, c, b;
 
-    assert(fr->nthreads >= 1);
+    bt = fr->bonded_threading;
+
+    assert(bt->nthreads >= 1);
 
     /* Divide the bonded interaction over the threads */
     divide_bondeds_over_threads(idef,
-                                fr->nthreads,
-                                fr->bonded_max_nthread_uniform);
+                                bt->nthreads,
+                                bt->bonded_max_nthread_uniform);
 
-    if (fr->nthreads == 1)
+    if (bt->nthreads == 1)
     {
-        fr->red_nblock = 0;
+        bt->red_nblock = 0;
 
         return;
     }
 
-    fr->red_ashift = 6;
-    while (fr->natoms_force > (int)(maxBlockBits*(1U<<fr->red_ashift)))
+    bt->red_ashift = 6;
+    while (fr->natoms_force > (int)(maxBlockBits*(1U<<bt->red_ashift)))
     {
-        fr->red_ashift++;
+        bt->red_ashift++;
     }
     if (debug)
     {
         fprintf(debug, "bonded force buffer block atom shift %d bits\n",
-                fr->red_ashift);
+                bt->red_ashift);
     }
 
     /* Determine to which blocks each thread's bonded force calculation
      * contributes. Store this is a mask for each thread.
      */
-#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
-    for (t = 1; t < fr->nthreads; t++)
+#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
+    for (t = 1; t < bt->nthreads; t++)
     {
-        calc_bonded_reduction_mask(&fr->f_t[t].red_mask,
-                                   idef, fr->red_ashift, t, fr->nthreads);
+        calc_bonded_reduction_mask(&bt->f_t[t].red_mask,
+                                   idef, bt->red_ashift, t, bt->nthreads);
     }
 
     /* Determine the maximum number of blocks we need to reduce over */
-    fr->red_nblock = 0;
+    bt->red_nblock = 0;
     ctot           = 0;
-    for (t = 0; t < fr->nthreads; t++)
+    for (t = 0; t < bt->nthreads; t++)
     {
         c = 0;
         for (b = 0; b < maxBlockBits; b++)
         {
-            if (bitmask_is_set(fr->f_t[t].red_mask, b))
+            if (bitmask_is_set(bt->f_t[t].red_mask, b))
             {
-                fr->red_nblock = std::max(fr->red_nblock, b+1);
+                bt->red_nblock = std::max(bt->red_nblock, b+1);
                 c++;
             }
         }
         if (debug)
         {
 #if BITMASK_SIZE <= 64 //move into bitmask when it is C++
-            std::string flags = gmx::formatString("%x", fr->f_t[t].red_mask);
+            std::string flags = gmx::formatString("%x", bt->f_t[t].red_mask);
 #else
-            std::string flags = gmx::formatAndJoin(fr->f_t[t].red_mask,
-                                                   fr->f_t[t].red_mask+BITMASK_ALEN,
+            std::string flags = gmx::formatAndJoin(bt->f_t[t].red_mask,
+                                                   bt->f_t[t].red_mask+BITMASK_ALEN,
                                                    "", gmx::StringFormatter("%x"));
 #endif
             fprintf(debug, "thread %d flags %s count %d\n",
@@ -411,38 +414,43 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
     if (debug)
     {
         fprintf(debug, "Number of blocks to reduce: %d of size %d\n",
-                fr->red_nblock, 1<<fr->red_ashift);
+                bt->red_nblock, 1<<bt->red_ashift);
         fprintf(debug, "Reduction density %.2f density/#thread %.2f\n",
-                ctot*(1<<fr->red_ashift)/(double)fr->natoms_force,
-                ctot*(1<<fr->red_ashift)/(double)(fr->natoms_force*fr->nthreads));
+                ctot*(1<<bt->red_ashift)/(double)fr->natoms_force,
+                ctot*(1<<bt->red_ashift)/(double)(fr->natoms_force*bt->nthreads));
     }
 }
 
-void init_bonded_threading(FILE *fplog, t_forcerec *fr, int nenergrp)
+void init_bonded_threading(FILE *fplog, int nenergrp,
+                           struct bonded_threading_t **bt_ptr)
 {
-    /* These thread local data structures are used for bondeds only */
-    fr->nthreads = gmx_omp_nthreads_get(emntBonded);
+    bonded_threading_t *bt;
 
-    if (fr->nthreads > 1)
+    snew(bt, 1);
+
+    /* These thread local data structures are used for bondeds only */
+    bt->nthreads = gmx_omp_nthreads_get(emntBonded);
+
+    if (bt->nthreads > 1)
     {
         int t;
 
-        snew(fr->f_t, fr->nthreads);
-#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
-        for (t = 0; t < fr->nthreads; t++)
+        snew(bt->f_t, bt->nthreads);
+#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
+        for (t = 0; t < bt->nthreads; t++)
         {
             /* Thread 0 uses the global force and energy arrays */
             if (t > 0)
             {
                 int i;
 
-                fr->f_t[t].f        = NULL;
-                fr->f_t[t].f_nalloc = 0;
-                snew(fr->f_t[t].fshift, SHIFTS);
-                fr->f_t[t].grpp.nener = nenergrp*nenergrp;
+                bt->f_t[t].f        = NULL;
+                bt->f_t[t].f_nalloc = 0;
+                snew(bt->f_t[t].fshift, SHIFTS);
+                bt->f_t[t].grpp.nener = nenergrp*nenergrp;
                 for (i = 0; i < egNR; i++)
                 {
-                    snew(fr->f_t[t].grpp.ener[i], fr->f_t[t].grpp.nener);
+                    snew(bt->f_t[t].grpp.ener[i], bt->f_t[t].grpp.nener);
                 }
             }
         }
@@ -456,16 +464,18 @@ void init_bonded_threading(FILE *fplog, t_forcerec *fr, int nenergrp)
 
         if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != NULL)
         {
-            sscanf(ptr, "%d", &fr->bonded_max_nthread_uniform);
+            sscanf(ptr, "%d", &bt->bonded_max_nthread_uniform);
             if (fplog != NULL)
             {
                 fprintf(fplog, "\nMax threads for uniform bonded distribution set to %d by env.var.\n",
-                        fr->bonded_max_nthread_uniform);
+                        bt->bonded_max_nthread_uniform);
             }
         }
         else
         {
-            fr->bonded_max_nthread_uniform = max_nthread_uniform;
+            bt->bonded_max_nthread_uniform = max_nthread_uniform;
         }
     }
+
+    *bt_ptr = bt;
 }

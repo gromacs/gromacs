@@ -60,8 +60,13 @@ extern "C" {
  */
 void setup_bonded_threading(t_forcerec *fr, t_idef *idef);
 
-/*! \brief Initialize the bonded threading data structures */
-void init_bonded_threading(FILE *fplog, t_forcerec *fr, int nenergrp);
+/*! \brief Initialize the bonded threading data structures
+ *
+ * Allocates and initializes a bonded threading data structure.
+ * A pointer to this struct is returned as \p *bb_ptr.
+ */
+void init_bonded_threading(FILE *fplog, int nenergrp,
+                           struct bonded_threading_t **bt_ptr);
 
 #ifdef __cplusplus
 }
