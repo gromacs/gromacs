@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,40 @@
  */
 #ifndef GMX_LISTED_FORCES_LISTED_INTERNAL_H
 #define GMX_LISTED_FORCES_LISTED_INTERNAL_H
+
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/bitmask.h"
+
+/*! \internal \brief struct with output for bonded forces, used per thread */
+typedef struct
+{
+    rvec             *f;            /**< Force array */
+    int               f_nalloc;     /**< Allocation size of f */
+    gmx_bitmask_t     red_mask;     /**< Mask for marking which parts of f are filled */
+    rvec             *fshift;       /**< Shift force array, size SHIFTS */
+    real              ener[F_NRE];  /**< Energy array */
+    gmx_grppairener_t grpp;         /**< Group pair energy data for pairs */
+    real              dvdl[efptNR]; /**< Free-energy dV/dl output */
+}
+f_thread_t;
+
+/*! \internal \brief struct contain all data for bonded force threading */
+struct bonded_threading_t
+{
+    /* Thread local force and energy data */
+    int         nthreads;   /**< Number of threads to be used for bondeds */
+    int         red_ashift; /**< Size of force reduction blocks in bits */
+    int         red_nblock; /**< The number of force blocks to reduce */
+    f_thread_t *f_t;        /**< Force/enegry data per thread, size nthreads */
+
+    /* There are two different ways to distribute the bonded force calculation
+     * over the threads. We dedice which to use based on the number of threads.
+     */
+    int bonded_max_nthread_uniform; /**< Maximum thread count for uniform distribution of bondeds over threads */
+};
+
 
 /*! \brief Returns the global topology atom number belonging to local
  * atom index i.

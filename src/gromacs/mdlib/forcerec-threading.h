@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,19 +36,11 @@
 #ifndef GMX_MDLIB_FORCEREC_THREADING_H
 #define GMX_MDLIB_FORCEREC_THREADING_H
 
-#include "gromacs/utility/bitmask.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct f_thread_t {
-    rvec             *f;
-    int               f_nalloc;
-    gmx_bitmask_t     red_mask; /* Mask for marking which parts of f are filled */
-    rvec             *fshift;
-    real              ener[F_NRE];
-    gmx_grppairener_t grpp;
+struct ewald_corr_thread_t {
     real              Vcorr_q;
     real              Vcorr_lj;
     real              dvdl[efptNR];

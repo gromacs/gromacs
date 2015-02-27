@@ -60,13 +60,13 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "listed-internal.h"
 #include "pairs.h"
 
 namespace
@@ -397,14 +397,18 @@ void calc_listed(const gmx_multisim_t *ms,
                  t_fcdata *fcd, int *global_atom_index,
                  int force_flags)
 {
-    gmx_bool      bCalcEnerVir;
-    int           i;
-    real          dvdl[efptNR]; /* The dummy array is to have a place to store the dhdl at other values
-                                                        of lambda, which will be thrown away in the end*/
-    const  t_pbc *pbc_null;
-    int           thread;
+    struct bonded_threading_t *bt;
+    gmx_bool                   bCalcEnerVir;
+    int                        i;
+    /* The dummy array is to have a place to store the dhdl at other values
+       of lambda, which will be thrown away in the end */
+    real                       dvdl[efptNR];
+    const  t_pbc              *pbc_null;
+    int                        thread;
 
-    assert(fr->nthreads == idef->nthreads);
+    bt = fr->bonded_threading;
+
+    assert(bt->nthreads == idef->nthreads);
 
     bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
 
@@ -461,8 +465,8 @@ void calc_listed(const gmx_multisim_t *ms,
 #endif
     }
 
-#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
-    for (thread = 0; thread < fr->nthreads; thread++)
+#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
+    for (thread = 0; thread < bt->nthreads; thread++)
     {
         int                ftype;
         real              *epot, v;
@@ -481,14 +485,14 @@ void calc_listed(const gmx_multisim_t *ms,
         }
         else
         {
-            zero_thread_forces(&fr->f_t[thread], fr->natoms_force,
-                               fr->red_nblock, 1<<fr->red_ashift);
+            zero_thread_forces(&bt->f_t[thread], fr->natoms_force,
+                               bt->red_nblock, 1<<bt->red_ashift);
 
-            ft     = fr->f_t[thread].f;
-            fshift = fr->f_t[thread].fshift;
-            epot   = fr->f_t[thread].ener;
-            grpp   = &fr->f_t[thread].grpp;
-            dvdlt  = fr->f_t[thread].dvdl;
+            ft     = bt->f_t[thread].f;
+            fshift = bt->f_t[thread].fshift;
+            epot   = bt->f_t[thread].ener;
+            grpp   = &bt->f_t[thread].grpp;
+            dvdlt  = bt->f_t[thread].dvdl;
         }
         /* Loop over all bonded force types to calculate the bonded forces */
         for (ftype = 0; (ftype < F_NRE); ftype++)
@@ -504,12 +508,12 @@ void calc_listed(const gmx_multisim_t *ms,
             }
         }
     }
-    if (fr->nthreads > 1)
+    if (bt->nthreads > 1)
     {
         reduce_thread_forces(fr->natoms_force, f, fr->fshift,
                              enerd->term, &enerd->grpp, dvdl,
-                             fr->nthreads, fr->f_t,
-                             fr->red_nblock, 1<<fr->red_ashift,
+                             bt->nthreads, bt->f_t,
+                             bt->red_nblock, 1<<bt->red_ashift,
                              bCalcEnerVir,
                              force_flags & GMX_FORCE_DHDL);
     }
