@@ -60,6 +60,7 @@ extern "C" {
 /* Abstract type for PME that is defined only in the routine that use them. */
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
+struct bonded_threading_t;
 
 /* Structure describing the data in a single table */
 typedef struct
@@ -185,7 +186,7 @@ typedef struct {
 /* Forward declaration of type for managing Ewald tables */
 struct gmx_ewald_tab_t;
 
-typedef struct f_thread_t f_thread_t;
+typedef struct ewald_corr_thread_t ewald_corr_thread_t;
 
 typedef struct {
     interaction_const_t *ic;
@@ -468,18 +469,14 @@ typedef struct {
     real userreal3;
     real userreal4;
 
-    /* Thread local force and energy data */
-    /* FIXME move to bonded_thread_data_t */
-    int         nthreads;
-    int         red_ashift;
-    int         red_nblock;
-    f_thread_t *f_t;
+    /* Pointer to struct for managing threading of bonded force calculation */
+    struct bonded_threading_t *bonded_threading;
 
-    /* Maximum thread count for uniform distribution of bondeds over threads */
-    int   bonded_max_nthread_uniform;
-
-    /* Exclusion load distribution over the threads */
-    int  *excl_load;
+    /* Ewald correction thread local virial and energy data */
+    int                  nthread_ewc;
+    ewald_corr_thread_t *ewc_t;
+    /* Ewald charge correction load distribution over the threads */
+    int                 *excl_load;
 } t_forcerec;
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have
