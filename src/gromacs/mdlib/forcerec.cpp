@@ -3202,9 +3202,12 @@ void init_forcerec(FILE              *fp,
     }
 
     /* Initialize the thread working data for bonded interactions */
-    init_bonded_threading(fp, fr, mtop->groups.grps[egcENER].nr);
+    init_bonded_threading(fp, mtop->groups.grps[egcENER].nr,
+                          &fr->bonded_threading);
 
-    snew(fr->excl_load, fr->nthreads+1);
+    fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
+    snew(fr->ewc_t, fr->nthread_ewc);
+    snew(fr->excl_load, fr->nthread_ewc + 1);
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
@@ -3274,9 +3277,9 @@ void forcerec_set_excl_load(t_forcerec           *fr,
     fr->excl_load[0] = 0;
     n                = 0;
     i                = 0;
-    for (t = 1; t <= fr->nthreads; t++)
+    for (t = 1; t <= fr->nthread_ewc; t++)
     {
-        ntarget = (ntot*t)/fr->nthreads;
+        ntarget = (ntot*t)/fr->nthread_ewc;
         while (i < top->excls.nr && n < ntarget)
         {
             for (j = ind[i]; j < ind[i+1]; j++)

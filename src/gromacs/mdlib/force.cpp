@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,34 +112,22 @@ void ns(FILE              *fp,
     }
 }
 
-static void reduce_thread_forces(int n, rvec *f,
-                                 tensor vir_q, tensor vir_lj,
-                                 real *Vcorr_q, real *Vcorr_lj,
-                                 real *dvdl_q, real *dvdl_lj,
-                                 int nthreads, f_thread_t *f_t)
+static void reduce_thread_energies(tensor vir_q, tensor vir_lj,
+                                   real *Vcorr_q, real *Vcorr_lj,
+                                   real *dvdl_q, real *dvdl_lj,
+                                   int nthreads,
+                                   ewald_corr_thread_t *ewc_t)
 {
-    int t, i;
-    int nthreads_loop gmx_unused;
+    int t;
 
-    // cppcheck-suppress unreadVariable
-    nthreads_loop = gmx_omp_nthreads_get(emntBonded);
-    /* This reduction can run over any number of threads */
-#pragma omp parallel for num_threads(nthreads_loop) private(t) schedule(static)
-    for (i = 0; i < n; i++)
-    {
-        for (t = 1; t < nthreads; t++)
-        {
-            rvec_inc(f[i], f_t[t].f[i]);
-        }
-    }
     for (t = 1; t < nthreads; t++)
     {
-        *Vcorr_q  += f_t[t].Vcorr_q;
-        *Vcorr_lj += f_t[t].Vcorr_lj;
-        *dvdl_q   += f_t[t].dvdl[efptCOUL];
-        *dvdl_lj  += f_t[t].dvdl[efptVDW];
-        m_add(vir_q, f_t[t].vir_q, vir_q);
-        m_add(vir_lj, f_t[t].vir_lj, vir_lj);
+        *Vcorr_q  += ewc_t[t].Vcorr_q;
+        *Vcorr_lj += ewc_t[t].Vcorr_lj;
+        *dvdl_q   += ewc_t[t].dvdl[efptCOUL];
+        *dvdl_lj  += ewc_t[t].dvdl[efptVDW];
+        m_add(vir_q, ewc_t[t].vir_q, vir_q);
+        m_add(vir_lj, ewc_t[t].vir_lj, vir_lj);
     }
 }
 
@@ -430,17 +418,14 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     gmx_fatal(FARGS, "TPI with PME currently only works in a 3D geometry with tin-foil boundary conditions");
                 }
 
-                nthreads = gmx_omp_nthreads_get(emntBonded);
+                nthreads = fr->nthread_ewc;
 #pragma omp parallel for num_threads(nthreads) schedule(static)
                 for (t = 0; t < nthreads; t++)
                 {
-                    int     i;
-                    rvec   *fnv;
                     tensor *vir_q, *vir_lj;
                     real   *Vcorrt_q, *Vcorrt_lj, *dvdlt_q, *dvdlt_lj;
                     if (t == 0)
                     {
-                        fnv       = fr->f_novirsum;
                         vir_q     = &fr->vir_el_recip;
                         vir_lj    = &fr->vir_lj_recip;
                         Vcorrt_q  = &Vcorr_q;
@@ -450,23 +435,23 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     }
                     else
                     {
-                        fnv       = fr->f_t[t].f;
-                        vir_q     = &fr->f_t[t].vir_q;
-                        vir_lj    = &fr->f_t[t].vir_lj;
-                        Vcorrt_q  = &fr->f_t[t].Vcorr_q;
-                        Vcorrt_lj = &fr->f_t[t].Vcorr_lj;
-                        dvdlt_q   = &fr->f_t[t].dvdl[efptCOUL];
-                        dvdlt_lj  = &fr->f_t[t].dvdl[efptVDW];
-                        for (i = 0; i < fr->natoms_force; i++)
-                        {
-                            clear_rvec(fnv[i]);
-                        }
+                        vir_q     = &fr->ewc_t[t].vir_q;
+                        vir_lj    = &fr->ewc_t[t].vir_lj;
+                        Vcorrt_q  = &fr->ewc_t[t].Vcorr_q;
+                        Vcorrt_lj = &fr->ewc_t[t].Vcorr_lj;
+                        dvdlt_q   = &fr->ewc_t[t].dvdl[efptCOUL];
+                        dvdlt_lj  = &fr->ewc_t[t].dvdl[efptVDW];
                         clear_mat(*vir_q);
                         clear_mat(*vir_lj);
                     }
                     *dvdlt_q  = 0;
                     *dvdlt_lj = 0;
 
+                    /* Threading is only supported with the Verlet cut-off
+                     * scheme and then only single particle forces (no
+                     * exclusion forces) are calculated, so we can store
+                     * the forces in the normal, single fr->f_novirsum array.
+                     */
                     ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
                                        cr, t, fr,
                                        md->chargeA, md->chargeB,
@@ -478,19 +463,18 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                        excl, x, bSB ? boxs : box, mu_tot,
                                        ir->ewald_geometry,
                                        ir->epsilon_surface,
-                                       fnv, *vir_q, *vir_lj,
+                                       fr->f_novirsum, *vir_q, *vir_lj,
                                        Vcorrt_q, Vcorrt_lj,
                                        lambda[efptCOUL], lambda[efptVDW],
                                        dvdlt_q, dvdlt_lj);
                 }
                 if (nthreads > 1)
                 {
-                    reduce_thread_forces(fr->natoms_force, fr->f_novirsum,
-                                         fr->vir_el_recip, fr->vir_lj_recip,
-                                         &Vcorr_q, &Vcorr_lj,
-                                         &dvdl_long_range_correction_q,
-                                         &dvdl_long_range_correction_lj,
-                                         nthreads, fr->f_t);
+                    reduce_thread_energies(fr->vir_el_recip, fr->vir_lj_recip,
+                                           &Vcorr_q, &Vcorr_lj,
+                                           &dvdl_long_range_correction_q,
+                                           &dvdl_long_range_correction_lj,
+                                           nthreads, fr->ewc_t);
                 }
                 wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
