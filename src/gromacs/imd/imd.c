@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -616,7 +616,7 @@ static gmx_bool imd_tryconnect(t_gmx_IMD_setup *IMDsetup)
 static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
 {
     /* do not wait for connection, when e.g. ctrl+c is pressed and we will terminate anyways. */
-    if (!(int) gmx_get_stop_condition() == gmx_stop_cond_none)
+    if (gmx_get_stop_condition() != gmx_stop_cond_none)
     {
         return;
     }
