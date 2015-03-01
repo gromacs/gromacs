@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "gromacs/fileio/confio.h"
@@ -317,13 +318,8 @@ void pull_calc_coms(t_commrec *cr,
                     t_pull *pull, t_mdatoms *md, t_pbc *pbc, double t,
                     rvec x[], rvec *xp)
 {
-    int           g, i, ii, m;
-    real          mass, w, wm, twopi_box = 0;
-    double        wmass, wwmass;
-    dvec          com, comp;
-    double        cm, sm, cmp, smp, ccm, csm, ssm, csw, snw;
-    rvec          x_pbc = {0, 0, 0}, dx;
-    t_pull_group *pgrp;
+    int  g;
+    real twopi_box = 0;
 
     if (pull->rbuf == NULL)
     {
@@ -353,6 +349,10 @@ void pull_calc_coms(t_commrec *cr,
 
     if (pull->cosdim >= 0)
     {
+        int m;
+
+        assert(pull->npbcdim <= DIM);
+
         for (m = pull->cosdim+1; m < pull->npbcdim; m++)
         {
             if (pbc->box[m][pull->cosdim] != 0)
@@ -365,39 +365,51 @@ void pull_calc_coms(t_commrec *cr,
 
     for (g = 0; g < pull->ngroup; g++)
     {
+        t_pull_group *pgrp;
+
         pgrp = &pull->group[g];
-        clear_dvec(com);
-        clear_dvec(comp);
-        wmass  = 0;
-        wwmass = 0;
-        cm     = 0;
-        sm     = 0;
-        cmp    = 0;
-        smp    = 0;
-        ccm    = 0;
-        csm    = 0;
-        ssm    = 0;
+
         if (pgrp->bCalcCOM)
         {
-            if (pgrp->epgrppbc == epgrppbcREFAT)
+            if (pgrp->epgrppbc != epgrppbcCOS)
             {
-                /* Set the pbc atom */
-                copy_rvec(pull->rbuf[g], x_pbc);
-            }
-            w = 1;
-            for (i = 0; i < pgrp->nat_loc; i++)
-            {
-                ii   = pgrp->ind_loc[i];
-                mass = md->massT[ii];
-                if (pgrp->epgrppbc != epgrppbcCOS)
+                dvec   com, comp;
+                double wmass, wwmass;
+                rvec   x_pbc = { 0, 0, 0 };
+                int    i;
+
+                clear_dvec(com);
+                clear_dvec(comp);
+                wmass  = 0;
+                wwmass = 0;
+
+                if (pgrp->epgrppbc == epgrppbcREFAT)
                 {
-                    if (pgrp->weight_loc)
+                    /* Set the pbc atom */
+                    copy_rvec(pull->rbuf[g], x_pbc);
+                }
+
+                for (i = 0; i < pgrp->nat_loc; i++)
+                {
+                    int  ii, m;
+                    real mass, wm;
+
+                    ii   = pgrp->ind_loc[i];
+                    mass = md->massT[ii];
+                    if (pgrp->weight_loc == NULL)
                     {
-                        w = pgrp->weight_loc[i];
+                        wm     = mass;
+                        wmass += wm;
                     }
-                    wm      = w*mass;
-                    wmass  += wm;
-                    wwmass += wm*w;
+                    else
+                    {
+                        real w;
+
+                        w       = pgrp->weight_loc[i];
+                        wm      = w*mass;
+                        wmass  += wm;
+                        wwmass += wm*w;
+                    }
                     if (pgrp->epgrppbc == epgrppbcNONE)
                     {
                         /* Plain COM: sum the coordinates */
@@ -415,6 +427,8 @@ void pull_calc_coms(t_commrec *cr,
                     }
                     else
                     {
+                        rvec dx;
+
                         /* Sum the difference with the reference atom */
                         pbc_dx(pbc, x[ii], x_pbc, dx);
                         for (m = 0; m < DIM; m++)
@@ -434,8 +448,60 @@ void pull_calc_coms(t_commrec *cr,
                         }
                     }
                 }
-                else
+
+                /* We do this check after the loop above to avoid more nesting.
+                 * If we have a single-atom group the mass is irrelevant, so
+                 * we can remove the mass factor to avoid division by zero.
+                 * Note that with constraint pulling the mass does matter, but
+                 * in that case a check group mass != 0 has been done before.
+                 */
+                if (pgrp->nat == 1 && pgrp->nat_loc == 1 && wmass == 0)
                 {
+                    int m;
+
+                    /* Copy the single atom coordinate */
+                    for (m = 0; m < DIM; m++)
+                    {
+                        com[m] = x[pgrp->ind_loc[0]][m];
+                    }
+                    /* Set all mass factors to 1 to get the correct COM */
+                    wmass  = 1;
+                    wwmass = 1;
+                }
+
+                if (pgrp->weight_loc == NULL)
+                {
+                    wwmass = wmass;
+                }
+
+                /* Copy local sums to a buffer for global summing */
+                copy_dvec(com, pull->dbuf[g*3]);
+                copy_dvec(comp, pull->dbuf[g*3+1]);
+                pull->dbuf[g*3+2][0] = wmass;
+                pull->dbuf[g*3+2][1] = wwmass;
+                pull->dbuf[g*3+2][2] = 0;
+            }
+            else
+            {
+                /* Cosine weighting geometry */
+                double cm, sm, cmp, smp, ccm, csm, ssm, csw, snw;
+                int    i;
+
+                cm  = 0;
+                sm  = 0;
+                cmp = 0;
+                smp = 0;
+                ccm = 0;
+                csm = 0;
+                ssm = 0;
+
+                for (i = 0; i < pgrp->nat_loc; i++)
+                {
+                    int  ii;
+                    real mass;
+
+                    ii   = pgrp->ind_loc[i];
+                    mass = md->massT[ii];
                     /* Determine cos and sin sums */
                     csw  = cos(x[ii][pull->cosdim]*twopi_box);
                     snw  = sin(x[ii][pull->cosdim]*twopi_box);
@@ -453,21 +519,8 @@ void pull_calc_coms(t_commrec *cr,
                         smp += snw*mass;
                     }
                 }
-            }
-        }
 
-        /* Copy local sums to a buffer for global summing */
-        switch (pgrp->epgrppbc)
-        {
-            case epgrppbcNONE:
-            case epgrppbcREFAT:
-                copy_dvec(com, pull->dbuf[g*3]);
-                copy_dvec(comp, pull->dbuf[g*3+1]);
-                pull->dbuf[g*3+2][0] = wmass;
-                pull->dbuf[g*3+2][1] = wwmass;
-                pull->dbuf[g*3+2][2] = 0;
-                break;
-            case epgrppbcCOS:
+                /* Copy local sums to a buffer for global summing */
                 pull->dbuf[g*3  ][0] = cm;
                 pull->dbuf[g*3  ][1] = sm;
                 pull->dbuf[g*3  ][2] = 0;
@@ -477,7 +530,7 @@ void pull_calc_coms(t_commrec *cr,
                 pull->dbuf[g*3+2][0] = cmp;
                 pull->dbuf[g*3+2][1] = smp;
                 pull->dbuf[g*3+2][2] = 0;
-                break;
+            }
         }
     }
 
@@ -489,11 +542,16 @@ void pull_calc_coms(t_commrec *cr,
 
     for (g = 0; g < pull->ngroup; g++)
     {
+        t_pull_group *pgrp;
+
         pgrp = &pull->group[g];
         if (pgrp->nat > 0 && pgrp->bCalcCOM)
         {
             if (pgrp->epgrppbc != epgrppbcCOS)
             {
+                double wmass, wwmass;
+                int    m;
+
                 /* Determine the inverse mass */
                 wmass             = pull->dbuf[g*3+2][0];
                 wwmass            = pull->dbuf[g*3+2][1];
@@ -524,6 +582,10 @@ void pull_calc_coms(t_commrec *cr,
             }
             else
             {
+                /* Cosine weighting geometry */
+                double csw, snw, wmass, wwmass;
+                int    i, ii;
+
                 /* Determine the optimal location of the cosine weight */
                 csw                   = pull->dbuf[g*3][0];
                 snw                   = pull->dbuf[g*3][1];
@@ -555,8 +617,8 @@ void pull_calc_coms(t_commrec *cr,
             }
             if (debug)
             {
-                fprintf(debug, "Pull group %d wmass %f wwmass %f invtm %f\n",
-                        g, wmass, wwmass, pgrp->invtm);
+                fprintf(debug, "Pull group %d wmass %f invtm %f\n",
+                        g, 1.0/pgrp->mwscale, pgrp->invtm);
             }
         }
     }

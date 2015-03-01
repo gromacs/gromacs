@@ -302,18 +302,32 @@ static void apply_forces_grp(const t_pull_group *pgrp, const t_mdatoms *md,
 
     inv_wm = pgrp->mwscale;
 
-    for (i = 0; i < pgrp->nat_loc; i++)
+    if (pgrp->nat == 1 && pgrp->nat_loc == 1)
     {
-        ii    = pgrp->ind_loc[i];
-        wmass = md->massT[ii];
-        if (pgrp->weight_loc)
-        {
-            wmass *= pgrp->weight_loc[i];
-        }
-
+        /* Only one atom and our rank has this atom: we can skip
+         * the mass weighting, which means that this code also works
+         * for mass=0, e.g. with a virtual site.
+         */
         for (m = 0; m < DIM; m++)
         {
-            f[ii][m] += sign * wmass * f_pull[m] * inv_wm;
+            f[pgrp->ind_loc[0]][m] += sign*f_pull[m];
+        }
+    }
+    else
+    {
+        for (i = 0; i < pgrp->nat_loc; i++)
+        {
+            ii    = pgrp->ind_loc[i];
+            wmass = md->massT[ii];
+            if (pgrp->weight_loc)
+            {
+                wmass *= pgrp->weight_loc[i];
+            }
+
+            for (m = 0; m < DIM; m++)
+            {
+                f[ii][m] += sign * wmass * f_pull[m] * inv_wm;
+            }
         }
     }
 }
@@ -1219,8 +1233,19 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
 
     if (wmass == 0)
     {
-        gmx_fatal(FARGS, "The total%s mass of pull group %d is zero",
-                  pg->weight ? " weighted" : "", g);
+        /* We can have single atom groups with zero mass with potential pulling
+         * without cosine weighting.
+         */
+        if (pg->nat == 1 && !bConstraint && pg->epgrppbc != epgrppbcCOS)
+        {
+            /* With one atom the mass doesn't matter */
+            wwmass = 1;
+        }
+        else
+        {
+            gmx_fatal(FARGS, "The total%s mass of pull group %d is zero",
+                      pg->weight ? " weighted" : "", g);
+        }
     }
     if (fplog)
     {
