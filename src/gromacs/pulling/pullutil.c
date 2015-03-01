@@ -319,6 +319,7 @@ void pull_calc_coms(t_commrec *cr,
 
     if (pull->cosdim >= 0)
     {
+        assert(pull->npbcdim <= DIM);
         for (m = pull->cosdim+1; m < pull->npbcdim; m++)
         {
             if (pbc->box[m][pull->cosdim] != 0)
@@ -419,6 +420,24 @@ void pull_calc_coms(t_commrec *cr,
                         smp += snw*mass;
                     }
                 }
+            }
+
+            /* We do this check after the loop above to avoid more nesting.
+             * If we have a single-atom group the mass is irrelevant, so
+             * we can remove the mass factor to avoid division by zero.
+             * Note that with constraint pulling the mass does matter, but
+             * in that case a check for zero group mass has been done before.
+             */
+            if (pgrp->nat == 1 && pgrp->nat_loc == 1 && wmass == 0)
+            {
+                /* Copy the single atom coordinate */
+                for (m = 0; m < DIM; m++)
+                {
+                    com[m] = x[pgrp->ind_loc[0]][m];
+                }
+                /* Set all mass factors to 1 to get the correct COM */
+                wmass  = 1;
+                wwmass = 1;
             }
         }
 
