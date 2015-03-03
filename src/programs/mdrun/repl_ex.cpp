@@ -402,7 +402,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     snew(re->order, re->nrepl);
     for (i = 0; i < re->nrepl; i++)
     {
-        snew(re->cyclic[i], re->nrepl);
+        snew(re->cyclic[i], re->nrepl+1);  /* need extra memory for this one */
         snew(re->order[i], re->nrepl);
     }
     /* allocate space for the functions storing the data for the replicas */
@@ -1135,6 +1135,7 @@ static void write_debug_x(t_state *state)
     }
 }
 
+/* generates the cyclic decomposition of a permutation of the replicas */
 static void
 cyclic_decomposition(const int *destinations,
                      int      **cyclic,
@@ -1144,29 +1145,31 @@ cyclic_decomposition(const int *destinations,
 {
 
     int i, j, c, p;
-    int maxlen = 1;
+    int maxlen = 1; /* maximum length of any of the cycles in the cyclic decomposition of the permutation.
     for (i = 0; i < nrepl; i++)
     {
-        incycle[i] = FALSE;
+        incycle[i] = FALSE;   /* we assume that a given replica is not in a cycle (i.e. didn't get permuted) */
     }
-    for (i = 0; i < nrepl; i++)  /* one cycle for each replica */
+    for (i = 0; i < nrepl; i++)  /* need to loop over all replicas to see if they are in a cycle */
     {
-        if (incycle[i])
+        if (incycle[i])  /* this one is already assigned as part of a cycle */
         {
-            cyclic[i][0] = -1;
+            cyclic[i][0] = -1;  /* this cycle has no first entry (signaled by -1) */
             continue;
         }
-        cyclic[i][0] = i;
-        incycle[i]   = TRUE;
-        c            = 1;
-        p            = i;
-        for (j = 0; j < nrepl; j++) /* potentially all cycles are part, but we will break first */
+        /* this one is not yet assigned to a cycle */
+        c = 0;              /* Counter for length of cycle */ 
+        cyclic[i][c] = i;  /* the first replica in the cycle is the current one */
+        incycle[i]   = TRUE; /* and it is marked as being in a cycle */
+        p            = i;  /* an indicator for where are currently permuted to */
+        for (j = 0; j < nrepl; j++) /* potentially all replicas are part of this cycle, so we need to loop over all */
         {
-            p = destinations[p];    /* start permuting */
-            if (p == i)
+            c++;
+            p = destinations[p];    /* start permuting to see where this cycle goes */
+            if (p == i)  /* we're back at the beginning */
             {
-                cyclic[i][c] = -1;
-                if (c > maxlen)
+                cyclic[i][c] = -1; /* the are no more in this replica */
+                if (c > maxlen) /* reset the maximum length of any permutation if required */
                 {
                     maxlen = c;
                 }
@@ -1174,9 +1177,8 @@ cyclic_decomposition(const int *destinations,
             }
             else
             {
-                cyclic[i][c] = p;  /* each permutation gives a new member of the cycle */
-                incycle[p]   = TRUE;
-                c++;
+                cyclic[i][c] = p;  /* each permutation adds a new replica to the cycle */
+                incycle[p]   = TRUE; /* which is now in a cycle */
             }
         }
     }
