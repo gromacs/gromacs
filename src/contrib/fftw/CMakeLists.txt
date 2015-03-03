@@ -58,7 +58,9 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS) # FFTW doesn
     set(GMX_BUILD_OWN_FFTW_SHARED_FLAG ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} --with-pic)
 endif()
 
-# Testing shows FFTW configured with --enable-avx is never better than --enable-sse2, so we do the latter always.
+# Testing shows FFTW configured with --enable-sse2 --enable-avx is slighlty
+# faster on most architectures than --enable-sse2 alone, but since on OS X
+# with gcc --enable-avx causes compilation issues, we only use --enable-sse2.
 if(${GMX_SIMD} MATCHES "^(SSE|AVX)")
     set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION --enable-sse2 CACHE INTERNAL "Optimization flags for FFTW compilation")
 endif()
@@ -69,12 +71,12 @@ if (TARGET_HOST)
 endif()
 
 # Machinery for running the external project
-set(EXTERNAL_FFTW_VERSION 3.3.3)
+set(EXTERNAL_FFTW_VERSION 3.3.4)
 # cmake make eats slashes //// -> //
 set(GMX_BUILD_OWN_FFTW_URL
     "http:////www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE PATH
     "URL from where to download fftw (use an absolute path when offline, adjust GMX_BUILD_OWN_FFTW_MD5 if downloading other version than ${EXTERNAL_FFTW_VERSION})")
-set(GMX_BUILD_OWN_FFTW_MD5 0a05ca9c7b3bfddc8278e7c40791a1c2 CACHE STRING
+set(GMX_BUILD_OWN_FFTW_MD5 2edab8c06b24feeb3b82bbb3ebf3e7b3 CACHE STRING
     "Expected MD5 hash for the file at GMX_BUILD_OWN_FFTW_URL")
 mark_as_advanced(GMX_BUILD_OWN_FFTW_URL GMX_BUILD_OWN_FFTW_MD5)
 
