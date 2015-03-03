@@ -400,7 +400,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     snew(re->order, re->nrepl);
     for (i = 0; i < re->nrepl; i++)
     {
-        snew(re->cyclic[i], re->nrepl);
+        snew(re->cyclic[i], re->nrepl+1);
         snew(re->order[i], re->nrepl);
     }
     /* allocate space for the functions storing the data for the replicas */
