@@ -596,7 +596,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("gb_obc_beta",ir->gb_obc_beta);
     PR("gb_obc_gamma",ir->gb_obc_gamma);
     PR("gb_dielectric_offset",ir->gb_dielectric_offset);
-    PS("sa_algorithm",ESAALGORITHM(ir->gb_algorithm));
+    PS("sa_algorithm",ESAALGORITHM(ir->sa_algorithm));
     PR("sa_surface_tension",ir->sa_surface_tension);
 	  
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
