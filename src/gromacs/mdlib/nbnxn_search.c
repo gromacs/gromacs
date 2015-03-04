@@ -1025,11 +1025,13 @@ static void print_bbsizes_simple(FILE                *fp,
     fprintf(fp, "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
             grid->sx,
             grid->sy,
-            grid->na_c/(grid->atom_density*grid->sx*grid->sy),
+            grid->atom_density > 0 ? 
+            grid->na_c/(grid->atom_density*grid->sx*grid->sy) : 0.0,
             ba[XX], ba[YY], ba[ZZ],
             ba[XX]/grid->sx,
             ba[YY]/grid->sy,
-            ba[ZZ]/(grid->na_c/(grid->atom_density*grid->sx*grid->sy)));
+            grid->atom_density > 0 ? 
+            ba[ZZ]/(grid->na_c/(grid->atom_density*grid->sx*grid->sy)) : 0.0);
 }
 
 /* Prints the average bb size, used for debug output */
@@ -1078,11 +1080,13 @@ static void print_bbsizes_supersub(FILE                *fp,
     fprintf(fp, "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
             grid->sx/GPU_NSUBCELL_X,
             grid->sy/GPU_NSUBCELL_Y,
-            grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z),
+            grid->atom_density > 0 ?
+            grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z) : 0.0,
             ba[XX], ba[YY], ba[ZZ],
             ba[XX]*GPU_NSUBCELL_X/grid->sx,
             ba[YY]*GPU_NSUBCELL_Y/grid->sy,
-            ba[ZZ]/(grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z)));
+            grid->atom_density > 0 ?
+            ba[ZZ]/(grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z)) : 0.0);
 }
 
 /* Potentially sorts atoms on LJ coefficients !=0 and ==0.
