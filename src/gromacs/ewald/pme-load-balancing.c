@@ -76,11 +76,15 @@ typedef struct {
  */
 #define PME_LB_GRID_EFFICIENCY_REL_FAC  1.05
 /* Rerun up till 12% slower setups than the fastest up till now */
-#define PME_LB_SLOW_FAC  1.12
+#define PME_LB_SLOW_FAC   1.12
 /* If setups get more than 2% faster, do another round to avoid
  * choosing a slower setup due to acceleration or fluctuations.
  */
-#define PME_LB_ACCEL_TOL 1.02
+#define PME_LB_ACCEL_TOL  1.02
+/* We choose shorter cut-off/finer grids when the performance is up to this
+ * factor slower than the fastest measured for DLB and GPU throttling headroom.
+ */
+#define PME_LB_SUBOPT_FAC 1.02
 
 enum {
     epmelblimNO, epmelblimBOX, epmelblimDD, epmelblimPMEGRID, epmelblimNR
@@ -648,8 +652,28 @@ gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
 
         if (pme_lb->stage == pme_lb->nstage)
         {
+            int i;
+
             /* We are done optimizing, use the fastest setup we found */
             pme_lb->cur = pme_lb->fastest;
+
+            /* The PME load balancing usually leads to a much larger PP load
+             * increase than PME load decrease, so we can trade in a small
+             * amount of total performance for a large reduction in PP load.
+             * This can be useful for lowering limitations on the DD DLB
+             * and for allowing some GPU throttling without affecting the
+             * performance. Without DLB and GPUs it's less useful, but we
+             * leave it in for code simplicity and because it could still
+             * help if the network load is high (due to other jobs) during
+             * the start of the run and decreases later.
+             */
+            for (i = pme_lb->fastest - 1; i >= pme_lb->start; i--)
+            {
+                if (pme_lb->setup[i].cycles <= cycles_fast*PME_LB_SUBOPT_FAC)
+                {
+                    pme_lb->cur = i;
+                }
+            }
         }
     }
 
@@ -758,6 +782,11 @@ gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
     if (pme_lb->stage == pme_lb->nstage)
     {
         print_grid(fp_err, fp_log, "", "optimal", set, -1);
+
+        /* In case we did not choose the fastest setup, but a shorter cut-off,
+         * we should lower the DD DLB cut-off limit.
+         */
+        change_dd_dlb_cutoff_limit(cr);
     }
 
     return TRUE;
