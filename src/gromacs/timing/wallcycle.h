@@ -98,6 +98,9 @@ void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */
 
+void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c);
+/* Returns the cumulative count and cycle count for ewc */
+
 void wallcycle_reset_all(gmx_wallcycle_t wc);
 /* Resets all cycle counters to zero */
 
