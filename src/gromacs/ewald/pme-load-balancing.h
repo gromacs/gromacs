@@ -41,6 +41,7 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,35 +49,35 @@ extern "C" {
 
 typedef struct pme_load_balancing *pme_load_balancing_t;
 
-/* Initialze the PP-PME load balacing data and infrastructure */
+/* Initialize the PP-PME load balacing data and infrastructure.
+ * The actual load balancing might start right away, later or never.
+ * Returns in bPrinting whether the load balancing is printing to fp_err.
+ * The PME grid in pmedata is reused for smaller grids to lower the memory
+ * usage.
+ */
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
-                      struct gmx_pme_t *pmedata);
+                      struct gmx_pme_t *pmedata,
+                      gmx_bool bUseGPU, gmx_bool bSepPMERanks,
+                      gmx_bool *bPrinting);
 
-/* Try to adjust the PME grid and Coulomb cut-off.
- * The adjustment is done to generate a different non-bonded PP and PME load.
- * With separate PME nodes (PP and PME on different processes) or with
- * a GPU (PP on GPU, PME on CPU), PP and PME run on different resources
- * and changing the load will affect the load balance and performance.
- * The total time for a set of integration steps is monitored and a range
- * of grid/cut-off setups is scanned. After calling pme_load_balance many
- * times and acquiring enough statistics, the best performing setup is chosen.
- * Here we try to take into account fluctuations and changes due to external
- * factors as well as DD load balancing.
- * Returns TRUE the load balancing continues, FALSE is the balancing is done.
+/* Process the cycles measured over the last nstlist steps and then
+ * either continue balancing or check if we need to trigger balancing.
+ * Should be called after the ewcSTEP cycle counter has been stopped.
+ * Returns if the load balancing is printing to fp_err.
  */
-gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
-                          t_commrec                 *cr,
-                          FILE                      *fp_err,
-                          FILE                      *fp_log,
-                          t_inputrec                *ir,
-                          t_state                   *state,
-                          double                     cycles,
-                          interaction_const_t       *ic,
-                          struct nonbonded_verlet_t *nbv,
-                          struct gmx_pme_t **        pmedata,
-                          gmx_int64_t                step);
+void pme_loadbal_do(pme_load_balancing_t  pme_lb,
+                    t_commrec            *cr,
+                    FILE                 *fp_err,
+                    FILE                 *fp_log,
+                    t_inputrec           *ir,
+                    t_forcerec           *fr,
+                    t_state              *state,
+                    gmx_wallcycle_t       wcycle,
+                    gmx_int64_t           step,
+                    gmx_int64_t           step_rel,
+                    gmx_bool             *bPrinting);
 
 /* Restart the PME load balancing discarding all timings gathered up till now */
 void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
