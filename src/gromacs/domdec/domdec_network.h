@@ -50,6 +50,10 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* \brief */
 enum {
     dddirForward, dddirBackward
@@ -145,5 +149,9 @@ void
 dd_gatherv(gmx_domdec_t *dd,
            int scount, void *sbuf,
            int *rcounts, int *disps, void *rbuf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

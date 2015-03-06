@@ -229,7 +229,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
-    gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
+    gmx_bool             bPMETuneActive = FALSE;
 
     /* Interactive MD */
     gmx_bool          bIMDstep = FALSE;
@@ -482,26 +482,15 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
-    /* PME tuning is only supported with GPUs or PME nodes and not with rerun.
-     * PME tuning is not supported with PME only for LJ and not for Coulomb.
+    /* PME tuning is not supported with PME only for LJ and not for Coulomb.
+     * With rerun we avoid the complications of PME tuning.
      */
-    if ((Flags & MD_TUNEPME) &&
-        EEL_PME(fr->eeltype) &&
-        ( use_GPU(fr->nbv) || !(cr->duty & DUTY_PME)) &&
-        !bRerunMD)
+    if ((Flags & MD_TUNEPME) && EEL_PME(fr->eeltype) && !bRerunMD)
     {
-        pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata);
+        pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata,
+                         use_GPU(fr->nbv), !(cr->duty & DUTY_PME),
+                         &bPMETuneActive);
         cycles_pmes = 0;
-        if (cr->duty & DUTY_PME)
-        {
-            /* Start tuning right away, as we can't measure the load */
-            bPMETuneRunning = TRUE;
-        }
-        else
-        {
-            /* Separate PME nodes, we can measure the PP/PME load balance */
-            bPMETuneTry = TRUE;
-        }
     }
 
     if (!ir->bContinuation && !bRerunMD)
@@ -937,7 +926,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     state, &f, mdatoms, top, fr,
                                     vsite, shellfc, constr,
                                     nrnb, wcycle,
-                                    do_verbose && !bPMETuneRunning);
+                                    do_verbose);
                 wallcycle_stop(wcycle, ewcDOMDEC);
                 /* If using an iterative integrator, reallocate space to match the decomposition */
             }
@@ -1645,7 +1634,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             state->fep_state = lamnew;
         }
         /* Print the remaining wall clock time for the run */
-        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && !bPMETuneRunning)
+        if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()))
         {
             if (shellfc)
             {
@@ -1742,7 +1731,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             dd_cycles_add(cr->dd, cycles, ddCyclStep);
         }
 
-        if (bPMETuneRunning || bPMETuneTry)
+        if (bPMETuneActive)
         {
             /* PME grid + cut-off optimization with GPUs or PME nodes */
 
@@ -1752,72 +1741,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* We can only switch cut-off at NS steps */
             if (step % ir->nstlist == 0)
             {
-                /* PME grid + cut-off optimization with GPUs or PME nodes */
-                if (bPMETuneTry)
-                {
-                    if (DDMASTER(cr->dd))
-                    {
-                        /* PME node load is too high, start tuning */
-                        bPMETuneRunning = (dd_pme_f_ratio(cr->dd) >= 1.05);
-                    }
-                    dd_bcast(cr->dd, sizeof(gmx_bool), &bPMETuneRunning);
-
-                    if (bPMETuneRunning &&
-                        use_GPU(fr->nbv) && DOMAINDECOMP(cr) &&
-                        !(cr->duty & DUTY_PME))
-                    {
-                        /* Lock DLB=auto to off (does nothing when DLB=yes/no).
-                         * With GPUs + separate PME ranks, we don't want DLB.
-                         * This could happen when we scan coarse grids and
-                         * it would then never be turned off again.
-                         * This would hurt performance at the final, optimal
-                         * grid spacing, where DLB almost never helps.
-                         * Also, DLB can limit the cut-off for PME tuning.
-                         */
-                        dd_dlb_set_lock(cr->dd, TRUE);
-                    }
-
-                    if (bPMETuneRunning || step_rel > ir->nstlist*50)
-                    {
-                        bPMETuneTry     = FALSE;
-                    }
-                }
-                if (bPMETuneRunning)
-                {
-                    /* init_step might not be a multiple of nstlist,
-                     * but the first cycle is always skipped anyhow.
-                     */
-                    bPMETuneRunning =
-                        pme_load_balance(pme_loadbal, cr,
-                                         (bVerbose && MASTER(cr)) ? stderr : NULL,
-                                         fplog,
-                                         ir, state, cycles_pmes,
-                                         fr->ic, fr->nbv, &fr->pmedata,
-                                         step);
-
-                    /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
-                    fr->ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
-                    fr->ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
-                    fr->rlist         = fr->ic->rlist;
-                    fr->rlistlong     = fr->ic->rlistlong;
-                    fr->rcoulomb      = fr->ic->rcoulomb;
-                    fr->rvdw          = fr->ic->rvdw;
-
-                    if (ir->eDispCorr != edispcNO)
-                    {
-                        calc_enervirdiff(NULL, ir->eDispCorr, fr);
-                    }
-
-                    if (!bPMETuneRunning &&
-                        DOMAINDECOMP(cr) &&
-                        dd_dlb_is_locked(cr->dd))
-                    {
-                        /* Unlock the DLB=auto, DLB is allowed to activate
-                         * (but we don't expect it to activate in most cases).
-                         */
-                        dd_dlb_set_lock(cr->dd, FALSE);
-                    }
-                }
+                pme_loadbal_do(pme_loadbal, cr,
+                               (bVerbose && MASTER(cr)) ? stderr : NULL,
+                               fplog,
+                               ir, fr, state, cycles_pmes,
+                               step, step_rel,
+                               &bPMETuneActive);
                 cycles_pmes = 0;
             }
         }

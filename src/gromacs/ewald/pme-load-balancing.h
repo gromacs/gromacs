@@ -48,35 +48,30 @@ extern "C" {
 
 typedef struct pme_load_balancing *pme_load_balancing_t;
 
-/* Initialze the PP-PME load balacing data and infrastructure */
+/* Initialze the PP-PME load balacing data and infrastructure.
+ * Returns if the load balancing is activated in bPMELoadBalActive.
+ * Active means either already balancing or that we should measure timings
+ * and potentially activate it later.
+ */
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
-                      struct gmx_pme_t *pmedata);
+                      struct gmx_pme_t *pmedata,
+                      gmx_bool bUseGPU, gmx_bool bSepPMERanks,
+                      gmx_bool *bPMELoadBalActive);
 
-/* Try to adjust the PME grid and Coulomb cut-off.
- * The adjustment is done to generate a different non-bonded PP and PME load.
- * With separate PME nodes (PP and PME on different processes) or with
- * a GPU (PP on GPU, PME on CPU), PP and PME run on different resources
- * and changing the load will affect the load balance and performance.
- * The total time for a set of integration steps is monitored and a range
- * of grid/cut-off setups is scanned. After calling pme_load_balance many
- * times and acquiring enough statistics, the best performing setup is chosen.
- * Here we try to take into account fluctuations and changes due to external
- * factors as well as DD load balancing.
- * Returns TRUE the load balancing continues, FALSE is the balancing is done.
- */
-gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
-                          t_commrec                 *cr,
-                          FILE                      *fp_err,
-                          FILE                      *fp_log,
-                          t_inputrec                *ir,
-                          t_state                   *state,
-                          double                     cycles,
-                          interaction_const_t       *ic,
-                          struct nonbonded_verlet_t *nbv,
-                          struct gmx_pme_t **        pmedata,
-                          gmx_int64_t                step);
+/* Do PME load balancing, or only check if trigger PME load balancing */
+void pme_loadbal_do(pme_load_balancing_t  pme_lb,
+                    t_commrec            *cr,
+                    FILE                 *fp_err,
+                    FILE                 *fp_log,
+                    t_inputrec           *ir,
+                    t_forcerec           *fr,
+                    t_state              *state,
+                    double                cycles,
+                    gmx_int64_t           step,
+                    gmx_int64_t           step_rel,
+                    gmx_bool             *bActive);
 
 /* Restart the PME load balancing discarding all timings gathered up till now */
 void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
