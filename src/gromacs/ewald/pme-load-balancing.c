@@ -39,6 +39,7 @@
 #include "config.h"
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_network.h"
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/legacyheaders/calcgrid.h"
 #include "gromacs/legacyheaders/force.h"
@@ -50,6 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -69,6 +71,10 @@ typedef struct {
     double            cycles;          /* the fastest time for this setup in cycles    */
 } pme_setup_t;
 
+/* After 50 nstlist periods of not observing imbalance: never tune PME */
+static const int PMETune_period = 50;
+/* Trigger PME load balancing at more than 5% PME overload */
+#define PME_LB_TRIGGER_FAC 1.05
 /* In the initial scan, step by grids that are at least a factor 0.8 coarser */
 #define PME_LB_GRID_SCALE_FAC  0.8
 /* In the initial scan, try to skip grids with uneven x/y/z spacing,
@@ -90,6 +96,9 @@ const char *pmelblim_str[epmelblimNR] =
 { "no", "box size", "domain decompostion", "PME grid restriction" };
 
 struct pme_load_balancing {
+    gmx_bool     bSepPMERanks;       /* Do we have separate PME ranks? */
+    gmx_bool     bActive;            /* Is PME tuning active? */
+    gmx_bool     bBalance;           /* Are we in the balancing phase, i.e. trying different setups? */
     int          nstage;             /* the current maximum number of stages */
 
     real         cut_spacing;        /* the minimum cutoff / PME grid spacing ratio */
@@ -109,18 +118,35 @@ struct pme_load_balancing {
     int          cutoff_scheme;      /* Verlet or group cut-offs */
 
     int          stage;              /* the current stage */
+
+    int          cycles_n;           /* step cycle counter cummulative count */
+    double       cycles_c;           /* step cycle counter cummulative cycles */
 };
 
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
-                      struct gmx_pme_t *pmedata)
+                      struct gmx_pme_t *pmedata,
+                      gmx_bool bUseGPU, gmx_bool bSepPMERanks,
+                      gmx_bool *bPrinting)
 {
     pme_load_balancing_t pme_lb;
     real                 spm, sp;
     int                  d;
 
+    if ((!bUseGPU && !bSepPMERanks) || !wallcycle_have_counter())
+    {
+        /* Unless the number of atoms inside the cut-off is very small,
+         * PME tuning will not help with CPU-only runs without PME ranks.
+         */
+        *bPrinting = FALSE;
+
+        return;
+    }
+
     snew(pme_lb, 1);
+
+    pme_lb->bSepPMERanks  = bSepPMERanks;
 
     /* Any number of stages >= 2 is supported */
     pme_lb->nstage   = 2;
@@ -205,7 +231,27 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
     pme_lb->end      = 0;
     pme_lb->elimited = epmelblimNO;
 
+    pme_lb->cycles_n = 0;
+    pme_lb->cycles_c = 0;
+
+    pme_lb->bActive  = TRUE;
+
+    if (bSepPMERanks)
+    {
+        /* Separate PME nodes, we can measure the PP/PME load balance,
+         * so we will start balancing after load imbalance is observed.
+         */
+        pme_lb->bBalance = FALSE;
+    }
+    else
+    {
+        /* Start tuning right away, as we can't measure the load */
+        pme_lb->bBalance = TRUE;
+    }
+
     *pme_lb_p = pme_lb;
+
+    *bPrinting = pme_lb->bBalance;
 }
 
 static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t  pme_lb,
@@ -440,17 +486,30 @@ static void switch_to_stage1(pme_load_balancing_t pme_lb)
     pme_lb->cur = pme_lb->start - 1;
 }
 
-gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
-                          t_commrec                 *cr,
-                          FILE                      *fp_err,
-                          FILE                      *fp_log,
-                          t_inputrec                *ir,
-                          t_state                   *state,
-                          double                     cycles,
-                          interaction_const_t       *ic,
-                          struct nonbonded_verlet_t *nbv,
-                          struct gmx_pme_t **        pmedata,
-                          gmx_int64_t                step)
+/* Try to adjust the PME grid and Coulomb cut-off.
+ * The adjustment is done to generate a different non-bonded PP and PME load.
+ * With separate PME nodes (PP and PME on different processes) or with
+ * a GPU (PP on GPU, PME on CPU), PP and PME run on different resources
+ * and changing the load will affect the load balance and performance.
+ * The total time for a set of integration steps is monitored and a range
+ * of grid/cut-off setups is scanned. After calling pme_load_balance many
+ * times and acquiring enough statistics, the best performing setup is chosen.
+ * Here we try to take into account fluctuations and changes due to external
+ * factors as well as DD load balancing.
+ * Returns TRUE the load balancing continues, FALSE is the balancing is done.
+ */
+static gmx_bool
+pme_load_balance(pme_load_balancing_t       pme_lb,
+                 t_commrec                 *cr,
+                 FILE                      *fp_err,
+                 FILE                      *fp_log,
+                 t_inputrec                *ir,
+                 t_state                   *state,
+                 double                     cycles,
+                 interaction_const_t       *ic,
+                 struct nonbonded_verlet_t *nbv,
+                 struct gmx_pme_t **        pmedata,
+                 gmx_int64_t                step)
 {
     gmx_bool     OK;
     pme_setup_t *set;
@@ -729,7 +788,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
      */
     init_interaction_const_tables(NULL, ic, bUsesSimpleTables, rtab);
 
-    if (cr->duty & DUTY_PME)
+    if (!pme_lb->bSepPMERanks)
     {
         if (pme_lb->setup[pme_lb->cur].pmedata == NULL)
         {
@@ -759,6 +818,110 @@ gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
     }
 
     return TRUE;
+}
+
+void pme_loadbal_do(pme_load_balancing_t  pme_lb,
+                    t_commrec            *cr,
+                    FILE                 *fp_err,
+                    FILE                 *fp_log,
+                    t_inputrec           *ir,
+                    t_forcerec           *fr,
+                    t_state              *state,
+                    gmx_wallcycle_t       wcycle,
+                    gmx_int64_t           step,
+                    gmx_int64_t           step_rel,
+                    gmx_bool             *bPrinting)
+{
+    int    n_prev;
+    double cycles_prev;
+
+    if (pme_lb == NULL || !pme_lb->bActive)
+    {
+        return;
+    }
+
+    n_prev      = pme_lb->cycles_n;
+    cycles_prev = pme_lb->cycles_c;
+    wallcycle_get(wcycle, ewcSTEP, &pme_lb->cycles_n, &pme_lb->cycles_c);
+    /* Sanity check, we expect nstlist cycle counts */
+    if (pme_lb->cycles_n - n_prev != ir->nstlist)
+    {
+        /* We could return here, but it's safer to issue and error and quit */
+        gmx_incons("pme_loadbal_do called at an interval != nstlist");
+    }
+
+    /* PME grid + cut-off optimization with GPUs or PME nodes */
+    if (!pme_lb->bBalance && pme_lb->bSepPMERanks)
+    {
+        if (DDMASTER(cr->dd))
+        {
+            /* PME node load is too high, start tuning */
+            pme_lb->bBalance = (dd_pme_f_ratio(cr->dd) >= PME_LB_TRIGGER_FAC);
+        }
+        dd_bcast(cr->dd, sizeof(gmx_bool), &pme_lb->bBalance);
+
+        if (pme_lb->bBalance &&
+            use_GPU(fr->nbv) && DOMAINDECOMP(cr) &&
+            pme_lb->bSepPMERanks)
+        {
+            /* Lock DLB=auto to off (does nothing when DLB=yes/no).
+             * With GPUs + separate PME ranks, we don't want DLB.
+             * This could happen when we scan coarse grids and
+             * it would then never be turned off again.
+             * This would hurt performance at the final, optimal
+             * grid spacing, where DLB almost never helps.
+             * Also, DLB can limit the cut-off for PME tuning.
+             */
+            dd_dlb_set_lock(cr->dd, TRUE);
+        }
+    }
+
+    if (pme_lb->bBalance)
+    {
+        /* init_step might not be a multiple of nstlist,
+         * but the first cycle is always skipped anyhow.
+         */
+        pme_lb->bBalance =
+            pme_load_balance(pme_lb, cr,
+                             fp_err, fp_log,
+                             ir, state, pme_lb->cycles_c - cycles_prev,
+                             fr->ic, fr->nbv, &fr->pmedata,
+                             step);
+
+        /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
+        fr->ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
+        fr->ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
+        fr->rlist         = fr->ic->rlist;
+        fr->rlistlong     = fr->ic->rlistlong;
+        fr->rcoulomb      = fr->ic->rcoulomb;
+        fr->rvdw          = fr->ic->rvdw;
+
+        if (ir->eDispCorr != edispcNO)
+        {
+            calc_enervirdiff(NULL, ir->eDispCorr, fr);
+        }
+
+        if (!pme_lb->bBalance &&
+            DOMAINDECOMP(cr) &&
+            dd_dlb_is_locked(cr->dd))
+        {
+            /* Unlock the DLB=auto, DLB is allowed to activate
+             * (but we don't expect it to activate in most cases).
+             */
+            dd_dlb_set_lock(cr->dd, FALSE);
+        }
+    }
+
+    if (!pme_lb->bBalance &&
+        (!pme_lb->bSepPMERanks || (step_rel <= PMETune_period*ir->nstlist)))
+    {
+        /* We have just deactivated the balancing and we're not measuring PP/PME
+         * imbalance during the first 50*nstlist steps: deactivate the tuning.
+         */
+        pme_lb->bActive = FALSE;
+    }
+
+    *bPrinting = pme_lb->bBalance;
 }
 
 void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n)

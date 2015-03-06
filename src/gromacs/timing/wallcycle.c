@@ -333,6 +333,12 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
     return last;
 }
 
+void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c)
+{
+    *n = wc->wcc[ewc].n;
+    *c = (double)wc->wcc[ewc].c;
+}
+
 void wallcycle_reset_all(gmx_wallcycle_t wc)
 {
     int i;
