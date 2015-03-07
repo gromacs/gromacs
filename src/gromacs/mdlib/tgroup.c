@@ -182,7 +182,9 @@ void accumulate_ekin(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
     for (g = 0; (g < opts->ngtc); g++)
     {
         gmx_sum(DIM*DIM, ekind->tcstat[g].ekinf[0], cr);
+        gmx_sum(DIM*DIM, ekind->tcstat[g].ekinh[0], cr);
     }
+    gmx_sum(DIM*DIM, ekind->ekin[0], cr);
 }
 
 void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,

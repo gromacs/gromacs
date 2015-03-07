@@ -803,7 +803,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
     {
         /* calculate kinetic energies associated with thermostats */
         nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
-        if (PAR(cr))
+        if (DOMAINDECOMP(cr))
         {
             accumulate_ekin(cr, opts, ekind);
         }
@@ -981,7 +981,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
 
         /* calculate new kinetic energies */
         nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
-        if (PAR(cr))
+        if (DOMAINDECOMP(cr))
         {
             accumulate_ekin(cr, opts, ekind);
         }
