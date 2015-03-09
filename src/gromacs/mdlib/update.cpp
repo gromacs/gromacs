@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1721,6 +1721,13 @@ void update_constraints(FILE             *fplog,
 
     if (!(bFirstHalf)) /* in the first half of vv, no shift. */
     {
+        /* NOTE This part of the update actually does not belong with
+         * the constraints, since we also call it without constraints.
+         * But currently we always integrate to a temporary buffer and
+         * then copy the results back here.
+         */
+        wallcycle_start_nocount(wcycle, ewcUPDATE);
+
         if (graph && (graph->nnodes > 0))
         {
             unshift_x(graph, state->box, state->x, upd->xp);
@@ -1745,6 +1752,7 @@ void update_constraints(FILE             *fplog,
                 copy_rvec(upd->xp[i], state->x[i]);
             }
         }
+        wallcycle_stop(wcycle, ewcUPDATE);
 
         dump_it_all(fplog, "After unshift",
                     state->natoms, state->x, upd->xp, state->v, force);
