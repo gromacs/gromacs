@@ -1778,8 +1778,11 @@ void update_box(FILE             *fplog,
         case (epcNO):
             break;
         case (epcBERENDSEN):
-            berendsen_pscale(inputrec, pcoupl_mu, state->box, state->box_rel,
-                             start, homenr, state->x, md->cFREEZE, nrnb);
+            if (inputrec->nstpcouple == 1 || (step % inputrec->nstpcouple == 1))
+            {
+                berendsen_pscale(inputrec, pcoupl_mu, state->box, state->box_rel,
+                                 start, homenr, state->x, md->cFREEZE, nrnb);
+            }
             break;
         case (epcPARRINELLORAHMAN):
             /* The box velocities were updated in do_pr_pcoupl in the update
