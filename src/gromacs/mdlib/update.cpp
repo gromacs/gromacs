@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1778,8 +1778,16 @@ void update_box(FILE             *fplog,
         case (epcNO):
             break;
         case (epcBERENDSEN):
-            berendsen_pscale(inputrec, pcoupl_mu, state->box, state->box_rel,
-                             start, homenr, state->x, md->cFREEZE, nrnb);
+            /* We should only scale after a step where the pressure (kinetic
+             * energy and virial) was calculated. This happens after the
+             * coordinate update, whereas the current routine is called before
+             * that, so we scale when step % nstpcouple = 1 instead of 0.
+             */
+            if (inputrec->nstpcouple == 1 || (step % inputrec->nstpcouple == 1))
+            {
+                berendsen_pscale(inputrec, pcoupl_mu, state->box, state->box_rel,
+                                 start, homenr, state->x, md->cFREEZE, nrnb);
+            }
             break;
         case (epcPARRINELLORAHMAN):
             /* The box velocities were updated in do_pr_pcoupl in the update
