@@ -1234,7 +1234,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 saved_conserved_quantity -= enerd->term[F_DISPCORR];
             }
             /* sum up the foreign energy and dhdl terms for vv.  currently done every step so that dhdl is correct in the .edr */
-            if (!bRerunMD)
+            if (ir->efep != efepNO && !bRerunMD)
             {
                 sum_dhdl(enerd, state->lambda, ir->fepvals);
             }
@@ -1552,7 +1552,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         /* TODO remove the brace above, once iteration is removed */
 
-        if (!bVV || bRerunMD)
+        if (ir->efep != efepNO && (!bVV || bRerunMD))
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
