@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -340,6 +340,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     pbc->bLimitDistance = FALSE;
     pbc->max_cutoff2    = 0;
     pbc->dim            = -1;
+    pbc->ntric_vec      = 0;
 
     for (i = 0; (i < DIM); i++)
     {
@@ -468,7 +469,6 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                 pr_rvecs(debug, 0, "Box", box, DIM);
                 fprintf(debug, "max cutoff %.3f\n", sqrt(pbc->max_cutoff2));
             }
-            pbc->ntric_vec = 0;
             /* We will only use single shifts, but we will check a few
              * more shifts to see if there is a limiting distance
              * above which we can not be sure of the correct distance.
