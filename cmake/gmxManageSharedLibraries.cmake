@@ -63,6 +63,10 @@ set(GMX_PREFER_STATIC_LIBS_DEFAULT OFF)
 if (WIN32 AND NOT CYGWIN AND NOT BUILD_SHARED_LIBS)
     set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
 endif()
+if (NOT BUILD_SHARED_EXE)
+    set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
+    set(SHARED_LIBS_DEFAULT OFF)
+endif()
 
 # Declare the user-visible options
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
