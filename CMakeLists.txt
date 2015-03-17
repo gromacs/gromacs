@@ -328,6 +328,11 @@ option(GMX_DEVELOPER_BUILD
     OFF)
 mark_as_advanced(GMX_DEVELOPER_BUILD)
 
+option(BUILD_SHARED_EXE
+    "Build exectuables as shared binaries. If not set, this disables rpath and dynamic linker flags."
+    ON)
+mark_as_advanced(BUILD_SHARED_EXE)
+
 ######################################################################
 # Detect OpenMP support
 ######################################################################
@@ -869,7 +874,12 @@ include(gmxManageSuffixes)
 # CMake supports RPATH on OS X only from 2.8.12 upwards.
 # CMAKE_SYSTEM_VERSION > 8.0 matches OS X 10.5 and above, where RPATH support
 # was added.
-if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
+
+if(NOT BUILD_SHARED_EXE)
+    # No rpath
+    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS) # remove -Wl,-Bdynamic
+    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+elseif((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
    ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
     # The build folder always has bin/ and lib/; if we are also going to
     # install to lib/, then the installation RPATH works also in the build
