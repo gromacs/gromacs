@@ -548,6 +548,13 @@ still be dynamically linked against system libraries on platforms
 where that is the default. To use static system libraries, additional
 compiler/linker flags are necessary, e.g. `-static-libgcc
 -static-libstdc++`.
+* To attempt to link a fully static binary set
+`-DGMX_BUILD_SHARED_EXE=OFF`. This will prevent CMake from explicitly
+setting any dynamic linking flags. This option also sets
+`-DBUILD_SHARED_LIBS=OFF` and `-DGMX_PREFER_STATIC_LIBS=ON` by
+default, but the above caveats apply. For compilers which don't
+default to static linking, the required flags have to be specified. On
+Linux, this is usually `CFLAGS=-static CXXFLAGS=-static`.
 
 ### Portability aspects ###
 
@@ -874,13 +881,10 @@ the right tools get used.
 ## Building on Cray ##
 
 GROMACS builds mostly out of the box on modern Cray machines, but
-* you may need to specify the use of static or dynamic libraries
-  (depending on the machine) with `-DBUILD_SHARED_LIBS=off`,
+* you may need to specify the use of static binaries
+  with `-DGMX_BUILD_SHARED_EXE=off`,
 * you may need to set the F77 environmental variable to `ftn` when
   compiling FFTW,
-* you may need to use `-DCMAKE_SKIP_RPATH=YES`, and
-* you may need to modify the CMakeLists.txt files to specify the
-  `BUILD_SEARCH_END_STATIC` target property.
 
 ## Building on BlueGene ##
 
