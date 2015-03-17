@@ -50,7 +50,11 @@ function(GMX_TEST_LIBXML2 VARIABLE)
         if(_do_libxml2_recompile)
             unset(LIBXML2_LINKS_OK CACHE)
         endif()
+        if(HAVE_ZLIB)
+            set(CMAKE_REQUIRED_LIBRARIES z) #not needed for dynamic but does not hurt
+        endif()
         check_library_exists("${LIBXML2_LIBRARIES}" "xmlTextWriterEndAttribute" "" LIBXML2_LINKS_OK)
+        set(CMAKE_REQUIRED_LIBRARIES)
         if(LIBXML2_LINKS_OK)
             #check that xml headers can be included
             set(CMAKE_REQUIRED_INCLUDES "${LIBXML2_INCLUDE_DIR}")
