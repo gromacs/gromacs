@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,11 @@ function(GMX_TEST_LIBXML2 VARIABLE)
         if(_do_libxml2_recompile)
             unset(LIBXML2_LINKS_OK CACHE)
         endif()
+        if(HAVE_ZLIB)
+            set(CMAKE_REQUIRED_LIBRARIES z) #not needed for dynamic but does not hurt
+        endif()
         check_library_exists("${LIBXML2_LIBRARIES}" "xmlTextWriterEndAttribute" "" LIBXML2_LINKS_OK)
+        set(CMAKE_REQUIRED_LIBRARIES)
         if(LIBXML2_LINKS_OK)
             #check that xml headers can be included
             set(CMAKE_REQUIRED_INCLUDES "${LIBXML2_INCLUDE_DIR}")

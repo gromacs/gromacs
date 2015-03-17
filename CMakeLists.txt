@@ -473,6 +473,11 @@ include(gmxManageSharedLibraries)
 # Find external packages                                               #
 ########################################################################
 
+# TNG wants zlib if it is available. And static libxml2 might have a dependency
+find_package(ZLIB QUIET)
+include(gmxTestZLib)
+gmx_test_zlib(HAVE_ZLIB)
+
 # Unconditionally find the package, as it is also required for unit
 # tests. This exports LIBXML2_FOUND, which we should not use because
 # it does not tell us that linking will succeed. Instead, we test that
@@ -606,13 +611,6 @@ if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
     message(FATAL_ERROR
         "Cannot build unit tests without libxml2. "
         "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
-endif()
-
-if(GMX_USE_TNG AND NOT GMX_EXTERNAL_TNG)
-    # TNG wants zlib if it is available
-    find_package(ZLIB QUIET)
-    include(gmxTestZLib)
-    gmx_test_zlib(HAVE_ZLIB)
 endif()
 
 ########################################################################
