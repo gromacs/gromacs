@@ -548,6 +548,11 @@ still be dynamically linked against system libraries on platforms
 where that is the default. To use static system libraries, additional
 compiler/linker flags are necessary, e.g. `-static-libgcc
 -static-libstdc++`.
+* To link a fully static binary set `-DBUILD_SHARED_EXE=OFF`. This will prevent
+cmake to explicitly set any dynamic linking flags. This option also
+sets `-DBUILD_SHARED_LIBS=OFF` and `-DGMX_PREFER_STATIC_LIBS=ON` by default.
+For compilers which don't default to static linking the required flags have to
+be specified. On Linux this is usually `CFLAGS=-static CXXFLAGS=-static`.
 
 ### Portability aspects ###
 
