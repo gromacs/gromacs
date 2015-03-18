@@ -51,22 +51,28 @@
 # conf-vars.py.cmakein), which in turn is included by the Sphinx configuration
 # file conf.py.
 
+option(GMX_BUILD_WEBPAGE "Whether to try to configure to build the GROMACS static webpages" OFF)
+option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
+mark_as_advanced(GMX_BUILD_WEBPAGE GMX_BUILD_MANUAL)
+
+find_package(PythonInterp)
+find_package(Sphinx 1.2.3 COMPONENTS pygments)
+
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 file(MAKE_DIRECTORY ${HTML_OUTPUT_DIR})
 
-set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
-find_package(PythonInterp)
-find_package(Sphinx 1.2.3 COMPONENTS pygments)
+# The directory from which man pages will be installed; if it remains
+# empty, they will be silently skipped.
+set(MAN_PAGE_DIR)
+if (SOURCE_IS_SOURCE_DISTRIBUTION)
+    # When building from the tarball, install the bundled man pages
+    # (unless overridden).
+    set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 
 add_subdirectory(doxygen)
-
-option(GMX_BUILD_WEBPAGE "Whether to try to configure to build the GROMACS static webpages" OFF)
-mark_as_advanced(GMX_BUILD_WEBPAGE)
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_MANUAL)
 if(GMX_BUILD_MANUAL)
     # Make sure we only do detection of manual-building dependencies
     # when the user opted in for that.
@@ -215,11 +221,18 @@ if (SPHINX_FOUND)
         COMMENT "Building man pages with Sphinx"
         VERBATIM)
     add_dependencies(man sphinx-input sphinx-programs)
-    if (NOT SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
-        set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/man)
+    if (GMX_BUILD_HELP)
+        # If requested, install the man pages built by the 'man' target
+        # created above.  Nothing will be installed if the user did not
+        # manually build the target.
+        set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR})
     endif()
 endif()
-if (SOURCE_IS_SOURCE_DISTRIBUTION OR (GMX_BUILD_HELP AND SPHINX_FOUND))
+
+if (MAN_PAGE_DIR)
+    set(MAN_PAGE_DIR ${MAN_PAGE_DIR}/man)
+    # Trailing slash on directory is significant for
+    # install(DIRECTORY). See CMake docs.
     install(DIRECTORY ${MAN_PAGE_DIR}/
         DESTINATION ${MAN_INSTALL_DIR}/man1
         COMPONENT man OPTIONAL

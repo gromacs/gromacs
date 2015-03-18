@@ -689,10 +689,10 @@ if(GMX_FAHCORE)
   include_directories(${COREWRAP_INCLUDE_DIR})
 endif()
 
-# Value of AUTO tries to generate things, but will only produce warnings if
-# that fails.
+# Value of GMX_BUILD_HELP=AUTO tries to generate things, but will only
+# produce warnings if that fails.
 set(build_help_default AUTO)
-if (SOURCE_IS_SOURCE_DISTRIBUTION)
+if (SOURCE_IS_SOURCE_DISTRIBUTION OR CMAKE_CROSSCOMPILING)
     set(build_help_default OFF)
 endif()
 gmx_option_trivalue(GMX_BUILD_HELP "Build completions automatically (requires that compiled binaries can be executed on the build host) and install man pages if built (requires building the 'man' target manually)" ${build_help_default})
