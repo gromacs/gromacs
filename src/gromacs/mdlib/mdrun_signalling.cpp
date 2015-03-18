@@ -88,10 +88,11 @@ prepareSignalBuffer(struct gmx_signalling_t *gs)
 {
     if (gs)
     {
-        gmx::ArrayRef<int>  signal(gs->sig);
+        gmx::ArrayRef<int>  sig(gs->sig, gs->sig + eglsNR);
         gmx::ArrayRef<real> temp(gs->mpiBuffer);
 
-        std::copy(signal.begin(), signal.end(), temp.begin());
+        std::copy(sig.begin(), sig.end(), temp.begin());
+
         return temp;
     }
     else
