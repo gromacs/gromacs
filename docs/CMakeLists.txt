@@ -56,8 +56,6 @@
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 file(MAKE_DIRECTORY ${HTML_OUTPUT_DIR})
 
-set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
 find_package(PythonInterp)
 find_package(Sphinx 1.2.3 COMPONENTS pygments)
 
@@ -215,21 +213,35 @@ if (SPHINX_FOUND)
         COMMENT "Building man pages with Sphinx"
         VERBATIM)
     add_dependencies(man sphinx-input sphinx-programs)
-    if (NOT SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
-        set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR}/man)
-    endif()
 endif()
-if (SOURCE_IS_SOURCE_DISTRIBUTION OR (GMX_BUILD_HELP AND SPHINX_FOUND))
-    install(DIRECTORY ${MAN_PAGE_DIR}/
+
+# Default to not doing anything with man pages, which makes sure we
+# have no portability problems for either tarball or repo build on
+# weirdo machines.
+set(MAN_PAGE_DIR)
+if (SOURCE_IS_SOURCE_DISTRIBUTION)
+    # When building from the tarball, install the bundled man pages
+    set(MAN_PAGE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+if (SPHINX_FOUND AND GMX_BUILD_HELP)
+    # Build the man pages, since it is possible and was requested
+    # (AUTO or YES).
+    set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
+if (MAN_PAGE_DIR)
+    # Trailing slash on directory is significant for
+    # install(DIRECTORY). See CMake docs.
+    install(DIRECTORY ${MAN_PAGE_DIR}/man/
         DESTINATION ${MAN_INSTALL_DIR}/man1
         COMPONENT man OPTIONAL
         FILES_MATCHING PATTERN "*.1")
-    install(DIRECTORY ${MAN_PAGE_DIR}/
+    install(DIRECTORY ${MAN_PAGE_DIR}/man/
         DESTINATION ${MAN_INSTALL_DIR}/man7
         COMPONENT man OPTIONAL
         FILES_MATCHING PATTERN "*.7")
+    gmx_cpack_add_generated_source_directory(man)
 endif()
-gmx_cpack_add_generated_source_directory(man)
 
 set(HTML_BUILD_IS_POSSIBLE OFF)
 # We can only configure to build the webpage if the user asked for it,
