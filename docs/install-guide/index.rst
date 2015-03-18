@@ -862,7 +862,7 @@ set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
 Typically, one might use variable values ``mpirun``, ``-np``, ``2``, ``''``,
 ``''`` respectively, in order to run on two ranks.
 
-.. _GROMACS regression test suite: `gmx-regression-tests`_
+.. _GROMACS regression test suite: `gmx-regressiontests-package`_
 
 
 Testing |Gromacs| for performance

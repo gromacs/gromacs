@@ -145,12 +145,8 @@ rst_epilog += """
 .. |Gromacs| replace:: GROMACS
 .. _gmx-manual: manual-{gmx_version_string}.pdf
 .. _gmx-manual-parent-dir: ../manual-{gmx_version_string}.pdf
-.. _gmx-regression-tests: http://gerrit.gromacs.org/download/regressiontests-{regressiontest_version}.tar.gz
-.. _gmx-source-package: gromacs-{gmx_version_string}.tar.gz
-.. |gmx-source-package| replace:: gromacs-{gmx_version_string}.tar.gz
-.. _gmx-regressiontests-package: regressiontests-{gmx_version_string}.tar.gz
-.. |gmx-regressiontests-package| replace:: regressiontests-{gmx_version_string}.tar.gz
-
+.. |gmx-source-package| replace:: ftp://ftp.gromacs.org/gromacs-{gmx_version_string}.tar.gz
+.. |gmx-regressiontests-package| replace:: `regressiontests-{gmx_version_string}.tar.gz <http://gerrit.gromacs.org/download/regressiontests-{regressiontest_version}.tar.gz>`
 .. _up-to-date installation instructions: http://www.gromacs.org/Documentation/Installation_Instructions
 .. _CUDA: http://www.nvidia.com/object/cuda_home_new.html
 .. _OpenMPI: http://www.open-mpi.org
