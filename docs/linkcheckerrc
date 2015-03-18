@@ -6,6 +6,8 @@
 ignore=
 # This site gives warnings about URLs if you try to refer to page.html\#heading
  cmake.org
+# This site gives warnings because it redirects to itself
+ http://swift.cmbi.ru.nl/gv/dssp
 # This site has a robots.txt that denies access
  jenkins.gromacs.org
 # A matching regressiontests tarball generally can't be found on this server yet.
