@@ -48,7 +48,7 @@ Running a related series of lambda points for a free-energy
 computation is also convenient to do this way.
 
 This feature requires
-`configuring GROMACS with an external MPI library <../install-guide/main.html#mpi-support>`_
+`configuring GROMACS with an external MPI library <../install-guide/index.html#mpi-support>`_
 so that the set of
 simulations can communicate. The ``n`` simulations within the set can
 use internal MPI parallelism also, so that ``mpirun -np x mdrun_mpi``
