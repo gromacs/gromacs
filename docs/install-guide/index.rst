@@ -164,6 +164,8 @@ version for |Gromacs| code as used as the back-end compiler for nvcc,
 but it could be faster to mix compiler versions to suit particular
 contexts.
 
+.. _mpi-support:
+
 MPI support
 ^^^^^^^^^^^
 If you wish to run in parallel on multiple machines across a network,
@@ -792,8 +794,8 @@ trust your build.
 The simplest way to run the checks is to build |Gromacs| with
 ``-DREGRESSIONTEST_DOWNLOAD``, and run ``make check``.
 |Gromacs| will automatically download and run the tests for you.
-Alternatively, you can download and unpack the
-`GROMACS regression test suite`_ tarball yourself
+Alternatively, you can download and unpack the GROMACS
+regression test suite |gmx-regressiontests-package| tarball yourself
 and use the advanced ``cmake`` option ``REGRESSIONTEST_PATH`` to
 specify the path to the unpacked tarball, which will then be used for
 testing. If the above does not work, then please read on.
@@ -861,8 +863,6 @@ set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
 
 Typically, one might use variable values ``mpirun``, ``-np``, ``2``, ``''``,
 ``''`` respectively, in order to run on two ranks.
-
-.. _GROMACS regression test suite: `gmx-regression-tests`_
 
 
 Testing |Gromacs| for performance
