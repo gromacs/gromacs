@@ -150,7 +150,6 @@ rst_epilog += """
 .. |gmx-source-package| replace:: gromacs-{gmx_version_string}.tar.gz
 .. _gmx-regressiontests-package: regressiontests-{gmx_version_string}.tar.gz
 .. |gmx-regressiontests-package| replace:: regressiontests-{gmx_version_string}.tar.gz
-
 .. _up-to-date installation instructions: http://www.gromacs.org/Documentation/Installation_Instructions
 .. _CUDA: http://www.nvidia.com/object/cuda_home_new.html
 .. _OpenMPI: http://www.open-mpi.org
