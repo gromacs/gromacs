@@ -43,18 +43,31 @@
 #       Should always be defined: zero for, e.g., 5.0.
 #   GMX_VERSION_SUFFIX     String suffix to add to numeric version string.
 #       "-dev" is automatically added when not building from a source package,
-#       and does not need to be kept here.
-#   LIBRARY_SOVERSION      so version for the built libraries.
-#       Should be increased for each binary incompatible release (in GROMACS,
+#       and does not need to be kept here. This mechanism is not quite enough
+#       for building a tarball, but setting the CMake cache variable
+#       GMX_BUILD_TARBALL=on will suppress the addition of "-dev" to the
+#       version string.
+#   LIBRARY_SOVERSION_MAJOR so major version for the built libraries.
+#       Should be increased for each binary incompatible release. In GROMACS,
 #       the typical policy is to increase it for each major/minor version
 #       change, but not for patch releases, even if the latter may not always
-#       be fully binary compatible).
+#       be fully binary compatible.
+#   LIBRARY_SOVERSION_MINOR so minor version for the built libraries.
+#       Should be increased for each release that changes only the implementation.
+#       In GROMACS, the typical policy is to increase it for each patch version
+#       change, even if they may not always be fully binary compatible.
+#       If it is somehow clear that the ABI implementation has not changed
+#       in a patch release, this variable should not increase. Release candidate
+#       and beta versions will not increase this number, since nobody should
+#       write code against such versions.
 #   LIBRARY_VERSION        Full library version.
 #   REGRESSIONTEST_BRANCH  For builds not from source packages, name of the
 #       regressiontests branch at gerrit.gromacs.org whose HEAD can test this
 #       code, *if* this code is recent enough (i.e., contains all changes from
 #       the corresponding code branch that affects the regression test
-#       results).
+#       results). Even after a release branch is forked for the source
+#       repository, the correct regressiontests branch can still be master,
+#       because we do not fork it until behaviour needs to change.
 #   REGRESSIONTEST_MD5SUM
 #       The MD5 checksum of the regressiontest tarball. Only used when building
 #       from a source package.
@@ -201,16 +214,23 @@ set(GMX_VERSION_MAJOR 5)
 set(GMX_VERSION_MINOR 1)
 set(GMX_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
-# candidates, where it signifies the last such release from this branch;
-# it will be empty before the first such release, as well as after the
-# final release is out.
-set(GMX_VERSION_SUFFIX "")
+# candidates, where it signifies the most recent such release from
+# this branch; it will be empty before the first such release, as well
+# as after the final release is out.
+set(GMX_VERSION_SUFFIX "-beta1")
 
-set(LIBRARY_SOVERSION 1)
-set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
-
-set(REGRESSIONTEST_BRANCH "refs/heads/master")
-set(REGRESSIONTEST_MD5SUM "a07524afebca5013540d4f2f72df2dce")
+# Conventionally with libtool, any ABI change must change the major
+# version number, the minor version number should change if it's just
+# the implementation that has been altered, and the third number
+# counts the number of old major versions that will still run if
+# linked to this library (i.e. it is not a patch number). See the
+# above descriptions of LIBRARY_SOVERSION_* for policy for changes
+# here. The important thing is to minimize the chance of third-party
+# code being able to dynamically link with a version of libgromacs
+# that might not work.
+set(LIBRARY_SOVERSION_MAJOR 2)
+set(LIBRARY_SOVERSION_MINOR 0)
+set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
 #####################################################################
 # General version management based on manually set numbers
@@ -221,15 +241,23 @@ else()
     set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_MINOR}")
 endif()
 set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
-if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)
+option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
+mark_as_advanced(GMX_BUILD_TARBALL)
+if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND NOT GMX_BUILD_TARBALL)
     set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-dev")
 endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
+set(REGRESSIONTEST_BRANCH "refs/heads/master")
+# TODO Find some way of ensuring that this is bumped appropriately for
+# each release. It's hard to test because it is only used for
+# REGRESSIONTEST_DOWNLOAD, which doesn't work until that tarball has
+# been placed on the server.
+set(REGRESSIONTEST_MD5SUM "6f8531a6e3c2a8912327b9cd450d8745" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_MINOR}*100 + ${GMX_VERSION_PATCH}")
-set(GMX_API_VERSION ${NUM_VERSION})
+set(GMX_API_VERSION ${GMX_VERSION_NUMERIC})
 
 #####################################################################
 # git version info management
