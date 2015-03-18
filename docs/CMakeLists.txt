@@ -62,9 +62,11 @@ find_package(Sphinx 1.2.3 COMPONENTS pygments)
 add_subdirectory(doxygen)
 
 option(GMX_BUILD_WEBPAGE "Whether to try to configure to build the GROMACS static webpages" OFF)
-mark_as_advanced(GMX_BUILD_WEBPAGE)
+set(MD5SUM_SOURCE "unknown" CACHE STRING "MD5 sum of the source tarball, normally used only for the pre-release webpage build")
+set(MD5SUM_REGRESSIONTESTS "unknown" CACHE STRING "MD5 sum of the regressiontests tarball, normally used only for the pre-release webpage build")
 option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_MANUAL)
+mark_as_advanced(GMX_BUILD_WEBPAGE MD5SUM_SOURCE MD5SUM_REGRESSIONTESTS GMX_BUILD_MANUAL)
+
 if(GMX_BUILD_MANUAL)
     # Make sure we only do detection of manual-building dependencies
     # when the user opted in for that.
@@ -84,7 +86,7 @@ if (SPHINX_FOUND)
             SPHINX_EXTENSION_PATH
             GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
-            SOURCE_MD5SUM REGRESSIONTESTS_MD5SUM
+            MD5SUM_SOURCE MD5SUM_REGRESSIONTESTS
         COMMENT "Configuring Sphinx configuration file")
     set(SPHINX_SOURCE_FILES
         index.rst
@@ -155,31 +157,6 @@ if (SPHINX_FOUND)
         )
     add_dependencies(install-guide sphinx-input)
     gmx_cpack_add_generated_source_directory(install-guide/text DESTINATION /)
-
-    # For a real build of the webpage, the md5sum of the tarballs must
-    # already be known, and so we may as well require that the real
-    # build of the webpage take place from cmake run from the unpacked
-    # tarball. Then, the *_MD5SUM and *_TARBALL variables will be able
-    # to be set on the cmake command line (e.g. by a Jenkins job
-    # configuration), and we can require that they are set. For local
-    # building of the webpages (e.g. for debugging), those variables
-    # can be left unset, and if so, the download section will not be
-    # constructed.
-    if(SOURCE_IS_SOURCE_DISTRIBUTION AND GMX_BUILD_WEBPAGE)
-        foreach(VAR SOURCE_MD5SUM REGRESSIONTESTS_MD5SUM SOURCE_TARBALL REGRESSIONTESTS_TARBALL)
-            if(NOT DEFINED ${VAR})
-                message(FATAL_ERROR "The build of the webpage requires that ${VAR} is set in the cmake cache, e.g. on the CMake command line")
-            endif()
-        endforeach()
-        set(BUILD_DOWNLOAD_SECTION on)
-    else()
-        if (SOURCE_TARBALL AND SOURCE_MD5SUM AND
-                REGRESSIONTESTS_TARBALL AND REGRESSIONTESTS_MD5SUM)
-            set(BUILD_DOWNLOAD_SECTION on)
-        else()
-            set(BUILD_DOWNLOAD_SECTION off)
-        endif()
-    endif()
 
     # Sphinx cache with pickled ReST documents
     set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
@@ -287,34 +264,6 @@ add_custom_target(webpage-old-images
     )
 
 if(HTML_BUILD_IS_POSSIBLE)
-    # If building the webpage from the repo, then tarballs may not
-    # exist, and if so, it would not make sense to build that part of
-    # the front page from index.rst.
-    if(BUILD_DOWNLOAD_SECTION)
-        # Copy the source tarball to the webpage output
-        add_custom_command(
-            OUTPUT ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
-            COMMAND ${CMAKE_COMMAND}
-               -E copy ${SOURCE_TARBALL} ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
-            VERBATIM
-            )
-
-        # Copy the regressiontests tarball to the webpage output
-        add_custom_command(
-            OUTPUT ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
-            COMMAND ${CMAKE_COMMAND}
-               -E copy ${REGRESSIONTESTS_TARBALL} ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
-            VERBATIM
-            )
-
-        # Add other dependencies for doing the webpage build from the real
-        # tarball
-        list(APPEND extra_webpage_dependencies
-            ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
-            ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
-            )
-    endif()
-
     # Make the PDF reference guide
     # TODO Try to make the PDF arrive directly in ${HTML_OUTPUT_DIR}
     add_custom_command(
