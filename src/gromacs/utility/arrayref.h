@@ -186,6 +186,11 @@ class ArrayRef
          *
          * This constructor is not explicit to allow directly passing
          * a C array to a function that takes an ArrayRef parameter.
+         *
+         * xlc on BG/Q compiles wrong code if the C array is a struct
+         * field, unless value_type is char or unsigned char. There's
+         * no good way to assert on this before C++11 (which that
+         * compiler will never support).
          */
         template <size_t count>
         ArrayRef(value_type (&array)[count])
@@ -441,6 +446,11 @@ class ConstArrayRef
          *
          * This constructor is not explicit to allow directly passing
          * a C array to a function that takes a ConstArrayRef parameter.
+         *
+         * xlc on BG/Q compiles wrong code if the C array is a struct
+         * field, unless value_type is char or unsigned char. There's
+         * no good way to assert on this before C++11 (which that
+         * compiler will never support).
          */
         template <size_t count>
         ConstArrayRef(const value_type (&array)[count])
