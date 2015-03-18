@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ void set_p_string(t_param *p, const char *s)
         }
         else
         {
-            gmx_fatal(FARGS, "Increase MAXSLEN in include/grompp-impl.h to at least %d,"
+            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %d,"
                       " or shorten your definition of bonds like %s to at most %d",
                       strlen(s)+1, s, MAXSLEN-1);
         }
