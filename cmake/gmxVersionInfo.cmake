@@ -43,7 +43,10 @@
 #       Should always be defined: zero for, e.g., 5.0.
 #   GMX_VERSION_SUFFIX     String suffix to add to numeric version string.
 #       "-dev" is automatically added when not building from a source package,
-#       and does not need to be kept here.
+#       and does not need to be kept here. This mechanism is not quite enough
+#       for building a tarball, but setting the CMake variable
+#       GMX_BUILD_TARBALL=on on the command line will suppress the
+#       addition of "-dev" to the version string.
 #   LIBRARY_SOVERSION      so version for the built libraries.
 #       Should be increased for each binary incompatible release (in GROMACS,
 #       the typical policy is to increase it for each major/minor version
@@ -201,10 +204,10 @@ set(GMX_VERSION_MAJOR 5)
 set(GMX_VERSION_MINOR 1)
 set(GMX_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
-# candidates, where it signifies the last such release from this branch;
-# it will be empty before the first such release, as well as after the
-# final release is out.
-set(GMX_VERSION_SUFFIX "")
+# candidates, where it signifies the most recent such release from
+# this branch; it will be empty before the first such release, as well
+# as after the final release is out.
+set(GMX_VERSION_SUFFIX "-beta1")
 
 set(LIBRARY_SOVERSION 1)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION}.0.0)
@@ -221,7 +224,7 @@ else()
     set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_MINOR}")
 endif()
 set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
-if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)
+if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND NOT GMX_BUILD_TARBALL)
     set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-dev")
 endif()
 
