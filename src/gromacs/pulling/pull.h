@@ -73,6 +73,30 @@ void get_pull_coord_value(struct pull_t      *pull,
                           double             *value);
 
 
+/*! \brief Set the reference value for a pull coord with rate!=0 to value_ref.
+ *
+ * This modifies the reference value. For potential (non-constraint) pulling,
+ * a modification of the reference value will lead to
+ * Note: can not be called for a pull coord with rate!=0.
+ *
+ * \param[in,out] pull         The pull struct.
+ * \param[in]     coord        The pull coordinate index to set.
+ * \param[in]     value_ref    The reference value.
+ * \param[in]     pbc          Information structure about periodicity.
+ * \param[in]     md           Atom properties.
+ * \param[in]     lambda       The value of lambda in FEP calculations.
+ * \param[in]     bUpdateForce Update the force for the new reference value.
+ * \param[in,out] f            The forces.
+ * \param[in,out] vir          The virial, can be NULL.
+ */
+void set_pull_coord_reference_value(struct pull_t *pull,
+                                    int coord, real value_ref,
+                                    const struct t_pbc *pbc,
+                                    const t_mdatoms *md,
+                                    real lambda,
+                                    gmx_bool bUpdateForce, rvec *f, tensor vir);
+
+
 /*! \brief Set the all the pull forces to zero.
  *
  * \param pull              The pull group.
