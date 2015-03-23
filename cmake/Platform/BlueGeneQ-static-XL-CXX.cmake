@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015 by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -74,10 +74,7 @@ __BlueGeneQ_set_static_flags(XL C)
 __BlueGeneQ_set_static_flags(XL CXX)
 
 set(CMAKE_SYSTEM_NAME BlueGeneQ-static CACHE STRING "Cross-compiling for BlueGene/Q" FORCE)
-# xl.ndebug is appropriate for production calculations. For debugging,
-# use xl to add back error checks and assertions. Using the
-# thread-safe compiler version is required, so use (e.g.)
-# CMAKE_C_COMPILER=/bgsys/drivers/ppcfloor/comm/xl.ndebug/bin/mpixlc_r
-# CMAKE_CXX_COMPILER=/bgsys/drivers/ppcfloor/comm/xl.ndebug/bin/mpixlcxx_r
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG" CACHE STRING "Compiler optimization flags")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG" CACHE STRING "Compiler optimization flags")
 
 mark_as_advanced(CMAKE_XL_CreateExportList) # No idea what spams this
