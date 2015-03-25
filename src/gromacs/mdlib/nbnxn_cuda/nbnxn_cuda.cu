@@ -460,6 +460,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         stat = cudaEventRecord(t->stop_nb_k[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
+
+#if (defined(WIN32) || defined( _WIN32 ))
+    /* Windows: force flushing WDDM queue */
+    stat = cudaStreamQuery(stream);
+#endif
 }
 
 void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
