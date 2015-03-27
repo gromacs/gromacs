@@ -106,22 +106,16 @@ void gmx_tng_open(const char       *filename,
 
     if (mode == 'w' || mode == 'a')
     {
-        /* FIXME in TNG: When adding data to the header, subsequent blocks might get
-         * overwritten. This could be solved by moving the first trajectory
-         * frame set(s) to the end of the file. Could that cause other problems,
-         * e.g. when continuing a simulation? */
         char hostname[256];
         gmx_gethostname(hostname, 256);
         if (mode == 'w')
         {
             tng_first_computer_name_set(*tng, hostname);
         }
-/* TODO: This should be implemented when the above fixme is done (adding data to
- * the header). */
-//         else
-//         {
-//             tng_last_computer_name_set(*tng, hostname);
-//         }
+        else
+        {
+            tng_last_computer_name_set(*tng, hostname);
+        }
 
         char        programInfo[256];
         const char *precisionString = "";
@@ -135,12 +129,10 @@ void gmx_tng_open(const char       *filename,
         {
             tng_first_program_name_set(*tng, programInfo);
         }
-/* TODO: This should be implemented when the above fixme is done (adding data to
- * the header). */
-//         else
-//         {
-//             tng_last_program_name_set(*tng, programInfo);
-//         }
+        else
+        {
+            tng_last_program_name_set(*tng, programInfo);
+        }
 
         char username[256];
         if (!gmx_getusername(username, 256))
@@ -149,13 +141,12 @@ void gmx_tng_open(const char       *filename,
             {
                 tng_first_user_name_set(*tng, username);
             }
+            else
+            {
+                tng_last_user_name_set(*tng, username);
+                tng_file_headers_write(*tng, TNG_USE_HASH);
+            }
         }
-/* TODO: This should be implemented when the above fixme is done (adding data to
- * the header). */
-//         else
-//         {
-//             tng_last_user_name_set(*tng, username);
-//         }
     }
 #else
     gmx_file("GROMACS was compiled without TNG support, cannot handle this file type");
