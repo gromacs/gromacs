@@ -301,7 +301,7 @@ static void do_update_vv_vel(int start, int nrend, double dt,
             {
                 v[n][d] = mv1*(mv1*v[n][d] + 0.5*(w_dt*mv2*f[n][d]))+0.5*accel[ga][d]*dt;
             }
-            /* Drudes with velocities will have velocities in the case of extended Lagrangian, so
+            /* Drudes with mass will have velocities in the case of extended Lagrangian, so
              * they get updated here, as well */
             else if ((ptype[n] == eptShell) && (m[n] > 0) && !nFreeze[gf][d])
             {
