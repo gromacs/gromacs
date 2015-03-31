@@ -1063,6 +1063,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
+        /* additional restraining force, if requested */
+        if (ir->bDrude && ir->drude->bHyper && shellfc)
+        {
+            apply_quartic_restraint_force(ir, shellfc, state->x, f);
+        }
+
         if (bVV && !bStartingFromCpt && !bRerunMD)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
@@ -1528,16 +1534,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                               ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
+                if (ir->bDrude && ir->drude->bHardWall)
+                {
+                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift);
+                }
+
                 update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
                                    fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    FALSE, bCalcVir, state->veta);
-
-                if (ir->bDrude && ir->drude->bHardWall)
-                {
-                    apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f);
-                }
 
                 if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
                 {
@@ -1569,6 +1575,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                   ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                     wallcycle_stop(wcycle, ewcUPDATE);
 
+                    if (ir->bDrude && ir->drude->bHardWall)
+                    {
+                        apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift);
+                    }
+
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
                     /* are the small terms in the shake_vir here due
                      * to numerical errors, or are they important
@@ -1580,12 +1591,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        cr, nrnb, wcycle, upd, NULL,
                                        FALSE, bCalcVir,
                                        state->veta);
-
-                    if (ir->bDrude && ir->drude->bHardWall)
-                    {
-                        apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, f);
-                    }
-
                 }
                 if (!bOK)
                 {

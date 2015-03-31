@@ -67,20 +67,6 @@
 
 #include "shellfc.h"
 
-/* copied from bondfree.c, needed by hardwall */
-static int hardwall_pbc_rvec_sub(t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
-{
-    if (pbc)
-    {
-        return pbc_dx_aiuc(pbc, xi, xj, dx);
-    }
-    else
-    {
-        rvec_sub(xi, xj, dx);
-        return CENTRAL;
-    }
-}
-
 static void pr_shell(FILE *fplog, int ns, t_shell s[])
 {
     int i;
@@ -941,7 +927,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
               NULL, NULL, nrnb, econqDeriv_FlexCon, FALSE, 0, 0);
 }
 
-/* Drude hard wall restraint
+/* Drude hard wall constraint
  *
  * Avoids polarization catastrophe by imposing a limit on the bond
  * length between a Drude and its bonded heavy atom.  If the bond
@@ -950,7 +936,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * down according to the Drude temperature set in the .mdp file
  */
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md, 
-                          t_state *state, rvec f[])
+                          t_state *state, tensor force_vir)
 {
 
     int     i, j, m, n;
@@ -976,10 +962,11 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     rvec    vb2, vp2;               /* Bond and particle velocities for Drude */ 
     rvec    diff_vr12;
     rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
+    rvec    dfa, dfb;               /* change in forces, applied as corrections to the virial */
     t_pbc   pbc;
     t_ilist    *ilist;
     t_iatom    *iatoms;
-    int         flocal[] = { F_BONDS, F_POLARIZATION }; /* local interactions subject to hardwall restraint */
+    int         flocal[] = { F_BONDS, F_POLARIZATION }; /* local interactions subject to hardwall constraint */
     int         nrlocal = 2;        /* size of flocal[] array */
     int         nral;
 
@@ -998,7 +985,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
     /* Here, we get the local bonded interactions that will be used for searching.
      * Basically, we will check any atom-Drude bond for the hardwall criterion and
-     * apply the restraint, if necessary.  So the total number of bonds/polarization entries is
+     * apply the constraint, if necessary.  So the total number of bonds/polarization entries is
      * what we actually care about, so we loop over entries in iatoms within the local ilist.
      */
     for (i = 0; i < nrlocal; i++)
@@ -1053,11 +1040,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
             }
 
             /* do_em_step() seg faults here because there are no velocities, so
-             * EM + hardwall explicitly disabled in grompp - workaround could be
-             * to simply reset state->x[ib] to state->x[ia] in case of hardwall
-             * violation during EM.  Note that CHARMM does not support the use of
-             * the hardwall function during EM, so some correction could be a nice 
-             * addition... */ 
+             * EM + hardwall explicitly disabled in grompp - the quartic restraint
+             * should be used in the case of EM */
             copy_rvec(state->v[ia], va);
             copy_rvec(state->v[ib], vb);
 
@@ -1072,7 +1056,14 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
             copy_rvec(state->v[ib], vinitb);
 
             /* get vector between atom b (Drude) and a (heavy atom) */
-            hardwall_pbc_rvec_sub(&pbc, xb, xa, vecab);
+            if (pbc)
+            {
+                pbc_dx(pbc, xb, xa, vecab);
+            }
+            else
+            {
+                rvec_sub(xb, xa, vecab);
+            }
 
             if (debug)
             {
@@ -1088,7 +1079,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
                 if (debug)
                 {
-                    fprintf(debug, "HARDWALL: Imposing restraint on atom %d rab2 = %f\n", (ib+1), rab2);
+                    fprintf(debug, "HARDWALL: Imposing constraint on atom %d rab2 = %f\n", (ib+1), rab2);
                 }
 
                 /* Make sure nothing catastrophic is going on */
@@ -1238,20 +1229,30 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
 
                 /* Now we have corrected positions and velocities for all heavy atoms and Drudes */
 
-                /* Update force on heavy atom */
+                /* Update virial for corrections made to heavy atom */
                 rvec_sub(vnewa, vinita, dva);
                 fac = ma*(1.0/(dt*0.5));
-                svmul(fac, dva, f[ia]);
+                svmul(fac, dva, dfa);
 
-                /* Update force on Drude */
+                for (m=0; m<DIM; m++)
+                {
+                    for (n=0; n<DIM; n++)
+                    {
+                        force_vir[m][n] += state->x[ia][m]*dfa[n];
+                    }
+                }
+
+                /* Update virial for corrections made to Drude */
                 rvec_sub(vnewb, vinitb, dvb);
                 fac = mb*(1.0/(dt*0.5));
-                svmul(fac, dvb, f[ib]);
+                svmul(fac, dvb, dfb);
 
-                if (debug)
+                for (m=0; m<DIM; m++)
                 {
-                    fprintf(debug, "HARDWALL: New force f[%d]: %f %f %f\n", (ia+1), f[ia][XX], f[ia][YY], f[ia][ZZ]);
-                    fprintf(debug, "HARDWALL: New force f[%d]: %f %f %f\n", (ib+1), f[ib][XX], f[ib][YY], f[ib][ZZ]);
+                    for (n=0; n<DIM; n++)
+                    {
+                        force_vir[m][n] += state->x[ib][m]*dfb[n];
+                    }
                 }
 
             } /* end loop over j within iatoms */
@@ -1271,7 +1272,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
  * disfavored during MD, but it can be VERY useful during EM and when running
  * MD+SCF.
  */
-static void add_quartic_restraint_force(t_inputrec *ir, gmx_shellfc_t shfc, rvec x[], rvec f[])
+void add_quartic_restraint_force(t_inputrec *ir, gmx_shellfc_t shfc, rvec x[], rvec f[])
 {
     int     d, i;
     int     ns;
@@ -1463,7 +1464,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
-    /* TODO: add hyperpolarizability here */
     if (inputrec->drude->bHyper)
     {
         add_quartic_restraint_force(inputrec, shfc, state->x, force[Min]);
@@ -1579,7 +1579,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                      fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
                      force_flags);
 
-            /* TODO: add hyperpolarizability here */
             if (inputrec->drude->bHyper)
             {
                 add_quartic_restraint_force(inputrec, shfc, state->x, force[Try]);

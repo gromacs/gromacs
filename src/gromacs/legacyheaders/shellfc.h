@@ -143,8 +143,10 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         int *count);
 
 /* functions for DD */
+void add_quartic_restraint_force(t_inputrec *ir, gmx_shellfc_t shfc, rvec x[], rvec f[]);
+
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md,       
-                          t_state *state, rvec f[]);
+                          t_state *state, tensor force_vir);
 
 static void spread_shell(t_iatom ia[],
                          rvec x[], rvec f[], rvec fshift[],
