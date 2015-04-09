@@ -328,7 +328,6 @@ check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
 
 check_include_files(regex.h      HAVE_POSIX_REGEX)
-check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 # TODO: It could be nice to inform the user if no regex support is found,
 # as selections won't be fully functional.
 
@@ -394,6 +393,11 @@ include(gmxManageSharedLibraries)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
+
+# TNG wants zlib if it is available. And static libxml2 might have a dependency
+find_package(ZLIB QUIET)
+include(gmxTestZLib)
+gmx_test_zlib(HAVE_ZLIB)
 
 # Unconditionally find the package, as it is also required for unit
 # tests. This exports LIBXML2_FOUND, which we should not use because
@@ -513,13 +517,6 @@ if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
         "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
 endif()
 
-if(GMX_USE_TNG AND NOT GMX_EXTERNAL_TNG)
-    # TNG wants zlib if it is available
-    find_package(ZLIB QUIET)
-    include(gmxTestZLib)
-    gmx_test_zlib(HAVE_ZLIB)
-endif()
-
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
@@ -592,6 +589,8 @@ if(GMX_CXX11)
     set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
 endif()
 
+# Now we can test for CXX11_REGEX include file
+check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
