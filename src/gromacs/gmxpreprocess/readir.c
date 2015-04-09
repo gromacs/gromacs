@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2207,6 +2207,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Format is number of terms (int) and for all terms an amplitude (real)");
     CTYPE ("and a phase angle (real)");
     STYPE ("E-x",     is->efield_x,   NULL);
+    CTYPE ("Time dependent (pulsed) electric field. Format is omega, time for pulse");
+    CTYPE ("peak, and sigma (width) for pulse. Sigma = 0 removes pulse, leaving");
+    CTYPE ("the field to be a cosine function.");
     STYPE ("E-xt",    is->efield_xt,  NULL);
     STYPE ("E-y",     is->efield_y,   NULL);
     STYPE ("E-yt",    is->efield_yt,  NULL);
