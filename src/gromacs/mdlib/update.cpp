@@ -2118,6 +2118,12 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, co
 
     if (ir->etc == etcANDERSEN && constr != NULL)
     {
+        /* Currently, Andersen thermostat does not support constrained
+           systems. Functionality exists in the andersen_tcoupl
+           function in GROMACS 4.5.7 to allow this combination. That
+           code could be ported to the current random-number
+           generation approach, but has not yet been done because of
+           lack of time and resources. */
         gmx_fatal(FARGS, "Normal Andersen is currently not supported with constraints, use massive Andersen instead");
     }
 
