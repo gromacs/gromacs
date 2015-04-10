@@ -963,14 +963,15 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     rvec    diff_vr12;
     rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
     rvec    dfa, dfb;               /* change in forces, applied as corrections to the virial */
-    t_pbc   pbc;
+    t_pbc  *pbc;
     t_ilist    *ilist;
     t_iatom    *iatoms;
     int         flocal[] = { F_BONDS, F_POLARIZATION }; /* local interactions subject to hardwall constraint */
     int         nrlocal = 2;        /* size of flocal[] array */
     int         nral;
 
-    set_pbc(&pbc, ir->ePBC, state->box);
+    snew(pbc, 1);
+    set_pbc(pbc, ir->ePBC, state->box);
 
     const real kbt = BOLTZ * ir->drude->drude_t;
     max_t = 2.0 * ir->delta_t;
@@ -1056,7 +1057,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
             copy_rvec(state->v[ib], vinitb);
 
             /* get vector between atom b (Drude) and a (heavy atom) */
-            if (pbc)
+            if (pbc != NULL)
             {
                 pbc_dx(pbc, xb, xa, vecab);
             }

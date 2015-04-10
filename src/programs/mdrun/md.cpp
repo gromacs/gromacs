@@ -1066,7 +1066,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* additional restraining force, if requested */
         if (ir->bDrude && ir->drude->bHyper && shellfc)
         {
-            apply_quartic_restraint_force(ir, shellfc, state->x, f);
+            add_quartic_restraint_force(ir, shellfc, state->x, f);
         }
 
         if (bVV && !bStartingFromCpt && !bRerunMD)
