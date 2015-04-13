@@ -493,7 +493,7 @@ static void bc_pull_group(const t_commrec *cr, t_pull_group *pgrp)
     }
 }
 
-static void bc_pull(const t_commrec *cr, t_pull *pull)
+static void bc_pull(const t_commrec *cr, pull_params_t *pull)
 {
     int g;
 
