@@ -614,7 +614,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (econq == econqCoord)
     {
-        if (ir->bPull && ir->pull->bConstraint)
+        if (ir->bPull && pull_have_constraint(ir->pull_work))
         {
             if (EI_DYNAMICS(ir->eI))
             {
@@ -625,7 +625,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 t = ir->init_t;
             }
             set_pbc(&pbc, ir->ePBC, box);
-            pull_constraint(ir->pull, md, &pbc, cr, ir->delta_t, t, x, xprime, v, *vir);
+            pull_constraint(ir->pull_work, md, &pbc, cr, ir->delta_t, t, x, xprime, v, *vir);
         }
         if (constr->ed && delta_step > 0)
         {
@@ -1172,7 +1172,7 @@ gmx_constr_t init_constraints(FILE *fplog,
     nset = gmx_mtop_ftype_count(mtop, F_SETTLE);
 
     if (ncon+nset == 0 &&
-        !(ir->bPull && ir->pull->bConstraint) &&
+        !(ir->bPull && pull_have_constraint(ir->pull_work)) &&
         ed == NULL)
     {
         return NULL;

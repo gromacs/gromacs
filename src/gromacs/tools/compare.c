@@ -888,7 +888,7 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_cosines(fp, "et", ir1->et, ir2->et, ftol, abstol);
 }
 
-static void comp_pull_AB(FILE *fp, t_pull *pull, real ftol, real abstol)
+static void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
 {
     int i;
 
