@@ -186,7 +186,7 @@ static void init_pull_coord(t_pull_coord *pcrd,
 }
 
 char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
-                       t_pull *pull,
+                       pull_params_t *pull,
                        warninp_t wi)
 {
     int           ninp, i, nchar, nscan, m, idum;
@@ -306,7 +306,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     return grpbuf;
 }
 
-void make_pull_groups(t_pull *pull,
+void make_pull_groups(pull_params_t *pull,
                       char **pgnames,
                       const t_blocka *grps, char **gnames)
 {
@@ -374,7 +374,7 @@ void make_pull_groups(t_pull *pull,
     }
 }
 
-void make_pull_coords(t_pull *pull)
+void make_pull_coords(pull_params_t *pull)
 {
     int           c, d;
     t_pull_coord *pcrd;
@@ -425,26 +425,27 @@ void make_pull_coords(t_pull *pull)
 void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
                    const output_env_t oenv)
 {
-    t_mdatoms    *md;
-    t_pull       *pull;
-    t_pbc         pbc;
-    int           c;
-    double        t_start;
+    pull_params_t *pull;
+    struct pull_t *pull_work;
+    t_mdatoms     *md;
+    t_pbc          pbc;
+    int            c;
+    double         t_start;
 
-    init_pull(NULL, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
-    md = init_mdatoms(NULL, mtop, ir->efep);
+    pull      = ir->pull;
+    pull_work = init_pull(NULL, pull, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
+    md        = init_mdatoms(NULL, mtop, ir->efep);
     atoms2md(mtop, ir, 0, NULL, mtop->natoms, md);
     if (ir->efep)
     {
         update_mdatoms(md, lambda);
     }
-    pull = ir->pull;
 
     set_pbc(&pbc, ir->ePBC, box);
 
     t_start = ir->init_t + ir->init_step*ir->delta_t;
 
-    pull_calc_coms(NULL, pull, md, &pbc, t_start, x, NULL);
+    pull_calc_coms(NULL, pull_work, md, &pbc, t_start, x, NULL);
 
     fprintf(stderr, "Pull group  natoms  pbc atom  distance at start  reference at t=0\n");
     for (c = 0; c < pull->ncoord; c++)
@@ -469,7 +470,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
             pcrd->init = 0;
         }
 
-        get_pull_coord_value(pull, c, &pbc, &value);
+        get_pull_coord_value(pull_work, c, &pbc, &value);
         fprintf(stderr, " %10.3f nm", value);
 
         if (pcrd->bStart)
@@ -478,4 +479,6 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         }
         fprintf(stderr, "     %10.3f nm\n", pcrd->init);
     }
+
+    finish_pull(pull_work);
 }
