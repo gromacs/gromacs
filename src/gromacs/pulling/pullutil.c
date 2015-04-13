@@ -49,11 +49,12 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/pulling/pull_internal.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
+static void pull_set_pbcatom(t_commrec *cr, pull_group_work_t *pgrp,
                              rvec *x,
                              rvec x_pbc)
 {
@@ -61,7 +62,7 @@ static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
 
     if (cr != NULL && DOMAINDECOMP(cr))
     {
-        if (ga2la_get_home(cr->dd->ga2la, pgrp->pbcatom, &a))
+        if (ga2la_get_home(cr->dd->ga2la, pgrp->params.pbcatom, &a))
         {
             copy_rvec(x[a], x_pbc);
         }
@@ -72,11 +73,11 @@ static void pull_set_pbcatom(t_commrec *cr, t_pull_group *pgrp,
     }
     else
     {
-        copy_rvec(x[pgrp->pbcatom], x_pbc);
+        copy_rvec(x[pgrp->params.pbcatom], x_pbc);
     }
 }
 
-static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
+static void pull_set_pbcatoms(t_commrec *cr, struct pull_t *pull,
                               rvec *x,
                               rvec *x_pbc)
 {
@@ -85,7 +86,7 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
     n = 0;
     for (g = 0; g < pull->ngroup; g++)
     {
-        if (!pull->group[g].bCalcCOM || pull->group[g].pbcatom == -1)
+        if (!pull->group[g].bCalcCOM || pull->group[g].params.pbcatom == -1)
         {
             clear_rvec(x_pbc[g]);
         }
@@ -103,7 +104,7 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
     }
 }
 
-static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
+static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                              t_pbc *pbc, double t, rvec *x)
 {
     /* The size and stride per coord for the reduction buffer */
@@ -111,8 +112,6 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
     int           c, i, ii, m, start, end;
     rvec          g_x, dx, dir;
     double        inv_cyl_r2;
-    t_pull_coord *pcrd;
-    t_pull_group *pref, *pgrp, *pdyna;
     gmx_ga2la_t   ga2la = NULL;
 
     if (pull->dbuf_cyl == NULL)
@@ -128,13 +127,14 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
     start = 0;
     end   = md->homenr;
 
-    inv_cyl_r2 = 1/dsqr(pull->cylinder_r);
+    inv_cyl_r2 = 1/dsqr(pull->params.cylinder_r);
 
     /* loop over all groups to make a reference group for each*/
     for (c = 0; c < pull->ncoord; c++)
     {
-        double sum_a, wmass, wwmass;
-        dvec   radf_fac0, radf_fac1;
+        pull_coord_work_t *pcrd;
+        double             sum_a, wmass, wwmass;
+        dvec               radf_fac0, radf_fac1;
 
         pcrd   = &pull->coord[c];
 
@@ -144,11 +144,13 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
         clear_dvec(radf_fac0);
         clear_dvec(radf_fac1);
 
-        if (pcrd->eGeom == epullgCYL)
+        if (pcrd->params.eGeom == epullgCYL)
         {
+            pull_group_work_t *pref, *pgrp, *pdyna;
+
             /* pref will be the same group for all pull coordinates */
-            pref  = &pull->group[pcrd->group[0]];
-            pgrp  = &pull->group[pcrd->group[1]];
+            pref  = &pull->group[pcrd->params.group[0]];
+            pgrp  = &pull->group[pcrd->params.group[1]];
             pdyna = &pull->dyna[c];
             copy_rvec(pcrd->vec, dir);
             pdyna->nat_loc = 0;
@@ -158,10 +160,10 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
              * we reduced the other group COM over the ranks. This resolves
              * any PBC issues and we don't need to use a PBC-atom here.
              */
-            if (pcrd->rate != 0)
+            if (pcrd->params.rate != 0)
             {
                 /* With rate=0, value_ref is set initially */
-                pcrd->value_ref = pcrd->init + pcrd->rate*t;
+                pcrd->value_ref = pcrd->params.init + pcrd->params.rate*t;
             }
             for (m = 0; m < DIM; m++)
             {
@@ -169,12 +171,12 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
             }
 
             /* loop over all atoms in the main ref group */
-            for (i = 0; i < pref->nat; i++)
+            for (i = 0; i < pref->params.nat; i++)
             {
-                ii = pref->ind[i];
+                ii = pref->params.ind[i];
                 if (ga2la)
                 {
-                    if (!ga2la_get_home(ga2la, pref->ind[i], &ii))
+                    if (!ga2la_get_home(ga2la, pref->params.ind[i], &ii))
                     {
                         ii = -1;
                     }
@@ -260,14 +262,17 @@ static void make_cyl_refgrps(t_commrec *cr, t_pull *pull, t_mdatoms *md,
 
     for (c = 0; c < pull->ncoord; c++)
     {
+        pull_coord_work_t *pcrd;
+
         pcrd  = &pull->coord[c];
 
-        if (pcrd->eGeom == epullgCYL)
+        if (pcrd->params.eGeom == epullgCYL)
         {
-            double wmass, wwmass, inp, dist;
+            pull_group_work_t *pdyna, *pgrp;
+            double             wmass, wwmass, inp, dist;
 
             pdyna = &pull->dyna[c];
-            pgrp  = &pull->group[pcrd->group[1]];
+            pgrp  = &pull->group[pcrd->params.group[1]];
 
             wmass          = pull->dbuf_cyl[c*stride+0];
             wwmass         = pull->dbuf_cyl[c*stride+1];
@@ -327,7 +332,7 @@ static double atan2_0_2pi(double y, double x)
 
 /* calculates center of mass of selection index from all coordinates x */
 void pull_calc_coms(t_commrec *cr,
-                    t_pull *pull, t_mdatoms *md, t_pbc *pbc, double t,
+                    struct pull_t *pull, t_mdatoms *md, t_pbc *pbc, double t,
                     rvec x[], rvec *xp)
 {
     int  g;
@@ -377,7 +382,7 @@ void pull_calc_coms(t_commrec *cr,
 
     for (g = 0; g < pull->ngroup; g++)
     {
-        t_pull_group *pgrp;
+        pull_group_work_t *pgrp;
 
         pgrp = &pull->group[g];
 
@@ -467,7 +472,7 @@ void pull_calc_coms(t_commrec *cr,
                  * Note that with constraint pulling the mass does matter, but
                  * in that case a check group mass != 0 has been done before.
                  */
-                if (pgrp->nat == 1 && pgrp->nat_loc == 1 && wmass == 0)
+                if (pgrp->params.nat == 1 && pgrp->nat_loc == 1 && wmass == 0)
                 {
                     int m;
 
@@ -554,10 +559,10 @@ void pull_calc_coms(t_commrec *cr,
 
     for (g = 0; g < pull->ngroup; g++)
     {
-        t_pull_group *pgrp;
+        pull_group_work_t *pgrp;
 
         pgrp = &pull->group[g];
-        if (pgrp->nat > 0 && pgrp->bCalcCOM)
+        if (pgrp->params.nat > 0 && pgrp->bCalcCOM)
         {
             if (pgrp->epgrppbc != epgrppbcCOS)
             {
