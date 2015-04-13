@@ -80,21 +80,21 @@ static void done_pull_group(t_pull_group *pgrp)
     if (pgrp->nat > 0)
     {
         sfree(pgrp->ind);
-        sfree(pgrp->ind_loc);
         sfree(pgrp->weight);
-        sfree(pgrp->weight_loc);
     }
 }
 
-static void done_pull(t_pull *pull)
+static void done_pull_params(pull_params_t *pull)
 {
     int i;
 
     for (i = 0; i < pull->ngroup+1; i++)
     {
         done_pull_group(pull->group);
-        done_pull_group(pull->dyna);
     }
+
+    sfree(pull->group);
+    sfree(pull->coord);
 }
 
 void done_inputrec(t_inputrec *ir)
@@ -145,7 +145,7 @@ void done_inputrec(t_inputrec *ir)
 
     if (ir->pull)
     {
-        done_pull(ir->pull);
+        done_pull_params(ir->pull);
         sfree(ir->pull);
     }
 }
