@@ -1592,8 +1592,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (inputrec->bPull)
         {
             /* Initialize pull code */
-            init_pull(fplog, inputrec, nfile, fnm, mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                      EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
+            inputrec->pull_work =
+                init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
+                          mtop, cr, oenv, inputrec->fepvals->init_lambda,
+                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
         }
 
         if (inputrec->bRot)
@@ -1641,7 +1643,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->bPull)
         {
-            finish_pull(inputrec->pull);
+            finish_pull(inputrec->pull_work);
         }
 
         if (inputrec->bRot)
