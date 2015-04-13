@@ -632,7 +632,7 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
 }
 
-static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead,
+static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
                     int file_version, int ePullOld)
 {
     int  eGeomOld;

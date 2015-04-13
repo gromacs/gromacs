@@ -760,7 +760,7 @@ static void pr_fepvals(FILE *fp, int indent, t_lambda *fep, gmx_bool bMDPformat)
     PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
 };
 
-static void pr_pull(FILE *fp, int indent, t_pull *pull)
+static void pr_pull(FILE *fp, int indent, pull_params_t *pull)
 {
     int g;
 
