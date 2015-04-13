@@ -127,16 +127,16 @@ void do_index(const char* mdparin,
 /* Routines In readpull.c */
 
 char **read_pullparams(int *ninp_p, t_inpfile **inp,
-                       t_pull *pull,
+                       pull_params_t *pull,
                        warninp_t wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
-void make_pull_groups(t_pull *pull,
+void make_pull_groups(pull_params_t *pull,
                       char **pgnames,
                       const t_blocka *grps, char **gnames);
 /* Process the pull group parameters after reading the index groups */
 
-void make_pull_coords(t_pull *pull);
+void make_pull_coords(pull_params_t *pull);
 /* Process the pull coordinates after reading the pull groups */
 
 void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,

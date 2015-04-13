@@ -1627,7 +1627,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
             if (ir->bPull)
             {
-                pull_print_output(ir->pull, step, t);
+                pull_print_output(ir->pull_work, step, t);
             }
 
             if (do_per_step(step, ir->nstlog))
