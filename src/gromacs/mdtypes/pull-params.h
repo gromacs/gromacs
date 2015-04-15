@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,8 +77,8 @@ typedef struct {
     rvec     origin;                       /**< The origin for the absolute reference */
     rvec     vec;                          /**< The pull vector, direction or position */
     gmx_bool bStart;                       /**< Set init based on the initial structure */
-    real     init;                         /**< Initial reference displacement */
-    real     rate;                         /**< Rate of motion (nm/ps) */
+    real     init;                         /**< Initial reference displacement (nm) or (deg) */
+    real     rate;                         /**< Rate of motion (nm/ps) or (deg/ps) */
     real     k;                            /**< Force constant */
     real     kB;                           /**< Force constant for state B */
 } t_pull_coord;
@@ -89,8 +89,7 @@ typedef struct pull_params_t {
     int            ncoord;         /**< Number of pull coordinates */
     real           cylinder_r;     /**< Radius of cylinder for dynamic COM */
     real           constr_tol;     /**< Absolute tolerance for constraints in (nm) */
-    gmx_bool       bPrintCOM1;     /**< Print coordinates of COM 1 for each coord */
-    gmx_bool       bPrintCOM2;     /**< Print coordinates of COM 2 for each coord */
+    gmx_bool       bPrintCOM;      /**< Print coordinates of COM for each coord */
     gmx_bool       bPrintRefValue; /**< Print the reference value for each coord */
     gmx_bool       bPrintComp;     /**< Print cartesian components for each coord with geometry=distance */
     int            nstxout;        /**< Output interval for pull x */

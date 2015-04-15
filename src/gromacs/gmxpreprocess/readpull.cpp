@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -130,7 +131,8 @@ static void init_pull_coord(t_pull_coord *pcrd,
     char   buf[STRLEN];
 
     if (pcrd->eType == epullCONSTRAINT && (pcrd->eGeom == epullgCYL ||
-                                           pcrd->eGeom == epullgDIRRELATIVE))
+                                           pcrd->eGeom == epullgDIRRELATIVE ||
+                                           pcrd->eGeom == epullgANGLE))
     {
         gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
                   epull_names[pcrd->eType],
@@ -146,26 +148,33 @@ static void init_pull_coord(t_pull_coord *pcrd,
         gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
 
-    /* Check and set the pull vector */
     clear_dvec(vec);
     if (pcrd->eGeom == epullgDIST)
     {
-        if (pcrd->init < 0)
+        if (pcrd->bStart && pcrd->init < 0)
         {
-            sprintf(buf, "The initial pull distance is negative with geometry %s, while a distance can not be negative. Use geometry %s instead.",
-                    EPULLGEOM(pcrd->eGeom), EPULLGEOM(epullgDIR));
-            warning_error(wi, buf);
+            /* This value of pcrd->init may be ok depending on pcrd->bStart which modifies pcrd->init later on */
+            sprintf(buf, "The initial reference distance set by pull-coord-init is set to a negative value (%g) with geometry %s while distances need to be non-negative. "
+                    "This may work, since you have set pull-coord-start to 'yes' which modifies this value, but only for certain starting distances. "
+                    "If this is a mistake you may want to use geometry %s instead.",
+                    pcrd->init, EPULLGEOM(pcrd->eGeom), EPULLGEOM(epullgDIR));
+            warning(wi, buf);
         }
-        /* TODO: With a positive init but a negative rate things could still
-         * go wrong, but it might be fine if you don't pull too far.
-         * We should give a warning or note when there is only one pull dim
-         * active, since that is usually the problematic case when you should
-         * be using direction. We will do this later, since an already planned
-         * generalization of the pull code makes pull dim available here.
-         */
+    }
+    else if (pcrd->eGeom == epullgANGLE)
+    {
+        if (pcrd->bStart && (pcrd->init < 0 || pcrd->init > 180))
+        {
+            /* This value of pcrd->init may be ok depending on pcrd->bStart which modifies pcrd->init later on */
+            sprintf(buf, "The initial reference angle set by pull-coord-init (%g) is outside of the allowed range (0, 180) degrees for geometry (%s). "
+                    "This may work, since you have set pull-coord-start to 'yes' which modifies this value, but only for certain starting angles.",
+                    pcrd->init, EPULLGEOM(pcrd->eGeom));
+            warning(wi, buf);
+        }
     }
     else if (pcrd->eGeom != epullgDIRRELATIVE)
     {
+        /* Check and set the pull vector */
         string2dvec(vec_buf, vec);
         if (dnorm2(vec) == 0)
         {
@@ -206,8 +215,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
     RTYPE("pull-cylinder-r",  pull->cylinder_r, 1.5);
     RTYPE("pull-constr-tol",  pull->constr_tol, 1E-6);
-    EETYPE("pull-print-com1", pull->bPrintCOM1, yesno_names);
-    EETYPE("pull-print-com2", pull->bPrintCOM2, yesno_names);
+    EETYPE("pull-print-com", pull->bPrintCOM, yesno_names);
     EETYPE("pull-print-ref-value", pull->bPrintRefValue, yesno_names);
     EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
     ITYPE("pull-nstxout",     pull->nstxout, 50);
@@ -234,7 +242,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     snew(pull->coord, pull->ncoord);
 
     /* pull group options */
-    CTYPE("Group name, weight (default all 1), vector, init, rate (nm/ps), kJ/(mol*nm^2)");
+    CTYPE("Group and coordinate parameters");
 
     /* Read the pull groups */
     snew(grpbuf, pull->ngroup);
@@ -265,7 +273,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         sprintf(buf, "pull-coord%d-groups", i);
         STYPE(buf,              groups, "");
 
-        pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE ? 4 : 2);
+        pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE || pcrd->eGeom == epullgANGLE ? 4 : 2);
 
         nscan = sscanf(groups, "%d %d %d %d %d", &pcrd->group[0], &pcrd->group[1], &pcrd->group[2], &pcrd->group[3], &idum);
         if (nscan != pcrd->ngroup)
@@ -451,6 +459,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         t_pull_group *pgrp0, *pgrp1;
         double        value;
         real          init = 0;
+        char          units_str[STRLEN];
 
         pcrd  = &pull->coord[c];
 
@@ -468,13 +477,42 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         }
 
         get_pull_coord_value(pull_work, c, &pbc, &value);
-        fprintf(stderr, " %10.3f nm", value);
+
+        value *= pull_value2init_conversion_factor(pcrd);
+
+        sprintf(units_str, pull_coordinate_is_angletype(pcrd) ?  "deg" : "nm");
+        fprintf(stderr, " %10.3f %s", value, units_str);
 
         if (pcrd->bStart)
         {
             pcrd->init = value + init;
         }
-        fprintf(stderr, "     %10.3f nm\n", pcrd->init);
+
+        if (pcrd->eGeom == epullgDIST)
+        {
+            if (pcrd->init < 0)
+            {
+                gmx_fatal(FARGS, "The initial pull distance (%g) needs to be non-negative with geometry %s. If you want a signed distance, use geometry %s instead.",
+                          pcrd->init, EPULLGEOM(pcrd->eGeom), EPULLGEOM(epullgDIR));
+            }
+
+            /* TODO: With a positive init but a negative rate things could still
+             * go wrong, but it might be fine if you don't pull too far.
+             * We should give a warning or note when there is only one pull dim
+             * active, since that is usually the problematic case when you should
+             * be using direction. We will do this later, since an already planned
+             * generalization of the pull code makes pull dim available here.
+             */
+        }
+        else if (pcrd->eGeom == epullgANGLE)
+        {
+            if (pcrd->init < 0 || pcrd->init > 180)
+            {
+                gmx_fatal(FARGS,  "The initial pull reference angle (%g) is outside of the allowed range of 0 to 180 degrees.", pcrd->init);
+            }
+        }
+
+        fprintf(stderr, "     %10.3f %s\n", pcrd->init, units_str);
     }
 
     finish_pull(pull_work);
