@@ -92,7 +92,8 @@ enum tpxv {
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
     tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
     tpxv_PullCoordTypeGeom,                                  /**< add pull type and geometry per group and flat-bottom */
-    tpxv_PullGeomDirRel                                      /**< add pull geometry direction-relative */
+    tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
+    tpxv_PullGeomAngle                                       /**< add pull geometry angle */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -106,7 +107,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_PullGeomDirRel;
+static const int tpx_version = tpxv_PullGeomAngle;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -300,7 +301,7 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
     {
         gmx_fio_do_int(fio,  pcrd->eType);
         gmx_fio_do_int(fio,  pcrd->eGeom);
-        if (pcrd->eGeom == epullgDIRRELATIVE)
+        if (pcrd->eGeom == epullgDIRRELATIVE || pcrd->eGeom == epullgANGLE)
         {
             gmx_fio_do_int(fio, pcrd->group[2]);
             gmx_fio_do_int(fio, pcrd->group[3]);
@@ -661,18 +662,16 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
     gmx_fio_do_real(fio, pull->constr_tol);
     if (file_version >= 95)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM1);
+        gmx_fio_do_int(fio, pull->bPrintCOM);
         /* With file_version < 95 this value is set below */
     }
     if (file_version >= tpxv_PullCoordTypeGeom)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM2);
         gmx_fio_do_int(fio, pull->bPrintRefValue);
         gmx_fio_do_int(fio, pull->bPrintComp);
     }
     else
     {
-        pull->bPrintCOM2     = FALSE;
         pull->bPrintRefValue = FALSE;
         pull->bPrintComp     = TRUE;
     }
@@ -707,7 +706,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
             }
         }
 
-        pull->bPrintCOM1 = (pull->group[0].nat > 0);
+        pull->bPrintCOM = (pull->group[0].nat > 0);
     }
     else
     {

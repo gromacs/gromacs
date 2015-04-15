@@ -194,8 +194,7 @@ typedef struct {
     int            ncoord;         /* number of pull coordinates */
     real           cylinder_r;     /* radius of cylinder for dynamic COM */
     real           constr_tol;     /* absolute tolerance for constraints in (nm) */
-    gmx_bool       bPrintCOM1;     /* Print coordinates of COM 1 for each coord */
-    gmx_bool       bPrintCOM2;     /* Print coordinates of COM 2 for each coord */
+    gmx_bool       bPrintCOM;      /* Print coordinates of COM for each coord */
     gmx_bool       bPrintRefValue; /* Print the reference value for each coord */
     gmx_bool       bPrintComp;     /* Print cartesian components for each coord with geometry=distance */
     int            nstxout;        /* Output frequency for pull x */
