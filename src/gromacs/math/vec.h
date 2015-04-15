@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -614,6 +614,20 @@ gmx_angle(const rvec a, const rvec b)
 
     wlen  = norm(w);
     s     = iprod(a, b);
+
+    return atan2(wlen, s);
+}
+
+static gmx_inline double
+gmx_dangle(const dvec a, const dvec b)
+{
+    dvec   w;
+    double wlen, s;
+
+    dcprod(a, b, w);
+
+    wlen  = dnorm(w);
+    s     = diprod(a, b);
 
     return atan2(wlen, s);
 }
