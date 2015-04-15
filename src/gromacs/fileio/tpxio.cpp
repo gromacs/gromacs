@@ -95,6 +95,7 @@ enum tpxv {
     tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
     tpxv_IntermolecularBondeds,                              /**< permit inter-molecular bonded interactions in the topology */
     tpxv_PullCoordNGroup,                                    /**< add ngroup to pull coord */
+    tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -651,18 +652,23 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
     gmx_fio_do_real(fio, pull->constr_tol);
     if (file_version >= 95)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM1);
+        gmx_fio_do_int(fio, pull->bPrintCOM);
         /* With file_version < 95 this value is set below */
     }
-    if (file_version >= tpxv_PullCoordTypeGeom)
+    if (file_version >= tpxv_ReplacePullPrintCOM12)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM2);
+        gmx_fio_do_int(fio, pull->bPrintRefValue);
+        gmx_fio_do_int(fio, pull->bPrintComp);
+    }
+    else if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        int idum;
+        gmx_fio_do_int(fio, idum); /* used to be bPrintCOM2 */
         gmx_fio_do_int(fio, pull->bPrintRefValue);
         gmx_fio_do_int(fio, pull->bPrintComp);
     }
     else
     {
-        pull->bPrintCOM2     = FALSE;
         pull->bPrintRefValue = FALSE;
         pull->bPrintComp     = TRUE;
     }
@@ -697,7 +703,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
             }
         }
 
-        pull->bPrintCOM1 = (pull->group[0].nat > 0);
+        pull->bPrintCOM = (pull->group[0].nat > 0);
     }
     else
     {
