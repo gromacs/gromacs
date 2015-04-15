@@ -1851,6 +1851,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     REM_TYPE("nstdihreout");
     REM_TYPE("nstcheckpoint");
     REM_TYPE("optimize-fft");
+    REM_TYPE("pull-print-com1");
+
 
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
@@ -1859,6 +1861,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     REPL_TYPE("nstxtcout", "nstxout-compressed");
     REPL_TYPE("xtc-grps", "compressed-x-grps");
     REPL_TYPE("xtc-precision", "compressed-x-precision");
+    REPL_TYPE("pull-print-com2", "pull-print-com");
 
     CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
     CTYPE ("Preprocessor information: use cpp syntax.");
