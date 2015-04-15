@@ -63,6 +63,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformintdistribution.h"
@@ -78,11 +79,6 @@
 
 //! longest file names allowed in input files
 #define WHAM_MAXFILELEN 2048
-
-/*! \brief
- * x-axis legend for output files
- */
-static const char *xlabel = "\\xx\\f{} (nm)";
 
 /*! \brief
  * enum for energy units
@@ -130,16 +126,17 @@ typedef struct
      * \name Using umbrella pull code since gromacs 4.x
      */
     /*!\{*/
-    int      npullcrds_tot; //!< nr of pull coordinates in tpr file
-    int      npullcrds;     //!< nr of umbrella pull coordinates for reading
-    int      pull_geometry; //!< such as distance, direction
-    ivec     pull_dim;      //!< pull dimension with geometry distance
-    int      pull_ndim;     //!< nr of pull_dim != 0
-    gmx_bool bPrintRef;     //!< Coordinates of reference groups written to pullx.xvg ?
-    gmx_bool bPrintComp;    //!< Components of pull distance written to pullx.xvg ?
-    real    *k;             //!< force constants in tpr file
-    real    *init_dist;     //!< reference displacements
-    real    *umbInitDist;   //!< reference displacement in umbrella direction
+    int      npullcrds_tot;       //!< nr of pull coordinates in tpr file
+    int      npullcrds;           //!< nr of umbrella pull coordinates for reading
+    int      pull_geometry;       //!< such as distance, direction
+    ivec     pull_dim;            //!< pull dimension with geometry distance
+    int      pull_ndim;           //!< nr of pull_dim != 0
+    gmx_bool bPrintRef;           //!< Coordinates of reference groups written to pullx.xvg ?
+    gmx_bool bPrintComp;          //!< Components of pull distance written to pullx.xvg ?
+    char     coord_units[256];    //!< Units common for all coordinates
+    real    *k;                   //!< force constants in tpr file
+    real    *init_dist;           //!< reference displacements
+    real    *umbInitDist;         //!< reference displacement in umbrella direction
     /*!\}*/
     /*!
      * \name Using PDO files common until gromacs 3.x
@@ -1254,7 +1251,7 @@ void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
  * the "synthetic" histograms for the Bootstrap method
  */
 void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
-                      t_UmbrellaOptions *opt, const char *fnhist)
+                      t_UmbrellaOptions *opt, const char *fnhist, const char *xlabel)
 {
     int    i, j, k, nbin;
     double last;
@@ -1497,7 +1494,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
  * sets of bootstrapped histograms.
  */
 void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindows,
-                      int bs_index, t_UmbrellaOptions *opt)
+                      int bs_index, t_UmbrellaOptions *opt, const char *xlabel)
 {
     char *fn = 0, *buf = 0, title[256];
     FILE *fp;
@@ -1599,7 +1596,7 @@ void setRandomBsWeights(t_UmbrellaWindow *synthwin, int nAllPull, t_UmbrellaOpti
 
 //! The main bootstrapping routine
 void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
-                      char* ylabel, double *profile,
+                      const char *xlabel, char* ylabel, double *profile,
                       t_UmbrellaWindow * window, int nWindows, t_UmbrellaOptions *opt)
 {
     t_UmbrellaWindow * synthWindow;
@@ -1680,7 +1677,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
             break;
         case bsMethod_traj:
         case bsMethod_trajGauss:
-            calc_cumulatives(window, nWindows, opt, fnhist);
+            calc_cumulatives(window, nWindows, opt, fnhist, xlabel);
             break;
         default:
             gmx_fatal(FARGS, "Unknown bootstrap method. That should not have happened.\n");
@@ -1726,7 +1723,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         /* write histos in case of verbose output */
         if (opt->bs_verbose)
         {
-            print_histograms(fnhist, synthWindow, nAllPull, ib, opt);
+            print_histograms(fnhist, synthWindow, nAllPull, ib, opt, xlabel);
         }
 
         /* do wham */
@@ -2111,6 +2108,11 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     }
     header->bPrintComp    = ir.pull->bPrintComp;
     header->pull_ndim     = header->pull_dim[0]+header->pull_dim[1]+header->pull_dim[2];
+
+    /* It is currently assumed that all pull coordinates have the same geometry, so they also have the same coordinate units.
+       We can therefore get the units for the xlabel from the first coordinate. */
+    std::strcpy(header->coord_units, pull_coordinate_units(&ir.pull->coord[0]));
+
     /* We should add a struct for each pull coord with all pull coord data
        instead of allocating many arrays for each property */
     snew(header->k, ncrd);
@@ -2131,7 +2133,12 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
 
     for (i = 0; i < ncrd; i++)
     {
-        header->k[i] = ir.pull->coord[i].k;
+        /* For angle pull geometries, the pull code uses coordinate units of degrees externally and radians internally.
+           The force constant has units kJ/mol/rad^2 both externally and internally. Here, we convert the force constants to
+           units of degrees (kJ/mol/deg^2) for internal use. This requires less code modification than converting the coordinates */
+        double k_pull_external_to_wham_internal = 1./(gmx::square(pull_conversion_factor_internal2userinput(&ir.pull->coord[i])));
+
+        header->k[i] = ir.pull->coord[i].k*k_pull_external_to_wham_internal;
         if (header->k[i] == 0.0)
         {
             gmx_fatal(FARGS, "Pull coordinate %d has force constant of of 0.0 in %s.\n"
@@ -2148,6 +2155,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
             case epullgDIST:
             case epullgDIR:
             case epullgDIRPBC:
+            case epullgANGLE:
                 header->umbInitDist[i] = header->init_dist[i];
                 break;
             default:
@@ -2164,7 +2172,8 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
                header->pull_ndim, (header->bPrintRef ? "" : " not"));
         for (i = 0; i < ncrd; i++)
         {
-            printf("\tcrd %d) k = %-5g  position = %g\n", i, header->k[i], header->umbInitDist[i]);
+            double k_wham_internal_to_pull_external = gmx::square(pull_conversion_factor_internal2userinput(&ir.pull->coord[i]));
+            printf("\tcrd %d) k = %-5g  position = %g\n", i, header->k[i]*k_wham_internal_to_pull_external, header->umbInitDist[i]);
         }
     }
     if (!opt->verbose && first)
@@ -2699,7 +2708,7 @@ void smoothIact(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
 /*! \brief Try to compute the autocorrelation time for each umbrealla window
  */
 void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
-                                        t_UmbrellaOptions *opt, const char *fn)
+                                        t_UmbrellaOptions *opt, const char *fn, const char *xlabel)
 {
     int   i, ig, ncorr, ntot, j, k, *count, restart;
     real *corr, c0, dt, tmp;
@@ -3021,7 +3030,7 @@ void  checkReactionCoordinateCovered(t_UmbrellaWindow *window, int nwins,
  *
  * This speeds up the convergence by roughly a factor of 2
  */
-void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptions *opt)
+void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptions *opt, const char *xlabel)
 {
     int    i, j, ig, bins = opt->bins, nHist, winmin, groupmin;
     double dz, min = opt->min, *pot, pos, hispos, dist, diff, fAv, distmin, *f;
@@ -3483,7 +3492,7 @@ int gmx_wham(int argc, char *argv[])
     char                   **fninTpr, **fninPull, **fninPdo;
     const char              *fnPull;
     FILE                    *histout, *profout;
-    char                     ylabel[256], title[256];
+    char                     xlabel[STRLEN], ylabel[256], title[256];
 
     opt.bins      = 200;
     opt.verbose   = FALSE;
@@ -3644,7 +3653,13 @@ int gmx_wham(int argc, char *argv[])
         printf("Found %d pdo files in %s\n", nfiles, opt.fnPdo);
         window = initUmbrellaWindows(nfiles);
         read_pdo_files(fninPdo, nfiles, &header, window, &opt);
+
+        /* Assume the default coordinate units */
+        std::strcpy(header.coord_units, "nm");
     }
+
+    sprintf(xlabel, "\\xx\\f{} (%s)", header.coord_units);
+
     nwins = nfiles;
 
     /* enforce equal weight for all histograms? */
@@ -3691,7 +3706,7 @@ int gmx_wham(int argc, char *argv[])
     /* Compute integrated autocorrelation times */
     if (opt.bCalcTauInt)
     {
-        calcIntegratedAutocorrelationTimes(window, nwins, &opt, opt2fn("-oiact", NFILE, fnm));
+        calcIntegratedAutocorrelationTimes(window, nwins, &opt, opt2fn("-oiact", NFILE, fnm), xlabel);
     }
 
     /* calc average and sigma for each histogram
@@ -3704,7 +3719,7 @@ int gmx_wham(int argc, char *argv[])
     /* Get initial potential by simple integration */
     if (opt.bInitPotByIntegration)
     {
-        guessPotByIntegration(window, nwins, &opt);
+        guessPotByIntegration(window, nwins, &opt, xlabel);
     }
 
     /* Check if complete reaction coordinate is covered */
@@ -3777,7 +3792,7 @@ int gmx_wham(int argc, char *argv[])
     {
         do_bootstrapping(opt2fn("-bsres", NFILE, fnm), opt2fn("-bsprof", NFILE, fnm),
                          opt2fn("-hist", NFILE, fnm),
-                         ylabel, profile, window, nwins, &opt);
+                         xlabel, ylabel, profile, window, nwins, &opt);
     }
 
     sfree(profile);
