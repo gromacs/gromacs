@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -69,6 +70,27 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
 
+
+/*! \brief Returns if the pull coordinate is an angle type, i.e. has unit degrees/radians.
+ *
+ * \param[in] pcrd The pull coordinate to query the type for.
+ * \returns a boolean telling if the coordinate is of angle type.
+ */
+bool pull_coordinate_is_angletype(const t_pull_coord *pcrd);
+
+/*! \brief Returns the conversion factor from the pull coord init/rate unit to internal value unit.
+ *
+ * \param[in] pcrd The pull coordinate to get the conversion factor for.
+ * \returns the conversion factor.
+ */
+double pull_init2value_conversion_factor(const t_pull_coord *pcrd);
+
+/*! \brief Returns the conversion factor from the pull coord internal value unit to the init/rate unit.
+ *
+ * \param[in] pcrd The pull coordinate to get the conversion factor for.
+ * \returns the conversion factor.
+ */
+double pull_value2init_conversion_factor(const t_pull_coord *pcrd);
 
 /*! \brief Get the value for pull coord coord_ind.
  *
