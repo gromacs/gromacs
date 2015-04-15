@@ -768,8 +768,7 @@ static void pr_pull(FILE *fp, int indent, pull_params_t *pull)
 
     PR("pull-cylinder-r", pull->cylinder_r);
     PR("pull-constr-tol", pull->constr_tol);
-    PS("pull-print-COM1", EBOOL(pull->bPrintCOM1));
-    PS("pull-print-COM2", EBOOL(pull->bPrintCOM2));
+    PS("pull-print-COM", EBOOL(pull->bPrintCOM));
     PS("pull-print-ref-value", EBOOL(pull->bPrintRefValue));
     PS("pull-print-components", EBOOL(pull->bPrintComp));
     PI("pull-nstxout", pull->nstxout);
