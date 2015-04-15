@@ -129,7 +129,8 @@ static void init_pull_coord(t_pull_coord *pcrd,
     char   buf[STRLEN];
 
     if (pcrd->eType == epullCONSTRAINT && (pcrd->eGeom == epullgCYL ||
-                                           pcrd->eGeom == epullgDIRRELATIVE))
+                                           pcrd->eGeom == epullgDIRRELATIVE ||
+                                           pcrd->eGeom == epullgANGLE))
     {
         gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
                   epull_names[pcrd->eType],
@@ -162,6 +163,16 @@ static void init_pull_coord(t_pull_coord *pcrd,
          * be using direction. We will do this later, since an already planned
          * generalization of the pull code makes pull dim available here.
          */
+    }
+    else if (pcrd->eGeom == epullgANGLE)
+    {
+        if (pcrd->init < 0)
+        {
+            sprintf(buf, "The initial pull angle (%g) is negative while the angle should be in the range of 0 to pi.",
+                    pcrd->init);
+            warning_error(wi, buf);
+        }
+
     }
     else if (pcrd->eGeom != epullgDIRRELATIVE)
     {
@@ -205,8 +216,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
     RTYPE("pull-cylinder-r",  pull->cylinder_r, 1.5);
     RTYPE("pull-constr-tol",  pull->constr_tol, 1E-6);
-    EETYPE("pull-print-com1", pull->bPrintCOM1, yesno_names);
-    EETYPE("pull-print-com2", pull->bPrintCOM2, yesno_names);
+    EETYPE("pull-print-com", pull->bPrintCOM, yesno_names);
     EETYPE("pull-print-ref-value", pull->bPrintRefValue, yesno_names);
     EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
     ITYPE("pull-nstxout",     pull->nstxout, 50);
@@ -233,7 +243,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     snew(pull->coord, pull->ncoord);
 
     /* pull group options */
-    CTYPE("Group name, weight (default all 1), vector, init, rate (nm/ps), kJ/(mol*nm^2)");
+    CTYPE("Group and coordinate parameters");
 
     /* Read the pull groups */
     snew(grpbuf, pull->ngroup);
@@ -264,7 +274,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         sprintf(buf, "pull-coord%d-groups", i);
         STYPE(buf,              groups, "");
 
-        pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE ? 4 : 2);
+        pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE || pcrd->eGeom == epullgANGLE ? 4 : 2);
 
         nscan = sscanf(groups, "%d %d %d %d %d", &pcrd->group[0], &pcrd->group[1], &pcrd->group[2], &pcrd->group[3], &idum);
         if (nscan != pcrd->ngroup)
@@ -427,6 +437,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
     t_pbc          pbc;
     int            c;
     double         t_start;
+    char           buf[STRLEN];
 
     pull      = ir->pull;
     pull_work = init_pull(NULL, pull, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
@@ -467,13 +478,15 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         }
 
         get_pull_coord_value(pull_work, c, &pbc, &value);
-        fprintf(stderr, " %10.3f nm", value);
+
+        sprintf(buf, pcrd->eGeom == epullgANGLE ? "degrees" : "nm");
+        fprintf(stderr, " %10.3f %s", value, buf);
 
         if (pcrd->bStart)
         {
             pcrd->init = value + init;
         }
-        fprintf(stderr, "     %10.3f nm\n", pcrd->init);
+        fprintf(stderr, "     %10.3f %s\n", pcrd->init, buf);
     }
 
     finish_pull(pull_work);
