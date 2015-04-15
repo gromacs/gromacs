@@ -2100,11 +2100,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
 
     header->npullcrds_tot = ir.pull->ncoord;
     header->npullcrds     = ncrd;
-    header->bPrintRef     = ir.pull->bPrintCOM1;
-    if (ir.pull->bPrintCOM2)
-    {
-        gmx_fatal(FARGS, "Reading pull output with printing of the COM of group 2 is currently not supported");
-    }
+    header->bPrintRef     = ir.pull->bPrintCOM;
     if (ir.pull->bPrintRefValue)
     {
         gmx_fatal(FARGS, "Reading pull output with printing of the reference value of the coordinates is currently not supported");
