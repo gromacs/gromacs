@@ -516,7 +516,7 @@ extern const char *epull_names[epullNR+1];
 
 //! Control of pull groups
 enum {
-    epullgDIST, epullgDIR, epullgCYL, epullgDIRPBC, epullgDIRRELATIVE, epullgNR
+    epullgDIST, epullgDIR, epullgCYL, epullgDIRPBC, epullgDIRRELATIVE, epullgANGLE, epullgNR
 };
 //! String for pull groups
 extern const char *epullg_names[epullgNR+1];
