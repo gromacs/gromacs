@@ -103,6 +103,7 @@ enum tpxv {
     tpxv_CompElPolyatomicIonsAndMultipleIonTypes,            /**< CompEl now can handle polyatomic ions and more than two types of ions */
     tpxv_RemoveAdress,                                       /**< removed support for AdResS */
     tpxv_PullCoordNGroup,                                    /**< add ngroup to pull coord */
+    tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -274,7 +275,7 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
 }
 
 static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
-                          int ePullOld, int eGeomOld, ivec dimOld)
+                          int ePullOld, int eGeomOld, ivec dimOld, gmx_bool bRead)
 {
     if (file_version >= tpxv_PullCoordNGroup)
     {
@@ -327,8 +328,17 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
         /* This parameter is only printed, but not actually used by mdrun */
         pcrd->bStart = FALSE;
     }
+
     gmx_fio_do_real(fio, pcrd->init);
     gmx_fio_do_real(fio, pcrd->rate);
+
+    if (bRead && pcrd->eGeom == epullgANGLE)
+    {
+        /* Convert degrees to radians after reading the tpr */
+        pcrd->init *= DEG2RAD;
+        pcrd->rate *= DEG2RAD;
+    }
+
     gmx_fio_do_real(fio, pcrd->k);
     gmx_fio_do_real(fio, pcrd->kB);
 }
@@ -659,18 +669,23 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
     gmx_fio_do_real(fio, pull->constr_tol);
     if (file_version >= 95)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM1);
+        gmx_fio_do_int(fio, pull->bPrintCOM);
         /* With file_version < 95 this value is set below */
     }
-    if (file_version >= tpxv_PullCoordTypeGeom)
+    if (file_version >= tpxv_ReplacePullPrintCOM12)
     {
-        gmx_fio_do_int(fio, pull->bPrintCOM2);
+        gmx_fio_do_int(fio, pull->bPrintRefValue);
+        gmx_fio_do_int(fio, pull->bPrintComp);
+    }
+    else if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        int idum;
+        gmx_fio_do_int(fio, idum); /* used to be bPrintCOM2 */
         gmx_fio_do_int(fio, pull->bPrintRefValue);
         gmx_fio_do_int(fio, pull->bPrintComp);
     }
     else
     {
-        pull->bPrintCOM2     = FALSE;
         pull->bPrintRefValue = FALSE;
         pull->bPrintComp     = TRUE;
     }
@@ -705,7 +720,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
             }
         }
 
-        pull->bPrintCOM1 = (pull->group[0].nat > 0);
+        pull->bPrintCOM = (pull->group[0].nat > 0);
     }
     else
     {
@@ -716,7 +731,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
         for (g = 0; g < pull->ncoord; g++)
         {
             do_pull_coord(fio, &pull->coord[g],
-                          file_version, ePullOld, eGeomOld, dimOld);
+                          file_version, ePullOld, eGeomOld, dimOld, bRead);
         }
     }
 }

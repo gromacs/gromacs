@@ -1874,6 +1874,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     REM_TYPE("adress_tf_grp_names");
     REM_TYPE("adress_cg_grp_names");
     REM_TYPE("adress_do_hybridpairs");
+    REM_TYPE("pull-print-com1");
 
     /* replace the following commands with the clearer new versions*/
     REPL_TYPE("unconstrained-start", "continuation");
@@ -1882,6 +1883,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     REPL_TYPE("nstxtcout", "nstxout-compressed");
     REPL_TYPE("xtc-grps", "compressed-x-grps");
     REPL_TYPE("xtc-precision", "compressed-x-precision");
+    REPL_TYPE("pull-print-com2", "pull-print-com");
 
     CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
     CTYPE ("Preprocessor information: use cpp syntax.");

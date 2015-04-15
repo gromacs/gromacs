@@ -655,8 +655,12 @@ static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
     pr_rvec(fp, indent, "origin", pcrd->origin, DIM, TRUE);
     pr_rvec(fp, indent, "vec", pcrd->vec, DIM, TRUE);
     PS("start", EBOOL(pcrd->bStart));
-    PR("init", pcrd->init);
-    PR("rate", pcrd->rate);
+
+    if (pcrd->eGeom == epullgANGLE)
+    {
+        PR("init", pcrd->init*RAD2DEG);
+        PR("rate", pcrd->rate*RAD2DEG);
+    }
     PR("k", pcrd->k);
     PR("kB", pcrd->kB);
 }
@@ -776,8 +780,7 @@ static void pr_pull(FILE *fp, int indent, pull_params_t *pull)
 
     PR("pull-cylinder-r", pull->cylinder_r);
     PR("pull-constr-tol", pull->constr_tol);
-    PS("pull-print-COM1", EBOOL(pull->bPrintCOM1));
-    PS("pull-print-COM2", EBOOL(pull->bPrintCOM2));
+    PS("pull-print-COM", EBOOL(pull->bPrintCOM));
     PS("pull-print-ref-value", EBOOL(pull->bPrintRefValue));
     PS("pull-print-components", EBOOL(pull->bPrintComp));
     PI("pull-nstxout", pull->nstxout);
