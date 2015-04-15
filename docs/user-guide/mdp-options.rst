@@ -1393,7 +1393,7 @@ Bonds
 
 .. mdp:: lincs-warnangle
 
-   (30) \[degrees\]
+   (30) \[deg\]
    maximum angle that a bond can rotate before LINCS will complain
 
 .. mdp:: morse
@@ -1692,15 +1692,23 @@ applicable pulling coordinate.
       component. This geometry is not supported with constraint
       pulling.
 
+   .. mdp-value:: angle
+
+      Pull along an angle defined by four groups. The angle is
+      defined as the angle between two vectors: the vector connecting
+      the COM of the first group to the COM of the second group and
+      the vector connecting the COM of the third group to the COM of
+      the fourth group.
+
 .. mdp:: pull-coord1-groups
 
-   The two groups indices should be given on which this pull
-   coordinate will operate. The first index can be 0, in which case an
+   The group indices on which this pull coordinate will operate.
+   The number of group indices required is geometry dependent.
+   The first index can be 0, in which case an
    absolute reference of :mdp:`pull-coord1-origin` is used. With an
    absolute reference the system is no longer translation invariant
    and one should think about what to do with the center of mass
-   motion. Note that (only) for :mdp:`pull-coord1-geometry` =
-   :mdp-value:`direction-relative` four groups are required.
+   motion.
 
 .. mdp:: pull-coord1-dim
 
@@ -1738,25 +1746,25 @@ applicable pulling coordinate.
 
 .. mdp:: pull-coord1-init
 
-   (0.0) \[nm\]
+   (0.0) \[nm\] / \[deg\]
    The reference distance at t=0.
 
 .. mdp:: pull-coord1-rate
 
-   (0) \[nm/ps\]
+   (0) \[nm/ps\] / \[deg/ps\]
    The rate of change of the reference position.
 
 .. mdp:: pull-coord1-k
 
-   (0) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\]
+   (0) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\] / \[kJ mol-1 rad-2\] / \[kJ mol-1 rad-1\]
    The force constant. For umbrella pulling this is the harmonic force
-   constant in kJ mol-1 nm-2. For constant force pulling this is the
+   constant in kJ mol-1 nm-2 (or kJ mol-1 rad-2 for angles). For constant force pulling this is the
    force constant of the linear potential, and thus the negative (!)
-   of the constant force in kJ mol-1 nm-1.
+   of the constant force in kJ mol-1 nm-1 (or kJ mol-1 rad-1 for angles).
 
 .. mdp:: pull-coord1-kB
 
-   (pull-k1) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\]
+   (pull-k1) \[kJ mol-1 nm-2\] / \[kJ mol-1 nm-1\] / \[kJ mol-1 rad-2\] / \[kJ mol-1 rad-1\]
    As :mdp:`pull-coord1-k`, but for state B. This is only used when
    :mdp:`free-energy` is turned on. The force constant is then (1 -
    lambda) * :mdp:`pull-coord1-k` + lambda * :mdp:`pull-coord1-kB`.
