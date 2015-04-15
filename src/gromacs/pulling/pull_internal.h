@@ -95,6 +95,10 @@ typedef struct
     double        cyl_dev;   /* The deviation from the reference position */
     double        f_scal;    /* Scalar force for directional pulling */
     dvec          f;         /* force due to the pulling/constraining */
+
+    /* Added for angle geometry coordinate */
+    dvec        dr23;       /*  Direction vector between groups 2 and 3 */
+    dvec        f23;        /*  Force for groups 2 and 3 */
 }
 pull_coord_work_t;
 
