@@ -77,9 +77,9 @@ typedef struct {
     rvec     origin;                       /**< The origin for the absolute reference */
     rvec     vec;                          /**< The pull vector, direction or position */
     gmx_bool bStart;                       /**< Set init based on the initial structure */
-    real     init;                         /**< Initial reference displacement */
-    real     rate;                         /**< Rate of motion (nm/ps) */
-    real     k;                            /**< Force constant */
+    real     init;                         /**< Initial reference displacement (nm) or (deg) */
+    real     rate;                         /**< Rate of motion (nm/ps) or (deg/ps) */
+    real     k;                            /**< Force constant (kJ/(mol nm^2) or kJ/(mol rad^2) for umbrella pull type, or kJ/(mol nm) or kJ/(mol rad) for constant force pull type */
     real     kB;                           /**< Force constant for state B */
 } t_pull_coord;
 
@@ -87,7 +87,7 @@ typedef struct {
 typedef struct pull_params_t {
     int            ngroup;         /**< Number of pull groups */
     int            ncoord;         /**< Number of pull coordinates */
-    real           cylinder_r;     /**< Radius of cylinder for dynamic COM */
+    real           cylinder_r;     /**< Radius of cylinder for dynamic COM (nm) */
     real           constr_tol;     /**< Absolute tolerance for constraints in (nm) */
     gmx_bool       bPrintCOM;      /**< Print coordinates of COM for each coord */
     gmx_bool       bPrintRefValue; /**< Print the reference value for each coord */

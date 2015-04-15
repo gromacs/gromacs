@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -69,6 +70,26 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
 
+/*! \brief Returns the units of the pull coordinate.
+ *
+ * \param[in] pcrd The pull coordinate to query the units for.
+ * \returns a string with the units of the coordinate.
+ */
+const char *pull_coordinate_units(const t_pull_coord *pcrd);
+
+/*! \brief Returns the conversion factor from the pull coord init/rate unit to internal value unit.
+ *
+ * \param[in] pcrd The pull coordinate to get the conversion factor for.
+ * \returns the conversion factor.
+ */
+double pull_conversion_factor_userinput2internal(const t_pull_coord *pcrd);
+
+/*! \brief Returns the conversion factor from the pull coord internal value unit to the init/rate unit.
+ *
+ * \param[in] pcrd The pull coordinate to get the conversion factor for.
+ * \returns the conversion factor.
+ */
+double pull_conversion_factor_internal2userinput(const t_pull_coord *pcrd);
 
 /*! \brief Get the value for pull coord coord_ind.
  *
@@ -94,7 +115,7 @@ void get_pull_coord_value(struct pull_t      *pull,
  *
  * \param[in,out] pull         The pull struct.
  * \param[in]     coord_ind    The pull coordinate index to set.
- * \param[in]     value_ref    The reference value.
+ * \param[in]     value_ref    The reference value, unit: nm or rad.
  * \param[in]     pbc          Information structure about periodicity.
  * \param[in]     md           Atom properties.
  * \param[in]     lambda       The value of lambda in FEP calculations.
