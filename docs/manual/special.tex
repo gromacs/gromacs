@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -197,7 +197,7 @@ $Z_{spring}$ is the location of the spring.}
 \label{fig:pull} 
 \end{figure}
 
-Three different types of calculation are supported,
+Several different pull types, i.e. ways to apply the pull force, are supported,
 and in all cases the reference distance can be constant
 or linearly changing with time.
 \begin{enumerate}
@@ -219,6 +219,8 @@ Like umbrella pulling, but the potential and force are zero for
 negative deviations. This is useful for restraining the distance
 between e.g. two molecules to a certain maximum distance.
 \end{enumerate}
+In addition, there are different types of reaction coordinates, so-called pull geometries.
+These are set with the {\tt .mdp} option {\tt pull-coord?-geometry}.
 
 \subsubsection{Definition of the center of mass}
 
@@ -322,6 +324,9 @@ Since the potential now depends on the coordinates of two additional groups defi
 \label{fig:pulldirrel} 
 \end{figure}   
 
+\subsubsection{Definition of the angle pull geometry}
+Four pull groups are required for {\tt pull-coord?-geometry = angle}. E.g., the {\tt .mdp} option {\tt pull-coord?-groups = 1 2 2 4}
+defines the angle between the vector from group 1 to 2 and the vector from group 2 to 4. The angle takes values in the interval (0, 180) deg.
 
 \subsubsection{Limitations}
 There is one theoretical limitation:

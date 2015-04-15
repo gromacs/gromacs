@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,13 +87,15 @@ typedef struct
 
     double        value_ref; /* The reference value, usually init+rate*t */
     double        value;     /* The current value of the coordinate */
-    dvec          dr;        /* The distance from the reference group */
+    dvec          dr01;      /* The direction vector of group 1 relative to group 0 */
+    dvec          dr23;      /* The direction vector of group 3 relative to group 2 */
     rvec          vec;       /* The pull direction */
     double        vec_len;   /* Length of vec for direction-relative */
     dvec          ffrad;     /* conversion factor from vec to radial force */
     double        cyl_dev;   /* The deviation from the reference position */
     double        f_scal;    /* Scalar force for directional pulling */
-    dvec          f;         /* force due to the pulling/constraining */
+    dvec          f01;       /* Force due to the pulling/constraining for groups 0, 1 */
+    dvec          f23;       /* Force for groups 2 and 3 */
 }
 pull_coord_work_t;
 
@@ -120,6 +122,7 @@ struct pull_t
 
     gmx_bool           bPotential;   /* Are there coordinates with potential? */
     gmx_bool           bConstraint;  /* Are there constrained coordinates? */
+    gmx_bool           bAngle;       /* Are there angle geometry coordinates? */
 
     int                ePBC;         /* the boundary conditions */
     int                npbcdim;      /* do pbc in dims 0 <= dim < npbcdim */
