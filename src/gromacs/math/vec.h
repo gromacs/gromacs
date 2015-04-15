@@ -454,6 +454,19 @@ static inline real gmx_angle(const rvec a, const rvec b)
     return atan2(wlen, s);
 }
 
+static inline double gmx_dangle(const dvec a, const dvec b)
+{
+    dvec   w;
+    double wlen, s;
+
+    dcprod(a, b, w);
+
+    wlen  = dnorm(w);
+    s     = diprod(a, b);
+
+    return atan2(wlen, s);
+}
+
 static inline void mmul_ur0(const matrix a, const matrix b, matrix dest)
 {
     dest[XX][XX] = a[XX][XX]*b[XX][XX];
