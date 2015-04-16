@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -225,6 +225,18 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
 }
 
 
+int
+gmx_cpuid_is_intel_nehalem  (const gmx_cpuid_t          cpuid)
+{
+    return (cpuid->vendor == GMX_CPUID_VENDOR_INTEL &&
+            cpuid->family == 6 &&
+            (cpuid->model == 0x2E ||
+             cpuid->model == 0x1A ||
+             cpuid->model == 0x1E ||
+             cpuid->model == 0x2F ||
+             cpuid->model == 0x2C ||
+             cpuid->model == 0x25));
+}
 
 
 /* What type of SIMD was compiled in, if any? */
