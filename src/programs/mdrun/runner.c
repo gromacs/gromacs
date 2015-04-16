@@ -271,6 +271,30 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     return crn;
 }
 
+static gmx_bool cpu_is_intel_nehalem(const gmx_cpuid_t cpuid_info)
+{
+    int cpu_model;
+
+    cpu_model = gmx_cpuid_model(cpuid_info);
+
+    return (gmx_cpuid_vendor(cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
+            gmx_cpuid_family(cpuid_info) == 6 &&
+            (cpu_model == 0x2E ||
+             cpu_model == 0x1A ||
+             cpu_model == 0x1E ||
+             cpu_model == 0x2F ||
+             cpu_model == 0x2C ||
+             cpu_model == 0x25));
+}
+
+static gmx_bool cpu_is_intel_sandybridge_or_later(const gmx_cpuid_t cpuid_info)
+{
+    return (gmx_cpuid_vendor(cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
+            gmx_cpuid_family(cpuid_info) == 6 &&
+            gmx_cpuid_model(cpuid_info) >= 0x2A &&
+            !cpu_is_intel_nehalem(cpuid_info));
+}
+
 
 static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
@@ -310,22 +334,22 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
          * two CPUs with HT, so we need a limit<16; thus we use 12.
          * A reasonable limit for Intel Sandy and Ivy bridge,
          * not knowing the topology, is 16 threads.
+         * Below we check for Intel and AVX, which for now includes
+         * Sandy/Ivy Bridge, Has/Broadwell. By checking for AVX instead of
+         * model numbers we ensure also future Intel CPUs are covered.
          */
         const int nthreads_omp_always_faster             =  4;
         const int nthreads_omp_always_faster_Nehalem     = 12;
         const int nthreads_omp_always_faster_SandyBridge = 16;
-        const int first_model_Nehalem                    = 0x1A;
-        const int first_model_SandyBridge                = 0x2A;
-        gmx_bool  bIntel_Family6;
+        gmx_bool  bIntelAVX;
 
-        bIntel_Family6 =
+        bIntelAVX =
             (gmx_cpuid_vendor(hwinfo->cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
-             gmx_cpuid_family(hwinfo->cpuid_info) == 6);
+             gmx_cpuid_feature(hwinfo->cpuid_info, GMX_CPUID_FEATURE_X86_AVX));
 
         if (nthreads_tot <= nthreads_omp_always_faster ||
-            (bIntel_Family6 &&
-             ((gmx_cpuid_model(hwinfo->cpuid_info) >= nthreads_omp_always_faster_Nehalem && nthreads_tot <= nthreads_omp_always_faster_Nehalem) ||
-              (gmx_cpuid_model(hwinfo->cpuid_info) >= nthreads_omp_always_faster_SandyBridge && nthreads_tot <= nthreads_omp_always_faster_SandyBridge))))
+            ((gmx_cpuid_is_intel_nehalem(hwinfo->cpuid_info) && nthreads_tot <= nthreads_omp_always_faster_Nehalem) ||
+             (bIntelAVX && nthreads_tot <= nthreads_omp_always_faster_SandyBridge)))
         {
             /* Use pure OpenMP parallelization */
             nthreads_tmpi = 1;
