@@ -194,6 +194,13 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
                              enum gmx_cpuid_feature     feature);
 
 
+/* Check whether the CPU is an Intel with Nehalem microarchitecture.
+ * Return 0 if not Intel Nehalem, 1 if Intel Nehalem.
+ */
+int
+gmx_cpuid_is_intel_nehalem  (const gmx_cpuid_t          cpuid);
+
+
 /* Return pointers to cpu topology information.
  *
  * Important: CPU topology requires more OS support than most other
