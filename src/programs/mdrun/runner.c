@@ -271,6 +271,30 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     return crn;
 }
 
+static gmx_bool cpu_is_intel_nehalem(const gmx_cpuid_t cpuid_info)
+{
+    int cpu_model;
+
+    cpu_model = gmx_cpuid_model(cpuid_info);
+
+    return (gmx_cpuid_vendor(cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
+            gmx_cpuid_family(cpuid_info) == 6 &&
+            (cpu_model == 0x2E ||
+             cpu_model == 0x1A ||
+             cpu_model == 0x1E ||
+             cpu_model == 0x2F ||
+             cpu_model == 0x2C ||
+             cpu_model == 0x25));
+}
+
+static gmx_bool cpu_is_intel_sandybridge_or_later(const gmx_cpuid_t cpuid_info)
+{
+    return (gmx_cpuid_vendor(cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
+            gmx_cpuid_family(cpuid_info) == 6 &&
+            gmx_cpuid_model(cpuid_info) >= 0x2A &&
+            !cpu_is_intel_nehalem(cpuid_info));
+}
+
 
 static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
@@ -324,8 +348,8 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
 
         if (nthreads_tot <= nthreads_omp_always_faster ||
             (bIntel_Family6 &&
-             ((gmx_cpuid_model(hwinfo->cpuid_info) >= nthreads_omp_always_faster_Nehalem && nthreads_tot <= nthreads_omp_always_faster_Nehalem) ||
-              (gmx_cpuid_model(hwinfo->cpuid_info) >= nthreads_omp_always_faster_SandyBridge && nthreads_tot <= nthreads_omp_always_faster_SandyBridge))))
+             ((cpu_is_intel_nehalem(hwinfo->cpuid_info) && nthreads_tot <= nthreads_omp_always_faster_Nehalem) ||
+              (cpu_is_intel_sandybridge_or_later(hwinfo->cpuid_info) && nthreads_tot <= nthreads_omp_always_faster_SandyBridge))))
         {
             /* Use pure OpenMP parallelization */
             nthreads_tmpi = 1;
