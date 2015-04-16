@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -192,6 +192,13 @@ gmx_cpuid_stepping          (gmx_cpuid_t                cpuid);
 int
 gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
                              enum gmx_cpuid_feature     feature);
+
+
+/* Check whether the CPU is an Intel with Nehalem microarchitecture.
+ * Return 0 if not Intel Nehalem, 1 if Intel Nehalem.
+ */
+int
+gmx_cpuid_is_intel_nehalem  (const gmx_cpuid_t          cpuid);
 
 
 /* Return pointers to cpu topology information.
