@@ -92,7 +92,8 @@ enum tpxv {
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
     tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
     tpxv_PullCoordTypeGeom,                                  /**< add pull type and geometry per group and flat-bottom */
-    tpxv_PullGeomDirRel                                      /**< add pull geometry direction-relative */
+    tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
+    tpxv_PullCoordNGroup                                     /**< add ngroup to pull coord */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -106,7 +107,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_PullGeomDirRel;
+static const int tpx_version = tpxv_PullCoordNGroup;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -292,26 +293,47 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
 static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
                           int ePullOld, int eGeomOld, ivec dimOld)
 {
-    int      i;
-
-    gmx_fio_do_int(fio, pcrd->group[0]);
-    gmx_fio_do_int(fio, pcrd->group[1]);
-    if (file_version >= tpxv_PullCoordTypeGeom)
+    if (file_version >= tpxv_PullCoordNGroup)
     {
+        int g;
+
         gmx_fio_do_int(fio,  pcrd->eType);
+        /* Note that we try to support addational of new geometries without
+         * changing the tpx version. This requires checks when printing the
+         * geometry string and a check and fatal_error in init_pull.
+         */ 
         gmx_fio_do_int(fio,  pcrd->eGeom);
-        if (pcrd->eGeom == epullgDIRRELATIVE)
+        gmx_fio_do_int(fio,  pcrd->ngroup);
+        if (pcrd->ngroup > 4)
         {
-            gmx_fio_do_int(fio, pcrd->group[2]);
-            gmx_fio_do_int(fio, pcrd->group[3]);
+            gmx_incons("pcrd->ngroup is larger than the size of pcrd->group");
         }
+        gmx_fio_ndo_int(fio, pcrd->group, pcrd->ngroup);
         gmx_fio_do_ivec(fio, pcrd->dim);
     }
     else
     {
-        pcrd->eType = ePullOld;
-        pcrd->eGeom = eGeomOld;
-        copy_ivec(dimOld, pcrd->dim);
+        pcrd->ngroup = 2;
+        gmx_fio_do_int(fio, pcrd->group[0]);
+        gmx_fio_do_int(fio, pcrd->group[1]);
+        if (file_version >= tpxv_PullCoordTypeGeom)
+        {
+            pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE ? 4 : 2);
+            gmx_fio_do_int(fio,  pcrd->eType);
+            gmx_fio_do_int(fio,  pcrd->eGeom);
+            if (pcrd->ngroup == 4)
+            {
+                gmx_fio_do_int(fio, pcrd->group[2]);
+                gmx_fio_do_int(fio, pcrd->group[3]);
+            }
+            gmx_fio_do_ivec(fio, pcrd->dim);
+        }
+        else
+        {
+            pcrd->eType = ePullOld;
+            pcrd->eGeom = eGeomOld;
+            copy_ivec(dimOld, pcrd->dim);
+        }
     }
     gmx_fio_do_rvec(fio, pcrd->origin);
     gmx_fio_do_rvec(fio, pcrd->vec);
