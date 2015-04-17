@@ -102,6 +102,7 @@ enum tpxv {
     tpxv_CompElWithSwapLayerOffset,                          /**< added parameters for improved CompEl setups */
     tpxv_CompElPolyatomicIonsAndMultipleIonTypes,            /**< CompEl now can handle polyatomic ions and more than two types of ions */
     tpxv_RemoveAdress,                                       /**< removed support for AdResS */
+    tpxv_PullCoordNGroup,                                    /**< add ngroup to pull coord */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -275,24 +276,45 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
 static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
                           int ePullOld, int eGeomOld, ivec dimOld)
 {
-    gmx_fio_do_int(fio, pcrd->group[0]);
-    gmx_fio_do_int(fio, pcrd->group[1]);
-    if (file_version >= tpxv_PullCoordTypeGeom)
+    if (file_version >= tpxv_PullCoordNGroup)
     {
         gmx_fio_do_int(fio,  pcrd->eType);
+        /* Note that we try to support adding new geometries without
+         * changing the tpx version. This requires checks when printing the
+         * geometry string and a check and fatal_error in init_pull.
+         */
         gmx_fio_do_int(fio,  pcrd->eGeom);
-        if (pcrd->eGeom == epullgDIRRELATIVE)
+        gmx_fio_do_int(fio,  pcrd->ngroup);
+        if (pcrd->ngroup > 4)
         {
-            gmx_fio_do_int(fio, pcrd->group[2]);
-            gmx_fio_do_int(fio, pcrd->group[3]);
+            gmx_incons("pcrd->ngroup is larger than the size of pcrd->group");
         }
+        gmx_fio_ndo_int(fio, pcrd->group, pcrd->ngroup);
         gmx_fio_do_ivec(fio, pcrd->dim);
     }
     else
     {
-        pcrd->eType = ePullOld;
-        pcrd->eGeom = eGeomOld;
-        copy_ivec(dimOld, pcrd->dim);
+        pcrd->ngroup = 2;
+        gmx_fio_do_int(fio, pcrd->group[0]);
+        gmx_fio_do_int(fio, pcrd->group[1]);
+        if (file_version >= tpxv_PullCoordTypeGeom)
+        {
+            pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE ? 4 : 2);
+            gmx_fio_do_int(fio,  pcrd->eType);
+            gmx_fio_do_int(fio,  pcrd->eGeom);
+            if (pcrd->ngroup == 4)
+            {
+                gmx_fio_do_int(fio, pcrd->group[2]);
+                gmx_fio_do_int(fio, pcrd->group[3]);
+            }
+            gmx_fio_do_ivec(fio, pcrd->dim);
+        }
+        else
+        {
+            pcrd->eType = ePullOld;
+            pcrd->eGeom = eGeomOld;
+            copy_ivec(dimOld, pcrd->dim);
+        }
     }
     gmx_fio_do_rvec(fio, pcrd->origin);
     gmx_fio_do_rvec(fio, pcrd->vec);
