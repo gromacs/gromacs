@@ -255,8 +255,6 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     /* Read the pull coordinates */
     for (i = 1; i < pull->ncoord + 1; i++)
     {
-        int ngroup;
-
         pcrd = &pull->coord[i-1];
         sprintf(buf, "pull-coord%d-type", i);
         EETYPE(buf,             pcrd->eType, epull_names);
@@ -265,12 +263,13 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         sprintf(buf, "pull-coord%d-groups", i);
         STYPE(buf,              groups, "");
 
-        nscan  = sscanf(groups, "%d %d %d %d %d", &pcrd->group[0], &pcrd->group[1],  &pcrd->group[2], &pcrd->group[3], &idum);
-        ngroup = (pcrd->eGeom == epullgDIRRELATIVE) ? 4 : 2;
-        if (nscan != ngroup)
+        pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE ? 4 : 2);
+
+        nscan = sscanf(groups, "%d %d %d %d %d", &pcrd->group[0], &pcrd->group[1], &pcrd->group[2], &pcrd->group[3], &idum);
+        if (nscan != pcrd->ngroup)
         {
             sprintf(wbuf, "%s should contain %d pull group indices with geometry %s",
-                    buf, ngroup, epullg_names[pcrd->eGeom]);
+                    buf, pcrd->ngroup, epullg_names[pcrd->eGeom]);
             set_warning_line(wi, NULL, -1);
             warning_error(wi, wbuf);
         }
