@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot
+Code-Review+1: Michael Shirts
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Fri, 17 Apr 2015 17:15:36 +0200
+Reviewed-on: https://gerrit.gromacs.org/4515
+Project: gromacs
+Branch: refs/heads/master
