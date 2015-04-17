@@ -1577,7 +1577,12 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                 copy_rvec(pull_params->coord[c].vec, pcrd->vec);
                 break;
             default:
-                gmx_incons("Pull geometry not handled");
+                /* We allow reading of newer tpx files with new pull geometries
+                 * with old code. The only place we need to generate an error
+                 * is here, since the pull code can't handle this.
+                 */
+                gmx_fatal(FARGS, "Pull geometry not supported for pull coordinate %d. The geometry enum %d in the input is larger than that supported by the code (up to %d). You are probably reading a tpr file generated with a newer version of Gromacs with an binary from an older version of Gromacs.",
+                          c + 1, pcrd->params.eGeom, epullgNR - 1);
         }
 
         if (pcrd->params.eType == epullCONSTRAINT)
@@ -1607,7 +1612,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
          * when it is not only used as a cylinder group.
          */
         calc_com_start = (pcrd->params.eGeom == epullgCYL         ? 1 : 0);
-        calc_com_end   = (pcrd->params.eGeom == epullgDIRRELATIVE ? 4 : 2);
+        calc_com_end   = pcrd->params.ngroup;
 
         for (g = calc_com_start; g <= calc_com_end; g++)
         {
@@ -1710,19 +1715,30 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             clear_ivec(pulldim_con);
             for (c = 0; c < pull->ncoord; c++)
             {
-                if (pull->coord[c].params.group[0] == g ||
-                    pull->coord[c].params.group[1] == g ||
-                    (pull->coord[c].params.eGeom == epullgDIRRELATIVE &&
-                     (pull->coord[c].params.group[2] == g ||
-                      pull->coord[c].params.group[3] == g)))
+                pull_coord_work_t *pcrd;
+                int                gi;
+                gmx_bool           bGroupUsed;
+
+                pcrd = &pull->coord[c];
+
+                bGroupUsed = FALSE;
+                for (gi = 0; gi < pcrd->params.ngroup; gi++)
+                {
+                    if (pcrd->params.group[gi] == g)
+                    {
+                        bGroupUsed = TRUE;
+                    }
+                }
+
+                if (bGroupUsed)
                 {
                     for (m = 0; m < DIM; m++)
                     {
-                        if (pull->coord[c].params.dim[m] == 1)
+                        if (pcrd->params.dim[m] == 1)
                         {
                             pulldim[m] = 1;
 
-                            if (pull->coord[c].params.eType == epullCONSTRAINT)
+                            if (pcrd->params.eType == epullCONSTRAINT)
                             {
                                 bConstraint    = TRUE;
                                 pulldim_con[m] = 1;
