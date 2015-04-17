@@ -631,17 +631,19 @@ static void pr_pull_group(FILE *fp, int indent, int g, t_pull_group *pgrp)
 
 static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
 {
+    int g;
+
     pr_indent(fp, indent);
     fprintf(fp, "pull-coord %d:\n", c);
-    PI("group[0]", pcrd->group[0]);
-    PI("group[1]", pcrd->group[1]);
-    if (pcrd->eGeom == epullgDIRRELATIVE)
-    {
-        PI("group[2]", pcrd->group[2]);
-        PI("group[3]", pcrd->group[3]);
-    }
     PS("type", EPULLTYPE(pcrd->eType));
     PS("geometry", EPULLGEOM(pcrd->eGeom));
+    for (g = 0; g < pcrd->ngroup; g++)
+    {
+        char buf[10];
+
+        sprintf(buf, "group[%d]", g);
+        PI(buf, pcrd->group[g]);
+    }
     pr_ivec(fp, indent, "dim", pcrd->dim, DIM, TRUE);
     pr_rvec(fp, indent, "origin", pcrd->origin, DIM, TRUE);
     pr_rvec(fp, indent, "vec", pcrd->vec, DIM, TRUE);
