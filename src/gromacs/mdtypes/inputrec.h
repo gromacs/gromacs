@@ -110,9 +110,10 @@ typedef struct {
 } t_pull_group;
 
 typedef struct {
-    int         group[4];   /* The pull groups, index in group in t_pull */
     int         eType;      /* The pull type: umbrella, constraint, ... */
     int         eGeom;      /* The pull geometry */
+    int         ngroup;     /* The number of groups, depends on eGeom */
+    int         group[4];   /* The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
     ivec        dim;        /* Used to select components for constraint */
     rvec        origin;     /* The origin for the absolute reference */
     rvec        vec;        /* The pull vector, direction or position */
