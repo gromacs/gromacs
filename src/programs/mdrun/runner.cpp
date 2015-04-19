@@ -147,7 +147,6 @@ struct mdrunner_arglist
     real            pforce;
     real            cpt_period;
     real            max_hours;
-    const char     *deviceOptions;
     int             imdport;
     unsigned long   Flags;
 };
@@ -184,7 +183,7 @@ static void mdrunner_start_fn(void *arg)
              mc.nbpu_opt, mc.nstlist_cmdline,
              mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
              mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
-             mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.imdport, mc.Flags);
+             mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including
@@ -203,7 +202,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                          real pforce, real cpt_period, real max_hours,
-                                         const char *deviceOptions, unsigned long Flags)
+                                         unsigned long Flags)
 {
     int                      ret;
     struct mdrunner_arglist *mda;
@@ -254,7 +253,6 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->pforce          = pforce;
     mda->cpt_period      = cpt_period;
     mda->max_hours       = max_hours;
-    mda->deviceOptions   = deviceOptions;
     mda->Flags           = Flags;
 
     /* now spawn new threads that start mdrunner_start_fn(), while
@@ -957,7 +955,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             const char *deviceOptions, int imdport, unsigned long Flags)
+             int imdport, unsigned long Flags)
 {
     gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD, bCantUseGPU;
     t_inputrec               *inputrec;
@@ -1140,7 +1138,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                         nbpu_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
-                                        cpt_period, max_hours, deviceOptions,
+                                        cpt_period, max_hours,
                                         Flags);
             /* the main thread continues here with a new cr. We don't deallocate
                the old cr because other threads may still be reading it. */
@@ -1634,7 +1632,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                       membed,
                                       cpt_period, max_hours,
-                                      deviceOptions,
                                       imdport,
                                       Flags,
                                       walltime_accounting);

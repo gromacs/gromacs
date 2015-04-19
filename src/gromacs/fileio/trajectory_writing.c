@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,14 +97,12 @@ do_md_trajectory_writing(FILE           *fplog,
     }
     ;
 
-#if defined(GMX_FAHCORE) || defined(GMX_WRITELASTSTEP)
+#if defined(GMX_FAHCORE)
     if (bLastStep)
     {
         /* Enforce writing positions and velocities at end of run */
         mdof_flags |= (MDOF_X | MDOF_V);
     }
-#endif
-#ifdef GMX_FAHCORE
     if (MASTER(cr))
     {
         fcReportProgress( ir->nsteps, step );
