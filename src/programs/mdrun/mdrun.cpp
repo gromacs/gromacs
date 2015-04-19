@@ -304,7 +304,6 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bKeepAndNumCPT        = FALSE;
     gmx_bool        bResetCountersHalfWay = FALSE;
     output_env_t    oenv                  = NULL;
-    const char     *deviceOptions         = "";
 
     /* Non transparent initialization of a complex gmx_hw_opt_t struct.
      * But unfortunately we are not allowed to call a function here,
@@ -603,7 +602,7 @@ int gmx_mdrun(int argc, char *argv[])
                   nbpu_opt[0], nstlist,
                   nsteps, nstepout, resetstep,
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
-                  pforce, cpt_period, max_hours, deviceOptions, imdport, Flags);
+                  pforce, cpt_period, max_hours, imdport, Flags);
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
