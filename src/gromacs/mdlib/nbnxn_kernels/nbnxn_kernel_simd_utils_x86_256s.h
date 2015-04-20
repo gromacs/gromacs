@@ -278,7 +278,7 @@ load_table_f_v(const real *tab_coul_FDV0, SimdInt32 ti_S, int *ti,
 #if GMX_SIMD_HAVE_FINT32_LOGICAL
 
 typedef SimdInt32 gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
+static const int filter_stride = 1;
 
 static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load1_exclfilter(int e)

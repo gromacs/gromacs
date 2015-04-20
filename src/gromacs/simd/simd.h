@@ -40,8 +40,8 @@
  * \brief Provides an architecture-independent way of doing SIMD coding.
  *
  * Overview of the SIMD implementation is provided in \ref page_simd.
- * The details are documented in simd.h and the reference implementation
- * impl_reference.h.
+ * The details are documented in gromacs/simd/simd.h and the reference
+ * implementation impl_reference.h.
  *
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  */
@@ -146,14 +146,34 @@
 #define GMX_SIMD_X86_SSE2_OR_HIGHER          (GMX_SIMD_X86_SSE4_1_OR_HIGHER || GMX_SIMD_X86_SSE2)
 
 
+#if (GMX_SIMD == 1)
+/* Temporary workarounds for a few new functions while implementing new operations
+ * for all architectures (for the second-generation implementation GMX_SIMD will be 2).
+ */
+#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT     0
+#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE    0
+#    define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT                           0
+#    define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE                          0
+/* Single */
+#    define simdCmpNzF(a)             simdOrFB(simdCmpLtF(a, simdSetZeroF()), simdCmpLtF(simdSetZeroF(), a))
+#    define simdRsqrtMaskF(a, mask)   simdMaskF(simdRsqrtF(simdBlendF(simdSet1F(1.0f), a, mask)), mask)
+#    define simdRcpMaskF(a, mask)     simdMaskF(simdRcpF(simdBlendF(simdSet1F(1.0f), a, mask)), mask)
+/* Double */
+#    define simdCmpNzD(a)             simdOrDB(simdCmpLtD(a, simdSetZeroD()), simdCmpLtD(simdSetZeroD(), a))
+#    define simdRsqrtMaskD(a, mask)   simdMaskD(simdRsqrtD(simdBlendD(simdSet1D(1.0), a, mask)), mask)
+#    define simdRcpMaskD(a, mask)     simdMaskD(simdRcpD(simdBlendD(simdSet1D(1.0), a, mask)), mask)
+#endif
+
+
+
 #ifdef GMX_DOUBLE
 #    define GMX_SIMD_HAVE_REAL               GMX_SIMD_HAVE_DOUBLE
 #    define GMX_SIMD_REAL_WIDTH              GMX_SIMD_DOUBLE_WIDTH
-#    define GMX_SIMD_HAVE_INT32              GMX_SIMD_HAVE_DINT32
-#    define GMX_SIMD_INT32_WIDTH             GMX_SIMD_DINT32_WIDTH
 #    define GMX_SIMD_HAVE_INT32_EXTRACT      GMX_SIMD_HAVE_DINT32_EXTRACT
 #    define GMX_SIMD_HAVE_INT32_LOGICAL      GMX_SIMD_HAVE_DINT32_LOGICAL
 #    define GMX_SIMD_HAVE_INT32_ARITHMETICS  GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL    GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
 #    define GMX_SIMD4_HAVE_REAL              GMX_SIMD4_HAVE_DOUBLE
 #else // GMX_DOUBLE
 
@@ -169,19 +189,7 @@
  */
 #    define GMX_SIMD_REAL_WIDTH              GMX_SIMD_FLOAT_WIDTH
 
-/*! \brief 1 if SimdInt32 is available, otherwise 0.
- *
- *  \ref GMX_SIMD_HAVE_DINT32 if GMX_DOUBLE is set, otherwise \ref GMX_SIMD_HAVE_FINT32.
- */
-#    define GMX_SIMD_HAVE_INT32              GMX_SIMD_HAVE_FINT32
-
-/*! \brief Width of SimdInt32.
- *
- *  \ref GMX_SIMD_DINT32_WIDTH if GMX_DOUBLE is set, otherwise \ref GMX_SIMD_FINT32_WIDTH.
- */
-#    define GMX_SIMD_INT32_WIDTH             GMX_SIMD_FINT32_WIDTH
-
-/*! \brief 1 if simdExtractI() is available, otherwise 0.
+/*! \brief 1 if support is available for extracting elements from SimdInt32, otherwise 0
  *
  *  \ref GMX_SIMD_HAVE_DINT32_EXTRACT if GMX_DOUBLE is set, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_EXTRACT.
@@ -202,6 +210,20 @@
  */
 #    define GMX_SIMD_HAVE_INT32_ARITHMETICS  GMX_SIMD_HAVE_FINT32_ARITHMETICS
 
+/*! \brief 1 if gmx::simdGatherLoadUBySimdIntTranspose is present, otherwise 0
+ *
+ *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE if GMX_DOUBLE is set, otherwise
+ *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT.
+ */
+#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
+
+/*! \brief 1 if real half-register load/store/reduce utils present, otherwise 0
+ *
+ *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE if GMX_DOUBLE is set, otherwise
+ *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT.
+ */
+#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL    GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
+
 /*! \brief 1 if Simd4Real is available, otherwise 0.
  *
  *  \ref GMX_SIMD4_HAVE_DOUBLE if GMX_DOUBLE is set, otherwise \ref GMX_SIMD4_HAVE_FLOAT.
@@ -215,6 +237,9 @@
 namespace gmx
 {
 
+// The if-block for HAVE_REAL spans all the way until the SIMD4 definitions a long way down
+#if GMX_SIMD_HAVE_REAL
+
 /*! \name SIMD data types
  *
  *  The actual storage of these types is implementation dependent. The
@@ -223,7 +248,6 @@ namespace gmx
  * \{
  */
 
-#if GMX_SIMD_HAVE_REAL
 /*! \brief Real precision floating-point SIMD datatype.
  *
  * This type is only available if \ref GMX_SIMD_HAVE_REAL is 1.
@@ -254,13 +278,9 @@ typedef SimdDBool                SimdBool;
 #    else
 typedef SimdFBool                SimdBool;
 #    endif
-#endif // GMX_SIMD_HAVE_REAL
 
 
-#if GMX_SIMD_HAVE_INT32
 /*! \brief 32-bit integer SIMD type.
- *
- * This type is only available if \ref GMX_SIMD_HAVE_INT32 is 1.
  *
  * If GMX_DOUBLE is defined, this will be set to \ref SimdDInt32
  * internally, otherwise \ref SimdFInt32. This might seem a strange
@@ -277,7 +297,7 @@ typedef SimdFInt32               SimdInt32;
 
 /*! \brief Boolean SIMD type for usage with \ref gmx::SimdInt32.
  *
- * This type is only available if \ref GMX_SIMD_HAVE_INT32 is 1.
+ * This type is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS is 1.
  *
  * If GMX_DOUBLE is defined, this will be set to \ref SimdDIBool
  * internally, otherwise \ref SimdFIBool. This is necessary since some
@@ -298,13 +318,9 @@ typedef SimdDIBool               SimdIBool;
 #    else
 typedef SimdFIBool               SimdIBool;
 #    endif
-#endif // GMX_SIMD_HAVE_INT32
 
 /*! \}  end of name-group describing SIMD data types */
 
-
-
-#if GMX_SIMD_HAVE_REAL
 /*  \name SIMD load/store operations on SimdReal
  *
  *  \note Unaligned load/stores are only available when
@@ -434,10 +450,7 @@ simdSetZero()
 
 /*! \}  end of name-group describing load/store on SimdReal */
 
-#endif // GMX_SIMD_HAVE_REAL
 
-
-#if GMX_SIMD_HAVE_INT32
 /*! \name SIMD load/store operations on SimdInt32
  *
  *  \note Unaligned load/stores are only available when
@@ -445,7 +458,7 @@ simdSetZero()
  *  \{
  */
 
-/*! \brief Load \ref GMX_SIMD_INT32_WIDTH values from aligned memory to \ref SimdInt32 .
+/*! \brief Load \ref GMX_SIMD_REAL_WIDTH values from aligned memory to SimdInt32 .
  *
  * Uses \ref simdLoadDI if GMX_DOUBLE is set, otherwise \ref simdLoadFI .
  *
@@ -461,7 +474,7 @@ simdLoadI(const std::int32_t *m)
 #endif
 }
 
-/*! \brief Set all elements in \ref SimdInt32 from a single integer.
+/*! \brief Set all elements in SimdInt32 from a single integer.
  *
  * Uses \ref simdSet1DI if GMX_DOUBLE is set, otherwise \ref simdSet1FI .
  *
@@ -477,7 +490,7 @@ simdSet1I(std::int32_t b)
 #endif
 }
 
-/*! \brief Store \ref GMX_SIMD_REAL_WIDTH values from \ref SimdInt32 to aligned memory.
+/*! \brief Store \ref GMX_SIMD_REAL_WIDTH values from SimdInt32 to aligned memory.
  *
  * Uses \ref simdStoreDI if GMX_DOUBLE is set, otherwise \ref simdStoreFI .
  *
@@ -494,7 +507,7 @@ simdStoreI(std::int32_t *m, SimdInt32 a)
 }
 
 #if GMX_SIMD_HAVE_LOADU
-/*! \brief Load \ref GMX_SIMD_REAL_WIDTH values from unaligned memory to \ref SimdInt32.
+/*! \brief Load \ref GMX_SIMD_REAL_WIDTH values from unaligned memory to SimdInt32.
  *
  * Uses \ref simdLoadUDI if GMX_DOUBLE is set, otherwise \ref simdLoadUFI .
  *
@@ -512,7 +525,7 @@ simdLoadUI(const std::int32_t *m)
 #endif // GMX_SIMD_HAVE_LOADU
 
 #if GMX_SIMD_HAVE_STOREU
-/*! \brief Store \ref GMX_SIMD_REAL_WIDTH values from \ref SimdInt32 to unaligned memory.
+/*! \brief Store \ref GMX_SIMD_REAL_WIDTH values from SimdInt32 to unaligned memory.
  *
  * Uses \ref simdStoreUDI if GMX_DOUBLE is set, otherwise \ref simdStoreUFI .
  *
@@ -530,7 +543,7 @@ simdStoreUI(std::int32_t *m, SimdInt32 a)
 #endif // GMX_SIMD_HAVE_STOREU
 
 
-/*! \brief Set all elements in \ref SimdInt32 to 0.
+/*! \brief Set all elements in SimdInt32 to 0.
  *
  * Uses \ref simdSetZeroDI if GMX_DOUBLE is set, otherwise \ref simdSetZeroFI.
  *
@@ -546,6 +559,7 @@ simdSetZeroI()
 #endif
 }
 
+
 #if GMX_SIMD_HAVE_INT32_EXTRACT
 /*! \brief Extract single integer from \ref gmx::SimdInt32 element.
  *
@@ -558,18 +572,24 @@ template<int index>
 static inline std::int32_t
 simdExtractI(SimdInt32 a)
 {
-#ifdef GMX_DOUBLE
+#if GMX_SIMD == 2
+#    ifdef GMX_DOUBLE
+    return simdExtractDI<index>(a);
+#    else
+    return simdExtractFI<index>(a);
+#    endif
+#else   // GMX_SIMD==2
+#    ifdef GMX_DOUBLE
     return simdExtractDI(a, index);
-#else
+#    else
     return simdExtractFI(a, index);
-#endif
+#    endif
+#endif // GMX_SIMD==2
 }
-
 #endif // GMX_SIMD_HAVE_INT32_EXTRACT
 
 /*! \}  end of name-group describing load/store on SimdInt32 */
 
-#endif // GMX_SIMD_HAVE_INT32
 
 #if GMX_SIMD_HAVE_LOGICAL
 /*! \name SIMD floating-point logical operations on SimdReal
@@ -645,7 +665,7 @@ simdXor(SimdReal a, SimdReal b)
 /*! \}   end of name-group describing FP logical */
 #endif // GMX_SIMD_HAVE_LOGICAL
 
-#if GMX_SIMD_HAVE_REAL
+
 /*! \name SIMD floating-point arithmetic operations on SimdReal
  *  \{
  */
@@ -697,6 +717,7 @@ simdMul(SimdReal a, SimdReal b)
     return simdMulF(a, b);
 #endif
 }
+
 
 /*! \brief SIMD a*b+c for three \ref SimdReal.
  *
@@ -791,6 +812,64 @@ simdRcp(SimdReal x)
     return simdRcpD(x);
 #else
     return simdRcpF(x);
+#endif
+}
+
+#if GMX_SIMD == 2
+/*! \brief Multiply two real SIMD variables, masked version.
+ *
+ * \copydetails simdMulMaskF
+ */
+static inline SimdReal
+simdMulMask(SimdReal a, SimdReal b, SimdBool m)
+{
+#ifdef GMX_DOUBLE
+    return simdMulMaskD(a, b, m);
+#else
+    return simdMulMaskF(a, b, m);
+#endif
+}
+
+/*! \brief Fused-multiply-add. Result is a*b+c, masked version.
+ *
+ * \copydetails simdFmaddMaskF
+ */
+static inline SimdReal
+simdFmaddMask(SimdReal a, SimdReal b, SimdReal c, SimdBool m)
+{
+#ifdef GMX_DOUBLE
+    return simdFmaddMaskD(a, b, c, m);
+#else
+    return simdFmaddMaskF(a, b, c, m);
+#endif
+}
+#endif // GMX_SIMD==2
+
+/*! \brief SIMD 1.0/sqrt(x) lookup, masked version.
+ *
+ * \copydetails simdRsqrtMaskF
+ */
+static inline SimdReal
+simdRsqrtMask(SimdReal x, SimdBool m)
+{
+#ifdef GMX_DOUBLE
+    return simdRsqrtMaskD(x, m);
+#else
+    return simdRsqrtMaskF(x, m);
+#endif
+}
+
+/*! \brief SIMD lookup for 1/x, masked version.
+ *
+ * \copydetails simdRcpMaskF
+ */
+static inline SimdReal
+simdRcpMask(SimdReal x, SimdBool m)
+{
+#ifdef GMX_DOUBLE
+    return simdRcpMaskD(x, m);
+#else
+    return simdRcpMaskF(x, m);
 #endif
 }
 
@@ -956,7 +1035,6 @@ simdSetExponent(SimdReal a)
 
 /*! \} end of name-group describing FP arithmetics */
 
-
 /*! \name SIMD comparison, boolean, and select operations for SimdReal
  *  \{
  */
@@ -974,6 +1052,20 @@ simdCmpEq(SimdReal a, SimdReal b)
     return simdCmpEqD(a, b);
 #else
     return simdCmpEqF(a, b);
+#endif
+}
+
+/*! \brief SIMD a!=0 for \ref SimdReal. Returns a \ref SimdBool.
+ *
+ * \copydetails simdCmpNzF
+ */
+static inline SimdBool
+simdCmpNz(SimdReal a)
+{
+#ifdef GMX_DOUBLE
+    return simdCmpNzD(a);
+#else
+    return simdCmpNzF(a);
 #endif
 }
 
@@ -1124,7 +1216,7 @@ simdReduce(SimdReal a)
 }
 
 /*! \}  end of name-group describing FP comparison and booleans */
-#endif // GMX_SIMD_HAVE_REAL
+
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
 /*! \name SIMD integer logical operations on SimdInt32
@@ -1133,7 +1225,7 @@ simdReduce(SimdReal a)
  *  \{
  */
 
-/*! \brief Shift each element in \ref SimdInt32 left by immediate
+/*! \brief Shift each element in SimdInt32 left by immediate
  *
  * Uses \ref simdSlliDI if GMX_DOUBLE is set, otherwise \ref simdSlliFI.
  *
@@ -1149,7 +1241,7 @@ simdSlliI(SimdInt32 a, int n)
 #endif
 }
 
-/*! \brief Shift each element in \ref SimdInt32 right by immediate
+/*! \brief Shift each element in SimdInt32 right by immediate
  *
  * Uses \ref simdSrliDI if GMX_DOUBLE is set, otherwise \ref simdSrliFI.
  *
@@ -1165,7 +1257,7 @@ simdSrliI(SimdInt32 a, int n)
 #endif
 }
 
-/*! \brief Bitwise \a and on two \ref SimdInt32.
+/*! \brief Bitwise \a and on two SimdInt32.
  *
  * Uses \ref simdAndDI if GMX_DOUBLE is set, otherwise \ref simdAndFI.
  *
@@ -1181,7 +1273,7 @@ simdAndI(SimdInt32 a, SimdInt32 b)
 #endif
 }
 
-/*! \brief Bitwise \a and-not on two \ref SimdInt32; 1st arg is complemented.
+/*! \brief Bitwise \a and-not on two SimdInt32; 1st arg is complemented.
  *
  * Uses \ref simdAndNotDI if GMX_DOUBLE is set, otherwise \ref simdAndNotFI.
  *
@@ -1197,7 +1289,7 @@ simdAndNotI(SimdInt32 a, SimdInt32 b)
 #endif
 }
 
-/*! \brief Bitwise \a or on two \ref SimdInt32.
+/*! \brief Bitwise \a or on two SimdInt32.
  *
  * Uses \ref simdOrDI if GMX_DOUBLE is set, otherwise \ref simdOrFI.
  *
@@ -1213,7 +1305,7 @@ simdOrI(SimdInt32 a, SimdInt32 b)
 #endif
 }
 
-/*! \brief Bitwise \a xor on two \ref SimdInt32.
+/*! \brief Bitwise \a xor on two SimdInt32.
  *
  * Uses \ref simdXorDI if GMX_DOUBLE is set, otherwise \ref simdXorFI.
  *
@@ -1240,7 +1332,7 @@ simdXorI(SimdInt32 a, SimdInt32 b)
  *  \{
  */
 
-/*! \brief SIMD a+b for two \ref SimdInt32.
+/*! \brief SIMD a+b for two SimdInt32.
  *
  * Uses \ref simdAddDI if GMX_DOUBLE is set, otherwise \ref simdAddFI.
  *
@@ -1256,7 +1348,7 @@ simdAddI(SimdInt32 a, SimdInt32 b)
 #endif
 }
 
-/*! \brief SIMD a-b for two \ref SimdInt32.
+/*! \brief SIMD a-b for two SimdInt32.
  *
  * Uses \ref simdSubDI if GMX_DOUBLE is set, otherwise \ref simdSubFI.
  *
@@ -1272,7 +1364,7 @@ simdSubI(SimdInt32 a, SimdInt32 b)
 #endif
 }
 
-/*! \brief SIMD a*b for two \ref SimdInt32.
+/*! \brief SIMD a*b for two SimdInt32.
  *
  * Uses \ref simdMulDI if GMX_DOUBLE is set, otherwise \ref simdMulFI.
  *
@@ -1297,7 +1389,7 @@ simdMulI(SimdInt32 a, SimdInt32 b)
  *  \{
  */
 
-/*! \brief Returns boolean describing whether a==b, for \ref SimdInt32
+/*! \brief Returns boolean describing whether a==b, for SimdInt32
  *
  * Uses \ref simdCmpEqDI if GMX_DOUBLE is set, otherwise \ref simdCmpEqFI.
  *
@@ -1313,7 +1405,7 @@ simdCmpEqI(SimdInt32 a, SimdInt32 b)
 #endif
 }
 
-/*! \brief Returns boolean describing whether a<b, for \ref SimdInt32
+/*! \brief Returns boolean describing whether a<b, for SimdInt32
  *
  * Uses \ref simdCmpLtDI if GMX_DOUBLE is set, otherwise \ref simdCmpLtFI.
  *
@@ -1377,7 +1469,7 @@ simdAnyTrueIB(SimdIBool a)
 #endif
 }
 
-/*! \brief Selects elements from \ref SimdInt32 where boolean is true, otherwise 0.
+/*! \brief Selects elements from SimdInt32 where boolean is true, otherwise 0.
  *
  * Uses \ref simdMaskDI if GMX_DOUBLE is set, otherwise \ref simdMaskFI.
  *
@@ -1393,7 +1485,7 @@ simdMaskI(SimdInt32 a, SimdIBool mask)
 #endif
 }
 
-/*! \brief Selects elements from \ref SimdInt32 where boolean is false, otherwise 0.
+/*! \brief Selects elements from SimdInt32 where boolean is false, otherwise 0.
  *
  * Uses \ref simdMaskNotDI if GMX_DOUBLE is set, otherwise \ref simdMaskNotFI.
  *
@@ -1428,12 +1520,13 @@ simdBlendI(SimdInt32 a, SimdInt32 b, SimdIBool sel)
 /*! \}  end of name-group describing SimdInt32 comparisons and booleans */
 #endif // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
-#if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32
+
 /*! \name SIMD conversion operations
  *
- *  These instructions are available when both types involved in the conversion
- *  are defined, e.g. if \ref GMX_SIMD_HAVE_REAL and \ref GMX_SIMD_HAVE_INT32
- *  are 1 for real-to-integer conversion.
+ *  These instructions are available when \ref GMX_SIMD_HAVE_REAL is 1.
+ *  Even for implementations that lack real integer support, all known SIMD
+ *  support conversions and storing the resulting integer, possibly by
+ *  temporary storing them inside the floating-point type.
  *  \{
  */
 
@@ -1518,10 +1611,414 @@ simdCvtIB2B(SimdIBool a)
 }
 
 /*! \}    end of name-group describing SIMD conversions */
-#endif // GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32
 
 
+#if GMX_SIMD == 2
+
+/*! \name Higher-level SIMD utility functions, real precision.
+ *  \{
+ */
+
+/*! \brief Load 4 consecutive reals from each of GMX_SIMD_REAL_WIDTH offsets,
+ *         and transpose into 4 SIMD real variables.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param      base   Pointer to the start of the memory area
+ * \param      offset Array with offsets to the start of each data point.
+ * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
+ * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
+ * \param[out] v2     3rd component of data, base[align*offset[i] + 2] for each i.
+ * \param[out] v3     4th component of data, base[align*offset[i] + 2] for each i.
+ */
+template <int align>
+static inline void
+simdGatherLoadTranspose(const real   *        base,
+                        const std::int32_t    offset[],
+                        SimdReal             &v0,
+                        SimdReal             &v1,
+                        SimdReal             &v2,
+                        SimdReal             &v3)
+{
+#ifdef GMX_DOUBLE
+    return simdGatherLoadTransposeD<align>(base, offset, v0, v1, v2, v3);
+#else
+    return simdGatherLoadTransposeF<align>(base, offset, v0, v1, v2, v3);
+#endif
+}
+
+/*! \brief Load 2 consecutive reals from each of GMX_SIMD_REAL_WIDTH offsets,
+ *         and transpose into 2 SIMD real variables.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param      base   Pointer to the start of the memory area
+ * \param      offset Array with offsets to the start of each data point.
+ * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
+ * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
+ */
+template <int align>
+static inline void
+simdGatherLoadTranspose(const real   *        base,
+                        const std::int32_t    offset[],
+                        SimdReal             &v0,
+                        SimdReal             &v1)
+{
+#ifdef GMX_DOUBLE
+    return simdGatherLoadTransposeD<align>(base, offset, v0, v1);
+#else
+    return simdGatherLoadTransposeF<align>(base, offset, v0, v1);
+#endif
+}
+
+/*! \brief Best alignment to use for aligned pairs of real data.
+ *
+ * \copydetails c_simdBestPairAlignmentF
+ */
+#ifdef GMX_DOUBLE
+static const int c_simdBestPairAlignment = c_simdBestPairAlignmentD;
+#else
+static const int c_simdBestPairAlignment = c_simdBestPairAlignmentF;
+#endif
+
+/*! \brief Load 3 consecutive reals from each of GMX_SIMD_REAL_WIDTH offsets,
+ *         and transpose into 3 SIMD real variables.
+ *
+ * \copydetails simdGatherLoadUTransposeF
+ */
+template <int align>
+static inline void
+simdGatherLoadUTranspose(const real   *        base,
+                         const std::int32_t    offset[],
+                         SimdReal             &v0,
+                         SimdReal             &v1,
+                         SimdReal             &v2)
+{
+#ifdef GMX_DOUBLE
+    return simdGatherLoadUTransposeD<align>(base, offset, v0, v1, v2);
+#else
+    return simdGatherLoadUTransposeF<align>(base, offset, v0, v1, v2);
+#endif
+}
+
+/*! \brief Transpose and store 3 SIMD reals to 3 consecutive addresses at
+ *         GMX_SIMD_REAL_WIDTH offsets.
+ *
+ * \copydetails simdTransposeScatterStoreUF
+ */
+template <int align>
+static inline void
+simdTransposeScatterStoreU(real   *              base,
+                           const std::int32_t    offset[],
+                           SimdReal              v0,
+                           SimdReal              v1,
+                           SimdReal              v2)
+{
+#ifdef GMX_DOUBLE
+    return simdTransposeScatterStoreUD<align>(base, offset, v0, v1, v2);
+#else
+    return simdTransposeScatterStoreUF<align>(base, offset, v0, v1, v2);
+#endif
+}
+
+/*! \brief Transpose and add 3 SIMD reals to 3 consecutive addresses at
+ *         GMX_SIMD_REAL_WIDTH offsets.
+ *
+ * \copydetails simdTransposeScatterIncrUF
+ */
+template <int align>
+static inline void
+simdTransposeScatterIncrU(real   *              base,
+                          const std::int32_t    offset[],
+                          SimdReal              v0,
+                          SimdReal              v1,
+                          SimdReal              v2)
+{
+#ifdef GMX_DOUBLE
+    return simdTransposeScatterIncrUD<align>(base, offset, v0, v1, v2);
+#else
+    return simdTransposeScatterIncrUF<align>(base, offset, v0, v1, v2);
+#endif
+}
+
+/*! \brief Transpose and subtract 3 SIMD reals to 3 consecutive addresses at
+ *         GMX_SIMD_REAL_WIDTH offsets.
+ *
+ * \copydetails simdTransposeScatterDecrUF
+ */
+template <int align>
+static inline void
+simdTransposeScatterDecrU(real   *              base,
+                          const std::int32_t    offset[],
+                          SimdReal              v0,
+                          SimdReal              v1,
+                          SimdReal              v2)
+{
+#ifdef GMX_DOUBLE
+    return simdTransposeScatterDecrUD<align>(base, offset, v0, v1, v2);
+#else
+    return simdTransposeScatterDecrUF<align>(base, offset, v0, v1, v2);
+#endif
+}
+
+/*! \brief Expand each element of real SIMD variable into three identical
+ *         consecutive elements in three SIMD outputs.
+ *
+ * \copydetails
+ */
+static inline void
+simdExpandScalarsToTriplets(SimdReal    scalar,
+                            SimdReal   &triplets0,
+                            SimdReal   &triplets1,
+                            SimdReal   &triplets2)
+{
+#ifdef GMX_DOUBLE
+    return simdExpandScalarsToTripletsD(scalar, triplets0, triplets1, triplets2);
+#else
+    return simdExpandScalarsToTripletsF(scalar, triplets0, triplets1, triplets2);
+#endif
+}
+
+
+#if GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL
+/*! \brief Load 4 consecutive reals from each of GMX_SIMD_REAL_WIDTH offsets
+ *         specified by a SIMD integer, transpose into 4 SIMD real variables.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding. This must be a
+ *                    multiple of the alignment to keep all data aligned.
+ * \param      base   Aligned pointer to the start of the memory.
+ * \param      offset SIMD integer type with offsets to the start of each triplet.
+ * \param[out] v0     First component, base[align*offset[i]] for each i.
+ * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
+ * \param[out] v2     Third component, base[align*offset[i] + 2] for each i.
+ * \param[out] v3     Fourth component, base[align*offset[i] + 3] for each i.
+ */
+template <int align>
+static inline void
+simdGatherLoadBySimdIntTranspose(const real *       base,
+                                 SimdInt32          offset,
+                                 SimdReal          &v0,
+                                 SimdReal          &v1,
+                                 SimdReal          &v2,
+                                 SimdReal          &v3)
+{
+#ifdef GMX_DOUBLE
+    return simdGatherLoadBySimdIntTransposeD<align>(base, offset, v0, v1, v2, v3);
+#else
+    return simdGatherLoadBySimdIntTransposeF<align>(base, offset, v0, v1, v2, v3);
+#endif
+}
+
+/*! \brief Load 2 consecutive reals from each of GMX_SIMD_REAL_WIDTH offsets
+ *         (unaligned) specified by SIMD integer, transpose into 2 SIMD reals.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding. This must be a
+ *                    multiple of the alignment to keep all data aligned.
+ * \param      base   Pointer to the start of the memory.
+ * \param      offset SIMD integer type with offsets to the start of each triplet.
+ * \param[out] v0     First component, base[align*offset[i]] for each i.
+ * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
+ */
+template <int align>
+static inline void
+simdGatherLoadUBySimdIntTranspose(const real *       base,
+                                  SimdInt32          offset,
+                                  SimdReal          &v0,
+                                  SimdReal          &v1)
+{
+#ifdef GMX_DOUBLE
+    return simdGatherLoadUBySimdIntTransposeD<align>(base, offset, v0, v1);
+#else
+    return simdGatherLoadUBySimdIntTransposeF<align>(base, offset, v0, v1);
+#endif
+}
+#endif // GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL
+
+
+/*! \brief Load 2 consecutive reals from each of GMX_SIMD_REAL_WIDTH offsets
+ *         specified by a SIMD integer, transpose into 2 SIMD real variables.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding. This must be a
+ *                    multiple of the alignment to keep all data aligned.
+ * \param      base   Aligned pointer to the start of the memory.
+ * \param      offset SIMD integer type with offsets to the start of each triplet.
+ * \param[out] v0     First component, base[align*offset[i]] for each i.
+ * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
+ */
+template <int align>
+static inline void
+simdGatherLoadBySimdIntTranspose(const real *       base,
+                                 SimdInt32          offset,
+                                 SimdReal          &v0,
+                                 SimdReal          &v1)
+{
+#ifdef GMX_DOUBLE
+    return simdGatherLoadBySimdIntTransposeD<align>(base, offset, v0, v1);
+#else
+    return simdGatherLoadBySimdIntTransposeF<align>(base, offset, v0, v1);
+#endif
+}
+
+/*! \brief Reduce each of four SIMD reals, add those values to four consecutive
+ *         reals in memory, return sum.
+ *
+ * \copydetails simdReduceIncr4ReturnSumF
+ */
+static inline real
+simdReduceIncr4ReturnSum(real *     m,
+                         SimdReal   v0,
+                         SimdReal   v1,
+                         SimdReal   v2,
+                         SimdReal   v3)
+{
+#ifdef GMX_DOUBLE
+    return simdReduceIncr4ReturnSumD(m, v0, v1, v2, v3);
+#else
+    return simdReduceIncr4ReturnSumF(m, v0, v1, v2, v3);
+#endif
+}
+
+/*! \} end of name group describing higher-level simd utility functions */
+
+#if GMX_SIMD_HAVE_HSIMD_UTIL_REAL
+/*! \name  Higher-level SIMD utilities accessing partial (half-width) SIMD reals.
+ *  \{
+ */
+
+/*! \brief Load low & high parts of SIMD real from different locations.
+ *
+ * \copydetails simdLoadDualHsimdF
+ */
+static inline SimdReal
+simdLoadDualHsimd(const real *  m0,
+                  const real *  m1)
+{
+#ifdef GMX_DOUBLE
+    return simdLoadDualHsimdD(m0, m1);
+#else
+    return simdLoadDualHsimdF(m0, m1);
+#endif
+}
+
+/*! \brief Load half-SIMD-width real data, spread to both halves.
+ *
+ * \copydetails simdLoadDupHsimdF
+ */
+static inline SimdReal
+simdLoadDupHsimd(const real *  m)
+{
+#ifdef GMX_DOUBLE
+    return simdLoadDupHsimdD(m);
+#else
+    return simdLoadDupHsimdF(m);
+#endif
+}
+
+/*! \brief Load two reals, spread 1st in low half, 2nd in high half.
+ *
+ * \copydetails simdLoad1DualHsimdF
+ */
+static inline SimdReal
+simdLoad1DualHsimd(const real *  m)
+{
+#ifdef GMX_DOUBLE
+    return simdLoad1DualHsimdD(m);
+#else
+    return simdLoad1DualHsimdF(m);
+#endif
+}
+
+/*! \brief Store low & high parts of SIMD real to different locations.
+ *
+ * \copydetails simdStoreDualHsimdF
+ */
+static inline void
+simdStoreDualHsimd(real *           m0,
+                   real *           m1,
+                   SimdReal         a)
+{
+#ifdef GMX_DOUBLE
+    return simdStoreDualHsimdD(m0, m1, a);
+#else
+    return simdStoreDualHsimdF(m0, m1, a);
+#endif
+}
+
+/*! \brief Add the two halves of a SIMD real, subtract the sum from
+ *         half-SIMD-width consecutive reals in memory.
+ *
+ * \copydetails simdDecrHsimdF
+ */
+static inline void
+simdDecrHsimd(real *           m,
+              SimdReal         a)
+{
+#ifdef GMX_DOUBLE
+    return simdDecrHsimdD(m, a);
+#else
+    return simdDecrHsimdF(m, a);
+#endif
+}
+
+/*! \brief Load 2 consecutive reals from each of GMX_SIMD_REAL_WIDTH/2 offsets,
+ *         transpose into SIMD real (low half from base0, high from base1).
+ *
+ * \copydetails simdGatherLoadTransposeHsimdF
+ */
+template <int align>
+static inline void
+simdGatherLoadTransposeHsimd(const real   *       base0,
+                             const real   *       base1,
+                             std::int32_t         offset[],
+                             SimdReal            &v0,
+                             SimdReal            &v1)
+{
+#ifdef GMX_DOUBLE
+    return simdGatherLoadTransposeHsimdD<align>(base0, base1, offset, v0, v1);
+#else
+    return simdGatherLoadTransposeHsimdF<align>(base0, base1, offset, v0, v1);
+#endif
+}
+
+/*! \brief Reduce the 4 half-SIMD-with reals in 2 SIMD variables (sum halves),
+ *         increment four consecutive reals in memory, return sum.
+ *
+ * \copydetails simdReduceIncr4ReturnSumHsimdF
+ */
+static inline real
+simdReduceIncr4ReturnSumHsimd(real *            m,
+                              SimdReal          v0,
+                              SimdReal          v1)
+{
+#ifdef GMX_DOUBLE
+    return simdReduceIncr4ReturnSumHsimdD(m, v0, v1);
+#else
+    return simdReduceIncr4ReturnSumHsimdF(m, v0, v1);
+#endif
+}
+
+/*! \} end of name group describing half-width simd utility functions in real */
+
+#endif // GMX_SIMD_HAVE_HSIMD_UTIL_REAL
+
+#endif // GMX_SIMD==2
+
+#endif // GMX_SIMD_HAVE_REAL
 #if GMX_SIMD4_HAVE_REAL
+
 /*! \name SIMD4 - constant width-four SIMD datatypes
  *
  * These operations are only meant to be used for a few coordinate
