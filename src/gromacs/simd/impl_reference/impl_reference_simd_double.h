@@ -45,13 +45,20 @@
  * \ingroup module_simd
  */
 
+#include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+
+#include <algorithm>
 
 #include "gromacs/utility/fatalerror.h"
 
-#include "impl_reference_common.h"
+#include "impl_reference_definitions.h"
 #include "impl_reference_simd_float.h"
+
+namespace gmx
+{
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */
@@ -65,43 +72,64 @@
  *
  * Supported with GMX_SIMD_HAVE_DOUBLE.
  */
-typedef struct
+struct SimdDouble
 {
     double r[GMX_SIMD_DOUBLE_WIDTH]; /**< Implementation dependent. Don't touch. */
-}
-SimdDouble;
+};
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from double.
  *
- * Available with GMX_SIMD_HAVE_DINT32.
+ * Available if GMX_SIMD_HAVE_DOUBLE.
+ *
+ * \note The integer SIMD type will always be available, but on architectures
+ * that do not have any real integer SIMD support it might be defined as the
+ * floating-point type. This will work fine, since there are separate defines
+ * for whether the implementation can actually do any operations on integer
+ * SIMD types.
+ *
+ * \note The Gromacs SIMD module works entirely with 32 bit integers, both
+ * in single and double precision, since some platforms do not support 64 bit
+ * SIMD integers at all. In particular, this means it is up to each
+ * implementation to get this working even if the architectures internal
+ * representation uses 64 bit integers when converting to/from double SIMD
+ * variables. For now we will try HARD to use conversions, packing or shuffling
+ * so the integer datatype has the same width as the floating-point type, i.e.
+ * if you use double precision SIMD with a width of 8, we want the integers
+ * we work with to also use a SIMD width of 8 to make it easy to load/store
+ * indices from arrays. This refers entirely to the function calls
+ * and how many integers we load/store in one call; the actual SIMD registers
+ * might be wider for integers internally (e.g. on x86 SimdDInt32 will
+ * only fill half the register), but this is none of the user's business.
+ * While this works for all current architectures, and we think it will work
+ * for future ones, we might have to alter this decision in the future. To
+ * avoid rewriting every single instance that refers to the SIMD width we still
+ * provide separate defines for the width of SIMD integer variables that you
+ * should use.
  */
-typedef struct
+struct SimdDInt32
 {
     std::int32_t i[GMX_SIMD_DINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
-}
-SimdDInt32;
+};
 
 /*! \libinternal \brief Boolean type for double precision SIMD data.
  *
  * Use the generic SimdBool
  * (for SimdReal) instead, unless you really know what you are doing.
  */
-typedef struct
+struct SimdDBool
 {
     std::int32_t b[GMX_SIMD_DOUBLE_WIDTH]; /**< Implementation dependent. Don't touch. */
-}
-SimdDBool;
+};
 
 /*! \libinternal \brief Boolean type for integer datatypes corresponding to double SIMD.
  *
  * You should likely use SimdIBool (for SimdInt32) instead,
  * unless you really know what you are doing.
  */
-typedef struct
+struct SimdDIBool
 {
     std::int32_t b[GMX_SIMD_DINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
-}
-SimdDIBool;
+};
 
 /*! \}
  *
@@ -116,10 +144,11 @@ SimdDIBool;
 static inline SimdDouble
 simdLoadD(const double *m)
 {
-    SimdDouble         a;
-    int                i;
+    assert(std::size_t(m) % (GMX_SIMD_DOUBLE_WIDTH*sizeof(double)) == 0);
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    SimdDouble         a;
+
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         a.r[i] = m[i];
     }
@@ -134,10 +163,9 @@ static inline SimdDouble
 simdLoad1D(const double *m)
 {
     SimdDouble         a;
-    int                i;
     double             d = *m;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         a.r[i] = d;
     }
@@ -152,9 +180,8 @@ static inline SimdDouble
 simdSet1D(double r)
 {
     SimdDouble         a;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         a.r[i] = r;
     }
@@ -169,9 +196,8 @@ static inline SimdDouble
 simdSetZeroD()
 {
     SimdDouble         a;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         a.r[i] = 0.0;
     }
@@ -185,9 +211,9 @@ simdSetZeroD()
 static inline void
 simdStoreD(double *m, SimdDouble a)
 {
-    int i;
+    assert(std::size_t(m) % (GMX_SIMD_DOUBLE_WIDTH*sizeof(double)) == 0);
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         m[i] = a.r[i];
     }
@@ -199,7 +225,17 @@ simdStoreD(double *m, SimdDouble a)
  *
  * \copydetails simdLoadUF
  */
-#define simdLoadUD simdLoadD
+static inline SimdDouble
+simdLoadUD(const double *m)
+{
+    SimdDouble         a;
+
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        a.r[i] = m[i];
+    }
+    return a;
+}
 
 /*! \brief Store SIMD double to unaligned memory.
  *
@@ -207,7 +243,14 @@ simdStoreD(double *m, SimdDouble a)
  *
  * \copydetails simdStoreUF
  */
-#define simdStoreUD simdStoreD
+static inline void
+simdStoreUD(double *m, SimdDouble a)
+{
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        m[i] = a.r[i];
+    }
+}
 
 /*! \}
  *
@@ -215,23 +258,25 @@ simdStoreD(double *m, SimdDouble a)
  * \{
  */
 
-/*! \brief Load aligned SIMD integer data, width corresponds to \ref SimdDouble.
+/*! \brief Load aligned SIMD integer data, width corresponds to \ref gmx::SimdDouble.
  *
  * \copydetails simdLoadFI
  */
 static inline SimdDInt32
 simdLoadDI(const std::int32_t * m)
 {
+    assert(std::size_t(m) % (GMX_SIMD_DINT32_WIDTH*sizeof(std::int32_t)) == 0);
+
     SimdDInt32         a;
-    int                i;
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         a.i[i] = m[i];
     }
     return a;
 };
 
-/*! \brief Set SIMD from integer, width corresponds to \ref SimdDouble.
+/*! \brief Set SIMD from integer, width corresponds to \ref gmx::SimdDouble.
  *
  *  \copydetails simdSet1FI
  */
@@ -239,15 +284,15 @@ static inline SimdDInt32
 simdSet1DI(std::int32_t b)
 {
     SimdDInt32         a;
-    int                i;
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         a.i[i] = b;
     }
     return a;
 }
 
-/*! \brief Set all SIMD variable elements to 0, width corresponds to \ref SimdDouble.
+/*! \brief Set all SIMD variable elements to 0, width corresponds to \ref gmx::SimdDouble.
  *
  * \copydetails simdSetZeroFI
  */
@@ -255,48 +300,66 @@ static inline SimdDInt32
 simdSetZeroDI()
 {
     SimdDInt32         a;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         a.i[i] = 0;
     }
     return a;
 }
 
-/*! \brief Store aligned SIMD integer data, width corresponds to \ref SimdDouble.
+/*! \brief Store aligned SIMD integer data, width corresponds to \ref gmx::SimdDouble.
  *
  * \copydetails simdStoreFI
  */
-static inline SimdDInt32
+static inline void
 simdStoreDI(std::int32_t * m, SimdDInt32 a)
 {
-    int                i;
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    assert(std::size_t(m) % (GMX_SIMD_DINT32_WIDTH*sizeof(std::int32_t)) == 0);
+
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         m[i] = a.i[i];
     }
-    return a;
 };
 
-/*! \brief Load unaligned integer SIMD data, width corresponds to \ref SimdDouble.
+/*! \brief Load unaligned integer SIMD data, width corresponds to \ref gmx::SimdDouble.
  *
  * \copydetails simdLoadUFI
  */
-#define simdLoadUDI  simdLoadDI
+static inline SimdDInt32
+simdLoadUDI(const std::int32_t * m)
+{
+    SimdDInt32         a;
 
-/*! \brief Store unaligned SIMD integer data, width corresponds to \ref SimdDouble.
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    {
+        a.i[i] = m[i];
+    }
+    return a;
+}
+
+/*! \brief Store unaligned SIMD integer data, width corresponds to \ref gmx::SimdDouble.
  *
  * \copydetails simdStoreUFI
  */
-#define simdStoreUDI simdStoreDI
+static inline void
+simdStoreUDI(std::int32_t * m, SimdDInt32 a)
+{
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    {
+        m[i] = a.i[i];
+    }
+}
 
-/*! \brief Extract element with index i from \ref SimdDInt32.
+
+/*! \brief Extract element with index i from \ref gmx::SimdDInt32.
  *
  * \copydetails simdExtractFI
  */
+template<int index>
 static inline std::int32_t
-simdExtractDI(SimdDInt32 a, int index)
+simdExtractDI(SimdDInt32 a)
 {
     return a.i[index];
 }
@@ -314,7 +377,7 @@ static inline SimdDouble
 simdAndD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
+
     union
     {
         double        r;
@@ -322,7 +385,7 @@ simdAndD(SimdDouble a, SimdDouble b)
     }
     conv1, conv2;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         conv1.r = a.r[i];
         conv2.r = b.r[i];
@@ -340,7 +403,7 @@ static inline SimdDouble
 simdAndNotD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
+
     union
     {
         double        r;
@@ -348,7 +411,7 @@ simdAndNotD(SimdDouble a, SimdDouble b)
     }
     conv1, conv2;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         conv1.r = a.r[i];
         conv2.r = b.r[i];
@@ -366,7 +429,7 @@ static inline SimdDouble
 simdOrD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
+
     union
     {
         double        r;
@@ -374,7 +437,7 @@ simdOrD(SimdDouble a, SimdDouble b)
     }
     conv1, conv2;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         conv1.r = a.r[i];
         conv2.r = b.r[i];
@@ -392,7 +455,7 @@ static inline SimdDouble
 simdXorD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
+
     union
     {
         double        r;
@@ -400,7 +463,7 @@ simdXorD(SimdDouble a, SimdDouble b)
     }
     conv1, conv2;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         conv1.r = a.r[i];
         conv2.r = b.r[i];
@@ -423,9 +486,8 @@ static inline SimdDouble
 simdAddD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.r[i] = a.r[i] + b.r[i];
     }
@@ -440,9 +502,8 @@ static inline SimdDouble
 simdSubD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.r[i] = a.r[i] - b.r[i];
     }
@@ -457,38 +518,54 @@ static inline SimdDouble
 simdMulD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        c.r[i] = a.r[i]*b.r[i];
+        c.r[i] = a.r[i] * b.r[i];
     }
     return c;
 }
 
-/*! \brief Fused-multiply-add. Result is a*b+c.
+/*! \brief Fused-multiply-add, double. Result is a*b+c.
  *
  * \copydetails simdFmaddF
  */
-#define simdFmaddD(a, b, c) simdAddD(simdMulD(a, b), c)
+static inline SimdDouble
+simdFmaddD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return simdAddD(simdMulD(a, b), c);
+}
 
 /*! \brief Fused-multiply-subtract. Result is a*b-c.
  *
  * \copydetails simdFmsubF
  */
-#define simdFmsubD(a, b, c) simdSubD(simdMulD(a, b), c)
+static inline SimdDouble
+simdFmsubD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return simdSubD(simdMulD(a, b), c);
+}
 
 /*! \brief Fused-negated-multiply-add. Result is -a*b+c.
  *
  * \copydetails simdFnmaddF
  */
-#define simdFnmaddD(a, b, c) simdSubD(c, simdMulD(a, b))
+static inline SimdDouble
+simdFnmaddD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return simdSubD(c, simdMulD(a, b));
+}
 
 /*! \brief Fused-negated-multiply-add. Result is -a*b-c.
  *
  * \copydetails simdFnmsubF
  */
-#define simdFnmsubD(a, b, c) simdSubD(simdSetZeroD(), simdFmaddD(a, b, c))
+static inline SimdDouble
+simdFnmsubD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return simdSubD(simdSetZeroD(), simdFmaddD(a, b, c));
+}
+
 
 /*! \brief SIMD 1.0/sqrt(x) lookup.
  *
@@ -498,14 +575,13 @@ static inline SimdDouble
 simdRsqrtD(SimdDouble x)
 {
     SimdDouble         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         /* Sic - we only need single precision for the reference lookup, since
          * we have defined GMX_SIMD_RSQRT_BITS to 23.
          */
-        b.r[i] = (x.r[i] > 0.0) ? 1.0f/sqrtf(x.r[i]) : 0.0;
+        b.r[i] = 1.0f / std::sqrt(static_cast<float>(x.r[i]));
     }
     return b;
 };
@@ -518,14 +594,81 @@ static inline SimdDouble
 simdRcpD(SimdDouble x)
 {
     SimdDouble         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         /* Sic - we only need single precision for the reference lookup, since
          * we have defined GMX_SIMD_RCP_BITS to 23.
          */
-        b.r[i] = (x.r[i] != 0.0) ? 1.0f/x.r[i] : 0.0;
+        b.r[i] = 1.0f / static_cast<float>(x.r[i]);
+    }
+    return b;
+};
+
+/*! \brief Multiply two SIMD doubles, masked version.
+ *
+ * \copydetails simdMulMaskF()
+ */
+static inline SimdDouble
+simdMulMaskD(SimdDouble a, SimdDouble b, SimdDBool m)
+{
+    SimdDouble        c;
+
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        c.r[i] = m.b[i] ? (a.r[i] * b.r[i]) : 0.0;
+    }
+    return c;
+}
+
+/*! \brief Fused-multiply-add, double. Result is a*b+c, masked version.
+ *
+ * \copydetails simdFmaddMaskF
+ */
+static inline SimdDouble
+simdFmaddMaskD(SimdDouble a, SimdDouble b, SimdDouble c,
+               SimdDBool m)
+{
+    SimdDouble        d;
+
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        d.r[i] = m.b[i] ? (a.r[i] * b.r[i] + c.r[i]) : 0.0;
+    }
+    return d;
+}
+
+/*! \brief SIMD 1.0/sqrt(x) lookup, masked version.
+ *
+ * \copydetails simdRsqrtMaskF
+ */
+static inline SimdDouble
+simdRsqrtMaskD(SimdDouble x, SimdDBool m)
+{
+    SimdDouble         b;
+
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        /* Sic - we only need single precision for the reference lookup, since
+         * we have defined GMX_SIMD_RSQRT_BITS to 23.
+         */
+        b.r[i] = m.b[i] ? 1.0 / sqrtf(x.r[i]) : 0.0;
+    }
+    return b;
+}
+
+/*! \brief 1.0/x lookup, masked version.
+ *
+ * \copydetails simdRcpMaskF
+ */
+static inline SimdDouble
+simdRcpMaskD(SimdDouble x, SimdDBool m)
+{
+    SimdDouble         b;
+
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        b.r[i] = m.b[i] ? 1.0 / x.r[i] : 0.0;
     }
     return b;
 };
@@ -538,11 +681,10 @@ static inline SimdDouble
 simdAbsD(SimdDouble a)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        c.r[i] = fabs(a.r[i]);
+        c.r[i] = std::abs(a.r[i]);
     }
     return c;
 }
@@ -555,9 +697,8 @@ static inline SimdDouble
 simdNegD(SimdDouble a)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.r[i] = -a.r[i];
     }
@@ -572,11 +713,10 @@ static inline SimdDouble
 simdMaxD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        c.r[i] = (a.r[i] >= b.r[i] ? a.r[i] : b.r[i]);
+        c.r[i] = std::max(a.r[i], b.r[i]);
     }
     return c;
 }
@@ -589,11 +729,10 @@ static inline SimdDouble
 simdMinD(SimdDouble a, SimdDouble b)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        c.r[i] = (a.r[i] <= b.r[i] ? a.r[i] : b.r[i]);
+        c.r[i] = std::min(a.r[i], b.r[i]);
     }
     return c;
 }
@@ -606,16 +745,10 @@ static inline SimdDouble
 simdRoundD(SimdDouble a)
 {
     SimdDouble         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-#ifdef _MSC_VER
-        int temp = (a.r[i] >= 0.0) ? (a.r[i] + 0.5) : (a.r[i] - 0.5);
-        b.r[i] = temp;
-#else
-        b.r[i] = round(a.r[i]);
-#endif
+        b.r[i] = std::round(a.r[i]);
     }
     return b;
 }
@@ -628,11 +761,10 @@ static inline SimdDouble
 simdTruncD(SimdDouble a)
 {
     SimdDouble         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        b.r[i] = trunc(a.r[i]);
+        b.r[i] = std::trunc(a.r[i]);
     }
     return b;
 }
@@ -656,9 +788,9 @@ static inline SimdDouble
 simdGetExponentD(SimdDouble a)
 {
     /* Mask with ones for the exponent field of double precision fp */
-    const std::int64_t      expmask = 0x7ff0000000000000LL;
+    const std::int64_t      exponentMask = 0x7ff0000000000000LL;
     SimdDouble              b;
-    int                     i;
+
     union
     {
         double              d;
@@ -666,13 +798,13 @@ simdGetExponentD(SimdDouble a)
     }
     conv;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         conv.d = a.r[i];
         /* Zero everything but exponent field (remove sign),
          * shift 23 bits right (mantissa size), and remove exponent bias (1023).
          */
-        b.r[i] = ((conv.i & expmask) >> 52) - 1023;
+        b.r[i] = ((conv.i & exponentMask) >> 52) - 1023;
     }
     return b;
 }
@@ -684,10 +816,10 @@ simdGetExponentD(SimdDouble a)
 static inline SimdDouble
 simdGetMantissaD(SimdDouble a)
 {
-    const std::int64_t      mantmask = 0x000fffffffffffffLL;
-    const std::int64_t      one      = 0x3ff0000000000000LL;
+    const std::int64_t      mantissaMask = 0x000fffffffffffffLL;
+    const std::int64_t      one          = 0x3ff0000000000000LL;
     SimdDouble              b;
-    int                     i;
+
     union
     {
         double           d;
@@ -695,10 +827,10 @@ simdGetMantissaD(SimdDouble a)
     }
     conv;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         conv.d = a.r[i];
-        conv.i = (conv.i & (mantmask)) | one;
+        conv.i = (conv.i & (mantissaMask)) | one;
         b.r[i] = conv.d;
     }
     return b;
@@ -712,8 +844,8 @@ static inline SimdDouble
 simdSetExponentD(SimdDouble a)
 {
     SimdDouble              b;
-    int                     i;
-    std::int64_t            iexp;
+
+    std::int64_t            iExponent;
     union
     {
         double           d;
@@ -721,16 +853,12 @@ simdSetExponentD(SimdDouble a)
     }
     conv;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         /* Critical to use same algorithm as for simdRoundD() */
-#ifdef _MSC_VER
-        iexp = (a.r[i] >= 0.0) ? (a.r[i] + 0.5) : (a.r[i] - 0.5);
-#else
-        iexp = round(a.r[i]);
-#endif
+        iExponent = static_cast<std::int64_t>(std::round(a.r[i]));
         /* Add bias (1023), and shift 52 bits left (mantissa size) */
-        conv.i = (iexp + 1023) << 52;
+        conv.i = (iExponent + 1023) << 52;
         b.r[i] = conv.d;
     }
     return b;
@@ -749,11 +877,31 @@ static inline SimdDBool
 simdCmpEqD(SimdDouble a, SimdDouble b)
 {
     SimdDBool         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.b[i] = (a.r[i] == b.r[i]);
+    }
+    return c;
+}
+
+/*! \brief SIMD a!= 0 for single SIMD.
+ *
+ * You should typically call the real-precision \ref gmx::simdCmpNz().
+ *
+ * \param a value
+ * \return Each element of the boolean will be true if any bit in a is nonzero.
+ *         The behaviour for negative zero is undefined, and should not be
+ *         relied on - it will depend on the architecture.
+ */
+static inline SimdDBool
+simdCmpNzD(SimdDouble a)
+{
+    SimdDBool         c;
+
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] != 0.0);
     }
     return c;
 }
@@ -766,9 +914,8 @@ static inline SimdDBool
 simdCmpLtD(SimdDouble a, SimdDouble b)
 {
     SimdDBool         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.b[i] = (a.r[i] < b.r[i]);
     }
@@ -783,9 +930,8 @@ static inline SimdDBool
 simdCmpLeD(SimdDouble a, SimdDouble b)
 {
     SimdDBool         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.b[i] = (a.r[i] <= b.r[i]);
     }
@@ -801,9 +947,8 @@ static inline SimdDBool
 simdAndDB(SimdDBool a, SimdDBool b)
 {
     SimdDBool         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.b[i] = (a.b[i] && b.b[i]);
     }
@@ -818,9 +963,8 @@ static inline SimdDBool
 simdOrDB(SimdDBool a, SimdDBool b)
 {
     SimdDBool         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.b[i] = (a.b[i] || b.b[i]);
     }
@@ -828,22 +972,20 @@ simdOrDB(SimdDBool a, SimdDBool b)
 }
 
 
-/*! \brief Returns non-zero if any of the boolean in x is True, otherwise 0.
+/*! \brief Returns true if any of the boolean in x is True, otherwise 0.
  *
  * \copydetails simdAnyTrueFB
  */
-static inline int
+static inline bool
 simdAnyTrueDB(SimdDBool a)
 {
-    int         anytrue;
-    int         i;
+    bool anyTrue = false;;
 
-    anytrue = 0;
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        anytrue = anytrue || a.b[i];
+        anyTrue = anyTrue || a.b[i];
     }
-    return anytrue;
+    return anyTrue;
 }
 
 
@@ -855,9 +997,8 @@ static inline SimdDouble
 simdMaskD(SimdDouble a, SimdDBool mask)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.r[i] = mask.b[i] ? a.r[i] : 0.0;
     }
@@ -872,9 +1013,8 @@ static inline SimdDouble
 simdMaskNotD(SimdDouble a, SimdDBool mask)
 {
     SimdDouble         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.r[i] = mask.b[i] ? 0.0 : a.r[i];
     }
@@ -889,9 +1029,8 @@ static inline SimdDouble
 simdBlendD(SimdDouble a, SimdDouble b, SimdDBool sel)
 {
     SimdDouble         d;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         d.r[i] = sel.b[i] ? b.r[i] : a.r[i];
     }
@@ -907,9 +1046,8 @@ static inline double
 simdReduceD(SimdDouble a)
 {
     double    sum = 0.0;
-    int       i;
 
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         sum += a.r[i];
     }
@@ -930,9 +1068,8 @@ static inline SimdDInt32
 simdSlliDI(SimdDInt32 a, int n)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] << n;
     }
@@ -947,9 +1084,8 @@ static inline SimdDInt32
 simdSrliDI(SimdDInt32 a, int n)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] >> n;
     }
@@ -964,9 +1100,8 @@ static inline SimdDInt32
 simdAndDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] & b.i[i];
     }
@@ -981,9 +1116,8 @@ static inline SimdDInt32
 simdAndNotDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = (~a.i[i]) & b.i[i];
     }
@@ -998,9 +1132,8 @@ static inline SimdDInt32
 simdOrDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] | b.i[i];
     }
@@ -1015,9 +1148,8 @@ static inline SimdDInt32
 simdXorDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] ^ b.i[i];
     }
@@ -1037,9 +1169,8 @@ static inline SimdDInt32
 simdAddDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] + b.i[i];
     }
@@ -1054,9 +1185,8 @@ static inline SimdDInt32
 simdSubDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] - b.i[i];
     }
@@ -1071,11 +1201,10 @@ static inline SimdDInt32
 simdMulDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
-        c.i[i] = a.i[i]*b.i[i];
+        c.i[i] = a.i[i] * b.i[i];
     }
     return c;
 }
@@ -1094,9 +1223,8 @@ static inline SimdDIBool
 simdCmpEqDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDIBool         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.b[i] = (a.i[i] == b.i[i]);
     }
@@ -1111,9 +1239,8 @@ static inline SimdDIBool
 simdCmpLtDI(SimdDInt32 a, SimdDInt32 b)
 {
     SimdDIBool         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.b[i] = (a.i[i] < b.i[i]);
     }
@@ -1128,9 +1255,8 @@ static inline SimdDIBool
 simdAndDIB(SimdDIBool a, SimdDIBool b)
 {
     SimdDIBool        c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.b[i] = (a.b[i] && b.b[i]);
     }
@@ -1145,31 +1271,28 @@ static inline SimdDIBool
 simdOrDIB(SimdDIBool a, SimdDIBool b)
 {
     SimdDIBool         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.b[i] = (a.b[i] || b.b[i]);
     }
     return c;
 }
 
-/*! \brief Returns non-zero if any of the double-int SIMD booleans in x is True, otherwise 0.
+/*! \brief Returns true if any of the double-int SIMD booleans in x is True, otherwise 0.
  *
  * \copydetails simdAnyTrueFIB
  */
-static inline int
+static inline bool
 simdAnyTrueDIB(SimdDIBool a)
 {
-    int             anytrue;
-    int             i;
+    bool anyTrue = false;
 
-    anytrue = 0;
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
-        anytrue = anytrue || a.b[i];
+        anyTrue = anyTrue || a.b[i];
     }
-    return anytrue;
+    return anyTrue;
 }
 
 /*! \brief Select from SIMD ints (corresponding to double) where boolean is true.
@@ -1180,9 +1303,8 @@ static inline SimdDInt32
 simdMaskDI(SimdDInt32 a, SimdDIBool mask)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = mask.b[i] ? a.i[i] : 0.0;
     }
@@ -1197,9 +1319,8 @@ static inline SimdDInt32
 simdMaskNotDI(SimdDInt32 a, SimdDIBool mask)
 {
     SimdDInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         c.i[i] = mask.b[i] ? 0.0 : a.i[i];
     }
@@ -1214,9 +1335,8 @@ static inline SimdDInt32
 simdBlendDI(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
 {
     SimdDInt32         d;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         d.i[i] = sel.b[i] ? b.i[i] : a.i[i];
     }
@@ -1237,15 +1357,10 @@ static inline SimdDInt32
 simdCvtD2I(SimdDouble a)
 {
     SimdDInt32         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
-#ifdef _MSC_VER
-        b.i[i] = (a.r[i] >= 0.0) ? (a.r[i] + 0.5) : (a.r[i] - 0.5);
-#else
-        b.i[i] = round(a.r[i]);
-#endif
+        b.i[i] = std::round(a.r[i]);
     }
     return b;
 };
@@ -1258,9 +1373,8 @@ static inline SimdDInt32
 simdCvttD2I(SimdDouble a)
 {
     SimdDInt32         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         b.i[i] = a.r[i];
     }
@@ -1275,9 +1389,8 @@ static inline SimdDouble
 simdCvtI2D(SimdDInt32 a)
 {
     SimdDouble         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
         b.r[i] = a.i[i];
     }
@@ -1292,10 +1405,9 @@ static inline SimdDIBool
 simdCvtDB2DIB(SimdDBool a)
 {
     SimdDIBool         b;
-    int                i;
 
     /* Integer width >= double width */
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         b.b[i] = a.b[i];
     }
@@ -1310,10 +1422,9 @@ static inline SimdDBool
 simdCvtDIB2DB(SimdDIBool a)
 {
     SimdDBool         b;
-    int               i;
 
     /* Integer width >= double width */
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         b.b[i] = a.b[i];
     }
@@ -1337,8 +1448,7 @@ simdCvtF2D(SimdFloat f)
 {
     SimdDouble        d;
 #if (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
-    int               i;
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         d.r[i] = f.r[i];
     }
@@ -1367,8 +1477,7 @@ simdCvtD2F(SimdDouble d)
 {
     SimdFloat        f;
 #if (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
-    int              i;
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         f.r[i] = d.r[i];
     }
@@ -1397,11 +1506,10 @@ static inline void
 simdCvtF2DD(SimdFloat f, SimdDouble *d0, SimdDouble *d1)
 {
 #if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
-    int i;
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         d0->r[i] = f.r[i];
-        d1->r[i] = f.r[GMX_SIMD_DOUBLE_WIDTH+i];
+        d1->r[i] = f.r[GMX_SIMD_DOUBLE_WIDTH + i];
     }
 #else
     gmx_fatal(FARGS, "simdCvtF2DD() requires GMX_SIMD_FLOAT_WIDTH==2*GMX_SIMD_DOUBLE_WIDTH");
@@ -1429,11 +1537,10 @@ simdCvtDD2F(SimdDouble d0, SimdDouble d1)
 {
     SimdFloat        f;
 #if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
-    int              i;
-    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        f.r[i]                       = d0.r[i];
-        f.r[GMX_SIMD_DOUBLE_WIDTH+i] = d1.r[i];
+        f.r[i]                         = d0.r[i];
+        f.r[GMX_SIMD_DOUBLE_WIDTH + i] = d1.r[i];
     }
 #else
     gmx_fatal(FARGS, "simdCvtDD2F() requires GMX_SIMD_FLOAT_WIDTH==2*GMX_SIMD_DOUBLE_WIDTH");
@@ -1448,4 +1555,6 @@ simdCvtDD2F(SimdDouble d0, SimdDouble d1)
 /*! \} */
 /*! \endcond */
 
-#endif /* GMX_SIMD_IMPL_REFERENCE_SIMD_DOUBLE_H */
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_REFERENCE_SIMD_DOUBLE_H

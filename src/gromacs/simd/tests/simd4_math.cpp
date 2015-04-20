@@ -197,7 +197,7 @@ namespace
 
 /*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
 static real
-ref_invsqrt(real x)
+refInvsqrt(real x)
 {
     return 1.0/sqrt(x);
 }
@@ -205,7 +205,7 @@ ref_invsqrt(real x)
 TEST_F(Simd4MathTest, gmxSimd4InvsqrtR)
 {
     setRange(1e-10, 1e10);
-    GMX_EXPECT_SIMD4_FUNC_NEAR(ref_invsqrt, simd4Invsqrt);
+    GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, simd4Invsqrt);
 }
 
 TEST_F(Simd4MathTest, gmxSimd4InvsqrtSingleaccuracyR)
@@ -213,7 +213,7 @@ TEST_F(Simd4MathTest, gmxSimd4InvsqrtSingleaccuracyR)
     setRange(1e-10, 1e10);
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
-    GMX_EXPECT_SIMD4_FUNC_NEAR(ref_invsqrt, simd4InvsqrtSingleAccuracy);
+    GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, simd4InvsqrtSingleAccuracy);
 }
 
 }      // namespace
