@@ -578,7 +578,22 @@ If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 (or whichever path has your installation). In some cases, you might
 need to specify manually which of your C++ compilers should be used,
-e.g. with the advanced option ``CUDA_HOST_COMPILER``.
+e.g. with the advanced option ``CUDA_HOST_COMPILER``. To make it
+possible to get best performance from NVIDIA Tesla and Quadro GPUs,
+you should install the `GPU Deployment Kit
+<https://developer.nvidia.com/gpu-deployment-kit>`_ and configure
+|Gromacs| to use it by setting the CMake variable
+``-DGPU_DEPLOYMENT_KIT_ROOT_DIR=/path/to/your/kit``. The NVML support
+is most useful if
+``nvidia-smi --applications-clocks-permission=UNRESTRICTED`` is run
+(as root). When application clocks permissions are unrestricted, the
+GPU clock speed can be increased automatically, which increases the
+GPU kernel performance roughly proportional to the clock
+increase. When using |Gromacs| on suitable GPUs under restricted
+permissions, clocks cannot be changed, and in that case informative
+log file messages will be produced. Background details can be found at
+this `NVIDIA blog post
+<http://devblogs.nvidia.com/parallelforall/increase-performance-gpu-boost-k80-autoboost/>`_.
 
 By default, optimized code will be generated for CUDA architectures
 supported by the nvcc compiler (and the |Gromacs| build system). 
