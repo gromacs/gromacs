@@ -505,7 +505,7 @@ gmx_simd_set_exponent_d_mic(__m512d a)
 static gmx_inline void gmx_simdcall
 gmx_simd_cvt_f2dd_mic(__m512 f, __m512d * d0, __m512d * d1)
 {
-    __m512i i1 = _mm512_permute4f128_epi32(_mm512_castps_si512(f), _MM_PERM_CDCD);
+    __m512i i1 = _mm512_permute4f128_epi32(_mm512_castps_si512(f), PERM_HIGH2LOW);
 
     *d0 = _mm512_cvtpslo_pd(f);
     *d1 = _mm512_cvtpslo_pd(_mm512_castsi512_ps(i1));
