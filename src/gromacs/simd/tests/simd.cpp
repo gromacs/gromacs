@@ -85,7 +85,7 @@ const SimdReal rSimd_ExpDouble = setSimdRealFrom3R( 6.287393598732017379054414e+
                                                     -3.637060701570496477655022e+202);
 #    endif
 #endif  // GMX_SIMD_HAVE_REAL
-#if GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32_ARITHMETICS
 const SimdInt32 iSimd_1_2_3      = setSimdIntFrom3I(1, 2, 3);
 const SimdInt32 iSimd_4_5_6      = setSimdIntFrom3I(4, 5, 6);
 const SimdInt32 iSimd_7_8_9      = setSimdIntFrom3I(7, 8, 9);
@@ -93,9 +93,11 @@ const SimdInt32 iSimd_5_7_9      = setSimdIntFrom3I(5, 7, 9);
 const SimdInt32 iSimd_1M_2M_3M   = setSimdIntFrom3I(1000000, 2000000, 3000000);
 const SimdInt32 iSimd_4M_5M_6M   = setSimdIntFrom3I(4000000, 5000000, 6000000);
 const SimdInt32 iSimd_5M_7M_9M   = setSimdIntFrom3I(5000000, 7000000, 9000000);
+#endif
+#if GMX_SIMD_HAVE_INT32_LOGICAL
 const SimdInt32 iSimd_0xF0F0F0F0 = setSimdIntFrom1I(0xF0F0F0F0);
 const SimdInt32 iSimd_0xCCCCCCCC = setSimdIntFrom1I(0xCCCCCCCC);
-#endif  // GMX_SIMD_HAVE_INT32
+#endif
 
 #if GMX_SIMD_HAVE_REAL
 ::std::vector<real>
@@ -156,16 +158,13 @@ SimdTest::compareSimdRealEq(const char * refExpr, const char * tstExpr,
     return compareVectorEq(refExpr, tstExpr, simdReal2Vector(ref), simdReal2Vector(tst));
 }
 
-#endif  // GMX_SIMD_HAVE_REAL
-
-#if GMX_SIMD_HAVE_INT32
 std::vector<int>
 simdInt2Vector(const SimdInt32 simd)
 {
-    GMX_ALIGNED(int, GMX_SIMD_INT32_WIDTH)  mem[GMX_SIMD_INT32_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
 
     simdStoreI(mem, simd);
-    std::vector<int>    v(mem, mem+GMX_SIMD_INT32_WIDTH);
+    std::vector<int>    v(mem, mem+GMX_SIMD_REAL_WIDTH);
 
     return v;
 }
@@ -173,9 +172,9 @@ simdInt2Vector(const SimdInt32 simd)
 SimdInt32
 vector2SimdInt(const std::vector<int> &v)
 {
-    GMX_ALIGNED(int, GMX_SIMD_INT32_WIDTH)  mem[GMX_SIMD_INT32_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  mem[GMX_SIMD_REAL_WIDTH];
 
-    for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         mem[i] = v[i % v.size()];  // repeat vector contents to fill simd width
     }
@@ -195,8 +194,8 @@ setSimdIntFrom3I(int i0, int i1, int i2)
 SimdInt32
 setSimdIntFrom1I(int value)
 {
-    std::vector<int> v(GMX_SIMD_INT32_WIDTH);
-    for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
+    std::vector<int> v(GMX_SIMD_REAL_WIDTH);
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         v[i] = value;
     }
@@ -210,7 +209,7 @@ SimdTest::compareSimdInt32(const char *  refExpr,      const char *  tstExpr,
     return compareVectorEq(refExpr, tstExpr, simdInt2Vector(ref), simdInt2Vector(tst));
 }
 
-#endif  // GMX_SIMD_HAVE_INT32
+#endif  // GMX_SIMD_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
