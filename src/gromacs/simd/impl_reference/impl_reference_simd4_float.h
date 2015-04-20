@@ -209,8 +209,46 @@
 static gmx_inline float
 gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
-    return a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2];
+    return a.r[0] * b.r[0] + a.r[1] * b.r[1] + a.r[2] * b.r[2];
 }
+
+#if defined(__cplusplus)
+/*! \brief SIMD4 float transpose
+ *
+ * \param[in,out] v0  Row 0 on input, column 0 on output
+ * \param[in,out] v1  Row 1 on input, column 1 on output
+ * \param[in,out] v2  Row 2 on input, column 2 on output
+ * \param[in,out] v3  Row 3 on input, column 3 on output
+ *
+ * This is only available in C++.
+ */
+static gmx_inline void
+gmx_simd4_transpose_f(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                      gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    gmx_simd4_float_t t0, t1, t2, t3;
+    t0      = v0;
+    t1      = v1;
+    t2      = v2;
+    t3      = v3;
+    v0.r[0] = t0.r[0];
+    v0.r[1] = t1.r[0];
+    v0.r[2] = t2.r[0];
+    v0.r[3] = t3.r[0];
+    v1.r[0] = t0.r[1];
+    v1.r[1] = t1.r[1];
+    v1.r[2] = t2.r[1];
+    v1.r[3] = t3.r[1];
+    v2.r[0] = t0.r[2];
+    v2.r[1] = t1.r[2];
+    v2.r[2] = t2.r[2];
+    v2.r[3] = t3.r[2];
+    v3.r[0] = t0.r[3];
+    v3.r[1] = t1.r[3];
+    v3.r[2] = t2.r[3];
+    v3.r[3] = t3.r[3];
+}
+#endif /* __cplusplus */
 
 /*! \brief SIMD4 variable type to use for logical comparisons on floats.
  * \copydetails gmx_simd_fbool_t
@@ -221,6 +259,11 @@ gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * \copydetails gmx_simd_cmpeq_f
  */
 #    define gmx_simd4_cmpeq_f   gmx_simd_cmpeq_f
+
+/*! \brief Return true for nonzero SIMD4 elements (i.e., with bits set)
+ * \copydetails gmx_simd_cmpnz_f
+ */
+#    define gmx_simd4_cmpnz_f   gmx_simd_cmpnz_f
 
 /*! \brief Less-than comparison of two single precision SIMD4.
  * \copydetails gmx_simd_cmplt_f
@@ -267,9 +310,7 @@ gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
  */
 #    define gmx_simd4_reduce_f  gmx_simd_reduce_f
 
-#else /* GMX_SIMD_FLOAT_WIDTH!=4 */
-#    define GMX_SIMD4_HAVE_FLOAT    0
-#endif
+#endif  /* GMX_SIMD_FLOAT_WIDTH==4 */
 
 /*! \} */
 

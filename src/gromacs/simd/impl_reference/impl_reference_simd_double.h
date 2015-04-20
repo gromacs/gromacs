@@ -50,6 +50,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "impl_reference_common.h"
+#include "impl_reference_simd_float.h"
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */
@@ -71,7 +72,33 @@ gmx_simd_double_t;
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from double.
  *
- * Available with GMX_SIMD_HAVE_DINT32.
+ * Available if GMX_SIMD_HAVE_DOUBLE.
+ *
+ * \note The integer SIMD type will always be available, but on architectures
+ * that do not have any real integer SIMD support it might be defined as the
+ * floating-point type. This will work fine, since there are separate defines
+ * for whether the implementation can actually do any operations on integer
+ * SIMD types.
+ *
+ * \note The Gromacs SIMD module works entirely with 32 bit integers, both
+ * in single and double precision, since some platforms do not support 64 bit
+ * SIMD integers at all. In particular, this means it is up to each
+ * implementation to get this working even if the architectures internal
+ * representation uses 64 bit integers when converting to/from double SIMD
+ * variables. For now we will try HARD to use conversions, packing or shuffling
+ * so the integer datatype has the same width as the floating-point type, i.e.
+ * if you use double precision SIMD with a width of 8, we want the integers
+ * we work with to also use a SIMD width of 8 to make it easy to load/store
+ * indices from arrays. This refers entirely to the function calls
+ * and how many integers we load/store in one call; the actual SIMD registers
+ * might be wider for integers internally (e.g. on x86 gmx_simd_dint32_t will
+ * only fill half the register), but this is none of the user's business.
+ * While this works for all current architectures, and we think it will work
+ * for future ones, we might have to alter this decision in the future. To
+ * avoid rewriting every single instance that refers to the SIMD width we still
+ * provide separate defines for the width of SIMD integer variables that you
+ * should use.
+
  */
 typedef struct
 {
@@ -459,12 +486,12 @@ gmx_simd_mul_d(gmx_simd_double_t a, gmx_simd_double_t b)
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        c.r[i] = a.r[i]*b.r[i];
+        c.r[i] = a.r[i] * b.r[i];
     }
     return c;
 }
 
-/*! \brief Fused-multiply-add. Result is a*b+c.
+/*! \brief Fused-multiply-add, double. Result is a*b+c.
  *
  * \copydetails gmx_simd_fmadd_f
  */
@@ -503,7 +530,7 @@ gmx_simd_rsqrt_d(gmx_simd_double_t x)
         /* Sic - we only need single precision for the reference lookup, since
          * we have defined GMX_SIMD_RSQRT_BITS to 23.
          */
-        b.r[i] = (x.r[i] > 0.0) ? 1.0f/sqrtf(x.r[i]) : 0.0;
+        b.r[i] = 1.0 / sqrtf(x.r[i]);
     }
     return b;
 };
@@ -523,7 +550,79 @@ gmx_simd_rcp_d(gmx_simd_double_t x)
         /* Sic - we only need single precision for the reference lookup, since
          * we have defined GMX_SIMD_RCP_BITS to 23.
          */
-        b.r[i] = (x.r[i] != 0.0) ? 1.0f/x.r[i] : 0.0;
+        b.r[i] = 1.0 / x.r[i];
+    }
+    return b;
+};
+
+/*! \brief Multiply two SIMD doubles, masked version.
+ *
+ * \copydetails gmx_simd_mul_mask_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_mul_mask_d(gmx_simd_double_t a, gmx_simd_double_t b, gmx_simd_dbool_t m)
+{
+    gmx_simd_double_t c;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        c.r[i] = m.b[i] ? (a.r[i] * b.r[i]) : 0.0;
+    }
+    return c;
+}
+
+/*! \brief Fused-multiply-add, double. Result is a*b+c, masked version.
+ *
+ * \copydetails gmx_simd_fmadd_mask_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_fmadd_mask_d(gmx_simd_double_t a, gmx_simd_double_t b, gmx_simd_double_t c,
+                      gmx_simd_dbool_t m)
+{
+    gmx_simd_double_t d;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        d.r[i] = m.b[i] ? (a.r[i] * b.r[i] + c.r[i]) : 0.0;
+    }
+    return d;
+}
+
+/*! \brief SIMD 1.0/sqrt(x) lookup, masked version.
+ *
+ * \copydetails gmx_simd_rsqrt_mask_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_rsqrt_mask_d(gmx_simd_double_t x, gmx_simd_dbool_t m)
+{
+    gmx_simd_double_t  b;
+    int                i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        /* Sic - we only need single precision for the reference lookup, since
+         * we have defined GMX_SIMD_RSQRT_BITS to 23.
+         */
+        b.r[i] = (m.b[i] != 0) ? 1.0 / sqrtf(x.r[i]) : 0.0;
+    }
+    return b;
+}
+
+/*! \brief 1.0/x lookup, masked version.
+ *
+ * \copydetails gmx_simd_rcp_mask_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_rcp_mask_d(gmx_simd_double_t x, gmx_simd_dbool_t m)
+{
+    gmx_simd_double_t  b;
+    int                i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        b.r[i] = (m.b[i] != 0) ? 1.0 / x.r[i] : 0.0;
     }
     return b;
 };
@@ -752,6 +851,28 @@ gmx_simd_cmpeq_d(gmx_simd_double_t a, gmx_simd_double_t b)
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.b[i] = (a.r[i] == b.r[i]);
+    }
+    return c;
+}
+
+/*! \brief SIMD a!=0 for single SIMD.
+ *
+ * You should typically call the real-precision \ref gmx_simd_cmpnz_r.
+ *
+ * \param a value
+ * \return Each element of the boolean will be true if any bit in a is nonzero.
+ *         The behaviour for negative zero is undefined, and should not be
+ *         relied on - it will depend on the architecture.
+ */
+static gmx_inline gmx_simd_dbool_t
+gmx_simd_cmpnz_d(gmx_simd_double_t a)
+{
+    gmx_simd_dbool_t  c;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] != 0.0);
     }
     return c;
 }
@@ -1073,7 +1194,7 @@ gmx_simd_mul_di(gmx_simd_dint32_t a, gmx_simd_dint32_t b)
 
     for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
-        c.i[i] = a.i[i]*b.i[i];
+        c.i[i] = a.i[i] * b.i[i];
     }
     return c;
 }
@@ -1399,7 +1520,7 @@ gmx_simd_cvt_f2dd(gmx_simd_float_t f, gmx_simd_double_t *d0, gmx_simd_double_t *
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         d0->r[i] = f.r[i];
-        d1->r[i] = f.r[GMX_SIMD_DOUBLE_WIDTH+i];
+        d1->r[i] = f.r[GMX_SIMD_DOUBLE_WIDTH + i];
     }
 #else
     gmx_fatal(FARGS, "gmx_simd_cvt_f2dd() requires GMX_SIMD_FLOAT_WIDTH==2*GMX_SIMD_DOUBLE_WIDTH");
@@ -1430,8 +1551,8 @@ gmx_simd_cvt_dd2f(gmx_simd_double_t d0, gmx_simd_double_t d1)
     int              i;
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        f.r[i]                       = d0.r[i];
-        f.r[GMX_SIMD_DOUBLE_WIDTH+i] = d1.r[i];
+        f.r[i]                         = d0.r[i];
+        f.r[GMX_SIMD_DOUBLE_WIDTH + i] = d1.r[i];
     }
 #else
     gmx_fatal(FARGS, "gmx_simd_cvt_dd2f() requires GMX_SIMD_FLOAT_WIDTH==2*GMX_SIMD_DOUBLE_WIDTH");

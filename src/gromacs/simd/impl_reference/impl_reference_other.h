@@ -33,37 +33,41 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_REFERENCE_H
-#define GMX_SIMD_IMPL_REFERENCE_H
+#ifndef GMX_SIMD_IMPL_REFERENCE_OTHER_H
+#define GMX_SIMD_IMPL_REFERENCE_OTHER_H
+
+#include "gromacs/utility/basedefinitions.h"
 
 /*! \libinternal \file
  *
- * \brief Reference SIMD implementation, including SIMD documentation.
+ * \brief Reference SIMD implementation, other functions (including prefetch)
  *
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  *
  * \ingroup module_simd
  */
 
-/* Functions not related to floating-point SIMD (mainly prefetching) */
-#include "impl_reference_other.h"
+/*! \brief Prefetch memory at address m
+ *
+ *  This typically prefetches one cache line of memory from address m,
+ *  usually 64bytes or more, but the exact amount will depend on the
+ *  implementation. On many platforms this is simply a no-op. Technically it
+ *  might not be part of the SIMD instruction set, but since it is a
+ *  hardware-specific function that is normally only used in tight loops where
+ *  we also apply SIMD, it fits well here.
+ *
+ *  There are no guarantees about the level of cache or temporality, but
+ *  usually we expect stuff to end up in level 2, and be used in a few hundred
+ *  clock cycles, after which it stays in cache until evicted (normal caching).
+ *
+ * \param m Pointer to location prefetch. There are no alignment requirements,
+ *        but if the pointer is not aligned the prefetch might start at the
+ *        lower cache line boundary (meaning fewer bytes are prefetched).
+ */
+static void
+gmx_simd_prefetch(void gmx_unused * m)
+{
+    /* Do nothing for reference implementaiton */
+}
 
-/* Special width-4 double-precision SIMD */
-#include "impl_reference_simd4_double.h"
-
-/* Special width-4 single-precision SIMD */
-#include "impl_reference_simd4_float.h"
-
-/* General double-precision SIMD (and double/float conversions) */
-#include "impl_reference_simd_double.h"
-
-/* General single-precision SIMD */
-#include "impl_reference_simd_float.h"
-
-/* Higher-level utility functions for double precision SIMD */
-#include "impl_reference_util_double.h"
-
-/* Higher-level utility functions for single precision SIMD */
-#include "impl_reference_util_float.h"
-
-#endif /* GMX_SIMD_IMPL_REFERENCE_H */
+#endif /* GMX_SIMD_IMPL_REFERENCE_OTHER_H */
