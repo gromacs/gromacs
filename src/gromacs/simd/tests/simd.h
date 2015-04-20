@@ -130,7 +130,7 @@ extern const gmx_simd_real_t rSimd_Bits4;       //!< Pattern 0C repeated to fill
 extern const gmx_simd_real_t rSimd_Bits5;       //!< Pattern FC repeated to fill single/double.
 extern const gmx_simd_real_t rSimd_Bits6;       //!< Pattern 3C repeated to fill single/double.
 #endif                                          // GMX_SIMD_HAVE_REAL
-#ifdef GMX_SIMD_HAVE_INT32
+#ifdef GMX_SIMD_HAVE_INT32_ARITHMETICS
 extern const gmx_simd_int32_t iSimd_1_2_3;      //!< Three generic ints.
 extern const gmx_simd_int32_t iSimd_4_5_6;      //!< Three generic ints.
 extern const gmx_simd_int32_t iSimd_7_8_9;      //!< Three generic ints.
@@ -138,9 +138,11 @@ extern const gmx_simd_int32_t iSimd_5_7_9;      //!< iSimd_1_2_3 + iSimd_4_5_6.
 extern const gmx_simd_int32_t iSimd_1M_2M_3M;   //!< Term1 for 32bit add/sub.
 extern const gmx_simd_int32_t iSimd_4M_5M_6M;   //!< Term2 for 32bit add/sub.
 extern const gmx_simd_int32_t iSimd_5M_7M_9M;   //!< iSimd_1M_2M_3M + iSimd_4M_5M_6M.
+#endif
+#ifdef GMX_SIMD_HAVE_INT32_LOGICAL
 extern const gmx_simd_int32_t iSimd_0xF0F0F0F0; //!< Bitpattern to test integer logical operations.
 extern const gmx_simd_int32_t iSimd_0xCCCCCCCC; //!< Bitpattern to test integer logical operations.
-#endif                                          // GMX_SIMD_HAVE_INT32
+#endif
 
 
 /*! \internal
@@ -189,7 +191,6 @@ class SimdTest : public SimdBaseTest
 
 #endif
 
-#ifdef GMX_SIMD_HAVE_INT32
         /*! \brief Compare two 32-bit integer SIMD variables.
          *
          * This is an internal implementation routine. YOu should always use
@@ -205,7 +206,6 @@ class SimdTest : public SimdBaseTest
             ::testing::AssertionResult
         compareSimdInt32(const char * refExpr, const char *  tstExpr,
                          const gmx_simd_int32_t ref, const gmx_simd_int32_t tst);
-#endif
 };
 
 #ifdef GMX_SIMD_HAVE_REAL
@@ -244,9 +244,6 @@ gmx_simd_real_t   setSimdRealFrom1R(real value);
 /*! \brief Test if a SIMD real is within tolerance of reference SIMD value. */
 #define GMX_EXPECT_SIMD_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimdRealUlp, ref, tst)
 
-#endif  // GMX_SIMD_HAVE_REAL
-
-#ifdef GMX_SIMD_HAVE_INT32
 /*! \brief Convert SIMD integer to std::vector<int>.
  *
  * The returned vector will have the same length as the SIMD width.
@@ -283,7 +280,7 @@ gmx_simd_int32_t   setSimdIntFrom1I(int value);
  */
 #define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdInt32, ref, tst)
 
-#endif  // GMX_SIMD_HAVE_INT32
+#endif  // GMX_SIMD_HAVE_REAL
 
 /*! \} */
 /*! \endcond */

@@ -80,7 +80,7 @@ const gmx_simd_real_t rSimd_ExpDouble = setSimdRealFrom3R( 6.2873935987320173790
                                                            -3.637060701570496477655022e+202);
 #    endif
 #endif  // GMX_SIMD_HAVE_REAL
-#ifdef GMX_SIMD_HAVE_INT32
+#ifdef GMX_SIMD_HAVE_INT32_ARITHMETICS
 const gmx_simd_int32_t iSimd_1_2_3      = setSimdIntFrom3I(1, 2, 3);
 const gmx_simd_int32_t iSimd_4_5_6      = setSimdIntFrom3I(4, 5, 6);
 const gmx_simd_int32_t iSimd_7_8_9      = setSimdIntFrom3I(7, 8, 9);
@@ -88,9 +88,11 @@ const gmx_simd_int32_t iSimd_5_7_9      = setSimdIntFrom3I(5, 7, 9);
 const gmx_simd_int32_t iSimd_1M_2M_3M   = setSimdIntFrom3I(1000000, 2000000, 3000000);
 const gmx_simd_int32_t iSimd_4M_5M_6M   = setSimdIntFrom3I(4000000, 5000000, 6000000);
 const gmx_simd_int32_t iSimd_5M_7M_9M   = setSimdIntFrom3I(5000000, 7000000, 9000000);
+#endif
+#ifdef GMX_SIMD_HAVE_INT32_LOGICAL
 const gmx_simd_int32_t iSimd_0xF0F0F0F0 = setSimdIntFrom1I(0xF0F0F0F0);
 const gmx_simd_int32_t iSimd_0xCCCCCCCC = setSimdIntFrom1I(0xCCCCCCCC);
-#endif  // GMX_SIMD_HAVE_INT32
+#endif
 
 #ifdef GMX_SIMD_HAVE_REAL
 ::std::vector<real>
@@ -153,9 +155,6 @@ SimdTest::compareSimdRealEq(const char * refExpr, const char * tstExpr,
     return compareVectorEq(refExpr, tstExpr, simdReal2Vector(ref), simdReal2Vector(tst));
 }
 
-#endif  // GMX_SIMD_HAVE_REAL
-
-#ifdef GMX_SIMD_HAVE_INT32
 std::vector<int>
 simdInt2Vector(const gmx_simd_int32_t simd)
 {
@@ -209,7 +208,7 @@ SimdTest::compareSimdInt32(const char *  refExpr,      const char *  tstExpr,
     return compareVectorEq(refExpr, tstExpr, simdInt2Vector(ref), simdInt2Vector(tst));
 }
 
-#endif  // GMX_SIMD_HAVE_INT32
+#endif  // GMX_SIMD_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
