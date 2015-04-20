@@ -61,10 +61,19 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#if GMX_SIMD_HAVE_INT32
-
 /*! \brief Test fixture for integer tests (identical to the generic \ref SimdTest) */
 typedef SimdTest SimdIntegerTest;
+
+/* Yes, Virginia. We test for real even for integers. This is because we use
+ * the floating-point type when no real integer SIMD type exists (which in turn
+ * is because the results of real-to-integer conversions end up there). This
+ * means the basic integer SIMD type is available whenever the real one is,
+ * but depending on the precision selected that might not be the case.
+ *
+ * The second we have default-precision floating-point SIMD, we also have
+ * the integer SIMD dataype and the most fundamental load/store ops.
+ */
+#if GMX_SIMD_HAVE_REAL
 
 TEST_F(SimdIntegerTest, gmxSimdSetZeroI)
 {
@@ -75,8 +84,9 @@ TEST_F(SimdIntegerTest, gmxSimdSet1I)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(1), gmx_simd_set1_i(1));
 }
+#endif      // GMX_SIMD_HAVE_REAL
 
-#if GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#if GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdAddI)
 {
     GMX_EXPECT_SIMD_INT_EQ(iSimd_5_7_9,   gmx_simd_add_i(iSimd_1_2_3, iSimd_4_5_6)    );    // short add
@@ -94,9 +104,7 @@ TEST_F(SimdIntegerTest, gmxSimdMulI)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 10, 18), gmx_simd_mul_i(iSimd_1_2_3, iSimd_4_5_6));                       // 2*3=6 (short mul)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(268435456), gmx_simd_mul_i(gmx_simd_set1_i(16384), gmx_simd_set1_i(16384))); // 16384*16384 = 268435456 (long mul)
 }
-#endif
 
-#if GMX_SIMD_HAVE_FINT32_LOGICAL
 TEST_F(SimdIntegerTest, gmxSimdSlliI)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4194304), gmx_simd_slli_i(gmx_simd_set1_i(2), 21)); // 2 << 21 = 4194304
@@ -106,7 +114,9 @@ TEST_F(SimdIntegerTest, gmxSimdSrliI)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), gmx_simd_srli_i(gmx_simd_set1_i(4194304), 20)); // 4194304 >> 20 = 4
 }
+#endif                                                                                          // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
+#if GMX_SIMD_HAVE_INT32_LOGICAL
 TEST_F(SimdIntegerTest, gmxSimdAndI)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0xC0C0C0C0), gmx_simd_and_i(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
@@ -126,7 +136,7 @@ TEST_F(SimdIntegerTest, gmxSimdXorI)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0x3C3C3C3C), gmx_simd_xor_i(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
 }
-#endif
+#endif      // GMX_SIMD_HAVE_INT32_LOGICAL
 
 #if GMX_SIMD_HAVE_INT32_EXTRACT
 TEST_F(SimdIntegerTest, gmxSimdExtractI)
@@ -172,7 +182,7 @@ TEST_F(SimdIntegerTest, gmxSimdExtractI)
         EXPECT_EQ(8, extracted_int);
     }
 }
-#endif
+#endif      // GMX_SIMD_HAVE_INT32_EXTRACT
 
 #if GMX_SIMD_HAVE_REAL
 TEST_F(SimdIntegerTest, gmxSimdCvtR2I)
@@ -192,9 +202,9 @@ TEST_F(SimdIntegerTest, gmxSimdCvtI2R)
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2.0), gmx_simd_cvt_i2r(gmx_simd_set1_i(2)));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2.0), gmx_simd_cvt_i2r(gmx_simd_set1_i(-2)));
 }
-#endif
+#endif      // GMX_SIMD_HAVE_REAL
 
-#if GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#if GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdBoolCmpEqAndBlendZeroI)
 {
     gmx_simd_ibool_t eq   = gmx_simd_cmpeq_i(iSimd_5_7_9, iSimd_7_8_9);
@@ -246,9 +256,9 @@ TEST_F(SimdIntegerTest, gmxSimdBlendvI)
     gmx_simd_ibool_t lt   = gmx_simd_cmplt_i(iSimd_5_7_9, iSimd_7_8_9);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 5, 3), gmx_simd_blendv_i(iSimd_1_2_3, iSimd_4_5_6, lt));
 }
-#endif
+#endif      // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
-#if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdCvtB2IB)
 {
     gmx_simd_bool_t  eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, setSimdRealFrom3R(5, 0, 0));  // eq should be T,F,F
@@ -263,9 +273,7 @@ TEST_F(SimdIntegerTest, gmxSimdCvtIB2B)
     gmx_simd_bool_t  eq   = gmx_simd_cvt_ib2b(eqi);
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.0, 0, 0), gmx_simd_blendzero_r(rSimd_1_2_3, eq));
 }
-#endif
-
-#endif      // GMX_SIMD_HAVE_INT32
+#endif      // GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 /*! \} */
 /*! \endcond */

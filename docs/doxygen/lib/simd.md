@@ -39,6 +39,25 @@ hardware. However, the advantage of this approach is that it is straightforward
 to extend with support for new simd instruction sets in the future,
 and that will instantly speed up old code too.
 
+To support the more complex stuff in the \Gromacs nonbonded kernels and
+to make it possible to use SIMD intrinsics even for some parts of the code
+where the data is not in SIMD-friendly layout, we have also added about 10
+higher-level utility routines. These perform gather/scatter operations
+on coordinate triplets, they load table data and aligned pairs (Lennard-Jones
+parameters), and sum up the forces needed in the outer loop of the nonbonded
+kernels. They are very straightforward to implement, but since they are
+performance-critical we want to exploit all features of each architecture,
+and for this reason they are part of the SIMD implementation.
+
+Finally, for some architectures with very large SIMD width (e.g. AVX with
+16 elements in single precision), the nonbonded kernels can become
+inefficient. Since all such architectures presently known
+(AVX, AVX2, MIC, AVX512) also provide extensive support for accessing
+parts of the register, we optionally define a handful of routines to
+perform load, store, and reduce operations based on half-SIMD-width data,
+which can improve performance. It is only useful for wide implementations,
+and it can safely be ignored first when porting to new platforms.
+
 Unfortunately there is no standard for SIMD architectures. The available
 features vary a lot, but we still need to use quite a few of them to
 get the best performance possible. This means some features will only
@@ -98,7 +117,7 @@ provides the API to define and manipulate SIMD datatypes. This will be enough
 for lots of cases, and it is a huge advantage that there is roughly
 parity between different architectures.
 </dd>
-<dt>Larger architecture-specific SIMD functions</dt>
+<dt>Larger architecture-specific SIMD utility functions</dt>
 <dd>
 For some parts of the code this is not enough. In particular, both the
 group and Verlet kernels do insane amounts of floating-point operations,
@@ -107,20 +126,30 @@ we can optimize them as much as possible. Here, our strategy is first to
 define larger high-level functions that e.g. take a number of distances
 and loads the table interactions for this interaction. This way we can
 move this architecture-specific implementation to the SIMD module, and
-both achieve a reasonably clean kernel but still optimize a lot.
+both achieve a reasonably clean kernel but still optimize a lot. This
+is what we have done for the approximately 10 functions for the nonbonded
+kernels, to load tables and Lennard-Jones parameters, and to sum up the
+forces in the outer loop. These functions have intentionally been given
+names that describe what they do with the data, rather than what their
+function is in \Gromacs. By looking at the documentation for these routines,
+and the reference implementation, it should be quite straightforward to
+implement them for a new architecture too.
+</dd>
+<dt>Half-SIMD-width architecture-specific utility functions</dt>
+<dd>
+As described earlier, as the SIMD width increases to 8 or more elements,
+the nonbonded kernels can become inefficient due to the large j-particle
+cluster size. Things will still work, but if an architecture supports
+efficient access to partial SIMD registers (e.g. loading half the width),
+we can use this to improve performance. When GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
+or GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is set, a handful of routines to
+use this in the nonbonded kernels is present. Avoid using these routines
+outside the nonbonded kernels since they are slightly more complex.
 </dd>
 <dt>Architecture-specific kernels (directories/files)</dt>
 <dd>
-When it is absolutely impossible to use a shared implementation we might
-have to code SIMD (just as GPU code). When this happens, we should create
-subdirectory or otherwise clearly names a file with a suffix for the
-SIMD architecture, to clarify to the user that the SIMD file has a
-direct non-SIMD correspondence. Since this code can be very hard to read,
-it is important to be explicit and use lots of comments - this is not the
-type of code where you should use smart optimization with hundreds of
-preprocessor directives. Keep it simple so other developers can help you
-support it. The question is not whether you can get a function 20% faster,
-but whether it justifies the added complexity of the code.
+We are in the process of completely removing all SIMD code outside the
+SIMD module so please do not add any new such code.
 </dd>
 </dl>
 
@@ -144,7 +173,7 @@ double precision but the hardware only supports single-precision SIMD
 there will not be any SIMD routines for default \Gromacs 'real' precision.
 There are \#defines you can use to check this, as described further down.
 </dd>
-<dt>`gromacs/simd/impl_reference.h`</dt>
+<dt>`gromacs/simd/impl_reference/impl_reference.h`</dt>
 <dd>
 This is an example of a low-level implementation. You should never, ever,
 work directly with these in higher-level code. The reference implementation
@@ -231,6 +260,9 @@ ones such as addition or multiplication. The routines
 operating on these variables have suffix `_fi`, like `gmx_simd_add_fi()`.
 This will also be the widest integer data type if you want to do pure
 integer SIMD operations, but that will not be supported on all platforms.
+If the architecture does not support any SIMD integer type at all, this
+might be defined as the floating-point type, without support for any
+integer operations apart from load/store.
 </dd>
 <dt>`gmx_simd_dint32_t`</dt>
 <dd>
@@ -309,7 +341,10 @@ the preprocessor macros described below.
 </dd>
 </dl>
 
-Operations on these types will be defined to either float/double (or corresponding integers) based on the current \Gromacs precision, so the documentation is occasionally more detailed for the lower-level actual implementation functions.
+Operations on these types will be defined to either float/double
+(or corresponding integers) based on the current \Gromacs precision, so the
+documentation is occasionally more detailed for the lower-level actual
+implementation functions.
 
 SIMD4 Macros
 ------------
@@ -380,10 +415,6 @@ support, but in that case you might be able to code it more efficient w/o FMA.
 Instruction to get decimal fraction. Same as FMA: This denotes
 hardware support, otherwise instruction will be emulated.
 </dd>
-<dt>`GMX_SIMD_HAVE_FINT32`</dt>
-<dd>
-Integer conversions to/from float available.
-</dd>
 <dt>`GMX_SIMD_HAVE_FINT32_EXTRACT`</dt>
 <dd>
 Support for extracting integer SIMD elements from `gmx_simd_fint32_t`.
@@ -396,10 +427,6 @@ Bitwise shifts on `gmx_simd_fint32_t`.
 <dd>
 Arithmetic ops for `gmx_simd_fint32_t`.
 </dd>
-<dt>`GMX_SIMD_HAVE_DINT32`</dt>
-<dd>
-Integer conversions to/from double available.
-</dd>
 <dt>`GMX_SIMD_HAVE_DINT32_EXTRACT`</dt>
 <dd>
 Support for extracting integer SIMD elements from `gmx_simd_dint32_t`.
@@ -411,6 +438,22 @@ Bitwise shifts on `gmx_simd_dint32_t`.
 <dt>`GMX_SIMD_HAVE_DINT32_ARITHMETICS`</dt>
 <dd>
 Arithmetic ops for `gmx_simd_dint32_t`.
+</dd>
+<dt>`GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT`</dt>
+<dd>
+Half-SIMD-width nonbonded kernel utilities available for float SIMD.
+</dd>
+<dt>`GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE`</dt>
+<dd>
+Half-SIMD-width nonbonded kernel utilities available for double SIMD.
+</dd>
+<dt>`GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT`</dt>
+<dd>
+Can load pairs of unaligned floats from simd offsets (meant for linear tables).
+</dd>
+<dt>`GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE`</dt>
+<dd>
+Can load pairs of unaligned doubles from simd offsets (meant for linear tables).
 </dd>
 </dl>
 
@@ -462,10 +505,6 @@ Set either to `GMX_SIMD4_HAVE_FLOAT` or `GMX_SIMD4_HAVE_DOUBLE`
 <dd>
 Set either to `GMX_SIMD_FLOAT_WIDTH` or `GMX_SIMD_DOUBLE_WIDTH`
 </dd>
-<dt>`GMX_SIMD_HAVE_INT32`</dt>
-<dd>
-Set either to `GMX_SIMD_HAVE_FINT32` or `GMX_SIMD_HAVE_DINT32`
-</dd>
 <dt>`GMX_SIMD_INT32_WIDTH`</dt>
 <dd>
 Set either to `GMX_SIMD_FINT32_WIDTH` or `GMX_SIMD_DINT32_WIDTH`
@@ -481,6 +520,14 @@ Set either to `GMX_SIMD_HAVE_FINT32_LOGICAL` or `GMX_SIMD_HAVE_DINT32_LOGICAL`
 <dt>`GMX_SIMD_HAVE_INT32_ARITHMETICS`</dt>
 <dd>
 Set either to `GMX_SIMD_HAVE_FINT32_ARITHMETICS` or `GMX_SIMD_HAVE_DINT32_ARITHMETICS`
+</dd>
+<dt>`GMX_SIMD_HAVE_HSIMD_UTIL_REAL`</dt>
+<dd>
+Set either to `GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT` or `GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE`
+</dd>
+<dt>`GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL`</dt>
+<dd>
+Set either to `GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT` or `GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE`
 </dd>
 </dl>
 
