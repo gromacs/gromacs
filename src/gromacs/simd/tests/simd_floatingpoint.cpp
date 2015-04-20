@@ -90,11 +90,29 @@ TEST_F(SimdFloatingpointTest, gmxSimdMulR)
                             gmx_simd_mul_r(rSimd_1_2_3, rSimd_4_5_6));
 }
 
+#ifdef GMX_SIMD_EXTENDED
+TEST_F(SimdFloatingpointTest, gmxSimdMulMaskR)
+{
+    gmx_simd_bool_t m = gmx_simd_cmpnz_r(setSimdRealFrom3R(1, 0, 1));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(4, 0, 18),
+                            gmx_simd_mul_mask_r(rSimd_1_2_3, rSimd_4_5_6, m));
+}
+#endif
+
 TEST_F(SimdFloatingpointTest, gmxSimdFmaddR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(11, 18, 27),
                             gmx_simd_fmadd_r(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // 1*4+7, etc.
 }
+
+#ifdef GMX_SIMD_EXTENDED
+TEST_F(SimdFloatingpointTest, gmxSimdFmaddMaskR)
+{
+    gmx_simd_bool_t m = gmx_simd_cmpnz_r(setSimdRealFrom3R(1, 0, 1));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(11, 0, 27),
+                            gmx_simd_fmadd_mask_r(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9, m)); // 1*4+7, etc.
+}
+#endif
 
 TEST_F(SimdFloatingpointTest, gmxSimdFmsubR)
 {
@@ -273,6 +291,26 @@ TEST_F(SimdFloatingpointTest, gmxSimdRsqrtR)
     GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_rsqrt_r(x));
 }
 
+TEST_F(SimdFloatingpointTest, gmxSimdRsqrtMaskR)
+{
+    gmx_simd_real_t x                  = setSimdRealFrom3R(M_PI, -4.0, 0.0);
+    /* gmx_simd_cmple_t is tested separately further down */
+    gmx_simd_bool_t m                  = gmx_simd_cmplt_r(gmx_simd_setzero_r(), x);
+    gmx_simd_real_t ref                = setSimdRealFrom3R(1.0/sqrt(M_PI), 0.0, 0.0);
+    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+
+    if (shiftbits < 0)
+    {
+        shiftbits = 0;
+    }
+
+    /* Set the allowed ulp error as 2 to the power of the number of bits in
+     * the mantissa that do not have to be correct after the table lookup.
+     */
+    setUlpTol(1LL << shiftbits);
+    GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_rsqrt_mask_r(x, m));
+}
+
 TEST_F(SimdFloatingpointTest, gmxSimdRcpR)
 {
     gmx_simd_real_t x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
@@ -291,10 +329,35 @@ TEST_F(SimdFloatingpointTest, gmxSimdRcpR)
     GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_rcp_r(x));
 }
 
+TEST_F(SimdFloatingpointTest, gmxSimdRcpMaskR)
+{
+    gmx_simd_real_t x                  = setSimdRealFrom3R(M_PI, 0.0, -1234567890.0);
+    gmx_simd_bool_t m                  = gmx_simd_cmpnz_r(x);
+    gmx_simd_real_t ref                = setSimdRealFrom3R(1.0/M_PI, 0.0, -1.0/1234567890.0);
+    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS;
+
+    if (shiftbits < 0)
+    {
+        shiftbits = 0;
+    }
+
+    /* Set the allowed ulp error as 2 to the power of the number of bits in
+     * the mantissa that do not have to be correct after the table lookup.
+     */
+    setUlpTol(1LL << shiftbits);
+    GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_rcp_mask_r(x, m));
+}
+
 TEST_F(SimdFloatingpointTest, gmxSimdBoolCmpEqAndBlendZeroR)
 {
     gmx_simd_bool_t eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, rSimd_7_8_9);
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, 3), gmx_simd_blendzero_r(rSimd_1_2_3, eq));
+}
+
+TEST_F(SimdFloatingpointTest, gmxSimdBoolCmpNzAndBlendZeroR)
+{
+    gmx_simd_bool_t eq   = gmx_simd_cmpnz_r(setSimdRealFrom3R(1, 0, 2));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 0, 3), gmx_simd_blendzero_r(rSimd_1_2_3, eq));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBlendNotZeroR)
