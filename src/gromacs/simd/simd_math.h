@@ -74,6 +74,7 @@
 
 #ifdef GMX_SIMD_HAVE_FLOAT
 
+
 /*! \name Single precision SIMD math functions
  *
  *  \note In most cases you should use the real-precision functions instead.
@@ -167,46 +168,6 @@ gmx_simd_invsqrt_f(gmx_simd_float_t x)
     return lu;
 }
 
-/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD float.
- *
- * Identical to gmx_simd_invsqrt_f but avoids fp-exception for non-masked entries.
- * The result for the non-masked entries is undefined and the user has to use blend
- * with the same mask to obtain a defined result.
- *
- *  \param x Argument that must be >0 for masked entries
- *  \param m Masked entries
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid or entry was not masked.
- */
-static gmx_inline gmx_simd_float_t
-gmx_simd_invsqrt_maskfpe_f(gmx_simd_float_t x, gmx_simd_fbool_t gmx_unused m)
-{
-#ifdef NDEBUG
-    return gmx_simd_invsqrt_f(x);
-#else
-    return gmx_simd_invsqrt_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), x, m));
-#endif
-}
-
-/*! \brief Calculate 1/sqrt(x) for non-masked entries of SIMD float.
- *
- * Identical to gmx_simd_invsqrt_f but avoids fp-exception for masked entries.
- * The result for the non-masked entries is undefined and the user has to use blend
- * with the same mask to obtain a defined result.
- *
- *  \param x Argument that must be >0 for non-masked entries
- *  \param m Masked entries
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid or entry was masked.
- */
-static gmx_inline gmx_simd_float_t
-gmx_simd_invsqrt_notmaskfpe_f(gmx_simd_float_t x, gmx_simd_fbool_t gmx_unused m)
-{
-#ifdef NDEBUG
-    return gmx_simd_invsqrt_f(x);
-#else
-    return gmx_simd_invsqrt_f(gmx_simd_blendv_f(x, gmx_simd_set1_f(1.0f), m));
-#endif
-}
-
 /*! \brief Calculate 1/sqrt(x) for two SIMD floats.
  *
  * You should normally call the real-precision routine \ref gmx_simd_invsqrt_pair_r.
@@ -267,45 +228,79 @@ gmx_simd_inv_f(gmx_simd_float_t x)
     return lu;
 }
 
-/*! \brief Calculate 1/x for masked entries of SIMD float.
+
+/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD float.
  *
- * Identical to gmx_simd_inv_f but avoids fp-exception for non-masked entries.
- * The result for the non-masked entries is undefined and the user has to use blend
- * with the same mask to obtain a defined result.
+ *  This routine only evaluates 1/sqrt(x) for elements for which mask is true.
+ *  Illegal values in the masked-out elements will not lead to
+ *  floating-point exceptions.
  *
- *  \param x Argument that must be nonzero for masked entries
- *  \param m Masked entries
- *  \return 1/x. Result is undefined if your argument was invalid or entry was not masked.
+ *  \param x Argument that must be >0 for masked-in entries
+ *  \param m Mask
+ *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
+ *          entry was not masked, and 0.0 for masked-out entries.
  */
 static gmx_inline gmx_simd_float_t
-gmx_simd_inv_maskfpe_f(gmx_simd_float_t x, gmx_simd_fbool_t gmx_unused m)
+gmx_simd_invsqrt_mask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
 {
-#ifdef NDEBUG
-    return gmx_simd_inv_f(x);
-#else
-    return gmx_simd_inv_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), x, m));
+    gmx_simd_float_t lu = gmx_simd_rsqrt_mask_f(x, m);
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_f(lu, x);
 #endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_f(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_f(lu, x);
+#endif
+    return lu;
 }
 
-
-/*! \brief Calculate 1/x for non-masked entries of SIMD float.
+/*! \brief Calculate 1/sqrt(x) for two SIMD floats, masked version.
  *
- * Identical to gmx_simd_inv_f but avoids fp-exception for masked entries.
- * The result for the non-masked entries is undefined and the user has to use blend
- * with the same mask to obtain a defined result.
+ * You should normally call the real-precision routine \ref gmx_simd_invsqrt_pair_r.
  *
- *  \param x Argument that must be nonzero for non-masked entries
- *  \param m Masked entries
- *  \return 1/x. Result is undefined if your argument was invalid or entry was masked.
+ * \param x0  First set of arguments, x0 must be positive for non-masked entries.
+ * \param x1  Second set of arguments, x1 must be positive for non-masked entries.
+ * \param m0 Mask for x0
+ * \param m1 Mask for x1
+ * \param[out] out0  Result 1/sqrt(x0), or 0.0 for masked-out entries.
+ * \param[out] out1  Result 1/sqrt(x1), or 0.0 for masked-out entries.
+ *
+ *  In particular for double precision we can sometimes calculate square root
+ *  pairs slightly faster by using single precision until the very last step.
  */
-static gmx_inline gmx_simd_float_t
-gmx_simd_inv_notmaskfpe_f(gmx_simd_float_t x, gmx_simd_fbool_t gmx_unused m)
+static gmx_inline void gmx_simdcall
+gmx_simd_invsqrt_pair_mask_f(gmx_simd_float_t x0,    gmx_simd_float_t x1,
+                             gmx_simd_fbool_t m0,    gmx_simd_fbool_t m1,
+                             gmx_simd_float_t *out0, gmx_simd_float_t *out1)
 {
-#ifdef NDEBUG
-    return gmx_simd_inv_f(x);
-#else
-    return gmx_simd_inv_f(gmx_simd_blendv_f(x, gmx_simd_set1_f(1.0f), m));
+    *out0 = gmx_simd_invsqrt_mask_f(x0, m0);
+    *out1 = gmx_simd_invsqrt_mask_f(x1, m1);
+}
+
+/*! \brief Calculate 1/x for SIMD float, masked version.
+ *
+ * You should normally call the real-precision routine \ref gmx_simd_inv_r.
+ *
+ *  \param x Argument that must be nonzero for non-masked entries.
+ *  \param m Mask
+ *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
+ */
+static gmx_inline gmx_simd_float_t gmx_simdcall
+gmx_simd_inv_mask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t lu = gmx_simd_rcp_mask_f(x, m);
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_f(lu, x);
 #endif
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_f(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_f(lu, x);
+#endif
+    return lu;
 }
 
 /*! \brief Calculate sqrt(x) correctly for SIMD floats, including argument 0.0.
@@ -319,11 +314,9 @@ gmx_simd_inv_notmaskfpe_f(gmx_simd_float_t x, gmx_simd_fbool_t gmx_unused m)
 static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_sqrt_f(gmx_simd_float_t x)
 {
-    gmx_simd_fbool_t  mask;
     gmx_simd_float_t  res;
 
-    mask = gmx_simd_cmpeq_f(x, gmx_simd_setzero_f());
-    res  = gmx_simd_blendnotzero_f(gmx_simd_invsqrt_notmaskfpe_f(x, mask), mask);
+    res  = gmx_simd_invsqrt_mask_f(x, gmx_simd_cmpnz_f(x));
     return gmx_simd_mul_f(res, x);
 }
 
@@ -537,8 +530,8 @@ gmx_simd_erf_f(gmx_simd_float_t x)
 
     /* Calculate erfc */
     y       = gmx_simd_fabs_f(x);
-    msk_erf = gmx_simd_cmplt_f(y, gmx_simd_set1_f(0.75f));
-    t       = gmx_simd_inv_notmaskfpe_f(y, msk_erf);
+    msk_erf = gmx_simd_cmple_f(gmx_simd_set1_f(0.75f), y);
+    t       = gmx_simd_inv_mask_f(y, msk_erf);
     w       = gmx_simd_sub_f(t, one);
     t2      = gmx_simd_mul_f(t, t);
     w2      = gmx_simd_mul_f(w, w);
@@ -581,7 +574,7 @@ gmx_simd_erf_f(gmx_simd_float_t x)
     res_erfc = gmx_simd_blendv_f(res_erfc, gmx_simd_sub_f(two, res_erfc), mask);
 
     /* Select erf() or erfc() */
-    res  = gmx_simd_blendv_f(gmx_simd_sub_f(one, res_erfc), res_erf, msk_erf);
+    res  = gmx_simd_blendv_f(res_erf, gmx_simd_sub_f(one, res_erfc), msk_erf);
 
     return res;
 }
@@ -684,8 +677,8 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
 
     /* Calculate erfc */
     y       = gmx_simd_fabs_f(x);
-    msk_erf = gmx_simd_cmplt_f(y, gmx_simd_set1_f(0.75f));
-    t       = gmx_simd_inv_notmaskfpe_f(y, msk_erf);
+    msk_erf = gmx_simd_cmple_f(gmx_simd_set1_f(0.75f), y);
+    t       = gmx_simd_inv_mask_f(y, msk_erf);
     w       = gmx_simd_sub_f(t, one);
     t2      = gmx_simd_mul_f(t, t);
     w2      = gmx_simd_mul_f(w, w);
@@ -760,7 +753,7 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
     res_erfc = gmx_simd_blendv_f(res_erfc, gmx_simd_sub_f(two, res_erfc), mask);
 
     /* Select erf() or erfc() */
-    res  = gmx_simd_blendv_f(res_erfc, gmx_simd_sub_f(one, res_erf), msk_erf);
+    res  = gmx_simd_blendv_f(gmx_simd_sub_f(one, res_erf), res_erfc, msk_erf);
 
     return res;
 }
@@ -797,7 +790,7 @@ gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t
     gmx_simd_float_t        ssign, csign;
     gmx_simd_float_t        x2, y, z, psin, pcos, sss, ccc;
     gmx_simd_fbool_t        mask;
-#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
     const gmx_simd_fint32_t ione            = gmx_simd_set1_fi(1);
     const gmx_simd_fint32_t itwo            = gmx_simd_set1_fi(2);
     gmx_simd_fint32_t       iy;
@@ -949,7 +942,7 @@ gmx_simd_tan_f(gmx_simd_float_t x)
     gmx_simd_float_t        x2, p, y, z;
     gmx_simd_fbool_t        mask;
 
-#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
     gmx_simd_fint32_t  iy;
     gmx_simd_fint32_t  ione = gmx_simd_set1_fi(1);
 
@@ -996,7 +989,7 @@ gmx_simd_tan_f(gmx_simd_float_t x)
     p       = gmx_simd_fmadd_f(p, x2, CT1);
     p       = gmx_simd_fmadd_f(x2, gmx_simd_mul_f(p, x), x);
 
-    p       = gmx_simd_blendv_f( p, gmx_simd_inv_maskfpe_f(p, mask), mask);
+    p       = gmx_simd_blendv_f( p, gmx_simd_inv_mask_f(p, mask), mask);
     return p;
 }
 
@@ -1027,9 +1020,8 @@ gmx_simd_asin_f(gmx_simd_float_t x)
     xabs  = gmx_simd_fabs_f(x);
     mask  = gmx_simd_cmplt_f(half, xabs);
     z1    = gmx_simd_mul_f(half, gmx_simd_sub_f(one, xabs));
-    mask2 = gmx_simd_cmpeq_f(xabs, one);
-    q1    = gmx_simd_mul_f(z1, gmx_simd_invsqrt_notmaskfpe_f(z1, mask2));
-    q1    = gmx_simd_blendnotzero_f(q1, mask2);
+    mask2 = gmx_simd_cmplt_f(xabs, one);
+    q1    = gmx_simd_mul_f(z1, gmx_simd_invsqrt_mask_f(z1, mask2));
     q2    = xabs;
     z2    = gmx_simd_mul_f(q2, q2);
     z     = gmx_simd_blendv_f(z2, z1, mask);
@@ -1076,9 +1068,8 @@ gmx_simd_acos_f(gmx_simd_float_t x)
     mask2 = gmx_simd_cmplt_f(gmx_simd_setzero_f(), x);
 
     z     = gmx_simd_mul_f(half, gmx_simd_sub_f(one, xabs));
-    mask3 = gmx_simd_cmpeq_f(xabs, one);
-    z     = gmx_simd_mul_f(z, gmx_simd_invsqrt_notmaskfpe_f(z, mask3));
-    z     = gmx_simd_blendnotzero_f(z, mask3);
+    mask3 = gmx_simd_cmplt_f(xabs, one);
+    z     = gmx_simd_mul_f(z, gmx_simd_invsqrt_mask_f(z, mask3));
     z     = gmx_simd_blendv_f(x, z, mask1);
     z     = gmx_simd_asin_f(z);
 
@@ -1117,7 +1108,7 @@ gmx_simd_atan_f(gmx_simd_float_t x)
     mask  = gmx_simd_cmplt_f(x, gmx_simd_setzero_f());
     x     = gmx_simd_fabs_f(x);
     mask2 = gmx_simd_cmplt_f(one, x);
-    x     = gmx_simd_blendv_f(x, gmx_simd_inv_maskfpe_f(x, mask2), mask2);
+    x     = gmx_simd_blendv_f(x, gmx_simd_inv_mask_f(x, mask2), mask2);
 
     x2    = gmx_simd_mul_f(x, x);
     x3    = gmx_simd_mul_f(x2, x);
@@ -1158,20 +1149,20 @@ gmx_simd_atan2_f(gmx_simd_float_t y, gmx_simd_float_t x)
     const gmx_simd_float_t pi          = gmx_simd_set1_f(M_PI);
     const gmx_simd_float_t halfpi      = gmx_simd_set1_f(M_PI/2.0);
     gmx_simd_float_t       xinv, p, aoffset;
-    gmx_simd_fbool_t       mask_x0, mask_y0, mask_xlt0, mask_ylt0;
+    gmx_simd_fbool_t       mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
-    mask_x0   = gmx_simd_cmpeq_f(x, gmx_simd_setzero_f());
-    mask_y0   = gmx_simd_cmpeq_f(y, gmx_simd_setzero_f());
+    mask_xnz  = gmx_simd_cmpnz_f(x);
+    mask_ynz  = gmx_simd_cmpnz_f(y);
     mask_xlt0 = gmx_simd_cmplt_f(x, gmx_simd_setzero_f());
     mask_ylt0 = gmx_simd_cmplt_f(y, gmx_simd_setzero_f());
 
-    aoffset   = gmx_simd_blendzero_f(halfpi, mask_x0);
-    aoffset   = gmx_simd_blendnotzero_f(aoffset, mask_y0);
+    aoffset   = gmx_simd_blendnotzero_f(halfpi, mask_xnz);
+    aoffset   = gmx_simd_blendzero_f(aoffset, mask_ynz);
 
     aoffset   = gmx_simd_blendv_f(aoffset, pi, mask_xlt0);
     aoffset   = gmx_simd_blendv_f(aoffset, gmx_simd_fneg_f(aoffset), mask_ylt0);
 
-    xinv      = gmx_simd_blendnotzero_f(gmx_simd_inv_notmaskfpe_f(x, mask_x0), mask_x0);
+    xinv      = gmx_simd_inv_mask_f(x, mask_xnz);
     p         = gmx_simd_mul_f(y, xinv);
     p         = gmx_simd_atan_f(p);
     p         = gmx_simd_add_f(p, aoffset);
@@ -1382,6 +1373,7 @@ gmx_simd_pmecorrV_f(gmx_simd_float_t z2)
 
 #ifdef GMX_SIMD_HAVE_DOUBLE
 
+
 /*! \name Double precision SIMD math functions
  *
  *  \note In most cases you should use the real-precision functions instead.
@@ -1464,34 +1456,6 @@ gmx_simd_invsqrt_d(gmx_simd_double_t x)
     return lu;
 }
 
-/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD double.
- *
- * \copydetails gmx_simd_invsqrt_maskfpe_f
- */
-static gmx_inline gmx_simd_double_t
-gmx_simd_invsqrt_maskfpe_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
-{
-#ifdef NDEBUG
-    return gmx_simd_invsqrt_d(x);
-#else
-    return gmx_simd_invsqrt_d(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), x, m));
-#endif
-}
-
-/*! \brief Calculate 1/sqrt(x) for non-masked entries of SIMD double.
- *
- * \copydetails gmx_simd_invsqrt_notmaskfpe_f
- */
-static gmx_inline gmx_simd_double_t
-gmx_simd_invsqrt_notmaskfpe_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
-{
-#ifdef NDEBUG
-    return gmx_simd_invsqrt_d(x);
-#else
-    return gmx_simd_invsqrt_d(gmx_simd_blendv_d(x, gmx_simd_set1_d(1.0), m));
-#endif
-}
-
 /*! \brief Calculate 1/sqrt(x) for two SIMD doubles.
  *
  * \copydetails gmx_simd_invsqrt_pair_f
@@ -1567,33 +1531,114 @@ gmx_simd_inv_d(gmx_simd_double_t x)
     return lu;
 }
 
-/*! \brief Calculate 1/x for masked entries of SIMD double.
+/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD double.
  *
- * \copydetails gmx_simd_inv_maskfpe_f
+ *  This routine only evaluates 1/sqrt(x) for elements for which mask is true.
+ *  Illegal values in the masked-out elements will not lead to
+ *  floating-point exceptions.
+ *
+ *  \param x Argument that must be >0 for masked-in entries
+ *  \param m Mask
+ *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
+ *          entry was not masked, and 0.0 for masked-out entries.
  */
 static gmx_inline gmx_simd_double_t
-gmx_simd_inv_maskfpe_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
+gmx_simd_invsqrt_mask_d(gmx_simd_double_t x, gmx_simd_dbool_t m)
 {
-#ifdef NDEBUG
-    return gmx_simd_inv_d(x);
+    gmx_simd_double_t lu = gmx_simd_rsqrt_mask_d(x, m);
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
+#endif
+    return lu;
+}
+
+/*! \brief Calculate 1/sqrt(x) for two SIMD doubles, masked version.
+ *
+ * You should normally call the real-precision routine \ref gmx_simd_invsqrt_pair_r.
+ *
+ * \param x0  First set of arguments, x0 must be positive for non-masked entries.
+ * \param x1  Second set of arguments, x1 must be positive for non-masked entries.
+ * \param m0  Mask for x0
+ * \param m1  Mask for x1
+ * \param[out] out0  Result 1/sqrt(x0), or 0.0 for masked-out entries.
+ * \param[out] out1  Result 1/sqrt(x1), or 0.0 for masked-out entries.
+ *
+ *  In particular for double precision we can sometimes calculate square root
+ *  pairs slightly faster by using single precision until the very last step.
+ */
+static gmx_inline void gmx_simdcall
+gmx_simd_invsqrt_pair_mask_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
+                             gmx_simd_dbool_t  m0,    gmx_simd_dbool_t  m1,
+                             gmx_simd_double_t *out0, gmx_simd_double_t *out1)
+{
+#if (defined GMX_SIMD_HAVE_FLOAT) && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22) && defined GMX_SIMD_EXTENDED
+    gmx_simd_float_t  xf  = gmx_simd_cvt_dd2f(x0, x1);
+    gmx_simd_float_t  luf = gmx_simd_rsqrt_mask_f(xf, gmx_simd_ddb2fb(m0, m1));
+    gmx_simd_double_t lu0, lu1;
+    /* Intermediate target is single - mantissa+1 bits */
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+    gmx_simd_cvt_f2dd(luf, &lu0, &lu1);
+    /* Last iteration(s) performed in double - if we had 22 bits, this gets us to 44 (~1e-15) */
+#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu0 = gmx_simd_rsqrt_iter_d(lu0, x0);
+    lu1 = gmx_simd_rsqrt_iter_d(lu1, x1);
+#endif
+#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu0 = gmx_simd_rsqrt_iter_d(lu0, x0);
+    lu1 = gmx_simd_rsqrt_iter_d(lu1, x1);
+#endif
+    *out0 = lu0;
+    *out1 = lu1;
 #else
-    return gmx_simd_inv_d(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), x, m));
+    *out0 = gmx_simd_invsqrt_mask_d(x0, m0);
+    *out1 = gmx_simd_invsqrt_mask_d(x1, m1);
 #endif
 }
 
-/*! \brief Calculate 1/x for non-masked entries of SIMD double.
+/*! \brief Calculate 1/x for SIMD float, masked version.
  *
- * \copydetails gmx_simd_inv_notmaskfpe_f
+ * You should normally call the real-precision routine \ref gmx_simd_inv_r.
+ *
+ *  \param x Argument that must be nonzero for non-masked entries.
+ *  \param m Mask
+ *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
-static gmx_inline gmx_simd_double_t
-gmx_simd_inv_notmaskfpe_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
+static gmx_inline gmx_simd_double_t gmx_simdcall
+gmx_simd_inv_mask_d(gmx_simd_double_t x, gmx_simd_dbool_t m)
 {
-#ifdef NDEBUG
-    return gmx_simd_inv_d(x);
-#else
-    return gmx_simd_inv_d(gmx_simd_blendv_d(x, gmx_simd_set1_d(1.0), m));
+    gmx_simd_double_t lu = gmx_simd_rcp_mask_d(x, m);
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
+#endif
+    return lu;
 }
+
 
 /*! \brief Calculate sqrt(x) correctly for SIMD doubles, including argument 0.0.
  *
@@ -1602,11 +1647,9 @@ gmx_simd_inv_notmaskfpe_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
 static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_sqrt_d(gmx_simd_double_t x)
 {
-    gmx_simd_dbool_t   mask;
     gmx_simd_double_t  res;
 
-    mask = gmx_simd_cmpeq_d(x, gmx_simd_setzero_d());
-    res  = gmx_simd_blendnotzero_d(gmx_simd_invsqrt_notmaskfpe_d(x, mask), mask);
+    res  = gmx_simd_invsqrt_mask_d(x, gmx_simd_cmpnz_d(x));
     return gmx_simd_mul_d(res, x);
 }
 
@@ -1848,7 +1891,7 @@ gmx_simd_erf_d(gmx_simd_double_t x)
     PolyAQ1  = gmx_simd_mul_d(PolyAQ1, x2);
     PolyAQ0  = gmx_simd_add_d(PolyAQ0, PolyAQ1);
 
-    res_erf  = gmx_simd_mul_d(PolyAP0, gmx_simd_inv_maskfpe_d(PolyAQ0, mask_erf));
+    res_erf  = gmx_simd_mul_d(PolyAP0, gmx_simd_inv_mask_d(PolyAQ0, mask_erf));
     res_erf  = gmx_simd_add_d(CAoffset, res_erf);
     res_erf  = gmx_simd_mul_d(x, res_erf);
 
@@ -1884,12 +1927,13 @@ gmx_simd_erf_d(gmx_simd_double_t x)
     PolyBQ1 = gmx_simd_mul_d(PolyBQ1, t);
     PolyBQ0 = gmx_simd_add_d(PolyBQ0, PolyBQ1);
 
-    res_erfcB = gmx_simd_mul_d(PolyBP0, gmx_simd_inv_notmaskfpe_d(PolyBQ0, mask_erf));
+    /* The denominator polynomial can be zero outside the range */
+    res_erfcB = gmx_simd_mul_d(PolyBP0, gmx_simd_inv_mask_d(PolyBQ0, gmx_simd_cmpnz_d(PolyBQ0)));
 
     res_erfcB = gmx_simd_mul_d(res_erfcB, xabs);
 
     /* Calculate erfc() in range [4.5,inf] */
-    w       = gmx_simd_inv_notmaskfpe_d(xabs, mask_erf);
+    w       = gmx_simd_inv_mask_d(xabs, gmx_simd_cmpnz_d(xabs));
     w2      = gmx_simd_mul_d(w, w);
 
     PolyCP0  = gmx_simd_mul_d(CCP6, w2);
@@ -1920,7 +1964,8 @@ gmx_simd_erf_d(gmx_simd_double_t x)
 
     expmx2   = gmx_simd_exp_d( gmx_simd_fneg_d(x2) );
 
-    res_erfcC = gmx_simd_mul_d(PolyCP0, gmx_simd_inv_notmaskfpe_d(PolyCQ0, mask_erf));
+    /* The denominator polynomial can be zero outside the range */
+    res_erfcC = gmx_simd_mul_d(PolyCP0, gmx_simd_inv_mask_d(PolyCQ0, gmx_simd_cmpnz_d(PolyCQ0)));
     res_erfcC = gmx_simd_add_d(res_erfcC, CCoffset);
     res_erfcC = gmx_simd_mul_d(res_erfcC, w);
 
@@ -2033,7 +2078,7 @@ gmx_simd_erfc_d(gmx_simd_double_t x)
     PolyAQ1  = gmx_simd_mul_d(PolyAQ1, x2);
     PolyAQ0  = gmx_simd_add_d(PolyAQ0, PolyAQ1);
 
-    res_erf  = gmx_simd_mul_d(PolyAP0, gmx_simd_inv_maskfpe_d(PolyAQ0, mask_erf));
+    res_erf  = gmx_simd_mul_d(PolyAP0, gmx_simd_inv_mask_d(PolyAQ0, mask_erf));
     res_erf  = gmx_simd_add_d(CAoffset, res_erf);
     res_erf  = gmx_simd_mul_d(x, res_erf);
 
@@ -2069,12 +2114,13 @@ gmx_simd_erfc_d(gmx_simd_double_t x)
     PolyBQ1 = gmx_simd_mul_d(PolyBQ1, t);
     PolyBQ0 = gmx_simd_add_d(PolyBQ0, PolyBQ1);
 
-    res_erfcB = gmx_simd_mul_d(PolyBP0, gmx_simd_inv_notmaskfpe_d(PolyBQ0, mask_erf));
+    /* The denominator polynomial can be zero outside the range */
+    res_erfcB = gmx_simd_mul_d(PolyBP0, gmx_simd_inv_mask_d(PolyBQ0, gmx_simd_cmpnz_d(PolyBQ0)));
 
     res_erfcB = gmx_simd_mul_d(res_erfcB, xabs);
 
     /* Calculate erfc() in range [4.5,inf] */
-    w       = gmx_simd_inv_notmaskfpe_d(xabs, mask_erf);
+    w       = gmx_simd_inv_mask_d(xabs, gmx_simd_cmpnz_d(xabs));
     w2      = gmx_simd_mul_d(w, w);
 
     PolyCP0  = gmx_simd_mul_d(CCP6, w2);
@@ -2105,7 +2151,8 @@ gmx_simd_erfc_d(gmx_simd_double_t x)
 
     expmx2   = gmx_simd_exp_d( gmx_simd_fneg_d(x2) );
 
-    res_erfcC = gmx_simd_mul_d(PolyCP0, gmx_simd_inv_notmaskfpe_d(PolyCQ0, mask_erf));
+    /* The denominator polynomial can be zero outside the range */
+    res_erfcC = gmx_simd_mul_d(PolyCP0, gmx_simd_inv_mask_d(PolyCQ0, gmx_simd_cmpnz_d(PolyCQ0)));
     res_erfcC = gmx_simd_add_d(res_erfcC, CCoffset);
     res_erfcC = gmx_simd_mul_d(res_erfcC, w);
 
@@ -2155,7 +2202,7 @@ gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_doubl
     gmx_simd_double_t        ssign, csign;
     gmx_simd_double_t        x2, y, z, psin, pcos, sss, ccc;
     gmx_simd_dbool_t         mask;
-#if (defined GMX_SIMD_HAVE_DINT32) && (defined GMX_SIMD_HAVE_DINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if (defined GMX_SIMD_HAVE_DINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
     const gmx_simd_dint32_t  ione            = gmx_simd_set1_di(1);
     const gmx_simd_dint32_t  itwo            = gmx_simd_set1_di(2);
     gmx_simd_dint32_t        iy;
@@ -2306,7 +2353,7 @@ gmx_simd_tan_d(gmx_simd_double_t x)
     gmx_simd_double_t        x2, p, y, z;
     gmx_simd_dbool_t         mask;
 
-#if (defined GMX_SIMD_HAVE_DINT32) && (defined GMX_SIMD_HAVE_DINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if (defined GMX_SIMD_HAVE_DINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
     gmx_simd_dint32_t  iy;
     gmx_simd_dint32_t  ione = gmx_simd_set1_di(1);
 
@@ -2362,7 +2409,7 @@ gmx_simd_tan_d(gmx_simd_double_t x)
     p       = gmx_simd_fmadd_d(p, x2, CT1);
     p       = gmx_simd_fmadd_d(x2, gmx_simd_mul_d(p, x), x);
 
-    p       = gmx_simd_blendv_d( p, gmx_simd_inv_maskfpe_d(p, mask), mask);
+    p       = gmx_simd_blendv_d( p, gmx_simd_inv_mask_d(p, mask), mask);
     return p;
 }
 
@@ -2471,7 +2518,7 @@ gmx_simd_asin_d(gmx_simd_double_t x)
     denom = gmx_simd_blendv_d( QA, SA, mask );
 
     mask2 = gmx_simd_cmplt_d(limit2, xabs);
-    q     = gmx_simd_mul_d( nom, gmx_simd_inv_maskfpe_d(denom, mask2) );
+    q     = gmx_simd_mul_d( nom, gmx_simd_inv_mask_d(denom, mask2) );
 
     zz    = gmx_simd_add_d(zz, zz);
     zz    = gmx_simd_sqrt_d(zz);
@@ -2565,8 +2612,8 @@ gmx_simd_atan_d(gmx_simd_double_t x)
     mask2  = gmx_simd_cmplt_d(limit2, xabs);
 
     t1     = gmx_simd_mul_d(gmx_simd_add_d(xabs, mone),
-                            gmx_simd_inv_maskfpe_d(gmx_simd_sub_d(xabs, mone), mask1));
-    t2     = gmx_simd_mul_d(mone, gmx_simd_inv_maskfpe_d(xabs, mask2));
+                            gmx_simd_inv_mask_d(gmx_simd_sub_d(xabs, mone), mask1));
+    t2     = gmx_simd_mul_d(mone, gmx_simd_inv_mask_d(xabs, mask2));
 
     y      = gmx_simd_blendzero_d(quarterpi, mask1);
     y      = gmx_simd_blendv_d(y, halfpi, mask2);
@@ -2622,20 +2669,20 @@ gmx_simd_atan2_d(gmx_simd_double_t y, gmx_simd_double_t x)
     const gmx_simd_double_t pi          = gmx_simd_set1_d(M_PI);
     const gmx_simd_double_t halfpi      = gmx_simd_set1_d(M_PI/2.0);
     gmx_simd_double_t       xinv, p, aoffset;
-    gmx_simd_dbool_t        mask_x0, mask_y0, mask_xlt0, mask_ylt0;
+    gmx_simd_dbool_t        mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
-    mask_x0   = gmx_simd_cmpeq_d(x, gmx_simd_setzero_d());
-    mask_y0   = gmx_simd_cmpeq_d(y, gmx_simd_setzero_d());
+    mask_xnz  = gmx_simd_cmpnz_d(x);
+    mask_ynz  = gmx_simd_cmpnz_d(y);
     mask_xlt0 = gmx_simd_cmplt_d(x, gmx_simd_setzero_d());
     mask_ylt0 = gmx_simd_cmplt_d(y, gmx_simd_setzero_d());
 
-    aoffset   = gmx_simd_blendzero_d(halfpi, mask_x0);
-    aoffset   = gmx_simd_blendnotzero_d(aoffset, mask_y0);
+    aoffset   = gmx_simd_blendnotzero_d(halfpi, mask_xnz);
+    aoffset   = gmx_simd_blendzero_d(aoffset, mask_ynz);
 
     aoffset   = gmx_simd_blendv_d(aoffset, pi, mask_xlt0);
     aoffset   = gmx_simd_blendv_d(aoffset, gmx_simd_fneg_d(aoffset), mask_ylt0);
 
-    xinv      = gmx_simd_blendnotzero_d(gmx_simd_inv_notmaskfpe_d(x, mask_x0), mask_x0);
+    xinv      = gmx_simd_inv_mask_d(x, mask_xnz);
     p         = gmx_simd_mul_d(y, xinv);
     p         = gmx_simd_atan_d(p);
     p         = gmx_simd_add_d(p, aoffset);
@@ -2802,32 +2849,24 @@ gmx_simd_invsqrt_singleaccuracy_d(gmx_simd_double_t x)
     return lu;
 }
 
-/*! \brief 1/sqrt(x) for masked entries of SIMD double, but in single accuracy.
+/*! \brief 1/sqrt(x) for masked-in entries of SIMD double, but in single accuracy.
  *
- * \copydetails gmx_simd_invsqrt_maskfpe_f
+ * \copydetails gmx_simd_invsqrt_mask_f
  */
 static gmx_inline gmx_simd_double_t
-gmx_simd_invsqrt_maskfpe_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
+gmx_simd_invsqrt_mask_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_dbool_t m)
 {
-#ifdef NDEBUG
-    return gmx_simd_invsqrt_singleaccuracy_d(x);
-#else
-    return gmx_simd_invsqrt_singleaccuracy_d(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), x, m));
+    gmx_simd_double_t lu = gmx_simd_rsqrt_mask_d(x, m);
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
-}
-
-/*! \brief 1/sqrt(x) for non-masked entries of SIMD double, in single accuracy.
- *
- * \copydetails gmx_simd_invsqrt_notmaskfpe_f
- */
-static gmx_inline gmx_simd_double_t
-gmx_simd_invsqrt_notmaskfpe_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
-{
-#ifdef NDEBUG
-    return gmx_simd_invsqrt_singleaccuracy_d(x);
-#else
-    return gmx_simd_invsqrt_singleaccuracy_d(gmx_simd_blendv_d(x, gmx_simd_set1_d(1.0), m));
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
 #endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rsqrt_iter_d(lu, x);
+#endif
+    return lu;
 }
 
 /*! \brief Calculate 1/sqrt(x) for two SIMD doubles, but single accuracy.
@@ -2872,6 +2911,52 @@ gmx_simd_invsqrt_pair_singleaccuracy_d(gmx_simd_double_t x0,    gmx_simd_double_
 }
 
 
+/*! \brief Calculate 1/sqrt(x) for two masked SIMD doubles, but single accuracy.
+ *
+ * You should normally call the real-precision routine
+ * \ref gmx_simd_invsqrt_pair_singleaccuracy_r.
+ *
+ * \param x0  First set of arguments, x0 must be positive for non-masked entries.
+ * \param x1  Second set of arguments, x1 must be positive for non-masked entries.
+ * \param m0 Mask for x0
+ * \param m1 Mask for x1
+ * \param[out] out0  Result 1/sqrt(x0), or 0.0 for masked-out entries.
+ * \param[out] out1  Result 1/sqrt(x1), or 0.0 for masked-out entries.
+ *
+ *  In particular for double precision we can sometimes calculate square root
+ *  pairs slightly faster by using single precision until the very last step.
+ */
+static gmx_inline void gmx_simdcall
+gmx_simd_invsqrt_pair_mask_singleaccuracy_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
+                                            gmx_simd_dbool_t m0,     gmx_simd_dbool_t m1,
+                                            gmx_simd_double_t *out0, gmx_simd_double_t *out1)
+{
+#if (defined GMX_SIMD_HAVE_FLOAT) && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22) && defined GMX_SIMD_EXTENDED
+    gmx_simd_float_t  xf  = gmx_simd_cvt_dd2f(x0, x1);
+    gmx_simd_float_t  luf = gmx_simd_rsqrt_mask_f(xf, gmx_simd_cvt_ddb2fb(m0, m1));
+    gmx_simd_double_t lu0, lu1;
+    /* Intermediate target is single - mantissa+1 bits */
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    luf = gmx_simd_rsqrt_iter_f(luf, xf);
+#endif
+    gmx_simd_cvt_f2dd(luf, &lu0, &lu1);
+    /* We now have single-precision accuracy values in lu0/lu1 */
+    *out0 = lu0;
+    *out1 = lu1;
+#else
+    *out0 = gmx_simd_invsqrt_mask_singleaccuracy_d(x0, m0);
+    *out1 = gmx_simd_invsqrt_mask_singleaccuracy_d(x1, m1);
+#endif
+}
+
+
+
 /*! \brief Calculate 1/x for SIMD double, but in single accuracy.
  *
  * You should normally call the real-precision routine
@@ -2898,31 +2983,24 @@ gmx_simd_inv_singleaccuracy_d(gmx_simd_double_t x)
 
 /*! \brief 1/x for masked entries of SIMD double, single accuracy.
  *
- * \copydetails gmx_simd_inv_maskfpe_f
+ * \copydetails gmx_simd_inv_mask_f
  */
 static gmx_inline gmx_simd_double_t
-gmx_simd_inv_maskfpe_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
+gmx_simd_inv_mask_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_dbool_t m)
 {
-#ifdef NDEBUG
-    return gmx_simd_inv_singleaccuracy_d(x);
-#else
-    return gmx_simd_inv_singleaccuracy_d(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), x, m));
+    gmx_simd_double_t lu = gmx_simd_rcp_mask_d(x, m);
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
 #endif
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = gmx_simd_rcp_iter_d(lu, x);
+#endif
+    return lu;
 }
 
-/*! \brief 1/x for non-masked entries of SIMD double, single accuracy.
- *
- * \copydetails gmx_simd_inv_notmaskfpe_f
- */
-static gmx_inline gmx_simd_double_t
-gmx_simd_inv_notmaskfpe_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_dbool_t gmx_unused m)
-{
-#ifdef NDEBUG
-    return gmx_simd_inv_singleaccuracy_d(x);
-#else
-    return gmx_simd_inv_singleaccuracy_d(gmx_simd_blendv_d(x, gmx_simd_set1_d(1.0), m));
-#endif
-}
 
 /*! \brief Calculate sqrt(x) (correct for 0.0) for SIMD double, single accuracy.
  *
@@ -2935,11 +3013,9 @@ gmx_simd_inv_notmaskfpe_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_dbool_t g
 static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_sqrt_singleaccuracy_d(gmx_simd_double_t x)
 {
-    gmx_simd_dbool_t   mask;
     gmx_simd_double_t  res;
 
-    mask = gmx_simd_cmpeq_d(x, gmx_simd_setzero_d());
-    res  = gmx_simd_blendnotzero_d(gmx_simd_invsqrt_notmaskfpe_singleaccuracy_d(x, mask), mask);
+    res  = gmx_simd_invsqrt_mask_singleaccuracy_d(x, gmx_simd_cmpnz_d(x));
     return gmx_simd_mul_d(res, x);
 }
 
@@ -3153,8 +3229,8 @@ gmx_simd_erf_singleaccuracy_d(gmx_simd_double_t x)
 
     /* Calculate erfc */
     y       = gmx_simd_fabs_d(x);
-    msk_erf = gmx_simd_cmplt_d(y, gmx_simd_set1_d(0.75));
-    t       = gmx_simd_inv_notmaskfpe_singleaccuracy_d(y, msk_erf);
+    msk_erf = gmx_simd_cmple_d(gmx_simd_set1_d(0.75), y);
+    t       = gmx_simd_inv_mask_singleaccuracy_d(y, msk_erf);
     w       = gmx_simd_sub_d(t, one);
     t2      = gmx_simd_mul_d(t, t);
     w2      = gmx_simd_mul_d(w, w);
@@ -3275,8 +3351,8 @@ gmx_simd_erfc_singleaccuracy_d(gmx_simd_double_t x)
 
     /* Calculate erfc */
     y       = gmx_simd_fabs_d(x);
-    msk_erf = gmx_simd_cmplt_d(y, gmx_simd_set1_d(0.75));
-    t       = gmx_simd_inv_notmaskfpe_singleaccuracy_d(y, msk_erf);
+    msk_erf = gmx_simd_cmple_d(gmx_simd_set1_d(0.75), y);
+    t       = gmx_simd_inv_mask_singleaccuracy_d(y, msk_erf);
     w       = gmx_simd_sub_d(t, one);
     t2      = gmx_simd_mul_d(t, t);
     w2      = gmx_simd_mul_d(w, w);
@@ -3352,7 +3428,7 @@ gmx_simd_sincos_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_double_t *sinval,
     gmx_simd_double_t        ssign, csign;
     gmx_simd_double_t        x2, y, z, psin, pcos, sss, ccc;
     gmx_simd_dbool_t         mask;
-#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
     const gmx_simd_dint32_t  ione            = gmx_simd_set1_di(1);
     const gmx_simd_dint32_t  itwo            = gmx_simd_set1_di(2);
     gmx_simd_dint32_t        iy;
@@ -3504,7 +3580,7 @@ gmx_simd_tan_singleaccuracy_d(gmx_simd_double_t x)
     gmx_simd_double_t        x2, p, y, z;
     gmx_simd_dbool_t         mask;
 
-#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
     gmx_simd_dint32_t  iy;
     gmx_simd_dint32_t  ione = gmx_simd_set1_di(1);
 
@@ -3549,7 +3625,7 @@ gmx_simd_tan_singleaccuracy_d(gmx_simd_double_t x)
     p       = gmx_simd_fmadd_d(p, x2, CT1);
     p       = gmx_simd_fmadd_d(x2, gmx_simd_mul_d(p, x), x);
 
-    p       = gmx_simd_blendv_d( p, gmx_simd_inv_maskfpe_singleaccuracy_d(p, mask), mask);
+    p       = gmx_simd_blendv_d( p, gmx_simd_inv_mask_singleaccuracy_d(p, mask), mask);
     return p;
 }
 
@@ -3581,9 +3657,8 @@ gmx_simd_asin_singleaccuracy_d(gmx_simd_double_t x)
     xabs  = gmx_simd_fabs_d(x);
     mask  = gmx_simd_cmplt_d(half, xabs);
     z1    = gmx_simd_mul_d(half, gmx_simd_sub_d(one, xabs));
-    mask2 = gmx_simd_cmpeq_d(xabs, one);
-    q1    = gmx_simd_mul_d(z1, gmx_simd_invsqrt_notmaskfpe_singleaccuracy_d(z1, mask2));
-    q1    = gmx_simd_blendnotzero_d(q1, gmx_simd_cmpeq_d(xabs, one));
+    mask2 = gmx_simd_cmplt_d(xabs, one);
+    q1    = gmx_simd_mul_d(z1, gmx_simd_invsqrt_mask_singleaccuracy_d(z1, mask2));
     q2    = xabs;
     z2    = gmx_simd_mul_d(q2, q2);
     z     = gmx_simd_blendv_d(z2, z1, mask);
@@ -3631,9 +3706,8 @@ gmx_simd_acos_singleaccuracy_d(gmx_simd_double_t x)
     mask2 = gmx_simd_cmplt_d(gmx_simd_setzero_d(), x);
 
     z     = gmx_simd_mul_d(half, gmx_simd_sub_d(one, xabs));
-    mask3 = gmx_simd_cmpeq_d(xabs, one);
-    z     = gmx_simd_mul_d(z, gmx_simd_invsqrt_notmaskfpe_singleaccuracy_d(z, mask3));
-    z     = gmx_simd_blendnotzero_d(z, gmx_simd_cmpeq_d(xabs, one));
+    mask3 = gmx_simd_cmplt_d(xabs, one);
+    z     = gmx_simd_mul_d(z, gmx_simd_invsqrt_mask_singleaccuracy_d(z, mask3));
     z     = gmx_simd_blendv_d(x, z, mask1);
     z     = gmx_simd_asin_singleaccuracy_d(z);
 
@@ -3672,7 +3746,7 @@ gmx_simd_atan_singleaccuracy_d(gmx_simd_double_t x)
     mask  = gmx_simd_cmplt_d(x, gmx_simd_setzero_d());
     x     = gmx_simd_fabs_d(x);
     mask2 = gmx_simd_cmplt_d(gmx_simd_set1_d(1.0), x);
-    x     = gmx_simd_blendv_d(x, gmx_simd_inv_maskfpe_singleaccuracy_d(x, mask2), mask2);
+    x     = gmx_simd_blendv_d(x, gmx_simd_inv_mask_singleaccuracy_d(x, mask2), mask2);
 
     x2    = gmx_simd_mul_d(x, x);
     x3    = gmx_simd_mul_d(x2, x);
@@ -3714,20 +3788,20 @@ gmx_simd_atan2_singleaccuracy_d(gmx_simd_double_t y, gmx_simd_double_t x)
     const gmx_simd_double_t pi          = gmx_simd_set1_d(M_PI);
     const gmx_simd_double_t halfpi      = gmx_simd_set1_d(M_PI/2.0);
     gmx_simd_double_t       xinv, p, aoffset;
-    gmx_simd_dbool_t        mask_x0, mask_y0, mask_xlt0, mask_ylt0;
+    gmx_simd_dbool_t        mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
-    mask_x0   = gmx_simd_cmpeq_d(x, gmx_simd_setzero_d());
-    mask_y0   = gmx_simd_cmpeq_d(y, gmx_simd_setzero_d());
+    mask_xnz  = gmx_simd_cmpnz_d(x);
+    mask_ynz  = gmx_simd_cmpnz_d(y);
     mask_xlt0 = gmx_simd_cmplt_d(x, gmx_simd_setzero_d());
     mask_ylt0 = gmx_simd_cmplt_d(y, gmx_simd_setzero_d());
 
-    aoffset   = gmx_simd_blendzero_d(halfpi, mask_x0);
-    aoffset   = gmx_simd_blendnotzero_d(aoffset, mask_y0);
+    aoffset   = gmx_simd_blendnotzero_d(halfpi, mask_xnz);
+    aoffset   = gmx_simd_blendzero_d(aoffset, mask_ynz);
 
     aoffset   = gmx_simd_blendv_d(aoffset, pi, mask_xlt0);
     aoffset   = gmx_simd_blendv_d(aoffset, gmx_simd_fneg_d(aoffset), mask_ylt0);
 
-    xinv      = gmx_simd_blendnotzero_d(gmx_simd_inv_notmaskfpe_singleaccuracy_d(x, mask_x0), mask_x0);
+    xinv      = gmx_simd_inv_mask_singleaccuracy_d(x, mask_xnz);
     p         = gmx_simd_mul_d(y, xinv);
     p         = gmx_simd_atan_singleaccuracy_d(p);
     p         = gmx_simd_add_d(p, aoffset);
@@ -3989,6 +4063,7 @@ gmx_simd4_invsqrt_f(gmx_simd4_float_t x)
     return lu;
 }
 
+
 #endif /* GMX_SIMD4_HAVE_FLOAT */
 
 
@@ -4047,6 +4122,7 @@ gmx_simd4_invsqrt_d(gmx_simd4_double_t x)
     return lu;
 }
 
+
 /**********************************************************************
  * SIMD4 MATH FUNCTIONS WITH DOUBLE PREC. DATA, SINGLE PREC. ACCURACY *
  **********************************************************************/
@@ -4072,6 +4148,7 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
 }
 
 
+
 #endif /* GMX_SIMD4_HAVE_DOUBLE */
 
 /*! \} */
@@ -4095,6 +4172,9 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
 #        define gmx_simd_invsqrt_pair_r   gmx_simd_invsqrt_pair_d
 #        define gmx_simd_sqrt_r           gmx_simd_sqrt_d
 #        define gmx_simd_inv_r            gmx_simd_inv_d
+#        define gmx_simd_invsqrt_mask_r        gmx_simd_invsqrt_mask_d
+#        define gmx_simd_invsqrt_pair_mask_r   gmx_simd_invsqrt_pair_mask_d
+#        define gmx_simd_inv_mask_r       gmx_simd_inv_mask_d
 #        define gmx_simd_log_r            gmx_simd_log_d
 #        define gmx_simd_exp2_r           gmx_simd_exp2_d
 #        define gmx_simd_exp_r            gmx_simd_exp_d
@@ -4118,6 +4198,9 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
 #        define gmx_simd_invsqrt_pair_r   gmx_simd_invsqrt_pair_singleaccuracy_d
 #        define gmx_simd_sqrt_r           gmx_simd_sqrt_singleaccuracy_d
 #        define gmx_simd_inv_r            gmx_simd_inv_singleaccuracy_d
+#        define gmx_simd_invsqrt_mask_r        gmx_simd_invsqrt_mask_singleaccuracy_d
+#        define gmx_simd_invsqrt_pair_mask_r   gmx_simd_invsqrt_pair_mask_singleaccuracy_d
+#        define gmx_simd_inv_mask_r            gmx_simd_inv_mask_singleaccuracy_d
 #        define gmx_simd_log_r            gmx_simd_log_singleaccuracy_d
 #        define gmx_simd_exp2_r           gmx_simd_exp2_singleaccuracy_d
 #        define gmx_simd_exp_r            gmx_simd_exp_singleaccuracy_d
@@ -4141,6 +4224,9 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
 #    define gmx_simd_invsqrt_pair_singleaccuracy_r   gmx_simd_invsqrt_pair_singleaccuracy_d
 #    define gmx_simd_sqrt_singleaccuracy_r           gmx_simd_sqrt_singleaccuracy_d
 #    define gmx_simd_inv_singleaccuracy_r            gmx_simd_inv_singleaccuracy_d
+#    define gmx_simd_invsqrt_mask_singleaccuracy_r        gmx_simd_invsqrt_mask_singleaccuracy_d
+#    define gmx_simd_invsqrt_pair_mask_singleaccuracy_r   gmx_simd_invsqrt_pair_mask_singleaccuracy_d
+#    define gmx_simd_inv_mask_singleaccuracy_r            gmx_simd_inv_mask_singleaccuracy_d
 #    define gmx_simd_log_singleaccuracy_r            gmx_simd_log_singleaccuracy_d
 #    define gmx_simd_exp2_singleaccuracy_r           gmx_simd_exp2_singleaccuracy_d
 #    define gmx_simd_exp_singleaccuracy_r            gmx_simd_exp_singleaccuracy_d
@@ -4184,11 +4270,23 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
  */
 #    define gmx_simd_invsqrt_r        gmx_simd_invsqrt_f
 
+/*! \brief Calculate 1/sqrt(x) for SIMD real, masked version.
+ *
+ * \copydetails gmx_simd_invsqrt_mask_f
+ */
+#    define gmx_simd_invsqrt_mask_r        gmx_simd_invsqrt_mask_f
+
 /*! \brief Calculate 1/sqrt(x) for two SIMD reals.
  *
  * \copydetails gmx_simd_invsqrt_pair_f
  */
 #    define gmx_simd_invsqrt_pair_r   gmx_simd_invsqrt_pair_f
+
+/*! \brief Calculate 1/sqrt(x) for two SIMD reals, masked version.
+ *
+ * \copydetails gmx_simd_invsqrt_pair_mask_f
+ */
+#    define gmx_simd_invsqrt_pair_mask_r   gmx_simd_invsqrt_pair_mask_f
 
 /*! \brief Calculate sqrt(x) correctly for SIMD real, including argument 0.0.
  *
@@ -4201,6 +4299,12 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
  * \copydetails gmx_simd_inv_f
  */
 #    define gmx_simd_inv_r            gmx_simd_inv_f
+
+/*! \brief Calculate 1/x for SIMD real, masked version.
+ *
+ * \copydetails gmx_simd_inv_mask_f
+ */
+#    define gmx_simd_inv_mask_r            gmx_simd_inv_mask_f
 
 /*! \brief SIMD real log(x). This is the natural logarithm.
  *
@@ -4301,6 +4405,15 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
  */
 #    define gmx_simd_invsqrt_singleaccuracy_r        gmx_simd_invsqrt_f
 
+/*! \brief Calculate 1/sqrt(x) for SIMD, always single accuracy, masked.
+ *
+ * \copydetails gmx_simd_invsqrt_mask_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_invsqrt_mask_singleaccuracy_r        gmx_simd_invsqrt_mask_f
+
 /*! \brief Calculate 1/sqrt(x) for SIMD pair, only targeting single accuracy.
  *
  * \copydetails gmx_simd_invsqrt_pair_r
@@ -4309,6 +4422,15 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
  *       precision accuracy, even when the SIMD data is double precision.
  */
 #    define gmx_simd_invsqrt_pair_singleaccuracy_r   gmx_simd_invsqrt_pair_f
+
+/*! \brief Calculate 1/sqrt(x) for SIMD pair, always single accuracy, masked.
+ *
+ * \copydetails gmx_simd_invsqrt_pair_mask_r
+ *
+ * \note This is a performance-targeted function that only achieves single
+ *       precision accuracy, even when the SIMD data is double precision.
+ */
+#    define gmx_simd_invsqrt_pair_mask_singleaccuracy_r   gmx_simd_invsqrt_pair_mask_f
 
 /*! \brief Calculate sqrt(x), only targeting single accuracy.
  *
