@@ -302,6 +302,48 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4Dotproduct3R)
 #    endif
 }
 
+#ifdef GMX_SIMD_V2
+TEST_F(Simd4FloatingpointTest, gmxSimd4TransposeR)
+{
+    gmx_simd4_real_t v0, v1, v2, v3;
+    int              i;
+    real             data[4*5];                    // 4 SIMD4 + alignment
+    real          *  p0 = gmx_simd4_align_r(data); // aligned pointers
+    real          *  p1 = p0 + 4;
+    real          *  p2 = p0 + 8;
+    real          *  p3 = p0 + 12;
+
+    // Assign data with tens as row, single-digit as column
+    for (i = 0; i < 4; i++)
+    {
+        p0[i] = 0*10 + i*1;
+        p1[i] = 1*10 + i*1;
+        p2[i] = 2*10 + i*1;
+        p3[i] = 3*10 + i*1;
+    }
+
+    v0 = gmx_simd4_load_r(p0);
+    v1 = gmx_simd4_load_r(p1);
+    v2 = gmx_simd4_load_r(p2);
+    v3 = gmx_simd4_load_r(p3);
+
+    gmx_simd4_transpose_r(v0, v1, v2, v3);
+
+    gmx_simd4_store_r(p0, v0);
+    gmx_simd4_store_r(p1, v1);
+    gmx_simd4_store_r(p2, v2);
+    gmx_simd4_store_r(p3, v3);
+
+    for (i = 0; i < 4; i++)
+    {
+        EXPECT_EQ(i*10+0, p0[i]);
+        EXPECT_EQ(i*10+1, p1[i]);
+        EXPECT_EQ(i*10+2, p2[i]);
+        EXPECT_EQ(i*10+3, p3[i]);
+    }
+}
+#endif
+
 #endif      // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
