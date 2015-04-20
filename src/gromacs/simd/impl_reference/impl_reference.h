@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,13 @@
  *  \{
  */
 
+/*! \brief Temporary indication of second-generation extended Gromacs SIMD.
+ *
+ * This define will be removed when the new intrinsics and routines are
+ * implemented for all architectures. Used for testing.
+ */
+#define GMX_SIMD_V2
+
 /*! \brief
  * Defined when SIMD float support is present.
  *
@@ -71,8 +78,8 @@
 #define GMX_SIMD_HAVE_DOUBLE
 
 /*! \brief Defined if SIMD is implemented with real hardware instructions. */
-#define GMX_SIMD_HAVE_HARDWARE /* For Doxygen */
-#undef  GMX_SIMD_HAVE_HARDWARE /* Reference implementation setting */
+#define GMX_SIMD_HAVE_HARDWARE
+#undef  GMX_SIMD_HAVE_HARDWARE /* Reference implementation setting - previous line was for Doxygen. */
 
 /*! \brief Defined if the SIMD implementation supports unaligned loads. */
 #define GMX_SIMD_HAVE_LOADU
@@ -84,15 +91,12 @@
 #define GMX_SIMD_HAVE_LOGICAL
 
 /*! \brief Defined if SIMD fused multiply-add uses hardware instructions */
-#define GMX_SIMD_HAVE_FMA  /* For Doxygen */
-#undef  GMX_SIMD_HAVE_FMA  /* Reference implementation setting */
+#define GMX_SIMD_HAVE_FMA
+#undef  GMX_SIMD_HAVE_FMA  /* Reference implementation setting - previous line was for Doxygen. */
 
 /*! \brief Defined if the SIMD fraction has a direct hardware instruction. */
-#define GMX_SIMD_HAVE_FRACTION /* For Doxygen */
-#undef  GMX_SIMD_HAVE_FRACTION /* Reference implementation setting */
-
-/*! \brief Defined if the SIMD implementation has \ref gmx_simd_fint32_t. */
-#define GMX_SIMD_HAVE_FINT32
+#define GMX_SIMD_HAVE_FRACTION
+#undef  GMX_SIMD_HAVE_FRACTION /* Reference implementation setting - previous line was for Doxygen. */
 
 /*! \brief Support for extracting integers from \ref gmx_simd_fint32_t. */
 #define GMX_SIMD_HAVE_FINT32_EXTRACT
@@ -103,29 +107,6 @@
 /*! \brief Defined if SIMD arithmetic operations are supported for \ref gmx_simd_fint32_t */
 #define GMX_SIMD_HAVE_FINT32_ARITHMETICS
 
-/*! \brief Defined if the SIMD implementation has \ref gmx_simd_dint32_t.
- *
- * \note The Gromacs SIMD module works entirely with 32 bit integers, both
- * in single and double precision, since some platforms do not support 64 bit
- * SIMD integers at all. In particular, this means it is up to each
- * implementation to get this working even if the architectures internal
- * representation uses 64 bit integers when converting to/from double SIMD
- * variables. For now we will try HARD to use conversions, packing or shuffling
- * so the integer datatype has the same width as the floating-point type, i.e.
- * if you use double precision SIMD with a width of 8, we want the integers
- * we work with to also use a SIMD width of 8 to make it easy to load/store
- * indices from arrays. This refers entirely to the function calls
- * and how many integers we load/store in one call; the actual SIMD registers
- * might be wider for integers internally (e.g. on x86 gmx_simd_dint32_t will
- * only fill half the register), but this is none of the user's business.
- * While this works for all current architectures, and we think it will work
- * for future ones, we might have to alter this decision in the future. To
- * avoid rewriting every single instance that refers to the SIMD width we still
- * provide separate defines for the width of SIMD integer variables that you
- * should use.
- */
-#define GMX_SIMD_HAVE_DINT32
-
 /*! \brief Support for extracting integer from \ref gmx_simd_dint32_t */
 #define GMX_SIMD_HAVE_DINT32_EXTRACT
 
@@ -134,6 +115,18 @@
 
 /*! \brief Defined if SIMD arithmetic operations are supported for \ref gmx_simd_dint32_t */
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS
+
+/*! \brief Defined if \ref gmx_simd_gather_loadu_bysimdint_transpose_f is present */
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
+
+/*! \brief Defined if \ref gmx_simd_gather_loadu_bysimdint_transpose_d is present */
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+
+/*! \brief Defined if implementation provides float half-register load/store/reduce utils */
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
+
+/*! \brief Defined if implementation provides double half-register load/store/reduce utils */
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
 
 /*! \brief Defined if the implementation provides \ref gmx_simd4_float_t. */
 #define GMX_SIMD4_HAVE_FLOAT
@@ -192,7 +185,13 @@ gmx_simd_double_t;
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from float.
  *
- * This is also the widest integer SIMD type.
+ * This is also the widest integer SIMD type. Available with GMX_SIMD_HAVE_FLOAT.
+ *
+ * \note The integer SIMD type will always be available, but on architectures
+ * that do not have any real integer SIMD support it might be defined as the
+ * floating-point type. This will work fine, since there are separate defines
+ * for whether the implementation can actually do any operations on integer
+ * SIMD types.
  */
 typedef struct
 {
@@ -202,7 +201,32 @@ gmx_simd_fint32_t;
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from double.
  *
- * Available with GMX_SIMD_HAVE_DINT32.
+ * Available with GMX_SIMD_HAVE_DOUBLE.
+ *
+ * \note The integer SIMD type will always be available, but on architectures
+ * that do not have any real integer SIMD support it might be defined as the
+ * floating-point type. This will work fine, since there are separate defines
+ * for whether the implementation can actually do any operations on integer
+ * SIMD types.
+ *
+ * \note The Gromacs SIMD module works entirely with 32 bit integers, both
+ * in single and double precision, since some platforms do not support 64 bit
+ * SIMD integers at all. In particular, this means it is up to each
+ * implementation to get this working even if the architectures internal
+ * representation uses 64 bit integers when converting to/from double SIMD
+ * variables. For now we will try HARD to use conversions, packing or shuffling
+ * so the integer datatype has the same width as the floating-point type, i.e.
+ * if you use double precision SIMD with a width of 8, we want the integers
+ * we work with to also use a SIMD width of 8 to make it easy to load/store
+ * indices from arrays. This refers entirely to the function calls
+ * and how many integers we load/store in one call; the actual SIMD registers
+ * might be wider for integers internally (e.g. on x86 gmx_simd_dint32_t will
+ * only fill half the register), but this is none of the user's business.
+ * While this works for all current architectures, and we think it will work
+ * for future ones, we might have to alter this decision in the future. To
+ * avoid rewriting every single instance that refers to the SIMD width we still
+ * provide separate defines for the width of SIMD integer variables that you
+ * should use.
  */
 typedef struct
 {
@@ -249,6 +273,7 @@ typedef struct
     gmx_int32_t b[GMX_SIMD_DINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
 }
 gmx_simd_dibool_t;
+
 
 /*! \}
  *
@@ -854,6 +879,7 @@ gmx_simd_xor_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * \name SIMD implementation single precision floating-point arithmetics
  * \{
  */
+
 /*! \brief Add two float SIMD variables.
  *
  * You should typically call the real-precision \ref gmx_simd_add_r.
@@ -912,7 +938,7 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = a.r[i]*b.r[i];
+        c.r[i] = a.r[i] * b.r[i];
     }
     return c;
 }
@@ -1002,7 +1028,7 @@ gmx_simd_rsqrt_f(gmx_simd_float_t x)
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        b.r[i] = (x.r[i] > 0.0f) ? 1.0f/sqrtf(x.r[i]) : 0.0f;
+        b.r[i] = 1.0f / sqrtf(x.r[i]);
     }
     return b;
 };
@@ -1025,10 +1051,111 @@ gmx_simd_rcp_f(gmx_simd_float_t x)
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        b.r[i] = (x.r[i] != 0.0f) ? 1.0f/x.r[i] : 0.0f;
+        b.r[i] = 1.0f / x.r[i];
     }
     return b;
-};
+}
+
+/*! \brief Multiply two SIMD variables, masked version.
+ *
+ * You should typically call the real-precision \ref gmx_simd_mul_r.
+ *
+ * \param a factor1
+ * \param b factor2
+ * \param m mask
+ * \return a*b where mask is true, 0.0 otherwise.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_mul_mask_f(gmx_simd_float_t a, gmx_simd_float_t b, gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t  c;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        c.r[i] = m.b[i] ? (a.r[i] * b.r[i]) : 0.0;
+    }
+    return c;
+}
+
+/*! \brief Fused-multiply-add. Result is a*b+c, masked version.
+ *
+ * You should typically call the real-precision \ref gmx_simd_fmadd_r.
+ *
+ *  If \ref GMX_SIMD_HAVE_FMA is defined this is a single hardware instruction.
+ *
+ * \param a value
+ * \param b value
+ * \param c value
+ * \param m mask
+ * \return a*b+c where mask is true, 0.0 otherwise.
+ *
+ * For some implementations you save an instruction if you assign the result
+ * to c.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_fmadd_mask_f(gmx_simd_float_t a, gmx_simd_float_t b, gmx_simd_float_t c,
+                      gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t  d;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        d.r[i] = m.b[i] ? (a.r[i] * b.r[i] + c.r[i]) : 0.0;
+    }
+    return d;
+}
+
+/*! \brief SIMD 1.0/sqrt(x) lookup, masked version.
+ *
+ * You should typically call the real-precision \ref gmx_simd_rsqrt_r.
+ *
+ * This is a low-level instruction that should only be called from routines
+ * implementing the inverse square root in simd_math.h.
+ *
+ * \param x Argument, x>0 for entries where mask is true.
+ * \param m Mask
+ * \return Approximation of 1/sqrt(x), accuracy is \ref GMX_SIMD_RSQRT_BITS.
+ *         The result for masked-out entries will be 0.0.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_rsqrt_mask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t  b;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        b.r[i] = (m.b[i] != 0) ? 1.0f / sqrtf(x.r[i]) : 0.0f;
+    }
+    return b;
+}
+
+/*! \brief SIMD 1.0/x lookup, masked version.
+ *
+ * You should typically call the real-precision \ref gmx_simd_rcp_r.
+ *
+ * This is a low-level instruction that should only be called from routines
+ * implementing the reciprocal in simd_math.h.
+ *
+ * \param x Argument, x>0 for entries where mask is true.
+ * \param m Mask
+ * \return Approximation of 1/x, accuracy is \ref GMX_SIMD_RCP_BITS.
+ *         The result for masked-out entries will be 0.0.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_rcp_mask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t  b;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        b.r[i] = (m.b[i] != 0) ? 1.0f / x.r[i] : 0.0f;
+    }
+    return b;
+}
 
 /*! \brief SIMD Floating-point fabs().
  *
@@ -1322,6 +1449,26 @@ gmx_simd_cmpeq_f(gmx_simd_float_t a, gmx_simd_float_t b)
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.b[i] = (a.r[i] == b.r[i]);
+    }
+    return c;
+}
+
+/*! \brief SIMD a!=0 for single SIMD.
+ *
+ * You should typically call the real-precision \ref gmx_simd_cmpnz_r.
+ *
+ * \param a value
+ * \return Each element of the boolean will be true if any bit in a is nonzero.
+ */
+static gmx_inline gmx_simd_fbool_t
+gmx_simd_cmpnz_f(gmx_simd_float_t a)
+{
+    gmx_simd_fbool_t  c;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] != 0.0);
     }
     return c;
 }
@@ -1733,12 +1880,12 @@ gmx_simd_mul_d(gmx_simd_double_t a, gmx_simd_double_t b)
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        c.r[i] = a.r[i]*b.r[i];
+        c.r[i] = a.r[i] * b.r[i];
     }
     return c;
 }
 
-/*! \brief Fused-multiply-add. Result is a*b+c.
+/*! \brief Fused-multiply-add, double. Result is a*b+c.
  *
  * \copydetails gmx_simd_fmadd_f
  */
@@ -1777,7 +1924,7 @@ gmx_simd_rsqrt_d(gmx_simd_double_t x)
         /* Sic - we only need single precision for the reference lookup, since
          * we have defined GMX_SIMD_RSQRT_BITS to 23.
          */
-        b.r[i] = (x.r[i] > 0.0) ? 1.0f/sqrtf(x.r[i]) : 0.0;
+        b.r[i] = 1.0 / sqrtf(x.r[i]);
     }
     return b;
 };
@@ -1794,10 +1941,79 @@ gmx_simd_rcp_d(gmx_simd_double_t x)
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
+        b.r[i] = 1.0 / x.r[i];
+    }
+    return b;
+};
+
+/*! \brief Multiply two SIMD doubles, masked version.
+ *
+ * \copydetails gmx_simd_mul_mask_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_mul_mask_d(gmx_simd_double_t a, gmx_simd_double_t b, gmx_simd_dbool_t m)
+{
+    gmx_simd_double_t c;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        c.r[i] = m.b[i] ? (a.r[i] * b.r[i]) : 0.0;
+    }
+    return c;
+}
+
+/*! \brief Fused-multiply-add, double. Result is a*b+c, masked version.
+ *
+ * \copydetails gmx_simd_fmadd_mask_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_fmadd_mask_d(gmx_simd_double_t a, gmx_simd_double_t b, gmx_simd_double_t c,
+                      gmx_simd_dbool_t m)
+{
+    gmx_simd_double_t d;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        d.r[i] = m.b[i] ? (a.r[i] * b.r[i] + c.r[i]) : 0.0;
+    }
+    return d;
+}
+
+/*! \brief SIMD 1.0/sqrt(x) lookup, masked version.
+ *
+ * \copydetails gmx_simd_rsqrt_mask_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_rsqrt_mask_d(gmx_simd_double_t x, gmx_simd_dbool_t m)
+{
+    gmx_simd_double_t  b;
+    int                i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
         /* Sic - we only need single precision for the reference lookup, since
-         * we have defined GMX_SIMD_RCP_BITS to 23.
+         * we have defined GMX_SIMD_RSQRT_BITS to 23.
          */
-        b.r[i] = (x.r[i] != 0.0) ? 1.0f/x.r[i] : 0.0;
+        b.r[i] = (m.b[i] != 0) ? 1.0 / sqrtf(x.r[i]) : 0.0;
+    }
+    return b;
+}
+
+/*! \brief 1.0/x lookup, masked version.
+ *
+ * \copydetails gmx_simd_rcp_mask_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_rcp_mask_d(gmx_simd_double_t x, gmx_simd_dbool_t m)
+{
+    gmx_simd_double_t  b;
+    int                i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        b.r[i] = (m.b[i] != 0) ? 1.0 / x.r[i] : 0.0;
     }
     return b;
 };
@@ -2026,6 +2242,26 @@ gmx_simd_cmpeq_d(gmx_simd_double_t a, gmx_simd_double_t b)
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         c.b[i] = (a.r[i] == b.r[i]);
+    }
+    return c;
+}
+
+/*! \brief SIMD a!=0 for single SIMD.
+ *
+ * You should typically call the real-precision \ref gmx_simd_cmpnz_r.
+ *
+ * \param a value
+ * \return Each element of the boolean will be true if any bit in a is nonzero.
+ */
+static gmx_inline gmx_simd_dbool_t
+gmx_simd_cmpnz_d(gmx_simd_double_t a)
+{
+    gmx_simd_dbool_t  c;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] != 0.0);
     }
     return c;
 }
@@ -2424,7 +2660,7 @@ gmx_simd_mul_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-        c.i[i] = a.i[i]*b.i[i];
+        c.i[i] = a.i[i] * b.i[i];
     }
     return c;
 }
@@ -2790,7 +3026,7 @@ gmx_simd_mul_di(gmx_simd_dint32_t a, gmx_simd_dint32_t b)
 
     for (i = 0; i < GMX_SIMD_DINT32_WIDTH; i++)
     {
-        c.i[i] = a.i[i]*b.i[i];
+        c.i[i] = a.i[i] * b.i[i];
     }
     return c;
 }
@@ -3222,7 +3458,7 @@ gmx_simd_cvt_f2dd(gmx_simd_float_t f, gmx_simd_double_t *d0, gmx_simd_double_t *
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         d0->r[i] = f.r[i];
-        d1->r[i] = f.r[GMX_SIMD_DOUBLE_WIDTH+i];
+        d1->r[i] = f.r[GMX_SIMD_DOUBLE_WIDTH + i];
     }
 #else
     gmx_fatal(FARGS, "gmx_simd_cvt_f2dd() requires GMX_SIMD_FLOAT_WIDTH==2*GMX_SIMD_DOUBLE_WIDTH");
@@ -3253,8 +3489,8 @@ gmx_simd_cvt_dd2f(gmx_simd_double_t d0, gmx_simd_double_t d1)
     int              i;
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-        f.r[i]                       = d0.r[i];
-        f.r[GMX_SIMD_DOUBLE_WIDTH+i] = d1.r[i];
+        f.r[i]                         = d0.r[i];
+        f.r[GMX_SIMD_DOUBLE_WIDTH + i] = d1.r[i];
     }
 #else
     gmx_fatal(FARGS, "gmx_simd_cvt_dd2f() requires GMX_SIMD_FLOAT_WIDTH==2*GMX_SIMD_DOUBLE_WIDTH");
@@ -3263,6 +3499,1230 @@ gmx_simd_cvt_dd2f(gmx_simd_double_t d0, gmx_simd_double_t d1)
 #endif
     return f;
 }
+
+/*! \}
+ *
+ * \name Higher-level SIMD utility functions, single precision.
+ *
+ * These include generic functions to work with triplets of data, typically
+ * coordinates, and a few utility functions to load and update data in the
+ * nonbonded kernels.
+ * These functions should be available on all implementations, although
+ * some wide SIMD implementations (width>=8) also provide special optional
+ * versions to work with half or quarter registers to improve the performance
+ * in the nonbonded kernels.
+ *
+ * This is part of the new C++ SIMD interface, so these functions are only
+ * available when using C++. Since some Gromacs code reliying on the SIMD
+ * module is still C (not C++), we have kept the C-style naming for now - this
+ * will change once we are entirely C++.
+ *
+ * Note that we overload function names here for convenience.
+ * \{
+ */
+
+#ifdef __cplusplus
+/*! \brief Load 4 floats from GMX_SIMD_FLOAT_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param      base   Pointer to the start of the memory area
+ * \param      offset Array with offsets to the start of each data point.
+ * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
+ * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
+ * \param[out] v2     3rd component of data, base[align*offset[i] + 2] for each i.
+ * \param[out] v3     4th component of data, base[align*offset[i] + 2] for each i.
+ *
+ * Each memory location must be aligned.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_f(const float *        base,
+                                 const gmx_int32_t    offset[],
+                                 gmx_simd_float_t    &v0,
+                                 gmx_simd_float_t    &v1,
+                                 gmx_simd_float_t    &v2,
+                                 gmx_simd_float_t    &v3)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset[i]];
+        v1.r[i] = base[align * offset[i] + 1];
+        v2.r[i] = base[align * offset[i] + 2];
+        v3.r[i] = base[align * offset[i] + 3];
+    }
+}
+
+
+/*! \brief Load 2 floats from GMX_SIMD_FLOAT_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param      base   Pointer to the start of the memory area
+ * \param      offset Array with offsets to the start of each data point.
+ * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
+ * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
+ *
+ * Each memory location must be aligned.
+ *
+ * To achieve the best possible performance, you should store your data with
+ * alignment \ref gmx_simd_best_pair_alignment_f in single,
+ * \ref gmx_simd_best_pair_alignment_d in double, or use
+ * \ref gmx_simd_best_pair_alignment_r for default Gromacs precision.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_f(const float *        base,
+                                 const gmx_int32_t    offset[],
+                                 gmx_simd_float_t    &v0,
+                                 gmx_simd_float_t    &v1)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset[i]];
+        v1.r[i] = base[align * offset[i] + 1];
+    }
+}
+
+
+/*! \brief Best alignment to use for aligned pairs of float data.
+ *
+ *  The routines to load and transpose data will work with a wide range of
+ *  alignments, but some might be faster than others, depending on the load
+ *  instructions available in the hardware. This specifies the best
+ *  alignment for each implementation when working with pairs of data.
+ *
+ *  To allow each architecture to use the most optimal form, we use a constant
+ *  that code outside the SIMD module should use to store things properly. It
+ *  must be at least 2. For example, a value of 2 means the two parameters A & B
+ *  are stored as [A0 B0 A1 B1] while align-4 means [A0 B0 - - A1 B1 - -].
+ *
+ *  This alignment depends on the efficiency of partial-register load/store
+ *  operations, and will depend on the architecture.
+ */
+static const int gmx_simd_best_pair_alignment_f = 2;
+
+
+/*! \brief Load 3 floats from GMX_SIMD_FLOAT_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param      base   Pointer to the start of the memory area
+ * \param      offset Array with offsets to the start of each data point.
+ * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
+ * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
+ * \param[out] v2     3rd component of data, base[align*offset[i] + 2] for each i.
+ *
+ * The memory does not have to be aligned.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This routine uses a normal array for the offsets, since we typically
+ *       load this data from memory. On the architectures we have tested this
+ *       is faster even when a SIMD integer datatype is present.
+ * \note Do NOT use this routine if your alignment is 4. Then it will likely
+ *       be much faster to make sure your memory (base pointer) is aligned,
+ *       and use the routines for loading four values instead. The extra
+ *       dummy value should be optimized away by the compiler.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_transpose_f(const float *        base,
+                                  const gmx_int32_t    offset[],
+                                  gmx_simd_float_t    &v0,
+                                  gmx_simd_float_t    &v1,
+                                  gmx_simd_float_t    &v2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset[i]];
+        v1.r[i] = base[align * offset[i] + 1];
+        v2.r[i] = base[align * offset[i] + 2];
+    }
+}
+
+
+/*! \brief Transpose and store 3 floats to GMX_SIMD_FLOAT_WIDTH locations.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param[out] base   Pointer to the start of the memory area
+ * \param      offset Aligned array with offsets to the start of each triplet.
+ * \param      v0     1st component of triplets, written to base[align*offset[i]].
+ * \param      v1     2nd component of triplets, written to base[align*offset[i] + 1].
+ * \param      v2     3rd component of triplets, written to base[align*offset[i] + 2].
+ *
+ * The memory does not have to be aligned.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This routine uses a normal array for the offsets, since we typically
+ *       load the data from memory. On the architectures we have tested this
+ *       is faster even when a SIMD integer datatype is present.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_storeu_f(float *              base,
+                                    const gmx_int32_t    offset[],
+                                    gmx_simd_float_t     v0,
+                                    gmx_simd_float_t     v1,
+                                    gmx_simd_float_t     v2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        base[align * offset[i]]     = v0.r[i];
+        base[align * offset[i] + 1] = v1.r[i];
+        base[align * offset[i] + 2] = v2.r[i];
+    }
+}
+
+
+/*! \brief Transpose and add 3 floats to GMX_SIMD_FLOAT_WIDTH locations.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param[out] base   Pointer to the start of the memory area
+ * \param      offset Aligned array with offsets to the start of each triplet.
+ * \param      v0     1st component of triplets, added to base[align*offset[i]].
+ * \param      v1     2nd component of triplets, added to base[align*offset[i] + 1].
+ * \param      v2     3rd component of triplets, added to base[align*offset[i] + 2].
+ *
+ * The memory does not have to be aligned.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This routine uses a normal array for the offsets, since we typically
+ *       load the data from memory. On the architectures we have tested this
+ *       is faster even when a SIMD integer datatype is present.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_incru_f(float *              base,
+                                   const gmx_int32_t    offset[],
+                                   gmx_simd_float_t     v0,
+                                   gmx_simd_float_t     v1,
+                                   gmx_simd_float_t     v2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        base[align * offset[i]]     += v0.r[i];
+        base[align * offset[i] + 1] += v1.r[i];
+        base[align * offset[i] + 2] += v2.r[i];
+    }
+}
+
+
+/*! \brief Transpose and subtract 3 floats to GMX_SIMD_FLOAT_WIDTH locations.
+ *
+ * \tparam     align   Alignment of storage, i.e. distance between index points
+ *                     measured in elements (not bytes). When this is identical
+ *                     to the number of output components the data is packed.
+ * \param[out] base    Pointer to start of memory.
+ * \param      offset  Aligned array with offsets to the start of each triplet.
+ * \param      v0      1st component, subtracted from base[align*offset[i]]
+ * \param      v1      2nd component, subtracted from base[align*offset[i]+1]
+ * \param      v2      3rd component, subtracted from base[align*offset[i]+2]
+ *
+ * The memory does not have to be aligned.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This routine uses a normal array for the offsets, since we typically
+ *       load the data from memory. On the architectures we have tested this
+ *       is faster even when a SIMD integer datatype is present.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_decru_f(float *              base,
+                                   const gmx_int32_t    offset[],
+                                   gmx_simd_float_t     v0,
+                                   gmx_simd_float_t     v1,
+                                   gmx_simd_float_t     v2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        base[align * offset[i]]     -= v0.r[i];
+        base[align * offset[i] + 1] -= v1.r[i];
+        base[align * offset[i] + 2] -= v2.r[i];
+    }
+}
+
+
+/*! \brief Expand floats into consecutive triplets in three outputs.
+ *
+ * \param      scalar    Floating-point input, e.g. [s0 s1 s2 s3] if width=4.
+ * \param[out] triplets0 First output, e.g. [s0 s0 s0 s1] if width=4.
+ * \param[out] triplets1 Second output, e.g. [s1 s1 s2 s2] if width=4.
+ * \param[out] triplets2 Third output, e.g. [s2 s3 s3 s3] if width=4.
+ *
+ * This routine is meant to use for things like scalar-vector multiplication,
+ * where the vectors are stored in a merged format like [x0 y0 z0 x1 y1 z1 ...],
+ * while the scalars are stored as [s0 s1 s2...], and the data cannot easily
+ * be changed to SIMD-friendly layout.
+ *
+ * In this case, load 3 full-width SIMD variables from the vector array (This
+ * will always correspond to GMX_SIMD_FLOAT_WIDTH/GMX_SIMD_DOUBLE_WIDTH
+ * triplets), load a single full-width variable from the scalar array, and
+ * call this routine to expand the data. You can then simply multiply the
+ * first, second and third pair of SIMD variables, and store the three
+ * results back into a suitable vector-format array.
+ */
+static gmx_inline void
+gmx_simd_expand_scalars_to_triplets_f(gmx_simd_float_t    scalar,
+                                      gmx_simd_float_t   &triplets0,
+                                      gmx_simd_float_t   &triplets1,
+                                      gmx_simd_float_t   &triplets2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        triplets0.r[i] = scalar.r[i / 3];
+        triplets1.r[i] = scalar.r[(i + GMX_SIMD_FLOAT_WIDTH) / 3];
+        triplets2.r[i] = scalar.r[(i + 2 * GMX_SIMD_FLOAT_WIDTH) / 3];
+    }
+}
+
+
+/*! \brief Load 4 floats from GMX_SIMD_FLOAT_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding. This must be a
+ *                    multiple of the alignment to keep all data aligned.
+ * \param      base   Aligned pointer to the start of the memory.
+ * \param      offset SIMD integer type with offsets to the start of each triplet.
+ * \param[out] v0     First component, base[align*offset[i]] for each i.
+ * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
+ * \param[out] v2     Third component, base[align*offset[i] + 2] for each i.
+ * \param[out] v3     Fourth component, base[align*offset[i] + 3] for each i.
+ *
+ * The memory locations must be aligned, but only to four elements even if the
+ * SIMD implementation is even wider.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This is a special routine primarily intended for loading Gromacs
+ *       table data as efficiently as possible - this is the reason for using
+ *       a SIMD offset index, since the result of the  real-to-integer conversion
+ *       is present in a SIMD register just before calling this routine.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_f(const float *       base,
+                                           gmx_simd_fint32_t   offset,
+                                           gmx_simd_float_t   &v0,
+                                           gmx_simd_float_t   &v1,
+                                           gmx_simd_float_t   &v2,
+                                           gmx_simd_float_t   &v3)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset.i[i]];
+        v1.r[i] = base[align * offset.i[i] + 1];
+        v2.r[i] = base[align * offset.i[i] + 2];
+        v3.r[i] = base[align * offset.i[i] + 3];
+    }
+}
+
+
+/*! \brief Load 2 floats from GMX_SIMD_FLOAT_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding. This must be a
+ *                    multiple of the alignment to keep all data aligned.
+ * \param      base   Aligned pointer to the start of the memory.
+ * \param      offset SIMD integer type with offsets to the start of each triplet.
+ * \param[out] v0     First component, base[align*offset[i]] for each i.
+ * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
+ *
+ * The memory locations must be aligned, but only to four elements even if the
+ * SIMD implementation is even wider.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This is a special routine primarily intended for loading Gromacs
+ *       table data as efficiently as possible - this is the reason for using
+ *       a SIMD offset index, since the result of the  real-to-integer conversion
+ *       is present in a SIMD register just before calling this routine.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_f(const float *       base,
+                                           gmx_simd_fint32_t   offset,
+                                           gmx_simd_float_t   &v0,
+                                           gmx_simd_float_t   &v1)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset.i[i]];
+        v1.r[i] = base[align * offset.i[i] + 1];
+    }
+}
+
+
+/*! \brief Load 2 floats from GMX_SIMD_FLOAT_WIDTH unaligned locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param      base   Pointer to the start of the memory.
+ * \param      offset SIMD integer type with offsets to the start of each triplet.
+ * \param[out] v0     First component, base[align*offset[i]] for each i.
+ * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
+ *
+ * This routine is only available when
+ * GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE is defined.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This is a special routine primarily intended for loading Gromacs
+ *       table data as efficiently as possible - this is the reason for using
+ *       a SIMD offset index, since the result of the  real-to-integer conversion
+ *       is present in a SIMD register just before calling this routine.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_bysimdint_transpose_f(const float *       base,
+                                            gmx_simd_fint32_t   offset,
+                                            gmx_simd_float_t   &v0,
+                                            gmx_simd_float_t   &v1)
+{
+    /* Reference implementation does not care about alignment */
+    gmx_simd_gather_load_bysimdint_transpose_f<align>(base, offset, v0, v1);
+}
+
+
+/*! \brief Reduce four SIMD floats, increment adjacent floats in mem, return sum.
+ *
+ * \param m   Pointer to memory where four floats should be incremented
+ * \param v0  SIMD variable whose sum should be added to m[0]
+ * \param v1  SIMD variable whose sum should be added to m[1]
+ * \param v2  SIMD variable whose sum should be added to m[2]
+ * \param v3  SIMD variable whose sum should be added to m[3]
+ *
+ * \return Sum of all elements in the four SIMD variables.
+ *
+ * \note This is a special routine intended for the Gromacs nonbonded kernels.
+ * It is used in the epilogue of the outer loop, where the variables will
+ * contain unrolled forces for one outer-loop-particle each, corresponding to
+ * a single coordinate (i.e, say, four x-coordinate force variables). These
+ * should be summed and added to the force array in memory. Since we always work
+ * with contiguous SIMD-layout , we can use efficient aligned loads/stores.
+ * When calculating the virial, we also need the total sum of all forces for
+ * each coordinate. This is provided as the return value. For routines that
+ * do not need these, this extra code will be optimized away completely if you
+ * just ignore the return value (Checked with gcc-4.9.1 and clang-3.6 for AVX).
+ */
+static gmx_inline float
+gmx_simd_reduce_incr_4_return_sum_f(float *           m,
+                                    gmx_simd_float_t  v0,
+                                    gmx_simd_float_t  v1,
+                                    gmx_simd_float_t  v2,
+                                    gmx_simd_float_t  v3)
+{
+    /* Note that the 4 here corresponds to the 4 elements, not any SIMD width */
+    float sum[4];
+
+    sum[0] = gmx_simd_reduce_f(v0);
+    sum[1] = gmx_simd_reduce_f(v1);
+    sum[2] = gmx_simd_reduce_f(v2);
+    sum[3] = gmx_simd_reduce_f(v3);
+
+    m[0] += sum[0];
+    m[1] += sum[1];
+    m[2] += sum[2];
+    m[3] += sum[3];
+
+    return sum[0] + sum[1] + sum[2] + sum[3];
+}
+#endif /* __cplusplus */
+
+/*! \}
+ *
+ * \name Higher-level SIMD utilities accessing partial (half-width) SIMD floats.
+ *
+ * These functions are optional. The are only useful for SIMD implementation
+ * where the width is 8 or larger, and where it would be inefficient
+ * to process 4*8, 8*8, or more, interactions in parallel.
+ *
+ * Currently, only Intel provides very wide SIMD implementations, but these
+ * also come with excellent support for loading, storing, accessing and
+ * shuffling parts of the register in so-called 'lanes' of 4 bytes each.
+ * We can use this to load separate parts into the low/high halves of the
+ * register in the inner loop of the nonbonded kernel, which e.g. makes it
+ * possible to process 4*4 nonbonded interactions as a pattern of 2*8. We
+ * can also use implementations with width 16 or greater.
+ *
+ * To make this more generic, when \ref GMX_SIMD_HAVE_HSIMD_UTIL_REAL is
+ * defined, the SIMD implementation provides seven special routines that:
+ *
+ * - Load the low/high parts of a SIMD variable from different pointers
+ * - Load half the SIMD width from one pointer, and duplicate in low/high parts
+ * - Load two reals, put 1st one in all low elements, and 2nd in all high ones.
+ * - Store the low/high parts of a SIMD variable to different pointers
+ * - Subtract both SIMD halves from a single half-SIMD-width memory location.
+ * - Load aligned pairs (LJ parameters) from two base pointers, with a common
+ *   offset list, and put these in the low/high SIMD halves.
+ * - Reduce each half of two SIMD registers (i.e., 4 parts in total), increment
+ *   four adjacent memory positions, and return the total sum.
+ *
+ * Remember: this is ONLY used when the native SIMD width is large. You will
+ * just waste time if you implement it for normal 16-byte SIMD architectures.
+ *
+ * This is part of the new C++ SIMD interface, so these functions are only
+ * available when using C++. Since some Gromacs code reliying on the SIMD
+ * module is still C (not C++), we have kept the C-style naming for now - this
+ * will change once we are entirely C++.
+ *
+ * \{
+ */
+
+#ifdef __cplusplus
+/*! \brief Load low & high parts of SIMD float from different locations
+ *
+ * \param m0 Pointer to memory aligned to half SIMD width.
+ * \param m1 Pointer to memory aligned to half SIMD width.
+ *
+ * \return SIMD variable with low part loaded from m0, high from m1.
+ *
+ * Available when \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is defined for single,
+ * or \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE for double.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_load_dual_hsimd_f(const float *  m0,
+                           const float *  m1)
+{
+    gmx_simd_float_t a;
+    int              i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH/2; i++)
+    {
+        a.r[i]                          = m0[i];
+        a.r[GMX_SIMD_FLOAT_WIDTH/2 + i] = m1[i];
+    }
+    return a;
+}
+
+/*! \brief Load half-SIMD-width float data, spread to both halves.
+ *
+ * \param m Pointer to memory aligned to half SIMD width.
+ *
+ * \return SIMD variable with both halves loaded from m..
+ *
+ * Available when \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is defined for single,
+ * or \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE for double.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_loaddup_hsimd_f(const float *  m)
+{
+    gmx_simd_float_t a;
+    int              i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH/2; i++)
+    {
+        a.r[i]                          = m[i];
+        a.r[GMX_SIMD_FLOAT_WIDTH/2 + i] = a.r[i];
+    }
+    return a;
+}
+
+/*! \brief Load two floats, spread 1st in low half, 2nd in high half.
+ *
+ * \param m Pointer to two adjacent floating-point values.
+ *
+ * \return SIMD variable where all elements in the low half have been set
+ *         to m[0], and all elements in high half to m[1].
+ *
+ * \note This routine always loads two values and sets the halves separately.
+ *       If you want to set all elements to the same value, simply use
+ *       the standard \ref gmx_simd_load1_r.
+ *
+ * Available when \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is defined for single,
+ * or \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE for double.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_load1_dual_hsimd_f(const float *  m)
+{
+    gmx_simd_float_t a;
+    int              i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH/2; i++)
+    {
+        a.r[i]                          = m[0];
+        a.r[GMX_SIMD_FLOAT_WIDTH/2 + i] = m[1];
+    }
+    return a;
+}
+
+
+/*! \brief Load low & high parts of SIMD float from different locations
+ *
+ * \param m0 Pointer to memory aligned to half SIMD width.
+ * \param m1 Pointer to memory aligned to half SIMD width.
+ * \param a  SIMD variable. Low half should be stored to m0, high to m1.
+ *
+ * Available when \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is defined for single,
+ * or \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE for double.
+ */
+static gmx_inline void
+gmx_simd_store_dual_hsimd_f(float *           m0,
+                            float *           m1,
+                            gmx_simd_float_t  a)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH/2; i++)
+    {
+        m0[i] = a.r[i];
+        m1[i] = a.r[GMX_SIMD_FLOAT_WIDTH/2 + i];
+    }
+}
+
+/*! \brief Subtract both halves from half-SIMD-width memory float data.
+ *
+ * \param m  half-width aligned memory, from which sum of the halves will be subtracted.
+ * \param a  SIMD variable. Upper & lower halves will first be added.
+ *
+ * If the SIMD width is 8 and contains [a b c d e f g h], the
+ * memory will be modified to [m[0]-(a+e) m[1]-(b+f) m[2]-(c+g) m[3]-(d+h)].
+ *
+ * Available when \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is defined for single,
+ * or \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE for double.
+ */
+static gmx_inline void
+gmx_simd_decr_hsimd_f(float *           m,
+                      gmx_simd_float_t  a)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH/2; i++)
+    {
+        m[i] -= a.r[i] + a.r[GMX_SIMD_FLOAT_WIDTH/2 + i];
+    }
+}
+
+
+/*! \brief Gather pairs from two memory bases, transpose to half-width-simd
+ *
+ * \param      base0  Pointer to base of first aligned memory
+ * \param      base1  Pointer to base of second aligned memory
+ * \param      offset Offset to the start of each pair
+ * \param[out] v0     1st element in each pair, base0 in low and base1 in high half.
+ * \param[out] v1     2nd element in each pair, base0 in low and base1 in high half.
+ *
+ * The offset array should be of half the SIMD width length, so it corresponds
+ * to the half-SIMD-register operations.
+ *
+ * This routine is primarily designed to load nonbonded parameters in the
+ * kernels. It is the equivalent of the full-width routine
+ * \ref gmx_simd_gather_load_transpose_r, but just
+ * as the other hsimd routines it will pick half-SIMD-width data from base0
+ * and put in the lower half, while the upper half comes from base1.
+ *
+ * For an example, assume the SIMD width is 8, pair alignment is 2, that
+ * base0 is [A0 A1 B0 B1 C0 C1 D0 D1 ...], and base1 [E0 E1 F0 F1 G0 G1 H0 H1...].
+ *
+ * Then we will get v0 as [A0 B0 C0 D0 E0 F0 G0 H0] and v1 as [A1 B1 C1 D1 E1 F1 G1 H1].
+ *
+ * Available when \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is defined for single,
+ * or \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE for double.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_hsimd_f(const float *       base0,
+                                       const float *       base1,
+                                       gmx_int32_t         offset[],
+                                       gmx_simd_float_t   &v0,
+                                       gmx_simd_float_t   &v1)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH/2; i++)
+    {
+        v0.r[i] = base0[align * offset[i]];
+        v1.r[i] = base0[align * offset[i] + 1];
+        v0.r[GMX_SIMD_FLOAT_WIDTH/2 + i] = base1[align * offset[i]];
+        v1.r[GMX_SIMD_FLOAT_WIDTH/2 + i] = base1[align * offset[i] + 1];
+    }
+}
+
+
+/*! \brief Reduce the 4 half-SIMD floats in 2 variables, increment mem, return sum.
+ *
+ * \param m    Pointer to memory where the four values should be incremented
+ * \param v0   Variable whose half-SIMD sums should be added to m[0]/m[1], respectively.
+ * \param v1   Variable whose half-SIMD sums should be added to m[2]/m[3], respectively.
+ *
+ * \return Sum of all elements in the four SIMD variables.
+ *
+ * \note This is the half-SIMD-width version of
+ * \ref gmx_simd_reduce_incr_4_return_sum_r. The only difference is that the
+ *      four half-SIMD inputs needed are present in the low/high halves of the
+ *      two SIMD arguments.
+ *
+ * Available when \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT is defined for single,
+ * or \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE for double.
+ */
+static gmx_inline float
+gmx_simd_reduce_incr_4_return_sum_hsimd_f(float *            m,
+                                          gmx_simd_float_t   v0,
+                                          gmx_simd_float_t   v1)
+{
+    /* The 4 here corresponds to the 4 elements in memory, not any SIMD width */
+    float sum[4];
+    int   i;
+
+    for (i = 0; i < 4; i++)
+    {
+        sum[i] = 0;
+    }
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH/2; i++)
+    {
+        sum[0] += v0.r[i];
+        sum[1] += v0.r[GMX_SIMD_FLOAT_WIDTH/2 + i];
+        sum[2] += v1.r[i];
+        sum[3] += v1.r[GMX_SIMD_FLOAT_WIDTH/2 + i];
+    }
+
+    m[0] += sum[0];
+    m[1] += sum[1];
+    m[2] += sum[2];
+    m[3] += sum[3];
+
+    return sum[0] + sum[1] + sum[2] + sum[3];
+}
+#endif /* __cplusplus */
+
+
+/*! \}
+ *
+ * \name Higher-level SIMD utility functions, double precision.
+ *
+ * These include generic functions to work with triplets of data, typically
+ * coordinates, and a few utility functions to load and update data in the
+ * nonbonded kernels. These functions should be available on all implementations.
+ *
+ * This is part of the new C++ SIMD interface, so these functions are only
+ * available when using C++. Since some Gromacs code reliying on the SIMD
+ * module is still C (not C++), we have kept the C-style naming for now - this
+ * will change once we are entirely C++.
+ *
+ * Note that we overload function names here for convenience.
+ * \{
+ */
+
+#ifdef __cplusplus
+/*! \brief Load 4 doubles from GMX_SIMD_DOUBLE_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param      base   Pointer to the start of the memory area
+ * \param      offset Array with offsets to the start of each data point.
+ * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
+ * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
+ * \param[out] v2     3rd component of data, base[align*offset[i] + 2] for each i.
+ * \param[out] v3     4th component of data, base[align*offset[i] + 2] for each i.
+ *
+ * The memory must be aligned.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_d(const double *        base,
+                                 const gmx_int32_t     offset[],
+                                 gmx_simd_double_t    &v0,
+                                 gmx_simd_double_t    &v1,
+                                 gmx_simd_double_t    &v2,
+                                 gmx_simd_double_t    &v3)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset[i]];
+        v1.r[i] = base[align * offset[i] + 1];
+        v2.r[i] = base[align * offset[i] + 2];
+        v3.r[i] = base[align * offset[i] + 3];
+    }
+}
+
+
+/*! \brief Load 2 doubles from GMX_SIMD_DOUBLE_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding.
+ * \param      base   Pointer to the start of the memory area
+ * \param      offset Array with offsets to the start of each data point.
+ * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
+ * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
+ *
+ * The memory must be aligned.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_d(const double *        base,
+                                 const gmx_int32_t     offset[],
+                                 gmx_simd_double_t    &v0,
+                                 gmx_simd_double_t    &v1)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset[i]];
+        v1.r[i] = base[align * offset[i] + 1];
+    }
+}
+
+
+/*! \brief Best alignment to use for aligned pairs of double data.
+ *
+ * \copydetails gmx_simd_best_pair_alignment_f
+ */
+static const int gmx_simd_best_pair_alignment_d = 2;
+
+
+/*! \brief Load 3 doubles from GMX_SIMD_DOUBLE_WIDTH locations, transpose.
+ *
+ * \copydetails gmx_simd_gather_loadu_transpose_f
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_transpose_d(const double *        base,
+                                  const gmx_int32_t     offset[],
+                                  gmx_simd_double_t    &v0,
+                                  gmx_simd_double_t    &v1,
+                                  gmx_simd_double_t    &v2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset[i]];
+        v1.r[i] = base[align * offset[i] + 1];
+        v2.r[i] = base[align * offset[i] + 2];
+    }
+}
+
+
+/*! \brief Transpose and store 3 doubles to GMX_SIMD_DOUBLE_WIDTH locations.
+ *
+ * \copydetails gmx_simd_transpose_scatter_storeu_f
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_storeu_d(double *              base,
+                                    const gmx_int32_t     offset[],
+                                    gmx_simd_double_t     v0,
+                                    gmx_simd_double_t     v1,
+                                    gmx_simd_double_t     v2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        base[align * offset[i]]     = v0.r[i];
+        base[align * offset[i] + 1] = v1.r[i];
+        base[align * offset[i] + 2] = v2.r[i];
+    }
+}
+
+
+/*! \brief Transpose and add 3 doubles to GMX_SIMD_DOUBLE_WIDTH locations.
+ *
+ * \copydetails gmx_simd_transpose_scatter_incru_f
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_incru_d(double *              base,
+                                   const gmx_int32_t     offset[],
+                                   gmx_simd_double_t     v0,
+                                   gmx_simd_double_t     v1,
+                                   gmx_simd_double_t     v2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        base[align * offset[i]]     += v0.r[i];
+        base[align * offset[i] + 1] += v1.r[i];
+        base[align * offset[i] + 2] += v2.r[i];
+    }
+}
+
+/*! \brief Transpose and subtract 3 doubles to GMX_SIMD_DOUBLE_WIDTH locations.
+ *
+ * \copydetails gmx_simd_transpose_scatter_decru_f
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_decru_d(double *              base,
+                                   const gmx_int32_t     offset[],
+                                   gmx_simd_double_t     v0,
+                                   gmx_simd_double_t     v1,
+                                   gmx_simd_double_t     v2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        base[align * offset[i]]     -= v0.r[i];
+        base[align * offset[i] + 1] -= v1.r[i];
+        base[align * offset[i] + 2] -= v2.r[i];
+    }
+}
+
+
+/*! \brief Expand doubles into consecutive triplets in three outputs.
+ *
+ * \copydetails gmx_simd_expand_scalars_to_triplets_f
+ */
+static gmx_inline void
+gmx_simd_expand_scalars_to_triplets_d(gmx_simd_double_t    scalar,
+                                      gmx_simd_double_t   &triplets0,
+                                      gmx_simd_double_t   &triplets1,
+                                      gmx_simd_double_t   &triplets2)
+{
+    int i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        triplets0.r[i] = scalar.r[i / 3];
+        triplets1.r[i] = scalar.r[(i + GMX_SIMD_DOUBLE_WIDTH) / 3];
+        triplets2.r[i] = scalar.r[(i + 2 * GMX_SIMD_DOUBLE_WIDTH) / 3];
+    }
+}
+
+
+/*! \brief Load 4 doubles from GMX_SIMD_DOUBLE_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding. This must be a
+ *                    multiple of the alignment to keep all data aligned.
+ * \param      base   Aligned pointer to the start of the memory.
+ * \param      offset SIMD integer type with offsets to the start of each triplet.
+ * \param[out] v0     First component, base[align*offset[i]] for each i.
+ * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
+ * \param[out] v2     Third component, base[align*offset[i] + 2] for each i.
+ * \param[out] v3     Fourth component, base[align*offset[i] + 3] for each i.
+ *
+ * The memory locations must be aligned, but only to four elements even if the
+ * SIMD implementation is even wider.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This is a special routine primarily intended for loading Gromacs
+ *       table data as efficiently as possible - this is the reason for using
+ *       a SIMD offset index, since the result of the  real-to-integer conversion
+ *       is present in a SIMD register just before calling this routine.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_d(const double *       base,
+                                           gmx_simd_dint32_t    offset,
+                                           gmx_simd_double_t   &v0,
+                                           gmx_simd_double_t   &v1,
+                                           gmx_simd_double_t   &v2,
+                                           gmx_simd_double_t   &v3)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset.i[i]];
+        v1.r[i] = base[align * offset.i[i] + 1];
+        v2.r[i] = base[align * offset.i[i] + 2];
+        v3.r[i] = base[align * offset.i[i] + 3];
+    }
+}
+
+
+/*! \brief Load 2 doubles from GMX_SIMD_DOUBLE_WIDTH locations, transpose.
+ *
+ * \tparam     align  Alignment of the storage, i.e. the distance
+ *                    (measured in elements, not bytes) between index points.
+ *                    When this is identical to the number of output components
+ *                    the data is packed without padding. This must be a
+ *                    multiple of the alignment to keep all data aligned.
+ * \param      base   Aligned pointer to the start of the memory.
+ * \param      offset SIMD integer type with offsets to the start of each triplet.
+ * \param[out] v0     First component, base[align*offset[i]] for each i.
+ * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
+ *
+ * The memory locations must be aligned, but only to four elements even if the
+ * SIMD implementation is even wider.
+ *
+ * \note You should NOT scale offsets before calling this routine; it is
+ *       done internally by using the alignment template parameter instead.
+ * \note This is a special routine primarily intended for loading Gromacs
+ *       table data as efficiently as possible - this is the reason for using
+ *       a SIMD offset index, since the result of the  real-to-integer conversion
+ *       is present in a SIMD register just before calling this routine.
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_d(const double *       base,
+                                           gmx_simd_dint32_t    offset,
+                                           gmx_simd_double_t   &v0,
+                                           gmx_simd_double_t   &v1)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        v0.r[i] = base[align * offset.i[i]];
+        v1.r[i] = base[align * offset.i[i] + 1];
+    }
+}
+
+
+/*! \brief Load 2 doubles from GMX_SIMD_DOUBLE_WIDTH unaligned locations, transpose.
+ *
+ * \copydetails gmx_simd_gather_loadu_bysimdint_transpose_f
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_bysimdint_transpose_d(const double *       base,
+                                            gmx_simd_dint32_t    offset,
+                                            gmx_simd_double_t   &v0,
+                                            gmx_simd_double_t   &v1)
+{
+    /* Reference implementation does not care about alignment */
+    gmx_simd_gather_load_bysimdint_transpose_f<align>(base, offset, v0, v1);
+}
+
+
+/*! \brief Reduce four SIMD doubles, increment adjacent floats in mem, return sum.
+ *
+ * \copydetails gmx_simd_reduce_incr_4_return_sum_f
+ */
+static gmx_inline double
+gmx_simd_reduce_incr_4_return_sum_d(double *           m,
+                                    gmx_simd_double_t  v0,
+                                    gmx_simd_double_t  v1,
+                                    gmx_simd_double_t  v2,
+                                    gmx_simd_double_t  v3)
+{
+    /* Note that the 4 here corresponds to the 4 elements, not any SIMD width */
+    double sum[4];
+
+    sum[0] = gmx_simd_reduce_d(v0);
+    sum[1] = gmx_simd_reduce_d(v1);
+    sum[2] = gmx_simd_reduce_d(v2);
+    sum[3] = gmx_simd_reduce_d(v3);
+
+    m[0] += sum[0];
+    m[1] += sum[1];
+    m[2] += sum[2];
+    m[3] += sum[3];
+
+    return sum[0] + sum[1] + sum[2] + sum[3];
+}
+#endif /* __cplusplus */
+
+
+/*! \}
+ *
+ * \name Higher-level SIMD utilities accessing partial (half-width) SIMD doubles.
+ *
+ * See the single-precision versions for documentation. Since double precision
+ * is typically half the width of single, this double version is likely only
+ * useful with 512-bit and larger implementations.
+ *
+ * \{
+ */
+
+#ifdef __cplusplus
+/*! \brief Load low & high parts of SIMD float from different locations
+ *
+ * \copydetails gmx_simd_load_dual_hsimd_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_load_dual_hsimd_d(const double *  m0,
+                           const double *  m1)
+{
+    gmx_simd_double_t a;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH/2; i++)
+    {
+        a.r[i]                           = m0[i];
+        a.r[GMX_SIMD_DOUBLE_WIDTH/2 + i] = m1[i];
+    }
+    return a;
+}
+
+/*! \brief Load half-SIMD-width float data, spread to both halves.
+ *
+ * \copydetails gmx_simd_loaddup_hsimd_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_loaddup_hsimd_d(const double *  m)
+{
+    gmx_simd_double_t a;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH/2; i++)
+    {
+        a.r[i]                           = m[i];
+        a.r[GMX_SIMD_DOUBLE_WIDTH/2 + i] = a.r[i];
+    }
+    return a;
+}
+
+/*! \brief Load two floats, spread 1st in low half, 2nd in high half.
+ *
+ * \copydetails gmx_simd_load1_dual_hsimd_f
+ */
+static gmx_inline gmx_simd_double_t
+gmx_simd_load1_dual_hsimd_d(const double *  m)
+{
+    gmx_simd_double_t a;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH/2; i++)
+    {
+        a.r[i]                           = m[0];
+        a.r[GMX_SIMD_DOUBLE_WIDTH/2 + i] = m[1];
+    }
+    return a;
+}
+
+
+/*! \brief Load low & high parts of SIMD float from different locations
+ *
+ * \copydetails gmx_simd_store_dual_hsimd_f
+ */
+static gmx_inline void
+gmx_simd_store_dual_hsimd_d(double *           m0,
+                            double *           m1,
+                            gmx_simd_double_t  a)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH/2; i++)
+    {
+        m0[i] = a.r[i];
+        m1[i] = a.r[GMX_SIMD_DOUBLE_WIDTH/2 + i];
+    }
+}
+
+/*! \brief Subtract both halves from half-SIMD-width memory float data.
+ *
+ * \copydetails gmx_simd_decr_hsimd_f
+ */
+static gmx_inline void
+gmx_simd_decr_hsimd_d(double *           m,
+                      gmx_simd_double_t  a)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH/2; i++)
+    {
+        m[i] -= a.r[i] + a.r[GMX_SIMD_DOUBLE_WIDTH/2 + i];
+    }
+}
+
+
+/*! \brief Gather pairs from two memory bases, transpose to half-width-simd
+ *
+ * \copydetails gmx_simd_gather_load_transpose_hsimd_f
+ */
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_hsimd_d(const double *       base0,
+                                       const double *       base1,
+                                       gmx_int32_t          offset[],
+                                       gmx_simd_double_t   &v0,
+                                       gmx_simd_double_t   &v1)
+{
+    int i;
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH/2; i++)
+    {
+        v0.r[i] = base0[align * offset[i]];
+        v1.r[i] = base0[align * offset[i] + 1];
+        v0.r[GMX_SIMD_DOUBLE_WIDTH/2 + i] = base1[align * offset[i]];
+        v1.r[GMX_SIMD_DOUBLE_WIDTH/2 + i] = base1[align * offset[i] + 1];
+    }
+}
+
+
+/*! \brief Reduce the 4 half-SIMD floats in 2 variables, increment mem, return sum.
+ *
+ * \copydetails gmx_simd_reduce_incr_4_return_sum_hsimd_f
+ */
+static gmx_inline double
+gmx_simd_reduce_incr_4_return_sum_hsimd_d(double *           m,
+                                          gmx_simd_double_t  v0,
+                                          gmx_simd_double_t  v1)
+{
+    /* The 4 here corresponds to the 4 elements, not any SIMD width */
+    double sum[4];
+    int    i;
+
+    for (i = 0; i < 4; i++)
+    {
+        sum[i] = 0;
+    }
+
+    for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH/2; i++)
+    {
+        sum[0] += v0.r[i];
+        sum[1] += v0.r[GMX_SIMD_DOUBLE_WIDTH/2 + i];
+        sum[2] += v1.r[i];
+        sum[3] += v1.r[GMX_SIMD_DOUBLE_WIDTH/2 + i];
+    }
+
+    m[0] += sum[0];
+    m[1] += sum[1];
+    m[2] += sum[2];
+    m[3] += sum[3];
+
+    return sum[0] + sum[1] + sum[2] + sum[3];
+}
+#endif /* __cplusplus */
+
+
 
 /*! \} */
 
@@ -3421,8 +4881,46 @@ gmx_simd_cvt_dd2f(gmx_simd_double_t d0, gmx_simd_double_t d1)
 static gmx_inline float
 gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
-    return a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2];
+    return a.r[0] * b.r[0] + a.r[1] * b.r[1] + a.r[2] * b.r[2];
 }
+
+#if defined(__cplusplus)
+/*! \brief SIMD4 float transpose
+ *
+ * \param[in,out] v0  Row 0 on input, column 0 on output
+ * \param[in,out] v1  Row 1 on input, column 1 on output
+ * \param[in,out] v2  Row 2 on input, column 2 on output
+ * \param[in,out] v3  Row 3 on input, column 3 on output
+ *
+ * This is only available in C++.
+ */
+static gmx_inline void
+gmx_simd4_transpose_f(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                      gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    gmx_simd4_float_t t0, t1, t2, t3;
+    t0      = v0;
+    t1      = v1;
+    t2      = v2;
+    t3      = v3;
+    v0.r[0] = t0.r[0];
+    v0.r[1] = t1.r[0];
+    v0.r[2] = t2.r[0];
+    v0.r[3] = t3.r[0];
+    v1.r[0] = t0.r[1];
+    v1.r[1] = t1.r[1];
+    v1.r[2] = t2.r[1];
+    v1.r[3] = t3.r[1];
+    v2.r[0] = t0.r[2];
+    v2.r[1] = t1.r[2];
+    v2.r[2] = t2.r[2];
+    v2.r[3] = t3.r[2];
+    v3.r[0] = t0.r[3];
+    v3.r[1] = t1.r[3];
+    v3.r[2] = t2.r[3];
+    v3.r[3] = t3.r[3];
+}
+#endif /* __cplusplus */
 
 /*! \brief SIMD4 variable type to use for logical comparisons on floats.
  * \copydetails gmx_simd_fbool_t
@@ -3433,6 +4931,11 @@ gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
  * \copydetails gmx_simd_cmpeq_f
  */
 #    define gmx_simd4_cmpeq_f   gmx_simd_cmpeq_f
+
+/*! \brief Return true for nonzero SIMD4 elements (i.e., with bits set)
+ * \copydetails gmx_simd_cmpnz_f
+ */
+#    define gmx_simd4_cmpnz_f   gmx_simd_cmpnz_f
 
 /*! \brief Less-than comparison of two single precision SIMD4.
  * \copydetails gmx_simd_cmplt_f
@@ -3628,8 +5131,46 @@ gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
 static gmx_inline double
 gmx_simd4_dotproduct3_d(gmx_simd_double_t a, gmx_simd_double_t b)
 {
-    return a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2];
+    return a.r[0] * b.r[0] + a.r[1] * b.r[1] + a.r[2] * b.r[2];
 }
+
+#if defined(__cplusplus)
+/*! \brief SIMD4 double transpose
+ *
+ * \param[in,out] v0  Row 0 on input, column 0 on output
+ * \param[in,out] v1  Row 1 on input, column 1 on output
+ * \param[in,out] v2  Row 2 on input, column 2 on output
+ * \param[in,out] v3  Row 3 on input, column 3 on output
+ *
+ * This is only available in C++.
+ */
+static gmx_inline void
+gmx_simd4_transpose_d(gmx_simd4_double_t &v0, gmx_simd4_double_t &v1,
+                      gmx_simd4_double_t &v2, gmx_simd4_double_t &v3)
+{
+    gmx_simd4_double_t t0, t1, t2, t3;
+    t0      = v0;
+    t1      = v1;
+    t2      = v2;
+    t3      = v3;
+    v0.r[0] = t0.r[0];
+    v0.r[1] = t1.r[0];
+    v0.r[2] = t2.r[0];
+    v0.r[3] = t3.r[0];
+    v1.r[0] = t0.r[1];
+    v1.r[1] = t1.r[1];
+    v1.r[2] = t2.r[1];
+    v1.r[3] = t3.r[1];
+    v2.r[0] = t0.r[2];
+    v2.r[1] = t1.r[2];
+    v2.r[2] = t2.r[2];
+    v2.r[3] = t3.r[2];
+    v3.r[0] = t0.r[3];
+    v3.r[1] = t1.r[3];
+    v3.r[2] = t2.r[3];
+    v3.r[3] = t3.r[3];
+}
+#endif /* __cplusplus */
 
 /*! \brief SIMD4 variable type to use for logical comparisons on doubles.
  * \copydetails gmx_simd_dbool_t
@@ -3640,6 +5181,11 @@ gmx_simd4_dotproduct3_d(gmx_simd_double_t a, gmx_simd_double_t b)
  * \copydetails gmx_simd_cmpeq_d
  */
 #    define gmx_simd4_cmpeq_d   gmx_simd_cmpeq_d
+
+/*! \brief Return true for nonzero SIMD4 elements (i.e., with bits set)
+ * \copydetails gmx_simd_cmpnz_d
+ */
+#    define gmx_simd4_cmpnz_d   gmx_simd_cmpnz_d
 
 /*! \brief Less-than comparison of two double precision SIMD4 values.
  * \copydetails gmx_simd_cmplt_d

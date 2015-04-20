@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,10 @@
  * - gmx_simd_load_i(),gmx_simd_store_i(), gmx_simd_loadu_i(),gmx_simd_storeu_i()
  * - gmx_simd4_load_r(),gmx_simd4_store_r(), gmx_simd4_loadu_r(),gmx_simd4_storeu_r()
  *
+ * Note that you probably do not have to add more tests in this (complicated)
+ * file; once the bootstrapping tests have passed we can use the working basic
+ * load/store operations to test higher-level load/store operations too.
+ *
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  * \ingroup module_simd
  */
@@ -64,23 +68,22 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
+#ifdef GMX_SIMD_HAVE_REAL
 TEST(SimdBootstrapTest, gmxSimdAlign)
 {
-#ifdef GMX_SIMD_HAVE_REAL
     real rdata[GMX_SIMD_REAL_WIDTH*2];
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         EXPECT_EQ(((size_t)gmx_simd_align_r(&rdata[i]) & (GMX_SIMD_REAL_WIDTH*sizeof(real)-1)), (size_t)0);
     }
-#endif
-#ifdef GMX_SIMD_HAVE_INT32
+
     int idata[GMX_SIMD_INT32_WIDTH*2];
     for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
     {
         EXPECT_EQ(((size_t)gmx_simd_align_i(&idata[i]) & (GMX_SIMD_INT32_WIDTH*sizeof(int)-1)), (size_t)0);
     }
-#endif
 }
+#endif
 
 /*! \brief Generic routine to test load & store of SIMD, and check for side effects.
  *
@@ -179,9 +182,7 @@ TEST(SimdBootstrapTest, gmxSimdStoreUR)
     }
 }
 #    endif
-#endif
 
-#ifdef GMX_SIMD_HAVE_INT32
 // Tests for gmx_simd_int32_t load & store operations
 
 //! Wrapper for SIMD macro to load aligned integer data.
