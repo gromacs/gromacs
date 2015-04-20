@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,10 +57,19 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#ifdef GMX_SIMD_HAVE_INT32
-
 /*! \brief Test fixture for integer tests (identical to the generic \ref SimdTest) */
 typedef SimdTest SimdIntegerTest;
+
+/* Yes, Virginia. We test for real even for integers. This is because we use
+ * the floating-point type when no real integer SIMD type exists (which in turn
+ * is because the results of real-to-integer conversions end up there). This
+ * means the basic integer SIMD type is available whenever the real one is,
+ * but depending on the precision selected that might not be the case.
+ *
+ * The second we have default-precision floating-point SIMD, we also have
+ * the integer SIMD dataype and the most fundamental load/store ops.
+ */
+#ifdef GMX_SIMD_HAVE_REAL
 
 TEST_F(SimdIntegerTest, gmxSimdSetZeroI)
 {
@@ -71,8 +80,9 @@ TEST_F(SimdIntegerTest, gmxSimdSet1I)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(1), gmx_simd_set1_i(1));
 }
+#endif
 
-#ifdef GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#ifdef GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdAddI)
 {
     GMX_EXPECT_SIMD_INT_EQ(iSimd_5_7_9,   gmx_simd_add_i(iSimd_1_2_3, iSimd_4_5_6)    );    // short add
@@ -90,9 +100,7 @@ TEST_F(SimdIntegerTest, gmxSimdMulI)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 10, 18), gmx_simd_mul_i(iSimd_1_2_3, iSimd_4_5_6));                       // 2*3=6 (short mul)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(268435456), gmx_simd_mul_i(gmx_simd_set1_i(16384), gmx_simd_set1_i(16384))); // 16384*16384 = 268435456 (long mul)
 }
-#endif
 
-#ifdef GMX_SIMD_HAVE_FINT32_LOGICAL
 TEST_F(SimdIntegerTest, gmxSimdSlliI)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4194304), gmx_simd_slli_i(gmx_simd_set1_i(2), 21)); // 2 << 21 = 4194304
@@ -102,7 +110,9 @@ TEST_F(SimdIntegerTest, gmxSimdSrliI)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), gmx_simd_srli_i(gmx_simd_set1_i(4194304), 20)); // 4194304 >> 20 = 4
 }
+#endif
 
+#ifdef GMX_SIMD_HAVE_INT32_LOGICAL
 TEST_F(SimdIntegerTest, gmxSimdAndI)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0xC0C0C0C0), gmx_simd_and_i(iSimd_0xF0F0F0F0, iSimd_0xCCCCCCCC));
@@ -190,7 +200,7 @@ TEST_F(SimdIntegerTest, gmxSimdCvtI2R)
 }
 #endif
 
-#ifdef GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#ifdef GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdBoolCmpEqAndBlendZeroI)
 {
     gmx_simd_ibool_t eq   = gmx_simd_cmpeq_i(iSimd_5_7_9, iSimd_7_8_9);
@@ -244,7 +254,7 @@ TEST_F(SimdIntegerTest, gmxSimdBlendvI)
 }
 #endif
 
-#if (defined GMX_SIMD_HAVE_REAL) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS)
+#if (defined GMX_SIMD_HAVE_REAL) && (defined GMX_SIMD_HAVE_INT32_ARITHMETICS)
 TEST_F(SimdIntegerTest, gmxSimdCvtB2IB)
 {
     gmx_simd_bool_t  eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, setSimdRealFrom3R(5, 0, 0));  // eq should be T,F,F
@@ -260,8 +270,6 @@ TEST_F(SimdIntegerTest, gmxSimdCvtIB2B)
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.0, 0, 0), gmx_simd_blendzero_r(rSimd_1_2_3, eq));
 }
 #endif
-
-#endif      // GMX_SIMD_HAVE_INT32
 
 /*! \} */
 /*! \endcond */
