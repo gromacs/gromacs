@@ -47,6 +47,10 @@
  * - simdLoadI(),simdStoreI(), simdLoadUI(),simdStoreUI()
  * - simd4Load(),simd4Store(), simd4LoadU(),simd4StoreU()
  *
+ * Note that you probably do not have to add more tests in this (complicated)
+ * file; once the bootstrapping tests have passed we can use the working basic
+ * load/store operations to test higher-level load/store operations too.
+ *
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  * \ingroup module_simd
  */
@@ -59,12 +63,19 @@
 
 #if GMX_SIMD
 
+namespace gmx
+{
+
+namespace test
+{
+
 namespace
 {
 
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
+
 
 /*! \brief Generic routine to test load & store of SIMD, and check for side effects.
  *
@@ -116,14 +127,14 @@ simdLoadStoreTester(TSimd simdLoadFn(T* mem), void simdStoreFn(T* mem, TSimd),
 
 #if GMX_SIMD_HAVE_REAL
 //! Wrapper for SIMD macro to load aligned floating-point data.
-gmx::SimdReal wrapperSimdLoadR(real *m)
+SimdReal wrapperSimdLoadR(real *m)
 {
-    return gmx::simdLoad(m);
+    return simdLoad(m);
 }
 //! Wrapper for SIMD macro to store to aligned floating-point data.
-void            wrapperSimdStoreR(real *m, gmx::SimdReal s)
+void            wrapperSimdStoreR(real *m, SimdReal s)
 {
-    gmx::simdStore(m, s);
+    simdStore(m, s);
 }
 
 TEST(SimdBootstrapTest, gmxSimdLoadStoreR)
@@ -133,9 +144,9 @@ TEST(SimdBootstrapTest, gmxSimdLoadStoreR)
 
 #    if GMX_SIMD_HAVE_LOADU
 //! Wrapper for SIMD macro to load unaligned floating-point data.
-gmx::SimdReal WrapperSimdLoadUR(real *m)
+SimdReal WrapperSimdLoadUR(real *m)
 {
-    return gmx::simdLoadU(m);
+    return simdLoadU(m);
 }
 
 TEST(SimdBootstrapTest, gmxSimdLoadUR)
@@ -149,9 +160,9 @@ TEST(SimdBootstrapTest, gmxSimdLoadUR)
 
 #    if GMX_SIMD_HAVE_STOREU
 //! Wrapper for SIMD macro to store to unaligned floating-point data.
-void WrapperSimdStoreUR(real *m, gmx::SimdReal s)
+void WrapperSimdStoreUR(real *m, SimdReal s)
 {
-    gmx::simdStoreU(m, s);
+    simdStoreU(m, s);
 }
 
 TEST(SimdBootstrapTest, gmxSimdStoreUR)
@@ -162,55 +173,53 @@ TEST(SimdBootstrapTest, gmxSimdStoreUR)
     }
 }
 #    endif
-#endif
 
-#if GMX_SIMD_HAVE_INT32
 // Tests for SimdInt32 load & store operations
 
 //! Wrapper for SIMD macro to load aligned integer data.
-gmx::SimdInt32 wrapperSimdLoadI(int *m)
+SimdInt32 wrapperSimdLoadI(int *m)
 {
-    return gmx::simdLoadI(m);
+    return simdLoadI(m);
 }
 //! Wrapper for SIMD macro to store to aligned integer data.
-void             wrapperSimdStoreI(int *m, gmx::SimdInt32 s)
+void             wrapperSimdStoreI(int *m, SimdInt32 s)
 {
-    gmx::simdStoreI(m, s);
+    simdStoreI(m, s);
 }
 
 TEST(SimdBootstrapTest, gmxSimdLoadStoreI)
 {
-    simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreI, 0, 0, GMX_SIMD_INT32_WIDTH);
+    simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreI, 0, 0, GMX_SIMD_REAL_WIDTH);
 }
 
 #    if GMX_SIMD_HAVE_LOADU
 //! Wrapper for SIMD macro to load unaligned integer data.
-gmx::SimdInt32 wrapperSimdLoadUI(int *m)
+SimdInt32 wrapperSimdLoadUI(int *m)
 {
-    return gmx::simdLoadUI(m);
+    return simdLoadUI(m);
 }
 
 TEST(SimdBootstrapTest, gmxSimdLoadUI)
 {
-    for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
-        simdLoadStoreTester(wrapperSimdLoadUI, wrapperSimdStoreI, i, 0, GMX_SIMD_INT32_WIDTH);
+        simdLoadStoreTester(wrapperSimdLoadUI, wrapperSimdStoreI, i, 0, GMX_SIMD_REAL_WIDTH);
     }
 }
 #    endif
 
 #    if GMX_SIMD_HAVE_STOREU
 //! Wrapper for SIMD macro to store to unaligned integer data.
-void wrapperSimdStoreUI(int *m, gmx::SimdInt32 s)
+void wrapperSimdStoreUI(int *m, SimdInt32 s)
 {
-    gmx::simdStoreUI(m, s);
+    simdStoreUI(m, s);
 }
 
 TEST(SimdBootstrapTest, gmxSimdStoreUI)
 {
-    for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
-        simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreUI, 0, i, GMX_SIMD_INT32_WIDTH);
+        simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreUI, 0, i, GMX_SIMD_REAL_WIDTH);
     }
 }
 #    endif
@@ -270,14 +279,14 @@ simd4LoadStoreTester(TSimd simd4LoadFn(T* mem), void simd4StoreFn(T* mem, TSimd)
 }
 
 //! Wrapper for SIMD4 macro to load aligned floating-point data.
-gmx::Simd4Real wrapperSimd4LoadR(real *m)
+Simd4Real wrapperSimd4LoadR(real *m)
 {
-    return gmx::simd4Load(m);
+    return simd4Load(m);
 }
 //! Wrapper for SIMD4 macro to store to aligned floating-point data.
-void             wrapperSimd4StoreR(real *m, gmx::Simd4Real s)
+void             wrapperSimd4StoreR(real *m, Simd4Real s)
 {
-    gmx::simd4Store(m, s);
+    simd4Store(m, s);
 }
 
 TEST(SimdBootstrapTest, gmxSimd4LoadStoreR)
@@ -287,9 +296,9 @@ TEST(SimdBootstrapTest, gmxSimd4LoadStoreR)
 
 #    if GMX_SIMD_HAVE_LOADU
 //! Wrapper for SIMD4 macro to load unaligned floating-point data.
-gmx::Simd4Real WrapperSimd4LoadUR(real *m)
+Simd4Real WrapperSimd4LoadUR(real *m)
 {
-    return gmx::simd4LoadU(m);
+    return simd4LoadU(m);
 }
 
 TEST(SimdBootstrapTest, gmxSimd4LoadUR)
@@ -303,9 +312,9 @@ TEST(SimdBootstrapTest, gmxSimd4LoadUR)
 
 #    if GMX_SIMD_HAVE_STOREU
 //! Wrapper for SIMD4 macro to store to unaligned floating-point data.
-void WrapperSimd4StoreUR(real *m, gmx::Simd4Real s)
+void WrapperSimd4StoreUR(real *m, Simd4Real s)
 {
-    gmx::simd4StoreU(m, s);
+    simd4StoreU(m, s);
 }
 
 TEST(SimdBootstrapTest, gmxSimd4StoreUR)
@@ -322,5 +331,9 @@ TEST(SimdBootstrapTest, gmxSimd4StoreUR)
 /*! \endcond */
 
 }      // namespace
+
+}      // namespace test
+
+}      // namespace gmx
 
 #endif // GMX_SIMD

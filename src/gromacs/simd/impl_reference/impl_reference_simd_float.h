@@ -39,7 +39,7 @@
 /*! \libinternal \file
  *
  * \brief Reference implementation, SIMD single precision.
- *
+
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  *
  * \ingroup module_simd
@@ -48,7 +48,12 @@
 #include <cmath>
 #include <cstdint>
 
-#include "impl_reference_common.h"
+#include <algorithm>
+
+#include "impl_reference_definitions.h"
+
+namespace gmx
+{
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */
@@ -59,39 +64,41 @@
  */
 /*! \libinternal \brief Float SIMD variable. Supported if GMX_SIMD_HAVE_FLOAT.
  */
-typedef struct
+struct SimdFloat
 {
     float r[GMX_SIMD_FLOAT_WIDTH]; /**< Implementation dependent. Don't touch. */
-}
-SimdFloat;
+};
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from float.
  *
- * This is also the widest integer SIMD type.
+ * This is also the widest integer SIMD type. Available if GMX_SIMD_HAVE_FLOAT.
+ *
+ * \note The integer SIMD type will always be available, but on architectures
+ * that do not have any real integer SIMD support it might be defined as the
+ * floating-point type. This will work fine, since there are separate defines
+ * for whether the implementation can actually do any operations on integer
+ * SIMD types.
  */
-typedef struct
+struct SimdFInt32
 {
     std::int32_t i[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
-}
-SimdFInt32;
+};
 
 /*! \libinternal \brief Boolean type for float SIMD data.
  *
  * You should likely use SimdBool
  * (for SimdReal) instead, unless you really know what you are doing.
  */
-typedef struct
+struct SimdFBool
 {
     std::int32_t b[GMX_SIMD_FLOAT_WIDTH]; /**< Implementation dependent. Don't touch. */
-}
-SimdFBool;
+};
 
 /*! \libinternal \brief Boolean type for integer datatypes corresponding to float SIMD. */
-typedef struct
+struct SimdFIBool
 {
     std::int32_t b[GMX_SIMD_FINT32_WIDTH]; /**< Implementation dependent. Don't touch. */
-}
-SimdFIBool;
+};
 
 /*! \}
  *
@@ -108,9 +115,8 @@ static inline SimdFloat
 simdLoadF(const float *m)
 {
     SimdFloat         a;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         a.r[i] = m[i];
     }
@@ -126,10 +132,9 @@ static inline SimdFloat
 simdLoad1F(const float *m)
 {
     SimdFloat         a;
-    int               i;
     float             f = *m;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         a.r[i] = f;
     }
@@ -145,9 +150,8 @@ static inline SimdFloat
 simdSet1F(float r)
 {
     SimdFloat         a;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         a.r[i] = r;
     }
@@ -162,11 +166,10 @@ static inline SimdFloat
 simdSetZeroF()
 {
     SimdFloat         a;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        a.r[i] = 0.0;
+        a.r[i] = 0.0f;
     }
     return a;
 }
@@ -179,9 +182,7 @@ simdSetZeroF()
 static inline void
 simdStoreF(float *m, SimdFloat a)
 {
-    int i;
-
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         m[i] = a.r[i];
     }
@@ -194,7 +195,8 @@ simdStoreF(float *m, SimdFloat a)
  * \param m Pointer to memory, no alignment requirement.
  * \return SIMD variable with data loaded.
  */
-#define simdLoadUF simdLoadF
+static inline SimdFloat
+simdLoadUF(const float *m) { return simdLoadF(m); }
 
 /*! \brief Store SIMD float to unaligned memory.
  *
@@ -203,15 +205,18 @@ simdStoreF(float *m, SimdFloat a)
  * \param[out] m Pointer to memory, no alignment requirement.
  * \param a SIMD variable to store.
  */
-#define simdStoreUF simdStoreF
+static inline void
+simdStoreUF(float *m, SimdFloat a) { simdStoreF(m, a); }
 
-/*! \}
- *
+/*! \} */
+
+
+/*!
  * \name SIMD implementation load/store operations for integers (corresponding to float)
  * \{
  */
 
-/*! \brief Load aligned SIMD integer data, width corresponds to \ref SimdFloat.
+/*! \brief Load aligned SIMD integer data, width corresponds to \ref gmx::SimdFloat.
  *
  * You should typically call the real-precision \ref gmx::simdLoadI.
  *
@@ -222,15 +227,15 @@ static inline SimdFInt32
 simdLoadFI(const std::int32_t * m)
 {
     SimdFInt32         a;
-    int                i;
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         a.i[i] = m[i];
     }
     return a;
 };
 
-/*! \brief Set SIMD from integer, width corresponds to \ref SimdFloat.
+/*! \brief Set SIMD from integer, width corresponds to \ref gmx::SimdFloat.
  *
  * You should typically call the real-precision \ref gmx::simdSet1I.
  *
@@ -241,15 +246,15 @@ static inline SimdFInt32
 simdSet1FI(std::int32_t b)
 {
     SimdFInt32         a;
-    int                i;
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         a.i[i] = b;
     }
     return a;
 }
 
-/*! \brief Set all SIMD variable elements to 0, width corresponds to \ref SimdFloat.
+/*! \brief Set all SIMD variable elements to 0, width corresponds to \ref gmx::SimdFloat.
  *
  * You should typically call the real-precision \ref gmx::simdSetZeroI.
  *
@@ -259,34 +264,31 @@ static inline SimdFInt32
 simdSetZeroFI()
 {
     SimdFInt32         a;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         a.i[i] = 0;
     }
     return a;
 }
 
-/*! \brief Store aligned SIMD integer data, width corresponds to \ref SimdFloat.
+/*! \brief Store aligned SIMD integer data, width corresponds to \ref gmx::SimdFloat.
  *
  * You should typically call the real-precision \ref gmx::simdStoreI.
  *
  * \param m Memory aligned to integer SIMD width.
  * \param a SIMD variable to store.
  */
-static inline SimdFInt32
-simdStoreFI(int * m, SimdFInt32 a)
+static inline void
+simdStoreFI(std::int32_t * m, SimdFInt32 a)
 {
-    int                i;
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         m[i] = a.i[i];
     }
-    return a;
 };
 
-/*! \brief Load unaligned integer SIMD data, width corresponds to \ref SimdFloat.
+/*! \brief Load unaligned integer SIMD data, width corresponds to \ref gmx::SimdFloat.
  *
  * You should typically call the real-precision \ref gmx::simdLoadUI.
  *
@@ -295,9 +297,10 @@ simdStoreFI(int * m, SimdFInt32 a)
  * \param m Pointer to memory, no alignment requirements.
  * \return SIMD integer variable.
  */
-#define simdLoadUFI  simdLoadFI
+static inline SimdFInt32
+simdLoadUFI(const std::int32_t *m) { return simdLoadFI(m); }
 
-/*! \brief Store unaligned SIMD integer data, width corresponds to \ref SimdFloat.
+/*! \brief Store unaligned SIMD integer data, width corresponds to \ref gmx::SimdFloat.
  *
  * You should typically call the real-precision \ref gmx::simdStoreUI.
  *
@@ -306,20 +309,22 @@ simdStoreFI(int * m, SimdFInt32 a)
  * \param m Memory pointer, no alignment requirements.
  * \param a SIMD variable to store.
  */
-#define simdStoreUFI simdStoreFI
+static inline void
+simdStoreUFI(std::int32_t * m, SimdFInt32 a) { simdStoreFI(m, a); }
 
-/*! \brief Extract element with index i from \ref SimdFInt32.
+/*! \brief Extract element with index i from \ref gmx::SimdFInt32.
  *
  * You should typically call the real-precision \ref gmx::simdExtractI.
  *
  * Available with \ref GMX_SIMD_HAVE_FINT32_EXTRACT.
  *
- * \param a SIMD variable
- * \param index Immediate value, position to extract integer from
+ * \tparam index Compile-time constant, position to extract (first position is 0)
+ * \param  a     SIMD variable from which to extract value.
  * \return Single integer from position index in SIMD variable.
  */
+template<int index>
 static inline std::int32_t
-simdExtractFI(SimdFInt32 a, int index)
+simdExtractFI(SimdFInt32 a)
 {
     return a.i[index];
 }
@@ -342,7 +347,7 @@ static inline SimdFloat
 simdAndF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
+
     union
     {
         float         r;
@@ -350,7 +355,7 @@ simdAndF(SimdFloat a, SimdFloat b)
     }
     conv1, conv2;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         conv1.r = a.r[i];
         conv2.r = b.r[i];
@@ -372,7 +377,7 @@ static inline SimdFloat
 simdAndNotF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
+
     union
     {
         float         r;
@@ -380,7 +385,7 @@ simdAndNotF(SimdFloat a, SimdFloat b)
     }
     conv1, conv2;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         conv1.r = a.r[i];
         conv2.r = b.r[i];
@@ -402,7 +407,7 @@ static inline SimdFloat
 simdOrF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
+
     union
     {
         float         r;
@@ -410,7 +415,7 @@ simdOrF(SimdFloat a, SimdFloat b)
     }
     conv1, conv2;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         conv1.r = a.r[i];
         conv2.r = b.r[i];
@@ -432,7 +437,7 @@ static inline SimdFloat
 simdXorF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
+
     union
     {
         float         r;
@@ -440,7 +445,7 @@ simdXorF(SimdFloat a, SimdFloat b)
     }
     conv1, conv2;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         conv1.r = a.r[i];
         conv2.r = b.r[i];
@@ -467,9 +472,8 @@ static inline SimdFloat
 simdAddF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.r[i] = a.r[i] + b.r[i];
     }
@@ -488,9 +492,8 @@ static inline SimdFloat
 simdSubF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.r[i] = a.r[i] - b.r[i];
     }
@@ -509,11 +512,10 @@ static inline SimdFloat
 simdMulF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = a.r[i]*b.r[i];
+        c.r[i] = a.r[i] * b.r[i];
     }
     return c;
 }
@@ -532,7 +534,12 @@ simdMulF(SimdFloat a, SimdFloat b)
  * For some implementations you save an instruction if you assign the result
  * to c.
  */
-#define simdFmaddF(a, b, c) simdAddF(simdMulF(a, b), c)
+static inline SimdFloat
+simdFmaddF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return simdAddF(simdMulF(a, b), c);
+}
+
 
 
 /*! \brief Fused-multiply-subtract. Result is a*b-c.
@@ -549,7 +556,11 @@ simdMulF(SimdFloat a, SimdFloat b)
  * For some implementations you save an instruction if you assign the result
  * to c.
  */
-#define simdFmsubF(a, b, c) simdSubF(simdMulF(a, b), c)
+static inline SimdFloat
+simdFmsubF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return simdSubF(simdMulF(a, b), c);
+}
 
 
 /*! \brief Fused-negated-multiply-add. Result is -a*b+c.
@@ -566,7 +577,11 @@ simdMulF(SimdFloat a, SimdFloat b)
  * For some implementations you save an instruction if you assign the result
  * to c.
  */
-#define simdFnmaddF(a, b, c) simdSubF(c, simdMulF(a, b))
+static inline SimdFloat
+simdFnmaddF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return simdSubF(c, simdMulF(a, b));
+}
 
 
 /*! \brief Fused-negated-multiply-sub. Result is -a*b-c.
@@ -583,7 +598,12 @@ simdMulF(SimdFloat a, SimdFloat b)
  * For some implementations you save an instruction if you assign the result
  * to c.
  */
-#define simdFnmsubF(a, b, c) simdSubF(simdSetZeroF(), simdFmaddF(a, b, c))
+static inline SimdFloat
+simdFnmsubF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return simdSubF(simdSetZeroF(), simdFmaddF(a, b, c));
+}
+
 
 /*! \brief SIMD 1.0/sqrt(x) lookup.
  *
@@ -599,11 +619,10 @@ static inline SimdFloat
 simdRsqrtF(SimdFloat x)
 {
     SimdFloat         b;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        b.r[i] = (x.r[i] > 0.0f) ? 1.0f/sqrtf(x.r[i]) : 0.0f;
+        b.r[i] = 1.0f / std::sqrt(x.r[i]);
     }
     return b;
 };
@@ -622,14 +641,110 @@ static inline SimdFloat
 simdRcpF(SimdFloat x)
 {
     SimdFloat         b;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        b.r[i] = (x.r[i] != 0.0f) ? 1.0f/x.r[i] : 0.0f;
+        b.r[i] = 1.0f / x.r[i];
     }
     return b;
 };
+
+/*! \brief Multiply two SIMD variables, masked version.
+ *
+ * You should typically call the real-precision simdMulMask().
+ *
+ * \param a factor1
+ * \param b factor2
+ * \param m mask
+ * \return a*b where mask is true, 0.0 otherwise.
+ */
+static inline SimdFloat
+simdMulMaskF(SimdFloat a, SimdFloat b, SimdFBool m)
+{
+    SimdFloat         c;
+
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        c.r[i] = m.b[i] ? (a.r[i] * b.r[i]) : 0.0f;
+    }
+    return c;
+}
+
+/*! \brief Fused-multiply-add. Result is a*b+c, masked version.
+ *
+ * You should typically call the real-precision simdFmaddMask().
+ *
+ *  If \ref GMX_SIMD_HAVE_FMA is defined this is a single hardware instruction.
+ *
+ * \param a value
+ * \param b value
+ * \param c value
+ * \param m mask
+ * \return a*b+c where mask is true, 0.0 otherwise.
+ *
+ * For some implementations you save an instruction if you assign the result
+ * to c.
+ */
+static inline SimdFloat
+simdFmaddMaskF(SimdFloat a, SimdFloat b, SimdFloat c,
+               SimdFBool m)
+{
+    SimdFloat         d;
+
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        d.r[i] = m.b[i] ? (a.r[i] * b.r[i] + c.r[i]) : 0.0f;
+    }
+    return d;
+}
+
+/*! \brief SIMD 1.0/sqrt(x) lookup, masked version.
+ *
+ * You should typically call the real-precision \ref gmx::simdRsqrtMask().
+ *
+ * This is a low-level instruction that should only be called from routines
+ * implementing the inverse square root in simd_math.h.
+ *
+ * \param x Argument, x>0 for entries where mask is true.
+ * \param m Mask
+ * \return Approximation of 1/sqrt(x), accuracy is \ref GMX_SIMD_RSQRT_BITS.
+ *         The result for masked-out entries will be 0.0.
+ */
+static inline SimdFloat
+simdRsqrtMaskF(SimdFloat x, SimdFBool m)
+{
+    SimdFloat         b;
+
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        b.r[i] = (m.b[i] != 0) ? 1.0f / std::sqrt(x.r[i]) : 0.0f;
+    }
+    return b;
+}
+
+/*! \brief SIMD 1.0/x lookup, masked version.
+ *
+ * You should typically call the real-precision \ref gmx::simdRcpMask().
+ *
+ * This is a low-level instruction that should only be called from routines
+ * implementing the reciprocal in simd_math.h.
+ *
+ * \param x Argument, x>0 for entries where mask is true.
+ * \param m Mask
+ * \return Approximation of 1/x, accuracy is \ref GMX_SIMD_RCP_BITS.
+ *         The result for masked-out entries will be 0.0.
+ */
+static inline SimdFloat
+simdRcpMaskF(SimdFloat x, SimdFBool m)
+{
+    SimdFloat         b;
+
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        b.r[i] = (m.b[i] != 0) ? 1.0f / x.r[i] : 0.0f;
+    }
+    return b;
+}
 
 /*! \brief SIMD Floating-point fabs().
  *
@@ -642,11 +757,10 @@ static inline SimdFloat
 simdAbsF(SimdFloat a)
 {
     SimdFloat         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = fabsf(a.r[i]);
+        c.r[i] = std::abs(a.r[i]);
     }
     return c;
 }
@@ -662,9 +776,8 @@ static inline SimdFloat
 simdNegF(SimdFloat a)
 {
     SimdFloat         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.r[i] = -a.r[i];
     }
@@ -683,11 +796,10 @@ static inline SimdFloat
 simdMaxF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = (a.r[i] >= b.r[i] ? a.r[i] : b.r[i]);
+        c.r[i] = std::max(a.r[i], b.r[i]);
     }
     return c;
 }
@@ -704,11 +816,10 @@ static inline SimdFloat
 simdMinF(SimdFloat a, SimdFloat b)
 {
     SimdFloat         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = (a.r[i] <= b.r[i] ? a.r[i] : b.r[i]);
+        c.r[i] = std::min(a.r[i], b.r[i]);
     }
     return c;
 }
@@ -732,16 +843,10 @@ static inline SimdFloat
 simdRoundF(SimdFloat a)
 {
     SimdFloat         b;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-#ifdef _MSC_VER
-        int temp = (a.r[i] >= 0.0f) ? (a.r[i] + 0.5f) : (a.r[i] - 0.5f);
-        b.r[i] = temp;
-#else
-        b.r[i] = roundf(a.r[i]);
-#endif
+        b.r[i] = std::round(a.r[i]);
     }
     return b;
 }
@@ -761,11 +866,10 @@ static inline SimdFloat
 simdTruncF(SimdFloat a)
 {
     SimdFloat         b;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        b.r[i] = truncf(a.r[i]);
+        b.r[i] = std::trunc(a.r[i]);
     }
     return b;
 }
@@ -807,7 +911,7 @@ simdGetExponentF(SimdFloat a)
     /* Mask with ones for the exponent field of single precision fp */
     const std::int32_t  expmask = 0x7f800000;
     SimdFloat           b;
-    int                 i;
+
     union
     {
         float         f;
@@ -815,7 +919,7 @@ simdGetExponentF(SimdFloat a)
     }
     conv;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         conv.f = a.r[i];
         /* Keep exponent, shift 23 right (float mantissa), remove bias (127) */
@@ -839,7 +943,7 @@ simdGetMantissaF(SimdFloat a)
     const std::int32_t  mantmask = 0x007fffff;
     const std::int32_t  one      = 0x3f800000;
     SimdFloat           b;
-    int                 i;
+
     union
     {
         float         f;
@@ -847,7 +951,7 @@ simdGetMantissaF(SimdFloat a)
     }
     conv;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         conv.f = a.r[i];
         /* remove current exponent, add a biased exponent for 1.0 (i.e., 2^0=1) */
@@ -876,7 +980,7 @@ simdSetExponentF(SimdFloat a)
 {
     SimdFloat           b;
     std::int32_t        iexp;
-    int                 i;
+
     union
     {
         float         f;
@@ -884,14 +988,10 @@ simdSetExponentF(SimdFloat a)
     }
     conv;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         /* Critical to use same algorithm as for simdRoundF() */
-#ifdef _MSC_VER
-        iexp = (a.r[i] >= 0.0f) ? (a.r[i] + 0.5f) : (a.r[i] - 0.5f);
-#else
-        iexp = roundf(a.r[i]);
-#endif
+        iexp = static_cast<std::int32_t>(std::round(a.r[i]));
         /* Add bias (127), and shift 23 bits left (mantissa size) */
         conv.i = (iexp + 127) << 23;
         b.r[i] = conv.f;
@@ -918,11 +1018,31 @@ static inline SimdFBool
 simdCmpEqF(SimdFloat a, SimdFloat b)
 {
     SimdFBool         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.b[i] = (a.r[i] == b.r[i]);
+    }
+    return c;
+}
+
+/*! \brief SIMD a!=0 for single SIMD.
+ *
+ * You should typically call the real-precision \ref gmx::simdCmpNz().
+ *
+ * \param a value
+ * \return Each element of the boolean will be true if any bit in a is nonzero.
+ *         The behaviour for negative zero is undefined, and should not be
+ *         relied on - it will depend on the architecture.
+ */
+static inline SimdFBool
+simdCmpNzF(SimdFloat a)
+{
+    SimdFBool         c;
+
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] != 0.0f);
     }
     return c;
 }
@@ -939,9 +1059,8 @@ static inline SimdFBool
 simdCmpLtF(SimdFloat a, SimdFloat b)
 {
     SimdFBool          c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.b[i] = (a.r[i] < b.r[i]);
     }
@@ -960,9 +1079,8 @@ static inline SimdFBool
 simdCmpLeF(SimdFloat a, SimdFloat b)
 {
     SimdFBool          c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.b[i] = (a.r[i] <= b.r[i]);
     }
@@ -986,9 +1104,8 @@ static inline SimdFBool
 simdAndFB(SimdFBool a, SimdFBool b)
 {
     SimdFBool         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.b[i] = (a.b[i] && b.b[i]);
     }
@@ -1012,9 +1129,8 @@ static inline SimdFBool
 simdOrFB(SimdFBool a, SimdFBool b)
 {
     SimdFBool         c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.b[i] = (a.b[i] || b.b[i]);
     }
@@ -1026,23 +1142,21 @@ simdOrFB(SimdFBool a, SimdFBool b)
  * You should typically call the real-precision \ref gmx::simdAnyTrueB.
  *
  * \param a Logical variable.
- * \return non-zero if any element in a is true, otherwise 0.
+ * \return true if any element in a is true, otherwise false.
  *
  * The actual return value for truth will depend on the architecture,
  * so any non-zero value is considered truth.
  */
-static inline int
+static inline bool
 simdAnyTrueFB(SimdFBool a)
 {
-    int             anytrue;
-    int             i;
+    bool anyTrue = false;
 
-    anytrue = 0;
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        anytrue = anytrue || a.b[i];
+        anyTrue = anyTrue || a.b[i];
     }
-    return anytrue;
+    return anyTrue;
 }
 
 /*! \brief Select from single precision SIMD variable where boolean is true.
@@ -1057,11 +1171,10 @@ static inline SimdFloat
 simdMaskF(SimdFloat a, SimdFBool mask)
 {
     SimdFloat          c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = mask.b[i] ? a.r[i] : 0.0;
+        c.r[i] = mask.b[i] ? a.r[i] : 0.0f;
     }
     return c;
 }
@@ -1078,11 +1191,10 @@ static inline SimdFloat
 simdMaskNotF(SimdFloat a, SimdFBool mask)
 {
     SimdFloat          c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = mask.b[i] ? 0.0 : a.r[i];
+        c.r[i] = mask.b[i] ? 0.0f : a.r[i];
     }
     return c;
 }
@@ -1100,9 +1212,8 @@ static inline SimdFloat
 simdBlendF(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
     SimdFloat         d;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         d.r[i] = sel.b[i] ? b.r[i] : a.r[i];
     }
@@ -1120,10 +1231,9 @@ simdBlendF(SimdFloat a, SimdFloat b, SimdFBool sel)
 static inline float
 simdReduceF(SimdFloat a)
 {
-    float     sum = 0.0;
-    int       i;
+    float     sum = 0.0f;
 
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         sum += a.r[i];
     }
@@ -1153,9 +1263,8 @@ static inline SimdFInt32
 simdSlliFI(SimdFInt32 a, int n)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] << n;
     }
@@ -1179,9 +1288,8 @@ static inline SimdFInt32
 simdSrliFI(SimdFInt32 a, int n)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] >> n;
     }
@@ -1207,9 +1315,8 @@ static inline SimdFInt32
 simdAndFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] & b.i[i];
     }
@@ -1235,9 +1342,8 @@ static inline SimdFInt32
 simdAndNotFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.i[i] = (~a.i[i]) & b.i[i];
     }
@@ -1259,9 +1365,8 @@ static inline SimdFInt32
 simdOrFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] | b.i[i];
     }
@@ -1283,9 +1388,8 @@ static inline SimdFInt32
 simdXorFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] ^ b.i[i];
     }
@@ -1312,9 +1416,8 @@ static inline SimdFInt32
 simdAddFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] + b.i[i];
     }
@@ -1336,9 +1439,8 @@ static inline SimdFInt32
 simdSubFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.i[i] = a.i[i] - b.i[i];
     }
@@ -1362,11 +1464,10 @@ static inline SimdFInt32
 simdMulFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-        c.i[i] = a.i[i]*b.i[i];
+        c.i[i] = a.i[i] * b.i[i];
     }
     return c;
 }
@@ -1392,9 +1493,8 @@ static inline SimdFIBool
 simdCmpEqFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFIBool         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.b[i] = (a.i[i] == b.i[i]);
     }
@@ -1416,9 +1516,8 @@ static inline SimdFIBool
 simdCmpLtFI(SimdFInt32 a, SimdFInt32 b)
 {
     SimdFIBool         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.b[i] = (a.i[i] < b.i[i]);
     }
@@ -1440,9 +1539,8 @@ static inline SimdFIBool
 simdAndFIB(SimdFIBool a, SimdFIBool b)
 {
     SimdFIBool        c;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.b[i] = (a.b[i] && b.b[i]);
     }
@@ -1464,16 +1562,15 @@ static inline SimdFIBool
 simdOrFIB(SimdFIBool a, SimdFIBool b)
 {
     SimdFIBool         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         c.b[i] = (a.b[i] || b.b[i]);
     }
     return c;
 }
 
-/*! \brief Returns non-zero if any of the boolean in x is True, otherwise 0.
+/*! \brief Returns true if any of the boolean in x is True, otherwise 0.
  *
  * You should typically call the real-precision \ref gmx::simdAnyTrueIB.
  *
@@ -1484,23 +1581,21 @@ simdOrFIB(SimdFIBool a, SimdFIBool b)
  * Any non-zero value should be considered truth.
  *
  * \param a SIMD boolean
- * \return Nonzero integer if any of the elements in a is true, otherwise 0.
+ * \return True if any of the elements in a is true, otherwise 0.
  */
-static inline int
+static inline bool
 simdAnyTrueFIB(SimdFIBool a)
 {
-    int             anytrue;
-    int             i;
+    bool anyTrue = false;
 
-    anytrue = 0;
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-        anytrue = anytrue || a.b[i];
+        anyTrue = anyTrue || a.b[i];
     }
-    return anytrue;
+    return anyTrue;
 }
 
-/*! \brief Select from \ref SimdFInt32 variable where boolean is true.
+/*! \brief Select from \ref gmx::SimdFInt32 variable where boolean is true.
  *
  * You should typically call the real-precision \ref gmx::simdMaskI.
  *
@@ -1515,16 +1610,15 @@ static inline SimdFInt32
 simdMaskFI(SimdFInt32 a, SimdFIBool mask)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-        c.i[i] = mask.b[i] ? a.i[i] : 0.0;
+        c.i[i] = mask.b[i] ? a.i[i] : 0.0f;
     }
     return c;
 }
 
-/*! \brief Select from \ref SimdFInt32 variable where boolean is false.
+/*! \brief Select from \ref gmx::SimdFInt32 variable where boolean is false.
  *
  * You should typically call the real-precision \ref gmx::simdMaskNotI.
  *
@@ -1539,11 +1633,10 @@ static inline SimdFInt32
 simdMaskNotFI(SimdFInt32 a, SimdFIBool mask)
 {
     SimdFInt32         c;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-        c.i[i] = mask.b[i] ? 0.0 : a.i[i];
+        c.i[i] = mask.b[i] ? 0.0f : a.i[i];
     }
     return c;
 }
@@ -1564,9 +1657,8 @@ static inline SimdFInt32
 simdBlendFI(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
 {
     SimdFInt32        d;
-    int               i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         d.i[i] = sel.b[i] ? b.i[i] : a.i[i];
     }
@@ -1590,15 +1682,10 @@ static inline SimdFInt32
 simdCvtF2I(SimdFloat a)
 {
     SimdFInt32         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-#ifdef _MSC_VER
-        b.i[i] = (a.r[i] >= 0.0) ? (a.r[i] + 0.5) : (a.r[i] - 0.5);
-#else
-        b.i[i] = roundf(a.r[i]);
-#endif
+        b.i[i] = std::round(a.r[i]);
     }
     return b;
 };
@@ -1614,9 +1701,8 @@ static inline SimdFInt32
 simdCvttF2I(SimdFloat a)
 {
     SimdFInt32         b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         b.i[i] = a.r[i];
     }
@@ -1634,9 +1720,8 @@ static inline SimdFloat
 simdCvtI2F(SimdFInt32 a)
 {
     SimdFloat          b;
-    int                i;
 
-    for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
         b.r[i] = a.i[i];
     }
@@ -1654,10 +1739,9 @@ static inline SimdFIBool
 simdCvtFB2FIB(SimdFBool a)
 {
     SimdFIBool         b;
-    int                i;
 
     /* Integer width >= float width */
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         b.b[i] = a.b[i];
     }
@@ -1675,10 +1759,9 @@ static inline SimdFBool
 simdCvtFIB2FB(SimdFIBool a)
 {
     SimdFBool         b;
-    int               i;
 
     /* Integer width >= float width */
-    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         b.b[i] = a.b[i];
     }
@@ -1689,5 +1772,7 @@ simdCvtFIB2FB(SimdFIBool a)
 
 /*! \} */
 /*! \endcond */
+
+}
 
 #endif /* GMX_SIMD_IMPL_REFERENCE_SIMD_FLOAT_H */
