@@ -47,6 +47,10 @@
  * - simdLoadI(),simdStoreI(), simdLoadUI(),simdStoreUI()
  * - simd4Load(),simd4Store(), simd4LoadU(),simd4StoreU()
  *
+ * Note that you probably do not have to add more tests in this (complicated)
+ * file; once the bootstrapping tests have passed we can use the working basic
+ * load/store operations to test higher-level load/store operations too.
+ *
  * \author Erik Lindahl <erik.lindahl@scilifelab.se>
  * \ingroup module_simd
  */
@@ -65,6 +69,7 @@ namespace
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
+
 
 /*! \brief Generic routine to test load & store of SIMD, and check for side effects.
  *
@@ -162,9 +167,7 @@ TEST(SimdBootstrapTest, gmxSimdStoreUR)
     }
 }
 #    endif
-#endif
 
-#if GMX_SIMD_HAVE_INT32
 // Tests for SimdInt32 load & store operations
 
 //! Wrapper for SIMD macro to load aligned integer data.
@@ -180,7 +183,7 @@ void             wrapperSimdStoreI(int *m, gmx::SimdInt32 s)
 
 TEST(SimdBootstrapTest, gmxSimdLoadStoreI)
 {
-    simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreI, 0, 0, GMX_SIMD_INT32_WIDTH);
+    simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreI, 0, 0, GMX_SIMD_REAL_WIDTH);
 }
 
 #    if GMX_SIMD_HAVE_LOADU
@@ -192,9 +195,9 @@ gmx::SimdInt32 wrapperSimdLoadUI(int *m)
 
 TEST(SimdBootstrapTest, gmxSimdLoadUI)
 {
-    for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
-        simdLoadStoreTester(wrapperSimdLoadUI, wrapperSimdStoreI, i, 0, GMX_SIMD_INT32_WIDTH);
+        simdLoadStoreTester(wrapperSimdLoadUI, wrapperSimdStoreI, i, 0, GMX_SIMD_REAL_WIDTH);
     }
 }
 #    endif
@@ -208,9 +211,9 @@ void wrapperSimdStoreUI(int *m, gmx::SimdInt32 s)
 
 TEST(SimdBootstrapTest, gmxSimdStoreUI)
 {
-    for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
+    for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
-        simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreUI, 0, i, GMX_SIMD_INT32_WIDTH);
+        simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreUI, 0, i, GMX_SIMD_REAL_WIDTH);
     }
 }
 #    endif

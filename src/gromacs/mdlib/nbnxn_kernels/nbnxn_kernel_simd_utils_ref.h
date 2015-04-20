@@ -40,7 +40,7 @@
 
 typedef gmx::SimdInt32        gmx_simd_ref_exclfilter;
 typedef gmx_simd_ref_exclfilter gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
+static const int filter_stride = 1;
 
 /* Set the stride for the lookup of the two LJ parameters from their
    (padded) array. Only strides of 2 and 4 are currently supported. */

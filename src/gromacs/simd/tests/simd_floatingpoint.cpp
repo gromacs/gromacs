@@ -34,10 +34,13 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
+
+#include "testutils/testasserts.h"
 
 #include "simd.h"
 
@@ -93,11 +96,29 @@ TEST_F(SimdFloatingpointTest, gmxSimdMulR)
                             simdMul(rSimd_1_2_3, rSimd_4_5_6));
 }
 
+#if GMX_SIMD == 2
+TEST_F(SimdFloatingpointTest, gmxSimdMulMaskR)
+{
+    SimdBool m = simdCmpNz(setSimdRealFrom3R(1, 0, 1));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(4, 0, 18),
+                            simdMulMask(rSimd_1_2_3, rSimd_4_5_6, m));
+}
+#endif
+
 TEST_F(SimdFloatingpointTest, gmxSimdFmaddR)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(11, 18, 27),
                             simdFmadd(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9)); // 1*4+7, etc.
 }
+
+#if GMX_SIMD == 2
+TEST_F(SimdFloatingpointTest, gmxSimdFmaddMaskR)
+{
+    SimdBool m = simdCmpNz(setSimdRealFrom3R(1, 0, 1));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(11, 0, 27),
+                            simdFmaddMask(rSimd_1_2_3, rSimd_4_5_6, rSimd_7_8_9, m)); // 1*4+7, etc.
+}
+#endif
 
 TEST_F(SimdFloatingpointTest, gmxSimdFmsubR)
 {
@@ -261,7 +282,7 @@ TEST_F(SimdFloatingpointTest, gmxSimdSetExponentR)
 TEST_F(SimdFloatingpointTest, gmxSimdRsqrtR)
 {
     SimdReal        x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    SimdReal        ref                = setSimdRealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    SimdReal        ref                = setSimdRealFrom3R(0.5, 1.0/std::sqrt(M_PI), 1.0/std::sqrt(1234567890.0));
     int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
@@ -274,6 +295,26 @@ TEST_F(SimdFloatingpointTest, gmxSimdRsqrtR)
      */
     setUlpTol(1LL << shiftbits);
     GMX_EXPECT_SIMD_REAL_NEAR(ref, simdRsqrt(x));
+}
+
+TEST_F(SimdFloatingpointTest, gmxSimdRsqrtMaskR)
+{
+    SimdReal        x                  = setSimdRealFrom3R(M_PI, -4.0, 0.0);
+    // simdCmpLe is tested separately further down
+    SimdBool        m                  = simdCmpLt(simdSetZero(), x);
+    SimdReal        ref                = setSimdRealFrom3R(1.0/std::sqrt(M_PI), 0.0, 0.0);
+    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+
+    if (shiftbits < 0)
+    {
+        shiftbits = 0;
+    }
+
+    /* Set the allowed ulp error as 2 to the power of the number of bits in
+     * the mantissa that do not have to be correct after the table lookup.
+     */
+    setUlpTol(1LL << shiftbits);
+    GMX_EXPECT_SIMD_REAL_NEAR(ref, simdRsqrtMask(x, m));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdRcpR)
@@ -294,10 +335,35 @@ TEST_F(SimdFloatingpointTest, gmxSimdRcpR)
     GMX_EXPECT_SIMD_REAL_NEAR(ref, simdRcp(x));
 }
 
+TEST_F(SimdFloatingpointTest, gmxSimdRcpMaskR)
+{
+    SimdReal        x                  = setSimdRealFrom3R(M_PI, 0.0, -1234567890.0);
+    SimdBool        m                  = simdCmpNz(x);
+    SimdReal        ref                = setSimdRealFrom3R(1.0/M_PI, 0.0, -1.0/1234567890.0);
+    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS;
+
+    if (shiftbits < 0)
+    {
+        shiftbits = 0;
+    }
+
+    /* Set the allowed ulp error as 2 to the power of the number of bits in
+     * the mantissa that do not have to be correct after the table lookup.
+     */
+    setUlpTol(1LL << shiftbits);
+    GMX_EXPECT_SIMD_REAL_NEAR(ref, simdRcpMask(x, m));
+}
+
 TEST_F(SimdFloatingpointTest, gmxSimdBoolCmpEqAndBlendZeroR)
 {
     SimdBool eq   = simdCmpEq(rSimd_5_7_9, rSimd_7_8_9);
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, 3), simdMask(rSimd_1_2_3, eq));
+}
+
+TEST_F(SimdFloatingpointTest, gmxSimdBoolCmpNzAndBlendZeroR)
+{
+    SimdBool eq   = simdCmpNz(setSimdRealFrom3R(1, 0, 2));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 0, 3), simdMask(rSimd_1_2_3, eq));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdBlendNotZeroR)
@@ -369,6 +435,71 @@ TEST_F(SimdFloatingpointTest, gmxSimdReduceR)
 }
 
 #endif      // GMX_SIMD_HAVE_REAL
+
+#if GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
+TEST_F(SimdFloatingpointTest, gmxSimdCvtFloat2Double)
+{
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
+
+    int                               i;
+    SimdFloat                         vf;
+    SimdDouble                        vd0;
+
+    gmx::test::FloatingPointTolerance tolerance(gmx::test::defaultRealTolerance());
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        f[i] = i;
+    }
+
+    vf = simdLoadF(f);
+#if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
+    SimdDouble vd1;
+    simdCvtF2DD(vf, &vd0, &vd1);
+    simdStoreD(d + GMX_SIMD_DOUBLE_WIDTH, vd1); // Store upper part halfway through array
+#else
+    vd0 = simdCvtF2D(vf);
+#endif
+    simdStoreD(d, vd0); // store lower (or whole) part from start of vector
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        EXPECT_REAL_EQ_TOL(f[i], d[i], tolerance);
+    }
+}
+
+TEST_F(SimdFloatingpointTest, gmxSimdCvtDouble2Float)
+{
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
+    int                               i;
+    SimdFloat                         vf;
+    SimdDouble                        vd0;
+    gmx::test::FloatingPointTolerance tolerance(gmx::test::defaultRealTolerance());
+
+    // This fills elements for pd1 too when double width is 2*single width
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        d[i] = i;
+    }
+
+    vd0 = simdLoadD(d);
+#if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
+    SimdDouble vd1 = simdLoadD(d + GMX_SIMD_DOUBLE_WIDTH); // load upper half of data
+    vf = simdCvtDD2F(vd0, vd1);
+#else
+    vf = simdCvtD2F(vd0);
+#endif
+    simdStoreF(f, vf);
+
+    // This will check elements in pd1 too when double width is 2*single width
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        EXPECT_REAL_EQ_TOL(d[i], f[i], tolerance);
+    }
+}
+#endif      // GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
 
 /*! \} */
 /*! \endcond */

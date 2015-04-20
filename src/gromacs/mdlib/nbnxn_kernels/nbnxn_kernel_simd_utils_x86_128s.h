@@ -46,7 +46,7 @@
  */
 
 typedef gmx::SimdInt32 gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
+static const int filter_stride = 1;
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
 static gmx_inline void gmx_simdcall

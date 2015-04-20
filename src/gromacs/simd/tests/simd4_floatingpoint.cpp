@@ -34,10 +34,11 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #include "simd4.h"
 
@@ -205,7 +206,7 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4TruncR)
 TEST_F(Simd4FloatingpointTest, gmxSimd4RsqrtR)
 {
     Simd4Real        x                   = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
-    Simd4Real        ref                 = setSimd4RealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    Simd4Real        ref                 = setSimd4RealFrom3R(0.5, 1.0/std::sqrt(M_PI), 1.0/std::sqrt(1234567890.0));
     int              shiftbits           = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
@@ -304,6 +305,48 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4DotProduct3R)
     EXPECT_FLOAT_EQ(45.0, simd4DotProduct(v1, v2));
 #    endif
 }
+
+#if GMX_SIMD == 2
+TEST_F(Simd4FloatingpointTest, gmxSimd4TransposeR)
+{
+    Simd4Real        v0, v1, v2, v3;
+    int              i;
+    // aligned pointers
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH) p0[4*GMX_SIMD4_WIDTH];
+    real          *  p1 = p0 + GMX_SIMD4_WIDTH;
+    real          *  p2 = p0 + 2*GMX_SIMD4_WIDTH;
+    real          *  p3 = p0 + 3*GMX_SIMD4_WIDTH;
+
+    // Assign data with tens as row, single-digit as column
+    for (i = 0; i < 4; i++)
+    {
+        p0[i] = 0*10 + i*1;
+        p1[i] = 1*10 + i*1;
+        p2[i] = 2*10 + i*1;
+        p3[i] = 3*10 + i*1;
+    }
+
+    v0 = simd4Load(p0);
+    v1 = simd4Load(p1);
+    v2 = simd4Load(p2);
+    v3 = simd4Load(p3);
+
+    simd4Transpose(v0, v1, v2, v3);
+
+    simd4Store(p0, v0);
+    simd4Store(p1, v1);
+    simd4Store(p2, v2);
+    simd4Store(p3, v3);
+
+    for (i = 0; i < 4; i++)
+    {
+        EXPECT_EQ(i*10+0, p0[i]);
+        EXPECT_EQ(i*10+1, p1[i]);
+        EXPECT_EQ(i*10+2, p2[i]);
+        EXPECT_EQ(i*10+3, p3[i]);
+    }
+}
+#endif      // GMX_SIMD==2
 
 #endif      // GMX_SIMD4_HAVE_REAL
 

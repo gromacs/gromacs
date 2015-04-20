@@ -45,10 +45,13 @@
  * \ingroup module_simd
  */
 
-#include <math.h>
+#include <cmath>
 
 #include "impl_reference_common.h"
 #include "impl_reference_simd_float.h"
+
+namespace gmx
+{
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */
@@ -70,132 +73,157 @@
  * reference implementation, this will often not be the case for
  * other architectures.
  */
-#    define Simd4Float    SimdFloat
+typedef SimdFloat         Simd4Float;
 
 /*! \brief Load SIMD4 float from aligned memory.
  *  \copydetails simdLoadF
  */
-#    define simd4LoadF     simdLoadF
+static inline Simd4Float
+simd4LoadF(const float *m) { return simdLoadF(m); }
 
 /*! \brief Set all elements of SIMD4 float from single pointer.
  *  \copydetails simdLoad1F
  */
-#    define simd4Load1F    simdLoad1F
+static inline Simd4Float
+simd4Load1F(const float *m) { return simdLoad1F(m); }
 
 /*! \brief Set all SIMD4 float elements to the value r.
  *  \copydetails simdSet1F
  */
-#    define simd4Set1F     simdSet1F
+static inline Simd4Float
+simd4Set1F(float r) { return simdSet1F(r); }
 
 /*! \brief Store the contents of SIMD4 float pr to aligned memory m.
  *  \copydetails simdStoreF
  */
-#    define simd4StoreF    simdStoreF
+static inline void
+simd4StoreF(float *m, Simd4Float a) { simdStoreF(m, a); }
 
 /*! \brief Load SIMD4 float from unaligned memory.
  * \copydetails simdLoadUF
  */
-#    define simd4LoadUF    simdLoadUF
+static inline Simd4Float
+simd4LoadUF(const float *m) { return simdLoadF(m); }
 
 /*! \brief Store SIMD4 float to unaligned memory.
  * \copydetails simdStoreUF
  */
-#    define simd4StoreUF   simdStoreUF
+static inline void
+simd4StoreUF(float *m, Simd4Float a) { simdStoreF(m, a); }
 
 /*! \brief Set all SIMD4 float elements to 0.
  * \copydetails simdSetZeroF
  */
-#    define simd4SetZeroF  simdSetZeroF
+static inline Simd4Float
+simd4SetZeroF() { return simdSetZeroF(); }
 
 /*! \brief Bitwise and for two SIMD4 float variables.
  * \copydetails simdAndF
  */
-#    define simd4AndF      simdAndF
+static inline Simd4Float
+simd4AndF(Simd4Float a, Simd4Float b) { return simdAndF(a, b); }
 
 /*! \brief Bitwise andnot for two SIMD4 float variables. c=(~a) & b.
  * \copydetails simdAndNotF
  */
-#    define simd4AndNotF   simdAndNotF
+static inline Simd4Float
+simd4AndNotF(Simd4Float a, Simd4Float b) { return simdAndNotF(a, b); }
 
 /*! \brief Bitwise or for two SIMD4 float variables.
  * \copydetails simdOrF
  */
-#    define simd4OrF       simdOrF
+static inline Simd4Float
+simd4OrF(Simd4Float a, Simd4Float b) { return simdOrF(a, b); }
 
 /*! \brief Bitwise xor for two SIMD4 float variables.
  * \copydetails simdXorF
  */
-#    define simd4XorF      simdXorF
+static inline Simd4Float
+simd4XorF(Simd4Float a, Simd4Float b) { return simdXorF(a, b); }
 
 /*! \brief Add two SIMD4 float variables.
  * \copydetails simdAddF
  */
-#    define simd4AddF      simdAddF
+static inline Simd4Float
+simd4AddF(Simd4Float a, Simd4Float b) { return simdAddF(a, b); }
 
 /*! \brief Subtract two SIMD4 float variables.
  * \copydetails simdSubF
  */
-#    define simd4SubF      simdSubF
+static inline Simd4Float
+simd4SubF(Simd4Float a, Simd4Float b) { return simdSubF(a, b); }
 
 /*! \brief Multiply two SIMD4 float variables.
  * \copydetails simdMulF
  */
-#    define simd4MulF      simdMulF
+static inline Simd4Float
+simd4MulF(Simd4Float a, Simd4Float b) { return simdMulF(a, b); }
 
 /*! \brief Fused-multiply-add for SIMD4 float. Result is a*b+c.
  * \copydetails simdFmaddF
  */
-#    define simd4FmaddF    simdFmaddF
+static inline Simd4Float
+simd4FmaddF(Simd4Float a, Simd4Float b, Simd4Float c) { return simdFmaddF(a, b, c); }
 
 /*! \brief Fused-multiply-subtract for SIMD4 float. Result is a*b-c.
  * \copydetails simdFmsubF
  */
-#    define simd4FmsubF    simdFmsubF
+static inline Simd4Float
+simd4FmsubF(Simd4Float a, Simd4Float b, Simd4Float c) { return simdFmsubF(a, b, c); }
 
 /*! \brief Fused-negated-multiply-add for SIMD4 float. Result is -a*b+c.
  * \copydetails simdFnmaddF
  */
-#    define simd4FnmaddF   simdFnmaddF
+static inline Simd4Float
+simd4FnmaddF(Simd4Float a, Simd4Float b, Simd4Float c) { return simdFnmaddF(a, b, c); }
 
 /*! \brief Fused-negated-multiply-add for SIMD4 float. Result is -a*b-c.
  * \copydetails simdFnmsubF
  */
-#    define simd4FnmsubF   simdFnmsubF
+static inline Simd4Float
+simd4FnmsubF(Simd4Float a, Simd4Float b, Simd4Float c) { return simdFnmsubF(a, b, c); }
 
 /*! \brief Lookup of approximate 1/sqrt(x) for SIMD4 float.
  * \copydetails simdRsqrtF
  */
-#    define simd4RsqrtF    simdRsqrtF
+static inline Simd4Float
+simd4RsqrtF(Simd4Float x) { return simdRsqrtF(x); }
 
 /*! \brief Floating-point absolute value for SIMD4 float.
  * \copydetails simdAbsF
  */
-#    define simd4AbsF     simdAbsF
+static inline Simd4Float
+simd4AbsF(Simd4Float a) { return simdAbsF(a); }
 
 /*! \brief Floating-point negate for SIMD4 float.
  * \copydetails simdNegF
  */
-#    define simd4NegF     simdNegF
+static inline Simd4Float
+simd4NegF(Simd4Float a) { return simdNegF(a); }
 
 /*! \brief Set each SIMD4 float element to the largest from two variables.
  * \copydetails simdMaxF
  */
-#    define simd4MaxF      simdMaxF
+static inline Simd4Float
+simd4MaxF(Simd4Float a, Simd4Float b) { return simdMaxF(a, b); }
 
 /*! \brief Set each SIMD4 float element to the smallest from two variables.
  * \copydetails simdMinF
  */
-#    define simd4MinF      simdMinF
+static inline Simd4Float
+simd4MinF(Simd4Float a, Simd4Float b) { return simdMinF(a, b); }
 
 /*! \brief Round to nearest integer value for SIMD4 float.
  * \copydetails simdRoundF
  */
-#    define simd4RoundF    simdRoundF
+static inline Simd4Float
+simd4RoundF(Simd4Float a) { return simdRoundF(a); }
 
 /*! \brief Round to largest integral value for SIMD4 float.
  * \copydetails simdTruncF
  */
-#    define simd4TruncF    simdTruncF
+static inline Simd4Float
+simd4TruncF(Simd4Float a) { return simdTruncF(a); }
 
 /*! \brief Return dot product of two single precision SIMD4 variables.
  *
@@ -209,71 +237,123 @@
 static inline float
 simd4DotProductF(SimdFloat a, SimdFloat b)
 {
-    return a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2];
+    return a.r[0] * b.r[0] + a.r[1] * b.r[1] + a.r[2] * b.r[2];
+}
+
+/*! \brief SIMD4 float transpose
+ *
+ * \param[in,out] v0  Row 0 on input, column 0 on output
+ * \param[in,out] v1  Row 1 on input, column 1 on output
+ * \param[in,out] v2  Row 2 on input, column 2 on output
+ * \param[in,out] v3  Row 3 on input, column 3 on output
+ *
+ * This is only available in C++.
+ */
+static inline void
+simd4Transpose(Simd4Float &v0, Simd4Float &v1,
+               Simd4Float &v2, Simd4Float &v3)
+{
+    Simd4Float t0, t1, t2, t3;
+    t0      = v0;
+    t1      = v1;
+    t2      = v2;
+    t3      = v3;
+    v0.r[0] = t0.r[0];
+    v0.r[1] = t1.r[0];
+    v0.r[2] = t2.r[0];
+    v0.r[3] = t3.r[0];
+    v1.r[0] = t0.r[1];
+    v1.r[1] = t1.r[1];
+    v1.r[2] = t2.r[1];
+    v1.r[3] = t3.r[1];
+    v2.r[0] = t0.r[2];
+    v2.r[1] = t1.r[2];
+    v2.r[2] = t2.r[2];
+    v2.r[3] = t3.r[2];
+    v3.r[0] = t0.r[3];
+    v3.r[1] = t1.r[3];
+    v3.r[2] = t2.r[3];
+    v3.r[3] = t3.r[3];
 }
 
 /*! \brief SIMD4 variable type to use for logical comparisons on floats.
  * \copydetails SimdFBool
  */
-#    define Simd4FBool   SimdFBool
+typedef SimdFBool        Simd4FBool;
 
 /*! \brief Equality comparison of two single precision SIMD4.
  * \copydetails simdCmpEqF
  */
-#    define simd4CmpEqF   simdCmpEqF
+static inline Simd4FBool
+simd4CmpEqF(Simd4Float a, Simd4Float b) { return simdCmpEqF(a, b); }
+
+/*! \brief Return true for nonzero SIMD4 elements (i.e., with bits set)
+ * \copydetails simdCmpNzF
+ */
+static inline Simd4FBool
+simd4CmpNzF(Simd4Float a) { return simdCmpNzF(a); }
 
 /*! \brief Less-than comparison of two single precision SIMD4.
  * \copydetails simdCmpLtF
  */
-#    define simd4CmpLtF   simdCmpLtF
+static inline Simd4FBool
+simd4CmpLtF(Simd4Float a, Simd4Float b) { return simdCmpLtF(a, b); }
 
 /*! \brief Less-than comparison of two single precision SIMD4.
  * \copydetails simdCmpLeF
  */
-#    define simd4CmpLeF   simdCmpLeF
+static inline Simd4FBool
+simd4CmpLeF(Simd4Float a, Simd4Float b) { return simdCmpLeF(a, b); }
 
 /*! \brief Logical AND on float SIMD4 booleans.
  * \copydetails simdAndFB
  */
-#    define simd4AndFB simdAndFB
+static inline Simd4FBool
+simd4AndFB(Simd4FBool a, Simd4FBool b) { return simdAndFB(a, b); }
 
 /*! \brief Logical OR on float SIMD4 booleans.
  * \copydetails simdOrFB
  */
-#    define simd4OrFB simdOrFB
+static inline Simd4FBool
+simd4OrFB(Simd4FBool a, Simd4FBool b) { return simdOrFB(a, b); }
 
 /*! \brief Returns non-zero if any of the SIMD4 boolean in x is True.
  * \copydetails simdAnyTrueFB
  */
-#    define simd4AnyTrueFB simdAnyTrueFB
+static inline int
+simd4AnyTrueFB(Simd4FBool a) { return simdAnyTrueFB(a); }
 
 /*! \brief Select from single precision SIMD4 variable where boolean is true.
  * \copydetails simdMaskF
  */
-#    define simd4MaskF simdMaskF
+static inline Simd4Float
+simd4MaskF(Simd4Float a, Simd4FBool mask) { return simdMaskF(a, mask); }
 
 /*! \brief Select from single precision SIMD4 variable where boolean is false.
  * \copydetails simdMaskNotF
  */
-#    define simd4MaskNotF simdMaskNotF
+static inline Simd4Float
+simd4MaskNotF(Simd4Float a, Simd4FBool mask) { return simdMaskNotF(a, mask); }
 
 /*! \brief Vector-blend instruction form SIMD4 float.
  * \copydetails simdBlendF
  */
-#    define simd4BlendF  simdBlendF
+static inline Simd4Float
+simd4BlendF(Simd4Float a, Simd4Float b, Simd4FBool sel) { return simdBlendF(a, b, sel); }
 
 /*! \brief Return sum of all elements in SIMD4 float.
  * \copydetails simdReduceF
  */
-#    define simd4ReduceF  simdReduceF
+static inline float
+simd4ReduceF(Simd4Float a) { return simdReduceF(a); }
 
-#else /* GMX_SIMD_FLOAT_WIDTH!=4 */
-#    define GMX_SIMD4_HAVE_FLOAT    0
-#endif
+#endif  /* GMX_SIMD_FLOAT_WIDTH==4 */
 
 /*! \} */
 
 /*! \} */
 /*! \endcond */
+
+}      // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_REFERENCE_SIMD4_FLOAT_H */
