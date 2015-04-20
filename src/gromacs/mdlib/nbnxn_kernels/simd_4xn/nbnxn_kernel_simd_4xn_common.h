@@ -58,6 +58,9 @@
 #define STRIDE     (UNROLLI)
 #endif
 
+// TODO: Remove when all kernels are in the gmx namespace
+using namespace gmx;
+
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace

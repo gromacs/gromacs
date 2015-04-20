@@ -32,51 +32,47 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
 
-#include <cmath>
+#ifndef GMX_SIMD_IMPL_REFERENCE_OTHER_H
+#define GMX_SIMD_IMPL_REFERENCE_OTHER_H
 
-#include "gromacs/simd/simd.h"
-#include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/basedefinitions.h"
 
-#include "simd4.h"
-
-#if GMX_SIMD
+/*! \libinternal \file
+ *
+ * \brief Reference SIMD implementation, general utility functions
+ *
+ * \author Erik Lindahl <erik.lindahl@scilifelab.se>
+ *
+ * \ingroup module_simd
+ */
 
 namespace gmx
 {
-namespace test
+
+/*! \brief Prefetch memory at address m
+ *
+ *  This typically prefetches one cache line of memory from address m,
+ *  usually 64bytes or more, but the exact amount will depend on the
+ *  implementation. On many platforms this is simply a no-op. Technically it
+ *  might not be part of the SIMD instruction set, but since it is a
+ *  hardware-specific function that is normally only used in tight loops where
+ *  we also apply SIMD, it fits well here.
+ *
+ *  There are no guarantees about the level of cache or temporality, but
+ *  usually we expect stuff to end up in level 2, and be used in a few hundred
+ *  clock cycles, after which it stays in cache until evicted (normal caching).
+ *
+ * \param m Pointer to location prefetch. There are no alignment requirements,
+ *        but if the pointer is not aligned the prefetch might start at the
+ *        lower cache line boundary (meaning fewer bytes are prefetched).
+ */
+static void
+simdPrefetch(void gmx_unused * m)
 {
-namespace
-{
-
-/*! \cond internal */
-/*! \addtogroup module_simd */
-/*! \{ */
-
-#if GMX_SIMD4_HAVE_REAL
-
-/*! \brief Test fixture for SIMD4 vector operations (identical to the SIMD4 \ref Simd4Test) */
-typedef Simd4Test Simd4VectorOperationsTest;
-
-TEST_F(Simd4VectorOperationsTest, gmxSimd4CalcRsqR)
-{
-    Simd4Real simdX  = setSimd4RealFrom3R(1, 2, 3);
-    Simd4Real simdY  = setSimd4RealFrom3R(3, 0, 5);
-    Simd4Real simdZ  = setSimd4RealFrom3R(4, 1, 8);
-    Simd4Real simdR2 = setSimd4RealFrom3R(26, 5, 98);
-
-    setUlpTol(2);
-    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, simd4CalcRsq(simdX, simdY, simdZ));
+    /* Do nothing for reference implementaiton */
 }
 
-#endif      // GMX_SIMD4_HAVE_REAL
+}      // namespace gmx
 
-/*! \} */
-/*! \endcond */
-
-}      // namespace
-}      // namespace
-}      // namespace
-
-#endif // GMX_SIMD
+#endif /* GMX_SIMD_IMPL_REFERENCE_OTHER_H */
