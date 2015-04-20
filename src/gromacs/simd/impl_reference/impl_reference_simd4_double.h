@@ -45,10 +45,15 @@
  * \ingroup module_simd
  */
 
-#include <math.h>
+#include <cmath>
 
-#include "impl_reference_common.h"
+#include <algorithm>
+
+#include "impl_reference_definitions.h"
 #include "impl_reference_simd_double.h"
+
+namespace gmx
+{
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */
@@ -69,207 +74,589 @@
  * reference implementation, this will often not be the case for
  * other architectures.
  */
-#    define Simd4Double    SimdDouble
+struct Simd4Double
+{
+    double r[GMX_SIMD4_WIDTH]; /**< Implementation dependent. Don't touch. */
+};
 
 /*! \brief Double precision SIMD4 load aligned.
  * \copydetails simdLoadD
  */
-#    define simd4LoadD     simdLoadD
+static inline Simd4Double
+simd4LoadD(const double *m)
+{
+    Simd4Double       a;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        a.r[i] = m[i];
+    }
+    return a;
+}
 
 /*! \brief Double precision SIMD4 load single value to all elements.
  * \copydetails simdLoad1D
  */
-#    define simd4Load1D    simdLoad1D
+static inline Simd4Double
+simd4Load1D(const double *m)
+{
+    Simd4Double       a;
+    float             f = *m;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        a.r[i] = f;
+    }
+    return a;
+}
 
 /*! \brief Double precision SIMD4 set all elements from value.
  * \copydetails simdSet1D
  */
-#    define simd4Set1D     simdSet1D
+static inline Simd4Double
+simd4Set1D(double r)
+{
+    Simd4Double       a;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        a.r[i] = r;
+    }
+    return a;
+}
 
 /*! \brief Double precision SIMD4 store to aligned memory.
  * \copydetails simdStoreD
  */
-#    define simd4StoreD   simdStoreD
+static inline void
+simd4StoreD(double *m, Simd4Double a)
+{
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        m[i] = a.r[i];
+    }
+}
 
 /*! \brief Load unaligned SIMD4 double.
  * \copydetails simdLoadUD
  */
-#    define simd4LoadUD   simdLoadUD
+static inline Simd4Double
+simd4LoadUD(const double *m) { return simd4LoadD(m); }
 
 /*! \brief Store unaligned SIMD4 double.
  * \copydetails simdStoreUD
  */
-#    define simd4StoreUD  simdStoreUD
+static inline void
+simd4StoreUD(double *m, Simd4Double a) { simd4StoreD(m, a); }
 
 /*! \brief Set all elements in SIMD4 double to 0.0.
  * \copydetails simdSetZeroD
  */
-#    define simd4SetZeroD simdSetZeroD
+static inline Simd4Double
+simd4SetZeroD()
+{
+    return { {
+                 0.0, 0.0, 0.0, 0.0
+             } };
+}
 
 /*! \brief Bitwise and for two SIMD4 double variables.
  * \copydetails simdAndD
  */
-#    define simd4AndD     simdAndD
+static inline Simd4Double
+simd4AndD(Simd4Double a, Simd4Double b)
+{
+    Simd4Double       c;
+
+    union
+    {
+        float         r;
+        std::int32_t  i;
+    }
+    conv1, conv2;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        conv1.r = a.r[i];
+        conv2.r = b.r[i];
+        conv1.i = conv1.i & conv2.i;
+        c.r[i]  = conv1.r;
+    }
+    return c;
+}
+
 
 /*! \brief Bitwise andnot for SIMD4 double. c=(~a) & b.
  * \copydetails simdAndNotD
  */
-#    define simd4AndNotD  simdAndNotD
+static inline Simd4Double
+simd4AndNotD(Simd4Double a, Simd4Double b)
+{
+    Simd4Double       c;
+
+    union
+    {
+        float         r;
+        std::int32_t  i;
+    }
+    conv1, conv2;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        conv1.r = a.r[i];
+        conv2.r = b.r[i];
+        conv1.i = (~conv1.i) & conv2.i;
+        c.r[i]  = conv1.r;
+    }
+    return c;
+}
 
 /*! \brief Bitwise or for SIMD4 double.
  * \copydetails gmx::simdOrD
  */
-#    define simd4OrD      simdOrD
+static inline Simd4Double
+simd4OrD(Simd4Double a, Simd4Double b)
+{
+    Simd4Double       c;
+
+    union
+    {
+        float         r;
+        std::int32_t  i;
+    }
+    conv1, conv2;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        conv1.r = a.r[i];
+        conv2.r = b.r[i];
+        conv1.i = conv1.i | conv2.i;
+        c.r[i]  = conv1.r;
+    }
+    return c;
+}
+
 
 /*! \brief Bitwise xor for SIMD4 double.
  * \copydetails gmx::simdXorD
  */
-#    define simd4XorD     simdXorD
+static inline Simd4Double
+simd4XorD(Simd4Double a, Simd4Double b)
+{
+    Simd4Double       c;
+
+    union
+    {
+        float         r;
+        std::int32_t  i;
+    }
+    conv1, conv2;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        conv1.r = a.r[i];
+        conv2.r = b.r[i];
+        conv1.i = conv1.i ^ conv2.i;
+        c.r[i]  = conv1.r;
+    }
+    return c;
+}
+
 
 /*! \brief Add two SIMD4 double values.
  * \copydetails gmx::simdAddD
  */
-#    define simd4AddD     simdAddD
+static inline Simd4Double
+simd4AddD(Simd4Double a, Simd4Double b)
+{
+    return { {
+                 a.r[0]+b.r[0], a.r[1]+b.r[1], a.r[2]+b.r[2], a.r[3]+b.r[3]
+             } };
+}
+
 
 /*! \brief Subtract two SIMD4 double values.
  * \copydetails gmx::simdSubD
  */
-#    define simd4SubD     simdSubD
+static inline Simd4Double
+simd4SubD(Simd4Double a, Simd4Double b)
+{
+    return { {
+                 a.r[0]-b.r[0], a.r[1]-b.r[1], a.r[2]-b.r[2], a.r[3]-b.r[3]
+             } };
+}
+
 
 /*! \brief Multiply two SIMD4 double values.
  * \copydetails gmx::simdMulD
  */
-#    define simd4MulD     simdMulD
+static inline Simd4Double
+simd4MulD(Simd4Double a, Simd4Double b)
+{
+    return { {
+                 a.r[0]*b.r[0], a.r[1]*b.r[1], a.r[2]*b.r[2], a.r[3]*b.r[3]
+             } };
+}
+
 
 /*! \brief Fused-multiply-add for SIMD4 double. Result is a*b+c.
  * \copydetails gmx::simdFmaddD
  */
-#    define simd4FmaddD   simdFmaddD
+static inline Simd4Double
+simd4FmaddD(Simd4Double a, Simd4Double b, Simd4Double c) { return simd4AddD(simd4MulD(a, b), c); }
 
 /*! \brief Fused-multiply-subtract for SIMD4 double. Result is a*b-c.
  * \copydetails gmx::simdFmsubD
  */
-#    define simd4FmsubD   simdFmsubD
+static inline Simd4Double
+simd4FmsubD(Simd4Double a, Simd4Double b, Simd4Double c) { return simd4SubD(simd4MulD(a, b), c); }
 
 /*! \brief Fused-negated-multiply-add for SIMD4 double. Result is -a*b+c.
  * \copydetails gmx::simdFnmaddD
  */
-#    define simd4FnmaddD  simdFnmaddD
+static inline Simd4Double
+simd4FnmaddD(Simd4Double a, Simd4Double b, Simd4Double c) { return simd4SubD(c, simd4MulD(a, b)); }
 
 /*! \brief Fused-negated-multiply-sub for SIMD4 double. Result is -a*b-c.
  * \copydetails gmx::simdFnmsubD
  */
-#    define simd4FnmsubD  simdFnmsubD
+static inline Simd4Double
+simd4FnmsubD(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return simd4SubD(simd4SetZeroD(), simd4FmaddD(a, b, c));
+}
 
 /*! \brief SIMD4 double 1.0/sqrt(x) lookup.
  * \copydetails gmx::simdRsqrtD
  */
-#    define simd4RsqrtD   simdRsqrtD
+static inline Simd4Double
+simd4RsqrtD(Simd4Double x)
+{
+    Simd4Double        b;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        /* Sic - we only need single precision for the reference lookup, since
+         * we have defined GMX_SIMD_RSQRT_BITS to 23.
+         */
+        b.r[i] = 1.0f / sqrtf(x.r[i]);
+    }
+    return b;
+};
 
 /*! \brief SIMD4 double Floating-point fabs().
  * \copydetails gmx::simdAbsD
  */
-#    define simd4AbsD    simdAbsD
+static inline Simd4Double
+simd4AbsD(Simd4Double a)
+{
+    Simd4Double       c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = std::abs(a.r[i]);
+    }
+    return c;
+}
+
 
 /*! \brief SIMD4 double floating-point negate.
  * \copydetails gmx::simdNegD
  */
-#    define simd4NegD    simdNegD
+static inline Simd4Double
+simd4NegD(Simd4Double a)
+{
+    Simd4Double       c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = -a.r[i];
+    }
+    return c;
+}
+
 
 /*! \brief Set each SIMD4 element to the largest from two variables.
  * \copydetails gmx::simdMaxD
  */
-#    define simd4MaxD     simdMaxD
+static inline Simd4Double
+simd4MaxD(Simd4Double a, Simd4Double b)
+{
+    Simd4Double       c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = std::max(a.r[i], b.r[i]);
+    }
+    return c;
+}
+
 
 /*! \brief Set each SIMD4 element to the smallest from two variables.
  * \copydetails gmx::simdMinD
  */
-#    define simd4MinD     simdMinD
+static inline Simd4Double
+simd4MinD(Simd4Double a, Simd4Double b)
+{
+    Simd4Double       c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = std::min(a.r[i], b.r[i]);
+    }
+    return c;
+}
+
 
 /*!  \brief Round SIMD4 double to nearest integer value (in floating-point format).
  * \copydetails gmx::simdRoundD
  */
-#    define simd4RoundD   simdRoundD
+static inline Simd4Double
+simd4RoundD(Simd4Double a)
+{
+    Simd4Double       b;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        b.r[i] = std::round(a.r[i]);
+    }
+    return b;
+}
+
 
 /*! \brief Truncate SIMD4 double, i.e. round towards zero.
  * \copydetails gmx::simdTruncD
  */
-#    define simd4TruncD   simdTruncD
+static inline Simd4Double
+simd4TruncD(Simd4Double a)
+{
+    Simd4Double       b;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        b.r[i] = std::trunc(a.r[i]);
+    }
+    return b;
+}
+
 
 /*! \brief Return dot product of two double precision SIMD4 variables.
  *
  * \copydetails simd4DotProductF
  */
 static inline double
-simd4DotProductD(SimdDouble a, SimdDouble b)
+simd4DotProductD(Simd4Double a, Simd4Double b)
 {
-    return a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2];
+    return a.r[0] * b.r[0] + a.r[1] * b.r[1] + a.r[2] * b.r[2];
+}
+
+/*! \brief SIMD4 double transpose
+ *
+ * \param[in,out] v0  Row 0 on input, column 0 on output
+ * \param[in,out] v1  Row 1 on input, column 1 on output
+ * \param[in,out] v2  Row 2 on input, column 2 on output
+ * \param[in,out] v3  Row 3 on input, column 3 on output
+ *
+ * This is only available in C++.
+ */
+static inline void
+simd4Transpose(Simd4Double * v0, Simd4Double * v1,
+               Simd4Double * v2, Simd4Double * v3)
+{
+    Simd4Double t0 = *v0;
+    Simd4Double t1 = *v1;
+    Simd4Double t2 = *v2;
+    Simd4Double t3 = *v3;
+    v0->r[0] = t0.r[0];
+    v0->r[1] = t1.r[0];
+    v0->r[2] = t2.r[0];
+    v0->r[3] = t3.r[0];
+    v1->r[0] = t0.r[1];
+    v1->r[1] = t1.r[1];
+    v1->r[2] = t2.r[1];
+    v1->r[3] = t3.r[1];
+    v2->r[0] = t0.r[2];
+    v2->r[1] = t1.r[2];
+    v2->r[2] = t2.r[2];
+    v2->r[3] = t3.r[2];
+    v3->r[0] = t0.r[3];
+    v3->r[1] = t1.r[3];
+    v3->r[2] = t2.r[3];
+    v3->r[3] = t3.r[3];
 }
 
 /*! \brief SIMD4 variable type to use for logical comparisons on doubles.
  * \copydetails SimdDBool
  */
-#    define Simd4DBool   SimdDBool
+struct Simd4DBool
+{
+    std::int32_t b[GMX_SIMD4_WIDTH]; /**< Implementation dependent. Don't touch. */
+};
 
 /*! \brief Equality comparison of two double precision SIMD4 values.
  * \copydetails simdCmpEqD
  */
-#    define simd4CmpEqD   simdCmpEqD
+static inline Simd4DBool
+simd4CmpEqD(Simd4Double a, Simd4Double b)
+{
+    Simd4DBool        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] == b.r[i]);
+    }
+    return c;
+}
+
+
+/*! \brief Return true for nonzero SIMD4 elements (i.e., with bits set)
+ * \copydetails simdCmpNzD
+ */
+static inline Simd4DBool
+simd4CmpNzD(Simd4Double a)
+{
+    Simd4DBool        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] != 0.0f);
+    }
+    return c;
+}
+
 
 /*! \brief Less-than comparison of two double precision SIMD4 values.
  * \copydetails simdCmpLtD
  */
-#    define simd4CmpLtD   simdCmpLtD
+static inline Simd4DBool
+simd4CmpLtD(Simd4Double a, Simd4Double b)
+{
+    Simd4DBool         c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] < b.r[i]);
+    }
+    return c;
+}
+
 
 /*! \brief Less-than comparison of two double precision SIMD4 values.
  * \copydetails simdCmpLeD
  */
-#    define simd4CmpLeD   simdCmpLeD
+static inline Simd4DBool
+simd4CmpLeD(Simd4Double a, Simd4Double b)
+{
+    Simd4DBool         c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] <= b.r[i]);
+    }
+    return c;
+}
+
 
 /*! \brief Logical AND on double SIMD4 booleans.
  * \copydetails simdAndDB
  */
-#    define simd4AndDB simdAndDB
+static inline Simd4DBool
+simd4AndDB(Simd4DBool a, Simd4DBool b)
+{
+    return { {
+                 a.b[0] && b.b[0], a.b[1] && b.b[1], a.b[2] && b.b[2], a.b[3] && b.b[3]
+             } };
+}
+
 
 /*! \brief Logical OR on double SIMD4 booleans.
  * \copydetails simdOrDB
  */
-#    define simd4OrDB simdOrDB
+static inline Simd4DBool
+simd4OrDB(Simd4DBool a, Simd4DBool b)
+{
+    return { {
+                 a.b[0] || b.b[0], a.b[1] || b.b[1], a.b[2] || b.b[2], a.b[3] || b.b[3]
+             } };
+}
 
-/*! \brief Returns non-zero if any of the SIMD4 booleans in x is True.
+
+/*! \brief Returns true if any of the SIMD4 booleans in x is True.
  * \copydetails simdAnyTrueDB
  */
-#    define simd4AnyTrueDB simdAnyTrueDB
+static inline bool
+simd4AnyTrueDB(Simd4DBool a)
+{
+    return a.b[0] || a.b[1] || a.b[2] || a.b[3];
+}
+
 
 /*! \brief Select from double precision SIMD4 variable where boolean is true.
  * \copydetails simdMaskD
  */
-#    define simd4MaskD simdMaskD
+static inline Simd4Double
+simd4MaskD(Simd4Double a, Simd4DBool mask)
+{
+    Simd4Double        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = mask.b[i] ? a.r[i] : 0.0f;
+    }
+    return c;
+}
+
 
 /*! \brief Select from double precision SIMD4 variable where boolean is false.
  * \copydetails simdMaskNotD
  */
-#    define simd4MaskNotD simdMaskNotD
+static inline Simd4Double
+simd4MaskNotD(Simd4Double a, Simd4DBool mask)
+{
+    Simd4Double        c;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        c.r[i] = mask.b[i] ? 0.0f : a.r[i];
+    }
+    return c;
+}
+
 
 /*! \brief Vector-blend instruction for SIMD4 double.
  * \copydetails simdBlendD
  */
-#    define simd4BlendD  simdBlendD
+static inline Simd4Double
+simd4BlendD(Simd4Double a, Simd4Double b, Simd4DBool sel)
+{
+    Simd4Double       d;
+
+    for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
+    {
+        d.r[i] = sel.b[i] ? b.r[i] : a.r[i];
+    }
+    return d;
+}
+
 
 /*! \brief Return sum of all elements in SIMD4 double.
  * \copydetails simdReduceD
  */
-#    define simd4ReduceD  simdReduceD
+static inline double
+simd4ReduceD(Simd4Double a)
+{
+    return a.r[0]+a.r[1]+a.r[2]+a.r[3];
+}
 
-#else /* GMX_SIMD4_DOUBLE_WIDTH!=4 */
-#    undef  GMX_SIMD4_HAVE_DOUBLE
-#    define GMX_SIMD4_HAVE_DOUBLE      0
-#endif
+
+#endif  /* GMX_SIMD_DOUBLE_WIDTH == 4 */
 
 /*! \} */
 
 
 /*! \} */
 /*! \endcond */
+
+}      // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_REFERENCE_SIMD4_DOUBLE_H */
