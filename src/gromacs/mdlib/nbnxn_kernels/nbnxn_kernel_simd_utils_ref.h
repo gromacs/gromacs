@@ -42,7 +42,7 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 typedef SimdInt32        gmx_simd_ref_exclfilter;
 typedef gmx_simd_ref_exclfilter gmx_exclfilter;
-static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;
+static const int filter_stride = 1;
 
 /* Set the stride for the lookup of the two LJ parameters from their
    (padded) array. Only strides of 2 and 4 are currently supported. */
@@ -79,7 +79,6 @@ simd4Load(const real *r)
 static gmx_inline void
 simd4Store(real *dest, Simd4Real src)
 {
-    Simd4Real        a;
     int              i;
 
     for (i = 0; i < 4; i++)
@@ -365,19 +364,12 @@ gmx_mm_transpose_sum2_pr(SimdReal in0, SimdReal in1)
 #endif
 
 #if GMX_SIMD_REAL_WIDTH >= 4
-#if GMX_SIMD_REAL_WIDTH == 4
-static gmx_inline SimdReal
-#else
 static gmx_inline Simd4Real
-#endif
 gmx_mm_transpose_sum4_pr(SimdReal in0, SimdReal in1,
                          SimdReal in2, SimdReal in3)
 {
-#if GMX_SIMD_REAL_WIDTH == 4
-    SimdReal              sum;
-#else
     Simd4Real             sum;
-#endif
+
     int                   i;
 
     sum.r[0] = 0;
