@@ -212,6 +212,14 @@ TEST_F(SimdMathTest, gmxSimdInvsqrtR)
     GMX_EXPECT_SIMD_FUNC_NEAR(ref_invsqrt, gmx_simd_invsqrt_r);
 }
 
+TEST_F(SimdMathTest, gmxSimdInvsqrtMaskR)
+{
+    gmx_simd_real_t x   = setSimdRealFrom3R(1.0, 0.0, 3.0);
+    gmx_simd_bool_t m   = gmx_simd_cmplt_r(gmx_simd_setzero_r(), x);
+    gmx_simd_real_t ref = setSimdRealFrom3R(1.0/sqrt(1.0), 0.0, 1.0/sqrt(3.0));
+    GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_invsqrt_mask_r(x, m));
+}
+
 /*! \brief Function wrapper to return first result when testing \ref gmx_simd_invsqrt_pair_r */
 gmx_simd_real_t gmx_simdcall
 tst_invsqrt_pair0(gmx_simd_real_t x)
@@ -261,6 +269,15 @@ TEST_F(SimdMathTest, gmxSimdInvR)
     setRange(1e-10, 1e10);
     GMX_EXPECT_SIMD_FUNC_NEAR(ref_inv, gmx_simd_inv_r);
 }
+
+TEST_F(SimdMathTest, gmxSimdInvMaskR)
+{
+    gmx_simd_real_t x   = setSimdRealFrom3R(2.0, 0.0, 3.0);
+    gmx_simd_bool_t m   = gmx_simd_cmplt_r(gmx_simd_setzero_r(), x);
+    gmx_simd_real_t ref = setSimdRealFrom3R(0.5, 0.0, 1.0/3.0);
+    GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_inv_mask_r(x, m));
+}
+
 
 /*! \brief Function wrapper for log(x), with argument/return in default Gromacs precision */
 real ref_log(real x)

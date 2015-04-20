@@ -66,7 +66,13 @@ gmx_simd_float_t;
 
 /*! \libinternal \brief Integer SIMD variable type to use for conversions to/from float.
  *
- * This is also the widest integer SIMD type.
+ * This is also the widest integer SIMD type. Available if GMX_SIMD_HAVE_FLOAT.
+ *
+ * \note The integer SIMD type will always be available, but on architectures
+ * that do not have any real integer SIMD support it might be defined as the
+ * floating-point type. This will work fine, since there are separate defines
+ * for whether the implementation can actually do any operations on integer
+ * SIMD types.
  */
 typedef struct
 {
@@ -512,7 +518,7 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        c.r[i] = a.r[i]*b.r[i];
+        c.r[i] = a.r[i] * b.r[i];
     }
     return c;
 }
@@ -602,7 +608,7 @@ gmx_simd_rsqrt_f(gmx_simd_float_t x)
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        b.r[i] = (x.r[i] > 0.0f) ? 1.0f/sqrtf(x.r[i]) : 0.0f;
+        b.r[i] = 1.0f / sqrtf(x.r[i]);
     }
     return b;
 };
@@ -625,10 +631,111 @@ gmx_simd_rcp_f(gmx_simd_float_t x)
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-        b.r[i] = (x.r[i] != 0.0f) ? 1.0f/x.r[i] : 0.0f;
+        b.r[i] = 1.0f / x.r[i];
     }
     return b;
 };
+
+/*! \brief Multiply two SIMD variables, masked version.
+ *
+ * You should typically call the real-precision \ref gmx_simd_mul_r.
+ *
+ * \param a factor1
+ * \param b factor2
+ * \param m mask
+ * \return a*b where mask is true, 0.0 otherwise.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_mul_mask_f(gmx_simd_float_t a, gmx_simd_float_t b, gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t  c;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        c.r[i] = m.b[i] ? (a.r[i] * b.r[i]) : 0.0;
+    }
+    return c;
+}
+
+/*! \brief Fused-multiply-add. Result is a*b+c, masked version.
+ *
+ * You should typically call the real-precision \ref gmx_simd_fmadd_r.
+ *
+ *  If \ref GMX_SIMD_HAVE_FMA is defined this is a single hardware instruction.
+ *
+ * \param a value
+ * \param b value
+ * \param c value
+ * \param m mask
+ * \return a*b+c where mask is true, 0.0 otherwise.
+ *
+ * For some implementations you save an instruction if you assign the result
+ * to c.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_fmadd_mask_f(gmx_simd_float_t a, gmx_simd_float_t b, gmx_simd_float_t c,
+                      gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t  d;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        d.r[i] = m.b[i] ? (a.r[i] * b.r[i] + c.r[i]) : 0.0;
+    }
+    return d;
+}
+
+/*! \brief SIMD 1.0/sqrt(x) lookup, masked version.
+ *
+ * You should typically call the real-precision \ref gmx_simd_rsqrt_r.
+ *
+ * This is a low-level instruction that should only be called from routines
+ * implementing the inverse square root in simd_math.h.
+ *
+ * \param x Argument, x>0 for entries where mask is true.
+ * \param m Mask
+ * \return Approximation of 1/sqrt(x), accuracy is \ref GMX_SIMD_RSQRT_BITS.
+ *         The result for masked-out entries will be 0.0.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_rsqrt_mask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t  b;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        b.r[i] = (m.b[i] != 0) ? 1.0f / sqrtf(x.r[i]) : 0.0f;
+    }
+    return b;
+}
+
+/*! \brief SIMD 1.0/x lookup, masked version.
+ *
+ * You should typically call the real-precision \ref gmx_simd_rcp_r.
+ *
+ * This is a low-level instruction that should only be called from routines
+ * implementing the reciprocal in simd_math.h.
+ *
+ * \param x Argument, x>0 for entries where mask is true.
+ * \param m Mask
+ * \return Approximation of 1/x, accuracy is \ref GMX_SIMD_RCP_BITS.
+ *         The result for masked-out entries will be 0.0.
+ */
+static gmx_inline gmx_simd_float_t
+gmx_simd_rcp_mask_f(gmx_simd_float_t x, gmx_simd_fbool_t m)
+{
+    gmx_simd_float_t  b;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        b.r[i] = (m.b[i] != 0) ? 1.0f / x.r[i] : 0.0f;
+    }
+    return b;
+}
 
 /*! \brief SIMD Floating-point fabs().
  *
@@ -922,6 +1029,28 @@ gmx_simd_cmpeq_f(gmx_simd_float_t a, gmx_simd_float_t b)
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         c.b[i] = (a.r[i] == b.r[i]);
+    }
+    return c;
+}
+
+/*! \brief SIMD a!=0 for single SIMD.
+ *
+ * You should typically call the real-precision \ref gmx_simd_cmpnz_r.
+ *
+ * \param a value
+ * \return Each element of the boolean will be true if any bit in a is nonzero.
+ *         The behaviour for negative zero is undefined, and should not be
+ *         relied on - it will depend on the architecture.
+ */
+static gmx_inline gmx_simd_fbool_t
+gmx_simd_cmpnz_f(gmx_simd_float_t a)
+{
+    gmx_simd_fbool_t  c;
+    int               i;
+
+    for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
+    {
+        c.b[i] = (a.r[i] != 0.0);
     }
     return c;
 }
@@ -1365,7 +1494,7 @@ gmx_simd_mul_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
 
     for (i = 0; i < GMX_SIMD_FINT32_WIDTH; i++)
     {
-        c.i[i] = a.i[i]*b.i[i];
+        c.i[i] = a.i[i] * b.i[i];
     }
     return c;
 }
