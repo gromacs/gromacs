@@ -544,7 +544,11 @@ If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 (or whichever path has your installation). In some cases, you might
 need to specify manually which of your C++ compilers should be used,
-e.g. with the advanced option ``CUDA_HOST_COMPILER``.
+e.g. with the advanced option ``CUDA_HOST_COMPILER``. To get best
+performance from NVIDIA Tesla GPUs, you should install the
+`GPU Deployment Kit <https://developer.nvidia.com/gpu-deployment-kit>`_
+and configure GROMACS to use it by setting the CMake variable
+``-DGPU_DEPLOYMENT_KIT_ROOT_DIR=/path/to/your/kit``.
 
 The GPU acceleration has been tested on AMD64/x86-64 platforms with
 Linux, Mac OS X and Windows operating systems, but Linux is the
