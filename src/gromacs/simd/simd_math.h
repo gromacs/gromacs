@@ -32,8 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_SIMD_SIMD_MATH_H_
-#define GMX_SIMD_SIMD_MATH_H_
+#ifndef GMX_SIMD_SIMD_MATH_H
+#define GMX_SIMD_SIMD_MATH_H
 
 /*! \libinternal \file
  *
@@ -57,7 +57,7 @@
 
 #include "config.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
@@ -80,6 +80,7 @@ namespace gmx
 /*! \} */
 
 #if GMX_SIMD_HAVE_FLOAT
+
 
 /*! \name Single precision SIMD math functions
  *
@@ -174,46 +175,6 @@ simdInvsqrtF(SimdFloat x)
     return lu;
 }
 
-/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD float.
- *
- * Identical to simdInvsqrtF but avoids fp-exception for non-masked entries.
- * The result for the non-masked entries is undefined and the user has to use blend
- * with the same mask to obtain a defined result.
- *
- *  \param x Argument that must be >0 for masked entries
- *  \param m Masked entries
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid or entry was not masked.
- */
-static inline SimdFloat
-simdInvsqrtMaskFpeF(SimdFloat x, SimdFBool gmx_unused m)
-{
-#ifdef NDEBUG
-    return simdInvsqrtF(x);
-#else
-    return simdInvsqrtF(simdBlendF(simdSet1F(1.0f), x, m));
-#endif
-}
-
-/*! \brief Calculate 1/sqrt(x) for non-masked entries of SIMD float.
- *
- * Identical to simdInvsqrtF but avoids fp-exception for masked entries.
- * The result for the non-masked entries is undefined and the user has to use blend
- * with the same mask to obtain a defined result.
- *
- *  \param x Argument that must be >0 for non-masked entries
- *  \param m Masked entries
- *  \return 1/sqrt(x). Result is undefined if your argument was invalid or entry was masked.
- */
-static inline SimdFloat
-simdInvsqrtNotMaskFpeF(SimdFloat x, SimdFBool gmx_unused m)
-{
-#ifdef NDEBUG
-    return simdInvsqrtF(x);
-#else
-    return simdInvsqrtF(simdBlendF(x, simdSet1F(1.0f), m));
-#endif
-}
-
 /*! \brief Calculate 1/sqrt(x) for two SIMD floats.
  *
  * You should normally call the real-precision routine \ref simdInvsqrtPair.
@@ -274,45 +235,56 @@ simdInvF(SimdFloat x)
     return lu;
 }
 
-/*! \brief Calculate 1/x for masked entries of SIMD float.
+
+/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD float.
  *
- * Identical to simdInvF but avoids fp-exception for non-masked entries.
- * The result for the non-masked entries is undefined and the user has to use blend
- * with the same mask to obtain a defined result.
+ *  This routine only evaluates 1/sqrt(x) for elements for which mask is true.
+ *  Illegal values in the masked-out elements will not lead to
+ *  floating-point exceptions.
  *
- *  \param x Argument that must be nonzero for masked entries
- *  \param m Masked entries
- *  \return 1/x. Result is undefined if your argument was invalid or entry was not masked.
+ *  \param x Argument that must be >0 for masked-in entries
+ *  \param m Mask
+ *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
+ *          entry was not masked, and 0.0 for masked-out entries.
  */
 static inline SimdFloat
-simdInvMaskFpeF(SimdFloat x, SimdFBool gmx_unused m)
+simdInvsqrtMaskF(SimdFloat x, SimdFBool m)
 {
-#ifdef NDEBUG
-    return simdInvF(x);
-#else
-    return simdInvF(simdBlendF(simdSet1F(1.0f), x, m));
+    SimdFloat lu = simdRsqrtMaskF(x, m);
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRsqrtIterF(lu, x);
 #endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRsqrtIterF(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRsqrtIterF(lu, x);
+#endif
+    return lu;
 }
 
-
-/*! \brief Calculate 1/x for non-masked entries of SIMD float.
+/*! \brief Calculate 1/x for SIMD float, masked version.
  *
- * Identical to simdInvF but avoids fp-exception for masked entries.
- * The result for the non-masked entries is undefined and the user has to use blend
- * with the same mask to obtain a defined result.
+ * You should normally call the real-precision routine \ref gmx::simdInv.
  *
- *  \param x Argument that must be nonzero for non-masked entries
- *  \param m Masked entries
- *  \return 1/x. Result is undefined if your argument was invalid or entry was masked.
+ *  \param x Argument that must be nonzero for non-masked entries.
+ *  \param m Mask
+ *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
-static inline SimdFloat
-simdInvNotMaskFpeF(SimdFloat x, SimdFBool gmx_unused m)
+static inline SimdFloat gmx_simdcall
+simdInvMaskF(SimdFloat x, SimdFBool m)
 {
-#ifdef NDEBUG
-    return simdInvF(x);
-#else
-    return simdInvF(simdBlendF(x, simdSet1F(1.0f), m));
+    SimdFloat lu = simdRcpMaskF(x, m);
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRcpIterF(lu, x);
 #endif
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRcpIterF(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRcpIterF(lu, x);
+#endif
+    return lu;
 }
 
 /*! \brief Calculate sqrt(x) correctly for SIMD floats, including argument 0.0.
@@ -326,11 +298,9 @@ simdInvNotMaskFpeF(SimdFloat x, SimdFBool gmx_unused m)
 static inline SimdFloat gmx_simdcall
 simdSqrtF(SimdFloat x)
 {
-    SimdFBool  mask;
     SimdFloat  res;
 
-    mask = simdCmpEqF(x, simdSetZeroF());
-    res  = simdMaskNotF(simdInvsqrtNotMaskFpeF(x, mask), mask);
+    res  = simdInvsqrtMaskF(x, simdCmpNzF(x));
     return simdMulF(res, x);
 }
 
@@ -544,8 +514,8 @@ simdErfF(SimdFloat x)
 
     /* Calculate erfc */
     y       = simdAbsF(x);
-    msk_erf = simdCmpLtF(y, simdSet1F(0.75f));
-    t       = simdInvNotMaskFpeF(y, msk_erf);
+    msk_erf = simdCmpLeF(simdSet1F(0.75f), y);
+    t       = simdInvMaskF(y, msk_erf);
     w       = simdSubF(t, one);
     t2      = simdMulF(t, t);
     w2      = simdMulF(w, w);
@@ -588,7 +558,7 @@ simdErfF(SimdFloat x)
     res_erfc = simdBlendF(res_erfc, simdSubF(two, res_erfc), mask);
 
     /* Select erf() or erfc() */
-    res  = simdBlendF(simdSubF(one, res_erfc), res_erf, msk_erf);
+    res  = simdBlendF(res_erf, simdSubF(one, res_erfc), msk_erf);
 
     return res;
 }
@@ -691,8 +661,8 @@ simdErfcF(SimdFloat x)
 
     /* Calculate erfc */
     y       = simdAbsF(x);
-    msk_erf = simdCmpLtF(y, simdSet1F(0.75f));
-    t       = simdInvNotMaskFpeF(y, msk_erf);
+    msk_erf = simdCmpLeF(simdSet1F(0.75f), y);
+    t       = simdInvMaskF(y, msk_erf);
     w       = simdSubF(t, one);
     t2      = simdMulF(t, t);
     w2      = simdMulF(w, w);
@@ -767,7 +737,7 @@ simdErfcF(SimdFloat x)
     res_erfc = simdBlendF(res_erfc, simdSubF(two, res_erfc), mask);
 
     /* Select erf() or erfc() */
-    res  = simdBlendF(res_erfc, simdSubF(one, res_erf), msk_erf);
+    res  = simdBlendF(simdSubF(one, res_erf), res_erfc, msk_erf);
 
     return res;
 }
@@ -804,7 +774,8 @@ simdSinCosF(SimdFloat x, SimdFloat *sinval, SimdFloat *cosval)
     SimdFloat        ssign, csign;
     SimdFloat        x2, y, z, psin, pcos, sss, ccc;
     SimdFBool        mask;
-#if GMX_SIMD_HAVE_FINT32 && GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
+
+#if GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     const SimdFInt32 ione            = simdSet1FI(1);
     const SimdFInt32 itwo            = simdSet1FI(2);
     SimdFInt32       iy;
@@ -955,7 +926,7 @@ simdTanF(SimdFloat x)
     SimdFloat        x2, p, y, z;
     SimdFBool        mask;
 
-#if GMX_SIMD_HAVE_FINT32 && GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     SimdFInt32  iy;
     SimdFInt32  ione = simdSet1FI(1);
 
@@ -1002,7 +973,7 @@ simdTanF(SimdFloat x)
     p       = simdFmaddF(p, x2, CT1);
     p       = simdFmaddF(x2, simdMulF(p, x), x);
 
-    p       = simdBlendF( p, simdInvMaskFpeF(p, mask), mask);
+    p       = simdBlendF( p, simdInvMaskF(p, mask), mask);
     return p;
 }
 
@@ -1033,9 +1004,8 @@ simdAsinF(SimdFloat x)
     xabs  = simdAbsF(x);
     mask  = simdCmpLtF(half, xabs);
     z1    = simdMulF(half, simdSubF(one, xabs));
-    mask2 = simdCmpEqF(xabs, one);
-    q1    = simdMulF(z1, simdInvsqrtNotMaskFpeF(z1, mask2));
-    q1    = simdMaskNotF(q1, mask2);
+    mask2 = simdCmpLtF(xabs, one);
+    q1    = simdMulF(z1, simdInvsqrtMaskF(z1, mask2));
     q2    = xabs;
     z2    = simdMulF(q2, q2);
     z     = simdBlendF(z2, z1, mask);
@@ -1082,9 +1052,8 @@ simdAcosF(SimdFloat x)
     mask2 = simdCmpLtF(simdSetZeroF(), x);
 
     z     = simdMulF(half, simdSubF(one, xabs));
-    mask3 = simdCmpEqF(xabs, one);
-    z     = simdMulF(z, simdInvsqrtNotMaskFpeF(z, mask3));
-    z     = simdMaskNotF(z, mask3);
+    mask3 = simdCmpLtF(xabs, one);
+    z     = simdMulF(z, simdInvsqrtMaskF(z, mask3));
     z     = simdBlendF(x, z, mask1);
     z     = simdAsinF(z);
 
@@ -1123,7 +1092,7 @@ simdAtanF(SimdFloat x)
     mask  = simdCmpLtF(x, simdSetZeroF());
     x     = simdAbsF(x);
     mask2 = simdCmpLtF(one, x);
-    x     = simdBlendF(x, simdInvMaskFpeF(x, mask2), mask2);
+    x     = simdBlendF(x, simdInvMaskF(x, mask2), mask2);
 
     x2    = simdMulF(x, x);
     x3    = simdMulF(x2, x);
@@ -1164,20 +1133,20 @@ simdAtan2F(SimdFloat y, SimdFloat x)
     const SimdFloat pi          = simdSet1F(M_PI);
     const SimdFloat halfpi      = simdSet1F(M_PI/2.0);
     SimdFloat       xinv, p, aoffset;
-    SimdFBool       mask_x0, mask_y0, mask_xlt0, mask_ylt0;
+    SimdFBool       mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
-    mask_x0   = simdCmpEqF(x, simdSetZeroF());
-    mask_y0   = simdCmpEqF(y, simdSetZeroF());
+    mask_xnz  = simdCmpNzF(x);
+    mask_ynz  = simdCmpNzF(y);
     mask_xlt0 = simdCmpLtF(x, simdSetZeroF());
     mask_ylt0 = simdCmpLtF(y, simdSetZeroF());
 
-    aoffset   = simdMaskF(halfpi, mask_x0);
-    aoffset   = simdMaskNotF(aoffset, mask_y0);
+    aoffset   = simdMaskNotF(halfpi, mask_xnz);
+    aoffset   = simdMaskF(aoffset, mask_ynz);
 
     aoffset   = simdBlendF(aoffset, pi, mask_xlt0);
     aoffset   = simdBlendF(aoffset, simdNegF(aoffset), mask_ylt0);
 
-    xinv      = simdMaskNotF(simdInvNotMaskFpeF(x, mask_x0), mask_x0);
+    xinv      = simdInvMaskF(x, mask_xnz);
     p         = simdMulF(y, xinv);
     p         = simdAtanF(p);
     p         = simdAddF(p, aoffset);
@@ -1388,6 +1357,7 @@ simdPmeCorrPotentialF(SimdFloat z2)
 
 #if GMX_SIMD_HAVE_DOUBLE
 
+
 /*! \name Double precision SIMD math functions
  *
  *  \note In most cases you should use the real-precision functions instead.
@@ -1470,34 +1440,6 @@ simdInvsqrtD(SimdDouble x)
     return lu;
 }
 
-/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD double.
- *
- * \copydetails simdInvsqrtMaskFpeF
- */
-static inline SimdDouble
-simdInvsqrtMaskFpeD(SimdDouble x, SimdDBool gmx_unused m)
-{
-#ifdef NDEBUG
-    return simdInvsqrtD(x);
-#else
-    return simdInvsqrtD(simdBlendD(simdSet1D(1.0), x, m));
-#endif
-}
-
-/*! \brief Calculate 1/sqrt(x) for non-masked entries of SIMD double.
- *
- * \copydetails simdInvsqrtNotMaskFpeF
- */
-static inline SimdDouble
-simdInvsqrtNotMaskFpeD(SimdDouble x, SimdDBool gmx_unused m)
-{
-#ifdef NDEBUG
-    return simdInvsqrtD(x);
-#else
-    return simdInvsqrtD(simdBlendD(x, simdSet1D(1.0), m));
-#endif
-}
-
 /*! \brief Calculate 1/sqrt(x) for two SIMD doubles.
  *
  * \copydetails simdInvsqrtPairF
@@ -1573,33 +1515,63 @@ simdInvD(SimdDouble x)
     return lu;
 }
 
-/*! \brief Calculate 1/x for masked entries of SIMD double.
+/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD double.
  *
- * \copydetails simdInvMaskFpeF
+ *  This routine only evaluates 1/sqrt(x) for elements for which mask is true.
+ *  Illegal values in the masked-out elements will not lead to
+ *  floating-point exceptions.
+ *
+ *  \param x Argument that must be >0 for masked-in entries
+ *  \param m Mask
+ *  \return 1/sqrt(x). Result is undefined if your argument was invalid or
+ *          entry was not masked, and 0.0 for masked-out entries.
  */
 static inline SimdDouble
-simdInvMaskFpeD(SimdDouble x, SimdDBool gmx_unused m)
+simdInvsqrtMaskD(SimdDouble x, SimdDBool m)
 {
-#ifdef NDEBUG
-    return simdInvD(x);
-#else
-    return simdInvD(simdBlendD(simdSet1D(1.0), x, m));
+    SimdDouble lu = simdRsqrtMaskD(x, m);
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = simdRsqrtIterD(lu, x);
 #endif
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = simdRsqrtIterD(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = simdRsqrtIterD(lu, x);
+#endif
+#if (GMX_SIMD_RSQRT_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = simdRsqrtIterD(lu, x);
+#endif
+    return lu;
 }
 
-/*! \brief Calculate 1/x for non-masked entries of SIMD double.
+/*! \brief Calculate 1/x for SIMD float, masked version.
  *
- * \copydetails simdInvNotMaskFpeF
+ * You should normally call the real-precision routine \ref gmx::simdInv.
+ *
+ *  \param x Argument that must be nonzero for non-masked entries.
+ *  \param m Mask
+ *  \return 1/x for elements where m is true, or 0.0 for masked-out entries.
  */
-static inline SimdDouble
-simdInvNotMaskFpeD(SimdDouble x, SimdDBool gmx_unused m)
+static inline SimdDouble gmx_simdcall
+simdInvMaskD(SimdDouble x, SimdDBool m)
 {
-#ifdef NDEBUG
-    return simdInvD(x);
-#else
-    return simdInvD(simdBlendD(x, simdSet1D(1.0), m));
+    SimdDouble lu = simdRcpMaskD(x, m);
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = simdRcpIterD(lu, x);
 #endif
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = simdRcpIterD(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = simdRcpIterD(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*8 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+    lu = simdRcpIterD(lu, x);
+#endif
+    return lu;
 }
+
 
 /*! \brief Calculate sqrt(x) correctly for SIMD doubles, including argument 0.0.
  *
@@ -1608,11 +1580,9 @@ simdInvNotMaskFpeD(SimdDouble x, SimdDBool gmx_unused m)
 static inline SimdDouble gmx_simdcall
 simdSqrtD(SimdDouble x)
 {
-    SimdDBool   mask;
     SimdDouble  res;
 
-    mask = simdCmpEqD(x, simdSetZeroD());
-    res  = simdMaskNotD(simdInvsqrtNotMaskFpeD(x, mask), mask);
+    res  = simdInvsqrtMaskD(x, simdCmpNzD(x));
     return simdMulD(res, x);
 }
 
@@ -1826,13 +1796,14 @@ simdErfD(SimdDouble x)
     SimdDouble       PolyCP0, PolyCP1, PolyCQ0, PolyCQ1;
     SimdDouble       res_erf, res_erfcB, res_erfcC, res_erfc, res;
     SimdDouble       expmx2;
-    SimdDBool        mask, mask_erf;
+    SimdDBool        mask, mask_erf, notmask_erf;
 
     /* Calculate erf() */
-    xabs     = simdAbsD(x);
-    mask_erf = simdCmpLtD(xabs, one);
-    x2       = simdMulD(x, x);
-    x4       = simdMulD(x2, x2);
+    xabs        = simdAbsD(x);
+    mask_erf    = simdCmpLtD(xabs, one);
+    notmask_erf = simdCmpLeD(one, xabs);
+    x2          = simdMulD(x, x);
+    x4          = simdMulD(x2, x2);
 
     PolyAP0  = simdMulD(CAP4, x4);
     PolyAP1  = simdMulD(CAP3, x4);
@@ -1854,7 +1825,7 @@ simdErfD(SimdDouble x)
     PolyAQ1  = simdMulD(PolyAQ1, x2);
     PolyAQ0  = simdAddD(PolyAQ0, PolyAQ1);
 
-    res_erf  = simdMulD(PolyAP0, simdInvMaskFpeD(PolyAQ0, mask_erf));
+    res_erf  = simdMulD(PolyAP0, simdInvMaskD(PolyAQ0, mask_erf));
     res_erf  = simdAddD(CAoffset, res_erf);
     res_erf  = simdMulD(x, res_erf);
 
@@ -1890,12 +1861,13 @@ simdErfD(SimdDouble x)
     PolyBQ1 = simdMulD(PolyBQ1, t);
     PolyBQ0 = simdAddD(PolyBQ0, PolyBQ1);
 
-    res_erfcB = simdMulD(PolyBP0, simdInvNotMaskFpeD(PolyBQ0, mask_erf));
+    /* The denominator polynomial can be zero outside the range */
+    res_erfcB = simdMulD(PolyBP0, simdInvMaskD(PolyBQ0, notmask_erf));
 
     res_erfcB = simdMulD(res_erfcB, xabs);
 
     /* Calculate erfc() in range [4.5,inf] */
-    w       = simdInvNotMaskFpeD(xabs, mask_erf);
+    w       = simdInvMaskD(xabs, notmask_erf);
     w2      = simdMulD(w, w);
 
     PolyCP0  = simdMulD(CCP6, w2);
@@ -1926,7 +1898,8 @@ simdErfD(SimdDouble x)
 
     expmx2   = simdExpD( simdNegD(x2) );
 
-    res_erfcC = simdMulD(PolyCP0, simdInvNotMaskFpeD(PolyCQ0, mask_erf));
+    /* The denominator polynomial can be zero outside the range */
+    res_erfcC = simdMulD(PolyCP0, simdInvMaskD(PolyCQ0, notmask_erf));
     res_erfcC = simdAddD(res_erfcC, CCoffset);
     res_erfcC = simdMulD(res_erfcC, w);
 
@@ -2011,13 +1984,14 @@ simdErfcD(SimdDouble x)
     SimdDouble       PolyCP0, PolyCP1, PolyCQ0, PolyCQ1;
     SimdDouble       res_erf, res_erfcB, res_erfcC, res_erfc, res;
     SimdDouble       expmx2;
-    SimdDBool        mask, mask_erf;
+    SimdDBool        mask, mask_erf, notmask_erf;
 
     /* Calculate erf() */
-    xabs     = simdAbsD(x);
-    mask_erf = simdCmpLtD(xabs, one);
-    x2       = simdMulD(x, x);
-    x4       = simdMulD(x2, x2);
+    xabs        = simdAbsD(x);
+    mask_erf    = simdCmpLtD(xabs, one);
+    notmask_erf = simdCmpLeD(one, xabs);
+    x2          = simdMulD(x, x);
+    x4          = simdMulD(x2, x2);
 
     PolyAP0  = simdMulD(CAP4, x4);
     PolyAP1  = simdMulD(CAP3, x4);
@@ -2039,7 +2013,7 @@ simdErfcD(SimdDouble x)
     PolyAQ1  = simdMulD(PolyAQ1, x2);
     PolyAQ0  = simdAddD(PolyAQ0, PolyAQ1);
 
-    res_erf  = simdMulD(PolyAP0, simdInvMaskFpeD(PolyAQ0, mask_erf));
+    res_erf  = simdMulD(PolyAP0, simdInvMaskD(PolyAQ0, mask_erf));
     res_erf  = simdAddD(CAoffset, res_erf);
     res_erf  = simdMulD(x, res_erf);
 
@@ -2075,12 +2049,13 @@ simdErfcD(SimdDouble x)
     PolyBQ1 = simdMulD(PolyBQ1, t);
     PolyBQ0 = simdAddD(PolyBQ0, PolyBQ1);
 
-    res_erfcB = simdMulD(PolyBP0, simdInvNotMaskFpeD(PolyBQ0, mask_erf));
+    /* The denominator polynomial can be zero outside the range */
+    res_erfcB = simdMulD(PolyBP0, simdInvMaskD(PolyBQ0, notmask_erf));
 
     res_erfcB = simdMulD(res_erfcB, xabs);
 
     /* Calculate erfc() in range [4.5,inf] */
-    w       = simdInvNotMaskFpeD(xabs, mask_erf);
+    w       = simdInvMaskD(xabs, simdCmpNzD(xabs));
     w2      = simdMulD(w, w);
 
     PolyCP0  = simdMulD(CCP6, w2);
@@ -2111,7 +2086,8 @@ simdErfcD(SimdDouble x)
 
     expmx2   = simdExpD( simdNegD(x2) );
 
-    res_erfcC = simdMulD(PolyCP0, simdInvNotMaskFpeD(PolyCQ0, mask_erf));
+    /* The denominator polynomial can be zero outside the range */
+    res_erfcC = simdMulD(PolyCP0, simdInvMaskD(PolyCQ0, notmask_erf));
     res_erfcC = simdAddD(res_erfcC, CCoffset);
     res_erfcC = simdMulD(res_erfcC, w);
 
@@ -2161,7 +2137,7 @@ simdSinCosD(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
     SimdDouble        ssign, csign;
     SimdDouble        x2, y, z, psin, pcos, sss, ccc;
     SimdDBool         mask;
-#if GMX_SIMD_HAVE_DINT32 && GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     const SimdDInt32  ione            = simdSet1DI(1);
     const SimdDInt32  itwo            = simdSet1DI(2);
     SimdDInt32        iy;
@@ -2312,7 +2288,7 @@ simdTanD(SimdDouble x)
     SimdDouble        x2, p, y, z;
     SimdDBool         mask;
 
-#if GMX_SIMD_HAVE_DINT32 && GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     SimdDInt32  iy;
     SimdDInt32  ione = simdSet1DI(1);
 
@@ -2368,7 +2344,7 @@ simdTanD(SimdDouble x)
     p       = simdFmaddD(p, x2, CT1);
     p       = simdFmaddD(x2, simdMulD(p, x), x);
 
-    p       = simdBlendD( p, simdInvMaskFpeD(p, mask), mask);
+    p       = simdBlendD( p, simdInvMaskD(p, mask), mask);
     return p;
 }
 
@@ -2477,7 +2453,7 @@ simdAsinD(SimdDouble x)
     denom = simdBlendD( QA, SA, mask );
 
     mask2 = simdCmpLtD(limit2, xabs);
-    q     = simdMulD( nom, simdInvMaskFpeD(denom, mask2) );
+    q     = simdMulD( nom, simdInvMaskD(denom, mask2) );
 
     zz    = simdAddD(zz, zz);
     zz    = simdSqrtD(zz);
@@ -2571,8 +2547,8 @@ simdAtanD(SimdDouble x)
     mask2  = simdCmpLtD(limit2, xabs);
 
     t1     = simdMulD(simdAddD(xabs, mone),
-                      simdInvMaskFpeD(simdSubD(xabs, mone), mask1));
-    t2     = simdMulD(mone, simdInvMaskFpeD(xabs, mask2));
+                      simdInvMaskD(simdSubD(xabs, mone), mask1));
+    t2     = simdMulD(mone, simdInvMaskD(xabs, mask2));
 
     y      = simdMaskD(quarterpi, mask1);
     y      = simdBlendD(y, halfpi, mask2);
@@ -2628,20 +2604,20 @@ simdAtan2D(SimdDouble y, SimdDouble x)
     const SimdDouble pi          = simdSet1D(M_PI);
     const SimdDouble halfpi      = simdSet1D(M_PI/2.0);
     SimdDouble       xinv, p, aoffset;
-    SimdDBool        mask_x0, mask_y0, mask_xlt0, mask_ylt0;
+    SimdDBool        mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
-    mask_x0   = simdCmpEqD(x, simdSetZeroD());
-    mask_y0   = simdCmpEqD(y, simdSetZeroD());
+    mask_xnz  = simdCmpNzD(x);
+    mask_ynz  = simdCmpNzD(y);
     mask_xlt0 = simdCmpLtD(x, simdSetZeroD());
     mask_ylt0 = simdCmpLtD(y, simdSetZeroD());
 
-    aoffset   = simdMaskD(halfpi, mask_x0);
-    aoffset   = simdMaskNotD(aoffset, mask_y0);
+    aoffset   = simdMaskNotD(halfpi, mask_xnz);
+    aoffset   = simdMaskD(aoffset, mask_ynz);
 
     aoffset   = simdBlendD(aoffset, pi, mask_xlt0);
     aoffset   = simdBlendD(aoffset, simdNegD(aoffset), mask_ylt0);
 
-    xinv      = simdMaskNotD(simdInvNotMaskFpeD(x, mask_x0), mask_x0);
+    xinv      = simdInvMaskD(x, mask_xnz);
     p         = simdMulD(y, xinv);
     p         = simdAtanD(p);
     p         = simdAddD(p, aoffset);
@@ -2808,32 +2784,24 @@ simdInvsqrtSingleAccuracyD(SimdDouble x)
     return lu;
 }
 
-/*! \brief 1/sqrt(x) for masked entries of SIMD double, but in single accuracy.
+/*! \brief 1/sqrt(x) for masked-in entries of SIMD double, but in single accuracy.
  *
- * \copydetails simdInvsqrtMaskFpeF
+ * \copydetails simdInvsqrtMaskF
  */
 static inline SimdDouble
-simdInvsqrtMaskFpeSingleAccuracyD(SimdDouble x, SimdDBool gmx_unused m)
+simdInvsqrtMaskSingleAccuracyD(SimdDouble x, SimdDBool m)
 {
-#ifdef NDEBUG
-    return simdInvsqrtSingleAccuracyD(x);
-#else
-    return simdInvsqrtSingleAccuracyD(simdBlendD(simdSet1D(1.0), x, m));
+    SimdDouble lu = simdRsqrtMaskD(x, m);
+#if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRsqrtIterD(lu, x);
 #endif
-}
-
-/*! \brief 1/sqrt(x) for non-masked entries of SIMD double, in single accuracy.
- *
- * \copydetails simdInvsqrtNotMaskFpeF
- */
-static inline SimdDouble
-simdInvsqrtNotMaskFpeSingleAccuracyD(SimdDouble x, SimdDBool gmx_unused m)
-{
-#ifdef NDEBUG
-    return simdInvsqrtSingleAccuracyD(x);
-#else
-    return simdInvsqrtSingleAccuracyD(simdBlendD(x, simdSet1D(1.0), m));
+#if (GMX_SIMD_RSQRT_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRsqrtIterD(lu, x);
 #endif
+#if (GMX_SIMD_RSQRT_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRsqrtIterD(lu, x);
+#endif
+    return lu;
 }
 
 /*! \brief Calculate 1/sqrt(x) for two SIMD doubles, but single accuracy.
@@ -2904,31 +2872,24 @@ simdInvSingleAccuracyD(SimdDouble x)
 
 /*! \brief 1/x for masked entries of SIMD double, single accuracy.
  *
- * \copydetails simdInvMaskFpeF
+ * \copydetails simdInvMaskF
  */
 static inline SimdDouble
-simdInvMaskFpeSingleAccuracyD(SimdDouble x, SimdDBool gmx_unused m)
+simdInvMaskSingleAccuracyD(SimdDouble x, SimdDBool m)
 {
-#ifdef NDEBUG
-    return simdInvSingleAccuracyD(x);
-#else
-    return simdInvSingleAccuracyD(simdBlendD(simdSet1D(1.0), x, m));
+    SimdDouble lu = simdRcpMaskD(x, m);
+#if (GMX_SIMD_RCP_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRcpIterD(lu, x);
 #endif
+#if (GMX_SIMD_RCP_BITS*2 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRcpIterD(lu, x);
+#endif
+#if (GMX_SIMD_RCP_BITS*4 < GMX_SIMD_ACCURACY_BITS_SINGLE)
+    lu = simdRcpIterD(lu, x);
+#endif
+    return lu;
 }
 
-/*! \brief 1/x for non-masked entries of SIMD double, single accuracy.
- *
- * \copydetails simdInvNotMaskFpeF
- */
-static inline SimdDouble
-simdInvNotMaskFpeSingleAccuracyD(SimdDouble x, SimdDBool gmx_unused m)
-{
-#ifdef NDEBUG
-    return simdInvSingleAccuracyD(x);
-#else
-    return simdInvSingleAccuracyD(simdBlendD(x, simdSet1D(1.0), m));
-#endif
-}
 
 /*! \brief Calculate sqrt(x) (correct for 0.0) for SIMD double, single accuracy.
  *
@@ -2941,11 +2902,9 @@ simdInvNotMaskFpeSingleAccuracyD(SimdDouble x, SimdDBool gmx_unused m)
 static inline SimdDouble gmx_simdcall
 simdSqrtSingleAccuracyD(SimdDouble x)
 {
-    SimdDBool   mask;
     SimdDouble  res;
 
-    mask = simdCmpEqD(x, simdSetZeroD());
-    res  = simdMaskNotD(simdInvsqrtNotMaskFpeSingleAccuracyD(x, mask), mask);
+    res  = simdInvsqrtMaskSingleAccuracyD(x, simdCmpNzD(x));
     return simdMulD(res, x);
 }
 
@@ -3159,8 +3118,8 @@ simdErfSingleAccuracyD(SimdDouble x)
 
     /* Calculate erfc */
     y       = simdAbsD(x);
-    msk_erf = simdCmpLtD(y, simdSet1D(0.75));
-    t       = simdInvNotMaskFpeSingleAccuracyD(y, msk_erf);
+    msk_erf = simdCmpLeD(simdSet1D(0.75), y);
+    t       = simdInvMaskSingleAccuracyD(y, msk_erf);
     w       = simdSubD(t, one);
     t2      = simdMulD(t, t);
     w2      = simdMulD(w, w);
@@ -3281,8 +3240,8 @@ simdErfcSingleAccuracyD(SimdDouble x)
 
     /* Calculate erfc */
     y       = simdAbsD(x);
-    msk_erf = simdCmpLtD(y, simdSet1D(0.75));
-    t       = simdInvNotMaskFpeSingleAccuracyD(y, msk_erf);
+    msk_erf = simdCmpLeD(simdSet1D(0.75), y);
+    t       = simdInvMaskSingleAccuracyD(y, msk_erf);
     w       = simdSubD(t, one);
     t2      = simdMulD(t, t);
     w2      = simdMulD(w, w);
@@ -3358,7 +3317,8 @@ simdSinCosSingleAccuracyD(SimdDouble x, SimdDouble *sinval, SimdDouble *cosval)
     SimdDouble        ssign, csign;
     SimdDouble        x2, y, z, psin, pcos, sss, ccc;
     SimdDBool         mask;
-#if GMX_SIMD_HAVE_FINT32 && GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
+
+#if GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     const SimdDInt32  ione            = simdSet1DI(1);
     const SimdDInt32  itwo            = simdSet1DI(2);
     SimdDInt32        iy;
@@ -3510,7 +3470,7 @@ simdTanSingleAccuracyD(SimdDouble x)
     SimdDouble        x2, p, y, z;
     SimdDBool         mask;
 
-#if GMX_SIMD_HAVE_FINT32 && GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     SimdDInt32  iy;
     SimdDInt32  ione = simdSet1DI(1);
 
@@ -3555,7 +3515,7 @@ simdTanSingleAccuracyD(SimdDouble x)
     p       = simdFmaddD(p, x2, CT1);
     p       = simdFmaddD(x2, simdMulD(p, x), x);
 
-    p       = simdBlendD( p, simdInvMaskFpeSingleAccuracyD(p, mask), mask);
+    p       = simdBlendD( p, simdInvMaskSingleAccuracyD(p, mask), mask);
     return p;
 }
 
@@ -3587,9 +3547,8 @@ simdAsinSingleAccuracyD(SimdDouble x)
     xabs  = simdAbsD(x);
     mask  = simdCmpLtD(half, xabs);
     z1    = simdMulD(half, simdSubD(one, xabs));
-    mask2 = simdCmpEqD(xabs, one);
-    q1    = simdMulD(z1, simdInvsqrtNotMaskFpeSingleAccuracyD(z1, mask2));
-    q1    = simdMaskNotD(q1, simdCmpEqD(xabs, one));
+    mask2 = simdCmpLtD(xabs, one);
+    q1    = simdMulD(z1, simdInvsqrtMaskSingleAccuracyD(z1, mask2));
     q2    = xabs;
     z2    = simdMulD(q2, q2);
     z     = simdBlendD(z2, z1, mask);
@@ -3637,9 +3596,8 @@ simdAcosSingleAccuracyD(SimdDouble x)
     mask2 = simdCmpLtD(simdSetZeroD(), x);
 
     z     = simdMulD(half, simdSubD(one, xabs));
-    mask3 = simdCmpEqD(xabs, one);
-    z     = simdMulD(z, simdInvsqrtNotMaskFpeSingleAccuracyD(z, mask3));
-    z     = simdMaskNotD(z, simdCmpEqD(xabs, one));
+    mask3 = simdCmpLtD(xabs, one);
+    z     = simdMulD(z, simdInvsqrtMaskSingleAccuracyD(z, mask3));
     z     = simdBlendD(x, z, mask1);
     z     = simdAsinSingleAccuracyD(z);
 
@@ -3678,7 +3636,7 @@ simdAtanSingleAccuracyD(SimdDouble x)
     mask  = simdCmpLtD(x, simdSetZeroD());
     x     = simdAbsD(x);
     mask2 = simdCmpLtD(simdSet1D(1.0), x);
-    x     = simdBlendD(x, simdInvMaskFpeSingleAccuracyD(x, mask2), mask2);
+    x     = simdBlendD(x, simdInvMaskSingleAccuracyD(x, mask2), mask2);
 
     x2    = simdMulD(x, x);
     x3    = simdMulD(x2, x);
@@ -3720,20 +3678,20 @@ simdAtan2SingleAccuracyD(SimdDouble y, SimdDouble x)
     const SimdDouble pi          = simdSet1D(M_PI);
     const SimdDouble halfpi      = simdSet1D(M_PI/2.0);
     SimdDouble       xinv, p, aoffset;
-    SimdDBool        mask_x0, mask_y0, mask_xlt0, mask_ylt0;
+    SimdDBool        mask_xnz, mask_ynz, mask_xlt0, mask_ylt0;
 
-    mask_x0   = simdCmpEqD(x, simdSetZeroD());
-    mask_y0   = simdCmpEqD(y, simdSetZeroD());
+    mask_xnz  = simdCmpNzD(x);
+    mask_ynz  = simdCmpNzD(y);
     mask_xlt0 = simdCmpLtD(x, simdSetZeroD());
     mask_ylt0 = simdCmpLtD(y, simdSetZeroD());
 
-    aoffset   = simdMaskD(halfpi, mask_x0);
-    aoffset   = simdMaskNotD(aoffset, mask_y0);
+    aoffset   = simdMaskNotD(halfpi, mask_xnz);
+    aoffset   = simdMaskD(aoffset, mask_ynz);
 
     aoffset   = simdBlendD(aoffset, pi, mask_xlt0);
     aoffset   = simdBlendD(aoffset, simdNegD(aoffset), mask_ylt0);
 
-    xinv      = simdMaskNotD(simdInvNotMaskFpeSingleAccuracyD(x, mask_x0), mask_x0);
+    xinv      = simdInvMaskSingleAccuracyD(x, mask_xnz);
     p         = simdMulD(y, xinv);
     p         = simdAtanSingleAccuracyD(p);
     p         = simdAddD(p, aoffset);
@@ -3995,6 +3953,7 @@ simd4InvsqrtF(Simd4Float x)
     return lu;
 }
 
+
 #endif /* GMX_SIMD4_HAVE_FLOAT */
 
 
@@ -4053,6 +4012,7 @@ simd4InvsqrtD(Simd4Double x)
     return lu;
 }
 
+
 /**********************************************************************
  * SIMD4 MATH FUNCTIONS WITH DOUBLE PREC. DATA, SINGLE PREC. ACCURACY *
  **********************************************************************/
@@ -4078,433 +4038,732 @@ simd4InvsqrtSingleAccuracyD(Simd4Double x)
 }
 
 
+
 #endif /* GMX_SIMD4_HAVE_DOUBLE */
 
 /*! \} */
 
+/**********************************************************************
+ *      WRAPPER FUNCTIONS FOR DEFAULT GROMACS "REAL" PRECISION        *
+ **********************************************************************/
 
-/* Set defines based on default Gromacs precision */
-#ifdef GMX_DOUBLE
-/* Documentation in single branch below */
-
-#    define simdSum4           simdSum4D
-#    define simdXorSign        simdXorSignD
-#    define simd4Sum4          simd4Sum4D
-
-/* On hardware that only supports double precision SIMD it is possible to use
- * the faster _singleaccuracy_d routines everywhere by setting the requested SIMD
- * accuracy to single precision.
- */
-#if (GMX_SIMD_ACCURACY_BITS_DOUBLE > GMX_SIMD_ACCURACY_BITS_SINGLE)
-
-#        define simdInvsqrt        simdInvsqrtD
-#        define simdInvsqrtPair   simdInvsqrtPairD
-#        define simdSqrt           simdSqrtD
-#        define simdInv            simdInvD
-#        define simdLog            simdLogD
-#        define simdExp2           simdExp2D
-#        define simdExp            simdExpD
-#        define simdErf            simdErfD
-#        define simdErfc           simdErfcD
-#        define simdSinCos         simdSinCosD
-#        define simdSin            simdSinD
-#        define simdCos            simdCosD
-#        define simdTan            simdTanD
-#        define simdAsin           simdAsinD
-#        define simdAcos           simdAcosD
-#        define simdAtan           simdAtanD
-#        define simdAtan2          simdAtan2D
-#        define simdPmeCorrForce       simdPmeCorrForceD
-#        define simdPmeCorrPotential       simdPmeCorrPotentialD
-#        define simd4Invsqrt       simd4InvsqrtD
-
-#else
-
-#        define simdInvsqrt        simdInvsqrtSingleAccuracyD
-#        define simdInvsqrtPair   simdInvsqrtPairSingleAccuracyD
-#        define simdSqrt           simdSqrtSingleAccuracyD
-#        define simdInv            simdInvSingleAccuracyD
-#        define simdLog            simdLogSingleAccuracyD
-#        define simdExp2           simdExp2SingleAccuracyD
-#        define simdExp            simdExpSingleAccuracyD
-#        define simdErf            simdErfSingleAccuracyD
-#        define simdErfc           simdErfcSingleAccuracyD
-#        define simdSinCos         simdSinCosSingleAccuracyD
-#        define simdSin            simdSinSingleAccuracyD
-#        define simdCos            simdCosSingleAccuracyD
-#        define simdTan            simdTanSingleAccuracyD
-#        define simdAsin           simdAsinSingleAccuracyD
-#        define simdAcos           simdAcosSingleAccuracyD
-#        define simdAtan           simdAtanSingleAccuracyD
-#        define simdAtan2          simdAtan2SingleAccuracyD
-#        define simdPmeCorrForce       simdPmeCorrForceSingleAccuracyD
-#        define simdPmeCorrPotential       simdPmeCorrPotentialSingleAccuracyD
-#        define simd4Invsqrt       simd4InvsqrtSingleAccuracyD
-
-#endif
-
-#    define simdInvsqrtSingleAccuracy        simdInvsqrtSingleAccuracyD
-#    define simdInvsqrtPairSingleAccuracy   simdInvsqrtPairSingleAccuracyD
-#    define simdSqrtSingleAccuracy           simdSqrtSingleAccuracyD
-#    define simdInvSingleAccuracy            simdInvSingleAccuracyD
-#    define simdLogSingleAccuracy            simdLogSingleAccuracyD
-#    define simdExp2SingleAccuracy           simdExp2SingleAccuracyD
-#    define simdExpSingleAccuracy            simdExpSingleAccuracyD
-#    define simdErfSingleAccuracy            simdErfSingleAccuracyD
-#    define simdErfcSingleAccuracy           simdErfcSingleAccuracyD
-#    define simdSinCosSingleAccuracy         simdSinCosSingleAccuracyD
-#    define simdSinSingleAccuracy            simdSinSingleAccuracyD
-#    define simdCosSingleAccuracy            simdCosSingleAccuracyD
-#    define simdTanSingleAccuracy            simdTanSingleAccuracyD
-#    define simdAsinSingleAccuracy           simdAsinSingleAccuracyD
-#    define simdAcosSingleAccuracy           simdAcosSingleAccuracyD
-#    define simdAtanSingleAccuracy           simdAtanSingleAccuracyD
-#    define simdAtan2SingleAccuracy          simdAtan2SingleAccuracyD
-#    define simdPmeCorrForceSingleAccuracy       simdPmeCorrForceSingleAccuracyD
-#    define simdPmeCorrPotentialSingleAccuracy       simdPmeCorrPotentialSingleAccuracyD
-#    define simd4InvsqrtSingleAccuracy       simd4InvsqrtSingleAccuracyD
-
-#else /* GMX_DOUBLE */
-
-/*! \name Real-precision SIMD math functions
- *
- *  These are the ones you should typically call in Gromacs.
- * \{
- */
-
-/*! \brief SIMD utility function to sum a+b+c+d for SIMD reals.
+/*! \brief SIMD float utility to sum a+b+c+d.
  *
  * \copydetails simdSum4F
  */
-#    define simdSum4           simdSum4F
+static inline SimdReal gmx_simdcall
+simdSum4(SimdReal a, SimdReal b,
+         SimdReal c, SimdReal d)
+{
+#ifdef GMX_DOUBLE
+    return simdSum4D(a, b, c, d);
+#else
+    return simdSum4F(a, b, c, d);
+#endif
+}
 
-/*! \brief Return -a if b is negative, SIMD real.
+/*! \brief Return -a if b is negative, SIMD float.
  *
  * \copydetails simdXorSignF
  */
-#    define simdXorSign       simdXorSignF
+static inline SimdReal gmx_simdcall
+simdXorSign(SimdReal a, SimdReal b)
+{
+#ifdef GMX_DOUBLE
+    return simdXorSignD(a, b);
+#else
+    return simdXorSignF(a, b);
+#endif
+}
+
+#if GMX_SIMD4_HAVE_REAL
+/*! \brief SIMD4 float utility to sum a+b+c+d.
+ *
+ * \copydetails simd4Sum4F
+ */
+static inline Simd4Real gmx_simdcall
+simd4Sum4(Simd4Real a, Simd4Real b,
+          Simd4Real c, Simd4Real d)
+{
+#ifdef GMX_DOUBLE
+    return simd4Sum4D(a, b, c, d);
+#else
+    return simd4Sum4F(a, b, c, d);
+#endif
+}
+#endif  // GMX_SIMD4_HAVE_REAL
 
 /*! \brief Calculate 1/sqrt(x) for SIMD real.
  *
  * \copydetails simdInvsqrtF
  */
-#    define simdInvsqrt        simdInvsqrtF
+static inline SimdReal gmx_simdcall
+simdInvsqrt(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdInvsqrtSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdInvsqrtD(x);
+#else
+    return simdInvsqrtF(x);
+#endif
+}
 
 /*! \brief Calculate 1/sqrt(x) for two SIMD reals.
  *
  * \copydetails simdInvsqrtPairF
  */
-#    define simdInvsqrtPair   simdInvsqrtPairF
+static inline void gmx_simdcall
+simdInvsqrtPair(SimdReal x0,    SimdReal x1,
+                SimdReal *out0, SimdReal *out1)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdInvsqrtPairSingleAccuracyD(x0, x1, out0, out1);
+#elif defined GMX_DOUBLE
+    return simdInvsqrtPairD(x0, x1, out0, out1);
+#else
+    return simdInvsqrtPairF(x0, x1, out0, out1);
+#endif
+}
 
-/*! \brief Calculate sqrt(x) correctly for SIMD real, including argument 0.0.
+/*! \brief Calculate 1/sqrt(x) for SIMD real.
  *
- * \copydetails simdSqrtF
+ * \copydetails simdInvsqrtF
  */
-#    define simdSqrt           simdSqrtF
+static inline SimdReal gmx_simdcall
+simdSqrt(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdSqrtSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdSqrtD(x);
+#else
+    return simdSqrtF(x);
+#endif
+}
 
-/*! \brief Calculate 1/x for SIMD real.
+/*! \brief Calculate 1/sqrt(x) for SIMD real.
  *
- * \copydetails simdInvF
+ * \copydetails simdInvsqrtF
  */
-#    define simdInv            simdInvF
+static inline SimdReal gmx_simdcall
+simdInv(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdInvSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdInvD(x);
+#else
+    return simdInvF(x);
+#endif
+}
+
+/*! \brief Calculate 1/sqrt(x) for masked entries of SIMD reals.
+ *
+ *  \copydetails simdInvsqrtMaskF
+ */
+static inline SimdReal
+simdInvsqrtMask(SimdReal x, SimdBool m)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdInvsqrtMaskSingleAccuracyD(x, m);
+#elif defined GMX_DOUBLE
+    return simdInvsqrtMaskD(x, m);
+#else
+    return simdInvsqrtMaskF(x, m);
+#endif
+}
+
+/*! \brief Calculate 1/x for masked entries of SIMD reals.
+ *
+ *  \copydetails simdInvMaskF
+ */
+static inline SimdReal
+simdInvMask(SimdReal x, SimdBool m)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdInvMaskSingleAccuracyD(x, m);
+#elif defined GMX_DOUBLE
+    return simdInvMaskD(x, m);
+#else
+    return simdInvMaskF(x, m);
+#endif
+}
 
 /*! \brief SIMD real log(x). This is the natural logarithm.
  *
- * \copydetails simdLogF
+ * \copydetails simdInvsqrtF
  */
-#    define simdLog            simdLogF
+static inline SimdReal gmx_simdcall
+simdLog(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdLogSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdLogD(x);
+#else
+    return simdLogF(x);
+#endif
+}
 
 /*! \brief SIMD real 2^x.
  *
  * \copydetails simdExp2F
  */
-#    define simdExp2           simdExp2F
+static inline SimdReal gmx_simdcall
+simdExp2(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdExp2SingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdExp2D(x);
+#else
+    return simdExp2F(x);
+#endif
+}
 
 /*! \brief SIMD real e^x.
  *
  * \copydetails simdExpF
  */
-#    define simdExp            simdExpF
+static inline SimdReal gmx_simdcall
+simdExp(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdExpSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdExpD(x);
+#else
+    return simdExpF(x);
+#endif
+}
 
 /*! \brief SIMD real erf(x).
  *
  * \copydetails simdErfF
  */
-#    define simdErf            simdErfF
+static inline SimdReal gmx_simdcall
+simdErf(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdErfSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdErfD(x);
+#else
+    return simdErfF(x);
+#endif
+}
 
 /*! \brief SIMD real erfc(x).
  *
  * \copydetails simdErfcF
  */
-#    define simdErfc           simdErfcF
+static inline SimdReal gmx_simdcall
+simdErfc(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdErfcSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdErfcD(x);
+#else
+    return simdErfcF(x);
+#endif
+}
 
 /*! \brief SIMD real sin \& cos.
  *
  * \copydetails simdSinCosF
  */
-#    define simdSinCos         simdSinCosF
+static inline void gmx_simdcall
+simdSinCos(SimdReal x, SimdReal *sinval, SimdReal *cosval)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    simdSinCosSingleAccuracyD(x, sinval, cosval);
+#elif defined GMX_DOUBLE
+    simdSinCosD(x, sinval, cosval);
+#else
+    simdSinCosF(x, sinval, cosval);
+#endif
+}
 
 /*! \brief SIMD real sin(x).
  *
  * \copydetails simdSinF
  */
-#    define simdSin            simdSinF
+static inline SimdReal gmx_simdcall
+simdSin(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdSinSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdSinD(x);
+#else
+    return simdSinF(x);
+#endif
+}
 
 /*! \brief SIMD real cos(x).
  *
  * \copydetails simdCosF
  */
-#    define simdCos            simdCosF
+static inline SimdReal gmx_simdcall
+simdCos(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdCosSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdCosD(x);
+#else
+    return simdCosF(x);
+#endif
+}
 
 /*! \brief SIMD real tan(x).
  *
  * \copydetails simdTanF
  */
-#    define simdTan            simdTanF
+static inline SimdReal gmx_simdcall
+simdTan(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdTanSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdTanD(x);
+#else
+    return simdTanF(x);
+#endif
+}
 
 /*! \brief SIMD real asin(x).
  *
  * \copydetails simdAsinF
  */
-#    define simdAsin           simdAsinF
+static inline SimdReal gmx_simdcall
+simdAsin(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdAsinSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdAsinD(x);
+#else
+    return simdAsinF(x);
+#endif
+}
 
 /*! \brief SIMD real acos(x).
  *
  * \copydetails simdAcosF
  */
-#    define simdAcos           simdAcosF
+static inline SimdReal gmx_simdcall
+simdAcos(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdAcosSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdAcosD(x);
+#else
+    return simdAcosF(x);
+#endif
+}
 
 /*! \brief SIMD real atan(x).
  *
  * \copydetails simdAtanF
  */
-#    define simdAtan           simdAtanF
+static inline SimdReal gmx_simdcall
+simdAtan(SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdAtanSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simdAtanD(x);
+#else
+    return simdAtanF(x);
+#endif
+}
 
 /*! \brief SIMD real atan2(y,x).
  *
  * \copydetails simdAtan2F
  */
-#    define simdAtan2          simdAtan2F
+static inline SimdReal gmx_simdcall
+simdAtan2(SimdReal y, SimdReal x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdAtan2SingleAccuracyD(y, x);
+#elif defined GMX_DOUBLE
+    return simdAtan2D(y, x);
+#else
+    return simdAtan2F(y, x);
+#endif
+}
 
 /*! \brief SIMD Analytic PME force correction.
  *
  * \copydetails simdPmeCorrForceF
  */
-#    define simdPmeCorrForce       simdPmeCorrForceF
+static inline SimdReal gmx_simdcall
+simdPmeCorrForce(SimdReal z2)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdPmeCorrForceSingleAccuracyD(z2);
+#elif defined GMX_DOUBLE
+    return simdPmeCorrForceD(z2);
+#else
+    return simdPmeCorrForceF(z2);
+#endif
+}
 
 /*! \brief SIMD Analytic PME potential correction.
  *
  * \copydetails simdPmeCorrPotentialF
  */
-#    define simdPmeCorrPotential       simdPmeCorrPotentialF
+static inline SimdReal gmx_simdcall
+simdPmeCorrPotential(SimdReal z2)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simdPmeCorrPotentialSingleAccuracyD(z2);
+#elif defined GMX_DOUBLE
+    return simdPmeCorrPotentialD(z2);
+#else
+    return simdPmeCorrPotentialF(z2);
+#endif
+}
 
-/*! \brief Calculate 1/sqrt(x) for SIMD, only targeting single accuracy.
- *
- * \copydetails simdInvsqrt
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdInvsqrtSingleAccuracy        simdInvsqrtF
-
-/*! \brief Calculate 1/sqrt(x) for SIMD pair, only targeting single accuracy.
- *
- * \copydetails simdInvsqrtPair
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdInvsqrtPairSingleAccuracy   simdInvsqrtPairF
-
-/*! \brief Calculate sqrt(x), only targeting single accuracy.
- *
- * \copydetails simdSqrt
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdSqrtSingleAccuracy           simdSqrtF
-
-/*! \brief Calculate 1/x for SIMD real, only targeting single accuracy.
- *
- * \copydetails simdInv
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdInvSingleAccuracy            simdInvF
-
-/*! \brief SIMD real log(x), only targeting single accuracy.
- *
- * \copydetails simdLog
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdLogSingleAccuracy            simdLogF
-
-/*! \brief SIMD real 2^x, only targeting single accuracy.
- *
- * \copydetails simdExp2
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdExp2SingleAccuracy           simdExp2F
-
-/*! \brief SIMD real e^x, only targeting single accuracy.
- *
- * \copydetails simdExp
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdExpSingleAccuracy            simdExpF
-
-/*! \brief SIMD real erf(x), only targeting single accuracy.
- *
- * \copydetails simdErf
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdErfSingleAccuracy            simdErfF
-
-/*! \brief SIMD real erfc(x), only targeting single accuracy.
- *
- * \copydetails simdErfc
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdErfcSingleAccuracy           simdErfcF
-
-/*! \brief SIMD real sin \& cos, only targeting single accuracy.
- *
- * \copydetails simdSinCos
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdSinCosSingleAccuracy         simdSinCosF
-
-/*! \brief SIMD real sin(x), only targeting single accuracy.
- *
- * \copydetails simdSin
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdSinSingleAccuracy            simdSinF
-
-/*! \brief SIMD real cos(x), only targeting single accuracy.
- *
- * \copydetails simdCos
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdCosSingleAccuracy            simdCosF
-
-/*! \brief SIMD real tan(x), only targeting single accuracy.
- *
- * \copydetails simdTan
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdTanSingleAccuracy            simdTanF
-
-/*! \brief SIMD real asin(x), only targeting single accuracy.
- *
- * \copydetails simdAsin
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdAsinSingleAccuracy           simdAsinF
-
-/*! \brief SIMD real acos(x), only targeting single accuracy.
- *
- * \copydetails simdAcos
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdAcosSingleAccuracy           simdAcosF
-
-/*! \brief SIMD real atan(x), only targeting single accuracy.
- *
- * \copydetails simdAtan
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdAtanSingleAccuracy           simdAtanF
-
-/*! \brief SIMD real atan2(y,x), only targeting single accuracy.
- *
- * \copydetails simdAtan2
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdAtan2SingleAccuracy          simdAtan2F
-
-/*! \brief SIMD Analytic PME force corr., only targeting single accuracy.
- *
- * \copydetails simdPmeCorrForce
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdPmeCorrForceSingleAccuracy       simdPmeCorrForceF
-
-/*! \brief SIMD Analytic PME potential corr., only targeting single accuracy.
- *
- * \copydetails simdPmeCorrPotential
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
- */
-#    define simdPmeCorrPotentialSingleAccuracy       simdPmeCorrPotentialF
-
-
-/*! \}
- * \name SIMD4 math functions
- * \{
- */
-
-/*! \brief SIMD4 utility function to sum a+b+c+d for SIMD4 reals.
- *
- * \copydetails simdSum4F
- */
-#    define simd4Sum4          simd4Sum4F
-
+#if GMX_SIMD4_HAVE_REAL
 /*! \brief Calculate 1/sqrt(x) for SIMD4 real.
  *
  * \copydetails simdInvsqrtF
  */
-#    define simd4Invsqrt       simd4InvsqrtF
+static inline Simd4Real gmx_simdcall
+simd4Invsqrt(Simd4Real x)
+{
+#if (defined GMX_DOUBLE) && (GMX_SIMD_ACCURACY_BITS_DOUBLE <= GMX_SIMD_ACCURACY_BITS_SINGLE)
+    return simd4InvsqrtSingleAccuracyD(x);
+#elif defined GMX_DOUBLE
+    return simd4InvsqrtD(x);
+#else
+    return simd4InvsqrtF(x);
+#endif
+}
+#endif
 
-/*! \brief 1/sqrt(x) for SIMD4 real. Single accuracy, even for double prec.
+/*! \brief Calculate 1/sqrt(x) for SIMD real, only targeting single accuracy.
  *
- * \copydetails simd4Invsqrt
- *
- * \note This is a performance-targeted function that only achieves single
- *       precision accuracy, even when the SIMD data is double precision.
+ * \copydetails simdInvsqrtF
  */
-#    define simd4InvsqrtSingleAccuracy       simd4InvsqrtF
+static inline SimdReal gmx_simdcall
+simdInvsqrtSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdInvsqrtSingleAccuracyD(x);
+#else
+    return simdInvsqrtF(x);
+#endif
+}
 
-/*! \} */
+/*! \brief Calculate 1/sqrt(x) for two SIMD reals, only targeting single accuracy.
+ *
+ * \copydetails simdInvsqrtPairF
+ */
+static inline void gmx_simdcall
+simdInvsqrtPairSingleAccuracy(SimdReal x0,    SimdReal x1,
+                              SimdReal *out0, SimdReal *out1)
+{
+#ifdef GMX_DOUBLE
+    return simdInvsqrtPairSingleAccuracyD(x0, x1, out0, out1);
+#else
+    return simdInvsqrtPairF(x0, x1, out0, out1);
+#endif
+}
 
-#endif /* GMX_DOUBLE */
+/*! \brief Calculate 1/sqrt(x) for SIMD real, only targeting single accuracy.
+ *
+ * \copydetails simdInvsqrtF
+ */
+static inline SimdReal gmx_simdcall
+simdSqrtSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdSqrtSingleAccuracyD(x);
+#else
+    return simdSqrtF(x);
+#endif
+}
 
-/*! \} */
-/*! \endcond */
+/*! \brief Calculate 1/sqrt(x) for SIMD real, only targeting single accuracy.
+ *
+ * \copydetails simdInvsqrtF
+ */
+static inline SimdReal gmx_simdcall
+simdInvSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdInvSingleAccuracyD(x);
+#else
+    return simdInvF(x);
+#endif
+}
+
+/*! \brief Calculate 1/sqrt(x) for masked SIMD reals, only targeting single accuracy.
+ *
+ *  \copydetails simdInvsqrtMaskF
+ */
+static inline SimdReal
+simdInvsqrtMaskSingleAccuracy(SimdReal x, SimdBool m)
+{
+#ifdef GMX_DOUBLE
+    return simdInvsqrtMaskSingleAccuracyD(x, m);
+#else
+    return simdInvsqrtMaskF(x, m);
+#endif
+}
+
+/*! \brief Calculate 1/x for masked SIMD reals, only targeting single accuracy.
+ *
+ *  \copydetails simdInvMaskF
+ */
+static inline SimdReal
+simdInvMaskSingleAccuracy(SimdReal x, SimdBool m)
+{
+#ifdef GMX_DOUBLE
+    return simdInvMaskSingleAccuracyD(x, m);
+#else
+    return simdInvMaskF(x, m);
+#endif
+}
+
+/*! \brief SIMD real log(x), only targeting single accuracy. This is the natural logarithm.
+ *
+ * \copydetails simdInvsqrtF
+ */
+static inline SimdReal gmx_simdcall
+simdLogSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdLogSingleAccuracyD(x);
+#else
+    return simdLogF(x);
+#endif
+}
+
+/*! \brief SIMD real 2^x, only targeting single accuracy.
+ *
+ * \copydetails simdExp2F
+ */
+static inline SimdReal gmx_simdcall
+simdExp2SingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdExp2SingleAccuracyD(x);
+#else
+    return simdExp2F(x);
+#endif
+}
+
+/*! \brief SIMD real e^x, only targeting single accuracy.
+ *
+ * \copydetails simdExpF
+ */
+static inline SimdReal gmx_simdcall
+simdExpSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdExpSingleAccuracyD(x);
+#else
+    return simdExpF(x);
+#endif
+}
+
+/*! \brief SIMD real erf(x), only targeting single accuracy.
+ *
+ * \copydetails simdErfF
+ */
+static inline SimdReal gmx_simdcall
+simdErfSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdErfSingleAccuracyD(x);
+#else
+    return simdErfF(x);
+#endif
+}
+
+/*! \brief SIMD real erfc(x), only targeting single accuracy.
+ *
+ * \copydetails simdErfcF
+ */
+static inline SimdReal gmx_simdcall
+simdErfcSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdErfcSingleAccuracyD(x);
+#else
+    return simdErfcF(x);
+#endif
+}
+
+/*! \brief SIMD real sin \& cos, only targeting single accuracy.
+ *
+ * \copydetails simdSinCosF
+ */
+static inline void gmx_simdcall
+simdSinCosSingleAccuracy(SimdReal x, SimdReal *sinval, SimdReal *cosval)
+{
+#ifdef GMX_DOUBLE
+    simdSinCosSingleAccuracyD(x, sinval, cosval);
+#else
+    simdSinCosF(x, sinval, cosval);
+#endif
+}
+
+/*! \brief SIMD real sin(x), only targeting single accuracy.
+ *
+ * \copydetails simdSinF
+ */
+static inline SimdReal gmx_simdcall
+simdSinSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdSinSingleAccuracyD(x);
+#else
+    return simdSinF(x);
+#endif
+}
+
+/*! \brief SIMD real cos(x), only targeting single accuracy.
+ *
+ * \copydetails simdCosF
+ */
+static inline SimdReal gmx_simdcall
+simdCosSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdCosSingleAccuracyD(x);
+#else
+    return simdCosF(x);
+#endif
+}
+
+/*! \brief SIMD real tan(x), only targeting single accuracy.
+ *
+ * \copydetails simdTanF
+ */
+static inline SimdReal gmx_simdcall
+simdTanSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdTanSingleAccuracyD(x);
+#else
+    return simdTanF(x);
+#endif
+}
+
+/*! \brief SIMD real asin(x), only targeting single accuracy.
+ *
+ * \copydetails simdAsinF
+ */
+static inline SimdReal gmx_simdcall
+simdAsinSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdAsinSingleAccuracyD(x);
+#else
+    return simdAsinF(x);
+#endif
+}
+
+/*! \brief SIMD real acos(x), only targeting single accuracy.
+ *
+ * \copydetails simdAcosF
+ */
+static inline SimdReal gmx_simdcall
+simdAcosSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdAcosSingleAccuracyD(x);
+#else
+    return simdAcosF(x);
+#endif
+}
+
+/*! \brief SIMD real atan(x), only targeting single accuracy.
+ *
+ * \copydetails simdAtanF
+ */
+static inline SimdReal gmx_simdcall
+simdAtanSingleAccuracy(SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdAtanSingleAccuracyD(x);
+#else
+    return simdAtanF(x);
+#endif
+}
+
+/*! \brief SIMD real atan2(y,x), only targeting single accuracy.
+ *
+ * \copydetails simdAtan2F
+ */
+static inline SimdReal gmx_simdcall
+simdAtan2SingleAccuracy(SimdReal y, SimdReal x)
+{
+#ifdef GMX_DOUBLE
+    return simdAtan2SingleAccuracyD(y, x);
+#else
+    return simdAtan2F(y, x);
+#endif
+}
+
+/*! \brief SIMD Analytic PME force correction, only targeting single accuracy.
+ *
+ * \copydetails simdPmeCorrForceF
+ */
+static inline SimdReal gmx_simdcall
+simdPmeCorrForceSingleAccuracy(SimdReal z2)
+{
+#ifdef GMX_DOUBLE
+    return simdPmeCorrForceSingleAccuracyD(z2);
+#else
+    return simdPmeCorrForceF(z2);
+#endif
+}
+
+/*! \brief SIMD Analytic PME potential correction, only targeting single accuracy.
+ *
+ * \copydetails simdPmeCorrPotentialF
+ */
+static inline SimdReal gmx_simdcall
+simdPmeCorrPotentialSingleAccuracy(SimdReal z2)
+{
+#ifdef GMX_DOUBLE
+    return simdPmeCorrPotentialSingleAccuracyD(z2);
+#else
+    return simdPmeCorrPotentialF(z2);
+#endif
+}
+
+#if GMX_SIMD4_HAVE_REAL
+/*! \brief Calculate 1/sqrt(x) for SIMD4 real, only targeting single accuracy.
+ *
+ * \copydetails simdInvsqrtF
+ */
+static inline Simd4Real gmx_simdcall
+simd4InvsqrtSingleAccuracy(Simd4Real x)
+{
+#ifdef GMX_DOUBLE
+    return simd4InvsqrtSingleAccuracyD(x);
+#else
+    return simd4InvsqrtF(x);
+#endif
+}
+#endif // GMX_SIMD4_HAVE_REAL
+
+/*! \}   end of addtogroup module_simd */
+/*! \endcond  end of condition libabl */
 
 #endif /* GMX_SIMD */
 
 }      // namespace gmx
 
-#endif /* GMX_SIMD_SIMD_MATH_H_ */
+#endif /* GMX_SIMD_SIMD_MATH_H */

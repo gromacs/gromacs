@@ -408,6 +408,9 @@ static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
 static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
                                  int csj, const nbnxn_bb_t *bb_j_all)
 {
+    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
+    using namespace gmx;
+
     Simd4Float bb_i_S0, bb_i_S1;
     Simd4Float bb_j_S0, bb_j_S1;
     Simd4Float dl_S;
@@ -483,6 +486,9 @@ static void subc_bb_dist2_simd4_xxxx(const float *bb_j,
                                      int nsi, const float *bb_i,
                                      float *d2)
 {
+    // TODO: During SIMDv2 transition only some archs use namespace (remove when done)
+    using namespace gmx;
+
     Simd4Float xj_l, yj_l, zj_l;
     Simd4Float xj_h, yj_h, zj_h;
     Simd4Float xi_l, yi_l, zi_l;
