@@ -34,26 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "buttons.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #include <algorithm>
 
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "ff.bm"
+#include "play.bm"
+#include "rewind.bm"
+#include "stop_ani.bm"
 #include "x11.h"
 #include "xutil.h"
-#include "buttons.h"
-
-#include "stop_ani.bm"
-#include "play.bm"
-#include "ff.bm"
-#include "rewind.bm"
 
 static void move_bbox(t_x11 *x11, t_butbox *bbox)
 {
@@ -118,7 +117,7 @@ static bool VBCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 void set_vbtime(t_x11 *x11, t_butbox *vbox, char *text)
 {
     sfree(vbox->wd.text);
-    vbox->wd.text = strdup(text);
+    vbox->wd.text = gmx_strdup(text);
     ExposeWin(x11->disp, vbox->wd.self);
 }
 

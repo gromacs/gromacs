@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,9 +40,11 @@
  * \ingroup module_commandline
  */
 // For GMX_BINARY_SUFFIX
-#ifdef HAVE_CONFIG_H
+#include "gmxpre.h"
+
+#include "gromacs/commandline/cmdlinemodulemanager.h"
+
 #include "config.h"
-#endif
 
 #include <vector>
 
@@ -50,7 +52,6 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
-#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/file.h"
 
@@ -83,6 +84,7 @@ class MockModule : public gmx::CommandLineModuleInterface
         virtual const char *name() const { return name_; }
         virtual const char *shortDescription() const { return descr_; }
 
+        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
         MOCK_METHOD2(run, int(int argc, char *argv[]));
         MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext &context));
 
@@ -93,6 +95,11 @@ class MockModule : public gmx::CommandLineModuleInterface
         }
 
     private:
+        //! Disable nice() calls for tests.
+        void disableNice(gmx::CommandLineModuleSettings *settings)
+        {
+            settings->setDefaultNiceLevel(0);
+        }
         //! Checks the context passed to writeHelp().
         void checkHelpContext(const gmx::CommandLineHelpContext &context) const;
 
@@ -107,6 +114,8 @@ MockModule::MockModule(const char *name, const char *description)
     using ::testing::_;
     using ::testing::Invoke;
     using ::testing::WithArg;
+    ON_CALL(*this, init(_))
+        .WillByDefault(WithArg<0>(Invoke(this, &MockModule::disableNice)));
     ON_CALL(*this, writeHelp(_))
         .WillByDefault(WithArg<0>(Invoke(this, &MockModule::checkHelpContext)));
 }
@@ -209,6 +218,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, init(_));
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
@@ -237,23 +247,6 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
 {
     const char *const cmdline[] = {
         "test", "module", "-h"
-    };
-    CommandLine       args(cmdline);
-    initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
-    addModule("other", "Second module");
-    using ::testing::_;
-    EXPECT_CALL(mod1, writeHelp(_));
-    mod1.setExpectedDisplayName("test module");
-    int rc = 0;
-    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
-}
-
-TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSymLink)
-{
-    const char *const cmdline[] = {
-        "g_module", "-h"
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
@@ -300,44 +293,6 @@ TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
     ASSERT_EQ(0, rc);
 }
 
-TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
-{
-    const char *const cmdline[] = {
-        "g_module", "-flag", "yes"
-    };
-    CommandLine       args(cmdline);
-    initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
-    addModule("other", "Second module");
-    using ::testing::_;
-    using ::testing::Args;
-    using ::testing::ElementsAreArray;
-    EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
-    int rc = 0;
-    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
-}
-
-TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffix)
-{
-    const char *const cmdline[] = {
-        "/usr/local/gromacs/bin/g_module" GMX_BINARY_SUFFIX ".exe", "-flag", "yes"
-    };
-    CommandLine       args(cmdline);
-    initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
-    addModule("other", "Second module");
-    using ::testing::_;
-    using ::testing::Args;
-    using ::testing::ElementsAreArray;
-    EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
-    int rc = 0;
-    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
-}
-
 TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
 {
     const char *const cmdline[] = {
@@ -350,6 +305,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;
+    EXPECT_CALL(mod1, init(_));
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;

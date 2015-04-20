@@ -36,9 +36,9 @@
 #ifndef _gmx_membed_h
 #define _gmx_membed_h
 
-#include "typedefs.h"
-#include "types/membedt.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/membedt.h"
 
 #ifdef __cplusplus
 extern "C" {

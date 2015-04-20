@@ -46,10 +46,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
+#include "gromacs/analysisdata/modules/histogram.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/histogram.h"
 
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/testasserts.h"
@@ -157,8 +160,13 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
+#else
+            static SimpleInputData singleton_histogram;
+            return singleton_histogram.data_;
+#endif
         }
 
         SimpleInputData() : data_(1, true)
@@ -238,8 +246,13 @@ class WeightedSimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static WeightedSimpleInputData singleton;
             return singleton.data_;
+#else
+            static WeightedSimpleInputData singleton_histogram;
+            return singleton_histogram.data_;
+#endif
         }
 
         WeightedSimpleInputData() : data_(1, true)
@@ -270,8 +283,13 @@ class WeightedDataSetInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static WeightedDataSetInputData singleton;
             return singleton.data_;
+#else
+            static WeightedDataSetInputData singleton_histogram;
+            return singleton_histogram.data_;
+#endif
         }
 
         WeightedDataSetInputData() : data_(2, true)
@@ -437,8 +455,13 @@ class AverageInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static AverageInputData singleton;
             return singleton.data_;
+#else
+            static AverageInputData singleton_histogram;
+            return singleton_histogram.data_;
+#endif
         }
 
         AverageInputData() : data_(1, false)
@@ -468,7 +491,6 @@ class AverageInputData
 class MockAverageHistogram : public gmx::AbstractAverageHistogram
 {
     public:
-        MockAverageHistogram() {}
         //! Creates a histogram module with defined bin parameters.
         explicit MockAverageHistogram(const gmx::AnalysisHistogramSettings &settings)
             : AbstractAverageHistogram(settings)
@@ -498,6 +520,24 @@ TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
     gmx::AverageHistogramPointer copy2(data.clone());
     ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, copy2.get()));
     ASSERT_NO_THROW_GMX(copy2->done());
+}
+
+
+TEST_F(AbstractAverageHistogramTest, ComputesCumulativeHistogram)
+{
+    const AnalysisDataTestInput &input = AverageInputData::get();
+    MockAverageHistogram         data(
+            gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
+    setupArrayData(input, &data);
+
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(data.done());
+
+    gmx::AverageHistogramPointer cumulative(data.clone());
+    cumulative->makeCumulative();
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("CumulativeHistogram", cumulative.get()));
+    ASSERT_NO_THROW_GMX(cumulative->done());
 }
 
 

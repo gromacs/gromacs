@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,6 +97,16 @@ class TestOptionsProvider
  * \ingroup module_testutils
  */
 void registerTestOptions(const char *name, TestOptionsProvider *provider);
+/*! \libinternal \brief
+ * Initializes the options from all registered test providers.
+ *
+ * \param   options  The options are added here.
+ *
+ * This is called automatically by initTestUtils().
+ *
+ * \ingroup module_testutils
+ */
+void initTestOptions(Options *options);
 
 // Uncrustify screws up the indentation for the example otherwise.
 /* *INDENT-OFF* */
@@ -118,6 +128,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
  * \code
    #include "gromacs/options/basicoptions.h"
    #include "gromacs/options/options.h"
+
    #include "testutils/testoptions.h"
 
    namespace gmx
@@ -165,26 +176,6 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
     static name s_ ## name ## Instance; \
     \
     void name::initOptions(::gmx::Options *options)
-
-/*! \libinternal \brief
- * Initializes the test utilities library.
- *
- * Does not throw.  Terminates the program with a non-zero error code if an
- * error occurs.
- *
- * This function is automatically called by unittest_main.cpp.
- */
-void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv);
-
-/*! \libinternal \brief
- * Finalizes the test utilities library.
- *
- * Does not throw.  Terminates the program with a non-zero error code if an
- * error occurs.
- *
- * This function is automatically called by unittest_main.cpp.
- */
-void finalizeTestUtils();
 
 } // namespace test
 } // namespace gmx

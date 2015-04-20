@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">insert-molecules -nmol 1</String>
+  <OutputFiles Name="Files">
+    <String Name="-o"><![CDATA[
+Test system for solvate/insert-molecules
+    8
+    1MeOH   Me1    1   1.970   1.460   1.209
+    1MeOH    O2    2   1.978   1.415   1.082
+    1MeOH    H3    3   1.905   1.460   1.030
+    2SOL     OW    4   1.555   1.511   0.703
+    2SOL    HW1    5   1.498   1.495   0.784
+    2SOL    HW2    6   1.496   1.521   0.623
+    3X       X1    7   2.308   2.035   0.277
+    4Y       Y1    8   2.335   1.954   0.173
+   3.01000   3.01000   3.01000
+]]></String>
+  </OutputFiles>
+</ReferenceData>

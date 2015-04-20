@@ -45,10 +45,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
+#include "gromacs/analysisdata/analysisdata.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -139,6 +142,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultipointModules)
     EXPECT_NO_THROW_GMX(data.addModule(mod2));
 }
 
+#if GTEST_HAS_TYPED_TEST
 
 /********************************************************************
  * Input data for tests below.
@@ -150,8 +154,13 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
+#else
+            static SimpleInputData singleton_analysisdata;
+            return singleton_analysisdata.data_;
+#endif
         }
 
         SimpleInputData() : data_(1, false)
@@ -172,8 +181,13 @@ class DataSetsInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static DataSetsInputData singleton;
             return singleton.data_;
+#else
+            static DataSetsInputData singleton_analysisdata;
+            return singleton_analysisdata.data_;
+#endif
         }
 
         DataSetsInputData() : data_(2, false)
@@ -202,8 +216,13 @@ class MultipointInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static MultipointInputData singleton;
             return singleton.data_;
+#else
+            static MultipointInputData singleton_analysisdata;
+            return singleton_analysisdata.data_;
+#endif
         }
 
         MultipointInputData() : data_(1, true)
@@ -234,8 +253,13 @@ class MultipointDataSetsInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static MultipointDataSetsInputData singleton;
             return singleton.data_;
+#else
+            static MultipointDataSetsInputData singleton_analysisdata;
+            return singleton_analysisdata.data_;
+#endif
         }
 
         MultipointDataSetsInputData() : data_(2, true)
@@ -389,7 +413,10 @@ TYPED_TEST(AnalysisDataCommonTest, CallsModuleCorrectlyWithOutOfOrderFrames)
     ASSERT_NO_THROW_GMX(handle2 = this->data_.startData(options));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 1, handle1));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 0, handle2));
+    ASSERT_NO_THROW_GMX(this->data_.finishFrameSerial(0));
+    ASSERT_NO_THROW_GMX(this->data_.finishFrameSerial(1));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 2, handle1));
+    ASSERT_NO_THROW_GMX(this->data_.finishFrameSerial(2));
     ASSERT_NO_THROW_GMX(handle1.finishData());
     ASSERT_NO_THROW_GMX(handle2.finishData());
 }
@@ -425,5 +452,20 @@ TYPED_TEST(AnalysisDataCommonTest, LimitedStorageWorks)
     ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticStorageCheckerModule(1));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
 }
+
+#else
+
+/* A dummy test that at least signals that something is missing if one runs the
+ * unit test executable itself.
+ */
+TEST(DISABLED_AnalysisDataCommonTest, GenericTests)
+{
+    ADD_FAILURE()
+    << "Tests for generic AnalysisData functionality require support for "
+    << "Google Test typed tests, which was not available when the tests "
+    << "were compiled.";
+}
+
+#endif
 
 } // namespace

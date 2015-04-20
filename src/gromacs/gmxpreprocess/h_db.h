@@ -40,7 +40,7 @@
 
 #include <stdio.h>
 
-#include "hackblock.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
 
 #ifdef __cplusplus
 extern "C" {

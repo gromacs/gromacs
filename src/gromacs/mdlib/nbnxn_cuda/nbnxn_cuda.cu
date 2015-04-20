@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,12 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdlib.h>
+#include "nbnxn_cuda.h"
+
+#include "config.h"
+
 #include <assert.h>
+#include <stdlib.h>
 
 #if defined(_MSVC)
 #include <limits>
@@ -45,25 +47,23 @@
 
 #include <cuda.h>
 
-#include "types/simple.h"
-#include "types/nbnxn_pairlist.h"
-#include "types/nb_verlet.h"
-#include "types/force_flags.h"
-#include "../nbnxn_consts.h"
-
 #ifdef TMPI_ATOMICS
 #include "thread_mpi/atomic.h"
 #endif
 
-#include "nbnxn_cuda_types.h"
-#include "../../gmxlib/cuda_tools/cudautils.cuh"
-#include "nbnxn_cuda.h"
-#include "nbnxn_cuda_data_mgmt.h"
-
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_pairlist.h"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/cstringutil.h"
 
-#if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
+#include "nbnxn_cuda_types.h"
+
+#if defined HAVE_CUDA_TEXOBJ_SUPPORT && __CUDA_ARCH__ >= 300
 #define USE_TEXOBJ
 #endif
 
@@ -80,8 +80,38 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
 
+/* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
+ * warp-pairs per block.
+ *
+ * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
+ * blocks/multiproc, is the fastest even though this setup gives low occupancy.
+ * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
+ * per multiprocessor is reduced proportionally to get the original number of max
+ * threads in flight (and slightly lower performance).
+ * - On CC 3.7 there are enough registers to double the number of threads; using
+ * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
+ * with low-register use).
+ *
+ * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
+ * shuffle-based reduction, hence CC >= 3.0.
+ */
+
+/* Kernel launch bounds as function of NTHREAD_Z.
+ * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
+ */
+#if __CUDA_ARCH__ == 370
+#define NTHREAD_Z           (2)
+#define MIN_BLOCKS_PER_MP   (16)
+#else
+#define NTHREAD_Z           (1)
+#define MIN_BLOCKS_PER_MP   (16)
+#endif
+#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
+
+
 /***** The kernels come here *****/
-#include "nbnxn_cuda_kernel_utils.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
 
 /* Top-level kernel generation: will generate through multiple inclusion the
  * following flavors for all kernels:
@@ -91,19 +121,19 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
  * - force and energy output with pair list pruning.
  */
 /** Force only **/
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 
 /*** Pair-list pruning kernels ***/
 /** Force only **/
 #define PRUNE_NBL
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
 #define CALC_ENERGIES
-#include "nbnxn_cuda_kernels.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernels.cuh"
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
 
@@ -212,7 +242,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
     nbnxn_cu_kfunc_ptr_t res;
 
     assert(eeltype < eelCuNR);
-    assert(evdwtype < eelCuNR);
+    assert(evdwtype < evdwCuNR);
 
     if (bDoEne)
     {
@@ -241,7 +271,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required()
+static inline int calc_shmem_required(const int num_threads_z)
 {
     int shmem;
 
@@ -249,8 +279,8 @@ static inline int calc_shmem_required()
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
-    /* cj in shared memory, for both warps separately */
-    shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
+    /* cj in shared memory, for each warp separately */
+    shmem += num_threads_z * 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
 #ifdef IATYPE_SHMEM
     /* i-atom types in shared memory */
     shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
@@ -297,7 +327,7 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
     cu_timers_t         *t       = cu_nb->timers;
     cudaStream_t         stream  = cu_nb->stream[iloc];
 
-    bool                 bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
     bool                 bDoTime     = cu_nb->bDoTime;
 
@@ -368,19 +398,30 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
                                     bCalcEner,
                                     plist->bDoPrune || always_prune);
 
-    /* kernel launch config */
+    /* Kernel launch config:
+     * - The thread block dimensions match the size of i-clusters, j-clusters,
+     *   and j-cluster concurrency, in x, y, and z, respectively.
+     * - The 1D block-grid contains as many blocks as super-clusters.
+     */
+    int num_threads_z = 1;
+    if (cu_nb->dev_info->prop.major == 3 && cu_nb->dev_info->prop.minor == 7)
+    {
+        num_threads_z = 2;
+    }
     nblock    = calc_nb_kernel_nblock(plist->nsci, cu_nb->dev_info);
-    dim_block = dim3(CL_SIZE, CL_SIZE, 1);
+    dim_block = dim3(CL_SIZE, CL_SIZE, num_threads_z);
     dim_grid  = dim3(nblock, 1, 1);
-    shmem     = calc_shmem_required();
+    shmem     = calc_shmem_required(num_threads_z);
 
     if (debug)
     {
         fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
-                "Grid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
+                "\tGrid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                "\tShMem: %d\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, plist->nsci*NCL_PER_SUPERCL,
-                NCL_PER_SUPERCL, plist->na_c);
+                NCL_PER_SUPERCL, plist->na_c,
+                shmem);
     }
 
     nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
@@ -424,7 +465,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
     bool             bDoTime = cu_nb->bDoTime;
     cudaStream_t     stream  = cu_nb->stream[iloc];
 
-    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* don't launch copy-back if there was no work to do */
@@ -580,7 +621,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     wallclock_gpu_t *timings  = cu_nb->timings;
     nb_staging       nbst     = cu_nb->nbst;
 
-    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */

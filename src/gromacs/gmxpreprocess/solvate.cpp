@@ -34,56 +34,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "solvate.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "solvate.h"
 
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/fileio/confio.h"
-#include "macros.h"
-#include "gromacs/utility/futil.h"
-#include "names.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
-#include "addconf.h"
-#include "read-conformation.h"
-#include "gromacs/fileio/pdbio.h"
+#include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/gmxpreprocess/read-conformation.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/selection/nbsearch.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/atomsbuilder.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-
-#ifdef DEBUG
-static void print_stat(rvec *x, int natoms, matrix box)
-{
-    int  i, m;
-    rvec xmin, xmax;
-    for (m = 0; (m < DIM); m++)
-    {
-        xmin[m] = x[0][m];
-        xmax[m] = x[0][m];
-    }
-    for (i = 0; (i < natoms); i++)
-    {
-        for (m = 0; m < DIM; m++)
-        {
-            xmin[m] = min(xmin[m], x[i][m]);
-            xmax[m] = max(xmax[m], x[i][m]);
-        }
-    }
-    for (m = 0; (m < DIM); m++)
-    {
-        fprintf(stderr, "DIM %d XMIN %8.3f XMAX %8.3f BOX %8.3f\n",
-                m, xmin[m], xmax[m], box[m][m]);
-    }
-}
-#endif
 
 typedef struct {
     char *name;
@@ -113,8 +88,8 @@ static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
         if ( (i == 0) || (atoms->atom[i].resind != atoms->atom[i-1].resind) )
         {
             /* see if this was a molecule type we haven't had yet: */
-            moltp = NOTSET;
-            for (j = 0; (j < nrmoltypes) && (moltp == NOTSET); j++)
+            moltp = -1;
+            for (j = 0; (j < nrmoltypes) && (moltp == -1); j++)
             {
                 /* cppcheck-suppress nullPointer
                  * moltypes is guaranteed to be allocated because otherwise
@@ -124,7 +99,7 @@ static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
                     moltp = j;
                 }
             }
-            if (moltp == NOTSET)
+            if (moltp == -1)
             {
                 moltp = nrmoltypes;
                 nrmoltypes++;
@@ -306,134 +281,35 @@ static void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
     }
 }
 
-/* Make a new configuration by adding boxes*/
-static void make_new_conformation(t_atoms *atoms, rvec *x, rvec *v, real *r, matrix box, ivec n_box)
+/*! \brief
+ * Generates a solvent configuration of desired size by stacking solvent boxes.
+ *
+ * \param[in,out] atoms      Solvent atoms.
+ * \param[in,out] x          Solvent positions.
+ * \param[in,out] v          Solvent velocities (`*v` can be NULL).
+ * \param[in,out] r          Solvent exclusion radii.
+ * \param[in]     box        Initial solvent box.
+ * \param[in]     boxTarget  Target box size.
+ *
+ * The solvent box of desired size is created by stacking the initial box in
+ * the smallest k*l*m array that covers the box, and then removing any residue
+ * where all atoms are outside the target box (with a small margin).
+ * This function does not remove overlap between solvent atoms across the
+ * edges.
+ *
+ * Note that the input configuration should be in the rectangular unit cell and
+ * have whole residues.
+ */
+static void replicateSolventBox(t_atoms *atoms, rvec **x, rvec **v, real **r,
+                                const matrix box, const matrix boxTarget)
 {
-    int     i, ix, iy, iz, m, j, imol, offset;
-    rvec    delta;
-    int     nmol;
-
-    nmol = n_box[XX]*n_box[YY]*n_box[ZZ];
-
-    /*print message*/
-    fprintf(stderr, "Generating configuration\n");
-    imol = 0;
-    for (ix = 0; (ix < n_box[XX]); ix++)
-    {
-        delta[XX] = ix*box[XX][XX];
-        for (iy = 0; (iy < n_box[YY]); iy++)
-        {
-            delta[YY] = iy*box[YY][YY];
-            for (iz = 0; (iz < n_box[ZZ]); iz++)
-            {
-                delta[ZZ] = iz*box[ZZ][ZZ];
-                offset    = imol*atoms->nr;
-                for (i = 0; (i < atoms->nr); i++)
-                {
-                    for (m = 0; (m < DIM); m++)
-                    {
-                        x[offset+i][m] = delta[m]+x[i][m];
-                    }
-                    if (v)
-                    {
-                        for (m = 0; (m < DIM); m++)
-                        {
-                            v[offset+i][m] = v[i][m];
-                        }
-                    }
-                    r[offset+i] = r[i];
-                }
-                imol++;
-            }
-        }
-    }
-    for (i = 1; (i < nmol); i++)
-    {
-        int offs    = i*atoms->nr;
-        int offsres = i*atoms->nres;
-        for (j = 0; (j < atoms->nr); j++)
-        {
-            atoms->atomname[offs+j]                    = atoms->atomname[j];
-            atoms->atom[offs+j].resind                 = atoms->atom[j].resind + offsres;
-            atoms->resinfo[atoms->atom[offs+j].resind] =
-                atoms->resinfo[atoms->atom[j].resind];
-            atoms->resinfo[atoms->atom[offs+j].resind].nr += offsres;
-        }
-    }
-    atoms->nr   *= nmol;
-    atoms->nres *= nmol;
-    for (i = 0; i < DIM; i++)
-    {
-        for (j = 0; j < DIM; j++)
-        {
-            box[j][i] *= n_box[j];
-        }
-    }
-}
-
-static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **exclusionDistances,
-                     int ePBC, matrix box,
-                     gmx_atomprop_t aps,
-                     real defaultDistance, real scaleFactor, int *atoms_added,
-                     int *residues_added, real rshell, int max_sol,
-                     const output_env_t oenv)
-{
-    int      i, nmol;
-    ivec     n_box;
-    char     filename[STRLEN];
-    char     title_solvt[STRLEN];
-    t_atoms *atoms_solvt;
-    rvec    *x_solvt, *v_solvt = NULL;
-    real    *exclusionDistances_solvt;
-    int      ePBC_solvt;
-    matrix   box_solvt;
-    int      onr, onres;
-    char    *lfn;
-
-    lfn = gmxlibfn(fn);
-    strncpy(filename, lfn, STRLEN);
-    sfree(lfn);
-    {
-        int natoms;
-        get_stx_coordnum(filename, &natoms);
-        if (0 == natoms)
-        {
-            gmx_fatal(FARGS, "No solvent in %s, please check your input\n", filename);
-        }
-        snew(atoms_solvt, 1);
-        init_t_atoms(atoms_solvt, natoms, FALSE);
-    }
-    snew(x_solvt, atoms_solvt->nr);
-    if (v)
-    {
-        snew(v_solvt, atoms_solvt->nr);
-    }
-    snew(exclusionDistances_solvt, atoms_solvt->nr);
-    snew(atoms_solvt->resinfo, atoms_solvt->nr);
-    snew(atoms_solvt->atomname, atoms_solvt->nr);
-    snew(atoms_solvt->atom, atoms_solvt->nr);
-    atoms_solvt->pdbinfo = NULL;
-    fprintf(stderr, "Reading solvent configuration%s\n",
-            v_solvt ? " and velocities" : "");
-    read_stx_conf(filename, title_solvt, atoms_solvt, x_solvt, v_solvt,
-                  &ePBC_solvt, box_solvt);
-    fprintf(stderr, "\"%s\"\n", title_solvt);
-    fprintf(stderr, "solvent configuration contains %d atoms in %d residues\n",
-            atoms_solvt->nr, atoms_solvt->nres);
-    fprintf(stderr, "\n");
-
-    /* apply pbc for solvent configuration for whole molecules */
-    rm_res_pbc(atoms_solvt, x_solvt, box_solvt);
-
-    /* initialise distance arrays for solvent configuration */
-    exclusionDistances_solvt = makeExclusionDistances(atoms_solvt, aps, defaultDistance, scaleFactor);
-
-    /* calculate the box multiplication factors n_box[0...DIM] */
-    nmol = 1;
-    for (i = 0; (i < DIM); i++)
+    // Calculate the box multiplication factors.
+    ivec n_box;
+    int  nmol = 1;
+    for (int i = 0; i < DIM; ++i)
     {
         n_box[i] = 1;
-        while (n_box[i]*box_solvt[i][i] < box[i][i])
+        while (n_box[i] * box[i][i] < boxTarget[i][i])
         {
             n_box[i]++;
         }
@@ -442,45 +318,385 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     fprintf(stderr, "Will generate new solvent configuration of %dx%dx%d boxes\n",
             n_box[XX], n_box[YY], n_box[ZZ]);
 
-    /* realloc atoms_solvt for the new solvent configuration */
-    srenew(atoms_solvt->resinfo, atoms_solvt->nres*nmol);
-    srenew(atoms_solvt->atomname, atoms_solvt->nr*nmol);
-    srenew(atoms_solvt->atom, atoms_solvt->nr*nmol);
-    srenew(x_solvt, atoms_solvt->nr*nmol);
-    if (v_solvt)
+    // Create arrays for storing the generated system (cannot be done in-place
+    // in case the target box is smaller than the original in one dimension,
+    // but not in all).
+    t_atoms           newAtoms;
+    init_t_atoms(&newAtoms, 0, FALSE);
+    gmx::AtomsBuilder builder(&newAtoms);
+    builder.reserve(atoms->nr * nmol, atoms->nres * nmol);
+    rvec             *newX;
+    rvec             *newV = NULL;
+    real             *newR;
+    snew(newX,              atoms->nr * nmol);
+    snew(newR,              atoms->nr * nmol);
+    if (*v)
     {
-        srenew(v_solvt, atoms_solvt->nr*nmol);
+        snew(newV,          atoms->nr * nmol);
     }
-    srenew(exclusionDistances_solvt, atoms_solvt->nr*nmol);
+
+    const real maxRadius = *std::max_element(*r, *r + atoms->nr);
+    rvec       boxWithMargin;
+    for (int i = 0; i < DIM; ++i)
+    {
+        // The code below is only interested about the box diagonal.
+        boxWithMargin[i] = boxTarget[i][i] + 3*maxRadius;
+    }
+
+    for (int ix = 0; ix < n_box[XX]; ++ix)
+    {
+        rvec delta;
+        delta[XX] = ix*box[XX][XX];
+        for (int iy = 0; iy < n_box[YY]; ++iy)
+        {
+            delta[YY] = iy*box[YY][YY];
+            for (int iz = 0; iz < n_box[ZZ]; ++iz)
+            {
+                delta[ZZ] = iz*box[ZZ][ZZ];
+                bool bKeepResidue     = false;
+                for (int i = 0; i < atoms->nr; ++i)
+                {
+                    const int newIndex  = builder.currentAtomCount();
+                    bool      bKeepAtom = true;
+                    for (int m = 0; m < DIM; ++m)
+                    {
+                        const real newCoord = delta[m] + (*x)[i][m];
+                        bKeepAtom         = bKeepAtom && (newCoord < boxWithMargin[m]);
+                        newX[newIndex][m] = newCoord;
+                    }
+                    bKeepResidue = bKeepResidue || bKeepAtom;
+                    if (newV)
+                    {
+                        copy_rvec((*v)[i], newV[newIndex]);
+                    }
+                    newR[newIndex] = (*r)[i];
+                    builder.addAtom(*atoms, i);
+                    if (i == atoms->nr - 1
+                        || atoms->atom[i+1].resind != atoms->atom[i].resind)
+                    {
+                        if (bKeepResidue)
+                        {
+                            builder.finishResidue(atoms->resinfo[atoms->atom[i].resind]);
+                        }
+                        else
+                        {
+                            builder.discardCurrentResidue();
+                        }
+                        // Reset state for the next residue.
+                        bKeepResidue     = false;
+                    }
+                }
+            }
+        }
+    }
+    sfree(atoms->atom);
+    sfree(atoms->atomname);
+    sfree(atoms->resinfo);
+    atoms->nr       = newAtoms.nr;
+    atoms->nres     = newAtoms.nres;
+    atoms->atom     = newAtoms.atom;
+    atoms->atomname = newAtoms.atomname;
+    atoms->resinfo  = newAtoms.resinfo;
+    sfree(*x);
+    sfree(*v);
+    sfree(*r);
+    *x = newX;
+    *v = newV;
+    *r = newR;
+    fprintf(stderr, "Solvent box contains %d atoms in %d residues\n",
+            atoms->nr, atoms->nres);
+}
+
+/*! \brief
+ * Removes overlap of solvent atoms across the edges.
+ *
+ * \param[in,out] atoms      Solvent atoms.
+ * \param[in,out] x          Solvent positions.
+ * \param[in,out] v          Solvent velocities (can be NULL).
+ * \param[in,out] r          Solvent exclusion radii.
+ * \param[in]     pbc        PBC information.
+ *
+ * Solvent residues that lay on the edges that do not touch the origin are
+ * removed if they overlap with other solvent atoms across the PBC.
+ * This is done in this way as the assumption is that the input solvent
+ * configuration is already equilibrated, and so does not contain any
+ * undesirable overlap.  The only overlap that should be removed is caused by
+ * cutting the box in half in replicateSolventBox() and leaving a margin of
+ * solvent outside those box edges; these atoms can then overlap with those on
+ * the opposite box edge in a way that is not part of the pre-equilibrated
+ * configuration.
+ */
+static void removeSolventBoxOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
+                                    const t_pbc &pbc)
+{
+    gmx::AtomsRemover remover(*atoms);
+
+    // TODO: We could limit the amount of pairs searched significantly,
+    // since we are only interested in pairs where the positions are on
+    // opposite edges.
+    const real maxRadius = *std::max_element(r, r + atoms->nr);
+    gmx::AnalysisNeighborhood           nb;
+    nb.setCutoff(2*maxRadius);
+    gmx::AnalysisNeighborhoodPositions  pos(x, atoms->nr);
+    gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, pos);
+    gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
+    gmx::AnalysisNeighborhoodPair       pair;
+    while (pairSearch.findNextPair(&pair))
+    {
+        const int  i1 = pair.refIndex();
+        const int  i2 = pair.testIndex();
+        if (remover.isMarked(i2))
+        {
+            pairSearch.skipRemainingPairsForTestPosition();
+            continue;
+        }
+        if (remover.isMarked(i1) || atoms->atom[i1].resind == atoms->atom[i2].resind)
+        {
+            continue;
+        }
+        if (pair.distance2() < sqr(r[i1] + r[i2]))
+        {
+            rvec dx;
+            rvec_sub(x[i2], x[i1], dx);
+            bool bCandidate1 = false, bCandidate2 = false;
+            // To satisfy Clang static analyzer.
+            GMX_ASSERT(pbc.ndim_ePBC <= DIM, "Too many periodic dimensions");
+            for (int d = 0; d < pbc.ndim_ePBC; ++d)
+            {
+                // If the distance in some dimension is larger than the
+                // cutoff, then it means that the distance has been computed
+                // over the PBC.  Mark the position with a larger coordinate
+                // for potential removal.
+                if (dx[d] > maxRadius)
+                {
+                    bCandidate2 = true;
+                }
+                else if (dx[d] < -maxRadius)
+                {
+                    bCandidate1 = true;
+                }
+            }
+            // Only mark one of the positions for removal if both were
+            // candidates.
+            if (bCandidate2 && (!bCandidate1 || i2 > i1))
+            {
+                remover.markResidue(*atoms, i2, true);
+                pairSearch.skipRemainingPairsForTestPosition();
+            }
+            else if (bCandidate1)
+            {
+                remover.markResidue(*atoms, i1, true);
+            }
+        }
+    }
+
+    remover.removeMarkedVectors(x);
+    if (v != NULL)
+    {
+        remover.removeMarkedVectors(v);
+    }
+    remover.removeMarkedValues(r);
+    const int originalAtomCount = atoms->nr;
+    remover.removeMarkedAtoms(atoms);
+    fprintf(stderr, "Removed %d solvent atoms due to solvent-solvent overlap\n",
+            originalAtomCount - atoms->nr);
+}
+
+/*! \brief
+ * Removes solvent molecules that overlap with the solute, and optionally also
+ * those that are outside a given shell radius from the solute.
+ *
+ * \param[in,out] atoms      Solvent atoms.
+ * \param[in,out] x          Solvent positions.
+ * \param[in,out] v          Solvent velocities (can be NULL).
+ * \param[in,out] r          Solvent exclusion radii.
+ * \param[in]     pbc        PBC information.
+ * \param[in]     soluteAtomCount Number of solute atoms.
+ * \param[in]     x_solute   Solute positions.
+ * \param[in]     r_solute   Solute exclusion radii.
+ * \param[in]     rshell     If >0, only keep solvent atoms within a shell of
+ *     this size from the solute.
+ */
+static void removeSoluteOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
+                                const t_pbc &pbc, int soluteAtomCount,
+                                const rvec *x_solute, const real *r_solute,
+                                real rshell)
+{
+    const real                          maxRadius1
+        = *std::max_element(r, r + atoms->nr);
+    const real                          maxRadius2
+        = *std::max_element(r_solute, r_solute + soluteAtomCount);
+
+    gmx::AtomsRemover                   remover(*atoms);
+    // If rshell is >0, the neighborhood search looks at all pairs
+    // within rshell, and unmarks those that are within the cutoff.
+    // This line marks everything, so that solvent outside rshell remains
+    // marked after the loop.
+    // Without rshell, the neighborhood search only marks the overlapping
+    // solvent atoms, and all others are left alone.
+    if (rshell > 0.0)
+    {
+        remover.markAll();
+    }
+
+    gmx::AnalysisNeighborhood           nb;
+    nb.setCutoff(std::max(maxRadius1 + maxRadius2, rshell));
+    gmx::AnalysisNeighborhoodPositions  posSolute(x_solute, soluteAtomCount);
+    gmx::AnalysisNeighborhoodSearch     search     = nb.initSearch(&pbc, posSolute);
+    gmx::AnalysisNeighborhoodPositions  pos(x, atoms->nr);
+    gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(pos);
+    gmx::AnalysisNeighborhoodPair       pair;
+    while (pairSearch.findNextPair(&pair))
+    {
+        if (remover.isMarked(pair.testIndex()))
+        {
+            pairSearch.skipRemainingPairsForTestPosition();
+            continue;
+        }
+        const real r1      = r_solute[pair.refIndex()];
+        const real r2      = r[pair.testIndex()];
+        const bool bRemove = (pair.distance2() < sqr(r1 + r2));
+        remover.markResidue(*atoms, pair.testIndex(), bRemove);
+    }
+
+    remover.removeMarkedVectors(x);
+    if (v != NULL)
+    {
+        remover.removeMarkedVectors(v);
+    }
+    remover.removeMarkedValues(r);
+    const int originalAtomCount = atoms->nr;
+    remover.removeMarkedAtoms(atoms);
+    fprintf(stderr, "Removed %d solvent atoms due to solute-solvent overlap\n",
+            originalAtomCount - atoms->nr);
+}
+
+/*! \brief
+ * Removes a given number of solvent residues.
+ *
+ * \param[in,out] atoms           Solvent atoms.
+ * \param[in,out] x               Solvent positions.
+ * \param[in,out] v               Solvent velocities (can be NULL).
+ * \param[in]     numberToRemove  Number of residues to remove.
+ *
+ * This function is called last in the process of creating the solvent box,
+ * so it does not operate on the exclusion radii, as no code after this needs
+ * them.
+ */
+static void removeExtraSolventMolecules(t_atoms *atoms, rvec *x, rvec *v,
+                                        int numberToRemove)
+{
+    gmx::AtomsRemover remover(*atoms);
+    // TODO: It might be nicer to remove a random set of residues, but
+    // in practice this should give a roughly uniform spatial distribution.
+    const int stride = atoms->nr / numberToRemove;
+    for (int i = 0; i < numberToRemove; ++i)
+    {
+        int atomIndex = (i+1)*stride - 1;
+        while (remover.isMarked(atomIndex))
+        {
+            ++atomIndex;
+            if (atomIndex == atoms->nr)
+            {
+                atomIndex = 0;
+            }
+        }
+        remover.markResidue(*atoms, atomIndex, true);
+    }
+    remover.removeMarkedVectors(x);
+    if (v != NULL)
+    {
+        remover.removeMarkedVectors(v);
+    }
+    remover.removeMarkedAtoms(atoms);
+}
+
+static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v,
+                     int ePBC, matrix box, gmx_atomprop_t aps,
+                     real defaultDistance, real scaleFactor,
+                     real rshell, int max_sol)
+{
+    t_atoms *atoms_solvt;
+    rvec    *x_solvt, *v_solvt = NULL;
+    int      ePBC_solvt;
+    matrix   box_solvt;
+
+    char    *filename = gmxlibfn(fn);
+    snew(atoms_solvt, 1);
+    char    *title_solvt
+        = readConformation(filename, atoms_solvt, &x_solvt, &v_solvt,
+                           &ePBC_solvt, box_solvt, "solvent");
+    sfree(title_solvt);
+    if (0 == atoms_solvt->nr)
+    {
+        gmx_fatal(FARGS, "No solvent in %s, please check your input\n", filename);
+    }
+    sfree(filename);
+    fprintf(stderr, "\n");
+
+    /* apply pbc for solvent configuration for whole molecules */
+    rm_res_pbc(atoms_solvt, x_solvt, box_solvt);
+
+    /* initialise distance arrays for solvent configuration */
+    fprintf(stderr, "Initialising inter-atomic distances...\n");
+    real *exclusionDistances
+        = makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor);
+    real *exclusionDistances_solvt
+        = makeExclusionDistances(atoms_solvt, aps, defaultDistance, scaleFactor);
 
     /* generate a new solvent configuration */
-    make_new_conformation(atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, box_solvt, n_box);
+    fprintf(stderr, "Generating solvent configuration\n");
+    t_pbc pbc;
+    set_pbc(&pbc, ePBC, box);
+    replicateSolventBox(atoms_solvt, &x_solvt, &v_solvt, &exclusionDistances_solvt,
+                        box_solvt, box);
+    if (ePBC != epbcNONE)
+    {
+        removeSolventBoxOverlap(atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, pbc);
+    }
+    if (atoms->nr > 0)
+    {
+        removeSoluteOverlap(atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, pbc,
+                            atoms->nr, *x, exclusionDistances, rshell);
+    }
 
-#ifdef DEBUG
-    print_stat(x_solvt, atoms_solvt->nr, box_solvt);
-#endif
+    if (max_sol > 0 && atoms_solvt->nres > max_sol)
+    {
+        const int numberToRemove = atoms_solvt->nres - max_sol;
+        removeExtraSolventMolecules(atoms_solvt, x_solvt, v_solvt, numberToRemove);
+    }
 
-#ifdef DEBUG
-    print_stat(x_solvt, atoms_solvt->nr, box_solvt);
-#endif
     /* Sort the solvent mixture, not the protein... */
     sort_molecule(&atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt);
 
-    /* add the two configurations */
-    onr   = atoms->nr;
-    onres = atoms->nres;
-    add_conf(atoms, x, v, exclusionDistances, TRUE, ePBC, box, FALSE,
-             atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, TRUE, rshell, max_sol, oenv);
-    *atoms_added    = atoms->nr-onr;
-    *residues_added = atoms->nres-onres;
+    // Merge the two configurations.
+    srenew(*x, atoms->nr + atoms_solvt->nr);
+    if (v != NULL)
+    {
+        srenew(*v, atoms->nr + atoms_solvt->nr);
+    }
+    for (int i = 0; i < atoms_solvt->nr; ++i)
+    {
+        const int index = atoms->nr + i;
+        copy_rvec(x_solvt[i], (*x)[index]);
+        if (v != NULL)
+        {
+            copy_rvec(v_solvt[i], (*v)[index]);
+        }
+    }
+    {
+        gmx::AtomsBuilder builder(atoms);
+        builder.mergeAtoms(*atoms_solvt);
+    }
+    fprintf(stderr, "Generated solvent containing %d atoms in %d residues\n",
+            atoms_solvt->nr, atoms_solvt->nres);
 
     sfree(x_solvt);
+    sfree(v_solvt);
+    sfree(exclusionDistances);
     sfree(exclusionDistances_solvt);
     done_atom(atoms_solvt);
     sfree(atoms_solvt);
-
-    fprintf(stderr, "Generated solvent containing %d atoms in %d residues\n",
-            *atoms_added, *residues_added);
 }
 
 static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
@@ -656,14 +872,6 @@ int gmx_solvate(int argc, char *argv[])
         "into the box. This can create a void that can cause problems later.",
         "Choose your volume wisely.[PAR]",
 
-        "The program can optionally rotate the solute molecule to align the",
-        "longest molecule axis along a box edge. This way the amount of solvent",
-        "molecules necessary is reduced.",
-        "It should be kept in mind that this only works for",
-        "short simulations, as e.g. an alpha-helical peptide in solution can ",
-        "rotate over 90 degrees, within 500 ps. In general it is therefore ",
-        "better to make a more or less cubic box.[PAR]",
-
         "Setting [TT]-shell[tt] larger than zero will place a layer of water of",
         "the specified thickness (nm) around the solute. Hint: it is a good",
         "idea to put the protein in the center of a box first (using [gmx-editconf]).",
@@ -681,7 +889,6 @@ int gmx_solvate(int argc, char *argv[])
     /* parameter data */
     gmx_bool       bProt, bBox;
     const char    *conf_prot, *confout;
-    real          *exclusionDistances = NULL;
     gmx_atomprop_t aps;
 
     /* protein configuration data */
@@ -690,9 +897,6 @@ int gmx_solvate(int argc, char *argv[])
     rvec    *x    = NULL, *v = NULL;
     int      ePBC = -1;
     matrix   box;
-
-    /* other data types */
-    int      atoms_added, residues_added;
 
     t_filenm fnm[] = {
         { efSTX, "-cp", "protein", ffOPTRD },
@@ -722,7 +926,7 @@ int gmx_solvate(int argc, char *argv[])
           "Keep velocities from input solute and solvent" },
     };
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
@@ -748,9 +952,7 @@ int gmx_solvate(int argc, char *argv[])
         /* Generate a solute configuration */
         conf_prot = opt2fn("-cp", NFILE, fnm);
         title     = readConformation(conf_prot, atoms, &x,
-                                     bReadV ? &v : NULL, &ePBC, box);
-        exclusionDistances = makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor);
-
+                                     bReadV ? &v : NULL, &ePBC, box, "solute");
         if (bReadV && !v)
         {
             fprintf(stderr, "Note: no velocities found\n");
@@ -775,9 +977,8 @@ int gmx_solvate(int argc, char *argv[])
                   "or give explicit -box command line option");
     }
 
-    add_solv(solventFileName, atoms, &x, v ? &v : NULL, &exclusionDistances, ePBC, box,
-             aps, defaultDistance, scaleFactor, &atoms_added, &residues_added, r_shell, max_sol,
-             oenv);
+    add_solv(solventFileName, atoms, &x, v ? &v : NULL, ePBC, box,
+             aps, defaultDistance, scaleFactor, r_shell, max_sol);
 
     /* write new configuration 1 to file confout */
     confout = ftp2fn(efSTO, NFILE, fnm);
@@ -785,8 +986,6 @@ int gmx_solvate(int argc, char *argv[])
     if (bProt)
     {
         write_sto_conf(confout, title, atoms, x, v, ePBC, box);
-        /* print box sizes and box type to stderr */
-        fprintf(stderr, "%s\n", title);
     }
     else
     {
@@ -799,11 +998,13 @@ int gmx_solvate(int argc, char *argv[])
     update_top(atoms, box, NFILE, fnm, aps);
 
     gmx_atomprop_destroy(aps);
-    sfree(exclusionDistances);
     sfree(x);
     sfree(v);
     done_atom(atoms);
     sfree(atoms);
+    sfree(title);
+    output_env_done(oenv);
+    done_filenms(NFILE, fnm);
 
     return 0;
 }

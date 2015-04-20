@@ -196,6 +196,9 @@ struct tMPI_Thread_starter
 };
 
 /* the thread_starter function that sets the thread id */
+#ifdef __MINGW32__
+__attribute__((force_align_arg_pointer))
+#endif
 static void *tMPI_Thread_starter(void *arg)
 {
     struct tMPI_Thread_starter *starter = (struct tMPI_Thread_starter *)arg;
@@ -369,8 +372,9 @@ int tMPI_Thread_setaffinity_single(tMPI_Thread_t tmpi_unused thread,
     CPU_ZERO(&set);
     CPU_SET(nr, &set);
     return pthread_setaffinity_np(thread->th, sizeof(set), &set);
-#endif
+#else
     return 0;
+#endif
 }
 
 

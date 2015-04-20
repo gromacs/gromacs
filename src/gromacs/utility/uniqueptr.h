@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \libinternal \file
  * \brief
  * Declares gmx::gmx_unique_ptr and supporting functionality.
  *
@@ -44,19 +44,20 @@
 #ifndef GMX_UTILITY_UNIQUEPTR_H
 #define GMX_UTILITY_UNIQUEPTR_H
 
-#include "gmx_header_config.h"
+#include "config.h"
 
-#ifdef GMX_CXX11 // C++11 Compiler
-#include <memory>
-#include <utility>
-#else      // C++03 Compiler
+#ifdef GMX_CXX11   // C++11 Compiler
+#include <memory>  // IWYU pragma: export
+#include <utility> // IWYU pragma: export
+#else              // C++03 Compiler
 #include <boost/shared_ptr.hpp>
 #endif
 
 namespace gmx
 {
 
-/*! \class gmx_unique_ptr
+//! \cond libapi
+/*! \libinternal \class gmx_unique_ptr
  * \brief
  * Smart pointer for unique ownership.
  *
@@ -73,7 +74,7 @@ namespace gmx
  * \ingroup module_utility
  * \inlibraryapi
  */
-/*! \typedef gmx_unique_ptr::type
+/*! \libinternal \typedef gmx_unique_ptr::type
  * \brief The smart pointer type.
  * Work-around for the non-existence of template typedefs in C++03.
  */
@@ -105,6 +106,7 @@ struct gmx_unique_ptr
     typedef boost::shared_ptr<T> type;
 };
 #endif
+//! \endcond
 
 } // namespace gmx
 

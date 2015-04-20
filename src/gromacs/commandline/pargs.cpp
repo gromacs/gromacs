@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* This file is completely threadsafe - keep it that way! */
-#include "gromacs/commandline/pargs.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "pargs.h"
 
-#include <cctype>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
 #include <list>
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#include "thread_mpi/threads.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
@@ -66,11 +55,12 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -338,20 +328,29 @@ void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)
     const bool        bOptional = ((fnm->flag & ffOPT)   != 0);
     const bool        bLibrary  = ((fnm->flag & ffLIB)   != 0);
     const bool        bMultiple = ((fnm->flag & ffMULT)  != 0);
+    const bool        bMissing  = ((fnm->flag & ffALLOW_MISSING) != 0);
     const char *const name      = &fnm->opt[1];
     const char *      defName   = fnm->fn;
+    int               defType   = -1;
     if (defName == NULL)
     {
         defName = ftp2defnm(fnm->ftp);
+    }
+    else if (Path::hasExtension(defName))
+    {
+        defType = fn2ftp(defName);
+        GMX_RELEASE_ASSERT(defType != efNR,
+                           "File name option specifies an invalid extension");
     }
     fileNameOptions_.push_back(FileNameData(fnm));
     FileNameData &data = fileNameOptions_.back();
     data.optionInfo = options->addOption(
                 FileNameOption(name).storeVector(&data.values)
-                    .defaultBasename(defName).legacyType(fnm->ftp)
-                    .legacyOptionalBehavior()
+                    .defaultBasename(defName).defaultType(defType)
+                    .legacyType(fnm->ftp).legacyOptionalBehavior()
                     .readWriteFlags(bRead, bWrite).required(!bOptional)
                     .libraryFile(bLibrary).multiValue(bMultiple)
+                    .allowMissing(bMissing)
                     .description(ftp2desc(fnm->ftp)));
 }
 
@@ -423,10 +422,6 @@ void OptionsAdapter::copyValues(bool bReadNode)
     std::list<FileNameData>::const_iterator file;
     for (file = fileNameOptions_.begin(); file != fileNameOptions_.end(); ++file)
     {
-        // FIXME: FF_NOT_READ_NODE should also skip all fexist() calls in
-        // FileNameOption.  However, it is not currently used, and other
-        // commented out code for using it is also outdated, so left this for
-        // later.
         if (!bReadNode && (file->fnm->flag & ffREAD))
         {
             continue;
@@ -439,8 +434,7 @@ void OptionsAdapter::copyValues(bool bReadNode)
         snew(file->fnm->fns, file->fnm->nfiles);
         for (int i = 0; i < file->fnm->nfiles; ++i)
         {
-            // TODO: Check for out-of-memory.
-            file->fnm->fns[i] = strdup(file->values[i].c_str());
+            file->fnm->fns[i] = gmx_strdup(file->values[i].c_str());
         }
     }
     std::list<ProgramArgData>::const_iterator arg;
@@ -493,7 +487,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     try
     {
-        int                        nicelevel = 0, debug_level = 0;
         double                     tbegin    = 0.0, tend = 0.0, tdelta = 0.0;
         bool                       bView     = false;
         int                        xvgFormat = 0;
@@ -502,17 +495,10 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         gmx::Options               options(NULL, NULL);
         gmx::FileNameOptionManager fileOptManager;
 
+        fileOptManager.disableInputOptionChecking(
+                FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
-        options.setDescription(gmx::ConstArrayRef<const char *>(desc, ndesc));
-        options.addOption(
-                gmx::IntegerOption("debug").store(&debug_level).hidden()
-                    .description("Write file with debug information, "
-                                 "1: short, 2: also x and f"));
-
-        options.addOption(
-                gmx::IntegerOption("nice").store(&nicelevel)
-                    .defaultValue(FF(PCA_BE_NICE) ? 19 : 0)
-                    .description("Set the nicelevel"));
+        options.setDescription(gmx::constArrayRefFromArray<const char *>(desc, ndesc));
 
         if (FF(PCA_CAN_SET_DEFFNM))
         {
@@ -545,8 +531,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         {
             options.addOption(
                     gmx::BooleanOption("w").store(&bView)
-                        .description("View output [TT].xvg[tt], [TT].xpm[tt], "
-                                     "[TT].eps[tt] and [TT].pdb[tt] files"));
+                        .description("View output [REF].xvg[ref], [REF].xpm[ref], "
+                                     "[REF].eps[ref] and [REF].pdb[ref] files"));
         }
 
         bool bXvgr = false;
@@ -577,14 +563,14 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx::GlobalCommandLineHelpContext::get();
         if (context != NULL)
         {
-            if (!(FF(PCA_QUIET)))
-            {
-                gmx::CommandLineHelpWriter(options)
-                    .setShowDescriptions(true)
-                    .setTimeUnitString(timeUnitManager.timeUnitAsString())
-                    .setKnownIssues(gmx::ConstArrayRef<const char *>(bugs, nbugs))
-                    .writeHelp(*context);
-            }
+            GMX_RELEASE_ASSERT(gmx_node_rank() == 0,
+                               "Help output should be handled higher up and "
+                               "only get called only on the master rank");
+            gmx::CommandLineHelpWriter(options)
+                .setShowDescriptions(true)
+                .setTimeUnitString(timeUnitManager.timeUnitAsString())
+                .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))
+                .writeHelp(*context);
             return FALSE;
         }
 
@@ -596,49 +582,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         /* set program name, command line, and default values for output options */
         output_env_init(oenv, gmx::getProgramContext(),
                         (time_unit_t)(timeUnitManager.timeUnit() + 1), bView,
-                        (xvg_format_t)(xvgFormat + 1), 0, debug_level);
-
-        /* Open the debug file */
-        if (debug_level > 0)
-        {
-            char buf[256];
-
-            if (gmx_mpi_initialized())
-            {
-                sprintf(buf, "%s%d.debug", output_env_get_short_program_name(*oenv),
-                        gmx_node_rank());
-            }
-            else
-            {
-                sprintf(buf, "%s.debug", output_env_get_short_program_name(*oenv));
-            }
-
-            init_debug(debug_level, buf);
-            fprintf(stderr, "Opening debug file %s (src code file %s, line %d)\n",
-                    buf, __FILE__, __LINE__);
-        }
-
-        /* Set the nice level */
-#ifdef HAVE_UNISTD_H
-#ifndef GMX_NO_NICE
-        /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
-        if (nicelevel != 0)
-        {
-            static gmx_bool            nice_set   = FALSE; /* only set it once */
-            static tMPI_Thread_mutex_t init_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-            tMPI_Thread_mutex_lock(&init_mutex);
-            if (!nice_set)
-            {
-                if (nice(nicelevel) == -1)
-                {
-                    /* Do nothing, but use the return value to avoid warnings. */
-                }
-                nice_set = TRUE;
-            }
-            tMPI_Thread_mutex_unlock(&init_mutex);
-        }
-#endif
-#endif
+                        (xvg_format_t)(xvgFormat + 1), 0);
 
         timeUnitManager.scaleTimeOptions(&options);
 

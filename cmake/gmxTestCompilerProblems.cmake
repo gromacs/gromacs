@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -78,6 +78,22 @@ macro(gmx_test_compiler_problems)
 
     if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
         message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to  compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
+    endif()
+
+    if(CMAKE_COMPILER_IS_GNUCC AND
+            (CMAKE_C_COMPILER_VERSION VERSION_LESS "4.9.0" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+            AND (WIN32 OR CYGWIN)
+            AND GMX_SIMD MATCHES "AVX" AND NOT GMX_SIMD STREQUAL AVX_128_FMA)
+        message(WARNING "GCC on Windows (GCC older than 4.9 or any version when compiling for 64bit) with AVX (other than AVX_128_FMA) crashes. Choose a different GMX_SIMD or a different compiler.") # GCC bug 49001, 54412.
+    endif()
+
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND WIN32)
+        if(CMAKE_VERSION VERSION_LESS 3.0.0)
+            message(WARNING "Clang on Windows requires cmake 3.0.0")
+        endif()
+        if(CMAKE_C_COMPILER_VERSION VERSION_LESS 3.5.0)
+            message(WARNING "Clang on Windows requires clang 3.5.0")
+        endif()
     endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "12.0.0")

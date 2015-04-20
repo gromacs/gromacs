@@ -35,14 +35,15 @@
 file(GLOB COMMANDLINE_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE)
 
-set(COMMANDLINE_PUBLIC_HEADERS
+gmx_install_headers(
     cmdlinehelpwriter.h
     cmdlineinit.h
     cmdlinemodule.h
+    cmdlineoptionsmodule.h
     cmdlineparser.h
     cmdlineprogramcontext.h
-    pargs.h)
-gmx_install_headers(commandline ${COMMANDLINE_PUBLIC_HEADERS})
+    pargs.h
+    )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

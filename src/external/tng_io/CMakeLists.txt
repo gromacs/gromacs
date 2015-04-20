@@ -5,7 +5,7 @@ project(TNG_IO)
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall")
-elseif(WIN32 AND NOT CYGWIN)
+elseif(WIN32)
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /W2")
 endif()
 
@@ -31,15 +31,16 @@ tng_get_source_list(TNG_SOURCES TNG_COMPILE_DEFS)
 
 tng_set_source_properties(WITH_ZLIB ${ZLIB_FOUND})
 
+add_library(tng_io ${TNG_SOURCES})
+
 if (ZLIB_FOUND)
   list(APPEND EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
+  include_directories(${ZLIB_INCLUDE_DIRS})
 endif()
 
 if (UNIX)
   list(APPEND EXTRA_LIBRARIES m)
 endif()
-
-add_library(tng_io ${TNG_SOURCES})
 
 target_link_libraries(tng_io ${EXTRA_LIBRARIES})
 

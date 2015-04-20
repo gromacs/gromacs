@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,16 +34,31 @@
 
 set(LIBGROMACS_SOURCES)
 
-function (gmx_install_headers DESTINATION)
+set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
+
+function (gmx_install_headers)
     if (NOT GMX_BUILD_MDRUN_ONLY)
-        if (DESTINATION)
-            set(DESTINATION ${INCL_INSTALL_DIR}/gromacs/${DESTINATION})
-        else()
-            set(DESTINATION ${INCL_INSTALL_DIR}/gromacs)
-        endif()
-        install(FILES ${ARGN} DESTINATION ${DESTINATION} COMPONENT development)
+        file(RELATIVE_PATH _dest ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_LIST_DIR})
+        install(FILES       ${ARGN}
+                DESTINATION "${INCL_INSTALL_DIR}/${_dest}"
+                COMPONENT   development)
     endif()
+    foreach (_file ${ARGN})
+        if (IS_ABSOLUTE "${_file}")
+            set_property(GLOBAL APPEND PROPERTY GMX_INSTALLED_HEADERS ${_file})
+        else()
+            set_property(GLOBAL APPEND PROPERTY GMX_INSTALLED_HEADERS
+                         ${CMAKE_CURRENT_LIST_DIR}/${_file})
+        endif()
+    endforeach()
 endfunction ()
+
+function (gmx_write_installed_header_list)
+    get_property(_list GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
+    string(REPLACE ";" "\n" _list "${_list}")
+    # TODO: Make this only update the file timestamp if the contents actually change.
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt "${_list}")
+endfunction()
 
 if(GMX_USE_TNG)
     option(GMX_EXTERNAL_TNG "Use external TNG instead of compiling the version shipped with GROMACS."
@@ -59,11 +74,6 @@ if(GMX_USE_TNG)
         include_directories(${TNG_IO_INCLUDE_DIRS})
     endif()
     if(NOT GMX_EXTERNAL_TNG)
-        # TNG wants zlib if it is available
-        find_package(ZLIB QUIET)
-        include(gmxTestZLib)
-        gmx_test_zlib(HAVE_ZLIB)
-
         include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
         tng_get_source_list(TNG_SOURCES TNG_IO_DEFINITIONS)
         list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
@@ -71,17 +81,20 @@ if(GMX_USE_TNG)
 
         if (HAVE_ZLIB)
             list(APPEND GMX_EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
+            include_directories(${ZLIB_INCLUDE_DIRS})
         endif()
     endif()
 else()
     # We still need to get tng/tng_io_fwd.h from somewhere!
-    include_directories(${CMAKE_SOURCE_DIR}/src/external/tng_io/include)
+    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/tng_io/include)
 endif()
 
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
-add_subdirectory(gmxpreprocess)
+add_subdirectory(listed-forces)
 add_subdirectory(commandline)
+add_subdirectory(domdec)
+add_subdirectory(ewald)
 add_subdirectory(fft)
 add_subdirectory(linearalgebra)
 add_subdirectory(math)
@@ -101,6 +114,8 @@ add_subdirectory(imd)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
+    add_subdirectory(gmxpreprocess)
+    add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
     add_subdirectory(analysisdata)
     add_subdirectory(selection)
@@ -120,50 +135,43 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
 tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
 list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
 
-file(GLOB LIBGROMACS_HEADERS *.h)
 configure_file(version.h.cmakein version.h)
-gmx_install_headers("" ${LIBGROMACS_HEADERS})
-gmx_install_headers("" ${CMAKE_CURRENT_BINARY_DIR}/version.h)
+gmx_install_headers(
+    analysisdata.h
+    commandline.h
+    options.h
+    selection.h
+    trajectoryanalysis.h
+    utility.h
+    ${CMAKE_CURRENT_BINARY_DIR}/version.h
+    )
 
-# Add target that generates baseversion-gen.c every time make is run
-# if git version info is requested, or create it statically.
-# This code is here instead of utility/CMakeLists.txt because CMake
-# ignores set_source_file_properties from subdirectories.
-set(GENERATED_VERSION_FILE
-    ${CMAKE_CURRENT_BINARY_DIR}/utility/baseversion-gen.c)
-set(GENERATED_VERSION_FILE_SOURCE
-    ${CMAKE_CURRENT_SOURCE_DIR}/utility/baseversion-gen.c.cmakein)
-if (GMX_GIT_VERSION_INFO)
-    add_custom_target(gmx-version ALL
-            COMMAND ${CMAKE_COMMAND}
-                -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
-                -D PROJECT_VERSION="${PROJECT_VERSION}"
-                -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-                -D VERSION_CMAKEIN=${GENERATED_VERSION_FILE_SOURCE}
-                -D VERSION_OUT=${GENERATED_VERSION_FILE}
-                -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            DEPENDS ${GENERATED_VERSION_FILE_SOURCE}
-            COMMENT "Generating git version information")
-    set_source_files_properties(${GENERATED_VERSION_FILE}
-                                PROPERTIES GENERATED true)
-else()
-    set(GMX_PROJECT_VERSION_STR ${PROJECT_VERSION})
-    configure_file(${GENERATED_VERSION_FILE_SOURCE} ${GENERATED_VERSION_FILE})
-endif()
+# This code is here instead of utility/CMakeLists.txt, because CMake
+# custom commands and source file properties can only be set in the directory
+# that contains the target that uses them.
+# TODO: Generate a header instead that can be included from baseversion.c.
+# That probably simplifies things somewhat.
+set(GENERATED_VERSION_FILE utility/baseversion-gen.c)
+gmx_configure_version_file(
+    utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
+    REMOTE_HASH SOURCE_FILE)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
 # apply gcc 4.4.x bug workaround
 if(GMX_USE_GCC44_BUG_WORKAROUND)
    include(gmxGCC44O3BugWorkaround)
-   gmx_apply_gcc44_bug_workaround("gmxlib/bondfree.c")
+   gmx_apply_gcc44_bug_workaround("listed-forces/bonded.cpp")
    gmx_apply_gcc44_bug_workaround("mdlib/force.c")
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
 
-add_library(libgromacs ${LIBGROMACS_SOURCES})
-if (GMX_GIT_VERSION_INFO)
-    add_dependencies(libgromacs gmx-version)
+if (GMX_GPU)
+    cuda_add_library(libgromacs ${LIBGROMACS_SOURCES}
+            OPTIONS
+            RELWITHDEBINFO -g
+            DEBUG -g -D_DEBUG_=1)
+else()
+    add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
@@ -190,7 +198,6 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs
                       ${EXTRAE_LIBRARIES}
-                      ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${TNG_IO_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
@@ -202,19 +209,21 @@ set_target_properties(libgromacs PROPERTIES
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
+gmx_write_installed_header_list()
+
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
-    install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+    install(TARGETS libgromacs
+            EXPORT libgromacs
+            LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+            RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+            ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+            COMPONENT libraries)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgromacs.pc.cmakein
-                   ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
-            DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
-            RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
-            COMPONENT development)
+    include(InstallLibInfo.cmake)
 endif()
 
 if (INSTALL_CUDART_LIB) #can be set manual by user

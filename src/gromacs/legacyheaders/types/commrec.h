@@ -37,9 +37,15 @@
 #ifndef _commrec_h
 #define _commrec_h
 
-#include "../../utility/gmxmpi.h"
-#include "../../pbcutil/ishift.h"
-#include "../typedefs.h"
+#include <stddef.h>
+
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h" // IWYU pragma: export
+#include "gromacs/math/vectypes.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -273,12 +279,12 @@ struct t_commrec {
     gmx_nodecomm_t nc;
 
     /* For domain decomposition */
-    gmx_domdec_t *dd;
+    struct gmx_domdec_t *dd;
 
     /* The duties of this node, see the defines above */
-    int             duty;
+    int                    duty;
 
-    gmx_multisim_t *ms;
+    struct gmx_multisim_t *ms;
 
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/

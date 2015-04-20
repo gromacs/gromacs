@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,23 +34,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "macros.h"
-#include "gstat.h"
-#include "gromacs/math/vec.h"
-#include "viewit.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gmx_ana.h"
+#include "gmxpre.h"
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -148,12 +145,14 @@ int gmx_sorient(int argc, char *argv[])
     const char     *desc[] = {
         "[THISMODULE] analyzes solvent orientation around solutes.",
         "It calculates two angles between the vector from one or more",
-        "reference positions to the first atom of each solvent molecule:[PAR]",
-        "[GRK]theta[grk][SUB]1[sub]: the angle with the vector from the first atom of the solvent",
-        "molecule to the midpoint between atoms 2 and 3.[BR]",
-        "[GRK]theta[grk][SUB]2[sub]: the angle with the normal of the solvent plane, defined by the",
-        "same three atoms, or, when the option [TT]-v23[tt] is set, ",
-        "the angle with the vector between atoms 2 and 3.[PAR]",
+        "reference positions to the first atom of each solvent molecule:",
+        "",
+        " * [GRK]theta[grk][SUB]1[sub]: the angle with the vector from the first atom of the solvent",
+        "   molecule to the midpoint between atoms 2 and 3.",
+        " * [GRK]theta[grk][SUB]2[sub]: the angle with the normal of the solvent plane, defined by the",
+        "   same three atoms, or, when the option [TT]-v23[tt] is set, ",
+        "   the angle with the vector between atoms 2 and 3.",
+        "",
         "The reference can be a set of atoms or",
         "the center of mass of a set of atoms. The group of solvent atoms should",
         "consist of 3 atoms per solvent molecule.",
@@ -187,15 +186,15 @@ int gmx_sorient(int argc, char *argv[])
         { efTRX, NULL,  NULL,  ffREAD },
         { efTPS, NULL,  NULL,  ffREAD },
         { efNDX, NULL,  NULL,  ffOPTRD },
-        { efXVG, NULL,  "sori.xvg",  ffWRITE },
-        { efXVG, "-no", "snor.xvg",  ffWRITE },
-        { efXVG, "-ro", "sord.xvg",  ffWRITE },
-        { efXVG, "-co", "scum.xvg",  ffWRITE },
-        { efXVG, "-rc", "scount.xvg",  ffWRITE }
+        { efXVG, NULL,  "sori",   ffWRITE },
+        { efXVG, "-no", "snor",   ffWRITE },
+        { efXVG, "-ro", "sord",   ffWRITE },
+        { efXVG, "-co", "scum",   ffWRITE },
+        { efXVG, "-rc", "scount", ffWRITE }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -400,7 +399,7 @@ int gmx_sorient(int argc, char *argv[])
     {
         fprintf(fp, "%g %g\n", (i+0.5)*binwidth-1, 2*normfac*hist1[i]);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     sprintf(str, "Solvent normal orientation between %g and %g nm", rmin, rmax);
     fp = xvgropen(opt2fn("-no", NFILE, fnm), str, "cos(\\8q\\4\\s2\\N)", "", oenv);
@@ -412,7 +411,7 @@ int gmx_sorient(int argc, char *argv[])
     {
         fprintf(fp, "%g %g\n", (i+0.5)*binwidth, normfac*hist2[i]);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
 
     sprintf(str, "Solvent orientation");
@@ -428,7 +427,7 @@ int gmx_sorient(int argc, char *argv[])
                 histn[i] ? histi1[i]/histn[i] : 0,
                 histn[i] ? histi2[i]/histn[i] : 0);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     sprintf(str, "Cumulative solvent orientation");
     fp = xvgropen(opt2fn("-co", NFILE, fnm), str, "r (nm)", "", oenv);
@@ -447,7 +446,7 @@ int gmx_sorient(int argc, char *argv[])
         c2 += histi2[i]*normfac;
         fprintf(fp, "%g %g %g\n", (i+1)*rbinw, c1, c2);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     sprintf(str, "Solvent distribution");
     fp = xvgropen(opt2fn("-rc", NFILE, fnm), str, "r (nm)", "molecules/nm", oenv);
@@ -460,7 +459,7 @@ int gmx_sorient(int argc, char *argv[])
     {
         fprintf(fp, "%g %g\n", (i+0.5)*rbinw, histn[i]*normfac);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
     do_view(oenv, opt2fn("-no", NFILE, fnm), NULL);

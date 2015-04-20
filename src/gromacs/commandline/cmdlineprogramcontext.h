@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,9 +51,10 @@
 #include <string>
 #include <vector>
 
-#include "../utility/common.h"
-#include "../utility/programcontext.h"
-#include "../utility/uniqueptr.h"
+#include <boost/shared_ptr.hpp>
+
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/programcontext.h"
 
 namespace gmx
 {
@@ -90,7 +91,7 @@ class ExecutableEnvironmentInterface
 };
 
 //! Shorthand for a smart pointer to ExecutableEnvironmentInterface.
-typedef gmx_unique_ptr<ExecutableEnvironmentInterface>::type
+typedef boost::shared_ptr<ExecutableEnvironmentInterface>
     ExecutableEnvironmentPointer;
 
 /*! \libinternal \brief
@@ -195,7 +196,7 @@ class CommandLineProgramContext : public ProgramContextInterface
          */
         virtual const char *fullBinaryPath() const;
         /*! \brief
-         * Returns the default path for \Gromacs data files.
+         * Returns the installation prefix (for finding \Gromacs data files).
          *
          * \throws std::bad_alloc if out of memory.
          * \throws tMPI::system_error on thread synchronization errors.
@@ -203,7 +204,7 @@ class CommandLineProgramContext : public ProgramContextInterface
          * Returns a hardcoded path set during configuration time if there is
          * an error in finding the library data files.
          */
-        virtual const char *defaultLibraryDataPath() const;
+        virtual InstallationPrefixInfo installationPrefix() const;
         /*! \brief
          * Returns the full command line used to invoke the binary.
          *

@@ -38,12 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_TOMORSE_H
 #define GMX_GMXPREPROCESS_TOMORSE_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
-#include "typedefs.h"
+
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

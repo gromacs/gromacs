@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,12 +39,16 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "gromacs/selection/selectioncollection.h"
+
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
@@ -417,6 +421,15 @@ TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
     EXPECT_STREQ("resname RB RC", sel_[1].selectionText());
 }
 
+TEST_F(SelectionCollectionTest, HandlesAtypicalWhitespace)
+{
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr\n1\r\nto\t10;\vatomnr 3\f to 14\r"));
+    ASSERT_EQ(2U, sel_.size());
+    EXPECT_STREQ("atomnr 1 to 10", sel_[0].selectionText());
+    // TODO: Get rid of the trailing whitespace.
+    EXPECT_STREQ("atomnr 3 to 14 ", sel_[1].selectionText());
+}
+
 TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
 {
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
@@ -488,21 +501,47 @@ TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed2)
     EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
 }
 
-// TODO: Make the check less eager so that it doesn't break other tests, and
-// adapt these tests accordingly.
-TEST_F(SelectionCollectionTest, DISABLED_HandlesUnsortedGroupReference)
+TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReference)
 {
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
-    EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpUnsorted\""),
+    EXPECT_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group \"GrpUnsorted\""),
                      gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.parseFromString("2"), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("group 2 or atomnr 2 to 5"),
+                     gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("within 1 of group 2"),
+                     gmx::InconsistentInputError);
 }
 
-TEST_F(SelectionCollectionTest, DISABLED_HandlesUnsortedGroupReferenceDelayed)
+TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReferenceDelayed)
 {
-    ASSERT_NO_THROW_GMX(sc_.parseFromString("group 2; group \"GrpUnsorted\""));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group \"GrpUnsorted\""));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 1 to 3 and group 2"));
     EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
-    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+    // TODO: Add a separate check in the selection compiler for a safer API
+    // (makes sense in the future if the compiler needs the information for
+    // other purposes as well).
+    // EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroup)
+{
+    ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, 5));
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpB\""), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroupDelayed)
+{
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"GrpB\""));
+    EXPECT_THROW_GMX(sc_.setTopology(NULL, 5), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesOutOfRangeAtomIndexInGroupDelayed2)
+{
+    ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, 5));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"GrpB\""));
+    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingMoleculeInfo)
@@ -548,7 +587,35 @@ TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation3)
     EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
 }
 
-// TODO: Tests for evaluation errors
+TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets)
+{
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("atomnr 3 to 10"));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    frame_->natoms = 8;
+    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets2)
+{
+    // Evaluating the positions will require atoms 1-9.
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("whole_res_com of atomnr 2 5 7"));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    frame_->natoms = 8;
+    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets3)
+{
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("mindistance from atomnr 1 to 5 < 2"));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    frame_->natoms = 10;
+    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+}
+
+// TODO: Tests for more evaluation errors
 
 
 /********************************************************************
@@ -930,11 +997,13 @@ TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelectionsDelayed)
 TEST_F(SelectionCollectionDataTest, HandlesUnsortedIndexGroupsInSelections)
 {
     static const char * const selections[] = {
+        "foo = group \"GrpUnsorted\"",
         "group \"GrpUnsorted\"",
         "GrpUnsorted",
         "2",
         "res_cog of group \"GrpUnsorted\"",
-        "group \"GrpUnsorted\" permute 2 1"
+        "group \"GrpUnsorted\" permute 2 1",
+        "foo"
     };
     setFlags(TestFlags() | efTestPositionAtoms | efTestPositionMapping
              | efTestSelectionNames);
@@ -942,12 +1011,42 @@ TEST_F(SelectionCollectionDataTest, HandlesUnsortedIndexGroupsInSelections)
     runTest("simple.gro", selections);
 }
 
+TEST_F(SelectionCollectionDataTest, HandlesUnsortedIndexGroupsInSelectionsDelayed)
+{
+    static const char * const selections[] = {
+        "foo = group \"GrpUnsorted\"",
+        "group \"GrpUnsorted\"",
+        "GrpUnsorted",
+        "2",
+        "res_cog of group \"GrpUnsorted\"",
+        "group \"GrpUnsorted\" permute 2 1",
+        "foo"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)
 {
     static const char * const selections[] = {
         "[1, -2, 3.5]"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+             | efTestPositionMapping);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesConstantPositionsWithModifiers)
+{
+    static const char * const selections[] = {
+        "[0, 0, 0] plus [0, 1, 0]"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+             | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
@@ -1025,6 +1124,47 @@ TEST_F(SelectionCollectionDataTest, HandlesEmptySelectionWithUnevaluatedExpressi
         "none and x > 2",
         "none and same resname as resnr 2"
     };
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForKeywords)
+{
+    static const char * const selections[] = {
+        "res_cog x > 2",
+        "name CB and res_cog y > 2.5"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForMethods)
+{
+    static const char * const selections[] = {
+        "res_cog distance from cog of resnr 1 < 2",
+        "res_cog within 2 of cog of resnr 1"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesKeywordOfPositions)
+{
+    static const char * const selections[] = {
+        "x < y of cog of resnr 2"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesKeywordOfPositionsInArithmetic)
+{
+    static const char * const selections[] = {
+        "x - y of cog of resnr 2 < 0"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
     runTest("simple.gro", selections);
 }
 

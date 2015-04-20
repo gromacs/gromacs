@@ -33,13 +33,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/timing/walltime_accounting.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "walltime_accounting.h"
+
+#include "config.h"
 
 #include <time.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -176,7 +177,7 @@ walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_acco
     return walltime_accounting->start_time_stamp;
 }
 
-double
+gmx_int64_t
 walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accounting)
 {
     return walltime_accounting->nsteps_done;

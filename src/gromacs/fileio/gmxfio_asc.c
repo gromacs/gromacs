@@ -34,30 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
 
+#include "config.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
 
-#include "gromacs/utility/fatalerror.h"
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio_int.h"
+#include "gromacs/fileio/md5.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gmxfio.h"
-#include "md5.h"
-
-#include "gmxfio_int.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 /* This is the part that reads dummy and ascii files.  */
@@ -295,8 +294,9 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
     int             i, m, res = 0, *iptr, ix;
     gmx_int64_t     s;
     double          d, x;
+    char            c;
     real           *ptr;
-    unsigned char   uc, *ucptr;
+    unsigned char  *ucptr;
     char           *cptr;
 #define NEXT_ITEM_BUF_LEN 128
     char            ni_buf[NEXT_ITEM_BUF_LEN];
@@ -329,10 +329,10 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
             }
             break;
         case eioUCHAR:
-            res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%c", &uc);
+            res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%c", &c);
             if (item)
             {
-                *((unsigned char *) item) = uc;
+                *((unsigned char *) item) = (unsigned char)c;
             }
             break;
         case eioNUCHAR:
@@ -362,6 +362,7 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
             }
             break;
         case eioNRVEC:
+            assert(item);
             for (i = 0; (i < nitem); i++)
             {
                 ptr = ((rvec *) item)[i];
@@ -369,10 +370,7 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
                 {
                     res = sscanf(next_item(fp, ni_buf, NEXT_ITEM_BUF_LEN), "%lf\n",
                                  &x);
-                    if (item)
-                    {
-                        ptr[m] = x;
-                    }
+                    ptr[m] = x;
                 }
             }
             break;

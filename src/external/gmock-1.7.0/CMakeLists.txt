@@ -35,6 +35,9 @@
 # As stated in README.Gromacs, this file is not part of GMock, but is written
 # specifically for the GROMACS build system from scratch.
 
+include(gmxGetGmockTupleWorkaround)
+get_gmock_tuple_workaround(GMOCK_COMPILE_DEFINITIONS)
+
 # GTest/GMock suggest linking with pthreads when available for thread safety
 set(CMAKE_THREAD_PREFER_PTHREAD 1)
 find_package(Threads)
@@ -51,13 +54,23 @@ set(GMOCK_SOURCES ${GMOCK_DIR}/src/gmock-all.cc)
 set(GTEST_INCLUDE_DIRS ${GTEST_DIR}/include)
 set(GMOCK_INCLUDE_DIRS ${GMOCK_DIR}/include ${GTEST_INCLUDE_DIRS})
 
-include_directories(${GTEST_INCLUDE_DIRS})
-include_directories(${GTEST_DIR})
-include_directories(${GMOCK_INCLUDE_DIRS})
-include_directories(${GMOCK_DIR})
-add_library(gmock STATIC ${GMOCK_SOURCES} ${GTEST_SOURCES})
+include_directories(BEFORE ${GTEST_INCLUDE_DIRS})
+include_directories(BEFORE ${GTEST_DIR})
+include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
+include_directories(BEFORE ${GMOCK_DIR})
+
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wno-unused-variable HAS_NO_UNUSED_VARIABLE)
+if (HAS_NO_UNUSED_VARIABLE)
+    set_source_files_properties(${GTEST_SOURCES} PROPERTIES COMPILE_FLAGS "-Wno-unused-variable")
+endif()
+
+add_library(gmock STATIC ${UNITTEST_TARGET_OPTIONS} ${GMOCK_SOURCES} ${GTEST_SOURCES})
+set_property(TARGET gmock APPEND PROPERTY COMPILE_DEFINITIONS
+             "_GNU_SOURCE=1;${GMOCK_COMPILE_DEFINITIONS};GTEST_CAN_STREAM_RESULTS=0")
 
 set(GMOCK_LIBRARIES gmock ${PTHREADS_LIBRARIES} PARENT_SCOPE)
 set(GTEST_LIBRARIES ${GMOCK_LIBRARIES} PARENT_SCOPE)
 set(GMOCK_INCLUDE_DIRS ${GMOCK_INCLUDE_DIRS} PARENT_SCOPE)
 set(GTEST_INCLUDE_DIRS ${GTEST_INCLUDE_DIRS} PARENT_SCOPE)
+set(GMOCK_COMPILE_DEFINITIONS ${GMOCK_COMPILE_DEFINITIONS} PARENT_SCOPE)

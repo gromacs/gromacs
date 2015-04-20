@@ -45,7 +45,9 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/trajectoryanalysis/analysismodule.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
+
+#include "testutils/cmdlinetest.h"
 
 namespace gmx
 {
@@ -55,7 +57,6 @@ class TrajectoryAnalysisModule;
 namespace test
 {
 
-class CommandLine;
 class FloatingPointTolerance;
 
 /*! \internal
@@ -69,15 +70,26 @@ class FloatingPointTolerance;
  * methods in this class.  runTest() then runs the specified module with the
  * given options and performs all the requested tests against reference data.
  *
+ * Tests should prefer to test the underlying data sets instead of string
+ * comparison on the output files using setOutputFile().
+ *
  * The actual module to be tested is constructed in the pure virtual
  * createModule() method, which should be implemented in a subclass.
  * Typically, the TrajectoryAnalysisModuleTestFixture template can be used.
  *
  * Any method in this class may throw std::bad_alloc if out of memory.
  *
+ * \todo
+ * Adding facilities to AnalysisData to check whether there are any
+ * output modules attached to the data object (directly or indirectly),
+ * marking the mocks as output modules, and using these checks in the
+ * tools instead of or in addition to the output file presence would be
+ * a superior.
+ * Also, the full file names should be deducible from the options.
+ *
  * \ingroup module_trajectoryanalysis
  */
-class AbstractTrajectoryAnalysisModuleTestFixture : public ::testing::Test
+class AbstractTrajectoryAnalysisModuleTestFixture : public CommandLineTestBase
 {
     public:
         AbstractTrajectoryAnalysisModuleTestFixture();
@@ -107,52 +119,6 @@ class AbstractTrajectoryAnalysisModuleTestFixture : public ::testing::Test
          * must be called before runTest().
          */
         void setTrajectory(const char *filename);
-        /*! \brief
-         * Sets an output file to use for the test.
-         *
-         * \param[in] option    Option to set.
-         * \param[in] filename  Name of the output file.
-         *
-         * This method:
-         *  - Sets \p option in the tested module to a temporary file name
-         *    constructed from \p filename.
-         *  - Makes runTest() to check the contents of the file against
-         *    reference data after running the module.
-         *  - Marks the temporary file for removal at test teardown.
-         *
-         * \p filename is given to TestTemporaryFileManager to make a unique
-         * filename for the temporary file, but is not otherwise used.
-         *
-         * Currently, this method should not be called for an XVG file, because
-         * the comments in the beginning of the file contain timestamps and
-         * other variable information, causing the test to fail.  Best used
-         * only for custom data formats.  For numeric data, testing the
-         * underlying dataset is typically sufficient.
-         */
-        void setOutputFile(const char *option, const char *filename);
-        /*! \brief
-         * Sets an output file parameter needed for the test.
-         *
-         * \param[in] option    Option to set.
-         * \param[in] extension Extension for the file to create.
-         *
-         * This method:
-         *  - Sets \p option in the tested module to a temporary file name.
-         *  - Marks the temporary file for removal at test teardown.
-         *
-         * This method provides the mechanism to set output files that are
-         * required to trigger computation of values that are required for
-         * the test.  The contents of the output file are not tested.
-         *
-         * \todo
-         * Adding facilities to AnalysisData to check whether there are any
-         * output modules attached to the data object (directly or indirectly),
-         * marking the mocks as output modules, and using these checks in the
-         * tools instead of or in addition to the output file presence would be
-         * a superior.
-         * Also, the extension should be deducible from the option.
-         */
-        void setOutputFileNoTest(const char *option, const char *extension);
         /*! \brief
          * Includes only specified dataset for the test.
          *

@@ -38,6 +38,7 @@
 #ifndef _nmol_h
 #define _nmol_h
 
+#include "manager.h"
 #include "x11.h"
 #include "xutil.h"
 

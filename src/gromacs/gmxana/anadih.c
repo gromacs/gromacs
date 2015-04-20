@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,27 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "gromacs/math/units.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "txtdump.h"
-#include "bondf.h"
-#include "gromacs/fileio/xvgr.h"
-#include "typedefs.h"
-#include "gromacs/math/vec.h"
-#include "gstat.h"
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void print_one(const output_env_t oenv, const char *base, const char *name,
                const char *title, const char *ylabel, int nf, real time[],
@@ -72,7 +70,7 @@ void print_one(const output_env_t oenv, const char *base, const char *name,
     {
         fprintf(fp, "%10g  %10g\n", time[k], data[k]);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static int calc_RBbin(real phi, int gmx_unused multiplicity, real gmx_unused core_frac)
@@ -302,7 +300,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
         {
             fprintf(fp, "%10.3f  %10d\n", time[j], tr_f[j]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     /* Compute histogram from # transitions per dihedral */
@@ -332,7 +330,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
                 fprintf(fp, "%10.3f  %10d\n", ttime/i, tr_f[i]);
             }
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     sfree(tr_f);
@@ -590,7 +588,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
                     }
                 }
                 fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
-                gmx_ffclose(fp);
+                xvgrclose(fp);
             }
 
             /* and finally print out occupancies to a single file */
@@ -617,7 +615,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
     }
 
     sfree(chi_prtrj);
-    gmx_ffclose(fpall);
+    xvgrclose(fpall);
     fprintf(stderr, "\n");
 
 }
@@ -677,7 +675,7 @@ void calc_distribution_props(int nh, int histo[], real start,
     *S2 = tdc*tdc+tds*tds;
 }
 
-static void calc_angles(t_pbc *pbc,
+static void calc_angles(struct t_pbc *pbc,
                         int n3, atom_id index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2;
@@ -731,7 +729,7 @@ static real calc_fraction(real angles[], int nangles)
     }
 }
 
-static void calc_dihs(t_pbc *pbc,
+static void calc_dihs(struct t_pbc *pbc,
                       int n4, atom_id index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
@@ -819,15 +817,15 @@ void read_ang_dih(const char *trj_fn,
                   real *dih[],
                   const output_env_t oenv)
 {
-    t_pbc       *pbc;
-    t_trxstatus *status;
-    int          i, angind, natoms, total, teller;
-    int          nangles, n_alloc;
-    real         t, fraction, pifac, aa, angle;
-    real        *angles[2];
-    matrix       box;
-    rvec        *x;
-    int          cur = 0;
+    struct t_pbc *pbc;
+    t_trxstatus  *status;
+    int           i, angind, natoms, total, teller;
+    int           nangles, n_alloc;
+    real          t, fraction, pifac, aa, angle;
+    real         *angles[2];
+    matrix        box;
+    rvec         *x;
+    int           cur = 0;
 #define prev (1-cur)
 
     snew(pbc, 1);

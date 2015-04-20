@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,35 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "edsam.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "names.h"
 #include "gromacs/fileio/confio.h"
-#include "txtdump.h"
-#include "gromacs/math/vec.h"
-#include "nrnb.h"
-#include "mdrun.h"
-#include "update.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/mdlib/groupcoord.h"
-
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
-/* We use the same defines as in mvdata.c here */
+/* We use the same defines as in broadcaststructs.cpp here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 #define nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
 #define   snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
@@ -1140,7 +1138,7 @@ static void get_flood_enx_names(t_edpar *edi, char** names, int *nnames)  /* get
     {
         srenew(names, count);
         sprintf(buf, "Vfl_%d", count);
-        names[count-1] = strdup(buf);
+        names[count-1] = gmx_strdup(buf);
         actual         = actual->next_edi;
         count++;
     }
@@ -1204,6 +1202,7 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm
         init_edsamstate(ed, EDstate);
 
         /* The master opens the ED output file */
+        /* TODO This file is never closed... */
         if (Flags & MD_APPENDFILES)
         {
             ed->edo = gmx_fio_fopen(opt2fn("-eo", nfile, fnm), "a+");
@@ -1795,7 +1794,6 @@ static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms)
         /* Keep the curr_edi pointer for the case that the next group is empty: */
         last_edi = curr_edi;
         /* Let's prepare to read in the next edi data set: */
-        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         curr_edi = edi_read;
     }
     if (edi_nr == 0)
@@ -2454,7 +2452,7 @@ static void nice_legend(const char ***setname, int *nsets, char **LegendStr, cha
     sprintf(tmp, "%c %s", EDgroupchar, value);
     add_to_string_aligned(LegendStr, tmp);
     sprintf(tmp2, "%s (%s)", tmp, unit);
-    (*setname)[*nsets] = strdup(tmp2);
+    (*setname)[*nsets] = gmx_strdup(tmp2);
     (*nsets)++;
 }
 
@@ -3185,4 +3183,17 @@ void do_edsam(t_inputrec     *ir,
     } /* END of loop over ED groups */
 
     ed->bFirst = FALSE;
+}
+
+void done_ed(gmx_edsam_t *ed)
+{
+    if (*ed)
+    {
+        /* ed->edo is opened sometimes with xvgropen, sometimes with
+         * gmx_fio_fopen, so we use the least common denominator for
+         * closing. */
+        gmx_fio_fclose((*ed)->edo);
+    }
+
+    /* TODO deallocate ed and set pointer to NULL */
 }

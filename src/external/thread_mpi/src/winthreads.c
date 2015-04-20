@@ -54,6 +54,12 @@
 #ifdef THREAD_WINDOWS
 
 /* the win32 header */
+#ifdef __MINGW32__
+/* Couple of types (e.g. PROCESSOR_NUMBER) are only available since
+ * WinServer2008 (0x600) and Windows7 (0x601). MingW doesn't have
+ * it defined for 0x600 in the headers */
+#define _WIN32_WINNT 0x0601
+#endif
 #include <windows.h>
 
 
@@ -66,6 +72,7 @@
 #include "thread_mpi/atomic.h"
 #include "thread_mpi/threads.h"
 #include "impl.h"
+#include "unused.h"
 
 #include "winthreads.h"
 
@@ -686,6 +693,9 @@ struct tMPI_Thread_starter_param
     struct tMPI_Thread *thread;
 };
 
+#ifdef __GNUC__
+__attribute__((force_align_arg_pointer))
+#endif
 static DWORD WINAPI tMPI_Win32_thread_starter( LPVOID lpParam )
 {
     struct tMPI_Thread_starter_param *prm =
@@ -823,7 +833,7 @@ int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr)
 }
 
 
-void tMPI_Thread_exit(void *value_ptr)
+void tMPI_Thread_exit(void tmpi_unused *value_ptr)
 {
     /* TODO: call destructors for thread-local storage */
     ExitThread( 0 );
@@ -1050,7 +1060,7 @@ int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx)
 
 
 
-int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
+int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *) tmpi_unused)
 {
     if (key == NULL)
     {

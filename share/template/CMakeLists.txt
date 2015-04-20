@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,6 @@ install(FILES README template.cpp Makefile.pkg
         DESTINATION ${DATA_INSTALL_DIR}/template
         COMPONENT development)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindGROMACS.cmakein
-        ${CMAKE_CURRENT_BINARY_DIR}/cmake/FindGROMACS.cmake @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/FindGROMACS.cmake
+install(FILES cmake/FindGROMACS.cmake
         DESTINATION ${DATA_INSTALL_DIR}/template/cmake
         COMPONENT development)
-

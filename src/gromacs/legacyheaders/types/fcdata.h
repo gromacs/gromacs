@@ -37,6 +37,10 @@
 #ifndef _fcdata_h
 #define _fcdata_h
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

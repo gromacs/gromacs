@@ -32,11 +32,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
+
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 

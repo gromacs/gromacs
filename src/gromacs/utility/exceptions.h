@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,11 +51,11 @@
 #include <vector>
 
 #include <boost/exception_ptr.hpp>
+#include <boost/throw_exception.hpp>
 #include <boost/exception/errinfo_api_function.hpp>
 #include <boost/exception/errinfo_errno.hpp>
 #include <boost/exception/exception.hpp>
 #include <boost/exception/info.hpp>
-#include <boost/throw_exception.hpp>
 
 namespace gmx
 {
@@ -134,6 +134,21 @@ class ExceptionInitializer
         void addCurrentExceptionAsNested()
         {
             nested_.push_back(boost::current_exception());
+        }
+        /*! \brief
+         * Adds the specified exception as a nested exception.
+         *
+         * May be called multiple times; all provided exceptions will be added
+         * in a list of nested exceptions.
+         *
+         * This is equivalent to throwing \p ex and calling
+         * addCurrentExceptionAsNested() in the catch block, but potentially
+         * more efficient.
+         */
+        template <class Exception>
+        void addNested(const Exception &ex)
+        {
+            nested_.push_back(boost::copy_exception(ex));
         }
 
     private:
@@ -383,6 +398,7 @@ class NotImplementedError : public APIError
         GMX_THROW((e) << boost::errinfo_errno(stored_errno_) \
                   << boost::errinfo_api_function(syscall)); \
     } while (0)
+//TODO: Add an equivalent macro for Windows GetLastError
 
 /*! \brief
  * Formats a standard fatal error message for reporting an exception.

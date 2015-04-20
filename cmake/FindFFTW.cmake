@@ -124,7 +124,7 @@ if (${FFTW}_FOUND)
     endif()
   endforeach()
   #Verify FFTW is compiled with fPIC (necessary for shared libraries)
-  if (CMAKE_OBJDUMP AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS)
+  if (CMAKE_OBJDUMP AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS AND NOT CYGWIN)
       execute_process(COMMAND ${CMAKE_OBJDUMP} --reloc ${${FFTW}_LIBRARY} OUTPUT_VARIABLE ${FFTW}_OBJDUMP)
       if (${${FFTW}_OBJDUMP} MATCHES "R_X86_64" #Should always be true for static libraries. Checks that objdump works properly and that the library isn't dynamic
               AND NOT ${${FFTW}_OBJDUMP} MATCHES "R_X86_64_PLT32")

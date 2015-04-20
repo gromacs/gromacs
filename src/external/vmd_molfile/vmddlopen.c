@@ -153,7 +153,7 @@ const char *vmddlerror( void  ) {
   return errorString;
 }
 
-#elif defined(_MSC_VER)
+#elif defined( _WIN32 ) || defined( _WIN64 )
 
 #include <windows.h>
 
@@ -165,7 +165,7 @@ const char *vmddlerror(void) {
   static CHAR szBuf[80]; 
   DWORD dw = GetLastError(); 
  
-  sprintf(szBuf, "vmddlopen failed: GetLastError returned %u\n", dw); 
+  sprintf(szBuf, "vmddlopen failed: GetLastError returned %lu\n", dw);
   return szBuf;
 }
 

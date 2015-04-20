@@ -35,18 +35,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#include "viewit.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gromacs/legacyheaders/viewit.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "oenv.h"
-#include "macros.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -125,15 +123,10 @@ void do_view(const output_env_t oenv, const char *fn, const char *opts)
             {
                 sprintf(buf, "%s %s %s &", cmd, opts ? opts : "", fn);
                 fprintf(stderr, "Executing '%s'\n", buf);
-#ifdef GMX_NO_SYSTEM
-                printf("Warning-- No calls to system(3) supported on this platform.");
-                printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
-#else
                 if (0 != system(buf) )
                 {
                     gmx_fatal(FARGS, "Failed executing command: %s", buf);
                 }
-#endif
             }
         }
     }

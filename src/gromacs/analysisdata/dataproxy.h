@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,8 +45,8 @@
 #ifndef GMX_ANALYSISDATA_DATAPROXY_H
 #define GMX_ANALYSISDATA_DATAPROXY_H
 
-#include "abstractdata.h"
-#include "datamodule.h"
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/datamodule.h"
 
 namespace gmx
 {
@@ -91,6 +91,7 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         virtual void frameStarted(const AnalysisDataFrameHeader &frame);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
+        virtual void frameFinishedSerial(int frameIndex);
         virtual void dataFinished();
 
     private:

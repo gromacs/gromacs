@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,32 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gstat.h"
-#include "macros.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/math/units.h"
-#include "gromacs/topology/residuetypes.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/tpxio.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
 static gmx_bool bAllowed(real phi, real psi)
@@ -683,15 +683,15 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
         snew(leg, NJC);
         for (i = 0; (i < NKKKPHI); i++)
         {
-            leg[i] = strdup(kkkphi[i].name);
+            leg[i] = gmx_strdup(kkkphi[i].name);
         }
         for (i = 0; (i < NKKKPSI); i++)
         {
-            leg[i+NKKKPHI] = strdup(kkkpsi[i].name);
+            leg[i+NKKKPHI] = gmx_strdup(kkkpsi[i].name);
         }
         for (i = 0; (i < NKKKCHI); i++)
         {
-            leg[i+NKKKPHI+NKKKPSI] = strdup(kkkchi1[i].name);
+            leg[i+NKKKPHI+NKKKPSI] = gmx_strdup(kkkchi1[i].name);
         }
         xvgr_legend(fp, NJC, (const char**)leg, oenv);
         fprintf(fp, "%5s ", "#Res.");
@@ -709,7 +709,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         for (i = 0; (i < NJC); i++)
         {
             sfree(leg[i]);
@@ -809,7 +809,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                     }
                 }
                 fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
-                gmx_ffclose(fp);
+                xvgrclose(fp);
                 if (bSSHisto)
                 {
                     for (k = 0; (k < 3); k++)
@@ -940,7 +940,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
             {
                 gmx_ffclose(gp);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
             if (bOm)
             {
                 sprintf(fn, "ramomega%s.xpm", dlist[i].name);
@@ -997,7 +997,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
             {
                 fprintf(fp, "%10g  %10g\n", RAD2DEG*dih[Xi1][j], RAD2DEG*dih[Xi2][j]);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
         }
         else
         {
@@ -1020,15 +1020,15 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
     char *leg[edMax];
 #define NLEG asize(leg)
 
-    leg[0] = strdup("Phi");
-    leg[1] = strdup("Psi");
-    leg[2] = strdup("Omega");
-    leg[3] = strdup("Chi1");
-    leg[4] = strdup("Chi2");
-    leg[5] = strdup("Chi3");
-    leg[6] = strdup("Chi4");
-    leg[7] = strdup("Chi5");
-    leg[8] = strdup("Chi6");
+    leg[0] = gmx_strdup("Phi");
+    leg[1] = gmx_strdup("Psi");
+    leg[2] = gmx_strdup("Omega");
+    leg[3] = gmx_strdup("Chi1");
+    leg[4] = gmx_strdup("Chi2");
+    leg[5] = gmx_strdup("Chi3");
+    leg[6] = gmx_strdup("Chi4");
+    leg[7] = gmx_strdup("Chi5");
+    leg[8] = gmx_strdup("Chi6");
 
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns",
@@ -1058,7 +1058,7 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
         /* fprintf(fp,"%12s\n",dlist[i].name);  this confuses xmgrace */
         fprintf(fp, "\n");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static void order_params(FILE *log,
@@ -1084,7 +1084,7 @@ static void order_params(FILE *log,
 
     for (i = 0; i < NLEG; i++)
     {
-        leg[i] = strdup(const_leg[i]);
+        leg[i] = gmx_strdup(const_leg[i]);
     }
 
     /* Print order parameters */
@@ -1136,7 +1136,7 @@ static void order_params(FILE *log,
         fprintf(fp, "\n");
         /* fprintf(fp,"%12s\n",dlist[i].name);  this confuses xmgrace */
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     if (NULL != pdbfn)
     {
@@ -1251,25 +1251,27 @@ int gmx_chi(int argc, char *argv[])
         "With option [TT]-all[tt], the angles themselves as a function of time for",
         "each residue are printed to separate files [TT](dihedral)(RESIDUE)(nresnr).xvg[tt].",
         "These can be in radians or degrees.[PAR]",
-        "A log file (argument [TT]-g[tt]) is also written. This contains [BR]",
-        "(a) information about the number of residues of each type.[BR]",
-        "(b) The NMR ^3J coupling constants from the Karplus equation.[BR]",
-        "(c) a table for each residue of the number of transitions between ",
-        "rotamers per nanosecond,  and the order parameter S^2 of each dihedral.[BR]",
-        "(d) a table for each residue of the rotamer occupancy.[PAR]",
+        "A log file (argument [TT]-g[tt]) is also written. This contains",
+        "",
+        " * information about the number of residues of each type.",
+        " * The NMR ^3J coupling constants from the Karplus equation.",
+        " * a table for each residue of the number of transitions between ",
+        "   rotamers per nanosecond,  and the order parameter S^2 of each dihedral.",
+        " * a table for each residue of the rotamer occupancy.",
+        "",
         "All rotamers are taken as 3-fold, except for [GRK]omega[grk] and [GRK]chi[grk] dihedrals",
         "to planar groups (i.e. [GRK]chi[grk][SUB]2[sub] of aromatics, Asp and Asn; [GRK]chi[grk][SUB]3[sub] of Glu",
         "and Gln; and [GRK]chi[grk][SUB]4[sub] of Arg), which are 2-fold. \"rotamer 0\" means ",
         "that the dihedral was not in the core region of each rotamer. ",
         "The width of the core region can be set with [TT]-core_rotamer[tt][PAR]",
 
-        "The S^2 order parameters are also output to an [TT].xvg[tt] file",
-        "(argument [TT]-o[tt] ) and optionally as a [TT].pdb[tt] file with",
+        "The S^2 order parameters are also output to an [REF].xvg[ref] file",
+        "(argument [TT]-o[tt] ) and optionally as a [REF].pdb[ref] file with",
         "the S^2 values as B-factor (argument [TT]-p[tt]). ",
         "The total number of rotamer transitions per timestep",
         "(argument [TT]-ot[tt]), the number of transitions per rotamer",
         "(argument [TT]-rt[tt]), and the ^3J couplings (argument [TT]-jc[tt]), ",
-        "can also be written to [TT].xvg[tt] files. Note that the analysis",
+        "can also be written to [REF].xvg[ref] files. Note that the analysis",
         "of rotamer transitions assumes that the supplied trajectory frames",
         "are equally spaced in time.[PAR]",
 
@@ -1334,15 +1336,15 @@ int gmx_chi(int argc, char *argv[])
         { "-binwidth", FALSE, etINT, {&ndeg},
           "bin width for histograms (degrees)" },
         { "-core_rotamer", FALSE, etREAL, {&core_frac},
-          "only the central [TT]-core_rotamer[tt]*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
+          "only the central [TT]-core_rotamer[tt]\\*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
         { "-maxchi", FALSE, etENUM, {maxchistr},
           "calculate first ndih [GRK]chi[grk] dihedrals" },
         { "-normhisto", FALSE, etBOOL, {&bNormHisto},
           "Normalize histograms" },
         { "-ramomega", FALSE, etBOOL, {&bRamOmega},
-          "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an [TT].xpm[tt] plot" },
+          "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an [REF].xpm[ref] plot" },
         { "-bfact", FALSE, etREAL, {&bfac_init},
-          "B-factor value for [TT].pdb[tt] file for atoms with no calculated dihedral order parameter"},
+          "B-factor value for [REF].pdb[ref] file for atoms with no calculated dihedral order parameter"},
         { "-chi_prod", FALSE, etBOOL, {&bChiProduct},
           "compute a single cumulative rotamer for each residue"},
         { "-HChi", FALSE, etBOOL, {&bHChi},
@@ -1391,7 +1393,7 @@ int gmx_chi(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
                            &oenv))
     {

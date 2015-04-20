@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
 #include "datastorage.h"
 
 #include <algorithm>
@@ -192,20 +194,12 @@ class AnalysisDataStorageImpl
         {
             return storageLimit_ > 0 || (pendingLimit_ > 1 && modules_->hasSerialModules());
         }
-        /*! \brief
-         * Calls notification methods for new frames.
-         *
-         * \param[in] firstLocation  First frame to consider.
-         * \throws    unspecified  Any exception thrown by frame notification
-         *      methods in AbstractAnalysisData.
-         *
-         * Notifies \a data_ of new frames (from \p firstLocation and after
-         * that) if all previous frames have already been notified.
-         * Also rotates the \a frames_ buffer as necessary.
-         */
-        void notifyNextFrames(size_t firstLocation);
         //! Implementation for AnalysisDataStorage::finishFrame().
         void finishFrame(int index);
+        /*! \brief
+         * Implementation for AnalysisDataStorage::finishFrameSerial().
+         */
+        void finishFrameSerial(int index);
 
 
         //! Parent data object to access data dimensionality etc.
@@ -501,48 +495,6 @@ AnalysisDataStorageImpl::getFrameBuilder()
 
 
 void
-AnalysisDataStorageImpl::notifyNextFrames(size_t firstLocation)
-{
-    if (frames_[firstLocation]->frameIndex() != firstUnnotifiedIndex_)
-    {
-        return;
-    }
-    size_t i   = firstLocation;
-    size_t end = endStorageLocation();
-    while (i != end)
-    {
-        AnalysisDataStorageFrameData &storedFrame = *frames_[i];
-        if (!storedFrame.isFinished())
-        {
-            break;
-        }
-        if (!storedFrame.isNotified())
-        {
-            // Increment before the notifications to make the frame available
-            // in the module callbacks.
-            ++firstUnnotifiedIndex_;
-            modules_->notifyFrameStart(storedFrame.header());
-            for (int j = 0; j < storedFrame.pointSetCount(); ++j)
-            {
-                modules_->notifyPointsAdd(storedFrame.pointSet(j));
-            }
-            modules_->notifyFrameFinish(storedFrame.header());
-            storedFrame.markNotified();
-            if (storedFrame.frameIndex() >= storageLimit_)
-            {
-                rotateBuffer();
-            }
-        }
-        ++i;
-        if (!storeAll() && i >= frames_.size())
-        {
-            i = 0;
-        }
-    }
-}
-
-
-void
 AnalysisDataStorageImpl::finishFrame(int index)
 {
     const int storageIndex = computeStorageLocation(index);
@@ -557,18 +509,48 @@ AnalysisDataStorageImpl::finishFrame(int index)
                        "Inconsistent internal frame indexing");
     builders_.push_back(storedFrame.finishFrame(isMultipoint()));
     modules_->notifyParallelFrameFinish(storedFrame.header());
+    if (pendingLimit_ == 1)
+    {
+        finishFrameSerial(index);
+    }
+}
+
+
+void
+AnalysisDataStorageImpl::finishFrameSerial(int index)
+{
+    GMX_RELEASE_ASSERT(index == firstUnnotifiedIndex_,
+                       "Out of order finisFrameSerial() calls");
+    const int storageIndex = computeStorageLocation(index);
+    GMX_RELEASE_ASSERT(storageIndex >= 0, "Out of bounds frame index");
+
+    AnalysisDataStorageFrameData &storedFrame = *frames_[storageIndex];
+    GMX_RELEASE_ASSERT(storedFrame.frameIndex() == index,
+                       "Inconsistent internal frame indexing");
+    GMX_RELEASE_ASSERT(storedFrame.isFinished(),
+                       "finishFrameSerial() called before finishFrame()");
+    GMX_RELEASE_ASSERT(!storedFrame.isNotified(),
+                       "finishFrameSerial() called twice for the same frame");
+    // Increment before the notifications to make the frame available
+    // in the module callbacks.
+    ++firstUnnotifiedIndex_;
     if (shouldNotifyImmediately())
     {
-        ++firstUnnotifiedIndex_;
         modules_->notifyFrameFinish(storedFrame.header());
-        if (storedFrame.frameIndex() >= storageLimit_)
-        {
-            rotateBuffer();
-        }
     }
     else
     {
-        notifyNextFrames(storageIndex);
+        modules_->notifyFrameStart(storedFrame.header());
+        for (int j = 0; j < storedFrame.pointSetCount(); ++j)
+        {
+            modules_->notifyPointsAdd(storedFrame.pointSet(j));
+        }
+        modules_->notifyFrameFinish(storedFrame.header());
+    }
+    storedFrame.markNotified();
+    if (storedFrame.frameIndex() >= storageLimit_)
+    {
+        rotateBuffer();
     }
 }
 
@@ -635,7 +617,7 @@ AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
     AnalysisDataPointSetInfo pointSetInfo(0, valueCount,
                                           dataSetIndex, firstColumn);
     AnalysisDataPointSetRef  pointSet(header(), pointSetInfo,
-                                      AnalysisDataValuesRef(begin, end));
+                                      constArrayRefFromVector<AnalysisDataValue>(begin, end));
     storageImpl().modules_->notifyParallelPointsAdd(pointSet);
     if (storageImpl().shouldNotifyImmediately())
     {
@@ -684,7 +666,7 @@ AnalysisDataStorageFrameData::pointSet(int index) const
                "Invalid point set index");
     return AnalysisDataPointSetRef(
             header_, pointSets_[index],
-            AnalysisDataValuesRef(values_.begin(), values_.end()));
+            constArrayRefFromVector<AnalysisDataValue>(values_.begin(), values_.end()));
 }
 
 }   // namespace internal
@@ -868,7 +850,7 @@ AnalysisDataStorage::startParallelDataStorage(
         AnalysisDataModuleManager         *modules,
         const AnalysisDataParallelOptions &options)
 {
-    const int pendingLimit = 2 * options.parallelizationFactor() - 1;
+    const int pendingLimit = options.parallelizationFactor();
     impl_->pendingLimit_   = pendingLimit;
     modules->notifyParallelDataStart(data, options);
     // Data needs to be set before calling extendBuffer()
@@ -946,6 +928,15 @@ void
 AnalysisDataStorage::finishFrame(int index)
 {
     impl_->finishFrame(index);
+}
+
+void
+AnalysisDataStorage::finishFrameSerial(int index)
+{
+    if (impl_->pendingLimit_ > 1)
+    {
+        impl_->finishFrameSerial(index);
+    }
 }
 
 void

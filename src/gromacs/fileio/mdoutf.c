@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "mdoutf.h"
 
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/trajectory_writing.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/mvdata.h"
-#include "gromacs/legacyheaders/domdec.h"
-#include "trnio.h"
-#include "xtcio.h"
-#include "tngio.h"
-#include "trajectory_writing.h"
-#include "checkpoint.h"
-#include "copyrite.h"
-
-#include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -68,13 +69,14 @@ struct gmx_mdoutf {
     int               natoms_global;
     int               natoms_x_compressed;
     gmx_groups_t     *groups; /* for compressed position writing */
+    gmx_wallcycle_t   wcycle;
 };
 
 
 gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          int mdrun_flags, const t_commrec *cr,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
-                         const output_env_t oenv)
+                         const output_env_t oenv, gmx_wallcycle_t wcycle)
 {
     gmx_mdoutf_t  of;
     char          filemode[3];
@@ -96,6 +98,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     of->elamstats               = ir->expandedvals->elamstats;
     of->simulation_part         = ir->simulation_part;
     of->x_compression_precision = ir->x_compression_precision;
+    of->wcycle                  = wcycle;
 
     if (MASTER(cr))
     {
@@ -182,8 +185,8 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         {
             if (bAppendFiles)
             {
-                of->fp_dhdl = gmx_fio_fopen(opt2fn("-field", nfile, fnm),
-                                            filemode);
+                of->fp_field = gmx_fio_fopen(opt2fn("-field", nfile, fnm),
+                                             filemode);
             }
             else
             {
@@ -230,6 +233,11 @@ ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of)
 FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of)
 {
     return of->fp_dhdl;
+}
+
+gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
+{
+    return of->wcycle;
 }
 
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
@@ -342,7 +350,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 int i, j;
 
                 snew(xxtc, of->natoms_x_compressed);
-                for (i = 0, j = 0; (i < of->natoms_x_compressed); i++)
+                for (i = 0, j = 0; (i < of->natoms_global); i++)
                 {
                     if (ggrpnr(of->groups, egcCompressedX, i) == 0)
                     {
@@ -373,6 +381,17 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
     }
 }
 
+void mdoutf_tng_close(gmx_mdoutf_t of)
+{
+    if (of->tng || of->tng_low_prec)
+    {
+        wallcycle_start(of->wcycle, ewcTRAJ);
+        gmx_tng_close(&of->tng);
+        gmx_tng_close(&of->tng_low_prec);
+        wallcycle_stop(of->wcycle, ewcTRAJ);
+    }
+}
+
 void done_mdoutf(gmx_mdoutf_t of)
 {
     if (of->fp_ene != NULL)
@@ -393,8 +412,12 @@ void done_mdoutf(gmx_mdoutf_t of)
     }
     if (of->fp_field != NULL)
     {
+        /* This is opened sometimes with xvgropen, sometimes with
+         * gmx_fio_fopen, so we use the least common denominator for closing.
+         */
         gmx_fio_fclose(of->fp_field);
     }
+
     gmx_tng_close(&of->tng);
     gmx_tng_close(&of->tng_low_prec);
 

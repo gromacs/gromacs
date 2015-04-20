@@ -1,0 +1,13 @@
+[
+{ include: ["<boost/smart_ptr/shared_ptr.hpp>", "private", "<boost/shared_ptr.hpp>", "public"] },
+{ include: ["<xmmintrin.h>", "public", "<emmintrin.h>", "public"] },
+{ include: ["<emmintrin.h>", "public", "<pmmintrin.h>", "public"] },
+{ include: ["<pmmintrin.h>", "public", "<smmintrin.h>", "public"] },
+{ include: ["<smmintrin.h>", "public", "<immintrin.h>", "public"] },
+{ include: ["<avxintrin.h>", "private", "<immintrin.h>", "public"] },
+{ include: ['"mpi.h"', "private", '"gromacs/utility/gmxmpi.h"', "public"] },
+{ include: ['"thread_mpi/atomic/gcc_x86.h"', "private", '"thread_mpi/atomic.h"', "public"] },
+{ include: ['<immintrin.h>', "public", '"gromacs/simd/simd.h"', "public"] },
+{ include: ['"gromacs/simd/impl_x86_avx_256/impl_x86_avx_256.h"', "private", '"gromacs/simd/simd.h"', "public"] },
+{ symbol: ["M_SQRT2", "private", '"gromacs/math/utilities.h"', "public"] }
+]

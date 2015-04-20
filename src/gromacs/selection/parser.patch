@@ -1,0 +1,20 @@
+--- parser.cpp	2014-11-03 06:56:28.000000000 +0200
++++ parser.cpp	2014-11-03 06:57:35.000000000 +0200
+@@ -470,7 +470,7 @@
+ 
+ 
+ #if (! defined yyoverflow \
+-     && (! defined __cplusplus \
++     && (! defined __cplusplus || defined GMX_YYFORCE_C_STACK_EXTENSION \
+ 	 || (defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL \
+ 	     && defined YYSTYPE_IS_TRIVIAL && YYSTYPE_IS_TRIVIAL)))
+ 
+@@ -1076,7 +1076,7 @@
+     void *scanner;
+ #endif
+ {
+-  FILE *yyo = yyoutput;
++  FILE *yyo gmx_unused = yyoutput;
+   YYUSE (yyo);
+   if (!yyvaluep)
+     return;

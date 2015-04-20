@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,33 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gstat.h"
-#include "macros.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/math/units.h"
-#include "gromacs/topology/index.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/commandline/pargs.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gmx_ana.h"
-#include "gromacs/fileio/trxio.h"
-
 
 #define NK  24
 #define NPK 4
@@ -81,10 +80,10 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 {
     FILE  *fp, *fp_vk, *fp_cub = NULL;
     int    nk, ntc;
-    real **tcaf, **tcafc = NULL, eta;
+    real **tcaf, **tcafc = NULL, eta, *sig;
     int    i, j, k, kc;
     int    ncorr;
-    real   fitparms[3], *sig;
+    double fitparms[3];
 
     nk  = kset_c[nkc];
     ntc = nk*NPK;
@@ -102,7 +101,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         do_view(oenv, fn_trans, "-nxy");
     }
 
@@ -170,7 +169,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         }
         fprintf(fp, "\n");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     do_view(oenv, fn_tc, "-nxy");
 
     if (fn_cub)
@@ -209,7 +208,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         fitparms[0]  = 1;
         fitparms[1]  = 1;
         do_lmfit(ncorr, tcaf[k], sig, dt, 0, 0, ncorr*dt,
-                 oenv, bDebugMode(), effnVAC, fitparms, 0);
+                 oenv, bDebugMode(), effnVAC, fitparms, 0, NULL);
         eta = 1000*fitparms[1]*rho/
             (4*fitparms[0]*PICO*norm2(kfac[k])/(NANO*NANO));
         fprintf(stdout, "k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
@@ -221,7 +220,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         }
         fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     do_view(oenv, fn_tcf, "-nxy");
 
     if (fn_cub)
@@ -234,7 +233,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             fitparms[0]  = 1;
             fitparms[1]  = 1;
             do_lmfit(ncorr, tcafc[k], sig, dt, 0, 0, ncorr*dt,
-                     oenv, bDebugMode(), effnVAC, fitparms, 0);
+                     oenv, bDebugMode(), effnVAC, fitparms, 0, NULL);
             eta = 1000*fitparms[1]*rho/
                 (4*fitparms[0]*PICO*norm2(kfac[kset_c[k]])/(NANO*NANO));
             fprintf(stdout,
@@ -248,10 +247,10 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             fprintf(fp_cub, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(fp_vk, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
-        gmx_ffclose(fp_cub);
+        xvgrclose(fp_cub);
         do_view(oenv, fn_cub, "-nxy");
     }
-    gmx_ffclose(fp_vk);
+    xvgrclose(fp_vk);
     do_view(oenv, fn_vk, "-nxy");
 }
 
@@ -340,7 +339,7 @@ int gmx_tcaf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

@@ -34,9 +34,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <limits.h>
 #include <math.h>
@@ -44,8 +42,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "xdrf.h"
-#include "xdr_datatype.h"
+#include "gromacs/fileio/xdr_datatype.h"
+#include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/futil.h"
 
 /* This is just for clarity - it can never be anything but 4! */
@@ -1132,7 +1130,6 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
             }
         }
     }
-    return -1;
 }
 
 
@@ -1173,7 +1170,6 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
             return -1;
         }
     }
-    return -1;
 }
 
 
@@ -1221,7 +1217,6 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
             }
         }
     }
-    return -1;
 }
 
 /* Currently not used, just for completeness */
@@ -1271,7 +1266,6 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
             }
         }
     }
-    return -1;
 }
 
 
@@ -1304,7 +1298,6 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
             return -1;
         }
     }
-    return -1;
 }
 
 

@@ -39,8 +39,8 @@
 #define GMX_GMXPREPROCESS_GENHYDRO_H
 
 #include "gromacs/fileio/pdbio.h"
-#include "hackblock.h"
-#include "pdb2top.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
 
 #ifdef __cplusplus
 extern "C" {

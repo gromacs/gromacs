@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,51 +34,46 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "pdb2gmx.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "pdb2gmx.h"
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "typedefs.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "copyrite.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "toputil.h"
-#include "h_db.h"
-#include "pgutil.h"
-#include "resall.h"
-#include "pdb2top.h"
-#include "ter_db.h"
-#include "gromacs/gmxlib/conformation-utilities.h"
-#include "genhydro.h"
-#include "readinp.h"
-#include "gromacs/topology/index.h"
-#include "fflibutil.h"
-#include "macros.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/genhydro.h"
+#include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/hizzie.h"
+#include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/specbond.h"
+#include "gromacs/gmxpreprocess/ter_db.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/xlate.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "hizzie.h"
-#include "specbond.h"
-#include "xlate.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     char gmx[6];
@@ -1101,9 +1096,9 @@ typedef struct {
 int gmx_pdb2gmx(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[THISMODULE] reads a [TT].pdb[tt] (or [TT].gro[tt]) file, reads",
+        "[THISMODULE] reads a [REF].pdb[ref] (or [REF].gro[ref]) file, reads",
         "some database files, adds hydrogens to the molecules and generates",
-        "coordinates in GROMACS (GROMOS), or optionally [TT].pdb[tt], format",
+        "coordinates in GROMACS (GROMOS), or optionally [REF].pdb[ref], format",
         "and a topology in GROMACS format.",
         "These files can subsequently be processed to generate a run input file.",
         "[PAR]",
@@ -1128,7 +1123,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "Check Chapter 5 of the manual for more information about file formats.",
         "[PAR]",
 
-        "Note that a [TT].pdb[tt] file is nothing more than a file format, and it",
+        "Note that a [REF].pdb[ref] file is nothing more than a file format, and it",
         "need not necessarily contain a protein structure. Every kind of",
         "molecule for which there is support in the database can be converted.",
         "If there is no support in the database, you can add it yourself.[PAR]",
@@ -1175,10 +1170,10 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "This can be turned off (no merging), all non-water chains can be merged into a",
         "single molecule, or the selection can be done interactively.[PAR]",
 
-        "[THISMODULE] will also check the occupancy field of the [TT].pdb[tt] file.",
+        "[THISMODULE] will also check the occupancy field of the [REF].pdb[ref] file.",
         "If any of the occupancies are not one, indicating that the atom is",
         "not resolved well in the structure, a warning message is issued.",
-        "When a [TT].pdb[tt] file does not originate from an X-ray structure determination",
+        "When a [REF].pdb[ref] file does not originate from an X-ray structure determination",
         "all occupancy fields may be zero. Either way, it is up to the user",
         "to verify the correctness of the input data (read the article!).[PAR]",
 
@@ -1190,9 +1185,9 @@ int gmx_pdb2gmx(int argc, char *argv[])
         "from the input and before new hydrogens are added. This means that",
         "you should not use [TT]-ignh[tt].[PAR]",
 
-        "The [TT].gro[tt] and [TT].g96[tt] file formats do not support chain",
-        "identifiers. Therefore it is useful to enter a [TT].pdb[tt] file name at",
-        "the [TT]-o[tt] option when you want to convert a multi-chain [TT].pdb[tt] file.",
+        "The [REF].gro[ref] and [TT].g96[tt] file formats do not support chain",
+        "identifiers. Therefore it is useful to enter a [REF].pdb[ref] file name at",
+        "the [TT]-o[tt] option when you want to convert a multi-chain [REF].pdb[ref] file.",
         "[PAR]",
 
         "The option [TT]-vsite[tt] removes hydrogen and fast improper dihedral",
@@ -1368,13 +1363,13 @@ int gmx_pdb2gmx(int argc, char *argv[])
         { "-deuterate", FALSE, etBOOL, {&bDeuterate},
           "Change the mass of hydrogens to 2 amu" },
         { "-chargegrp", TRUE, etBOOL, {&bChargeGroups},
-          "Use charge groups in the [TT].rtp[tt] file"  },
+          "Use charge groups in the [REF].rtp[ref] file"  },
         { "-cmap", TRUE, etBOOL, {&bCmap},
-          "Use cmap torsions (if enabled in the [TT].rtp[tt] file)"  },
+          "Use cmap torsions (if enabled in the [REF].rtp[ref] file)"  },
         { "-renum", TRUE, etBOOL, {&bRenumRes},
           "Renumber the residues consecutively in the output"  },
         { "-rtpres", TRUE, etBOOL, {&bRTPresname},
-          "Use [TT].rtp[tt] entry names as residue names"  },
+          "Use [REF].rtp[ref] entry names as residue names"  },
         { "-charmmdrude", FALSE, etBOOL, {&bDrude},
           "Add Drude oscillators to structure. ONLY for the CHARMM-Drude force field." }
     };
@@ -1688,7 +1683,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             chains[i].pdba->atom[j] = pdba_all.atom[pdb_ch[si].start+j];
             snew(chains[i].pdba->atomname[j], 1);
             *chains[i].pdba->atomname[j] =
-                strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
+                gmx_strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
             chains[i].pdba->pdbinfo[j] = pdba_all.pdbinfo[pdb_ch[si].start+j];
             copy_rvec(pdbx[pdb_ch[si].start+j], chains[i].x[j]);
         }
@@ -1705,7 +1700,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         {
             chains[i].pdba->resinfo[j] = pdba_all.resinfo[k+j];
             snew(chains[i].pdba->resinfo[j].name, 1);
-            *chains[i].pdba->resinfo[j].name = strdup(*pdba_all.resinfo[k+j].name);
+            *chains[i].pdba->resinfo[j].name = gmx_strdup(*pdba_all.resinfo[k+j].name);
             /* make all chain identifiers equal to that of the chain */
             chains[i].pdba->resinfo[j].chainid = pdb_ch[si].chainid;
         }
@@ -2077,7 +2072,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
             nincl++;
             srenew(incls, nincl);
-            incls[nincl-1] = strdup(itp_fn);
+            incls[nincl-1] = gmx_strdup(itp_fn);
             itp_file       = gmx_fio_fopen(itp_fn, "w");
         }
         else
@@ -2088,12 +2083,12 @@ int gmx_pdb2gmx(int argc, char *argv[])
         srenew(mols, nmol+1);
         if (cc->bAllWat)
         {
-            mols[nmol].name = strdup("SOL");
+            mols[nmol].name = gmx_strdup("SOL");
             mols[nmol].nr   = pdba->nres;
         }
         else
         {
-            mols[nmol].name = strdup(molname);
+            mols[nmol].name = gmx_strdup(molname);
             mols[nmol].nr   = 1;
         }
         nmol++;

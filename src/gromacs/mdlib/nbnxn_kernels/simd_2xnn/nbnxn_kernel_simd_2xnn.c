@@ -37,12 +37,12 @@
  * kernel type 2xnn.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "typedefs.h"
+#include "config.h"
 
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 
 #ifdef GMX_NBNXN_SIMD_2XNN
@@ -56,9 +56,10 @@
 
 #define GMX_SIMD_J_UNROLL_SIZE 2
 #include "nbnxn_kernel_simd_2xnn.h"
-#include "../nbnxn_kernel_common.h"
-#include "gmx_omp_nthreads.h"
-#include "types/force_flags.h"
+
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_common.h"
 #include "gromacs/utility/fatalerror.h"
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
@@ -273,6 +274,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
     nbnxn_pairlist_t **nbl;
     int                coulkt, vdwkt = 0;
     int                nb;
+    int                nthreads gmx_unused;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
@@ -344,7 +346,8 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         gmx_incons("Unsupported VdW interaction type");
     }
 
-#pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
+    nthreads = gmx_omp_nthreads_get(emntNonbonded);
+#pragma omp parallel for schedule(static) num_threads(nthreads)
     for (nb = 0; nb < nnbl; nb++)
     {
         nbnxn_atomdata_output_t *out;

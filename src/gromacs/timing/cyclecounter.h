@@ -49,9 +49,7 @@
  * define HAVE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
  * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -76,6 +74,11 @@ extern "C"
 #if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
     (defined(__i386__) || defined(__x86_64__)))
 /* x86 or x86-64 with GCC inline assembly */
+typedef unsigned long long
+    gmx_cycles_t;
+
+#elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
+/* 64-bit ARM cycle counters with GCC inline assembly */
 typedef unsigned long long
     gmx_cycles_t;
 
@@ -145,8 +148,8 @@ typedef hrtime_t
 
 #elif defined(__xlC__) && defined (_AIX)
 /* AIX compilers */
-#include <sys/time.h>
 #include <sys/systemcfg.h>
+#include <sys/time.h>
 typedef unsigned long long
     gmx_cycles_t;
 
@@ -208,6 +211,12 @@ typedef long
 static __inline__ int gmx_cycles_have_counter(void)
 {
     /* x86 or x86-64 with GCC inline assembly - pentium TSC register */
+    return 1;
+}
+#elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
+static __inline int gmx_cycles_have_counter(void)
+{
+    /* 64-bit ARM cycle counters with GCC inline assembly */
     return 1;
 }
 #elif (defined(_MSC_VER))
@@ -350,14 +359,30 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 
     return cycle;
 }
+#elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
+static __inline__ gmx_cycles_t gmx_cycles_read(void)
+{
+    /* 64-bit ARM cycle counters with GCC inline assembly */
+    gmx_cycles_t   cycle;
+    __asm__ __volatile__("mrs %0, cntvct_el0" : "=r" (cycle) );
+
+    return cycle;
+}
+
 #elif defined(_MSC_VER)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 {
-#ifdef HAVE_RDTSCP
+#ifdef _M_ARM
+    /* Windows on 64-bit ARM */
+    return __rdpmccntr64();
+#else
+    /* x86 */
+#    ifdef HAVE_RDTSCP
     unsigned int ui;
     return __rdtscp(&ui);
-#else
+#    else
     return __rdtsc();
+#    endif
 #endif
 }
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)

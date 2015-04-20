@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,35 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gmx_ana.h"
-
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -429,15 +426,17 @@ int gmx_trjcat(int argc, char *argv[])
         "Obviously the file to append to has to be the one with lowest starting",
         "time since one can only append at the end of a file.[PAR]",
         "If the [TT]-demux[tt] option is given, the N trajectories that are",
-        "read, are written in another order as specified in the [TT].xvg[tt] file.",
-        "The [TT].xvg[tt] file should contain something like:[PAR]",
-        "[TT]0  0  1  2  3  4  5[BR]",
-        "2  1  0  2  3  5  4[tt][BR]",
-        "Where the first number is the time, and subsequent numbers point to",
+        "read, are written in another order as specified in the [REF].xvg[ref] file.",
+        "The [REF].xvg[ref] file should contain something like::",
+        "",
+        "    0  0  1  2  3  4  5",
+        "    2  1  0  2  3  5  4",
+        "",
+        "The first number is the time, and subsequent numbers point to",
         "trajectory indices.",
         "The frames corresponding to the numbers present at the first line",
         "are collected into the output trajectory. If the number of frames in",
-        "the trajectory does not match that in the [TT].xvg[tt] file then the program",
+        "the trajectory does not match that in the [REF].xvg[ref] file then the program",
         "tries to be smart. Beware."
     };
     static gmx_bool bVels           = TRUE;
@@ -505,7 +504,7 @@ int gmx_trjcat(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_TIME_UNIT, NFILE, fnm,
+    if (!parse_common_args(&argc, argv, PCA_TIME_UNIT, NFILE, fnm,
                            asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -589,7 +588,7 @@ int gmx_trjcat(int argc, char *argv[])
     {
         if (nfile_out != nset)
         {
-            char *buf = strdup(fnms_out[0]);
+            char *buf = gmx_strdup(fnms_out[0]);
             snew(fnms_out, nset);
             for (i = 0; (i < nset); i++)
             {
@@ -650,6 +649,10 @@ int gmx_trjcat(int argc, char *argv[])
         {
             if (ftpout == efTNG)
             {
+                if (ftpout != ftpin)
+                {
+                    gmx_fatal(FARGS, "When writing TNG the input file format must also be TNG");
+                }
                 if (bIndex)
                 {
                     trjtools_gmx_prepare_tng_writing(out_file, 'w', NULL, &trxout,

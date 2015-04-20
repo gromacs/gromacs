@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,14 +39,15 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
-#include "gromacs/options/options.h"
+#include "gmxpre.h"
+
+#include "options.h"
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "options-impl.h"
@@ -153,7 +154,7 @@ void Options::setDescription(const std::string &desc)
 
 void Options::setDescription(const ConstArrayRef<const char *> &descArray)
 {
-    impl_->description_ = concatenateStrings(descArray.data(), descArray.size());
+    impl_->description_ = joinStrings(descArray, "\n");
 }
 
 void Options::addManager(OptionManagerInterface *manager)
@@ -195,7 +196,7 @@ OptionInfo *Options::addOption(const AbstractOption &settings)
     {
         root = root->parent_->impl_.get();
     }
-    AbstractOptionStoragePointer option(settings.createStorage(root->managers_));
+    Impl::AbstractOptionStoragePointer option(settings.createStorage(root->managers_));
     if (impl_->findOption(option->name().c_str()) != NULL)
     {
         GMX_THROW(APIError("Duplicate option: " + option->name()));

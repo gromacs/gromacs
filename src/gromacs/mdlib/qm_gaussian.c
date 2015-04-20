@@ -34,9 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "config.h"
 
 #ifdef GMX_QMMM_GAUSSIAN
 
@@ -45,21 +45,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/qmmm.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "force.h"
-#include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "network.h"
-#include "ns.h"
-#include "nrnb.h"
-#include "bondf.h"
-#include "txtdump.h"
-#include "qmmm.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 
 /* TODO: this should be made thread-safe */
@@ -202,7 +201,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 
         if (buf)
         {
-            qm->gauss_dir = strdup(buf);
+            qm->gauss_dir = gmx_strdup(buf);
         }
         else
         {
@@ -212,7 +211,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         buf = getenv("GMX_QM_GAUSS_EXE");
         if (buf)
         {
-            qm->gauss_exe = strdup(buf);
+            qm->gauss_exe = gmx_strdup(buf);
         }
         else
         {
@@ -221,7 +220,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         buf = getenv("GMX_QM_MODIFIED_LINKS_DIR");
         if (buf)
         {
-            qm->devel_dir = strdup (buf);
+            qm->devel_dir = gmx_strdup (buf);
         }
         else
         {
@@ -1018,15 +1017,10 @@ void do_gaussian(int step, char *exe)
                 "input.log");
     }
     fprintf(stderr, "Calling '%s'\n", buf);
-#ifdef GMX_NO_SYSTEM
-    printf("Warning-- No calls to system(3) supported on this platform.");
-    gmx_fatal(FARGS, "Call to '%s' failed\n", buf);
-#else
     if (system(buf) != 0)
     {
         gmx_fatal(FARGS, "Call to '%s' failed\n", buf);
     }
-#endif
 }
 
 real call_gaussian(t_commrec *cr,  t_forcerec *fr,

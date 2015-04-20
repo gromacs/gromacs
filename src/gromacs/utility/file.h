@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 
 #include <string>
 
-#include "common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
@@ -64,6 +64,19 @@ namespace gmx
 class File
 {
     public:
+        /*! \brief
+         * Opens a file and returns a `FILE` handle.
+         *
+         * \param[in] filename  Path of the file to open.
+         * \param[in] mode      Mode to open the file in (for fopen()).
+         * \throws    FileIOError on any I/O error.
+         *
+         * Instead of returning `NULL` on errors, throws an exception with
+         * additional details (including the file name and `errno`).
+         */
+        static FILE *openRawHandle(const char *filename, const char *mode);
+        //! \copydoc openRawHandle(const char *, const char *)
+        static FILE *openRawHandle(const std::string &filename, const char *mode);
         /*! \brief
          * Creates a file object and opens a file.
          *

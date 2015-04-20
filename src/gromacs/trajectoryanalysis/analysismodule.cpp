@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "gromacs/trajectoryanalysis/analysismodule.h"
+#include "gmxpre.h"
+
+#include "analysismodule.h"
 
 #include <utility>
 
@@ -293,7 +295,9 @@ void TrajectoryAnalysisModule::optionsFinished(
 }
 
 
-void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe & /*fr*/)
+void TrajectoryAnalysisModule::initAfterFirstFrame(
+        const TrajectoryAnalysisSettings & /*settings*/,
+        const t_trxframe                 & /*fr*/)
 {
 }
 
@@ -379,6 +383,18 @@ void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
     // TODO: Strong exception safety should be possible to implement.
     registerBasicDataset(data, name);
     impl_->analysisDatasets_[name] = data;
+}
+
+
+void TrajectoryAnalysisModule::finishFrameSerial(int frameIndex)
+{
+    Impl::AnalysisDatasetContainer::const_iterator data;
+    for (data = impl_->analysisDatasets_.begin();
+         data != impl_->analysisDatasets_.end();
+         ++data)
+    {
+        data->second->finishFrameSerial(frameIndex);
+    }
 }
 
 } // namespace gmx

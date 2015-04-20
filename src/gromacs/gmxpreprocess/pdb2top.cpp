@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,42 +34,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdio.h>
-#include <math.h>
-#include <ctype.h>
-
-#include "gromacs/math/vec.h"
-#include "macros.h"
-#include "gromacs/utility/futil.h"
 #include "pdb2top.h"
-#include "gpp_nextnb.h"
-#include "topdirs.h"
-#include "toputil.h"
-#include "h_db.h"
-#include "pgutil.h"
-#include "resall.h"
-#include "topio.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gen_ad.h"
-#include "gromacs/fileio/filenm.h"
-#include "gen_vsite.h"
-#include "add_par.h"
-#include "toputil.h"
-#include "fflibutil.h"
-#include "copyrite.h"
 
+#include <ctype.h>
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <algorithm>
+#include <string>
+#include <vector>
+
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/fflibutil.h"
+#include "gromacs/gmxpreprocess/gen_ad.h"
+#include "gromacs/gmxpreprocess/gen_vsite.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/topio.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/file.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
@@ -138,89 +144,47 @@ gmx_bool is_int(double x)
     return (fabs(x-ix) < tol);
 }
 
-static void swap_strings(char **s, int i, int j)
+static void
+choose_ff_impl(const char *ffsel,
+               char *forcefield, int ff_maxlen,
+               char *ffdir, int ffdir_maxlen)
 {
-    char *tmp;
-
-    tmp  = s[i];
-    s[i] = s[j];
-    s[j] = tmp;
-}
-
-void
-choose_ff(const char *ffsel,
-          char *forcefield, int ff_maxlen,
-          char *ffdir, int ffdir_maxlen)
-{
-    int    nff;
-    char **ffdirs, **ffs, **ffs_dir, *ptr;
-    int    i, j, sel, cwdsel, nfound;
-    char   buf[STRLEN], **desc;
-    FILE  *fp;
-    char  *pret;
-
-    nff = fflib_search_file_in_dirend(fflib_forcefield_itp(),
-                                      fflib_forcefield_dir_ext(),
-                                      &ffdirs);
-
-    if (nff == 0)
-    {
-        gmx_fatal(FARGS, "No force fields found (files with name '%s' in subdirectories ending on '%s')",
-                  fflib_forcefield_itp(), fflib_forcefield_dir_ext());
-    }
+    std::vector<gmx::DataFileInfo> ffdirs = fflib_enumerate_forcefields();
+    const int nff = static_cast<int>(ffdirs.size());
 
     /* Replace with unix path separators */
     if (DIR_SEPARATOR != '/')
     {
-        for (i = 0; i < nff; i++)
+        for (int i = 0; i < nff; ++i)
         {
-            while ( (ptr = strchr(ffdirs[i], DIR_SEPARATOR)) != NULL)
-            {
-                *ptr = '/';
-            }
+            std::replace(ffdirs[i].dir.begin(), ffdirs[i].dir.end(), DIR_SEPARATOR, '/');
         }
     }
 
     /* Store the force field names in ffs */
-    snew(ffs, nff);
-    snew(ffs_dir, nff);
-    for (i = 0; i < nff; i++)
+    std::vector<std::string> ffs;
+    ffs.reserve(ffdirs.size());
+    for (int i = 0; i < nff; ++i)
     {
-        /* Remove the path from the ffdir name - use our unix standard here! */
-        ptr = strrchr(ffdirs[i], '/');
-        if (ptr == NULL)
-        {
-            ffs[i]     = strdup(ffdirs[i]);
-            ffs_dir[i] = low_gmxlibfn(ffdirs[i], FALSE, FALSE);
-            if (ffs_dir[i] == NULL)
-            {
-                gmx_fatal(FARGS, "Can no longer find file '%s'", ffdirs[i]);
-            }
-        }
-        else
-        {
-            ffs[i]     = strdup(ptr+1);
-            ffs_dir[i] = strdup(ffdirs[i]);
-        }
-        ffs_dir[i][strlen(ffs_dir[i])-strlen(ffs[i])-1] = '\0';
-        /* Remove the extension from the ffdir name */
-        ffs[i][strlen(ffs[i])-strlen(fflib_forcefield_dir_ext())] = '\0';
+        ffs.push_back(gmx::stripSuffixIfPresent(ffdirs[i].name,
+                                                fflib_forcefield_dir_ext()));
     }
 
+    int sel;
     if (ffsel != NULL)
     {
-        sel     = -1;
-        cwdsel  = -1;
-        nfound  = 0;
-        for (i = 0; i < nff; i++)
+        sel         = -1;
+        int cwdsel  = -1;
+        int nfound  = 0;
+        for (int i = 0; i < nff; ++i)
         {
-            if (strcmp(ffs[i], ffsel) == 0)
+            if (ffs[i] == ffsel)
             {
                 /* Matching ff name */
                 sel = i;
                 nfound++;
 
-                if (strncmp(ffs_dir[i], ".", 1) == 0)
+                if (ffdirs[i].dir == ".")
                 {
                     cwdsel = i;
                 }
@@ -243,77 +207,88 @@ choose_ff(const char *ffsel,
             }
             else
             {
-                gmx_fatal(FARGS,
-                          "Force field '%s' occurs in %d places, but not in the current directory.\n"
-                          "Run without the -ff switch and select the force field interactively.", ffsel, nfound);
+                std::string message = gmx::formatString(
+                            "Force field '%s' occurs in %d places, but not in "
+                            "the current directory.\n"
+                            "Run without the -ff switch and select the force "
+                            "field interactively.", ffsel, nfound);
+                GMX_THROW(gmx::InconsistentInputError(message));
             }
         }
         else if (nfound == 0)
         {
-            gmx_fatal(FARGS, "Could not find force field '%s' in current directory, install tree or GMXDATA path.", ffsel);
+            std::string message = gmx::formatString(
+                        "Could not find force field '%s' in current directory, "
+                        "install tree or GMXLIB path.", ffsel);
+            GMX_THROW(gmx::InconsistentInputError(message));
         }
     }
     else if (nff > 1)
     {
-        snew(desc, nff);
-        for (i = 0; (i < nff); i++)
+        std::vector<std::string> desc;
+        desc.reserve(ffdirs.size());
+        for (int i = 0; i < nff; ++i)
         {
-            sprintf(buf, "%s%c%s%s%c%s",
-                    ffs_dir[i], DIR_SEPARATOR,
-                    ffs[i], fflib_forcefield_dir_ext(), DIR_SEPARATOR,
-                    fflib_forcefield_doc());
-            if (gmx_fexist(buf))
+            std::string docFileName(
+                    gmx::Path::join(ffdirs[i].dir, ffdirs[i].name,
+                                    fflib_forcefield_doc()));
+            // TODO: Just try to open the file with a method that does not
+            // throw/bail out with a fatal error instead of multiple checks.
+            if (gmx::File::exists(docFileName))
             {
+                // TODO: Use a C++ API without such an intermediate/fixed-length buffer.
+                char  buf[STRLEN];
                 /* We don't use fflib_open, because we don't want printf's */
-                fp = gmx_ffopen(buf, "r");
-                snew(desc[i], STRLEN);
-                get_a_line(fp, desc[i], STRLEN);
+                FILE *fp = gmx_ffopen(docFileName.c_str(), "r");
+                get_a_line(fp, buf, STRLEN);
                 gmx_ffclose(fp);
+                desc.push_back(buf);
             }
             else
             {
-                desc[i] = strdup(ffs[i]);
+                desc.push_back(ffs[i]);
             }
         }
         /* Order force fields from the same dir alphabetically
          * and put deprecated force fields at the end.
          */
-        for (i = 0; (i < nff); i++)
+        for (int i = 0; i < nff; ++i)
         {
-            for (j = i+1; (j < nff); j++)
+            for (int j = i + 1; j < nff; ++j)
             {
-                if (strcmp(ffs_dir[i], ffs_dir[j]) == 0 &&
+                if (ffdirs[i].dir == ffdirs[j].dir &&
                     ((desc[i][0] == '[' && desc[j][0] != '[') ||
                      ((desc[i][0] == '[' || desc[j][0] != '[') &&
-                      gmx_strcasecmp(desc[i], desc[j]) > 0)))
+                      gmx_strcasecmp(desc[i].c_str(), desc[j].c_str()) > 0)))
                 {
-                    swap_strings(ffdirs, i, j);
-                    swap_strings(ffs, i, j);
-                    swap_strings(desc, i, j);
+                    std::swap(ffdirs[i].name, ffdirs[j].name);
+                    std::swap(ffs[i], ffs[j]);
+                    std::swap(desc[i], desc[j]);
                 }
             }
         }
 
         printf("\nSelect the Force Field:\n");
-        for (i = 0; (i < nff); i++)
+        for (int i = 0; i < nff; ++i)
         {
-            if (i == 0 || strcmp(ffs_dir[i-1], ffs_dir[i]) != 0)
+            if (i == 0 || ffdirs[i-1].dir != ffdirs[i].dir)
             {
-                if (strcmp(ffs_dir[i], ".") == 0)
+                if (ffdirs[i].dir == ".")
                 {
                     printf("From current directory:\n");
                 }
                 else
                 {
-                    printf("From '%s':\n", ffs_dir[i]);
+                    printf("From '%s':\n", ffdirs[i].dir.c_str());
                 }
             }
-            printf("%2d: %s\n", i+1, desc[i]);
-            sfree(desc[i]);
+            printf("%2d: %s\n", i+1, desc[i].c_str());
         }
-        sfree(desc);
 
         sel = -1;
+        // TODO: Add a C++ API for this.
+        char   buf[STRLEN];
+        char  *pret;
         do
         {
             pret = fgets(buf, STRLEN, stdin);
@@ -331,12 +306,20 @@ choose_ff(const char *ffsel,
          * This check assumes that the order of ffs matches the order
          * in which fflib_open searches ff library files.
          */
-        for (i = 0; i < sel; i++)
+        for (int i = 0; i < sel; i++)
         {
-            if (strcmp(ffs[i], ffs[sel]) == 0)
+            if (ffs[i] == ffs[sel])
             {
-                gmx_fatal(FARGS, "Can only select the first of multiple force field entries with directory name '%s%s' in the list. If you want to use the next entry, run pdb2gmx in a different directory or rename or move the force field directory present in the current working directory.",
-                          ffs[sel], fflib_forcefield_dir_ext());
+                std::string message = gmx::formatString(
+                            "Can only select the first of multiple force "
+                            "field entries with directory name '%s%s' in "
+                            "the list. If you want to use the next entry, "
+                            "run pdb2gmx in a different directory, set GMXLIB "
+                            "to point to the desired force field first, and/or "
+                            "rename or move the force field directory present "
+                            "in the current working directory.",
+                            ffs[sel].c_str(), fflib_forcefield_dir_ext());
+                GMX_THROW(gmx::NotImplementedError(message));
             }
         }
     }
@@ -345,29 +328,44 @@ choose_ff(const char *ffsel,
         sel = 0;
     }
 
-    if (strlen(ffs[sel]) >= (size_t)ff_maxlen)
+    if (ffs[sel].length() >= static_cast<size_t>(ff_maxlen))
     {
-        gmx_fatal(FARGS, "Length of force field name (%d) >= maxlen (%d)",
-                  strlen(ffs[sel]), ff_maxlen);
+        std::string message = gmx::formatString(
+                    "Length of force field name (%d) >= maxlen (%d)",
+                    static_cast<int>(ffs[sel].length()), ff_maxlen);
+        GMX_THROW(gmx::InvalidInputError(message));
     }
-    strcpy(forcefield, ffs[sel]);
+    strcpy(forcefield, ffs[sel].c_str());
 
-    if (strlen(ffdirs[sel]) >= (size_t)ffdir_maxlen)
+    std::string ffpath;
+    if (ffdirs[sel].bFromDefaultDir)
     {
-        gmx_fatal(FARGS, "Length of force field dir (%d) >= maxlen (%d)",
-                  strlen(ffdirs[sel]), ffdir_maxlen);
+        ffpath = ffdirs[sel].name;
     }
-    strcpy(ffdir, ffdirs[sel]);
+    else
+    {
+        ffpath = gmx::Path::join(ffdirs[sel].dir, ffdirs[sel].name);
+    }
+    if (ffpath.length() >= static_cast<size_t>(ffdir_maxlen))
+    {
+        std::string message = gmx::formatString(
+                    "Length of force field dir (%d) >= maxlen (%d)",
+                    static_cast<int>(ffpath.length()), ffdir_maxlen);
+        GMX_THROW(gmx::InvalidInputError(message));
+    }
+    strcpy(ffdir, ffpath.c_str());
+}
 
-    for (i = 0; (i < nff); i++)
+void
+choose_ff(const char *ffsel,
+          char *forcefield, int ff_maxlen,
+          char *ffdir, int ffdir_maxlen)
+{
+    try
     {
-        sfree(ffdirs[i]);
-        sfree(ffs[i]);
-        sfree(ffs_dir[i]);
+        choose_ff_impl(ffsel, forcefield, ff_maxlen, ffdir, ffdir_maxlen);
     }
-    sfree(ffdirs);
-    sfree(ffs);
-    sfree(ffs_dir);
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
 void choose_watermodel(const char *wmsel, const char *ffdir,
@@ -389,7 +387,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     }
     else if (strcmp(wmsel, "select") != 0)
     {
-        *watermodel = strdup(wmsel);
+        *watermodel = gmx_strdup(wmsel);
 
         return;
     }
@@ -447,7 +445,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     }
     else
     {
-        *watermodel = strdup(model[sel]);
+        *watermodel = gmx_strdup(model[sel]);
     }
 
     for (i = 0; i < nwm; i++)
@@ -1264,7 +1262,7 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
         }
         snew( restp->atomname[at_start+1+k], 1);
         restp->atom     [at_start+1+k] = *hack->atom;
-        *restp->atomname[at_start+1+k] = strdup(buf);
+        *restp->atomname[at_start+1+k] = gmx_strdup(buf);
         if (hack->cgnr != NOTSET)
         {
             restp->cgnr   [at_start+1+k] = hack->cgnr;
@@ -1438,7 +1436,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                             }
                             snew( (*restp)[i].atomname[l], 1);
                             (*restp)[i].atom[l]      =       *(*hb)[i].hack[j].atom;
-                            *(*restp)[i].atomname[l] = strdup((*hb)[i].hack[j].nname);
+                            *(*restp)[i].atomname[l] = gmx_strdup((*hb)[i].hack[j].nname);
                             if ( (*hb)[i].hack[j].cgnr != NOTSET)
                             {
                                 (*restp)[i].cgnr   [l] = (*hb)[i].hack[j].cgnr;
@@ -1595,7 +1593,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             }
             /* Rename the atom in pdba */
             snew(pdba->atomname[atind], 1);
-            *pdba->atomname[atind] = strdup(newnm);
+            *pdba->atomname[atind] = gmx_strdup(newnm);
         }
         else if (hbr->hack[j].oname != NULL && hbr->hack[j].nname == NULL &&
                  gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)

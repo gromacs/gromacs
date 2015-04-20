@@ -46,12 +46,11 @@
 #include <string>
 #include <vector>
 
-#include "../utility/arrayref.h"
-#include "../utility/common.h"
-#include "../utility/gmxassert.h"
-
-#include "position.h"
-#include "selectionenums.h"
+#include "gromacs/selection/position.h"
+#include "gromacs/selection/selectionenums.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/gmxassert.h"
 
 struct t_topology;
 
@@ -104,6 +103,8 @@ class SelectionData
         bool isDynamic() const { return bDynamic_; }
         //! Returns the type of positions in the selection.
         e_index_t type() const { return rawPositions_.m.type; }
+        //! Returns true if the selection only contains positions with a single atom each.
+        bool hasOnlyAtoms() const { return type() == INDEX_ATOM; }
 
         //! Number of positions in the selection.
         int posCount() const { return rawPositions_.count(); }
@@ -323,6 +324,8 @@ class Selection
         bool isDynamic() const { return data().isDynamic(); }
         //! Returns the type of positions in the selection.
         e_index_t type() const { return data().type(); }
+        //! Returns true if the selection only contains positions with a single atom each.
+        bool hasOnlyAtoms() const { return data().hasOnlyAtoms(); }
 
         //! Total number of atoms in the selection.
         int atomCount() const
@@ -332,8 +335,8 @@ class Selection
         //! Returns atom indices of all atoms in the selection.
         ConstArrayRef<int> atomIndices() const
         {
-            return ConstArrayRef<int>(sel_->rawPositions_.m.mapb.a,
-                                      sel_->rawPositions_.m.mapb.nra);
+            return constArrayRefFromArray(sel_->rawPositions_.m.mapb.a,
+                                          sel_->rawPositions_.m.mapb.nra);
         }
         //! Number of positions in the selection.
         int posCount() const { return data().posCount(); }
@@ -342,7 +345,7 @@ class Selection
         //! Returns coordinates for this selection as a continuous array.
         ConstArrayRef<rvec> coordinates() const
         {
-            return ConstArrayRef<rvec>(data().rawPositions_.x, posCount());
+            return constArrayRefFromArray(data().rawPositions_.x, posCount());
         }
         //! Returns whether velocities are available for this selection.
         bool hasVelocities() const { return data().rawPositions_.v != NULL; }
@@ -354,7 +357,7 @@ class Selection
         ConstArrayRef<rvec> velocities() const
         {
             GMX_ASSERT(hasVelocities(), "Velocities accessed, but unavailable");
-            return ConstArrayRef<rvec>(data().rawPositions_.v, posCount());
+            return constArrayRefFromArray(data().rawPositions_.v, posCount());
         }
         //! Returns whether forces are available for this selection.
         bool hasForces() const { return sel_->rawPositions_.f != NULL; }
@@ -366,7 +369,7 @@ class Selection
         ConstArrayRef<rvec> forces() const
         {
             GMX_ASSERT(hasForces(), "Forces accessed, but unavailable");
-            return ConstArrayRef<rvec>(data().rawPositions_.f, posCount());
+            return constArrayRefFromArray(data().rawPositions_.f, posCount());
         }
         //! Returns masses for this selection as a continuous array.
         ConstArrayRef<real> masses() const
@@ -376,8 +379,8 @@ class Selection
             // (and thus the masses and charges are fixed).
             GMX_ASSERT(data().posMass_.size() >= static_cast<size_t>(posCount()),
                        "Internal inconsistency");
-            return ConstArrayRef<real>(data().posMass_.begin(),
-                                       data().posMass_.begin() + posCount());
+            return constArrayRefFromVector<real>(data().posMass_.begin(),
+                                                 data().posMass_.begin() + posCount());
         }
         //! Returns charges for this selection as a continuous array.
         ConstArrayRef<real> charges() const
@@ -387,8 +390,8 @@ class Selection
             // (and thus the masses and charges are fixed).
             GMX_ASSERT(data().posCharge_.size() >= static_cast<size_t>(posCount()),
                        "Internal inconsistency");
-            return ConstArrayRef<real>(data().posCharge_.begin(),
-                                       data().posCharge_.begin() + posCount());
+            return constArrayRefFromVector<real>(data().posCharge_.begin(),
+                                                 data().posCharge_.begin() + posCount());
         }
         /*! \brief
          * Returns reference IDs for this selection as a continuous array.
@@ -397,7 +400,7 @@ class Selection
          */
         ConstArrayRef<int> refIds() const
         {
-            return ConstArrayRef<int>(data().rawPositions_.m.refid, posCount());
+            return constArrayRefFromArray(data().rawPositions_.m.refid, posCount());
         }
         /*! \brief
          * Returns mapped IDs for this selection as a continuous array.
@@ -406,7 +409,7 @@ class Selection
          */
         ConstArrayRef<int> mappedIds() const
         {
-            return ConstArrayRef<int>(data().rawPositions_.m.mapid, posCount());
+            return constArrayRefFromArray(data().rawPositions_.m.mapid, posCount());
         }
 
         //! Returns whether the covered fraction can change between frames.
@@ -489,7 +492,43 @@ class Selection
          *
          * \see SelectionPosition::mappedId()
          */
-        void setOriginalId(int i, int id) { data().rawPositions_.m.orgid[i] = id; }
+        void setOriginalId(int i, int id);
+        /*! \brief
+         * Inits the IDs for use with SelectionPosition::mappedId() for
+         * grouping.
+         *
+         * \param[in] top   Topology information
+         *     (can be NULL if not required for \p type).
+         * \param[in] type  Type of groups to generate.
+         * \returns   Number of groups that were present in the selection.
+         * \throws    InconsistentInputError if the selection positions cannot
+         *     be assigned to groups of the given type.
+         *
+         * If `type == INDEX_ATOM`, the IDs are initialized to 0, 1, 2, ...,
+         * and the return value is the number of positions.
+         * If `type == INDEX_ALL`, all the IDs are initialized to 0, and the
+         * return value is one.
+         * If `type == INDEX_RES` or `type == INDEX_MOL`, the first position
+         * will get ID 0, and all following positions that belong to the same
+         * residue/molecule will get the same ID.  The first position that
+         * belongs to a different residue/molecule will get ID 1, and so on.
+         * If some position contains atoms from multiple residues/molecules,
+         * i.e., the mapping is ambiguous, an exception is thrown.
+         * The return value is the number of residues/molecules that are
+         * present in the selection positions.
+         *
+         * This method is useful if the calling code needs to group the
+         * selection, e.g., for computing aggregate properties for each residue
+         * or molecule.  It can then use this method to initialize the
+         * appropriate grouping, use the return value to allocate a
+         * sufficiently sized buffer to store the aggregated values, and then
+         * use SelectionPosition::mappedId() to identify the location where to
+         * aggregate to.
+         *
+         * \see setOriginalId()
+         * \see SelectionPosition::mappedId()
+         */
+        int initOriginalIdsToGroup(t_topology *top, e_index_t type);
 
         /*! \brief
          * Prints out one-line description of the selection.
@@ -653,7 +692,7 @@ class SelectionPosition
                 return ConstArrayRef<int>();
             }
             const int first = sel_->rawPositions_.m.mapb.index[i_];
-            return ConstArrayRef<int>(&atoms[first], atomCount());
+            return constArrayRefFromArray(&atoms[first], atomCount());
         }
         /*! \brief
          * Returns whether this position is selected in the current frame.
@@ -704,10 +743,10 @@ class SelectionPosition
          * Selection::setOriginalId() has not been called, the default values
          * are dependent on type():
          *  - ::INDEX_ATOM: atom indices
-         *  - ::INDEX_RES:  residue numbers
-         *  - ::INDEX_MOL:  molecule numbers
+         *  - ::INDEX_RES:  residue indices
+         *  - ::INDEX_MOL:  molecule indices
          *  .
-         * All the default values are zero-based
+         * All the default values are zero-based.
          */
         int mappedId() const
         {

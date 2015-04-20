@@ -37,7 +37,7 @@
 #ifndef GMX_LEGACYHEADERS_TYPES_RGB_H
 #define GMX_LEGACYHEADERS_TYPES_RGB_H
 
-#include "../../utility/real.h"
+#include "gromacs/utility/real.h"
 
 typedef struct {
     real r, g, b;

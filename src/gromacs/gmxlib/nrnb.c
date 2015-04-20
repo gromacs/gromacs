@@ -34,17 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/nrnb.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "types/commrec.h"
-#include "names.h"
-#include "macros.h"
-#include "nrnb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
@@ -439,10 +438,10 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
 }
 
 void print_perf(FILE *out, double time_per_thread, double time_per_node,
-                gmx_int64_t nsteps, real delta_t,
+                gmx_int64_t nsteps, double delta_t,
                 double nbfs, double mflop)
 {
-    real wallclocktime;
+    double wallclocktime;
 
     fprintf(out, "\n");
 

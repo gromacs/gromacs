@@ -38,7 +38,7 @@
 #ifndef _warninp_h
 #define _warninp_h
 
-#include "../utility/basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

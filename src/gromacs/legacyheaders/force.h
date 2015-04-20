@@ -39,14 +39,13 @@
 #define _force_h
 
 
-#include "typedefs.h"
-#include "types/force_flags.h"
-#include "network.h"
-#include "tgroup.h"
-#include "vsite.h"
-#include "genborn.h"
-
-#include "../timing/wallcycle.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,8 +53,6 @@ extern "C" {
 
 struct t_graph;
 struct t_pbc;
-
-void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda);
 
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box);
@@ -149,9 +146,9 @@ gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
  * message to fplog/stderr.
  */
 
-gmx_bool uses_simple_tables(int                 cutoff_scheme,
-                            nonbonded_verlet_t *nbv,
-                            int                 group);
+gmx_bool uses_simple_tables(int                        cutoff_scheme,
+                            struct nonbonded_verlet_t *nbv,
+                            int                        group);
 /* Returns whether simple tables (i.e. not for use with GPUs) are used
  * with the type of kernel indicated.
  */
@@ -256,9 +253,7 @@ void ns(FILE              *fplog,
         gmx_bool           bDoLongRangeNS);
 /* Call the neighborsearcher */
 
-extern void do_force_lowlevel(FILE         *fplog,
-                              gmx_int64_t   step,
-                              t_forcerec   *fr,
+extern void do_force_lowlevel(t_forcerec   *fr,
                               t_inputrec   *ir,
                               t_idef       *idef,
                               t_commrec    *cr,
@@ -273,7 +268,6 @@ extern void do_force_lowlevel(FILE         *fplog,
                               t_fcdata     *fcd,
                               gmx_localtop_t *top,
                               gmx_genborn_t *born,
-                              t_atomtypes  *atype,
                               gmx_bool         bBornRadii,
                               matrix       box,
                               t_lambda     *fepvals,
@@ -284,6 +278,11 @@ extern void do_force_lowlevel(FILE         *fplog,
                               int          flags,
                               float        *cycles_pme);
 /* Call all the force routines */
+
+void free_gpu_resources(const t_forcerec     *fr,
+                        const t_commrec      *cr,
+                        const gmx_gpu_info_t *gpu_info,
+                        const gmx_gpu_opt_t  *gpu_opt);
 
 #ifdef __cplusplus
 }

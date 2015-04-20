@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,27 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "protonate.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <math.h>
-#include "gromacs/utility/cstringutil.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "genhydro.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/gmxpreprocess/genhydro.h"
+#include "gromacs/gmxpreprocess/hackblock.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "hackblock.h"
-
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_protonate(int argc, char *argv[])
 {
@@ -65,7 +63,7 @@ int gmx_protonate(int argc, char *argv[])
         "is specified, the conformation(s) will be read from this file, ",
         "which can be either a single conformation or a trajectory.",
         "[PAR]",
-        "If a [TT].pdb[tt] file is supplied, residue names might not correspond to",
+        "If a [REF].pdb[ref] file is supplied, residue names might not correspond to",
         "to the GROMACS naming conventions, in which case these residues will",
         "probably not be properly protonated.",
         "[PAR]",

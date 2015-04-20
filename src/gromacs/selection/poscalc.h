@@ -54,7 +54,7 @@
 
 #include <cstdio>
 
-#include "../utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 /*! \name Flags for position calculation.
  * \anchor poscalc_flags
@@ -278,6 +278,13 @@ class PositionCalculationCollection
          * \see createCalculation(), typeFromEnum()
          */
         gmx_ana_poscalc_t *createCalculationFromEnum(const char *post, int flags);
+
+        /*! \brief
+         * Computes the highest atom index required to evaluate this collection.
+         *
+         * Does not throw.
+         */
+        int getHighestRequiredAtomIndex() const;
 
         /*! \brief
          * Initializes evaluation for a position calculation collection.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,16 +38,18 @@
  * Tests for the .mdp nst*out functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
+#include "gmxpre.h"
+
+#include "config.h"
+
 #include <gtest/gtest.h>
-#include "moduletest.h"
+
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/utility/stringutil.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "moduletest.h"
 
 namespace
 {
@@ -67,13 +69,13 @@ class TrajectoryWritingTest :
         //! Execute the trajectory writing test
         void runTest()
         {
-            useStringAsMdpFile(theMdpFile);
-            useTopGroAndNdxFromDatabase("spc-and-methanol");
-            EXPECT_EQ(0, callGrompp());
+            runner_.useStringAsMdpFile(theMdpFile);
+            runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+            EXPECT_EQ(0, runner_.callGrompp());
 
-            fullPrecisionTrajectoryFileName    = fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
-            reducedPrecisionTrajectoryFileName = fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
-            ASSERT_EQ(0, callMdrun());
+            runner_.fullPrecisionTrajectoryFileName_    = fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
+            runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
+            ASSERT_EQ(0, runner_.callMdrun());
             // TODO When there is a way to sense something like the
             // output of gmx check, compare the result with that from
             // writing .trr and .xtc and assert the behaviour is

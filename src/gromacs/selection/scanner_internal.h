@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 
 namespace gmx
 {
-class MessageStringCollector;
+class SelectionParserSymbol;
 }
 
 /* These need to be defined before including scanner_flex.h, because it
@@ -72,8 +72,6 @@ typedef struct gmx_sel_lexer_t
 {
     //! Selection collection to put parsed selections in.
     struct gmx_ana_selcollection_t  *sc;
-    //! Error reporter object.
-    gmx::MessageStringCollector     *errors;
     //! Stores an exception that occurred during parsing.
     boost::exception_ptr             exception;
     //! Whether external index groups have been set.
@@ -92,6 +90,13 @@ typedef struct gmx_sel_lexer_t
     int                              pslen;
     //! Number of bytes allocated for \a pselstr.
     int                              nalloc_psel;
+    /*! \brief
+     * Position of the result of the current Bison action.
+     *
+     * This identifies the part of \a pselstr that corresponds to the
+     * subselection that is currently being reduced by Bison.
+     */
+    gmx::SelectionLocation           currentLocation;
 
     //! Stack of methods in which parameters should be looked up.
     struct gmx_ana_selmethod_t     **mstack;
@@ -111,9 +116,9 @@ typedef struct gmx_sel_lexer_t
      *
      * Only used when \p nextparam is NULL.
      */
-    struct gmx_ana_selmethod_t      *nextmethod;
+    const gmx::SelectionParserSymbol *nextMethodSymbol;
     //! Used to track whether the previous token was a position modifier.
-    int                              prev_pos_kw;
+    int                               prev_pos_kw;
 
     //! Whether the 'of' keyword is acceptable as the next token.
     bool                             bMatchOf;
@@ -133,13 +138,13 @@ typedef struct gmx_sel_lexer_t
  * we cannot have them here as parameter names... */
 /** Internal function for cases where several tokens need to be returned. */
 int
-_gmx_sel_lexer_process_pending(YYSTYPE *, gmx_sel_lexer_t *state);
+_gmx_sel_lexer_process_pending(YYSTYPE *, YYLTYPE *, gmx_sel_lexer_t *state);
 /** Internal function that processes identifier tokens. */
 int
-    _gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
+    _gmx_sel_lexer_process_identifier(YYSTYPE *, YYLTYPE *, char *, size_t,
                                       gmx_sel_lexer_t *state);
 /** Internal function to add a token to the pretty-printed selection text. */
 void
-_gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state);
+_gmx_sel_lexer_add_token(YYLTYPE *, const char *str, int len, gmx_sel_lexer_t *state);
 
 #endif

@@ -172,7 +172,7 @@ macro(__BlueGeneQ_set_static_flags compiler_id lang)
   set(CMAKE_${lang}_LINK_EXECUTABLE
     "<CMAKE_${lang}_COMPILER> ${BG/Q_${lang}_DEFAULT_EXE_FLAGS}")
 
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND ${compiler_id} STREQUAL "XL")
+  if(CMAKE_BUILD_TYPE MATCHES "Deb" AND ${compiler_id} STREQUAL "XL")
       # Work around an unknown compiler bug triggered in
       # compute_globals(). Using -O0 disables -qhot and this seems
       # to break the normal OpenMP flag -qsmp unless qualified with

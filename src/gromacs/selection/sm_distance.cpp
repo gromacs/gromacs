@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,13 +42,15 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include "gromacs/legacyheaders/macros.h"
+#include "gmxpre.h"
 
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
+
+#include "selmethod.h"
 
 /*! \internal
  * \brief
@@ -153,12 +155,14 @@ static gmx_ana_selparam_t smparams_within[] = {
 
 /** Help text for the distance selection methods. */
 static const char *help_distance[] = {
-    "DISTANCE-BASED SELECTION KEYWORDS[PAR]",
-
-    "[TT]distance from POS [cutoff REAL][tt][BR]",
-    "[TT]mindistance from POS_EXPR [cutoff REAL][tt][BR]",
-    "[TT]within REAL of POS_EXPR[tt][PAR]",
-
+    "DISTANCE-BASED SELECTION KEYWORDS",
+    "",
+    "::",
+    "",
+    "  distance from POS [cutoff REAL]",
+    "  mindistance from POS_EXPR [cutoff REAL]",
+    "  within REAL of POS_EXPR",
+    "",
     "[TT]distance[tt] and [TT]mindistance[tt] calculate the distance from the",
     "given position(s), the only difference being in that [TT]distance[tt]",
     "only accepts a single position, while any number of positions can be",
@@ -273,14 +277,10 @@ evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc 
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 
-    out->nr = pos->m.mapb.nra;
-    for (int b = 0; b < pos->count(); ++b)
+    out->nr = pos->count();
+    for (int i = 0; i < pos->count(); ++i)
     {
-        real dist = d->nbsearch.minimumDistance(pos->x[b]);
-        for (int i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
-        {
-            out->u.r[i] = dist;
-        }
+        out->u.r[i] = d->nbsearch.minimumDistance(pos->x[i]);
     }
 }
 

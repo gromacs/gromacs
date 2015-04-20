@@ -1,0 +1,12 @@
+# .ini-style config file for linkchecker. Recommended use
+# for testing the GROMACS webpage is
+#
+# linkchecker index.html --ignore-url html-full --ignore-url html-user --ignore-url html-lib -f linkcheckerrc
+[filtering]
+ignore=
+# This site gives warnings about URLs if you try to refer to page.html\#heading
+ cmake.org
+# This site has a robots.txt that denies access
+ jenkins.gromacs.org
+# A matching regressiontests tarball generally can't be found on this server yet.
+ gerrit.gromacs.org/download

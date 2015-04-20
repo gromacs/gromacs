@@ -32,34 +32,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/integrate.h"
+#include "gromacs/fft/fft.h"
 #include "gromacs/fileio/confio.h"
-#include "copyrite.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gstat.h"
-#include "macros.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/math/units.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/commandline/pargs.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "correl.h"
 #include "gmx_ana.h"
-#include "gromacs/fft/fft.h"
-#include "gromacs/fileio/trxio.h"
 
 enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
@@ -182,7 +181,7 @@ static real wSsolid(real nu, real beta)
     }
     else
     {
-        return bhn/(exp(bhn)-1) - log(1-exp(-bhn));
+        return bhn/gmx_expm1(bhn) - gmx_log1p(-exp(-bhn));
     }
 }
 
@@ -210,7 +209,7 @@ static real wEsolid(real nu, real beta)
     }
     else
     {
-        return bhn/2 + bhn/(exp(bhn)-1)-1;
+        return bhn/2 + bhn/gmx_expm1(bhn)-1;
     }
 }
 
@@ -307,7 +306,7 @@ int gmx_dos(int argc, char *argv[])
 
     t_filenm            fnm[] = {
         { efTRN, "-f",    NULL,    ffREAD  },
-        { efTPX, "-s",    NULL,    ffREAD  },
+        { efTPR, "-s",    NULL,    ffREAD  },
         { efNDX, NULL,    NULL,    ffOPTRD },
         { efXVG, "-vacf", "vacf",  ffWRITE },
         { efXVG, "-mvacf", "mvacf", ffWRITE },
@@ -323,7 +322,7 @@ int gmx_dos(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc,
                            asize(bugs), bugs, &oenv))
     {
@@ -344,7 +343,7 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
                   TRUE);
     V     = det(box);
     tmass = 0;

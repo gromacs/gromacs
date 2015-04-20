@@ -38,14 +38,14 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/inputrec.h"
-#include "../legacyheaders/types/oenv.h"
-#include "../legacyheaders/network.h"
-
-#include "../math/vectypes.h"
-#include "../utility/basedefinitions.h"
-#include "filenm.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +67,8 @@ gmx_mdoutf_t init_mdoutf(FILE              *fplog,
                          const t_commrec   *cr,
                          const t_inputrec  *ir,
                          struct gmx_mtop_t *mtop,
-                         const output_env_t oenv);
+                         const output_env_t oenv,
+                         gmx_wallcycle_t    wcycle);
 
 /*! \brief Getter for file pointer */
 FILE *mdoutf_get_fp_field(gmx_mdoutf_t of);
@@ -77,6 +78,16 @@ ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 
 /*! \brief Getter for file pointer */
 FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
+
+/*! \brief Getter for wallcycle timer */
+gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
+
+/*! \brief Close TNG files if they are open.
+ *
+ * This also measures the time it takes to close the TNG
+ * files.
+ */
+void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
 void done_mdoutf(gmx_mdoutf_t of);

@@ -34,25 +34,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "toppush.h"
 
 #include <assert.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdlib.h>
 
-#include "macros.h"
-#include "names.h"
-#include "toputil.h"
-#include "toppush.h"
-#include "topdirs.h"
-#include "readir.h"
-#include "warninp.h"
-#include "gpp_atomtype.h"
-#include "gpp_bond_atomtype.h"
-
+#include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -487,6 +485,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         gmx_fatal(FARGS, "Invalid particle type %s on line %s",
                   ptype, line);
     }
+    /* cppcheck-suppress arrayIndexOutOfBounds #6329 */
     pt = xl[j].ptype;
     if (debug)
     {
@@ -601,9 +600,11 @@ static void push_bondtype(t_params     *       bt,
                     {
                         sprintf(errbuf, "Overriding %s parameters.%s",
                                 interaction_function[ftype].longname,
-                                (ftype == F_PDIHS) ? "\nUse dihedraltype 4 to allow several multiplicity terms." : "");
+                                (ftype == F_PDIHS) ?
+                                "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
+                                : "");
                         warning(wi, errbuf);
-                        fprintf(stderr, "  old:");
+                        fprintf(stderr, "  old:                                         ");
                         for (j = 0; (j < nrfp); j++)
                         {
                             fprintf(stderr, " %g", bt->param[i].c[j]);

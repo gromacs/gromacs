@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,11 +35,6 @@
 #ifndef _nb_kernel_h_
 #define _nb_kernel_h_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,8 +43,8 @@ extern "C" {
 #endif
 
 
-#include "types/simple.h"
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.

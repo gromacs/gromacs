@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,28 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "config.h"
 
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h> // for fork()
 #endif
 
-#include "macros.h"
-#include "x11.h"
-#include "xdlghi.h"
-#include "xmb.h"
 #include "dialogs.h"
-#include "names.h"
-#include "nmol.h"
-#include "manager.h"
 
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "manager.h"
+#include "nmol.h"
+#include "x11.h"
+#include "xdlghi.h"
+#include "xmb.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 
@@ -105,15 +107,10 @@ static void shell_comm(const char *title, const char *script, int nsleep)
     fprintf(stderr, "command: %s\n", command);
 #endif
 
-#ifdef GMX_NO_SYSTEM
-    printf("Warning-- No calls to system(3) supported on this platform.");
-    printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
-#else
     if (0 != system(command))
     {
         gmx_fatal(FARGS, "Failed to execute command: %s", command);
     }
-#endif
 
 #ifdef DEBUG
     unlink(tmp)

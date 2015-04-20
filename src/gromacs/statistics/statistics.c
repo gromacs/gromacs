@@ -34,11 +34,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "statistics.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 #include <math.h>
 
 #include "gromacs/math/vec.h"

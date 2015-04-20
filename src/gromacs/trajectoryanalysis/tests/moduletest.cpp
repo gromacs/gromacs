@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
+#include "gmxpre.h"
+
 #include "moduletest.h"
 
 #include <map>
@@ -47,14 +49,11 @@
 
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
-#include "gromacs/utility/file.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -79,19 +78,7 @@ class AbstractTrajectoryAnalysisModuleTestFixture::Impl
             FloatingPointTolerance tolerance;
         };
 
-        struct OutputFileInfo
-        {
-            OutputFileInfo(const char *option, const std::string &path)
-                : option(option), path(path)
-            {
-            }
-
-            std::string         option;
-            std::string         path;
-        };
-
         typedef std::map<std::string, DatasetInfo> DatasetList;
-        typedef std::vector<OutputFileInfo>        OutputFileList;
 
         explicit Impl(AbstractTrajectoryAnalysisModuleTestFixture *parent);
 
@@ -101,11 +88,7 @@ class AbstractTrajectoryAnalysisModuleTestFixture::Impl
 
         AbstractTrajectoryAnalysisModuleTestFixture    &parent_;
         TrajectoryAnalysisModulePointer                 module_;
-        TestReferenceData                               data_;
-        CommandLine                                     cmdline_;
-        TestFileManager                                 tempFiles_;
         DatasetList                                     datasets_;
-        OutputFileList                                  outputFiles_;
         bool                                            bDatasetsIncluded_;
 };
 
@@ -113,7 +96,6 @@ AbstractTrajectoryAnalysisModuleTestFixture::Impl::Impl(
         AbstractTrajectoryAnalysisModuleTestFixture *parent)
     : parent_(*parent), bDatasetsIncluded_(false)
 {
-    cmdline_.append("module");
 }
 
 TrajectoryAnalysisModule &
@@ -169,35 +151,13 @@ AbstractTrajectoryAnalysisModuleTestFixture::~AbstractTrajectoryAnalysisModuleTe
 void
 AbstractTrajectoryAnalysisModuleTestFixture::setTopology(const char *filename)
 {
-    impl_->cmdline_.append("-s");
-    impl_->cmdline_.append(TestFileManager::getInputFilePath(filename));
+    setInputFile("-s", filename);
 }
 
 void
 AbstractTrajectoryAnalysisModuleTestFixture::setTrajectory(const char *filename)
 {
-    impl_->cmdline_.append("-f");
-    impl_->cmdline_.append(TestFileManager::getInputFilePath(filename));
-}
-
-void
-AbstractTrajectoryAnalysisModuleTestFixture::setOutputFile(const char *option,
-                                                           const char *filename)
-{
-    std::string fullFilename = impl_->tempFiles_.getTemporaryFilePath(filename);
-    impl_->cmdline_.append(option);
-    impl_->cmdline_.append(fullFilename);
-    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename));
-}
-
-void
-AbstractTrajectoryAnalysisModuleTestFixture::setOutputFileNoTest(
-        const char *option, const char *extension)
-{
-    std::string fullFilename = impl_->tempFiles_.getTemporaryFilePath(
-                formatString("%d.%s", impl_->cmdline_.argc(), extension));
-    impl_->cmdline_.append(option);
-    impl_->cmdline_.append(fullFilename);
+    setInputFile("-f", filename);
 }
 
 void
@@ -242,16 +202,11 @@ AbstractTrajectoryAnalysisModuleTestFixture::setDatasetTolerance(
 void
 AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
 {
-    TrajectoryAnalysisModule &module = impl_->module();
-    // Skip first argument if it is the module name.
-    int firstArg = (args.arg(0)[0] == '-' ? 0 : 1);
-    for (int i = firstArg; i < args.argc(); ++i)
-    {
-        impl_->cmdline_.append(args.arg(i));
-    }
+    TrajectoryAnalysisModule &module  = impl_->module();
+    CommandLine              &cmdline = commandLine();
+    cmdline.merge(args);
 
-    TestReferenceChecker rootChecker(impl_->data_.rootChecker());
-
+    TestReferenceChecker rootChecker(this->rootChecker());
     rootChecker.checkString(args.toString(), "CommandLine");
 
     if (impl_->hasCheckedDatasets())
@@ -276,22 +231,10 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
     TrajectoryAnalysisCommandLineRunner runner(&module);
     runner.setUseDefaultGroups(false);
     int rc = 0;
-    EXPECT_NO_THROW_GMX(rc = runner.run(impl_->cmdline_.argc(), impl_->cmdline_.argv()));
+    EXPECT_NO_THROW_GMX(rc = runner.run(cmdline.argc(), cmdline.argv()));
     EXPECT_EQ(0, rc);
 
-    if (!impl_->outputFiles_.empty())
-    {
-        TestReferenceChecker                 outputChecker(
-                rootChecker.checkCompound("OutputFiles", "Files"));
-        Impl::OutputFileList::const_iterator outfile;
-        for (outfile = impl_->outputFiles_.begin();
-             outfile != impl_->outputFiles_.end();
-             ++outfile)
-        {
-            std::string output = File::readToString(outfile->path);
-            outputChecker.checkStringBlock(output, outfile->option.c_str());
-        }
-    }
+    checkOutputFiles();
 }
 
 } // namespace test

@@ -43,8 +43,10 @@
  * GMX_NBNXN_SIMD_2XNN, so that this file reduces to a stub
  * function definition when the kernel will never be called.
  */
+#include "gmxpre.h"
+
 #define GMX_SIMD_J_UNROLL_SIZE 2
-#include "nbnxn_kernel_simd_2xnn.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 
 #define CALC_COUL_TAB
 #define LJ_CUT
@@ -53,7 +55,7 @@
 /* Will not calculate energies */
 
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "nbnxn_kernel_simd_2xnn_common.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h"
 #endif /* GMX_NBNXN_SIMD_2XNN */
 
 #ifdef CALC_ENERGIES
@@ -76,7 +78,7 @@ nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_F_2xnn(const nbnxn_pairlist_t    gmx_unus
                                               real                      gmx_unused *fshift)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "nbnxn_kernel_simd_2xnn_outer.h"
+#include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h"
 #else /* GMX_NBNXN_SIMD_2XNN */
 {
 /* No need to call gmx_incons() here, because the only function

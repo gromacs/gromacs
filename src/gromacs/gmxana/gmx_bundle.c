@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,27 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
 #include <math.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
-#include "gmx_ana.h"
-
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define MAX_ENDS 3
 
@@ -206,7 +204,7 @@ int gmx_bundle(int argc, char *argv[])
         "[PAR]",
         "With option [TT]-oa[tt] the top, mid (or kink when [TT]-ok[tt] is set)",
         "and bottom points of each axis",
-        "are written to a [TT].pdb[tt] file each frame. The residue numbers correspond",
+        "are written to a [REF].pdb[ref] file each frame. The residue numbers correspond",
         "to the axis numbers. When viewing this file with Rasmol, use the",
         "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
         "display the reference axis."
@@ -260,7 +258,7 @@ int gmx_bundle(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -427,17 +425,17 @@ int gmx_bundle(int argc, char *argv[])
     {
         close_trx(fpdb);
     }
-    gmx_ffclose(flen);
-    gmx_ffclose(fdist);
-    gmx_ffclose(fz);
-    gmx_ffclose(ftilt);
-    gmx_ffclose(ftiltr);
-    gmx_ffclose(ftiltl);
+    xvgrclose(flen);
+    xvgrclose(fdist);
+    xvgrclose(fz);
+    xvgrclose(ftilt);
+    xvgrclose(ftiltr);
+    xvgrclose(ftiltl);
     if (bKink)
     {
-        gmx_ffclose(fkink);
-        gmx_ffclose(fkinkr);
-        gmx_ffclose(fkinkl);
+        xvgrclose(fkink);
+        xvgrclose(fkinkr);
+        xvgrclose(fkinkl);
     }
 
     return 0;

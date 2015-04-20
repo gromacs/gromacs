@@ -1,0 +1,20 @@
+--- scanner.cpp	2014-08-12 22:12:01.000000000 +0300
++++ scanner.cpp	2014-08-12 22:17:03.000000000 +0300
+@@ -331,7 +331,7 @@
+ 
+ #define YY_AT_BOL() (YY_CURRENT_BUFFER_LVALUE->yy_at_bol)
+ 
+-#define _gmx_sel_yywrap(yyscanner) 1
++static inline int _gmx_sel_yywrap(yyscan_t yyscanner) { return 1; }
+ #define YY_SKIP_YYWRAP
+ 
+ typedef unsigned char YY_CHAR;
+@@ -1807,7 +1807,7 @@
+ 	YY_BUFFER_STATE b;
+ 	char *buf;
+ 	yy_size_t n;
+-	int i;
++	yy_size_t i;
+     
+ 	/* Get memory for full buffer, including space for trailing EOB's. */
+ 	n = _yybytes_len + 2;

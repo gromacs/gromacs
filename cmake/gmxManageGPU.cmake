@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -57,8 +57,18 @@ if ((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     gmx_detect_gpu()
 endif()
 
+# CMake 3.0-3.1 has a bug in the following case, which breaks
+# configuration on at least BlueGene/Q. Fixed in 3.1.1
+if ((NOT CMAKE_VERSION VERSION_LESS "3.0.0") AND
+    (CMAKE_VERSION VERSION_LESS "3.1.1") AND
+        (CMAKE_CROSSCOMPILING AND NOT CMAKE_SYSTEM_PROCESSOR))
+    message(STATUS "Cannot search for CUDA because the CMake find package has a bug. Set a valid CMAKE_SYSTEM_PROCESSOR if you need to detect CUDA")
+else()
+    set(CAN_RUN_CUDA_FIND_PACKAGE 1)
+endif()
+
 # We need to call find_package even when we've already done the detection/setup
-if(GMX_GPU OR GMX_GPU_AUTO)
+if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
     if(NOT GMX_GPU AND NOT GMX_DETECT_GPU_AVAILABLE)
         # Stay quiet when detection has occured and found no GPU.
         # Noise is acceptable when there is a GPU or the user required one.
@@ -141,6 +151,17 @@ ${_msg}")
         endif()
     endif() # NOT CUDA_FOUND
 endif()
+
+# Try to find NVML if a GPU accelerated binary should be build.
+if (GMX_GPU)
+    find_package(NVML)
+    if(NVML_FOUND)
+        include_directories(${NVML_INCLUDE_DIR})
+        set(HAVE_NVML 1)
+        list(APPEND GMX_EXTRA_LIBRARIES ${NVML_LIBRARY})
+    endif(NVML_FOUND)
+endif()
+
 # Annoyingly enough, FindCUDA leaves a few variables behind as non-advanced.
 # We need to mark these advanced outside the conditional, otherwise, if the
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be
@@ -190,6 +211,42 @@ endmacro ()
 macro(gmx_gpu_setup)
     # set up nvcc options
     include(gmxManageNvccConfig)
+
+    gmx_check_if_changed(_cuda_version_changed CUDA_VERSION)
+
+    # Generate CUDA RT API version string which will end up in config.h
+    # We do this because nvcc is silly enough to not define its own version
+    # (which should match the CUDA runtime API version AFAICT) and we want to
+    # avoid creating the fragile dependency on cuda_runtime_api.h.
+    #
+    # NOTE: CUDA v7.5 is expected to have nvcc define it own version, so in the
+    # future we should switch to using that version string instead of our own.
+    if (NOT GMX_CUDA_VERSION OR _cuda_version_changed)
+        MATH(EXPR GMX_CUDA_VERSION "${CUDA_VERSION_MAJOR}*1000 + ${CUDA_VERSION_MINOR}*10")
+    endif()
+
+    if (_cuda_version_changed)
+        # check the generated CUDA API version against the one present in cuda_runtime_api.h
+        try_compile(_get_cuda_version_compile_res
+            ${CMAKE_BINARY_DIR}
+            ${CMAKE_SOURCE_DIR}/cmake/TestCUDAVersion.c
+            COMPILE_DEFINITIONS "-DGMX_CUDA_VERSION=${GMX_CUDA_VERSION}"
+            CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${CUDA_TOOLKIT_INCLUDE}"
+            OUTPUT_VARIABLE _get_cuda_version_compile_out)
+
+        if (NOT _get_cuda_version_compile_res)
+            if (_get_cuda_version_compile_out MATCHES "CUDA version mismatch")
+                message(FATAL_ERROR "The CUDA API version generated internally from the compiler version does not match the version reported by cuda.h. This means either that the CUDA detection picked up mismatching nvcc and the CUDA headers (likely not part of the same toolkit installation) or that there is an error in the internal version generation. If you are sure that it is not the former causing the error (check the relevant cache variables), define the GMX_CUDA_VERSION cache variable to work around the error.")
+            else()
+                message(FATAL_ERROR "Could not detect CUDA runtime API version")
+            endif()
+        endif()
+    endif()
+
+    # texture objects are supported in CUDA 5.0 and later
+    if (CUDA_VERSION VERSION_GREATER 4.999)
+        set(HAVE_CUDA_TEXOBJ_SUPPORT 1)
+    endif()
 
     # Atomic operations used for polling wait for GPU
     # (to avoid the cudaStreamSynchronize + ECC bug).

@@ -35,7 +35,7 @@
 #ifndef GMX_INPUTREC_H
 #define GMX_INPUTREC_H
 
-#include "types/inputrec.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 
 #ifdef __cplusplus
 extern "C"

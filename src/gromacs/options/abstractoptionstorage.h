@@ -45,9 +45,8 @@
 
 #include <string>
 
-#include "../utility/common.h"
-
-#include "optionflags.h"
+#include "gromacs/options/optionflags.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

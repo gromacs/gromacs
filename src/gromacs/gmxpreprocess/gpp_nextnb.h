@@ -38,7 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_GPP_NEXTNB_H
 #define GMX_GMXPREPROCESS_GPP_NEXTNB_H
 
-#include "grompp-impl.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 
 #ifdef __cplusplus
 extern "C" {

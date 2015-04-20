@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,28 +34,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "txtdump.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
-#include "eigio.h"
-#include "gmx_ana.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 int gmx_nmtraj(int argc, char *argv[])
@@ -75,7 +73,7 @@ int gmx_nmtraj(int argc, char *argv[])
         "However, be aware that both the linear Cartesian displacements and mass weighting will ",
         "lead to serious structure deformation for high amplitudes - this is is simply a limitation ",
         "of the Cartesian normal mode model. By default the selected eigenvector is set to 7, since ",
-        " the first six normal modes are the translational and rotational degrees of freedom."
+        "the first six normal modes are the translational and rotational degrees of freedom."
     };
 
     static real        refamplitude = 0.25;
@@ -139,7 +137,7 @@ int gmx_nmtraj(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, 0,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

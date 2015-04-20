@@ -34,18 +34,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <stdio.h>
+#include "topdirs.h"
+
 #include <stdarg.h>
+#include <stdio.h>
 
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "topdirs.h"
+#include "gromacs/utility/smalloc.h"
 
 /* Must correspond to the directive enum in grompp-impl.h */
 static const char *directive_names[d_maxdir+1] = {

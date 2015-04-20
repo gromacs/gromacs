@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,17 +59,23 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "poscalc.h"
+
 #include <string.h>
+
+#include <algorithm>
 
 #include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/selection/centerofmass.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "centerofmass.h"
 
 namespace gmx
 {
@@ -557,6 +563,25 @@ PositionCalculationCollection::createCalculationFromEnum(const char *post, int f
     return impl_->createCalculation(type, cflags);
 }
 
+int PositionCalculationCollection::getHighestRequiredAtomIndex() const
+{
+    int                result = 0;
+    gmx_ana_poscalc_t *pc     = impl_->first_;
+    while (pc)
+    {
+        // Calculations with a base just copy positions from the base, so
+        // those do not need to be considered in the check.
+        if (!pc->sbase)
+        {
+            gmx_ana_index_t g;
+            gmx_ana_index_set(&g, pc->b.nra, pc->b.a, 0);
+            result = std::max(result, gmx_ana_index_get_max_index(&g));
+        }
+        pc = pc->next;
+    }
+    return result;
+}
+
 void PositionCalculationCollection::initEvaluation()
 {
     if (impl_->bInit_)
@@ -1041,7 +1066,7 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
     {
         gmx_ana_indexmap_set_static(&p->m, &pc->b);
     }
-    gmx_ana_pos_reserve(p, p->m.mapb.nr, 0);
+    gmx_ana_pos_reserve(p, p->m.mapb.nr, -1);
     if (pc->flags & POS_VELOCITIES)
     {
         gmx_ana_pos_reserve_velocities(p);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,21 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "gromacs/topology/index.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/math/units.h"
-#include "gmx_ana.h"
-#include "macros.h"
-#include "gromacs/fileio/trxio.h"
+#include "gmxpre.h"
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/3dtransforms.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -148,7 +145,7 @@ static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
 int gmx_dyndom(int argc, char *argv[])
 {
     const char  *desc[] = {
-        "[THISMODULE] reads a [TT].pdb[tt] file output from DynDom",
+        "[THISMODULE] reads a [REF].pdb[ref] file output from DynDom",
         "(http://www.cmp.uea.ac.uk/dyndom/).",
         "It reads the coordinates, the coordinates of the rotation axis,",
         "and an index file containing the domains.",
@@ -209,6 +206,11 @@ int gmx_dyndom(int argc, char *argv[])
                            asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
+    }
+
+    if (maxangle == 0)
+    {
+        gmx_fatal(FARGS, "maxangle not given");
     }
 
     get_stx_coordnum (opt2fn("-f", NFILE, fnm), &natoms);

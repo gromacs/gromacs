@@ -32,13 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "gromacs/pbcutil/ishift.h"
+#include "gmxpre.h"
 
 #include "nbnxn_kernel_common.h"
+
+#include "gromacs/pbcutil/ishift.h"
 
 static void
 clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
@@ -55,16 +53,16 @@ static void
 clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
 {
     const nbnxn_buffer_flags_t *flags;
-    unsigned                    our_flag;
+    gmx_bitmask_t               our_flag;
     int g, b, a0, a1, i;
 
     flags = &nbat->buffer_flags;
 
-    our_flag = (1U << output_index);
+    bitmask_init_bit(&our_flag, output_index);
 
     for (b = 0; b < flags->nflag; b++)
     {
-        if (flags->flag[b] & our_flag)
+        if (!bitmask_is_disjoint(flags->flag[b], our_flag))
         {
             a0 = b*NBNXN_BUFFERFLAG_SIZE;
             a1 = a0 + NBNXN_BUFFERFLAG_SIZE;

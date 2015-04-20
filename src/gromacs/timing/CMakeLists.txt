@@ -35,11 +35,10 @@
 file(GLOB TIMING_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TIMING_SOURCES} PARENT_SCOPE)
 
-set(TIMING_PUBLIC_HEADERS
+gmx_install_headers(
     wallcycle.h
-    walltime_accounting.h)
-
-gmx_install_headers(timing ${TIMING_PUBLIC_HEADERS})
+    walltime_accounting.h
+    )
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

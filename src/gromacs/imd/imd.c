@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,10 +45,11 @@
  *
  * \ingroup module_imd
  */
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "imd.h"
+
+#include "config.h"
 
 #include <errno.h>
 #include <string.h>
@@ -59,21 +60,19 @@
 #include <unistd.h>
 #endif
 
-#include "imd.h"
-#include "imdsocket.h"
-#include "network.h"
-#include "mdrun.h"
-#include "sighandler.h"
-#include "gmx_ga2la.h"
-#include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/topology/mtop_util.h"
-#include "names.h"
-#include "gromacs/timing/wallcycle.h"
-
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/imd/imdsocket.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/sighandler.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -617,7 +616,7 @@ static gmx_bool imd_tryconnect(t_gmx_IMD_setup *IMDsetup)
 static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
 {
     /* do not wait for connection, when e.g. ctrl+c is pressed and we will terminate anyways. */
-    if (!(int) gmx_get_stop_condition() == gmx_stop_cond_none)
+    if (gmx_get_stop_condition() != gmx_stop_cond_none)
     {
         return;
     }

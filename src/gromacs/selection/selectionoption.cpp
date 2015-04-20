@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,19 +39,22 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include "selectionoption.h"
-#include "selectionfileoption.h"
-#include "selectionoptionstorage.h"
-#include "selectionfileoptionstorage.h"
 
 #include <string>
 
 #include "gromacs/options/optionmanagercontainer.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/messagestringcollector.h"
+
+#include "selectionfileoptionstorage.h"
+#include "selectionoptionstorage.h"
 
 namespace gmx
 {
@@ -148,6 +151,7 @@ void SelectionOptionStorage::processAll()
 void SelectionOptionStorage::setAllowedValueCount(int count)
 {
     // TODO: It should be possible to have strong exception safety here.
+    // TODO: Use ExceptionInitializer here.
     MessageStringCollector errors;
     errors.startContext("In option '" + name() + "'");
     if (count >= 0)
@@ -250,12 +254,11 @@ void SelectionOptionInfo::setDynamicMask(bool bEnabled)
  * SelectionOption
  */
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 SelectionOption::createStorage(const OptionManagerContainer &managers) const
 {
-    return AbstractOptionStoragePointer(
-            new SelectionOptionStorage(
-                    *this, managers.get<SelectionOptionManager>()));
+    return new SelectionOptionStorage(
+            *this, managers.get<SelectionOptionManager>());
 }
 
 
@@ -318,12 +321,11 @@ SelectionFileOption::SelectionFileOption(const char *name)
     setDescription("Provide selections from files");
 }
 
-AbstractOptionStoragePointer
+AbstractOptionStorage *
 SelectionFileOption::createStorage(const OptionManagerContainer &managers) const
 {
-    return AbstractOptionStoragePointer(
-            new SelectionFileOptionStorage(
-                    *this, managers.get<SelectionOptionManager>()));
+    return new SelectionFileOptionStorage(
+            *this, managers.get<SelectionOptionManager>());
 }
 
 } // namespace gmx

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,31 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/pdbio.h"
-#include "txtdump.h"
-#include "viewit.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gmx_ana.h"
-
-#include "gromacs/math/do_fit.h"
+#include "gromacs/utility/smalloc.h"
 
 void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
@@ -493,9 +490,9 @@ int gmx_confrms(int argc, char *argv[])
         "will be used for the fit and RMSD calculation. This can be useful ",
         "when comparing mutants of a protein.",
         "[PAR]",
-        "The superimposed structures are written to file. In a [TT].pdb[tt] file",
+        "The superimposed structures are written to file. In a [REF].pdb[ref] file",
         "the two structures will be written as separate models",
-        "(use [TT]rasmol -nmrpdb[tt]). Also in a [TT].pdb[tt] file, B-factors",
+        "(use [TT]rasmol -nmrpdb[tt]). Also in a [REF].pdb[ref] file, B-factors",
         "calculated from the atomic MSD values can be written with [TT]-bfac[tt].",
     };
     static gmx_bool bOne  = FALSE, bRmpbc = FALSE, bMW = TRUE, bName = FALSE,
@@ -518,9 +515,9 @@ int gmx_confrms(int argc, char *argv[])
         { efTPS, "-f1",  "conf1.gro", ffREAD  },
         { efSTX, "-f2",  "conf2",     ffREAD  },
         { efSTO, "-o",   "fit.pdb",   ffWRITE },
-        { efNDX, "-n1", "fit1.ndx",  ffOPTRD },
-        { efNDX, "-n2", "fit2.ndx",  ffOPTRD },
-        { efNDX, "-no", "match.ndx", ffOPTWR }
+        { efNDX, "-n1",  "fit1",      ffOPTRD },
+        { efNDX, "-n2",  "fit2",      ffOPTRD },
+        { efNDX, "-no",  "match",     ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -554,7 +551,7 @@ int gmx_confrms(int argc, char *argv[])
     real    *msds;
 
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_CAN_VIEW,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -614,12 +611,12 @@ int gmx_confrms(int argc, char *argv[])
             fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1);
             for (i = 0; i < isize1; i++)
             {
-                fprintf(fp, "%4u%s", index1[i]+1, (i%15 == 14 || i == isize1-1) ? "\n" : " ");
+                fprintf(fp, "%4d%s", index1[i]+1, (i%15 == 14 || i == isize1-1) ? "\n" : " ");
             }
             fprintf(fp, "[ Match_%s_%s ]\n", conf2file, groupnames2);
             for (i = 0; i < isize2; i++)
             {
-                fprintf(fp, "%4u%s", index2[i]+1, (i%15 == 14 || i == isize2-1) ? "\n" : " ");
+                fprintf(fp, "%4d%s", index2[i]+1, (i%15 == 14 || i == isize2-1) ? "\n" : " ");
             }
         }
     }
@@ -639,7 +636,7 @@ int gmx_confrms(int argc, char *argv[])
             if (warn < 20)
             {
                 fprintf(stderr,
-                        "Warning: atomnames at index %d don't match: %u %s, %u %s\n",
+                        "Warning: atomnames at index %d don't match: %d %s, %d %s\n",
                         i+1, index1[i]+1, name1, index2[i]+1, name2);
             }
             warn++;

@@ -1,0 +1,34 @@
+@INCLUDE               = Doxyfile-common
+
+PREDEFINED            += F77_FUNC(name,NAME)=name
+
+ENABLED_SECTIONS      += libapi internal xml
+INTERNAL_DOCS          = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_ANON_NSPACES   = YES
+
+# We don't need the STL classes for our use of the XML,
+# and they generate broken references that would need extra handling
+BUILTIN_STL_SUPPORT    = NO
+WARN_IF_UNDOCUMENTED   = NO
+WARN_LOGFILE           = doxygen-xml.log
+CLASS_DIAGRAMS         = NO
+CLASS_GRAPH            = NO
+COLLABORATION_GRAPH    = NO
+DIRECTORY_GRAPH        = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+
+INLINE_INHERITED_MEMB  = NO  # Do not duplicate documentation
+
+GENERATE_HTML          = NO
+GENERATE_XML           = YES
+XML_PROGRAMLISTING     = NO
+
+ALIASES               += inpublicapi="\ingroup group_publicapi"
+ALIASES               += inlibraryapi="\ingroup group_libraryapi"
+ALIASES               += libinternal="\xmlonly <libinternal /> \endxmlonly"
+
+# This is here because some comments that don't produce any useful
+# documentation still contain invalid Doxygen commands...
+ALIASES               += threadsafe=

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 
-#include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gromacs/fileio/pdbio.h"
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/units.h"
-#include "names.h"
-#include "txtdump.h"
-#include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/smalloc.h"
 
 real pot(real x, real qq, real c6, real cn, int npow)
 {
@@ -189,7 +187,7 @@ int gmx_sigeps(int argc, char *argv[])
         oldx = x;
 
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
 

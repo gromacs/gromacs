@@ -39,14 +39,16 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include "toputils.h"
 
 #include <cstring>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/gmxassert.h"
@@ -173,7 +175,7 @@ void TopologyManager::initAtomTypes(int count, const char *const types[])
     atomtypes_.reserve(count);
     for (int i = 0; i < count; ++i)
     {
-        atomtypes_.push_back(strdup(types[i]));
+        atomtypes_.push_back(gmx_strdup(types[i]));
     }
     snew(top_->atoms.atomtype, top_->atoms.nr);
     for (int i = 0, j = 0; i < top_->atoms.nr; ++i, ++j)

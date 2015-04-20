@@ -48,12 +48,11 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "../utility/common.h"
-#include "../utility/exceptions.h"
-#include "../utility/gmxassert.h"
-
-#include "abstractoption.h"
-#include "abstractoptionstorage.h"
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

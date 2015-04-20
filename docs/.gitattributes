@@ -1,0 +1,3 @@
+dev-manual/*.md           gmx-doxygen
+doxygen/DoxygenLayout.xml gmx-doxygen
+doxygen/**/*.md           gmx-doxygen

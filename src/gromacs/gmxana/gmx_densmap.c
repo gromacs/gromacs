@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,39 +34,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
-#include "txtdump.h"
+#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gstat.h"
-#include "gromacs/fileio/matio.h"
-#include "viewit.h"
-#include "gmx_ana.h"
-
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_densmap(int argc, char *argv[])
 {
     const char        *desc[] = {
         "[THISMODULE] computes 2D number-density maps.",
         "It can make planar and axial-radial density maps.",
-        "The output [TT].xpm[tt] file can be visualized with for instance xv",
+        "The output [REF].xpm[ref] file can be visualized with for instance xv",
         "and can be converted to postscript with [TT]xpm2ps[tt].",
-        "Optionally, output can be in text form to a [TT].dat[tt] file with [TT]-od[tt], instead of the usual [TT].xpm[tt] file with [TT]-o[tt].",
+        "Optionally, output can be in text form to a [REF].dat[ref] file with [TT]-od[tt], instead of the usual [REF].xpm[ref] file with [TT]-o[tt].",
         "[PAR]",
         "The default analysis is a 2-D number-density map for a selected",
         "group of atoms in the x-y plane.",
@@ -161,7 +158,7 @@ int gmx_densmap(int argc, char *argv[])
 
     npargs = asize(pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -249,7 +246,9 @@ int gmx_densmap(int argc, char *argv[])
     {
         n1      = (int)(2*amax/bin + 0.5);
         nradial = (int)(rmax/bin + 0.5);
+        /* cppcheck-suppress zerodiv fixed in 1.68-dev */
         invspa  = n1/(2*amax);
+        /* cppcheck-suppress zerodiv fixed in 1.68-dev */
         invspz  = nradial/rmax;
         if (bMirror)
         {

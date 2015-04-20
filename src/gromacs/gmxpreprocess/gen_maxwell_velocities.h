@@ -38,7 +38,7 @@
 #ifndef GMX_MAXWELL_VELOCITIES
 #define GMX_MAXWELL_VELOCITIES
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

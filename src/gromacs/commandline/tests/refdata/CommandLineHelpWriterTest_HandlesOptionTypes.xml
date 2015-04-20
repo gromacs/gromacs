@@ -14,9 +14,9 @@ OPTIONS
 Options to specify input and output files:
 
  -f     [<.xtc/.trr/...>] (traj.xtc) (Input)
-     Input file description: xtc trr cpt trj gro g96 pdb tng
+     Input file description: xtc trr cpt gro g96 pdb tng
  -mult  [<.xtc/.trr/...> [...]] (traj.xtc) (Input, Opt.)
-     Multiple file description: xtc trr cpt trj gro g96 pdb tng
+     Multiple file description: xtc trr cpt gro g96 pdb tng
  -lib   [<.dat>] (libdata.dat) (Input, Opt., Lib.) Library file description
  -io    [<.dat>] (inout.dat) (In/Out, Opt.) Input/Output file description
  -o     <.xvg>   (Output, Opt.) Output file description

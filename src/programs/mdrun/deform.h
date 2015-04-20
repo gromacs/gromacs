@@ -38,6 +38,9 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

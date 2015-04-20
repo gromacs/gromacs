@@ -46,15 +46,16 @@
  *  - Tests for XVG labels.  This is a limitation of the current testing
  *    framework.
  *
- * The actual surface area algorithm should be tested separately with a more
- * extensive set of data, but those fit better as a separate set of unit tests.
+ * The actual surface area algorithm is tested separately in surfacearea.cpp.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include <gtest/gtest.h>
+#include "gmxpre.h"
 
 #include "gromacs/trajectoryanalysis/modules/sasa.h"
+
+#include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
@@ -67,10 +68,10 @@ namespace
 using gmx::test::CommandLine;
 
 /********************************************************************
- * Tests for gmx::analysismodules::Sas.
+ * Tests for gmx::analysismodules::Sasa.
  */
 
-//! Test fixture for the select analysis module.
+//! Test fixture for the `sasa` analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SasaInfo>
     SasaModuleTest;
 

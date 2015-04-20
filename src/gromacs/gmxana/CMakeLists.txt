@@ -34,10 +34,9 @@
 
 file(GLOB GMXANA_SOURCES *.c *.cpp)
 
-set(GMXANA_PUBLIC_HEADERS
+gmx_install_headers(
     gstat.h
     )
-gmx_install_headers(gmxana ${GMXANA_PUBLIC_HEADERS})
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXANA_SOURCES} PARENT_SCOPE)
 

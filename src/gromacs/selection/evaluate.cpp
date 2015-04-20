@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,22 +50,27 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "evaluate.h"
+
 #include <string.h>
+
+#include <algorithm>
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
-#include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "evaluate.h"
 #include "mempool.h"
+#include "poscalc.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
+#include "selmethod.h"
 
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
@@ -235,8 +240,7 @@ class SelelemTemporaryValueAssigner
                                "Can only assign one element with one instance");
             GMX_RELEASE_ASSERT(sel->v.type == vsource.v.type,
                                "Mismatching selection value types");
-            old_ptr_    = sel->v.u.ptr;
-            old_nalloc_ = sel->v.nalloc;
+            _gmx_selvalue_getstore_and_release(&sel->v, &old_ptr_, &old_nalloc_);
             _gmx_selvalue_setstore(&sel->v, vsource.v.u.ptr);
             sel_ = sel;
         }
@@ -246,6 +250,42 @@ class SelelemTemporaryValueAssigner
         void                           *old_ptr_;
         int                             old_nalloc_;
 };
+
+/*! \brief
+ * Expands a value array from one-per-position to one-per-atom.
+ *
+ * \param[in,out] value  Array to expand.
+ * \param[in,out] nr     Number of values in \p value.
+ * \param[in]     pos    Position data.
+ * \tparam        T      Value type of the array to expand.
+ *
+ * On input, \p value contains one value for each position in \p pos (and `*nr`
+ * must match).  On output, \p value will contain a value for each atom used to
+ * evaluate `pos`: each input value is replicated to all atoms that make up the
+ * corresponding position.
+ * The operation is done in-place.
+ *
+ * Does not throw.
+ */
+template <typename T>
+void expandValueForPositions(T value[], int *nr, gmx_ana_pos_t *pos)
+{
+    GMX_RELEASE_ASSERT(*nr == pos->count(),
+                       "Position update method did not return the correct number of values");
+    *nr = pos->m.mapb.nra;
+    // Loop over the positions in reverse order so that the expansion can be
+    // done in-place (assumes that each position has at least one atom, which
+    // should always be the case).
+    int outputIndex = pos->m.mapb.nra;
+    for (int i = pos->count() - 1; i >= 0; --i)
+    {
+        const int atomCount = pos->m.mapb.index[i + 1] - pos->m.mapb.index[i];
+        outputIndex -= atomCount;
+        GMX_ASSERT(outputIndex >= i,
+                   "In-place algorithm would overwrite data not yet used");
+        std::fill(&value[outputIndex], &value[outputIndex + atomCount], value[i]);
+    }
+}
 
 } // namespace
 
@@ -934,6 +974,18 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t                     *data,
         sel->u.expr.method->pupdate(data->top, data->fr, data->pbc,
                                     sel->u.expr.pos, &sel->v,
                                     sel->u.expr.mdata);
+        if ((sel->flags & SEL_ATOMVAL) && sel->v.nr < g->isize)
+        {
+            switch (sel->v.type)
+            {
+                case REAL_VALUE:
+                    expandValueForPositions(sel->v.u.r, &sel->v.nr,
+                                            sel->u.expr.pos);
+                    break;
+                default:
+                    GMX_RELEASE_ASSERT(false, "Unimplemented value type for position update method");
+            }
+        }
     }
     else
     {
@@ -969,15 +1021,12 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t                     *data,
         sel->u.expr.method->init_frame(data->top, data->fr, data->pbc,
                                        sel->u.expr.mdata);
     }
-    GMX_RELEASE_ASSERT(sel->child != NULL,
-                       "Modifier element with a value must have a child");
-    if (sel->child->v.type != POS_VALUE)
+    if (sel->child && sel->child->v.type != POS_VALUE)
     {
         GMX_THROW(gmx::NotImplementedError("Non-position valued modifiers not implemented"));
     }
     sel->u.expr.method->pupdate(data->top, data->fr, data->pbc,
-                                sel->child->v.u.p,
-                                &sel->v, sel->u.expr.mdata);
+                                NULL, &sel->v, sel->u.expr.mdata);
 }
 
 

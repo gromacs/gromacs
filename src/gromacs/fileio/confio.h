@@ -40,9 +40,8 @@
 
 #include <stdio.h>
 
-#include "../legacyheaders/types/simple.h"
-
-#include "trx.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.

@@ -13,6 +13,13 @@
       <Sequence Name="Atoms">
         <Int Name="Length">0</Int>
       </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">1</Int>
+        <Position>
+          <Int Name="RefId">0</Int>
+          <Int Name="MappedId">0</Int>
+        </Position>
+      </Sequence>
     </Selection>
   </CompiledSelections>
   <EvaluatedSelections Name="Frame1">
@@ -28,6 +35,8 @@
             <Real Name="Y">-2</Real>
             <Real Name="Z">3.5</Real>
           </Vector>
+          <Int Name="RefId">0</Int>
+          <Int Name="MappedId">0</Int>
         </Position>
       </Sequence>
     </Selection>

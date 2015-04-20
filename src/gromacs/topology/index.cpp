@@ -34,11 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/topology/index.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "index.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -47,11 +45,10 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/txtdump.h"
-
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
@@ -129,7 +126,7 @@ void add_grp(t_blocka *b, char ***gnames, int nra, atom_id a[], const char *name
 
     srenew(b->index, b->nr+2);
     srenew(*gnames, b->nr+1);
-    (*gnames)[b->nr] = strdup(name);
+    (*gnames)[b->nr] = gmx_strdup(name);
 
     srenew(b->a, b->nra+nra);
     for (i = 0; (i < nra); i++)
@@ -170,7 +167,8 @@ static gmx_bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
 }
 
 static void
-p_status(const char **restype, int nres, const char **typenames, int ntypes)
+p_status(const char *const *restype, int nres,
+         const char *const *typenames, int ntypes)
 {
     int   i, j;
     int * counter;
@@ -241,7 +239,7 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
     restp_t *restp = NULL;
     char   **attp  = NULL;
     char    *rname, *aname;
-    atom_id *other_ndx, *aid, *aaid;
+    atom_id *aid, *aaid;
     int      i, j, k, l, resind, naid, naaid, natp, nrestp = 0;
 
     for (i = 0; (i < atoms->nres); i++)
@@ -258,7 +256,6 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
         {
             printf("Analysing residues not classified as Protein/DNA/RNA/Water and splitting into groups...\n");
         }
-        snew(other_ndx, atoms->nr);
         for (k = 0; (k < atoms->nr); k++)
         {
             resind = atoms->atom[k].resind;
@@ -277,11 +274,10 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
                 if (l == nrestp)
                 {
                     srenew(restp, nrestp+1);
-                    restp[nrestp].rname = strdup(rname);
+                    restp[nrestp].rname = gmx_strdup(rname);
                     restp[nrestp].bNeg  = FALSE;
-                    restp[nrestp].gname = strdup(rname);
+                    restp[nrestp].gname = gmx_strdup(rname);
                     nrestp++;
-
                 }
             }
         }
@@ -343,10 +339,12 @@ static void analyse_other(const char ** restype, t_atoms *atoms,
                     sfree(attp);
                     attp = NULL;
                 }
-                sfree(aid);
             }
+            sfree(aid);
+            sfree(restp[i].rname);
+            sfree(restp[i].gname);
         }
-        sfree(other_ndx);
+        sfree(restp);
     }
 }
 
@@ -584,7 +582,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
     int               nra;
     int               i, k;
     int               ntypes;
-    const char     ** p_typename;
+    char           ** p_typename;
     int               iwater, iion;
     int               nwater, nion;
     int               found;
@@ -626,7 +624,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
         if (!found)
         {
             srenew(p_typename, ntypes+1);
-            p_typename[ntypes++] = strdup(restype[i]);
+            p_typename[ntypes++] = gmx_strdup(restype[i]);
         }
     }
 
@@ -678,6 +676,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
             sfree(aid);
             analyse_other(restype, atoms, gb, gn, bASK, bVerb);
         }
+        sfree(p_typename[k]);
     }
 
     sfree(p_typename);
@@ -708,7 +707,7 @@ void analyse(t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool b
     {
         srenew(gb->index, gb->nr+2);
         srenew(*gn, gb->nr+1);
-        (*gn)[gb->nr] = strdup("Water_and_ions");
+        (*gn)[gb->nr] = gmx_strdup("Water_and_ions");
         srenew(gb->a, gb->nra+nwater+nion);
         if (nwater > 0)
         {
@@ -778,7 +777,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
                 b->index[0] = 0;
             }
             b->index[b->nr]     = b->index[b->nr-1];
-            (*grpname)[b->nr-1] = strdup(str);
+            (*grpname)[b->nr-1] = gmx_strdup(str);
         }
         else
         {
@@ -970,7 +969,7 @@ static void rd_groups(t_blocka *grps, char **grpname, char *gnames[],
             fprintf(stderr, "There is one group in the index\n");
             gnr1 = 0;
         }
-        gnames[i] = strdup(grpname[gnr1]);
+        gnames[i] = gmx_strdup(grpname[gnr1]);
         isize[i]  = grps->index[gnr1+1]-grps->index[gnr1];
         snew(index[i], isize[i]);
         for (j = 0; (j < isize[i]); j++)

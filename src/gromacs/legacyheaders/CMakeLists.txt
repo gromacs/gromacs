@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,12 +33,8 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # includes: Nothing to build, just installation
-file(GLOB ROOT_LEGACY_HEADERS          *.h)
-file(GLOB ROOT_LEGACY_HEADERS_PRIVATE  thread_mpi.h tmpi.h gmx_hash.h 
-     gmx_ga2la.h gpu_utils.h pmalloc_cuda.h nbnxn_cuda_data_mgmt.h)
-file(GLOB TYPES_LEGACY_HEADERS         types/*.h)
-file(GLOB TYPES_LEGACY_HEADERS_PRIVATE types/commrec.h)
-list(REMOVE_ITEM ROOT_LEGACY_HEADERS   ${ROOT_LEGACY_HEADERS_PRIVATE})
-list(REMOVE_ITEM TYPES_LEGACY_HEADERS  ${TYPES_LEGACY_HEADERS_PRIVATE})
-gmx_install_headers(legacyheaders                   ${ROOT_LEGACY_HEADERS})
-gmx_install_headers(legacyheaders/types             ${TYPES_LEGACY_HEADERS})
+file(GLOB HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
+list(REMOVE_ITEM HEADERS gmx_hash.h gmx_ga2la.h)
+gmx_install_headers(${HEADERS})
+
+add_subdirectory(types)

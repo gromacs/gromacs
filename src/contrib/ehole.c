@@ -672,7 +672,7 @@ int main(int argc,char *argv[])
   int seed;
   
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,
+  parse_common_args(&argc,argv,0,NFILE,fnm,
 		    NPA,pa,asize(desc),desc,0,NULL);
   please_cite(stdout,"Timneanu2004a");
   

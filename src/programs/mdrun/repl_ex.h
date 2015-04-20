@@ -38,8 +38,8 @@
 #ifndef _repl_ex_h
 #define _repl_ex_h
 
-#include "typedefs.h"
-#include "types/commrec.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {

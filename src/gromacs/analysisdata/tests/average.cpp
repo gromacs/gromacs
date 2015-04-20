@@ -46,10 +46,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
+#include "gromacs/analysisdata/modules/average.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/analysisdata.h"
-#include "gromacs/analysisdata/modules/average.h"
 
 #include "gromacs/analysisdata/tests/datatest.h"
 #include "testutils/testasserts.h"
@@ -65,8 +68,13 @@ class SimpleInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static SimpleInputData singleton;
             return singleton.data_;
+#else
+            static SimpleInputData singleton_average;
+            return singleton_average.data_;
+#endif
         }
 
         SimpleInputData() : data_(1, false)
@@ -87,8 +95,13 @@ class MultipointInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static MultipointInputData singleton;
             return singleton.data_;
+#else
+            static MultipointInputData singleton_average;
+            return singleton_average.data_;
+#endif
         }
 
         MultipointInputData() : data_(1, true)
@@ -116,8 +129,13 @@ class MultiDataSetInputData
     public:
         static const AnalysisDataTestInput &get()
         {
+#ifndef STATIC_ANON_NAMESPACE_BUG
             static MultiDataSetInputData singleton;
             return singleton.data_;
+#else
+            static MultiDataSetInputData singleton_average;
+            return singleton_average.data_;
+#endif
         }
 
         MultiDataSetInputData() : data_(2, true)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
+#include "gmxpre.h"
+
 #include "helpwritercontext.h"
 
 #include <cctype>
@@ -61,7 +63,7 @@ namespace gmx
 namespace
 {
 
-//! \addtogroup module_onlinehelp
+//! \internal \addtogroup module_onlinehelp
 //! \{
 
 struct t_sandr
@@ -79,6 +81,10 @@ struct t_sandr
 
 //! List of replacements for console output.
 const t_sandr sandrTty[] = {
+    { "\\*", "*" },
+    { "\\=", "=" },
+    { "[REF]", "" },
+    { "[ref]", "" },
     { "[TT]", "" },
     { "[tt]", "" },
     { "[BB]", "" },
@@ -123,26 +129,24 @@ const t_sandr sandrTty[] = {
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
     { "[BR]", "\n"},
-    /* [UL], [LI], [ul] cannot be implemented properly with the current
-     * approach. */
     { "[GRK]", "" },
     { "[grk]", "" }
 };
 
-//! List of replacements for man page output.
-const t_sandr sandrMan[] = {
-    { "[TT]", "\\fB" },
-    { "[tt]", "\\fR" },
-    { "[BB]", "\\fB" },
-    { "[bb]", "\\fR" },
-    { "[IT]", "\\fI" },
-    { "[it]", "\\fR" },
+//! List of replacements for reStructuredText output.
+const t_sandr sandrRst[] = {
+    { "[TT]", "``" },
+    { "[tt]", "``" },
+    { "[BB]", "**" },
+    { "[bb]", "**" },
+    { "[IT]", "*" },
+    { "[it]", "*" },
     { "[MATH]", "" },
     { "[math]", "" },
     { "[CHEVRON]", "<" },
     { "[chevron]", ">" },
-    { "[MAG]", "|" },
-    { "[mag]", "|" },
+    { "[MAG]", "\\|" },
+    { "[mag]", "\\|" },
     { "[INT]", "integral" },
     { "[FROM]", " from " },
     { "[from]", "" },
@@ -154,7 +158,7 @@ const t_sandr sandrMan[] = {
     { "[SUB]", "_" },
     { "[sub]", "" },
     { "[SQRT]", "sqrt(" },
-    { "[sqrt]", ")", },
+    { "[sqrt]", ")" },
     { "[EXP]", "exp(" },
     { "[exp]", ")" },
     { "[LN]", "ln(" },
@@ -174,75 +178,10 @@ const t_sandr sandrMan[] = {
     { "[TANH]", "tanh(" },
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
-    { "\n ",    "\n" },
-    // The following three work only in the specific context in which they are
-    // currently used.
-    { "[UL]", "" },
-    { "[LI]", "\n- " },
-    { "[ul]", "" },
-    { "<",    "" },
-    { ">",    "" },
-    { "^",    "" },
-    { "#",    "" },
-    { "[BR]", "\n"},
-    { "-",    "\\-"},
+    // [BR] is fundamentally incompatible with rst
+    { "[BR]", "\n\n"},
     { "[GRK]", "" },
     { "[grk]", "" }
-};
-
-//! List of replacements for HTML output.
-const t_sandr sandrHtml[] = {
-    { "<",    "&lt;" },
-    { ">",    "&gt;" },
-    { "[TT]", "<tt>" },
-    { "[tt]", "</tt>" },
-    { "[BB]", "<b>" },
-    { "[bb]", "</b>" },
-    { "[IT]", "<it>" },
-    { "[it]", "</it>" },
-    { "[MATH]", "" },
-    { "[math]", "" },
-    { "[CHEVRON]", "&lt;" },
-    { "[chevron]", "&gt;" },
-    { "[MAG]", "|" },
-    { "[mag]", "|" },
-    { "[INT]", "integral" },
-    { "[FROM]", " from " },
-    { "[from]", "" },
-    { "[TO]", " to " },
-    { "[to]", " of" },
-    { "[int]", "" },
-    { "[SUM]", "sum" },
-    { "[sum]", "" },
-    { "[SUB]", "_" },
-    { "[sub]", "" },
-    { "[SQRT]", "sqrt(" },
-    { "[sqrt]", ")", },
-    { "[EXP]", "exp(" },
-    { "[exp]", ")" },
-    { "[LN]", "ln(" },
-    { "[ln]", ")" },
-    { "[LOG]", "log(" },
-    { "[log]", ")" },
-    { "[COS]", "cos(" },
-    { "[cos]", ")" },
-    { "[SIN]", "sin(" },
-    { "[sin]", ")" },
-    { "[TAN]", "tan(" },
-    { "[tan]", ")" },
-    { "[COSH]", "cosh(" },
-    { "[cosh]", ")" },
-    { "[SINH]", "sinh(" },
-    { "[sinh]", ")" },
-    { "[TANH]", "tanh(" },
-    { "[tanh]", ")" },
-    { "[PAR]", "<p>" },
-    { "[BR]", "<br>" },
-    { "[UL]", "<ul>" },
-    { "[LI]", "<li>" },
-    { "[ul]", "</ul>" },
-    { "[GRK]", "&"  },
-    { "[grk]", ";"  }
 };
 
 /*! \brief
@@ -357,7 +296,46 @@ class WrapperToVector : public WrapperInterface
 std::string toUpperCase(const std::string &text)
 {
     std::string result(text);
-    transform(result.begin(), result.end(), result.begin(), toupper);
+    std::transform(result.begin(), result.end(), result.begin(), toupper);
+    return result;
+}
+
+/*! \brief
+ * Removes extra newlines from reStructuredText.
+ *
+ * \param[in] text  Input text.
+ * \returns   \p text with all sequences of more than two newlines replaced
+ *     with just two newlines.
+ *
+ * Does not throw.
+ */
+std::string removeExtraNewlinesRst(const std::string &text)
+{
+    // Start from 2, so that all newlines in the beginning get stripped off.
+    int         newlineCount = 2;
+    std::string result;
+    result.reserve(text.length());
+    for (size_t i = 0; i < text.length(); ++i)
+    {
+        if (text[i] == '\n')
+        {
+            ++newlineCount;
+            if (newlineCount > 2)
+            {
+                continue;
+            }
+        }
+        else
+        {
+            newlineCount = 0;
+        }
+        result.push_back(text[i]);
+    }
+    size_t last = result.find_last_not_of('\n');
+    if (last != std::string::npos)
+    {
+        result.resize(last + 1);
+    }
     return result;
 }
 
@@ -424,13 +402,8 @@ void HelpLinks::addLink(const std::string &linkName,
         case eHelpOutputFormat_Console:
             replacement = repall(displayName, sandrTty);
             break;
-        case eHelpOutputFormat_Man:
-            replacement = repall(displayName, sandrMan);
-            break;
-        case eHelpOutputFormat_Html:
-            replacement = formatString(
-                        "<a href=\"%s.html\">%s</a>", targetName.c_str(),
-                        repall(displayName, sandrHtml).c_str());
+        case eHelpOutputFormat_Rst:
+            replacement = targetName;
             break;
         default:
             GMX_RELEASE_ASSERT(false, "Output format not implemented for links");
@@ -566,22 +539,128 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
     {
         case eHelpOutputFormat_Console:
         {
+            const int   baseFirstLineIndent = wrapper->settings().firstLineIndent();
+            const int   baseIndent          = wrapper->settings().indent();
             result = repall(result, sandrTty);
             result = replaceLinks(result);
-            return wrapper->wrap(result);
+            std::string paragraph;
+            paragraph.reserve(result.length());
+            size_t      i             = 0;
+            int         nextBreakSize = 0;
+            bool        bLiteral      = false;
+            while (i < result.length())
+            {
+                while (i < result.length() && result[i] == '\n')
+                {
+                    ++i;
+                }
+                if (i == result.length())
+                {
+                    break;
+                }
+                const int breakSize     = nextBreakSize;
+                int       currentLine   = 0;
+                bool      bLineStart    = true;
+                int       currentIndent = 0;
+                int       firstIndent   = 0;
+                int       indent        = 0;
+                paragraph.clear();
+                for (;; ++i)
+                {
+                    if (result[i] == '\n' || i == result.length())
+                    {
+                        if (currentLine == 0)
+                        {
+                            firstIndent = currentIndent;
+                        }
+                        else if (currentLine == 1)
+                        {
+                            indent = currentIndent;
+                        }
+                        ++currentLine;
+                        bLineStart    = true;
+                        currentIndent = 0;
+                        if (i + 1 >= result.length() || result[i + 1] == '\n')
+                        {
+                            nextBreakSize = 2;
+                            break;
+                        }
+                        if (!bLiteral)
+                        {
+                            if (!std::isspace(result[i - 1]))
+                            {
+                                paragraph.push_back(' ');
+                            }
+                            continue;
+                        }
+                    }
+                    else if (bLineStart)
+                    {
+                        if (std::isspace(result[i]))
+                        {
+                            ++currentIndent;
+                            continue;
+                        }
+                        else if (i + 1 < result.length()
+                                 && result[i] == '*' && result[i + 1] == ' ')
+                        {
+                            if (currentLine > 0)
+                            {
+                                while (i > 0 && result[i - 1] != '\n')
+                                {
+                                    --i;
+                                }
+                                paragraph     = stripString(paragraph);
+                                nextBreakSize = 1;
+                                break;
+                            }
+                            indent = currentIndent + 2;
+                        }
+                        bLineStart = false;
+                    }
+                    paragraph.push_back(result[i]);
+                }
+                if (endsWith(paragraph, "::"))
+                {
+                    bLiteral = true;
+                    if (paragraph.length() == 2)
+                    {
+                        continue;
+                    }
+                    if (paragraph[paragraph.length() - 3] == ' ')
+                    {
+                        paragraph.resize(paragraph.length() - 3);
+                    }
+                    else
+                    {
+                        paragraph.resize(paragraph.length() - 1);
+                    }
+                }
+                else
+                {
+                    bLiteral = false;
+                }
+                if (breakSize > 0)
+                {
+                    wrapper->wrap(std::string(breakSize, '\n'));
+                }
+                wrapper->settings().setFirstLineIndent(baseFirstLineIndent + firstIndent);
+                wrapper->settings().setIndent(baseIndent + indent);
+                wrapper->wrap(paragraph);
+                wrapper->settings().setFirstLineIndent(baseFirstLineIndent);
+                wrapper->settings().setIndent(baseIndent);
+            }
+            break;
         }
-        case eHelpOutputFormat_Man:
+        case eHelpOutputFormat_Rst:
         {
-            // Needs to be done first to avoid '-' -> '\-' messing up the links.
+            result = repall(result, sandrRst);
             result = replaceLinks(result);
-            result = repall(result, sandrMan);
-            return wrapper->wrap(result);
-        }
-        case eHelpOutputFormat_Html:
-        {
-            result = repall(result, sandrHtml);
-            result = replaceLinks(result);
-            return wrapper->wrap(result);
+            result = replaceAll(result, "[REF]", "");
+            result = replaceAll(result, "[ref]", "");
+            result = removeExtraNewlinesRst(result);
+            wrapper->wrap(result);
+            break;
         }
         default:
             GMX_THROW(InternalError("Invalid help output format"));
@@ -665,11 +744,9 @@ void HelpWriterContext::writeTitle(const std::string &title) const
             file.writeLine(toUpperCase(title));
             file.writeLine();
             break;
-        case eHelpOutputFormat_Man:
-            file.writeLine(formatString(".SH %s", toUpperCase(title).c_str()));
-            break;
-        case eHelpOutputFormat_Html:
-            file.writeLine(formatString("<H3>%s</H3>", title.c_str()));
+        case eHelpOutputFormat_Rst:
+            file.writeLine(title);
+            file.writeLine(std::string(title.length(), '-'));
             break;
         default:
             GMX_THROW(NotImplementedError(
@@ -689,10 +766,6 @@ void HelpWriterContext::writeTextBlock(const std::string &text) const
 
 void HelpWriterContext::writeOptionListStart() const
 {
-    if (outputFormat() == eHelpOutputFormat_Html)
-    {
-        outputFile().writeLine("<dl>");
-    }
 }
 
 void HelpWriterContext::writeOptionItem(const std::string &name,
@@ -707,21 +780,12 @@ void HelpWriterContext::writeOptionItem(const std::string &name,
             // special implementation is in CommandLineHelpWriter.
             GMX_THROW(NotImplementedError("Option item formatting for console output not implemented"));
             break;
-        case eHelpOutputFormat_Man:
-            file.writeLine(formatString(".BI \"\\%s\" \" %s\"", name.c_str(), args.c_str()));
-            file.writeString("    ");
-            writeTextBlock(description);
-            file.writeLine();
-            break;
-        case eHelpOutputFormat_Html:
+        case eHelpOutputFormat_Rst:
         {
-            std::string substArgs =
-                substituteMarkupAndWrapToString(TextLineWrapperSettings(), args);
-            file.writeLine(formatString("<dt><b><tt>%s</tt></b> %s</dt>", name.c_str(),
-                                        substArgs.c_str()));
-            file.writeLine("<dd>");
-            writeTextBlock(description);
-            file.writeLine("</dd>");
+            file.writeLine(formatString("``%s`` %s", name.c_str(), args.c_str()));
+            TextLineWrapperSettings settings;
+            settings.setIndent(4);
+            file.writeLine(substituteMarkupAndWrapToString(settings, description));
             break;
         }
         default:
@@ -732,10 +796,6 @@ void HelpWriterContext::writeOptionItem(const std::string &name,
 
 void HelpWriterContext::writeOptionListEnd() const
 {
-    if (outputFormat() == eHelpOutputFormat_Html)
-    {
-        outputFile().writeLine("</dl>");
-    }
 }
 
 } // namespace gmx

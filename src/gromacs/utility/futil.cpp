@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,42 +34,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/utility/futil.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
+#include "futil.h"
+
 #include "config.h"
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-
-#ifdef HAVE_DIRENT_H
-/* POSIX */
-#include <dirent.h>
-#endif
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #ifdef GMX_NATIVE_WINDOWS
-#include <direct.h>
+#include <direct.h>   // For _chdir() and _getcwd()
 #include <io.h>
-#endif
-
-/* Windows file stuff, only necessary for visual studio */
-#ifdef _MSC_VER
 #include <windows.h>
 #endif
 
 #include "thread_mpi/threads.h"
 
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/datafilefinder.h"
+#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/path.h"
@@ -86,16 +78,68 @@ typedef struct t_pstack {
     struct t_pstack *prev;
 } t_pstack;
 
-static t_pstack    *pstack      = NULL;
-static gmx_bool     bUnbuffered = FALSE;
+static t_pstack    *pstack           = NULL;
+static bool         bUnbuffered      = false;
+static int          s_maxBackupCount = 0;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
 static tMPI_Thread_mutex_t pstack_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-void no_buffers(void)
+namespace gmx
 {
-    bUnbuffered = TRUE;
+namespace
+{
+//! Global library file finder; stores the object set with setLibraryFileFinder().
+const DataFileFinder *g_libFileFinder;
+//! Default library file finder if nothing is set.
+const DataFileFinder  g_defaultLibFileFinder;
+}   // namespace
+
+const DataFileFinder &getLibraryFileFinder()
+{
+    if (g_libFileFinder != NULL)
+    {
+        return *g_libFileFinder;
+    }
+    return g_defaultLibFileFinder;
+}
+
+void setLibraryFileFinder(const DataFileFinder *finder)
+{
+    g_libFileFinder = finder;
+}
+
+} // namespace gmx
+
+void gmx_disable_file_buffering(void)
+{
+    bUnbuffered = true;
+}
+
+void gmx_set_max_backup_count(int count)
+{
+    if (count < 0)
+    {
+        const char *env = getenv("GMX_MAXBACKUP");
+        if (env != NULL)
+        {
+            // TODO: Check that the value is converted properly.
+            count = strtol(env, NULL, 10);
+            if (count < 0)
+            {
+                count = 0;
+            }
+        }
+        else
+        {
+            // Use a reasonably low value for countmax; we might
+            // generate 4-5 files in each round, and we don't
+            // want to hit directory limits of 1024 or 2048 files.
+            count = 99;
+        }
+    }
+    s_maxBackupCount = count;
 }
 
 void push_ps(FILE *fp)
@@ -234,10 +278,34 @@ gmx_off_t gmx_ftell(FILE *stream)
     return ftello(stream);
 #else
 #ifdef HAVE__FSEEKI64
+#ifndef __MINGW32__
     return _ftelli64(stream);
+#else
+    return ftello64(stream);
+#endif
 #else
     return ftell(stream);
 #endif
+#endif
+}
+
+int gmx_truncate(const char *filename, gmx_off_t length)
+{
+#ifdef GMX_NATIVE_WINDOWS
+    FILE *fp = fopen(filename, "rb+");
+    if (fp == NULL)
+    {
+        return -1;
+    }
+#ifdef _MSC_VER
+    int rc = _chsize_s(fileno(fp), length);
+#else
+    int rc = _chsize(fileno(fp), length);
+#endif
+    fclose(fp);
+    return rc;
+#else
+    return truncate(filename, length);
 #endif
 }
 
@@ -299,21 +367,11 @@ gmx_bool gmx_fexist(const char *fname)
     }
 }
 
-static char *backup_fn(const char *file, int count_max)
+static char *backup_fn(const char *file)
 {
-    /* Use a reasonably low value for countmax; we might
-     * generate 4-5 files in each round, and we dont
-     * want to hit directory limits of 1024 or 2048 files.
-     */
-#define COUNTMAX 99
     int          i, count = 1;
     char        *directory, *fn;
     char        *buf;
-
-    if (count_max == -1)
-    {
-        count_max = COUNTMAX;
-    }
 
     smalloc(buf, GMX_PATH_MAX);
 
@@ -341,14 +399,16 @@ static char *backup_fn(const char *file, int count_max)
         sprintf(buf, "%s/#%s.%d#", directory, fn, count);
         count++;
     }
-    while ((count <= count_max) && gmx_fexist(buf));
+    while ((count <= s_maxBackupCount) && gmx_fexist(buf));
 
     /* Arbitrarily bail out */
-    if (count > count_max)
+    if (count > s_maxBackupCount)
     {
+        /* TODO: The error message is only accurate for code that starts with
+         * Gromacs command-line interface. */
         gmx_fatal(FARGS, "Won't make more than %d backups of %s for you.\n"
                   "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
-                  count_max, fn);
+                  s_maxBackupCount, fn);
     }
 
     sfree(directory);
@@ -357,34 +417,15 @@ static char *backup_fn(const char *file, int count_max)
     return buf;
 }
 
-gmx_bool make_backup(const char * name)
+void make_backup(const char *name)
 {
-    char * env;
-    int    count_max;
-    char * backup;
-
-#ifdef GMX_FAHCORE
-    return FALSE; /* skip making backups */
-#else
-
+    if (s_maxBackupCount <= 0)
+    {
+        return;
+    }
     if (gmx_fexist(name))
     {
-        env = getenv("GMX_MAXBACKUP");
-        if (env != NULL)
-        {
-            count_max = strtol(env, NULL, 10);
-            if (count_max == -1)
-            {
-                /* Do not make backups and possibly overwrite old files */
-                return TRUE;
-            }
-        }
-        else
-        {
-            /* Use the default maximum */
-            count_max = -1;
-        }
-        backup = backup_fn(name, count_max);
+        char *backup = backup_fn(name);
         if (rename(name, backup) == 0)
         {
             fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
@@ -392,13 +433,10 @@ gmx_bool make_backup(const char * name)
         }
         else
         {
-            fprintf(stderr, "Sorry couldn't backup %s to %s\n", name, backup);
-            return FALSE;
+            fprintf(stderr, "\nSorry couldn't backup %s to %s\n", name, backup);
         }
         sfree(backup);
     }
-    return TRUE;
-#endif
 }
 
 FILE *gmx_ffopen(const char *file, const char *mode)
@@ -484,274 +522,38 @@ FILE *gmx_ffopen(const char *file, const char *mode)
 #endif
 }
 
-/* Our own implementation of dirent-like functionality to scan directories. */
-struct gmx_directory
-{
-#ifdef HAVE_DIRENT_H
-    DIR  *               dirent_handle;
-#elif (defined GMX_NATIVE_WINDOWS)
-    intptr_t             windows_handle;
-    struct _finddata_t   finddata;
-    int                  first;
-#else
-    int                  dummy;
-#endif
-};
-
-
-int
-gmx_directory_open(gmx_directory_t *p_gmxdir, const char *dirname)
-{
-    struct gmx_directory *  gmxdir;
-    int                     rc;
-
-    snew(gmxdir, 1);
-
-    *p_gmxdir = gmxdir;
-
-#ifdef HAVE_DIRENT_H
-    if ( (gmxdir->dirent_handle = opendir(dirname)) != NULL)
-    {
-        rc = 0;
-    }
-    else
-    {
-        sfree(gmxdir);
-        *p_gmxdir = NULL;
-        rc        = EINVAL;
-    }
-#elif (defined GMX_NATIVE_WINDOWS)
-
-    if (dirname != NULL && strlen(dirname) > 0)
-    {
-        char *     tmpname;
-        int        len;
-
-        len = strlen(dirname);
-        snew(tmpname, len+3);
-
-        strncpy(tmpname, dirname, len+1);
-
-        /* Remove possible trailing directory separator */
-        if (tmpname[len] == '/' || tmpname[len] == '\\')
-        {
-            tmpname[len] = '\0';
-        }
-
-        /* Add wildcard */
-        strcat(tmpname, "/*");
-
-        gmxdir->first = 1;
-        if ( (gmxdir->windows_handle = _findfirst(tmpname, &gmxdir->finddata)) > 0L)
-        {
-            rc = 0;
-        }
-        else
-        {
-            if (errno == EINVAL)
-            {
-                sfree(gmxdir);
-                *p_gmxdir = NULL;
-                rc        = EINVAL;
-            }
-            else
-            {
-                rc        = 0;
-            }
-        }
-    }
-    else
-    {
-        rc = EINVAL;
-    }
-#else
-    gmx_fatal(FARGS,
-              "Source compiled without POSIX dirent or windows support - cannot scan directories.\n"
-              "In the very unlikely event this is not a compile-time mistake you could consider\n"
-              "implementing support for your platform in futil.c, but contact the developers\n"
-              "to make sure it's really necessary!\n");
-    rc = -1;
-#endif
-    return rc;
-}
-
-
-int
-gmx_directory_nextfile(gmx_directory_t gmxdir, char *name, int maxlength_name)
-{
-    int                     rc;
-
-#ifdef HAVE_DIRENT_H
-
-    struct dirent *         direntp_large;
-    struct dirent *         p;
-
-
-    if (gmxdir != NULL && gmxdir->dirent_handle != NULL)
-    {
-        /* On some platforms no space is present for d_name in dirent.
-         * Since d_name is guaranteed to be the last entry, allocating
-         * extra space for dirent will allow more size for d_name.
-         * GMX_MAX_PATH should always be >= the max possible d_name.
-         */
-        smalloc(direntp_large, sizeof(*direntp_large) + GMX_PATH_MAX);
-        rc = readdir_r(gmxdir->dirent_handle, direntp_large, &p);
-
-        if (p != NULL && rc == 0)
-        {
-            strncpy(name, direntp_large->d_name, maxlength_name);
-        }
-        else
-        {
-            name[0] = '\0';
-            rc      = ENOENT;
-        }
-        sfree(direntp_large);
-    }
-    else
-    {
-        name[0] = '\0';
-        rc      = EINVAL;
-    }
-
-#elif (defined GMX_NATIVE_WINDOWS)
-
-    if (gmxdir != NULL)
-    {
-        if (gmxdir->windows_handle <= 0)
-        {
-
-            name[0] = '\0';
-            rc      = ENOENT;
-        }
-        else if (gmxdir->first == 1)
-        {
-            strncpy(name, gmxdir->finddata.name, maxlength_name);
-            rc            = 0;
-            gmxdir->first = 0;
-        }
-        else
-        {
-            if (_findnext(gmxdir->windows_handle, &gmxdir->finddata) == 0)
-            {
-                strncpy(name, gmxdir->finddata.name, maxlength_name);
-                rc      = 0;
-            }
-            else
-            {
-                name[0] = '\0';
-                rc      = ENOENT;
-            }
-        }
-    }
-
-#else
-    gmx_fatal(FARGS,
-              "Source compiled without POSIX dirent or windows support - cannot scan directories.\n");
-    rc = -1;
-#endif
-    return rc;
-}
-
-
-int
-gmx_directory_close(gmx_directory_t gmxdir)
-{
-    int                     rc;
-#ifdef HAVE_DIRENT_H
-    rc = (gmxdir != NULL) ? closedir(gmxdir->dirent_handle) : EINVAL;
-#elif (defined GMX_NATIVE_WINDOWS)
-    rc = (gmxdir != NULL) ? _findclose(gmxdir->windows_handle) : EINVAL;
-#else
-    gmx_fatal(FARGS,
-              "Source compiled without POSIX dirent or windows support - cannot scan directories.\n");
-    rc = -1;
-#endif
-
-    sfree(gmxdir);
-    return rc;
-}
-
 
 char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
 {
-    bool bEnvIsSet = false;
     try
     {
-        if (bAddCWD && gmx_fexist(file))
+        const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
+        std::string                result =
+            finder.findFile(gmx::DataFileOptions(file)
+                                .includeCurrentDir(bAddCWD)
+                                .throwIfNotFound(bFatal));
+        if (!result.empty())
         {
-            return gmx_strdup(file);
-        }
-        else
-        {
-            std::string  libpath;
-            // GMXLIB can be a path.
-            const char  *lib = getenv("GMXLIB");
-            if (lib != NULL)
-            {
-                bEnvIsSet = true;
-                libpath   = lib;
-            }
-            else
-            {
-                libpath = gmx::getProgramContext().defaultLibraryDataPath();
-            }
-
-            std::vector<std::string>                 pathEntries;
-            gmx::Path::splitPathEnvironment(libpath, &pathEntries);
-            std::vector<std::string>::const_iterator i;
-            for (i = pathEntries.begin(); i != pathEntries.end(); ++i)
-            {
-                std::string testPath = gmx::Path::join(*i, file);
-                if (gmx::Path::exists(testPath))
-                {
-                    return gmx_strdup(testPath.c_str());
-                }
-            }
+            return gmx_strdup(result.c_str());
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    if (bFatal)
-    {
-        if (bEnvIsSet)
-        {
-            gmx_fatal(FARGS,
-                      "Library file %s not found %sin your GMXLIB path.",
-                      file, bAddCWD ? "in current dir nor " : "");
-        }
-        else
-        {
-            gmx_fatal(FARGS,
-                      "Library file %s not found %sin default directories.\n"
-                      "(You can set the directories to search with the GMXLIB path variable)",
-                      file, bAddCWD ? "in current dir nor " : "");
-        }
-    }
     return NULL;
 }
 
 FILE *low_libopen(const char *file, gmx_bool bFatal)
 {
-    FILE *ff;
-    char *fn;
-
-    fn = low_gmxlibfn(file, TRUE, bFatal);
-
-    if (fn == NULL)
+    try
     {
-        ff = NULL;
+        const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
+        FILE *fp =
+            finder.openFile(gmx::DataFileOptions(file)
+                                .includeCurrentDir(true)
+                                .throwIfNotFound(bFatal));
+        return fp;
     }
-    else
-    {
-        if (debug)
-        {
-            fprintf(debug, "Opening library file %s\n", fn);
-        }
-        ff = fopen(fn, "r");
-    }
-    sfree(fn);
-
-    return ff;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return NULL;
 }
 
 char *gmxlibfn(const char *file)
@@ -906,13 +708,15 @@ int gmx_fsync(FILE *fp)
     rc = fah_fsync(fp);
 #else /* GMX_FAHCORE */
     {
-        int fn = -1;
+        int fn;
 
         /* get the file number */
 #if defined(HAVE_FILENO)
         fn = fileno(fp);
 #elif defined(HAVE__FILENO)
         fn = _fileno(fp);
+#else
+        fn = -1;
 #endif
 
         /* do the actual fsync */

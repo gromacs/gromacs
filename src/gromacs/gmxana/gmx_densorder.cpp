@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,38 +32,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "gstat.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/correlationfunctions/expfit.h"
+#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/math/units.h"
-#include "dens_filter.h"
-#include "binsearch.h"
-#include "powerspect.h"
-#include "gmx_ana.h"
-#include "copyrite.h"
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/binsearch.h"
+#include "gromacs/gmxana/dens_filter.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/powerspect.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_DOUBLE
@@ -357,21 +355,21 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                             t_interf ****intf2, const output_env_t oenv)
 {
     /*Returns two pointers to 3D arrays of t_interf structs containing (position,thickness) of the interface(s)*/
-    FILE       *xvg;
-    real       *zDensavg; /* zDensavg[z]*/
-    int         i, j, k, n;
-    int         xysize;
-    int         ndx1, ndx2, *zperm;
-    real        densmid;
-    real        splitpoint, startpoint, endpoint;
-    real       *sigma1, *sigma2;
-    real        beginfit1[4];
-    real        beginfit2[4];
-    real       *fit1 = NULL, *fit2 = NULL;
-    const real *avgfit1;
-    const real *avgfit2;
-    const real  onehalf = 1.00/2.00;
-    t_interf ***int1    = NULL, ***int2 = NULL; /*Interface matrices [t][x,y] - last index in row-major order*/
+    FILE         *xvg;
+    real         *zDensavg; /* zDensavg[z]*/
+    int           i, j, k, n;
+    int           xysize;
+    int           ndx1, ndx2, *zperm;
+    real          densmid;
+    real          splitpoint, startpoint, endpoint;
+    real         *sigma1, *sigma2;
+    double        beginfit1[4];
+    double        beginfit2[4];
+    double       *fit1 = NULL, *fit2 = NULL;
+    const double *avgfit1;
+    const double *avgfit2;
+    const real    onehalf = 1.00/2.00;
+    t_interf   ***int1    = NULL, ***int2 = NULL; /*Interface matrices [t][x,y] - last index in row-major order*/
     /*Create int1(t,xy) and int2(t,xy) arrays with correct number of interf_t elements*/
     xysize = xslices*yslices;
     snew(int1, tblocks);
@@ -494,9 +492,9 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
         /*Fit average density in z over whole trajectory to obtain tentative fit-parameters in fit1 and fit2*/
 
         /*Fit 1st half of box*/
-        do_lmfit(zslices, zDensavg, sigma1, binwidth, NULL, startpoint, splitpoint, oenv, FALSE, effnERF, beginfit1, 3);
+        do_lmfit(zslices, zDensavg, sigma1, binwidth, NULL, startpoint, splitpoint, oenv, FALSE, effnERF, beginfit1, 8, NULL);
         /*Fit 2nd half of box*/
-        do_lmfit(zslices, zDensavg, sigma2, binwidth, NULL, splitpoint, endpoint, oenv, FALSE, effnERF, beginfit2, 3);
+        do_lmfit(zslices, zDensavg, sigma2, binwidth, NULL, splitpoint, endpoint, oenv, FALSE, effnERF, beginfit2, 8, NULL);
 
         /*Initialise the const arrays for storing the average fit parameters*/
         avgfit1 = beginfit1;
@@ -520,10 +518,10 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
                         fit2[k] = avgfit2[k];
                     }
                     /*Now fit and store in structures in row-major order int[n][i][j]*/
-                    do_lmfit(zslices, Densmap[n][i][j], sigma1, binwidth, NULL, startpoint, splitpoint, oenv, FALSE, effnERF, fit1, 1);
+                    do_lmfit(zslices, Densmap[n][i][j], sigma1, binwidth, NULL, startpoint, splitpoint, oenv, FALSE, effnERF, fit1, 0, NULL);
                     int1[n][j+(yslices*i)]->Z = fit1[2];
                     int1[n][j+(yslices*i)]->t = fit1[3];
-                    do_lmfit(zslices, Densmap[n][i][j], sigma2, binwidth, NULL, splitpoint, endpoint, oenv, FALSE, effnERF, fit2, 2);
+                    do_lmfit(zslices, Densmap[n][i][j], sigma2, binwidth, NULL, splitpoint, endpoint, oenv, FALSE, effnERF, fit2, 0, NULL);
                     int2[n][j+(yslices*i)]->Z = fit2[2];
                     int2[n][j+(yslices*i)]->t = fit2[3];
                 }
@@ -615,7 +613,9 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
     sfree(yticks);
 }
 
-static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins, int ybins, char **fnms)
+static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks,
+                     int xbins, int ybins, char **fnms,
+                     const output_env_t oenv)
 {
     FILE *raw1, *raw2;
     int   i, j, n;
@@ -627,8 +627,10 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);
         settings.linePrefix("# ");
-        gmx::printBinaryInformation(raw1, gmx::getProgramContext(), settings);
-        gmx::printBinaryInformation(raw2, gmx::getProgramContext(), settings);
+        gmx::printBinaryInformation(raw1, output_env_get_program_context(oenv),
+                                    settings);
+        gmx::printBinaryInformation(raw2, output_env_get_program_context(oenv),
+                                    settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(raw1, "# Legend: nt nx ny\n# Xbin Ybin Z t\n");
@@ -725,7 +727,7 @@ int gmx_densorder(int argc, char *argv[])
 
 
     t_filenm fnm[] = {
-        { efTPX, "-s",  NULL, ffREAD },               /* this is for the topology */
+        { efTPR, "-s",  NULL, ffREAD },               /* this is for the topology */
         { efTRX, "-f", NULL, ffREAD },                /* and this for the trajectory */
         { efNDX, "-n", NULL, ffREAD},                 /* this is to select groups */
         { efDAT, "-o", "Density4D", ffOPTWR},         /* This is for outputting the entire 4D densityfield in binary format */
@@ -750,7 +752,7 @@ int gmx_densorder(int argc, char *argv[])
     bRawOut  = opt2bSet("-or", NFILE, fnm);
     bGraph   = opt2bSet("-og", NFILE, fnm);
     bOut     = opt2bSet("-o", NFILE, fnm);
-    top      = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top      = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
     snew(grpname, 1);
     snew(index, 1);
     snew(ngx, 1);
@@ -798,7 +800,7 @@ int gmx_densorder(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "No or not correct number (2) of output-files: %d", nfxpm);
         }
-        writeraw(surf1, surf2, tblock, xslices, yslices, rawfiles);
+        writeraw(surf1, surf2, tblock, xslices, yslices, rawfiles, oenv);
     }
 
 

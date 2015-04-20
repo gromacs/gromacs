@@ -44,7 +44,8 @@
 #define GMX_UTILITY_GMXASSERT_H
 
 #include <boost/current_function.hpp>
-#include <boost/exception/detail/attribute_noreturn.hpp>
+
+#include "gromacs/utility/basedefinitions.h"
 
 //! \addtogroup module_utility
 //! \{
@@ -100,7 +101,7 @@ namespace internal
  *
  * \ingroup module_utility
  */
-BOOST_ATTRIBUTE_NORETURN
+gmx_noreturn
 void assertHandler(const char *condition, const char *msg,
                    const char *func, const char *file, int line);
 

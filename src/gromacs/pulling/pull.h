@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,8 +50,8 @@
 #ifndef GMX_PULLING_PULL_H
 #define GMX_PULLING_PULL_H
 
-#include "typedefs.h"
-#include "../fileio/filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,19 +59,18 @@ extern "C" {
 
 struct t_pbc;
 
-/*! \brief Get the distance to the reference and deviation for pull coord coord_ind.
+
+/*! \brief Get the value for pull coord coord_ind.
  *
- * \param[in]  pull         The pull group.
- * \param[in]  coord_ind    Number of the pull coordinate.
- * \param[in]  pbc          Information structure about periodicity.
- * \param[in]  t            Time.
- * \param[out] dr           The pull coordinate difference vector.
- * \param[out] dev          The deviation from the reference distance.
+ * \param[in,out] pull      The pull struct.
+ * \param[in]     coord_ind Number of the pull coordinate.
+ * \param[in]     pbc       Information structure about periodicity.
+ * \param[out]    value     The value of the pull coordinate.
  */
-void get_pull_coord_distance(const t_pull *pull,
-                             int coord_ind,
-                             const struct t_pbc *pbc, double t,
-                             dvec dr, double *dev);
+void get_pull_coord_value(t_pull             *pull,
+                          int                 coord_ind,
+                          const struct t_pbc *pbc,
+                          double             *value);
 
 
 /*! \brief Set the all the pull forces to zero.
@@ -83,21 +82,20 @@ void clear_pull_forces(t_pull *pull);
 
 /*! \brief Determine the COM pull forces and add them to f, return the potential
  *
- * \param[in] ePull      Enum defining the type of pulling: umbrella, const force, ...
- * \param[in] pull       The pull group.
- * \param[in] md         All atoms.
- * \param[in] pbc        Information struct about periodicity.
- * \param[in] cr         Struct for communication info.
- * \param[in] t          Time.
- * \param[in] lambda     The value of lambda in FEP calculations.
- * \param[in] x          Positions.
- * \param[in] f          Forces.
+ * \param[in,out] pull   The pull struct.
+ * \param[in]     md     All atoms.
+ * \param[in]     pbc    Information struct about periodicity.
+ * \param[in]     cr     Struct for communication info.
+ * \param[in]     t      Time.
+ * \param[in]     lambda The value of lambda in FEP calculations.
+ * \param[in]     x      Positions.
+ * \param[in]     f      Forces.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  * \param[out] dvdlambda Pull contribution to dV/d(lambda).
  *
  * \returns The pull potential energy.
  */
-real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
+real pull_potential(t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
                     rvec *x, rvec *f, tensor vir, real *dvdlambda);
 
@@ -105,13 +103,13 @@ real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, struct t_pbc *pbc,
 /*! \brief Constrain the coordinates xp in the directions in x
  * and also constrain v when v != NULL.
  *
- * \param[in] pull       The pull group.
- * \param[in] md         All atoms.
- * \param[in] pbc        Information struct about periodicity.
- * \param[in] cr         Struct for communication info.
- * \param[in] dt         The time step length.
- * \param[in] t          The time.
- * \param[in] x          Positions.
+ * \param[in,out] pull   The pull data.
+ * \param[in]     md     All atoms.
+ * \param[in]     pbc    Information struct about periodicity.
+ * \param[in]     cr     Struct for communication info.
+ * \param[in]     dt     The time step length.
+ * \param[in]     t      The time.
+ * \param[in]     x      Positions.
  * \param[in,out] xp     Updated x, can be NULL.
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.

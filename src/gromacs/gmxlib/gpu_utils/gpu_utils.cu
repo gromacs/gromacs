@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,33 +33,21 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-
-#include "types/hw_info.h"
+#include "gmxpre.h"
 
 #include "gpu_utils.h"
-#include "../cuda_tools/cudautils.cuh"
-#include "memtestG80_core.h"
 
+#include "config.h"
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-
-/** Amount of memory to be used in quick memtest. */
-#define QUICK_MEM       250
-/** Bit flag with type of tests to run in quick memtest. */
-#define QUICK_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS
-/** Number of iterations in quick memtest. */
-#define QUICK_ITER      3
-
-/** Bitflag with all test set on for full memetest. */
-#define FULL_TESTS      0x3FFF
-/** Number of iterations in full memtest. */
-#define FULL_ITER       25
-
-/** Bit flag with type of tests to run in time constrained memtest. */
-#define TIMED_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS
 
 /*! \brief
  * Max number of devices supported by CUDA (for consistency checking).
@@ -72,25 +60,6 @@ static int cuda_max_device_count = 32;
 __global__ void k_dummy_test()
 {
 }
-
-
-/** Bit-flags which refer to memtestG80 test types and are used in do_memtest
- * to specify which tests to run. */
-enum memtest_G80_test_types {
-    MOVING_INVERSIONS_10   = 0x1,
-    MOVING_INVERSIONS_RAND = 0x2,
-    WALKING_8BIT_M86       = 0x4,
-    WALKING_0_8BIT         = 0x8,
-    WALKING_1_8BIT         = 0x10,
-    WALKING_0_32BIT        = 0x20,
-    WALKING_1_32BIT        = 0x40,
-    RANDOM_BLOCKS          = 0x80,
-    MOD_20_32BIT           = 0x100,
-    LOGIC_1_ITER           = 0x200,
-    LOGIC_4_ITER           = 0x400,
-    LOGIC_1_ITER_SHMEM     = 0x800,
-    LOGIC_4_ITER_SHMEM     = 0x1000
-};
 
 
 /*!
@@ -194,365 +163,249 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     /* destroy context if we created one */
     if (id != -1)
     {
-#if CUDA_VERSION < 4000
-        cu_err = cudaThreadExit();
-        CU_RET_ERR(cu_err, "cudaThreadExit failed");
-#else
         cu_err = cudaDeviceReset();
         CU_RET_ERR(cu_err, "cudaDeviceReset failed");
-#endif
     }
 
     return 0;
 }
 
-
-/*!
- * \brief Runs a set of memory tests specified by the given bit-flags.
- * Tries to allocate and do the test on \p megs Mb memory or
- * the greatest amount that can be allocated (>10Mb).
- * In case if an error is detected it stops without finishing the remaining
- * steps/iterations and returns greater then zero value.
- * In case of other errors (e.g. kernel launch errors, device querying errors)
- * -1 is returned.
- *
- * \param[in] which_tests   variable with bit-flags of the requested tests
- * \param[in] megs          amount of memory that will be tested in MB
- * \param[in] iter          number of iterations
- * \returns                 0 if no error was detected, otherwise >0
+#ifdef HAVE_NVML
+/* TODO: We should actually be using md_print_warn in md_logging.c,
+ * but we can't include mpi.h in CUDA code.
  */
-static int do_memtest(unsigned int which_tests, int megs, int iter)
+static void md_print_info(FILE       *fplog,
+                          const char *fmt, ...)
 {
-    memtestState    tester;
-    int             i;
-    uint            err_count; //, err_iter;
+    va_list ap;
 
-    // no parameter check as this fn won't be called externally
-
-    // let's try to allocate the mem
-    while (!tester.allocate(megs) && (megs - 10 > 0))
+    if (fplog != NULL)
     {
-        megs -= 10; tester.deallocate();
-    }
+        /* We should only print to stderr on the master node,
+         * in most cases fplog is only set on the master node, so this works.
+         */
+        va_start(ap, fmt);
+        vfprintf(stderr, fmt, ap);
+        va_end(ap);
 
-    if (megs <= 10)
+        va_start(ap, fmt);
+        vfprintf(fplog, fmt, ap);
+        va_end(ap);
+    }
+}
+#endif /*HAVE_NVML*/
+
+/* TODO: We should actually be using md_print_warn in md_logging.c,
+ * but we can't include mpi.h in CUDA code.
+ * This is replicated from nbnxn_cuda_data_mgmt.cu.
+ */
+static void md_print_warn(FILE       *fplog,
+                          const char *fmt, ...)
+{
+    va_list ap;
+
+    if (fplog != NULL)
     {
-        fprintf(stderr, "Unable to allocate GPU memory!\n");
-        return -1;
+        /* We should only print to stderr on the master node,
+         * in most cases fplog is only set on the master node, so this works.
+         */
+        va_start(ap, fmt);
+        fprintf(stderr, "\n");
+        vfprintf(stderr, fmt, ap);
+        fprintf(stderr, "\n");
+        va_end(ap);
+
+        va_start(ap, fmt);
+        fprintf(fplog, "\n");
+        vfprintf(fplog, fmt, ap);
+        fprintf(fplog, "\n");
+        va_end(ap);
     }
-
-    // clear the first 18 bits
-    which_tests &= 0x3FFF;
-    for (i = 0; i < iter; i++)
-    {
-        // Moving Inversions (ones and zeros)
-        if ((MOVING_INVERSIONS_10 & which_tests) == MOVING_INVERSIONS_10)
-        {
-            tester.gpuMovingInversionsOnesZeros(err_count);
-            if (err_count > 0)
-            {
-                return MOVING_INVERSIONS_10;
-            }
-        }
-        // Moving Inversions (random)
-        if ((MOVING_INVERSIONS_RAND & which_tests) == MOVING_INVERSIONS_RAND)
-        {
-            tester.gpuMovingInversionsRandom(err_count);
-            if (err_count > 0)
-            {
-                return MOVING_INVERSIONS_RAND;
-            }
-        }
-        // Memtest86 Walking 8-bit
-        if ((WALKING_8BIT_M86 & which_tests) == WALKING_8BIT_M86)
-        {
-            for (uint shift = 0; shift < 8; shift++)
-            {
-                tester.gpuWalking8BitM86(err_count, shift);
-                if (err_count > 0)
-                {
-                    return WALKING_8BIT_M86;
-                }
-            }
-        }
-        // True Walking zeros (8-bit)
-        if ((WALKING_0_8BIT & which_tests) == WALKING_0_8BIT)
-        {
-            for (uint shift = 0; shift < 8; shift++)
-            {
-                tester.gpuWalking8Bit(err_count, false, shift);
-                if (err_count > 0)
-                {
-                    return WALKING_0_8BIT;
-                }
-            }
-        }
-        // True Walking ones (8-bit)
-        if ((WALKING_1_8BIT & which_tests) == WALKING_1_8BIT)
-        {
-            for (uint shift = 0; shift < 8; shift++)
-            {
-                tester.gpuWalking8Bit(err_count, true, shift);
-                if (err_count > 0)
-                {
-                    return WALKING_1_8BIT;
-                }
-            }
-        }
-        // Memtest86 Walking zeros (32-bit)
-        if ((WALKING_0_32BIT & which_tests) == WALKING_0_32BIT)
-        {
-            for (uint shift = 0; shift < 32; shift++)
-            {
-                tester.gpuWalking32Bit(err_count, false, shift);
-                if (err_count > 0)
-                {
-                    return WALKING_0_32BIT;
-                }
-            }
-        }
-        // Memtest86 Walking ones (32-bit)
-        if ((WALKING_1_32BIT & which_tests) == WALKING_1_32BIT)
-        {
-            for (uint shift = 0; shift < 32; shift++)
-            {
-                tester.gpuWalking32Bit(err_count, true, shift);
-                if (err_count > 0)
-                {
-                    return WALKING_1_32BIT;
-                }
-            }
-        }
-        // Random blocks
-        if ((RANDOM_BLOCKS & which_tests) == RANDOM_BLOCKS)
-        {
-            tester.gpuRandomBlocks(err_count, rand());
-            if (err_count > 0)
-            {
-                return RANDOM_BLOCKS;
-            }
-
-        }
-
-        // Memtest86 Modulo-20
-        if ((MOD_20_32BIT & which_tests) == MOD_20_32BIT)
-        {
-            for (uint shift = 0; shift < 20; shift++)
-            {
-                tester.gpuModuloX(err_count, shift, rand(), 20, 2);
-                if (err_count > 0)
-                {
-                    return MOD_20_32BIT;
-                }
-            }
-        }
-        // Logic (one iteration)
-        if ((LOGIC_1_ITER & which_tests) == LOGIC_1_ITER)
-        {
-            tester.gpuShortLCG0(err_count, 1);
-            if (err_count > 0)
-            {
-                return LOGIC_1_ITER;
-            }
-        }
-        // Logic (4 iterations)
-        if ((LOGIC_4_ITER & which_tests) == LOGIC_4_ITER)
-        {
-            tester.gpuShortLCG0(err_count, 4);
-            if (err_count > 0)
-            {
-                return LOGIC_4_ITER;
-            }
-
-        }
-        // Logic (shared memory, one iteration)
-        if ((LOGIC_1_ITER_SHMEM & which_tests) == LOGIC_1_ITER_SHMEM)
-        {
-            tester.gpuShortLCG0Shmem(err_count, 1);
-            if (err_count > 0)
-            {
-                return LOGIC_1_ITER_SHMEM;
-            }
-        }
-        // Logic (shared-memory, 4 iterations)
-        if ((LOGIC_4_ITER_SHMEM & which_tests) == LOGIC_4_ITER_SHMEM)
-        {
-            tester.gpuShortLCG0Shmem(err_count, 4);
-            if (err_count > 0)
-            {
-                return LOGIC_4_ITER_SHMEM;
-            }
-        }
-    }
-
-    tester.deallocate();
-    return err_count;
 }
 
-/*! \brief Runs a quick memory test and returns 0 in case if no error is detected.
- * If an error is detected it stops before completing the test and returns a
- * value greater then 0. In case of other errors (e.g. kernel launch errors,
- * device querying errors) -1 is returned.
+#ifdef HAVE_NVML
+/*! \brief Determines and adds the NVML device ID to the passed \cuda_dev.
  *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
- * \returns             0 if no error was detected, otherwise >0
- */
-int do_quick_memtest(int dev_id)
-{
-    cudaDeviceProp  dev_prop;
-    int             devmem, res, time = 0;
-
-    if (debug)
-    {
-        time = getTimeMilliseconds();
-    }
-
-    if (do_sanity_checks(dev_id, &dev_prop) != 0)
-    {
-        // something went wrong
-        return -1;
-    }
-
-    if (debug)
-    {
-        devmem = dev_prop.totalGlobalMem/(1024*1024); // in MiB
-        fprintf(debug, ">> Running QUICK memtests on %d MiB (out of total %d MiB), %d iterations\n",
-                QUICK_MEM, devmem, QUICK_ITER);
-    }
-
-    res = do_memtest(QUICK_TESTS, QUICK_MEM, QUICK_ITER);
-
-    if (debug)
-    {
-        fprintf(debug, "Q-RES = %d\n", res);
-        fprintf(debug, "Q-runtime: %d ms\n", getTimeMilliseconds() - time);
-    }
-
-    /* destroy context only if we created it */
-    if (dev_id != -1)
-    {
-        cudaThreadExit();
-    }
-    return res;
-}
-
-/*! \brief Runs a full memory test and returns 0 in case if no error is detected.
- * If an error is detected  it stops before completing the test and returns a
- * value greater then 0. In case of other errors (e.g. kernel launch errors,
- * device querying errors) -1 is returned.
+ * Determines and adds the NVML device ID to the passed \cuda_dev. This is done by
+ * matching PCI-E information from \cuda_dev with the available NVML devices.
  *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
- * \returns             0 if no error was detected, otherwise >0
+ * \param[in,out] cuda_dev  CUDA device information to enrich with NVML device info
+ * \returns                 true if \cuda_dev could be enriched with matching NVML device information.
  */
-
-int do_full_memtest(int dev_id)
+static bool addNVMLDeviceId(cuda_dev_info* cuda_dev)
 {
-    cudaDeviceProp  dev_prop;
-    int             devmem, res, time = 0;
-
-    if (debug)
+    nvmlReturn_t nvml_stat = NVML_SUCCESS;
+    nvmlDevice_t nvml_device_id;
+    unsigned int nvml_device_count = 0;
+    cuda_dev->nvml_initialized = false;
+    nvml_stat                  = nvmlDeviceGetCount ( &nvml_device_count );
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetCount failed" );
+    for (unsigned int nvml_device_idx = 0; nvml_stat == NVML_SUCCESS && nvml_device_idx < nvml_device_count; ++nvml_device_idx)
     {
-        time = getTimeMilliseconds();
-    }
-
-    if (do_sanity_checks(dev_id, &dev_prop) != 0)
-    {
-        // something went wrong
-        return -1;
-    }
-
-    devmem = dev_prop.totalGlobalMem/(1024*1024); // in MiB
-
-    if (debug)
-    {
-        fprintf(debug, ">> Running FULL memtests on %d MiB (out of total %d MiB), %d iterations\n",
-                devmem, devmem, FULL_ITER);
-    }
-
-    /* do all test on the entire memory */
-    res = do_memtest(FULL_TESTS, devmem, FULL_ITER);
-
-    if (debug)
-    {
-        fprintf(debug, "F-RES = %d\n", res);
-        fprintf(debug, "F-runtime: %d ms\n", getTimeMilliseconds() - time);
-    }
-
-    /* destroy context only if we created it */
-    if (dev_id != -1)
-    {
-        cudaThreadExit();
-    }
-    return res;
-}
-
-/*! \brief Runs a time constrained memory test and returns 0 in case if no error is detected.
- * If an error is detected it stops before completing the test and returns a value greater
- * than zero. In case of other errors (e.g. kernel launch errors, device querying errors) -1
- * is returned. Note, that test iterations are not interrupted therefor the total runtime of
- * the test will always be multipple of one iteration's runtime.
- *
- * \param[in] dev_id        the device id of the GPU or -1 if the device has laredy been selected
- * \param[in] time_constr   the time limit of the testing
- * \returns                 0 if no error was detected, otherwise >0
- */
-int do_timed_memtest(int dev_id, int time_constr)
-{
-    cudaDeviceProp  dev_prop;
-    int             devmem, res = 0, time = 0, startt;
-
-    if (debug)
-    {
-        time = getTimeMilliseconds();
-    }
-
-    time_constr *= 1000;  /* convert to ms for convenience */
-    startt       = getTimeMilliseconds();
-
-    if (do_sanity_checks(dev_id, &dev_prop) != 0)
-    {
-        // something went wrong
-        return -1;
-    }
-
-    devmem = dev_prop.totalGlobalMem/(1024*1024); // in MiB
-
-    if (debug)
-    {
-        fprintf(debug, ">> Running time constrained memtests on %d MiB (out of total %d MiB), time limit of %d s \n",
-                devmem, devmem, time_constr);
-    }
-
-    /* do the TIMED_TESTS set, one step at a time on the entire memory
-       that can be allocated, and stop when the given time is exceeded */
-    while ( ((int)getTimeMilliseconds() - startt) < time_constr)
-    {
-        res = do_memtest(TIMED_TESTS, devmem, 1);
-        if (res != 0)
+        nvml_stat = nvmlDeviceGetHandleByIndex ( nvml_device_idx, &nvml_device_id );
+        HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetHandleByIndex failed" );
+        if (nvml_stat != NVML_SUCCESS)
         {
             break;
         }
-    }
 
-    if (debug)
-    {
-        fprintf(debug, "T-RES = %d\n", res);
-        fprintf(debug, "T-runtime: %d ms\n", getTimeMilliseconds() - time);
+        nvmlPciInfo_t nvml_pci_info;
+        nvml_stat = nvmlDeviceGetPciInfo ( nvml_device_id, &nvml_pci_info );
+        HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetPciInfo failed" );
+        if (nvml_stat != NVML_SUCCESS)
+        {
+            break;
+        }
+        if (static_cast<unsigned int>(cuda_dev->prop.pciBusID) == nvml_pci_info.bus &&
+            static_cast<unsigned int>(cuda_dev->prop.pciDeviceID) == nvml_pci_info.device &&
+            static_cast<unsigned int>(cuda_dev->prop.pciDomainID) == nvml_pci_info.domain)
+        {
+            cuda_dev->nvml_initialized = true;
+            cuda_dev->nvml_device_id   = nvml_device_id;
+            break;
+        }
     }
-
-    /* destroy context only if we created it */
-    if (dev_id != -1)
-    {
-        cudaThreadExit();
-    }
-    return res;
+    return cuda_dev->nvml_initialized;
 }
+#endif /*HAVE_NVML*/
+
+/*! \brief Tries to set application clocks for the GPU with the given index.
+ *
+ * The variable \gpuid is the index of the GPU in the gpu_info.cuda_dev array
+ * to handle the application clocks for. Application clocks are set to the
+ * max supported value to increase performance if application clock permissions
+ * allow this. For future GPU architectures a more sophisticated scheme might be
+ * required.
+ *
+ * \param[out] fplog        log file to write to
+ * \param[in] gpuid         index of the GPU to set application clocks for
+ * \param[in] gpu_info      GPU info of all detected devices in the system.
+ * \returns                 true if no error occurs during application clocks handling.
+ */
+static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unused gpuid, const gmx_gpu_info_t gmx_unused *gpu_info)
+{
+#ifndef HAVE_NVML
+    if ( (gpu_info->cuda_dev[gpuid].prop.major * 10 + gpu_info->cuda_dev[gpuid].prop.minor) >= 35 &&
+         (0 == gmx_wcmatch( "*Tesla*", gpu_info->cuda_dev[gpuid].prop.name )))
+    {
+        md_print_warn( fplog, "NVML support was not found in CUDA library %d.%d, so your GPU of type %s cannot use application clock support to improve performance.\n",
+                       gpu_info->cuda_dev[gpuid].prop.major,
+                       gpu_info->cuda_dev[gpuid].prop.minor,
+                       gpu_info->cuda_dev[gpuid].prop.name );
+    }
+    return true;
+#else /* HAVE_NVML defined */
+    nvmlReturn_t nvml_stat = NVML_SUCCESS;
+    char        *env;
+    if (!( (gpu_info->cuda_dev[gpuid].prop.major * 10 + gpu_info->cuda_dev[gpuid].prop.minor) >= 35 &&
+           (0 == gmx_wcmatch( "*Tesla*", gpu_info->cuda_dev[gpuid].prop.name ))))
+    {
+        return true;
+    }
+    //TODO: GMX_GPU_APPLICATION_CLOCKS is currently only used to enable/disable setting of application clocks
+    //      this variable can be later used to give a user more fine grained control.
+    env = getenv("GMX_GPU_APPLICATION_CLOCKS");
+    if (env != NULL && ( strcmp( env, "0") == 0 ||
+                         gmx_strcasecmp( env, "OFF") == 0 ||
+                         gmx_strcasecmp( env, "DISABLE") == 0 ))
+    {
+        return true;
+    }
+    nvml_stat = nvmlInit();
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlInit failed." );
+    if (nvml_stat != NVML_SUCCESS)
+    {
+        return false;
+    }
+    if (!addNVMLDeviceId( &(gpu_info->cuda_dev[gpuid])))
+    {
+        return false;
+    }
+    //get current application clocks setting
+    unsigned int app_sm_clock  = 0;
+    unsigned int app_mem_clock = 0;
+    nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &app_sm_clock );
+    if (NVML_ERROR_NOT_SUPPORTED == nvml_stat)
+    {
+        return false;
+    }
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+    nvml_stat = nvmlDeviceGetApplicationsClock ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &app_mem_clock );
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+    //get max application clocks
+    unsigned int max_sm_clock  = 0;
+    unsigned int max_mem_clock = 0;
+    nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_SM, &max_sm_clock );
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetMaxClockInfo failed" );
+    nvml_stat = nvmlDeviceGetMaxClockInfo ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_CLOCK_MEM, &max_mem_clock );
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetMaxClockInfo failed" );
+
+    gpu_info->cuda_dev[gpuid].nvml_is_restricted     = NVML_FEATURE_ENABLED;
+    gpu_info->cuda_dev[gpuid].nvml_ap_clocks_changed = false;
+
+    nvml_stat = nvmlDeviceGetAPIRestriction ( gpu_info->cuda_dev[gpuid].nvml_device_id, NVML_RESTRICTED_API_SET_APPLICATION_CLOCKS, &(gpu_info->cuda_dev[gpuid].nvml_is_restricted) );
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetAPIRestriction failed" );
+
+    //TODO: Need to distinguish between different type of GPUs might be necessary in the future, e.g. if max application clocks should not be used
+    //      for certain GPUs.
+    if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock && gpu_info->cuda_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED)
+    {
+        //TODO: Maybe need to think about something more user friendly here.
+        md_print_info( fplog, "Changing GPU clock rates by setting application clocks for %s to (%d,%d)\n", gpu_info->cuda_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
+        nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->cuda_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
+        HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
+        gpu_info->cuda_dev[gpuid].nvml_ap_clocks_changed = true;
+    }
+    else if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock)
+    {
+        //TODO: Maybe need to think about something more user friendly here.
+        md_print_warn( fplog, "Not possible to change GPU clocks to optimal value because of insufficient permissions to set application clocks for %s. Current values are (%d,%d). Max values are (%d,%d)\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clock permissions.\n", gpu_info->cuda_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
+    }
+    else if (nvml_stat == NVML_SUCCESS && app_sm_clock == max_sm_clock)
+    {
+        //TODO: This should probably be integrated into the GPU Properties table.
+        md_print_info( fplog, "Application clocks (GPU clocks) for %s are (%d,%d)\n", gpu_info->cuda_dev[gpuid].prop.name, app_mem_clock, app_sm_clock);
+    }
+    else
+    {
+        //TODO: Maybe need to think about something more user friendly here.
+        md_print_warn( fplog,  "Not possible to change GPU clocks to optimal value because application clocks handling failed with NVML error (%d): %s.\n", nvml_stat, nvmlErrorString(nvml_stat));
+    }
+    return (nvml_stat == NVML_SUCCESS);
+#endif /*HAVE_NVML*/
+}
+
+/*! \brief Resets application clocks if changed and cleans up NVML for the passed \cuda_dev.
+ *
+ * \param[in] cuda_dev  CUDA device information
+ */
+static gmx_bool reset_gpu_application_clocks(const cuda_dev_info gmx_unused * cuda_dev)
+{
+#ifndef HAVE_NVML
+    GMX_UNUSED_VALUE(cuda_dev);
+    return true;
+#else
+    nvmlReturn_t nvml_stat = NVML_SUCCESS;
+    if (cuda_dev &&
+        cuda_dev->nvml_is_restricted == NVML_FEATURE_DISABLED &&
+        cuda_dev->nvml_ap_clocks_changed)
+    {
+        nvml_stat = nvmlDeviceResetApplicationsClocks( cuda_dev->nvml_device_id );
+        HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceResetApplicationsClocks failed" );
+    }
+    nvml_stat = nvmlShutdown();
+    HANDLE_NVML_RET_ERR( nvml_stat, "nvmlShutdown failed" );
+    return (nvml_stat == NVML_SUCCESS);
+#endif /*HAVE_NVML*/
+}
+
 
 /*! \brief Initializes the GPU with the given index.
  *
  * The varible \mygpu is the index of the GPU to initialize in the
  * gpu_info.cuda_dev array.
  *
+ * \param[out] fplog        log file to write to
  * \param[in]  mygpu        index of the GPU to initialize
  * \param[out] result_str   the message related to the error that occurred
  *                          during the initialization (if there was any).
@@ -560,7 +413,7 @@ int do_timed_memtest(int dev_id, int time_constr)
  * \param[in] gpu_opt       options for using the GPUs in gpu_info
  * \returns                 true if no error occurs during initialization.
  */
-gmx_bool init_gpu(int mygpu, char *result_str,
+gmx_bool init_gpu(FILE gmx_unused *fplog, int mygpu, char *result_str,
                   const gmx_gpu_info_t *gpu_info,
                   const gmx_gpu_opt_t *gpu_opt)
 {
@@ -589,6 +442,11 @@ gmx_bool init_gpu(int mygpu, char *result_str,
         fprintf(stderr, "Initialized GPU ID #%d: %s\n", gpuid, gpu_info->cuda_dev[gpuid].prop.name);
     }
 
+    //Ignoring return value as NVML errors should be treated not critical.
+    if (stat == cudaSuccess)
+    {
+        init_gpu_application_clocks(fplog, gpuid, gpu_info);
+    }
     return (stat == cudaSuccess);
 }
 
@@ -597,13 +455,22 @@ gmx_bool init_gpu(int mygpu, char *result_str,
  * The context is explicitly destroyed and therefore all data uploaded to the GPU
  * is lost. This should only be called when none of this data is required anymore.
  *
+ * \param[in]  mygpu        index of the GPU clean up for
  * \param[out] result_str   the message related to the error that occurred
  *                          during the initialization (if there was any).
+ * \param[in] gpu_info      GPU info of all detected devices in the system.
+ * \param[in] gpu_opt       options for using the GPUs in gpu_info
  * \returns                 true if no error occurs during the freeing.
  */
-gmx_bool free_gpu(char *result_str)
+gmx_bool free_gpu(
+        int gmx_unused mygpu, char *result_str,
+        const gmx_gpu_info_t gmx_unused *gpu_info,
+        const gmx_gpu_opt_t gmx_unused *gpu_opt
+        )
 {
-    cudaError_t stat;
+    cudaError_t  stat;
+    gmx_bool     reset_gpu_application_clocks_status = true;
+    int          gpuid;
 
     assert(result_str);
 
@@ -615,14 +482,15 @@ gmx_bool free_gpu(char *result_str)
         fprintf(stderr, "Cleaning up context on GPU ID #%d\n", gpuid);
     }
 
-#if CUDA_VERSION < 4000
-    stat = cudaThreadExit();
-#else
-    stat = cudaDeviceReset();
-#endif
-    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+    gpuid = gpu_opt ? gpu_opt->cuda_dev_use[mygpu] : -1;
+    if (gpuid != -1)
+    {
+        reset_gpu_application_clocks_status = reset_gpu_application_clocks( &(gpu_info->cuda_dev[gpuid]) );
+    }
 
-    return (stat == cudaSuccess);
+    stat = cudaDeviceReset();
+    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+    return (stat == cudaSuccess) && reset_gpu_application_clocks_status;
 }
 
 /*! \brief Returns true if the gpu characterized by the device properties is
@@ -796,9 +664,9 @@ void pick_compatible_gpus(const gmx_gpu_info_t *gpu_info,
         }
     }
 
-    gpu_opt->ncuda_dev_use = ncompat;
-    snew(gpu_opt->cuda_dev_use, ncompat);
-    memcpy(gpu_opt->cuda_dev_use, compat, ncompat*sizeof(*compat));
+    gpu_opt->ncuda_dev_compatible = ncompat;
+    snew(gpu_opt->cuda_dev_compatible, ncompat);
+    memcpy(gpu_opt->cuda_dev_compatible, compat, ncompat*sizeof(*compat));
     sfree(compat);
 }
 

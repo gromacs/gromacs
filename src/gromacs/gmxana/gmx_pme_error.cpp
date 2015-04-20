@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,31 +32,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
+#include "config.h"
+
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "copyrite.h"
 #include "gromacs/fileio/tpxio.h"
-#include "readinp.h"
-#include "calcgrid.h"
-#include "checkpoint.h"
-#include "gmx_ana.h"
-#include "gromacs/random/random.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
-#include "mdatoms.h"
-#include "coulomb.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
-#include "network.h"
-#include "main.h"
-#include "macros.h"
-
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
-/* We use the same defines as in mvdata.c here */
+/* We use the same defines as in broadcaststructs.cpp here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 #define nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
 #define   snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
@@ -1102,16 +1105,16 @@ int gmx_pme_error(int argc, char *argv[])
 
 
     static t_filenm fnm[] = {
-        { efTPX, "-s",     NULL,    ffREAD },
+        { efTPR, "-s",     NULL,    ffREAD },
         { efOUT, "-o",    "error",  ffWRITE },
-        { efTPX, "-so",   "tuned",  ffOPTWR }
+        { efTPR, "-so",   "tuned",  ffOPTWR }
     };
 
     output_env_t    oenv = NULL;
 
     t_pargs         pa[] = {
         { "-beta",     FALSE, etREAL, {&user_beta},
-          "If positive, overwrite ewald_beta from [TT].tpr[tt] file with this value" },
+          "If positive, overwrite ewald_beta from [REF].tpr[ref] file with this value" },
         { "-tune",     FALSE, etBOOL, {&bTUNE},
           "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space" },
         { "-self",     FALSE, etREAL, {&fracself},
@@ -1126,12 +1129,8 @@ int gmx_pme_error(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     cr = init_commrec();
-#ifdef GMX_LIB_MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-#endif
 
     PCA_Flags  = PCA_NOEXIT_ON_ARGS;
-    PCA_Flags |= (MASTER(cr) ? 0 : PCA_QUIET);
 
     if (!parse_common_args(&argc, argv, PCA_Flags,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,

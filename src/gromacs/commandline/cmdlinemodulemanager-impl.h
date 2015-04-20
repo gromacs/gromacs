@@ -46,12 +46,11 @@
 #include <string>
 #include <vector>
 
-#include "cmdlinemodule.h"
-#include "cmdlinemodulemanager.h"
-
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/uniqueptr.h"
 
@@ -154,6 +153,9 @@ class CommandLineCommonOptionsHolder
          */
         bool finishOptions();
 
+        //! Adjust defaults based on module settings.
+        void adjustFromSettings(const CommandLineModuleSettings &settings);
+
         //! Returns the internal Options object.
         Options *options() { return &options_; }
         //! Returns the settings for printing startup information.
@@ -179,6 +181,15 @@ class CommandLineCommonOptionsHolder
         {
             return bQuiet_ && !bVersion_;
         }
+        //! Returns whether backups should be made.
+        bool shouldBackup() const { return bBackup_; }
+
+        //! Returns the nice level.
+        int niceLevel() const { return niceLevel_; }
+        //! Returns whether floating-point exception should be enabled
+        bool enableFPExceptions() const { return bFpexcept_; }
+        //! Returns the debug level.
+        int debugLevel() const { return debugLevel_; }
 
         //! Returns the file to which startup information should be printed.
         FILE *startupInfoFile() const { return (bVersion_ ? stdout : stderr); }
@@ -192,6 +203,10 @@ class CommandLineCommonOptionsHolder
         bool                         bQuiet_;
         bool                         bVersion_;
         bool                         bCopyright_;
+        int                          niceLevel_;
+        bool                         bBackup_;
+        bool                         bFpexcept_;
+        int                          debugLevel_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineCommonOptionsHolder);
 };

@@ -34,21 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "xdlg.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "Xstuff.h"
-#include "xutil.h"
-#include "xdlg.h"
-#include "xmb.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+
+#include "Xstuff.h"
+#include "xmb.h"
+#include "xutil.h"
 /*****************************
  *
  * Helpful routines
@@ -407,11 +408,14 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
         if (gmx_strcasecmp(buf, "nok") == 0)
         {
             /* An error occurred */
-            for (i = 0; (i < nlines); i++)
+            if (lines)
             {
-                sfree(lines[i]);
+                for (i = 0; (i < nlines); i++)
+                {
+                    sfree(lines[i]);
+                }
+                sfree(lines);
             }
-            sfree(lines);
             NoHelp(dlg);
             return;
         }
@@ -421,7 +425,7 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
             if (bCont)
             {
                 srenew(lines, ++nlines);
-                lines[nlines-1] = strdup(buf);
+                lines[nlines-1] = gmx_strdup(buf);
             }
         }
     }
@@ -776,7 +780,7 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
     dlg->data = data;
     if (title)
     {
-        dlg->title = strdup(title);
+        dlg->title = gmx_strdup(title);
     }
     else
     {

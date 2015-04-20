@@ -99,23 +99,25 @@
  *
  * <H3>Implementation Helpers</H3>
  *
- * The header common.h implements a gmx::PrivateImplPointer template for easily
+ * The header basedefinitions.h contains common definitions and macros used
+ * throughout \Gromacs.  It includes fixed-width integer types (`gmx_int64_t`
+ * and friends), `gmx_bool` for C code, some macros for compiler-specific
+ * attributes, and ::GMX_UNUSED_VALUE and ::GMX_IGNORE_RETURN_VALUE for
+ * handling warnings about unused values.
+ *
+ * The header classhelpers.h implements a gmx::PrivateImplPointer template for easily
  * writing classes that use the private implementation idiom.  This header also
  * declares ::GMX_DISALLOW_COPY_AND_ASSIGN and ::GMX_DISALLOW_ASSIGN macros for
- * class declarations, and ::GMX_IGNORE_RETURN_VALUE for cleanly ignoring a
- * return value from a function.
+ * class declarations.
  *
  * The header flags.h implements a gmx::FlagsTemplate template for better type
  * safety when using bit flag fields.
- *
- * The header uniqueptr.h declares gmx::gmx_unique_ptr, which is intended for
- * declaring smart pointer types with unique ownership.
  *
  *
  * <H3>Other Functionality</H3>
  *
  * The header init.h declares gmx::init() and gmx::finalize() for initializing
- * and deinitializing the Gromacs library.
+ * and deinitializing the \Gromacs library.
  *
  * The header arrayref.h implements a gmx::ConstArrayRef class for exposing a
  * C array or part of a std::vector (basically, any continuous stretch of
@@ -136,6 +138,9 @@
  * The header messagestringcollector.h declares a gmx::MessageStringCollector
  * class for composing messages with context information.
  *
+ * The header sysinfo.h declares gmx_getpid() for getting the current process
+ * id.
+ *
  * The header programcontext.h declares a gmx::ProgramContextInterface that is
  * used to
  * initialize and access information about the running program, such as the
@@ -144,6 +149,9 @@
  *
  * The header qsort_threadsafe.h provides a guaranteed threadsafe
  * implementation for qsort().
+ *
+ * The header uniqueptr.h declares gmx::gmx_unique_ptr, which is intended for
+ * declaring smart pointer types with unique ownership.
  *
  * \endif
  *
@@ -160,10 +168,10 @@
 #ifndef GMX_UTILITY_H
 #define GMX_UTILITY_H
 
-#include "utility/errorcodes.h"
-#include "utility/exceptions.h"
-#include "utility/gmxassert.h"
-#include "utility/init.h"
-#include "utility/programcontext.h"
+#include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/init.h"
+#include "gromacs/utility/programcontext.h"
 
 #endif

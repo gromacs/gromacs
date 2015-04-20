@@ -48,10 +48,9 @@
 
 #include <string>
 
-#include "../utility/basedefinitions.h"
-#include "../utility/gmxassert.h"
-
-#include "abstractoption.h"
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -98,7 +97,7 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
 
     private:
         //! Creates a BooleanOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 };
 
@@ -141,7 +140,7 @@ class IntegerOption : public OptionTemplate<int, IntegerOption>
 
     private:
         //! Creates an IntegerOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         /*! \brief
@@ -171,7 +170,7 @@ class Int64Option : public OptionTemplate<gmx_int64_t, Int64Option>
 
     private:
         //! Creates an Int64OptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         /*! \brief
@@ -217,7 +216,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
 
     private:
         //! Creates a DoubleOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         bool bTime_;
@@ -256,7 +255,7 @@ class FloatOption : public OptionTemplate<float, FloatOption>
 
     private:
         //! Creates a FloatOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         bool bTime_;
@@ -364,7 +363,10 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * The index (zero-based) of the selected value in the array \p values
          * provided to enumValues() is written into \p *store after the
          * option gets its value.  If the option has not been provided,
-         * and there is no default value, -1 is stored.
+         * and there is no default value, -1 is stored.  If store(),
+         * storeVector() or defaultEnumIndex() is not present, the value in
+         * \p *store is kept as a default value, otherwise it is always
+         * overwritten.
          *
          * Cannot be specified without enumValue().
          *
@@ -377,7 +379,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
     private:
         //! Creates a StringOptionStorage object.
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         const char *const      *enumValues_;

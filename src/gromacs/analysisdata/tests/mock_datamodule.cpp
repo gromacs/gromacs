@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
 #include "mock_datamodule.h"
 
 #include <gmock/gmock.h>
@@ -98,9 +100,16 @@ class MockAnalysisDataModule::Impl
          * Callback used to check frame finish against reference data.
          *
          * Called to check parameters and order of calls to frameFinished().
-         * \a frameIndex_ is incremented here.
          */
         void finishReferenceFrame(const AnalysisDataFrameHeader &header);
+        /*! \brief
+         * Callback used to check serial frame finish with reference data.
+         *
+         * Called to check parameters and order of calls to
+         * frameFinishedSerial().
+         * \a frameIndex_ is incremented here.
+         */
+        void finishReferenceFrameSerial(int frameIndex);
 
         /*! \brief
          * Reference data checker to use for checking frames.
@@ -214,8 +223,16 @@ MockAnalysisDataModule::Impl::finishReferenceFrame(
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
     EXPECT_EQ(frameIndex_, header.index());
-    ++frameIndex_;
     frameChecker_.reset();
+}
+
+
+void
+MockAnalysisDataModule::Impl::finishReferenceFrameSerial(int frameIndex)
+{
+    EXPECT_TRUE(frameChecker_.get() == NULL);
+    EXPECT_EQ(frameIndex_, frameIndex);
+    ++frameIndex_;
 }
 
 
@@ -524,6 +541,7 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
             EXPECT_CALL(*this, parallelDataStarted(source, _))
                 .WillOnce(Return(true));
         ::testing::ExpectationSet framesFinished;
+        ::testing::Expectation    prevFinish;
         for (int row = 0; row < data.frameCount(); ++row)
         {
             ::testing::InSequence frameSequence;
@@ -539,9 +557,20 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
                 EXPECT_CALL(*this, pointsAdded(Property(&AnalysisDataPointSetRef::frameIndex, row)))
                     .WillOnce(Invoke(checker));
             }
-            framesFinished +=
-                EXPECT_CALL(*this, frameFinished(Property(&AnalysisDataFrameHeader::index, row)))
-                    .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+            EXPECT_CALL(*this, frameFinished(Property(&AnalysisDataFrameHeader::index, row)))
+                .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+            ::testing::Expectation finish;
+            if (row > 0)
+            {
+                finish = EXPECT_CALL(*this, frameFinishedSerial(row))
+                        .After(prevFinish);
+            }
+            else
+            {
+                finish = EXPECT_CALL(*this, frameFinishedSerial(row));
+            }
+            framesFinished += finish;
+            prevFinish      = finish;
         }
         EXPECT_CALL(*this, dataFinished())
             .After(framesFinished);
@@ -565,6 +594,7 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
             }
             EXPECT_CALL(*this, frameFinished(_))
                 .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+            EXPECT_CALL(*this, frameFinishedSerial(row));
         }
         EXPECT_CALL(*this, dataFinished());
     }
@@ -601,6 +631,7 @@ MockAnalysisDataModule::setupStaticColumnCheck(
         }
         EXPECT_CALL(*this, frameFinished(_))
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        EXPECT_CALL(*this, frameFinishedSerial(row));
     }
     EXPECT_CALL(*this, dataFinished());
 }
@@ -635,6 +666,7 @@ MockAnalysisDataModule::setupStaticStorageCheck(
         }
         EXPECT_CALL(*this, frameFinished(_))
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        EXPECT_CALL(*this, frameFinishedSerial(row));
     }
     EXPECT_CALL(*this, dataFinished());
 }
@@ -669,8 +701,11 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
     Expectation frameFinish = EXPECT_CALL(*this, frameFinished(_))
             .After(dataStart)
             .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrame));
+    Expectation frameFinishSerial = EXPECT_CALL(*this, frameFinishedSerial(_))
+            .After(dataStart)
+            .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrameSerial));
     EXPECT_CALL(*this, dataFinished())
-        .After(frameStart, pointsAdd, frameFinish);
+        .After(frameStart, pointsAdd, frameFinish, frameFinishSerial);
 }
 
 } // namespace test

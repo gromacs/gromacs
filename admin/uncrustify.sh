@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,78 +33,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This script runs uncrustify on modified files and reports/applies the
-# results.  It also checks for outdated copyright years or headers.
-# By default, the current HEAD commit is compared to the work tree,
-# and files that
-#  1. are different between these two trees and
-#  2. change under uncrustify and/or have outdated copyright header
-# are reported.  This behavior can be changed by
-#  1. Specifying an --rev=REV argument, which uses REV instead of HEAD as
-#     the base of the comparison.
-#  2. Specifying an action:
-#       check-*:   reports the files that uncrustify changes
-#       diff-*:    prints the actual diff of what would change
-#       update-*:  applies the changes to the repository
-#       *-workdir: operates on the working directory (files on disk)
-#       *-index:   operates on the index of the repository
-#     For convenience, if you omit the workdir/index suffix, workdir is assumed
-#     (i.e., diff equals diff-workdir).
-#  3. Specifying --uncrustify=off, which does not run uncrustify.
-#  4. Specifying --copyright=<mode>, which alters the level of copyright
-#     checking is done:
-#       off:     does not check copyright headers at all
-#       year:    only update copyright year in new-format copyright headers
-#       add:     in addition to 'year', add copyright headers to files that
-#                don't have any
-#       update:  in addition to 'year' and 'add', also update new-format
-#                copyright headers if they are broken or outdated.
-#       replace: replace any copyright header with a new-format copyright
-#                header
-#       full:    do all of the above
-# By default, update-* refuses to update "dirty" files (i.e., that differ
-# between the disk and the index) to make it easy to revert the changes.
-# This can be overridden by adding a -f/--force option.
+# This script runs uncrustify and copyright header checks on modified files and
+# reports/applies the necessary changes.
 #
-# The location of the uncrustify executable must be specified using an
-# environment variable UNCRUSTIFY.  Note that to produce the indentation used
-# in the source tree, you need a custom version of uncrustify.
-# To get and configure the currently used version, you can do the following:
-#  1. Run
-#       git clone -b gromacs git://github.com/rolandschulz/uncrustify.git
-#       cd uncrustify
-#       ./configure
-#       make
-#  2. Copy the binary src/uncrustify into a directory of your choice.
-#  3. Set the UNCRUSTIFY environment variable to point to the copied binary.
-#
-# To identify which files to run through uncrustify, the script uses git
-# filters, specified in .gitattributes files.  Only files that have the filter
-# set as "uncrustify" (or something ending in "uncrustify") are processed: if
-# other files have been changed, they are ignored by the script.  Files passed
-# to uncrustify, as well as files with filter "copyright", get their copyright
-# header checked.  To only run uncrustify for a file, set the filter to
-# "uncrustify_only".
-#
-# If you want to run uncrustify automatically for changes you make, there are
-# two options:
-#  1. Copy the git-pre-commit script in this directory to .git/hooks/pre-commit
-#     and set
-#       git config hooks.uncrustifymode check
-#       git config hooks.uncrustifypath /path/to/uncrustify
-#     See comments in the hook script for more information.
-#  2. Configure a git filter (doesn't require this script, only the
-#     .gitattributes files):
-#       git config filter.uncrustify.clean \
-#           "/path/to/uncrustify -c admin/uncrustify.cfg -q -l cpp"
-# The pre-commit hook + manually running the script gives better/more intuitive
-# control (with the filter, it is possible to have a work tree that is
-# different from HEAD and still have an empty 'git diff') and provides better
-# performance for changes that modify many files.  It is the only way that
-# currently also checks the copyright headers.
-# The filter allows one to transparently merge branches that have not been run
-# through uncrustify, and is applied more consistently (the pre-commit hook is
-# not run for every commit, e.g., during a rebase).
+# See `uncrustify.sh -h` for a brief usage, and docs/dev-manual/uncrustify.md
+# for more details.
 
 # Parse command-line arguments
 function usage() {
@@ -144,7 +77,7 @@ for arg in "$@" ; do
         force=1
     elif [[ "$arg" == --rev=* ]] ; then
         baserev=${arg#--rev=}
-    elif [[ "$arg" == "-h" ]] ; then
+    elif [[ "$arg" == "-h" || "$arg" == "--help" ]] ; then
         usage
         exit 0
     else
@@ -160,9 +93,14 @@ if [[ "$uncrustify_mode" != "off" ]]
 then
     if [ -z "$UNCRUSTIFY" ]
     then
-        echo "Please set the path to uncrustify using UNCRUSTIFY."
+        UNCRUSTIFY=`git config hooks.uncrustifypath`
+    fi
+    if [ -z "$UNCRUSTIFY" ]
+    then
+        echo "Please set the path to uncrustify using UNCRUSTIFY or"
+        echo "git config hooks.uncrustifypath."
         echo "Note that you need a custom version of uncrustify."
-        echo "See comments in the script file for how to get one."
+        echo "See docs/dev-manual/uncrustify.md for how to get one."
         exit 2
     fi
     if ! which "$UNCRUSTIFY" 1>/dev/null
@@ -198,11 +136,11 @@ cut -f2 <$tmpdir/difflist | \
     git check-attr --stdin filter | \
     sed -e 's/.*: filter: //' | \
     paste $tmpdir/difflist - | \
-    grep -E '(uncrustify|uncrustify_only|copyright)$' >$tmpdir/filtered
+    grep -E '(uncrustify|uncrustify_only|copyright|includesort)$' >$tmpdir/filtered
 cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
 grep -E '(uncrustify|uncrustify_only)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_uncrustify
-grep -E '(uncrustify|copyright)$' <$tmpdir/filtered | \
+grep -E '(uncrustify|copyright|includesort)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_copyright
 git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 
@@ -286,10 +224,10 @@ if [[ $action == diff-* ]] ; then
 fi
 
 # Find the changed files
+git diff --no-index --name-only --exit-code org/ new/ | \
+    sed -e 's#new/##' > $tmpdir/changed
 changes=
-set -o pipefail
-if ! git diff --no-index --name-only --exit-code org/ new/ | \
-         sed -e 's#new/##' > $tmpdir/changed
+if [[ -s $tmpdir/changed ]]
 then
     changes=1
 fi

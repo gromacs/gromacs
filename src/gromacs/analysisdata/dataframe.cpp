@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
+#include "gmxpre.h"
+
 #include "dataframe.h"
 
 #include "gromacs/utility/gmxassert.h"
@@ -74,8 +76,8 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
     : header_(header),
       dataSetIndex_(pointSetInfo.dataSetIndex()),
       firstColumn_(pointSetInfo.firstColumn()),
-      values_(&*values.begin() + pointSetInfo.valueOffset(),
-              pointSetInfo.valueCount())
+      values_(constArrayRefFromArray(&*values.begin() + pointSetInfo.valueOffset(),
+                                     pointSetInfo.valueCount()))
 {
     GMX_ASSERT(header_.isValid(),
                "Invalid point set reference should not be constructed");
@@ -86,7 +88,7 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
         const AnalysisDataFrameHeader        &header,
         const std::vector<AnalysisDataValue> &values)
     : header_(header), dataSetIndex_(0), firstColumn_(0),
-      values_(values.begin(), values.end())
+      values_(constArrayRefFromVector<AnalysisDataValue>(values.begin(), values.end()))
 {
     GMX_ASSERT(header_.isValid(),
                "Invalid point set reference should not be constructed");
@@ -166,8 +168,8 @@ AnalysisDataFrameRef::AnalysisDataFrameRef(
         const AnalysisDataFrameHeader               &header,
         const std::vector<AnalysisDataValue>        &values,
         const std::vector<AnalysisDataPointSetInfo> &pointSets)
-    : header_(header), values_(values.begin(), values.end()),
-      pointSets_(pointSets.begin(), pointSets.end())
+    : header_(header), values_(constArrayRefFromVector<AnalysisDataValue>(values.begin(), values.end())),
+      pointSets_(constArrayRefFromVector<AnalysisDataPointSetInfo>(pointSets.begin(), pointSets.end()))
 {
     GMX_ASSERT(!pointSets_.empty(), "There must always be a point set");
 }
@@ -176,7 +178,7 @@ AnalysisDataFrameRef::AnalysisDataFrameRef(
 AnalysisDataFrameRef::AnalysisDataFrameRef(
         const AnalysisDataFrameRef &frame, int firstColumn, int columnCount)
     : header_(frame.header()),
-      values_(&frame.values_[firstColumn], columnCount),
+      values_(constArrayRefFromArray(&frame.values_[firstColumn], columnCount)),
       pointSets_(frame.pointSets_)
 {
     // FIXME: This doesn't produce a valid internal state, although it does

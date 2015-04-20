@@ -34,39 +34,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "pull_rotation.h"
+
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "domdec.h"
-#include "gromacs/utility/smalloc.h"
-#include "network.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "mdrun.h"
-#include "txtdump.h"
-#include "names.h"
-#include "gromacs/topology/mtop_util.h"
-#include "names.h"
-#include "gromacs/math/vec.h"
-#include "gmx_ga2la.h"
-#include "gromacs/fileio/xvgr.h"
-#include "copyrite.h"
-#include "macros.h"
-
-#include "gromacs/utility/futil.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_ga2la.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/qsort_threadsafe.h"
-#include "gromacs/pulling/pull_rotation.h"
-#include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/math/utilities.h"
+#include "gromacs/utility/smalloc.h"
 
 static char *RotStr = {"Enforced rotation:"};
 
@@ -874,7 +873,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
         fp = xvgropen(fn, "Rotation angles and energy", "Time (ps)", "angles (degrees) and energies (kJ/mol)", oenv);
         fprintf(fp, "# Output of enforced rotation data is written in intervals of %d time step%s.\n#\n", rot->nstrout, rot->nstrout > 1 ? "s" : "");
         fprintf(fp, "# The scalar tau is the torque (kJ/mol) in the direction of the rotation vector v.\n");
-        fprintf(fp, "# To obtain the vectorial torque, multiply tau with the group's rot_vec.\n");
+        fprintf(fp, "# To obtain the vectorial torque, multiply tau with the group's rot-vec.\n");
         fprintf(fp, "# For flexible groups, tau(t,n) from all slabs n have been summed in a single value tau(t) here.\n");
         fprintf(fp, "# The torques tau(t,n) are found in the rottorque.log (-rt) output file\n");
 
@@ -886,19 +885,19 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
 
             fprintf(fp, "#\n");
             fprintf(fp, "# ROTATION GROUP %d, potential type '%s':\n", g, erotg_names[rotg->eType]);
-            fprintf(fp, "# rot_massw%d          %s\n", g, yesno_names[rotg->bMassW]);
-            fprintf(fp, "# rot_vec%d            %12.5e %12.5e %12.5e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
-            fprintf(fp, "# rot_rate%d           %12.5e degrees/ps\n", g, rotg->rate);
-            fprintf(fp, "# rot_k%d              %12.5e kJ/(mol*nm^2)\n", g, rotg->k);
+            fprintf(fp, "# rot-massw%d          %s\n", g, yesno_names[rotg->bMassW]);
+            fprintf(fp, "# rot-vec%d            %12.5e %12.5e %12.5e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
+            fprintf(fp, "# rot-rate%d           %12.5e degrees/ps\n", g, rotg->rate);
+            fprintf(fp, "# rot-k%d              %12.5e kJ/(mol*nm^2)\n", g, rotg->k);
             if (rotg->eType == erotgISO || rotg->eType == erotgPM || rotg->eType == erotgRM || rotg->eType == erotgRM2)
             {
-                fprintf(fp, "# rot_pivot%d          %12.5e %12.5e %12.5e  nm\n", g, rotg->pivot[XX], rotg->pivot[YY], rotg->pivot[ZZ]);
+                fprintf(fp, "# rot-pivot%d          %12.5e %12.5e %12.5e  nm\n", g, rotg->pivot[XX], rotg->pivot[YY], rotg->pivot[ZZ]);
             }
 
             if (bFlex)
             {
-                fprintf(fp, "# rot_slab_distance%d   %f nm\n", g, rotg->slab_dist);
-                fprintf(fp, "# rot_min_gaussian%d   %12.5e\n", g, rotg->min_gaussian);
+                fprintf(fp, "# rot-slab-distance%d   %f nm\n", g, rotg->slab_dist);
+                fprintf(fp, "# rot-min-gaussian%d   %12.5e\n", g, rotg->min_gaussian);
             }
 
             /* Output the centers of the rotation groups for the pivot-free potentials */
@@ -914,7 +913,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
 
             if ( (rotg->eType == erotgRM2) || (rotg->eType == erotgFLEX2) || (rotg->eType == erotgFLEX2T) )
             {
-                fprintf(fp, "# rot_eps%d            %12.5e nm^2\n", g, rotg->eps);
+                fprintf(fp, "# rot-eps%d            %12.5e nm^2\n", g, rotg->eps);
             }
             if (erotgFitPOT == rotg->eFittype)
             {
@@ -943,7 +942,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
             add_to_string_aligned(&LegendStr, buf);
 
             sprintf(buf2, "%s (degrees)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
         }
         for (g = 0; g < rot->ngrp; g++)
@@ -963,19 +962,19 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
             }
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (degrees)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
 
             sprintf(buf, "tau%d", g);
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (kJ/mol)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
 
             sprintf(buf, "energy%d", g);
             add_to_string_aligned(&LegendStr, buf);
             sprintf(buf2, "%s (kJ/mol)", buf);
-            setname[nsets] = strdup(buf2);
+            setname[nsets] = gmx_strdup(buf2);
             nsets++;
         }
         fprintf(fp, "#\n");
@@ -1107,7 +1106,7 @@ static FILE *open_torque_out(const char *fn, t_rot *rot)
                 fprintf(fp, "# Rotation group %d (%s), slab distance %f nm.\n", g, erotg_names[rotg->eType], rotg->slab_dist);
                 fprintf(fp, "# The scalar tau is the torque (kJ/mol) in the direction of the rotation vector.\n");
                 fprintf(fp, "# To obtain the vectorial torque, multiply tau with\n");
-                fprintf(fp, "# rot_vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
+                fprintf(fp, "# rot-vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
                 fprintf(fp, "#\n");
             }
         }

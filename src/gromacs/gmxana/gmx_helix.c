@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,33 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "fitahx.h"
-#include "gromacs/utility/futil.h"
-#include "gstat.h"
-#include "hxprops.h"
-#include "macros.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/utility/smalloc.h"
-#include "txtdump.h"
-#include "typedefs.h"
-#include "gromacs/math/vec.h"
-#include "viewit.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/fitahx.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/gmxana/hxprops.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_helix(int argc, char *argv[])
 {
@@ -70,29 +67,29 @@ int gmx_helix(int argc, char *argv[])
         "hydrogen bonds and [GRK]phi[grk]/[GRK]psi[grk] angles.",
         "That bit is fitted",
         "to an ideal helix around the [IT]z[it]-axis and centered around the origin.",
-        "Then the following properties are computed:[PAR]",
-        "[BB]1.[bb] Helix radius (file [TT]radius.xvg[tt]). This is merely the",
-        "RMS deviation in two dimensions for all C[GRK]alpha[grk] atoms.",
-        "it is calculated as [SQRT]([SUM][sum][SUB]i[sub] (x^2(i)+y^2(i)))/N[sqrt] where N is the number",
-        "of backbone atoms. For an ideal helix the radius is 0.23 nm[BR]",
-        "[BB]2.[bb] Twist (file [TT]twist.xvg[tt]). The average helical angle per",
-        "residue is calculated. For an [GRK]alpha[grk]-helix it is 100 degrees,",
-        "for 3-10 helices it will be smaller, and ",
-        "for 5-helices it will be larger.[BR]",
-        "[BB]3.[bb] Rise per residue (file [TT]rise.xvg[tt]). The helical rise per",
-        "residue is plotted as the difference in [IT]z[it]-coordinate between C[GRK]alpha[grk]",
-        "atoms. For an ideal helix, this is 0.15 nm[BR]",
-        "[BB]4.[bb] Total helix length (file [TT]len-ahx.xvg[tt]). The total length",
-        "of the",
-        "helix in nm. This is simply the average rise (see above) times the",
-        "number of helical residues (see below).[BR]",
-        "[BB]5.[bb] Helix dipole, backbone only (file [TT]dip-ahx.xvg[tt]).[BR]",
-        "[BB]6.[bb] RMS deviation from ideal helix, calculated for the C[GRK]alpha[grk]",
-        "atoms only (file [TT]rms-ahx.xvg[tt]).[BR]",
-        "[BB]7.[bb] Average C[GRK]alpha[grk] - C[GRK]alpha[grk] dihedral angle (file [TT]phi-ahx.xvg[tt]).[BR]",
-        "[BB]8.[bb] Average [GRK]phi[grk] and [GRK]psi[grk] angles (file [TT]phipsi.xvg[tt]).[BR]",
-        "[BB]9.[bb] Ellipticity at 222 nm according to Hirst and Brooks.",
-        "[PAR]"
+        "Then the following properties are computed:",
+        "",
+        " * Helix radius (file [TT]radius.xvg[tt]). This is merely the",
+        "   RMS deviation in two dimensions for all C[GRK]alpha[grk] atoms.",
+        "   it is calculated as [SQRT]([SUM][sum][SUB]i[sub] (x^2(i)+y^2(i)))/N[sqrt] where N is the number",
+        "   of backbone atoms. For an ideal helix the radius is 0.23 nm.",
+        " * Twist (file [TT]twist.xvg[tt]). The average helical angle per",
+        "   residue is calculated. For an [GRK]alpha[grk]-helix it is 100 degrees,",
+        "   for 3-10 helices it will be smaller, and ",
+        "   for 5-helices it will be larger.",
+        " * Rise per residue (file [TT]rise.xvg[tt]). The helical rise per",
+        "   residue is plotted as the difference in [IT]z[it]-coordinate between C[GRK]alpha[grk]",
+        "   atoms. For an ideal helix, this is 0.15 nm.",
+        " * Total helix length (file [TT]len-ahx.xvg[tt]). The total length",
+        "   of the",
+        "   helix in nm. This is simply the average rise (see above) times the",
+        "   number of helical residues (see below).",
+        " * Helix dipole, backbone only (file [TT]dip-ahx.xvg[tt]).",
+        " * RMS deviation from ideal helix, calculated for the C[GRK]alpha[grk]",
+        "   atoms only (file [TT]rms-ahx.xvg[tt]).",
+        " * Average C[GRK]alpha[grk] - C[GRK]alpha[grk] dihedral angle (file [TT]phi-ahx.xvg[tt]).",
+        " * Average [GRK]phi[grk] and [GRK]psi[grk] angles (file [TT]phipsi.xvg[tt]).",
+        " * Ellipticity at 222 nm according to Hirst and Brooks."
     };
     static gmx_bool    bCheck = FALSE, bFit = TRUE, bDBG = FALSE, bEV = FALSE;
     static int         rStart = 0, rEnd = 0, r0 = 1;
@@ -159,14 +156,14 @@ int gmx_helix(int argc, char *argv[])
     gmx_rmpbc_t    gpbc = NULL;
     gmx_bool       bRange;
     t_filenm       fnm[] = {
-        { efTPX, NULL,  NULL,   ffREAD  },
+        { efTPR, NULL,  NULL,   ffREAD  },
         { efNDX, NULL,  NULL,   ffREAD  },
         { efTRX, "-f",  NULL,   ffREAD  },
         { efSTO, "-cz", "zconf", ffWRITE },
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -175,7 +172,7 @@ int gmx_helix(int argc, char *argv[])
     bRange = (opt2parg_bSet("-ahxstart", asize(pa), pa) &&
               opt2parg_bSet("-ahxend", asize(pa), pa));
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
 
@@ -210,7 +207,7 @@ int gmx_helix(int argc, char *argv[])
 
     /* Read reference frame from tpx file to compute helix length */
     snew(xref, top->atoms.nr);
-    read_tpx(ftp2fn(efTPX, NFILE, fnm),
+    read_tpx(ftp2fn(efTPR, NFILE, fnm),
              NULL, NULL, &natoms, xref, NULL, NULL, NULL);
     calc_hxprops(nres, bb, xref);
     do_start_end(nres, bb, &nbb, bbindex, &nca, caindex, bRange, rStart, rEnd);
@@ -292,10 +289,10 @@ int gmx_helix(int argc, char *argv[])
 
     for (i = 0; (i < efhNR); i++)
     {
-        gmx_ffclose(xf[i].fp);
+        xvgrclose(xf[i].fp);
         if (xf[i].bfp2)
         {
-            gmx_ffclose(xf[i].fp2);
+            xvgrclose(xf[i].fp2);
         }
         do_view(oenv, xf[i].filenm, "-nxy");
     }

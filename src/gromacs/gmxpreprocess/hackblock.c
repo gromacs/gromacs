@@ -35,15 +35,16 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "hackblock.h"
 
 #include <string.h>
-#include "hackblock.h"
-#include "gromacs/utility/smalloc.h"
+
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
-#include "names.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap", "anisotropic_polarization", "polarization", "thole_polarization", "virtual_sites2", "virtual_sites3", "virtual_sites4" };
@@ -166,7 +167,7 @@ void clear_t_hack(t_hack *hack)
     }
 }
 
-#define safe_strdup(str) ((str != NULL) ? strdup(str) : NULL)
+#define safe_strdup(str) ((str != NULL) ? gmx_strdup(str) : NULL)
 
 static void copy_t_rbonded(t_rbonded *s, t_rbonded *d)
 {

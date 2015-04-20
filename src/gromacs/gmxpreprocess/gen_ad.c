@@ -35,28 +35,26 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gen_ad.h"
 
 #include <ctype.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/pgutil.h"
+#include "gromacs/gmxpreprocess/resall.h"
+#include "gromacs/gmxpreprocess/topio.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "toputil.h"
-#include "topio.h"
-#include "gpp_nextnb.h"
-#include "macros.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "pgutil.h"
-#include "resall.h"
-#include "gen_ad.h"
+#include "gromacs/utility/smalloc.h"
 
 static gmx_bool is_hydro(t_atoms *atoms, int ai)
 {

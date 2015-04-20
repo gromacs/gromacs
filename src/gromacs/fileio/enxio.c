@@ -34,24 +34,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "enxio.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "enxio.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/futil.h"
-#include "macros.h"
-
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
@@ -377,7 +374,7 @@ static void edr_strings(XDR *xdr, gmx_bool bRead, int file_version,
         }
         else
         {
-            nm->unit = strdup("kJ/mol");
+            nm->unit = gmx_strdup("kJ/mol");
         }
     }
 }

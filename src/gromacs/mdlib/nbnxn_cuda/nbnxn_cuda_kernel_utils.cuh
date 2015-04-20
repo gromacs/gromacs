@@ -37,8 +37,9 @@
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
  */
+#include "config.h"
 
-#include "../../gmxlib/cuda_tools/vectype_ops.cuh"
+#include "gromacs/gmxlib/cuda_tools/vectype_ops.cuh"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
@@ -316,7 +317,7 @@ float interpolate_coulomb_force_r(float r, float scale)
            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
 }
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static inline __device__
 float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)

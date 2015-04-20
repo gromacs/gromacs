@@ -34,18 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/pbcutil/mshift.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "mshift.h"
 
 #include <string.h>
 
 #include <algorithm>
 
 #include "gromacs/legacyheaders/types/ifunc.h"
-
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
@@ -147,7 +144,7 @@ static void mk_igraph(t_graph *g, int ftype, t_ilist *il,
     }
 }
 
-GMX_ATTRIBUTE_NORETURN static void g_error(int line, const char *file)
+gmx_noreturn static void g_error(int line, const char *file)
 {
     gmx_fatal(FARGS, "Tring to print non existant graph (file %s, line %d)",
               file, line);
@@ -178,7 +175,7 @@ void p_graph(FILE *log, const char *title, t_graph *g)
                     g->nedge[i]);
             for (j = 0; (j < g->nedge[i]); j++)
             {
-                fprintf(log, " %5u", g->edge[i][j]+1);
+                fprintf(log, " %5d", g->edge[i][j]+1);
             }
             fprintf(log, "\n");
         }

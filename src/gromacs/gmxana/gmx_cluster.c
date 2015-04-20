@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,38 +34,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/math/vec.h"
-#include "macros.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/random/random.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/matio.h"
-#include "cmat.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
-#include "viewit.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/cmat.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/random/random.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
 static gmx_inline
@@ -139,11 +135,6 @@ typedef struct {
     int  nr;
     int *nb;
 } t_nnb;
-
-void pr_energy(FILE *fp, real e)
-{
-    fprintf(fp, "Energy: %8.4f\n", e);
-}
 
 void cp_index(int nn, int from[], int to[])
 {
@@ -284,7 +275,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
 
     if (NULL != fp)
     {
-        fclose(fp);
+        xvgrclose(fp);
     }
 }
 
@@ -999,7 +990,7 @@ static void ana_trans(t_clusters *clust, int nf,
         {
             fprintf(fp, "%5d %5d\n", i+1, ntrans[i]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     sfree(ntrans);
     for (i = 0; i < clust->ncl; i++)
@@ -1022,7 +1013,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              gmx_bool bFit, FILE *log, t_rgb rlo, t_rgb rhi,
                              const output_env_t oenv)
 {
-    FILE        *fp = NULL;
+    FILE        *size_fp = NULL;
     char         buf[STRLEN], buf1[40], buf2[40], buf3[40], *trxsfn;
     t_trxstatus *trxout  = NULL;
     t_trxstatus *trxsout = NULL;
@@ -1097,7 +1088,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 
     if (clustidfn)
     {
-        fp = xvgropen(clustidfn, "Clusters", output_env_get_xvgr_tlabel(oenv), "Cluster #", oenv);
+        FILE *fp = xvgropen(clustidfn, "Clusters", output_env_get_xvgr_tlabel(oenv), "Cluster #", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fp, "@    s0 symbol 2\n");
@@ -1108,14 +1099,14 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         {
             fprintf(fp, "%8g %8d\n", time[i], clust->cl[i]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     if (sizefn)
     {
-        fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
+        size_fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
-            fprintf(fp, "@g%d type %s\n", 0, "bar");
+            fprintf(size_fp, "@g%d type %s\n", 0, "bar");
         }
     }
     snew(structure, nf);
@@ -1164,7 +1155,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
         }
         if (sizefn)
         {
-            fprintf(fp, "%8d %8d\n", cl, nstr);
+            fprintf(size_fp, "%8d %8d\n", cl, nstr);
         }
         clrmsd  = 0;
         midstr  = 0;
@@ -1310,6 +1301,11 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     {
         sfree(trxsfn);
     }
+
+    if (size_fp)
+    {
+        xvgrclose(size_fp);
+    }
 }
 
 static void convert_mat(t_matrix *mat, t_mat *rms)
@@ -1345,7 +1341,7 @@ int gmx_cluster(int argc, char *argv[])
     const char        *desc[] = {
         "[THISMODULE] can cluster structures using several different methods.",
         "Distances between structures can be determined from a trajectory",
-        "or read from an [TT].xpm[tt] matrix file with the [TT]-dm[tt] option.",
+        "or read from an [REF].xpm[ref] matrix file with the [TT]-dm[tt] option.",
         "RMS deviation after fitting or RMS deviation of atom-pair distances",
         "can be used to define the distance between structures.[PAR]",
 
@@ -1367,7 +1363,7 @@ int gmx_cluster(int argc, char *argv[])
         "ensemble of simulations or a pulling simulation. Obviously the user",
         "has to prepare the trajectory well (e.g. by not superimposing frames).",
         "The final result can be inspect visually by looking at the matrix",
-        "[TT].xpm[tt] file, which should vary smoothly from bottom to top.[PAR]",
+        "[REF].xpm[ref] file, which should vary smoothly from bottom to top.[PAR]",
 
         "diagonalization: diagonalize the RMSD matrix.[PAR]",
 
@@ -1386,32 +1382,35 @@ int gmx_cluster(int argc, char *argv[])
         "file. When writing all structures, separate numbered files are made",
         "for each cluster.[PAR]",
 
-        "Two output files are always written:[BR]",
-        "[TT]-o[tt] writes the RMSD values in the upper left half of the matrix",
-        "and a graphical depiction of the clusters in the lower right half",
-        "When [TT]-minstruct[tt] = 1 the graphical depiction is black",
-        "when two structures are in the same cluster.",
-        "When [TT]-minstruct[tt] > 1 different colors will be used for each",
-        "cluster.[BR]",
-        "[TT]-g[tt] writes information on the options used and a detailed list",
-        "of all clusters and their members.[PAR]",
+        "Two output files are always written:",
+        "",
+        " * [TT]-o[tt] writes the RMSD values in the upper left half of the matrix",
+        "   and a graphical depiction of the clusters in the lower right half",
+        "   When [TT]-minstruct[tt] = 1 the graphical depiction is black",
+        "   when two structures are in the same cluster.",
+        "   When [TT]-minstruct[tt] > 1 different colors will be used for each",
+        "   cluster.",
+        " * [TT]-g[tt] writes information on the options used and a detailed list",
+        "   of all clusters and their members.",
+        "",
 
-        "Additionally, a number of optional output files can be written:[BR]",
-        "[TT]-dist[tt] writes the RMSD distribution.[BR]",
-        "[TT]-ev[tt] writes the eigenvectors of the RMSD matrix",
-        "diagonalization.[BR]",
-        "[TT]-sz[tt] writes the cluster sizes.[BR]",
-        "[TT]-tr[tt] writes a matrix of the number transitions between",
-        "cluster pairs.[BR]",
-        "[TT]-ntr[tt] writes the total number of transitions to or from",
-        "each cluster.[BR]",
-        "[TT]-clid[tt] writes the cluster number as a function of time.[BR]",
-        "[TT]-cl[tt] writes average (with option [TT]-av[tt]) or central",
-        "structure of each cluster or writes numbered files with cluster members",
-        "for a selected set of clusters (with option [TT]-wcl[tt], depends on",
-        "[TT]-nst[tt] and [TT]-rmsmin[tt]). The center of a cluster is the",
-        "structure with the smallest average RMSD from all other structures",
-        "of the cluster.[BR]",
+        "Additionally, a number of optional output files can be written:",
+        "",
+        " * [TT]-dist[tt] writes the RMSD distribution.",
+        " * [TT]-ev[tt] writes the eigenvectors of the RMSD matrix",
+        "   diagonalization.",
+        " * [TT]-sz[tt] writes the cluster sizes.",
+        " * [TT]-tr[tt] writes a matrix of the number transitions between",
+        "   cluster pairs.",
+        " * [TT]-ntr[tt] writes the total number of transitions to or from",
+        "   each cluster.",
+        " * [TT]-clid[tt] writes the cluster number as a function of time.",
+        " * [TT]-cl[tt] writes average (with option [TT]-av[tt]) or central",
+        "   structure of each cluster or writes numbered files with cluster members",
+        "   for a selected set of clusters (with option [TT]-wcl[tt], depends on",
+        "   [TT]-nst[tt] and [TT]-rmsmin[tt]). The center of a cluster is the",
+        "   structure with the smallest average RMSD from all other structures",
+        "   of the cluster.",
     };
 
     FILE              *fp, *log;
@@ -1484,7 +1483,7 @@ int gmx_cluster(int argc, char *argv[])
         { "-method", FALSE, etENUM, {methodname},
           "Method for cluster determination" },
         { "-minstruct", FALSE, etINT, {&minstruct},
-          "Minimum number of structures in cluster for coloring in the [TT].xpm[tt] file" },
+          "Minimum number of structures in cluster for coloring in the [REF].xpm[ref] file" },
         { "-binary", FALSE, etBOOL, {&bBinary},
           "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off "
           "is given by [TT]-cutoff[tt]" },
@@ -1519,13 +1518,13 @@ int gmx_cluster(int argc, char *argv[])
         { efXVG, "-sz",   "clust-size", ffOPTWR},
         { efXPM, "-tr",   "clust-trans", ffOPTWR},
         { efXVG, "-ntr",  "clust-trans", ffOPTWR},
-        { efXVG, "-clid", "clust-id.xvg", ffOPTWR},
+        { efXVG, "-clid", "clust-id",   ffOPTWR},
         { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
                            &oenv))
     {
@@ -1874,7 +1873,7 @@ int gmx_cluster(int argc, char *argv[])
             {
                 fprintf(fp, "%10d  %10g\n", i, eigenvalues[i]);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
             break;
         case m_monte_carlo:
             orig     = init_mat(rms->nn, FALSE);

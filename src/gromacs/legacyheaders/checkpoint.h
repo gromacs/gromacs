@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,9 +39,9 @@
 #define _checkpoint_h
 
 
-#include "typedefs.h"
-#include "../fileio/gmxfio.h"
-#include "../fileio/filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -91,6 +91,20 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr);
 /* Print the complete contents of checkpoint file fn to out */
 void list_checkpoint(const char *fn, FILE *out);
 
+/* ! \brief Read simulation step and part from a checkpoint file
+ *
+ * Used by tune_pme to handle tuning with a checkpoint file as part of the input.
+ *
+ * \param[in]  filename         Name of checkpoint file
+ * \param[out] simulation_part  The part of the simulation that wrote the checkpoint
+ * \param[out] step             The final step number of the simulation that wrote the checkpoint
+ *
+ * The output variables will both contain 0 if filename is NULL, the file
+ * does not exist, or is not readable. */
+void read_checkpoint_part_and_step(const char  *filename,
+                                   int         *simulation_part,
+                                   gmx_int64_t *step);
+
 /* Read just the simulation 'generation' and with bAppendReq check files.
  * This is necessary already at the beginning of mdrun,
  * to be able to rename the logfile correctly.
@@ -102,7 +116,7 @@ void list_checkpoint(const char *fn, FILE *out);
  * needs to be added to the output file name.
  */
 gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         gmx_int64_t *step, t_commrec *cr,
+                                         t_commrec *cr,
                                          gmx_bool bAppendReq,
                                          int nfile, const t_filenm fnm[],
                                          const char *part_suffix, gmx_bool *bAddPart);

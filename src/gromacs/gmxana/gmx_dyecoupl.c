@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,15 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "copyrite.h"
-#include "gromacs/fileio/filenm.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
+#include "gmxpre.h"
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
@@ -127,7 +128,8 @@ int gmx_dyecoupl(int argc, char *argv[])
                 rrange, krange, rincr, kincr, Rfrac;
     int         rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }
@@ -356,7 +358,7 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             if (bRKout)
             {
-                gmx_ffclose(rkfp);
+                xvgrclose(rkfp);
             }
 
             if (bDatout)
@@ -366,7 +368,7 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             if (bInstEffout)
             {
-                gmx_ffclose(iefp);
+                xvgrclose(iefp);
             }
 
 
@@ -417,7 +419,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                     fprintf(rhfp, "%12.7f %12.7f\n", (i + 0.5) * rincr + rmin,
                             rhist[i]);
                 }
-                gmx_ffclose(rhfp);
+                xvgrclose(rhfp);
             }
 
             if (bKhistout)
@@ -454,7 +456,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                     fprintf(khfp, "%12.7f %12.7f\n", (i + 0.5) * kincr + kmin,
                             khist[i]);
                 }
-                gmx_ffclose(khfp);
+                xvgrclose(khfp);
             }
 
             printf("\nAverages:\n");

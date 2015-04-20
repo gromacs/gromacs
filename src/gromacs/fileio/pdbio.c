@@ -34,22 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "pdbio.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "pdbio.h"
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/utility/futil.h"
-
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -59,6 +55,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
@@ -395,7 +392,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
         if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic)
         {
-            fprintf(out, "ANISOU%5u  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
+            fprintf(out, "ANISOU%5d  %-4.4s%4.4s%c%4d%c %7d%7d%7d%7d%7d%7d\n",
                     (i+1)%100000, nm, resnm, ch, resnr,
                     (resic == '\0') ? ' ' : resic,
                     atoms->pdbinfo[i].uij[0], atoms->pdbinfo[i].uij[1],

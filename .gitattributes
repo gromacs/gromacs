@@ -1,16 +1,16 @@
 # Generic rules
-*.c     filter=uncrustify
-*.cpp   filter=uncrustify
+*.c     filter=uncrustify gmx-doxygen
+*.cpp   filter=uncrustify gmx-doxygen
 *.cu    filter=uncrustify
-*.h     filter=uncrustify
+*.h     filter=uncrustify gmx-doxygen
 *.cuh   filter=uncrustify
 CMakeLists.txt  filter=copyright
 *.cmake         filter=copyright
 *.cmakein       filter=copyright
 *.py            filter=copyright
-*.l             filter=copyright
-*.y             filter=copyright
-*.pre           filter=copyright
+*.l             filter=includesort
+*.y             filter=includesort
+*.pre           filter=includesort
 *.tex           filter=copyright
 *.bm            filter=copyright
 # Exceptions: extra files to include
@@ -23,22 +23,37 @@ cmake/FindBLAS.cmake                    !filter
 cmake/FindLAPACK.cmake                  !filter
 cmake/ThreadMPI.cmake                   !filter
 cmake/Platform/BluegeneQ*.cmake         !filter
-cmake/*.c                               !filter
+cmake/*.c                               -filter -gmx-doxygen
+cmake/*.cpp                             -filter -gmx-doxygen
 cmake/*.c.cmakein                       !filter
-doxygen/Doxyfile-*.cmakein              !filter
-doxygen/*.cpp                           !filter
-doxygen/examples/*.cpp                  filter=uncrustify_only
-doxygen/examples/*.c                    filter=uncrustify_only
-manual/UseLATEX.cmake                   !filter
+docs/doxygen/Doxyfile-*.cmakein         !filter
+docs/doxygen/*.cpp                      !filter
+docs/doxygen/examples/*.cpp             filter=uncrustify_only
+docs/doxygen/examples/*.c               filter=uncrustify_only
+docs/manual/UseLATEX.cmake              !filter
 scripts/GMXRC.*                         !filter
 scripts/make_gromos_rtp.py              !filter
-src/contrib/*                           !filter
-src/gromacs/gmxlib/gpu_utils/memtestG80_core.*             !filter
+src/contrib/*                           -filter -gmx-doxygen
 src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter
-src/gromacs/selection/parser.cpp        !filter
-src/gromacs/selection/parser.h          !filter
-src/gromacs/selection/scanner.cpp       !filter
-src/gromacs/selection/scanner_flex.h    !filter
-nb_kernel_Elec*                         filter=copyright
+src/gromacs/selection/parser.cpp        -filter -gmx-doxygen
+src/gromacs/selection/parser.h          -filter -gmx-doxygen
+src/gromacs/selection/scanner.cpp       -filter -gmx-doxygen
+src/gromacs/selection/scanner_flex.h    -filter
+nb_kernel_Elec*                         filter=copyright -gmx-doxygen
+nb_kernel*pre                           filter=copyright
+*.eps                                   binary
+*.jpg                                   binary
+*.svg                                   binary
+*.png                                   binary
+*.pdf                                   binary
+*.ogl                                   binary
+*.gif                                   binary
+*.jpg                                   binary
+*.tpr                                   binary
+*.trr                                   binary
+*.tng                                   binary
+*.xtc                                   binary
+*.edr                                   binary
+*.cpt                                   binary

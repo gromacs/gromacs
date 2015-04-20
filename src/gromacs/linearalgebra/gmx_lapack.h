@@ -63,9 +63,7 @@
 
 /*! \cond */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 /* These are not required by this file, but by the internal LAPACK
  * implementation.  In principle, they could be included in each file
@@ -73,12 +71,6 @@
  * to the linearyalgebra/ module, the added complexity may not be worth it. */
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-/* Suppress Cygwin compiler warnings from using newlib version of
- * ctype.h */
-#ifdef GMX_CYGWIN
-#undef toupper
-#endif
 
 #ifdef __cplusplus
 extern "C" {

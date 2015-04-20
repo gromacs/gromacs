@@ -1,0 +1,290 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+\documentclass[11pt,a4paper,twoside]{gmxmanual}
+\usepackage{here,picins,fancy,array,tabularx,multicol,dcolumn,makeidx,times,ifthen,enumitem,longtable,pdflscape}
+%citesort was old, deprecated in tex, and doesn't work with hyperref/pdftex.
+%it is rumored you could achieve the same functionality with natbib, but
+%after a couple of hours of trial I gave up... /EL
+\input{macros}
+
+% If you set gmxlite to 1 a very much shortened version of the manual 
+% will be generated, which may be useful for teaching.
+\newcommand{\gmxlite}{0}
+
+\begin{document}
+
+%roman pagenumbers for the preamble stuff
+\pagenumbering{roman}
+
+% Adjust margins on front page to make it
+% symmetrical. It is reset on the next page.
+\addtolength{\oddsidemargin}{-5mm}
+
+%
+%       F R O N T P A G E       
+%
+\pagestyle{empty}
+\begin{center}
+
+\textcolor{blue}{\fontsize{84}{96} \selectfont GROMACS}
+\vspace{4mm}
+
+\textcolor{blue}{\LARGE \em Groningen Machine for Chemical Simulations}
+\vspace{4mm}
+
+\includegraphics[height=5in]{plots/peregrine}
+\vspace{4mm}
+
+\ifthenelse{\equal{\gmxlite}{1}}
+{
+\fcolorbox{blue}{blue}{\textcolor{white}{\fontsize{56}{64} \selectfont Reference Manual {\em ~Lite~}}}
+}
+{
+\fcolorbox{blue}{blue}{\textcolor{white}{\fontsize{56}{64} \selectfont ~Reference Manual~}}
+} % Brace matches ifthenelse test for gmxlite
+\vspace{4mm}
+
+\textcolor{blue}{\fontsize{48}{56} \selectfont ~Version \gmxver~}
+
+
+%\vspace{0.25cm}
+%{\fontsize{30}{36} \selectfont \bf Version \gmxver}
+
+\end{center}
+\vfill
+
+\ifthenelse{\equal{\gmxlite}{1}} 
+{
+\newpage
+{\bf
+This text is a shortened version of the full {\gromacs} manual, written
+by David van der Spoel, Berk Hess, Erik Lindahl and others. Please
+find further information on our website {\wwwpage}.}
+
+\vspace{2cm}
+
+\noindent \copyright\ 1991--2000: 
+Department of Biophysical Chemistry, University of Groningen. 
+Nijenborgh 4, 9747 AG Groningen, The Netherlands.\\
+\medskip
+
+\noindent \copyright\ 2001--{\gmxyear}:
+The {\gromacs} development teams at the Royal Institute of Technology and \\
+Uppsala University, Sweden.
+} 
+{ 
+\cleardoublepage
+} % Brace matches ifthenelse test for gmxlite
+%reset to normal margins
+\addtolength{\oddsidemargin}{5mm}
+
+%
+%       P R E F A C E
+%
+\renewcommand{\chaptermark}[1]{\markboth{#1}{#1}} % remember chapter title
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+                                                % section number and title
+\lhead[\fancyplain{}{\em\thepage}]{\fancyplain{}{\em\rightmark}}
+\rhead[\fancyplain{}{\em\leftmark}]{\fancyplain{}{\em\thepage}}
+\cfoot{}
+
+\ifthenelse{\equal{\gmxlite}{1}}{}{
+\begin{center}
+\phantom{ }
+\vspace{1cm}
+{\fontsize{40}{50} \selectfont 
+GROMACS\\
+Reference Manual\\[1cm]
+}
+{\LARGE\bf Version \gmxver}\\[1cm]
+
+{\Large 
+Contributions from \\
+\vspace{5mm}
+
+Emile Apol, Rossen Apostolov, Herman J.C. Berendsen, \\
+Aldert van Buuren, P\"ar Bjelkmar, Rudi van Drunen, \\
+Anton Feenstra, Sebastian Fritsch, Gerrit Groenhof, \\
+Christoph Junghans, Jochen Hub, Peter Kasson, \\
+Carsten Kutzner, Brad Lambeth, Per Larsson, \\
+Justin A. Lemkul, Erik Marklund, Peiter Meulenhoff, \\
+Teemu Murtola, Szil\'ard P\'all, Sander Pronk, \\
+Roland Schulz, Michael Shirts, Alfons Sijbers, \\
+Peter Tieleman, Christian Wennberg and Maarten Wolf. \\}
+\vspace{5mm}
+
+{\LARGE Mark Abraham, Berk Hess, David van der Spoel, and Erik Lindahl.}
+\vspace{10mm}
+\end{center}
+
+\vfill
+
+
+\noindent \copyright\ 1991--2000: 
+Department of Biophysical Chemistry, University of Groningen. \\
+Nijenborgh 4, 9747 AG Groningen, The Netherlands.\\
+\medskip
+
+\noindent \copyright\ 2001--{\gmxyear}:
+The {\gromacs} development teams at the Royal Institute of Technology and \\
+Uppsala University, Sweden.
+
+\vspace{5mm}
+
+More information can be found on our website: {\wwwpage}.
+
+
+\newpage
+\pagestyle{fancyplain}
+
+\subsection*{Preface \& Disclaimer}
+This manual is not complete and has no pretention to be so due
+to lack of time of the contributors -- our first priority is to improve
+the software. It is worked on continuously,
+which in some cases might mean the information is not entirely correct.
+
+Comments on form and content are welcome, please send them to one of
+the mailing lists (see {\wwwpage}), or open an issue
+at {\redminepage}. Corrections can also be made in the GROMACS git
+source repository and uploaded to {\gerritpage}.
+
+We release an updated version of the manual whenever
+we release a new version of the software, so in general 
+it is a good idea to use a manual with the same major and
+minor release number as your {\gromacs} installation. 
+
+\subsection*{On-line Resources}
+You can find more documentation and other material at our homepage
+\wwwpage. Among other things there is an on-line reference, several
+{\gromacs} mailing lists with archives and contributed
+topologies/force fields.
+
+\subsection*{Citation information}
+When \normindex{citing} this document in any scientific publication
+please refer to it as:
+\begin{quote}
+\raggedright
+M.J. Abraham, D. van der Spoel, E. Lindahl, B. Hess, and the GROMACS development team,
+\hspace{0.3em} {\em {\gromacs} {U}ser {M}anual version \gmxver},
+\hspace{0.3em} {\wwwpage} ({\gmxyear})
+\end{quote}
+However, we prefer that you cite (some of) the {\gromacs}
+papers~\cite{Bekker93a,Berendsen95a,Lindahl2001a,Spoel2005a,Hess2008b,Pronk2013}
+when you publish your results. Any future development depends on academic research
+grants, since the package is distributed as free software!
+
+\subsection*{{\gromacs} is {\em Free Software}}
+The entire {\gromacs} package is available under the GNU Lesser
+General Public License, version 2.1. This means it's free as in free
+speech, not just that you can use it without paying us money. For
+details, check the COPYING file in the source code or consult
+\href{http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html}{http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html}.
+
+The {\gromacs} source code and and selected set of binary packages are
+available on our homepage, \wwwpage. Have fun.
+} % Brace matches ifthenelse test for gmxlite
+
+\newpage
+%       C O N T E N T S
+%
+\tableofcontents
+%\listoffigures
+%\listoftables
+
+%
+%       R E A L   M A N U A L
+%
+\cleardoublepage
+\pagenumbering{arabic}
+
+\include{intro}
+\include{defunits}
+\include{algorithms}
+\include{forcefield}
+
+\ifthenelse{\equal{\gmxlite}{1}}{}{
+\include{topology}
+\include{special}
+\include{programs}
+} % Brace matches ifthenelse test for gmxlite
+\include{analyse}
+\ifthenelse{\equal{\gmxlite}{1}}{}{
+%
+%       A P P E N D I C E S
+%
+\appendix
+\include{technical}
+\include{implement}
+\include{averages}
+} % Brace matches ifthenelse test for gmxlite
+%
+% The pdfdummy counter is a workaround to get correct
+% bookmarks for the index & bibliography in pdf files
+
+\newcounter{pdfdummy}
+
+%
+%       B I B L I O G R A P H Y
+%
+\cleardoublepage
+\refstepcounter{pdfdummy}
+
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\bibliographystyle{proteins}
+\bibliography{monster,unpubl}
+
+%
+%       I N D E X
+%
+\cleardoublepage
+\refstepcounter{pdfdummy}
+
+\ifthenelse{\equal{\gmxlite}{1}}{}{
+\addcontentsline{toc}{chapter}{Index}
+
+\renewcommand{\see}[2]{\mbox{} \mbox{\textit{see} #1}}
+\printindex
+} % Brace matches ifthenelse test for gmxlite
+
+\end{document}
+
+% LocalWords:  Groningen der Spoel Lindahl Nijenborgh Carsten Kutzner Aldert
+% LocalWords:  Buuren Apol Meulenhoff Tieleman Sijbers Feenstra Rudi Drunen Sij
+% LocalWords:  Berendsen pretention bers ser anual Uppsala Mainz unpubl
+% LocalWords:  Bioinformatics GROMACS Rossen Apostolov ar Bjelkmar
+% LocalWords:  Fritsch Gerrit Groenhof Junghans Kasson Larsson Peiter
+% LocalWords:  Teemu Murtola Szil ard Pronk Jochen Lambeth Lemkul
+% LocalWords:  Marklund Maarten

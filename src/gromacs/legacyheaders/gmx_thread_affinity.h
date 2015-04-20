@@ -37,8 +37,8 @@
 
 #include <stdio.h>
 
-#include "types/hw_info.h"
-#include "../utility/basedefinitions.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

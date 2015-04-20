@@ -32,11 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "read-conformation.h"
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
@@ -51,7 +53,6 @@ real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
     snew(exclusionDistances, a->nr);
     /* initialise arrays with distances usually based on van der Waals
        radii */
-    fprintf(stderr, "Initialising inter-atomic distances...\n");
     for (i = 0; (i < a->nr); i++)
     {
         if (!gmx_atomprop_query(aps, epropVDW,
@@ -69,7 +70,7 @@ real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
 }
 
 char *readConformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
-                       int *ePBC, matrix box)
+                       int *ePBC, matrix box, const char *statusTitle)
 {
     char *title;
     int   natoms;
@@ -86,7 +87,7 @@ char *readConformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
     init_t_atoms(atoms, natoms, FALSE);
 
     /* read residue number, residue names, atomnames, coordinates etc. */
-    fprintf(stderr, "Reading solute configuration%s\n", v ? " and velocities" : "");
+    fprintf(stderr, "Reading %s configuration%s\n", statusTitle, v ? " and velocities" : "");
     read_stx_conf(confin, title, atoms, *x, v ? *v : NULL, ePBC, box);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
             title, atoms->nr, atoms->nres);

@@ -32,20 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "geminate.h"
 
 #include <math.h>
 #include <stdlib.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "geminate.h"
-
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/smalloc.h"
 
 static void missing_code_message()
 {
@@ -517,7 +515,7 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
 /* This returns the real-valued index(!) to an ACF, equidistant on a log scale. */
 static double getLogIndex(const int i, const t_gemParams *params)
 {
-    return (exp(((double)(i)) * params->logQuota) -1);
+    return gmx_expm1(((double)(i)) * params->logQuota);
 }
 
 extern t_gemParams *init_gemParams(const double sigma, const double D,

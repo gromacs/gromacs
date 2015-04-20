@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,11 +32,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
+
 #include "gromacs/math/utilities.h"
 
 #include "simd4.h"
@@ -121,25 +120,47 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4FnegR)
 }
 
 #ifdef GMX_SIMD4_HAVE_LOGICAL
+/* 1.3333282470703125 has mantissa 0101010101010101 (followed by zeros)
+ * 1.79998779296875   has mantissa 1100110011001100 (followed by zeros)
+ * 1.26666259765625   has mantissa 0100010001000100 (followed by zeros)
+ * 1.8666534423828125 has mantissa 1101110111011101 (followed by zeros)
+ *
+ * Since all of them have the same exponent (2^0), the exponent will
+ * not change with AND or OR operations.
+ */
 TEST_F(Simd4FloatingpointTest, gmxSimd4AndR)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_Bits3, gmx_simd4_and_r(rSimd4_Bits1, rSimd4_Bits2)); // Bits1 & Bits2 = Bits3
-}
-
-TEST_F(Simd4FloatingpointTest, gmxSimd4AndnotR)
-{
-    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_Bits4, gmx_simd4_andnot_r(rSimd4_Bits1, rSimd4_Bits2)); // (~Bits1) & Bits2 = Bits3
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom1R(1.26666259765625),
+                             gmx_simd4_and_r(gmx_simd4_set1_r(1.3333282470703125),
+                                             gmx_simd4_set1_r(1.79998779296875)));
 }
 
 TEST_F(Simd4FloatingpointTest, gmxSimd4OrR)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_Bits5, gmx_simd4_or_r(rSimd4_Bits1, rSimd4_Bits2)); // Bits1 | Bits2 = Bits3
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom1R(1.8666534423828125),
+                             gmx_simd4_or_r(gmx_simd4_set1_r(1.3333282470703125),
+                                            gmx_simd4_set1_r(1.79998779296875)));
 }
 
 TEST_F(Simd4FloatingpointTest, gmxSimd4XorR)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_Bits6, gmx_simd4_xor_r(rSimd4_Bits1, rSimd4_Bits2)); // Bits1 ^ Bits2 = Bits3
+    /* Test xor by taking xor with a number and its negative. This should result
+     * in only the sign bit being set. We then use this bit change the sign of
+     * different numbers.
+     */
+    gmx_simd4_real_t signbit = gmx_simd4_xor_r(gmx_simd4_set1_r(1.5), gmx_simd4_set1_r(-1.5));
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(-1, 2, -3), gmx_simd4_xor_r(signbit, setSimd4RealFrom3R(1, -2, 3)));
 }
+
+TEST_F(Simd4FloatingpointTest, gmxSimd4AndnotR)
+{
+    /* Use xor (which we already tested, so fix that first if both tests fail)
+     * to extract the sign bit, and then use andnot to take absolute values.
+     */
+    gmx_simd4_real_t signbit = gmx_simd4_xor_r(gmx_simd4_set1_r(1.5), gmx_simd4_set1_r(-1.5));
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(1, 2, 3), gmx_simd4_andnot_r(signbit, setSimd4RealFrom3R(-1, 2, -3)));
+}
+
 #endif
 
 TEST_F(Simd4FloatingpointTest, gmxSimd4MaxR)
@@ -180,12 +201,18 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4TruncR)
  */
 TEST_F(Simd4FloatingpointTest, gmxSimd4RsqrtR)
 {
-    gmx_simd4_real_t x      = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
-    gmx_simd4_real_t ref    = setSimd4RealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    gmx_simd4_real_t x                   = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
+    gmx_simd4_real_t ref                 = setSimd4RealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    int              shiftbits           = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+
+    if (shiftbits < 0)
+    {
+        shiftbits = 0;
+    }
 
     // The allowed Ulp deviation is 2 to the power of the number of mantissa
     // digits, minus the number of bits provided by the table lookup
-    setUlpTol(1LL << (std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS));
+    setUlpTol(1LL << shiftbits);
     GMX_EXPECT_SIMD4_REAL_NEAR(ref, gmx_simd4_rsqrt_r(x));
 }
 

@@ -38,7 +38,7 @@
 #ifndef _xutil_h
 #define _xutil_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 /* TODO: This include is needed here, because this header reuses eXPos and
  * eYPos.  It has nothing to do with PostScript output. */
 #include "gromacs/fileio/writeps.h"

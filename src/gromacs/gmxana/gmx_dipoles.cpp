@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,41 +34,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <string.h>
+#include "gmxpre.h"
+
 #include <math.h>
+#include <string.h>
 
 #include <algorithm>
 
-#include "macros.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "bondf.h"
-#include "gromacs/utility/futil.h"
-#include "viewit.h"
-#include "txtdump.h"
-#include "gromacs/statistics/statistics.h"
-#include "gstat.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/random/random.h"
-#include "names.h"
-#include "gromacs/math/units.h"
-#include "calcmu.h"
-#include "gromacs/fileio/enxio.h"
-#include "gmx_ana.h"
-#include "copyrite.h"
-#include "gromacs/fileio/trxio.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/calcmu.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/random/random.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define e2d(x) ENM2DEBYE*(x)
@@ -407,7 +404,7 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
         /* Swap x0 and x1 */
         x0 = x1;
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol,
@@ -689,7 +686,7 @@ static void dump_slab_dipoles(const char *fn, int idim, int nslice,
                 slab_dipole[i][ZZ]/nframes,
                 mutot);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     do_view(oenv, fn, "-autoscale xy -nxy");
 }
 
@@ -955,7 +952,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             gmx::BinaryInformationSettings settings;
             settings.generatedByHeader(true);
             settings.linePrefix("# ");
-            gmx::printBinaryInformation(dip3d, gmx::getProgramContext(),
+            gmx::printBinaryInformation(dip3d, output_env_get_program_context(oenv),
                                         settings);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -1339,18 +1336,18 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         close_trj(status);
     }
 
-    gmx_ffclose(outmtot);
-    gmx_ffclose(outaver);
-    gmx_ffclose(outeps);
+    xvgrclose(outmtot);
+    xvgrclose(outaver);
+    xvgrclose(outeps);
 
     if (fnadip)
     {
-        gmx_ffclose(adip);
+        xvgrclose(adip);
     }
 
     if (cosaver)
     {
-        gmx_ffclose(caver);
+        xvgrclose(caver);
     }
 
     if (dip3d)
@@ -1459,7 +1456,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             fprintf(outdd, "%10g  %10f\n",
                     (i*mu_max)/ndipbin, dipole_bin[i]/(double)teller);
         }
-        gmx_ffclose(outdd);
+        xvgrclose(outdd);
         sfree(dipole_bin);
     }
     if (bGkr)
@@ -1578,7 +1575,7 @@ int gmx_dipoles(int argc, char *argv[])
         { "-rcmax",    FALSE, etREAL, {&rcmax},
           "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterion based on the box length will be used." },
         { "-phi",      FALSE, etBOOL, {&bPhi},
-          "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [TT].xpm[tt] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted." },
+          "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [REF].xpm[ref] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted." },
         { "-nlevels",  FALSE, etINT, {&nlevels},
           "Number of colors in the cmap output" },
         { "-ndegrees", FALSE, etINT, {&ndegrees},
@@ -1592,7 +1589,7 @@ int gmx_dipoles(int argc, char *argv[])
     t_filenm       fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
-        { efTPX, NULL, NULL,           ffREAD },
+        { efTPR, NULL, NULL,           ffREAD },
         { efNDX, NULL, NULL,           ffOPTRD },
         { efXVG, "-o",   "Mtot",       ffWRITE },
         { efXVG, "-eps", "epsilon",    ffWRITE },
@@ -1616,7 +1613,7 @@ int gmx_dipoles(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -1666,7 +1663,7 @@ int gmx_dipoles(int argc, char *argv[])
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPX, NFILE, fnm), NULL, box,
+    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), NULL, box,
                         &natoms, NULL, NULL, NULL, top);
 
     snew(gnx, ncos);

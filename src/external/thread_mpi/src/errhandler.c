@@ -132,7 +132,7 @@ int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
 
     if (errorcode != TMPI_ERR_IO)
     {
-#if !(defined( _WIN32 ) || defined( _WIN64 ) )
+#ifndef _MSC_VER
         strncpy(strn, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
 #else
         strncpy_s(strn, TMPI_MAX_ERROR_STRING, tmpi_errmsg[errorcode],
@@ -141,7 +141,7 @@ int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
     }
     else
     {
-#if !(defined( _WIN32 ) || defined( _WIN64 ) )
+#ifndef _MSC_VER
         snprintf(strn, TMPI_MAX_ERROR_STRING,
                  "%s: %s", tmpi_errmsg[errorcode], strerror(errno));
 #else

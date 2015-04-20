@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,39 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
-#include <time.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "txtdump.h"
 #include "gromacs/fileio/matio.h"
-#include "eigio.h"
-#include "gmx_ana.h"
-#include "gromacs/utility/cstringutil.h"
+#include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/trxio.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/eigio.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 int gmx_covar(int argc, char *argv[])
 {
@@ -90,9 +83,9 @@ int gmx_covar(int argc, char *argv[])
         "Option [TT]-ascii[tt] writes the whole covariance matrix to",
         "an ASCII file. The order of the elements is: x1x1, x1y1, x1z1, x1x2, ...",
         "[PAR]",
-        "Option [TT]-xpm[tt] writes the whole covariance matrix to an [TT].xpm[tt] file.",
+        "Option [TT]-xpm[tt] writes the whole covariance matrix to an [REF].xpm[ref] file.",
         "[PAR]",
-        "Option [TT]-xpma[tt] writes the atomic covariance matrix to an [TT].xpm[tt] file,",
+        "Option [TT]-xpma[tt] writes the atomic covariance matrix to an [REF].xpm[ref] file,",
         "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
         "written.",
         "[PAR]",
@@ -117,7 +110,7 @@ int gmx_covar(int argc, char *argv[])
         { "-pbc",  FALSE,  etBOOL, {&bPBC},
           "Apply corrections for periodic boundary conditions" }
     };
-    FILE           *out;
+    FILE           *out = NULL; /* initialization makes all compilers happy */
     t_trxstatus    *status;
     t_trxstatus    *trjout;
     t_topology      top;
@@ -140,7 +133,6 @@ int gmx_covar(int argc, char *argv[])
     int             d, dj, nfit;
     atom_id        *index, *ifit;
     gmx_bool        bDiffMass1, bDiffMass2;
-    time_t          now;
     char            timebuf[STRLEN];
     t_rgb           rlo, rmi, rhi;
     real           *eigenvectors;
@@ -161,7 +153,7 @@ int gmx_covar(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -546,18 +538,7 @@ int gmx_covar(int argc, char *argv[])
         fprintf(stderr, "\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
     }
 
-    fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile);
-
-    sprintf(str, "(%snm\\S2\\N)", bM ? "u " : "");
-    out = xvgropen(eigvalfile,
-                   "Eigenvalues of the covariance matrix",
-                   "Eigenvector index", str, oenv);
-    for (i = 0; (i < end); i++)
-    {
-        fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
-    }
-    gmx_ffclose(out);
-
+    /* Set 'end', the maximum eigenvector and -value index used for output */
     if (end == -1)
     {
         if (nframes-1 < ndim)
@@ -572,6 +553,19 @@ int gmx_covar(int argc, char *argv[])
             end = ndim;
         }
     }
+
+    fprintf(stderr, "\nWriting eigenvalues to %s\n", eigvalfile);
+
+    sprintf(str, "(%snm\\S2\\N)", bM ? "u " : "");
+    out = xvgropen(eigvalfile,
+                   "Eigenvalues of the covariance matrix",
+                   "Eigenvector index", str, oenv);
+    for (i = 0; (i < end); i++)
+    {
+        fprintf (out, "%10d %g\n", (int)i+1, eigenvalues[ndim-1-i]);
+    }
+    xvgrclose(out);
+
     if (bFit)
     {
         /* misuse lambda: 0/1 mass weighted analysis no/yes */
@@ -599,8 +593,7 @@ int gmx_covar(int argc, char *argv[])
 
     out = gmx_ffopen(logfile, "w");
 
-    time(&now);
-    gmx_ctime_r(&now, timebuf, STRLEN);
+    gmx_format_current_time(timebuf, STRLEN);
     fprintf(out, "Covariance analysis log, written %s\n", timebuf);
 
     fprintf(out, "Program: %s\n", argv[0]);

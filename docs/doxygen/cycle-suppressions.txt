@@ -1,0 +1,22 @@
+# Order (or more generally, edge selection) is significant (see gmxtree.md);
+# "moduleA -> moduleB" means that moduleA should not depend on moduleB, and is
+# a problem to be addressed at some point.
+fileio -> domdec
+domdec -> imd
+domdec -> ewald
+domdec -> mdlib
+domdec -> pulling
+domdec -> swap
+mdlib -> essentialdynamics
+mdlib -> imd
+mdlib -> ewald
+mdlib -> pulling
+legacyheaders -> swap
+legacyheaders -> fileio
+timing -> legacyheaders
+math -> legacyheaders
+topology -> fileio
+topology -> legacyheaders
+pbcutil -> fileio
+pbcutil -> legacyheaders
+listed-forces -> mdlib

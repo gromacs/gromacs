@@ -47,7 +47,7 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
@@ -57,7 +57,7 @@ class File;
 class Options;
 
 //! \cond internal
-//! \addtogroup module_onlinehelp
+//! \addtogroup module_commandline
 //! \{
 
 //! Output format for ShellCompletionWriter.

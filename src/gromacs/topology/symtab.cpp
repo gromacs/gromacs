@@ -34,11 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "symtab.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "symtab.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -46,7 +44,6 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/txtdump.h"
-
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -168,7 +165,7 @@ static char **enter_buf(t_symtab *symtab, char *name)
             if (symbuf->buf[i] == NULL)
             {
                 symtab->nr++;
-                symbuf->buf[i] = strdup(name);
+                symbuf->buf[i] = gmx_strdup(name);
                 return &(symbuf->buf[i]);
             }
             else if (strcmp(symbuf->buf[i], name) == 0)
@@ -192,7 +189,7 @@ static char **enter_buf(t_symtab *symtab, char *name)
     symbuf       = symbuf->next;
 
     symtab->nr++;
-    symbuf->buf[0] = strdup(name);
+    symbuf->buf[0] = gmx_strdup(name);
     return &(symbuf->buf[0]);
 }
 

@@ -34,7 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/math/3dtransforms.h"
+#include "gmxpre.h"
+
+#include "3dtransforms.h"
 
 #include <math.h>
 #include <stdio.h>

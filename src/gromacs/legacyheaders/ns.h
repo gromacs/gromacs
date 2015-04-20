@@ -40,9 +40,9 @@
 
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "tgroup.h"
-#include "network.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,10 +93,6 @@ void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL);
 
 int read_nblist(FILE *in, FILE *out, int **mat, int natoms, gmx_bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */
-
-int natoms_beyond_ns_buffer(t_inputrec *ir, t_forcerec *fr, t_block *cgs,
-                            matrix scale_tot, rvec *x);
-/* Returns the number of atoms that moved beyond the ns buffer */
 
 void reallocate_nblist(t_nblist *nl);
 /* List reallocation, only exported for Verlet scheme use with FEP */

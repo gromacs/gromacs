@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
-#include "gromacs/options/abstractoption.h"
+#include "gmxpre.h"
+
+#include "abstractoption.h"
 
 #include "gromacs/options/abstractoptionstorage.h"
 #include "gromacs/options/optionflags.h"

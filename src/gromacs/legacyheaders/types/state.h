@@ -38,8 +38,8 @@
 #define _state_h_
 
 
-#include "simple.h"
-#include "../../swap/enums.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/swap/enums.h"
 
 #ifdef __cplusplus
 extern "C" {

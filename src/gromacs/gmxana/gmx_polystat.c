@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,28 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/topology/index.h"
-#include "macros.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void gyro_eigen(double **gyr, double *eig, double **eigv, int *ord)
 {
@@ -130,7 +127,7 @@ int gmx_polystat(int argc, char *argv[])
         "are usually all trans and therefore only every second bond aligns.",
         "The persistence length is defined as number of bonds where",
         "the average cos reaches a value of 1/e. This point is determined",
-        "by a linear interpolation of log(<cos>)."
+        "by a linear interpolation of [LOG]<cos>[log]."
     };
     static gmx_bool bMW  = TRUE, bPC = FALSE;
     t_pargs         pa[] = {
@@ -141,7 +138,7 @@ int gmx_polystat(int argc, char *argv[])
     };
 
     t_filenm        fnm[] = {
-        { efTPX, NULL, NULL,  ffREAD  },
+        { efTPR, NULL, NULL,  ffREAD  },
         { efTRX, "-f", NULL,  ffREAD  },
         { efNDX, NULL, NULL,  ffOPTRD },
         { efXVG, "-o", "polystat",  ffWRITE },
@@ -179,14 +176,14 @@ int gmx_polystat(int argc, char *argv[])
     gmx_rmpbc_t  gpbc = NULL;
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPX, NFILE, fnm),
+    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                         NULL, box, &natoms, NULL, NULL, NULL, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");
@@ -235,7 +232,7 @@ int gmx_polystat(int argc, char *argv[])
             for (d2 = 0; d2 < DIM; d2++)
             {
                 sprintf(buf, "eig%d %c", d+1, 'x'+d2);
-                legp[d*DIM+d2] = strdup(buf);
+                legp[d*DIM+d2] = gmx_strdup(buf);
             }
         }
         xvgr_legend(outv, DIM*DIM, (const char**)legp, oenv);
@@ -467,14 +464,14 @@ int gmx_polystat(int argc, char *argv[])
 
     close_trx(status);
 
-    gmx_ffclose(out);
+    xvgrclose(out);
     if (outv)
     {
-        gmx_ffclose(outv);
+        xvgrclose(outv);
     }
     if (outp)
     {
-        gmx_ffclose(outp);
+        xvgrclose(outp);
     }
 
     sum_eed2_tot /= frame;
@@ -517,7 +514,7 @@ int gmx_polystat(int argc, char *argv[])
         {
             fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
         }
-        gmx_ffclose(outi);
+        xvgrclose(outi);
     }
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");

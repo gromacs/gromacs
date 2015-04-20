@@ -42,11 +42,11 @@
 #ifndef GMX_COMMANDLINE_CMDLINEHELPMODULE_H
 #define GMX_COMMANDLINE_CMDLINEHELPMODULE_H
 
-#include "cmdlinemodule.h"
-#include "cmdlinemodulemanager-impl.h"
-
+#include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/onlinehelp/helptopicinterface.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
+
+#include "cmdlinemodulemanager-impl.h"
 
 namespace gmx
 {
@@ -128,6 +128,10 @@ class CommandLineHelpModule : public CommandLineModuleInterface
             return "Print help information";
         }
 
+        virtual void init(CommandLineModuleSettings *settings)
+        {
+            settings->setDefaultNiceLevel(0);
+        }
         virtual int run(int argc, char *argv[]);
         virtual void writeHelp(const CommandLineHelpContext &context) const;
 

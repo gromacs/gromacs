@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,42 +34,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gromacs/pbcutil/mshift.h"
-#include "viewit.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
-#include "nrnb.h"
-#include "disre.h"
-#include "force.h"
-#include "gstat.h"
-#include "main.h"
+#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/topology/index.h"
-#include "mdatoms.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "mdrun.h"
-#include "names.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/mdatoms.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -665,7 +662,7 @@ int gmx_disre(int argc, char *argv[])
         "the time averaged values per restraint are given in the log file.[PAR]",
         "An index file may be used to select specific restraints for",
         "printing.[PAR]",
-        "When the optional [TT]-q[tt] flag is given a [TT].pdb[tt] file coloured by the",
+        "When the optional [TT]-q[tt] flag is given a [REF].pdb[ref] file coloured by the",
         "amount of average violations.[PAR]",
         "When the [TT]-c[tt] option is given, an index file will be read",
         "containing the frames in your trajectory corresponding to the clusters",
@@ -719,7 +716,7 @@ int gmx_disre(int argc, char *argv[])
     gmx_rmpbc_t     gpbc = NULL;
 
     t_filenm        fnm[] = {
-        { efTPX, NULL, NULL, ffREAD },
+        { efTPR, NULL, NULL, ffREAD },
         { efTRX, "-f", NULL, ffREAD },
         { efXVG, "-ds", "drsum",  ffWRITE },
         { efXVG, "-da", "draver", ffWRITE },
@@ -734,7 +731,7 @@ int gmx_disre(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -747,9 +744,9 @@ int gmx_disre(int argc, char *argv[])
         init5(ntop);
     }
 
-    read_tpxheader(ftp2fn(efTPX, NFILE, fnm), &header, FALSE, NULL, NULL);
+    read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE, NULL, NULL);
     snew(xtop, header.natoms);
-    read_tpx(ftp2fn(efTPX, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, NULL, &mtop);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, NULL, &mtop);
     bPDB = opt2bSet("-q", NFILE, fnm);
     if (bPDB)
     {
@@ -789,6 +786,8 @@ int gmx_disre(int argc, char *argv[])
 
     if (ftp2bSet(efNDX, NFILE, fnm))
     {
+        /* TODO: Nothing is written to this file if -c is provided, but it is
+         * still opened... */
         rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
         xvg = xvgropen(opt2fn("-dr", NFILE, fnm), "Individual Restraints", "Time (ps)",
                        "nm", oenv);
@@ -936,19 +935,22 @@ int gmx_disre(int argc, char *argv[])
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres,
                           j, &top->idef, &mtop, max_dr, nlevels, bThird);
-        gmx_ffclose(out);
-        gmx_ffclose(aver);
-        gmx_ffclose(numv);
-        gmx_ffclose(maxxv);
-        if (isize > 0)
-        {
-            gmx_ffclose(xvg);
-            do_view(oenv, opt2fn("-dr", NFILE, fnm), "-nxy");
-        }
+        xvgrclose(out);
+        xvgrclose(aver);
+        xvgrclose(numv);
+        xvgrclose(maxxv);
         do_view(oenv, opt2fn("-dn", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-da", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-ds", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-dm", NFILE, fnm), "-nxy");
+    }
+    if (isize > 0)
+    {
+        xvgrclose(xvg);
+        if (!clust)
+        {
+            do_view(oenv, opt2fn("-dr", NFILE, fnm), "-nxy");
+        }
     }
 
     gmx_log_close(fplog);

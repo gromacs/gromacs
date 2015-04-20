@@ -46,6 +46,8 @@
 #ifndef GMX_SIMD_VECTOR_OPERATIONS_H
 #define GMX_SIMD_VECTOR_OPERATIONS_H
 
+#include "config.h"
+
 #include "gromacs/simd/simd.h"
 
 /*! \cond libapi */
@@ -68,7 +70,7 @@
  *
  * \note The SIMD part is that we calculate many scalar products in one call.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_iprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
                  gmx_simd_float_t bx, gmx_simd_float_t by, gmx_simd_float_t bz)
 {
@@ -94,7 +96,7 @@ gmx_simd_iprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
  * \note This corresponds to the scalar product of the vector with itself, but
  * the compiler might be able to optimize it better with identical vectors.
  */
-static gmx_inline gmx_simd_float_t
+static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_norm2_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az)
 {
     gmx_simd_float_t ret;
@@ -132,7 +134,7 @@ gmx_simd_norm2_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az)
  * The arguments x/y/z denotes the different components, and each element
  * corresponds to a separate vector.
  */
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_simd_cprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
                  gmx_simd_float_t bx, gmx_simd_float_t by, gmx_simd_float_t bz,
                  gmx_simd_float_t *cx, gmx_simd_float_t *cy, gmx_simd_float_t *cz)
@@ -153,7 +155,7 @@ gmx_simd_cprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
  *
  * \copydetails gmx_simd_iprod_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_iprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az,
                  gmx_simd_double_t bx, gmx_simd_double_t by, gmx_simd_double_t bz)
 {
@@ -170,7 +172,7 @@ gmx_simd_iprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t a
  *
  * \copydetails gmx_simd_norm2_f
  */
-static gmx_inline gmx_simd_double_t
+static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_norm2_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az)
 {
     gmx_simd_double_t ret;
@@ -192,7 +194,7 @@ gmx_simd_norm2_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t a
  *
  * \copydetails gmx_simd_cprod_f
  */
-static gmx_inline void
+static gmx_inline void gmx_simdcall
 gmx_simd_cprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t az,
                  gmx_simd_double_t bx, gmx_simd_double_t by, gmx_simd_double_t bz,
                  gmx_simd_double_t *cx, gmx_simd_double_t *cy, gmx_simd_double_t *cz)
@@ -214,7 +216,7 @@ gmx_simd_cprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t a
  *
  * \copydetails gmx_simd_norm2_f
  */
-static gmx_inline gmx_simd4_float_t
+static gmx_inline gmx_simd4_float_t gmx_simdcall
 gmx_simd4_norm2_f(gmx_simd4_float_t ax, gmx_simd4_float_t ay, gmx_simd4_float_t az)
 {
     gmx_simd4_float_t ret;
@@ -239,7 +241,7 @@ gmx_simd4_norm2_f(gmx_simd4_float_t ax, gmx_simd4_float_t ay, gmx_simd4_float_t 
  *
  * \copydetails gmx_simd_norm2_f
  */
-static gmx_inline gmx_simd4_double_t
+static gmx_inline gmx_simd4_double_t gmx_simdcall
 gmx_simd4_norm2_d(gmx_simd4_double_t ax, gmx_simd4_double_t ay, gmx_simd4_double_t az)
 {
     gmx_simd4_double_t ret;

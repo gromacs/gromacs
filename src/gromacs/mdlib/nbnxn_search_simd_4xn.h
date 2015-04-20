@@ -33,7 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-
 #if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_REAL_WIDTH)
 #else
@@ -110,6 +109,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     float                              d2;
     int                                xind_f, xind_l, cj;
 
+    /* cppcheck-suppress selfAssignment . selfAssignment for width 4.*/
     cjf = CI_TO_CJ_SIMD_4XN(cjf);
     cjl = CI_TO_CJ_SIMD_4XN(cjl+1) - 1;
 
@@ -263,12 +263,6 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_4XN(gridj->cell0) + cj;
             nbl->cj[nbl->ncj].excl = get_imask_simd_4xn(remove_sub_diag, ci, cj);
-#ifdef GMX_SIMD_IBM_QPX
-            nbl->cj[nbl->ncj].interaction_mask_indices[0] = (nbl->cj[nbl->ncj].excl & 0x000F) >> (0 * 4);
-            nbl->cj[nbl->ncj].interaction_mask_indices[1] = (nbl->cj[nbl->ncj].excl & 0x00F0) >> (1 * 4);
-            nbl->cj[nbl->ncj].interaction_mask_indices[2] = (nbl->cj[nbl->ncj].excl & 0x0F00) >> (2 * 4);
-            nbl->cj[nbl->ncj].interaction_mask_indices[3] = (nbl->cj[nbl->ncj].excl & 0xF000) >> (3 * 4);
-#endif
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,32 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <ctype.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/utility/cstringutil.h"
-#include "typedefs.h"
-#include "macros.h"
-#include "gstat.h"
-#include "viewit.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/math/units.h"
-#include "gmx_ana.h"
-#include "macros.h"
-
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -121,7 +117,7 @@ int get_electrons(t_electron **eltab, const char *fn)
             gmx_fatal(FARGS, "Invalid line in datafile at line %d\n", i+1);
         }
         (*eltab)[i].nr_el    = tempnr;
-        (*eltab)[i].atomname = strdup(tempname);
+        (*eltab)[i].atomname = gmx_strdup(tempname);
     }
     gmx_ffclose(in);
 
@@ -277,7 +273,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
                     slice = (z / (*slWidth));
                 }
                 sought.nr_el    = 0;
-                sought.atomname = strdup(*(top->atoms.atomname[index[n][i]]));
+                sought.atomname = gmx_strdup(*(top->atoms.atomname[index[n][i]]));
 
                 /* now find the number of electrons. This is not efficient. */
                 found = (t_electron *)
@@ -555,7 +551,7 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
         fprintf(den, "\n");
     }
 
-    gmx_ffclose(den);
+    xvgrclose(den);
 }
 
 int gmx_density(int argc, char *argv[])
@@ -583,10 +579,12 @@ int gmx_density(int argc, char *argv[])
         "Densities are in kg/m^3, and number densities or electron densities can also be",
         "calculated. For electron densities, a file describing the number of",
         "electrons for each type of atom should be provided using [TT]-ei[tt].",
-        "It should look like:[BR]",
-        "   [TT]2[tt][BR]",
-        "   [TT]atomname = nrelectrons[tt][BR]",
-        "   [TT]atomname = nrelectrons[tt][BR]",
+        "It should look like::",
+        "",
+        "   2",
+        "   atomname = nrelectrons",
+        "   atomname = nrelectrons",
+        "",
         "The first line contains the number of lines to read from the file.",
         "There should be one line for each unique atom name in your system.",
         "The number of electrons for each atom is modified by its atomic",
@@ -673,14 +671,14 @@ int gmx_density(int argc, char *argv[])
     t_filenm           fnm[] = { /* files for g_density       */
         { efTRX, "-f", NULL,  ffREAD },
         { efNDX, NULL, NULL,  ffOPTRD },
-        { efTPX, NULL, NULL,  ffREAD },
+        { efTPR, NULL, NULL,  ffREAD },
         { efDAT, "-ei", "electrons", ffOPTRD }, /* file with nr. of electrons */
         { efXVG, "-o", "density", ffWRITE },
     };
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
                            &oenv))
     {
@@ -695,7 +693,7 @@ int gmx_density(int argc, char *argv[])
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
     if (dens_opt[0][0] == 'n')
     {
         for (i = 0; (i < top->atoms.nr); i++)

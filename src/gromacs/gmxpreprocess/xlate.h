@@ -38,6 +38,7 @@
 #ifndef GMX_GMXPREPROCESS_XLATE_H
 #define GMX_GMXPREPROCESS_XLATE_H
 
+#include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus

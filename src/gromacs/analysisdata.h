@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
  * that process frames in parallel: the functionality in this module takes care
  * of necessary synchronization and communication such that output from the
  * frames is collected and output in the correct order.
+ * See \ref page_analysisdata for an overview of the high-level functionality
+ * and the terminology used.
  *
  * This module consists of two main parts.  The first is formed by the
  * gmx::AbstractAnalysisData class and classes that derive from it:
@@ -53,99 +55,15 @@
  * process and store raw data as produced by the analysis tool.  They also
  * provide an interface to attach data modules that implement
  * gmx::AnalysisDataModuleInterface.
- * Modules that implement this interface form the second part of the module,
- * and they provide functionality to do processing operations on the data.
+ *
+ * Modules that implement gmx::AnalysisDataModuleInterface form the second part
+ * of the module, and they provide functionality to do processing on the data.
  * These modules can also derive from gmx::AbstractAnalysisData, allowing other
  * modules to be attached to them to form a processing chain that best suits
  * the analysis tool.  Typically, such a processing chain ends in a plotting
  * module that writes the data into a file, but the final module can also
  * provide direct access to the processed data, allowing the analysis tool to
  * do custom postprocessing outside the module framework.
- *
- * The sequence chart below shows an overview of how analysis data objects
- * and modules interact (currently, multipoint data is an exception to this
- * diagram).
- * \msc
- *     caller,
- *     data [ label="AnalysisData", URL="\ref gmx::AnalysisData" ],
- *     module1 [ label="data module", URL="\ref gmx::AnalysisDataModuleInterface" ];
- *
- *     caller box module1 [ label="caller creates and initializes all objects" ];
- *     caller => data [ label="addModule(module1)",
- *                      URL="\ref gmx::AbstractAnalysisData::addModule() " ];
- *     caller => data [ label="startData()",
- *                      URL="\ref gmx::AnalysisData::startData()" ];
- *     data => module1 [ label="dataStarted()",
- *                       URL="\ref gmx::AnalysisDataModuleInterface::dataStarted()" ];
- *     caller << data [ label="handle",
- *                      URL="\ref gmx::AnalysisDataHandle" ];
- *     caller => data [ label="handle->startFrame(0)",
- *                      URL="\ref gmx::AnalysisDataHandle::startFrame()" ];
- *     caller => data [ label="add data for frame 0",
- *                      URL="\ref gmx::AnalysisDataHandle" ];
- *     caller => data [ label="handle->finishFrame() (frame 0)",
- *                      URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
- *     data => module1 [ label="frameStarted(0)",
- *                       URL="\ref gmx::AnalysisDataModuleInterface::frameStarted()" ];
- *     data => module1 [ label="pointsAdded()",
- *                       URL="\ref gmx::AnalysisDataModuleInterface::pointsAdded()" ];
- *     data => module1 [ label="frameFinished(0)",
- *                       URL="\ref gmx::AnalysisDataModuleInterface::frameFinished()" ];
- *     caller => data [ label="handle->startFrame(1)",
- *                      URL="\ref gmx::AnalysisDataHandle::startFrame()" ];
- *     caller => data [ label="add data for frame 1",
- *                      URL="\ref gmx::AnalysisDataHandle" ];
- *     caller => data [ label="handle2->finishFrame() (frame 1)",
- *                      URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
- *     data => module1 [ label="process frame 1" ];
- *     ... [ label="add more frames" ];
- *     caller => data [ label="handle->finishData()",
- *                      URL="\ref gmx::AnalysisDataHandle::finishData()" ];
- *     data => module1 [ label="dataFinished()",
- *                       URL="\ref gmx::AnalysisDataModuleInterface::dataFinished()" ];
- * \endmsc
- *
- * The second sequence chart below shows the interaction in the case of two
- * gmx::AnalysisDataHandle objects, which can be used to insert data
- * concurrently for multiple frames.  The gmx::AnalysisData object and the
- * handles take care to notify the module such that it always receives the
- * frames in the correct order.
- * \msc
- *     caller,
- *     handle1 [ label="handle1", URL="\ref gmx::AnalysisDataHandle" ],
- *     handle2 [ label="handle2", URL="\ref gmx::AnalysisDataHandle" ],
- *     module1 [ label="data module", URL="\ref gmx::AnalysisDataModuleInterface" ];
- *
- *     caller box handle2 [ label="caller has created both handles using startData()" ];
- *     caller => handle1 [ label="startFrame(0)",
- *                         URL="\ref gmx::AnalysisDataHandle::startFrame()" ];
- *     caller => handle2 [ label="startFrame(1)",
- *                         URL="\ref gmx::AnalysisDataHandle::startFrame()" ];
- *     caller => handle1 [ label="add data for frame 0",
- *                         URL="\ref gmx::AnalysisDataHandle" ];
- *     caller => handle2 [ label="add data for frame 1",
- *                         URL="\ref gmx::AnalysisDataHandle" ];
- *     caller => handle2 [ label="finishFrame() (frame 1)",
- *                         URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
- *     caller => handle2 [ label="startFrame(2)",
- *                         URL="\ref gmx::AnalysisDataHandle::startFrame()" ];
- *     caller => handle1 [ label="finishFrame() (frame 0)",
- *                         URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
- *     handle1 => module1 [ label="process frame 0" ];
- *     handle1 => module1 [ label="process frame 1" ];
- *     caller => handle2 [ label="add data for frame 2",
- *                         URL="\ref gmx::AnalysisDataHandle" ];
- *     caller => handle2 [ label="finishFrame() (frame 2)",
- *                         URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
- *     handle2 => module1 [ label="process frame 2" ];
- *     ...;
- *     caller => handle1 [ label="finishData()",
- *                         URL="\ref gmx::AnalysisDataHandle::finishData()" ];
- *     caller => handle2 [ label="finishData()",
- *                         URL="\ref gmx::AnalysisDataHandle::finishData()" ];
- *     handle2 => module1 [ label="dataFinished()",
- *                          URL="\ref gmx::AnalysisDataModuleInterface::dataFinished()" ];
- * \endmsc
  *
  * <H3>Using Data Objects and Modules</H3>
  *
@@ -156,15 +74,102 @@
  * one another using gmx::AbstractAnalysisData::addModule().  Then you add the
  * actual data values to the gmx::AnalysisData object, which automatically
  * passes it on to the modules.
- * After all data is added, you may optionally access some
- * results directly from the module objects.  However, in many cases it is
- * sufficient to initially add a plotting module to the processing chain, which
- * will then automatically write the results into a file.
+ * After all data is added, you may optionally access some results directly
+ * from the module objects or from the gmx::AnalysisData object itself.
+ * However, in many cases it is sufficient to initially add a plotting module
+ * to the processing chain, which will then automatically write the results
+ * into a file.
  *
  * For simple processing needs with a small amount of data, an
  * gmx::AnalysisArrayData class is also provided, which keeps all the data in an
  * in-memory array and allows you to manipulate the data as you wish before you
  * pass the data to the attached modules.
+ *
+ * <H3>Data Modules</H3>
+ *
+ * Modules that derive from gmx::AnalysisDataModuleInterface can operate in two
+ * modes:
+ *  - In _serial_ mode, the frames are presented to the module always in the
+ *    order of increasing indices, even if they become ready in a different
+ *    order in the attached data.
+ *  - In _parallel_ mode, the frames are presented in the order that they
+ *    become available in the input data, which may not be sequential.
+ *    This mode allows the input data to optimize its behavior if it does not
+ *    need to store and sort the frames.
+ *
+ * The figure below shows the sequence of callbacks that the module receives.
+ * Arrows show a dependency between callbacks: the event at the start of the
+ * arrow always occurs before the event at the end.  The events in the box are
+ * repeated for each frame.  Dashed lines within this box show dependencies
+ * between these frames:
+ *  - In serial mode, all the events are called in a deterministic order, with
+ *    each frame completely processed before the next starts.
+ *  - In parallel mode, multiple frames can be in progress simultaneously, and
+ *    the events for different frames can occur even concurrently on different
+ *    threads.  However, frameFinishSerial() events will always occur in
+ *    deterministic, sequential order for the frames.  Also, the number of
+ *    concurrent frames is limited by the parallelization factor passed to
+ *    parallelDataStarted(): only M frames after the last frame for which
+ *    frameFinishSerial() has been called can be in progress
+ *
+ * \dot
+ *     digraph datamodule_events {
+ *         rankdir = LR
+ *         node [ shape=box ]
+ *
+ *         start  [ label="dataStarted()",
+ *                  URL="\ref gmx::AnalysisDataModuleInterface::dataStarted()" ]
+ *         pstart [ label="parallelDataStarted()",
+ *                  URL="\ref gmx::AnalysisDataModuleInterface::parallelDataStarted()" ]
+ *         subgraph cluster_frame {
+ *             label = "for each frame"
+ *             framestart   [ label="frameStarted()",
+ *                            URL="\ref gmx::AnalysisDataModuleInterface::frameStarted()" ]
+ *             pointsadd    [ label="pointsAdded()",
+ *                            URL="\ref gmx::AnalysisDataModuleInterface::pointsAdded()" ]
+ *             framefinish  [ label="frameFinished()",
+ *                            URL="\ref gmx::AnalysisDataModuleInterface::frameFinished()" ]
+ *             serialfinish [ label="frameFinishedSerial()",
+ *                            URL="\ref gmx::AnalysisDataModuleInterface::frameFinishedSerial()" ]
+ *         }
+ *         finish [ label="dataFinished()",
+ *                  URL="\ref gmx::AnalysisDataModuleInterface::dataFinished()" ]
+ *
+ *         start -> framestart
+ *         pstart -> framestart
+ *         framestart -> pointsadd
+ *         pointsadd -> pointsadd [ label="0..*", dir=back ]
+ *         pointsadd -> framefinish
+ *         framefinish -> serialfinish
+ *         serialfinish -> finish
+ *
+ *         framestart:se -> serialfinish:sw [ dir=back, style=dashed, weight=0,
+ *                                            label="serial: frame n+1\nparallel: frame n+M" ]
+ *         serialfinish -> serialfinish [ dir=back, style=dashed,
+ *                                        label="frame n+1" ]
+ *     }
+ * \enddot
+ *
+ * If the input data supports parallel mode, it calls parallelDataStarted().
+ * If the module returns `true` from this method, then it will process the
+ * frames in the parallel mode.  If the module returns `false`, it will get the
+ * frames in serial order.
+ * If the input data does not support parallel mode, it calls dataStarted(),
+ * and the module will always get the frames in order.
+ *
+ * The sequence of when the module methods are called with respect to when data
+ * is added to the data object depends on the type of the module and the type
+ * of the data.  However, generally the modules do not need to know the details
+ * of how this happens, as long as they work with the above state diagram.
+ *
+ * For parallel processing, the gmx::AnalysisData object itself only provides
+ * the infrastructure to support all of the above, including the reordering of
+ * the frames for serial processing.  However, the caller is still responsible
+ * of the actual thread synchronization, and must call
+ * gmx::AnalysisData::finishFrameSerial() for each frame from a suitable
+ * context where the serial processing for that frame can be done.  When using
+ * the data objects as part of the trajectory analysis framework
+ * (\ref page_analysisframework), these calls are handled by the framework.
  *
  * \if libapi
  * <H3>Writing New Data and Module Objects</H3>
@@ -201,13 +206,13 @@
 #ifndef GMX_ANALYSISDATA_H
 #define GMX_ANALYSISDATA_H
 
-#include "analysisdata/analysisdata.h"
-#include "analysisdata/arraydata.h"
-#include "analysisdata/dataframe.h"
-#include "analysisdata/modules/average.h"
-#include "analysisdata/modules/displacement.h"
-#include "analysisdata/modules/histogram.h"
-#include "analysisdata/modules/lifetime.h"
-#include "analysisdata/modules/plot.h"
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/arraydata.h"
+#include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/displacement.h"
+#include "gromacs/analysisdata/modules/histogram.h"
+#include "gromacs/analysisdata/modules/lifetime.h"
+#include "gromacs/analysisdata/modules/plot.h"
 
 #endif

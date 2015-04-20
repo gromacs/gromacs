@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,10 @@
  * Tests utilities for "Computational Electrophysiology" setups.
  *
  * \author Carsten Kutzner <ckutzne@gwdg.de>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
+#include "gmxpre.h"
+
 #include "moduletest.h"
 
 namespace gmx
@@ -75,29 +77,29 @@ typedef gmx::test::SwapTestFixture CompelTest;
 TEST_F(CompelTest, SwapCanRun)
 {
     std::string name = "OctaneSandwich";
-    useTopGroAndNdxFromDatabase(name.c_str());
-    mdpInputFileName = fileManager_.getInputFilePath((name + ".mdp").c_str());
+    runner_.useTopGroAndNdxFromDatabase(name.c_str());
+    runner_.mdpInputFileName_ = fileManager_.getInputFilePath((name + ".mdp").c_str());
 
-    EXPECT_EQ(0, callGrompp());
+    EXPECT_EQ(0, runner_.callGrompp());
 
-    cptFileName       = fileManager_.getTemporaryFilePath(".cpt");
-    groOutputFileName = fileManager_.getTemporaryFilePath(".gro");
-    swapFileName      = fileManager_.getTemporaryFilePath("swap.xvg");
+    runner_.cptFileName_       = fileManager_.getTemporaryFilePath(".cpt");
+    runner_.groOutputFileName_ = fileManager_.getTemporaryFilePath(".gro");
+    runner_.swapFileName_      = fileManager_.getTemporaryFilePath("swap.xvg");
 
     ::gmx::test::CommandLine swapCaller;
     swapCaller.append("mdrun");
-    swapCaller.addOption("-c", groOutputFileName);
-    swapCaller.addOption("-swap", swapFileName);
+    swapCaller.addOption("-c", runner_.groOutputFileName_);
+    swapCaller.addOption("-swap", runner_.swapFileName_);
 
     // Do an initial mdrun that writes a checkpoint file
     ::gmx::test::CommandLine firstCaller(swapCaller);
-    firstCaller.addOption("-cpo", cptFileName);
-    ASSERT_EQ(0, callMdrun(firstCaller));
+    firstCaller.addOption("-cpo", runner_.cptFileName_);
+    ASSERT_EQ(0, runner_.callMdrun(firstCaller));
     // Continue mdrun from that checkpoint file
     ::gmx::test::CommandLine secondCaller(swapCaller);
-    secondCaller.addOption("-cpi", cptFileName);
-    nsteps = 2;
-    ASSERT_EQ(0, callMdrun(secondCaller));
+    secondCaller.addOption("-cpi", runner_.cptFileName_);
+    runner_.nsteps_ = 2;
+    ASSERT_EQ(0, runner_.callMdrun(secondCaller));
 }
 
 

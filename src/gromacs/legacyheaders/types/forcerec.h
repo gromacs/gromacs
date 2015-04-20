@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,13 +35,20 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "ns.h"
-#include "genborn.h"
-#include "qmmmrec.h"
-#include "../../topology/idef.h"
-#include "nb_verlet.h"
-#include "interaction_const.h"
-#include "hw_info.h"
+#ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
+#define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
+
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/genborn.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/legacyheaders/types/ns.h"
+#include "gromacs/legacyheaders/types/qmmmrec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,9 +58,8 @@ extern "C" {
 #endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
-typedef struct gmx_pme *gmx_pme_t;
-
-
+struct gmx_pme_t;
+struct nonbonded_verlet_t;
 
 /* Structure describing the data in a single table */
 typedef struct
@@ -176,22 +182,10 @@ typedef struct {
 } cginfo_mb_t;
 
 
-/* ewald table type */
-typedef struct ewald_tab *ewald_tab_t;
+/* Forward declaration of type for managing Ewald tables */
+struct gmx_ewald_tab_t;
 
-typedef struct {
-    rvec             *f;
-    int               f_nalloc;
-    unsigned          red_mask; /* Mask for marking which parts of f are filled */
-    rvec             *fshift;
-    real              ener[F_NRE];
-    gmx_grppairener_t grpp;
-    real              Vcorr_q;
-    real              Vcorr_lj;
-    real              dvdl[efptNR];
-    tensor            vir_q;
-    tensor            vir_lj;
-} f_thread_t;
+typedef struct f_thread_t f_thread_t;
 
 typedef struct {
     interaction_const_t *ic;
@@ -295,7 +289,6 @@ typedef struct {
     real     sc_r_power;
     real     sc_sigma6_def;
     real     sc_sigma6_min;
-    gmx_bool bSepDVDL;
 
     /* NS Stuff */
     int  eeltype;
@@ -315,13 +308,13 @@ typedef struct {
     rvec        *shift_vec;
 
     /* The neighborlists including tables */
-    int                 nnblists;
-    int                *gid2nblists;
-    t_nblists          *nblists;
+    int                        nnblists;
+    int                       *gid2nblists;
+    t_nblists                 *nblists;
 
-    int                 cutoff_scheme; /* group- or Verlet-style cutoff */
-    gmx_bool            bNonbonded;    /* true if nonbonded calculations are *not* turned off */
-    nonbonded_verlet_t *nbv;
+    int                        cutoff_scheme; /* group- or Verlet-style cutoff */
+    gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
+    struct nonbonded_verlet_t *nbv;
 
     /* The wall tables (if used) */
     int            nwall;
@@ -356,16 +349,16 @@ typedef struct {
     rvec *f_novirsum;
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
-    gmx_pme_t pmedata;
-    int       ljpme_combination_rule;
-    tensor    vir_el_recip;
-    tensor    vir_lj_recip;
+    struct gmx_pme_t *pmedata;
+    int               ljpme_combination_rule;
+    tensor            vir_el_recip;
+    tensor            vir_lj_recip;
 
     /* PME/Ewald stuff */
-    gmx_bool    bEwald;
-    real        ewaldcoeff_q;
-    real        ewaldcoeff_lj;
-    ewald_tab_t ewald_table;
+    gmx_bool                bEwald;
+    real                    ewaldcoeff_q;
+    real                    ewaldcoeff_lj;
+    struct gmx_ewald_tab_t *ewald_table;
 
     /* Virial Stuff */
     rvec *fshift;
@@ -482,6 +475,9 @@ typedef struct {
     int         red_nblock;
     f_thread_t *f_t;
 
+    /* Maximum thread count for uniform distribution of bondeds over threads */
+    int   bonded_max_nthread_uniform;
+
     /* Exclusion load distribution over the threads */
     int  *excl_load;
 } t_forcerec;
@@ -498,4 +494,5 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
 #endif

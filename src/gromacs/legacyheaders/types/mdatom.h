@@ -38,7 +38,7 @@
 #ifndef _mdatom_h
 #define _mdatom_h
 
-#include "simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

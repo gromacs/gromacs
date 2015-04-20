@@ -331,17 +331,25 @@ typedef unsigned __int64 uint64_t;
 #ifndef PRId64
 # define PRId64         __PRI64_PREFIX "d"
 #endif
+#ifndef PRIu64
+# define PRIu64         __PRI64_PREFIX "u"
+#endif
 
 #endif
 
 #endif /* USE_STD_INTTYPES_H */
-
 
 #ifndef USE_WINDOWS
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
 #define USE_WINDOWS
 #endif /* win32... */
 #endif /* not defined USE_WINDOWS */
+
+#ifdef USE_WINDOWS
+#define TNG_PRIsize "Iu"
+#else
+#define TNG_PRIsize "zu"
+#endif
 
 #ifndef DECLSPECDLLEXPORT
 #ifdef USE_WINDOWS

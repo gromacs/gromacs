@@ -1,0 +1,79 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+\chapter{Run parameters and Programs}
+\label{ch:programs}
+
+\section{On-line and HTML manuals}
+\index{online manual}
+\index{html manual}
+% TODO Check that these statements and default file locations are
+% current when the help-writing module has stabilized
+All the information in this chapter can also be found in HTML
+format in your {\gromacs} data directory. The path depends on
+where your files are installed, but the default location is
+{\tt /usr/local/gromacs/share/gromacs/html/online.html}.
+If you installed from Linux packages it can typically be found as
+{\tt /usr/share/gromacs/html/online.html}.
+You can also use the online manual from the {\gromacs} web site,
+\url{http://manual.gromacs.org/current}.
+
+In addition, we install standard UNIX man pages for all the programs. If
+you have sourced the {\tt GMXRC} script in the {\gromacs} binary directory for
+your host they should already be present in your {\tt MANPATH} environment variable, and you
+should be able to type {\eg} {\tt man gmx-grompp}. You can also use
+the {\tt -h} flag on the command line (e.g. {\tt gmx grompp -h}) to
+see the same information, as well as {\tt gmx help grompp}.
+The list of all programs are available from {\tt gmx help}.
+
+\section{File types\swapindexquiet{file}{type}}
+\label{sec:fileformats}
+\tabref{form} lists the file types used by {\gromacs} along with
+a short description, and you can find a more detail description for
+each file in your HTML reference, or in our online version.
+
+{\gromacs} files written in \normindex{XDR} format can be read on any
+architecture with {\gromacs} version 1.6 or later if the configuration
+script found the XDR libraries on your system. They should always be
+present on UNIX since they are necessary for NFS support.
+
+\input{files}
+
+\section{Run Parameters\swapindexquiet{run}{parameter}}
+% TODO Check this is up to date when things stabilize
+The descriptions of {\tt .mdp} parameters can be found at
+\url{http://manual.gromacs.org/current/mdp-options.html}
+or in your installation at {\tt share/gromacs/html/mdp-options.html}
+
+% LocalWords:  online html GMXRC MANPATH grompp xdr NFS

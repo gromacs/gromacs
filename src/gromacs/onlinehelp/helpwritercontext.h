@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include <string>
 #include <vector>
 
-#include "../utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
@@ -59,8 +59,7 @@ class TextLineWrapperSettings;
 enum HelpOutputFormat
 {
     eHelpOutputFormat_Console,  //!< Plain text directly on the console.
-    eHelpOutputFormat_Man,      //!< Man page.
-    eHelpOutputFormat_Html,     //!< Html output for online manual.
+    eHelpOutputFormat_Rst,      //!< reStructuredText for online manual and man pages.
     eHelpOutputFormat_Other,    //!< Used for extensions in other modules.
     eHelpOutputFormat_NR        //!< Used for the number of output formats.
 };

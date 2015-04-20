@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,23 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
  * Functions for initializing online help for selections.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELHELP_H
 #define GMX_SELECTION_SELHELP_H
 
-#include "../onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/helptopicinterface.h"
 
 namespace gmx
 {
 
-/*! \cond internal */
-/*! \internal \brief
+//! \cond libapi
+/*! \libinternal \brief
  * Creates a help tree for selections.
  *
  * \throws   std::bad_alloc if out of memory.

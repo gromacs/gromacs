@@ -43,10 +43,9 @@
 #ifndef GMX_SELECTION_SELECTIONOPTION_H
 #define GMX_SELECTION_SELECTIONOPTION_H
 
-#include "../options/abstractoption.h"
-
-#include "selection.h"
-#include "selectionenums.h"
+#include "gromacs/options/abstractoption.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/selection/selectionenums.h"
 
 namespace gmx
 {
@@ -149,7 +148,7 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         using MyBase::defaultValue;
         using MyBase::defaultValueIfSet;
 
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 
         const char             *defaultText_;

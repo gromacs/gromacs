@@ -35,11 +35,11 @@
 file(GLOB TRAJECTORYANALYSIS_SOURCES *.cpp modules/*.cpp modules/*.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORYANALYSIS_SOURCES} PARENT_SCOPE)
 
-set(TRAJECTORYANALYSIS_PUBLIC_HEADERS
+gmx_install_headers(
     analysismodule.h
     analysissettings.h
-    cmdlinerunner.h)
-gmx_install_headers(trajectoryanalysis ${TRAJECTORYANALYSIS_PUBLIC_HEADERS})
+    cmdlinerunner.h
+    )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

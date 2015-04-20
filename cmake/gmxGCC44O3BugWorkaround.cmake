@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# Due to a bug, gcc 4.4.x crashes when compiling bondfree.c with -O3 and
+# Due to a bug, gcc 4.4.x crashes when compiling listed-forces/bonded.cpp with -O3 and
 # -fopenmp, but strangely it does not crash with -O2 + all additional options.
 # -O3 uses. Therefore, for the affected files, when compiling in release mode,
 # we override -O3 with -O2 and add the additional option.

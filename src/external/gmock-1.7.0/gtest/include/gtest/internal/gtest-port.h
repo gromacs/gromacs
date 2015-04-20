@@ -85,6 +85,8 @@
 //   GTEST_CREATE_SHARED_LIBRARY
 //                            - Define to 1 when compiling Google Test itself
 //                              as a shared library.
+//   GTEST_CAN_STREAM_RESULTS - Define to 1/0 to indicate that streaming
+//                              results to a socket is/isn't available
 
 // This header defines the following utilities:
 //
@@ -679,8 +681,12 @@ using ::std::tuple_size;
     (GTEST_OS_WINDOWS || GTEST_OS_CYGWIN || GTEST_OS_SYMBIAN || GTEST_OS_AIX)
 
 // Determines whether test results can be streamed to a socket.
-#if GTEST_OS_LINUX
-# define GTEST_CAN_STREAM_RESULTS_ 1
+#ifndef GTEST_CAN_STREAM_RESULTS
+# if GTEST_OS_LINUX
+#  define GTEST_CAN_STREAM_RESULTS_ 1
+# endif
+#else
+# define GTEST_CAN_STREAM_RESULTS_ GTEST_CAN_STREAM_RESULTS
 #endif
 
 // Defines some utility macros.

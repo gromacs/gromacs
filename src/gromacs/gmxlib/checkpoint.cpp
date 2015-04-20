@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,52 +35,40 @@
 
 /* The source code in this file should be thread-safe.
    Please keep it that way. */
-#include "checkpoint.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gromacs/legacyheaders/checkpoint.h"
+
+#include "config.h"
 
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include <fcntl.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #ifdef GMX_NATIVE_WINDOWS
-/* _chsize_s */
 #include <io.h>
 #include <sys/locking.h>
 #endif
 
-#include "copyrite.h"
-#include "names.h"
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "txtdump.h"
-#include "gromacs/math/vec.h"
-#include "network.h"
-
+#include "buildinfo.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/xdrf.h"
 #include "gromacs/fileio/xdr_datatype.h"
-#include "gromacs/utility/basenetwork.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "buildinfo.h"
+#include "gromacs/utility/sysinfo.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -159,29 +147,6 @@ const char *edfh_names[edfhNR] =
     "bEquilibrated", "N_at_state", "Wang-Landau Histogram", "Wang-Landau Delta", "Weights", "Free Energies", "minvar", "variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
-
-#ifdef GMX_NATIVE_WINDOWS
-static int
-gmx_wintruncate(const char *filename, __int64 size)
-{
-#ifdef GMX_FAHCORE
-    /*we do this elsewhere*/
-    return 0;
-#else
-    FILE *fp;
-
-    fp = fopen(filename, "rb+");
-
-    if (fp == NULL)
-    {
-        return -1;
-    }
-
-    return _chsize_s( fileno(fp), size);
-#endif
-}
-#endif
-
 
 enum {
     ecprREAL, ecprRVEC, ecprMATRIX
@@ -1501,7 +1466,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     int                  double_prec;
     char                *fprog;
     char                *fntemp; /* the temporary checkpoint file name */
-    time_t               now;
     char                 timebuf[STRLEN];
     int                  nppnodes, npmenodes;
     char                 buf[1024], suffix[5+STEPSTRSIZE], sbuf[STEPSTRSIZE];
@@ -1537,8 +1501,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     snew(fntemp, strlen(fn));
     strcpy(fntemp, fn);
 #endif
-    time(&now);
-    gmx_ctime_r(&now, timebuf, STRLEN);
+    gmx_format_current_time(timebuf, STRLEN);
 
     if (fplog)
     {
@@ -1796,8 +1759,9 @@ static void check_match(FILE *fplog,
         int   gmx_major, gmx_minor;
         int   cpt_major, cpt_minor;
         sscanf(gmx_version(), "VERSION %5d.%5d", &gmx_major, &gmx_minor);
-        sscanf(version, "VERSION %5d.%5d", &cpt_major, &cpt_minor);
-        version_differs = (gmx_major != cpt_major || gmx_minor != cpt_minor);
+        int   ret = sscanf(version, "VERSION %5d.%5d", &cpt_major, &cpt_minor);
+        version_differs = (ret < 2 || gmx_major != cpt_major ||
+                           gmx_minor != cpt_minor);
     }
 
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
@@ -2083,13 +2047,13 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
     if (ret)
     {
         cp_error();
     }
 
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, &state->edsamstate, NULL);
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, &state->swapstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2245,15 +2209,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
             if (i != 0) /*log file is already seeked to correct position */
             {
-#ifdef GMX_NATIVE_WINDOWS
-                rc = gmx_wintruncate(outputfiles[i].filename, outputfiles[i].offset);
-#else
-                rc = truncate(outputfiles[i].filename, outputfiles[i].offset);
-#endif
+#if !defined(GMX_NATIVE_WINDOWS) || !defined(GMX_FAHCORE)
+                /* For FAHCORE, we do this elsewhere*/
+                rc = gmx_truncate(outputfiles[i].filename, outputfiles[i].offset);
                 if (rc != 0)
                 {
                     gmx_fatal(FARGS, "Truncation of file %s failed. Cannot do appending because of this failure.", outputfiles[i].filename);
                 }
+#endif
             }
         }
     }
@@ -2293,6 +2256,44 @@ void load_checkpoint(const char *fn, FILE **fplog,
     }
     ir->init_step        = step;
     ir->simulation_part += 1;
+}
+
+void read_checkpoint_part_and_step(const char  *filename,
+                                   int         *simulation_part,
+                                   gmx_int64_t *step)
+{
+    int       file_version;
+    char     *version, *btime, *buser, *bhost, *fprog, *ftime;
+    int       double_prec;
+    int       eIntegrator;
+    int       nppnodes, npme;
+    ivec      dd_nc;
+    int       flags_eks, flags_enh, flags_dfh;
+    double    t;
+    t_state   state;
+    t_fileio *fp;
+
+    if (filename == NULL ||
+        !gmx_fexist(filename) ||
+        (!(fp = gmx_fio_open(filename, "r"))))
+    {
+        *simulation_part = 0;
+        *step            = 0;
+        return;
+    }
+
+    /* Not calling initializing state before use is nasty, but all we
+       do is read into its member variables and throw the struct away
+       again immediately. */
+
+    do_cpt_header(gmx_fio_getxdr(fp), TRUE, &file_version,
+                  &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
+                  &eIntegrator, simulation_part, step, &t, &nppnodes, dd_nc, &npme,
+                  &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
+                  &(state.dfhist.nlambda), &state.flags, &flags_eks, &flags_enh, &flags_dfh,
+                  &state.edsamstate.nED, &state.swapstate.eSwapCoords, NULL);
+
+    gmx_fio_close(fp);
 }
 
 static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
@@ -2536,7 +2537,7 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         gmx_int64_t *cpt_step, t_commrec *cr,
+                                         t_commrec *cr,
                                          gmx_bool bAppendReq,
                                          int nfile, const t_filenm fnm[],
                                          const char *part_suffix, gmx_bool *bAddPart)
@@ -2654,10 +2655,6 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
             gmx_bcast(sizeof(bAppend), &bAppend, cr);
             gmx_bcast(sizeof(*bAddPart), bAddPart, cr);
         }
-    }
-    if (NULL != cpt_step)
-    {
-        *cpt_step = step;
     }
 
     return bAppend;

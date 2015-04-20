@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,31 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gstat.h"
-#include "gromacs/math/vec.h"
-#include "viewit.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/confio.h"
-#include "cmat.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/cmat.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 /****************************************************************************/
@@ -328,8 +325,8 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     sfree(index);
     sfree(isize);
 
-    gmx_ffclose(fpsg);
-    gmx_ffclose(fpsk);
+    xvgrclose(fpsg);
+    xvgrclose(fpsk);
 
     fpsg = xvgropen(sgslfn,
                     "S\\sg\\N Angle Order Parameter / Slab", "(nm)", "S\\sg\\N",
@@ -344,8 +341,8 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
         fprintf(fpsk, "%10g  %10g\n", (i+0.5)*box[slice_dim][slice_dim]/nslice,
                 sk_slice_tot[i]/nframes);
     }
-    gmx_ffclose(fpsg);
-    gmx_ffclose(fpsk);
+    xvgrclose(fpsg);
+    xvgrclose(fpsk);
 }
 
 
@@ -833,9 +830,9 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
                                                         0.333 * order[atom][YY]));
         }
 
-        gmx_ffclose(ord);
-        gmx_ffclose(slOrd);
     }
+    xvgrclose(ord);
+    xvgrclose(slOrd);
 }
 
 void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, output_env_t oenv)
@@ -917,8 +914,7 @@ int gmx_order(int argc, char *argv[])
         "The tetrahedrality order parameters can be determined",
         "around an atom. Both angle an distance order parameters are calculated. See",
         "P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.",
-        "for more details.[BR]",
-        ""
+        "for more details."
     };
 
     static int         nslices       = 1;     /* nr of slices defined       */
@@ -963,7 +959,7 @@ int gmx_order(int argc, char *argv[])
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
         { efNDX, "-nr", NULL,  ffREAD },              /* index for radial axis calculation	  */
-        { efTPX, NULL, NULL,  ffREAD },               /* topology file                */
+        { efTPR, NULL, NULL,  ffREAD },               /* topology file                */
         { efXVG, "-o", "order", ffWRITE },            /* xvgr output file     */
         { efXVG, "-od", "deuter", ffWRITE },          /* xvgr output file           */
         { efPDB, "-ob", NULL, ffWRITE },              /* write Scd as B factors to PDB if permolecule           */
@@ -979,7 +975,7 @@ int gmx_order(int argc, char *argv[])
     const char   *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
     output_env_t  oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -991,7 +987,7 @@ int gmx_order(int argc, char *argv[])
     sgfnm  = opt2fn_null("-Sg", NFILE, fnm);
     skfnm  = opt2fn_null("-Sk", NFILE, fnm);
     ndxfnm = opt2fn_null("-n", NFILE, fnm);
-    tpsfnm = ftp2fn(efTPX, NFILE, fnm);
+    tpsfnm = ftp2fn(efTPR, NFILE, fnm);
     trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */
@@ -1062,7 +1058,7 @@ int gmx_order(int argc, char *argv[])
             fprintf(stderr, "Taking carbons as unsaturated!\n");
         }
 
-        top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */
+        top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
 
         block = init_index(ftp2fn(efNDX, NFILE, fnm), &grpname);
         index = block->index;                   /* get indices from t_block block */

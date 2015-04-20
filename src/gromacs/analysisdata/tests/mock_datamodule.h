@@ -51,7 +51,7 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/analysisdata/paralleloptions.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
@@ -76,6 +76,7 @@ class MockAnalysisDataModule : public AnalysisDataModuleInterface
         MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader &header));
         MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef &points));
         MOCK_METHOD1(frameFinished, void(const AnalysisDataFrameHeader &header));
+        MOCK_METHOD1(frameFinishedSerial, void(int frameIndex));
         MOCK_METHOD0(dataFinished, void());
 
         void setupStaticCheck(const AnalysisDataTestInput &data,

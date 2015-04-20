@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,31 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
-#include "macros.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
-#include "typedefs.h"
-#include "viewit.h"
-#include "gstat.h"
-#include "gromacs/statistics/statistics.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/confio.h"
-#include "gmx_ana.h"
-
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/statistics/statistics.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define FACTOR  1000.0  /* Convert nm^2/ps to 10e-5 cm^2/s */
@@ -216,7 +213,7 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
         }
         fprintf(out, "\n");
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
 }
 
 /* called from corr_loop, to do the main calculations */
@@ -610,7 +607,7 @@ void printmol(t_corr *curr, const char *fn,
             }
         }
     }
-    gmx_ffclose(out);
+    xvgrclose(out);
     do_view(oenv, fn, "-graphtype bar");
 
     /* Compute variance, stddev and error */
@@ -1068,7 +1065,7 @@ int gmx_msd(int argc, char *argv[])
         "Note that this diffusion coefficient and error estimate are only",
         "accurate when the MSD is completely linear between",
         "[TT]-beginfit[tt] and [TT]-endfit[tt].[PAR]",
-        "Option [TT]-pdb[tt] writes a [TT].pdb[tt] file with the coordinates of the frame",
+        "Option [TT]-pdb[tt] writes a [REF].pdb[ref] file with the coordinates of the frame",
         "at time [TT]-tpdb[tt] with in the B-factor field the square root of",
         "the diffusion coefficient of the molecule.",
         "This option implies option [TT]-mol[tt]."
@@ -1128,7 +1125,7 @@ int gmx_msd(int argc, char *argv[])
     output_env_t    oenv;
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

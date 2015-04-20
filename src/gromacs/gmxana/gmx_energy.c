@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,33 +34,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/fileio/enxio.h"
 #include "gromacs/commandline/pargs.h"
-#include "names.h"
-#include "copyrite.h"
-#include "macros.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gstat.h"
-#include "gromacs/math/units.h"
+#include "gromacs/correlationfunctions/autocorr.h"
+#include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "viewit.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gmx_ana.h"
-#include "mdebin.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 static real       minthird = -1.0/3.0, minsixth = -1.0/6.0;
 
@@ -193,7 +192,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
     j = 0;
     for (k = 0; k < nre; k++)
     {
-        newnm[k] = strdup(nm[k].name);
+        newnm[k] = gmx_strdup(nm[k].name);
         /* Insert dashes in all the names */
         while ((ptr = strchr(newnm[k], ' ')) != NULL)
         {
@@ -560,7 +559,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
         fprintf(vout, "%10d  %10.5e\n", j, mypow(violaver[j]/nframes, minthird));
     }
 #endif
-    gmx_ffclose(vout);
+    xvgrclose(vout);
 
     fprintf(stdout, "\nSum of violations averaged over simulation: %g nm\n",
             sumt);
@@ -622,8 +621,8 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
         }
         fprintf(fp1, "\n");
     }
-    gmx_ffclose(fp0);
-    gmx_ffclose(fp1);
+    xvgrclose(fp0);
+    xvgrclose(fp1);
 }
 
 typedef struct {
@@ -1421,7 +1420,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                 intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
                 fprintf(fp, "%10g  %10g  %10g\n", (i*Dt), integral, intBulk);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
 
             for (i = 0; i < 12; i++)
             {
@@ -1584,7 +1583,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
     }
     if (fp)
     {
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     sfree(fr);
 }
@@ -1866,7 +1865,7 @@ int gmx_energy(int argc, char *argv[])
         "[BB]Note[bb] that in most cases the energy files contains averages over all",
         "MD steps, or over many more points than the number of frames in",
         "energy file. This makes the [THISMODULE] statistics output more accurate",
-        "than the [TT].xvg[tt] output. When exact averages are not present in the energy",
+        "than the [REF].xvg[ref] output. When exact averages are not present in the energy",
         "file, the statistics mentioned above are simply over the single, per-frame",
         "energy values.[PAR]",
 
@@ -1916,21 +1915,27 @@ int gmx_energy(int argc, char *argv[])
         "from the [TT]ener.edr[tt] file.[PAR]",
 
         "With [TT]-fee[tt] an estimate is calculated for the free-energy",
-        "difference with an ideal gas state: [BR]",
-        "  [GRK]Delta[grk] A = A(N,V,T) - A[SUB]idealgas[sub](N,V,T) = kT [LN][CHEVRON][EXP]U[SUB]pot[sub]/kT[exp][chevron][ln][BR]",
-        "  [GRK]Delta[grk] G = G(N,p,T) - G[SUB]idealgas[sub](N,p,T) = kT [LN][CHEVRON][EXP]U[SUB]pot[sub]/kT[exp][chevron][ln][BR]",
+        "difference with an ideal gas state::",
+        "",
+        "  [GRK]Delta[grk] A = A(N,V,T) - A[SUB]idealgas[sub](N,V,T) = kT [LN][CHEVRON][EXP]U[SUB]pot[sub]/kT[exp][chevron][ln]",
+        "  [GRK]Delta[grk] G = G(N,p,T) - G[SUB]idealgas[sub](N,p,T) = kT [LN][CHEVRON][EXP]U[SUB]pot[sub]/kT[exp][chevron][ln]",
+        "",
         "where k is Boltzmann's constant, T is set by [TT]-fetemp[tt] and",
         "the average is over the ensemble (or time in a trajectory).",
         "Note that this is in principle",
         "only correct when averaging over the whole (Boltzmann) ensemble",
         "and using the potential energy. This also allows for an entropy",
-        "estimate using:[BR]",
-        "  [GRK]Delta[grk] S(N,V,T) = S(N,V,T) - S[SUB]idealgas[sub](N,V,T) = ([CHEVRON]U[SUB]pot[sub][chevron] - [GRK]Delta[grk] A)/T[BR]",
+        "estimate using::",
+        "",
+        "  [GRK]Delta[grk] S(N,V,T) = S(N,V,T) - S[SUB]idealgas[sub](N,V,T) = ([CHEVRON]U[SUB]pot[sub][chevron] - [GRK]Delta[grk] A)/T",
         "  [GRK]Delta[grk] S(N,p,T) = S(N,p,T) - S[SUB]idealgas[sub](N,p,T) = ([CHEVRON]U[SUB]pot[sub][chevron] + pV - [GRK]Delta[grk] G)/T",
-        "[PAR]",
+        "",
 
         "When a second energy file is specified ([TT]-f2[tt]), a free energy",
-        "difference is calculated [BR] dF = -kT [LN][CHEVRON][EXP]-(E[SUB]B[sub]-E[SUB]A[sub])/kT[exp][chevron][SUB]A[sub][ln] ,",
+        "difference is calculated::",
+        "",
+        "  dF = -kT [LN][CHEVRON][EXP]-(E[SUB]B[sub]-E[SUB]A[sub])/kT[exp][chevron][SUB]A[sub][ln] ,",
+        "",
         "where E[SUB]A[sub] and E[SUB]B[sub] are the energies from the first and second energy",
         "files, and the average is over the ensemble A. The running average",
         "of the free energy difference is printed to a file specified by [TT]-ravg[tt].",
@@ -2029,7 +2034,7 @@ int gmx_energy(int argc, char *argv[])
     t_filenm           fnm[] = {
         { efEDR, "-f",    NULL,      ffREAD  },
         { efEDR, "-f2",   NULL,      ffOPTRD },
-        { efTPX, "-s",    NULL,      ffOPTRD },
+        { efTPR, "-s",    NULL,      ffOPTRD },
         { efXVG, "-o",    "energy",  ffWRITE },
         { efXVG, "-viol", "violaver", ffOPTWR },
         { efXVG, "-pairs", "pairs",   ffOPTWR },
@@ -2051,7 +2056,7 @@ int gmx_energy(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -2146,7 +2151,7 @@ int gmx_energy(int argc, char *argv[])
         }
         if (bSum)
         {
-            leg[nset] = strdup("Sum");
+            leg[nset] = gmx_strdup("Sum");
             xvgr_legend(out, nset+1, (const char**)leg, oenv);
         }
         else
@@ -2174,7 +2179,7 @@ int gmx_energy(int argc, char *argv[])
 
         if (bORIRE || bOTEN)
         {
-            get_orires_parms(ftp2fn(efTPX, NFILE, fnm), &nor, &nex, &or_label, &oobs);
+            get_orires_parms(ftp2fn(efTPR, NFILE, fnm), &nor, &nex, &or_label, &oobs);
         }
 
         if (bORIRE)
@@ -2283,14 +2288,14 @@ int gmx_energy(int argc, char *argv[])
                 for (j = 0; j < 3; j++)
                 {
                     sprintf(buf, "eig%d", j+1);
-                    otenleg[(bOvec ? 12 : 3)*i+j] = strdup(buf);
+                    otenleg[(bOvec ? 12 : 3)*i+j] = gmx_strdup(buf);
                 }
                 if (bOvec)
                 {
                     for (j = 0; j < 9; j++)
                     {
                         sprintf(buf, "vec%d%s", j/3+1, j%3 == 0 ? "x" : (j%3 == 1 ? "y" : "z"));
-                        otenleg[12*i+3+j] = strdup(buf);
+                        otenleg[12*i+3+j] = gmx_strdup(buf);
                     }
                 }
             }
@@ -2299,7 +2304,7 @@ int gmx_energy(int argc, char *argv[])
     }
     else if (bDisRe)
     {
-        nbounds = get_bounds(ftp2fn(efTPX, NFILE, fnm), &bounds, &index, &pair, &npairs,
+        nbounds = get_bounds(ftp2fn(efTPR, NFILE, fnm), &bounds, &index, &pair, &npairs,
                              &mtop, &top, &ir);
         snew(violaver, npairs);
         out = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations",
@@ -2318,7 +2323,7 @@ int gmx_energy(int argc, char *argv[])
     }
     else if (bDHDL)
     {
-        get_dhdl_parms(ftp2fn(efTPX, NFILE, fnm), &ir);
+        get_dhdl_parms(ftp2fn(efTPR, NFILE, fnm), &ir);
     }
 
     /* Initiate energies and set them to zero */
@@ -2710,21 +2715,21 @@ int gmx_energy(int argc, char *argv[])
     close_enx(fp);
     if (out)
     {
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
 
     if (bDRAll)
     {
-        gmx_ffclose(fp_pairs);
+        xvgrclose(fp_pairs);
     }
 
     if (bORT)
     {
-        gmx_ffclose(fort);
+        xvgrclose(fort);
     }
     if (bODT)
     {
-        gmx_ffclose(fodt);
+        xvgrclose(fodt);
     }
     if (bORA)
     {
@@ -2739,7 +2744,7 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr);
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
     if (bODA)
     {
@@ -2754,7 +2759,7 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], orient[i]/norfr-oobs[i]);
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
     if (bODR)
     {
@@ -2769,11 +2774,11 @@ int gmx_energy(int argc, char *argv[])
         {
             fprintf(out, "%5d  %g\n", or_label[i], sqrt(odrms[i]/norfr));
         }
-        gmx_ffclose(out);
+        xvgrclose(out);
     }
     if (bOTEN)
     {
-        gmx_ffclose(foten);
+        xvgrclose(foten);
     }
 
     if (bDisRe)
@@ -2785,7 +2790,7 @@ int gmx_energy(int argc, char *argv[])
     {
         if (fp_dhdl)
         {
-            gmx_ffclose(fp_dhdl);
+            gmx_fio_fclose(fp_dhdl);
             printf("\n\nWrote %d lambda values with %d samples as ",
                    dh_lambdas, dh_samples);
             if (dh_hists > 0)

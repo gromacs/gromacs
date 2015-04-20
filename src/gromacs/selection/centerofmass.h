@@ -74,8 +74,8 @@
 #ifndef GMX_SELECTION_CENTEROFMASS_H
 #define GMX_SELECTION_CENTEROFMASS_H
 
-#include "../legacyheaders/types/simple.h"
-#include "../math/vectypes.h"
+#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
 
 struct t_block;
 struct t_blocka;

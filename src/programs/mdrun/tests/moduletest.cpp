@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,13 +37,13 @@
  * Implements classes in moduletest.h.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
+#include "gmxpre.h"
+
 #include "moduletest.h"
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
-#endif
+#include "config.h"
 
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/options/basicoptions.h"
@@ -51,12 +51,11 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/file.h"
-
 #include "programs/mdrun/mdrun_main.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/integrationtests.h"
 #include "testutils/testoptions.h"
-#include "testutils/cmdlinetest.h"
 
 namespace gmx
 {
@@ -70,47 +69,47 @@ namespace test
 namespace
 {
 
+#if defined(GMX_THREAD_MPI) || defined(DOXYGEN)
 //! Number of tMPI threads for child mdrun call.
-int gmx_unused g_numThreads = 1;
+int g_numThreads = 1;
+#endif
+#if defined(GMX_OPENMP) || defined(DOXYGEN)
 //! Number of OpenMP threads for child mdrun call.
-int gmx_unused g_numOpenMPThreads = 1;
-
+int g_numOpenMPThreads = 1;
+#endif
 //! \cond
 GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
 #ifdef GMX_THREAD_MPI
     options->addOption(IntegerOption("nt").store(&g_numThreads)
-                           .description("Number of thread-MPI threads/ranks for child mdrun call"));
+                           .description("Number of thread-MPI threads/ranks for child mdrun calls"));
 #endif
 #ifdef GMX_OPENMP
     options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
-                           .description("Number of OpenMP threads for child mdrun call"));
+                           .description("Number of OpenMP threads for child mdrun calls"));
 #endif
 }
 //! \endcond
 
 }
 
-MdrunTestFixture::MdrunTestFixture() :
-    topFileName(),
-    groFileName(),
-    fullPrecisionTrajectoryFileName(),
-    ndxFileName(),
-    mdpInputFileName(fileManager_.getTemporaryFilePath("input.mdp")),
-    mdpOutputFileName(fileManager_.getTemporaryFilePath("output.mdp")),
-    tprFileName(fileManager_.getTemporaryFilePath(".tpr")),
-    logFileName(fileManager_.getTemporaryFilePath(".log")),
-    edrFileName(fileManager_.getTemporaryFilePath(".edr")),
-    nsteps(-2)
+SimulationRunner::SimulationRunner(IntegrationTestFixture *fixture) :
+    fixture_(fixture),
+    topFileName_(),
+    groFileName_(),
+    fullPrecisionTrajectoryFileName_(),
+    ndxFileName_(),
+    mdpInputFileName_(fixture_->fileManager_.getTemporaryFilePath("input.mdp")),
+    mdpOutputFileName_(fixture_->fileManager_.getTemporaryFilePath("output.mdp")),
+    tprFileName_(fixture_->fileManager_.getTemporaryFilePath(".tpr")),
+    logFileName_(fixture_->fileManager_.getTemporaryFilePath(".log")),
+    edrFileName_(fixture_->fileManager_.getTemporaryFilePath(".edr")),
+    nsteps_(-2)
 {
 #ifdef GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
 #endif
-}
-
-MdrunTestFixture::~MdrunTestFixture()
-{
 }
 
 // TODO The combination of defaulting to Verlet cut-off scheme, NVE,
@@ -118,55 +117,55 @@ MdrunTestFixture::~MdrunTestFixture()
 // things that way, this function should be renamed. For now,
 // force the use of the group scheme.
 void
-MdrunTestFixture::useEmptyMdpFile()
+SimulationRunner::useEmptyMdpFile()
 {
     useStringAsMdpFile("cutoff-scheme = Group\n");
 }
 
 void
-MdrunTestFixture::useStringAsMdpFile(const char *mdpString)
+SimulationRunner::useStringAsMdpFile(const char *mdpString)
 {
     useStringAsMdpFile(std::string(mdpString));
 }
 
 void
-MdrunTestFixture::useStringAsMdpFile(const std::string &mdpString)
+SimulationRunner::useStringAsMdpFile(const std::string &mdpString)
 {
-    gmx::File::writeFileFromString(mdpInputFileName, mdpString);
+    gmx::File::writeFileFromString(mdpInputFileName_, mdpString);
 }
 
 void
-MdrunTestFixture::useStringAsNdxFile(const char *ndxString)
+SimulationRunner::useStringAsNdxFile(const char *ndxString)
 {
-    gmx::File::writeFileFromString(ndxFileName, ndxString);
+    gmx::File::writeFileFromString(ndxFileName_, ndxString);
 }
 
 void
-MdrunTestFixture::useTopGroAndNdxFromDatabase(const char *name)
+SimulationRunner::useTopGroAndNdxFromDatabase(const char *name)
 {
-    topFileName = fileManager_.getInputFilePath((std::string(name) + ".top").c_str());
-    groFileName = fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
-    ndxFileName = fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
+    topFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".top").c_str());
+    groFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
+    ndxFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
 }
 
 int
-MdrunTestFixture::callGromppOnThisRank()
+SimulationRunner::callGromppOnThisRank()
 {
     CommandLine caller;
     caller.append("grompp");
-    caller.addOption("-f", mdpInputFileName);
-    caller.addOption("-n", ndxFileName);
-    caller.addOption("-p", topFileName);
-    caller.addOption("-c", groFileName);
+    caller.addOption("-f", mdpInputFileName_);
+    caller.addOption("-n", ndxFileName_);
+    caller.addOption("-p", topFileName_);
+    caller.addOption("-c", groFileName_);
 
-    caller.addOption("-po", mdpOutputFileName);
-    caller.addOption("-o", tprFileName);
+    caller.addOption("-po", mdpOutputFileName_);
+    caller.addOption("-o", tprFileName_);
 
     return gmx_grompp(caller.argc(), caller.argv());
 }
 
 int
-MdrunTestFixture::callGrompp()
+SimulationRunner::callGrompp()
 {
 #ifdef GMX_LIB_MPI
     // When compiled with external MPI, only call one instance of the
@@ -180,25 +179,25 @@ MdrunTestFixture::callGrompp()
 }
 
 int
-MdrunTestFixture::callMdrun(const CommandLine &callerRef)
+SimulationRunner::callMdrun(const CommandLine &callerRef)
 {
     /* Conforming to style guide by not passing a non-const reference
        to this function. Passing a non-const reference might make it
        easier to write code that incorrectly re-uses callerRef after
        the call to this function. */
     CommandLine caller(callerRef);
-    caller.addOption("-s", tprFileName);
+    caller.addOption("-s", tprFileName_);
 
-    caller.addOption("-g", logFileName);
-    caller.addOption("-e", edrFileName);
-    caller.addOption("-o", fullPrecisionTrajectoryFileName);
-    caller.addOption("-x", reducedPrecisionTrajectoryFileName);
+    caller.addOption("-g", logFileName_);
+    caller.addOption("-e", edrFileName_);
+    caller.addOption("-o", fullPrecisionTrajectoryFileName_);
+    caller.addOption("-x", reducedPrecisionTrajectoryFileName_);
 
-    caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
+    caller.addOption("-deffnm", fixture_->fileManager_.getTemporaryFilePath("state"));
 
-    if (nsteps > -2)
+    if (nsteps_ > -2)
     {
-        caller.addOption("-nsteps", nsteps);
+        caller.addOption("-nsteps", nsteps_);
     }
 
 #ifdef GMX_THREAD_MPI
@@ -212,11 +211,34 @@ MdrunTestFixture::callMdrun(const CommandLine &callerRef)
 }
 
 int
-MdrunTestFixture::callMdrun()
+SimulationRunner::callMdrun()
 {
     CommandLine caller;
     caller.append("mdrun");
     return callMdrun(caller);
+}
+
+// ====
+
+MdrunTestFixtureBase::MdrunTestFixtureBase()
+{
+#ifdef GMX_LIB_MPI
+    GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
+#endif
+}
+
+MdrunTestFixtureBase::~MdrunTestFixtureBase()
+{
+}
+
+// ====
+
+MdrunTestFixture::MdrunTestFixture() : runner_(this)
+{
+}
+
+MdrunTestFixture::~MdrunTestFixture()
+{
 }
 
 } // namespace test

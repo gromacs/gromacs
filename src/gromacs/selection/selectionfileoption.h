@@ -43,7 +43,7 @@
 #ifndef GMX_SELECTION_SELECTIONFILEOPTION_H
 #define GMX_SELECTION_SELECTIONFILEOPTION_H
 
-#include "../options/abstractoption.h"
+#include "gromacs/options/abstractoption.h"
 
 namespace gmx
 {
@@ -76,7 +76,7 @@ class SelectionFileOption : public AbstractOption
         explicit SelectionFileOption(const char *name);
 
     private:
-        virtual AbstractOptionStoragePointer createStorage(
+        virtual AbstractOptionStorage *createStorage(
             const OptionManagerContainer &managers) const;
 };
 

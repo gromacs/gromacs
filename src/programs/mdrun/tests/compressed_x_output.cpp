@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,14 +38,20 @@
  * Tests for the mdrun -x functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun
+ * \ingroup module_mdrun_integration_tests
  */
-#include "moduletest.h"
-#include <gtest/gtest.h>
+#include "gmxpre.h"
+
 #include <string>
+
+#include <gtest/gtest.h>
+
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/tools/check.h"
+
 #include "testutils/cmdlinetest.h"
+
+#include "moduletest.h"
 
 namespace
 {
@@ -63,16 +69,16 @@ TEST_P(CompressedXOutputTest, ExitsNormally)
                         "nsteps = 1\n"
                         "nstxout-compressed = 1\n");
     mdpFile += GetParam();
-    useStringAsMdpFile(mdpFile.c_str());
-    useTopGroAndNdxFromDatabase("spc2");
-    ASSERT_EQ(0, callGrompp());
+    runner_.useStringAsMdpFile(mdpFile.c_str());
+    runner_.useTopGroAndNdxFromDatabase("spc2");
+    ASSERT_EQ(0, runner_.callGrompp());
 
-    reducedPrecisionTrajectoryFileName = fileManager_.getTemporaryFilePath(".xtc");
-    ASSERT_EQ(0, callMdrun());
+    runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath(".xtc");
+    ASSERT_EQ(0, runner_.callMdrun());
 
     ::gmx::test::CommandLine checkCaller;
     checkCaller.append("check");
-    checkCaller.addOption("-f", reducedPrecisionTrajectoryFileName);
+    checkCaller.addOption("-f", runner_.reducedPrecisionTrajectoryFileName_);
     ASSERT_EQ(0, gmx_check(checkCaller.argc(), checkCaller.argv()));
 }
 

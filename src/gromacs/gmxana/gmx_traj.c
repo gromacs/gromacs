@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,32 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/math/units.h"
-#include "gromacs/fileio/confio.h"
-#include "gmx_ana.h"
-
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static void low_print_data(FILE *fp, real time, rvec x[], int n, atom_id *index,
                            gmx_bool bDim[], const char *sffmt)
@@ -467,7 +464,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
             fprintf(fp, "%-5d  %10.3f  %10.3f  %10.3f\n", 1+i,
                     sum[index[i]][XX], sum[index[i]][YY], sum[index[i]][ZZ]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         max  = 0;
         maxi = 0;
         for (i = 0; i < isize; i++)
@@ -587,7 +584,7 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
     {
         fprintf(fp, "%10.3e  %10d\n", i*binwidth, histo[i]);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 int gmx_traj(int argc, char *argv[])
@@ -608,7 +605,7 @@ int gmx_traj(int argc, char *argv[])
         "provided velocities are present in the trajectory file.",
         "This implies [TT]-com[tt].[PAR]",
         "Options [TT]-cv[tt] and [TT]-cf[tt] write the average velocities",
-        "and average forces as temperature factors to a [TT].pdb[tt] file with",
+        "and average forces as temperature factors to a [REF].pdb[ref] file with",
         "the average coordinates or the coordinates at [TT]-ctime[tt].",
         "The temperature factors are scaled such that the maximum is 10.",
         "The scaling can be changed with the option [TT]-scale[tt].",
@@ -617,7 +614,7 @@ int gmx_traj(int argc, char *argv[])
         "desired frame. When averaging over frames you might need to use",
         "the [TT]-nojump[tt] option to obtain the correct average coordinates.",
         "If you select either of these option the average force and velocity",
-        "for each atom are written to an [TT].xvg[tt] file as well",
+        "for each atom are written to an [REF].xvg[ref] file as well",
         "(specified with [TT]-av[tt] or [TT]-af[tt]).[PAR]",
         "Option [TT]-vd[tt] computes a velocity distribution, i.e. the",
         "norm of the vector is plotted. In addition in the same graph",
@@ -653,7 +650,7 @@ int gmx_traj(int argc, char *argv[])
         { "-ctime", FALSE, etREAL, {&ctime},
           "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
         { "-scale", FALSE, etREAL, {&scale},
-          "Scale factor for [TT].pdb[tt] output, 0 is autoscale" }
+          "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
     FILE           *outx   = NULL, *outv = NULL, *outf = NULL, *outb = NULL, *outt = NULL;
     FILE           *outekt = NULL, *outekr = NULL;
@@ -687,24 +684,24 @@ int gmx_traj(int argc, char *argv[])
         { efTRX, "-f", NULL, ffREAD },
         { efTPS, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD },
-        { efXVG, "-ox", "coord.xvg", ffOPTWR },
-        { efTRX, "-oxt", "coord.xtc", ffOPTWR },
-        { efXVG, "-ov", "veloc.xvg", ffOPTWR },
-        { efXVG, "-of", "force.xvg", ffOPTWR },
-        { efXVG, "-ob", "box.xvg",   ffOPTWR },
-        { efXVG, "-ot", "temp.xvg",  ffOPTWR },
-        { efXVG, "-ekt", "ektrans.xvg", ffOPTWR },
-        { efXVG, "-ekr", "ekrot.xvg", ffOPTWR },
-        { efXVG, "-vd", "veldist.xvg", ffOPTWR },
-        { efPDB, "-cv", "veloc.pdb", ffOPTWR },
-        { efPDB, "-cf", "force.pdb", ffOPTWR },
-        { efXVG, "-av", "all_veloc.xvg", ffOPTWR },
-        { efXVG, "-af", "all_force.xvg", ffOPTWR }
+        { efXVG, "-ox",  "coord",     ffOPTWR },
+        { efTRX, "-oxt", "coord",     ffOPTWR },
+        { efXVG, "-ov",  "veloc",     ffOPTWR },
+        { efXVG, "-of",  "force",     ffOPTWR },
+        { efXVG, "-ob",  "box",       ffOPTWR },
+        { efXVG, "-ot",  "temp",      ffOPTWR },
+        { efXVG, "-ekt", "ektrans",   ffOPTWR },
+        { efXVG, "-ekr", "ekrot",     ffOPTWR },
+        { efXVG, "-vd",  "veldist",   ffOPTWR },
+        { efPDB, "-cv",  "veloc",     ffOPTWR },
+        { efPDB, "-cf",  "force",     ffOPTWR },
+        { efXVG, "-av",  "all_veloc", ffOPTWR },
+        { efXVG, "-af",  "all_force", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -1058,7 +1055,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (bOX)
     {
-        gmx_ffclose(outx);
+        xvgrclose(outx);
     }
     if (bOXT)
     {
@@ -1066,27 +1063,27 @@ int gmx_traj(int argc, char *argv[])
     }
     if (bOV)
     {
-        gmx_ffclose(outv);
+        xvgrclose(outv);
     }
     if (bOF)
     {
-        gmx_ffclose(outf);
+        xvgrclose(outf);
     }
     if (bOB)
     {
-        gmx_ffclose(outb);
+        xvgrclose(outb);
     }
     if (bOT)
     {
-        gmx_ffclose(outt);
+        xvgrclose(outt);
     }
     if (bEKT)
     {
-        gmx_ffclose(outekt);
+        xvgrclose(outekt);
     }
     if (bEKR)
     {
-        gmx_ffclose(outekr);
+        xvgrclose(outekr);
     }
 
     if (bVD)

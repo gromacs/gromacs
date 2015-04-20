@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,6 +32,14 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+
+"""Checks and/or updates copyright headers in GROMACS source files.
+
+It is used internally by several bash scripts to do copyright-relates tasks,
+but can also be invoked directly for some rare use cases.
+
+See docs/dev-manual/uncrustify.md for more details.
+"""
 
 import datetime
 import os.path

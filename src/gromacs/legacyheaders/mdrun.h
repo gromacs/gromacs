@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,20 +40,19 @@
 
 #include <stdio.h>
 #include <time.h>
-#include "typedefs.h"
-#include "network.h"
-#include "sim_util.h"
-#include "tgroup.h"
-#include "mdebin.h"
-#include "vcm.h"
-#include "vsite.h"
-#include "shellfc.h"
-#include "update.h"
-#include "types/membedt.h"
-#include "types/globsig.h"
 
-#include "../fileio/filenm.h"
-#include "../timing/wallcycle.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/sim_util.h"
+#include "gromacs/legacyheaders/tgroup.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/shellfc.h"
+#include "gromacs/legacyheaders/types/membedt.h"
+#include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,7 +61,6 @@ extern "C" {
 #define MD_POLARISE       (1<<2)
 #define MD_RERUN          (1<<4)
 #define MD_RERUN_VSITE    (1<<5)
-#define MD_SEPPOT         (1<<7)
 #define MD_DDBONDCHECK    (1<<10)
 #define MD_DDBONDCOMM     (1<<11)
 #define MD_CONFOUT        (1<<12)
@@ -74,7 +72,6 @@ extern "C" {
 #define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 #define MD_TUNEPME        (1<<20)
-#define MD_TESTVERLET     (1<<22)
 #define MD_IMDWAIT        (1<<23)
 #define MD_IMDTERM        (1<<24)
 #define MD_IMDPULL        (1<<25)
@@ -165,6 +162,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, int imdport, unsigned long Flags);
 /* Driver routine, that calls the different methods */
+
+void bcast_state(const struct t_commrec *cr, t_state *state);
+/* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
+ */
 
 #ifdef __cplusplus
 }

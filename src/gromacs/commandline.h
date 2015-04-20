@@ -47,7 +47,8 @@
  *  - Helper classes/functions for implementing the %main() function.
  *    See \ref page_usinglibrary for an overview of those available for user
  *    programs.  These are declared in cmdlineinit.h
- *    (gmx::CommandLineModuleInterface is declared in cmdlinemodule.h).
+ *    (gmx::CommandLineModuleInterface is declared in cmdlinemodule.h and
+ *    gmx::CommandLineOptionsInterface in cmdlineoptionsmodule.h).
  *    \if libapi
  *
  *    Additionally, for internal \Gromacs use, gmx::CommandLineModuleManager
@@ -78,10 +79,11 @@
 #ifndef GMX_COMMANDLINE_H
 #define GMX_COMMANDLINE_H
 
-#include "commandline/cmdlinehelpwriter.h"
-#include "commandline/cmdlineinit.h"
-#include "commandline/cmdlinemodule.h"
-#include "commandline/cmdlineparser.h"
-#include "commandline/pargs.h"
+#include "gromacs/commandline/cmdlinehelpwriter.h"
+#include "gromacs/commandline/cmdlineinit.h"
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
+#include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/commandline/pargs.h"
 
 #endif

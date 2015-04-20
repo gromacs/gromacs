@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,27 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gstat.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gmx_ana.h"
-
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/writeps.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static gmx_bool *bPhobics(int nres, char *resnm[])
 {
@@ -218,7 +216,7 @@ int gmx_wheel(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[THISMODULE] plots a helical wheel representation of your sequence.",
-        "The input sequence is in the [TT].dat[tt] file where the first line contains",
+        "The input sequence is in the [REF].dat[ref] file where the first line contains",
         "the number of residues and each consecutive line contains a residue "
         "name."
     };
@@ -246,7 +244,7 @@ int gmx_wheel(int argc, char *argv[])
     int    i, nres;
     char **resnm;
 
-    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -266,7 +264,7 @@ int gmx_wheel(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-T") == 0)
         {
-            title = strdup(argv[++i]);
+            title = gmx_strdup(argv[++i]);
             fprintf(stderr, "Title will be '%s'\n", title);
         }
         else if (strcmp(argv[i], "-nn") == 0)

@@ -39,18 +39,17 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "gromacs/utility/init.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
+#include "init.h"
+
 #include "config.h"
-#endif
 
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 #ifdef GMX_LIB_MPI
 #include "gromacs/utility/gmxmpi.h"
 #endif
-
-#include "gromacs/utility/common.h"
-#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

@@ -38,8 +38,8 @@
 #ifndef _viewit_h
 #define _viewit_h
 
-#include "types/oenv.h"
-#include "../fileio/filenm.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/types/oenv.h"
 
 #ifdef __cplusplus
 extern "C" {

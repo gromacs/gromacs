@@ -62,7 +62,7 @@ function(gmx_suggest_x86_simd _suggested_simd)
     message(STATUS "Detecting best SIMD instructions for this CPU")
 
     # Get CPU SIMD properties information
-    set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders -DGMX_CPUID_STANDALONE")
+    set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUID_STANDALONE")
     if(GMX_TARGET_X86)
         set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
     endif()
@@ -84,16 +84,22 @@ function(gmx_suggest_x86_simd _suggested_simd)
         set(OUTPUT_TMP "None")
     endif(NOT GMX_CPUID_COMPILED)
 
-    string(STRIP "@OUTPUT_TMP@" OUTPUT_SIMD)
+    string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
 
-    set(${_suggested_simd} "@OUTPUT_SIMD@" PARENT_SCOPE)
-    message(STATUS "Detected best SIMD instructions for this CPU - @OUTPUT_SIMD@")
+    set(${_suggested_simd} "${OUTPUT_SIMD}" PARENT_SCOPE)
+    message(STATUS "Detected best SIMD instructions for this CPU - ${OUTPUT_SIMD}")
 endfunction()
 
 function(gmx_detect_simd _suggested_simd)
     if(NOT DEFINED GMX_SIMD)
         if(GMX_TARGET_BGQ)
             set(${_suggested_simd} "IBM_QPX")
+        elseif(GMX_TARGET_FUJITSU_SPARC64)
+            # HPC-ACE is always present. In the future we
+            # should add detection for HPC-ACE2 here.
+            set(${_suggested_simd} "Sparc64_HPC_ACE")
+        elseif(GMX_TARGET_MIC)
+            set(${_suggested_simd} "MIC")
         elseif(GMX_TARGET_X86)
             gmx_suggest_x86_simd(${_suggested_simd})
         else()

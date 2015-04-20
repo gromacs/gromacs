@@ -44,12 +44,8 @@
 #ifndef GMX_UTILITY_BASEDEFINITIONS_H
 #define GMX_UTILITY_BASEDEFINITIONS_H
 
-/* Information about integer data type sizes */
-#include <limits.h>
-#define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #ifndef _MSC_VER
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #endif
 
@@ -159,9 +155,25 @@ typedef uint64_t gmx_uint64_t;
  */
 #define gmx_restrict __restrict
 
+/*! \def gmx_cxx_const
+ * \brief
+ * Keyword to work around C/C++ differences in possible const keyword usage.
+ *
+ * Some functions that do not modify their input parameters cannot declare
+ * those parameters as `const` and compile warning/error-free on both C and C++
+ * compilers because of differences in `const` semantics.  This macro can be
+ * used in cases where C++ allows `const`, but C does not like it, to make the
+ * same declaration work for both.
+ */
+#ifdef __cplusplus
+#define gmx_cxx_const const
+#else
+#define gmx_cxx_const
+#endif
+
 /*! \def gmx_unused
  * \brief
- * Attribute to suppres compiler warnings about unused function parameters.
+ * Attribute to suppress compiler warnings about unused function parameters.
  *
  * This attribute suppresses compiler warnings about unused function arguments
  * by marking them as possibly unused.  Some arguments are unused but
@@ -177,6 +189,9 @@ typedef uint64_t gmx_uint64_t;
 #elif (defined(__INTEL_COMPILER) || defined(__ECC)) && !defined(_MSC_VER)
 /* ICC on *nix */
 #  define gmx_unused __attribute__ ((unused))
+#elif defined(__PGI)
+/* Portland group compilers */
+#  define gmx_unused __attribute__ ((unused))
 #elif defined _MSC_VER
 /* MSVC */
 #  define gmx_unused /*@unused@*/
@@ -186,6 +201,68 @@ typedef uint64_t gmx_uint64_t;
 #else
 #  define gmx_unused
 #endif
+#endif
+
+#ifndef __has_feature
+/** For compatibility with non-clang compilers. */
+#define __has_feature(x) 0
+#endif
+
+/*! \def gmx_noreturn
+ * \brief
+ * Indicate that a function is not expected to return.
+ */
+#ifndef gmx_noreturn
+#if defined(__GNUC__) || __has_feature(attribute_analyzer_noreturn)
+#define gmx_noreturn __attribute__((noreturn))
+#elif defined (_MSC_VER)
+#define gmx_noreturn __declspec(noreturn)
+#else
+#define gmx_noreturn
+#endif
+#endif
+
+/*! \brief
+ * Macro to explicitly ignore an unused value.
+ *
+ * \ingroup module_utility
+ */
+#define GMX_UNUSED_VALUE(value) (void)value
+
+#ifdef __cplusplus
+namespace gmx
+{
+namespace internal
+{
+/*! \cond internal */
+/*! \internal \brief
+ * Helper for ignoring values in macros.
+ *
+ * \ingroup module_utility
+ */
+template <typename T>
+static inline void ignoreValueHelper(const T &)
+{
+}
+//! \endcond
+}   // namespace internal
+}   // namespace gmx
+
+/*! \brief
+ * Macro to explicitly ignore a return value of a call.
+ *
+ * Mainly meant for ignoring values of functions declared with
+ * `__attribute__((warn_unused_return))`.  Makes it easy to find those places if
+ * they need to be fixed, and document the intent in cases where the return
+ * value really can be ignored.  It also makes it easy to adapt the approach so
+ * that they don't produce warnings.  A cast to void doesn't remove the warning
+ * in gcc, while adding a dummy variable can cause warnings about an unused
+ * variable.
+ *
+ * \ingroup module_utility
+ */
+#define GMX_IGNORE_RETURN_VALUE(call) \
+        ::gmx::internal::ignoreValueHelper(call)
 #endif
 
 #endif

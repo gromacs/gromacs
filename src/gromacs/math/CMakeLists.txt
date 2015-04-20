@@ -35,17 +35,17 @@
 file(GLOB MATH_SOURCES *.cpp *.c)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
 
-set(MATH_PUBLIC_HEADERS
+gmx_install_headers(
     3dtransforms.h
-    gmxcomplex.h
+    calculate-ewald-splitting-coefficient.h
     do_fit.h
+    gmxcomplex.h
     units.h
     utilities.h
     vec.h
     vectypes.h
     )
-gmx_install_headers(math ${MATH_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
-#    add_subdirectory(tests)
+    add_subdirectory(tests)
 endif()

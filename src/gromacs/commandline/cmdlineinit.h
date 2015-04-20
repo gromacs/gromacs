@@ -47,12 +47,13 @@
 
 // Forward declaration of class CommandLineProgramContext is not sufficient for
 // MSVC if the return value of initForCommandLine() is ignored(!)
-#include "cmdlineprogramcontext.h"
+#include "gromacs/commandline/cmdlineprogramcontext.h"
 
 namespace gmx
 {
 
 class CommandLineModuleInterface;
+class CommandLineOptionsModuleInterface;
 
 /*! \brief
  * Initializes the \Gromacs library for command-line use.
@@ -92,7 +93,19 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv);
  * \ingroup module_commandline
  */
 void finalizeForCommandLine();
-
+/*! \brief
+ * Handles an exception and deinitializes after initForCommandLine.
+ *
+ * \param[in] ex  Exception that is the cause for terminating the program.
+ * \returns   Return code to return from main().
+ *
+ * This method should be called as the last thing before terminating the
+ * program because of an exception. See processExceptionAtExit() for details.
+ * Additionally this method undoes the work done by initForCommandLine.
+ *
+ * Does not throw.
+ */
+int processExceptionAtExitForCommandLine(const std::exception &ex);
 /*! \brief
  * Implements a main() method that runs a single module.
  *
@@ -125,6 +138,44 @@ void finalizeForCommandLine();
  */
 int runCommandLineModule(int argc, char *argv[],
                          CommandLineModuleInterface *module);
+/*! \brief
+ * Implements a main() method that runs a single module.
+ *
+ * \param     argc        \c argc passed to main().
+ * \param     argv        \c argv passed to main().
+ * \param[in] name        Name for the module.
+ * \param[in] description Short description for the module.
+ * \param     factory Factory method that creates the module to run.
+ *
+ * This method allows for uniform behavior for binaries that only
+ * contain a single module without duplicating any of the
+ * implementation from CommandLineModuleManager (startup headers,
+ * common options etc.).
+ *
+ * Usage:
+ * \code
+   class CustomCommandLineOptionsModule : public CommandLineOptionsModuleInterface
+   {
+       // <...>
+   };
+
+   static CommandLineOptionsModuleInterface *create()
+   {
+       return new CustomCommandLineOptionsModule();
+   }
+
+   int main(int argc, char *argv[])
+   {
+       return gmx::runCommandLineModule(
+               argc, argv, "mymodule", "short description", &create);
+   }
+   \endcode
+ *
+ * Does not throw.  All exceptions are caught and handled internally.
+ */
+int runCommandLineModule(int argc, char *argv[],
+                         const char *name, const char *description,
+                         CommandLineOptionsModuleInterface *(*factory)());
 
 } // namespace gmx
 

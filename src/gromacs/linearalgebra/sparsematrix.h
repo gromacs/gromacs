@@ -39,8 +39,8 @@
 
 #include <stdio.h>
 
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

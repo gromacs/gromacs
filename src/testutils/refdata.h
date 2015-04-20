@@ -46,7 +46,8 @@
 #include <iterator>
 #include <string>
 
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
@@ -315,6 +316,10 @@ class TestReferenceChecker
         void checkStringBlock(const std::string &value, const char *id);
         //! Check a single integer value.
         void checkInteger(int value, const char *id);
+        //! Check a single int64 value.
+        void checkInt64(gmx_int64_t value, const char *id);
+        //! Check a single uint64 value.
+        void checkUInt64(gmx_uint64_t value, const char *id);
         //! Check a single single-precision floating point value.
         void checkFloat(float value, const char *id);
         //! Check a single double-precision floating point value.
@@ -358,6 +363,16 @@ class TestReferenceChecker
         void checkValue(int value, const char *id)
         {
             checkInteger(value, id);
+        }
+        //! Check a single integer value.
+        void checkValue(gmx_int64_t value, const char *id)
+        {
+            checkInt64(value, id);
+        }
+        //! Check a single integer value.
+        void checkValue(gmx_uint64_t value, const char *id)
+        {
+            checkUInt64(value, id);
         }
         //! Check a single single-precision floating point value.
         void checkValue(float value, const char *id)

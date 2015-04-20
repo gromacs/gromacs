@@ -34,13 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/topology/atomprop.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "atomprop.h"
 
 #include <ctype.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "gromacs/fileio/strdb.h"
@@ -182,8 +181,8 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
                 ap->bAvail[i] = FALSE;
             }
         }
-        ap->atomnm[ap->nprop] = strdup(atomnm);
-        ap->resnm[ap->nprop]  = strdup(resnm);
+        ap->atomnm[ap->nprop] = gmx_strdup(atomnm);
+        ap->resnm[ap->nprop]  = gmx_strdup(resnm);
         j                     = ap->nprop;
         ap->nprop++;
     }
@@ -254,7 +253,7 @@ static void set_prop(gmx_atomprop_t aps, int eprop)
     ap = &ap2->prop[eprop];
     if (!ap->bSet)
     {
-        ap->db  = strdup(fns[eprop]);
+        ap->db  = gmx_strdup(fns[eprop]);
         ap->def = def[eprop];
         read_prop(aps, eprop, fac[eprop]);
 

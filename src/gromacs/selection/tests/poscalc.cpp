@@ -39,14 +39,17 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
-#include <gtest/gtest.h>
+#include "gmxpre.h"
+
+#include "gromacs/selection/poscalc.h"
 
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"

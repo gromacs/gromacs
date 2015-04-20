@@ -48,11 +48,9 @@
 #include <string>
 #include <vector>
 
-#include "../legacyheaders/types/oenv.h"
-
-#include "../onlinehelp/helptopicinterface.h"
-#include "../utility/common.h"
-#include "selection.h" // For gmx::SelectionList
+#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/selection/selection.h" // For gmx::SelectionList
+#include "gromacs/utility/classhelpers.h"
 
 struct gmx_ana_indexgrps_t;
 struct t_pbc;
@@ -112,14 +110,6 @@ class SelectionEvaluator;
 class SelectionCollection
 {
     public:
-        /*! \brief
-         * Creates a help tree for selections.
-         *
-         * \throws   std::bad_alloc if out of memory.
-         * \returns  Root topic of the created selection tree.
-         */
-        static HelpTopicPointer createDefaultHelpTopic();
-
         /*! \brief
          * Creates an empty selection collection.
          *

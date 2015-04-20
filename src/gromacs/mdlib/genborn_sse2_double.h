@@ -37,11 +37,7 @@
 #ifndef _genborn_sse2_double_h
 #define _genborn_sse2_double_h
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 int
 calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,

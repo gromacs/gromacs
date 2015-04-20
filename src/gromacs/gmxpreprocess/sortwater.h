@@ -38,7 +38,7 @@
 #ifndef _sortwater_h
 #define _sortwater_h
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/random/random.h"
 
 #ifdef __cplusplus

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,9 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <ctype.h>
 #include <float.h>
@@ -42,21 +40,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "macros.h"
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/math/units.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gmx_ana.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/cstringutil.h"
-#include "names.h"
-#include "mdebin.h"
+#include "gromacs/utility/dir_separator.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/snprintf.h"
 
 
 /* Structure for the names of lambda vector components */
@@ -1132,6 +1131,31 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
     xvgrclose(fp);
 }
 
+static int
+snprint_lambda_vec(char *str, int sz, const char *label, lambda_vec_t *lambda)
+{
+    int n = 0;
+
+    n += snprintf(str+n, sz-n, "lambda vector [%s]: ", label);
+    if (lambda->index >= 0)
+    {
+        n += snprintf(str+n, sz-n, " init-lambda-state=%d", lambda->index);
+    }
+    if (lambda->dhdl >= 0)
+    {
+        n += snprintf(str+n, sz-n, " dhdl index=%d", lambda->dhdl);
+    }
+    else
+    {
+        int i;
+        for (i = 0; i < lambda->lc->N; i++)
+        {
+            n += snprintf(str+n, sz-n, " (%s) l=%g", lambda->lc->names[i], lambda->val[i]);
+        }
+    }
+    return n;
+}
+
 /* create a collection (array) of barres_t object given a ordered linked list
    of barlamda_t sample collections */
 static barres_t *barres_list_create(sim_data_t *sd, int *nres,
@@ -1187,17 +1211,27 @@ static barres_t *barres_list_create(sim_data_t *sd, int *nres,
         }
         else if (!scprev && !sc)
         {
-            gmx_fatal(FARGS, "There is no path from lambda=%f -> %f that is covered by foreign lambdas:\ncannot proceed with BAR.\nUse thermodynamic integration of dH/dl by calculating the averages of dH/dl\nwith g_analyze and integrating them.\nAlternatively, use the -extp option if (and only if) the Hamiltonian\ndepends linearly on lambda, which is NOT normally the case.\n", bl->prev->lambda, bl->lambda);
+            char descX[STRLEN], descY[STRLEN];
+            snprint_lambda_vec(descX, STRLEN, "X", bl->prev->lambda);
+            snprint_lambda_vec(descY, STRLEN, "Y", bl->lambda);
+
+            gmx_fatal(FARGS, "There is no path between the states X & Y below that is covered by foreign lambdas:\ncannot proceed with BAR.\nUse thermodynamic integration of dH/dl by calculating the averages of dH/dl\nwith g_analyze and integrating them.\nAlternatively, use the -extp option if (and only if) the Hamiltonian\ndepends linearly on lambda, which is NOT normally the case.\n\n%s\n%s\n", descX, descY);
         }
 
         /* normal delta H */
         if (!scprev)
         {
-            gmx_fatal(FARGS, "Could not find a set for foreign lambda = %f\nin the files for lambda = %f", bl->lambda, bl->prev->lambda);
+            char descX[STRLEN], descY[STRLEN];
+            snprint_lambda_vec(descX, STRLEN, "X", bl->lambda);
+            snprint_lambda_vec(descY, STRLEN, "Y", bl->prev->lambda);
+            gmx_fatal(FARGS, "Could not find a set for foreign lambda (state X below)\nin the files for main lambda (state Y below)\n\n%s\n%s\n", descX, descY);
         }
         if (!sc)
         {
-            gmx_fatal(FARGS, "Could not find a set for foreign lambda = %f\nin the files for lambda = %f", bl->prev->lambda, bl->lambda);
+            char descX[STRLEN], descY[STRLEN];
+            snprint_lambda_vec(descX, STRLEN, "X", bl->prev->lambda);
+            snprint_lambda_vec(descY, STRLEN, "Y", bl->lambda);
+            gmx_fatal(FARGS, "Could not find a set for foreign lambda (state X below)\nin the files for main lambda (state Y below)\n\n%s\n%s\n", descX, descY);
         }
         br->a = scprev;
         br->b = sc;
@@ -3465,31 +3499,32 @@ int gmx_bar(int argc, char *argv[])
 
         "Every individual BAR free energy difference relies on two ",
         "simulations at different states: say state A and state B, as",
-        "controlled by a parameter, [GRK]lambda[grk] (see the [TT].mdp[tt] parameter",
+        "controlled by a parameter, [GRK]lambda[grk] (see the [REF].mdp[ref] parameter",
         "[TT]init_lambda[tt]). The BAR method calculates a ratio of weighted",
         "average of the Hamiltonian difference of state B given state A and",
         "vice versa.",
         "The energy differences to the other state must be calculated",
         "explicitly during the simulation. This can be done with",
-        "the [TT].mdp[tt] option [TT]foreign_lambda[tt].[PAR]",
+        "the [REF].mdp[ref] option [TT]foreign_lambda[tt].[PAR]",
 
         "Input option [TT]-f[tt] expects multiple [TT]dhdl.xvg[tt] files. ",
-        "Two types of input files are supported:[BR]",
-        "[TT]*[tt]  Files with more than one [IT]y[it]-value. ",
-        "The files should have columns ",
-        "with dH/d[GRK]lambda[grk] and [GRK]Delta[grk][GRK]lambda[grk]. ",
-        "The [GRK]lambda[grk] values are inferred ",
-        "from the legends: [GRK]lambda[grk] of the simulation from the legend of ",
-        "dH/d[GRK]lambda[grk] and the foreign [GRK]lambda[grk] values from the ",
-        "legends of Delta H",
-        "[BR]",
-        "[TT]*[tt]  Files with only one [IT]y[it]-value. Using the",
-        "[TT]-extp[tt] option for these files, it is assumed",
-        "that the [IT]y[it]-value is dH/d[GRK]lambda[grk] and that the ",
-        "Hamiltonian depends linearly on [GRK]lambda[grk]. ",
-        "The [GRK]lambda[grk] value of the simulation is inferred from the ",
-        "subtitle (if present), otherwise from a number in the subdirectory ",
-        "in the file name.[PAR]",
+        "Two types of input files are supported:",
+        "",
+        " * Files with more than one [IT]y[it]-value. ",
+        "   The files should have columns ",
+        "   with dH/d[GRK]lambda[grk] and [GRK]Delta[grk][GRK]lambda[grk]. ",
+        "   The [GRK]lambda[grk] values are inferred ",
+        "   from the legends: [GRK]lambda[grk] of the simulation from the legend of ",
+        "   dH/d[GRK]lambda[grk] and the foreign [GRK]lambda[grk] values from the ",
+        "   legends of Delta H",
+        " * Files with only one [IT]y[it]-value. Using the",
+        "   [TT]-extp[tt] option for these files, it is assumed",
+        "   that the [IT]y[it]-value is dH/d[GRK]lambda[grk] and that the ",
+        "   Hamiltonian depends linearly on [GRK]lambda[grk]. ",
+        "   The [GRK]lambda[grk] value of the simulation is inferred from the ",
+        "   subtitle (if present), otherwise from a number in the subdirectory ",
+        "   in the file name.",
+        "",
 
         "The [GRK]lambda[grk] of the simulation is parsed from ",
         "[TT]dhdl.xvg[tt] file's legend containing the string 'dH', the ",
@@ -3497,14 +3532,14 @@ int gmx_bar(int argc, char *argv[])
         "capitalized letters 'D' and 'H'. The temperature is parsed from ",
         "the legend line containing 'T ='.[PAR]",
 
-        "The input option [TT]-g[tt] expects multiple [TT].edr[tt] files. ",
+        "The input option [TT]-g[tt] expects multiple [REF].edr[ref] files. ",
         "These can contain either lists of energy differences (see the ",
-        "[TT].mdp[tt] option [TT]separate_dhdl_file[tt]), or a series of ",
-        "histograms (see the [TT].mdp[tt] options [TT]dh_hist_size[tt] and ",
+        "[REF].mdp[ref] option [TT]separate_dhdl_file[tt]), or a series of ",
+        "histograms (see the [REF].mdp[ref] options [TT]dh_hist_size[tt] and ",
         "[TT]dh_hist_spacing[tt]).", "The temperature and [GRK]lambda[grk] ",
         "values are automatically deduced from the [TT]ener.edr[tt] file.[PAR]",
 
-        "In addition to the [TT].mdp[tt] option [TT]foreign_lambda[tt], ",
+        "In addition to the [REF].mdp[ref] option [TT]foreign_lambda[tt], ",
         "the energy difference can also be extrapolated from the ",
         "dH/d[GRK]lambda[grk] values. This is done with the[TT]-extp[tt]",
         "option, which assumes that the system's Hamiltonian depends linearly",
@@ -3533,13 +3568,15 @@ int gmx_bar(int argc, char *argv[])
         "and the total. The first part contains detailed free energy ",
         "difference estimates and phase space overlap measures in units of ",
         "kT (together with their computed error estimate). The printed ",
-        "values are:[BR]",
-        "[TT]*[tt]  lam_A: the [GRK]lambda[grk] values for point A.[BR]",
-        "[TT]*[tt]  lam_B: the [GRK]lambda[grk] values for point B.[BR]",
-        "[TT]*[tt]     DG: the free energy estimate.[BR]",
-        "[TT]*[tt]    s_A: an estimate of the relative entropy of B in A.[BR]",
-        "[TT]*[tt]    s_B: an estimate of the relative entropy of A in B.[BR]",
-        "[TT]*[tt]  stdev: an estimate expected per-sample standard deviation.[PAR]",
+        "values are:",
+        "",
+        " * lam_A: the [GRK]lambda[grk] values for point A.",
+        " * lam_B: the [GRK]lambda[grk] values for point B.",
+        " *    DG: the free energy estimate.",
+        " *   s_A: an estimate of the relative entropy of B in A.",
+        " *   s_B: an estimate of the relative entropy of A in B.",
+        " * stdev: an estimate expected per-sample standard deviation.",
+        "",
 
         "The relative entropy of both states in each other's ensemble can be ",
         "interpreted as a measure of phase space overlap: ",
@@ -3938,7 +3975,11 @@ int gmx_bar(int argc, char *argv[])
     {
         lambda_vec_print_short(results[nresults-1].b->native_lambda, buf);
         fprintf(fpi, xvg2format, buf, dg_tot);
-        gmx_ffclose(fpi);
+        xvgrclose(fpi);
+    }
+    if (fpb != NULL)
+    {
+        xvgrclose(fpb);
     }
 
     do_view(oenv, opt2fn_null("-o", NFILE, fnm), "-xydy");

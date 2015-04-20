@@ -32,14 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
-#include "../../nbnxn_consts.h"
 #ifdef CALC_COUL_EWALD
 #include "gromacs/math/utilities.h"
 #endif
+
+#include "config.h"
 
 #ifndef GMX_SIMD_J_UNROLL_SIZE
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
@@ -55,15 +57,14 @@
 #define STRIDE     (UNROLLI)
 #endif
 
-#include "../nbnxn_kernel_simd_utils.h"
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
 
-static gmx_inline void
-gmx_load_simd_4xn_interactions(int gmx_unused             excl,
+static gmx_inline void gmx_simdcall
+gmx_load_simd_4xn_interactions(int                        excl,
                                gmx_exclfilter gmx_unused  filter_S0,
                                gmx_exclfilter gmx_unused  filter_S1,
                                gmx_exclfilter gmx_unused  filter_S2,
                                gmx_exclfilter gmx_unused  filter_S3,
-                               const char gmx_unused     *interaction_mask_indices,
                                real gmx_unused           *simd_interaction_array,
                                gmx_simd_bool_t           *interact_S0,
                                gmx_simd_bool_t           *interact_S1,
@@ -77,13 +78,14 @@ gmx_load_simd_4xn_interactions(int gmx_unused             excl,
     *interact_S1  = gmx_checkbitmask_pb(mask_pr_S, filter_S1);
     *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
     *interact_S3  = gmx_checkbitmask_pb(mask_pr_S, filter_S3);
-#endif
-#ifdef GMX_SIMD_IBM_QPX
+#elif defined GMX_SIMD_IBM_QPX
     const int size = GMX_SIMD_REAL_WIDTH * sizeof(real);
-    *interact_S0  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[0], simd_interaction_array);
-    *interact_S1  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[1], simd_interaction_array);
-    *interact_S2  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[2], simd_interaction_array);
-    *interact_S3  = gmx_load_interaction_mask_pb(size*interaction_mask_indices[3], simd_interaction_array);
+    *interact_S0  = gmx_load_interaction_mask_pb(size*((excl >> (0 * UNROLLJ)) & 0xF), simd_interaction_array);
+    *interact_S1  = gmx_load_interaction_mask_pb(size*((excl >> (1 * UNROLLJ)) & 0xF), simd_interaction_array);
+    *interact_S2  = gmx_load_interaction_mask_pb(size*((excl >> (2 * UNROLLJ)) & 0xF), simd_interaction_array);
+    *interact_S3  = gmx_load_interaction_mask_pb(size*((excl >> (3 * UNROLLJ)) & 0xF), simd_interaction_array);
+#else
+#error "Need implementation of gmx_load_simd_4xn_interactions"
 #endif
 }
 

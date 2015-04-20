@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,25 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 /* This file is completely threadsafe - keep it that way! */
+
+#include "tpxio.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
-#include "names.h"
-#include "gromacs/utility/futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
-#include "tpxio.h"
-#include "txtdump.h"
-#include "confio.h"
-#include "copyrite.h"
-
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/block.h"
@@ -61,6 +58,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define TPX_TAG_RELEASE  "release"
@@ -93,6 +91,8 @@ enum tpxv {
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
     tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_PullCoordTypeGeom,                                  /**< add pull type and geometry per group and flat-bottom */
+    tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
     tpxv_DrudeExtendedLagrangian                             /**< Drude extended Lagrangian support within md-vv */
 };
 
@@ -229,50 +229,6 @@ static const t_ftupd ftupd[] = {
 /* Needed for backward compatibility */
 #define MAXNODES 256
 
-static void _do_section(t_fileio *fio, int key, gmx_bool bRead, const char *src,
-                        int line)
-{
-    char     buf[STRLEN];
-    gmx_bool bDbg;
-
-    if (gmx_fio_getftp(fio) == efTPA)
-    {
-        if (!bRead)
-        {
-            gmx_fio_write_string(fio, itemstr[key]);
-            bDbg       = gmx_fio_getdebug(fio);
-            gmx_fio_setdebug(fio, FALSE);
-            gmx_fio_write_string(fio, comment_str[key]);
-            gmx_fio_setdebug(fio, bDbg);
-        }
-        else
-        {
-            if (gmx_fio_getdebug(fio))
-            {
-                fprintf(stderr, "Looking for section %s (%s, %d)",
-                        itemstr[key], src, line);
-            }
-
-            do
-            {
-                gmx_fio_do_string(fio, buf);
-            }
-            while ((gmx_strcasecmp(buf, itemstr[key]) != 0));
-
-            if (gmx_strcasecmp(buf, itemstr[key]) != 0)
-            {
-                gmx_fatal(FARGS, "\nCould not find section heading %s", itemstr[key]);
-            }
-            else if (gmx_fio_getdebug(fio))
-            {
-                fprintf(stderr, " and found it\n");
-            }
-        }
-    }
-}
-
-#define do_section(fio, key, bRead) _do_section(fio, key, bRead, __FILE__, __LINE__)
-
 /**************************************************************
  *
  * Now the higer level routines that do io of the structures and arrays
@@ -335,14 +291,41 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
     gmx_fio_do_int(fio, pgrp->pbcatom);
 }
 
-static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd)
+static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
+                          int ePullOld, int eGeomOld, ivec dimOld)
 {
     int      i;
 
     gmx_fio_do_int(fio, pcrd->group[0]);
     gmx_fio_do_int(fio, pcrd->group[1]);
+    if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        gmx_fio_do_int(fio,  pcrd->eType);
+        gmx_fio_do_int(fio,  pcrd->eGeom);
+        if (pcrd->eGeom == epullgDIRRELATIVE)
+        {
+            gmx_fio_do_int(fio, pcrd->group[2]);
+            gmx_fio_do_int(fio, pcrd->group[3]);
+        }
+        gmx_fio_do_ivec(fio, pcrd->dim);
+    }
+    else
+    {
+        pcrd->eType = ePullOld;
+        pcrd->eGeom = eGeomOld;
+        copy_ivec(dimOld, pcrd->dim);
+    }
     gmx_fio_do_rvec(fio, pcrd->origin);
     gmx_fio_do_rvec(fio, pcrd->vec);
+    if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        gmx_fio_do_gmx_bool(fio, pcrd->bStart);
+    }
+    else
+    {
+        /* This parameter is only printed, but not actually used by mdrun */
+        pcrd->bStart = FALSE;
+    }
     gmx_fio_do_real(fio, pcrd->init);
     gmx_fio_do_real(fio, pcrd->rate);
     gmx_fio_do_real(fio, pcrd->k);
@@ -651,9 +634,12 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     }
 }
 
-static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_version)
+static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead,
+                    int file_version, int ePullOld)
 {
-    int g;
+    int  eGeomOld;
+    ivec dimOld;
+    int  g;
 
     if (file_version >= 95)
     {
@@ -664,14 +650,33 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
     {
         pull->ngroup = pull->ncoord + 1;
     }
-    gmx_fio_do_int(fio, pull->eGeom);
-    gmx_fio_do_ivec(fio, pull->dim);
-    gmx_fio_do_real(fio, pull->cyl_r1);
-    gmx_fio_do_real(fio, pull->cyl_r0);
+    if (file_version < tpxv_PullCoordTypeGeom)
+    {
+        real dum;
+
+        gmx_fio_do_int(fio, eGeomOld);
+        gmx_fio_do_ivec(fio, dimOld);
+        /* The inner cylinder radius, now removed */
+        gmx_fio_do_real(fio, dum);
+    }
+    gmx_fio_do_real(fio, pull->cylinder_r);
     gmx_fio_do_real(fio, pull->constr_tol);
     if (file_version >= 95)
     {
-        gmx_fio_do_int(fio, pull->bPrintRef);
+        gmx_fio_do_int(fio, pull->bPrintCOM1);
+        /* With file_version < 95 this value is set below */
+    }
+    if (file_version >= tpxv_PullCoordTypeGeom)
+    {
+        gmx_fio_do_int(fio, pull->bPrintCOM2);
+        gmx_fio_do_int(fio, pull->bPrintRefValue);
+        gmx_fio_do_int(fio, pull->bPrintComp);
+    }
+    else
+    {
+        pull->bPrintCOM2     = FALSE;
+        pull->bPrintRefValue = FALSE;
+        pull->bPrintComp     = TRUE;
     }
     gmx_fio_do_int(fio, pull->nstxout);
     gmx_fio_do_int(fio, pull->nstfout);
@@ -683,13 +688,13 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
     if (file_version < 95)
     {
         /* epullgPOS for position pulling, before epullgDIRPBC was removed */
-        if (pull->eGeom == epullgDIRPBC)
+        if (eGeomOld == epullgDIRPBC)
         {
             gmx_fatal(FARGS, "pull-geometry=position is no longer supported");
         }
-        if (pull->eGeom > epullgDIRPBC)
+        if (eGeomOld > epullgDIRPBC)
         {
-            pull->eGeom -= 1;
+            eGeomOld -= 1;
         }
 
         for (g = 0; g < pull->ngroup; g++)
@@ -704,7 +709,7 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
             }
         }
 
-        pull->bPrintRef = (pull->group[0].nat > 0);
+        pull->bPrintCOM1 = (pull->group[0].nat > 0);
     }
     else
     {
@@ -714,7 +719,8 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
         }
         for (g = 0; g < pull->ncoord; g++)
         {
-            do_pull_coord(fio, &pull->coord[g]);
+            do_pull_coord(fio, &pull->coord[g],
+                          file_version, ePullOld, eGeomOld, dimOld);
         }
     }
 }
@@ -1569,19 +1575,31 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     /* pull stuff */
     if (file_version >= 48)
     {
-        gmx_fio_do_int(fio, ir->ePull);
-        if (ir->ePull != epullNO)
+        int ePullOld = 0;
+
+        if (file_version >= tpxv_PullCoordTypeGeom)
+        {
+            gmx_fio_do_gmx_bool(fio, ir->bPull);
+        }
+        else
+        {
+            gmx_fio_do_int(fio, ePullOld);
+            ir->bPull = (ePullOld > 0);
+            /* We removed the first ePull=ePullNo for the enum */
+            ePullOld -= 1;
+        }
+        if (ir->bPull)
         {
             if (bRead)
             {
                 snew(ir->pull, 1);
             }
-            do_pull(fio, ir->pull, bRead, file_version);
+            do_pull(fio, ir->pull, bRead, file_version, ePullOld);
         }
     }
     else
     {
-        ir->ePull = epullNO;
+        ir->bPull = FALSE;
     }
 
     /* Enforced rotation */
@@ -2757,7 +2775,7 @@ static void do_symtab(t_fileio *fio, t_symtab *symtab, gmx_bool bRead)
         for (i = 0; (i < nr); i++)
         {
             gmx_fio_do_string(fio, buf);
-            symbuf->buf[i] = strdup(buf);
+            symbuf->buf[i] = gmx_strdup(buf);
         }
     }
     else
@@ -3234,7 +3252,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     gmx_fio_checktype(fio);
     gmx_fio_setdebug(fio, bDebugMode());
 
-    /* NEW! XDR tpb file */
+    /* XDR binary topology file */
     precision = sizeof(real);
     if (bRead)
     {
@@ -3311,7 +3329,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
             /* We only support reading tpx files with the same tag as the code
              * or tpx files with the release tag and with lower version number.
              */
-            if (!strcmp(file_tag, TPX_TAG_RELEASE) == 0 && fver < tpx_version)
+            if (strcmp(file_tag, TPX_TAG_RELEASE) != 0 && fver < tpx_version)
             {
                 gmx_fatal(FARGS, "tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' with program for tpx version %d, tag '%s'",
                           gmx_fio_getname(fio), fver, file_tag,
@@ -3339,7 +3357,6 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
                   gmx_fio_getname(fio), fver, tpx_version);
     }
 
-    do_section(fio, eitemHEADER, bRead);
     gmx_fio_do_int(fio, tpx->natoms);
     if (fver >= 28)
     {
@@ -3434,7 +3451,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 #define do_test(fio, b, p) if (bRead && (p != NULL) && !b) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))
 
     do_test(fio, tpx.bBox, state->box);
-    do_section(fio, eitemBOX, bRead);
     if (tpx.bBox)
     {
         gmx_fio_ndo_rvec(fio, state->box, DIM);
@@ -3481,7 +3497,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (file_version < 26)
     {
         do_test(fio, tpx.bIr, ir);
-        do_section(fio, eitemIR, bRead);
         if (tpx.bIr)
         {
             if (ir)
@@ -3508,7 +3523,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     }
 
     do_test(fio, tpx.bTop, mtop);
-    do_section(fio, eitemTOP, bRead);
     if (tpx.bTop)
     {
         if (mtop)
@@ -3522,7 +3536,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
     }
     do_test(fio, tpx.bX, state->x);
-    do_section(fio, eitemX, bRead);
     if (tpx.bX)
     {
         if (bRead)
@@ -3533,7 +3546,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     }
 
     do_test(fio, tpx.bV, state->v);
-    do_section(fio, eitemV, bRead);
     if (tpx.bV)
     {
         if (bRead)
@@ -3544,7 +3556,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     }
 
     do_test(fio, tpx.bF, f);
-    do_section(fio, eitemF, bRead);
     if (tpx.bF)
     {
         gmx_fio_ndo_rvec(fio, f, state->natoms);
@@ -3562,7 +3573,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (file_version >= 26)
     {
         do_test(fio, tpx.bIr, ir);
-        do_section(fio, eitemIR, bRead);
         if (tpx.bIr)
         {
             if (file_version >= 53)
@@ -3746,15 +3756,7 @@ int read_tpx_top(const char *fn,
 
 gmx_bool fn2bTPX(const char *file)
 {
-    switch (fn2ftp(file))
-    {
-        case efTPR:
-        case efTPB:
-        case efTPA:
-            return TRUE;
-        default:
-            return FALSE;
-    }
+    return (efTPR == fn2ftp(file));
 }
 
 static void done_gmx_groups_t(gmx_groups_t *g)

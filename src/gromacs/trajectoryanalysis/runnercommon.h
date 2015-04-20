@@ -42,7 +42,7 @@
 #ifndef GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 #define GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/classhelpers.h"
 
 struct t_trxframe;
 

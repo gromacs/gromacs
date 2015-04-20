@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
+#include "gmxpre.h"
+
 #include "gromacs/commandline/pargs.h"
 
 #include <string>
@@ -376,6 +378,23 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaultFileName)
     done_filenms(nfile(), fnm);
 }
 
+TEST_F(ParseCommonArgsTest, ParseFileArgsWithCustomDefaultExtension)
+{
+    t_filenm          fnm[] = {
+        { efTRX, "-o1", "conf1.gro", ffWRITE },
+        { efTRX, "-o2", "conf2.pdb", ffWRITE },
+        { efTRX, "-o3", "conf3.gro", ffWRITE }
+    };
+    const char *const cmdline[] = {
+        "test", "-o2", "-o3", "test"
+    };
+    parseFromArray(cmdline, PCA_CAN_SET_DEFFNM, fnm, gmx::EmptyArrayRef());
+    EXPECT_STREQ("conf1.gro", opt2fn("-o1", nfile(), fnm));
+    EXPECT_STREQ("conf2.pdb", opt2fn("-o2", nfile(), fnm));
+    EXPECT_STREQ("test.gro", opt2fn("-o3", nfile(), fnm));
+    done_filenms(nfile(), fnm);
+}
+
 /********************************************************************
  * Tests for file name options (input files, dependent on file system contents)
  */
@@ -394,7 +413,7 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentInputFiles)
     const char *const cmdline[] = {
         "test", "-f2", "-f3", "other", "-f4", "trj.gro", "-g2", "foo"
     };
-    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    parseFromArray(cmdline, PCA_DISABLE_INPUT_FILE_CHECKING, fnm, gmx::EmptyArrayRef());
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
     EXPECT_STREQ("trj2.xtc", opt2fn("-f2", nfile(), fnm));
@@ -402,6 +421,42 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentInputFiles)
     EXPECT_STREQ("trj.gro", opt2fn("-f4", nfile(), fnm));
     EXPECT_STREQ("cnf.gro", opt2fn("-g", nfile(), fnm));
     EXPECT_STREQ("foo.gro", opt2fn("-g2", nfile(), fnm));
+    done_filenms(nfile(), fnm);
+}
+
+TEST_F(ParseCommonArgsTest, HandlesNonExistentOptionalInputFiles)
+{
+    t_filenm          fnm[] = {
+        { efTPS, "-s",  NULL,   ffOPTRD },
+        { efTRX, "-f",  "trj",  ffOPTRD }
+    };
+    const char *const cmdline[] = {
+        "test"
+    };
+    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
+    EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
+    done_filenms(nfile(), fnm);
+}
+
+TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
+{
+    t_filenm          fnm[] = {
+        { efCPT, "-c",  "file1", ffOPTRD | ffALLOW_MISSING },
+        { efCPT, "-c2", "file2", ffOPTRD | ffALLOW_MISSING },
+        { efCPT, "-c3", "file3", ffOPTRD | ffALLOW_MISSING },
+        { efCPT, "-c4", "file4", ffOPTRD | ffALLOW_MISSING },
+        { efTRX, "-f",  "trj",   ffOPTRD | ffALLOW_MISSING }
+    };
+    const char *const cmdline[] = {
+        "test", "-c2", "-c3", "nonexistent", "-c4", "nonexistent.cpt", "-f", "nonexistent"
+    };
+    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    EXPECT_STREQ("file1.cpt", opt2fn("-c", nfile(), fnm));
+    EXPECT_STREQ("file2.cpt", opt2fn("-c2", nfile(), fnm));
+    EXPECT_STREQ("nonexistent.cpt", opt2fn("-c3", nfile(), fnm));
+    EXPECT_STREQ("nonexistent.cpt", opt2fn("-c4", nfile(), fnm));
+    EXPECT_STREQ("nonexistent.xtc", opt2fn("-f", nfile(), fnm));
     done_filenms(nfile(), fnm);
 }
 
@@ -461,13 +516,13 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
 {
     t_filenm          fnm[] = {
         { efTRX, "-f1", NULL,  ffREAD },
-        { efTPX, "-f2", "foo", ffREAD },
+        { efSTO, "-f2", "foo", ffREAD },
         { efTRX, "-f3", NULL,  ffREAD },
         { efSTX, "-f4", NULL,  ffREAD }
     };
     args_.append("test");
     std::string       expected1 = addFileArg("-f1", "1.trr", efNoExtension);
-    std::string       expected2 = addFileArg("-f2", ".tpa", efEmptyValue);
+    std::string       expected2 = addFileArg("-f2", ".pdb", efEmptyValue);
     std::string       expected3 = addFileArg("-f3", ".trr", efEmptyValue);
     std::string       expected4 = addFileArg(NULL, ".pdb", efEmptyValue);
     std::string       deffnm    = gmx::Path::stripExtension(expected3);

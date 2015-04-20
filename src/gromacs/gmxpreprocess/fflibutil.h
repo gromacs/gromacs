@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,14 +36,20 @@
 #ifndef GMX_GMXPREPROCESS_FFLIBUTIL_H
 #define GMX_GMXPREPROCESS_FFLIBUTIL_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdio.h>
-#include "typedefs.h"
+
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
+#include <vector>
+
+#include "gromacs/utility/datafilefinder.h"
+
+/*! \brief
+ * Enumerates forcefields in the data directories.
+ */
+std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields();
+
 extern "C" {
 #endif
 
@@ -71,12 +77,6 @@ int fflib_search_file_end(const char *ffdir,
  * Return the number of files and the file names in filenames.
  */
 
-int fflib_search_file_in_dirend(const char *filename, const char *dirend,
-                                char ***dirnames);
-/* Search for files with name filename in subdirectories with names
- * ending on dirend.
- * Return the number of files and the directory names in dirnames.
- */
 gmx_bool fflib_fexist(const char *file);
 /* Check if a file exists in the force field library */
 

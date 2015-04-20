@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,28 +32,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "membed.h"
 
 #include <signal.h>
 #include <stdlib.h>
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
-#include "macros.h"
-#include "gromacs/utility/futil.h"
+
 #include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/topology/index.h"
-#include "names.h"
-#include "gromacs/topology/mtop_util.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/utility/cstringutil.h"
-#include "membed.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "readinp.h"
-#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 /* information about scaling center */
 typedef struct {
@@ -982,6 +981,32 @@ void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x)
     resize(membed->r_ins, x, membed->pos_ins, membed->fac);
 }
 
+/* We would like gn to be const as well, but C doesn't allow this */
+/* TODO this is utility functionality (search for the index of a
+   string in a collection), so should be refactored and located more
+   centrally. Also, it nearly duplicates the same string in readir.c */
+static int search_string(const char *s, int ng, char *gn[])
+{
+    int i;
+
+    for (i = 0; (i < ng); i++)
+    {
+        if (gmx_strcasecmp(s, gn[i]) == 0)
+        {
+            return i;
+        }
+    }
+
+    gmx_fatal(FARGS,
+              "Group %s selected for embedding was not found in the index file.\n"
+              "Group names must match either [moleculetype] names or custom index group\n"
+              "names, in which case you must supply an index file to the '-n' option\n"
+              "of grompp.",
+              s);
+
+    return -1;
+}
+
 gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
                          t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt)
 {
@@ -1036,7 +1061,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         get_input(membed_input, &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
                   &maxwarn, &pieces, &bALLOW_ASYMMETRY);
 
-        tpr_version = get_tpr_version(ftp2fn(efTPX, nfile, fnm));
+        tpr_version = get_tpr_version(ftp2fn(efTPR, nfile, fnm));
         if (tpr_version < membed_version)
         {
             gmx_fatal(FARGS, "Version of *.tpr file to old (%d). "

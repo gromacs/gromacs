@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nbnxn_cuda_data_mgmt.h"
+
+#include "config.h"
 
 #include <assert.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#include <cuda.h>
+#include <cuda_profiler_api.h>
 
-#include "tables.h"
-#include "typedefs.h"
-#include "types/enums.h"
-#include "types/nb_verlet.h"
-#include "types/interaction_const.h"
-#include "types/force_flags.h"
-#include "../nbnxn_consts.h"
-#include "gmx_detect_hardware.h"
-
-#include "nbnxn_cuda_types.h"
-#include "../../gmxlib/cuda_tools/cudautils.cuh"
-#include "nbnxn_cuda_data_mgmt.h"
-#include "pmalloc_cuda.h"
-#include "gpu_utils.h"
-
+#include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
+#include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
+#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
+#include "gromacs/legacyheaders/gmx_detect_hardware.h"
+#include "gromacs/legacyheaders/tables.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/types/interaction_const.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "nbnxn_cuda_types.h"
 
 static bool bUseCudaEventBlockingSync = false; /* makes the CPU thread block */
 
@@ -142,7 +142,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
 
         nbp->coulomb_tab = coul_tab;
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (dev_info->prop.major >= 3)
         {
@@ -161,7 +161,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
             CU_RET_ERR(stat, "cudaCreateTextureObject on coulomb_tab_texobj failed");
         }
         else
-#endif
+#endif  /* HAVE_CUDA_TEXOBJ_SUPPORT */
         {
             GMX_UNUSED_VALUE(dev_info);
             cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
@@ -375,7 +375,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         cu_copy_H2D(nbp->nbfp_comb, nbat->nbfp_comb, nnbfp_comb*sizeof(*nbp->nbfp_comb));
     }
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     if (dev_info->prop.major >= 3)
     {
@@ -410,7 +410,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         }
     }
     else
-#endif
+#endif /* HAVE_CUDA_TEXOBJ_SUPPORT */
     {
         cudaChannelFormatDesc cd = cudaCreateChannelDesc<float>();
         stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
@@ -428,10 +428,15 @@ static void init_nbparam(cu_nbparam_t              *nbp,
 
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed. */
-void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t           cu_nb,
-                                         const interaction_const_t *ic)
+void nbnxn_cuda_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
+                                         const interaction_const_t   *ic)
 {
-    cu_nbparam_t *nbp = cu_nb->nbparam;
+    if (!nbv || nbv->grp[0].kernel_type != nbnxnk8x8x8_CUDA)
+    {
+        return;
+    }
+    nbnxn_cuda_ptr_t cu_nb = nbv->cu_nbv;
+    cu_nbparam_t    *nbp   = cu_nb->nbparam;
 
     set_cutoff_parameters(nbp, ic);
 
@@ -574,7 +579,7 @@ void nbnxn_cuda_init(FILE                 *fplog,
          * priorities, because we are querying the priority range which in this
          * case will be a single value.
          */
-#if CUDA_VERSION >= 5500
+#if GMX_CUDA_VERSION >= 5050
         {
             int highest_priority;
             stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);
@@ -921,6 +926,14 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
     cu_plist_t      *plist, *plist_nl;
     cu_timers_t     *timers;
 
+    /* Stopping the nvidia profiler here allows us to eliminate the subsequent
+       uninitialization API calls from the trace. */
+    if (getenv("NVPROF_ID") != NULL)
+    {
+        stat = cudaProfilerStop();
+        CU_RET_ERR(stat, "cudaProfilerStop failed");
+    }
+
     if (cu_nb == NULL)
     {
         return;
@@ -935,7 +948,7 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (cu_nb->dev_info->prop.major >= 3)
         {
@@ -991,7 +1004,7 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
         }
     }
 
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     if (cu_nb->dev_info->prop.major >= 3)
     {
@@ -1008,7 +1021,7 @@ void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
 
     if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
     {
-#ifdef TEXOBJ_SUPPORTED
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (cu_nb->dev_info->prop.major >= 3)
         {
@@ -1079,11 +1092,24 @@ wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
     return (cu_nb != NULL && cu_nb->bDoTime) ? cu_nb->timings : NULL;
 }
 
-void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb)
+void nbnxn_cuda_reset_timings(nonbonded_verlet_t* nbv)
 {
-    if (cu_nb->bDoTime)
+    /* The NVPROF_ID environment variable is set by nvprof and indicates that
+       mdrun is executed in the CUDA profiler.
+       If nvprof was run is with "--profile-from-start off", the profiler will
+       be started here. This way we can avoid tracing the CUDA events from the
+       first part of the run. Starting the profiler again does nothing.
+     */
+    if (getenv("NVPROF_ID") != NULL)
     {
-        init_timings(cu_nb->timings);
+        cudaError_t stat;
+        stat = cudaProfilerStart();
+        CU_RET_ERR(stat, "cudaProfilerStart failed");
+    }
+
+    if (nbv->cu_nbv && nbv->cu_nbv->bDoTime)
+    {
+        init_timings(nbv->cu_nbv->timings);
     }
 }
 

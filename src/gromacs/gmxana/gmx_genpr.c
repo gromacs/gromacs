@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,24 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/utility/futil.h"
-#include "macros.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gmx_ana.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 int gmx_genpr(int argc, char *argv[])
 {
@@ -73,7 +71,7 @@ int gmx_genpr(int argc, char *argv[])
         "or construct a suitable index group to provide",
         "as input to [THISMODULE].[PAR]",
         "The [TT]-of[tt] option produces an index file that can be used for",
-        "freezing atoms. In this case, the input file must be a [TT].pdb[tt] file.[PAR]",
+        "freezing atoms. In this case, the input file must be a [REF].pdb[ref] file.[PAR]",
         "With the [TT]-disre[tt] option, half a matrix of distance restraints",
         "is generated instead of position restraints. With this matrix, that",
         "one typically would apply to C[GRK]alpha[grk] atoms in a protein, one can",

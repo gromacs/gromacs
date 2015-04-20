@@ -39,6 +39,10 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "mempool.h"
+
 #include <stdlib.h>
 
 #include <new>
@@ -47,8 +51,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "mempool.h"
 
 //! Alignment in bytes for all returned blocks.
 #define ALIGN_STEP 8

@@ -58,7 +58,7 @@
 
 #include "thread_mpi/lock.h"
 
-#include "xdrf.h"
+#include "gromacs/fileio/xdrf.h"
 
 /* the reader/writer functions  for t_iotype */
 typedef gmx_bool read_func (t_fileio *fio, void *item, int nitem, int eio,

@@ -40,8 +40,8 @@
 #include <limits.h>
 #include <math.h>
 
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -96,6 +96,14 @@ float   gmx_erfcf(float x);
 #else
 #define gmx_erf(x)   gmx_erff(x)
 #define gmx_erfc(x)  gmx_erfcf(x)
+#endif
+
+#if defined(_MSC_VER) && _MSC_VER < 1800
+#define gmx_expm1(x) (exp(x)-1)
+#define gmx_log1p(x) log(1+x)
+#else
+#define gmx_expm1 expm1
+#define gmx_log1p log1p
 #endif
 
 gmx_bool gmx_isfinite(real x);
@@ -160,6 +168,13 @@ check_int_multiply_for_overflow(gmx_int64_t  a,
  */
 int
 gmx_greatest_common_divisor(int p, int q);
+
+
+/*! \brief Enable floating-point exceptions if supported on OS
+ *
+ * Enables division-by-zero, invalid, and overflow.
+ */
+int gmx_feenableexcept();
 
 #ifdef __cplusplus
 }

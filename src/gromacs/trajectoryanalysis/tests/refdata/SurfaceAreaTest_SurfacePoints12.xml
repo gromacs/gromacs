@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <SASA Name="Surface">
+    <Real Name="Area">12.566370614359172</Real>
+    <Sequence Name="Dots">
+      <Int Name="Length">36</Int>
+      <Real>0</Real>
+      <Real>0</Real>
+      <Real>-1</Real>
+      <Real>-0.27639310998086691</Real>
+      <Real>-0.85065087452807109</Real>
+      <Real>-0.44721352665112024</Real>
+      <Real>0.72360690737127242</Real>
+      <Real>-0.52573101980466264</Real>
+      <Real>-0.44721352665112024</Real>
+      <Real>-0.8944272254243314</Real>
+      <Real>0</Real>
+      <Real>-0.44721352665112024</Real>
+      <Real>0.72360681651420888</Real>
+      <Real>0.52573114485870043</Real>
+      <Real>-0.44721352665112024</Real>
+      <Real>-0.27639325699069922</Real>
+      <Real>0.85065082676168668</Real>
+      <Real>-0.44721352665112024</Real>
+      <Real>0.27639333049561254</Real>
+      <Real>-0.85065080287848482</Real>
+      <Real>0.44721352665112024</Real>
+      <Real>-0.72360677108566906</Real>
+      <Real>-0.52573120738571333</Real>
+      <Real>0.44721352665112024</Real>
+      <Real>0.8944272254243314</Real>
+      <Real>0</Real>
+      <Real>0.44721352665112024</Real>
+      <Real>-0.72360686194274337</Real>
+      <Real>0.52573108233168353</Real>
+      <Real>0.44721352665112024</Real>
+      <Real>0.27639318348578412</Real>
+      <Real>0.85065085064488211</Real>
+      <Real>0.44721352665112024</Real>
+      <Real>0</Real>
+      <Real>0</Real>
+      <Real>1</Real>
+    </Sequence>
+  </SASA>
+</ReferenceData>

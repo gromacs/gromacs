@@ -45,8 +45,8 @@
 #include <string>
 #include <vector>
 
-#include "basicoptions.h"
-#include "optionstoragetemplate.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/optionstoragetemplate.h"
 
 namespace gmx
 {
@@ -205,6 +205,8 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
     private:
         virtual void convertValue(const std::string &value);
         virtual void refreshValues();
+
+        void refreshEnumIndexStore();
 
         StringOptionInfo        info_;
         ValueList               allowed_;

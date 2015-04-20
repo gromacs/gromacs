@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,44 +34,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "copyrite.h"
-#include "macros.h"
-#include "typedefs.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/tngio_for_tools.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/confio.h"
-#include "names.h"
-#include "gromacs/topology/index.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xtcio.h"
-#include "viewit.h"
-#include "gmx_ana.h"
-
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 enum {
     euSel, euRect, euTric, euCompact, euNR
@@ -377,7 +370,7 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             {
                 if (debug)
                 {
-                    fprintf(debug, "\nShifting position of residue %d (atoms %u-%u) "
+                    fprintf(debug, "\nShifting position of residue %d (atoms %d-%d) "
                             "by %g,%g,%g\n", atom[res_start].resind+1,
                             res_start+1, res_end+1, shift[XX], shift[YY], shift[ZZ]);
                 }
@@ -470,13 +463,12 @@ static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
 
 void check_trn(const char *fn)
 {
-    if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
+    if (fn2ftp(fn) != efTRR)
     {
         gmx_fatal(FARGS, "%s is not a trajectory file, exiting\n", fn);
     }
 }
 
-#ifndef GMX_NATIVE_WINDOWS
 void do_trunc(const char *fn, real t0)
 {
     t_fileio        *in;
@@ -493,7 +485,7 @@ void do_trunc(const char *fn, real t0)
         gmx_fatal(FARGS, "You forgot to set the truncation time");
     }
 
-    /* Check whether this is a .trj file */
+    /* Check whether this is a .trr file */
     check_trn(fn);
 
     in   = open_trn(fn, "r");
@@ -532,7 +524,7 @@ void do_trunc(const char *fn, real t0)
             {
                 fprintf(stderr, "Once again, I'm gonna DO this...\n");
                 close_trn(in);
-                if (0 != truncate(fn, fpos))
+                if (0 != gmx_truncate(fn, fpos))
                 {
                     gmx_fatal(FARGS, "Error truncating file %s", fn);
                 }
@@ -549,7 +541,6 @@ void do_trunc(const char *fn, real t0)
         }
     }
 }
-#endif
 
 /*! \brief Read a full molecular topology if useful and available.
  *
@@ -593,52 +584,52 @@ static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
 int gmx_trjconv(int argc, char *argv[])
 {
     const char *desc[] = {
-        "[THISMODULE] can convert trajectory files in many ways:[BR]",
-        "* from one format to another[BR]",
-        "* select a subset of atoms[BR]",
-        "* change the periodicity representation[BR]",
-        "* keep multimeric molecules together[BR]",
-        "* center atoms in the box[BR]",
-        "* fit atoms to reference structure[BR]",
-        "* reduce the number of frames[BR]",
-        "* change the timestamps of the frames ",
-        "([TT]-t0[tt] and [TT]-timestep[tt])[BR]",
+        "[THISMODULE] can convert trajectory files in many ways:",
+        "",
+        "* from one format to another",
+        "* select a subset of atoms",
+        "* change the periodicity representation",
+        "* keep multimeric molecules together",
+        "* center atoms in the box",
+        "* fit atoms to reference structure",
+        "* reduce the number of frames",
+        "* change the timestamps of the frames ([TT]-t0[tt] and [TT]-timestep[tt])",
         "* cut the trajectory in small subtrajectories according",
-        "to information in an index file. This allows subsequent analysis of",
-        "the subtrajectories that could, for example, be the result of a",
-        "cluster analysis. Use option [TT]-sub[tt].",
-        "This assumes that the entries in the index file are frame numbers and",
-        "dumps each group in the index file to a separate trajectory file.[BR]",
+        "  to information in an index file. This allows subsequent analysis of",
+        "  the subtrajectories that could, for example, be the result of a",
+        "  cluster analysis. Use option [TT]-sub[tt].",
+        "  This assumes that the entries in the index file are frame numbers and",
+        "  dumps each group in the index file to a separate trajectory file.",
         "* select frames within a certain range of a quantity given",
-        "in an [TT].xvg[tt] file.[PAR]",
-
+        "  in an [REF].xvg[ref] file.",
+        "",
         "[gmx-trjcat] is better suited for concatenating multiple trajectory files.",
         "[PAR]",
 
         "The following formats are supported for input and output:",
-        "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].g96[tt]",
-        "and [TT].pdb[tt].",
+        "[REF].xtc[ref], [REF].trr[ref], [REF].gro[ref], [TT].g96[tt]",
+        "and [REF].pdb[ref].",
         "The file formats are detected from the file extension.",
-        "The precision of [TT].xtc[tt] and [TT].gro[tt] output is taken from the",
-        "input file for [TT].xtc[tt], [TT].gro[tt] and [TT].pdb[tt],",
+        "The precision of [REF].xtc[ref] and [REF].gro[ref] output is taken from the",
+        "input file for [REF].xtc[ref], [REF].gro[ref] and [REF].pdb[ref],",
         "and from the [TT]-ndec[tt] option for other input formats. The precision",
         "is always taken from [TT]-ndec[tt], when this option is set.",
-        "All other formats have fixed precision. [TT].trr[tt] and [TT].trj[tt]",
+        "All other formats have fixed precision. [REF].trr[ref]",
         "output can be single or double precision, depending on the precision",
         "of the [THISMODULE] binary.",
         "Note that velocities are only supported in",
-        "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
+        "[REF].trr[ref], [REF].gro[ref] and [TT].g96[tt] files.[PAR]",
 
         "Option [TT]-sep[tt] can be used to write every frame to a separate",
-        "[TT].gro, .g96[tt] or [TT].pdb[tt] file. By default, all frames all written to one file.",
-        "[TT].pdb[tt] files with all frames concatenated can be viewed with",
+        "[TT].gro, .g96[tt] or [REF].pdb[ref] file. By default, all frames all written to one file.",
+        "[REF].pdb[ref] files with all frames concatenated can be viewed with",
         "[TT]rasmol -nmrpdb[tt].[PAR]",
 
         "It is possible to select part of your trajectory and write it out",
         "to a new trajectory file in order to save disk space, e.g. for leaving",
         "out the water from a trajectory of a protein in water.",
         "[BB]ALWAYS[bb] put the original trajectory on tape!",
-        "We recommend to use the portable [TT].xtc[tt] format for your analysis",
+        "We recommend to use the portable [REF].xtc[ref] format for your analysis",
         "to save disk space and to have portable files.[PAR]",
 
         "There are two options for fitting the trajectory to a reference",
@@ -653,28 +644,31 @@ int gmx_trjconv(int argc, char *argv[])
         "conformational transitions.[PAR]",
 
         "Option [TT]-pbc[tt] sets the type of periodic boundary condition",
-        "treatment:[BR]",
-        "[TT]* mol[tt] puts the center of mass of molecules in the box,",
-        "and requires a run input file to be supplied with [TT]-s[tt].[BR]",
-        "[TT]* res[tt] puts the center of mass of residues in the box.[BR]",
-        "[TT]* atom[tt] puts all the atoms in the box.[BR]",
-        "[TT]* nojump[tt] checks if atoms jump across the box and then puts",
-        "them back. This has the effect that all molecules",
-        "will remain whole (provided they were whole in the initial",
-        "conformation). [BB]Note[bb] that this ensures a continuous trajectory but",
-        "molecules may diffuse out of the box. The starting configuration",
-        "for this procedure is taken from the structure file, if one is",
-        "supplied, otherwise it is the first frame.[BR]",
-        "[TT]* cluster[tt] clusters all the atoms in the selected index",
-        "such that they are all closest to the center of mass of the cluster,",
-        "which is iteratively updated. [BB]Note[bb] that this will only give meaningful",
-        "results if you in fact have a cluster. Luckily that can be checked",
-        "afterwards using a trajectory viewer. Note also that if your molecules",
-        "are broken this will not work either.[BR]",
-        "The separate option [TT]-clustercenter[tt] can be used to specify an",
-        "approximate center for the cluster. This is useful e.g. if you have",
-        "two big vesicles, and you want to maintain their relative positions.[BR]",
-        "[TT]* whole[tt] only makes broken molecules whole.[PAR]",
+        "treatment:",
+        "",
+        " * [TT]mol[tt] puts the center of mass of molecules in the box,",
+        "   and requires a run input file to be supplied with [TT]-s[tt].",
+        " * [TT]res[tt] puts the center of mass of residues in the box.",
+        " * [TT]atom[tt] puts all the atoms in the box.",
+        " * [TT]nojump[tt] checks if atoms jump across the box and then puts",
+        "   them back. This has the effect that all molecules",
+        "   will remain whole (provided they were whole in the initial",
+        "   conformation). [BB]Note[bb] that this ensures a continuous trajectory but",
+        "   molecules may diffuse out of the box. The starting configuration",
+        "   for this procedure is taken from the structure file, if one is",
+        "   supplied, otherwise it is the first frame.",
+        " * [TT]cluster[tt] clusters all the atoms in the selected index",
+        "   such that they are all closest to the center of mass of the cluster,",
+        "   which is iteratively updated. [BB]Note[bb] that this will only give meaningful",
+        "   results if you in fact have a cluster. Luckily that can be checked",
+        "   afterwards using a trajectory viewer. Note also that if your molecules",
+        "   are broken this will not work either.",
+        "",
+        "   The separate option [TT]-clustercenter[tt] can be used to specify an",
+        "   approximate center for the cluster. This is useful e.g. if you have",
+        "   two big vesicles, and you want to maintain their relative positions.",
+        " * [TT]whole[tt] only makes broken molecules whole.",
+        "",
 
         "Option [TT]-ur[tt] sets the unit cell representation for options",
         "[TT]mol[tt], [TT]res[tt] and [TT]atom[tt] of [TT]-pbc[tt].",
@@ -715,7 +709,7 @@ int gmx_trjconv(int argc, char *argv[])
         "can reduce the number of frames while using low-pass frequency",
         "filtering, this reduces aliasing of high frequency motions.[PAR]",
 
-        "Using [TT]-trunc[tt] [THISMODULE] can truncate [TT].trj[tt] in place, i.e.",
+        "Using [TT]-trunc[tt] [THISMODULE] can truncate [REF].trr[ref] in place, i.e.",
         "without copying the file. This is useful when a run has crashed",
         "during disk I/O (i.e. full disk), or when two contiguous",
         "trajectories must be concatenated without having double frames.[PAR]",
@@ -723,7 +717,7 @@ int gmx_trjconv(int argc, char *argv[])
         "Option [TT]-dump[tt] can be used to extract a frame at or near",
         "one specific time from your trajectory.[PAR]",
 
-        "Option [TT]-drop[tt] reads an [TT].xvg[tt] file with times and values.",
+        "Option [TT]-drop[tt] reads an [REF].xvg[ref] file with times and values.",
         "When options [TT]-dropunder[tt] and/or [TT]-dropover[tt] are set,",
         "frames with a value below and above the value of the respective options",
         "will not be written."
@@ -829,11 +823,9 @@ int gmx_trjconv(int argc, char *argv[])
           { &bVels }, "Read and write velocities if possible" },
         { "-force", FALSE, etBOOL,
           { &bForce }, "Read and write forces if possible" },
-#ifndef GMX_NATIVE_WINDOWS
         { "-trunc", FALSE, etTIME,
           { &ttrunc },
           "Truncate input trajectory file after this time (%t)" },
-#endif
         { "-exec", FALSE, etSTR,
           { &exec_command },
           "Execute command for every output frame with the "
@@ -856,7 +848,7 @@ int gmx_trjconv(int argc, char *argv[])
           { &dropover }, "Drop all frames above this value" },
         { "-conect", FALSE, etBOOL,
           { &bCONECT },
-          "Add conect records when writing [TT].pdb[tt] files. Useful "
+          "Add conect records when writing [REF].pdb[ref] files. Useful "
           "for visualization of non-standard molecules, e.g. "
           "coarse grained ones" }
     };
@@ -926,7 +918,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW |
-                           PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_TIME_UNIT,
                            NFILE, fnm, NPA, pa, asize(desc), desc,
                            0, NULL, &oenv))
     {
@@ -941,9 +933,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     if (ttrunc != -1)
     {
-#ifndef GMX_NATIVE_WINDOWS
         do_trunc(in_file, ttrunc);
-#endif
     }
     else
     {
@@ -1033,9 +1023,9 @@ int gmx_trjconv(int argc, char *argv[])
         {
             /* check if velocities are possible in input and output files */
             ftpin = fn2ftp(in_file);
-            bVels = (ftp == efTRR || ftp == efTRJ || ftp == efGRO ||
+            bVels = (ftp == efTRR || ftp == efGRO ||
                      ftp == efG96 || ftp == efTNG)
-                && (ftpin == efTRR || ftpin == efTRJ || ftpin == efGRO ||
+                && (ftpin == efTRR || ftpin == efGRO ||
                     ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
@@ -1045,7 +1035,7 @@ int gmx_trjconv(int argc, char *argv[])
             {
                 gmx_fatal(FARGS, "Output file name '%s' does not contain a '.'", out_file);
             }
-            outf_base = strdup(out_file);
+            outf_base = gmx_strdup(out_file);
             outf_base[outf_ext - out_file] = '\0';
         }
 
@@ -1269,7 +1259,7 @@ int gmx_trjconv(int argc, char *argv[])
             useatoms.nr = nout;
         }
         /* select what to read */
-        if (ftp == efTRR || ftp == efTRJ)
+        if (ftp == efTRR)
         {
             flags = TRX_READ_X;
         }
@@ -1353,7 +1343,6 @@ int gmx_trjconv(int argc, char *argv[])
                     break;
                 case efXTC:
                 case efTRR:
-                case efTRJ:
                     out = NULL;
                     if (!bSplit && !bSubTraj)
                     {
@@ -1573,22 +1562,29 @@ int gmx_trjconv(int argc, char *argv[])
 
                 if (bWriteFrame)
                 {
+                    /* We should avoid modifying the input frame,
+                     * but since here we don't have the output frame yet,
+                     * we introduce a temporary output frame time variable.
+                     */
+                    real frout_time;
+
+                    frout_time = fr.time;
 
                     /* calc new time */
                     if (bTimeStep)
                     {
-                        fr.time = tzero+frame*timestep;
+                        frout_time = tzero + frame*timestep;
                     }
                     else
                     if (bSetTime)
                     {
-                        fr.time += tshift;
+                        frout_time += tshift;
                     }
 
                     if (bTDump)
                     {
                         fprintf(stderr, "\nDumping frame at t= %g %s\n",
-                                output_env_conv_time(oenv, fr.time), output_env_get_time_unit(oenv));
+                                output_env_conv_time(oenv, frout_time), output_env_get_time_unit(oenv));
                     }
 
                     /* check for writing at each delta_t */
@@ -1597,12 +1593,12 @@ int gmx_trjconv(int argc, char *argv[])
                     {
                         if (!bRound)
                         {
-                            bDoIt = bRmod(fr.time, tzero, delta_t);
+                            bDoIt = bRmod(frout_time, tzero, delta_t);
                         }
                         else
                         {
                             /* round() is not C89 compatible, so we do this:  */
-                            bDoIt = bRmod(floor(fr.time+0.5), floor(tzero+0.5),
+                            bDoIt = bRmod(floor(frout_time+0.5), floor(tzero+0.5),
                                           floor(delta_t+0.5));
                         }
                     }
@@ -1613,7 +1609,7 @@ int gmx_trjconv(int argc, char *argv[])
                         if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
                         {
                             fprintf(stderr, " ->  frame %6d time %8.3f      \r",
-                                    outframe, output_env_conv_time(oenv, fr.time));
+                                    outframe, output_env_conv_time(oenv, frout_time));
                         }
 
                         if (!bPFit)
@@ -1682,6 +1678,7 @@ int gmx_trjconv(int argc, char *argv[])
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
                         frout        = fr;
+                        frout.time   = frout_time;
                         frout.bV     = (frout.bV && bVels);
                         frout.bF     = (frout.bF && bForce);
                         frout.natoms = nout;
@@ -1728,12 +1725,12 @@ int gmx_trjconv(int argc, char *argv[])
 
                         if (!bRound)
                         {
-                            bSplitHere = bSplit && bRmod(fr.time, tzero, split_t);
+                            bSplitHere = bSplit && bRmod(frout.time, tzero, split_t);
                         }
                         else
                         {
                             /* round() is not C89 compatible, so we do this: */
-                            bSplitHere = bSplit && bRmod(floor(fr.time+0.5),
+                            bSplitHere = bSplit && bRmod(floor(frout.time+0.5),
                                                          floor(tzero+0.5),
                                                          floor(split_t+0.5));
                         }
@@ -1748,7 +1745,6 @@ int gmx_trjconv(int argc, char *argv[])
                                 write_tng_frame(trxout, &frout);
                                 // TODO when trjconv behaves better: work how to read and write lambda
                                 break;
-                            case efTRJ:
                             case efTRR:
                             case efXTC:
                                 if (bSplitHere)
@@ -1803,7 +1799,7 @@ int gmx_trjconv(int argc, char *argv[])
                             case efG96:
                             case efPDB:
                                 sprintf(title, "Generated by trjconv : %s t= %9.5f",
-                                        top_title, fr.time);
+                                        top_title, frout.time);
                                 if (bSeparate || bSplitHere)
                                 {
                                     out = gmx_ffopen(out_file2, "w");
@@ -1853,7 +1849,7 @@ int gmx_trjconv(int argc, char *argv[])
                                         }
                                         write_g96_conf(out, &frout, -1, NULL);
                                 }
-                                if (bSeparate)
+                                if (bSeparate || bSplitHere)
                                 {
                                     gmx_ffclose(out);
                                     out = NULL;
@@ -1873,15 +1869,10 @@ int gmx_trjconv(int argc, char *argv[])
                             char c[255];
                             sprintf(c, "%s  %d", exec_command, file_nr-1);
                             /*fprintf(stderr,"Executing '%s'\n",c);*/
-#ifdef GMX_NO_SYSTEM
-                            printf("Warning-- No calls to system(3) supported on this platform.");
-                            printf("Warning-- Skipping execution of 'system(\"%s\")'.", c);
-#else
                             if (0 != system(c))
                             {
                                 gmx_fatal(FARGS, "Error executing command: %s", c);
                             }
-#endif
                         }
                         outframe++;
                     }

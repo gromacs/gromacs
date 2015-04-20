@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,27 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <stdlib.h>
 
-#include "typedefs.h"
-#include "macros.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/topology/index.h"
-#include "gstat.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trxio.h"
-#include "viewit.h"
-
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gstat.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -214,7 +212,7 @@ static void check_oo(t_atoms *atoms)
 
     int   i;
 
-    OOO = strdup("O");
+    OOO = gmx_strdup("O");
 
     for (i = 0; (i < atoms->nr); i++)
     {
@@ -354,7 +352,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     leg[0] = "Structure";
     for (s = 0; s < (size_t)mat->nmap; s++)
     {
-        leg[s+1] = strdup(map[s].desc);
+        leg[s+1] = gmx_strdup(map[s].desc);
     }
 
     fp = xvgropen(outfile, "Secondary Structure",
@@ -428,7 +426,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     fprintf(fp, "\n");
 
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     sfree(leg);
     sfree(count);
 }
@@ -453,9 +451,9 @@ int gmx_do_dssp(int argc, char *argv[])
         "Even newer versions (which at the time of writing are not yet released)",
         "are assumed to have the same syntax as 2.0.0.[PAR]",
         "The structure assignment for each residue and time is written to an",
-        "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
+        "[REF].xpm[ref] matrix file. This file can be visualized with for instance",
         "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
-        "Individual chains are separated by light grey lines in the [TT].xpm[tt] and",
+        "Individual chains are separated by light grey lines in the [REF].xpm[ref] and",
         "postscript files.",
         "The number of residues with each secondary structure type and the",
         "total secondary structure ([TT]-sss[tt]) count as a function of",
@@ -524,7 +522,7 @@ int gmx_do_dssp(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
@@ -660,17 +658,11 @@ int gmx_do_dssp(int argc, char *argv[])
         write_pdbfile_indexed(tapein, NULL, atoms, x, ePBC, box, ' ', -1, gnx, index, NULL, TRUE);
         gmx_ffclose(tapein);
 
-#ifdef GMX_NO_SYSTEM
-        printf("Warning-- No calls to system(3) supported on this platform.");
-        printf("Warning-- Skipping execution of 'system(\"%s\")'.", dssp);
-        exit(1);
-#else
         if (0 != system(dssp))
         {
             gmx_fatal(FARGS, "Failed to execute command: %s\n",
                       "Try specifying your dssp version with the -ver option.", dssp);
         }
-#endif
 
         /* strip_dssp returns the number of lines found in the dssp file, i.e.
          * the number of residues plus the separator lines */
@@ -691,7 +683,7 @@ int gmx_do_dssp(int argc, char *argv[])
     close_trj(status);
     if (fTArea)
     {
-        gmx_ffclose(fTArea);
+        xvgrclose(fTArea);
     }
     gmx_rmpbc_done(gpbc);
 
@@ -740,7 +732,7 @@ int gmx_do_dssp(int argc, char *argv[])
             {
                 fprintf(acc, "%5d  %10g %10g\n", i+1, av_area[i], norm_av_area[i]);
             }
-            gmx_ffclose(acc);
+            xvgrclose(acc);
         }
     }
 

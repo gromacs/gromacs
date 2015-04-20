@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,29 +32,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <assert.h>
 #include <stdlib.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
-#include "gromacs/topology/index.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/statistics/statistics.h"
-#include "gmx_ana.h"
-#include "macros.h"
-
+#include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #define SQR(x) (pow(x, 2.0))
 #define EPSI0 (EPSILON0*E_CHARGE*E_CHARGE*AVOGADRO/(KILO*NANO)) /* EPSILON0 in SI units */
@@ -860,12 +857,12 @@ int gmx_current(int argc, char *argv[])
         { efTPS,  NULL,  NULL, ffREAD }, /* this is for the topology */
         { efNDX, NULL, NULL, ffOPTRD },
         { efTRX, "-f", NULL, ffREAD },   /* and this for the trajectory */
-        { efXVG, "-o", "current.xvg", ffWRITE },
-        { efXVG, "-caf", "caf.xvg", ffOPTWR },
-        { efXVG, "-dsp", "dsp.xvg", ffWRITE },
-        { efXVG, "-md", "md.xvg", ffWRITE },
-        { efXVG, "-mj", "mj.xvg", ffWRITE},
-        { efXVG, "-mc", "mc.xvg", ffOPTWR }
+        { efXVG, "-o",   "current", ffWRITE },
+        { efXVG, "-caf", "caf",     ffOPTWR },
+        { efXVG, "-dsp", "dsp",     ffWRITE },
+        { efXVG, "-md",  "md",      ffWRITE },
+        { efXVG, "-mj",  "mj",      ffWRITE },
+        { efXVG, "-mc",  "mc",      ffOPTWR }
     };
 
 #define NFILE asize(fnm)
@@ -893,7 +890,7 @@ int gmx_current(int argc, char *argv[])
         "Option [TT]-temp[tt] sets the temperature required for the computation of the static dielectric constant.",
         "[PAR]",
         "Option [TT]-eps[tt] controls the dielectric constant of the surrounding medium for simulations using",
-        "a Reaction Field or dipole corrections of the Ewald summation ([TT]-eps[tt]=0 corresponds to",
+        "a Reaction Field or dipole corrections of the Ewald summation ([TT]-eps[tt]\\=0 corresponds to",
         "tin-foil boundary conditions).",
         "[PAR]",
         "[TT]-[no]nojump[tt] unfolds the coordinates to allow free diffusion. This is required to get a continuous",
@@ -995,16 +992,20 @@ int gmx_current(int argc, char *argv[])
                temp, trust, bfit, efit, bvit, evit, status, isize, nmols, nshift,
                index0, indexm, mass2, qmol, eps_rf, oenv);
 
-    gmx_ffclose(fmj);
-    gmx_ffclose(fmd);
-    gmx_ffclose(fmjdsp);
-    if (bACF)
+    xvgrclose(fmj);
+    xvgrclose(fmd);
+    xvgrclose(fmjdsp);
+    if (fr.bV)
     {
-        gmx_ffclose(outf);
-    }
-    if (bINT)
-    {
-        gmx_ffclose(mcor);
+        if (bACF)
+        {
+            xvgrclose(outf);
+        }
+        xvgrclose(fcur);
+        if (bINT)
+        {
+            xvgrclose(mcor);
+        }
     }
 
     return 0;

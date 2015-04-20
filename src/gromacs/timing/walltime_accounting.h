@@ -38,7 +38,7 @@
 #ifndef GMX_TIMING_WALLTIME_ACCOUNTING_H
 #define GMX_TIMING_WALLTIME_ACCOUNTING_H
 
-#include "../utility/basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,7 +92,7 @@ double
 walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_accounting);
 
 //! Get the number of integration steps done
-double
+gmx_int64_t
 walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief Set the number of integration steps done

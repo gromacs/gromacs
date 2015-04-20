@@ -1,0 +1,93 @@
+%
+% This file is part of the GROMACS molecular simulation package.
+%
+% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+% and including many others, as listed in the AUTHORS file in the
+% top-level source directory and at http://www.gromacs.org.
+%
+% GROMACS is free software; you can redistribute it and/or
+% modify it under the terms of the GNU Lesser General Public License
+% as published by the Free Software Foundation; either version 2.1
+% of the License, or (at your option) any later version.
+%
+% GROMACS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+% Lesser General Public License for more details.
+%
+% You should have received a copy of the GNU Lesser General Public
+% License along with GROMACS; if not, see
+% http://www.gnu.org/licenses, or write to the Free Software Foundation,
+% Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+%
+% If you want to redistribute modifications to GROMACS, please
+% consider that scientific software is very special. Version
+% control is crucial - bugs must be traceable. We will be happy to
+% consider code for inclusion in the official distribution, but
+% derived work must not be called official GROMACS. Details are found
+% in the README & COPYING files - if they are missing, get the
+% official version at http://www.gromacs.org.
+%
+% To help us fund GROMACS development, we humbly ask that you cite
+% the research papers on the package. Check out http://www.gromacs.org.
+
+% TODO generate this from the code!
+\begin{table}
+\begin{tabularx}{\linewidth}{|r@{\tt.}lccX|}
+\dline
+\mc{2}{|c}{Default} &      & Default &  \\[-0.1ex]
+\mc{1}{|c}{Name} & \mc{1}{c}{Ext.} & Type &  Option & Description \\[-0.1ex]
+\hline
+\tt   atomtp & \tt atp & Asc & \tt    & Atomtype file used by {\tt pdb2gmx} \\[-0.1ex]
+\tt    eiwit & \tt brk & Asc & \tt -f & Brookhaven data bank file \\[-0.1ex]
+\tt    state & \tt cpt & xdr & \tt    & Checkpoint file \\[-0.1ex]
+\tt   nnnice & \tt dat & Asc & \tt    & Generic data file \\[-0.1ex]
+\tt     user & \tt dlg & Asc & \tt    & Dialog Box data for {\tt ngmx} \\[-0.1ex]
+\tt      sam & \tt edi & Asc & \tt    & ED sampling input \\[-0.1ex]
+\tt      sam & \tt edo & Asc & \tt    & ED sampling output \\[-0.1ex]
+\tt     ener & \tt edr &     & \tt    & Generic energy: \tt edr ene \\[-0.1ex]
+\tt     ener & \tt edr & xdr & \tt    & Energy file in portable xdr format \\[-0.1ex]
+\tt     ener & \tt ene & Bin & \tt    & Energy file \\[-0.1ex]
+\tt    eiwit & \tt ent & Asc & \tt -f & Entry in the protein date bank \\[-0.1ex]
+\tt     plot & \tt eps & Asc & \tt    & Encapsulated PostScript (tm) file \\[-0.1ex]
+\tt     conf & \tt esp & Asc & \tt -c & Coordinate file in ESPResSo format \\[-0.1ex]
+\tt     conf & \tt g96 & Asc & \tt -c & Coordinate file in Gromos-96 format \\[-0.1ex]
+\tt     conf & \tt gro & Asc & \tt -c & Coordinate file in Gromos-87 format \\[-0.1ex]
+\tt     conf & \tt gro &     & \tt -c & Structure: \tt gro g96 pdb esp tpr \\[-0.1ex]
+\tt      out & \tt gro &     & \tt -o & Structure: \tt gro g96 pdb esp \\[-0.1ex]
+\tt    polar & \tt hdb & Asc & \tt    & Hydrogen data base \\[-0.1ex]
+\tt   topinc & \tt itp & Asc & \tt    & Include file for topology \\[-0.1ex]
+\tt      run & \tt log & Asc & \tt -l & Log file \\[-0.1ex]
+\tt       ps & \tt m2p & Asc & \tt    & Input file for mat2ps \\[-0.1ex]
+\tt       ss & \tt map & Asc & \tt    & File that maps matrix data to colors \\[-0.1ex]
+\tt       ss & \tt mat & Asc & \tt    & Matrix Data file \\[-0.1ex]
+\tt   grompp & \tt mdp & Asc & \tt -f & {\tt grompp} input file with MD parameters \\[-0.1ex]
+\tt  hessian & \tt mtx & Bin & \tt -m & Hessian matrix \\[-0.1ex]
+\tt    index & \tt ndx & Asc & \tt -n & Index file \\[-0.1ex]
+\tt    hello & \tt out & Asc & \tt -o & Generic output file \\[-0.1ex]
+\tt    eiwit & \tt pdb & Asc & \tt -f & Protein data bank file \\[-0.1ex]
+\tt  residue & \tt rtp & Asc & \tt    & Residue Type file used by {\tt pdb2gmx} \\[-0.1ex]
+\tt      doc & \tt tex & Asc & \tt -o & LaTeX file \\[-0.1ex]
+\tt    topol & \tt top & Asc & \tt -p & Topology file \\[-0.1ex]
+\tt    topol & \tt tpr &     & \tt -s & Generic run input: \tt tpr \\[-0.1ex]
+\tt    topol & \tt tpr &     & \tt -s & Structure+mass(db): \tt tpr gro g96 pdb \\[-0.1ex]
+\tt    topol & \tt tpr & xdr & \tt -s & Portable xdr run input file \\[-0.1ex]
+\tt     traj & \tt trr &     & \tt    & Full precision trajectory: \tt trr cpt \\[-0.1ex]
+\tt     traj & \tt trr & xdr & \tt    & Trajectory in portable xdr format \\[-0.1ex]
+\tt     root & \tt xpm & Asc & \tt    & X PixMap compatible matrix file \\[-0.1ex]
+\tt     traj & \tt xtc &     & \tt -f & Trajec., input: \tt xtc trr tng cpt gro g96 pdb \\[-0.1ex]
+\tt     traj & \tt xtc &     & \tt -f & Trajectory, output: \tt xtc trr tng gro g96 pdb \\[-0.1ex]
+\tt     traj & \tt xtc & xdr & \tt    & Compressed trajectory (portable xdr format) \\[-0.1ex]
+\tt    graph & \tt xvg & Asc & \tt -o & xvgr/xmgr file \\[-0.1ex]
+\dline
+\end{tabularx}
+\caption{The {\gromacs} file types.}
+\label{tab:form}
+\end{table}
+
+% LocalWords:  lccX atomtp atp Asc Atomtype pdb gmx eiwit brk Brookhaven cpt tm
+% LocalWords:  xdr nnnice dat dlg ngmx sam edi edo ener edr ene ent eps conf ss
+% LocalWords:  PostScript ESPResSo gtraj Gromos gro tpr hdb topinc itp
+% LocalWords:  grompp mdp mtx ndx rtp tex LaTeX topol traj trr xpm PixMap
+% LocalWords:  xtc Trajec xvg xvgr xmgr ps

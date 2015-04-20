@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,33 +48,13 @@
 #include <limits.h>
 #include <stdio.h>
 
-#include "basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #if 0
 }
-#endif
-
-#include "gmx_header_config.h"
-/*! \def DIR_SEPARATOR
- * \brief
- * Directory separator on this OS.
- *
- * Native Windows uses backslash path separators (but accepts also slashes).
- * Cygwin and most other systems use slash.
- *
- * \todo
- * Get rid of this (Redmine #950), or at least remove this from an installed
- * header.  It is not necessary for constructing paths on the systems that it
- * currently supports, and is not reliable in parsing input paths either, since
- * Windows needs to accept both instead of only DIR_SEPARATOR.
- */
-#ifdef GMX_NATIVE_WINDOWS
-#define DIR_SEPARATOR '\\'
-#else
-#define DIR_SEPARATOR '/'
 #endif
 
 /*! \def GMX_PATH_MAX
@@ -93,11 +73,23 @@ extern "C" {
 typedef gmx_int64_t    gmx_off_t;
 
 /*! \brief
- * Turn off buffering of files (which is default) for debugging purposes.
+ * Turn off buffering for output files (which is default) for debugging
+ * purposes.
  *
  * This only has effect on files opened with gmx_ffopen().
  */
-void no_buffers(void);
+void gmx_disable_file_buffering(void);
+
+/*! \brief
+ * Enables backups with the specified number of maximum backups.
+ *
+ * If \p count == 0, disables backups.  If not called, this is the default.
+ * If \p count == -1, reads the count from an environment variable.
+ *
+ * This is not currently thread-safe, as it is only called during
+ * initialization code.
+ */
+void gmx_set_max_backup_count(int count);
 
 /*! \brief
  * Check whether a path exists.
@@ -111,10 +103,8 @@ gmx_bool gmx_fexist(const char *fname);
 
 /*! \brief
  * Makes a backup of file if the file exists.
- *
- * \returns `FALSE` if there was a problem.
  */
-gmx_bool make_backup(const char *file);
+void make_backup(const char *file);
 
 /*! \brief
  * Opens a file, with \Gromacs-specific additions.
@@ -147,6 +137,9 @@ int gmx_fseek(FILE *stream, gmx_off_t offset, int whence);
 
 /** OS-independent 64-bit ftell(). */
 gmx_off_t gmx_ftell(FILE *stream);
+
+/** OS-independent truncate(). */
+int gmx_truncate(const char *filename, gmx_off_t length);
 
 /*! \brief
  * Finds full path for a library file.
@@ -182,35 +175,6 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
  * error or not.
  */
 FILE *low_libopen(const char *file, gmx_bool bFatal);
-
-/** Opaque data type to list directories. */
-typedef struct gmx_directory *gmx_directory_t;
-
-/*! \brief
- * Opens a directory for reading.
- *
- * \param[out] p_gmxdir Handle to the opened directory.
- * \param[in]  dirname  Path to directory to open.
- * \returns  0 on success.
- */
-int
-gmx_directory_open(gmx_directory_t *p_gmxdir, const char *dirname);
-
-/*! \brief
- * Gets next file in a directory.
- *
- * Given an initialized gmx_directory_t, if there are more files in
- * the directory this routine returns 0 and write the next name
- * into the USER-PROVIDED buffer \p name.  The last argument is the max
- * number of characters that will be written.  Just as strncpy(), the
- * string will NOT be terminated it it is longer than \p maxlength_name.
- */
-int
-gmx_directory_nextfile(gmx_directory_t gmxdir, char *name, int maxlength_name);
-
-/** Releases all data for a directory structure. */
-int
-gmx_directory_close(gmx_directory_t gmxdir);
 
 
 /*! \brief
@@ -256,6 +220,50 @@ void gmx_getcwd(char *buffer, size_t size);
 
 #ifdef __cplusplus
 }
+
+namespace gmx
+{
+
+class DataFileFinder;
+
+/*! \brief
+ * Gets a finder for locating data files from share/top/.
+ *
+ * \returns Finder set with setLibraryFileFinder(), or a default finder.
+ *
+ * If setLibraryFileFinder() has not been called (or a `NULL` finder has been
+ * set), a default finder is returned.
+ * The default finder searches data files from the directory identified by the
+ * global program context; it does not respect GMXLIB environment variable.
+ * Calling initForCommandLine() sets a finder that respects GMXLIB.
+ *
+ * Does not throw.
+ *
+ * See setLibraryFileFinder() for thread safety.
+ *
+ * \ingroup module_utility
+ */
+const DataFileFinder &getLibraryFileFinder();
+/*! \brief
+ * Sets a finder for location data files from share/top/.
+ *
+ * \param[in] finder  finder to set
+ *     (can be NULL to restore the default finder).
+ *
+ * The library does not take ownership of \p finder.
+ * The provided object must remain valid until the global instance is changed
+ * by another call to setLibraryFileFinder().
+ *
+ * The global instance is used by gmxlibfn() and libopen().
+ *
+ * This method is not thread-safe.  See setProgramContext(); the same
+ * constraints apply here as well.
+ *
+ * Does not throw.
+ */
+void setLibraryFileFinder(const DataFileFinder *finder);
+
+} // namespace gmx
 #endif
 
 #endif

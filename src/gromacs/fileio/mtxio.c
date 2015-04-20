@@ -34,11 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "mtxio.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "mtxio.h"
 
 /* This module provides routines to read/write sparse or full storage
  * matrices from/to files. It is normally used for the Hessian matrix

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,31 +34,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/gmxpreprocess/readir.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
-#include "gromacs/topology/index.h"
-#include "macros.h"
-#include "names.h"
-#include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/topology/mtop_util.h"
-#include "checkpoint.h"
-#include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
-#include "gromacs/fileio/enxio.h"
-#include "gromacs/utility/futil.h"
-
-#include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
@@ -340,12 +337,12 @@ int gmx_convert_tpr(int argc, char *argv[])
         "When pressure and/or Nose-Hoover temperature coupling is used",
         "an energy file can be supplied to get an exact continuation",
         "of the original run.[PAR]",
-        "[BB]3.[bb] by creating a [TT].tpx[tt] file for a subset of your original",
+        "[BB]3.[bb] by creating a [REF].tpx[ref] file for a subset of your original",
         "tpx file, which is useful when you want to remove the solvent from",
-        "your [TT].tpx[tt] file, or when you want to make e.g. a pure C[GRK]alpha[grk] [TT].tpx[tt] file.",
+        "your [REF].tpx[ref] file, or when you want to make e.g. a pure C[GRK]alpha[grk] [REF].tpx[ref] file.",
         "Note that you may need to use [TT]-nsteps -1[tt] (or similar) to get",
         "this to work.",
-        "[BB]WARNING: this [TT].tpx[tt] file is not fully functional[bb].[PAR]",
+        "[BB]WARNING: this [REF].tpx[ref] file is not fully functional[bb].[PAR]",
         "[BB]4.[bb] by setting the charges of a specified group",
         "to zero. This is useful when doing free energy estimates",
         "using the LIE (Linear Interaction Energy) method."
@@ -376,11 +373,11 @@ int gmx_convert_tpr(int argc, char *argv[])
     char              buf[200], buf2[200];
     output_env_t      oenv;
     t_filenm          fnm[] = {
-        { efTPX, NULL,  NULL,    ffREAD  },
+        { efTPR, NULL,  NULL,    ffREAD  },
         { efTRN, "-f",  NULL,    ffOPTRD },
         { efEDR, "-e",  NULL,    ffOPTRD },
         { efNDX, NULL,  NULL,    ffOPTRD },
-        { efTPX, "-o",  "tpxout", ffWRITE }
+        { efTPR, "-o",  "tprout", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -425,7 +422,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     bTime      = opt2parg_bSet("-time", asize(pa), pa);
     bTraj      = (opt2bSet("-f", NFILE, fnm) || bTime);
 
-    top_fn = ftp2fn(efTPX, NFILE, fnm);
+    top_fn = ftp2fn(efTPR, NFILE, fnm);
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
     snew(ir, 1);

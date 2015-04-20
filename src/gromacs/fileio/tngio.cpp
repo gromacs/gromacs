@@ -32,50 +32,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "tngio.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+#include "config.h"
 
 #ifdef GMX_USE_TNG
 #include "tng/tng_io.h"
 #endif
 
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
-
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/common.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/sysinfo.h"
 
 static const char *modeToVerb(char mode)
 {
+    const char *p;
     switch (mode)
     {
         case 'r':
-            return "reading";
+            p = "reading";
             break;
         case 'w':
-            return "writing";
+            p = "writing";
             break;
         case 'a':
-            return "appending";
+            p = "appending";
             break;
         default:
             gmx_fatal(FARGS, "Invalid file opening mode %c", mode);
-            return "";
+            p = "";
+            break;
     }
+    return p;
 }
 
 void gmx_tng_open(const char       *filename,
@@ -88,10 +86,7 @@ void gmx_tng_open(const char       *filename,
      */
     if (mode == 'w')
     {
-#ifndef GMX_FAHCORE
-        /* only make backups for normal gromacs */
         make_backup(filename);
-#endif
     }
 
     /* tng must not be pointing at already allocated memory.
@@ -147,12 +142,13 @@ void gmx_tng_open(const char       *filename,
 //             tng_last_program_name_set(*tng, programInfo);
 //         }
 
-#ifdef HAVE_UNISTD_H
         char username[256];
-        getlogin_r(username, 256);
-        if (mode == 'w')
+        if (!gmx_getusername(username, 256))
         {
-            tng_first_user_name_set(*tng, username);
+            if (mode == 'w')
+            {
+                tng_first_user_name_set(*tng, username);
+            }
         }
 /* TODO: This should be implemented when the above fixme is done (adding data to
  * the header). */
@@ -160,7 +156,6 @@ void gmx_tng_open(const char       *filename,
 //         {
 //             tng_last_user_name_set(*tng, username);
 //         }
-#endif
     }
 #else
     gmx_file("GROMACS was compiled without TNG support, cannot handle this file type");

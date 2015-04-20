@@ -36,9 +36,7 @@
 #ifndef FFT5D_H_
 #define FFT5D_H_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #ifdef NOGMX
 /*#define GMX_MPI*/

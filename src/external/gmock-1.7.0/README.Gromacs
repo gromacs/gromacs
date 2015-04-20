@@ -14,3 +14,18 @@ gmock-1.7.0/gtest/src/
 
 The file CMakeLists.txt in this directory is part of the Gromacs build system
 and has been written from scratch.
+
+In the default version, gmock-1.7.0 assumes wcscasecmp() to be present on Linux.
+This is not the case on all platforms, so on line 1610 of gtest/src/gtest.cc
+we have added a define to only use this if GTEST_HAS_WCSCASECMP is set. Since
+we never set this define, we fall back on the alternative internal implementation
+which should be perfectly fine for now.
+
+gmock-1.7.0 also assumes that streaming results to a socket is
+something you can always do on Linux, but the implementation uses
+getaddrinfo(), about which the Cray linker warns because its use would
+require shared libraries at run time. Since Gromacs testing doesn't
+use this feature, we'd just want to turn it off, but there's no
+interface for that. So, GTEST_CAN_STREAM_RESULTS is added in
+gtest/include/gtest/internal/gtest-port.h to allow the default
+behaviour to be applied only if the user hasn't gotten involved.

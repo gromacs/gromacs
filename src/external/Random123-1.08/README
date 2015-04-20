@@ -1,0 +1,4 @@
+This folder contains the threefry algorithm from Random123.
+threefry.h: is unmodified
+array.h: the sections for SSE and cplusplus are removed
+compilerfeatures.h: our own file

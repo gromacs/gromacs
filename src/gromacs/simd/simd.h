@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,9 +70,7 @@
  * \ingroup module_simd
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <stddef.h>
 
@@ -108,32 +106,45 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
 
 
 /* Intel MIC is a bit special since it is a co-processor. This means the rest
- * of GROMACS (which runs on the CPU) should use a default SIMD set like AVX,
- * while the part running on the coprocessor defines __MIC__. All functions in
- * this SIMD module are static, so it will work perfectly fine to include this
- * file with different SIMD definitions for different files.
+ * of GROMACS (which runs on the CPU) can use a default SIMD set like AVX.
+ * All functions in this SIMD module are static, so it will work perfectly fine
+ * to include this file with different SIMD definitions for different files.
  */
-#if defined __MIC__
-#    include "gromacs/simd/impl_intel_mic/impl_intel_mic.h"
+#if defined GMX_SIMD_X86_AVX_512ER
+#    include "impl_x86_avx_512er/impl_x86_avx_512er.h"
+#elif defined GMX_SIMD_X86_AVX_512F
+#    include "impl_x86_avx_512f/impl_x86_avx_512f.h"
+#elif defined GMX_SIMD_X86_MIC
+#    include "impl_intel_mic/impl_intel_mic.h"
 #elif defined GMX_SIMD_X86_AVX2_256
-#    include "gromacs/simd/impl_x86_avx2_256/impl_x86_avx2_256.h"
+#    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
 #elif defined GMX_SIMD_X86_AVX_256
-#    include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256.h"
+#    include "impl_x86_avx_256/impl_x86_avx_256.h"
 #elif defined GMX_SIMD_X86_AVX_128_FMA
-#    include "gromacs/simd/impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
+#    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
 #elif defined GMX_SIMD_X86_SSE4_1
-#    include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1.h"
+#    include "impl_x86_sse4_1/impl_x86_sse4_1.h"
 #elif defined GMX_SIMD_X86_SSE2
-#    include "gromacs/simd/impl_x86_sse2/impl_x86_sse2.h"
+#    include "impl_x86_sse2/impl_x86_sse2.h"
+#elif defined GMX_SIMD_ARM_NEON
+#    include "impl_arm_neon/impl_arm_neon.h"
+#elif defined GMX_SIMD_ARM_NEON_ASIMD
+#    include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
 #elif defined GMX_SIMD_IBM_QPX
-#    include "gromacs/simd/impl_ibm_qpx/impl_ibm_qpx.h"
+#    include "impl_ibm_qpx/impl_ibm_qpx.h"
+#elif defined GMX_SIMD_IBM_VMX
+#    include "impl_ibm_vmx/impl_ibm_vmx.h"
+#elif defined GMX_SIMD_IBM_VSX
+#    include "impl_ibm_vsx/impl_ibm_vsx.h"
+#elif defined GMX_SIMD_SPARC64_HPC_ACE
+#    include "impl_sparc64_hpc_ace/impl_sparc64_hpc_ace.h"
 #elif (defined GMX_SIMD_REFERENCE) || (defined DOXYGEN)
 /* Plain C SIMD reference implementation, also serves as documentation.
  * For now this code path will also be taken for Sparc64_HPC_ACE since we have
  * not yet added the verlet kernel extensions there. The group kernels do not
  * depend on this file, so they will still be accelerated with SIMD.
  */
-#    include "gromacs/simd/impl_reference/impl_reference.h"
+#    include "impl_reference/impl_reference.h"
 #else
 /* Turn off the GMX_SIMD flag if we do not even have reference support */
 #    undef GMX_SIMD

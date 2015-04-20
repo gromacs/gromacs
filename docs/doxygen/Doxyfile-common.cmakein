@@ -1,0 +1,71 @@
+PROJECT_NAME           = @CMAKE_PROJECT_NAME@
+@INCLUDE               = Doxyfile-version
+LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/DoxygenLayout.xml
+INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@ \
+                         @CMAKE_SOURCE_DIR@/docs/dev-manual \
+                         @CMAKE_SOURCE_DIR@/src \
+                         @CMAKE_SOURCE_DIR@/share/template
+FILE_PATTERNS          = *.c *.cpp *.h *.md
+# CUDA files could be included like this, but currently produce a lot of
+# warnings.
+# FILE_PATTERNS         += *.cu *.cuh
+EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
+RECURSIVE              = YES
+EXCLUDE                = @CMAKE_CURRENT_SOURCE_DIR@/examples \
+                         @CMAKE_SOURCE_DIR@/src/contrib \
+                         @CMAKE_SOURCE_DIR@/src/external \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.h \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/selection/scanner.cpp @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
+EXCLUDE_SYMBOLS        = YY* yy* _gmx_sel_yy*
+EXCLUDE_SYMBOLS       += __STDC*
+EXCLUDE_SYMBOLS       += TEST TEST_F TEST_P TYPED_TEST_CASE TYPED_TEST INSTANTIATE_TEST_CASE_P
+EXCLUDE_SYMBOLS       += MOCK_METHOD* MOCK_CONST_METHOD*
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@
+STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
+INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src
+HAVE_DOT               = @DOXYGEN_DOT_FOUND@
+DOT_PATH               = @DOXYGEN_DOT_PATH@
+MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
+DOTFILE_DIRS           = @DEPGRAPH_DIR@
+@DOXYGEN_EXTRA_SETTINGS@
+
+ENABLED_SECTIONS       = @DOXYGEN_SECTIONS@
+
+MACRO_EXPANSION        = YES
+# Extract documentation also for code in headers within #ifdef __cplusplus
+PREDEFINED             = __cplusplus
+# This is for cases where \cond does not work, so that #ifndef can also be used.
+# thread_mpi also uses this, but it is now excluded from the documentation.
+PREDEFINED            += DOXYGEN
+# This makes 'static gmx_inline' functions appear better in the documentation.
+PREDEFINED            += gmx_inline=inline
+# This is for parser.cpp to make it produce code that Doxygen understands
+# and that does not have unnecessary function declarations.
+PREDEFINED            += __STDC__ YYMALLOC=malloc YYFREE=free
+
+JAVADOC_AUTOBRIEF      = YES
+BUILTIN_STL_SUPPORT    = YES
+INLINE_INHERITED_MEMB  = YES
+SORT_BY_SCOPE_NAME     = YES
+ALPHABETICAL_INDEX     = YES
+HTML_DYNAMIC_SECTIONS  = YES
+GENERATE_LATEX         = NO
+# Setting this to NO has a side effect to hide undocumented headers from the
+# file list, which makes it generally look nicer.
+VERBATIM_HEADERS       = NO
+STRIP_CODE_COMMENTS    = NO
+
+EXTRACT_LOCAL_CLASSES  = NO
+# This includes 'static inline' functions from headers in the documentation.
+EXTRACT_STATIC         = YES
+
+ALIASES               += Gromacs=GROMACS
+
+DOT_IMAGE_FORMAT       = svg
+DOT_MULTI_TARGETS      = YES
+# According to Doxygen docs, this is required for svg support on IE
+HTML_FILE_EXTENSION    = .xhtml
+
+OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen

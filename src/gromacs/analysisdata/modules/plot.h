@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,9 +47,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "../datamodule.h"
-#include "../../options/timeunitmanager.h"
-#include "../../utility/common.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/options/timeunitmanager.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
@@ -177,10 +177,14 @@ class AbstractPlotModule : public AnalysisDataModuleSerial
          * Set plot title.
          */
         void setTitle(const char *title);
+        //! \copydoc setTitle(const char *)
+        void setTitle(const std::string &title);
         /*! \brief
          * Set plot subtitle.
          */
         void setSubtitle(const char *subtitle);
+        //! \copydoc setSubtitle(const char *)
+        void setSubtitle(const std::string &subtitle);
         /*! \brief
          * Set X axis label.
          */

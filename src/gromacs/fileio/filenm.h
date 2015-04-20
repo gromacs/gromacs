@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,8 @@
 #ifndef GMX_FILEIO_FILENM_H
 #define GMX_FILEIO_FILENM_H
 
-#include "../legacyheaders/types/commrec_fwd.h"
-#include "../utility/basedefinitions.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,14 +48,14 @@ extern "C" {
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {
     efMDP,
-    efTRX, efTRO, efTRN, efTRR, efTRJ, efCOMPRESSED, efXTC, efTNG,
+    efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
     efEDR,
     efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR,
     efCPT,
     efLOG, efXVG, efOUT,
     efNDX,
     efTOP, efITP,
-    efTPX, efTPS, efTPR, efTPA, efTPB,
+    efTPS, efTPR,
     efTEX, efRTP, efATP, efHDB,
     efDAT, efDLG,
     efMAP, efEPS, efMAT, efM2P,
@@ -82,6 +82,7 @@ typedef struct {
 #define ffOPT   1<<3
 #define ffLIB   1<<4
 #define ffMULT  1<<5
+#define ffALLOW_MISSING 1<<6
 #define ffRW    (ffREAD | ffWRITE)
 #define ffOPTRD (ffREAD | ffOPT)
 #define ffOPTWR (ffWRITE| ffOPT)

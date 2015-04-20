@@ -34,45 +34,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "basenetwork.h"
 
 #include "config.h"
 
-#include <cctype>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-#include <algorithm>
 #include <exception>
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programcontext.h"
-
-int gmx_gethostname(char *name, size_t len)
-{
-    if (len < 8)
-    {
-        gmx_incons("gmx_gethostname called with len<8");
-    }
-#if defined(HAVE_UNISTD_H) && !defined(__native_client__)
-    if (gethostname(name, len-1) != 0)
-    {
-        std::strncpy(name, "unknown", 8);
-        return -1;
-    }
-    return 0;
-#else
-    std::strncpy(name, "unknown", 8);
-    return -1;
-#endif
-}
 
 gmx_bool gmx_mpi_initialized(void)
 {
@@ -91,6 +69,12 @@ int gmx_node_num(void)
 #ifndef GMX_MPI
     return 1;
 #else
+#ifdef GMX_THREAD_MPI
+    if (!gmx_mpi_initialized())
+    {
+        return 1;
+    }
+#endif
     int i;
     (void) MPI_Comm_size(MPI_COMM_WORLD, &i);
     return i;
@@ -102,6 +86,12 @@ int gmx_node_rank(void)
 #ifndef GMX_MPI
     return 0;
 #else
+#ifdef GMX_THREAD_MPI
+    if (!gmx_mpi_initialized())
+    {
+        return 0;
+    }
+#endif
     int i;
     (void) MPI_Comm_rank(MPI_COMM_WORLD, &i);
     return i;
@@ -143,6 +133,15 @@ static int mpi_hostname_hash(void)
 }
 
 #if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
+#ifdef __clang__
+/* IBM's declaration of this function in
+ * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/process.h
+ * erroneously fails to specify __INLINE__, despite
+ * /bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/cnk/process_impl.h
+ * specifiying __INLINE__, so bgclang thinks they are different enough
+ * to complain about. */
+static uint64_t Kernel_GetJobID();
+#endif
 #include <spi/include/kernel/location.h>
 
 static int bgq_nodenum(void)

@@ -34,31 +34,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/fileio/xvgr.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "xvgr.h"
 
-#include <string.h>
 #include <ctype.h>
-#include <time.h>
-
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/oenv.h"
+#include <string.h>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
@@ -240,22 +232,22 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
                  const output_env_t oenv)
 {
     char   pukestr[100], buf[STRLEN];
-    time_t t;
 
     if (output_env_get_print_xvgr_codes(oenv))
     {
-        time(&t);
-        gmx_ctime_r(&t, buf, STRLEN);
+        gmx_format_current_time(buf, STRLEN);
         fprintf(fp, "# This file was created %s", buf);
         try
         {
             gmx::BinaryInformationSettings settings;
             settings.generatedByHeader(true);
             settings.linePrefix("# ");
-            gmx::printBinaryInformation(fp, gmx::getProgramContext(), settings);
+            gmx::printBinaryInformation(fp, output_env_get_program_context(oenv),
+                                        settings);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        fprintf(fp, "# %s is part of G R O M A C S:\n#\n", ShortProgram());
+        fprintf(fp, "# %s is part of G R O M A C S:\n#\n",
+                output_env_get_program_display_name(oenv));
         bromacs(pukestr, 99);
         fprintf(fp, "# %s\n#\n", pukestr);
         fprintf(fp, "@    title \"%s\"\n", xvgrstr(title, oenv, buf, STRLEN));
@@ -501,24 +493,25 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
 
 static int wordcount(char *ptr)
 {
-    int i, n, is[2];
+    int i, n = 0, is[2];
     int cur = 0;
 #define prev (1-cur)
 
-    if (strlen(ptr) == 0)
+    if (NULL != ptr)
     {
-        return 0;
-    }
-    /* fprintf(stderr,"ptr='%s'\n",ptr); */
-    n = 1;
-    for (i = 0; (ptr[i] != '\0'); i++)
-    {
-        is[cur] = isspace(ptr[i]);
-        if ((i > 0)  && (is[cur] && !is[prev]))
+        for (i = 0; (ptr[i] != '\0'); i++)
         {
-            n++;
+            is[cur] = isspace(ptr[i]);
+            if ((0 == i) && !is[cur])
+            {
+                n++;
+            }
+            else if ((i > 0)  && (!is[cur] && is[prev]))
+            {
+                n++;
+            }
+            cur = prev;
         }
-        cur = prev;
     }
     return n;
 }
@@ -535,17 +528,17 @@ static char *read_xvgr_string(const char *line)
         ptr1 = strchr(ptr0, '"');
         if (ptr1 != NULL)
         {
-            str            = strdup(ptr0);
+            str            = gmx_strdup(ptr0);
             str[ptr1-ptr0] = '\0';
         }
         else
         {
-            str = strdup("");
+            str = gmx_strdup("");
         }
     }
     else
     {
-        str = strdup("");
+        str = gmx_strdup("");
     }
 
     return str;
@@ -690,6 +683,8 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
 
     *y = yy;
     sfree(tmpbuf);
+    sfree(base);
+    sfree(fmt);
 
     if (legend_nalloc > 0)
     {

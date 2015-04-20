@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,15 +32,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "config.h"
 
 #include <vector>
+
 #include "gromacs/math/utilities.h"
+#include "gromacs/options/basicoptions.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
-#include "gromacs/options/basicoptions.h"
 
 #include "simd4.h"
 
@@ -60,7 +61,7 @@ class Simd4MathTest : public Simd4Test
     public:
         ::testing::AssertionResult
                              compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                                      real refFunc(real x),     gmx_simd4_real_t simd4Func(gmx_simd4_real_t x));
+                                                      real refFunc(real x),     gmx_simd4_real_t gmx_simdcall simd4Func(gmx_simd4_real_t x));
 };
 
 /*! \brief Test approximate equality of SIMD4 vs reference version of a function.
@@ -85,7 +86,7 @@ class Simd4MathTest : public Simd4Test
  */
 ::testing::AssertionResult
 Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                        real refFunc(real x),     gmx_simd4_real_t simd4Func(gmx_simd4_real_t x))
+                                        real refFunc(real x),     gmx_simd4_real_t gmx_simdcall simd4Func(gmx_simd4_real_t x))
 {
     std::vector<real>            vx(GMX_SIMD4_WIDTH);
     std::vector<real>            vref(GMX_SIMD4_WIDTH);
@@ -201,6 +202,14 @@ TEST_F(Simd4MathTest, gmxSimd4InvsqrtR)
 {
     setRange(1e-10, 1e10);
     GMX_EXPECT_SIMD4_FUNC_NEAR(ref_invsqrt, gmx_simd4_invsqrt_r);
+}
+
+TEST_F(Simd4MathTest, gmxSimd4InvsqrtSingleaccuracyR)
+{
+    setRange(1e-10, 1e10);
+    /* Increase the allowed error by the difference between the actual precision and single */
+    setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
+    GMX_EXPECT_SIMD4_FUNC_NEAR(ref_invsqrt, gmx_simd4_invsqrt_singleaccuracy_r);
 }
 
 }      // namespace

@@ -45,10 +45,10 @@
 
 #include <vector>
 
-#include "../abstractdata.h"
-#include "../arraydata.h"
-#include "../datamodule.h"
-#include "../../utility/common.h"
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/arraydata.h"
+#include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {

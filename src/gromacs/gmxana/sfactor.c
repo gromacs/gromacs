@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,25 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/vec.h"
-#include "macros.h"
-#include "gromacs/topology/index.h"
+#include "sfactor.h"
+
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
-#include "typedefs.h"
-#include "oenv.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "names.h"
-#include "sfactor.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/utilities.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 typedef struct gmx_structurefactors {
@@ -284,7 +283,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
         if (sscanf(line, "%s %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
                    atomn, &p, &a1, &a2, &a3, &a4, &b1, &b2, &b3, &b4, &c) == 11)
         {
-            gsf->atomnm[i] = strdup(atomn);
+            gsf->atomnm[i] = gmx_strdup(atomn);
             gsf->p[i]      = p;
             snew(gsf->a[i], 4);
             snew(gsf->b[i], 4);
@@ -595,7 +594,7 @@ extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
         }
     }
 
-    gmx_ffclose (fp);
+    xvgrclose (fp);
 }
 
 

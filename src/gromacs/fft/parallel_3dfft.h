@@ -37,13 +37,12 @@
 #ifndef GMX_FFT_PARALLEL_3DFFT_H
 #define GMX_FFT_PARALLEL_3DFFT_H
 
-#include "../math/gmxcomplex.h"
-#include "../timing/wallcycle.h"
-#include "../utility/basedefinitions.h"
-#include "../utility/gmxmpi.h"
-#include "../utility/real.h"
-
-#include "fft.h"
+#include "gromacs/fft/fft.h"
+#include "gromacs/math/gmxcomplex.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

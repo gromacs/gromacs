@@ -37,7 +37,7 @@
 #ifndef GMX_GMXANA_PRINC_H
 #define GMX_GMXANA_PRINC_H
 
-#include "typedefs.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {

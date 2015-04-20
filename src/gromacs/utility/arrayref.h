@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@
 #include <utility>
 #include <vector>
 
-#include "gmxassert.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -144,6 +144,9 @@ class ArrayRef
          * \param[in] end    Pointer to the end of a range.
          *
          * Passed pointers must remain valid for the lifetime of this object.
+         *
+         * \note For clarity, use the non-member function arrayRefFromPointers
+         * instead.
          */
         ArrayRef(pointer begin, pointer end)
             : begin_(begin), end_(end)
@@ -151,32 +154,19 @@ class ArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a particular range in a std::vector.
+         * Constructs a reference to a whole vector.
          *
-         * \param[in] begin  Iterator to the beginning of a range.
-         * \param[in] end    Iterator to the end of a range.
+         * \param[in] v  Vector to reference.
          *
-         * The referenced vector must remain valid and not be reallocated for
-         * the lifetime of this object.
+         * Passed vector must remain valid and not be reallocated for the
+         * lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * std::vector to a method that takes ArrayRef.
          */
-        ArrayRef(typename std::vector<value_type>::iterator begin,
-                 typename std::vector<value_type>::iterator end)
-            : begin_((begin != end) ? &*begin : NULL),
-              end_(begin_+(end-begin))
-        {
-            GMX_ASSERT(end >= begin, "Invalid range");
-        }
-        /*! \brief
-         * Constructs a reference to an array.
-         *
-         * \param[in] begin  Pointer to the beginning of the array.
-         *      May be NULL if \p size is zero.
-         * \param[in] size   Number of elements in the array.
-         *
-         * Passed pointer must remain valid for the lifetime of this object.
-         */
-        ArrayRef(pointer begin, size_type size)
-            : begin_(begin), end_(begin + size)
+        ArrayRef(std::vector<T> &v)
+            : begin_((!v.empty()) ? &v[0] : NULL),
+              end_((!v.empty()) ? &v[0] + v.size() : NULL)
         {
         }
         //! \cond
@@ -281,6 +271,62 @@ class ArrayRef
         pointer           end_;
 };
 
+
+/*! \brief
+ * Constructs a reference to a particular range from two pointers.
+ *
+ * \param[in] begin  Pointer to the beginning of a range.
+ * \param[in] end    Pointer to the end of a range.
+ *
+ * Passed pointers must remain valid for the lifetime of this object.
+ *
+ * \related ArrayRef
+ */
+template <typename T>
+ArrayRef<T> arrayRefFromPointers(T * begin, T * end)
+{
+    return ArrayRef<T>(begin, end);
+}
+
+/*! \brief
+ * Constructs a reference to an array
+ *
+ * \param[in] begin  Pointer to the beginning of the array.
+ *                   May be NULL if \p size is zero.
+ * \param[in] size   Number of elements in the array.
+ *
+ * Passed pointer must remain valid for the lifetime of this object.
+ *
+ * \related ArrayRef
+ */
+template <typename T>
+ArrayRef<T> arrayRefFromArray(T * begin, size_t size)
+{
+    return arrayRefFromPointers<T>(begin, begin+size);
+}
+
+/*! \brief
+ * Constructs a reference to a particular range in a std::vector.
+ *
+ * \param[in] begin  Iterator to the beginning of a range.
+ * \param[in] end    Iterator to the end of a range.
+ *
+ * The referenced vector must remain valid and not be reallocated for
+ * the lifetime of this object.
+ *
+ * \related ArrayRef
+ */
+template <typename T>
+ArrayRef<T> arrayRefFromVector(typename std::vector<T>::iterator begin,
+                               typename std::vector<T>::iterator end)
+{
+    T * p_begin = (begin != end) ? &*begin : NULL;
+    T * p_end   = p_begin + (end-begin);
+    return arrayRefFromPointers<T>(p_begin, p_end);
+}
+
+
+
 /*! \brief
  * STL-like container for non-mutable interface to a C array (or part of a
  * std::vector).
@@ -354,6 +400,9 @@ class ConstArrayRef
          * \param[in] end    Pointer to the end of a range.
          *
          * Passed pointers must remain valid for the lifetime of this object.
+         *
+         * \note For clarity, use the non-member function constArrayRefFromPointers
+         * instead.
          */
         ConstArrayRef(const_pointer begin, const_pointer end)
             : begin_(begin), end_(end)
@@ -361,32 +410,19 @@ class ConstArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a particular range in a std::vector.
+         * Constructs a reference to a whole vector.
          *
-         * \param[in] begin  Iterator to the beginning of a range.
-         * \param[in] end    Iterator to the end of a range.
+         * \param[in] v  Vector to reference.
          *
-         * The referenced vector must remain valid and not be reallocated for
-         * the lifetime of this object.
+         * Passed vector must remain valid and not be reallocated for the
+         * lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * std::vector to a method that takes ConstArrayRef.
          */
-        ConstArrayRef(typename std::vector<value_type>::const_iterator begin,
-                      typename std::vector<value_type>::const_iterator end)
-            : begin_((begin != end) ? &*begin : NULL),
-              end_(begin_+(end-begin))
-        {
-            GMX_ASSERT(end >= begin, "Invalid range");
-        }
-        /*! \brief
-         * Constructs a reference to an array.
-         *
-         * \param[in] begin  Pointer to the beginning of the array.
-         *      May be NULL if \p size is zero.
-         * \param[in] size   Number of elements in the array.
-         *
-         * Passed pointer must remain valid for the lifetime of this object.
-         */
-        ConstArrayRef(const_pointer begin, size_type size)
-            : begin_(begin), end_(begin + size)
+        ConstArrayRef(const std::vector<T> &v)
+            : begin_((!v.empty()) ? &v[0] : NULL),
+              end_((!v.empty()) ? &v[0] + v.size() : NULL)
         {
         }
         //! \cond
@@ -464,6 +500,60 @@ class ConstArrayRef
         const_pointer           begin_;
         const_pointer           end_;
 };
+
+
+/*! \brief
+ * Constructs a reference to a particular range from two pointers.
+ *
+ * \param[in] begin  Pointer to the beginning of a range.
+ * \param[in] end    Pointer to the end of a range.
+ *
+ * Passed pointers must remain valid for the lifetime of this object.
+ *
+ * \related ConstArrayRef
+ */
+template <typename T>
+ConstArrayRef<T> constArrayRefFromPointers(const T * begin, const T * end)
+{
+    return ConstArrayRef<T>(begin, end);
+}
+
+/*! \brief
+ * Constructs a reference to an array.
+ *
+ * \param[in] begin  Pointer to the beginning of the array.
+ *                   May be NULL if \p size is zero.
+ * \param[in] size   Number of elements in the array.
+ *
+ * Passed pointer must remain valid for the lifetime of this object.
+ *
+ * \related ConstArrayRef
+ */
+template <typename T>
+ConstArrayRef<T> constArrayRefFromArray(const T * begin, size_t size)
+{
+    return constArrayRefFromPointers<T>(begin, begin+size);
+}
+
+/*! \brief
+ * Constructs a reference to a particular range in a std::vector.
+ *
+ * \param[in] begin  Iterator to the beginning of a range.
+ * \param[in] end    Iterator to the end of a range.
+ *
+ * The referenced vector must remain valid and not be reallocated for
+ * the lifetime of this object.
+ *
+ * \related ConstArrayRef
+ */
+template <typename T>
+ConstArrayRef<T> constArrayRefFromVector(typename std::vector<T>::const_iterator begin,
+                                         typename std::vector<T>::const_iterator end)
+{
+    const T * p_begin = (begin != end) ? &*begin : NULL;
+    const T * p_end   = p_begin + (end-begin);
+    return constArrayRefFromPointers<T>(p_begin, p_end);
+}
 
 /*! \brief
  * Simple swap method for ArrayRef objects.

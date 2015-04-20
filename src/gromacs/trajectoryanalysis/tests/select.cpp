@@ -47,9 +47,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include <gtest/gtest.h>
+#include "gmxpre.h"
 
 #include "gromacs/trajectoryanalysis/modules/select.h"
+
+#include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
 

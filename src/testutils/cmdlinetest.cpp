@@ -34,23 +34,33 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::test::CommandLine.
+ * Implements classes from cmdlinetest.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
+
 #include "cmdlinetest.h"
 
 #include <cstdlib>
 #include <cstring>
-#include <sstream>
 
 #include <new>
+#include <sstream>
 #include <vector>
 
+#include <boost/scoped_ptr.hpp>
+
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
+
+#include "testutils/refdata.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -157,33 +167,39 @@ std::string value2string(T value)
     return ss.str();
 }
 
-}
+}       // namespace
 
-void CommandLine::addOption(const char *name,
-                            const char *value)
+void CommandLine::addOption(const char *name, const char *value)
 {
     append(name);
     append(value);
 }
 
-void CommandLine::addOption(const char        *name,
-                            const std::string &value)
+void CommandLine::addOption(const char *name, const std::string &value)
 {
     addOption(name, value.c_str());
 }
 
-void CommandLine::addOption(const char *name,
-                            int         value)
+void CommandLine::addOption(const char *name, int value)
 {
     append(name);
     append(value2string(value));
 }
 
-void CommandLine::addOption(const char *name,
-                            double      value)
+void CommandLine::addOption(const char *name, double value)
 {
     append(name);
     append(value2string(value));
+}
+
+void CommandLine::merge(const CommandLine &args)
+{
+    // Skip first argument if it is the module name.
+    const int firstArg = (args.arg(0)[0] == '-' ? 0 : 1);
+    for (int i = firstArg; i < args.argc(); ++i)
+    {
+        append(args.arg(i));
+    }
 }
 
 int &CommandLine::argc()
@@ -210,6 +226,213 @@ const char *CommandLine::arg(int i) const
 std::string CommandLine::toString() const
 {
     return CommandLineProgramContext(argc(), argv()).commandLine();
+}
+
+/********************************************************************
+ * CommandLineTestHelper::Impl
+ */
+
+class CommandLineTestHelper::Impl
+{
+    public:
+        struct OutputFileInfo
+        {
+            OutputFileInfo(const char *option, const std::string &path)
+                : option(option), path(path)
+            {
+            }
+
+            std::string         option;
+            std::string         path;
+        };
+
+        typedef std::vector<OutputFileInfo>        OutputFileList;
+
+        explicit Impl(TestFileManager *fileManager)
+            : fileManager_(*fileManager)
+        {
+        }
+
+        TestFileManager &fileManager_;
+        OutputFileList   outputFiles_;
+};
+
+/********************************************************************
+ * CommandLineTestHelper
+ */
+
+// static
+int CommandLineTestHelper::runModule(
+        CommandLineModuleInterface *module, CommandLine *commandLine)
+{
+    CommandLineModuleSettings settings;
+    module->init(&settings);
+    return module->run(commandLine->argc(), commandLine->argv());
+}
+
+// static
+int CommandLineTestHelper::runModule(
+        CommandLineOptionsModuleInterface::FactoryMethod  factory,
+        CommandLine                                      *commandLine)
+{
+    // The name and description are not used in the tests, so they can be NULL.
+    boost::scoped_ptr<CommandLineModuleInterface> module(
+            CommandLineOptionsModuleInterface::createModule(NULL, NULL, factory));
+    return runModule(module.get(), commandLine);
+}
+
+CommandLineTestHelper::CommandLineTestHelper(TestFileManager *fileManager)
+    : impl_(new Impl(fileManager))
+{
+}
+
+CommandLineTestHelper::~CommandLineTestHelper()
+{
+}
+
+void CommandLineTestHelper::setInputFileContents(
+        CommandLine *args, const char *option, const char *extension,
+        const std::string &contents)
+{
+    GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
+                formatString("%d.%s", args->argc(), extension));
+    File::writeFileFromString(fullFilename, contents);
+    args->addOption(option, fullFilename);
+}
+
+void CommandLineTestHelper::setInputFileContents(
+        CommandLine *args, const char *option, const char *extension,
+        const ConstArrayRef<const char *> &contents)
+{
+    GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
+                formatString("%d.%s", args->argc(), extension));
+    File        file(fullFilename, "w");
+    ConstArrayRef<const char *>::const_iterator i;
+    for (i = contents.begin(); i != contents.end(); ++i)
+    {
+        file.writeLine(*i);
+    }
+    file.close();
+    args->addOption(option, fullFilename);
+}
+
+void CommandLineTestHelper::setOutputFile(
+        CommandLine *args, const char *option, const char *filename)
+{
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(filename);
+    args->addOption(option, fullFilename);
+    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename));
+}
+
+void CommandLineTestHelper::setOutputFileNoTest(
+        CommandLine *args, const char *option, const char *extension)
+{
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
+                formatString("%d.%s", args->argc(), extension));
+    args->addOption(option, fullFilename);
+}
+
+void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
+{
+    if (!impl_->outputFiles_.empty())
+    {
+        TestReferenceChecker                 outputChecker(
+                checker.checkCompound("OutputFiles", "Files"));
+        Impl::OutputFileList::const_iterator outfile;
+        for (outfile = impl_->outputFiles_.begin();
+             outfile != impl_->outputFiles_.end();
+             ++outfile)
+        {
+            std::string output = File::readToString(outfile->path);
+            outputChecker.checkStringBlock(output, outfile->option.c_str());
+        }
+    }
+}
+
+/********************************************************************
+ * CommandLineTestBase::Impl
+ */
+
+class CommandLineTestBase::Impl
+{
+    public:
+        Impl() : helper_(&tempFiles_)
+        {
+            cmdline_.append("module");
+        }
+
+        TestReferenceData     data_;
+        TestFileManager       tempFiles_;
+        CommandLineTestHelper helper_;
+        CommandLine           cmdline_;
+};
+
+/********************************************************************
+ * CommandLineTestBase
+ */
+
+CommandLineTestBase::CommandLineTestBase()
+    : impl_(new Impl)
+{
+}
+
+CommandLineTestBase::~CommandLineTestBase()
+{
+}
+
+void CommandLineTestBase::setInputFile(
+        const char *option, const char *filename)
+{
+    impl_->cmdline_.addOption(option, TestFileManager::getInputFilePath(filename));
+}
+
+void CommandLineTestBase::setInputFileContents(
+        const char *option, const char *extension, const std::string &contents)
+{
+    impl_->helper_.setInputFileContents(&impl_->cmdline_, option, extension,
+                                        contents);
+}
+
+void CommandLineTestBase::setInputFileContents(
+        const char *option, const char *extension,
+        const ConstArrayRef<const char *> &contents)
+{
+    impl_->helper_.setInputFileContents(&impl_->cmdline_, option, extension,
+                                        contents);
+}
+
+void CommandLineTestBase::setOutputFile(
+        const char *option, const char *filename)
+{
+    impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename);
+}
+
+void CommandLineTestBase::setOutputFileNoTest(
+        const char *option, const char *extension)
+{
+    impl_->helper_.setOutputFileNoTest(&impl_->cmdline_, option, extension);
+}
+
+CommandLine &CommandLineTestBase::commandLine()
+{
+    return impl_->cmdline_;
+}
+
+TestFileManager &CommandLineTestBase::fileManager()
+{
+    return impl_->tempFiles_;
+}
+
+TestReferenceChecker CommandLineTestBase::rootChecker()
+{
+    return impl_->data_.rootChecker();
+}
+
+void CommandLineTestBase::checkOutputFiles()
+{
+    impl_->helper_.checkOutputFiles(rootChecker());
 }
 
 } // namespace test

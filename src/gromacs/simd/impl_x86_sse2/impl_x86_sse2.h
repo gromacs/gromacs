@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,10 @@
 #ifndef GMX_SIMD_IMPL_X86_SSE2_H
 #define GMX_SIMD_IMPL_X86_SSE2_H
 
+#include "config.h"
+
 #include <math.h>
+
 #include <emmintrin.h>
 
 /* Set capabilities that can be inherited */
@@ -99,8 +102,8 @@
 #define gmx_simd_xor_f            _mm_xor_ps
 #define gmx_simd_rsqrt_f          _mm_rsqrt_ps
 #define gmx_simd_rcp_f            _mm_rcp_ps
-#define gmx_simd_fabs_f(x)        _mm_andnot_ps(_mm_set1_ps(-0.0), x)
-#define gmx_simd_fneg_f(x)        _mm_xor_ps(x, _mm_set1_ps(-0.0))
+#define gmx_simd_fabs_f(x)        _mm_andnot_ps(_mm_set1_ps(GMX_FLOAT_NEGZERO), x)
+#define gmx_simd_fneg_f(x)        _mm_xor_ps(x, _mm_set1_ps(GMX_FLOAT_NEGZERO))
 #define gmx_simd_max_f            _mm_max_ps
 #define gmx_simd_min_f            _mm_min_ps
 #define gmx_simd_round_f(x)       _mm_cvtepi32_ps(_mm_cvtps_epi32(x))
@@ -111,11 +114,11 @@
 #define gmx_simd_set_exponent_f   gmx_simd_set_exponent_f_sse2
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_fint32_t         __m128i
-#define gmx_simd_load_fi(m)       _mm_load_si128((const __m128i *)m)
+#define gmx_simd_load_fi(m)       _mm_load_si128((const __m128i *)(m))
 #define gmx_simd_set1_fi          _mm_set1_epi32
-#define gmx_simd_store_fi(m, x)    _mm_store_si128((__m128i *)m, x)
-#define gmx_simd_loadu_fi(m)      _mm_loadu_si128((const __m128i *)m)
-#define gmx_simd_storeu_fi(m, x)   _mm_storeu_si128((__m128i *)m, x)
+#define gmx_simd_store_fi(m, x)    _mm_store_si128((__m128i *)(m), x)
+#define gmx_simd_loadu_fi(m)      _mm_loadu_si128((const __m128i *)(m))
+#define gmx_simd_storeu_fi(m, x)   _mm_storeu_si128((__m128i *)(m), x)
 #define gmx_simd_setzero_fi       _mm_setzero_si128
 #define gmx_simd_cvt_f2i          _mm_cvtps_epi32
 #define gmx_simd_cvtt_f2i         _mm_cvttps_epi32
@@ -183,8 +186,8 @@
 #define gmx_simd_rsqrt_d(x)        _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x)))
 /* Don't use FMA for sqrt N-R iterations - this saves 1 instruction without FMA hardware */
 #define gmx_simd_rcp_d(x)          _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x)))
-#define gmx_simd_fabs_d(x)         _mm_andnot_pd(_mm_set1_pd(-0.0), x)
-#define gmx_simd_fneg_d(x)         _mm_xor_pd(x, _mm_set1_pd(-0.0))
+#define gmx_simd_fabs_d(x)         _mm_andnot_pd(_mm_set1_pd(GMX_DOUBLE_NEGZERO), x)
+#define gmx_simd_fneg_d(x)         _mm_xor_pd(x, _mm_set1_pd(GMX_DOUBLE_NEGZERO))
 #define gmx_simd_max_d             _mm_max_pd
 #define gmx_simd_min_d             _mm_min_pd
 #define gmx_simd_round_d(x)        _mm_cvtepi32_pd(_mm_cvtpd_epi32(x))
@@ -195,11 +198,11 @@
 #define gmx_simd_set_exponent_d    gmx_simd_set_exponent_d_sse2
 /* integer datatype corresponding to double: gmx_simd_dint32_t */
 #define gmx_simd_dint32_t          __m128i
-#define gmx_simd_load_di(m)        _mm_loadl_epi64((const __m128i *)m)
+#define gmx_simd_load_di(m)        _mm_loadl_epi64((const __m128i *)(m))
 #define gmx_simd_set1_di           _mm_set1_epi32
-#define gmx_simd_store_di(m, x)     _mm_storel_epi64((__m128i *)m, x)
-#define gmx_simd_loadu_di(m)       _mm_loadl_epi64((const __m128i *)m)
-#define gmx_simd_storeu_di(m, x)    _mm_storel_epi64((__m128i *)m, x)
+#define gmx_simd_store_di(m, x)     _mm_storel_epi64((__m128i *)(m), x)
+#define gmx_simd_loadu_di(m)       _mm_loadl_epi64((const __m128i *)(m))
+#define gmx_simd_storeu_di(m, x)    _mm_storel_epi64((__m128i *)(m), x)
 #define gmx_simd_setzero_di        _mm_setzero_si128
 #define gmx_simd_cvt_d2i           _mm_cvtpd_epi32
 #define gmx_simd_cvtt_d2i          _mm_cvttpd_epi32
@@ -249,7 +252,7 @@
 /****************************************************
  * SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static gmx_inline __m128
+static gmx_inline __m128 gmx_simdcall
 gmx_simd_get_exponent_f_sse2(__m128 x)
 {
     const __m128  expmask      = _mm_castsi128_ps(_mm_set1_epi32(0x7F800000));
@@ -261,7 +264,7 @@ gmx_simd_get_exponent_f_sse2(__m128 x)
     return _mm_cvtepi32_ps(iexp);
 }
 
-static gmx_inline __m128
+static gmx_inline __m128 gmx_simdcall
 gmx_simd_get_mantissa_f_sse2(__m128 x)
 {
     const __m128 mantmask = _mm_castsi128_ps(_mm_set1_epi32(0x007FFFFF));
@@ -271,7 +274,7 @@ gmx_simd_get_mantissa_f_sse2(__m128 x)
     return _mm_or_ps(x, one);
 }
 
-static gmx_inline __m128
+static gmx_inline __m128 gmx_simdcall
 gmx_simd_set_exponent_f_sse2(__m128 x)
 {
     const __m128i expbias      = _mm_set1_epi32(127);
@@ -281,7 +284,7 @@ gmx_simd_set_exponent_f_sse2(__m128 x)
     return _mm_castsi128_ps(iexp);
 }
 
-static gmx_inline __m128i
+static gmx_inline __m128i gmx_simdcall
 gmx_simd_mul_fi_sse2(__m128i a, __m128i b)
 {
     __m128i a1 = _mm_srli_si128(a, 4); /* - a[3] a[2] a[1] */
@@ -295,7 +298,7 @@ gmx_simd_mul_fi_sse2(__m128i a, __m128i b)
     return _mm_unpacklo_epi32(c, c1);
 }
 
-static gmx_inline float
+static gmx_inline float gmx_simdcall
 gmx_simd_reduce_f_sse2(__m128 a)
 {
     __m128 b;
@@ -309,7 +312,7 @@ gmx_simd_reduce_f_sse2(__m128 a)
 /****************************************************
  * DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
  ****************************************************/
-static gmx_inline __m128d
+static gmx_inline __m128d gmx_simdcall
 gmx_simd_get_exponent_d_sse2(__m128d x)
 {
     /* Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds */
@@ -323,7 +326,7 @@ gmx_simd_get_exponent_d_sse2(__m128d x)
     return _mm_cvtepi32_pd(iexp);
 }
 
-static gmx_inline __m128d
+static gmx_inline __m128d gmx_simdcall
 gmx_simd_get_mantissa_d_sse2(__m128d x)
 {
     /* Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds */
@@ -334,7 +337,7 @@ gmx_simd_get_mantissa_d_sse2(__m128d x)
     return _mm_or_pd(x, one);
 }
 
-static gmx_inline __m128d
+static gmx_inline __m128d gmx_simdcall
 gmx_simd_set_exponent_d_sse2(__m128d x)
 {
     const __m128i  expbias      = _mm_set1_epi32(1023);
@@ -347,7 +350,7 @@ gmx_simd_set_exponent_d_sse2(__m128d x)
     return _mm_castsi128_pd(iexp);
 }
 
-static gmx_inline __m128i
+static gmx_inline __m128i gmx_simdcall
 gmx_simd_mul_di_sse2(__m128i a, __m128i b)
 {
     __m128i c;
@@ -359,7 +362,7 @@ gmx_simd_mul_di_sse2(__m128i a, __m128i b)
     return _mm_shuffle_epi32(c, _MM_SHUFFLE(3, 1, 2, 0)); /* 0 0 a[1]*b[1] a[0]*b[0] */
 }
 
-static gmx_inline double
+static gmx_inline double gmx_simdcall
 gmx_simd_reduce_d_sse2(__m128d a)
 {
     __m128d b;
@@ -436,7 +439,7 @@ gmx_simd_check_and_reset_overflow(void)
 #define gmx_simd4_reduce_f               gmx_simd_reduce_f
 
 /* SIMD4 Dotproduct helper function */
-static gmx_inline float
+static gmx_inline float gmx_simdcall
 gmx_simd4_dotproduct3_f_sse2(__m128 a, __m128 b)
 {
     float  f;

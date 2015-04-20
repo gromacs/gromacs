@@ -49,9 +49,7 @@
 #ifndef GMX_UTILITY_GMXMPI_H
 #define GMX_UTILITY_GMXMPI_H
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 /*! \cond */
 #ifdef GMX_LIB_MPI
@@ -75,8 +73,8 @@
 #endif /*MPI_INT64_T*/
 #else
 #ifdef GMX_THREAD_MPI
-#include "thread_mpi/tmpi.h"
-#include "thread_mpi/mpi_bindings.h"
+#include "thread_mpi/mpi_bindings.h" /* IWYU pragma: export */
+#include "thread_mpi/tmpi.h"         /* IWYU pragma: export */
 #else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;

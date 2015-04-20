@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,15 +48,37 @@ if(GMX_MPI)
 
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
   if(NOT MPI_FOUND)
-      set(MPI_PREFIX MPI_C)
       find_package(MPI)
-      if(${${MPI_PREFIX}_FOUND})
-        set(MPI_COMPILE_FLAGS ${${MPI_PREFIX}_COMPILE_FLAGS})
-        set(MPI_LINKER_FLAGS ${${MPI_PREFIX}_LINK_FLAGS})
-        include_directories(${${MPI_PREFIX}_INCLUDE_PATH})
-        list(APPEND GMX_EXTRA_LIBRARIES ${${MPI_PREFIX}_LIBRARIES})
+      if(MPI_C_FOUND)
+        set(MPI_COMPILE_FLAGS ${MPI_C_COMPILE_FLAGS})
+        set(MPI_LINKER_FLAGS ${MPI_C_LINK_FLAGS})
+        include_directories(${MPI_C_INCLUDE_PATH})
+        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_C_LIBRARIES})
       endif()
-      set(MPI_FOUND ${${MPI_PREFIX}_FOUND})
+      set(MPI_FOUND ${MPI_C_FOUND})
+  else()
+      # The following defaults are based on FindMPI.cmake in cmake
+      # 3.1.2. (That package does not actually do any detection of the
+      # flags, but if it ever does then we should re-visit how we use
+      # the package.) If we are compiling with an MPI wrapper
+      # compiler, then MPI_FOUND will be set above, and will mean that
+      # none of these cache variables are populated by the package. We
+      # need to do it manually so that test drivers can work using the
+      # standard machinery for CMake + FindMPI.cmake.  Users will need
+      # to set these to suit their MPI setup in order for tests to
+      # work.
+
+      find_program(MPIEXEC
+          NAMES mpiexec mpirun lamexec srun aprun poe
+          HINTS ${MPI_HOME} $ENV{MPI_HOME}
+          PATH_SUFFIXES bin
+          DOC "Executable for running MPI programs.")
+
+      set(MPIEXEC_NUMPROC_FLAG "-np" CACHE STRING "Flag used by MPI to specify the number of processes for MPIEXEC; the next option will be the number of processes.")
+      set(MPIEXEC_PREFLAGS     ""    CACHE STRING "These flags will be directly before the executable that is being run by MPIEXEC.")
+      set(MPIEXEC_POSTFLAGS    ""    CACHE STRING "These flags will come after all flags given to MPIEXEC.")
+      set(MPIEXEC_MAX_NUMPROCS "2"   CACHE STRING "Maximum number of processors available to run MPI applications.")
+      mark_as_advanced(MPIEXEC MPIEXEC_NUMPROC_FLAG MPIEXEC_PREFLAGS MPIEXEC_POSTFLAGS MPIEXEC_MAX_NUMPROCS)
   endif()
 
   if(MPI_FOUND)
@@ -66,7 +88,7 @@ if(GMX_MPI)
     endif()
 
     # Find path of the mpi compilers
-    if (${${MPI_PREFIX}_FOUND})
+    if (${MPI_C_FOUND})
         get_filename_component(_mpi_c_compiler_path "${MPI_C_COMPILER}" PATH)
         get_filename_component(_mpiexec_path "${MPIEXEC}" PATH)
     else()
@@ -153,14 +175,5 @@ if(GMX_MPI)
         "or set the variables reported missing for MPI_C above.")
   endif()
 
-  include(gmxTestCatamount)
-  gmx_test_catamount(GMX_CRAY_CATAMOUNT)
-  if(GMX_CRAY_CATAMOUNT)
-    set(GMX_NO_SYSTEM 1)
-    set(GMX_NO_NICE 1)
-    set(HAVE_PWD_H 0)
-  endif()
-
   set(GMX_LIB_MPI 1)
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_LIB_MPI")
 endif()

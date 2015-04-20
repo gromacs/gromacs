@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,23 +46,71 @@
 #ifndef GMX_SELECTION_PARSER_INTERNAL_H
 #define GMX_SELECTION_PARSER_INTERNAL_H
 
+#include "config.h"
+
 #include <exception>
 
+#include <boost/exception_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "parsetree.h"
-#include "selelem.h"
-
 #include "scanner.h"
+#include "selelem.h"
 
 //! Error handler needed by Bison.
 static void
-yyerror(yyscan_t scanner, char const *s)
+yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
 {
-    _gmx_selparser_error(scanner, "%s", s);
+    try
+    {
+        std::string            context(_gmx_sel_lexer_get_text(scanner, *location));
+        gmx::InvalidInputError ex(s);
+        // TODO: Examine how to show better context information.
+        if (!context.empty())
+        {
+            context = gmx::formatString("Near '%s'", context.c_str());
+            ex.prependContext(context);
+        }
+        _gmx_sel_lexer_set_exception(scanner, boost::copy_exception(ex));
+    }
+    catch (const std::exception &)
+    {
+        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+    }
 }
+
+//! Logic for computing the location of the output of Bison reduction.
+#define YYLLOC_DEFAULT(Current, Rhs, N)                          \
+    do {                                                         \
+        if (N != 0)                                              \
+        {                                                        \
+            (Current).startIndex = YYRHSLOC(Rhs, 1).startIndex;  \
+            (Current).endIndex   = YYRHSLOC(Rhs, N).endIndex;    \
+        }                                                        \
+        else                                                     \
+        {                                                        \
+            (Current).startIndex = (Current).endIndex =          \
+                    YYRHSLOC(Rhs, 0).endIndex;                   \
+        }                                                        \
+        _gmx_sel_lexer_set_current_location(scanner, (Current)); \
+    } while (0)
+
+/*! \brief
+ * Custom macro to influence Bison behavior.
+ *
+ * This macro added to parser.cpp through our patch to force Bison to
+ * use C-style logic for stack reallocation even though we have provided
+ * YYLTYPE and are compiling the code in C++ (our YYLTYPE can safely be copied
+ * this way).
+ * An alternative would be to provide the whole reallocation logic through an
+ * undocumented yyoverflow() macro, but that is probably also more trouble than
+ * it is worth.
+ */
+#define GMX_YYFORCE_C_STACK_EXTENSION 1
 
 /*! \name Exception handling macros for actions
  *
@@ -80,14 +128,26 @@ yyerror(yyscan_t scanner, char const *s)
 #define BEGIN_ACTION \
     try {
 //! Finishes an action that may throw exceptions.
-#define END_ACTION \
-    } \
-    catch (const std::exception &ex) \
-    { \
-        if (_gmx_selparser_handle_exception(scanner, ex)) { \
-            YYERROR; } \
-        else{ \
-            YYABORT; } \
+#define END_ACTION                                              \
+    }                                                           \
+    catch (std::exception &ex)                                  \
+    {                                                           \
+        if (_gmx_selparser_handle_exception(scanner, &ex))      \
+        {                                                       \
+            YYERROR;                                            \
+        }                                                       \
+        else                                                    \
+        {                                                       \
+            YYABORT;                                            \
+        }                                                       \
+    }
+//! Finishes an action that may throw exceptions and does not support resuming.
+#define END_ACTION_TOPLEVEL                                     \
+    }                                                           \
+    catch (const std::exception &)                              \
+    {                                                           \
+        _gmx_sel_lexer_set_exception(scanner, boost::current_exception()); \
+        YYABORT;                                                \
     }
 //!\}
 

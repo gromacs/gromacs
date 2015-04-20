@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,12 +34,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include "typedefs.h"
-#include "names.h"
+#include "gromacs/legacyheaders/names.h"
+
+#include "gromacs/legacyheaders/typedefs.h"
 
 /* note: these arrays should correspond to enums in include/types/enums.h */
 
@@ -220,11 +219,11 @@ const char *ewt_names[ewtNR+1] = {
 };
 
 const char *epull_names[epullNR+1] = {
-    "no", "umbrella", "constraint", "constant-force", NULL
+    "umbrella", "constraint", "constant-force", "flat-bottom", NULL
 };
 
 const char *epullg_names[epullgNR+1] = {
-    "distance", "direction", "cylinder", "direction-periodic", NULL
+    "distance", "direction", "cylinder", "direction-periodic", "direction-relative", NULL
 };
 
 const char *erotg_names[erotgNR+1] = {

@@ -39,11 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
-#include "cmdlinerunner.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "cmdlinerunner.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
@@ -52,16 +50,18 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/fileio/trx.h"
+#include "gromacs/options/filenameoptionmanager.h"
 #include "gromacs/options/options.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
-#include "gromacs/trajectoryanalysis/runnercommon.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "runnercommon.h"
 
 namespace gmx
 {
@@ -108,12 +108,14 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         SelectionCollection *selections,
         int *argc, char *argv[])
 {
+    FileNameOptionManager  fileoptManager;
     SelectionOptionManager seloptManager(selections);
     Options                options(NULL, NULL);
     Options                moduleOptions(module_->name(), module_->description());
     Options                commonOptions("common", "Common analysis control");
     Options                selectionOptions("selection", "Common selection control");
 
+    options.addManager(&fileoptManager);
     options.addManager(&seloptManager);
     options.addSubSection(&commonOptions);
     options.addSubSection(&selectionOptions);
@@ -194,7 +196,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     // Load first frame.
     common.initFirstFrame();
-    module->initAfterFirstFrame(common.frame());
+    module->initAfterFirstFrame(settings, common.frame());
 
     t_pbc  pbc;
     t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
@@ -214,8 +216,9 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
         selections.evaluate(&frame, ppbc);
         module->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        module->finishFrameSerial(nframes);
 
-        nframes++;
+        ++nframes;
     }
     while (common.readNextFrame());
     module->finishFrames(pdata.get());
@@ -304,6 +307,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
         virtual const char *name() const { return name_; }
         virtual const char *shortDescription() const { return description_; };
 
+        virtual void init(CommandLineModuleSettings *settings);
         virtual int run(int argc, char *argv[]);
         virtual void writeHelp(const CommandLineHelpContext &context) const;
 
@@ -314,6 +318,11 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RunnerCommandLineModule);
 };
+
+void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::init(
+        CommandLineModuleSettings * /*settings*/)
+{
+}
 
 int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
         int argc, char *argv[])

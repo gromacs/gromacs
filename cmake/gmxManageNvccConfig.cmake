@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -74,10 +74,8 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
             setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
             ")
         else()
-            # do not use MPI compiler wrappers, as these are prone to brake nvcc
-            if (GMX_MPI AND
-                NOT "${${MPI_PREFIX}_FOUND}" AND # FindMPI-based detection
-                NOT GMX_THREAD_MPI)
+            # do not use MPI compiler wrappers, as these are prone to break nvcc
+            if (GMX_MPI AND NOT "${MPI_C_FOUND}") # FindMPI-based detection
                 message(WARNING "
             Will not set the nvcc host compiler because the current C compiler is an MPI
             compiler wrapper: ${CMAKE_C_COMPILER}
@@ -131,15 +129,6 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}-D__STRICT_ANSI__;")
     endif()
 
-    # on Linux we need to add -fPIC when building shared gmx libs
-    # Note: will add -fPIC for any compiler that supports it as it shouldn't hurt
-    if(BUILD_SHARED_LIBS)
-        GMX_TEST_CXXFLAG(CXXFLAG_FPIC "-fPIC" _FPIC_NVCC_FLAG)
-        if(_FPIC_NVCC_FLAG)
-            set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}-Xcompiler;${_FPIC_NVCC_FLAG}")
-        endif()
-    endif()
-
     # the legacy CUDA kernels have been dropped, warn with CUDA 4.0
     if (CUDA_VERSION VERSION_EQUAL "4.0")
         message(WARNING "The legacy GPU kernels optimized for older CUDA compilers, including the detected version 4.0, have been removed. To avoid performance loss, we strongly recommend upgrading to a newer CUDA toolkit.
@@ -148,17 +137,24 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
 
     # Set the CUDA GPU architectures to compile for:
     # - with CUDA >v4.2 compute capability 2.0, 2.1 is, but 3.0 is not supported:
-    #     => compile sm_20, sm_21 cubin, and compute_20 PTX
-    # - with CUDA >=4.2 compute capability <=3.0 is supported:
-    #     => compile sm_20, sm_21, sm_30 cubin, and compute_30 PTX
-    # - with CUDA 5.0 and later compute capability 3.5 is supported
-    #     => compile sm_20, sm_21, sm_30, sm_35 cubin, and compute_35 PTX
+    #     => compile sm_20 cubin, and compute_20 PTX
+    # - with CUDA >=4.2 CC <=3.0 is supported:
+    #     => compile sm_20, sm_30 cubin, and compute_30 PTX
+    # - with CUDA 5.0 and later CC <=3.5 is supported
+    #     => compile sm_20, sm_30, sm_35 cubin, and compute_35 PTX
+    # - with CUDA 6.5 and later compute capability <=3.5 and 5.0 are supported
+    #     => compile sm_20, sm_30, sm_35, sm_5.0, cubin, and compute_50 PTX
+    #   Note that CUDA 6.5.19 second patch release supports cc 5.2 too, but
+    #   CUDA_VERSION does not contain patch version and having PTX 5.0 JIT-ed is
+    #   equally fast anyway.
     if(CUDA_VERSION VERSION_LESS "4.2")
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_20,code=compute_20")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=compute_20")
     elseif(CUDA_VERSION VERSION_LESS "5.0")
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_30,code=compute_30")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_30,code=compute_30")
+    elseif(CUDA_VERSION VERSION_LESS "6.5")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
     else()
-        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_50,code=compute_50;")
     endif()
 
     # finally set the damn flags

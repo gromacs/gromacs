@@ -75,7 +75,7 @@
   </AnalysisData>
   <AnalysisData Name="ResampledHistogram">
     <DataFrame Name="Frame0">
-      <Real Name="X">1.5</Real>
+      <Real Name="X">1.25</Real>
       <DataValues>
         <Int Name="Count">1</Int>
         <DataValue>
@@ -85,7 +85,7 @@
       </DataValues>
     </DataFrame>
     <DataFrame Name="Frame1">
-      <Real Name="X">2.5</Real>
+      <Real Name="X">2.25</Real>
       <DataValues>
         <Int Name="Count">1</Int>
         <DataValue>
@@ -95,7 +95,7 @@
       </DataValues>
     </DataFrame>
     <DataFrame Name="Frame2">
-      <Real Name="X">3.5</Real>
+      <Real Name="X">3.25</Real>
       <DataValues>
         <Int Name="Count">1</Int>
         <DataValue>

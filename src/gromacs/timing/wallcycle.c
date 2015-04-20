@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,29 +34,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gromacs/timing/wallcycle.h"
+#include "gmxpre.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "wallcycle.h"
+
+#include "config.h"
 
 #include <stdlib.h>
-#include <string.h>
 
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "cyclecounter.h"
+#include "gromacs/utility/snprintf.h"
 
 /* DEBUG_WCYCLE adds consistency checking for the counters.
  * It checks if you stop a counter different from the last
  * one that was opened and if you do nest too deep.
  */
 /* #define DEBUG_WCYCLE */
+
+#ifdef DEBUG_WCYCLE
+#include "gromacs/utility/fatalerror.h"
+#endif
 
 typedef struct
 {
@@ -100,8 +102,9 @@ static const char *wcn[ewcNR] =
     "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
     "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
     "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
-    "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
-    "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies",
+    "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "Wait GPU loc. est.", "NB X/F buffer ops.",
+    "Vsite spread", "COM pull force",
+    "Write traj.", "Update", "Constraints", "Comm. energies",
     "Enforced rotation", "Add rot. forces", "Coordinate swapping", "IMD", "Test"
 };
 
@@ -110,8 +113,14 @@ static const char *wcsn[ewcsNR] =
     "DD redist.", "DD NS grid + sort", "DD setup comm.",
     "DD make top.", "DD make constr.", "DD top. other",
     "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc.",
-    "Bonded F", "Nonbonded F", "Ewald F correction",
-    "NB X buffer ops.", "NB F buffer ops."
+    "Bonded F",
+    "Bonded-FEP F",
+    "Restraints F",
+    "Listed buffer ops.",
+    "Nonbonded F",
+    "Ewald F correction",
+    "NB X buffer ops.",
+    "NB F buffer ops.",
 };
 
 gmx_bool wallcycle_have_counter(void)
@@ -388,6 +397,12 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 
     wcc = wc->wcc;
 
+    /* The GPU wait estimate counter is used for load balancing only
+     * and will mess up the total due to double counting: clear it.
+     */
+    wcc[ewcWAIT_GPU_NB_L_EST].n = 0;
+    wcc[ewcWAIT_GPU_NB_L_EST].c = 0;
+
     for (i = 0; i < ewcNR; i++)
     {
         if (is_pme_counter(i) || (i == ewcRUN && cr->duty == DUTY_PME))
@@ -519,6 +534,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
     char   nthreads_str[6];
     char   ncalls_str[11];
     double wallt;
+    double percentage = (tot > 0.) ? (100. * c_sum / tot) : 0.;
 
     if (c_sum > 0)
     {
@@ -553,7 +569,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
 
         fprintf(fplog, " %-19.19s %4s %4s %10s  %10.3f %14.3f %5.1f\n",
                 name, nnodes_str, nthreads_str, ncalls_str, wallt,
-                c_sum*1e-9, 100*c_sum/tot);
+                c_sum*1e-9, percentage);
     }
 }
 
@@ -622,7 +638,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 {
     double     *cyc_sum;
     double      tot, tot_for_pp, tot_for_rest, tot_gpu, tot_cpu_overlap, gpu_cpu_ratio, tot_k;
-    double      c2t, c2t_pp, c2t_pme;
+    double      c2t, c2t_pp, c2t_pme = 0;
     int         i, j, npp, nth_pp, nth_pme, nth_tot;
     char        buf[STRLEN];
     const char *hline = "-----------------------------------------------------------------------------";
@@ -651,7 +667,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     {
         c2t     = realtime/tot;
         c2t_pp  = c2t * nth_tot / (double) (npp*nth_pp);
-        c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
+        if (npme > 0)
+        {
+            c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
+        }
     }
     else
     {
@@ -854,6 +873,13 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         }
     }
 
+    if (wc->wc_barrier)
+    {
+        md_print_warn(NULL, fplog,
+                      "MPI_Barrier was called before each cycle start/stop\n"
+                      "call, so timings are not those of real runs.\n");
+    }
+
     if (wc->wcc[ewcNB_XF_BUF_OPS].n > 0 &&
         (cyc_sum[ewcDOMDEC] > tot*0.1 ||
          cyc_sum[ewcNS] > tot*0.1))
@@ -917,6 +943,17 @@ void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs)
     }
 }
 
+void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs)
+{
+    if (wc == NULL)
+    {
+        return;
+    }
+
+    wallcycle_sub_start(wc, ewcs);
+    wc->wcsc[ewcs].n--;
+}
+
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
 {
     if (wc != NULL)
@@ -929,6 +966,9 @@ void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
 #else
 
 void wallcycle_sub_start(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
+{
+}
+void wallcycle_sub_start_nocount(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)
 {
 }
 void wallcycle_sub_stop(gmx_wallcycle_t gmx_unused wc, int gmx_unused ewcs)

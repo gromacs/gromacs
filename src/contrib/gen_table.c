@@ -759,7 +759,7 @@ int main(int argc,char *argv[])
   int  eel=0,m=0;
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   
   if (strcmp(opt[0],"cut") == 0) 

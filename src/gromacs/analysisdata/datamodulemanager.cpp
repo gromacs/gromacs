@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include "gromacs/analysisdata/datamodulemanager.h"
+#include "gmxpre.h"
+
+#include "datamodulemanager.h"
 
 #include <vector>
 
@@ -247,6 +249,7 @@ AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData        *data,
             module->pointsAdded(frame.pointSet(j));
         }
         module->frameFinished(frame.header());
+        module->frameFinishedSerial(frame.header().index());
     }
     if (state_ == eFinished)
     {
@@ -499,6 +502,11 @@ AnalysisDataModuleManager::notifyFrameFinish(const AnalysisDataFrameHeader &head
                 i->module->frameFinished(header);
             }
         }
+    }
+    Impl::ModuleList::const_iterator i;
+    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+    {
+        i->module->frameFinishedSerial(header.index());
     }
 }
 

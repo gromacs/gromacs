@@ -34,14 +34,12 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/topology/symtab.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void replace_atom(t_topology *top, int inr, char *anm, char *resnm,
                   real q, real m, int type)
@@ -112,7 +110,6 @@ static void delete_from_interactions(t_idef *idef, int inr)
             idef->il[i].iatoms[j] = niatoms[j];
         }
         idef->il[i].nr = nnr;
-        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         sfree(niatoms);
     }
 }

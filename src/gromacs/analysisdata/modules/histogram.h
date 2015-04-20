@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,11 @@
 #ifndef GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 #define GMX_ANALYSISDATA_MODULES_HISTOGRAM_H
 
-#include "../abstractdata.h"
-#include "../arraydata.h"
-#include "../datamodule.h"
-#include "../../utility/uniqueptr.h"
+#include <boost/shared_ptr.hpp>
+
+#include "gromacs/analysisdata/abstractdata.h"
+#include "gromacs/analysisdata/arraydata.h"
+#include "gromacs/analysisdata/datamodule.h"
 
 namespace gmx
 {
@@ -236,17 +237,10 @@ class AnalysisHistogramSettings
 };
 
 
-namespace internal
-{
-
-class BasicHistogramImpl;
-
-}   // namespace internal
-
 class AbstractAverageHistogram;
 
 //! Smart pointer to manage an AbstractAverageHistogram object.
-typedef gmx_unique_ptr<AbstractAverageHistogram>::type
+typedef boost::shared_ptr<AbstractAverageHistogram>
     AverageHistogramPointer;
 
 /*! \brief
@@ -261,6 +255,8 @@ typedef gmx_unique_ptr<AbstractAverageHistogram>::type
  *
  * This class can represent multiple histograms in one object: each column in
  * the data is an independent histogram.
+ * The X values correspond to center of the bins, except for a cumulative
+ * histogram made with makeCumulative().
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -276,6 +272,9 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         /*! \brief
          * Creates a copy of the histogram with double the bin width.
          *
+         * \param[in] bIntegerBins If `true`, the first bin in the result will
+         *     cover the first bin from the source. Otherwise, the first bin
+         *     will cover first two bins from the source.
          * \throws std::bad_alloc if out of memory.
          *
          * The caller is responsible of deleting the returned object.
@@ -295,6 +294,14 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         AverageHistogramPointer clone() const;
         //! Normalizes the histogram such that the integral over it is one.
         void normalizeProbability();
+        /*! \brief
+         * Makes the histograms cumulative by summing up each bin to all bins
+         * after it.
+         *
+         * The X values in the data are adjusted such that they match the right
+         * edges of bins instead of bin centers.
+         */
+        void makeCumulative();
         //! Scales a single histogram by a uniform scaling factor.
         void scaleSingle(int index, real factor);
         //! Scales all histograms by a uniform scaling factor.
@@ -343,6 +350,10 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * The number of columns for all data sets equals the number of bins in the
  * histogram.
  *
+ * The histograms are accumulated as 64-bit integers within a frame and summed
+ * in double precision across frames, even if the output data is in single
+ * precision.
+ *
  * \inpublicapi
  * \ingroup module_analysisdata
  */
@@ -389,13 +400,16 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
+        virtual void frameFinishedSerial(int frameIndex);
         virtual void dataFinished();
 
     private:
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        PrivateImplPointer<internal::BasicHistogramImpl> impl_;
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 
         // Copy and assign disallowed by base.
 };
@@ -415,6 +429,9 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
  * All input columns for a data set are averaged into the same histogram.
  * The number of columns for all data sets equals the number of bins in the
  * histogram.
+ *
+ * The histograms are accumulated in double precision, even if the output data
+ * is in single precision.
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -448,13 +465,16 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
+        virtual void frameFinishedSerial(int frameIndex);
         virtual void dataFinished();
 
     private:
         virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
         virtual bool requestStorageInternal(int nframes);
 
-        PrivateImplPointer<internal::BasicHistogramImpl> impl_;
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 
         // Copy and assign disallowed by base.
 };

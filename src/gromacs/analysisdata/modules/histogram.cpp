@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
-#include "gromacs/analysisdata/modules/histogram.h"
+#include "gmxpre.h"
+
+#include "histogram.h"
 
 #include <cmath>
 
@@ -48,6 +50,8 @@
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
+#include "gromacs/analysisdata/framelocaldata.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -282,7 +286,7 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
 
     AverageHistogramPointer dest(
             new StaticAverageHistogram(
-                    histogramFromBins(xstart(), nbins, 2*xstep())
+                    histogramFromBins(settings().firstEdge(), nbins, 2*xstep())
                         .integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
     dest->allocateValues();
@@ -329,6 +333,7 @@ AbstractAverageHistogram::clone() const
 {
     AverageHistogramPointer dest(new StaticAverageHistogram());
     copyContents(this, dest.get());
+    dest->settings_ = settings_;
     return dest;
 }
 
@@ -338,7 +343,7 @@ AbstractAverageHistogram::normalizeProbability()
 {
     for (int c = 0; c < columnCount(); ++c)
     {
-        real sum = 0;
+        double sum = 0;
         for (int i = 0; i < rowCount(); ++i)
         {
             sum += value(i, c).value();
@@ -348,6 +353,24 @@ AbstractAverageHistogram::normalizeProbability()
             scaleSingle(c, 1.0 / (sum * xstep()));
         }
     }
+}
+
+void
+AbstractAverageHistogram::makeCumulative()
+{
+    for (int c = 0; c < columnCount(); ++c)
+    {
+        double sum = 0;
+        for (int i = 0; i < rowCount(); ++i)
+        {
+            sum += value(i, c).value();
+            // Clear the error, as we don't cumulate that.
+            value(i, c).clear();
+            value(i, c).setValue(sum);
+        }
+    }
+    setXAxis(settings().firstEdge() + settings().binWidth(),
+             settings().binWidth());
 }
 
 
@@ -502,9 +525,14 @@ BasicAverageHistogramModule::dataFinished()
  * BasicHistogramImpl
  */
 
-/*! \internal \brief
- * Private implementation class for AnalysisDataSimpleHistogramModule and
- * AnalysisDataWeightedHistogramModule.
+/*! \internal
+ * \brief
+ * Base class for private implementation classes for histogram modules.
+ *
+ * Actual implementation classes are derived from this and add an accumulation
+ * data member that is specific to the histogram type in question.
+ * This is done like this to keep implementation details out of the header, and
+ * to not unnecessarily duplicate code.
  *
  * \ingroup module_analysisdata
  */
@@ -518,16 +546,13 @@ class BasicHistogramImpl
         BasicHistogramImpl();
         //! Creates an histogram impl with defined bin parameters.
         explicit BasicHistogramImpl(const AnalysisHistogramSettings &settings);
-        ~BasicHistogramImpl();
+        // Virtual only for simplicity.
+        virtual ~BasicHistogramImpl();
 
         /*! \brief
          * (Re)initializes the histogram from settings.
          */
         void init(const AnalysisHistogramSettings &settings);
-        /*! \brief
-         * Initializes data storage frame when a new frame starts.
-         */
-        void initFrame(int dataSetCount, AnalysisDataStorageFrame *frame);
 
         //! Storage implementation object.
         AnalysisDataStorage                  storage_;
@@ -560,21 +585,6 @@ void BasicHistogramImpl::init(const AnalysisHistogramSettings &settings)
     averager_->init(settings);
 }
 
-
-void
-BasicHistogramImpl::initFrame(int dataSetCount, AnalysisDataStorageFrame *frame)
-{
-    for (int s = 0; s < dataSetCount; ++s)
-    {
-        frame->selectDataSet(s);
-        for (int i = 0; i < frame->columnCount(); ++i)
-        {
-            frame->setValue(i, 0.0);
-        }
-    }
-    frame->selectDataSet(0);
-}
-
 }   // namespace internal
 
 
@@ -582,15 +592,37 @@ BasicHistogramImpl::initFrame(int dataSetCount, AnalysisDataStorageFrame *frame)
  * AnalysisDataSimpleHistogramModule
  */
 
+/*! \internal \brief
+ * Private implementation class for AnalysisDataSimpleHistogramModule.
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataSimpleHistogramModule::Impl : public internal::BasicHistogramImpl
+{
+    public:
+        //! Shorthand for the per-frame accumulation data structure type.
+        typedef AnalysisDataFrameLocalData<gmx_int64_t> FrameLocalData;
+
+        Impl() {}
+        //! Creates an histogram impl with defined bin parameters.
+        explicit Impl(const AnalysisHistogramSettings &settings)
+            : BasicHistogramImpl(settings)
+        {
+        }
+
+        //! Accumulates the histogram within a frame.
+        FrameLocalData  accumulator_;
+};
+
 AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
-    : impl_(new internal::BasicHistogramImpl())
+    : impl_(new Impl())
 {
 }
 
 
 AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule(
         const AnalysisHistogramSettings &settings)
-    : impl_(new internal::BasicHistogramImpl(settings))
+    : impl_(new Impl(settings))
 {
 }
 
@@ -641,11 +673,16 @@ AnalysisDataSimpleHistogramModule::parallelDataStarted(
         const AnalysisDataParallelOptions &options)
 {
     addModule(impl_->averager_);
-    setDataSetCount(data->dataSetCount());
-    for (int i = 0; i < data->dataSetCount(); ++i)
+    const int dataSetCount = data->dataSetCount();
+    const int columnCount  = settings().binCount();
+    setDataSetCount(dataSetCount);
+    impl_->accumulator_.setDataSetCount(dataSetCount);
+    for (int i = 0; i < dataSetCount; ++i)
     {
-        setColumnCount(i, settings().binCount());
+        setColumnCount(i, columnCount);
+        impl_->accumulator_.setColumnCount(i, columnCount);
     }
+    impl_->accumulator_.init(options);
     impl_->storage_.startParallelDataStorage(this, &moduleManager(), options);
     return true;
 }
@@ -654,17 +691,15 @@ AnalysisDataSimpleHistogramModule::parallelDataStarted(
 void
 AnalysisDataSimpleHistogramModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
-    AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
-    impl_->initFrame(dataSetCount(), &frame);
+    impl_->accumulator_.frameData(header.index()).clear();
 }
 
 
 void
 AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    AnalysisDataStorageFrame &frame =
-        impl_->storage_.currentFrame(points.frameIndex());
-    frame.selectDataSet(points.dataSetIndex());
+    Impl::FrameLocalData::DataSetHandle handle
+        = impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         if (points.present(i))
@@ -672,7 +707,7 @@ AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &po
             const int bin = settings().findBin(points.y(i));
             if (bin != -1)
             {
-                frame.value(bin) += 1;
+                handle.value(bin) += 1;
             }
         }
     }
@@ -682,7 +717,27 @@ AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &po
 void
 AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    impl_->storage_.finishFrame(header.index());
+    Impl::FrameLocalData::FrameHandle  handle
+        = impl_->accumulator_.frameData(header.index());
+    AnalysisDataStorageFrame          &frame = impl_->storage_.startFrame(header);
+    const int columnCount                    = settings().binCount();
+    for (int s = 0; s < dataSetCount(); ++s)
+    {
+        Impl::FrameLocalData::DataSetHandle dataSet = handle.dataSet(s);
+        frame.selectDataSet(s);
+        for (int i = 0; i < columnCount; ++i)
+        {
+            frame.setValue(i, dataSet.value(i));
+        }
+    }
+    frame.finishFrame();
+}
+
+
+void
+AnalysisDataSimpleHistogramModule::frameFinishedSerial(int frameIndex)
+{
+    impl_->storage_.finishFrameSerial(frameIndex);
 }
 
 
@@ -711,15 +766,37 @@ AnalysisDataSimpleHistogramModule::requestStorageInternal(int nframes)
  * AnalysisDataWeightedHistogramModule
  */
 
+/*! \internal \brief
+ * Private implementation class for AnalysisDataWeightedHistogramModule.
+ *
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataWeightedHistogramModule::Impl : public internal::BasicHistogramImpl
+{
+    public:
+        //! Shorthand for the per-frame accumulation data structure type.
+        typedef AnalysisDataFrameLocalData<double> FrameLocalData;
+
+        Impl() {}
+        //! Creates an histogram impl with defined bin parameters.
+        explicit Impl(const AnalysisHistogramSettings &settings)
+            : BasicHistogramImpl(settings)
+        {
+        }
+
+        //! Accumulates the histogram within a frame.
+        FrameLocalData  accumulator_;
+};
+
 AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule()
-    : impl_(new internal::BasicHistogramImpl())
+    : impl_(new Impl())
 {
 }
 
 
 AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule(
         const AnalysisHistogramSettings &settings)
-    : impl_(new internal::BasicHistogramImpl(settings))
+    : impl_(new Impl(settings))
 {
 }
 
@@ -769,11 +846,16 @@ AnalysisDataWeightedHistogramModule::parallelDataStarted(
         const AnalysisDataParallelOptions &options)
 {
     addModule(impl_->averager_);
-    setDataSetCount(data->dataSetCount());
-    for (int i = 0; i < data->dataSetCount(); ++i)
+    const int dataSetCount = data->dataSetCount();
+    const int columnCount  = settings().binCount();
+    setDataSetCount(dataSetCount);
+    impl_->accumulator_.setDataSetCount(dataSetCount);
+    for (int i = 0; i < dataSetCount; ++i)
     {
-        setColumnCount(i, settings().binCount());
+        setColumnCount(i, columnCount);
+        impl_->accumulator_.setColumnCount(i, columnCount);
     }
+    impl_->accumulator_.init(options);
     impl_->storage_.startParallelDataStorage(this, &moduleManager(), options);
     return true;
 }
@@ -782,8 +864,7 @@ AnalysisDataWeightedHistogramModule::parallelDataStarted(
 void
 AnalysisDataWeightedHistogramModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
-    AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
-    impl_->initFrame(dataSetCount(), &frame);
+    impl_->accumulator_.frameData(header.index()).clear();
 }
 
 
@@ -797,12 +878,11 @@ AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &
     int bin = settings().findBin(points.y(0));
     if (bin != -1)
     {
-        AnalysisDataStorageFrame &frame =
-            impl_->storage_.currentFrame(points.frameIndex());
-        frame.selectDataSet(points.dataSetIndex());
+        Impl::FrameLocalData::DataSetHandle  handle
+            = impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
         for (int i = 1; i < points.columnCount(); ++i)
         {
-            frame.value(bin) += points.y(i);
+            handle.value(bin) += points.y(i);
         }
     }
 }
@@ -811,7 +891,27 @@ AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &
 void
 AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    impl_->storage_.finishFrame(header.index());
+    Impl::FrameLocalData::FrameHandle  handle
+        = impl_->accumulator_.frameData(header.index());
+    AnalysisDataStorageFrame          &frame = impl_->storage_.startFrame(header);
+    const int columnCount                    = settings().binCount();
+    for (int s = 0; s < dataSetCount(); ++s)
+    {
+        Impl::FrameLocalData::DataSetHandle dataSet = handle.dataSet(s);
+        frame.selectDataSet(s);
+        for (int i = 0; i < columnCount; ++i)
+        {
+            frame.setValue(i, dataSet.value(i));
+        }
+    }
+    frame.finishFrame();
+}
+
+
+void
+AnalysisDataWeightedHistogramModule::frameFinishedSerial(int frameIndex)
+{
+    impl_->storage_.finishFrameSerial(frameIndex);
 }
 
 

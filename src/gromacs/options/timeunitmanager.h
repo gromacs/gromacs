@@ -43,7 +43,7 @@
 #ifndef GMX_OPTIONS_TIMEUNITMANAGER_H
 #define GMX_OPTIONS_TIMEUNITMANAGER_H
 
-#include "../utility/gmxassert.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

@@ -35,24 +35,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gmxpre.h"
+
 #include "repl_ex.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <math.h>
 
-#include "network.h"
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/math/units.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/math/units.h"
-#include "copyrite.h"
-#include "gromacs/math/vec.h"
-#include "names.h"
-#include "domdec.h"
-#include "main.h"
-#include "gromacs/random/random.h"
 
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */

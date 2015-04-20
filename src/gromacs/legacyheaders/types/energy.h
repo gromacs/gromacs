@@ -38,7 +38,7 @@
 #ifndef GMX_TYPES_ENERGY_H
 #define GMX_TYPES_ENERGY_H
 
-#include "simple.h"
+#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -34,9 +34,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "topio.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -48,34 +48,31 @@
 
 #include <sys/types.h>
 
-#include "gromacs/utility/futil.h"
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "txtdump.h"
+#include "gromacs/gmxpreprocess/gmxcpp.h"
+#include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
+#include "gromacs/gmxpreprocess/gpp_nextnb.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/gmxpreprocess/toppush.h"
+#include "gromacs/gmxpreprocess/topshake.h"
+#include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/gmxpreprocess/vsite_parm.h"
+#include "gromacs/legacyheaders/genborn.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/math/units.h"
-#include "macros.h"
-#include "names.h"
-#include "gromacs/utility/cstringutil.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
-#include "warninp.h"
-#include "vsite_parm.h"
-
-#include "grompp-impl.h"
-#include "toputil.h"
-#include "toppush.h"
-#include "topdirs.h"
-#include "gpp_nextnb.h"
-#include "topio.h"
-#include "topshake.h"
-#include "gmxcpp.h"
-#include "gpp_bond_atomtype.h"
-#include "genborn.h"
-#include "gromacs/math/utilities.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 #define OPENDIR     '[' /* starting sign for directive */
 #define CLOSEDIR    ']' /* ending sign for directive   */
@@ -339,7 +336,7 @@ static char ** cpp_opts(const char *define, const char *include,
                     else
                     {
                         srenew(cppopts, ++ncppopts);
-                        cppopts[ncppopts-1] = strdup(buf);
+                        cppopts[ncppopts-1] = gmx_strdup(buf);
                     }
                     sfree(buf);
                     ptr = rptr;
@@ -642,7 +639,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
             set_warning_line(wi, cpp_cur_file(&handle), cpp_cur_linenr(&handle));
 
-            pline = strdup(line);
+            pline = gmx_strdup(line);
 
             /* Strip trailing '\' from pline, if it exists */
             sl = strlen(pline);
@@ -660,7 +657,7 @@ static char **read_topol(const char *infile, const char *outfile,
                 /* Since we depend on the '\' being present to continue to read, we copy line
                  * to a tmp string, strip the '\' from that string, and cat it to pline
                  */
-                tmp_line = strdup(line);
+                tmp_line = gmx_strdup(line);
 
                 sl = strlen(tmp_line);
                 if ((sl > 0) && (tmp_line[sl-1] == CONTINUE))
@@ -699,7 +696,7 @@ static char **read_topol(const char *infile, const char *outfile,
                      * without the brackets into dirstr, then
                      * skip spaces and tabs on either side of directive
                      */
-                    dirstr = strdup((pline+1));
+                    dirstr = gmx_strdup((pline+1));
                     if ((dummy2 = strchr (dirstr, CLOSEDIR)) != NULL)
                     {
                         (*dummy2) = 0;
@@ -999,7 +996,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
                         }
                         default:
-                            fprintf (stderr, "case: %d\n", d);
+                            fprintf (stderr, "case: %d\n", (int)d);
                             gmx_incons("unknown directive");
                     }
                 }

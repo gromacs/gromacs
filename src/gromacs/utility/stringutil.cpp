@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,11 +39,13 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
+#include "gmxpre.h"
+
 #include "stringutil.h"
 
 #include <cctype>
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 
 #include <algorithm>
@@ -151,28 +153,20 @@ std::vector<std::string> splitString(const std::string &str)
     return result;
 }
 
-std::string concatenateStrings(const char *const *sarray, size_t count)
-{
-    std::string result;
-
-    for (size_t i = 0; i < count && sarray[i] != NULL; ++i)
-    {
-        if (sarray[i][0] != '\0')
-        {
-            result.append(sarray[i]);
-            char lastchar = sarray[i][std::strlen(sarray[i])-1];
-            if (!std::isspace(lastchar))
-            {
-                result.append(" ");
-            }
-        }
-    }
-    result.resize(result.find_last_not_of(" \n\r\t") + 1);
-    return result;
-}
-
 namespace
 {
+
+/*! \brief
+ * Helper function to identify word boundaries for replaceAllWords().
+ *
+ * \returns  `true` if the character is considered part of a word.
+ *
+ * \ingroup module_utility
+ */
+bool isWordChar(char c)
+{
+    return std::isalnum(c) || c == '-' || c == '_';
+}
 
 /*! \brief
  * Common implementation for string replacement functions.
@@ -201,8 +195,8 @@ replaceInternal(const std::string &input, const char *from, const char *to,
         size_t matchEnd = matchPos + matchLength;
         if (bWholeWords)
         {
-            if (!((matchPos == 0 || !std::isalnum(input[matchPos-1]))
-                  && (matchEnd == input.length() || !std::isalnum(input[matchEnd]))))
+            if (!((matchPos == 0 || !isWordChar(input[matchPos-1]))
+                  && (matchEnd == input.length() || !isWordChar(input[matchEnd]))))
             {
                 matchPos = input.find(from, matchPos + 1);
                 continue;
@@ -253,7 +247,7 @@ replaceAllWords(const std::string &input, const std::string &from,
 
 TextLineWrapperSettings::TextLineWrapperSettings()
     : maxLength_(0), indent_(0), firstLineIndent_(-1),
-      bStripLeadingWhitespace_(true), continuationChar_('\0')
+      bStripLeadingWhitespace_(false), continuationChar_('\0')
 {
 }
 

@@ -35,18 +35,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "../timing/wallcycle.h"
-
-#include "../pbcutil/mshift.h"
-#include "../pbcutil/ishift.h"
-#include "../pbcutil/pbc.h"
-
-#include "typedefs.h"
-#include "vsite.h"
-#include "update.h"
-
-#ifndef _shellfc_h
-#define _shellfc_h
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/timing/wallcycle.h"
+#include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/legacyheaders/update.h"
 
 #ifdef __cplusplus
 extern "C" {

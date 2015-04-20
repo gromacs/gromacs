@@ -32,11 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#include "gmxpre.h"
+
 #include "nsfactor.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "config.h"
 
 #include <string.h>
 
@@ -117,7 +117,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
         i = line_no;
         if (sscanf(line, "%s %d %d %lf", atomnm, &p, &n, &slength) == 4)
         {
-            gnsf->atomnm[i]  = strdup(atomnm);
+            gnsf->atomnm[i]  = gmx_strdup(atomnm);
             gnsf->n[i]       = n;
             gnsf->p[i]       = p;
             gnsf->slength[i] = slength;

@@ -34,35 +34,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/ns.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "macros.h"
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/legacyheaders/force.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nonbonded.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/nsgrid.h"
+#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "nsgrid.h"
-#include "force.h"
-#include "nonbonded.h"
-#include "ns.h"
-#include "names.h"
-#include "nrnb.h"
-#include "txtdump.h"
-#include "gromacs/topology/mtop_util.h"
-
-#include "domdec.h"
-#include "adress.h"
-
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "adress.h"
 
 /*
  *    E X C L U S I O N   H A N D L I N G
@@ -289,11 +287,8 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
         /* Did we get the solvent loops so we can use optimized water kernels? */
         if (nbl->nlist_sr[eNL_VDWQQ_WATER].kernelptr_vf == NULL
             || nbl->nlist_sr[eNL_QQ_WATER].kernelptr_vf == NULL
-#ifndef DISABLE_WATERWATER_NLIST
             || nbl->nlist_sr[eNL_VDWQQ_WATERWATER].kernelptr_vf == NULL
-            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL
-#endif
-            )
+            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL)
         {
             fr->solvent_opt = esolNO;
             if (log != NULL)
@@ -432,6 +427,14 @@ static gmx_inline void close_i_nblist(t_nblist *nlist)
         nlist->jindex[nri+1] = nlist->nrj;
 
         len = nlist->nrj -  nlist->jindex[nri];
+        /* If there are no j-particles we have to reduce the
+         * number of i-particles again, to prevent errors in the
+         * kernel functions.
+         */
+        if ((len == 0) && (nlist->nri > 0))
+        {
+            nlist->nri--;
+        }
     }
 }
 
@@ -666,13 +669,11 @@ put_in_list_at(gmx_bool              bHaveVdW[],
 
     if (iwater != esolNO)
     {
-        vdwc = &nlist[eNL_VDWQQ_WATER];
-        vdw  = &nlist[eNL_VDW];
-        coul = &nlist[eNL_QQ_WATER];
-#ifndef DISABLE_WATERWATER_NLIST
+        vdwc    = &nlist[eNL_VDWQQ_WATER];
+        vdw     = &nlist[eNL_VDW];
+        coul    = &nlist[eNL_QQ_WATER];
         vdwc_ww = &nlist[eNL_VDWQQ_WATERWATER];
         coul_ww = &nlist[eNL_QQ_WATERWATER];
-#endif
     }
     else
     {
@@ -692,9 +693,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             if (bDoCoul && bDoVdW)
             {
                 new_i_nblist(vdwc, i_atom, shift, gid);
-#ifndef DISABLE_WATERWATER_NLIST
                 new_i_nblist(vdwc_ww, i_atom, shift, gid);
-#endif
             }
             if (bDoVdW)
             {
@@ -703,9 +702,7 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             if (bDoCoul)
             {
                 new_i_nblist(coul, i_atom, shift, gid);
-#ifndef DISABLE_WATERWATER_NLIST
                 new_i_nblist(coul_ww, i_atom, shift, gid);
-#endif
             }
             /* Loop over the j charge groups */
             for (j = 0; (j < nj); j++)
@@ -730,19 +727,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     }
                     else
                     {
-#ifdef DISABLE_WATERWATER_NLIST
-                        /* Add entries for the three atoms - only do VdW if we need to */
-                        if (!bDoVdW)
-                        {
-                            add_j_to_nblist(coul, jj0, bLR);
-                        }
-                        else
-                        {
-                            add_j_to_nblist(vdwc, jj0, bLR);
-                        }
-                        add_j_to_nblist(coul, jj0+1, bLR);
-                        add_j_to_nblist(coul, jj0+2, bLR);
-#else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
@@ -752,7 +736,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             add_j_to_nblist(vdwc_ww, jj0, bLR);
                         }
-#endif
                     }
                 }
                 else if (iwater == esolTIP4P && jwater == esolTIP4P)
@@ -765,16 +748,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                     }
                     else
                     {
-#ifdef DISABLE_WATERWATER_NLIST
-                        /* Add entries for the four atoms - only do VdW if we need to */
-                        if (bDoVdW)
-                        {
-                            add_j_to_nblist(vdw, jj0, bLR);
-                        }
-                        add_j_to_nblist(coul, jj0+1, bLR);
-                        add_j_to_nblist(coul, jj0+2, bLR);
-                        add_j_to_nblist(coul, jj0+3, bLR);
-#else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
@@ -784,7 +757,6 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                         {
                             add_j_to_nblist(vdwc_ww, jj0, bLR);
                         }
-#endif
                     }
                 }
                 else
@@ -845,10 +817,8 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             close_i_nblist(vdw);
             close_i_nblist(coul);
             close_i_nblist(vdwc);
-#ifndef DISABLE_WATERWATER_NLIST
             close_i_nblist(coul_ww);
             close_i_nblist(vdwc_ww);
-#endif
         }
         else
         {
@@ -2862,108 +2832,4 @@ int search_neighbours(FILE *log, t_forcerec *fr,
     /* inc_nrnb(nrnb,eNR_LR,fr->nlr); */
 
     return nsearch;
-}
-
-int natoms_beyond_ns_buffer(t_inputrec *ir, t_forcerec *fr, t_block *cgs,
-                            matrix scale_tot, rvec *x)
-{
-    int  cg0, cg1, cg, a0, a1, a, i, j;
-    real rint, hbuf2, scale;
-    rvec *cg_cm, cgsc;
-    gmx_bool bIsotropic;
-    int  nBeyond;
-
-    nBeyond = 0;
-
-    rint = max(ir->rcoulomb, ir->rvdw);
-    if (ir->rlist < rint)
-    {
-        gmx_fatal(FARGS, "The neighbor search buffer has negative size: %f nm",
-                  ir->rlist - rint);
-    }
-    cg_cm = fr->cg_cm;
-
-    cg0 = fr->cg0;
-    cg1 = fr->hcg;
-
-    if (!EI_DYNAMICS(ir->eI) || !DYNAMIC_BOX(*ir))
-    {
-        hbuf2 = sqr(0.5*(ir->rlist - rint));
-        for (cg = cg0; cg < cg1; cg++)
-        {
-            a0 = cgs->index[cg];
-            a1 = cgs->index[cg+1];
-            for (a = a0; a < a1; a++)
-            {
-                if (distance2(cg_cm[cg], x[a]) > hbuf2)
-                {
-                    nBeyond++;
-                }
-            }
-        }
-    }
-    else
-    {
-        bIsotropic = TRUE;
-        scale      = scale_tot[0][0];
-        for (i = 1; i < DIM; i++)
-        {
-            /* With anisotropic scaling, the original spherical ns volumes become
-             * ellipsoids. To avoid costly transformations we use the minimum
-             * eigenvalue of the scaling matrix for determining the buffer size.
-             * Since the lower half is 0, the eigenvalues are the diagonal elements.
-             */
-            scale = min(scale, scale_tot[i][i]);
-            if (scale_tot[i][i] != scale_tot[i-1][i-1])
-            {
-                bIsotropic = FALSE;
-            }
-            for (j = 0; j < i; j++)
-            {
-                if (scale_tot[i][j] != 0)
-                {
-                    bIsotropic = FALSE;
-                }
-            }
-        }
-        hbuf2 = sqr(0.5*(scale*ir->rlist - rint));
-        if (bIsotropic)
-        {
-            for (cg = cg0; cg < cg1; cg++)
-            {
-                svmul(scale, cg_cm[cg], cgsc);
-                a0 = cgs->index[cg];
-                a1 = cgs->index[cg+1];
-                for (a = a0; a < a1; a++)
-                {
-                    if (distance2(cgsc, x[a]) > hbuf2)
-                    {
-                        nBeyond++;
-                    }
-                }
-            }
-        }
-        else
-        {
-            /* Anistropic scaling */
-            for (cg = cg0; cg < cg1; cg++)
-            {
-                /* Since scale_tot contains the transpose of the scaling matrix,
-                 * we need to multiply with the transpose.
-                 */
-                tmvmul_ur0(scale_tot, cg_cm[cg], cgsc);
-                a0 = cgs->index[cg];
-                a1 = cgs->index[cg+1];
-                for (a = a0; a < a1; a++)
-                {
-                    if (distance2(cgsc, x[a]) > hbuf2)
-                    {
-                        nBeyond++;
-                    }
-                }
-            }
-        }
-    }
-
-    return nBeyond;
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,47 +32,49 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
-#include <string>
-#include <vector>
+#include "gromacs/legacyheaders/gmx_detect_hardware.h"
+
+#include "config.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <string>
+#include <vector>
+
 #ifdef HAVE_UNISTD_H
 /* For sysconf */
 #include <unistd.h>
 #endif
+#ifdef GMX_NATIVE_WINDOWS
+#include <windows.h>
+#endif
 
-#include "types/enums.h"
-#include "types/hw_info.h"
-#include "types/commrec.h"
-#include "network.h"
-#include "md_logging.h"
-#include "gmx_cpuid.h"
-#include "gpu_utils.h"
-#include "copyrite.h"
-#include "gmx_detect_hardware.h"
-#include "md_logging.h"
+#include "thread_mpi/threads.h"
 
+#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/gmx_cpuid.h"
+#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/sysinfo.h"
 
-#include "thread_mpi/threads.h"
-
-#ifdef GMX_NATIVE_WINDOWS
-#include <windows.h>
-#endif
 
 #ifdef GMX_GPU
 const gmx_bool bGPUBinary = TRUE;
@@ -152,27 +154,6 @@ static void print_gpu_detection_stats(FILE                 *fplog,
     }
 }
 
-/*! \brief Helper function for writing comma-separated GPU IDs.
- *
- * \param[in] ids  A container of integer GPU IDs
- * \return         A comma-separated string of GPU IDs */
-template <typename Container>
-static std::string makeGpuIdsString(const Container &ids)
-{
-    std::string output;
-
-    if (0 != ids.size())
-    {
-        typename Container::const_iterator it = ids.begin();
-        output += gmx::formatString("%d", *it);
-        for (++it; it != ids.end(); ++it)
-        {
-            output += gmx::formatString(",%d", *it);
-        }
-    }
-    return output;
-}
-
 /*! \brief Helper function for reporting GPU usage information
  * in the mdrun log file
  *
@@ -198,6 +179,21 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
     }
 
     std::string output;
+    if (!gpu_opt->bUserSet)
+    {
+        // gpu_opt->cuda_dev_compatible is only populated during auto-selection
+        std::string gpuIdsString =
+            formatAndJoin(gmx::constArrayRefFromArray(gpu_opt->cuda_dev_compatible,
+                                                      gpu_opt->ncuda_dev_compatible),
+                          ",", gmx::StringFormatter("%d"));
+        bool bPluralGpus = gpu_opt->ncuda_dev_compatible > 1;
+        output += gmx::formatString("%d compatible GPU%s %s present, with ID%s %s\n",
+                                    gpu_opt->ncuda_dev_compatible,
+                                    bPluralGpus ? "s" : "",
+                                    bPluralGpus ? "are" : "is",
+                                    bPluralGpus ? "s" : "",
+                                    gpuIdsString.c_str());
+    }
 
     {
         std::vector<int> gpuIdsInUse;
@@ -205,7 +201,8 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
         {
             gpuIdsInUse.push_back(get_gpu_device_id(gpu_info, gpu_opt, i));
         }
-        std::string gpuIdsString = makeGpuIdsString(gpuIdsInUse);
+        std::string gpuIdsString =
+            formatAndJoin(gpuIdsInUse, ",", gmx::StringFormatter("%d"));
         int         numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
         bool        bPluralGpus  = numGpusInUse > 1;
 
@@ -251,7 +248,7 @@ check_use_of_rdtscp_on_this_cpu(FILE                *fplog,
         md_print_warn(cr, fplog, "The current CPU can measure timings more accurately than the code in\n"
                       "%s was configured to use. This might affect your simulation\n"
                       "speed as accurate timings are needed for load-balancing.\n"
-                      "Please consider rebuilding %s with the GMX_USE_RDTSCP=OFF CMake option.\n",
+                      "Please consider rebuilding %s with the GMX_USE_RDTSCP=ON CMake option.\n",
                       ShortProgram(), ShortProgram());
     }
 }
@@ -813,17 +810,7 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
     else
     {
         pick_compatible_gpus(&hwinfo_g->gpu_info, gpu_opt);
-
-        if (gpu_opt->ncuda_dev_use > cr->nrank_pp_intranode)
-        {
-            /* We picked more GPUs than we can use: limit the number.
-             * We print detailed messages about this later in
-             * gmx_check_hw_runconf_consistency.
-             */
-            limit_num_gpus_used(gpu_opt, cr->nrank_pp_intranode);
-        }
-
-        gpu_opt->bUserSet = FALSE;
+        limit_num_gpus_used(gpu_opt, cr->nrank_pp_intranode);
     }
 
     /* If the user asked for a GPU, check whether we have a GPU */
@@ -833,30 +820,26 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
     }
 }
 
-static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int count)
+/* If we detected more compatible GPUs than we can use, limit the
+ * number. We print detailed messages about this later in
+ * gmx_check_hw_runconf_consistency.
+ */
+static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int maxNumberToUse)
 {
-    int ndev_use;
+    GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
+    GMX_RELEASE_ASSERT(maxNumberToUse >= 1,
+                       gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
+                                         maxNumberToUse, gpu_opt->ncuda_dev_compatible).c_str());
 
-    assert(gpu_opt);
-
-    ndev_use = gpu_opt->ncuda_dev_use;
-
-    if (count > ndev_use)
+    /* Don't increase the number of GPUs used beyond (e.g.) the number
+       of PP ranks */
+    gpu_opt->ncuda_dev_use = std::min(gpu_opt->ncuda_dev_compatible, maxNumberToUse);
+    snew(gpu_opt->cuda_dev_use, gpu_opt->ncuda_dev_use);
+    for (int i = 0; i != gpu_opt->ncuda_dev_use; ++i)
     {
-        /* won't increase the # of GPUs */
-        return;
+        /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
+        gpu_opt->cuda_dev_use[i] = gpu_opt->cuda_dev_compatible[i];
     }
-
-    if (count < 1)
-    {
-        char sbuf[STRLEN];
-        sprintf(sbuf, "Limiting the number of GPUs to <1 doesn't make sense (detected %d, %d requested)!",
-                ndev_use, count);
-        gmx_incons(sbuf);
-    }
-
-    /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-    gpu_opt->ncuda_dev_use = count;
 }
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)

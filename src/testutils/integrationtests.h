@@ -86,19 +86,16 @@ class IntegrationTestFixture : public ::testing::Test
          * sufficiently modular to permit it to work. */
         void redirectStderrToDevNull();
 
-        /* TEST_F() constructs derived classes, and those classes
-         * might need to access implementation details, so we
-         * cannot use the private access specifer here. */
-    protected:
+        /* TEST_F() constructs derived classes, and those classes and
+         * their member objects might need to access implementation
+         * details, so we cannot use the private access specifer
+         * here. */
+    public:
 
         /*! \brief Object that manages finding input files, writing
          * temporary output files and cleaning up files.
          */
         ::gmx::test::TestFileManager fileManager_;
-
-    public:
-        //! Number of backup files to write
-        static std::string s_maxBackup;
 };
 
 } // namespace test

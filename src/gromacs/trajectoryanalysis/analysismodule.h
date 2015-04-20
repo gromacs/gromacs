@@ -47,9 +47,10 @@
 #include <string>
 #include <vector>
 
-#include "../selection/selection.h" // For gmx::SelectionList
-#include "../utility/common.h"
-#include "../utility/uniqueptr.h"
+#include <boost/shared_ptr.hpp>
+
+#include "gromacs/selection/selection.h" // For gmx::SelectionList
+#include "gromacs/utility/classhelpers.h"
 
 struct t_pbc;
 struct t_trxframe;
@@ -177,7 +178,7 @@ class TrajectoryAnalysisModuleData
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
-typedef gmx_unique_ptr<TrajectoryAnalysisModuleData>::type
+typedef boost::shared_ptr<TrajectoryAnalysisModuleData>
     TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
@@ -294,7 +295,8 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual void initAfterFirstFrame(const t_trxframe &fr);
+        virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
+                                         const t_trxframe                 &fr);
 
         /*! \brief
          * Starts the analysis of frames.
@@ -441,6 +443,20 @@ class TrajectoryAnalysisModule
          * care about external modifications.
          */
         AbstractAnalysisData &datasetFromName(const char *name) const;
+        /*! \brief
+         * Processes data in AnalysisData objects in serial for each frame.
+         *
+         * \param[in] frameIndex  Index of the frame that has been finished.
+         *
+         * This method is called by the framework in order for each frame,
+         * after the analysis for that frame has been finished.  These calls
+         * always execute in serial and in sequential frame order, even during
+         * parallel analysis where multiple analyzeFrame() calls may be
+         * executing concurrently.
+         *
+         * \see AnalysisData::finishFrameSerial()
+         */
+        void finishFrameSerial(int frameIndex);
 
     protected:
         /*! \brief
@@ -496,7 +512,7 @@ class TrajectoryAnalysisModule
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
-typedef gmx_unique_ptr<TrajectoryAnalysisModule>::type
+typedef boost::shared_ptr<TrajectoryAnalysisModule>
     TrajectoryAnalysisModulePointer;
 
 } // namespace gmx

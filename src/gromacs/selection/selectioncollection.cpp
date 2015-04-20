@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
 #include "selectioncollection.h"
 
 #include <cctype>
@@ -49,18 +51,18 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "gromacs/fileio/trx.h"
 #include "gromacs/legacyheaders/oenv.h"
-
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selection.h"
+#include "gromacs/selection/selhelp.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/messagestringcollector.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -69,10 +71,8 @@
 #include "parser.h"
 #include "poscalc.h"
 #include "scanner.h"
-#include "selection.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
-#include "selhelp.h"
 #include "selmethod.h"
 #include "symrec.h"
 
@@ -84,7 +84,7 @@ namespace gmx
  */
 
 SelectionCollection::Impl::Impl()
-    : debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
+    : maxAtomIndex_(0), debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
 {
     sc_.nvars     = 0;
     sc_.varstrs   = NULL;
@@ -189,7 +189,8 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
     do
     {
         YYSTYPE value;
-        int     token = _gmx_sel_yylex(&value, scanner);
+        YYLTYPE location;
+        int     token = _gmx_sel_yylex(&value, &location, scanner);
         if (bInteractive)
         {
             if (token == 0)
@@ -205,7 +206,7 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
             }
             prevToken = token;
         }
-        status = _gmx_sel_yypush_parse(parserState, token, &value, scanner);
+        status = _gmx_sel_yypush_parse(parserState, token, &value, &location, scanner);
     }
     while (status == YYPUSH_MORE);
     _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
@@ -336,11 +337,7 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
     gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
     gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
 
-    MessageStringCollector   errors;
-    _gmx_sel_set_lexer_error_reporter(scanner, &errors);
-
-    size_t oldCount = sc->sel.size();
-    bool   bOk      = false;
+    size_t                   oldCount = sc->sel.size();
     {
         boost::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
@@ -380,37 +377,33 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
                     // error/warning if some input was ignored.
                     goto early_termination;
                 }
-                if (!errors.isEmpty() && bInteractive)
-                {
-                    fprintf(stderr, "%s", errors.toString().c_str());
-                    errors.clear();
-                }
             }
-            status = _gmx_sel_yypush_parse(parserState.get(), 0, NULL,
-                                           scanner);
+            {
+                YYLTYPE location;
+                status = _gmx_sel_yypush_parse(parserState.get(), 0, NULL,
+                                               &location, scanner);
+            }
+            // TODO: Remove added selections from the collection if parsing failed?
             _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
 early_termination:
-            bOk = (status == 0);
+            GMX_RELEASE_ASSERT(status == 0,
+                               "Parser errors should have resulted in an exception");
         }
         else
         {
             int status = runParserLoop(scanner, parserState.get(), false);
-            bOk = (status == 0);
+            GMX_RELEASE_ASSERT(status == 0,
+                               "Parser errors should have resulted in an exception");
         }
     }
     scannerGuard.reset();
     int nr = sc->sel.size() - oldCount;
     if (maxnr > 0 && nr != maxnr)
     {
-        bOk = false;
-        errors.append("Too few selections provided");
-    }
-
-    // TODO: Remove added selections from the collection if parsing failed?
-    if (!bOk || !errors.isEmpty())
-    {
-        GMX_ASSERT(!bOk && !errors.isEmpty(), "Inconsistent error reporting");
-        GMX_THROW(InvalidInputError(errors.toString()));
+        std::string message
+            = formatString("Too few selections provided; got %d, expected %d",
+                           nr, maxnr);
+        GMX_THROW(InvalidInputError(message));
     }
 
     SelectionList                     result;
@@ -421,6 +414,44 @@ early_termination:
         result.push_back(Selection(i->get()));
     }
     return result;
+}
+
+/*! \brief
+ * Checks that index groups have valid atom indices.
+ *
+ * \param[in]    root    Root of selection tree to process.
+ * \param[in]    natoms  Maximum number of atoms that the selections are set
+ *     to evaluate.
+ * \param        errors  Object for reporting any error messages.
+ * \throws std::bad_alloc if out of memory.
+ *
+ * Recursively checks the selection tree for index groups.
+ * Each found group is checked that it only contains atom indices that match
+ * the topology/maximum number of atoms set for the selection collection.
+ * Any issues are reported to \p errors.
+ */
+void checkExternalGroups(const SelectionTreeElementPointer &root,
+                         int                                natoms,
+                         ExceptionInitializer              *errors)
+{
+    if (root->type == SEL_CONST && root->v.type == GROUP_VALUE)
+    {
+        try
+        {
+            root->checkIndexGroup(natoms);
+        }
+        catch (const UserInputError &)
+        {
+            errors->addCurrentExceptionAsNested();
+        }
+    }
+
+    SelectionTreeElementPointer child = root->child;
+    while (child)
+    {
+        checkExternalGroups(child, natoms, errors);
+        child = child->next;
+    }
 }
 
 }   // namespace
@@ -435,7 +466,7 @@ void SelectionCollection::Impl::resolveExternalGroups(
     {
         try
         {
-            root->resolveIndexGroupReference(grps_);
+            root->resolveIndexGroupReference(grps_, sc_.gall.isize);
         }
         catch (const UserInputError &)
         {
@@ -552,6 +583,20 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
     {
         natoms = top->atoms.nr;
     }
+    if (impl_->bExternalGroupsSet_)
+    {
+        ExceptionInitializer        errors("Invalid index group references encountered");
+        SelectionTreeElementPointer root = impl_->sc_.root;
+        while (root)
+        {
+            checkExternalGroups(root, natoms, &errors);
+            root = root->next;
+        }
+        if (errors.hasNestedExceptions())
+        {
+            GMX_THROW(InconsistentInputError(errors));
+        }
+    }
     gmx_ana_selcollection_t *sc = &impl_->sc_;
     // Do this first, as it allocates memory, while the others don't throw.
     gmx_ana_index_init_simple(&sc->gall, natoms);
@@ -568,11 +613,12 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     impl_->grps_               = grps;
     impl_->bExternalGroupsSet_ = true;
 
-    ExceptionInitializer        errors("Unknown index group references encountered");
+    ExceptionInitializer        errors("Invalid index group reference(s)");
     SelectionTreeElementPointer root = impl_->sc_.root;
     while (root)
     {
         impl_->resolveExternalGroups(root, &errors);
+        root->checkUnsortedAtoms(true, &errors);
         root = root->next;
     }
     if (errors.hasNestedExceptions())
@@ -721,7 +767,7 @@ SelectionCollection::compile()
         const internal::SelectionData &sel = **iter;
         if (sel.hasFlag(efSelection_OnlyAtoms))
         {
-            if (sel.type() != INDEX_ATOM)
+            if (!sel.hasOnlyAtoms())
             {
                 std::string message = formatString(
                             "Selection '%s' does not evaluate to individual atoms. "
@@ -747,6 +793,14 @@ SelectionCollection::compile()
 void
 SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
+    if (fr->natoms <= impl_->maxAtomIndex_)
+    {
+        std::string message = formatString(
+                    "Trajectory has less atoms (%d) than what is required for "
+                    "evaluating the provided selections (atoms up to index %d "
+                    "are required).", fr->natoms, impl_->maxAtomIndex_ + 1);
+        GMX_THROW(InconsistentInputError(message));
+    }
     impl_->sc_.pcc.initFrame();
 
     SelectionEvaluator evaluator;
@@ -797,13 +851,6 @@ SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
         }
         std::fprintf(out, "#\n");
     }
-}
-
-// static
-HelpTopicPointer
-SelectionCollection::createDefaultHelpTopic()
-{
-    return createSelectionHelpTopic();
 }
 
 } // namespace gmx

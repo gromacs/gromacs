@@ -37,8 +37,8 @@
 #ifndef GMX_TOPOLOGY_ATOMPROP_H
 #define GMX_TOPOLOGY_ATOMPROP_H
 
-#include "../utility/basedefinitions.h"
-#include "../utility/real.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {

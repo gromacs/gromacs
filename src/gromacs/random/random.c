@@ -34,27 +34,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include "random.h"
 
+#include "config.h"
+
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include <time.h>
-#include <math.h>
-#ifdef GMX_NATIVE_WINDOWS
-#include <process.h>
-#endif
 
 #include "external/Random123-1.08/include/Random123/threefry.h"
 
 #include "gromacs/math/utilities.h"
-#include "random_gausstable.h"
+#include "gromacs/random/random_gausstable.h"
+#include "gromacs/utility/sysinfo.h"
 
 #define RNG_N 624
 #define RNG_M 397
@@ -236,12 +231,8 @@ gmx_rng_make_seed(void)
     else
     {
         /* No random device available, use time-of-day and process id */
-#ifdef GMX_NATIVE_WINDOWS
-        my_pid = (long)_getpid();
-#else
-        my_pid = (long)getpid();
-#endif
-        data = (unsigned int)(((long)time(NULL)+my_pid) % (long)1000000);
+        my_pid = gmx_getpid();
+        data   = (unsigned int)(((long)time(NULL)+my_pid) % (long)1000000);
     }
     return data;
 }

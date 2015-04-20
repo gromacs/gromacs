@@ -39,6 +39,10 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gmxpre.h"
+
+#include "gromacs/selection/selectionoption.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/options/options.h"
@@ -46,7 +50,6 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionfileoption.h"
-#include "gromacs/selection/selectionoption.h"
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
 

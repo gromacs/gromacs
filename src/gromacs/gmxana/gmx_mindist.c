@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,29 +34,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/fileio/xvgr.h"
-#include "viewit.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/topology/index.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
-#include "gmx_ana.h"
-#include "names.h"
+#include "gromacs/topology/index.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 
 static void periodic_dist(int ePBC,
@@ -203,7 +201,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
         gmx_rmpbc_done(gpbc);
     }
 
-    gmx_ffclose(out);
+    xvgrclose(out);
 
     fprintf(stdout,
             "\nThe shortest periodic distance is %g (nm) at time %g (%s),\n"
@@ -363,7 +361,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
         {
             snew(leg, 1);
             sprintf(buf, "Internal in %s", grpn[0]);
-            leg[0] = strdup(buf);
+            leg[0] = gmx_strdup(buf);
             xvgr_legend(dist, 0, (const char**)leg, oenv);
             if (num)
             {
@@ -378,7 +376,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
                 for (k = i+1; (k < ng); k++, j++)
                 {
                     sprintf(buf, "%s-%s", grpn[i], grpn[k]);
-                    leg[j] = strdup(buf);
+                    leg[j] = gmx_strdup(buf);
                 }
             }
             xvgr_legend(dist, j, (const char**)leg, oenv);
@@ -394,7 +392,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
         for (i = 0; (i < ng-1); i++)
         {
             sprintf(buf, "%s-%s", grpn[0], grpn[i+1]);
-            leg[i] = strdup(buf);
+            leg[i] = gmx_strdup(buf);
         }
         xvgr_legend(dist, ng-1, (const char**)leg, oenv);
         if (num)
@@ -552,10 +550,10 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     while (read_next_x(oenv, status, &t, x0, box));
 
     close_trj(status);
-    gmx_ffclose(dist);
+    xvgrclose(dist);
     if (num)
     {
-        gmx_ffclose(num);
+        xvgrclose(num);
     }
     if (atm)
     {
@@ -564,6 +562,10 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     if (trxout)
     {
         close_trx(trxout);
+    }
+    if (respertime)
+    {
+        xvgrclose(respertime);
     }
 
     if (nres && !bEachResEachTime)
@@ -582,6 +584,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
             }
             fprintf(res, "\n");
         }
+        xvgrclose(res);
     }
 
     sfree(x0);
@@ -652,7 +655,7 @@ int gmx_mindist(int argc, char *argv[])
         "each direction is considered, giving a total of 26 shifts.",
         "It also plots the maximum distance within the group and the lengths",
         "of the three box vectors.[PAR]",
-        "Also [gmx-distance] calculates distances."
+        "Also [gmx-distance] and [gmx-pairdist] calculate distances."
     };
     const char     *bugs[] = {
         "The [TT]-pi[tt] option is very slow."
@@ -713,7 +716,7 @@ int gmx_mindist(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;

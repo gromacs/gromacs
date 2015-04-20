@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
 #include <math.h>
 #include <string.h>
 
-#include "macros.h"
-#include "gromacs/math/vec.h"
-#include "typedefs.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gmx_ana.h"
-
+#include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 typedef struct {
     char *label;
@@ -88,7 +85,7 @@ static t_charge *mk_charge(t_atoms *atoms, t_block *cgs, int *nncg)
                     *(atoms->resinfo[resnr].name),
                     atoms->resinfo[resnr].nr,
                     anr+1);
-            cg[ncg].label = strdup(buf);
+            cg[ncg].label = gmx_strdup(buf);
             ncg++;
         }
     }
@@ -151,7 +148,7 @@ int gmx_saltbr(int argc, char *argv[])
     };
     t_filenm        fnm[] = {
         { efTRX, "-f",  NULL, ffREAD },
-        { efTPX, NULL,  NULL, ffREAD },
+        { efTPR, NULL,  NULL, ffREAD },
     };
 #define NFILE asize(fnm)
 
@@ -185,13 +182,13 @@ int gmx_saltbr(int argc, char *argv[])
     matrix             box;
     output_env_t       oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
     {
         return 0;
     }
 
-    top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
     cg  = mk_charge(&top->atoms, &(top->cgs), &ncg);
     snew(cgdist, ncg);
     snew(nWithin, ncg);
@@ -247,7 +244,7 @@ int gmx_saltbr(int argc, char *argv[])
                     {
                         fprintf(fp, "%10g  %10g\n", time[k], cgdist[i][j][k]);
                     }
-                    gmx_ffclose(fp);
+                    xvgrclose(fp);
                 }
             }
         }
@@ -329,7 +326,7 @@ int gmx_saltbr(int argc, char *argv[])
         }
         for (m = 0; (m < 3); m++)
         {
-            gmx_ffclose(out[m]);
+            xvgrclose(out[m]);
             if (nset[m] == 0)
             {
                 remove(fn[m]);

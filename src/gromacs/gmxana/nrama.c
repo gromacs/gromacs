@@ -34,20 +34,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "nrama.h"
 
 #include <math.h>
 #include <stdlib.h>
 
-#include "nrama.h"
-#include "gromacs/utility/smalloc.h"
-#include "typedefs.h"
-#include "bondf.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
 static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 #define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))
@@ -144,7 +142,7 @@ static void add_xr(t_xrama *xr, int ff[5], t_atoms *atoms)
     xr->pp[xr->npp].bShow = FALSE;
     sprintf(buf, "%s-%d", *atoms->resinfo[atoms->atom[ff[1]].resind].name,
             atoms->resinfo[atoms->atom[ff[1]].resind].nr);
-    xr->pp[xr->npp].label = strdup(buf);
+    xr->pp[xr->npp].label = gmx_strdup(buf);
     xr->npp++;
 }
 

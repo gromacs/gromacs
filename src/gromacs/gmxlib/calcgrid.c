@@ -34,16 +34,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/calcgrid.h"
 
 #include <math.h>
 
-#include "typedefs.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-#include "calcgrid.h"
+#include "gromacs/utility/smalloc.h"
 
 /* The grid sizes below are based on timing of a 3D cubic grid in fftw
  * compiled with SSE using 4 threads in fft5d.c.
@@ -137,7 +136,7 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
                 /* Determine how many pre-factors of 2 we need */
                 fac2 = 1;
                 i    = g_baseNR - 1;
-                while (fac2*grid_base[i-1] < nmin)
+                while (fac2*grid_base[i] < nmin)
                 {
                     fac2 *= 2;
                 }
