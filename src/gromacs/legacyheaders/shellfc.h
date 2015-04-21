@@ -35,13 +35,25 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/types/constr.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/legacyheaders/types/state.h"
+
+#ifndef _shellfc_h
+#define _shellfc_h
 
 #ifdef __cplusplus
 extern "C" {

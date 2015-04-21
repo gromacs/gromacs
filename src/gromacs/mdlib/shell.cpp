@@ -34,28 +34,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+
+#include "gmxpre.h"
+
+#include "gromacs/legacyheaders/shellfc.h"
 
 #include <stdio.h>
 
-#include "typedefs.h"
-#include "types/commrec.h"
-#include "shellfc.h"
-#include "macros.h"
-#include "nrnb.h"
-#include "gromacs/math/vec.h"
-#include "network.h"
-#include "domdec.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gmx_omp_nthreads.h"
+#include <algorithm>
 
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+
 
 /* Routines to send/recieve coordinates and force
  * of connected atoms.
@@ -79,10 +81,9 @@ static void spread_shell(t_iatom ia[],
                          rvec x[], rvec f[], rvec fshift[],
                          t_pbc *pbc, t_graph *g)
 {
-    rvec    fi, fj, dx;
+    rvec    fi, dx;
     t_iatom as, ai;
     ivec    di;
-    real    b;
     int     sis;
 
     as = ia[1];     /* shell/Drude */
@@ -316,7 +317,7 @@ static int *atom2cg(t_block *cgs)
 static int count_intercg_shells(gmx_mtop_t *mtop,
                                 gmx_bool   *bHaveChargeGroups)
 {
-    int             mb, mt, ftype, nral, i, cg, a;
+    int             mb, ftype, nral, i, cg, a;
     gmx_molblock_t *molb;
     gmx_moltype_t  *molt;
     int            *a2cg;
@@ -369,7 +370,7 @@ static int **get_shell_pbc(t_ilist *ilist,
                            t_atom *atom, t_mdatoms *md,
                            t_block *cgs, int *a2cg)
 {
-    int      ftype, nral, i, j, shi, shell, cg_v, cg_c, a;
+    int      ftype, nral, i, shi, shell, cg_v, a;
     t_ilist *il;
     t_iatom *ia;
     int    **shell_pbc, *shell_pbc_f;
@@ -511,11 +512,10 @@ gmx_shellfc_t init_shell(gmx_mtop_t *mtop, t_commrec *cr,
                          gmx_bool bSerial_NoPBC)
 {
     int            nshell, nshellmol, i;
-    int           *a2cg, cg;
+    int           *a2cg;
     gmx_shellfc_t  shfc;
     int            mt;
     gmx_moltype_t *molt;
-    int            nthreads;
     int            nmol;
 
     /* check if there are shells */
@@ -669,7 +669,7 @@ void split_shells_over_threads(const t_ilist   *ilist,
                 {
                     for (j = i+1; j < i+nral1; j++)
                     {
-                        shell_atom_range = max(shell_atom_range, iat[j]);
+                        shell_atom_range = std::max(shell_atom_range, iat[j]);
                     }
                 }
             }

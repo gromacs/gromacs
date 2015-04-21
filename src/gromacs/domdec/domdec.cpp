@@ -80,7 +80,6 @@
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/nsgrid.h"
-#include "gromacs/legacyheaders/types/shellfc.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
@@ -109,6 +108,7 @@
 
 #include "domdec_constraints.h"
 #include "domdec_internal.h"
+#include "domdec_shell.h"
 #include "domdec_vsite.h"
 
 #define DDRANK(dd, rank)    (rank)

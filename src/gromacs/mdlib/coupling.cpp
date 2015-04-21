@@ -314,7 +314,7 @@ void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[
         }
     }
 
-    int         g, i, j, k, m;
+    int         i, j, m;
     int         ti;                 /* NH thermostat index */
     real        mass;               /* mass of an atom */
     real        mtot;               /* total mass */
@@ -492,7 +492,7 @@ void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[
  * on relative motion of atom-Drude pairs. Other functions take care of the
  * actual velocity scaling. */
 void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state, 
-                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
 
     int             i, j, k, m, d;
@@ -545,10 +545,7 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
 
     for (i = 0; i < ngtc; i++)
     {
-        if (!bSaveEkinOld)
-        {
-            copy_mat(ekind->tcstat[i].ekinh, ekind->tcstat[i].ekinh_old);
-        }
+        copy_mat(ekind->tcstat[i].ekinh, ekind->tcstat[i].ekinh_old);
         if (bEkinAveVel)
         {
             clear_mat(ekind->tcstat[i].ekinf);
@@ -741,12 +738,11 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
                                       t_extmass *MassQ, t_vcm gmx_unused *vcm, gmx_ekindata_t *ekind, 
                                       double scalefac[], int gmx_unused seqno)
 {
-    int             i, j, k, n, g;
+    int             i, j, k, n;
     int             nc;                     /* time steps for thermostat */
     int             ti;                     /* thermostat index */
     int             nh;                     /* NH chain lengths */
     atom_id         ia, ib;                 /* atom indices */
-    real            dt;                     /* time step */
     real           *grpmass;                /* masses of tc-grps */
     double          dtsy;                   /* subdivided time step */
     double         *expfac;                 /* array of factors for (size: ngtc) */
@@ -803,7 +799,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies associated with thermostats */
-        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
+        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE);
         if (DOMAINDECOMP(cr))
         {
             accumulate_ekin(cr, opts, ekind);
@@ -981,7 +977,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
         }
 
         /* calculate new kinetic energies */
-        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
+        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE);
         if (DOMAINDECOMP(cr))
         {
             accumulate_ekin(cr, opts, ekind);
@@ -1000,6 +996,8 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
 /* CHARMM function PropagateTFB
  * Updates thermostat associated with barostat
  */
+/* TODO: this needs to be implemented when the new barostat framework is done - jal 4/20/2015 */
+#if 0
 static void drude_tstat_for_barostat(t_inputrec *ir, t_idef gmx_unused *idef, t_mdatoms *md, t_state *state,
                                      t_extmass *MassQ, t_vcm gmx_unused *vcm, gmx_ekindata_t *ekind, int gmx_unused seqno)
 {
@@ -1042,7 +1040,7 @@ static void drude_tstat_for_barostat(t_inputrec *ir, t_idef gmx_unused *idef, t_
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies */
-        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
+        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE);
 
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
@@ -1062,7 +1060,7 @@ static void drude_tstat_for_barostat(t_inputrec *ir, t_idef gmx_unused *idef, t_
         }
 
         /* update thermostat kinetic energies */
-        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE, TRUE);
+        nosehoover_KE(ir, idef, md, state, ekind, NULL, TRUE);
 
         /* propagate thermostat variables for subdivided time step */
         NHC_trotter(opts, opts->ngtc, ekind, dtsy, state->nosehoover_xi,
@@ -1071,6 +1069,7 @@ static void drude_tstat_for_barostat(t_inputrec *ir, t_idef gmx_unused *idef, t_
     } /* end for-loop over thermostat subdivided time steps */
 
 }
+#endif
 
 /*
  * This file implements temperature and pressure coupling algorithms:
@@ -1720,7 +1719,9 @@ void trotter_update(t_commrec *cr, t_inputrec *ir, t_idef *idef, gmx_int64_t ste
             case etrtBARONHC2:
                 if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
                 {
-                    drude_tstat_for_barostat(ir, idef, md, state, MassQ, vcm, ekind, trotter_seq[i]);
+                    /* TODO: add this back with new barostat framework */
+                    /* drude_tstat_for_barostat(ir, idef, md, state, MassQ, vcm, ekind, trotter_seq[i]); */
+                    gmx_fatal(FARGS, "Pressure coupling not supported with Drude. This shouldn't happen.");
                 }
                 else
                 {

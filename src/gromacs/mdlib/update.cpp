@@ -1159,7 +1159,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
 
 void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, t_idef *idef, 
-                  gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+                  gmx_bool bEkinAveVel)
 {
     /* TODO: remove */
     int         i, ngtc;
@@ -1182,12 +1182,12 @@ void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
     {
         if (ir->bDrude && ir->drude->drudemode == edrudeLagrangian)
         {
-            nosehoover_KE(ir, idef, md, state, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+            nosehoover_KE(ir, idef, md, state, ekind, nrnb, bEkinAveVel);
             /* Note: summation of ekind occurs in compute_globals(), no need to do it here */
         }
         else
         {
-            calc_ke_part_normal(state->v, &(ir->opts), md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+            calc_ke_part_normal(state->v, &(ir->opts), md, ekind, nrnb, bEkinAveVel);
         }
     }
     else

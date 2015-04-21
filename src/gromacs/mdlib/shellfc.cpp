@@ -36,8 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/shellfc.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -53,6 +51,7 @@
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
@@ -65,8 +64,6 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "shellfc.h"
 
 static void pr_shell(FILE *fplog, int ns, t_shell s[])
 {
@@ -962,7 +959,6 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     rvec    va, vb;                 /* velocities of heavy atom and drude, respectively */
     rvec    vb1, vp1;               /* Bond and particle velocities for heavy atom */ 
     rvec    vb2, vp2;               /* Bond and particle velocities for Drude */ 
-    rvec    diff_vr12;
     rvec    dva, dvb;               /* magnitude of change in velocity of heavy atom and drude, respectively */
     rvec    dfa, dfb;               /* change in forces, applied as corrections to the virial */
     t_pbc  *pbc;
@@ -1348,8 +1344,6 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     int        start = 0, homenr = md->homenr, end = start+homenr, cg0, cg1;
     int        nflexcon, number_steps, d, Min = 0;
 #define  Try (1-Min)             /* At start Try = 1 */
-
-    real       mdrude, matom, mratio = 0;
 
     bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
     bInit        = (mdstep == inputrec->init_step) || shfc->bRequireInit;

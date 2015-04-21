@@ -40,8 +40,13 @@
 
 #include <stdio.h>
 
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
 
 #ifdef __cplusplus
 extern "C" {

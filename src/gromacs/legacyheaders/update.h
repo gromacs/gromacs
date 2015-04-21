@@ -42,6 +42,14 @@
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/legacyheaders/types/constr.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
@@ -143,7 +151,7 @@ void update_box(FILE             *fplog,
 
 void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
                   gmx_ekindata_t *ekind, t_nrnb *nrnb, t_idef *idef, 
-                  gmx_bool bEkinAveVel, gmx_bool bSaveOld);
+                  gmx_bool bEkinAveVel);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
@@ -161,7 +169,7 @@ void calc_ke_part(t_inputrec *ir, t_state *state, t_mdatoms *md,
  */
 
 void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state, 
-                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld);
+                   gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
 /* special KE calculation for Drude with extended Lagrangian */
 
 void relative_tstat(t_state *state, t_mdatoms *md, t_inputrec *ir, real grpmass[],

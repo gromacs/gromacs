@@ -1312,9 +1312,9 @@ static void check_gbsa_params(gpp_atomtype_t atype)
 
 }
 
-static real calc_temp(const gmx_mtop_t *mtop,
-                      const t_inputrec *ir,
-                      rvec             *v)
+static real calc_buf_temp(const gmx_mtop_t *mtop,
+                          const t_inputrec *ir,
+                          rvec             *v)
 {
     double                  sum_mv2;
     gmx_mtop_atomloop_all_t aloop;
@@ -1836,7 +1836,7 @@ int gmx_grompp(int argc, char *argv[])
             gmx_fatal(FARGS, "Free energy simulations with Drude have not been tested and are therefore not supported.");
         }
 
-        if (ir->ePull != epullNO)
+        if (ir->bPull)
         {
             gmx_fatal(FARGS, "Drude + pulling has not been tested and is therefore not supported.");
         }
@@ -2035,7 +2035,7 @@ int gmx_grompp(int argc, char *argv[])
                 }
                 else
                 {
-                    buffer_temp = calc_temp(sys, ir, state.v);
+                    buffer_temp = calc_buf_temp(sys, ir, state.v);
                 }
                 if (buffer_temp > 0)
                 {

@@ -60,6 +60,7 @@
 
 #include <stdio.h>
 
+#include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec_fwd.h"
@@ -69,7 +70,6 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/shellfc.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
@@ -281,19 +281,16 @@ void print_dd_statistics(t_commrec *cr, t_inputrec *ir, FILE *fplog);
 /*! \brief Communicates the virtual site forces, reduces the shift forces when \p fshift != NULL */
 void dd_move_f_vsites(gmx_domdec_t *dd, rvec *f, rvec *fshift);
 
-<<<<<<< HEAD:src/gromacs/legacyheaders/domdec.h
+/*! \brief Communicates the shell forces, reduces the shift forces when \p fshift != NULL */
 void dd_move_f_shells(gmx_domdec_t *dd, rvec *f, rvec *fshift);
 
-void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f);
-
+/*! \brief Clears the forces for shells */
 void dd_clear_f_shells(gmx_domdec_t *dd, rvec *f);
 
-=======
 /*! \brief Clears the forces for virtual sites */
 void dd_clear_f_vsites(gmx_domdec_t *dd, rvec *f);
 
 /*! \brief Move x0 and also x1 if x1!=NULL. bX1IsCoord tells if to do PBC on x1 */
->>>>>>> master:src/gromacs/domdec/domdec.h
 void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
                            rvec *x0, rvec *x1, gmx_bool bX1IsCoord);
 
@@ -308,32 +305,6 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x);
  */
 int *dd_constraints_nlocalatoms(gmx_domdec_t *dd);
 
-<<<<<<< HEAD:src/gromacs/legacyheaders/domdec.h
-void dd_clear_local_constraint_indices(gmx_domdec_t *dd);
-
-void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
-
-void dd_clear_local_shell_indices(gmx_domdec_t *dd);
-
-int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil);
-
-int dd_make_local_vsites(gmx_domdec_t *dd, int at_start, t_ilist *lil);
-
-int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
-                              const gmx_mtop_t *mtop,
-                              const int *cginfo,
-                              gmx_constr_t constr, int nrec,
-                              t_ilist *il_local);
-
-void init_domdec_constraints(gmx_domdec_t *dd,
-                             gmx_mtop_t   *mtop);
-
-void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite);
-
-void init_domdec_shells(gmx_domdec_t *dd, int n_intercg_shells);
-
-=======
->>>>>>> master:src/gromacs/domdec/domdec.h
 /* In domdec_top.c */
 
 /*! \brief Print error output when interactions are missing */

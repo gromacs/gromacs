@@ -313,7 +313,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             /* idef is only used in case of Drude simulations, ir->opts always needed,
              * but other data in ir are needed by Drude algorithms, so instead of just
              * passing opts, we use ir directly */
-            calc_ke_part(ir, state, mdatoms, ekind, nrnb, idef, bEkinAveVel, bIterate);
+            calc_ke_part(ir, state, mdatoms, ekind, nrnb, idef, bEkinAveVel);
         }
 
         debug_gmx();

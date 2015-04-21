@@ -58,9 +58,9 @@
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/shellfc.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -74,6 +74,7 @@
 
 #include "domdec_constraints.h"
 #include "domdec_internal.h"
+#include "domdec_shell.h"
 #include "domdec_vsite.h"
 
 /*! \brief The number of integer item in the local state, used for broadcasting of the state */
@@ -96,6 +97,8 @@ typedef struct {
     t_idef     idef;             /**< Partial local topology */
     int      **vsite_pbc;        /**< vsite PBC structure */
     int       *vsite_pbc_nalloc; /**< Allocation sizes for vsite_pbc */
+    int      **shell_pbc;        /**< shell PBC structure */
+    int       *shell_pbc_nalloc; /**< Allocation sizes for shell_pbc */
     int        nbonded;          /**< The number of bondeds in this struct */
     t_blocka   excl;             /**< List of exclusions */
     int        excl_count;       /**< The total exclusion count for \p excl */
@@ -117,8 +120,8 @@ typedef struct gmx_reverse_top {
     int              nmolblock;       /**< The number of molblocks, size of \p mbi */
 
     /* Work data structures for multi-threading */
-<<<<<<< HEAD:src/gromacs/mdlib/domdec_top.c
     int         nthread;
+    thread_work_t *th_work;           /**< Thread work array for local topology generation */
     t_idef     *idef_thread;
     int      ***vsite_pbc;
     int       **vsite_pbc_nalloc;
@@ -127,10 +130,6 @@ typedef struct gmx_reverse_top {
     int        *nbonded_thread;
     t_blocka   *excl_thread;
     int        *excl_count_thread;
-=======
-    int            nthread;           /**< The number of threads to be used */
-    thread_work_t *th_work;           /**< Thread work array for local topology generation */
->>>>>>> master:src/gromacs/domdec/domdec_topology.cpp
 
     /* Pointers only used for an error message */
     gmx_mtop_t     *err_top_global; /**< Pointer to the global top, only used for error reporting */
@@ -748,7 +747,6 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
             snew(rt->th_work[thread].vsite_pbc_nalloc, F_VSITEN-F_VSITE2+1);
         }
     }
-<<<<<<< HEAD:src/gromacs/mdlib/domdec_top.c
 
     /* TODO: check */
     if (shell_pbc_molt != NULL)
@@ -765,8 +763,6 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
     snew(rt->nbonded_thread, rt->nthread);
     snew(rt->excl_thread, rt->nthread);
     snew(rt->excl_count_thread, rt->nthread);
-=======
->>>>>>> master:src/gromacs/domdec/domdec_topology.cpp
 
     return rt;
 }
@@ -1219,23 +1215,10 @@ static void combine_blocka(t_blocka *dest, const thread_work_t *src, int nsrc)
 /*! \brief Append t_idef structures 1 to nsrc in src to *dest,
  * virtual sites need special attention, as pbc info differs per vsite.
  */
-<<<<<<< HEAD:src/gromacs/mdlib/domdec_top.c
-static void combine_idef(t_idef *dest, const t_idef *src, int nsrc,
-                         gmx_vsite_t *vsite, int ***vsite_pbc_t,
-                         gmx_shellfc_t shellfc, int ***shell_pbc_t)
-{
-    int            ftype, n, s, i;
-    t_ilist       *ild;
-    const t_ilist *ils;
-    gmx_bool       vpbc;
-    gmx_bool       spbc;
-    int            nral1 = 0, ftv = 0;
-=======
 static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
-                         gmx_vsite_t *vsite)
+                         gmx_vsite_t *vsite, gmx_shellfc_t shellfc)
 {
     int ftype;
->>>>>>> master:src/gromacs/domdec/domdec_topology.cpp
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -1276,8 +1259,8 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                 }
             }
 
-<<<<<<< HEAD:src/gromacs/mdlib/domdec_top.c
             /* TODO: check */
+            gmx_bool spbc;
             spbc = ((ftype == F_BONDS || ftype == F_POLARIZATION || ftype == F_THOLE_POL ||
                     ftype == F_ANISO_POL || ftype == F_WATER_POL || ftype == F_ANHARM_POL)
                     && shellfc->shell_pbc_loc != NULL);
@@ -1301,10 +1284,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                 }
             }
 
-            for (s = 0; s < nsrc; s++)
-=======
             for (s = 1; s < nsrc; s++)
->>>>>>> master:src/gromacs/domdec/domdec_topology.cpp
             {
                 const t_ilist *ils;
                 int            i;
@@ -1329,7 +1309,7 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
                     for (i = 0; i < ils->nr; i += nral1)
                     {
                         shellfc->shell_pbc_loc[ftv][(ild->nr+i)/nral1] =
-                            shell_pbc_t[s][ftv][i/nral1];
+                            src[s].shell_pbc[ftv][i/nral1];
                     }
                 }
 
@@ -1965,8 +1945,11 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
             t_idef   *idef_t;
             int     **vsite_pbc;
             int      *vsite_pbc_nalloc;
+/* TODO */
+#if 0
             int     **shell_pbc;
             int      *shell_pbc_nalloc;
+#endif
             t_blocka *excl_t;
 
             cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
@@ -2001,7 +1984,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 vsite_pbc_nalloc = NULL;
             }
 
-<<<<<<< HEAD:src/gromacs/mdlib/domdec_top.c
+#if 0
             /* TODO: check */
             if (shellfc && shellfc->bInterCG && shellfc->nshell_gl > 0)
             {
@@ -2012,15 +1995,18 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 }
                 else
                 {
-                    shell_pbc        = NULL;
-                    shell_pbc_nalloc = NULL;
+                    shell_pbc        = rt->th_work[thread].shell_pbc;
+                    shell_pbc_nalloc = rt->th_work[thread].shell_pbc_nalloc;
                 }
             }
+            else
+            {
+                shell_pbc        = NULL;
+                shell_pbc_nalloc = NULL;
+            }
+#endif
 
-            rt->nbonded_thread[thread] =
-=======
             rt->th_work[thread].nbonded =
->>>>>>> master:src/gromacs/domdec/domdec_topology.cpp
                 make_bondeds_zone(dd, zones,
                                   mtop->molblock,
                                   bRCheckMB, rcheck, bRCheck2B, rc2,
@@ -2068,13 +2054,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 
         if (rt->nthread > 1)
         {
-<<<<<<< HEAD:src/gromacs/mdlib/domdec_top.c
             /* TODO: check */
-            combine_idef(idef, rt->idef_thread+1, rt->nthread-1,
-                         vsite, rt->vsite_pbc+1, shellfc, rt->shell_pbc+2);
-=======
-            combine_idef(idef, rt->th_work, rt->nthread, vsite);
->>>>>>> master:src/gromacs/domdec/domdec_topology.cpp
+            combine_idef(idef, rt->th_work, rt->nthread, vsite, shellfc); 
         }
 
         for (thread = 0; thread < rt->nthread; thread++)
@@ -2615,8 +2596,6 @@ void dd_bonded_cg_distance(FILE *fplog,
     int             mb, at_offset, *at2cg, mol;
     t_graph         graph;
     gmx_vsite_t    *vsite;
-    /* TODO: check */
-    gmx_shellfc_t   shfc;
     gmx_molblock_t *molb;
     gmx_moltype_t  *molt;
     rvec           *xs, *cg_cm;
@@ -2627,8 +2606,6 @@ void dd_bonded_cg_distance(FILE *fplog,
     bExclRequired = IR_EXCL_FORCES(*ir);
 
     vsite = init_vsite(mtop, NULL, TRUE);
-    /* TODO: check, since this doesn't go anywhere!!! */
-    /* shfc = init_shell(mtop, NULL, TRUE); */
 
     *r_2b     = 0;
     *r_mb     = 0;

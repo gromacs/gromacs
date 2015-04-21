@@ -86,7 +86,6 @@
 #include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/oenv.h"
-#include "gromacs/legacyheaders/types/shellfc.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/utilities.h"
@@ -1436,7 +1435,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift);
                 }
 
-                update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
+                update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
                                    fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,

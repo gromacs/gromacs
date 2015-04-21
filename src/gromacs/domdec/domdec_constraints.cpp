@@ -134,6 +134,14 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
     }
 }
 
+void dd_clear_local_shell_indices(gmx_domdec_t *dd)
+{
+    if (dd->shell_comm)
+    {
+        gmx_hash_clear_and_optimize(dd->ga2la_shell);
+    }
+}
+
 /*! \brief Walks over the constraints out from the local atoms into the non-local atoms and adds them to a list */
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      int ncon1, const t_iatom *ia1, const t_iatom *ia2,

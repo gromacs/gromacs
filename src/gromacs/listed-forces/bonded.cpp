@@ -1021,7 +1021,7 @@ real thole_pol(int nbonds,
     int     i, type, a1, da1, a2, da2;
     real    q1, qd1, q2, qd2, qq, a, al1, al2, afac;
     real    V = 0;
-    const real minusOneOnSix = -1.0/6.0;
+    const real minusOneSix = -1.0/6.0;
 
     for (i = 0; (i < nbonds); )
     {

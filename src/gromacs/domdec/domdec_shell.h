@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,48 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file declares functions for domdec to use
+ * while managing shells.
+ *
+ * \author Justin Lemkul <jalemkul@vt.edu> 
+ * \ingroup module_domdec
+ */
 
-#ifndef _tgroup_h
-#define _tgroup_h
+#ifndef GMX_DOMDEC_DOMDEC_SHELL_H
+#define GMX_DOMDEC_DOMDEC_SHELL_H
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/group.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
 
-#ifdef __cplusplus
-extern "C" {
+/*! \brief Clears the local indices for the shell communication setup */
+void dd_clear_local_shell_indices(gmx_domdec_t *dd);
+
+/*! \brief Sets up communication and atom indices for all local shells */
+int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil);
+
+/*! \brief Initializes the data structures for shell communication */
+void init_domdec_shells(gmx_domdec_t *dd, int n_intercg_shells);
+
 #endif
-
-void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
-                   gmx_ekindata_t *ekind);
-/* Allocate memory and set the grpnr array. */
-
-void done_ekindata(gmx_ekindata_t *ekind);
-/* Free the memory */
-
-void accumulate_u(t_commrec *cr, t_grpopts *opts,
-                  gmx_ekindata_t *ekind);
-
-void accumulate_ekin(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind);
-/* Communicate subsystem - group velocities and subsystem ekin respectively
- * and sum them up. Return them in grps.
- */
-
-real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
-/* Sum the group ekins into total ekin and calc temp per group,
- * return total temperature.
- */
-
-void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
-                     t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda);
-/* Do the update of group velocities (if bNEMD) and
- * (partial) group ekin.
- */
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  /* _tgroup_h */
