@@ -380,17 +380,15 @@ static inline __device__
 void reduce_force_j_generic(float *f_buf, float3 *fout,
                             int tidxi, int tidxj, int aidx)
 {
-    if (tidxi == 0)
+    if (tidxi < 3)
     {
-        float3 f = make_float3(0.0f);
+        float f = 0.0f;
         for (int j = tidxj * CL_SIZE; j < (tidxj + 1) * CL_SIZE; j++)
         {
-            f.x += f_buf[                  j];
-            f.y += f_buf[    FBUF_STRIDE + j];
-            f.z += f_buf[2 * FBUF_STRIDE + j];
+            f += f_buf[FBUF_STRIDE * tidxi + j];
         }
 
-        atomicAdd(&fout[aidx], f);
+        atomicAdd((&fout[aidx].x)+tidxi, f);
     }
 }
 
@@ -422,6 +420,7 @@ void reduce_force_j_warp_shfl(float3 f, float3 *fout,
 
 /*! Final i-force reduction; this generic implementation works with
  *  arbitrary array sizes.
+ * TODO: add the tidxi < 3 trick
  */
 static inline __device__
 void reduce_force_i_generic(float *f_buf, float3 *fout,
@@ -456,7 +455,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
                          int tidxi, int tidxj, int aidx)
 {
     int     i, j;
-    float3  f = make_float3(0.0f);
+    float   f;
 
     /* Reduce the initial CL_SIZE values for each i atom to half
      * every step by using CL_SIZE * i threads.
@@ -477,19 +476,19 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
     }
 
     /* i == 1, last reduction step, writing to global mem */
-    if (tidxj == 0)
+    if (tidxj < 3)
     {
-        f.x = f_buf[                  tidxj * CL_SIZE + tidxi] + f_buf[                  (tidxj + i) * CL_SIZE + tidxi];
-        f.y = f_buf[    FBUF_STRIDE + tidxj * CL_SIZE + tidxi] + f_buf[    FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
-        f.z = f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] + f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+        f = f_buf[tidxj * FBUF_STRIDE               + tidxi] +
+            f_buf[tidxj * FBUF_STRIDE + i * CL_SIZE + tidxi];
 
-        atomicAdd(&fout[aidx], f);
+        atomicAdd(&(fout[aidx].x) + tidxj, f);
 
         if (bCalcFshift)
         {
-            *fshift_buf += f;
+            (*fshift_buf).x += f;
         }
     }
+
 }
 
 /*! Final i-force reduction wrapper; calls the generic or pow2 reduction depending
@@ -569,6 +568,8 @@ void reduce_energy_pow2(volatile float *buf,
         i >>= 1;
     }
 
+    // TODO do this on two threads - requires e_lj and e_el to be stored on adjascent
+    // memory locations to make sense
     /* last reduction step, writing to global mem */
     if (tidx == 0)
     {
