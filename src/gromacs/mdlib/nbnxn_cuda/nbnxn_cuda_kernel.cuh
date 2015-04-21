@@ -549,12 +549,18 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef REDUCE_SHUFFLE
     if (bCalcFshift && (tidxj == 0 || tidxj == 4))
 #else
-    if (bCalcFshift && tidxj == 0)
+    //if (bCalcFshift && tidxj == 0)
+    if (bCalcFshift && tidxj < 3)
 #endif
     {
+
+        /*
         atomicAdd(&atdat.fshift[nb_sci.shift].x, fshift_buf.x);
         atomicAdd(&atdat.fshift[nb_sci.shift].y, fshift_buf.y);
         atomicAdd(&atdat.fshift[nb_sci.shift].z, fshift_buf.z);
+        */
+        // FIXME: this needs to go together with the shuffle-based reductions
+        atomicAdd(&(atdat.fshift[nb_sci.shift].x) + tidxj, *(&fshift_buf.x + tidxj));
     }
 
 #ifdef CALC_ENERGIES
