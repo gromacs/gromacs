@@ -380,17 +380,15 @@ static inline __device__
 void reduce_force_j_generic(float *f_buf, float3 *fout,
                             int tidxi, int tidxj, int aidx)
 {
-    if (tidxi == 0)
+    if (tidxi < 3)
     {
-        float3 f = make_float3(0.0f);
+        float f = 0.0f;
         for (int j = tidxj * CL_SIZE; j < (tidxj + 1) * CL_SIZE; j++)
         {
-            f.x += f_buf[                  j];
-            f.y += f_buf[    FBUF_STRIDE + j];
-            f.z += f_buf[2 * FBUF_STRIDE + j];
+            f += f_buf[FBUF_STRIDE * tidxi + j];
         }
 
-        atomicAdd(&fout[aidx], f);
+        atomicAdd((&fout[aidx].x)+tidxi, f);
     }
 }
 
@@ -402,43 +400,50 @@ static inline __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx)
 {
-    int i;
+    f.x += __shfl_down(f.x, 1);
+    f.y += __shfl_up  (f.y, 1);
+    f.z += __shfl_down(f.z, 1);
 
-#pragma unroll 3
-    for (i = 0; i < 3; i++)
+    if (tidxi & 1)
     {
-        f.x += __shfl_down(f.x, 1<<i);
-        f.y += __shfl_down(f.y, 1<<i);
-        f.z += __shfl_down(f.z, 1<<i);
+        f.x = f.y;
     }
 
-    /* Write the reduced j-force on one thread for each j */
-    if (tidxi == 0)
+    f.x += __shfl_down(f.x, 2);
+    f.z += __shfl_up  (f.z, 2);
+
+    if (tidxi & 2)
     {
-        atomicAdd(&fout[aidx], f);
+        f.x = f.z;
+    }
+
+    f.x += __shfl_down(f.x, 4);
+
+    if (tidxi < 3)
+    {
+        atomicAdd((&fout[aidx].x) + tidxi, f.x);
     }
 }
 #endif
 
 /*! Final i-force reduction; this generic implementation works with
  *  arbitrary array sizes.
+ * TODO: add the tidxi < 3 trick
  */
 static inline __device__
 void reduce_force_i_generic(float *f_buf, float3 *fout,
-                            float3 *fshift_buf, bool bCalcFshift,
+                            float *fshift_buf, bool bCalcFshift,
                             int tidxi, int tidxj, int aidx)
 {
-    if (tidxj == 0)
+    if (tidxj < 3)
     {
-        float3 f = make_float3(0.0f);
+        float f = 0.0f;
         for (int j = tidxi; j < CL_SIZE_SQ; j += CL_SIZE)
         {
-            f.x += f_buf[                  j];
-            f.y += f_buf[    FBUF_STRIDE + j];
-            f.z += f_buf[2 * FBUF_STRIDE + j];
+            f += f_buf[tidxj * FBUF_STRIDE + j];
         }
 
-        atomicAdd(&fout[aidx], f);
+        atomicAdd(&fout[aidx].x + tidxj , f);
 
         if (bCalcFshift)
         {
@@ -452,11 +457,11 @@ void reduce_force_i_generic(float *f_buf, float3 *fout,
  */
 static inline __device__
 void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
-                         float3 *fshift_buf, bool bCalcFshift,
+                         float *fshift_buf, bool bCalcFshift,
                          int tidxi, int tidxj, int aidx)
 {
     int     i, j;
-    float3  f = make_float3(0.0f);
+    float   f;
 
     /* Reduce the initial CL_SIZE values for each i atom to half
      * every step by using CL_SIZE * i threads.
@@ -477,19 +482,20 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
     }
 
     /* i == 1, last reduction step, writing to global mem */
-    if (tidxj == 0)
+    if (tidxj < 3)
     {
-        f.x = f_buf[                  tidxj * CL_SIZE + tidxi] + f_buf[                  (tidxj + i) * CL_SIZE + tidxi];
-        f.y = f_buf[    FBUF_STRIDE + tidxj * CL_SIZE + tidxi] + f_buf[    FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
-        f.z = f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] + f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+        /* tidxj*FBUF_STRIDE selects x, y or z */
+        f = f_buf[tidxj * FBUF_STRIDE               + tidxi] +
+            f_buf[tidxj * FBUF_STRIDE + i * CL_SIZE + tidxi];
 
-        atomicAdd(&fout[aidx], f);
+        atomicAdd(&(fout[aidx].x) + tidxj, f);
 
         if (bCalcFshift)
         {
             *fshift_buf += f;
         }
     }
+
 }
 
 /*! Final i-force reduction wrapper; calls the generic or pow2 reduction depending
@@ -497,7 +503,7 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
  */
 static inline __device__
 void reduce_force_i(float *f_buf, float3 *f,
-                    float3 *fshift_buf, bool bCalcFshift,
+                    float *fshift_buf, bool bCalcFshift,
                     int tidxi, int tidxj, int ai)
 {
     if ((CL_SIZE & (CL_SIZE - 1)))
@@ -516,29 +522,34 @@ void reduce_force_i(float *f_buf, float3 *f,
 #if __CUDA_ARCH__ >= 300
 static inline __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
-                              float3 *fshift_buf, bool bCalcFshift,
+                              float *fshift_buf, bool bCalcFshift,
                               int tidxj, int aidx)
 {
-    int j;
+    fin.x += __shfl_down(fin.x, CL_SIZE);
+    fin.y += __shfl_up  (fin.y, CL_SIZE);
+    fin.z += __shfl_down(fin.z, CL_SIZE);
 
-#pragma unroll 2
-    for (j = 0; j < 2; j++)
+    if (tidxj & 1)
     {
-        fin.x += __shfl_down(fin.x,  CL_SIZE<<j);
-        fin.y += __shfl_down(fin.y,  CL_SIZE<<j);
-        fin.z += __shfl_down(fin.z,  CL_SIZE<<j);
+        fin.x = fin.y;
     }
 
-    /* The first thread in the warp writes the reduced force */
-    if (tidxj == 0 || tidxj == 4)
+    fin.x += __shfl_down(fin.x, 2*CL_SIZE);
+    fin.z += __shfl_up  (fin.z, 2*CL_SIZE);
+
+    if (tidxj & 2)
     {
-        atomicAdd(&fout[aidx], fin);
+        fin.x = fin.z;
+    }
+
+    /* Threads 0,1,2 and 4,5,6 increment x,y,z for their warp */
+    if ((tidxj & 3) < 3)
+    {
+        atomicAdd(&fout[aidx].x + (tidxj & ~4), fin.x);
 
         if (bCalcFshift)
         {
-            fshift_buf->x += fin.x;
-            fshift_buf->y += fin.y;
-            fshift_buf->z += fin.z;
+            *fshift_buf += fin.x;
         }
     }
 }
@@ -569,6 +580,8 @@ void reduce_energy_pow2(volatile float *buf,
         i >>= 1;
     }
 
+    // TODO do this on two threads - requires e_lj and e_el to be stored on adjascent
+    // memory locations to make sense
     /* last reduction step, writing to global mem */
     if (tidx == 0)
     {
