@@ -182,7 +182,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
-    float3       xi, xj, rv, f_ij, fcj_buf, fshift_buf;
+    float3       xi, xj, rv, f_ij, fcj_buf;
     float3       fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
     nbnxn_sci_t  nb_sci;
 
@@ -283,8 +283,6 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     {
         bCalcFshift = false;
     }
-
-    fshift_buf = make_float3(0.0f);
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
@@ -525,6 +523,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         }
     }
 
+    float fshift_buf = 0.0f;
+
     /* reduce i forces */
     for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
@@ -545,17 +545,18 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
     }
 
-    /* add up local shift forces into global mem */
+    /* add up local shift forces into global mem, tidxj indexes x,y,z */
 #ifdef REDUCE_SHUFFLE
-    if (bCalcFshift && (tidxj == 0 || tidxj == 4))
-#else
-    if (bCalcFshift && tidxj == 0)
-#endif
+    if (bCalcFshift && (tidxj & 3) < 3)
     {
-        atomicAdd(&atdat.fshift[nb_sci.shift].x, fshift_buf.x);
-        atomicAdd(&atdat.fshift[nb_sci.shift].y, fshift_buf.y);
-        atomicAdd(&atdat.fshift[nb_sci.shift].z, fshift_buf.z);
+        atomicAdd(&(atdat.fshift[nb_sci.shift].x) + (tidxj & ~4), fshift_buf);
     }
+#else
+    if (bCalcFshift && tidxj < 3)
+    {
+        atomicAdd(&(atdat.fshift[nb_sci.shift].x) + tidxj, fshift_buf);
+    }
+#endif
 
 #ifdef CALC_ENERGIES
 #ifdef REDUCE_SHUFFLE
