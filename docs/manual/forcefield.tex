@@ -252,19 +252,16 @@ respectively.
 \subsection{Modified non-bonded interactions}
 \label{sec:mod_nb_int}
 In {\gromacs}, the non-bonded potentials can be
-modified by a shift function. The purpose of this is to replace the
+modified by a shift function, also called a force-switch function,
+since it switches the force to zero at the cut-off.
+The purpose of this is to replace the
 truncated forces by forces that are continuous and have continuous
 derivatives at the \normindex{cut-off} radius. With such forces the
-timestep integration produces much smaller errors and there are no
-such complications as creating charges from dipoles by the truncation
-procedure. In fact, by using shifted forces there is no need for
-charge groups in the construction of neighbor lists. However, the
-shift function produces a considerable modification of the Coulomb
-potential. Unless the ``missing'' long-range potential is properly
-calculated and added (through the use of PPPM, Ewald, or PME), the
-effect of such modifications must be carefully evaluated.  The
-modification of the Lennard-Jones dispersion and repulsion is only
-minor, but it does remove the noise caused by cut-off effects.
+time integration produces smaller errors. But note that for
+Lennard-Jones interactions these errors are usually smaller than other errors,
+such as integration errors at the repulsive part of the potential.
+For Coulomb interactions we advise against using a shifted potential
+and for use of a reaction field or a proper long-range method such as PME.
  
 There is {\em no} fundamental difference between a switch function
 (which multiplies the potential with a function) and a shift function
@@ -273,11 +270,11 @@ function is a special case of the shift function, which we apply to
 the {\em force function} $F(r)$, related to the electrostatic or
 van der Waals force acting on particle $i$ by particle $j$ as:
 \beq
-\ve{F}_i = c F(r_{ij}) \frac{\rvij}{r_{ij}}
+\ve{F}_i = c \, F(r_{ij}) \frac{\rvij}{r_{ij}}
 \eeq
 For pure Coulomb or Lennard-Jones interactions
-$F(r)=F_\alpha(r)=r^{-(\alpha+1)}$.
-The shifted force $F_s(r)$ can generally be written as:
+$F(r) = F_\alpha(r) = \alpha \, r^{-(\alpha+1)}$.
+The switched force $F_s(r)$ can generally be written as:
 \beq
 \begin{array}{rcl}
 \vspace{2mm}
@@ -288,17 +285,13 @@ F_s(r)~=&~0             & r_c \le r
 \end{array}
 \eeq
 When $r_1=0$ this is a traditional shift function, otherwise it acts as a 
-switch function. The corresponding shifted coulomb potential then reads:
+switch function. The corresponding shifted potential function then reads:
 \beq
-V_s(r_{ij}) = f \Phi_s (r_{ij}) q_i q_j
-\eeq
-where $\Phi(r)$ is the potential function 
-\beq
-\Phi_s(r) =  \int^{\infty}_r~F_s(x)\, dx
+V_s(r) =  \int^{\infty}_r~F_s(x)\, dx
 \eeq
 
-The {\gromacs} shift function should be smooth at the boundaries, therefore
-the following boundary conditions are imposed on the shift function:
+The {\gromacs} force switch function should be smooth at the boundaries, therefore
+the following boundary conditions are imposed on the switch function:
 \beq
 \begin{array}{rcl}
 S(r_1)          &=&0            \\
@@ -316,9 +309,9 @@ boundary condition at $r_c$:
 \beq
 \begin{array}{rcl}
 \vspace{2mm}
-A &~=~& -\displaystyle
+A &~=~& -\alpha \, \displaystyle
         \frac{(\alpha+4)r_c~-~(\alpha+1)r_1} {r_c^{\alpha+2}~(r_c-r_1)^2} \\
-B &~=~& \displaystyle
+B &~=~& \alpha \, \displaystyle
         \frac{(\alpha+3)r_c~-~(\alpha+1)r_1}{r_c^{\alpha+2}~(r_c-r_1)^3}
 \end{array}
 \eeq
@@ -328,42 +321,20 @@ F_s(r) = \frac{\alpha}{r^{\alpha+1}} + A(r-r_1)^2 + B(r-r_1)^3
 \eeq
 and the potential function reads:
 \beq
-\Phi(r) = \frac{1}{r^\alpha} - \frac{A}{3} (r-r_1)^3 - \frac{B}{4} (r-r_1)^4 - C
+V_s(r) = \frac{1}{r^\alpha} - \frac{A}{3} (r-r_1)^3 - \frac{B}{4} (r-r_1)^4 - C
 \eeq
 where 
 \beq
 C =  \frac{1}{r_c^\alpha} - \frac{A}{3} (r_c-r_1)^3 - \frac{B}{4} (r_c-r_1)^4
 \eeq
 
-When $r_1$ = 0, the modified Coulomb force function is
-\beq
- F_s(r) = \frac{1}{r^2} - \frac{5 r^2}{r_c^4} + \frac{4 r^3}{r_c^5}
-\eeq
-which is identical to the {\em \index{parabolic force}} 
-function recommended to be used as a short-range function in 
-conjunction with a \swapindex{Poisson}{solver} 
-for the long-range part~\cite{Berendsen93a}.
-The modified Coulomb potential function is:
-\beq
-\Phi(r) = \frac{1}{r} - \frac{5}{3r_c} + \frac{5r^3}{3r_c^4} - \frac{r^4}{r_c^5}
-\eeq
-See also \figref{shift}.
-
-\begin{figure}
-\centerline{\includegraphics[width=10cm]{plots/shiftf}}
-\caption[The Coulomb Force, Shifted Force and Shift Function
-$S(r)$,.]{The Coulomb Force, Shifted Force and Shift Function $S(r)$,
-using r$_1$ = 2 and r$_c$ = 4.} 
-\label{fig:shift}
-\end{figure}
-
 \subsection{Modified short-range interactions with Ewald summation}
 When Ewald summation\index{Ewald sum} or \seeindex{particle-mesh
 Ewald}{PME}\index{Ewald, particle-mesh} is used to calculate the
 long-range interactions, the 
-short-range Coulomb potential must also be modified, similar to the
-switch function above. In this case the short range potential is given
-by:
+short-range Coulomb potential must also be modified. Here the potential
+is switched to (nearly) zero at the cut-off, instead of the force.
+In this case the short range potential is given by:
 \beq
 V(r) = f \frac{\mbox{erfc}(\beta r_{ij})}{r_{ij}} q_i q_j,
 \eeq
