@@ -2808,6 +2808,7 @@ void init_md(FILE *fplog,
     if ((ir->bDrude) && (ir->drude->drudemode == edrudeLagrangian))
     {
         please_cite(fplog, "Lamoureux2003");
+        please_cite(fplog, "Lemkul2015");
     }
 
     /* Initiate variables */
