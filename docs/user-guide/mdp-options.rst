@@ -2929,6 +2929,113 @@ Adaptive Resolution Simulation
    Cap the force in the hybrid region, useful for big molecules. 0
    disables force capping.
 
+Polarizable simulations
+^^^^^^^^^^^^^^^^^^^^^^^
+
+When shells/Drudes or flexible constraints are present in the system the
+positions of the shells/Drudes and the lengths of the flexible constraints
+are optimized at every time step until either the RMS force on the
+shells/Drudes and constraints is less than :mdp:`emtol`, or a maximum number
+of iterations :mdp:`niter` has been reached. Minimization is converged
+when the maximum force is smaller than :mdp:`emtol`. For shell/Drude MD this
+value should be 1.0 at most.  An alternative integration scheme (extended
+Lagrangian) performs normal integration on shells/Drudes, provided they have
+masses.
+
+.. mdp:: drude
+
+   .. mdp-value:: no
+
+      There are no shells/Drudes in the system.  All options related to 
+      polarizability are ignored.
+
+   .. mdp-value:: yes
+
+      The system is polarizable.
+
+.. mdp:: drude-mode
+
+   .. mdp-value:: SCF
+
+      Use the self-consistent field optimization algorithm for updating
+      shell/Drude positions
+
+   .. mdp-value:: Lagrangian
+
+      Use the extended Lagrangian algorithm for integrating shell/Drude
+      positions and velocities
+
+.. mdp:: niter
+
+   (20)
+   maximum number of iterations for optimizing the shell positions and
+   the flexible constraints.
+
+.. mdp:: fcstep
+
+   (0) \[ps^2\]
+   the step size for optimizing the flexible constraints. Should be
+   chosen as mu/(d2V/dq2) where mu is the reduced mass of two
+   particles in a flexible constraint and d2V/dq2 is the second
+   derivative of the potential in the constraint direction. Hopefully
+   this number does not differ too much between the flexible
+   constraints, as the number of iterations and thus the runtime is
+   very sensitive to fcstep. Try several values!
+
+.. mdp:: drude-t
+
+   (1.0) \[K\]
+   The temperature for Drude particle velocity generation.  Only meaningful when
+   :mdp:`drude-mode` is set to Lagrangian.
+
+.. mdp:: drude-hardwall
+
+   .. mdp-value:: no
+
+   No hardwall restraint will be applied.  Simulations may be unstable and the value
+   of :mdp:`dt` should be set no larger than 0.0005.
+
+   .. mdp-value:: yes
+
+   The hardwall constraint described by Chowdhary et al. (see manual) will be applied
+   to avoid polarization catastrophe.
+
+.. mdp:: drude-hyper
+
+   .. mdp-value:: no
+
+   No additional restraining force is applied.
+
+   .. mdp-value:: yes
+
+   An additional quartic restraint potential is applied to Drude-atom pairs to prevent
+   polarization catastrophe.  It is less stable than the hardwall constraint, and cannot
+   be used in conjunction with the hardwall.  Should only be used if :mdp:`drude-mode`
+   is set to SCF, and :mdp:`dt` is still generally limited to no larger than 0.0005.
+
+.. mdp:: drude-r
+
+   (0.02) \[nm\]
+   The distance limit for Drude-atom bonds, at which point the hardwall 
+   or quartic restraint is imposed.
+
+.. mdp:: drude-khyp
+
+   (16736000.0) \[kJ mol^-1 nm^-2\]
+   The force constaint for the additional quartic restraint force.
+
+.. mdp:: drude-power
+
+   (4)
+   Power for the additional restraining potential.  Typically, this is a quartic restraint,
+   though it can be tuned.  Be advised that values other than 4 are untested!
+
+.. mdp:: drude-tsteps
+
+   (20)
+   The number of subdivided time steps for updating thermostat and barostat variables.
+   A value of 20 is generally recommended, though values as low as 5 can be stable and
+   more efficient.
 
 User defined thingies
 ^^^^^^^^^^^^^^^^^^^^^
