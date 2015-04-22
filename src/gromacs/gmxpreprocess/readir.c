@@ -2194,6 +2194,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Format is number of terms (int) and for all terms an amplitude (real)");
     CTYPE ("and a phase angle (real)");
     STYPE ("E-x",     is->efield_x,   NULL);
+    CTYPE ("Time dependent (pulsed) electric field. Format is omega, time for pulse");
+    CTYPE ("peak, and sigma (width) for pulse. Sigma = 0 removes pulse, leaving");
+    CTYPE ("the field to be a cosine function.");
     STYPE ("E-xt",    is->efield_xt,  NULL);
     STYPE ("E-y",     is->efield_y,   NULL);
     STYPE ("E-yt",    is->efield_yt,  NULL);
