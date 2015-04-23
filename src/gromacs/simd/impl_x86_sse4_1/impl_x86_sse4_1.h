@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,52 +60,84 @@
 /* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
  * can be implemented more efficiently in SSE4.1.
  */
+
+/* SINGLE */
 #undef  gmx_simd_round_f
-#define gmx_simd_round_f(x)       _mm_round_ps(x, _MM_FROUND_NINT)
+#define gmx_simd_round_f(x)                 _mm_round_ps(x, _MM_FROUND_NINT)
 #undef  gmx_simd_trunc_f
-#define gmx_simd_trunc_f(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
-#undef  gmx_simd_round_d
-#define gmx_simd_round_d(x)       _mm_round_pd(x, _MM_FROUND_NINT)
-#undef  gmx_simd_trunc_d
-#define gmx_simd_trunc_d(x)       _mm_round_pd(x, _MM_FROUND_TRUNC)
-
+#define gmx_simd_trunc_f(x)                 _mm_round_ps(x, _MM_FROUND_TRUNC)
 #undef  gmx_simd_extract_fi
-#define gmx_simd_extract_fi       _mm_extract_epi32
+#define gmx_simd_extract_fi                 _mm_extract_epi32
 #undef  gmx_simd_mul_fi
-#define gmx_simd_mul_fi           _mm_mullo_epi32
-
-#undef  gmx_simd_extract_di
-#define gmx_simd_extract_di       _mm_extract_epi32
-#undef  gmx_simd_mul_di
-#define gmx_simd_mul_di           _mm_mullo_epi32
-
+#define gmx_simd_mul_fi                     _mm_mullo_epi32
 #undef  gmx_simd_blendv_f
-#define gmx_simd_blendv_f         _mm_blendv_ps
-#undef  gmx_simd_blendv_d
-#define gmx_simd_blendv_d         _mm_blendv_pd
-
+#define gmx_simd_blendv_f                   _mm_blendv_ps
 #undef  gmx_simd_reduce_f
-#define gmx_simd_reduce_f(a)      gmx_simd_reduce_f_sse4_1(a)
-#undef  gmx_simd_reduce_d
-#define gmx_simd_reduce_d(a)      gmx_simd_reduce_d_sse4_1(a)
-
+#define gmx_simd_reduce_f(a)                gmx_simd_reduce_f_sse4_1(a)
 #undef  gmx_simd_blendv_fi
-#define gmx_simd_blendv_fi        _mm_blendv_epi8
-#undef  gmx_simd_blendv_di
-#define gmx_simd_blendv_di        _mm_blendv_epi8
+#define gmx_simd_blendv_fi                  _mm_blendv_epi8
+#undef gmx_simd_load_2of4_transpose_f
+#define gmx_simd_load_2of4_transpose_f      gmx_simd_load_2of4_transpose_f_sse4_1
+#undef gmx_simd_load_4_transpose_f
+#define gmx_simd_load_4_transpose_f         gmx_simd_load_4_transpose_f_sse4_1
+#undef gmx_simd_reduce_incr_4_return_sum_f
+#define gmx_simd_reduce_incr_4_return_sum_f gmx_simd_reduce_incr_4_return_sum_f_sse4_1
 
+/* DOUBLE */
+#undef  gmx_simd_round_d
+#define gmx_simd_round_d(x)                 _mm_round_pd(x, _MM_FROUND_NINT)
+#undef  gmx_simd_trunc_d
+#define gmx_simd_trunc_d(x)                 _mm_round_pd(x, _MM_FROUND_TRUNC)
+#undef  gmx_simd_extract_di
+#define gmx_simd_extract_di                 _mm_extract_epi32
+#undef  gmx_simd_mul_di
+#define gmx_simd_mul_di                     _mm_mullo_epi32
+#undef  gmx_simd_blendv_d
+#define gmx_simd_blendv_d                   _mm_blendv_pd
+#undef  gmx_simd_reduce_d
+#define gmx_simd_reduce_d(a)                gmx_simd_reduce_d_sse4_1(a)
+#undef  gmx_simd_blendv_di
+#define gmx_simd_blendv_di                  _mm_blendv_epi8
+#undef gmx_simd_load_2of4_transpose_d
+#define gmx_simd_load_2of4_transpose_d      gmx_simd_load_2of4_transpose_d_sse4_1
+#undef gmx_simd_load_4_transpose_d
+#define gmx_simd_load_4_transpose_d         gmx_simd_load_4_transpose_d_sse4_1
+#undef gmx_simd_reduce_incr_4_return_sum_d
+#define gmx_simd_reduce_incr_4_return_sum_d gmx_simd_reduce_incr_4_return_sum_d_sse4_1
+
+/* We only need to override the debugging versions of rsqrt/rcp. Sorry for the double-negative check. */
+#ifndef NDEBUG
+#    undef  gmx_simd_rcp_mask_f
+#    define gmx_simd_rcp_mask_f(a, m)    _mm_and_ps(_mm_rcp_ps(_mm_blendv_ps(_mm_set1_ps(1.0f), a, m)), m)
+#    undef  gmx_simd_rsqrt_mask_f
+#    define gmx_simd_rsqrt_mask_f(a, m)  _mm_and_ps(_mm_rsqrt_ps(_mm_blendv_ps(_mm_set1_ps(1.0f), a, m)), m)
+#    undef  gmx_simd_rcp_mask_d
+#    define gmx_simd_rcp_mask_d(a, m)    _mm_and_pd(gmx_simd_rcp_d(_mm_blendv_pd(_mm_set1_pd(1.0), a, m)), m)
+#    undef  gmx_simd_rsqrt_mask_d
+#    define gmx_simd_rsqrt_mask_d(a, m)  _mm_and_pd(gmx_simd_rsqrt_d(_mm_blendv_pd(_mm_set1_pd(1.0), a, m)), m)
+#endif
+
+/* SIMD4 */
 #undef  gmx_simd4_dotproduct3_f
-#define gmx_simd4_dotproduct3_f   gmx_simd4_dotproduct3_f_sse4_1
+#define gmx_simd4_dotproduct3_f         gmx_simd4_dotproduct3_f_sse4_1
+
+
+
+
+
 
 /* SIMD reduction function */
 static gmx_inline float gmx_simdcall
 gmx_simd_reduce_f_sse4_1(__m128 a)
 {
     float  f;
-
-    a = _mm_hadd_ps(a, a);
-    a = _mm_hadd_ps(a, a);
-    _mm_store_ss(&f, a);
+    /* Shuffle has latency 1/throughput 1, followed by add with latency 3, t-put 1.
+     * This is likely faster than using _mm_hadd_ps, which has latency 5, t-put 2.
+     */
+    a = _mm_add_ps(a, _mm_shuffle_ps(a, a, _MM_SHUFFLE(1, 0, 3, 2)));
+    a = _mm_add_ss(a, _mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 3, 2, 1)));
+    /* This macro usually provides slightly better performance than _mm_cvtss_f32(). */
+    _MM_EXTRACT_FLOAT(f, a, 0);
     return f;
 }
 
@@ -122,10 +154,133 @@ static gmx_inline double gmx_simdcall
 gmx_simd_reduce_d_sse4_1(__m128d a)
 {
     double  f;
-
-    a = _mm_hadd_pd(a, a);
+    /* Shuffle has latency 1/throughput 1, followed by add with latency 3, t-put 1.
+     * This is likely faster than using _mm_hadd_ps, which has latency 5, t-put 2.
+     */
+    a = _mm_add_sd(a, _mm_shuffle_pd(a, a, _MM_SHUFFLE2(1, 1)));
     _mm_store_sd(&f, a);
     return f;
 }
+
+
+/****************************************************
+ * Single precision higher-level utility functions  *
+ ****************************************************/
+
+static gmx_inline void gmx_simdcall
+gmx_simd_load_2of4_transpose_f_sse4_1(const float * base,    gmx_simd_fint32_t offset,
+                                      gmx_simd_float_t * v0, gmx_simd_float_t * v1)
+{
+    __m128 t1, t2;
+    offset = _mm_slli_epi32(offset, 2);
+    *v0    = _mm_castpd_ps(_mm_load_sd((const double *)(base + _mm_extract_epi32(offset, 0))));
+    *v1    = _mm_castpd_ps(_mm_load_sd((const double *)(base + _mm_extract_epi32(offset, 1))));
+    t1     = _mm_castpd_ps(_mm_load_sd((const double *)(base + _mm_extract_epi32(offset, 2))));
+    t2     = _mm_castpd_ps(_mm_load_sd((const double *)(base + _mm_extract_epi32(offset, 3))));
+    t1     = _mm_unpacklo_ps(*v0, t1);
+    t2     = _mm_unpacklo_ps(*v1, t2);
+    *v0    = _mm_unpacklo_ps(t1, t2);
+    *v1    = _mm_unpackhi_ps(t1, t2);
+}
+
+
+static gmx_inline void gmx_simdcall
+gmx_simd_load_4_transpose_f_sse4_1(const float * base,    gmx_simd_fint32_t offset,
+                                   gmx_simd_float_t * v0, gmx_simd_float_t * v1,
+                                   gmx_simd_float_t * v2, gmx_simd_float_t * v3)
+{
+    offset = _mm_slli_epi32(offset, 2);
+    *v0    = _mm_load_ps(base + _mm_extract_epi32(offset, 0) );
+    *v1    = _mm_load_ps(base + _mm_extract_epi32(offset, 1) );
+    *v2    = _mm_load_ps(base + _mm_extract_epi32(offset, 2) );
+    *v3    = _mm_load_ps(base + _mm_extract_epi32(offset, 3) );
+    _MM_TRANSPOSE4_PS(*v0, *v1, *v2, *v3);
+}
+
+static gmx_inline float gmx_simdcall
+gmx_simd_reduce_incr_4_return_sum_f_sse4_1(float * m,
+                                           gmx_simd_float_t v0, gmx_simd_float_t v1,
+                                           gmx_simd_float_t v2, gmx_simd_float_t v3)
+{
+    /* The present implementation is quite standardized: transpose and sum.
+     * However, there are a couple of alternatives worth trying and benchmarking later:
+     *
+     * 1) Use 3*hadd. Much fewer instructions, but high latency (5) and bad throughput (2).
+     * 2) Mix hadd with shuffle/blend (blend is better t-put than shuffle).
+     *
+     * In a standalone test all these had similar performance, so we need to test what
+     * works best in the actual kernels where it is mixed with other instructions.
+     */
+    _MM_TRANSPOSE4_PS(v0, v1, v2, v3);
+    v0 = _mm_add_ps(v0, v1);
+    v2 = _mm_add_ps(v2, v3);
+    v0 = _mm_add_ps(v0, v2);
+    v2 = _mm_add_ps(v0, _mm_load_ps(m));
+    _mm_store_ps(m, v2);
+
+    return gmx_simd_reduce_f_sse4_1(v0);
+}
+
+
+
+/****************************************************
+ * Double precision higher-level utility functions  *
+ ****************************************************/
+
+
+static gmx_inline void gmx_simdcall
+gmx_simd_load_2of4_transpose_d_sse4_1(const double * base,    gmx_simd_dint32_t offset,
+                                      gmx_simd_double_t * v0, gmx_simd_double_t * v1)
+{
+    __m128d t1, t2;
+    offset = _mm_slli_epi32(offset, 2);
+    t1     = _mm_load_pd(base + _mm_extract_epi32(offset, 0) );
+    t2     = _mm_load_pd(base + _mm_extract_epi32(offset, 1) );
+    *v0    = _mm_unpacklo_pd(t1, t2);
+    *v1    = _mm_unpackhi_pd(t1, t2);
+}
+
+
+static gmx_inline void gmx_simdcall
+gmx_simd_load_4_transpose_d_sse4_1(const double * base,    gmx_simd_dint32_t offset,
+                                   gmx_simd_double_t * v0, gmx_simd_double_t * v1,
+                                   gmx_simd_double_t * v2, gmx_simd_double_t * v3)
+{
+    __m128d t1, t2, t3, t4;
+    offset = _mm_slli_epi32(offset, 2);
+    t1     = _mm_load_pd(base + _mm_extract_epi32(offset, 0) );
+    t2     = _mm_load_pd(base + _mm_extract_epi32(offset, 1) );
+    t3     = _mm_load_pd(base + _mm_extract_epi32(offset, 0) + 2);
+    t4     = _mm_load_pd(base + _mm_extract_epi32(offset, 1) + 2);
+    *v0    = _mm_unpacklo_pd(t1, t2);
+    *v1    = _mm_unpackhi_pd(t1, t2);
+    *v2    = _mm_unpacklo_pd(t3, t4);
+    *v3    = _mm_unpackhi_pd(t3, t4);
+}
+
+static gmx_inline double gmx_simdcall
+gmx_simd_reduce_incr_4_return_sum_d_sse4_1(double * m,
+                                           gmx_simd_double_t v0, gmx_simd_double_t v1,
+                                           gmx_simd_double_t v2, gmx_simd_double_t v3)
+{
+    __m128d t1, t2, t3, t4;
+
+    t1 = _mm_unpacklo_pd(v0, v1);
+    t2 = _mm_unpackhi_pd(v0, v1);
+    t3 = _mm_unpacklo_pd(v2, v3);
+    t4 = _mm_unpackhi_pd(v2, v3);
+
+    t1 = _mm_add_pd(t1, t2);
+    t3 = _mm_add_pd(t3, t4);
+
+    t2 = _mm_add_pd(t1, _mm_load_pd(m));
+    t4 = _mm_add_pd(t3, _mm_load_pd(m + 2));
+    _mm_store_pd(m, t2);
+    _mm_store_pd(m + 2, t4);
+
+    t1 = _mm_add_pd(t1, t3);
+    return gmx_simd_reduce_d_sse4_1(t1);
+}
+
 
 #endif /* GMX_SIMD_IMPL_X86_SSE4_1_H */
