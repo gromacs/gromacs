@@ -95,9 +95,15 @@
  *  \{
  */
 
-#if (GMX_SIMD_REFERENCE || defined DOXYGEN)
-// Plain C SIMD reference implementation, also serves as documentation.
-#    include "impl_reference/impl_reference.h"
+// Many SIMD architectures other than reference are temporarily disabled in this commit
+#if GMX_SIMD_X86_AVX_128_FMA
+#    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
+#elif GMX_SIMD_X86_SSE4_1
+#    include "impl_x86_sse4_1/impl_x86_sse4_1.h"
+#elif GMX_SIMD_X86_SSE2
+#    include "impl_x86_sse2/impl_x86_sse2.h"
+#elif (GMX_SIMD_REFERENCE || defined DOXYGEN)
+#    include "impl_reference/impl_reference.h" // Includes doxygen documentation
 #else
 #    include "impl_none/impl_none.h"
 #endif
