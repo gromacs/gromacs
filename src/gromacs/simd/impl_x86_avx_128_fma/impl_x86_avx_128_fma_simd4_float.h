@@ -33,16 +33,60 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_SSE4_1_COMMON_H
-#define GMX_SIMD_IMPL_X86_SSE4_1_COMMON_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD4_FLOAT_H
+#define GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD4_FLOAT_H
 
-#include <smmintrin.h>
+#include "config.h"
 
-/* x86 SSE4.1 SIMD settings. Please see documentation in gromacs/simd/simd.h for
- * the available defines.
- */
+#include <immintrin.h>
+#include <x86intrin.h>
 
-/* Inherit most of SSE4.1 from SSE2 */
-#include "gromacs/simd/impl_x86_sse2/impl_x86_sse2.h"
+#include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1_simd4_float.h"
 
-#endif /* GMX_SIMD_IMPL_X86_SSE4_1_COMMON_H */
+namespace gmx
+{
+
+static inline Simd4Float gmx_simdcall
+fma(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_macc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fms(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_msub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_nmacc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_nmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline float gmx_simdcall
+reduce(Simd4Float a)
+{
+    __m128 b;
+    b = _mm_add_ps(a.simdInternal_, _mm_permute_ps(a.simdInternal_, _MM_SHUFFLE(1, 0, 3, 2)));
+    b = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
+    return *reinterpret_cast<float *>(&b);
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD4_FLOAT_H
