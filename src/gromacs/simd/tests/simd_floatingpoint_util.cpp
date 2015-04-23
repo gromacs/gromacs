@@ -68,7 +68,7 @@ class SimdFloatingpointUtilTest : public SimdTest
             val2_   = val0_ + 2 * GMX_SIMD_REAL_WIDTH;
             val3_   = val0_ + 3 * GMX_SIMD_REAL_WIDTH;
             mem0_   = val0_ + 4 * GMX_SIMD_REAL_WIDTH;
-            mem1_   = mem0_ + 6 * GMX_SIMD_REAL_WIDTH;
+            mem1_   = mem0_ + 8 * GMX_SIMD_REAL_WIDTH;
             // Set default values for offset and variables m0_ through m3_
             // We cannot fill mem_ here since those values depend on the test.
             for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -89,13 +89,14 @@ class SimdFloatingpointUtilTest : public SimdTest
         real *                  val1_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
         real *                  val2_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
         real *                  val3_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
-        real *                  mem0_;                           //!< Aligned pointer to 12*GMX_SIMD_REAL_WIDTH mem
+        real *                  mem0_;                           //!< Aligned pointer to 16*GMX_SIMD_REAL_WIDTH mem
         real *                  mem1_;                           //!< Aligned pointer halfway through mem0_
     private:
-        // To have a somewhat odd access pattern, we use every
-        // third entry, so for four different locations in memory we
-        // use 4*3*GMX_SIMD_REAL_WIDTH entries, and then we also have the four m0-m3 locations, and padding.
-        real                    work_[17 * GMX_SIMD_REAL_WIDTH]; //!< Raw work memory (12+4+pad=17)
+        // To have a somewhat odd access pattern, we use every third entry, i.e. offset_[i] = 3*i.
+        // On top of this we also allow alignments up to 16.
+        // This means we need the memory area (mem0_) to be 16*3*GMX_SIMD_REAL_WIDTH.
+        // Then we also use need memory for the four four m0-m3 locations, and padding.
+        real                    work_[53 * GMX_SIMD_REAL_WIDTH]; //!< Raw work memory (16*3+4+pad=53)
         int                     iwork_[2 * GMX_SIMD_REAL_WIDTH]; //!< Raw work memory for offsets (1+pad=2)
 };
 
@@ -136,6 +137,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadTranspose4)
         else if (align == 12)
         {
             gmx_simd_gather_load_transpose_r<12>(mem0_, offset_, v0, v1, v2, v3);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
@@ -179,6 +184,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadTranspose2)
         {
             gmx_simd_gather_load_transpose_r<gmx_simd_best_pair_alignment_r>(mem0_, offset_, v0, v1);
         }
+        else
+        {
+            FAIL();
+        }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -214,6 +223,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadUTranspose3)
         else if (align == 4)
         {
             gmx_simd_gather_loadu_transpose_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
@@ -255,11 +268,15 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterStoreU3)
 
         if (align == 3)
         {
-            gmx_simd_transpose_scatter_storeu_f<3>(mem0_, offset_, v0, v1, v2);
+            gmx_simd_transpose_scatter_storeu_r<3>(mem0_, offset_, v0, v1, v2);
         }
         else if (align == 4)
         {
-            gmx_simd_transpose_scatter_storeu_f<4>(mem0_, offset_, v0, v1, v2);
+            gmx_simd_transpose_scatter_storeu_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
@@ -302,11 +319,15 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterIncrU3)
 
         if (align == 3)
         {
-            gmx_simd_transpose_scatter_incru_f<3>(mem0_, offset_, v0, v1, v2);
+            gmx_simd_transpose_scatter_incru_r<3>(mem0_, offset_, v0, v1, v2);
         }
         else if (align == 4)
         {
-            gmx_simd_transpose_scatter_incru_f<4>(mem0_, offset_, v0, v1, v2);
+            gmx_simd_transpose_scatter_incru_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
@@ -349,11 +370,15 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterDecrU3)
 
         if (align == 3)
         {
-            gmx_simd_transpose_scatter_decru_f<3>(mem0_, offset_, v0, v1, v2);
+            gmx_simd_transpose_scatter_decru_r<3>(mem0_, offset_, v0, v1, v2);
         }
         else if (align == 4)
         {
-            gmx_simd_transpose_scatter_decru_f<4>(mem0_, offset_, v0, v1, v2);
+            gmx_simd_transpose_scatter_decru_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         for (j = 0; j < 12*GMX_SIMD_REAL_WIDTH; j++)
@@ -418,16 +443,21 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadBySimdIntTranspose4)
 
         if (align == 4)
         {
-            gmx_simd_gather_load_bysimdint_transpose_f<4>(mem0_, simdoffset, v0, v1, v2, v3);
+            gmx_simd_gather_load_bysimdint_transpose_r<4>(mem0_, simdoffset, v0, v1, v2, v3);
         }
         else if (align == 8)
         {
-            gmx_simd_gather_load_bysimdint_transpose_f<8>(mem0_, simdoffset, v0, v1, v2, v3);
+            gmx_simd_gather_load_bysimdint_transpose_r<8>(mem0_, simdoffset, v0, v1, v2, v3);
         }
         else if (align == 12)
         {
-            gmx_simd_gather_load_bysimdint_transpose_f<12>(mem0_, simdoffset, v0, v1, v2, v3);
+            gmx_simd_gather_load_bysimdint_transpose_r<12>(mem0_, simdoffset, v0, v1, v2, v3);
         }
+        else
+        {
+            FAIL();
+        }
+
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -461,15 +491,19 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadBySimdIntTranspose2)
 
         if (align == 4)
         {
-            gmx_simd_gather_load_bysimdint_transpose_f<4>(mem0_, simdoffset, v0, v1);
+            gmx_simd_gather_load_bysimdint_transpose_r<4>(mem0_, simdoffset, v0, v1);
         }
         else if (align == 8)
         {
-            gmx_simd_gather_load_bysimdint_transpose_f<8>(mem0_, simdoffset, v0, v1);
+            gmx_simd_gather_load_bysimdint_transpose_r<8>(mem0_, simdoffset, v0, v1);
         }
         else if (align == 12)
         {
-            gmx_simd_gather_load_bysimdint_transpose_f<12>(mem0_, simdoffset, v0, v1);
+            gmx_simd_gather_load_bysimdint_transpose_r<12>(mem0_, simdoffset, v0, v1);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
@@ -502,15 +536,19 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadUBySimdIntTranspose2)
 
         if (align == 1)
         {
-            gmx_simd_gather_loadu_bysimdint_transpose_f<1>(mem0_, simdoffset, v0, v1);
+            gmx_simd_gather_loadu_bysimdint_transpose_r<1>(mem0_, simdoffset, v0, v1);
         }
         else if (align == 3)
         {
-            gmx_simd_gather_loadu_bysimdint_transpose_f<3>(mem0_, simdoffset, v0, v1);
+            gmx_simd_gather_loadu_bysimdint_transpose_r<3>(mem0_, simdoffset, v0, v1);
         }
         else if (align == 5)
         {
-            gmx_simd_gather_loadu_bysimdint_transpose_f<5>(mem0_, simdoffset, v0, v1);
+            gmx_simd_gather_loadu_bysimdint_transpose_r<5>(mem0_, simdoffset, v0, v1);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
