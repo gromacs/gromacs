@@ -70,7 +70,7 @@ class SimdFloatingpointUtilTest : public SimdTest
             val2_   = val0_ + 2 * GMX_SIMD_REAL_WIDTH;
             val3_   = val0_ + 3 * GMX_SIMD_REAL_WIDTH;
             mem0_   = val0_ + 4 * GMX_SIMD_REAL_WIDTH;
-            mem1_   = mem0_ + 6 * GMX_SIMD_REAL_WIDTH;
+            mem1_   = mem0_ + 8 * GMX_SIMD_REAL_WIDTH;
             // Set default values for offset and variables m0_ through m3_
             // We cannot fill mem_ here since those values depend on the test.
             for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -91,7 +91,7 @@ class SimdFloatingpointUtilTest : public SimdTest
         real *                  val1_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
         real *                  val2_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
         real *                  val3_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
-        real *                  mem0_;                           //!< Aligned pointer to 12*GMX_SIMD_REAL_WIDTH mem
+        real *                  mem0_;                           //!< Aligned pointer to 16*GMX_SIMD_REAL_WIDTH mem
         real *                  mem1_;                           //!< Aligned pointer halfway through mem0_
     private:
         // To have a somewhat odd access pattern, we use every
@@ -461,6 +461,7 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadBySimdIntTranspose4)
         {
             FAIL();
         }
+
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);

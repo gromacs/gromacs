@@ -33,14 +33,19 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_SSE2_H
-#define GMX_SIMD_IMPL_X86_SSE2_H
+#ifndef GMX_SIMD_IMPL_X86_SSE2_OTHER_H
+#define GMX_SIMD_IMPL_X86_SSE2_OTHER_H
 
-#include "impl_x86_sse2_other.h"
-#include "impl_x86_sse2_simd4_float.h"
-#include "impl_x86_sse2_simd_double.h"
-#include "impl_x86_sse2_simd_float.h"
-#include "impl_x86_sse2_util_double.h"
-#include "impl_x86_sse2_util_float.h"
+#include "config.h"
 
-#endif /* GMX_SIMD_IMPL_X86_SSE2_H */
+#include <emmintrin.h>
+
+#include "impl_x86_sse2_common.h"
+
+static void
+gmx_simd_prefetch(void *m)
+{
+    _mm_prefetch((const char *)m, _MM_HINT_T0);
+}
+
+#endif /* GMX_SIMD_IMPL_X86_SSE2_OTHER_H */

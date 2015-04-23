@@ -66,12 +66,23 @@
 #undef  gmx_simd_blendv_di
 #define gmx_simd_blendv_di        _mm_blendv_epi8
 
+/* We only need to override the debugging versions of rsqrt/rcp. Sorry for the double-negative check. */
+#ifndef NDEBUG
+#    undef  gmx_simd_rcp_mask_d
+#    define gmx_simd_rcp_mask_d(a, m)    _mm_and_pd(gmx_simd_rcp_d(_mm_blendv_pd(_mm_set1_pd(1.0), a, m)), m)
+#    undef  gmx_simd_rsqrt_mask_d
+#    define gmx_simd_rsqrt_mask_d(a, m)  _mm_and_pd(gmx_simd_rsqrt_d(_mm_blendv_pd(_mm_set1_pd(1.0), a, m)), m)
+#endif
+
+
 static gmx_inline double gmx_simdcall
 gmx_simd_reduce_d_sse4_1(__m128d a)
 {
     double  f;
-
-    a = _mm_hadd_pd(a, a);
+    /* Shuffle has latency 1/throughput 1, followed by add with latency 3, t-put 1.
+     * This is likely faster than using _mm_hadd_ps, which has latency 5, t-put 2.
+     */
+    a = _mm_add_sd(a, _mm_shuffle_pd(a, a, _MM_SHUFFLE2(1, 1)));
     _mm_store_sd(&f, a);
     return f;
 }
