@@ -69,6 +69,16 @@
 #define gmx_simd_rsqrt_d(x)        _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x)))
 /* Don't use FMA for sqrt N-R iterations - this saves 1 instruction without FMA hardware */
 #define gmx_simd_rcp_d(x)          _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x)))
+#define gmx_simd_mul_mask_d(a, b, m)       _mm_and_pd(_mm_mul_pd(a, b), m)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  _mm_and_pd(gmx_simd_fmadd_d(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_d(a, m)      _mm_and_pd(gmx_simd_rcp_d(a), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    _mm_and_pd(gmx_simd_rsqrt_d(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_d(a, m)      _mm_and_pd(gmx_simd_rcp_d(gmx_simd_blendv_d(_mm_set1_pd(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    _mm_and_pd(gmx_simd_rsqrt_d(gmx_simd_blendv_d(_mm_set1_pd(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_d(x)         _mm_andnot_pd(_mm_set1_pd(GMX_DOUBLE_NEGZERO), x)
 #define gmx_simd_fneg_d(x)         _mm_xor_pd(x, _mm_set1_pd(GMX_DOUBLE_NEGZERO))
 #define gmx_simd_max_d             _mm_max_pd
@@ -105,6 +115,7 @@
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t            __m128d
 #define gmx_simd_cmpeq_d            _mm_cmpeq_pd
+#define gmx_simd_cmpnz_d(a)         _mm_cmpneq_pd(a, _mm_setzero_pd())
 #define gmx_simd_cmplt_d            _mm_cmplt_pd
 #define gmx_simd_cmple_d            _mm_cmple_pd
 #define gmx_simd_and_db             _mm_and_pd
@@ -128,7 +139,7 @@
 #define gmx_simd_cvt_db2dib(x)      _mm_shuffle_epi32(_mm_castpd_si128(x), _MM_SHUFFLE(2, 0, 2, 0))
 #define gmx_simd_cvt_dib2db(x)      _mm_castsi128_pd(_mm_shuffle_epi32(x, _MM_SHUFFLE(1, 1, 0, 0)))
 /* Float/double conversion */
-#define gmx_simd_cvt_f2dd(f, d0, d1)  { *d0 = _mm_cvtps_pd(f); *d1 = _mm_cvtps_pd(_mm_movehl_ps(f, f)); }
+#define gmx_simd_cvt_f2dd(f, d0, d1) { *d0 = _mm_cvtps_pd(f); *d1 = _mm_cvtps_pd(_mm_movehl_ps(f, f)); }
 #define gmx_simd_cvt_dd2f(d0, d1)    _mm_movelh_ps(_mm_cvtpd_ps(d0), _mm_cvtpd_ps(d1))
 
 

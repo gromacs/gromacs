@@ -33,14 +33,33 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_SSE2_H
-#define GMX_SIMD_IMPL_X86_SSE2_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H
 
-#include "impl_x86_sse2_other.h"
-#include "impl_x86_sse2_simd4_float.h"
-#include "impl_x86_sse2_simd_double.h"
-#include "impl_x86_sse2_simd_float.h"
-#include "impl_x86_sse2_util_double.h"
-#include "impl_x86_sse2_util_float.h"
+#include "config.h"
 
-#endif /* GMX_SIMD_IMPL_X86_SSE2_H */
+#include <immintrin.h>
+#include <x86intrin.h>
+
+#include "impl_x86_avx_128_fma_common.h"
+
+#undef  gmx_simd_expand_scalars_to_triplets_d
+#define gmx_simd_expand_scalars_to_triplets_d   gmx_simd_expand_scalars_to_triplets_d_avx_128_fma
+
+/****************************************************
+ * Double precision higher-level utility functions  *
+ ****************************************************/
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd_expand_scalars_to_triplets_d_avx_128_fma(gmx_simd_double_t   scalar,
+                                                  gmx_simd_double_t  &triplets0,
+                                                  gmx_simd_double_t  &triplets1,
+                                                  gmx_simd_double_t  &triplets2)
+{
+    triplets0 = _mm_permute_pd(scalar, _MM_SHUFFLE2(0, 0));
+    triplets1 = _mm_permute_pd(scalar, _MM_SHUFFLE2(1, 0));
+    triplets2 = _mm_permute_pd(scalar, _MM_SHUFFLE2(1, 1));
+}
+#endif
+
+#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H */
