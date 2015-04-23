@@ -36,9 +36,13 @@
 #ifndef GMX_SIMD_IMPL_X86_SSE2_H
 #define GMX_SIMD_IMPL_X86_SSE2_H
 
+#include "impl_x86_sse2_definitions.h"
+#include "impl_x86_sse2_general.h"
+// SSE2 cannot do double precision SIMD4
 #include "impl_x86_sse2_simd4_float.h"
 #include "impl_x86_sse2_simd_double.h"
 #include "impl_x86_sse2_simd_float.h"
-/* SSE2 cannot do double precision SIMD4 */
+#include "impl_x86_sse2_util_double.h"
+#include "impl_x86_sse2_util_float.h"
 
-#endif /* GMX_SIMD_IMPL_X86_SSE2_H */
+#endif // GMX_SIMD_IMPL_X86_SSE2_H
