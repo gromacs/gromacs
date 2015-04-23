@@ -51,7 +51,6 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
-#include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -174,7 +173,9 @@ class OptionsFilter : public OptionsVisitor
         //! Specifies the type of output that formatSelected() produces.
         enum FilterType
         {
-            eSelectFileOptions,
+            eSelectInputFileOptions,
+            eSelectInputOutputFileOptions,
+            eSelectOutputFileOptions,
             eSelectOtherOptions
         };
 
@@ -233,9 +234,26 @@ void OptionsFilter::visitOption(const OptionInfo &option)
     {
         return;
     }
-    if (option.isType<FileNameOptionInfo>())
+    const FileNameOptionInfo *const fileOption = option.toType<FileNameOptionInfo>();
+    if (fileOption != NULL && fileOption->isInputFile())
     {
-        if (filterType_ == eSelectFileOptions)
+        if (filterType_ == eSelectInputFileOptions)
+        {
+            formatter_->formatOption(option);
+        }
+        return;
+    }
+    if (fileOption != NULL && fileOption->isInputOutputFile())
+    {
+        if (filterType_ == eSelectInputOutputFileOptions)
+        {
+            formatter_->formatOption(option);
+        }
+        return;
+    }
+    if (fileOption != NULL && fileOption->isOutputFile())
+    {
+        if (filterType_ == eSelectOutputFileOptions)
         {
             formatter_->formatOption(option);
         }
@@ -323,25 +341,17 @@ std::string
 fileOptionFlagsAsString(const FileNameOptionInfo &option, bool bAbbrev)
 {
     std::string type;
-    if (option.isInputOutputFile())
-    {
-        type = bAbbrev ? "In/Out" : "Input/Output";
-    }
-    else if (option.isInputFile())
-    {
-        type = "Input";
-    }
-    else if (option.isOutputFile())
-    {
-        type = "Output";
-    }
     if (!option.isRequired())
     {
-        type += bAbbrev ? ", Opt." : ", Optional";
+        type = bAbbrev ? "Opt." : "Optional";
     }
     if (option.isLibraryFile())
     {
-        type += bAbbrev ? ", Lib." : ", Library";
+        if (!type.empty())
+        {
+            type.append(", ");
+        }
+        type.append(bAbbrev ? "Lib." : "Library");
     }
     return type;
 }
@@ -377,7 +387,8 @@ class SynopsisFormatter : public OptionsFormatterInterface
     public:
         //! Creates a helper object for formatting the synopsis.
         explicit SynopsisFormatter(const HelpWriterContext &context)
-            : context_(context), lineLength_(0), indent_(0), currentLength_(0)
+            : context_(context), bFormatted_(false), lineLength_(0), indent_(0),
+              currentLength_(0)
         {
         }
 
@@ -390,6 +401,7 @@ class SynopsisFormatter : public OptionsFormatterInterface
 
     private:
         const HelpWriterContext &context_;
+        bool                     bFormatted_;
         int                      lineLength_;
         int                      indent_;
         int                      currentLength_;
@@ -409,9 +421,10 @@ void SynopsisFormatter::start(const char *name)
             file.writeString(name);
             break;
         case eHelpOutputFormat_Rst:
+            bFormatted_ = true;
             lineLength_ = 74;
             indent_    += 4;
-            file.writeLine("::");
+            file.writeLine(".. parsed-literal::");
             file.writeLine();
             file.writeString("    ");
             file.writeString(name);
@@ -432,14 +445,16 @@ void SynopsisFormatter::formatOption(const OptionInfo &option)
 {
     std::string name, value;
     formatOptionNameAndValue(option, &name, &value);
-    std::string fullOptionText(" [-" + name);
+    int         totalLength = name.length() + 4;
+    std::string fullOptionText
+        = formatString(" [%s-%s", bFormatted_ ? ":strong:`" : "", name.c_str());
     if (!value.empty())
     {
-        fullOptionText.append(" ");
+        fullOptionText.append(bFormatted_ ? "` :emphasis:`" : " ");
         fullOptionText.append(value);
+        totalLength += value.length() + 1;
     }
-    fullOptionText.append("]");
-    const int   totalLength = fullOptionText.size();
+    fullOptionText.append(bFormatted_ ? "`]" : "]");
 
     File       &file = context_.outputFile();
     currentLength_ += totalLength;
@@ -506,7 +521,6 @@ class OptionsListFormatter : public OptionsFormatterInterface
 
         const HelpWriterContext               &context_;
         const CommonFormatterData             &common_;
-        boost::scoped_ptr<TextTableFormatter>  consoleFormatter_;
         const char                            *title_;
         const char                            *header_;
         bool                                   bDidOutput_;
@@ -521,63 +535,23 @@ OptionsListFormatter::OptionsListFormatter(
     : context_(context), common_(common),
       title_(title), header_(NULL), bDidOutput_(false)
 {
-    if (context.outputFormat() == eHelpOutputFormat_Console)
-    {
-        consoleFormatter_.reset(new TextTableFormatter());
-        consoleFormatter_->setFirstColumnIndent(1);
-        consoleFormatter_->setFoldLastColumnToNextLine(4);
-        consoleFormatter_->addColumn(NULL, 6, false);
-        consoleFormatter_->addColumn(NULL, 8, false);
-        consoleFormatter_->addColumn(NULL, 10, false);
-        consoleFormatter_->addColumn(NULL, 50, true);
-    }
 }
 
 void OptionsListFormatter::formatOption(const OptionInfo &option)
 {
     writeSectionStartIfNecessary();
-    std::string name, value;
+    std::string               name, value;
     formatOptionNameAndValue(option, &name, &value);
-    std::string defaultValue(defaultOptionValue(option));
-    std::string info;
-    if (!defaultValue.empty())
-    {
-        info = "(" + defaultValue + ")";
-    }
+    std::string               defaultValue(defaultOptionValue(option));
+    std::string               info;
     const FileNameOptionInfo *fileOption = option.toType<FileNameOptionInfo>();
     if (fileOption != NULL)
     {
         const bool bAbbrev = (context_.outputFormat() == eHelpOutputFormat_Console);
-        if (!info.empty())
-        {
-            info.append(" ");
-        }
-        info.append("(");
-        info.append(fileOptionFlagsAsString(*fileOption, bAbbrev));
-        info.append(")");
+        info = fileOptionFlagsAsString(*fileOption, bAbbrev);
     }
     std::string description(descriptionWithOptionDetails(common_, option));
-    if (context_.outputFormat() == eHelpOutputFormat_Console)
-    {
-        consoleFormatter_->clear();
-        consoleFormatter_->addColumnLine(0, "-" + name);
-        consoleFormatter_->addColumnLine(1, value);
-        if (!info.empty())
-        {
-            consoleFormatter_->addColumnLine(2, info);
-        }
-        consoleFormatter_->addColumnHelpTextBlock(3, context_, description);
-        context_.outputFile().writeString(consoleFormatter_->formatRow());
-    }
-    else
-    {
-        if (!info.empty())
-        {
-            value.append(" ");
-            value.append(info);
-        }
-        context_.writeOptionItem("-" + name, value, description);
-    }
+    context_.writeOptionItem("-" + name, value, defaultValue, info, description);
 }
 
 //! \}
@@ -690,7 +664,11 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
         writerContext.writeTitle("Synopsis");
         SynopsisFormatter synopsisFormatter(writerContext);
         synopsisFormatter.start(context.moduleDisplayName());
-        filter.formatSelected(OptionsFilter::eSelectFileOptions,
+        filter.formatSelected(OptionsFilter::eSelectInputFileOptions,
+                              &synopsisFormatter, impl_->options_);
+        filter.formatSelected(OptionsFilter::eSelectInputOutputFileOptions,
+                              &synopsisFormatter, impl_->options_);
+        filter.formatSelected(OptionsFilter::eSelectOutputFileOptions,
                               &synopsisFormatter, impl_->options_);
         filter.formatSelected(OptionsFilter::eSelectOtherOptions,
                               &synopsisFormatter, impl_->options_);
@@ -704,11 +682,19 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
     }
     CommonFormatterData    common(impl_->timeUnit_.c_str());
     OptionsListFormatter   formatter(writerContext, common, "Options");
-    formatter.startSection("Options to specify input and output files:[PAR]");
-    filter.formatSelected(OptionsFilter::eSelectFileOptions,
+    formatter.startSection("Options to specify input files:");
+    filter.formatSelected(OptionsFilter::eSelectInputFileOptions,
                           &formatter, impl_->options_);
     formatter.finishSection();
-    formatter.startSection("Other options:[PAR]");
+    formatter.startSection("Options to specify input/output files:");
+    filter.formatSelected(OptionsFilter::eSelectInputOutputFileOptions,
+                          &formatter, impl_->options_);
+    formatter.finishSection();
+    formatter.startSection("Options to specify output files:");
+    filter.formatSelected(OptionsFilter::eSelectOutputFileOptions,
+                          &formatter, impl_->options_);
+    formatter.finishSection();
+    formatter.startSection("Other options:");
     filter.formatSelected(OptionsFilter::eSelectOtherOptions,
                           &formatter, impl_->options_);
     formatter.finishSection();

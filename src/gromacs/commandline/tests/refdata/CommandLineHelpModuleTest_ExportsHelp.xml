@@ -38,9 +38,9 @@ test module
 ===========
 Synopsis
 --------
-::
+.. parsed-literal::
 
-    test module [-int <int>]
+    test module [:strong:`-int` :emphasis:`<int>`]
 
 Description
 -----------
@@ -71,7 +71,7 @@ test other
 ==========
 Synopsis
 --------
-::
+.. parsed-literal::
 
     test other
 

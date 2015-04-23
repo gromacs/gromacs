@@ -51,6 +51,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
@@ -435,21 +436,48 @@ class HelpWriterContext::Impl
          *
          * \ingroup module_onlinehelp
          */
-        struct SharedState
+        class SharedState
         {
-            //! Initializes the state with the given parameters.
-            SharedState(File *file, HelpOutputFormat format,
-                        const HelpLinks *links)
-                : file_(*file), format_(format), links_(links)
-            {
-            }
+            public:
+                //! Initializes the state with the given parameters.
+                SharedState(File *file, HelpOutputFormat format,
+                            const HelpLinks *links)
+                    : file_(*file), format_(format), links_(links)
+                {
+                }
 
-            //! Output file to which the help is written.
-            File                   &file_;
-            //! Output format for the help output.
-            HelpOutputFormat        format_;
-            //! Links to use.
-            const HelpLinks        *links_;
+                /*! \brief
+                 * Returns a formatter for formatting options lists for console
+                 * output.
+                 *
+                 * The formatter is lazily initialized on first access.
+                 */
+                TextTableFormatter &consoleOptionsFormatter() const
+                {
+                    GMX_RELEASE_ASSERT(format_ == eHelpOutputFormat_Console,
+                                       "Accessing console formatter for non-console output");
+                    if (!consoleOptionsFormatter_)
+                    {
+                        consoleOptionsFormatter_.reset(new TextTableFormatter());
+                        consoleOptionsFormatter_->setFirstColumnIndent(1);
+                        consoleOptionsFormatter_->addColumn(NULL, 7, false);
+                        consoleOptionsFormatter_->addColumn(NULL, 18, false);
+                        consoleOptionsFormatter_->addColumn(NULL, 16, false);
+                        consoleOptionsFormatter_->addColumn(NULL, 28, false);
+                    }
+                    return *consoleOptionsFormatter_;
+                }
+
+                //! Output file to which the help is written.
+                File                   &file_;
+                //! Output format for the help output.
+                HelpOutputFormat        format_;
+                //! Links to use.
+                const HelpLinks        *links_;
+
+            private:
+                //! Formatter for console output options.
+                mutable boost::scoped_ptr<TextTableFormatter> consoleOptionsFormatter_;
         };
 
         struct ReplaceItem
@@ -791,19 +819,52 @@ void HelpWriterContext::writeOptionListStart() const
 }
 
 void HelpWriterContext::writeOptionItem(const std::string &name,
-                                        const std::string &args,
+                                        const std::string &value,
+                                        const std::string &defaultValue,
+                                        const std::string &info,
                                         const std::string &description) const
 {
     File &file = outputFile();
     switch (outputFormat())
     {
         case eHelpOutputFormat_Console:
-            // TODO: Generalize this when there is need for it; the current,
-            // special implementation is in CommandLineHelpWriter.
-            GMX_THROW(NotImplementedError("Option item formatting for console output not implemented"));
+        {
+            TextTableFormatter &formatter(impl_->state_->consoleOptionsFormatter());
+            formatter.clear();
+            formatter.addColumnLine(0, name);
+            formatter.addColumnLine(1, value);
+            if (!defaultValue.empty())
+            {
+                formatter.addColumnLine(2, "(" + defaultValue + ")");
+            }
+            if (!info.empty())
+            {
+                formatter.addColumnLine(3, "(" + info + ")");
+            }
+            TextLineWrapperSettings settings;
+            settings.setIndent(11);
+            settings.setLineLength(78);
+            std::string formattedDescription
+                = substituteMarkupAndWrapToString(settings, description);
+            file.writeLine(formatter.formatRow());
+            file.writeLine(formattedDescription);
             break;
+        }
         case eHelpOutputFormat_Rst:
         {
+            std::string args(value);
+            if (!defaultValue.empty())
+            {
+                args.append(" (");
+                args.append(defaultValue);
+                args.append(")");
+            }
+            if (!info.empty())
+            {
+                args.append(" (");
+                args.append(info);
+                args.append(")");
+            }
             file.writeLine(formatString("``%s`` %s", name.c_str(), args.c_str()));
             TextLineWrapperSettings settings;
             settings.setIndent(4);
