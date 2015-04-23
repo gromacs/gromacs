@@ -45,6 +45,8 @@
 #include <string.h>
 #include <time.h>
 
+#include <algorithm>
+
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
@@ -160,6 +162,17 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
     sfree(tmpstr);
 }
 
+static int centeringOffset(int width, int length)
+{
+    return std::max(width - length, 0) / 2;
+}
+
+static void printCentered(FILE *fp, int width, const char *text)
+{
+    const int offset = centeringOffset(width, std::strlen(text));
+    fprintf(fp, "%*s%s", offset, "", text);
+}
+
 static void printCopyright(FILE *fp)
 {
     static const char * const Contributors[] = {
@@ -215,18 +228,27 @@ static void printCopyright(FILE *fp)
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
-    fprintf(fp, "GROMACS is written by:\n");
+    printCentered(fp, 78, "GROMACS is written by:");
+    fprintf(fp, "\n");
     for (int i = 0; i < NCONTRIBUTORS; )
     {
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
         {
-            fprintf(fp, "%-18s ", Contributors[i]);
+            const int width = 18;
+            char      buf[30];
+            const int offset = centeringOffset(width, strlen(Contributors[i]));
+            GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < asize(buf),
+                               "Formatting buffer is not long enough");
+            std::fill(buf, buf+width, ' ');
+            std::strcpy(buf+offset, Contributors[i]);
+            fprintf(fp, " %-*s", width, buf);
         }
         fprintf(fp, "\n");
     }
-    fprintf(fp, "and the project leaders:\n");
-    fprintf(fp, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel\n");
+    printCentered(fp, 78, "and the project leaders:");
     fprintf(fp, "\n");
+    printCentered(fp, 78, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel");
+    fprintf(fp, "\n\n");
     for (int i = 0; i < NCR; ++i)
     {
         fprintf(fp, "%s\n", CopyrightText[i]);
@@ -791,26 +813,29 @@ void printBinaryInformation(FILE                            *fp,
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
     }
+    // TODO: It would be nice to know here whether we are really running a
+    // Gromacs binary or some other binary that is calling Gromacs; we
+    // could then print "%s is part of GROMACS" or some alternative text.
+    std::string title
+        = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
+    const int   indent
+        = centeringOffset(78 - strlen(prefix) - strlen(suffix), title.length()) + 1;
+    fprintf(fp, "%s%*c%s%s\n", prefix, indent, ' ', title.c_str(), suffix);
+    fprintf(fp, "\n");
     if (settings.bCopyright_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
                            "Prefix/suffix not supported with copyright");
+        printCopyright(fp);
+        fprintf(fp, "\n");
         // This line is printed again after the copyright notice to make it
         // appear together with all the other information, so that it is not
         // necessary to read stuff above the copyright notice.
         // The line above the copyright notice puts the copyright notice is
         // context, though.
-        // TODO: It would be nice to know here whether we are really running a
-        // Gromacs binary or some other binary that is calling Gromacs; we
-        // could then print "%s is part of GROMACS" or some alternative text.
-        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
+        fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
                 gmx_version(), precisionString, suffix);
-        fprintf(fp, "\n");
-        printCopyright(fp);
-        fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
-            gmx_version(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
     {

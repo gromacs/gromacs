@@ -10,11 +10,13 @@ OPTIONS
 
 Other options:
 
- -[no]longboolean (yes)     Boolean option with a long name
- -dvec  <vector> (1.135 2.32 3.2132) Double vector option
- -string <string> (A very long string value that overflows even the description column Another very long string value that overflows even the description column)
-     String option with very long values (may be less relevant with selections
-     having their own option type)
+ -[no]longboolean           (yes)
+           Boolean option with a long name
+ -dvec   <vector>           (1.135 2.32 3.2132)
+           Double vector option
+ -string <string>           (A very long string value that overflows even the description column Another very long string value that overflows even the description column)
+           String option with very long values (may be less relevant with
+           selections having their own option type)
 
 ]]></String>
 </ReferenceData>

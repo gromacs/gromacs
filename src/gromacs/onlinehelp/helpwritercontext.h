@@ -263,12 +263,16 @@ class HelpWriterContext
          * Writes an entry for a single option into the output.
          *
          * \param[in] name  Name of the option.
-         * \param[in] args  Placeholder for values and other information about
-         *     the option (placed after \p name).
+         * \param[in] value        Placeholder for option value.
+         * \param[in] defaultValue Default value for the option.
+         * \param[in] info         Additional (brief) info/attributes for the
+         *      option.
          * \param[in] description  Full description of the option.
          */
-        void writeOptionItem(const std::string &name, const std::string &args,
-                             const std::string &description) const;
+        void writeOptionItem(
+            const std::string &name, const std::string &value,
+            const std::string &defaultValue, const std::string &info,
+            const std::string &description) const;
         /*! \brief
          * Finishes writing a list of options.
          *
