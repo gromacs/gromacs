@@ -68,7 +68,7 @@ class SimdFloatingpointUtilTest : public SimdTest
             val2_   = val0_ + 2 * GMX_SIMD_REAL_WIDTH;
             val3_   = val0_ + 3 * GMX_SIMD_REAL_WIDTH;
             mem0_   = val0_ + 4 * GMX_SIMD_REAL_WIDTH;
-            mem1_   = mem0_ + 6 * GMX_SIMD_REAL_WIDTH;
+            mem1_   = mem0_ + 8 * GMX_SIMD_REAL_WIDTH;
             // Set default values for offset and variables m0_ through m3_
             // We cannot fill mem_ here since those values depend on the test.
             for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -89,7 +89,7 @@ class SimdFloatingpointUtilTest : public SimdTest
         real *                  val1_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
         real *                  val2_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
         real *                  val3_;                           //!< Aligned pointer to GMX_SIMD_REAL_WIDTH mem
-        real *                  mem0_;                           //!< Aligned pointer to 12*GMX_SIMD_REAL_WIDTH mem
+        real *                  mem0_;                           //!< Aligned pointer to 16*GMX_SIMD_REAL_WIDTH mem
         real *                  mem1_;                           //!< Aligned pointer halfway through mem0_
     private:
         // To have a somewhat odd access pattern, we use every
@@ -140,6 +140,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadTranspose4)
         {
             gmx_simd_gather_load_transpose_r<12>(mem0_, offset_, v0, v1, v2, v3);
         }
+        else
+        {
+            FAIL();
+        }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -182,6 +186,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadTranspose2)
         {
             gmx_simd_gather_load_transpose_r<gmx_simd_best_pair_alignment_r>(mem0_, offset_, v0, v1);
         }
+        else
+        {
+            FAIL();
+        }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -217,6 +225,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadUTranspose3)
         else if (align == 4)
         {
             gmx_simd_gather_loadu_transpose_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
@@ -263,6 +275,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterStoreU3)
         else if (align == 4)
         {
             gmx_simd_transpose_scatter_storeu_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
@@ -311,6 +327,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterIncrU3)
         {
             gmx_simd_transpose_scatter_incru_r<4>(mem0_, offset_, v0, v1, v2);
         }
+        else
+        {
+            FAIL();
+        }
 
         for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
         {
@@ -357,6 +377,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterDecrU3)
         else if (align == 4)
         {
             gmx_simd_transpose_scatter_decru_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         for (j = 0; j < 12*GMX_SIMD_REAL_WIDTH; j++)
@@ -431,6 +455,11 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadBySimdIntTranspose4)
         {
             gmx_simd_gather_load_bysimdint_transpose_r<12>(mem0_, simdoffset, v0, v1, v2, v3);
         }
+        else
+        {
+            FAIL();
+        }
+
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -474,6 +503,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadBySimdIntTranspose2)
         {
             gmx_simd_gather_load_bysimdint_transpose_r<12>(mem0_, simdoffset, v0, v1);
         }
+        else
+        {
+            FAIL();
+        }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -514,6 +547,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadUBySimdIntTranspose2)
         else if (align == 5)
         {
             gmx_simd_gather_loadu_bysimdint_transpose_r<5>(mem0_, simdoffset, v0, v1);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);

@@ -1789,13 +1789,14 @@ gmx_simd_erf_d(gmx_simd_double_t x)
     gmx_simd_double_t       PolyCP0, PolyCP1, PolyCQ0, PolyCQ1;
     gmx_simd_double_t       res_erf, res_erfcB, res_erfcC, res_erfc, res;
     gmx_simd_double_t       expmx2;
-    gmx_simd_dbool_t        mask, mask_erf;
+    gmx_simd_dbool_t        mask, mask_erf, notmask_erf;
 
     /* Calculate erf() */
-    xabs     = gmx_simd_fabs_d(x);
-    mask_erf = gmx_simd_cmplt_d(xabs, one);
-    x2       = gmx_simd_mul_d(x, x);
-    x4       = gmx_simd_mul_d(x2, x2);
+    xabs        = gmx_simd_fabs_d(x);
+    mask_erf    = gmx_simd_cmplt_d(xabs, one);
+    notmask_erf = gmx_simd_cmple_d(one, xabs);
+    x2          = gmx_simd_mul_d(x, x);
+    x4          = gmx_simd_mul_d(x2, x2);
 
     PolyAP0  = gmx_simd_mul_d(CAP4, x4);
     PolyAP1  = gmx_simd_mul_d(CAP3, x4);
@@ -1854,12 +1855,12 @@ gmx_simd_erf_d(gmx_simd_double_t x)
     PolyBQ0 = gmx_simd_add_d(PolyBQ0, PolyBQ1);
 
     /* The denominator polynomial can be zero outside the range */
-    res_erfcB = gmx_simd_mul_d(PolyBP0, gmx_simd_inv_mask_d(PolyBQ0, gmx_simd_cmpnz_d(PolyBQ0)));
+    res_erfcB = gmx_simd_mul_d(PolyBP0, gmx_simd_inv_mask_d(PolyBQ0, notmask_erf));
 
     res_erfcB = gmx_simd_mul_d(res_erfcB, xabs);
 
     /* Calculate erfc() in range [4.5,inf] */
-    w       = gmx_simd_inv_mask_d(xabs, gmx_simd_cmpnz_d(xabs));
+    w       = gmx_simd_inv_mask_d(xabs, notmask_erf);
     w2      = gmx_simd_mul_d(w, w);
 
     PolyCP0  = gmx_simd_mul_d(CCP6, w2);
@@ -1891,7 +1892,7 @@ gmx_simd_erf_d(gmx_simd_double_t x)
     expmx2   = gmx_simd_exp_d( gmx_simd_fneg_d(x2) );
 
     /* The denominator polynomial can be zero outside the range */
-    res_erfcC = gmx_simd_mul_d(PolyCP0, gmx_simd_inv_mask_d(PolyCQ0, gmx_simd_cmpnz_d(PolyCQ0)));
+    res_erfcC = gmx_simd_mul_d(PolyCP0, gmx_simd_inv_mask_d(PolyCQ0, notmask_erf));
     res_erfcC = gmx_simd_add_d(res_erfcC, CCoffset);
     res_erfcC = gmx_simd_mul_d(res_erfcC, w);
 
@@ -1976,13 +1977,14 @@ gmx_simd_erfc_d(gmx_simd_double_t x)
     gmx_simd_double_t       PolyCP0, PolyCP1, PolyCQ0, PolyCQ1;
     gmx_simd_double_t       res_erf, res_erfcB, res_erfcC, res_erfc, res;
     gmx_simd_double_t       expmx2;
-    gmx_simd_dbool_t        mask, mask_erf;
+    gmx_simd_dbool_t        mask, mask_erf, notmask_erf;
 
     /* Calculate erf() */
-    xabs     = gmx_simd_fabs_d(x);
-    mask_erf = gmx_simd_cmplt_d(xabs, one);
-    x2       = gmx_simd_mul_d(x, x);
-    x4       = gmx_simd_mul_d(x2, x2);
+    xabs        = gmx_simd_fabs_d(x);
+    mask_erf    = gmx_simd_cmplt_d(xabs, one);
+    notmask_erf = gmx_simd_cmple_d(one, xabs);
+    x2          = gmx_simd_mul_d(x, x);
+    x4          = gmx_simd_mul_d(x2, x2);
 
     PolyAP0  = gmx_simd_mul_d(CAP4, x4);
     PolyAP1  = gmx_simd_mul_d(CAP3, x4);
@@ -2041,7 +2043,7 @@ gmx_simd_erfc_d(gmx_simd_double_t x)
     PolyBQ0 = gmx_simd_add_d(PolyBQ0, PolyBQ1);
 
     /* The denominator polynomial can be zero outside the range */
-    res_erfcB = gmx_simd_mul_d(PolyBP0, gmx_simd_inv_mask_d(PolyBQ0, gmx_simd_cmpnz_d(PolyBQ0)));
+    res_erfcB = gmx_simd_mul_d(PolyBP0, gmx_simd_inv_mask_d(PolyBQ0, notmask_erf));
 
     res_erfcB = gmx_simd_mul_d(res_erfcB, xabs);
 
@@ -2078,7 +2080,7 @@ gmx_simd_erfc_d(gmx_simd_double_t x)
     expmx2   = gmx_simd_exp_d( gmx_simd_fneg_d(x2) );
 
     /* The denominator polynomial can be zero outside the range */
-    res_erfcC = gmx_simd_mul_d(PolyCP0, gmx_simd_inv_mask_d(PolyCQ0, gmx_simd_cmpnz_d(PolyCQ0)));
+    res_erfcC = gmx_simd_mul_d(PolyCP0, gmx_simd_inv_mask_d(PolyCQ0, notmask_erf));
     res_erfcC = gmx_simd_add_d(res_erfcC, CCoffset);
     res_erfcC = gmx_simd_mul_d(res_erfcC, w);
 
