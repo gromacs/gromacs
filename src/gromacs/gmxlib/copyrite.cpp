@@ -791,26 +791,29 @@ void printBinaryInformation(FILE                            *fp,
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
     }
+    // TODO: It would be nice to know here whether we are really running a
+    // Gromacs binary or some other binary that is calling Gromacs; we
+    // could then print "%s is part of GROMACS" or some alternative text.
+    std::string title
+        = formatString("GROMACS - %s, %s%s", name, gmx_version(), precisionString);
+    const int   indent
+        = std::max(78 - strlen(prefix) - strlen(suffix) - title.length() - 8, (size_t)0) / 2 + 1;
+    fprintf(fp, "%s%*c:-) %s (-:%s\n", prefix, indent, ' ', title.c_str(), suffix);
+    fprintf(fp, "\n");
     if (settings.bCopyright_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
                            "Prefix/suffix not supported with copyright");
+        printCopyright(fp);
+        fprintf(fp, "\n");
         // This line is printed again after the copyright notice to make it
         // appear together with all the other information, so that it is not
         // necessary to read stuff above the copyright notice.
         // The line above the copyright notice puts the copyright notice is
         // context, though.
-        // TODO: It would be nice to know here whether we are really running a
-        // Gromacs binary or some other binary that is calling Gromacs; we
-        // could then print "%s is part of GROMACS" or some alternative text.
-        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
+        fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
                 gmx_version(), precisionString, suffix);
-        fprintf(fp, "\n");
-        printCopyright(fp);
-        fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
-            gmx_version(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
     {

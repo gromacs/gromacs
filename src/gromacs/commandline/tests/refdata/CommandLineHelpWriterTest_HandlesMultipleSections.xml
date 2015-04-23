@@ -20,9 +20,12 @@ OPTIONS
 
 Other options:
 
- -sub1  <int>               Option in subsection 1
- -sub2  <int>               Option in subsection 2
- -main  <int>               Option in main section
+ -sub1   <int>
+           Option in subsection 1
+ -sub2   <int>
+           Option in subsection 2
+ -main   <int>
+           Option in main section
 
 ]]></String>
 </ReferenceData>
