@@ -36,20 +36,64 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_FLOAT_H
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_FLOAT_H
 
+#include "config.h"
+
 #include <immintrin.h>
 #include <x86intrin.h>
 
-#include "impl_x86_avx_128_fma_common.h"
+#include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1_simd_float.h"
 
-#undef  simdFmaddF
-#define simdFmaddF                 _mm_macc_ps
-#undef  simdFmsubF
-#define simdFmsubF                 _mm_msub_ps
-#undef  simdFnmaddF
-#define simdFnmaddF                _mm_nmacc_ps
-#undef  simdFnmsubF
-#define simdFnmsubF                _mm_nmsub_ps
-#undef  simdFractionF
-#define simdFractionF              _mm_frcz_ps
+namespace gmx
+{
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_FLOAT_H */
+static inline float gmx_simdcall
+simdReduceF(SimdFloat a)
+{
+    a.r = _mm_add_ps(a.r, _mm_permute_ps(a.r, _MM_SHUFFLE(1, 0, 3, 2)));
+    a.r = _mm_add_ss(a.r, _mm_permute_ps(a.r, _MM_SHUFFLE(0, 3, 2, 1)));
+    return *reinterpret_cast<float *>(&a);
+}
+
+static inline SimdFloat gmx_simdcall
+simdFmaddF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               _mm_macc_ps(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdFmsubF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               _mm_msub_ps(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdFnmaddF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               _mm_nmacc_ps(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdFnmsubF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               _mm_nmsub_ps(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdFractionF(SimdFloat x)
+{
+    return {
+               _mm_frcz_ps(x.r)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_FLOAT_H

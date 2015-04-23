@@ -33,16 +33,39 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_SSE4_1_COMMON_H
-#define GMX_SIMD_IMPL_X86_SSE4_1_COMMON_H
+#ifndef GMX_SIMD_IMPL_X86_SSE4_1_DEFINITIONS_H
+#define GMX_SIMD_IMPL_X86_SSE4_1_DEFINITIONS_H
 
-#include <smmintrin.h>
+// Capability definitions for SSE4.1
+#define GMX_SIMD                            2
+#define GMX_SIMD_HAVE_FLOAT                 1
+#define GMX_SIMD_HAVE_DOUBLE                1
+#define GMX_SIMD_HAVE_LOADU                 1
+#define GMX_SIMD_HAVE_STOREU                1
+#define GMX_SIMD_HAVE_LOGICAL               1
+#define GMX_SIMD_HAVE_FMA                   0
+#define GMX_SIMD_HAVE_FRACTION              0
+#define GMX_SIMD_HAVE_FINT32_EXTRACT        1
+#define GMX_SIMD_HAVE_FINT32_LOGICAL        1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS    1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT        1
+#define GMX_SIMD_HAVE_DINT32_LOGICAL        1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS    1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT   1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE  1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT      0  // No need for half-simd, width is 4
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE     0  // No need for half-simd, width is 2
 
-/* x86 SSE4.1 SIMD settings. Please see documentation in gromacs/simd/simd.h for
- * the available defines.
- */
+#define GMX_SIMD4_HAVE_FLOAT                1
+#define GMX_SIMD4_HAVE_DOUBLE               0
 
-/* Inherit most of SSE4.1 from SSE2 */
-#include "gromacs/simd/impl_x86_sse2/impl_x86_sse2.h"
+// Implementation details
+#define GMX_SIMD_FLOAT_WIDTH                4
+#define GMX_SIMD_DOUBLE_WIDTH               2
+#define GMX_SIMD_FINT32_WIDTH               4
+#define GMX_SIMD_DINT32_WIDTH               2
+#define GMX_SIMD4_WIDTH                     4
+#define GMX_SIMD_RSQRT_BITS                11
+#define GMX_SIMD_RCP_BITS                  11
 
-#endif /* GMX_SIMD_IMPL_X86_SSE4_1_COMMON_H */
+#endif // GMX_SIMD_IMPL_X86_SSE4_1_DEFINITIONS_H
