@@ -56,7 +56,6 @@ src/gromacs/simd/impl_intel_mic/impl_intel_mic_common.h: warning: should include
 src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"
 src/gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_common.h: warning: should include "simd.h"
 src/gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f_common.h: warning: should include "simd.h"
-src/gromacs/simd/impl_x86_sse2/impl_x86_sse2_common.h: warning: should include "simd.h"
 
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"

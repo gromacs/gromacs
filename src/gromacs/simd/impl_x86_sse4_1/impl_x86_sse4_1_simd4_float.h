@@ -40,18 +40,42 @@
 
 #include <smmintrin.h>
 
-#include "impl_x86_sse4_1_common.h"
+#include "gromacs/simd/impl_x86_sse2/impl_x86_sse2_simd4_float.h"
 
-#undef  simd4DotProductF
-#define simd4DotProductF   simd4DotProductF_sse4_1
-
-/* SIMD4 Dot product helper function */
-static inline float gmx_simdcall
-simd4DotProductF_sse4_1(__m128 a, __m128 b)
+namespace gmx
 {
-    float f;
-    _MM_EXTRACT_FLOAT(f, _mm_dp_ps(a, b, 0x71), 0);
-    return f;
+
+static inline Simd4Float gmx_simdcall
+round(Simd4Float x)
+{
+    return {
+               _mm_round_ps(x.simdInternal_, _MM_FROUND_NINT)
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H */
+static inline Simd4Float gmx_simdcall
+trunc(Simd4Float x)
+{
+    return {
+               _mm_round_ps(x.simdInternal_, _MM_FROUND_TRUNC)
+    };
+}
+
+static inline float gmx_simdcall
+dotProduct(Simd4Float a, Simd4Float b)
+{
+    __m128 res = _mm_dp_ps(a.simdInternal_, b.simdInternal_, 0x71);
+    return *reinterpret_cast<float *>(&res);
+}
+
+static inline Simd4Float gmx_simdcall
+blend(Simd4Float a, Simd4Float b, Simd4FBool sel)
+{
+    return {
+               _mm_blendv_ps(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
