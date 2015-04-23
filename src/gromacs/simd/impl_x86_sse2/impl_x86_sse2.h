@@ -42,6 +42,9 @@
 
 #include <emmintrin.h>
 
+
+#define GMX_SIMD_V2
+
 /* Set capabilities that can be inherited */
 #define GMX_SIMD_X86_SSE2_OR_HIGHER
 
@@ -67,6 +70,10 @@
 #define GMX_SIMD_HAVE_DINT32_EXTRACT   /* No SSE2 instruction, but use shifts */
 #define GMX_SIMD_HAVE_DINT32_LOGICAL
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+#undef  GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT  /* No need for half-simd, width is 4 */
+#undef  GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE /* No need for half-simd, width is 2 */
 #define GMX_SIMD4_HAVE_FLOAT
 #undef  GMX_SIMD4_HAVE_DOUBLE
 
@@ -102,6 +109,16 @@
 #define gmx_simd_xor_f            _mm_xor_ps
 #define gmx_simd_rsqrt_f          _mm_rsqrt_ps
 #define gmx_simd_rcp_f            _mm_rcp_ps
+#define gmx_simd_mul_mask_f(a, b, m)      _mm_and_ps(_mm_mul_ps(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  _mm_and_ps(gmx_simd_fmadd_f(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)        _mm_and_ps(_mm_rcp_ps(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)      _mm_and_ps(_mm_rsqrt_ps(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)        _mm_and_ps(_mm_rcp_ps(gmx_simd_blendv_f(_mm_set1_ps(1.0f), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)      _mm_and_ps(_mm_rsqrt_ps(gmx_simd_blendv_f(_mm_set1_ps(1.0f), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(x)        _mm_andnot_ps(_mm_set1_ps(GMX_FLOAT_NEGZERO), x)
 #define gmx_simd_fneg_f(x)        _mm_xor_ps(x, _mm_set1_ps(GMX_FLOAT_NEGZERO))
 #define gmx_simd_max_f            _mm_max_ps
@@ -138,6 +155,7 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t          __m128
 #define gmx_simd_cmpeq_f          _mm_cmpeq_ps
+#define gmx_simd_cmpnz_f(a)       _mm_cmpneq_ps(a, _mm_setzero_ps())
 #define gmx_simd_cmplt_f          _mm_cmplt_ps
 #define gmx_simd_cmple_f          _mm_cmple_ps
 #define gmx_simd_and_fb           _mm_and_ps
@@ -160,6 +178,17 @@
 /* Conversions between different booleans */
 #define gmx_simd_cvt_fb2fib       _mm_castps_si128
 #define gmx_simd_cvt_fib2fb       _mm_castsi128_ps
+/* Higher-level utility functions (single) */
+#define gmx_simd_gather_load_transpose_f             gmx_simd_gather_load_transpose_f_sse2
+#define gmx_simd_best_pair_alignment_f               gmx_simd_best_pair_alignment_f_sse2
+#define gmx_simd_gather_loadu_transpose_f            gmx_simd_gather_loadu_transpose_f_sse2
+#define gmx_simd_transpose_scatter_storeu_f          gmx_simd_transpose_scatter_storeu_f_sse2
+#define gmx_simd_transpose_scatter_incru_f           gmx_simd_transpose_scatter_incru_f_sse2
+#define gmx_simd_transpose_scatter_decru_f           gmx_simd_transpose_scatter_decru_f_sse2
+#define gmx_simd_expand_scalars_to_triplets_f        gmx_simd_expand_scalars_to_triplets_f_sse2
+#define gmx_simd_gather_load_bysimdint_transpose_f   gmx_simd_gather_load_bysimdint_transpose_f_sse2
+#define gmx_simd_gather_loadu_bysimdint_transpose_f  gmx_simd_gather_loadu_bysimdint_transpose_f_sse2
+#define gmx_simd_reduce_incr_4_return_sum_f          gmx_simd_reduce_incr_4_return_sum_f_sse2
 
 /****************************************************
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
@@ -186,6 +215,16 @@
 #define gmx_simd_rsqrt_d(x)        _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x)))
 /* Don't use FMA for sqrt N-R iterations - this saves 1 instruction without FMA hardware */
 #define gmx_simd_rcp_d(x)          _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x)))
+#define gmx_simd_mul_mask_d(a, b, m)      _mm_and_pd(_mm_mul_pd(a, b), m)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  _mm_and_pd(gmx_simd_fmadd_d(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_d(a, m)        _mm_and_pd(gmx_simd_rcp_d(a), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)      _mm_and_pd(gmx_simd_rsqrt_d(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_d(a, m)        _mm_and_pd(gmx_simd_rcp_d(gmx_simd_blendv_d(_mm_set1_pd(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)      _mm_and_pd(gmx_simd_rsqrt_d(gmx_simd_blendv_d(_mm_set1_pd(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_d(x)         _mm_andnot_pd(_mm_set1_pd(GMX_DOUBLE_NEGZERO), x)
 #define gmx_simd_fneg_d(x)         _mm_xor_pd(x, _mm_set1_pd(GMX_DOUBLE_NEGZERO))
 #define gmx_simd_max_d             _mm_max_pd
@@ -222,6 +261,7 @@
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t            __m128d
 #define gmx_simd_cmpeq_d            _mm_cmpeq_pd
+#define gmx_simd_cmpnz_d(a)         _mm_cmpneq_pd(a, _mm_setzero_pd())
 #define gmx_simd_cmplt_d            _mm_cmplt_pd
 #define gmx_simd_cmple_d            _mm_cmple_pd
 #define gmx_simd_and_db             _mm_and_pd
@@ -245,8 +285,22 @@
 #define gmx_simd_cvt_db2dib(x)      _mm_shuffle_epi32(_mm_castpd_si128(x), _MM_SHUFFLE(2, 0, 2, 0))
 #define gmx_simd_cvt_dib2db(x)      _mm_castsi128_pd(_mm_shuffle_epi32(x, _MM_SHUFFLE(1, 1, 0, 0)))
 /* Float/double conversion */
-#define gmx_simd_cvt_f2dd(f, d0, d1)  { *d0 = _mm_cvtps_pd(f); *d1 = _mm_cvtps_pd(_mm_movehl_ps(f, f)); }
+#define gmx_simd_cvt_f2dd(f, d0, d1) { *d0 = _mm_cvtps_pd(f); *d1 = _mm_cvtps_pd(_mm_movehl_ps(f, f)); }
 #define gmx_simd_cvt_dd2f(d0, d1)    _mm_movelh_ps(_mm_cvtpd_ps(d0), _mm_cvtpd_ps(d1))
+#define gmx_simd_cvt_fb2dbdb(f, d0, d1) { *d0 = _mm_castps_pd(_mm_unpacklo_ps(f, f)); *d1 = _mm_castps_pd(_mm_unpackhi_ps(f, f)); }
+#define gmx_simd_cvt_dbdb2fb(d0, d1)   _mm_shuffle_ps(_mm_castpd_ps(d0), _mm_castpd_ps(d1), _MM_SHUFFLE(3, 1, 3, 1))
+/* Higher-level utility functions (double) */
+#define gmx_simd_gather_load_transpose_d             gmx_simd_gather_load_transpose_d_sse2
+#define gmx_simd_best_pair_alignment_d               gmx_simd_best_pair_alignment_d_sse2
+#define gmx_simd_gather_loadu_transpose_d            gmx_simd_gather_loadu_transpose_d_sse2
+#define gmx_simd_transpose_scatter_storeu_d          gmx_simd_transpose_scatter_storeu_d_sse2
+#define gmx_simd_transpose_scatter_incru_d           gmx_simd_transpose_scatter_incru_d_sse2
+#define gmx_simd_transpose_scatter_decru_d           gmx_simd_transpose_scatter_decru_d_sse2
+#define gmx_simd_expand_scalars_to_triplets_d        gmx_simd_expand_scalars_to_triplets_d_sse2
+#define gmx_simd_gather_load_bysimdint_transpose_d   gmx_simd_gather_load_bysimdint_transpose_d_sse2
+#define gmx_simd_gather_loadu_bysimdint_transpose_d  gmx_simd_gather_loadu_bysimdint_transpose_d_sse2
+#define gmx_simd_reduce_incr_4_return_sum_d          gmx_simd_reduce_incr_4_return_sum_d_sse2
+
 
 
 /****************************************************
@@ -308,6 +362,366 @@ gmx_simd_reduce_f_sse2(__m128 a)
     _mm_store_ss(&f, b);
     return f;
 }
+
+/****************************************************
+ * Single precision higher-level utility functions  *
+ ****************************************************/
+#ifdef __cplusplus
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_f_sse2(const float *        base,
+                                      const gmx_int32_t    offset[],
+                                      gmx_simd_float_t    &v0,
+                                      gmx_simd_float_t    &v1,
+                                      gmx_simd_float_t    &v2,
+                                      gmx_simd_float_t    &v3)
+{
+    /* This will work with any value for align, as long as the resulting pointer is aligned */
+    v0  = _mm_load_ps( base + align * offset[0] );
+    v1  = _mm_load_ps( base + align * offset[1] );
+    v2  = _mm_load_ps( base + align * offset[2] );
+    v3  = _mm_load_ps( base + align * offset[3] );
+    _MM_TRANSPOSE4_PS(v0, v1, v2, v3);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_f_sse2(const float *        base,
+                                      const gmx_int32_t    offset[],
+                                      gmx_simd_float_t    &v0,
+                                      gmx_simd_float_t    &v1)
+{
+    __m128 t1, t2;
+    /* This will work with any value for align, as long as the resulting pointer is aligned */
+    v0  = _mm_castpd_ps(_mm_load_sd( (const double *)( base + align * offset[0] ) ));
+    v1  = _mm_castpd_ps(_mm_load_sd( (const double *)( base + align * offset[1] ) ));
+    t1  = _mm_castpd_ps(_mm_load_sd( (const double *)( base + align * offset[2] ) ));
+    t2  = _mm_castpd_ps(_mm_load_sd( (const double *)( base + align * offset[3] ) ));
+    t1  = _mm_unpacklo_ps(v0, t1);
+    t2  = _mm_unpacklo_ps(v1, t2);
+    v0  = _mm_unpacklo_ps(t1, t2);
+    v1  = _mm_unpackhi_ps(t1, t2);
+}
+
+static const int gmx_simd_best_pair_alignment_f_sse2 = 2;
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_transpose_f_sse2(const float *        base,
+                                       const gmx_int32_t    offset[],
+                                       gmx_simd_float_t    &v0,
+                                       gmx_simd_float_t    &v1,
+                                       gmx_simd_float_t    &v2)
+{
+    __m128 t1, t2, t3, t4, t5, t6, t7, t8;
+
+    /* The template conditional should be optimized away at compile time */
+    if ( (align & 0x3) == 0)
+    {
+        /* With alignment 4 or better we can read a byte beyond triplets and use _mm_loadu_ps() */
+        t1  = _mm_loadu_ps( base + align * offset[0] );
+        t2  = _mm_loadu_ps( base + align * offset[1] );
+        t3  = _mm_loadu_ps( base + align * offset[2] );
+        t4  = _mm_loadu_ps( base + align * offset[3] );
+        t1  = _mm_unpacklo_ps(t1, t2);
+        t3  = _mm_unpacklo_ps(t3, t4);
+        v0  = _mm_movelh_ps(t1, t3);
+        v1  = _mm_movehl_ps(t3, t1);
+    }
+    else
+    {
+        t1  = _mm_castpd_ps(_mm_load_sd( (const double *)( base + align * offset[0] ) ));
+        t2  = _mm_castpd_ps(_mm_load_sd( (const double *)( base + align * offset[1] ) ));
+        t3  = _mm_castpd_ps(_mm_load_sd( (const double *)( base + align * offset[2] ) ));
+        t4  = _mm_castpd_ps(_mm_load_sd( (const double *)( base + align * offset[3] ) ));
+        t5  = _mm_load_ss( base + align * offset[0] + 2 );
+        t6  = _mm_load_ss( base + align * offset[1] + 2 );
+        t7  = _mm_load_ss( base + align * offset[2] + 2 );
+        t8  = _mm_load_ss( base + align * offset[3] + 2 );
+        t1  = _mm_unpacklo_ps(t1, t2);
+        t3  = _mm_unpacklo_ps(t3, t4);
+        v0  = _mm_movelh_ps(t1, t3);
+        v1  = _mm_movehl_ps(t3, t1);
+        t5  = _mm_unpacklo_ps(t5, t6);
+        t7  = _mm_unpacklo_ps(t7, t8);
+        v2  = _mm_movelh_ps(t5, t7);
+    }
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_storeu_f_sse2(float *              base,
+                                         const gmx_int32_t    offset[],
+                                         gmx_simd_float_t     v0,
+                                         gmx_simd_float_t     v1,
+                                         gmx_simd_float_t     v2)
+{
+    __m128 t1, t2;
+
+    t1   = _mm_unpacklo_ps(v0, v1);
+    t2   = _mm_unpackhi_ps(v0, v1);
+    _mm_storel_pi( (__m64 *)( base + align * offset[0] ), t1);
+    _mm_store_ss(base + align * offset[0] + 2, v2);
+    _mm_storeh_pi( (__m64 *)( base + align * offset[1] ), t1);
+    _mm_store_ss(base + align * offset[1] + 2, _mm_shuffle_ps(v2, v2, _MM_SHUFFLE(1, 1, 1, 1)));
+    _mm_storel_pi( (__m64 *)( base + align * offset[2] ), t2);
+    _mm_store_ss(base + align * offset[2] + 2, _mm_shuffle_ps(v2, v2, _MM_SHUFFLE(2, 2, 2, 2)));
+    _mm_storeh_pi( (__m64 *)( base + align * offset[3] ), t2);
+    _mm_store_ss(base + align * offset[3] + 2, _mm_shuffle_ps(v2, v2, _MM_SHUFFLE(3, 3, 3, 3)));
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_incru_f_sse2(float *              base,
+                                        const gmx_int32_t    offset[],
+                                        gmx_simd_float_t     v0,
+                                        gmx_simd_float_t     v1,
+                                        gmx_simd_float_t     v2)
+{
+    __m128 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
+    t5          = _mm_unpacklo_ps(v1, v2);
+    t6          = _mm_unpackhi_ps(v1, v2);
+    t7          = _mm_shuffle_ps(v0, t5, _MM_SHUFFLE(1, 0, 0, 0));
+    t8          = _mm_shuffle_ps(v0, t5, _MM_SHUFFLE(3, 2, 0, 1));
+    t9          = _mm_shuffle_ps(v0, t6, _MM_SHUFFLE(1, 0, 0, 2));
+    t10         = _mm_shuffle_ps(v0, t6, _MM_SHUFFLE(3, 2, 0, 3));
+    t1          = _mm_load_ss(base + align * offset[0]);
+    t1          = _mm_loadh_pi(t1, (__m64 *)(base + align * offset[0] + 1));
+    t1          = _mm_add_ps(t1, t7);
+    _mm_store_ss(base + align * offset[0], t1);
+    _mm_storeh_pi( (__m64 *)(base + align * offset[0] + 1), t1);
+    t2          = _mm_load_ss(base + align * offset[1]);
+    t2          = _mm_loadh_pi(t2, (__m64 *)(base + align * offset[1] + 1));
+    t2          = _mm_add_ps(t2, t8);
+    _mm_store_ss(base + align * offset[1], t2);
+    _mm_storeh_pi((__m64 *)(base + align * offset[1] + 1), t2);
+    t3          = _mm_load_ss(base + align * offset[2]);
+    t3          = _mm_loadh_pi(t3, (__m64 *)(base + align * offset[2] + 1));
+    t3          = _mm_add_ps(t3, t9);
+    _mm_store_ss(base + align * offset[2], t3);
+    _mm_storeh_pi((__m64 *)(base + align * offset[2] + 1), t3);
+    t4          = _mm_load_ss(base + align * offset[3]);
+    t4          = _mm_loadh_pi(t4, (__m64 *)(base + align * offset[3] + 1));
+    t4          = _mm_add_ps(t4, t10);
+    _mm_store_ss(base + align * offset[3], t4);
+    _mm_storeh_pi((__m64 *)(base + align * offset[3] + 1), t4);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_decru_f_sse2(float *              base,
+                                        const gmx_int32_t    offset[],
+                                        gmx_simd_float_t     v0,
+                                        gmx_simd_float_t     v1,
+                                        gmx_simd_float_t     v2)
+{
+    /* This implementation is identical to the increment version, apart from using subtraction instead */
+    __m128 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
+    t5          = _mm_unpacklo_ps(v1, v2);
+    t6          = _mm_unpackhi_ps(v1, v2);
+    t7          = _mm_shuffle_ps(v0, t5, _MM_SHUFFLE(1, 0, 0, 0));
+    t8          = _mm_shuffle_ps(v0, t5, _MM_SHUFFLE(3, 2, 0, 1));
+    t9          = _mm_shuffle_ps(v0, t6, _MM_SHUFFLE(1, 0, 0, 2));
+    t10         = _mm_shuffle_ps(v0, t6, _MM_SHUFFLE(3, 2, 0, 3));
+    t1          = _mm_load_ss(base + align * offset[0]);
+    t1          = _mm_loadh_pi(t1, (__m64 *)(base + align * offset[0] + 1));
+    t1          = _mm_sub_ps(t1, t7);
+    _mm_store_ss(base + align * offset[0], t1);
+    _mm_storeh_pi((__m64 *)(base + align * offset[0] + 1), t1);
+    t2          = _mm_load_ss(base + align * offset[1]);
+    t2          = _mm_loadh_pi(t2, (__m64 *)(base + align * offset[1] + 1));
+    t2          = _mm_sub_ps(t2, t8);
+    _mm_store_ss(base + align * offset[1], t2);
+    _mm_storeh_pi((__m64 *)(base + align * offset[1] + 1), t2);
+    t3          = _mm_load_ss(base + align * offset[2]);
+    t3          = _mm_loadh_pi(t3, (__m64 *)(base + align * offset[2] + 1));
+    t3          = _mm_sub_ps(t3, t9);
+    _mm_store_ss(base + align * offset[2], t3);
+    _mm_storeh_pi((__m64 *)(base + align * offset[2] + 1), t3);
+    t4          = _mm_load_ss(base + align * offset[3]);
+    t4          = _mm_loadh_pi(t4, (__m64 *)(base + align * offset[3] + 1));
+    t4          = _mm_sub_ps(t4, t10);
+    _mm_store_ss(base + align * offset[3], t4);
+    _mm_storeh_pi((__m64 *)(base + align * offset[3] + 1), t4);
+}
+
+static gmx_inline void
+gmx_simd_expand_scalars_to_triplets_f_sse2(gmx_simd_float_t    scalar,
+                                           gmx_simd_float_t   &triplets0,
+                                           gmx_simd_float_t   &triplets1,
+                                           gmx_simd_float_t   &triplets2)
+{
+    triplets0 = _mm_shuffle_ps(scalar, scalar, _MM_SHUFFLE(1, 0, 0, 0));
+    triplets1 = _mm_shuffle_ps(scalar, scalar, _MM_SHUFFLE(2, 2, 1, 1));
+    triplets2 = _mm_shuffle_ps(scalar, scalar, _MM_SHUFFLE(3, 3, 3, 2));
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_f_sse2(const float *       base,
+                                                gmx_simd_fint32_t   offset,
+                                                gmx_simd_float_t   &v0,
+                                                gmx_simd_float_t   &v1,
+                                                gmx_simd_float_t   &v2,
+                                                gmx_simd_float_t   &v3)
+{
+    /* Use optimized bit-shift multiply for the most common alignments */
+    if (align == 4)
+    {
+        offset = _mm_slli_epi32(offset, 2);
+    }
+    else if (align == 8)
+    {
+        offset = _mm_slli_epi32(offset, 3);
+    }
+    else if (align == 12)
+    {
+        /* multiply by 3, then by 4 */
+        offset = _mm_add_epi32(offset, _mm_slli_epi32(offset, 1));
+        offset = _mm_slli_epi32(offset, 2);
+    }
+    else if (align == 16)
+    {
+        offset = _mm_slli_epi32(offset, 4);
+    }
+
+    if (align == 4 || align == 8 || align == 12 || align == 16)
+    {
+        v0  = _mm_load_ps(base + gmx_simd_extract_fi(offset, 0) );
+        v1  = _mm_load_ps(base + gmx_simd_extract_fi(offset, 1) );
+        v2  = _mm_load_ps(base + gmx_simd_extract_fi(offset, 2) );
+        v3  = _mm_load_ps(base + gmx_simd_extract_fi(offset, 3) );
+    }
+    else
+    {
+        v0  = _mm_load_ps(base + align * gmx_simd_extract_fi(offset, 0) );
+        v1  = _mm_load_ps(base + align * gmx_simd_extract_fi(offset, 1) );
+        v2  = _mm_load_ps(base + align * gmx_simd_extract_fi(offset, 2) );
+        v3  = _mm_load_ps(base + align * gmx_simd_extract_fi(offset, 3) );
+    }
+    _MM_TRANSPOSE4_PS(v0, v1, v2, v3);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_f_sse2(const float *       base,
+                                                gmx_simd_fint32_t   offset,
+                                                gmx_simd_float_t   &v0,
+                                                gmx_simd_float_t   &v1)
+{
+    __m128 t1, t2;
+
+    /* Use optimized bit-shift multiply for the most common alignments */
+    if (align == 2)
+    {
+        offset = _mm_slli_epi32(offset, 1);
+    }
+    else if (align == 4)
+    {
+        offset = _mm_slli_epi32(offset, 2);
+    }
+    else if (align == 6)
+    {
+        /* multiply by 3, then by 2 */
+        offset = _mm_add_epi32(offset, _mm_slli_epi32(offset, 1));
+        offset = _mm_slli_epi32(offset, 1);
+    }
+    else if (align == 8)
+    {
+        offset = _mm_slli_epi32(offset, 3);
+    }
+    else if (align == 12)
+    {
+        /* multiply by 3, then by 4 */
+        offset = _mm_add_epi32(offset, _mm_slli_epi32(offset, 1));
+        offset = _mm_slli_epi32(offset, 2);
+    }
+    else if (align == 16)
+    {
+        offset = _mm_slli_epi32(offset, 4);
+    }
+
+    if (align == 2 || align == 4 || align == 6 ||
+        align == 8 || align == 12 || align == 16)
+    {
+        v0  = _mm_castpd_ps(_mm_load_sd((const double *)(base + gmx_simd_extract_fi(offset, 0))));
+        v1  = _mm_castpd_ps(_mm_load_sd((const double *)(base + gmx_simd_extract_fi(offset, 1))));
+        t1  = _mm_castpd_ps(_mm_load_sd((const double *)(base + gmx_simd_extract_fi(offset, 2))));
+        t2  = _mm_castpd_ps(_mm_load_sd((const double *)(base + gmx_simd_extract_fi(offset, 3))));
+    }
+    else
+    {
+        v0  = _mm_castpd_ps(_mm_load_sd((const double *)(base + align * gmx_simd_extract_fi(offset, 0))));
+        v1  = _mm_castpd_ps(_mm_load_sd((const double *)(base + align * gmx_simd_extract_fi(offset, 1))));
+        t1  = _mm_castpd_ps(_mm_load_sd((const double *)(base + align * gmx_simd_extract_fi(offset, 2))));
+        t2  = _mm_castpd_ps(_mm_load_sd((const double *)(base + align * gmx_simd_extract_fi(offset, 3))));
+    }
+    t1  = _mm_unpacklo_ps(v0, t1);
+    t2  = _mm_unpacklo_ps(v1, t2);
+    v0  = _mm_unpacklo_ps(t1, t2);
+    v1  = _mm_unpackhi_ps(t1, t2);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_bysimdint_transpose_f_sse2(const float *       base,
+                                                 gmx_simd_fint32_t   offset,
+                                                 gmx_simd_float_t   &v0,
+                                                 gmx_simd_float_t   &v1)
+{
+    __m128 t1, t2;
+
+    /* Use optimized bit-shift multiply for the most common alignments. */
+    /* Do nothing for align == 1 */
+    if (align == 2)
+    {
+        offset = _mm_slli_epi32(offset, 1);
+    }
+    else if (align == 4)
+    {
+        offset = _mm_slli_epi32(offset, 2);
+    }
+
+    if (align == 1 || align == 2 || align == 4)
+    {
+        v0  = _mm_castpd_ps(_mm_load_sd((const double *)(base + gmx_simd_extract_fi(offset, 0))));
+        v1  = _mm_castpd_ps(_mm_load_sd((const double *)(base + gmx_simd_extract_fi(offset, 1))));
+        t1  = _mm_castpd_ps(_mm_load_sd((const double *)(base + gmx_simd_extract_fi(offset, 2))));
+        t2  = _mm_castpd_ps(_mm_load_sd((const double *)(base + gmx_simd_extract_fi(offset, 3))));
+    }
+    else
+    {
+        v0  = _mm_castpd_ps(_mm_load_sd((const double *)(base + align * gmx_simd_extract_fi(offset, 0))));
+        v1  = _mm_castpd_ps(_mm_load_sd((const double *)(base + align * gmx_simd_extract_fi(offset, 1))));
+        t1  = _mm_castpd_ps(_mm_load_sd((const double *)(base + align * gmx_simd_extract_fi(offset, 2))));
+        t2  = _mm_castpd_ps(_mm_load_sd((const double *)(base + align * gmx_simd_extract_fi(offset, 3))));
+    }
+    t1  = _mm_unpacklo_ps(v0, t1);
+    t2  = _mm_unpacklo_ps(v1, t2);
+    v0  = _mm_unpacklo_ps(t1, t2);
+    v1  = _mm_unpackhi_ps(t1, t2);
+}
+
+
+static gmx_inline float
+gmx_simd_reduce_incr_4_return_sum_f_sse2(float *           m,
+                                         gmx_simd_float_t  v0,
+                                         gmx_simd_float_t  v1,
+                                         gmx_simd_float_t  v2,
+                                         gmx_simd_float_t  v3)
+{
+    _MM_TRANSPOSE4_PS(v0, v1, v2, v3);
+    v0 = _mm_add_ps(v0, v1);
+    v2 = _mm_add_ps(v2, v3);
+    v0 = _mm_add_ps(v0, v2);
+    v2 = _mm_add_ps(v0, _mm_load_ps(m));
+    _mm_store_ps(m, v2);
+
+    return gmx_simd_reduce_f_sse2(v0);
+}
+#endif /* __cplusplus */
+
+
 
 /****************************************************
  * DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
@@ -396,6 +810,317 @@ gmx_simd_check_and_reset_overflow(void)
     return sse_overflow;
 }
 
+/****************************************************
+ * Double precision higher-level utility functions  *
+ ****************************************************/
+#ifdef __cplusplus
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_d_sse2(const double *        base,
+                                      const gmx_int32_t     offset[],
+                                      gmx_simd_double_t    &v0,
+                                      gmx_simd_double_t    &v1,
+                                      gmx_simd_double_t    &v2,
+                                      gmx_simd_double_t    &v3)
+{
+    __m128d t1, t2, t3, t4;
+    t1  = _mm_load_pd(base + align * offset[0]);
+    t2  = _mm_load_pd(base + align * offset[1]);
+    t3  = _mm_load_pd(base + align * offset[0] + 2);
+    t4  = _mm_load_pd(base + align * offset[1] + 2);
+    v0  = _mm_unpacklo_pd(t1, t2);
+    v1  = _mm_unpackhi_pd(t1, t2);
+    v2  = _mm_unpacklo_pd(t3, t4);
+    v3  = _mm_unpackhi_pd(t3, t4);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_d_sse2(const double *        base,
+                                      const gmx_int32_t     offset[],
+                                      gmx_simd_double_t    &v0,
+                                      gmx_simd_double_t    &v1)
+{
+    __m128d t1, t2;
+    t1  = _mm_load_pd(base + align * offset[0]);
+    t2  = _mm_load_pd(base + align * offset[1]);
+    v0  = _mm_unpacklo_pd(t1, t2);
+    v1  = _mm_unpackhi_pd(t1, t2);
+}
+
+static const int gmx_simd_best_pair_alignment_d_sse2 = 2;
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_transpose_d_sse2(const double *        base,
+                                       const gmx_int32_t     offset[],
+                                       gmx_simd_double_t    &v0,
+                                       gmx_simd_double_t    &v1,
+                                       gmx_simd_double_t    &v2)
+{
+    __m128d t1, t2, t3, t4;
+    t1  = _mm_loadu_pd(base + align * offset[0]);
+    t2  = _mm_loadu_pd(base + align * offset[1]);
+    t3  = _mm_load_sd(base + align * offset[0] + 2);
+    t4  = _mm_load_sd(base + align * offset[1] + 2);
+    v0  = _mm_unpacklo_pd(t1, t2);
+    v1  = _mm_unpackhi_pd(t1, t2);
+    v2  = _mm_unpacklo_pd(t3, t4);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_storeu_d_sse2(double *              base,
+                                         const gmx_int32_t     offset[],
+                                         gmx_simd_double_t     v0,
+                                         gmx_simd_double_t     v1,
+                                         gmx_simd_double_t     v2)
+{
+    __m128d t1, t2;
+    t1  = _mm_unpacklo_pd(v0, v1);
+    t2  = _mm_unpackhi_pd(v0, v1);
+    _mm_storeu_pd(base + align * offset[0], t1);
+    _mm_store_sd(base + align * offset[0] + 2, v2);
+    _mm_storeu_pd(base + align * offset[1], t2);
+    _mm_storeh_pi((__m64 *)(base + align * offset[1] + 2), _mm_castpd_ps(v2));
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_incru_d_sse2(double *              base,
+                                        const gmx_int32_t     offset[],
+                                        gmx_simd_double_t     v0,
+                                        gmx_simd_double_t     v1,
+                                        gmx_simd_double_t     v2)
+{
+    __m128d t1, t2, t3, t4, t5, t6, t7;
+
+    t1          = _mm_loadu_pd(base + align * offset[0]);
+    t2          = _mm_load_sd(base + align * offset[0] + 2);
+    t3          = _mm_loadu_pd(base + align * offset[1]);
+    t4          = _mm_load_sd(base + align * offset[1] + 2);
+
+    t5          = _mm_unpacklo_pd(v0, v1);
+    t6          = _mm_unpackhi_pd(v0, v1);
+    t7          = _mm_unpackhi_pd(v2, v2);
+
+    t1          = _mm_add_pd(t1, t5);
+    t2          = _mm_add_sd(t2, v2);
+    t3          = _mm_add_pd(t3, t6);
+    t4          = _mm_add_sd(t4, t7);
+
+    _mm_storeu_pd(base + align * offset[0], t1);
+    _mm_store_sd(base + align * offset[0] + 2, t2);
+    _mm_storeu_pd(base + align * offset[1], t3);
+    _mm_store_sd(base + align * offset[1] + 2, t4);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_decru_d_sse2(double *              base,
+                                        const gmx_int32_t     offset[],
+                                        gmx_simd_double_t     v0,
+                                        gmx_simd_double_t     v1,
+                                        gmx_simd_double_t     v2)
+{
+    /* This implementation is identical to the increment version, apart from using subtraction instead */
+    __m128d t1, t2, t3, t4, t5, t6, t7;
+
+    t1          = _mm_loadu_pd(base + align * offset[0]);
+    t2          = _mm_load_sd(base + align * offset[0] + 2);
+    t3          = _mm_loadu_pd(base + align * offset[1]);
+    t4          = _mm_load_sd(base + align * offset[1] + 2);
+
+    t5          = _mm_unpacklo_pd(v0, v1);
+    t6          = _mm_unpackhi_pd(v0, v1);
+    t7          = _mm_unpackhi_pd(v2, v2);
+
+    t1          = _mm_sub_pd(t1, t5);
+    t2          = _mm_sub_sd(t2, v2);
+    t3          = _mm_sub_pd(t3, t6);
+    t4          = _mm_sub_sd(t4, t7);
+
+    _mm_storeu_pd(base + align * offset[0], t1);
+    _mm_store_sd(base + align * offset[0] + 2, t2);
+    _mm_storeu_pd(base + align * offset[1], t3);
+    _mm_store_sd(base + align * offset[1] + 2, t4);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd_expand_scalars_to_triplets_d_sse2(gmx_simd_double_t    scalar,
+                                           gmx_simd_double_t   &triplets0,
+                                           gmx_simd_double_t   &triplets1,
+                                           gmx_simd_double_t   &triplets2)
+{
+    triplets0 = _mm_shuffle_pd(scalar, scalar, _MM_SHUFFLE2(0, 0));
+    triplets1 = _mm_shuffle_pd(scalar, scalar, _MM_SHUFFLE2(1, 0));
+    triplets2 = _mm_shuffle_pd(scalar, scalar, _MM_SHUFFLE2(1, 1));
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_d_sse2(const double *       base,
+                                                gmx_simd_dint32_t    offset,
+                                                gmx_simd_double_t   &v0,
+                                                gmx_simd_double_t   &v1,
+                                                gmx_simd_double_t   &v2,
+                                                gmx_simd_double_t   &v3)
+{
+    __m128d t1, t2, t3, t4;
+    /* Use optimized bit-shift multiply for the most common alignments */
+    if (align == 4)
+    {
+        offset = _mm_slli_epi32(offset, 2);
+    }
+    else if (align == 8)
+    {
+        offset = _mm_slli_epi32(offset, 3);
+    }
+    else if (align == 12)
+    {
+        /* multiply by 3, then by 4 */
+        offset = _mm_add_epi32(offset, _mm_slli_epi32(offset, 1));
+        offset = _mm_slli_epi32(offset, 2);
+    }
+    else if (align == 16)
+    {
+        offset = _mm_slli_epi32(offset, 4);
+    }
+
+    if (align == 4 || align == 8 || align == 12 || align == 16)
+    {
+        t1  = _mm_load_pd(base + gmx_simd_extract_di(offset, 0));
+        t2  = _mm_load_pd(base + gmx_simd_extract_di(offset, 1));
+        t3  = _mm_load_pd(base + gmx_simd_extract_di(offset, 0) + 2);
+        t4  = _mm_load_pd(base + gmx_simd_extract_di(offset, 1) + 2);
+    }
+    else
+    {
+        t1  = _mm_load_pd(base + align * gmx_simd_extract_di(offset, 0));
+        t2  = _mm_load_pd(base + align * gmx_simd_extract_di(offset, 1));
+        t3  = _mm_load_pd(base + align * gmx_simd_extract_di(offset, 0) + 2);
+        t4  = _mm_load_pd(base + align * gmx_simd_extract_di(offset, 1) + 2);
+    }
+    v0  = _mm_unpacklo_pd(t1, t2);
+    v1  = _mm_unpackhi_pd(t1, t2);
+    v2  = _mm_unpacklo_pd(t3, t4);
+    v3  = _mm_unpackhi_pd(t3, t4);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_d_sse2(const double *       base,
+                                                gmx_simd_dint32_t    offset,
+                                                gmx_simd_double_t   &v0,
+                                                gmx_simd_double_t   &v1)
+{
+    __m128d t1, t2;
+    /* Use optimized bit-shift multiply for the most common alignments */
+    if (align == 2)
+    {
+        offset = _mm_slli_epi32(offset, 1);
+    }
+    else if (align == 4)
+    {
+        offset = _mm_slli_epi32(offset, 2);
+    }
+    else if (align == 6)
+    {
+        /* multiply by 3, then by 2 */
+        offset = _mm_add_epi32(offset, _mm_slli_epi32(offset, 1));
+        offset = _mm_slli_epi32(offset, 1);
+    }
+    else if (align == 8)
+    {
+        offset = _mm_slli_epi32(offset, 3);
+    }
+    else if (align == 12)
+    {
+        /* multiply by 3, then by 4 */
+        offset = _mm_add_epi32(offset, _mm_slli_epi32(offset, 1));
+        offset = _mm_slli_epi32(offset, 2);
+    }
+    else if (align == 16)
+    {
+        offset = _mm_slli_epi32(offset, 4);
+    }
+
+    if (align == 2 || align == 4 || align == 6 ||
+        align == 8 || align == 12 || align == 16)
+    {
+        t1  = _mm_load_pd(base + gmx_simd_extract_di(offset, 0));
+        t2  = _mm_load_pd(base + gmx_simd_extract_di(offset, 1));
+    }
+    else
+    {
+        t1  = _mm_load_pd(base + align * gmx_simd_extract_di(offset, 0));
+        t2  = _mm_load_pd(base + align * gmx_simd_extract_di(offset, 1));
+    }
+    v0  = _mm_unpacklo_pd(t1, t2);
+    v1  = _mm_unpackhi_pd(t1, t2);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_bysimdint_transpose_d_sse2(const double *       base,
+                                                 gmx_simd_dint32_t    offset,
+                                                 gmx_simd_double_t   &v0,
+                                                 gmx_simd_double_t   &v1)
+{
+    __m128d t1, t2;
+    /* Use optimized bit-shift multiply for the most common alignments. */
+    /* Do nothing for align == 1 */
+    if (align == 2)
+    {
+        offset = _mm_slli_epi32(offset, 1);
+    }
+    else if (align == 4)
+    {
+        offset = _mm_slli_epi32(offset, 2);
+    }
+
+    if (align == 1 || align == 2 || align == 4)
+    {
+        t1  = _mm_loadu_pd(base + gmx_simd_extract_di(offset, 0));
+        t2  = _mm_loadu_pd(base + gmx_simd_extract_di(offset, 1));
+    }
+    else
+    {
+        t1  = _mm_loadu_pd(base + align * gmx_simd_extract_di(offset, 0));
+        t2  = _mm_loadu_pd(base + align * gmx_simd_extract_di(offset, 1));
+    }
+    v0  = _mm_unpacklo_pd(t1, t2);
+    v1  = _mm_unpackhi_pd(t1, t2);
+}
+
+static gmx_inline double
+gmx_simd_reduce_incr_4_return_sum_d_sse2(double *           m,
+                                         gmx_simd_double_t  v0,
+                                         gmx_simd_double_t  v1,
+                                         gmx_simd_double_t  v2,
+                                         gmx_simd_double_t  v3)
+{
+    __m128d t1, t2, t3, t4;
+
+    t1 = _mm_unpacklo_pd(v0, v1);
+    t2 = _mm_unpackhi_pd(v0, v1);
+    t3 = _mm_unpacklo_pd(v2, v3);
+    t4 = _mm_unpackhi_pd(v2, v3);
+
+    t1 = _mm_add_pd(t1, t2);
+    t3 = _mm_add_pd(t3, t4);
+
+    t2 = _mm_add_pd(t1, _mm_load_pd(m));
+    t4 = _mm_add_pd(t3, _mm_load_pd(m + 2));
+    _mm_store_pd(m, t2);
+    _mm_store_pd(m + 2, t4);
+
+    t1 = _mm_add_pd(t1, t3);
+    return gmx_simd_reduce_d_sse2(t1);
+}
+#endif /* __cplusplus */
+
+
 /* SSE2 is already 4-wide in single, so we just reuse float datatype for SIMD4.
  * SSE2 cannot do double-precision SIMD4.
  */
@@ -426,6 +1151,7 @@ gmx_simd_check_and_reset_overflow(void)
 #define gmx_simd4_round_f                gmx_simd_round_f
 #define gmx_simd4_trunc_f                gmx_simd_trunc_f
 #define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_sse2
+#define gmx_simd4_transpose_f            gmx_simd4_transpose_f_sse2
 #define gmx_simd4_fbool_t                gmx_simd_fbool_t
 #define gmx_simd4_cmpeq_f                gmx_simd_cmpeq_f
 #define gmx_simd4_cmplt_f                gmx_simd_cmplt_f
@@ -450,5 +1176,14 @@ gmx_simd4_dotproduct3_f_sse2(__m128 a, __m128 b)
     _mm_store_ss(&f, c);
     return f;
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_f_sse2(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                           gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    _MM_TRANSPOSE4_PS(v0, v1, v2, v3);
+}
+#endif
 
 #endif /* GMX_SIMD_IMPL_X86_SSE2_H */
