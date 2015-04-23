@@ -33,58 +33,63 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H
 
 #include "config.h"
+
+#include <cassert>
+#include <cstddef>
 
 #include <immintrin.h>
 #include <x86intrin.h>
 
-#include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1_simd_double.h"
+#include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1_util_double.h"
 
 namespace gmx
 {
 
-static inline double gmx_simdcall
-reduce(SimdDouble a)
+static inline void gmx_simdcall
+expandScalarsToTriplets(SimdDouble    scalar,
+                        SimdDouble *  triplets0,
+                        SimdDouble *  triplets1,
+                        SimdDouble *  triplets2)
 {
-    __m128d b = _mm_add_sd(a.simdInternal_, _mm_permute_pd(a.simdInternal_, _MM_SHUFFLE2(1, 1)));
-    return *reinterpret_cast<double *>(&b);
+    triplets0->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(0, 0));
+    triplets1->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(1, 0));
+    triplets2->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(1, 1));
 }
 
-static inline SimdDouble gmx_simdcall
-fma(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline double
+reduceIncr4ReturnSum(double *    m,
+                     SimdDouble  v0,
+                     SimdDouble  v1,
+                     SimdDouble  v2,
+                     SimdDouble  v3)
 {
-    return {
-               _mm_macc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
+    __m128d t1, t2, t3, t4;
 
-static inline SimdDouble gmx_simdcall
-fms(SimdDouble a, SimdDouble b, SimdDouble c)
-{
-    return {
-               _mm_msub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
+    t1 = _mm_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
+    t2 = _mm_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
+    t3 = _mm_unpacklo_pd(v2.simdInternal_, v3.simdInternal_);
+    t4 = _mm_unpackhi_pd(v2.simdInternal_, v3.simdInternal_);
 
-static inline SimdDouble gmx_simdcall
-fnma(SimdDouble a, SimdDouble b, SimdDouble c)
-{
-    return {
-               _mm_nmacc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
+    t1 = _mm_add_pd(t1, t2);
+    t3 = _mm_add_pd(t3, t4);
 
-static inline SimdDouble gmx_simdcall
-fnms(SimdDouble a, SimdDouble b, SimdDouble c)
-{
-    return {
-               _mm_nmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    assert(std::size_t(m) % 16 == 0);
+
+    t2 = _mm_add_pd(t1, _mm_load_pd(m));
+    t4 = _mm_add_pd(t3, _mm_load_pd(m + 2));
+    _mm_store_pd(m, t2);
+    _mm_store_pd(m + 2, t4);
+
+    t1 = _mm_add_pd(t1, t3);
+
+    t2 = _mm_add_sd(t1, _mm_permute_pd(t1, _MM_SHUFFLE2(1, 1)));
+    return *reinterpret_cast<double *>(&t2);
 }
 
 }      // namespace gmx
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H */
+#endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H
