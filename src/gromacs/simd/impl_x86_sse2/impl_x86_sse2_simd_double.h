@@ -32,168 +32,686 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 #ifndef GMX_SIMD_IMPL_X86_SSE2_SIMD_DOUBLE_H
 #define GMX_SIMD_IMPL_X86_SSE2_SIMD_DOUBLE_H
 
 #include "config.h"
 
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+
 #include <emmintrin.h>
 
-#include "gromacs/utility/real.h"
+#include "impl_x86_sse2_simd_float.h"
 
-#include "impl_x86_sse2_common.h"
-
-/****************************************************
- *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
- ****************************************************/
-#define SimdDouble          __m128d
-#define simdLoadD            _mm_load_pd
-#define simdLoad1D           _mm_load1_pd
-#define simdSet1D            _mm_set1_pd
-#define simdStoreD           _mm_store_pd
-#define simdLoadUD           _mm_loadu_pd
-#define simdStoreUD          _mm_storeu_pd
-#define simdSetZeroD         _mm_setzero_pd
-#define simdAddD             _mm_add_pd
-#define simdSubD             _mm_sub_pd
-#define simdMulD             _mm_mul_pd
-#define simdFmaddD(a, b, c)    _mm_add_pd(_mm_mul_pd(a, b), c)
-#define simdFmsubD(a, b, c)    _mm_sub_pd(_mm_mul_pd(a, b), c)
-#define simdFnmaddD(a, b, c)   _mm_sub_pd(c, _mm_mul_pd(a, b))
-#define simdFnmsubD(a, b, c)   _mm_sub_pd(_mm_setzero_pd(), simdFmaddD(a, b, c))
-#define simdAndD             _mm_and_pd
-#define simdAndNotD          _mm_andnot_pd
-#define simdOrD              _mm_or_pd
-#define simdXorD             _mm_xor_pd
-#define simdRsqrtD(x)        _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x)))
-/* Don't use FMA for sqrt N-R iterations - this saves 1 instruction without FMA hardware */
-#define simdRcpD(x)          _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x)))
-#define simdAbsD(x)         _mm_andnot_pd(_mm_set1_pd(GMX_DOUBLE_NEGZERO), x)
-#define simdNegD(x)         _mm_xor_pd(x, _mm_set1_pd(GMX_DOUBLE_NEGZERO))
-#define simdMaxD             _mm_max_pd
-#define simdMinD             _mm_min_pd
-#define simdRoundD(x)        _mm_cvtepi32_pd(_mm_cvtpd_epi32(x))
-#define simdTruncD(x)        _mm_cvtepi32_pd(_mm_cvttpd_epi32(x))
-#define simdFractionD(x)     _mm_sub_pd(x, simdTruncD(x))
-#define simdGetExponentD    simdGetExponentD_sse2
-#define simdGetMantissaD    simdGetMantissaD_sse2
-#define simdSetExponentD    simdSetExponentD_sse2
-/* integer datatype corresponding to double: SimdDInt32 */
-#define SimdDInt32          __m128i
-#define simdLoadDI(m)        _mm_loadl_epi64((const __m128i *)(m))
-#define simdSet1DI           _mm_set1_epi32
-#define simdStoreDI(m, x)     _mm_storel_epi64((__m128i *)(m), x)
-#define simdLoadUDI(m)       _mm_loadl_epi64((const __m128i *)(m))
-#define simdStoreUDI(m, x)    _mm_storel_epi64((__m128i *)(m), x)
-#define simdSetZeroDI        _mm_setzero_si128
-#define simdCvtD2I           _mm_cvtpd_epi32
-#define simdCvttD2I          _mm_cvttpd_epi32
-#define simdCvtI2D           _mm_cvtepi32_pd
-#define simdExtractDI(x, i)   _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (i)))
-/* Integer logical ops on SimdDInt32 */
-#define simdSlliDI           _mm_slli_epi32
-#define simdSrliDI           _mm_srli_epi32
-#define simdAndDI            _mm_and_si128
-#define simdAndNotDI         _mm_andnot_si128
-#define simdOrDI             _mm_or_si128
-#define simdXorDI            _mm_xor_si128
-/* Integer arithmetic ops on integer datatype corresponding to double */
-#define simdAddDI            _mm_add_epi32
-#define simdSubDI            _mm_sub_epi32
-#define simdMulDI            simdMulDI_sse2
-/* Boolean & comparison operations on SimdDouble */
-#define SimdDBool            __m128d
-#define simdCmpEqD            _mm_cmpeq_pd
-#define simdCmpLtD            _mm_cmplt_pd
-#define simdCmpLeD            _mm_cmple_pd
-#define simdAndDB             _mm_and_pd
-#define simdOrDB              _mm_or_pd
-#define simdAnyTrueDB         _mm_movemask_pd
-#define simdMaskD        _mm_and_pd
-#define simdMaskNotD(a, sel) _mm_andnot_pd(sel, a)
-#define simdBlendD(a, b, sel)  _mm_or_pd(_mm_andnot_pd(sel, a), _mm_and_pd(sel, b))
-#define simdReduceD(a)        simdReduceD_sse2(a)
-
-/* Boolean & comparison operations on SimdDInt32 */
-#define SimdDIBool           __m128i
-#define simdCmpEqDI           _mm_cmpeq_epi32
-#define simdCmpLtDI           _mm_cmplt_epi32
-#define simdAndDIB            _mm_and_si128
-#define simdOrDIB             _mm_or_si128
-#define simdAnyTrueDIB(x)     _mm_movemask_epi8(_mm_shuffle_epi32(x, _MM_SHUFFLE(1, 0, 1, 0)))
-#define simdMaskDI       _mm_and_si128
-#define simdMaskNotDI(a, sel)  _mm_andnot_si128(sel, a)
-#define simdBlendDI(a, b, sel) _mm_or_si128(_mm_andnot_si128(sel, a), _mm_and_si128(sel, b))
-#define simdCvtDB2DIB(x)      _mm_shuffle_epi32(_mm_castpd_si128(x), _MM_SHUFFLE(2, 0, 2, 0))
-#define simdCvtDIB2DB(x)      _mm_castsi128_pd(_mm_shuffle_epi32(x, _MM_SHUFFLE(1, 1, 0, 0)))
-/* Float/double conversion */
-#define simdCvtF2DD(f, d0, d1)  { *d0 = _mm_cvtps_pd(f); *d1 = _mm_cvtps_pd(_mm_movehl_ps(f, f)); }
-#define simdCvtDD2F(d0, d1)    _mm_movelh_ps(_mm_cvtpd_ps(d0), _mm_cvtpd_ps(d1))
-
-
-/****************************************************
- * DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
- ****************************************************/
-static inline __m128d gmx_simdcall
-simdGetExponentD_sse2(__m128d x)
+namespace gmx
 {
-    /* Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds */
-    const __m128d expmask      = _mm_castsi128_pd( _mm_set_epi32(0x7FF00000, 0x00000000, 0x7FF00000, 0x00000000) );
-    const __m128i expbias      = _mm_set1_epi32(1023);
-    __m128i       iexp;
 
-    iexp   = _mm_castpd_si128(_mm_and_pd(x, expmask));
-    iexp   = _mm_sub_epi32(_mm_srli_epi64(iexp, 52), expbias);
-    iexp   = _mm_shuffle_epi32(iexp, _MM_SHUFFLE(3, 1, 2, 0) );
-    return _mm_cvtepi32_pd(iexp);
-}
-
-static inline __m128d gmx_simdcall
-simdGetMantissaD_sse2(__m128d x)
+struct SimdDouble
 {
-    /* Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds */
-    const __m128d mantmask = _mm_castsi128_pd( _mm_set_epi32(0x000FFFFF, 0xFFFFFFFF, 0x000FFFFF, 0xFFFFFFFF) );
-    const __m128d one      = _mm_set1_pd(1.0);
+    __m128d r;
+};
 
-    x = _mm_and_pd(x, mantmask);
-    return _mm_or_pd(x, one);
-}
-
-static inline __m128d gmx_simdcall
-simdSetExponentD_sse2(__m128d x)
+struct SimdDInt32
 {
-    const __m128i  expbias      = _mm_set1_epi32(1023);
-    __m128i        iexp         = _mm_cvtpd_epi32(x);
+    __m128i i;
+};
 
-    /* After conversion integers will be in slot 0,1. Move them to 0,2 so
-     * we can do a 64-bit shift and get them to the dp exponents. */
-    iexp = _mm_shuffle_epi32(iexp, _MM_SHUFFLE(3, 1, 2, 0));
-    iexp = _mm_slli_epi64(_mm_add_epi32(iexp, expbias), 52);
-    return _mm_castsi128_pd(iexp);
-}
-
-static inline __m128i gmx_simdcall
-simdMulDI_sse2(__m128i a, __m128i b)
-{
-    __m128i c;
-
-    a = _mm_unpacklo_epi32(a, _mm_setzero_si128());       /* 0 a[1] 0 a[0] */
-    b = _mm_unpacklo_epi32(b, _mm_setzero_si128());       /* 0 b[1] 0 b[0] */
-
-    c  = _mm_mul_epu32(a, b);                             /* 0 a[1]*b[1] 0 a[0]*b[0] */
-    return _mm_shuffle_epi32(c, _MM_SHUFFLE(3, 1, 2, 0)); /* 0 0 a[1]*b[1] a[0]*b[0] */
-}
-
-static inline double gmx_simdcall
-simdReduceD_sse2(__m128d a)
+struct SimdDBool
 {
     __m128d b;
-    double  f;
+};
 
-    b = _mm_add_sd(a, _mm_shuffle_pd(a, a, _MM_SHUFFLE2(1, 1)));
-    _mm_store_sd(&f, b);
-    return f;
+struct SimdDIBool
+{
+    __m128i b;
+};
+
+static inline SimdDouble gmx_simdcall
+simdLoadD(const double *m)
+{
+    assert(std::size_t(m) % 16 == 0);
+    return {
+               _mm_load_pd(m)
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_X86_SSE2_SIMD_DOUBLE_H */
+static inline SimdDouble gmx_simdcall
+simdLoad1D(const double *m)
+{
+    return {
+               _mm_load1_pd(m)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdSet1D(double r)
+{
+    return {
+               _mm_set1_pd(r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdSetZeroD()
+{
+    return {
+               _mm_setzero_pd()
+    };
+}
+
+static inline void gmx_simdcall
+simdStoreD(double *m, SimdDouble a)
+{
+    assert(std::size_t(m) % 16 == 0);
+    _mm_store_pd(m, a.r);
+}
+
+static inline SimdDouble gmx_simdcall
+simdLoadUD(const double *m)
+{
+    return {
+               _mm_loadu_pd(m)
+    };
+}
+
+static inline void gmx_simdcall
+simdStoreUD(double *m, SimdDouble a) { _mm_storeu_pd(m, a.r); }
+
+static inline SimdDInt32 gmx_simdcall
+simdLoadDI(const std::int32_t * m)
+{
+    assert(std::size_t(m) % 8 == 0);
+    return {
+               _mm_loadl_epi64(reinterpret_cast<const __m128i *>(m))
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSet1DI(std::int32_t b)
+{
+    return {
+               _mm_set1_epi32(b)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSetZeroDI()
+{
+    return {
+               _mm_setzero_si128()
+    };
+}
+
+static inline void gmx_simdcall
+simdStoreDI(std::int32_t * m, SimdDInt32 a)
+{
+    assert(std::size_t(m) % 8 == 0);
+    _mm_storel_epi64(reinterpret_cast<__m128i *>(m), a.i);
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdLoadUDI(const std::int32_t *m) { return simdLoadDI(m); }
+
+static inline void gmx_simdcall
+simdStoreUDI(std::int32_t * m, SimdDInt32 a) { simdStoreDI(m, a); }
+
+// Override for SSE4.1 and higher
+#if GMX_SIMD_X86_SSE2
+template<int index> gmx_simdcall
+static inline std::int32_t
+simdExtractDI(SimdDInt32 a)
+{
+    return _mm_cvtsi128_si32( _mm_srli_si128(a.i, 4 * index) );
+}
+#endif
+
+static inline SimdDouble gmx_simdcall
+simdAndD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_and_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdAndNotD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_andnot_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdOrD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_or_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdXorD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_xor_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdAddD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_add_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdSubD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_sub_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMulD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_mul_pd(a.r, b.r)
+    };
+}
+
+// Override for AVX-128-FMA and higher
+#if GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1
+static inline SimdDouble gmx_simdcall
+simdFmaddD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm_add_pd(_mm_mul_pd(a.r, b.r), c.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFmsubD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm_sub_pd(_mm_mul_pd(a.r, b.r), c.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFnmaddD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm_sub_pd(c.r, _mm_mul_pd(a.r, b.r))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFnmsubD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm_sub_pd(_mm_setzero_pd(), _mm_add_pd(_mm_mul_pd(a.r, b.r), c.r))
+    };
+}
+#endif
+
+static inline SimdDouble gmx_simdcall
+simdRsqrtD(SimdDouble x)
+{
+    return {
+               _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x.r)))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdRcpD(SimdDouble x)
+{
+    return {
+               _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x.r)))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMulMaskD(SimdDouble a, SimdDouble b, SimdDBool m)
+{
+    return {
+               _mm_and_pd(_mm_mul_pd(a.r, b.r), m.b)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFmaddMaskD(SimdDouble a, SimdDouble b, SimdDouble c, SimdDBool m)
+{
+    return {
+               _mm_and_pd(_mm_add_pd(_mm_mul_pd(a.r, b.r), c.r), m.b)
+    };
+}
+
+// Override for SSE4.1 and higher
+#if GMX_SIMD_X86_SSE2
+static inline SimdDouble gmx_simdcall
+simdRsqrtMaskD(SimdDouble x, SimdDBool m)
+{
+    // The result will always be correct since we mask the result with m, but
+    // for debug builds we also want to make sure not to generate FP exceptions
+#ifndef NDEBUG
+    x.r = _mm_or_pd(_mm_andnot_pd(m.b, _mm_set1_pd(1.0)), _mm_and_pd(m.b, x.r));
+#endif
+    return {
+               _mm_and_pd(_mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x.r))), m.b)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdRcpMaskD(SimdDouble x, SimdDBool m)
+{
+    // The result will always be correct since we mask the result with m, but
+    // for debug builds we also want to make sure not to generate FP exceptions
+#ifndef NDEBUG
+    x.r = _mm_or_pd(_mm_andnot_pd(m.b, _mm_set1_pd(1.0)), _mm_and_pd(m.b, x.r));
+#endif
+    return {
+               _mm_and_pd(_mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x.r))), m.b)
+    };
+}
+#endif
+
+static inline SimdDouble gmx_simdcall
+simdAbsD(SimdDouble x)
+{
+    return {
+               _mm_andnot_pd( _mm_set1_pd(GMX_DOUBLE_NEGZERO), x.r )
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdNegD(SimdDouble x)
+{
+    return {
+               _mm_xor_pd(x.r, _mm_set1_pd(GMX_DOUBLE_NEGZERO))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMaxD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_max_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMinD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_min_pd(a.r, b.r)
+    };
+}
+
+// Override for SSE4.1 and higher
+#if GMX_SIMD_X86_SSE2
+static inline SimdDouble gmx_simdcall
+simdRoundD(SimdDouble x)
+{
+    return {
+               _mm_cvtepi32_pd( _mm_cvtpd_epi32(x.r) )
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdTruncD(SimdDouble x)
+{
+    return {
+               _mm_cvtepi32_pd( _mm_cvttpd_epi32(x.r) )
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFractionD(SimdDouble x)
+{
+    return {
+               _mm_sub_pd(x.r, _mm_cvtepi32_pd( _mm_cvttpd_epi32(x.r) ))
+    };
+}
+#endif
+
+static inline SimdDouble gmx_simdcall
+simdGetExponentD(SimdDouble x)
+{
+    // Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds
+    const __m128d exponentMask = _mm_castsi128_pd( _mm_set_epi32(0x7FF00000, 0x00000000, 0x7FF00000, 0x00000000) );
+    const __m128i exponentBias = _mm_set1_epi32(1023);
+    __m128i       iExponent;
+
+    iExponent   = _mm_castpd_si128(_mm_and_pd(x.r, exponentMask));
+    iExponent   = _mm_sub_epi32(_mm_srli_epi64(iExponent, 52), exponentBias);
+    iExponent   = _mm_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0) );
+
+    return {
+               _mm_cvtepi32_pd(iExponent)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdGetMantissaD(SimdDouble x)
+{
+    // Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds
+    const __m128d mantissaMask = _mm_castsi128_pd( _mm_set_epi32(0x000FFFFF, 0xFFFFFFFF, 0x000FFFFF, 0xFFFFFFFF) );
+    const __m128d one          = _mm_set1_pd(1.0);
+
+    return {
+               _mm_or_pd(_mm_and_pd(x.r, mantissaMask), one)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdSetExponentD(SimdDouble x)
+{
+    const __m128i  exponentBias = _mm_set1_epi32(1023);
+    __m128i        iExponent    = _mm_cvtpd_epi32(x.r);
+
+    // After conversion integers will be in slot 0,1. Move them to 0,2 so
+    // we can do a 64-bit shift and get them to the dp exponents.
+    iExponent = _mm_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0));
+    iExponent = _mm_slli_epi64(_mm_add_epi32(iExponent, exponentBias), 52);
+
+    return {
+               _mm_castsi128_pd(iExponent)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCmpEqD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_cmpeq_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCmpNzD(SimdDouble a)
+{
+    return {
+               _mm_cmpneq_pd(a.r, _mm_setzero_pd())
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCmpLtD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_cmplt_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCmpLeD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm_cmple_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdAndDB(SimdDBool a, SimdDBool b)
+{
+    return {
+               _mm_and_pd(a.b, b.b)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdOrDB(SimdDBool a, SimdDBool b)
+{
+    return {
+               _mm_or_pd(a.b, b.b)
+    };
+}
+
+static inline bool gmx_simdcall
+simdAnyTrueDB(SimdDBool a) { return _mm_movemask_pd(a.b) != 0; }
+
+static inline SimdDouble gmx_simdcall
+simdMaskD(SimdDouble a, SimdDBool mask)
+{
+    return {
+               _mm_and_pd(a.r, mask.b)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMaskNotD(SimdDouble a, SimdDBool mask)
+{
+    return {
+               _mm_andnot_pd(mask.b, a.r)
+    };
+}
+
+// Override for SSE4.1 and higher
+#if GMX_SIMD_X86_SSE2
+static inline SimdDouble gmx_simdcall
+simdBlendD(SimdDouble a, SimdDouble b, SimdDBool sel)
+{
+    return {
+               _mm_or_pd(_mm_andnot_pd(sel.b, a.r), _mm_and_pd(sel.b, b.r))
+    };
+}
+#endif
+
+// Override for AVX-128-FMA and higher
+#if GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1
+static inline double gmx_simdcall
+simdReduceD(SimdDouble a)
+{
+    __m128d b = _mm_add_sd(a.r, _mm_shuffle_pd(a.r, a.r, _MM_SHUFFLE2(1, 1)));
+    return *reinterpret_cast<double *>(&b);
+}
+#endif
+
+static inline SimdDInt32 gmx_simdcall
+simdSlliDI(SimdDInt32 a, int n)
+{
+    return {
+               _mm_slli_epi32(a.i, n)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSrliDI(SimdDInt32 a, int n)
+{
+    return {
+               _mm_srli_epi32(a.i, n)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdAndDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_and_si128(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdAndNotDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_andnot_si128(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdOrDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_or_si128(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdXorDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_xor_si128(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdAddDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_add_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSubDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_sub_epi32(a.i, b.i)
+    };
+}
+
+// Override for SSE4.1 and higher
+#if GMX_SIMD_X86_SSE2
+static inline SimdDInt32 gmx_simdcall
+simdMulDI(SimdDInt32 a, SimdDInt32 b)
+{
+
+    __m128i tmpA = _mm_unpacklo_epi32(a.i, _mm_setzero_si128()); // 0 a[1] 0 a[0]
+    __m128i tmpB = _mm_unpacklo_epi32(b.i, _mm_setzero_si128()); // 0 b[1] 0 b[0]
+
+    __m128i tmpC  = _mm_mul_epu32(tmpA, tmpB);                   // 0 a[1]*b[1] 0 a[0]*b[0]
+
+    return {
+               _mm_shuffle_epi32(tmpC, _MM_SHUFFLE(3, 1, 2, 0))
+    };
+}
+#endif
+
+static inline SimdDIBool gmx_simdcall
+simdCmpEqDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_cmpeq_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdCmpLtDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_cmplt_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdAndDIB(SimdDIBool a, SimdDIBool b)
+{
+    return {
+               _mm_and_si128(a.b, b.b)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdOrDIB(SimdDIBool a, SimdDIBool b)
+{
+    return {
+               _mm_or_si128(a.b, b.b)
+    };
+}
+
+static inline bool gmx_simdcall
+simdAnyTrueDIB(SimdDIBool a)
+{
+    return _mm_movemask_epi8(_mm_shuffle_epi32(a.b, _MM_SHUFFLE(1, 0, 1, 0))) != 0;
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdMaskDI(SimdDInt32 a, SimdDIBool mask)
+{
+    return {
+               _mm_and_si128(a.i, mask.b)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdMaskNotDI(SimdDInt32 a, SimdDIBool mask)
+{
+    return {
+               _mm_andnot_si128(mask.b, a.i)
+    };
+}
+
+// Override for SSE4.1 and higher
+#if GMX_SIMD_X86_SSE2
+static inline SimdDInt32 gmx_simdcall
+simdBlendDI(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
+{
+    return {
+               _mm_or_si128(_mm_andnot_si128(sel.b, a.i), _mm_and_si128(sel.b, b.i))
+    };
+}
+#endif
+
+static inline SimdDInt32 gmx_simdcall
+simdCvtD2I(SimdDouble a)
+{
+    return {
+               _mm_cvtpd_epi32(a.r)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdCvttD2I(SimdDouble a)
+{
+    return {
+               _mm_cvttpd_epi32(a.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdCvtI2D(SimdDInt32 a)
+{
+    return {
+               _mm_cvtepi32_pd(a.i)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdCvtDB2DIB(SimdDBool a)
+{
+    return {
+               _mm_shuffle_epi32(_mm_castpd_si128(a.b), _MM_SHUFFLE(2, 0, 2, 0))
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCvtDIB2DB(SimdDIBool a)
+{
+    return {
+               _mm_castsi128_pd(_mm_shuffle_epi32(a.b, _MM_SHUFFLE(1, 1, 0, 0)))
+    };
+}
+
+static inline void gmx_simdcall
+simdCvtF2DD(SimdFloat f, SimdDouble *d0, SimdDouble *d1)
+{
+    d0->r = _mm_cvtps_pd(f.r);
+    d1->r = _mm_cvtps_pd(_mm_movehl_ps(f.r, f.r));
+}
+
+static inline SimdFloat gmx_simdcall
+simdCvtDD2F(SimdDouble d0, SimdDouble d1)
+{
+    return {
+               _mm_movelh_ps(_mm_cvtpd_ps(d0.r), _mm_cvtpd_ps(d1.r))
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_SSE2_SIMD_DOUBLE_H

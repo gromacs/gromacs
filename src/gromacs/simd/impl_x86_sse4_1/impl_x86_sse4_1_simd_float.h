@@ -40,42 +40,92 @@
 
 #include <smmintrin.h>
 
-#include "impl_x86_sse4_1_common.h"
+#include "gromacs/simd/impl_x86_sse2/impl_x86_sse2_simd_float.h"
 
-/* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
- * can be implemented more efficiently in SSE4.1.
- */
-#undef  simdRoundF
-#define simdRoundF(x)       _mm_round_ps(x, _MM_FROUND_NINT)
-
-#undef  simdTruncF
-#define simdTruncF(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
-
-#undef  simdExtractFI
-#define simdExtractFI       _mm_extract_epi32
-
-#undef  simdMulFI
-#define simdMulFI           _mm_mullo_epi32
-
-#undef  simdBlendF
-#define simdBlendF         _mm_blendv_ps
-
-#undef  simdReduceF
-#define simdReduceF(a)      simdReduceF_sse4_1(a)
-
-#undef  simdBlendFI
-#define simdBlendFI        _mm_blendv_epi8
-
-/* SIMD reduction function */
-static inline float gmx_simdcall
-simdReduceF_sse4_1(__m128 a)
+namespace gmx
 {
-    float  f;
 
-    a = _mm_hadd_ps(a, a);
-    a = _mm_hadd_ps(a, a);
-    _mm_store_ss(&f, a);
-    return f;
+template<int index> gmx_simdcall
+static inline std::int32_t
+simdExtractFI(SimdFInt32 a)
+{
+    return _mm_extract_epi32(a.i, index);
 }
 
-#endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD_FLOAT_H */
+static inline SimdFloat
+simdRsqrtMaskF(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    x.r = _mm_blendv_ps(_mm_set1_ps(1.0f), x.r, m.b);
+#endif
+    return {
+               _mm_and_ps(_mm_rsqrt_ps(x.r), m.b)
+    };
+}
+
+static inline SimdFloat
+simdRcpMaskF(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    x.r = _mm_blendv_ps(_mm_set1_ps(1.0f), x.r, m.b);
+#endif
+    return {
+               _mm_and_ps(_mm_rcp_ps(x.r), m.b)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdRoundF(SimdFloat x)
+{
+    return {
+               _mm_round_ps(x.r, _MM_FROUND_NINT)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdTruncF(SimdFloat x)
+{
+    return {
+               _mm_round_ps(x.r, _MM_FROUND_TRUNC)
+    };
+}
+
+// Override for AVX-128-FMA and higher
+#if GMX_SIMD_X86_SSE4_1
+static inline SimdFloat gmx_simdcall
+simdFractionF(SimdFloat x)
+{
+    return {
+               _mm_sub_ps(x.r, _mm_round_ps(x.r, _MM_FROUND_TRUNC))
+    };
+}
+#endif
+
+static inline SimdFloat gmx_simdcall
+simdBlendF(SimdFloat a, SimdFloat b, SimdFBool sel)
+{
+    return {
+               _mm_blendv_ps(a.r, b.r, sel.b)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdMulFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm_mullo_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdBlendFI(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+{
+    return {
+               _mm_blendv_epi8(a.i, b.i, sel.b)
+    };
+}
+
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD_FLOAT_H

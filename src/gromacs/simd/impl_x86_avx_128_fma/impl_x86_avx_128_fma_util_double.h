@@ -33,49 +33,63 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
-#define GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H
 
 #include "config.h"
 
-#include <smmintrin.h>
+#include <cassert>
+#include <cstddef>
 
-#include "gromacs/simd/impl_x86_sse2/impl_x86_sse2_simd4_float.h"
+#include <immintrin.h>
+#include <x86intrin.h>
+
+#include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1_util_double.h"
 
 namespace gmx
 {
 
-static inline Simd4Float gmx_simdcall
-simd4RoundF(Simd4Float x)
+static inline void gmx_simdcall
+simdExpandScalarsToTripletsD(SimdDouble    scalar,
+                             SimdDouble *  triplets0,
+                             SimdDouble *  triplets1,
+                             SimdDouble *  triplets2)
 {
-    return {
-               _mm_round_ps(x.r, _MM_FROUND_NINT)
-    };
+    triplets0->r = _mm_permute_pd(scalar.r, _MM_SHUFFLE2(0, 0));
+    triplets1->r = _mm_permute_pd(scalar.r, _MM_SHUFFLE2(1, 0));
+    triplets2->r = _mm_permute_pd(scalar.r, _MM_SHUFFLE2(1, 1));
 }
 
-static inline Simd4Float gmx_simdcall
-simd4TruncF(Simd4Float x)
+static inline double
+simdReduceIncr4ReturnSumD(double *    m,
+                          SimdDouble  v0,
+                          SimdDouble  v1,
+                          SimdDouble  v2,
+                          SimdDouble  v3)
 {
-    return {
-               _mm_round_ps(x.r, _MM_FROUND_TRUNC)
-    };
-}
+    __m128d t1, t2, t3, t4;
 
-static inline float gmx_simdcall
-simd4DotProductF(Simd4Float a, Simd4Float b)
-{
-    __m128 res = _mm_dp_ps(a.r, b.r, 0x71);
-    return *reinterpret_cast<float *>(&res);
-}
+    t1 = _mm_unpacklo_pd(v0.r, v1.r);
+    t2 = _mm_unpackhi_pd(v0.r, v1.r);
+    t3 = _mm_unpacklo_pd(v2.r, v3.r);
+    t4 = _mm_unpackhi_pd(v2.r, v3.r);
 
-static inline Simd4Float gmx_simdcall
-simd4BlendF(Simd4Float a, Simd4Float b, Simd4FBool sel)
-{
-    return {
-               _mm_blendv_ps(a.r, b.r, sel.b)
-    };
+    t1 = _mm_add_pd(t1, t2);
+    t3 = _mm_add_pd(t3, t4);
+
+    assert(std::size_t(m) % 16 == 0);
+
+    t2 = _mm_add_pd(t1, _mm_load_pd(m));
+    t4 = _mm_add_pd(t3, _mm_load_pd(m + 2));
+    _mm_store_pd(m, t2);
+    _mm_store_pd(m + 2, t4);
+
+    t1 = _mm_add_pd(t1, t3);
+
+    t2 = _mm_add_sd(t1, _mm_permute_pd(t1, _MM_SHUFFLE2(1, 1)));
+    return *reinterpret_cast<double *>(&t2);
 }
 
 }      // namespace gmx
 
-#endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
+#endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_DOUBLE_H
