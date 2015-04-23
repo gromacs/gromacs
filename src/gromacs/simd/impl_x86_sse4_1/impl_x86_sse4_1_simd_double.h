@@ -40,40 +40,92 @@
 
 #include <smmintrin.h>
 
-#include "impl_x86_sse4_1_common.h"
+#include "gromacs/simd/impl_x86_sse2/impl_x86_sse2_simd_double.h"
 
-/* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
- * can be implemented more efficiently in SSE4.1.
- */
-#undef  simdRoundD
-#define simdRoundD(x)       _mm_round_pd(x, _MM_FROUND_NINT)
-
-#undef  simdTruncD
-#define simdTruncD(x)       _mm_round_pd(x, _MM_FROUND_TRUNC)
-
-#undef  simdExtractDI
-#define simdExtractDI       _mm_extract_epi32
-
-#undef  simdMulDI
-#define simdMulDI           _mm_mullo_epi32
-
-#undef  simdBlendD
-#define simdBlendD         _mm_blendv_pd
-
-#undef  simdReduceD
-#define simdReduceD(a)      simdReduceD_sse4_1(a)
-
-#undef  simdBlendDI
-#define simdBlendDI        _mm_blendv_epi8
-
-static inline double gmx_simdcall
-simdReduceD_sse4_1(__m128d a)
+namespace gmx
 {
-    double  f;
 
-    a = _mm_hadd_pd(a, a);
-    _mm_store_sd(&f, a);
-    return f;
+template<int index> gmx_simdcall
+static inline std::int32_t
+simdExtractDI(SimdDInt32 a)
+{
+    return _mm_extract_epi32(a.i, index);
 }
 
-#endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD_DOUBLE_H */
+static inline SimdDouble
+simdRsqrtMaskD(SimdDouble x, SimdDBool m)
+{
+#ifndef NDEBUG
+    x.r = _mm_blendv_pd(_mm_set1_pd(1.0), x.r, m.b);
+#endif
+    return {
+               _mm_and_pd(_mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x.r))), m.b)
+    };
+}
+
+static inline SimdDouble
+simdRcpMaskD(SimdDouble x, SimdDBool m)
+{
+#ifndef NDEBUG
+    x.r = _mm_blendv_pd(_mm_set1_pd(1.0), x.r, m.b);
+#endif
+    return {
+               _mm_and_pd(_mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x.r))), m.b)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdRoundD(SimdDouble x)
+{
+    return {
+               _mm_round_pd(x.r, _MM_FROUND_NINT)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdTruncD(SimdDouble x)
+{
+    return {
+               _mm_round_pd(x.r, _MM_FROUND_TRUNC)
+    };
+}
+
+// Override for AVX-128-FMA and higher
+#if GMX_SIMD_X86_SSE4_1
+static inline SimdDouble gmx_simdcall
+simdFractionD(SimdDouble x)
+{
+    return {
+               _mm_sub_pd(x.r, _mm_round_pd(x.r, _MM_FROUND_TRUNC))
+    };
+}
+#endif
+
+static inline SimdDouble gmx_simdcall
+simdBlendD(SimdDouble a, SimdDouble b, SimdDBool sel)
+{
+    return {
+               _mm_blendv_pd(a.r, b.r, sel.b)
+    };
+}
+
+
+static inline SimdDInt32 gmx_simdcall
+simdMulDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_mullo_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdBlendDI(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
+{
+    return {
+               _mm_blendv_epi8(a.i, b.i, sel.b)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD_DOUBLE_H

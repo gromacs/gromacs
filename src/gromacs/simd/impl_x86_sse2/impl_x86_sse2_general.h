@@ -32,50 +32,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_SIMD_IMPL_X86_SSE2_GENERAL_H
+#define GMX_SIMD_IMPL_X86_SSE2_GENERAL_H
 
-#ifndef GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
-#define GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
+#include <emmintrin.h>
 
-#include "config.h"
-
-#include <smmintrin.h>
-
-#include "gromacs/simd/impl_x86_sse2/impl_x86_sse2_simd4_float.h"
+#include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {
 
-static inline Simd4Float gmx_simdcall
-simd4RoundF(Simd4Float x)
+static inline void
+simdPrefetch(void * m)
 {
-    return {
-               _mm_round_ps(x.r, _MM_FROUND_NINT)
-    };
-}
-
-static inline Simd4Float gmx_simdcall
-simd4TruncF(Simd4Float x)
-{
-    return {
-               _mm_round_ps(x.r, _MM_FROUND_TRUNC)
-    };
-}
-
-static inline float gmx_simdcall
-simd4DotProductF(Simd4Float a, Simd4Float b)
-{
-    __m128 res = _mm_dp_ps(a.r, b.r, 0x71);
-    return *reinterpret_cast<float *>(&res);
-}
-
-static inline Simd4Float gmx_simdcall
-simd4BlendF(Simd4Float a, Simd4Float b, Simd4FBool sel)
-{
-    return {
-               _mm_blendv_ps(a.r, b.r, sel.b)
-    };
+    _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
 }
 
 }      // namespace gmx
 
-#endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
+#endif // GMX_SIMD_IMPL_X86_SSE2_GENERAL_H

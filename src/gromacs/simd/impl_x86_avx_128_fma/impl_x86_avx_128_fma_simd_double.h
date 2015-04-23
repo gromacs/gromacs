@@ -36,20 +36,63 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H
 
+#include "config.h"
+
 #include <immintrin.h>
 #include <x86intrin.h>
 
-#include "impl_x86_avx_128_fma_common.h"
+#include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1_simd_double.h"
 
-#undef  simdFmaddD
-#define simdFmaddD                 _mm_macc_pd
-#undef  simdFmsubD
-#define simdFmsubD                 _mm_msub_pd
-#undef  simdFnmaddD
-#define simdFnmaddD                _mm_nmacc_pd
-#undef  simdFnmsubD
-#define simdFnmsubD                _mm_nmsub_pd
-#undef  simdFractionD
-#define simdFractionD              _mm_frcz_pd
+namespace gmx
+{
+
+static inline double gmx_simdcall
+simdReduceD(SimdDouble a)
+{
+    __m128d b = _mm_add_sd(a.r, _mm_permute_pd(a.r, _MM_SHUFFLE2(1, 1)));
+    return *reinterpret_cast<double *>(&b);
+}
+
+static inline SimdDouble gmx_simdcall
+simdFmaddD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm_macc_pd(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFmsubD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm_msub_pd(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFnmaddD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm_nmacc_pd(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFnmsubD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm_nmsub_pd(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFractionD(SimdDouble x)
+{
+    return {
+               _mm_frcz_pd(x.r)
+    };
+}
+
+}      // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H */

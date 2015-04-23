@@ -52,47 +52,53 @@ static const int filter_stride = 1;
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
 static gmx_inline void gmx_simdcall
-gmx_shuffle_4_ps_fil01_to_2_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3,
-                               __m128 *out0, __m128 *out1)
+gmx_shuffle_4_ps_fil01_to_2_ps(SimdFloat in0, SimdFloat in1, SimdFloat in2, SimdFloat in3,
+                               SimdFloat *out0, SimdFloat *out1)
 {
-    __m128 _c01, _c23;
+    SimdFloat _c01, _c23;
 
-    _c01  = _mm_movelh_ps(in0, in1);
-    _c23  = _mm_movelh_ps(in2, in3);
-    *out0 = _mm_shuffle_ps(_c01, _c23, _MM_SHUFFLE(2, 0, 2, 0));
-    *out1 = _mm_shuffle_ps(_c01, _c23, _MM_SHUFFLE(3, 1, 3, 1));
+    _c01.r  = _mm_movelh_ps(in0.r, in1.r);
+    _c23.r  = _mm_movelh_ps(in2.r, in3.r);
+    out0->r = _mm_shuffle_ps(_c01.r, _c23.r, _MM_SHUFFLE(2, 0, 2, 0));
+    out1->r = _mm_shuffle_ps(_c01.r, _c23.r, _MM_SHUFFLE(3, 1, 3, 1));
 }
 
 /* Collect element 2 of the 4 inputs to out */
-static gmx_inline __m128 gmx_simdcall
-gmx_shuffle_4_ps_fil2_to_1_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3)
+static gmx_inline SimdFloat gmx_simdcall
+gmx_shuffle_4_ps_fil2_to_1_ps(SimdFloat in0, SimdFloat in1, SimdFloat in2, SimdFloat in3)
 {
-    __m128 _c01, _c23;
+    SimdFloat _c01, _c23;
 
-    _c01 = _mm_shuffle_ps(in0, in1, _MM_SHUFFLE(3, 2, 3, 2));
-    _c23 = _mm_shuffle_ps(in2, in3, _MM_SHUFFLE(3, 2, 3, 2));
+    _c01.r = _mm_shuffle_ps(in0.r, in1.r, _MM_SHUFFLE(3, 2, 3, 2));
+    _c23.r = _mm_shuffle_ps(in2.r, in3.r, _MM_SHUFFLE(3, 2, 3, 2));
 
-    return _mm_shuffle_ps(_c01, _c23, _MM_SHUFFLE(2, 0, 2, 0));
+    return {
+               _mm_shuffle_ps(_c01.r, _c23.r, _MM_SHUFFLE(2, 0, 2, 0))
+    };
 }
 
 /* Sum the elements within each input register and store the sums in out */
-static gmx_inline __m128 gmx_simdcall
-gmx_mm_transpose_sum4_pr(__m128 in0, __m128 in1,
-                         __m128 in2, __m128 in3)
+static gmx_inline Simd4Float gmx_simdcall
+gmx_mm_transpose_sum4_pr(SimdFloat in0, SimdFloat in1,
+                         SimdFloat in2, SimdFloat in3)
 {
-    _MM_TRANSPOSE4_PS(in0, in1, in2, in3);
-    in0  = _mm_add_ps(in0, in1);
-    in2  = _mm_add_ps(in2, in3);
+    _MM_TRANSPOSE4_PS(in0.r, in1.r, in2.r, in3.r);
+    in0  = simdAdd(in0, in1);
+    in2  = simdAdd(in2, in3);
 
-    return _mm_add_ps(in0, in2);
+    SimdFloat tmp = simdAdd(in0, in2);
+
+    return {
+               tmp.r
+    };                // Return as Simd4Float
 }
 
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
-                    __m128 *c6_S, __m128 *c12_S)
+                    SimdFloat *c6_S, SimdFloat *c12_S)
 {
-    __m128 clj_S[UNROLLJ];
-    int    p;
+    SimdFloat clj_S[UNROLLJ];
+    int       p;
 
     for (p = 0; p < UNROLLJ; p++)
     {
@@ -117,22 +123,22 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 
 static gmx_inline void gmx_simdcall
 load_table_f(const real *tab_coul_FDV0, SimdInt32 ti_S, int gmx_unused *ti,
-             __m128 *ctab0_S, __m128 *ctab1_S)
+             SimdFloat *ctab0_S, SimdFloat *ctab1_S)
 {
-    int    idx[4];
-    __m128 ctab_S[4];
+    int       idx[4];
+    SimdFloat ctab_S[4];
 
     /* Table has 4 entries, left-shift index by 2 */
-    ti_S = _mm_slli_epi32(ti_S, 2);
+    ti_S      = simdSlliI(ti_S, 2);
     /* Without SSE4.1 the extract macro needs an immediate: unroll */
     idx[0]    = simdExtractI<0>(ti_S);
-    ctab_S[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);
+    ctab_S[0] = simdLoad(tab_coul_FDV0+idx[0]);
     idx[1]    = simdExtractI<1>(ti_S);
-    ctab_S[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);
+    ctab_S[1] = simdLoad(tab_coul_FDV0+idx[1]);
     idx[2]    = simdExtractI<2>(ti_S);
-    ctab_S[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);
+    ctab_S[2] = simdLoad(tab_coul_FDV0+idx[2]);
     idx[3]    = simdExtractI<3>(ti_S);
-    ctab_S[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);
+    ctab_S[3] = simdLoad(tab_coul_FDV0+idx[3]);
 
     /* Shuffle the force table entries to a convenient order */
     gmx_shuffle_4_ps_fil01_to_2_ps(ctab_S[0], ctab_S[1], ctab_S[2], ctab_S[3], ctab0_S, ctab1_S);
@@ -140,22 +146,22 @@ load_table_f(const real *tab_coul_FDV0, SimdInt32 ti_S, int gmx_unused *ti,
 
 static gmx_inline void gmx_simdcall
 load_table_f_v(const real *tab_coul_FDV0, SimdInt32 ti_S, int gmx_unused *ti,
-               __m128 *ctab0_S, __m128 *ctab1_S, __m128 *ctabv_S)
+               SimdFloat *ctab0_S, SimdFloat *ctab1_S, SimdFloat *ctabv_S)
 {
-    int    idx[4];
-    __m128 ctab_S[4];
+    int       idx[4];
+    SimdFloat ctab_S[4];
 
     /* Table has 4 entries, left-shift index by 2 */
-    ti_S = _mm_slli_epi32(ti_S, 2);
+    ti_S = simdSlliI(ti_S, 2);
     /* Without SSE4.1 the extract macro needs an immediate: unroll */
     idx[0]    = simdExtractI<0>(ti_S);
-    ctab_S[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);
+    ctab_S[0] = simdLoad(tab_coul_FDV0+idx[0]);
     idx[1]    = simdExtractI<1>(ti_S);
-    ctab_S[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);
+    ctab_S[1] = simdLoad(tab_coul_FDV0+idx[1]);
     idx[2]    = simdExtractI<2>(ti_S);
-    ctab_S[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);
+    ctab_S[2] = simdLoad(tab_coul_FDV0+idx[2]);
     idx[3]    = simdExtractI<3>(ti_S);
-    ctab_S[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);
+    ctab_S[3] = simdLoad(tab_coul_FDV0+idx[3]);
 
     /* Shuffle the force table entries to a convenient order */
     gmx_shuffle_4_ps_fil01_to_2_ps(ctab_S[0], ctab_S[1], ctab_S[2], ctab_S[3], ctab0_S, ctab1_S);
@@ -166,7 +172,9 @@ load_table_f_v(const real *tab_coul_FDV0, SimdInt32 ti_S, int gmx_unused *ti,
 static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load1_exclfilter(int e)
 {
-    return _mm_set1_epi32(e);
+    return {
+               _mm_set1_epi32(e)
+    };
 }
 
 static gmx_inline gmx_exclfilter gmx_simdcall
@@ -178,7 +186,9 @@ gmx_load_exclusion_filter(const unsigned *i)
 static gmx_inline SimdBool gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
-    return _mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
+    return {
+               _mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0.i, m1.i), _mm_setzero_si128()))
+    };
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s128s_h_ */
