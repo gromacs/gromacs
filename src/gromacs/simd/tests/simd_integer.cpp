@@ -249,10 +249,10 @@ TEST_F(SimdIntegerTest, anyTrue)
      * since the SIMD width could be 1 as a special case.
      */
     eq = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));
-    EXPECT_NE(0, anyTrue(eq));
+    EXPECT_NE(false, anyTrue(eq));
 
     eq = (iSimd_1_2_3 == iSimd_4_5_6);
-    EXPECT_EQ(0, anyTrue(eq));
+    EXPECT_EQ(false, anyTrue(eq));
 }
 
 TEST_F(SimdIntegerTest, blend)

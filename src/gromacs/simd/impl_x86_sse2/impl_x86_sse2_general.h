@@ -32,59 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_SIMD_IMPL_X86_SSE2_GENERAL_H
+#define GMX_SIMD_IMPL_X86_SSE2_GENERAL_H
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H
-
-#include "config.h"
-
-#include <immintrin.h>
-#include <x86intrin.h>
-
-#include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1_simd_double.h"
+#include <emmintrin.h>
 
 namespace gmx
 {
 
-static inline double gmx_simdcall
-reduce(SimdDouble a)
+static inline void
+simdPrefetch(void * m)
 {
-    __m128d b = _mm_add_sd(a.simdInternal_, _mm_permute_pd(a.simdInternal_, _MM_SHUFFLE2(1, 1)));
-    return *reinterpret_cast<double *>(&b);
-}
-
-static inline SimdDouble gmx_simdcall
-fma(SimdDouble a, SimdDouble b, SimdDouble c)
-{
-    return {
-               _mm_macc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
-
-static inline SimdDouble gmx_simdcall
-fms(SimdDouble a, SimdDouble b, SimdDouble c)
-{
-    return {
-               _mm_msub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
-
-static inline SimdDouble gmx_simdcall
-fnma(SimdDouble a, SimdDouble b, SimdDouble c)
-{
-    return {
-               _mm_nmacc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
-
-static inline SimdDouble gmx_simdcall
-fnms(SimdDouble a, SimdDouble b, SimdDouble c)
-{
-    return {
-               _mm_nmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
 }
 
 }      // namespace gmx
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H */
+#endif // GMX_SIMD_IMPL_X86_SSE2_GENERAL_H
