@@ -41,6 +41,8 @@
 
 #include "impl_x86_avx_128_fma_common.h"
 
+
+
 #undef  gmx_simd_fmadd_f
 #define gmx_simd_fmadd_f                 _mm_macc_ps
 #undef  gmx_simd_fmsub_f

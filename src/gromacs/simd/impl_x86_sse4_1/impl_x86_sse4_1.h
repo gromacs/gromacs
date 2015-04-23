@@ -36,9 +36,12 @@
 #ifndef GMX_SIMD_IMPL_X86_SSE4_1_H
 #define GMX_SIMD_IMPL_X86_SSE4_1_H
 
+/* No improved prefetch compared to SSE2 */
+/* SSE4.1 cannot do double precision SIMD4 */
 #include "impl_x86_sse4_1_simd4_float.h"
 #include "impl_x86_sse4_1_simd_double.h"
 #include "impl_x86_sse4_1_simd_float.h"
-/* SSE4.1 cannot do double precision SIMD4 */
+#include "impl_x86_sse4_1_util_double.h"
+#include "impl_x86_sse4_1_util_float.h"
 
 #endif /* GMX_SIMD_IMPL_X86_SSE4_1_H */

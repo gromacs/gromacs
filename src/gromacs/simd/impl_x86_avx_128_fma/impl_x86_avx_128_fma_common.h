@@ -36,6 +36,8 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_COMMON_H
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_COMMON_H
 
+#include "config.h"
+
 /* Please see documentation in gromacs/simd/simd.h for details. */
 
 /* Inherit parts of AVX_128_FMA from SSE4.1 */
@@ -49,4 +51,13 @@
 #undef  GMX_SIMD4_HAVE_DOUBLE
 #define GMX_SIMD4_HAVE_DOUBLE      1 /* We can use 256-bit operations for this */
 
-#endif                               /* GMX_SIMD_IMPL_X86_AVX_128_FMA_COMMON_H */
+/* Work around gcc bug with wrong type for mask formal parameter to maskload/maskstore */
+#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), _mm_castsi128_ps(mask))
+#    define gmx_mm_maskstore_ps(mem, mask, x)   _mm_maskstore_ps((mem), _mm_castsi128_ps(mask), (x))
+#else
+#    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), (mask))
+#    define gmx_mm_maskstore_ps(mem, mask, x)   _mm_maskstore_ps((mem), (mask), (x))
+#endif
+
+#endif  /* GMX_SIMD_IMPL_X86_AVX_128_FMA_COMMON_H */

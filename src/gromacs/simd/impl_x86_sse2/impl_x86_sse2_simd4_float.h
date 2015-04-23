@@ -71,6 +71,7 @@
 #define gmx_simd4_round_f                gmx_simd_round_f
 #define gmx_simd4_trunc_f                gmx_simd_trunc_f
 #define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_sse2
+#define gmx_simd4_transpose_f            gmx_simd4_transpose_f_sse2
 #define gmx_simd4_fbool_t                gmx_simd_fbool_t
 #define gmx_simd4_cmpeq_f                gmx_simd_cmpeq_f
 #define gmx_simd4_cmplt_f                gmx_simd_cmplt_f
@@ -95,5 +96,14 @@ gmx_simd4_dotproduct3_f_sse2(__m128 a, __m128 b)
     _mm_store_ss(&f, c);
     return f;
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_f_sse2(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                           gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    _MM_TRANSPOSE4_PS(v0, v1, v2, v3);
+}
+#endif
 
 #endif /* GMX_SIMD_IMPL_X86_SSE2_SIMD4_FLOAT_H */

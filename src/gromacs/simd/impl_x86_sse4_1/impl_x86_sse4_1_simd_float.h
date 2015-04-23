@@ -66,15 +66,26 @@
 #undef  gmx_simd_blendv_fi
 #define gmx_simd_blendv_fi        _mm_blendv_epi8
 
+/* We only need to override the debugging versions of rsqrt/rcp. Sorry for the double-negative check. */
+#ifndef NDEBUG
+#    undef  gmx_simd_rcp_mask_f
+#    define gmx_simd_rcp_mask_f(a, m)    _mm_and_ps(_mm_rcp_ps(_mm_blendv_ps(_mm_set1_ps(1.0f), a, m)), m)
+#    undef  gmx_simd_rsqrt_mask_f
+#    define gmx_simd_rsqrt_mask_f(a, m)  _mm_and_ps(_mm_rsqrt_ps(_mm_blendv_ps(_mm_set1_ps(1.0f), a, m)), m)
+#endif
+
 /* SIMD reduction function */
 static gmx_inline float gmx_simdcall
 gmx_simd_reduce_f_sse4_1(__m128 a)
 {
     float  f;
-
-    a = _mm_hadd_ps(a, a);
-    a = _mm_hadd_ps(a, a);
-    _mm_store_ss(&f, a);
+    /* Shuffle has latency 1/throughput 1, followed by add with latency 3, t-put 1.
+     * This is likely faster than using _mm_hadd_ps, which has latency 5, t-put 2.
+     */
+    a = _mm_add_ps(a, _mm_shuffle_ps(a, a, _MM_SHUFFLE(1, 0, 3, 2)));
+    a = _mm_add_ss(a, _mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 3, 2, 1)));
+    /* This macro usually provides slightly better performance than _mm_cvtss_f32(). */
+    _MM_EXTRACT_FLOAT(f, a, 0);
     return f;
 }
 

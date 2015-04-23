@@ -78,6 +78,7 @@
 #define gmx_simd4_round_d(x)             _mm256_round_pd(x, _MM_FROUND_NINT)
 #define gmx_simd4_trunc_d(x)             _mm256_round_pd(x, _MM_FROUND_TRUNC)
 #define gmx_simd4_dotproduct3_d          gmx_simd4_dotproduct3_d_avx_128_fma
+#define gmx_simd4_transpose_d            gmx_simd4_transpose_d_avx_128_fma
 /* SIMD4 booleans corresponding to double */
 #define gmx_simd4_dbool_t                __m256d
 #define gmx_simd4_cmpeq_d(a, b)           _mm256_cmp_pd(a, b, _CMP_EQ_OQ)
@@ -99,6 +100,7 @@ gmx_simd4_reduce_d_avx_128_fma(__m256d a)
 {
     double  f;
     __m128d a0, a1;
+    /* test with shuffle & add as an alternative to hadd later */
     a  = _mm256_hadd_pd(a, a);
     a0 = _mm256_castpd256_pd128(a);
     a1 = _mm256_extractf128_pd(a, 0x1);
@@ -121,5 +123,22 @@ gmx_simd4_dotproduct3_d_avx_128_fma(__m256d a, __m256d b)
     _mm_store_sd(&d, tmp1);
     return d;
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_d_avx_128_fma(gmx_simd4_double_t &v0, gmx_simd4_double_t &v1,
+                                  gmx_simd4_double_t &v2, gmx_simd4_double_t &v3)
+{
+    __m256d t1, t2, t3, t4;
+    t1  = _mm256_unpacklo_pd(v0, v1);
+    t2  = _mm256_unpackhi_pd(v0, v1);
+    t3  = _mm256_unpacklo_pd(v2, v3);
+    t4  = _mm256_unpackhi_pd(v2, v3);
+    v0  = _mm256_permute2f128_pd(t1, t3, 0x20);
+    v1  = _mm256_permute2f128_pd(t2, t4, 0x20);
+    v2  = _mm256_permute2f128_pd(t1, t3, 0x31);
+    v3  = _mm256_permute2f128_pd(t2, t4, 0x31);
+}
+#endif /* __cplusplus */
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD4_DOUBLE_H */

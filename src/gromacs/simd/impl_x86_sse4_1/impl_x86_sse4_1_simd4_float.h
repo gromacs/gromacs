@@ -45,6 +45,7 @@
 #undef  gmx_simd4_dotproduct3_f
 #define gmx_simd4_dotproduct3_f   gmx_simd4_dotproduct3_f_sse4_1
 
+
 /* SIMD4 Dotproduct helper function */
 static gmx_inline float gmx_simdcall
 gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
@@ -53,5 +54,6 @@ gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
     _MM_EXTRACT_FLOAT(f, _mm_dp_ps(a, b, 0x71), 0);
     return f;
 }
+
 
 #endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H */

@@ -36,9 +36,12 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
 
+/* There are no improvements to prefetcing over SSE4.1 */
 #include "impl_x86_avx_128_fma_simd4_double.h"
+/* There are no improvements to SIMD4 float over SSE4.1 */
 #include "impl_x86_avx_128_fma_simd_double.h"
 #include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+#include "impl_x86_avx_128_fma_util_double.h"
+#include "impl_x86_avx_128_fma_util_float.h"
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */

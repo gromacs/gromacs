@@ -39,6 +39,7 @@
 /* Capability definitions for SSE2.
  * Please see documentation in gromacs/simd/simd.h for define documentation.
  */
+#define GMX_SIMD_V2                         1
 #define GMX_SIMD_HAVE_FLOAT                 1
 #define GMX_SIMD_HAVE_DOUBLE                1
 #define GMX_SIMD_HAVE_HARDWARE              1
@@ -55,6 +56,11 @@
 #define GMX_SIMD_HAVE_DINT32_EXTRACT        1  /* No SSE2 instruction, but use shifts */
 #define GMX_SIMD_HAVE_DINT32_LOGICAL        1
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS    1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT   1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE  1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT      0 /* No need for half-simd, width is 4 */
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE     0 /* No need for half-simd, width is 2 */
+
 #define GMX_SIMD4_HAVE_FLOAT                1
 #define GMX_SIMD4_HAVE_DOUBLE               0
 
