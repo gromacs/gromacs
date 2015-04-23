@@ -265,10 +265,10 @@ TEST_F(Simd4FloatingpointTest, anyTrue)
      * since that part of the data will not be used if simd width is 1.
      */
     eq = (rSimd4_5_7_9 == setSimd4RealFrom3R(5, 0, 0));
-    EXPECT_NE(0, anyTrue(eq));
+    EXPECT_NE(false, anyTrue(eq));
 
     eq = (rSimd4_1_2_3 == rSimd4_4_5_6);
-    EXPECT_EQ(0, anyTrue(eq));
+    EXPECT_EQ(false, anyTrue(eq));
 }
 
 TEST_F(Simd4FloatingpointTest, blend)
