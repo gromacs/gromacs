@@ -228,7 +228,8 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadUTranspose3)
 TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
 {
     SimdReal                          v0, v1, v2;
-    real                              refmem[12 * GMX_SIMD_REAL_WIDTH]; // Same amount (4*3) as mem0_ in class
+    const int                         memSize                = 12 * GMX_SIMD_REAL_WIDTH;
+    real                              refmem[memSize];
     const int                         nalign                 = 2;
     int                               alignmentList[nalign]  = { 3, 4 };
     int                               i, j, align;
@@ -239,7 +240,7 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
         align = alignmentList[i];
 
         // Set test and reference memory to background value
-        for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
+        for (j = 0; j < memSize; j++)
         {
             mem0_[j] = refmem[j] = 1000.0 + j;
         }
@@ -269,7 +270,7 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
             FAIL();
         }
 
-        for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
+        for (j = 0; j < memSize; j++)
         {
             EXPECT_REAL_EQ_TOL(refmem[j], mem0_[j], tolerance);
         }
@@ -279,7 +280,8 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
 TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3)
 {
     SimdReal                          v0, v1, v2;
-    real                              refmem[12 * GMX_SIMD_REAL_WIDTH]; // Same amount (4*3) as mem0_ in class
+    const int                         memSize                = 12 * GMX_SIMD_REAL_WIDTH;
+    real                              refmem[memSize];
     const int                         nalign                 = 2;
     int                               alignmentList[nalign]  = { 3, 4 };
     int                               i, j, align;
@@ -290,7 +292,7 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3)
         align = alignmentList[i];
 
         // Set test and reference memory to background value
-        for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
+        for (j = 0; j < memSize; j++)
         {
             mem0_[j] = refmem[j] = 1000.0 + j;
         }
@@ -320,17 +322,57 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3)
             FAIL();
         }
 
-        for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
+        for (j = 0; j < memSize; j++)
         {
             EXPECT_REAL_EQ_TOL(refmem[j], mem0_[j], tolerance);
         }
     }
 }
 
+TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3Overlapping)
+{
+    SimdReal                          v0, v1, v2;
+    const int                         memSize = 12 * GMX_SIMD_REAL_WIDTH;
+    real                              refmem[memSize];
+    FloatingPointTolerance            tolerance(defaultRealTolerance());
+
+    // Alter offset_ to make all entries point to the same (first) value, so all entries will overlap
+    for (int j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
+    {
+        offset_[j] = 0;
+    }
+
+    // Set test and reference memory to background value
+    for (int j = 0; j < memSize; j++)
+    {
+        mem0_[j] = refmem[j] = 1000.0 + j;
+    }
+
+    for (int j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
+    {
+        // Add values to _reference_ memory (we will then test with mem0_, and compare)
+        refmem[3 * offset_[j]    ] += val0_[j];
+        refmem[3 * offset_[j] + 1] += val1_[j];
+        refmem[3 * offset_[j] + 2] += val2_[j];
+    }
+
+    v0 = load(val0_);
+    v1 = load(val1_);
+    v2 = load(val2_);
+
+    transposeScatterIncrU<3>(mem0_, offset_, v0, v1, v2);
+
+    for (int j = 0; j < memSize; j++)
+    {
+        EXPECT_REAL_EQ_TOL(refmem[j], mem0_[j], tolerance);
+    }
+}
+
 TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3)
 {
     SimdReal                          v0, v1, v2;
-    real                              refmem[12*GMX_SIMD_REAL_WIDTH]; // Same amount (4*3) as mem0_ in class
+    const int                         memSize                = 12 * GMX_SIMD_REAL_WIDTH;
+    real                              refmem[memSize];
     const int                         nalign                 = 2;
     int                               alignmentList[nalign]  = { 3, 4 };
     int                               i, j, align;
@@ -341,7 +383,7 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3)
         align = alignmentList[i];
 
         // Set test and reference memory to background value
-        for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
+        for (j = 0; j < memSize; j++)
         {
             mem0_[j] = refmem[j] = 1000.0 + j;
         }
@@ -371,10 +413,49 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3)
             FAIL();
         }
 
-        for (j = 0; j < 12*GMX_SIMD_REAL_WIDTH; j++)
+        for (j = 0; j < memSize; j++)
         {
             EXPECT_REAL_EQ_TOL(refmem[j], mem0_[j], tolerance);
         }
+    }
+}
+
+TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
+{
+    SimdReal                          v0, v1, v2;
+    const int                         memSize = 12 * GMX_SIMD_REAL_WIDTH;
+    real                              refmem[memSize];
+    FloatingPointTolerance            tolerance(defaultRealTolerance());
+
+    // Alter offset_ to make all entries point to the same (first) value, so all entries will overlap
+    for (int j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
+    {
+        offset_[j] = 0;
+    }
+
+    // Set test and reference memory to background value
+    for (int j = 0; j < memSize; j++)
+    {
+        mem0_[j] = refmem[j] = 1000.0 + j;
+    }
+
+    for (int j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
+    {
+        // Subtract values from _reference_ memory (we will then test with mem0_, and compare)
+        refmem[3 * offset_[j]    ] -= val0_[j];
+        refmem[3 * offset_[j] + 1] -= val1_[j];
+        refmem[3 * offset_[j] + 2] -= val2_[j];
+    }
+
+    v0 = load(val0_);
+    v1 = load(val1_);
+    v2 = load(val2_);
+
+    transposeScatterDecrU<3>(mem0_, offset_, v0, v1, v2);
+
+    for (int j = 0; j < memSize; j++)
+    {
+        EXPECT_REAL_EQ_TOL(refmem[j], mem0_[j], tolerance);
     }
 }
 

@@ -95,9 +95,15 @@
  *  \{
  */
 
-#if (GMX_SIMD_REFERENCE || defined DOXYGEN)
-// Plain C SIMD reference implementation, also serves as documentation.
-#    include "impl_reference/impl_reference.h"
+// Many SIMD architectures other than reference are temporarily disabled in this commit
+#if GMX_SIMD_X86_AVX_128_FMA
+#    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
+#elif GMX_SIMD_X86_SSE4_1
+#    include "impl_x86_sse4_1/impl_x86_sse4_1.h"
+#elif GMX_SIMD_X86_SSE2
+#    include "impl_x86_sse2/impl_x86_sse2.h"
+#elif (GMX_SIMD_REFERENCE || defined DOXYGEN)
+#    include "impl_reference/impl_reference.h" // Includes doxygen documentation
 #else
 #    include "impl_none/impl_none.h"
 #endif
@@ -365,7 +371,7 @@ class SimdLoadIProxyInternal
         //! \brief Private constructor can only be called from load()
         SimdLoadIProxyInternal(const std::int32_t *m) : m_(m) {}
 
-        friend const SimdLoadIProxyInternal
+        friend const SimdLoadIProxyInternal gmx_simdcall
         load(const std::int32_t *m);
 
         const std::int32_t * const m_; //!< The pointer used to load memory
@@ -413,7 +419,7 @@ class SimdLoadUIProxyInternal
         //! \brief Private constructor can only be called from loadU()
         SimdLoadUIProxyInternal(const std::int32_t *m) : m_(m) {}
 
-        friend const SimdLoadUIProxyInternal
+        friend const SimdLoadUIProxyInternal gmx_simdcall
         loadU(const std::int32_t *m);
 
         const std::int32_t * const m_; //!< The pointer used to load memory
@@ -476,7 +482,7 @@ class SimdSetZeroProxyInternal
         //! \brief Private constructor can only be called from setZero()
         SimdSetZeroProxyInternal() {}
 
-        friend const SimdSetZeroProxyInternal
+        friend const SimdSetZeroProxyInternal gmx_simdcall
         setZero();
 
         GMX_DISALLOW_COPY_AND_ASSIGN(SimdSetZeroProxyInternal);
