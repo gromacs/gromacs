@@ -57,6 +57,19 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      const t_commrec     *cr,
                      FILE                *fplog);
 
+/* Check if the number of OpenMP threads is within reasonable range
+ * considering the hardware used. This is a crude check, but mainly
+ * intended to catch cases where the user starts 1 MPI rank per hardware
+ * thread of 1 rank per physical note.
+ * With a sub-optimal setup a note is printed to fplog and stderr when
+ * bNtOptSet==TRUE; with bNtOptSet==FALSE a fatal error is issued.
+ */
+void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
+                                        const gmx_hw_opt_t  *hw_opt,
+                                        gmx_bool             bNTOptSet,
+                                        t_commrec           *cr,
+                                        FILE                *fplog);
+
 /* Checks we can do when we don't (yet) know the cut-off scheme */
 void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
                                gmx_bool      bIsSimMaster);
