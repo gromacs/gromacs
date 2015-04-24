@@ -571,6 +571,7 @@ int gmx_mdrun(int argc, char *argv[])
     Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0);
     Flags = Flags | (sim_part > 1    ? MD_STARTFROMCPT : 0);
     Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
+    Flags = Flags | (opt2parg_bSet("-ntomp", asize(pa), pa) ? MD_NTOMPSET : 0);
     Flags = Flags | (bIMDwait      ? MD_IMDWAIT      : 0);
     Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
     Flags = Flags | (bIMDpull      ? MD_IMDPULL      : 0);
