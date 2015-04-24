@@ -49,6 +49,7 @@
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/fatalerror.h"
 
 
@@ -58,13 +59,94 @@
  */
 static const int min_atoms_per_mpi_thread =  90;
 static const int min_atoms_per_gpu        = 900;
+#endif /* GMX_THREAD_MPI */
+
+/* TODO choose nthreads_omp based on hardware topology
+   when we have a hardware topology detection library */
+/* First we consider the case of no MPI (1 MPI rank).
+ * In general, when running up to 4 threads, OpenMP should be faster.
+ * Note: on AMD Bulldozer we should avoid running OpenMP over two dies.
+ * On Intel>=Nehalem running OpenMP on a single CPU is always faster,
+ * even on two CPUs it's usually faster (but with many OpenMP threads
+ * it could be faster not to use HT, currently we always use HT).
+ * On Nehalem/Westmere we want to avoid running 16 threads over
+ * two CPUs with HT, so we need a limit<16; thus we use 12.
+ * A reasonable limit for Intel Sandy and Ivy bridge,
+ * not knowing the topology, is 16 threads.
+ * Below we check for Intel and AVX, which for now includes
+ * Sandy/Ivy Bridge, Has/Broadwell. By checking for AVX instead of
+ * model numbers we ensure also future Intel CPUs are covered.
+ */
+const int nthreads_omp_always_faster_default   =  6;
+const int nthreads_omp_always_faster_Nehalem   = 12;
+const int nthreads_omp_always_faster_Intel_AVX = 16;
+/* For CPU only runs the fastest options are usually MPI or OpenMP only.
+ * With one GPU, using MPI only is almost never optimal, so we need to
+ * compare running pure OpenMP with combined MPI+OpenMP. This means higher
+ * OpenMP threads counts can still be ok. Multiplying the numbers above
+ * by a factor of 2 seems to be a good estimate.
+ */
+const int nthreads_omp_always_faster_gpu_fac   =  2;
+
+/* This is the case with MPI (2 or more MPI PP ranks).
+ * By default we will terminate with a fatal error when more than 8
+ * OpenMP thread are (indirectly) requested, since using less threads
+ * nearly always results in better performance.
+ * With thread-mpi and multiple GPUs or one GPU and too many threads
+ * we first try 6 OpenMP threads and then less until the number of MPI ranks
+ * is divisible by the number of GPUs.
+ */
+#if defined GMX_OPENMP && defined GMX_MPI
+const int nthreads_omp_mpi_ok_max              =  8;
+const int nthreads_omp_mpi_ok_min_cpu          =  1;
+#endif
+const int nthreads_omp_mpi_ok_min_gpu          =  2;
+const int nthreads_omp_mpi_target_max          =  6;
+
+
+#ifdef GMX_USE_OPENCL
+static const bool bGpuSharingSupported = false;
+#else
+static const bool bGpuSharingSupported = true;
+#endif
+
+
+static int nthreads_omp_always_faster(gmx_cpuid_t cpuid_info, gmx_bool bUseGPU)
+{
+    int nth;
+
+    if (gmx_cpuid_vendor(cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
+        gmx_cpuid_feature(cpuid_info, GMX_CPUID_FEATURE_X86_AVX))
+    {
+        nth = nthreads_omp_always_faster_Intel_AVX;
+    }
+    else if (gmx_cpuid_is_intel_nehalem(cpuid_info))
+    {
+        nth = nthreads_omp_always_faster_Nehalem;
+    }
+    else
+    {
+        nth = nthreads_omp_always_faster_default;
+    }
+
+    if (bUseGPU)
+    {
+        nth *= nthreads_omp_always_faster_gpu_fac;
+    }
+
+    nth = std::min(nth, GMX_OPENMP_MAX_THREADS);
+
+    return nth;
+}
 
 static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
                                         int                  nthreads_tot,
                                         int                  ngpu)
 {
-    int nthreads_tmpi;
+    int nrank;
+
+    assert(nthreads_tot > 0);
 
     /* There are no separate PME nodes here, as we ensured in
      * check_and_update_hw_opt that nthreads_tmpi>0 with PME nodes
@@ -73,62 +155,63 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
      */
     if (ngpu > 0)
     {
-        nthreads_tmpi = ngpu;
-        if (nthreads_tot > 0 && nthreads_tot < nthreads_tmpi)
+        nrank = ngpu;
+        if (nthreads_tot < nrank)
         {
-            nthreads_tmpi = nthreads_tot;
+            /* #thread < #gpu is very unlikely, but if so: waste gpu(s) */
+            nrank = nthreads_tot;
+        }
+        else if (bGpuSharingSupported &&
+                 (nthreads_tot > nthreads_omp_always_faster(hwinfo->cpuid_info,
+                                                            ngpu > 0) ||
+                  (ngpu > 1 && nthreads_tot/ngpu > nthreads_omp_mpi_target_max)))
+        {
+            /* The high OpenMP thread count will likely result in sub-optimal
+             * performance. Increase the rank count to reduce the thread count
+             * per rank. This will lead to GPU sharing by MPI ranks/threads.
+             */
+            int nshare;
+
+            /* Increase the rank count as long as have we more than 6 OpenMP
+             * threads per rank or the number of hardware threads is not
+             * divisible by the rank count. Don't go below 2 OpenMP threads.
+             */
+            nshare = 1;
+            do
+            {
+                nshare++;
+                nrank = ngpu*nshare;
+            }
+            while (nthreads_tot/nrank > nthreads_omp_mpi_target_max ||
+                   (nthreads_tot/(ngpu*(nshare + 1)) >= nthreads_omp_mpi_ok_min_gpu && nthreads_tot % nrank != 0));
         }
     }
     else if (hw_opt->nthreads_omp > 0)
     {
         /* Here we could oversubscribe, when we do, we issue a warning later */
-        nthreads_tmpi = std::max(1, nthreads_tot/hw_opt->nthreads_omp);
+        nrank = std::max(1, nthreads_tot/hw_opt->nthreads_omp);
     }
     else
     {
-        /* TODO choose nthreads_omp based on hardware topology
-           when we have a hardware topology detection library */
-        /* In general, when running up to 4 threads, OpenMP should be faster.
-         * Note: on AMD Bulldozer we should avoid running OpenMP over two dies.
-         * On Intel>=Nehalem running OpenMP on a single CPU is always faster,
-         * even on two CPUs it's usually faster (but with many OpenMP threads
-         * it could be faster not to use HT, currently we always use HT).
-         * On Nehalem/Westmere we want to avoid running 16 threads over
-         * two CPUs with HT, so we need a limit<16; thus we use 12.
-         * A reasonable limit for Intel Sandy and Ivy bridge,
-         * not knowing the topology, is 16 threads.
-         * Below we check for Intel and AVX, which for now includes
-         * Sandy/Ivy Bridge, Has/Broadwell. By checking for AVX instead of
-         * model numbers we ensure also future Intel CPUs are covered.
-         */
-        const int nthreads_omp_always_faster             =  4;
-        const int nthreads_omp_always_faster_Nehalem     = 12;
-        const int nthreads_omp_always_faster_Intel_AVX   = 16;
-        gmx_bool  bIntelAVX;
-
-        bIntelAVX =
-            (gmx_cpuid_vendor(hwinfo->cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
-             gmx_cpuid_feature(hwinfo->cpuid_info, GMX_CPUID_FEATURE_X86_AVX));
-
-        if (nthreads_tot <= nthreads_omp_always_faster ||
-            ((gmx_cpuid_is_intel_nehalem(hwinfo->cpuid_info) && nthreads_tot <= nthreads_omp_always_faster_Nehalem) ||
-             (bIntelAVX && nthreads_tot <= nthreads_omp_always_faster_Intel_AVX)))
+        if (nthreads_tot <= nthreads_omp_always_faster(hwinfo->cpuid_info,
+                                                       ngpu > 0))
         {
             /* Use pure OpenMP parallelization */
-            nthreads_tmpi = 1;
+            nrank = 1;
         }
         else
         {
             /* Don't use OpenMP parallelization */
-            nthreads_tmpi = nthreads_tot;
+            nrank = nthreads_tot;
         }
     }
 
-    return nthreads_tmpi;
+    return nrank;
 }
 
 
-/* Get the number of threads to use for thread-MPI based on how many
+#ifdef GMX_THREAD_MPI
+/* Get the number of MPI ranks to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
  * and how many particles there are.
  * At the point we have already called check_and_update_hw_opt.
@@ -142,9 +225,22 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      const t_commrec     *cr,
                      FILE                *fplog)
 {
-    int      nthreads_hw, nthreads_tot_max, nthreads_tmpi, nthreads_new, ngpu;
+    int      nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int      min_atoms_per_mpi_rank;
     gmx_bool bCanUseGPU;
+
+    /* Check if an algorithm does not support parallel simulation.  */
+    if (inputrec->eI == eiLBFGS ||
+        inputrec->coulombtype == eelEWALD)
+    {
+        md_print_warn(cr, fplog, "The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI thread.\n");
+        if (hw_opt->nthreads_tmpi > 1)
+        {
+            gmx_fatal(FARGS, "You asked for more than 1 thread-MPI thread, but an algorithm doesn't support that");
+        }
+
+        return 1;
+    }
 
     if (hw_opt->nthreads_tmpi > 0)
     {
@@ -153,6 +249,12 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     }
 
     nthreads_hw = hwinfo->nthreads_hw_avail;
+
+    if (nthreads_hw <= 0)
+    {
+        /* This should normally not happen, but if it does, we handle it */
+        gmx_fatal(FARGS, "The number of available hardware threads can not be detected, please specify the number of MPI ranks and the number of OpenMP threads (if supported) manually with options -ntmpi and -ntomp, respectively");
+    }
 
     /* How many total (#tMPI*#OpenMP) threads can we start? */
     if (hw_opt->nthreads_tot > 0)
@@ -181,7 +283,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         assert(hw_opt->nthreads_omp == 1);
     }
 
-    nthreads_tmpi =
+    nrank =
         get_tmpi_omp_thread_division(hwinfo, hw_opt, nthreads_tot_max, ngpu);
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
@@ -205,66 +307,200 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         }
     }
 
-    /* Check if an algorithm does not support parallel simulation.  */
-    if (nthreads_tmpi != 1 &&
-        ( inputrec->eI == eiLBFGS ||
-          inputrec->coulombtype == eelEWALD ) )
+    if (mtop->natoms/nrank < min_atoms_per_mpi_rank)
     {
-        nthreads_tmpi = 1;
+        int nrank_new;
 
-        md_print_warn(cr, fplog, "The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI thread.\n");
-        if (hw_opt->nthreads_tmpi > nthreads_tmpi)
-        {
-            gmx_fatal(FARGS, "You asked for more than 1 thread-MPI thread, but an algorithm doesn't support that");
-        }
-    }
-    else if (mtop->natoms/nthreads_tmpi < min_atoms_per_mpi_rank)
-    {
-        /* the thread number was chosen automatically, but there are too many
-           threads (too few atoms per thread) */
-        nthreads_new = std::max(1, mtop->natoms/min_atoms_per_mpi_rank);
+        /* the rank number was chosen automatically, but there are too few
+           atoms per rank, so we need to reduce the rank count */
+        nrank_new = std::max(1, mtop->natoms/min_atoms_per_mpi_rank);
 
         /* Avoid partial use of Hyper-Threading */
         if (gmx_cpuid_x86_smt(hwinfo->cpuid_info) == GMX_CPUID_X86_SMT_ENABLED &&
-            nthreads_new > nthreads_hw/2 && nthreads_new < nthreads_hw)
+            nrank_new > nthreads_hw/2 && nrank_new < nthreads_hw)
         {
-            nthreads_new = nthreads_hw/2;
+            nrank_new = nthreads_hw/2;
         }
 
-        /* Avoid large prime numbers in the thread count */
-        if (nthreads_new >= 6)
+        /* If the user specified the total thread count, ensure this is
+         * divisible by the number of ranks.
+         * It is quite likely that we have too many total threads compared
+         * to the size of the system, but if the user asked for this many
+         * threads we should respect that.
+         */
+        while (hw_opt->nthreads_tot > 0 &&
+               hw_opt->nthreads_tot % nrank_new != 0)
+        {
+            nrank_new--;
+        }
+
+        /* Avoid large prime numbers in the rank count */
+        if (nrank_new >= 6)
         {
             /* Use only 6,8,10 with additional factors of 2 */
             int fac;
 
             fac = 2;
-            while (3*fac*2 <= nthreads_new)
+            while (3*fac*2 <= nrank_new)
             {
                 fac *= 2;
             }
 
-            nthreads_new = (nthreads_new/fac)*fac;
+            nrank_new = (nrank_new/fac)*fac;
         }
         else
         {
-            /* Avoid 5 */
-            if (nthreads_new == 5)
+            /* Avoid 5, since small system won't fit 5 domains along
+             * a dimension. This might lead to waisting some cores, but this
+             * will have a small impact in this regime of very small systems.
+             */
+            if (nrank_new == 5)
             {
-                nthreads_new = 4;
+                nrank_new = 4;
             }
         }
 
-        nthreads_tmpi = nthreads_new;
+        nrank = nrank_new;
 
         fprintf(stderr, "\n");
         fprintf(stderr, "NOTE: Parallelization is limited by the small number of atoms,\n");
-        fprintf(stderr, "      only starting %d thread-MPI threads.\n", nthreads_tmpi);
+        fprintf(stderr, "      only starting %d thread-MPI ranks.\n", nrank);
         fprintf(stderr, "      You can use the -nt and/or -ntmpi option to optimize the number of threads.\n\n");
     }
 
-    return nthreads_tmpi;
+    return nrank;
 }
 #endif /* GMX_THREAD_MPI */
+
+
+void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
+                                        const gmx_hw_opt_t  *hw_opt,
+                                        gmx_bool             bNTOptSet,
+                                        t_commrec           *cr,
+                                        FILE                *fplog)
+{
+#if defined GMX_OPENMP && defined GMX_MPI
+    int         nth_omp_min, nth_omp_max, ngpu;
+    char        buf[1000];
+#ifdef GMX_THREAD_MPI
+    const char *mpi_option = " (option -ntmpi)";
+#else
+    const char *mpi_option = "";
+#endif
+
+    nth_omp_min = gmx_omp_nthreads_get(emntDefault);
+    nth_omp_max = gmx_omp_nthreads_get(emntDefault);
+    ngpu        = hw_opt->gpu_opt.n_dev_use;
+
+    /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */
+    if (cr->nnodes + cr->npmenodes > 1)
+    {
+        int count[3], count_max[3];
+
+        count[0] = -nth_omp_min;
+        count[1] =  nth_omp_max;
+        count[2] =  ngpu;
+
+        MPI_Allreduce(count, count_max, 3, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
+
+        /* In case of an inhomogeneous run setup we use the maximum counts */
+        nth_omp_min = -count_max[0];
+        nth_omp_max =  count_max[1];
+        ngpu        =  count_max[2];
+    }
+
+    int nthreads_omp_mpi_ok_min;
+
+    if (ngpu == 0)
+    {
+        nthreads_omp_mpi_ok_min = nthreads_omp_mpi_ok_min_cpu;
+    }
+    else
+    {
+        /* With GPUs we set the minimum number of OpenMP threads to 2 to catch
+         * cases where the user specifies #ranks == #cores.
+         */
+        nthreads_omp_mpi_ok_min = nthreads_omp_mpi_ok_min_gpu;
+    }
+
+    if (DOMAINDECOMP(cr) && cr->nnodes > 1)
+    {
+        if (nth_omp_max < nthreads_omp_mpi_ok_min ||
+            (!(ngpu > 0 && !bGpuSharingSupported) &&
+             nth_omp_max > nthreads_omp_mpi_ok_max))
+        {
+            /* Note that we print target_max here, not ok_max */
+            sprintf(buf, "Your choice of number of MPI ranks and amount of resources results in using %d OpenMP threads per rank, which is most likely inefficient. The optimum is usually between %d and %d threads per rank.",
+                    nth_omp_max,
+                    nthreads_omp_mpi_ok_min,
+                    nthreads_omp_mpi_target_max);
+
+            if (bNTOptSet)
+            {
+                md_print_warn(cr, fplog, "NOTE: %s\n", buf);
+            }
+            else
+            {
+                /* This fatal error, and the one below, is nasty, but it's
+                 * probably the only way to ensure that all users don't waste
+                 * a lot of resources, since many users don't read logs/stderr.
+                 */
+                gmx_fatal(FARGS, "%s If you want to run with this setup, specify the -ntomp option. But we suggest to change the number of MPI ranks%s.", buf, mpi_option);
+            }
+        }
+    }
+    else
+    {
+        /* No domain decomposition (or only one domain) */
+        if (!(ngpu > 0 && !bGpuSharingSupported) &&
+            nth_omp_max > nthreads_omp_always_faster(hwinfo->cpuid_info, ngpu > 0))
+        {
+            /* To arrive here, the user/system set #ranks and/or #OMPthreads */
+            gmx_bool bEnvSet;
+            char     buf2[256];
+
+            bEnvSet = (getenv("OMP_NUM_THREADS") != NULL);
+
+            if (bNTOptSet || bEnvSet)
+            {
+                sprintf(buf2, "You requested %d OpenMP threads", nth_omp_max);
+            }
+            else
+            {
+                sprintf(buf2, "Your choice of %d MPI rank%s and the use of %d total threads %sleads to the use of %d OpenMP threads",
+                        cr->nnodes + cr->npmenodes,
+                        cr->nnodes + cr->npmenodes == 1 ? "" : "s",
+                        hw_opt->nthreads_tot > 0 ? hw_opt->nthreads_tot : hwinfo->nthreads_hw_avail,
+                        hwinfo->nphysicalnode > 1 ? "on a node " : "",
+                        nth_omp_max);
+            }
+            sprintf(buf, "%s, whereas we expect the optimum to be with more MPI ranks with %d to %d OpenMP threads.",
+                    buf2, nthreads_omp_mpi_ok_min, nthreads_omp_mpi_target_max);
+
+            /* We can not quit with a fatal error when OMP_NUM_THREADS is set
+             * with different values per rank or node, since in that case
+             * the user can not set -ntomp to override the error.
+             */
+            if (bNTOptSet || (bEnvSet && nth_omp_min != nth_omp_max))
+            {
+                md_print_warn(cr, fplog, "NOTE: %s\n", buf);
+            }
+            else
+            {
+                gmx_fatal(FARGS, "%s If you want to run with this many OpenMP threads, specify the -ntomp option. But we suggest to increase the number of MPI ranks%s.", buf, mpi_option);
+            }
+        }
+    }
+#else
+    /* No OpenMP and/or MPI: it doesn't make much sense to check */
+    GMX_UNUSED_VALUE(hwinfo);
+    GMX_UNUSED_VALUE(hw_opt);
+    GMX_UNUSED_VALUE(bNTOptSet);
+    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(fplog);
+    return;
+#endif
+}
 
 
 static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
