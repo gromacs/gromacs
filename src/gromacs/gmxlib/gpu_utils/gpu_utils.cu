@@ -284,21 +284,24 @@ static bool addNVMLDeviceId(cuda_dev_info* cuda_dev)
  */
 static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unused gpuid, const gmx_gpu_info_t gmx_unused *gpu_info)
 {
+    const cudaDeviceProp *prop                        = &gpu_info->cuda_dev[gpuid].prop;
+    int                   cuda_version_number         = prop->major * 10 + prop->minor;
+    gmx_bool              bGpuCanUseApplicationClocks =
+        ((0 == gmx_wcmatch("*Tesla*", prop->name) && cuda_version_number >= 35 ) ||
+         (0 == gmx_wcmatch("*Quadro*", prop->name) && cuda_version_number >= 52 ));
 #ifndef HAVE_NVML
-    if ( (gpu_info->cuda_dev[gpuid].prop.major * 10 + gpu_info->cuda_dev[gpuid].prop.minor) >= 35 &&
-         (0 == gmx_wcmatch( "*Tesla*", gpu_info->cuda_dev[gpuid].prop.name )))
+    if (bGpuCanUseApplicationClocks)
     {
         md_print_warn( fplog, "NVML support was not found in CUDA library %d.%d, so your GPU of type %s cannot use application clock support to improve performance.\n",
-                       gpu_info->cuda_dev[gpuid].prop.major,
-                       gpu_info->cuda_dev[gpuid].prop.minor,
-                       gpu_info->cuda_dev[gpuid].prop.name );
+                       prop->major,
+                       prop->minor,
+                       prop->name );
     }
     return true;
 #else /* HAVE_NVML defined */
     nvmlReturn_t nvml_stat = NVML_SUCCESS;
     char        *env;
-    if (!( (gpu_info->cuda_dev[gpuid].prop.major * 10 + gpu_info->cuda_dev[gpuid].prop.minor) >= 35 &&
-           (0 == gmx_wcmatch( "*Tesla*", gpu_info->cuda_dev[gpuid].prop.name ))))
+    if (!bGpuCanUseApplicationClocks)
     {
         return true;
     }
