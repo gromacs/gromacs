@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -132,6 +133,33 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
     return cr;
 #else
     return NULL;
+#endif
+}
+
+int gmx_get_num_nodes(const struct t_commrec *cr)
+{
+#ifdef GMX_LIB_MPI
+    double   num_nodes = 0;
+    int      nodehash  = gmx_physicalnode_id_hash();
+    int      key       = -1;
+    MPI_Comm mpi_comm_all_ranks_on_this_node;
+    int      num_mpi_ranks_on_this_node;
+
+    MPI_Comm_split(cr->mpi_comm_mysim, nodehash, key, &mpi_comm_all_ranks_on_this_node);
+    MPI_Comm_size(mpi_comm_all_ranks_on_this_node, &num_mpi_ranks_on_this_node);
+    /* We could have different numbers of ranks on each node
+       (e.g. -npme with -ntomp != -ntomp_pme), so we reduce over all
+       ranks the fraction of a node that is associated with each
+       rank. */
+    double fraction = 1.0 / (double) num_mpi_ranks_on_this_node;
+    MPI_Reduce(&fraction, &num_nodes, 1, MPI_DOUBLE, MPI_SUM, MASTERRANK(cr), cr->mpi_comm_mysim);
+    MPI_Comm_free(&mpi_comm_all_ranks_on_this_node);
+    /* Ensure we round up, but not too far */
+    return (int) (num_nodes + 0.1);
+#else
+    GMX_UNUSED_VALUE(cr);
+    /* Thread-MPI and no-MPI run on one node */
+    return 1;
 #endif
 }
 

@@ -576,21 +576,24 @@ int gmx_mdrun(int argc, char *argv[])
     Flags = Flags | (bIMDterm      ? MD_IMDTERM      : 0);
     Flags = Flags | (bIMDpull      ? MD_IMDPULL      : 0);
 
-    /* We postpone opening the log file if we are appending, so we can
-       first truncate the old log file and append to the correct position
-       there instead.  */
-    if (MASTER(cr) && !bAppendFiles)
     {
-        gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
-                     Flags & MD_APPENDFILES, &fplog);
-        please_cite(fplog, "Hess2008b");
-        please_cite(fplog, "Spoel2005a");
-        please_cite(fplog, "Lindahl2001a");
-        please_cite(fplog, "Berendsen95a");
-    }
-    else
-    {
-        fplog = NULL;
+        int nnodes = gmx_get_num_nodes(cr);
+        /* We postpone opening the log file if we are appending, so we
+           can first truncate the old log file and append to the
+           correct position there instead.  */
+        if (MASTER(cr) && !bAppendFiles)
+        {
+            gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
+                         Flags & MD_APPENDFILES, &fplog, nnodes);
+            please_cite(fplog, "Hess2008b");
+            please_cite(fplog, "Spoel2005a");
+            please_cite(fplog, "Lindahl2001a");
+            please_cite(fplog, "Berendsen95a");
+        }
+        else
+        {
+            fplog = NULL;
+        }
     }
 
     ddxyz[XX] = (int)(realddxyz[XX] + 0.5);

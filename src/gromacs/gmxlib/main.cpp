@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -59,6 +60,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
 /* The source code in this file should be thread-safe.
@@ -209,9 +211,35 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     sfree(ibuf);
 }
 
+/*! \brief Print some information to the mdrun log file about parallelism
+ *
+ * String width before the colon should match that used in
+ * gmx_print_version_info().
+ *
+ * If mdrun is using library MPI, does MPI communication.
+ *
+ * \param[in] fp      File pointer to which to write
+ * \param[in] cr      Communication object
+ * \param[in] nnodes  Number of compute nodes in use (not MPI ranks)
+ */
+static void printParallelInfo(FILE *fp, const t_commrec *cr, int nnodes)
+{
+#ifdef GMX_LIB_MPI
+    fputs(gmx::formatString("Num. MPI ranks:     %d\n", cr->nnodes).c_str(), fp);
+    if (MULTISIM(cr))
+    {
+        fputs(gmx::formatString("Multi-sim index:    %d of %d\n", cr->ms->sim, cr->ms->nsim).c_str(), fp);
+    }
+#else
+    GMX_UNUSED_VALUE(cr);
+#endif
+    fputs(gmx::formatString("Num. nodes used:    %d\n", nnodes).c_str(), fp);
+}
+
 
 void gmx_log_open(const char *lognm, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE** fplog)
+                  gmx_bool bAppendFiles, FILE** fplog,
+                  int nnodes)
 {
     int    pid;
     char   host[256];
@@ -253,6 +281,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
         settings.extendedInfo(true);
         settings.copyright(!bAppendFiles);
         gmx::printBinaryInformation(fp, gmx::getProgramContext(), settings);
+        printParallelInfo(fp, cr, nnodes);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(fp, "\n\n");
