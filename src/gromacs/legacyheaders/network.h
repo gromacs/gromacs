@@ -69,6 +69,18 @@ struct t_commrec *reinitialize_commrec_for_this_thread(const struct t_commrec *c
 void gmx_fill_commrec_from_mpi(struct t_commrec *cr);
 /* Continues t_commrec construction */
 
+/*! \brief Get number of nodes used for a simulation
+ *
+ * If mdrun is using library MPI, does MPI communication.
+ *
+ * Note that gmx_num_nodes() actually returns the number of MPI ranks.
+ *
+ * \param[in]  cr  Communication record
+ * \return         On master rank, the number of nodes used (ie. 1 for
+ *                 thread-MPI or no-MPI). On other ranks, 0.
+ */
+int gmx_get_num_nodes(const struct t_commrec *cr);
+
 void gmx_setup_nodecomm(FILE *fplog, struct t_commrec *cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 

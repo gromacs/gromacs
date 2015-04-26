@@ -135,6 +135,33 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 #endif
 }
 
+int gmx_get_num_nodes(const struct t_commrec *cr)
+{
+#ifdef GMX_LIB_MPI
+    double num_nodes = 0;
+    int nodehash = gmx_physicalnode_id_hash();
+    int key = -1;
+    MPI_Comm mpi_comm_all_ranks_on_this_node;
+    int num_mpi_ranks_on_this_node;
+
+    MPI_Comm_split(cr->mpi_comm_mysim, nodehash, key, &mpi_comm_all_ranks_on_this_node);
+    MPI_Comm_size(mpi_comm_all_ranks_on_this_node, &num_mpi_ranks_on_this_node);
+    /* We could have different numbers of ranks on each node
+       (e.g. -npme with -ntomp != -ntomp_pme), so we reduce over all
+       ranks the fraction of a node that is associated with each
+       rank. */
+    double fraction = 1.0 / (double) num_mpi_ranks_on_this_node;
+    MPI_Reduce(&fraction, &num_nodes, 1, MPI_DOUBLE, MPI_SUM, MASTERRANK(cr), cr->mpi_comm_mysim);
+    MPI_Comm_free(&mpi_comm_all_ranks_on_this_node);
+    /* Ensure we round up, but not too far */
+    return (int) (num_nodes + 0.1);
+#else
+    GMX_UNUSED_VALUE(cr);
+    /* Thread-MPI and no-MPI run on one node */
+    return 1;
+#endif
+}
+
 void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 {
     gmx_nodecomm_t *nc;

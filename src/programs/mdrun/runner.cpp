@@ -1287,10 +1287,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
     }
 
-    if (MASTER(cr) && (Flags & MD_APPENDFILES))
     {
-        gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
-                     Flags, &fplog);
+        int nnodes = gmx_get_num_nodes(cr);
+        if (MASTER(cr) && (Flags & MD_APPENDFILES))
+        {
+            gmx_log_open(ftp2fn(efLOG, nfile, fnm), cr,
+                         Flags, &fplog, nnodes);
+        }
     }
 
     /* override nsteps with value from cmdline */

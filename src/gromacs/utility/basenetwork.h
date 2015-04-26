@@ -66,18 +66,21 @@ extern "C" {
 gmx_bool gmx_mpi_initialized(void);
 
 /*! \brief
- * Returns the number of nodes.
+ * Returns the number of MPI ranks in MPI_COMM_WORLD.
  *
  * For thread-MPI, returns one before the threads have been started.
  * This allows code between the real MPI_Init() and the thread-MPI "init" to
  * still use this function to check for serial/parallel status and work as
  * expected: for thread-MPI, at that point they should behave as if the run was
  * serial.
+ *
+ * \todo User documentation has largely replaced "rank" for "node" but
+ * the code should get that change too.
  */
 int gmx_node_num(void);
 
 /*! \brief
- * Returns the rank of the node.
+ * Returns the MPI rank with respect to MPI_COMM_WORLD.
  *
  * For thread-MPI, returns zero before the threads have been started.
  * This allows code between the real MPI_Init() and the thread-MPI "init" to
