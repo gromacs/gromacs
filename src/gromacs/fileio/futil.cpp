@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -851,19 +851,10 @@ void gmx_tmpnam(char *buf)
 #else
     int fd = mkstemp(buf);
 
-    switch (fd)
+    if (fd < 0)
     {
-        case EINVAL:
-            gmx_fatal(FARGS, "Invalid template %s for mkstemp", buf);
-            break;
-        case EEXIST:
-            gmx_fatal(FARGS, "mkstemp created existing file", buf);
-            break;
-        case EACCES:
-            gmx_fatal(FARGS, "Permission denied for opening %s", buf);
-            break;
-        default:
-            break;
+        gmx_fatal(FARGS, "Creating temporary file %s: %s", buf,
+                  strerror(errno));
     }
     close(fd);
 #endif
