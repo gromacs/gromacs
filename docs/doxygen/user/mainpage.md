@@ -67,9 +67,3 @@ give an overview of some of the topics that are documented:
 \endif
 
 This list will hopefully expand over time.
-
-\if libapi
-Additionally, a separate section contains a \subpage page_devmanual, which provides
-resources for developers, such as and documentation for development-time tools
-and guidelines.
-\endif
