@@ -111,6 +111,16 @@ if (SPHINX_FOUND)
     set(SPHINX_SOURCE_FILES
         index.rst
         download.rst
+        dev-manual/index.rst
+        dev-manual/doxygen.rst
+        dev-manual/doxygen-links.rst
+        dev-manual/formatting.rst
+        dev-manual/gmxtree.rst
+        dev-manual/includestyle.rst
+        dev-manual/naming.rst
+        dev-manual/style.rst
+        dev-manual/tools.rst
+        dev-manual/uncrustify.rst
         install-guide/index.rst
         man/gromacs.7.rst
         user-guide/index.rst

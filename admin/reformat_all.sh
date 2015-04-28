@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,8 @@
 # This script runs uncrustify, copyright header checks, or include sorter on
 # all applicable files in the source tree.
 #
-# See `reformat_all.sh -h` for a brief usage, and docs/dev-manual/uncrustify.md
-# for more details (docs/dev-manual/gmxtree.md for include sorter).
+# See `reformat_all.sh -h` for a brief usage, and docs/dev-manual/uncrustify.rst
+# for more details (docs/dev-manual/gmxtree.rst for include sorter).
 
 function usage() {
     echo "usage: reformat_all.sh [-f|--force]"

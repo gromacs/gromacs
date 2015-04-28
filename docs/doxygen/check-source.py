@@ -43,7 +43,7 @@ specific to GROMACS, like checking that only installed headers contribute to
 the public API documentation.
 
 The checks should be self-evident from the source code of the script
-(they are also described in docs/dev-manual/gmxtree.md).
+(they are also described in docs/dev-manual/gmxtree.rst).
 All the logic of parsing the Doxygen XML output and creating a GROMACS-specific
 representation of the source tree is separated into separate Python modules
 (doxygenxml.py and gmxtree.py, respectively).  Similarly, logic for handling

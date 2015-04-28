@@ -36,7 +36,7 @@
 # This script runs uncrustify and copyright header checks on modified files and
 # reports/applies the necessary changes.
 #
-# See `uncrustify.sh -h` for a brief usage, and docs/dev-manual/uncrustify.md
+# See `uncrustify.sh -h` for a brief usage, and docs/dev-manual/uncrustify.rst
 # for more details.
 
 # Parse command-line arguments
@@ -100,7 +100,7 @@ then
         echo "Please set the path to uncrustify using UNCRUSTIFY or"
         echo "git config hooks.uncrustifypath."
         echo "Note that you need a custom version of uncrustify."
-        echo "See docs/dev-manual/uncrustify.md for how to get one."
+        echo "See docs/dev-manual/uncrustify.rst for how to get one."
         exit 2
     fi
     if ! which "$UNCRUSTIFY" 1>/dev/null
