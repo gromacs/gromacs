@@ -91,7 +91,7 @@
     /* Coulomb table variables */
     SimdReal          invtsp_S;
     const real       *tab_coul_F;
-#ifndef TAB_FDV0
+#if defined CALC_ENERGIES && !defined TAB_FDV0
     const real       *tab_coul_V;
 #endif
 
@@ -231,7 +231,9 @@
     tab_coul_F = ic->tabq_coul_FDV0;
 #else
     tab_coul_F = ic->tabq_coul_F;
+#ifdef CALC_ENERGIES
     tab_coul_V = ic->tabq_coul_V;
+#endif
 #endif
 #endif /* CALC_COUL_TAB */
 
