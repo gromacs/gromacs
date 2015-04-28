@@ -96,7 +96,11 @@
  */
 
 // Many SIMD architectures other than reference are temporarily disabled in this commit
-#if GMX_SIMD_X86_AVX_128_FMA
+#if GMX_SIMD_X86_AVX2_256
+#    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
+#elif GMX_SIMD_X86_AVX_256
+#    include "impl_x86_avx_256/impl_x86_avx_256.h"
+#elif GMX_SIMD_X86_AVX_128_FMA
 #    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
 #elif GMX_SIMD_X86_SSE4_1
 #    include "impl_x86_sse4_1/impl_x86_sse4_1.h"
@@ -254,7 +258,7 @@ typedef SimdFInt32               SimdInt32;
 #if GMX_SIMD_HAVE_INT32_ARITHMETICS
 /*! \brief Boolean SIMD type for usage with \ref SimdInt32.
  *
- * This type is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS is 1.
+ * This type is only available if \ref GMX_SIMD_HAVE_INT32_ARITHMETICS is 1.
  *
  * If GMX_DOUBLE is defined, this will be set to \ref SimdDIBool
  * internally, otherwise \ref SimdFIBool. This is necessary since some
@@ -503,7 +507,6 @@ setZero()
 
 
 #endif // GMX_SIMD_HAVE_REAL
-
 
 }      // namespace gmx
 
