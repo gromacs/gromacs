@@ -140,6 +140,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadTranspose4)
         {
             gmx_simd_gather_load_transpose_r<12>(mem0_, offset_, v0, v1, v2, v3);
         }
+        else
+        {
+            FAIL();
+        }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -182,6 +186,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadTranspose2)
         {
             gmx_simd_gather_load_transpose_r<gmx_simd_best_pair_alignment_r>(mem0_, offset_, v0, v1);
         }
+        else
+        {
+            FAIL();
+        }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -217,6 +225,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadUTranspose3)
         else if (align == 4)
         {
             gmx_simd_gather_loadu_transpose_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
@@ -263,6 +275,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterStoreU3)
         else if (align == 4)
         {
             gmx_simd_transpose_scatter_storeu_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
@@ -311,6 +327,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterIncrU3)
         {
             gmx_simd_transpose_scatter_incru_r<4>(mem0_, offset_, v0, v1, v2);
         }
+        else
+        {
+            FAIL();
+        }
 
         for (j = 0; j < 12 * GMX_SIMD_REAL_WIDTH; j++)
         {
@@ -357,6 +377,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdTransposeScatterDecrU3)
         else if (align == 4)
         {
             gmx_simd_transpose_scatter_decru_r<4>(mem0_, offset_, v0, v1, v2);
+        }
+        else
+        {
+            FAIL();
         }
 
         for (j = 0; j < 12*GMX_SIMD_REAL_WIDTH; j++)
@@ -431,6 +455,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadBySimdIntTranspose4)
         {
             gmx_simd_gather_load_bysimdint_transpose_r<12>(mem0_, simdoffset, v0, v1, v2, v3);
         }
+        else
+        {
+            FAIL();
+        }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -474,6 +502,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadBySimdIntTranspose2)
         {
             gmx_simd_gather_load_bysimdint_transpose_r<12>(mem0_, simdoffset, v0, v1);
         }
+        else
+        {
+            FAIL();
+        }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
@@ -514,6 +546,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadUBySimdIntTranspose2)
         else if (align == 5)
         {
             gmx_simd_gather_loadu_bysimdint_transpose_r<5>(mem0_, simdoffset, v0, v1);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
@@ -693,6 +729,10 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdGatherLoadTranspose2Hsimd)
         else if (align == gmx_simd_best_pair_alignment_r)
         {
             gmx_simd_gather_load_transpose_hsimd_r<gmx_simd_best_pair_alignment_r>(mem0_, mem1_, offset_, v0, v1);
+        }
+        else
+        {
+            FAIL();
         }
 
         GMX_EXPECT_SIMD_REAL_EQ(ref0, v0);
