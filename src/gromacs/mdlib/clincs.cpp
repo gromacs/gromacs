@@ -2010,7 +2010,7 @@ void set_lincs(const t_idef         *idef,
              */
             ncon_target = ((ncon_assign*(th + 1))/li->ntask - li->nc_real + GMX_SIMD_REAL_WIDTH - 1) & ~(GMX_SIMD_REAL_WIDTH - 1);
         }
-#endif
+#endif  // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
         /* Continue filling the arrays where we left off with the previous task,
          * including padding for SIMD.

@@ -33,50 +33,11 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_FLOAT_H
-#define GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_FLOAT_H
-
-#include "config.h"
+#ifndef GMX_SIMD_IMPL_X86_AVX2_256_UTIL_FLOAT_H
+#define GMX_SIMD_IMPL_X86_AVX2_256_UTIL_FLOAT_H
 
 #include <immintrin.h>
 
-#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd4_float.h"
+#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_float.h"
 
-namespace gmx
-{
-
-static inline Simd4Float gmx_simdcall
-fma(Simd4Float a, Simd4Float b, Simd4Float c)
-{
-    return {
-               _mm_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
-
-static inline Simd4Float gmx_simdcall
-fms(Simd4Float a, Simd4Float b, Simd4Float c)
-{
-    return {
-               _mm_fmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
-
-static inline Simd4Float gmx_simdcall
-fnma(Simd4Float a, Simd4Float b, Simd4Float c)
-{
-    return {
-               _mm_fnmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
-
-static inline Simd4Float gmx_simdcall
-fnms(Simd4Float a, Simd4Float b, Simd4Float c)
-{
-    return {
-               _mm_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
-}
-
-}      // namespace gmx
-
-#endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_FLOAT_H
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_UTIL_FLOAT_H
