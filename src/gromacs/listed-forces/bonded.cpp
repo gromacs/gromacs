@@ -75,157 +75,6 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
-
-// This was originally work-in-progress for augmenting the SIMD module with
-// masked load/store operations. Instead, that turned into and extended SIMD
-// interface that supports gather/scatter in all platforms, which will be
-// part of a future Gromacs version. However, since the code for bonded
-// interactions and LINCS was already written it would be a pity not to get
-// the performance gains in Gromacs-5.1. For this reason we have added it as
-// a bit of a hack in the two files that use it. It will be replaced with the
-// new generic functionality after version 5.1
-
-#    ifdef GMX_DOUBLE
-static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose4_r(SimdDouble *row0,
-                           SimdDouble *row1,
-                           SimdDouble *row2,
-                           SimdDouble *row3)
-{
-    __m256d tmp0, tmp1, tmp2, tmp3;
-
-    tmp0  = _mm256_unpacklo_pd(*row0, *row1);
-    tmp2  = _mm256_unpacklo_pd(*row2, *row3);
-    tmp1  = _mm256_unpackhi_pd(*row0, *row1);
-    tmp3  = _mm256_unpackhi_pd(*row2, *row3);
-    *row0 = _mm256_permute2f128_pd(tmp0, tmp2, 0x20);
-    *row1 = _mm256_permute2f128_pd(tmp1, tmp3, 0x20);
-    *row2 = _mm256_permute2f128_pd(tmp0, tmp2, 0x31);
-    *row3 = _mm256_permute2f128_pd(tmp1, tmp3, 0x31);
-}
-
-static gmx_inline void gmx_simdcall
-gmx_hack_simd4_transpose_to_simd_r(const Simd4Double *a,
-                                   SimdDouble        *row0,
-                                   SimdDouble        *row1,
-                                   SimdDouble        *row2,
-                                   SimdDouble        *row3)
-{
-    *row0 = a[0];
-    *row1 = a[1];
-    *row2 = a[2];
-    *row3 = a[3];
-
-    gmx_hack_simd_transpose4_r(row0, row1, row2, row3);
-}
-
-#    if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
-#        define gmx_hack_simd4_load3_r(mem)    _mm256_maskload_pd((mem), _mm_castsi128_ps(_mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1)))
-#    else
-#        define gmx_hack_simd4_load3_r(mem)    _mm256_maskload_pd((mem), _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1))
-#    endif
-
-#    else /* single instead of double */
-static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose4_r(SimdFloat *row0,
-                           SimdFloat *row1,
-                           SimdFloat *row2,
-                           SimdFloat *row3)
-{
-    __m256 tmp0, tmp1, tmp2, tmp3;
-
-    tmp0  = _mm256_unpacklo_ps(*row0, *row1);
-    tmp2  = _mm256_unpacklo_ps(*row2, *row3);
-    tmp1  = _mm256_unpackhi_ps(*row0, *row1);
-    tmp3  = _mm256_unpackhi_ps(*row2, *row3);
-    *row0 = _mm256_shuffle_ps(tmp0, tmp2, 0x44);
-    *row1 = _mm256_shuffle_ps(tmp0, tmp2, 0xEE);
-    *row2 = _mm256_shuffle_ps(tmp1, tmp3, 0x44);
-    *row3 = _mm256_shuffle_ps(tmp1, tmp3, 0xEE);
-}
-
-static gmx_inline void gmx_simdcall
-gmx_hack_simd4_transpose_to_simd_r(const Simd4Float *a,
-                                   SimdFloat        *row0,
-                                   SimdFloat        *row1,
-                                   SimdFloat        *row2,
-                                   SimdFloat        *row3)
-{
-    *row0 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[0]), a[4], 1);
-    *row1 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[1]), a[5], 1);
-    *row2 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[2]), a[6], 1);
-    *row3 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[3]), a[7], 1);
-
-    gmx_hack_simd_transpose4_r(row0, row1, row2, row3);
-}
-#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
-#        define gmx_hack_simd4_load3_r(mem)    _mm_maskload_ps((mem), _mm_castsi256_pd(_mm_set_epi32(0, -1, -1, -1)))
-#else
-#        define gmx_hack_simd4_load3_r(mem)    _mm_maskload_ps((mem), _mm_set_epi32(0, -1, -1, -1))
-#endif
-
-#endif
-
-#endif /* AVX */
-
-
-
-#if GMX_SIMD_HAVE_REAL
-/*! \brief Store differences between indexed rvecs in SIMD registers.
- *
- * Returns SIMD register with the difference vectors:
- *     v[index0[i]] - v[index1[i]]
- *
- * \param[in]     v           Array of rvecs
- * \param[in]     index0      Index into the vector array
- * \param[in]     index1      Index into the vector array
- * \param[out]    dx          SIMD register with x difference
- * \param[out]    dy          SIMD register with y difference
- * \param[out]    dz          SIMD register with z difference
- */
-static gmx_inline void gmx_simdcall
-gmx_hack_simd_gather_rvec_dist_two_index(const rvec      *v,
-                                         const int       *index0,
-                                         const int       *index1,
-                                         SimdReal        *dx,
-                                         SimdReal        *dy,
-                                         SimdReal        *dz)
-{
-#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
-    int              i;
-    Simd4Real        d[GMX_SIMD_REAL_WIDTH];
-    SimdReal         tmp;
-
-    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        d[i] = simd4Sub(gmx_hack_simd4_load3_r(&(v[index0[i]][0])),
-                        gmx_hack_simd4_load3_r(&(v[index1[i]][0])));
-
-    }
-    gmx_hack_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
-#else /* generic SIMD */
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  buf[3*GMX_SIMD_REAL_WIDTH];
-
-    int i, m;
-
-    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        /* Store the distances packed and aligned */
-        for (m = 0; m < DIM; m++)
-        {
-            buf[m*GMX_SIMD_REAL_WIDTH + i] =
-                v[index0[i]][m] - v[index1[i]][m];
-        }
-    }
-    *dx = simdLoad(buf + 0*GMX_SIMD_REAL_WIDTH);
-    *dy = simdLoad(buf + 1*GMX_SIMD_REAL_WIDTH);
-    *dz = simdLoad(buf + 2*GMX_SIMD_REAL_WIDTH);
-#endif
-}
-#endif /* GMX_SIMD_HAVE_REAL */
-
-
 /*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {
     1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4,
@@ -1116,7 +965,7 @@ real angles(int nbonds,
     return vtot;
 }
 
-#if GMX_SIMD_HAVE_REAL
+#if GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 /* As angles, but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
@@ -1136,6 +985,9 @@ angles_noener_simd(int nbonds,
     int                  ak[GMX_SIMD_REAL_WIDTH];
     GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  coeff[2*GMX_SIMD_REAL_WIDTH];
     GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  f_buf[6*GMX_SIMD_REAL_WIDTH];
+    SimdReal             xi_S, yi_S, zi_S;
+    SimdReal             xj_S, yj_S, zj_S;
+    SimdReal             xk_S, yk_S, zk_S;
     SimdReal             k_S, theta0_S;
     SimdReal             rijx_S, rijy_S, rijz_S;
     SimdReal             rkjx_S, rkjy_S, rkjz_S;
@@ -1184,11 +1036,16 @@ angles_noener_simd(int nbonds,
         }
 
         /* Store the non PBC corrected distances packed and aligned */
-        gmx_hack_simd_gather_rvec_dist_two_index(x, ai, aj,
-                                                 &rijx_S, &rijy_S, &rijz_S);
-        gmx_hack_simd_gather_rvec_dist_two_index(x, ak, aj,
-                                                 &rkjx_S, &rkjy_S, &rkjz_S);
-
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi_S, &yi_S, &zi_S);
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj_S, &yj_S, &zj_S);
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ak, &xk_S, &yk_S, &zk_S);
+        rijx_S = simdSub(xi_S,xj_S);
+        rijy_S = simdSub(yi_S,yj_S);
+        rijz_S = simdSub(zi_S,zj_S);
+        rkjx_S = simdSub(xk_S,xj_S);
+        rkjy_S = simdSub(yk_S,yj_S);
+        rkjz_S = simdSub(zk_S,zj_S);
+        
         k_S       = simdLoad(coeff);
         theta0_S  = simdLoad(coeff+GMX_SIMD_REAL_WIDTH);
 
@@ -1264,7 +1121,7 @@ angles_noener_simd(int nbonds,
     }
 }
 
-#endif /* GMX_SIMD_HAVE_REAL */
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 real linear_angles(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
@@ -1564,7 +1421,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 }
 
 
-#if GMX_SIMD_HAVE_REAL
+#if GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 /* As dih_angle above, but calculates 4 dihedral angles at once using SIMD,
  * also calculates the pre-factor required for the dihedral force update.
@@ -1582,6 +1439,10 @@ dih_angle_simd(const rvec *x,
                real *p,
                real *q)
 {
+    SimdReal xi_S, yi_S, zi_S;
+    SimdReal xj_S, yj_S, zj_S;
+    SimdReal xk_S, yk_S, zk_S;
+    SimdReal xl_S, yl_S, zl_S;
     SimdReal rijx_S, rijy_S, rijz_S;
     SimdReal rkjx_S, rkjy_S, rkjz_S;
     SimdReal rklx_S, rkly_S, rklz_S;
@@ -1605,12 +1466,19 @@ dih_angle_simd(const rvec *x,
     real_eps_S  = simdSet1(2*GMX_REAL_EPS);
 
     /* Store the non PBC corrected distances packed and aligned */
-    gmx_hack_simd_gather_rvec_dist_two_index(x, ai, aj,
-                                             &rijx_S, &rijy_S, &rijz_S);
-    gmx_hack_simd_gather_rvec_dist_two_index(x, ak, aj,
-                                             &rkjx_S, &rkjy_S, &rkjz_S);
-    gmx_hack_simd_gather_rvec_dist_two_index(x, ak, al,
-                                             &rklx_S, &rkly_S, &rklz_S);
+    simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ai, &xi_S, &yi_S, &zi_S);
+    simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), aj, &xj_S, &yj_S, &zj_S);
+    simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), ak, &xk_S, &yk_S, &zk_S);
+    simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), al, &xl_S, &yl_S, &zl_S);
+    rijx_S = simdSub(xi_S,xj_S);
+    rijy_S = simdSub(yi_S,yj_S);
+    rijz_S = simdSub(zi_S,zj_S);
+    rkjx_S = simdSub(xk_S,xj_S);
+    rkjy_S = simdSub(yk_S,yj_S);
+    rkjz_S = simdSub(zk_S,zj_S);
+    rklx_S = simdSub(xk_S,xl_S);
+    rkly_S = simdSub(yk_S,yl_S);
+    rklz_S = simdSub(zk_S,zl_S);
 
     pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc);
     pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc);
@@ -1676,7 +1544,7 @@ dih_angle_simd(const rvec *x,
     simdStore(q, q_S);
 }
 
-#endif /* GMX_SIMD_HAVE_REAL */
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
@@ -2010,7 +1878,7 @@ pdihs_noener(int nbonds,
 }
 
 
-#if GMX_SIMD_HAVE_REAL
+#if GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 /* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
 void
@@ -2272,7 +2140,7 @@ rbdihs_noener_simd(int nbonds,
     }
 }
 
-#endif /* GMX_SIMD_HAVE_REAL */
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 
 real idihs(int nbonds,

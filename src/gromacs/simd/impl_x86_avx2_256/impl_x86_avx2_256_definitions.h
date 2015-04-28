@@ -33,50 +33,39 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
-#define GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
+#ifndef GMX_SIMD_IMPL_X86_AVX2_256_DEFINITIONS_H
+#define GMX_SIMD_IMPL_X86_AVX2_256_DEFINITIONS_H
 
-#include "config.h"
+// Capability definitions for 256-bit AVX2
+#define GMX_SIMD                            2
+#define GMX_SIMD_HAVE_FLOAT                 1
+#define GMX_SIMD_HAVE_DOUBLE                1
+#define GMX_SIMD_HAVE_LOADU                 1
+#define GMX_SIMD_HAVE_STOREU                1
+#define GMX_SIMD_HAVE_LOGICAL               1
+#define GMX_SIMD_HAVE_FMA                   1
+#define GMX_SIMD_HAVE_FRACTION              0
+#define GMX_SIMD_HAVE_FINT32_EXTRACT        1
+#define GMX_SIMD_HAVE_FINT32_LOGICAL        1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS    1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT        1
+#define GMX_SIMD_HAVE_DINT32_LOGICAL        1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS    1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT   1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE  1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT      1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE     0 // Not needed for width 4
 
-#include <immintrin.h>
+#define GMX_SIMD4_HAVE_FLOAT                1
+#define GMX_SIMD4_HAVE_DOUBLE               1
 
-#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd4_double.h"
+// Implementation details
+#define GMX_SIMD_FLOAT_WIDTH                8
+#define GMX_SIMD_DOUBLE_WIDTH               4
+#define GMX_SIMD_FINT32_WIDTH               8
+#define GMX_SIMD_DINT32_WIDTH               4
+#define GMX_SIMD4_WIDTH                     4
+#define GMX_SIMD_RSQRT_BITS                11
+#define GMX_SIMD_RCP_BITS                  11
 
-namespace gmx
-{
-
-static inline Simd4Double gmx_simdcall
-simd4FmaddD(Simd4Double a, Simd4Double b, Simd4Double c)
-{
-    return {
-               _mm256_fmadd_pd(a.r, b.r, c.r)
-    };
-}
-
-static inline Simd4Double gmx_simdcall
-simd4FmsubD(Simd4Double a, Simd4Double b, Simd4Double c)
-{
-    return {
-               _mm256_fmsub_pd(a.r, b.r, c.r)
-    };
-}
-
-static inline Simd4Double gmx_simdcall
-simd4FnmaddD(Simd4Double a, Simd4Double b, Simd4Double c)
-{
-    return {
-               _mm256_fnmadd_pd(a.r, b.r, c.r)
-    };
-}
-
-static inline Simd4Double gmx_simdcall
-simd4FnmsubD(Simd4Double a, Simd4Double b, Simd4Double c)
-{
-    return {
-               _mm256_fnmsub_pd(a.r, b.r, c.r)
-    };
-}
-
-}      // namespace gmx
-
-#endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_DEFINITIONS_H

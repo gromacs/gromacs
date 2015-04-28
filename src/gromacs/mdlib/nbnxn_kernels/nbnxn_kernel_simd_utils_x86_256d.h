@@ -58,14 +58,14 @@ gmx_mm_transpose2_op_pd(__m128d in0, __m128d in1,
 }
 
 /* Sum the elements within each input register and store the sums in out */
-static gmx_inline __m256d
-gmx_mm_transpose_sum4_pr(__m256d in0, __m256d in1,
-                         __m256d in2, __m256d in3)
+static gmx_inline Simd4Double
+gmx_mm_transpose_sum4_pr(SimdDouble in0, SimdDouble in1,
+                         SimdDouble in2, SimdDouble in3)
 {
-    in0 = _mm256_hadd_pd(in0, in1);
-    in2 = _mm256_hadd_pd(in2, in3);
+    in0.r = _mm256_hadd_pd(in0.r, in1.r);
+    in2.r = _mm256_hadd_pd(in2.r, in3.r);
 
-    return _mm256_add_pd(_mm256_permute2f128_pd(in0, in2, 0x20), _mm256_permute2f128_pd(in0, in2, 0x31));
+    return { _mm256_add_pd(_mm256_permute2f128_pd(in0.r, in2.r, 0x20), _mm256_permute2f128_pd(in0.r, in2.r, 0x31)) };
 }
 
 static gmx_inline __m256
@@ -116,7 +116,7 @@ gmx_mm_invsqrt2_pd(__m256d in0, __m256d in1,
 
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
-                    __m256d *c6_S, __m256d *c12_S)
+                    SimdDouble *c6_S, SimdDouble *c12_S)
 {
     __m128d clj_S[UNROLLJ], c6t_S[2], c12t_S[2];
     int     p;
@@ -127,8 +127,8 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
     }
     gmx_mm_transpose2_op_pd(clj_S[0], clj_S[1], &c6t_S[0], &c12t_S[0]);
     gmx_mm_transpose2_op_pd(clj_S[2], clj_S[3], &c6t_S[1], &c12t_S[1]);
-    *c6_S  = gmx_2_m128d_to_m256d(c6t_S[0], c6t_S[1]);
-    *c12_S = gmx_2_m128d_to_m256d(c12t_S[0], c12t_S[1]);
+    c6_S->r  = gmx_2_m128d_to_m256d(c6t_S[0], c6t_S[1]);
+    c12_S->r = gmx_2_m128d_to_m256d(c12t_S[0], c12t_S[1]);
 }
 
 /* The load_table functions below are performance critical. They
@@ -136,13 +136,13 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * is aligned. */
 
 static gmx_inline void
-load_table_f(const real *tab_coul_F, __m128i ti_S, int *ti,
-             __m256d *ctab0_S, __m256d *ctab1_S)
+load_table_f(const real *tab_coul_F, SimdDInt32 ti_S, int *ti,
+             SimdDouble *ctab0_S, SimdDouble *ctab1_S)
 {
     __m128d ctab_S[4], tr_S[4];
     int     j;
 
-    _mm_store_si128((__m128i *)ti, ti_S);
+    _mm_store_si128((__m128i *)ti, ti_S.i);
     for (j = 0; j < 4; j++)
     {
         ctab_S[j] = _mm_loadu_pd(tab_coul_F+ti[j]);
@@ -150,21 +150,21 @@ load_table_f(const real *tab_coul_F, __m128i ti_S, int *ti,
     /* Shuffle the force table entries to a convenient order */
     gmx_mm_transpose2_op_pd(ctab_S[0], ctab_S[1], &tr_S[0], &tr_S[1]);
     gmx_mm_transpose2_op_pd(ctab_S[2], ctab_S[3], &tr_S[2], &tr_S[3]);
-    *ctab0_S = gmx_2_m128d_to_m256d(tr_S[0], tr_S[2]);
-    *ctab1_S = gmx_2_m128d_to_m256d(tr_S[1], tr_S[3]);
+    ctab0_S->r = gmx_2_m128d_to_m256d(tr_S[0], tr_S[2]);
+    ctab1_S->r = gmx_2_m128d_to_m256d(tr_S[1], tr_S[3]);
     /* The second force table entry should contain the difference */
-    *ctab1_S = _mm256_sub_pd(*ctab1_S, *ctab0_S);
+    ctab1_S->r = _mm256_sub_pd(ctab1_S->r, ctab0_S->r);
 }
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               __m128i ti_S, int *ti,
-               __m256d *ctab0_S, __m256d *ctab1_S, __m256d *ctabv_S)
+               SimdDInt32 ti_S, int *ti,
+               SimdDouble *ctab0_S, SimdDouble *ctab1_S, SimdDouble *ctabv_S)
 {
     __m128d ctab_S[8], tr_S[4];
     int     j;
 
-    _mm_store_si128((__m128i *)ti, ti_S);
+    _mm_store_si128((__m128i *)ti, ti_S.i);
     for (j = 0; j < 4; j++)
     {
         ctab_S[j] = _mm_loadu_pd(tab_coul_F+ti[j]);
@@ -172,23 +172,23 @@ load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
     /* Shuffle the force table entries to a convenient order */
     gmx_mm_transpose2_op_pd(ctab_S[0], ctab_S[1], &tr_S[0], &tr_S[1]);
     gmx_mm_transpose2_op_pd(ctab_S[2], ctab_S[3], &tr_S[2], &tr_S[3]);
-    *ctab0_S = gmx_2_m128d_to_m256d(tr_S[0], tr_S[2]);
-    *ctab1_S = gmx_2_m128d_to_m256d(tr_S[1], tr_S[3]);
+    ctab0_S->r = gmx_2_m128d_to_m256d(tr_S[0], tr_S[2]);
+    ctab1_S->r = gmx_2_m128d_to_m256d(tr_S[1], tr_S[3]);
     /* The second force table entry should contain the difference */
-    *ctab1_S = _mm256_sub_pd(*ctab1_S, *ctab0_S);
+    ctab1_S->r = _mm256_sub_pd(ctab1_S->r, ctab0_S->r);
 
     for (j = 0; j < 4; j++)
     {
         ctab_S[4+j] = _mm_loadu_pd(tab_coul_V+ti[j]);
     }
     /* Shuffle the energy table entries to a single register */
-    *ctabv_S = gmx_2_m128d_to_m256d(_mm_shuffle_pd(ctab_S[4], ctab_S[5], _MM_SHUFFLE2(0, 0)), _mm_shuffle_pd(ctab_S[6], ctab_S[7], _MM_SHUFFLE2(0, 0)));
+    ctabv_S->r = gmx_2_m128d_to_m256d(_mm_shuffle_pd(ctab_S[4], ctab_S[5], _MM_SHUFFLE2(0, 0)), _mm_shuffle_pd(ctab_S[6], ctab_S[7], _MM_SHUFFLE2(0, 0)));
 }
 
 static gmx_inline gmx_exclfilter
 gmx_load1_exclfilter(int e)
 {
-    return _mm256_castsi256_pd(_mm256_set1_epi32(e));
+    return { _mm256_castsi256_pd(_mm256_set1_epi32(e)) };
 }
 
 static gmx_inline gmx_exclfilter
@@ -205,7 +205,7 @@ gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
      * a non-zero float, but with the Intel compiler this does not
      * work correctly. Because AVX does not have int->double
      * conversion, we convert via float. */
-    return _mm256_cmp_pd(_mm256_castps_pd(_mm256_cvtepi32_ps(_mm256_castpd_si256(_mm256_and_pd(m0, m1)))), _mm256_setzero_pd(), 0x0c);
+    return { _mm256_cmp_pd(_mm256_castps_pd(_mm256_cvtepi32_ps(_mm256_castpd_si256(_mm256_and_pd(m0.r, m1.r)))), _mm256_setzero_pd(), 0x0c) };
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s256d_h_ */

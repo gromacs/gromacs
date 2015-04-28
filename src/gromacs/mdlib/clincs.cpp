@@ -72,246 +72,6 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-/* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
-#if GMX_SIMD_HAVE_REAL && !(defined _MSC_VER && _MSC_VER < 1700) && !defined(__ICL)
-#    define LINCS_SIMD
-#endif
-
-
-#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
-
-// This was originally work-in-progress for augmenting the SIMD module with
-// masked load/store operations. Instead, that turned into and extended SIMD
-// interface that supports gather/scatter in all platforms, which will be
-// part of a future Gromacs version. However, since the code for bonded
-// interactions and LINCS was already written it would be a pity not to get
-// the performance gains in Gromacs-5.1. For this reason we have added it as
-// a bit of a hack in the two files that use it. It will be replaced with the
-// new generic functionality after version 5.1
-
-#    ifdef GMX_DOUBLE
-static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose4_r(SimdDouble *row0,
-                           SimdDouble *row1,
-                           SimdDouble *row2,
-                           SimdDouble *row3)
-{
-    __m256d tmp0, tmp1, tmp2, tmp3;
-
-    tmp0  = _mm256_unpacklo_pd(*row0, *row1);
-    tmp2  = _mm256_unpacklo_pd(*row2, *row3);
-    tmp1  = _mm256_unpackhi_pd(*row0, *row1);
-    tmp3  = _mm256_unpackhi_pd(*row2, *row3);
-    *row0 = _mm256_permute2f128_pd(tmp0, tmp2, 0x20);
-    *row1 = _mm256_permute2f128_pd(tmp1, tmp3, 0x20);
-    *row2 = _mm256_permute2f128_pd(tmp0, tmp2, 0x31);
-    *row3 = _mm256_permute2f128_pd(tmp1, tmp3, 0x31);
-}
-
-static gmx_inline void gmx_simdcall
-gmx_hack_simd4_transpose_to_simd_r(const Simd4Double *a,
-                                   SimdDouble        *row0,
-                                   SimdDouble        *row1,
-                                   SimdDouble        *row2,
-                                   SimdDouble        *row3)
-{
-    *row0 = a[0];
-    *row1 = a[1];
-    *row2 = a[2];
-    *row3 = a[3];
-
-    gmx_hack_simd_transpose4_r(row0, row1, row2, row3);
-}
-
-static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose_to_simd4_r(SimdDouble   row0,
-                                   SimdDouble   row1,
-                                   SimdDouble   row2,
-                                   SimdDouble   row3,
-                                   Simd4Double *a)
-{
-    a[0] = row0;
-    a[1] = row1;
-    a[2] = row2;
-    a[3] = row3;
-
-    gmx_hack_simd_transpose4_r(&a[0], &a[1], &a[2], &a[3]);
-}
-
-
-#    if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
-#        define gmx_hack_simd4_load3_r(mem)      _mm256_maskload_pd((mem), _mm_castsi128_ps(_mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1)))
-#        define gmx_hack_simd4_store3_r(mem, x)   _mm256_maskstore_pd((mem), _mm_castsi128_ps(_mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1)), (x))
-#    else
-#        define gmx_hack_simd4_load3_r(mem)      _mm256_maskload_pd((mem), _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1))
-#        define gmx_hack_simd4_store3_r(mem, x)   _mm256_maskstore_pd((mem), _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1), (x))
-#    endif
-
-#    else /* single instead of double */
-static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose4_r(SimdFloat *row0,
-                           SimdFloat *row1,
-                           SimdFloat *row2,
-                           SimdFloat *row3)
-{
-    __m256 tmp0, tmp1, tmp2, tmp3;
-
-    tmp0  = _mm256_unpacklo_ps(*row0, *row1);
-    tmp2  = _mm256_unpacklo_ps(*row2, *row3);
-    tmp1  = _mm256_unpackhi_ps(*row0, *row1);
-    tmp3  = _mm256_unpackhi_ps(*row2, *row3);
-    *row0 = _mm256_shuffle_ps(tmp0, tmp2, 0x44);
-    *row1 = _mm256_shuffle_ps(tmp0, tmp2, 0xEE);
-    *row2 = _mm256_shuffle_ps(tmp1, tmp3, 0x44);
-    *row3 = _mm256_shuffle_ps(tmp1, tmp3, 0xEE);
-}
-
-static gmx_inline void gmx_simdcall
-gmx_hack_simd4_transpose_to_simd_r(const Simd4Float *a,
-                                   SimdFloat        *row0,
-                                   SimdFloat        *row1,
-                                   SimdFloat        *row2,
-                                   SimdFloat        *row3)
-{
-    *row0 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[0]), a[4], 1);
-    *row1 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[1]), a[5], 1);
-    *row2 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[2]), a[6], 1);
-    *row3 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[3]), a[7], 1);
-
-    gmx_hack_simd_transpose4_r(row0, row1, row2, row3);
-}
-
-static gmx_inline void gmx_simdcall
-gmx_hack_simd_transpose_to_simd4_r(SimdFloat   row0,
-                                   SimdFloat   row1,
-                                   SimdFloat   row2,
-                                   SimdFloat   row3,
-                                   Simd4Float *a)
-{
-    gmx_hack_simd_transpose4_r(&row0, &row1, &row2, &row3);
-
-    a[0] = _mm256_extractf128_ps(row0, 0);
-    a[1] = _mm256_extractf128_ps(row1, 0);
-    a[2] = _mm256_extractf128_ps(row2, 0);
-    a[3] = _mm256_extractf128_ps(row3, 0);
-    a[4] = _mm256_extractf128_ps(row0, 1);
-    a[5] = _mm256_extractf128_ps(row1, 1);
-    a[6] = _mm256_extractf128_ps(row2, 1);
-    a[7] = _mm256_extractf128_ps(row3, 1);
-}
-#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
-#        define gmx_hack_simd4_load3_r(mem)      _mm_maskload_ps((mem), _mm_castsi256_pd(_mm_set_epi32(0, -1, -1, -1)))
-#        define gmx_hack_simd4_store3_r(mem, x)   _mm_maskstore_ps((mem), _mm_castsi256_pd(_mm_set_epi32(0, -1, -1, -1)), (x))
-#else
-#        define gmx_hack_simd4_load3_r(mem)      _mm_maskload_ps((mem), _mm_set_epi32(0, -1, -1, -1))
-#        define gmx_hack_simd4_store3_r(mem, x)   _mm_maskstore_ps((mem), _mm_set_epi32(0, -1, -1, -1), (x))
-#endif
-
-#endif /* double */
-
-#endif /* AVX */
-
-#if GMX_SIMD_HAVE_REAL
-/*! \brief Store differences between indexed rvecs in SIMD registers.
- *
- * Returns SIMD register with the difference vectors:
- *     v[pair_index[i*2]] - v[pair_index[i*2 + 1]]
- *
- * \param[in]     v           Array of rvecs
- * \param[in]     pair_index  Index pairs for GMX_SIMD_REAL_WIDTH vector pairs
- * \param[in,out] buf         Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
- * \param[out]    dx          SIMD register with x difference
- * \param[out]    dy          SIMD register with y difference
- * \param[out]    dz          SIMD register with z difference
- */
-static gmx_inline void gmx_simdcall
-gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
-                                          const int       *pair_index,
-                                          real gmx_unused *buf,
-                                          SimdReal        *dx,
-                                          SimdReal        *dy,
-                                          SimdReal        *dz)
-{
-#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
-    int              i;
-    Simd4Real        d[GMX_SIMD_REAL_WIDTH];
-    SimdReal         tmp;
-
-    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        d[i] = simd4Sub(gmx_hack_simd4_load3_r(&(v[pair_index[i*2 + 0]][0])),
-                        gmx_hack_simd4_load3_r(&(v[pair_index[i*2 + 1]][0])));
-    }
-
-    gmx_hack_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
-#else
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf_aligned[3*GMX_SIMD_REAL_WIDTH];
-
-    int i, m;
-
-    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        /* Store the distances packed and aligned */
-        for (m = 0; m < DIM; m++)
-        {
-            buf_aligned[m*GMX_SIMD_REAL_WIDTH + i] =
-                v[pair_index[i*2]][m] - v[pair_index[i*2 + 1]][m];
-        }
-    }
-    *dx = simdLoad(buf_aligned + 0*GMX_SIMD_REAL_WIDTH);
-    *dy = simdLoad(buf_aligned + 1*GMX_SIMD_REAL_WIDTH);
-    *dz = simdLoad(buf_aligned + 2*GMX_SIMD_REAL_WIDTH);
-#endif
-}
-
-
-/*! \brief Stores SIMD vector into multiple rvecs.
- *
- * \param[in]     x           SIMD register with x-components of the vectors
- * \param[in]     y           SIMD register with y-components of the vectors
- * \param[in]     z           SIMD register with z-components of the vectors
- * \param[in,out] buf         Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
- * \param[out]    v           Array of GMX_SIMD_REAL_WIDTH rvecs
- */
-static gmx_inline void gmx_simdcall
-gmx_simd_store_vec_to_rvec(SimdReal         x,
-                           SimdReal         y,
-                           SimdReal         z,
-                           real gmx_unused *buf,
-                           rvec            *v)
-{
-#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
-    int              i;
-    Simd4Real        s4[GMX_SIMD_REAL_WIDTH];
-    SimdReal         zero = simdSetZero();
-
-    gmx_hack_simd_transpose_to_simd4_r(x, y, z, zero, s4);
-
-    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        gmx_hack_simd4_store3_r(v[i], s4[i]);
-    }
-#else
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf_aligned[3*GMX_SIMD_REAL_WIDTH];
-
-    int i, m;
-
-    simdStore(buf_aligned + 0*GMX_SIMD_REAL_WIDTH, x);
-    simdStore(buf_aligned + 1*GMX_SIMD_REAL_WIDTH, y);
-    simdStore(buf_aligned + 2*GMX_SIMD_REAL_WIDTH, z);
-
-    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        for (m = 0; m < DIM; m++)
-        {
-            v[i][m] = buf_aligned[m*GMX_SIMD_REAL_WIDTH + i];
-        }
-    }
-#endif
-}
-#endif /* GMX_SIMD_HAVE_REAL */
-
-
 typedef struct {
     int    b0;         /* first constraint for this task */
     int    b1;         /* b1-1 is the last constraint for this task */
@@ -377,7 +137,7 @@ typedef struct gmx_lincsdata {
 } t_gmx_lincsdata;
 
 /* Define simd_width for memory allocation used for SIMD code */
-#ifdef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
 static const int simd_width = GMX_SIMD_REAL_WIDTH;
 #else
 static const int simd_width = 1;
@@ -647,7 +407,7 @@ static void lincs_update_atoms(struct gmx_lincsdata *li, int th,
     }
 }
 
-#ifdef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
 /* Calculate the constraint distance vectors r to project on from x.
  * Determine the right-hand side of the matrix equation using quantity f.
  * This function only differs from calc_dr_x_xp_simd below in that
@@ -661,8 +421,6 @@ calc_dr_x_f_simd(int                       b0,
                  const rvec * gmx_restrict f,
                  const real * gmx_restrict blc,
                  const pbc_simd_t *        pbc_simd,
-                 real * gmx_restrict       vbuf1,
-                 real * gmx_restrict       vbuf2,
                  rvec * gmx_restrict       r,
                  real * gmx_restrict       rhs,
                  real * gmx_restrict       sol)
@@ -671,14 +429,34 @@ calc_dr_x_f_simd(int                       b0,
 
     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
 
+    int offset2[GMX_SIMD_REAL_WIDTH];
+    
+    for(int i = 0 ;i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        offset2[i] = i;
+    }
+    
     for (bs = b0; bs < b1; bs += GMX_SIMD_REAL_WIDTH)
     {
+        SimdReal x0_S, y0_S, z0_S;
+        SimdReal x1_S, y1_S, z1_S;
         SimdReal rx_S, ry_S, rz_S, n2_S, il_S;
         SimdReal fx_S, fy_S, fz_S, ip_S, rhs_S;
-
-        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf1,
-                                                  &rx_S, &ry_S, &rz_S);
-
+        int      offset0[GMX_SIMD_REAL_WIDTH];
+        int      offset1[GMX_SIMD_REAL_WIDTH];
+        
+        for(int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+        {
+            offset0[i] = bla[bs*2 + i*2];
+            offset1[i] = bla[bs*2 + i*2 + 1];
+        }
+        
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        rx_S = simdSub(x0_S, x1_S);
+        ry_S = simdSub(y0_S, y1_S);
+        rz_S = simdSub(z0_S, z1_S);
+        
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 
         n2_S  = simdNorm2(rx_S, ry_S, rz_S);
@@ -688,10 +466,13 @@ calc_dr_x_f_simd(int                       b0,
         ry_S  = simdMul(ry_S, il_S);
         rz_S  = simdMul(rz_S, il_S);
 
-        gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r + bs);
-
-        gmx_hack_simd_gather_rvec_dist_pair_index(f, bla + bs*2, vbuf2,
-                                                  &fx_S, &fy_S, &fz_S);
+        simdTransposeScatterStoreU<3>(reinterpret_cast<real *>(r + bs),offset2,rx_S,ry_S,rz_S);
+        
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(f), offset0, &x0_S, &y0_S, &z0_S);
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(f), offset1, &x1_S, &y1_S, &z1_S);
+        fx_S = simdSub(x0_S, x1_S);
+        fy_S = simdSub(y0_S, y1_S);
+        fz_S = simdSub(z0_S, z1_S);
 
         ip_S  = simdIprod(rx_S, ry_S, rz_S,
                           fx_S, fy_S, fz_S);
@@ -702,7 +483,7 @@ calc_dr_x_f_simd(int                       b0,
         simdStore(sol + bs, rhs_S);
     }
 }
-#endif /* LINCS_SIMD */
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 /* LINCS projection, works on derivatives of the coordinates */
 static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
@@ -740,7 +521,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     rhs2   = lincsd->tmp2;
     sol    = lincsd->tmp3;
 
-#ifdef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
 
     /* This SIMD code does the same as the plain-C code after the #else.
      * The only difference is that we always call pbc code, as with SIMD
@@ -756,11 +537,9 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
      */
     calc_dr_x_f_simd(b0, b1, bla, x, f, blc,
                      &pbc_simd,
-                     lincsd->task[th].simd_buf,
-                     lincsd->task[th].simd_buf + GMX_SIMD_REAL_WIDTH*DIM,
                      r, rhs1, sol);
 
-#else /* LINCS_SIMD */
+#else // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
     /* Compute normalized i-j vectors */
     if (pbc)
@@ -799,7 +578,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
         /* 7 flops */
     }
 
-#endif /* LINCS_SIMD */
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
     if (lincsd->bTaskDep)
     {
@@ -888,7 +667,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
     }
 }
 
-#ifdef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
 /* Calculate the constraint distance vectors r to project on from x.
  * Determine the right-hand side of the matrix equation using coordinates xp.
  */
@@ -901,8 +680,6 @@ calc_dr_x_xp_simd(int                       b0,
                   const real * gmx_restrict bllen,
                   const real * gmx_restrict blc,
                   const pbc_simd_t *        pbc_simd,
-                  real * gmx_restrict       vbuf1,
-                  real * gmx_restrict       vbuf2,
                   rvec * gmx_restrict       r,
                   real * gmx_restrict       rhs,
                   real * gmx_restrict       sol)
@@ -911,14 +688,34 @@ calc_dr_x_xp_simd(int                       b0,
 
     assert(b0 % GMX_SIMD_REAL_WIDTH == 0);
 
+    int offset2[GMX_SIMD_REAL_WIDTH];
+    
+    for(int i = 0 ;i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        offset2[i] = i;
+    }
+
     for (bs = b0; bs < b1; bs += GMX_SIMD_REAL_WIDTH)
     {
+        SimdReal x0_S, y0_S, z0_S;
+        SimdReal x1_S, y1_S, z1_S;
         SimdReal rx_S, ry_S, rz_S, n2_S, il_S;
         SimdReal rxp_S, ryp_S, rzp_S, ip_S, rhs_S;
-
-        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf1,
-                                                  &rx_S, &ry_S, &rz_S);
-
+        int      offset0[GMX_SIMD_REAL_WIDTH];
+        int      offset1[GMX_SIMD_REAL_WIDTH];
+        
+        for(int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+        {
+            offset0[i] = bla[bs*2 + i*2];
+            offset1[i] = bla[bs*2 + i*2 + 1];
+        }
+        
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        rx_S = simdSub(x0_S, x1_S);
+        ry_S = simdSub(y0_S, y1_S);
+        rz_S = simdSub(z0_S, z1_S);
+        
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 
         n2_S  = simdNorm2(rx_S, ry_S, rz_S);
@@ -928,10 +725,13 @@ calc_dr_x_xp_simd(int                       b0,
         ry_S  = simdMul(ry_S, il_S);
         rz_S  = simdMul(rz_S, il_S);
 
-        gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r + bs);
-
-        gmx_hack_simd_gather_rvec_dist_pair_index(xp, bla + bs*2, vbuf2,
-                                                  &rxp_S, &ryp_S, &rzp_S);
+        simdTransposeScatterStoreU<3>(reinterpret_cast<real *>(r + bs),offset2,rx_S,ry_S,rz_S);
+        
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(xp), offset0, &x0_S, &y0_S, &z0_S);
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(xp), offset1, &x1_S, &y1_S, &z1_S);
+        rxp_S = simdSub(x0_S, x1_S);
+        ryp_S = simdSub(y0_S, y1_S);
+        rzp_S = simdSub(z0_S, z1_S);
 
         pbc_correct_dx_simd(&rxp_S, &ryp_S, &rzp_S, pbc_simd);
 
@@ -945,7 +745,7 @@ calc_dr_x_xp_simd(int                       b0,
         simdStore(sol + bs, rhs_S);
     }
 }
-#endif /* LINCS_SIMD */
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 /* Determine the distances and right-hand side for the next iteration */
 static void calc_dist_iter(int                       b0,
@@ -996,7 +796,7 @@ static void calc_dist_iter(int                       b0,
     } /* 20*ncons flops */
 }
 
-#ifdef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
 /* As the function above, but using SIMD intrinsics */
 static void gmx_simdcall
 calc_dist_iter_simd(int                       b0,
@@ -1007,7 +807,6 @@ calc_dist_iter_simd(int                       b0,
                     const real * gmx_restrict blc,
                     const pbc_simd_t *        pbc_simd,
                     real                      wfac,
-                    real * gmx_restrict       vbuf,
                     real * gmx_restrict       rhs,
                     real * gmx_restrict       sol,
                     gmx_bool *                bWarn)
@@ -1026,11 +825,24 @@ calc_dist_iter_simd(int                       b0,
 
     for (bs = b0; bs < b1; bs += GMX_SIMD_REAL_WIDTH)
     {
+        SimdReal x0_S, y0_S, z0_S;
+        SimdReal x1_S, y1_S, z1_S;
         SimdReal rx_S, ry_S, rz_S, n2_S;
         SimdReal len_S, len2_S, dlen2_S, lc_S, blc_S;
+        int      offset0[GMX_SIMD_REAL_WIDTH];
+        int      offset1[GMX_SIMD_REAL_WIDTH];
+        
+        for(int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+        {
+            offset0[i] = bla[bs*2 + i*2];
+            offset1[i] = bla[bs*2 + i*2 + 1];
+        }
 
-        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf,
-                                                  &rx_S, &ry_S, &rz_S);
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset0, &x0_S, &y0_S, &z0_S);
+        simdGatherLoadUTranspose<3>(reinterpret_cast<const real *>(x), offset1, &x1_S, &y1_S, &z1_S);
+        rx_S = simdSub(x0_S, x1_S);
+        ry_S = simdSub(y0_S, y1_S);
+        rz_S = simdSub(z0_S, z1_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
 
@@ -1066,7 +878,7 @@ calc_dist_iter_simd(int                       b0,
         *bWarn = TRUE;
     }
 }
-#endif /* LINCS_SIMD */
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
 static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                      struct gmx_lincsdata *lincsd, int th,
@@ -1101,7 +913,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     mlambda = lincsd->mlambda;
     nlocat  = lincsd->nlocat;
 
-#ifdef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
 
     /* This SIMD code does the same as the plain-C code after the #else.
      * The only difference is that we always call pbc code, as with SIMD
@@ -1117,11 +929,9 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
      */
     calc_dr_x_xp_simd(b0, b1, bla, x, xp, bllen, blc,
                       &pbc_simd,
-                      lincsd->task[th].simd_buf,
-                      lincsd->task[th].simd_buf + GMX_SIMD_REAL_WIDTH*DIM,
                       r, rhs1, sol);
 
-#else /* LINCS_SIMD */
+#else // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
     if (pbc)
     {
@@ -1170,7 +980,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         /* Together: 26*ncons + 6*nrtot flops */
     }
 
-#endif /* LINCS_SIMD */
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
     if (lincsd->bTaskDep)
     {
@@ -1193,17 +1003,17 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     lincs_matrix_expand(lincsd, &lincsd->task[th], blcc, rhs1, rhs2, sol);
     /* nrec*(ncons+2*nrtot) flops */
 
-#ifndef LINCS_SIMD
-    for (b = b0; b < b1; b++)
-    {
-        mlambda[b] = blc[b]*sol[b];
-    }
-#else
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
     for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
     {
         simdStore(mlambda + b,
                   simdMul(simdLoad(blc + b),
                           simdLoad(sol + b)));
+    }
+#else
+    for (b = b0; b < b1; b++)
+    {
+        mlambda[b] = blc[b]*sol[b];
     }
 #endif
 
@@ -1239,9 +1049,9 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 #pragma omp barrier
         }
 
-#ifdef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
         calc_dist_iter_simd(b0, b1, bla, xp, bllen, blc, &pbc_simd, wfac,
-                            lincsd->task[th].simd_buf, rhs1, sol, bWarn);
+                            rhs1, sol, bWarn);
 #else
         calc_dist_iter(b0, b1, bla, xp, bllen, blc, pbc, wfac,
                        rhs1, sol, bWarn);
@@ -1251,7 +1061,18 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
         lincs_matrix_expand(lincsd, &lincsd->task[th], blcc, rhs1, rhs2, sol);
         /* nrec*(ncons+2*nrtot) flops */
 
-#ifndef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
+        for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
+        {
+            SimdReal mvb;
+            
+            mvb = simdMul(simdLoad(blc + b),
+                          simdLoad(sol + b));
+            simdStore(blc_sol + b, mvb);
+            simdStore(mlambda + b,
+                      simdAdd(simdLoad(mlambda + b), mvb));
+        }
+#else
         for (b = b0; b < b1; b++)
         {
             real mvb;
@@ -1259,17 +1080,6 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
             mvb         = blc[b]*sol[b];
             blc_sol[b]  = mvb;
             mlambda[b] += mvb;
-        }
-#else
-        for (b = b0; b < b1; b += GMX_SIMD_REAL_WIDTH)
-        {
-            SimdReal mvb;
-
-            mvb = simdMul(simdLoad(blc + b),
-                          simdLoad(sol + b));
-            simdStore(blc_sol + b, mvb);
-            simdStore(mlambda + b,
-                      simdAdd(simdLoad(mlambda + b), mvb));
         }
 #endif
 
@@ -2206,7 +2016,7 @@ void set_lincs(const t_idef         *idef,
 
         li_task = &li->task[th];
 
-#ifdef LINCS_SIMD
+#if GMX_SIMD==3 && GMX_SIMD_HAVE_REAL
         /* With indepedent tasks we likely have H-bond constraints or constraint
          * pairs. The connected constraints will be pulled into the task, so the
          * constraints per task will often exceed ncon_target.
@@ -2222,7 +2032,7 @@ void set_lincs(const t_idef         *idef,
              */
             ncon_target = ((ncon_assign*(th + 1))/li->ntask - li->nc_real + GMX_SIMD_REAL_WIDTH - 1) & ~(GMX_SIMD_REAL_WIDTH - 1);
         }
-#endif
+#endif // GMX_SIMD==2 && GMX_SIMD_HAVE_REAL
 
         /* Continue filling the arrays where we left off with the previous task,
          * including padding for SIMD.

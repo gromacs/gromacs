@@ -33,20 +33,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX2_256_COMMON_H
-#define GMX_SIMD_IMPL_X86_AVX2_256_COMMON_H
+#ifndef GMX_SIMD_IMPL_X86_AVX2_256_UTIL_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX2_256_UTIL_DOUBLE_H
 
-/* x86 256-bit AVX2 SIMD instruction wrappers
- * Inherit parts of AVX2_256 from AVX_256
- */
-#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256.h"
+#include "config.h"
 
-/* Override some capability definitions for things added in AVX2 */
-#undef  GMX_SIMD_HAVE_FMA
-#define GMX_SIMD_HAVE_FMA                     1
-#undef  GMX_SIMD_HAVE_FINT32_LOGICAL
-#define GMX_SIMD_HAVE_FINT32_LOGICAL          1 /* AVX2 adds 256-bit integer shifts */
-#undef  GMX_SIMD_HAVE_FINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS      1 /* AVX2 adds 256-bit integer +,-,*  */
+#include <immintrin.h>
 
-#endif                                          /* GMX_SIMD_IMPL_X86_AVX2_256_COMMON_H */
+#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_util_double.h"
+
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_UTIL_DOUBLE_H
