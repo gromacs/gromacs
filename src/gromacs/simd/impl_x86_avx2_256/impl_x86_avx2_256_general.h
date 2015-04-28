@@ -33,50 +33,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
-#define GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
+#ifndef GMX_SIMD_IMPL_X86_AVX2_256_GENERAL_H
+#define GMX_SIMD_IMPL_X86_AVX2_256_GENERAL_H
 
-#include "config.h"
+#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_general.h"
 
-#include <immintrin.h>
-
-#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd4_double.h"
-
-namespace gmx
-{
-
-static inline Simd4Double gmx_simdcall
-simd4FmaddD(Simd4Double a, Simd4Double b, Simd4Double c)
-{
-    return {
-               _mm256_fmadd_pd(a.r, b.r, c.r)
-    };
-}
-
-static inline Simd4Double gmx_simdcall
-simd4FmsubD(Simd4Double a, Simd4Double b, Simd4Double c)
-{
-    return {
-               _mm256_fmsub_pd(a.r, b.r, c.r)
-    };
-}
-
-static inline Simd4Double gmx_simdcall
-simd4FnmaddD(Simd4Double a, Simd4Double b, Simd4Double c)
-{
-    return {
-               _mm256_fnmadd_pd(a.r, b.r, c.r)
-    };
-}
-
-static inline Simd4Double gmx_simdcall
-simd4FnmsubD(Simd4Double a, Simd4Double b, Simd4Double c)
-{
-    return {
-               _mm256_fnmsub_pd(a.r, b.r, c.r)
-    };
-}
-
-}      // namespace gmx
-
-#endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_GENERAL_H

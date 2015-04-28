@@ -33,20 +33,39 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX2_256_COMMON_H
-#define GMX_SIMD_IMPL_X86_AVX2_256_COMMON_H
+#ifndef GMX_SIMD_IMPL_X86_AVX2_256_DEFINITIONS_H
+#define GMX_SIMD_IMPL_X86_AVX2_256_DEFINITIONS_H
 
-/* x86 256-bit AVX2 SIMD instruction wrappers
- * Inherit parts of AVX2_256 from AVX_256
- */
-#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256.h"
+// Capability definitions for 256-bit AVX2
+#define GMX_SIMD                            2
+#define GMX_SIMD_HAVE_FLOAT                 1
+#define GMX_SIMD_HAVE_DOUBLE                1
+#define GMX_SIMD_HAVE_LOADU                 1
+#define GMX_SIMD_HAVE_STOREU                1
+#define GMX_SIMD_HAVE_LOGICAL               1
+#define GMX_SIMD_HAVE_FMA                   1
+#define GMX_SIMD_HAVE_FRACTION              0
+#define GMX_SIMD_HAVE_FINT32_EXTRACT        1
+#define GMX_SIMD_HAVE_FINT32_LOGICAL        1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS    1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT        1
+#define GMX_SIMD_HAVE_DINT32_LOGICAL        1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS    1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT   1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE  1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT      1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE     0 // Not needed for width 4
 
-/* Override some capability definitions for things added in AVX2 */
-#undef  GMX_SIMD_HAVE_FMA
-#define GMX_SIMD_HAVE_FMA                     1
-#undef  GMX_SIMD_HAVE_FINT32_LOGICAL
-#define GMX_SIMD_HAVE_FINT32_LOGICAL          1 /* AVX2 adds 256-bit integer shifts */
-#undef  GMX_SIMD_HAVE_FINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS      1 /* AVX2 adds 256-bit integer +,-,*  */
+#define GMX_SIMD4_HAVE_FLOAT                1
+#define GMX_SIMD4_HAVE_DOUBLE               1
 
-#endif                                          /* GMX_SIMD_IMPL_X86_AVX2_256_COMMON_H */
+// Implementation details
+#define GMX_SIMD_FLOAT_WIDTH                8
+#define GMX_SIMD_DOUBLE_WIDTH               4
+#define GMX_SIMD_FINT32_WIDTH               8
+#define GMX_SIMD_DINT32_WIDTH               4
+#define GMX_SIMD4_WIDTH                     4
+#define GMX_SIMD_RSQRT_BITS                11
+#define GMX_SIMD_RCP_BITS                  11
+
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_DEFINITIONS_H

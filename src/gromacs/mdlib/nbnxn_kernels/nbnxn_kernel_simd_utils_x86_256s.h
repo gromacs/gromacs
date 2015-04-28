@@ -62,18 +62,19 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 /* Set all entries in half-width SIMD register *a to b */
 #define gmx_set1_hpr(a, b)   *(a) = _mm_set1_ps(b)
 /* Load one real at b and one real at b+1 into halves of a, respectively */
-#define gmx_load1p1_pr(a, b)  *(a) = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_load1_ps(b)), _mm_load1_ps(b+1), 0x1)
+#define gmx_load1p1_pr(a, b)  *(a) = simdLoad1DualHsimdF(b)
+
 /* To half-width SIMD register b into half width aligned memory a */
 #define gmx_store_hpr(a, b)          _mm_store_ps(a, b)
 #define gmx_add_hpr                  _mm_add_ps
 #define gmx_sub_hpr                  _mm_sub_ps
 
 /* Sum over 4 half SIMD registers */
-static __m128 gmx_simdcall gmx_sum4_hpr(__m256 x, __m256 y)
+static __m128 gmx_simdcall gmx_sum4_hpr(SimdReal x, SimdReal y)
 {
     __m256 sum;
 
-    sum = _mm256_add_ps(x, y);
+    sum = _mm256_add_ps(x.r, y.r);
     return _mm_add_ps(_mm256_castps256_ps128(sum), _mm256_extractf128_ps(sum, 0x1));
 }
 
@@ -82,22 +83,22 @@ static gmx_inline void
 gmx_loaddh_pr(SimdReal *a, const real *b)
 {
     __m128 tmp;
-    tmp = _mm_load_ps(b);
-    *a  = _mm256_insertf128_ps(_mm256_castps128_ps256(tmp), tmp, 0x1);
+    tmp  = _mm_load_ps(b);
+    a->r = _mm256_insertf128_ps(_mm256_castps128_ps256(tmp), tmp, 0x1);
 }
 
 static gmx_inline void gmx_simdcall
 gmx_pr_to_2hpr(SimdReal a, gmx_mm_hpr *b, gmx_mm_hpr *c)
 {
-    *b = _mm256_extractf128_ps(a, 0);
-    *c = _mm256_extractf128_ps(a, 1);
+    *b = _mm256_extractf128_ps(a.r, 0);
+    *c = _mm256_extractf128_ps(a.r, 1);
 }
 
 /* Store half width SIMD registers a and b in full width register *c */
 static gmx_inline void gmx_simdcall
 gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, SimdReal *c)
 {
-    *c = _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 0x1);
+    c->r = _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 0x1);
 }
 
 #endif /* GMX_NBNXN_SIMD_2XNN */
@@ -128,28 +129,32 @@ gmx_shuffle_4_ps_fil2_to_1_ps(__m128 in0, __m128 in1, __m128 in2, __m128 in3)
 }
 
 /* Sum the elements within each input register and return the sums */
-static gmx_inline __m128 gmx_simdcall
-gmx_mm_transpose_sum4_pr(__m256 in0, __m256 in1,
-                         __m256 in2, __m256 in3)
+static gmx_inline Simd4Real gmx_simdcall
+gmx_mm_transpose_sum4_pr(SimdReal in0, SimdReal in1,
+                         SimdReal in2, SimdReal in3)
 {
-    in0 = _mm256_hadd_ps(in0, in1);
-    in2 = _mm256_hadd_ps(in2, in3);
-    in1 = _mm256_hadd_ps(in0, in2);
+    in0.r = _mm256_hadd_ps(in0.r, in1.r);
+    in2.r = _mm256_hadd_ps(in2.r, in3.r);
+    in1.r = _mm256_hadd_ps(in0.r, in2.r);
 
-    return _mm_add_ps(_mm256_castps256_ps128(in1),
-                      _mm256_extractf128_ps(in1, 1));
+    return {
+               _mm_add_ps(_mm256_castps256_ps128(in1.r),
+                          _mm256_extractf128_ps(in1.r, 1))
+    };
 }
 
 /* Sum the elements of halfs of each input register and return the sums */
-static gmx_inline __m128 gmx_simdcall
-gmx_mm_transpose_sum4h_pr(__m256 in0, __m256 in2)
+static gmx_inline Simd4Real gmx_simdcall
+gmx_mm_transpose_sum4h_pr(SimdReal in0, SimdReal in2)
 {
-    in0 = _mm256_hadd_ps(in0, _mm256_setzero_ps());
-    in2 = _mm256_hadd_ps(in2, _mm256_setzero_ps());
-    in0 = _mm256_hadd_ps(in0, in2);
-    in2 = _mm256_permute_ps(in0, _MM_SHUFFLE(2, 3, 0, 1));
+    in0.r = _mm256_hadd_ps(in0.r, _mm256_setzero_ps());
+    in2.r = _mm256_hadd_ps(in2.r, _mm256_setzero_ps());
+    in0.r = _mm256_hadd_ps(in0.r, in2.r);
+    in2.r = _mm256_permute_ps(in0.r, _MM_SHUFFLE(2, 3, 0, 1));
 
-    return _mm_add_ps(_mm256_castps256_ps128(in0), _mm256_extractf128_ps(in2, 1));
+    return {
+               _mm_add_ps(_mm256_castps256_ps128(in0.r), _mm256_extractf128_ps(in2.r, 1))
+    };
 }
 
 /* Put two 128-bit 4-float registers into one 256-bit 8-float register */
@@ -162,7 +167,7 @@ gmx_2_mm_to_m256(__m128 in0, __m128 in1)
 #if defined(UNROLLJ) && UNROLLJ == 8
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
-                    __m256 *c6_S, __m256 *c12_S)
+                    SimdReal *c6_S, SimdReal *c12_S)
 {
     __m128 clj_S[UNROLLJ], c6t_S[2], c12t_S[2];
     int    p;
@@ -177,8 +182,8 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
     gmx_shuffle_4_ps_fil01_to_2_ps(clj_S[4], clj_S[5], clj_S[6], clj_S[7],
                                    &c6t_S[1], &c12t_S[1]);
 
-    *c6_S  = gmx_2_mm_to_m256(c6t_S[0], c6t_S[1]);
-    *c12_S = gmx_2_mm_to_m256(c12t_S[0], c12t_S[1]);
+    c6_S->r  = gmx_2_mm_to_m256(c6t_S[0], c6t_S[1]);
+    c12_S->r = gmx_2_mm_to_m256(c12t_S[0], c12t_S[1]);
 }
 #endif
 
@@ -186,7 +191,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 static gmx_inline void
 load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
                      const int *type, int aj,
-                     __m256 *c6_S, __m256 *c12_S)
+                     SimdReal *c6_S, SimdReal *c12_S)
 {
     __m128 clj_S0[UNROLLJ], clj_S1[UNROLLJ], c6t_S[2], c12t_S[2];
     int    p;
@@ -206,8 +211,8 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
     gmx_shuffle_4_ps_fil01_to_2_ps(clj_S1[0], clj_S1[1], clj_S1[2], clj_S1[3],
                                    &c6t_S[1], &c12t_S[1]);
 
-    *c6_S  = gmx_2_mm_to_m256(c6t_S[0], c6t_S[1]);
-    *c12_S = gmx_2_mm_to_m256(c12t_S[0], c12t_S[1]);
+    c6_S->r  = gmx_2_mm_to_m256(c6t_S[0], c6t_S[1]);
+    c12_S->r = gmx_2_mm_to_m256(c12t_S[0], c12t_S[1]);
 }
 #endif
 
@@ -226,13 +231,13 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
 
 static gmx_inline void gmx_simdcall
 load_table_f(const real *tab_coul_FDV0, SimdInt32 ti_S, int *ti,
-             __m256 *ctab0_S, __m256 *ctab1_S)
+             SimdReal *ctab0_S, SimdReal *ctab1_S)
 {
     __m128 ctab_S[8], ctabt_S[4];
     int    j;
 
     /* Bit shifting would be faster, but AVX doesn't support that */
-    _mm256_store_si256((__m256i *)ti, ti_S);
+    _mm256_store_si256((__m256i *)ti, ti_S.i);
     for (j = 0; j < 8; j++)
     {
         ctab_S[j] = _mm_load_ps(tab_coul_FDV0+ti[j]*4);
@@ -242,19 +247,19 @@ load_table_f(const real *tab_coul_FDV0, SimdInt32 ti_S, int *ti,
     gmx_shuffle_4_ps_fil01_to_2_ps(ctab_S[4], ctab_S[5], ctab_S[6], ctab_S[7],
                                    &ctabt_S[1], &ctabt_S[3]);
 
-    *ctab0_S = gmx_2_mm_to_m256(ctabt_S[0], ctabt_S[1]);
-    *ctab1_S = gmx_2_mm_to_m256(ctabt_S[2], ctabt_S[3]);
+    ctab0_S->r = gmx_2_mm_to_m256(ctabt_S[0], ctabt_S[1]);
+    ctab1_S->r = gmx_2_mm_to_m256(ctabt_S[2], ctabt_S[3]);
 }
 
 static gmx_inline void gmx_simdcall
 load_table_f_v(const real *tab_coul_FDV0, SimdInt32 ti_S, int *ti,
-               __m256 *ctab0_S, __m256 *ctab1_S, __m256 *ctabv_S)
+               SimdReal *ctab0_S, SimdReal *ctab1_S, SimdReal *ctabv_S)
 {
     __m128 ctab_S[8], ctabt_S[4], ctabvt_S[2];
     int    j;
 
     /* Bit shifting would be faster, but AVX doesn't support that */
-    _mm256_store_si256((__m256i *)ti, ti_S);
+    _mm256_store_si256((__m256i *)ti, ti_S.i);
     for (j = 0; j < 8; j++)
     {
         ctab_S[j] = _mm_load_ps(tab_coul_FDV0+ti[j]*4);
@@ -264,15 +269,15 @@ load_table_f_v(const real *tab_coul_FDV0, SimdInt32 ti_S, int *ti,
     gmx_shuffle_4_ps_fil01_to_2_ps(ctab_S[4], ctab_S[5], ctab_S[6], ctab_S[7],
                                    &ctabt_S[1], &ctabt_S[3]);
 
-    *ctab0_S = gmx_2_mm_to_m256(ctabt_S[0], ctabt_S[1]);
-    *ctab1_S = gmx_2_mm_to_m256(ctabt_S[2], ctabt_S[3]);
+    ctab0_S->r = gmx_2_mm_to_m256(ctabt_S[0], ctabt_S[1]);
+    ctab1_S->r = gmx_2_mm_to_m256(ctabt_S[2], ctabt_S[3]);
 
     ctabvt_S[0] = gmx_shuffle_4_ps_fil2_to_1_ps(ctab_S[0], ctab_S[1],
                                                 ctab_S[2], ctab_S[3]);
     ctabvt_S[1] = gmx_shuffle_4_ps_fil2_to_1_ps(ctab_S[4], ctab_S[5],
                                                 ctab_S[6], ctab_S[7]);
 
-    *ctabv_S = gmx_2_mm_to_m256(ctabvt_S[0], ctabvt_S[1]);
+    ctabv_S->r = gmx_2_mm_to_m256(ctabvt_S[0], ctabvt_S[1]);
 }
 
 #if GMX_SIMD_HAVE_FINT32_LOGICAL
@@ -283,7 +288,9 @@ static const int filter_stride = 1;
 static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load1_exclfilter(int e)
 {
-    return _mm256_set1_epi32(e);
+    return {
+               _mm256_set1_epi32(e)
+    };
 }
 
 static gmx_inline gmx_exclfilter gmx_simdcall
@@ -295,7 +302,9 @@ gmx_load_exclusion_filter(const unsigned *i)
 static gmx_inline SimdBool gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
-    return _mm256_castsi256_ps(_mm256_cmpeq_epi32(_mm256_andnot_si256(m0, m1), _mm256_setzero_si256()));
+    return {
+               _mm256_castsi256_ps(_mm256_cmpeq_epi32(_mm256_andnot_si256(m0.i, m1.i), _mm256_setzero_si256()))
+    };
 }
 
 #else /* GMX_SIMD_HAVE_FINT32_LOGICAL */
@@ -307,7 +316,9 @@ static const int filter_stride = 1;
 static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load1_exclfilter(int e)
 {
-    return _mm256_castsi256_ps(_mm256_set1_epi32(e));
+    return {
+               _mm256_castsi256_ps(_mm256_set1_epi32(e))
+    };
 }
 
 static gmx_inline gmx_exclfilter gmx_simdcall
@@ -320,7 +331,9 @@ gmx_load_exclusion_filter(const unsigned *i)
 static gmx_inline SimdBool gmx_simdcall
 gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
 {
-    return _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c);
+    return {
+               _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0.r, m1.r))), _mm256_setzero_ps(), 0x0c)
+    };
 }
 
 #endif /* GMX_SIMD_HAVE_FINT32_LOGICAL */

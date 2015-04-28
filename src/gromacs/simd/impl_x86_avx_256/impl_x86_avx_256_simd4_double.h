@@ -38,68 +38,329 @@
 
 #include "config.h"
 
+#include <cassert>
+#include <cstddef>
+
 #include <immintrin.h>
 
-#include "impl_x86_avx_256_common.h"
-#include "impl_x86_avx_256_simd_double.h"
-
-/****************************************************
- *      DOUBLE PRECISION SIMD4 IMPLEMENTATION       *
- ****************************************************/
-#define Simd4Double           SimdDouble
-#define simd4LoadD            simdLoadD
-#define simd4Load1D           simdLoad1D
-#define simd4Set1D            simdSet1D
-#define simd4StoreD           simdStoreD
-#define simd4LoadUD           simdLoadUD
-#define simd4StoreUD          simdStoreUD
-#define simd4SetZeroD         simdSetZeroD
-#define simd4AddD             simdAddD
-#define simd4SubD             simdSubD
-#define simd4MulD             simdMulD
-#define simd4FmaddD           simdFmaddD
-#define simd4FmsubD           simdFmsubD
-#define simd4FnmaddD          simdFnmaddD
-#define simd4FnmsubD          simdFnmsubD
-#define simd4AndD             simdAndD
-#define simd4AndNotD          simdAndNotD
-#define simd4OrD              simdOrD
-#define simd4XorD             simdXorD
-#define simd4RsqrtD           simdRsqrtD
-#define simd4AbsD            simdAbsD
-#define simd4NegD            simdNegD
-#define simd4MaxD             simdMaxD
-#define simd4MinD             simdMinD
-#define simd4RoundD           simdRoundD
-#define simd4TruncD           simdTruncD
-#define simd4DotProductD     simd4DotProductD_avx_256
-#define Simd4DBool           SimdDBool
-#define simd4CmpEqD           simdCmpEqD
-#define simd4CmpLtD           simdCmpLtD
-#define simd4CmpLeD           simdCmpLeD
-#define simd4AndDB            simdAndDB
-#define simd4OrDB             simdOrDB
-#define simd4AnyTrueDB        simdAnyTrueDB
-#define simd4MaskD       simdMaskD
-#define simd4MaskNotD    simdMaskNotD
-#define simd4BlendD          simdBlendD
-#define simd4ReduceD          simdReduceD
-
-/* Implementation helpers */
-static inline double gmx_simdcall
-simd4DotProductD_avx_256(__m256d a, __m256d b)
+namespace gmx
 {
-    double  d;
+
+struct Simd4Double
+{
+    __m256d r;
+};
+
+struct Simd4DBool
+{
+    __m256d b;
+};
+
+static inline Simd4Double gmx_simdcall
+simd4LoadD(const double *m)
+{
+    assert(std::size_t(m) % 32 == 0);
+    return {
+               _mm256_load_pd(m)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4Load1D(const double *m)
+{
+    return {
+               _mm256_broadcast_sd(m)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4Set1D(double r)
+{
+    return {
+               _mm256_set1_pd(r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4SetZeroD()
+{
+    return {
+               _mm256_setzero_pd()
+    };
+}
+
+static inline void gmx_simdcall
+simd4StoreD(double *m, Simd4Double a)
+{
+    assert(std::size_t(m) % 32 == 0);
+    _mm256_store_pd(m, a.r);
+}
+
+static inline Simd4Double gmx_simdcall
+simd4LoadUD(const double *m)
+{
+    return {
+               _mm256_loadu_pd(m)
+    };
+}
+
+static inline void gmx_simdcall
+simd4StoreUD(double *m, Simd4Double a) { _mm256_storeu_pd(m, a.r); }
+
+static inline Simd4Double gmx_simdcall
+simd4AndD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_and_pd(a.r, b.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4AndNotD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_andnot_pd(a.r, b.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4OrD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_or_pd(a.r, b.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4XorD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_xor_pd(a.r, b.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4AddD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_add_pd(a.r, b.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4SubD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_sub_pd(a.r, b.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4MulD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_mul_pd(a.r, b.r)
+    };
+}
+
+// Override for AVX2 and higher
+#if GMX_SIMD_X86_AVX_256
+static inline Simd4Double gmx_simdcall
+simd4FmaddD(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_add_pd(_mm256_mul_pd(a.r, b.r), c.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4FmsubD(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_sub_pd(_mm256_mul_pd(a.r, b.r), c.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4FnmaddD(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_sub_pd(c.r, _mm256_mul_pd(a.r, b.r))
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4FnmsubD(Simd4Double a, Simd4Double b, Simd4Double c)
+{
+    return {
+               _mm256_sub_pd(_mm256_setzero_pd(), _mm256_add_pd(_mm256_mul_pd(a.r, b.r), c.r))
+    };
+}
+#endif
+
+static inline Simd4Double gmx_simdcall
+simd4RsqrtD(Simd4Double x)
+{
+    return {
+               _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x.r)))
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4AbsD(Simd4Double x)
+{
+    return {
+               _mm256_andnot_pd( _mm256_set1_pd(GMX_DOUBLE_NEGZERO), x.r )
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4NegD(Simd4Double x)
+{
+    return {
+               _mm256_xor_pd(x.r, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4MaxD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_max_pd(a.r, b.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4MinD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_min_pd(a.r, b.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4RoundD(Simd4Double x)
+{
+    return {
+               _mm256_round_pd(x.r, _MM_FROUND_NINT)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4TruncD(Simd4Double x)
+{
+    return {
+               _mm256_round_pd(x.r, _MM_FROUND_TRUNC)
+    };
+}
+
+static inline float gmx_simdcall
+simd4DotProductD(Simd4Double a, Simd4Double b)
+{
     __m128d tmp1, tmp2;
-    a    = _mm256_mul_pd(a, b);
-    tmp1 = _mm256_castpd256_pd128(a);
-    tmp2 = _mm256_extractf128_pd(a, 0x1);
+    a.r  = _mm256_mul_pd(a.r, b.r);
+    tmp1 = _mm256_castpd256_pd128(a.r);
+    tmp2 = _mm256_extractf128_pd(a.r, 0x1);
 
     tmp1 = _mm_add_pd(tmp1, _mm_permute_pd(tmp1, _MM_SHUFFLE2(0, 1)));
     tmp1 = _mm_add_pd(tmp1, tmp2);
-    _mm_store_sd(&d, tmp1);
-    return d;
+    return *reinterpret_cast<double *>(&tmp1);
 }
 
+static inline void gmx_simdcall
+simd4Transpose(Simd4Double * v0, Simd4Double * v1,
+               Simd4Double * v2, Simd4Double * v3)
+{
+    __m256d t1, t2, t3, t4;
+    t1    = _mm256_unpacklo_pd(v0->r, v1->r);
+    t2    = _mm256_unpackhi_pd(v0->r, v1->r);
+    t3    = _mm256_unpacklo_pd(v2->r, v3->r);
+    t4    = _mm256_unpackhi_pd(v2->r, v3->r);
+    v0->r = _mm256_permute2f128_pd(t1, t3, 0x20);
+    v1->r = _mm256_permute2f128_pd(t2, t4, 0x20);
+    v2->r = _mm256_permute2f128_pd(t1, t3, 0x31);
+    v3->r = _mm256_permute2f128_pd(t2, t4, 0x31);
+}
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_256_SIMD4_DOUBLE_H */
+static inline Simd4DBool gmx_simdcall
+simd4CmpEqD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_cmp_pd(a.r, b.r, _CMP_EQ_OQ)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+simd4CmpLtD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_cmp_pd(a.r, b.r, _CMP_LT_OQ)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+simd4CmpLeD(Simd4Double a, Simd4Double b)
+{
+    return {
+               _mm256_cmp_pd(a.r, b.r, _CMP_LE_OQ)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+simd4AndDB(Simd4DBool a, Simd4DBool b)
+{
+    return {
+               _mm256_and_pd(a.b, b.b)
+    };
+}
+
+static inline Simd4DBool gmx_simdcall
+simd4OrDB(Simd4DBool a, Simd4DBool b)
+{
+    return {
+               _mm256_or_pd(a.b, b.b)
+    };
+}
+
+static inline bool gmx_simdcall
+simd4AnyTrueDB(Simd4DBool a) { return _mm256_movemask_pd(a.b) != 0; }
+
+static inline Simd4Double gmx_simdcall
+simd4MaskD(Simd4Double a, Simd4DBool mask)
+{
+    return {
+               _mm256_and_pd(a.r, mask.b)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4MaskNotD(Simd4Double a, Simd4DBool mask)
+{
+    return {
+               _mm256_andnot_pd(mask.b, a.r)
+    };
+}
+
+static inline Simd4Double gmx_simdcall
+simd4BlendD(Simd4Double a, Simd4Double b, Simd4DBool sel)
+{
+    return {
+               _mm256_blendv_pd(a.r, b.r, sel.b)
+    };
+}
+
+static inline float gmx_simdcall
+simd4ReduceD(Simd4Double a)
+{
+    __m128d a0, a1;
+    // test with shuffle & add as an alternative to hadd later
+    a.r = _mm256_hadd_pd(a.r, a.r);
+    a0  = _mm256_castpd256_pd128(a.r);
+    a1  = _mm256_extractf128_pd(a.r, 0x1);
+    a0  = _mm_add_sd(a0, a1);
+    return *reinterpret_cast<double *>(&a0);
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_256_SIMD4_DOUBLE_H
