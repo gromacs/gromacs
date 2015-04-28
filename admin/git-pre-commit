@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 # You can also run git commit --no-verify, but that also disables other hooks,
 # such as the Change-Id hook used by Gerrit.
 #
-# See docs/dev-manual/uncrustify.md for more details.
+# See docs/dev-manual/uncrustify.rst for more details.
 
 if [ ! -z "$NO_FORMAT_CHECK" ]
 then

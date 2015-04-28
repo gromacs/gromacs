@@ -3,7 +3,6 @@
 # These pages include documentation that does not belong to the public API
 # documentation; exclude them from the generated documentation
 EXCLUDE               += @CMAKE_CURRENT_SOURCE_DIR@/lib
-EXCLUDE               += @CMAKE_SOURCE_DIR@/docs/dev-manual
 
 INTERNAL_DOCS          = NO
 HIDE_UNDOC_CLASSES     = YES
