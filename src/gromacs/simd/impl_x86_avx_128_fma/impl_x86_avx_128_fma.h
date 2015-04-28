@@ -56,28 +56,28 @@
 #define GMX_SIMD4_HAVE_DOUBLE  /* We can use 256-bit operations for this */
 
 /* SINGLE */
-#undef  gmx_simd_fmadd_ps
-#define gmx_simd_fmadd_ps           _mm_macc_ps
-#undef  gmx_simd_fmsub_ps
-#define gmx_simd_fmsub_ps(a, b, c)    _mm_msub_ps
-#undef  gmx_simd_fnmadd_ps
-#define gmx_simd_fnmadd_ps(a, b, c)   _mm_nmacc_ps
-#undef  gmx_simd_fnmsub_ps
-#define gmx_simd_fnmsub_ps(a, b, c)   _mm_nmsub_ps
+#undef  gmx_simd_fmadd_f
+#define gmx_simd_fmadd_f                 _mm_macc_ps
+#undef  gmx_simd_fmsub_f
+#define gmx_simd_fmsub_f                 _mm_msub_ps
+#undef  gmx_simd_fnmadd_f
+#define gmx_simd_fnmadd_f                _mm_nmacc_ps
+#undef  gmx_simd_fnmsub_f
+#define gmx_simd_fnmsub_f                _mm_nmsub_ps
 #undef  gmx_simd_fraction_f
-#define gmx_simd_fraction_f         _mm_frcz_ps
+#define gmx_simd_fraction_f              _mm_frcz_ps
 
 /* DOUBLE */
-#undef  gmx_simd_fmadd_pd
-#define gmx_simd_fmadd_pd            _mm_macc_pd
-#undef  gmx_simd_fmsub_pd
-#define gmx_simd_fmsub_pd(a, b, c)     _mm_msub_pd
-#undef  gmx_simd_fnmadd_pd
-#define gmx_simd_fnmadd_pd(a, b, c)    _mm_nmacc_pd
-#undef  gmx_simd_fnmsub_pd
-#define gmx_simd_fnmsub_pd(a, b, c)    _mm_nmsub_pd
+#undef  gmx_simd_fmadd_d
+#define gmx_simd_fmadd_d                 _mm_macc_pd
+#undef  gmx_simd_fmsub_d
+#define gmx_simd_fmsub_d                 _mm_msub_pd
+#undef  gmx_simd_fnmadd_d
+#define gmx_simd_fnmadd_d                _mm_nmacc_pd
+#undef  gmx_simd_fnmsub_d
+#define gmx_simd_fnmsub_d                _mm_nmsub_pd
 #undef  gmx_simd_fraction_d
-#define gmx_simd_fraction_d          _mm_frcz_pd
+#define gmx_simd_fraction_d              _mm_frcz_pd
 
 /* Even if the _main_ SIMD implementation for this architecture file corresponds
  * to 128-bit AVX (since it will be faster), the 256-bit operations will always
