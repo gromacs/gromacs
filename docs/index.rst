@@ -28,15 +28,19 @@ Contents:
 Documentation for developers
 ----------------------------
 
+Resources for developers, e.g., related to guidelines and tools used during
+development.
+
+.. toctree::
+   :maxdepth: 3
+
+   dev-manual/index
+
 * `Doxygen public API documentation <doxygen/html-user/index.xhtml>`_
 
 * `Doxygen code documentation <doxygen/html-lib/index.xhtml>`_
      This contains the public API documentation as a subset, but also has more
      details on the internal implementation of |Gromacs|.
-
-* `Developer Guide <doxygen/html-lib/page_devmanual.xhtml>`_
-     Resources for developers, e.g., related to guidelines and tools used during
-     development.
 
 Indices and tables
 ==================
