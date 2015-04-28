@@ -40,67 +40,221 @@
 
 #include <immintrin.h>
 
-#include "impl_x86_avx2_256_common.h"
+#include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256_simd_float.h"
 
-/****************************************************
- *      SINGLE PRECISION SIMD IMPLEMENTATION        *
- ****************************************************/
-#undef  simdFmaddF
-#define simdFmaddF           _mm256_fmadd_ps
-#undef  simdFmsubF
-#define simdFmsubF           _mm256_fmsub_ps
-#undef  simdFnmaddF
-#define simdFnmaddF          _mm256_fnmadd_ps
-#undef  simdFnmsubF
-#define simdFnmsubF          _mm256_fnmsub_ps
-#undef  simdGetExponentF
-#define simdGetExponentF    simdGetExponentF_avx2_256
-#undef  simdSetExponentF
-#define simdSetExponentF    simdSetExponentF_avx2_256
-/* Previously undefined logical ops on SimdFInt32 */
-#define simdSlliFI           _mm256_slli_epi32
-#define simdSrliFI           _mm256_srli_epi32
-#define simdAndFI            _mm256_and_si256
-#define simdAndNotFI         _mm256_andnot_si256
-#define simdOrFI             _mm256_or_si256
-#define simdXorFI            _mm256_xor_si256
-/* Previously undefined arithmetic ops on SimdFInt32 */
-#define simdAddFI            _mm256_add_epi32
-#define simdSubFI            _mm256_sub_epi32
-#define simdMulFI            _mm256_mullo_epi32
-/* Previously undefined boolean ops on SimdFInt32 */
-#define simdCmpEqFI          _mm256_cmpeq_epi32
-#define simdCmpLtFI(a, b)     _mm256_cmpgt_epi32(b, a)
-#define simdAndFIB           _mm256_and_si256
-#define simdOrFIB            _mm256_or_si256
-#define simdAnyTrueFIB       _mm256_movemask_epi8
-#define simdMaskFI      _mm256_and_si256
-#define simdMaskNotFI(a, sel) _mm256_andnot_si256(sel, a)
-#define simdBlendFI         _mm256_blendv_epi8
-
-/*********************************************************
- * SIMD SINGLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
- *********************************************************/
-static inline SimdFloat gmx_simdcall
-simdGetExponentF_avx2_256(SimdFloat x)
+namespace gmx
 {
-    const __m256  expmask      = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
-    const __m256i expbias      = _mm256_set1_epi32(127);
-    __m256i       iexp;
 
-    iexp = _mm256_castps_si256(_mm256_and_ps(x, expmask));
-    iexp = _mm256_sub_epi32(_mm256_srli_epi32(iexp, 23), expbias);
-    return _mm256_cvtepi32_ps(iexp);
+struct SimdFIBool
+{
+    __m256i b;
+};
+
+static inline SimdFloat gmx_simdcall
+simdFmaddF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               _mm256_fmadd_ps(a.r, b.r, c.r)
+    };
 }
 
 static inline SimdFloat gmx_simdcall
-simdSetExponentF_avx2_256(SimdFloat x)
+simdFmsubF(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    const __m256i  expbias      = _mm256_set1_epi32(127);
-    __m256i        iexp         = _mm256_cvtps_epi32(x);
-
-    iexp = _mm256_slli_epi32(_mm256_add_epi32(iexp, expbias), 23);
-    return _mm256_castsi256_ps(iexp);
+    return {
+               _mm256_fmsub_ps(a.r, b.r, c.r)
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_X86_AVX2_256_SIMD_FLOAT_H */
+static inline SimdFloat gmx_simdcall
+simdFnmaddF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               _mm256_fnmadd_ps(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdFnmsubF(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               _mm256_fnmsub_ps(a.r, b.r, c.r)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdGetExponentF(SimdFloat x)
+{
+    const __m256  exponentMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
+    const __m256i exponentBias = _mm256_set1_epi32(127);
+    __m256i       iExponent;
+
+    iExponent = _mm256_castps_si256(_mm256_and_ps(x.r, exponentMask));
+    iExponent = _mm256_sub_epi32(_mm256_srli_epi32(iExponent, 23), exponentBias);
+    return {
+               _mm256_cvtepi32_ps(iExponent)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+simdSetExponentF(SimdFloat x)
+{
+    const __m256i  exponentBias = _mm256_set1_epi32(127);
+    __m256i        iExponent    = _mm256_cvtps_epi32(x.r);
+
+    iExponent = _mm256_slli_epi32(_mm256_add_epi32(iExponent, exponentBias), 23);
+    return {
+               _mm256_castsi256_ps(iExponent)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdSlliFI(SimdFInt32 a, int n)
+{
+    return {
+               _mm256_slli_epi32(a.i, n)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdSrliFI(SimdFInt32 a, int n)
+{
+    return {
+               _mm256_srli_epi32(a.i, n)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdAndFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_and_si256(a.i, b.i)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdAndNotFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_andnot_si256(a.i, b.i)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdOrFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_or_si256(a.i, b.i)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdXorFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_xor_si256(a.i, b.i)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdAddFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_add_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdSubFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_sub_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdMulFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_mullo_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+simdCmpEqFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_cmpeq_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+simdCmpLtFI(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               _mm256_cmpgt_epi32(b.i, a.i)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+simdAndFIB(SimdFIBool a, SimdFIBool b)
+{
+    return {
+               _mm256_and_si256(a.b, b.b)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+simdOrFIB(SimdFIBool a, SimdFIBool b)
+{
+    return {
+               _mm256_or_si256(a.b, b.b)
+    };
+}
+
+static inline bool gmx_simdcall
+simdAnyTrueFIB(SimdFIBool a) { return _mm256_movemask_epi8(a.b) != 0; }
+
+static inline SimdFInt32 gmx_simdcall
+simdMaskFI(SimdFInt32 a, SimdFIBool mask)
+{
+    return {
+               _mm256_and_si256(a.i, mask.b)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdMaskNotFI(SimdFInt32 a, SimdFIBool mask)
+{
+    return {
+               _mm256_andnot_si256(mask.b, a.i)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+simdBlendFI(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+{
+    return {
+               _mm256_blendv_epi8(a.i, b.i, sel.b)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+simdCvtFB2FIB(SimdFBool a)
+{
+    return {
+               _mm256_castps_si256(a.b)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+simdCvtFIB2FB(SimdFIBool a)
+{
+    return {
+               _mm256_castsi256_ps(a.b)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD_FLOAT_H

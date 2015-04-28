@@ -38,78 +38,315 @@
 
 #include "config.h"
 
+#include <cassert>
+#include <cstddef>
+
 #include <immintrin.h>
 
-#include "gromacs/utility/real.h"
-
-#include "impl_x86_avx_256_common.h"
-#include "impl_x86_avx_256_simd_float.h"
-
-/****************************************************
- *      SINGLE PRECISION SIMD4 IMPLEMENTATION       *
- ****************************************************/
-#define Simd4Float          __m128
-#define simd4LoadF           _mm_load_ps
-#define simd4Load1F          _mm_broadcast_ss
-#define simd4Set1F           _mm_set1_ps
-#define simd4StoreF          _mm_store_ps
-#define simd4LoadUF          _mm_loadu_ps
-#define simd4StoreUF         _mm_storeu_ps
-#define simd4SetZeroF        _mm_setzero_ps
-#define simd4AddF            _mm_add_ps
-#define simd4SubF            _mm_sub_ps
-#define simd4MulF            _mm_mul_ps
-#define simd4FmaddF(a, b, c)   _mm_add_ps(_mm_mul_ps(a, b), c)
-#define simd4FmsubF(a, b, c)   _mm_sub_ps(_mm_mul_ps(a, b), c)
-#define simd4FnmaddF(a, b, c)  _mm_sub_ps(c, _mm_mul_ps(a, b))
-#define simd4FnmsubF(a, b, c)  _mm_sub_ps(_mm_setzero_ps(), simd4FmaddF(a, b, c))
-#define simd4AndF            _mm_and_ps
-#define simd4AndNotF         _mm_andnot_ps
-#define simd4OrF             _mm_or_ps
-#define simd4XorF            _mm_xor_ps
-#define simd4RsqrtF          _mm_rsqrt_ps
-#define simd4AbsF(x)        _mm_andnot_ps(_mm_set1_ps(GMX_FLOAT_NEGZERO), x)
-#define simd4NegF(x)        _mm_xor_ps(x, _mm_set1_ps(GMX_FLOAT_NEGZERO))
-#define simd4MaxF            _mm_max_ps
-#define simd4MinF            _mm_min_ps
-#define simd4RoundF(x)       _mm_round_ps(x, _MM_FROUND_NINT)
-#define simd4TruncF(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
-#define simd4DotProductF    simd4DotProductF_avx_256
-#define Simd4FBool           __m128
-#define simd4CmpEqF          _mm_cmpeq_ps
-#define simd4CmpLtF          _mm_cmplt_ps
-#define simd4CmpLeF          _mm_cmple_ps
-#define simd4AndFB           _mm_and_ps
-#define simd4OrFB            _mm_or_ps
-#define simd4AnyTrueFB       _mm_movemask_ps
-#define simd4MaskF      _mm_and_ps
-#define simd4MaskNotF(a, sel)  _mm_andnot_ps(sel, a)
-#define simd4BlendF         _mm_blendv_ps
-#define simd4ReduceF         simd4ReduceF_avx_256
-
-
-/* SIMD4 reduce helper */
-static inline float gmx_simdcall
-simd4ReduceF_avx_256(__m128 a)
+namespace gmx
 {
-    float f;
-    a = _mm_hadd_ps(a, a);
-    a = _mm_hadd_ps(a, a);
-    _mm_store_ss(&f, a);
-    return f;
+
+struct Simd4Float
+{
+    __m128 r;
+};
+
+struct Simd4FBool
+{
+    __m128 b;
+};
+
+static inline Simd4Float gmx_simdcall
+simd4LoadF(const float *m)
+{
+    assert(std::size_t(m) % 16 == 0);
+    return {
+               _mm_load_ps(m)
+    };
 }
 
-/* SIMD4 Dot product helper function */
-static inline float gmx_simdcall
-simd4DotProductF_avx_256(__m128 a, __m128 b)
+static inline Simd4Float gmx_simdcall
+simd4Load1F(const float *m)
 {
-    float  f;
-    __m128 c;
-    a = _mm_mul_ps(a, b);
-    c = _mm_add_ps(a, _mm_permute_ps(a, _MM_SHUFFLE(0, 3, 2, 1)));
-    c = _mm_add_ps(c, _mm_permute_ps(a, _MM_SHUFFLE(1, 0, 3, 2)));
-    _mm_store_ss(&f, c);
-    return f;
+    return {
+               _mm_broadcast_ss(m)
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_256_SIMD4_FLOAT_H */
+static inline Simd4Float gmx_simdcall
+simd4Set1F(float r)
+{
+    return {
+               _mm_set1_ps(r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4SetZeroF()
+{
+    return {
+               _mm_setzero_ps()
+    };
+}
+
+static inline void gmx_simdcall
+simd4StoreF(float *m, Simd4Float a)
+{
+    assert(std::size_t(m) % 16 == 0);
+    _mm_store_ps(m, a.r);
+}
+
+static inline Simd4Float gmx_simdcall
+simd4LoadUF(const float *m)
+{
+    return {
+               _mm_loadu_ps(m)
+    };
+}
+
+static inline void gmx_simdcall
+simd4StoreUF(float *m, Simd4Float a) { _mm_storeu_ps(m, a.r); }
+
+static inline Simd4Float gmx_simdcall
+simd4AndF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_and_ps(a.r, b.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4AndNotF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_andnot_ps(a.r, b.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4OrF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_or_ps(a.r, b.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4XorF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_xor_ps(a.r, b.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4AddF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_add_ps(a.r, b.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4SubF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_sub_ps(a.r, b.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4MulF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_mul_ps(a.r, b.r)
+    };
+}
+
+// Override for AVX2 and higher
+#if GMX_SIMD_X86_AVX_256
+static inline Simd4Float gmx_simdcall
+simd4FmaddF(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_add_ps(_mm_mul_ps(a.r, b.r), c.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4FmsubF(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_sub_ps(_mm_mul_ps(a.r, b.r), c.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4FnmaddF(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_sub_ps(c.r, _mm_mul_ps(a.r, b.r))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4FnmsubF(Simd4Float a, Simd4Float b, Simd4Float c)
+{
+    return {
+               _mm_sub_ps(_mm_setzero_ps(), _mm_add_ps(_mm_mul_ps(a.r, b.r), c.r))
+    };
+}
+#endif
+
+static inline Simd4Float gmx_simdcall
+simd4RsqrtF(Simd4Float x)
+{
+    return {
+               _mm_rsqrt_ps(x.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4AbsF(Simd4Float x)
+{
+    return {
+               _mm_andnot_ps( _mm_set1_ps(GMX_FLOAT_NEGZERO), x.r )
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4NegF(Simd4Float x)
+{
+    return {
+               _mm_xor_ps(x.r, _mm_set1_ps(GMX_FLOAT_NEGZERO))
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4MaxF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_max_ps(a.r, b.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4MinF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_min_ps(a.r, b.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4RoundF(Simd4Float x)
+{
+    return {
+               _mm_round_ps(x.r, _MM_FROUND_NINT)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4TruncF(Simd4Float x)
+{
+    return {
+               _mm_round_ps(x.r, _MM_FROUND_TRUNC)
+    };
+}
+
+static inline float gmx_simdcall
+simd4DotProductF(Simd4Float a, Simd4Float b)
+{
+    __m128 c, d;
+    c = _mm_mul_ps(a.r, b.r);
+    d = _mm_add_ps(c, _mm_permute_ps(c, _MM_SHUFFLE(2, 1, 2, 1)));
+    d = _mm_add_ps(d, _mm_permute_ps(c, _MM_SHUFFLE(3, 2, 3, 2)));
+    return *reinterpret_cast<float *>(&d);
+}
+
+static inline void gmx_simdcall
+simd4Transpose(Simd4Float * v0, Simd4Float * v1,
+               Simd4Float * v2, Simd4Float * v3)
+{
+    _MM_TRANSPOSE4_PS(v0->r, v1->r, v2->r, v3->r);
+}
+
+static inline Simd4FBool gmx_simdcall
+simd4CmpEqF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_cmp_ps(a.r, b.r, _CMP_EQ_OQ)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+simd4CmpLtF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_cmp_ps(a.r, b.r, _CMP_LT_OQ)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+simd4CmpLeF(Simd4Float a, Simd4Float b)
+{
+    return {
+               _mm_cmp_ps(a.r, b.r, _CMP_LE_OQ)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+simd4AndFB(Simd4FBool a, Simd4FBool b)
+{
+    return {
+               _mm_and_ps(a.b, b.b)
+    };
+}
+
+static inline Simd4FBool gmx_simdcall
+simd4OrFB(Simd4FBool a, Simd4FBool b)
+{
+    return {
+               _mm_or_ps(a.b, b.b)
+    };
+}
+
+static inline bool gmx_simdcall
+simd4AnyTrueFB(Simd4FBool a) { return _mm_movemask_ps(a.b) != 0; }
+
+static inline Simd4Float gmx_simdcall
+simd4MaskF(Simd4Float a, Simd4FBool mask)
+{
+    return {
+               _mm_and_ps(a.r, mask.b)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4MaskNotF(Simd4Float a, Simd4FBool mask)
+{
+    return {
+               _mm_andnot_ps(mask.b, a.r)
+    };
+}
+
+static inline Simd4Float gmx_simdcall
+simd4BlendF(Simd4Float a, Simd4Float b, Simd4FBool sel)
+{
+    return {
+               _mm_blendv_ps(a.r, b.r, sel.b)
+    };
+}
+
+static inline float gmx_simdcall
+simd4ReduceF(Simd4Float a)
+{
+    __m128 b;
+    b = _mm_add_ps(a.r, _mm_permute_ps(a.r, _MM_SHUFFLE(1, 0, 3, 2)));
+    b = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
+    return *reinterpret_cast<float *>(&b);
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_256_SIMD4_FLOAT_H

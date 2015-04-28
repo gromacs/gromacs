@@ -38,190 +38,681 @@
 
 #include "config.h"
 
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+
 #include <immintrin.h>
 
-#include "gromacs/utility/real.h"
+#include "impl_x86_avx_256_simd_float.h"
 
-#include "impl_x86_avx_256_common.h"
 
-/****************************************************
- *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
- ****************************************************/
-#define SimdDouble          __m256d
-#define simdLoadD            _mm256_load_pd
-#define simdLoad1D           _mm256_broadcast_sd
-#define simdSet1D            _mm256_set1_pd
-#define simdStoreD           _mm256_store_pd
-#define simdLoadUD           _mm256_loadu_pd
-#define simdStoreUD          _mm256_storeu_pd
-#define simdSetZeroD         _mm256_setzero_pd
-#define simdAddD             _mm256_add_pd
-#define simdSubD             _mm256_sub_pd
-#define simdMulD             _mm256_mul_pd
-#define simdFmaddD(a, b, c)    _mm256_add_pd(_mm256_mul_pd(a, b), c)
-#define simdFmsubD(a, b, c)    _mm256_sub_pd(_mm256_mul_pd(a, b), c)
-#define simdFnmaddD(a, b, c)   _mm256_sub_pd(c, _mm256_mul_pd(a, b))
-#define simdFnmsubD(a, b, c)   _mm256_sub_pd(_mm256_setzero_pd(), simdFmaddD(a, b, c))
-#define simdAndD             _mm256_and_pd
-#define simdAndNotD          _mm256_andnot_pd
-#define simdOrD              _mm256_or_pd
-#define simdXorD             _mm256_xor_pd
-#define simdRsqrtD(x)        _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)))
-#define simdRcpD(x)          _mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(x)))
-#define simdAbsD(x)         _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x)
-#define simdNegD(x)         _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
-#define simdMaxD             _mm256_max_pd
-#define simdMinD             _mm256_min_pd
-#define simdRoundD(x)        _mm256_round_pd(x, _MM_FROUND_NINT)
-#define simdTruncD(x)        _mm256_round_pd(x, _MM_FROUND_TRUNC)
-#define simdFractionD(x)     _mm256_sub_pd(x, simdTruncD(x))
-#define simdGetExponentD    simdGetExponentD_avx_256
-#define simdGetMantissaD    simdGetMantissaD_avx_256
-#define simdSetExponentD    simdSetExponentD_avx_256
-/* integer datatype corresponding to double: SimdDInt32 */
-#define SimdDInt32          __m128i
-#define simdLoadDI(m)        _mm_load_si128((const __m128i *)(m))
-#define simdSet1DI           _mm_set1_epi32
-#define simdStoreDI(m, x)     _mm_store_si128((__m128i *)(m), x)
-#define simdLoadUDI(m)       _mm_loadu_si128((const __m128i *)(m))
-#define simdStoreUDI(m, x)    _mm_storeu_si128((__m128i *)(m), x)
-#define simdSetZeroDI        _mm_setzero_si128
-#define simdCvtD2I           _mm256_cvtpd_epi32
-#define simdCvttD2I          _mm256_cvttpd_epi32
-#define simdCvtI2D           _mm256_cvtepi32_pd
-#define simdExtractDI        _mm_extract_epi32
-/* Integer logical ops on SimdDInt32 */
-#define simdSlliDI           _mm_slli_epi32
-#define simdSrliDI           _mm_srli_epi32
-#define simdAndDI            _mm_and_si128
-#define simdAndNotDI         _mm_andnot_si128
-#define simdOrDI             _mm_or_si128
-#define simdXorDI            _mm_xor_si128
-/* Integer arithmetic ops on integer datatype corresponding to double */
-#define simdAddDI            _mm_add_epi32
-#define simdSubDI            _mm_sub_epi32
-#define simdMulDI            _mm_mullo_epi32
-/* Boolean & comparison operations on SimdDouble */
-#define SimdDBool           __m256d
-#define simdCmpEqD(a, b)      _mm256_cmp_pd(a, b, _CMP_EQ_OQ)
-#define simdCmpLtD(a, b)      _mm256_cmp_pd(a, b, _CMP_LT_OQ)
-#define simdCmpLeD(a, b)      _mm256_cmp_pd(a, b, _CMP_LE_OQ)
-#define simdAndDB            _mm256_and_pd
-#define simdOrDB             _mm256_or_pd
-#define simdAnyTrueDB        _mm256_movemask_pd
-#define simdMaskD       _mm256_and_pd
-#define simdMaskNotD(a, sel)  _mm256_andnot_pd(sel, a)
-#define simdBlendD          _mm256_blendv_pd
-#define simdReduceD          simdReduceD_avx_256
-/* Boolean & comparison operations on SimdDInt32 */
-#define SimdDIBool          __m128i
-#define simdCmpEqDI          _mm_cmpeq_epi32
-#define simdCmpLtDI          _mm_cmplt_epi32
-#define simdAndDIB           _mm_and_si128
-#define simdOrDIB            _mm_or_si128
-#define simdAnyTrueDIB       _mm_movemask_epi8
-#define simdMaskDI      _mm_and_si128
-#define simdMaskNotDI(a, sel)  _mm_andnot_si128(sel, a)
-#define simdBlendDI         _mm_blendv_epi8
-/* Conversions between different booleans */
-#define simdCvtDB2DIB        simdCvtDB2DIB_avx_256
-#define simdCvtDIB2DB        simdCvtDIB2DB_avx_256
-/* Float/double conversion */
-#define simdCvtF2DD          simdCvtF2DD_avx_256
-#define simdCvtDD2F          simdCvtDD2F_avx_256
 
-/*********************************************************
- * SIMD DOUBLE PRECISION IMPLEMENTATION HELPER FUNCTIONS *
- *********************************************************/
-static inline __m256d gmx_simdcall
-simdGetExponentD_avx_256(__m256d x)
+
+namespace gmx
 {
-    const __m256d expmask      = _mm256_castsi256_pd( _mm256_set1_epi64x(0x7FF0000000000000LL));
-    const __m128i expbias      = _mm_set1_epi32(1023);
-    __m256i       iexp256;
-    __m128i       iexp128a, iexp128b;
 
-    iexp256   = _mm256_castpd_si256(_mm256_and_pd(x, expmask));
-    iexp128b  = _mm256_extractf128_si256(iexp256, 0x1);
-    iexp128a  = _mm256_castsi256_si128(iexp256);
-    iexp128a  = _mm_srli_epi64(iexp128a, 52);
-    iexp128b  = _mm_srli_epi64(iexp128b, 52);
-    iexp128a  = _mm_shuffle_epi32(iexp128a, _MM_SHUFFLE(1, 1, 2, 0));
-    iexp128b  = _mm_shuffle_epi32(iexp128b, _MM_SHUFFLE(2, 0, 1, 1));
-    iexp128a  = _mm_or_si128(iexp128a, iexp128b);
-    iexp128a  = _mm_sub_epi32(iexp128a, expbias);
-    return _mm256_cvtepi32_pd(iexp128a);
+struct SimdDouble
+{
+    __m256d r;
+};
+
+struct SimdDInt32
+{
+    __m128i i;
+};
+
+struct SimdDBool
+{
+    __m256d b;
+};
+
+struct SimdDIBool
+{
+    __m128i b;
+};
+
+static inline SimdDouble gmx_simdcall
+simdLoadD(const double *m)
+{
+    assert(std::size_t(m) % 32 == 0);
+    return {
+               _mm256_load_pd(m)
+    };
 }
 
-static inline __m256d gmx_simdcall
-simdGetMantissaD_avx_256(__m256d x)
+static inline SimdDouble gmx_simdcall
+simdLoad1D(const double *m)
 {
-    const __m256d mantmask   = _mm256_castsi256_pd(_mm256_set1_epi64x(0x000FFFFFFFFFFFFFLL));
-    const __m256d one        = _mm256_set1_pd(1.0);
-
-    x = _mm256_and_pd(x, mantmask);
-    return _mm256_or_pd(x, one);
+    return {
+               _mm256_broadcast_sd(m)
+    };
 }
 
-static inline __m256d gmx_simdcall
-simdSetExponentD_avx_256(__m256d x)
+static inline SimdDouble gmx_simdcall
+simdSet1D(double r)
 {
-    const __m128i expbias      = _mm_set1_epi32(1023);
-    __m128i       iexp128a, iexp128b;
-
-    iexp128a = _mm256_cvtpd_epi32(x);
-    iexp128a = _mm_add_epi32(iexp128a, expbias);
-    iexp128b = _mm_shuffle_epi32(iexp128a, _MM_SHUFFLE(3, 3, 2, 2));
-    iexp128a = _mm_shuffle_epi32(iexp128a, _MM_SHUFFLE(1, 1, 0, 0));
-    iexp128b = _mm_slli_epi64(iexp128b, 52);
-    iexp128a = _mm_slli_epi64(iexp128a, 52);
-    return _mm256_castsi256_pd(_mm256_insertf128_si256(_mm256_castsi128_si256(iexp128a), iexp128b, 0x1));
+    return {
+               _mm256_set1_pd(r)
+    };
 }
 
-static inline double gmx_simdcall
-simdReduceD_avx_256(__m256d a)
+static inline SimdDouble gmx_simdcall
+simdSetZeroD()
 {
-    double  f;
-    __m128d a0, a1;
-    a  = _mm256_hadd_pd(a, a);
-    a0 = _mm256_castpd256_pd128(a);
-    a1 = _mm256_extractf128_pd(a, 0x1);
-    a0 = _mm_add_sd(a0, a1);
-    _mm_store_sd(&f, a0);
-    return f;
-}
-
-static inline SimdDIBool gmx_simdcall
-simdCvtDB2DIB_avx_256(SimdDBool a)
-{
-    __m128i a1 = _mm256_extractf128_si256(_mm256_castpd_si256(a), 0x1);
-    __m128i a0 = _mm256_castsi256_si128(_mm256_castpd_si256(a));
-    a0 = _mm_shuffle_epi32(a0, _MM_SHUFFLE(2, 0, 2, 0));
-    a1 = _mm_shuffle_epi32(a1, _MM_SHUFFLE(2, 0, 2, 0));
-    return _mm_blend_epi16(a0, a1, 0xF0);
-}
-
-static inline SimdDBool gmx_simdcall
-simdCvtDIB2DB_avx_256(SimdDIBool a)
-{
-    __m128i a1 = _mm_shuffle_epi32(a, _MM_SHUFFLE(3, 3, 2, 2));
-    __m128i a0 = _mm_shuffle_epi32(a, _MM_SHUFFLE(1, 1, 0, 0));
-    return _mm256_castsi256_pd(_mm256_insertf128_si256(_mm256_castsi128_si256(a0), a1, 0x1));
+    return {
+               _mm256_setzero_pd()
+    };
 }
 
 static inline void gmx_simdcall
-simdCvtF2DD_avx_256(__m256 f, __m256d *d0, __m256d *d1)
+simdStoreD(double *m, SimdDouble a)
 {
-    *d0 = _mm256_cvtps_pd(_mm256_castps256_ps128(f));
-    *d1 = _mm256_cvtps_pd(_mm256_extractf128_ps(f, 0x1));
+    assert(std::size_t(m) % 32 == 0);
+    _mm256_store_pd(m, a.r);
 }
 
-static inline __m256 gmx_simdcall
-simdCvtDD2F_avx_256(__m256d d0, __m256d d1)
+static inline SimdDouble gmx_simdcall
+simdLoadUD(const double *m)
 {
-    __m128 f0 = _mm256_cvtpd_ps(d0);
-    __m128 f1 = _mm256_cvtpd_ps(d1);
-    return _mm256_insertf128_ps(_mm256_castps128_ps256(f0), f1, 0x1);
+    return {
+               _mm256_loadu_pd(m)
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_256_SIMD_DOUBLE_H */
+static inline void gmx_simdcall
+simdStoreUD(double *m, SimdDouble a) { _mm256_storeu_pd(m, a.r); }
+
+static inline SimdDInt32 gmx_simdcall
+simdLoadDI(const std::int32_t * m)
+{
+    assert(std::size_t(m) % 16 == 0);
+    return {
+               _mm_load_si128(reinterpret_cast<const __m128i *>(m))
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSet1DI(std::int32_t b)
+{
+    return {
+               _mm_set1_epi32(b)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSetZeroDI()
+{
+    return {
+               _mm_setzero_si128()
+    };
+}
+
+static inline void gmx_simdcall
+simdStoreDI(std::int32_t * m, SimdDInt32 a)
+{
+    assert(std::size_t(m) % 16 == 0);
+    _mm_store_si128(reinterpret_cast<__m128i *>(m), a.i);
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdLoadUDI(const std::int32_t *m)
+{
+    return {
+               _mm_loadu_si128(reinterpret_cast<const __m128i *>(m))
+    };
+}
+
+static inline void gmx_simdcall
+simdStoreUDI(std::int32_t * m, SimdDInt32 a)
+{
+    _mm_storeu_si128(reinterpret_cast<__m128i *>(m), a.i);
+}
+
+template<int index> gmx_simdcall
+static inline std::int32_t
+simdExtractDI(SimdDInt32 a)
+{
+    return _mm_extract_epi32(a.i, index);
+}
+
+static inline SimdDouble gmx_simdcall
+simdAndD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_and_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdAndNotD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_andnot_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdOrD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_or_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdXorD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_xor_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdAddD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_add_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdSubD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_sub_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMulD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_mul_pd(a.r, b.r)
+    };
+}
+
+// Override for AVX2 and higher
+#if GMX_SIMD_X86_AVX_256
+static inline SimdDouble gmx_simdcall
+simdFmaddD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm256_add_pd(_mm256_mul_pd(a.r, b.r), c.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFmsubD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm256_sub_pd(_mm256_mul_pd(a.r, b.r), c.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFnmaddD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm256_sub_pd(c.r, _mm256_mul_pd(a.r, b.r))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFnmsubD(SimdDouble a, SimdDouble b, SimdDouble c)
+{
+    return {
+               _mm256_sub_pd(_mm256_setzero_pd(), _mm256_add_pd(_mm256_mul_pd(a.r, b.r), c.r))
+    };
+}
+#endif
+
+static inline SimdDouble gmx_simdcall
+simdRsqrtD(SimdDouble x)
+{
+    return {
+               _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x.r)))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdRcpD(SimdDouble x)
+{
+    return {
+               _mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(x.r)))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMulMaskD(SimdDouble a, SimdDouble b, SimdDBool m)
+{
+    return {
+               _mm256_and_pd(_mm256_mul_pd(a.r, b.r), m.b)
+    };
+}
+
+static inline SimdDouble
+simdFmaddMaskD(SimdDouble a, SimdDouble b, SimdDouble c, SimdDBool m)
+{
+    return {
+               _mm256_and_pd(_mm256_add_pd(_mm256_mul_pd(a.r, b.r), c.r), m.b)
+    };
+}
+
+static inline SimdDouble
+simdRsqrtMaskD(SimdDouble x, SimdDBool m)
+{
+#ifndef NDEBUG
+    x.r = _mm256_blendv_pd(_mm256_set1_pd(1.0), x.r, m.b);
+#endif
+    return {
+               _mm256_and_pd(_mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x.r))), m.b)
+    };
+}
+
+static inline SimdDouble
+simdRcpMaskD(SimdDouble x, SimdDBool m)
+{
+#ifndef NDEBUG
+    x.r = _mm256_blendv_pd(_mm256_set1_pd(1.0), x.r, m.b);
+#endif
+    return {
+               _mm256_and_pd(_mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(x.r))), m.b)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdAbsD(SimdDouble x)
+{
+    return {
+               _mm256_andnot_pd( _mm256_set1_pd(GMX_DOUBLE_NEGZERO), x.r )
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdNegD(SimdDouble x)
+{
+    return {
+               _mm256_xor_pd(x.r, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMaxD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_max_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMinD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_min_pd(a.r, b.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdRoundD(SimdDouble x)
+{
+    return {
+               _mm256_round_pd(x.r, _MM_FROUND_NINT)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdTruncD(SimdDouble x)
+{
+    return {
+               _mm256_round_pd(x.r, _MM_FROUND_TRUNC)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdFractionD(SimdDouble x)
+{
+    return {
+               _mm256_sub_pd(x.r, _mm256_round_pd(x.r, _MM_FROUND_TRUNC))
+    };
+}
+
+// Override for AVX2 and higher
+#if GMX_SIMD_X86_AVX_256
+static inline SimdDouble gmx_simdcall
+simdGetExponentD(SimdDouble x)
+{
+    const __m256d exponentMask      = _mm256_castsi256_pd( _mm256_set1_epi64x(0x7FF0000000000000LL));
+    const __m128i exponentBias      = _mm_set1_epi32(1023);
+    __m256i       iExponent;
+    __m128i       iExponentLow, iExponentHigh;
+
+    iExponent     = _mm256_castpd_si256(_mm256_and_pd(x.r, exponentMask));
+    iExponentHigh = _mm256_extractf128_si256(iExponent, 0x1);
+    iExponentLow  = _mm256_castsi256_si128(iExponent);
+    iExponentLow  = _mm_srli_epi64(iExponentLow, 52);
+    iExponentHigh = _mm_srli_epi64(iExponentHigh, 52);
+    iExponentLow  = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(1, 1, 2, 0));
+    iExponentHigh = _mm_shuffle_epi32(iExponentHigh, _MM_SHUFFLE(2, 0, 1, 1));
+    iExponentLow  = _mm_or_si128(iExponentLow, iExponentHigh);
+    iExponentLow  = _mm_sub_epi32(iExponentLow, exponentBias);
+    return {
+               _mm256_cvtepi32_pd(iExponentLow)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdSetExponentD(SimdDouble x)
+{
+    const __m128i exponentBias = _mm_set1_epi32(1023);
+    __m128i       iExponentLow, iExponentHigh;
+
+    iExponentLow  = _mm256_cvtpd_epi32(x.r);
+    iExponentLow  = _mm_add_epi32(iExponentLow, exponentBias);
+    iExponentHigh = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(3, 3, 2, 2));
+    iExponentLow  = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(1, 1, 0, 0));
+    iExponentHigh = _mm_slli_epi64(iExponentHigh, 52);
+    iExponentLow  = _mm_slli_epi64(iExponentLow, 52);
+    return {
+               _mm256_castsi256_pd(_mm256_insertf128_si256(_mm256_castsi128_si256(iExponentLow), iExponentHigh, 0x1))
+    };
+}
+#endif
+
+static inline SimdDouble gmx_simdcall
+simdGetMantissaD(SimdDouble x)
+{
+    const __m256d mantissaMask = _mm256_castsi256_pd(_mm256_set1_epi64x(0x000FFFFFFFFFFFFFLL));
+    const __m256d one          = _mm256_set1_pd(1.0);
+
+    return {
+               _mm256_or_pd(_mm256_and_pd(x.r, mantissaMask), one)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCmpEqD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_cmp_pd(a.r, b.r, _CMP_EQ_OQ)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCmpNzD(SimdDouble a)
+{
+    return {
+               _mm256_cmp_pd(a.r, _mm256_setzero_pd(), _CMP_NEQ_OQ)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCmpLtD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_cmp_pd(a.r, b.r, _CMP_LT_OQ)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCmpLeD(SimdDouble a, SimdDouble b)
+{
+    return {
+               _mm256_cmp_pd(a.r, b.r, _CMP_LE_OQ)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdAndDB(SimdDBool a, SimdDBool b)
+{
+    return {
+               _mm256_and_pd(a.b, b.b)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdOrDB(SimdDBool a, SimdDBool b)
+{
+    return {
+               _mm256_or_pd(a.b, b.b)
+    };
+}
+
+static inline bool gmx_simdcall
+simdAnyTrueDB(SimdDBool a) { return _mm256_movemask_pd(a.b) != 0; }
+
+static inline SimdDouble gmx_simdcall
+simdMaskD(SimdDouble a, SimdDBool mask)
+{
+    return {
+               _mm256_and_pd(a.r, mask.b)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdMaskNotD(SimdDouble a, SimdDBool mask)
+{
+    return {
+               _mm256_andnot_pd(mask.b, a.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdBlendD(SimdDouble a, SimdDouble b, SimdDBool sel)
+{
+    return {
+               _mm256_blendv_pd(a.r, b.r, sel.b)
+    };
+}
+
+static inline double gmx_simdcall
+simdReduceD(SimdDouble a)
+{
+    __m128d a0, a1;
+    a.r = _mm256_add_pd(a.r, _mm256_permute_pd(a.r, 0b0101 ));
+    a0  = _mm256_castpd256_pd128(a.r);
+    a1  = _mm256_extractf128_pd(a.r, 0x1);
+    a0  = _mm_add_sd(a0, a1);
+
+    return *reinterpret_cast<double *>(&a0);
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSlliDI(SimdDInt32 a, int n)
+{
+    return {
+               _mm_slli_epi32(a.i, n)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSrliDI(SimdDInt32 a, int n)
+{
+    return {
+               _mm_srli_epi32(a.i, n)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdAndDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_and_si128(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdAndNotDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_andnot_si128(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdOrDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_or_si128(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdXorDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_xor_si128(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdAddDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_add_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdSubDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_sub_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdMulDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_mullo_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdCmpEqDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_cmpeq_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdCmpLtDI(SimdDInt32 a, SimdDInt32 b)
+{
+    return {
+               _mm_cmplt_epi32(a.i, b.i)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdAndDIB(SimdDIBool a, SimdDIBool b)
+{
+    return {
+               _mm_and_si128(a.b, b.b)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdOrDIB(SimdDIBool a, SimdDIBool b)
+{
+    return {
+               _mm_or_si128(a.b, b.b)
+    };
+}
+
+static inline bool gmx_simdcall
+simdAnyTrueDIB(SimdDIBool a) { return _mm_movemask_epi8(_mm_shuffle_epi32(a.b, _MM_SHUFFLE(1, 0, 1, 0))) != 0; }
+
+static inline SimdDInt32 gmx_simdcall
+simdMaskDI(SimdDInt32 a, SimdDIBool mask)
+{
+    return {
+               _mm_and_si128(a.i, mask.b)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdMaskNotDI(SimdDInt32 a, SimdDIBool mask)
+{
+    return {
+               _mm_andnot_si128(mask.b, a.i)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdBlendDI(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
+{
+    return {
+               _mm_blendv_epi8(a.i, b.i, sel.b)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdCvtD2I(SimdDouble a)
+{
+    return {
+               _mm256_cvtpd_epi32(a.r)
+    };
+}
+
+static inline SimdDInt32 gmx_simdcall
+simdCvttD2I(SimdDouble a)
+{
+    return {
+               _mm256_cvttpd_epi32(a.r)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+simdCvtI2D(SimdDInt32 a)
+{
+    return {
+               _mm256_cvtepi32_pd(a.i)
+    };
+}
+
+static inline SimdDIBool gmx_simdcall
+simdCvtDB2DIB(SimdDBool a)
+{
+    __m128i a1 = _mm256_extractf128_si256(_mm256_castpd_si256(a.b), 0x1);
+    __m128i a0 = _mm256_castsi256_si128(_mm256_castpd_si256(a.b));
+    a0 = _mm_shuffle_epi32(a0, _MM_SHUFFLE(2, 0, 2, 0));
+    a1 = _mm_shuffle_epi32(a1, _MM_SHUFFLE(2, 0, 2, 0));
+
+    return {
+               _mm_blend_epi16(a0, a1, 0xF0)
+    };
+}
+
+static inline SimdDBool gmx_simdcall
+simdCvtDIB2DB(SimdDIBool a)
+{
+    __m128d lo = _mm_castsi128_pd(_mm_unpacklo_epi32(a.b, a.b));
+    __m128d hi = _mm_castsi128_pd(_mm_unpackhi_epi32(a.b, a.b));
+
+    return {
+               _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), hi, 0x1)
+    };
+}
+
+static inline void gmx_simdcall
+simdCvtF2DD(SimdFloat f, SimdDouble *d0, SimdDouble *d1)
+{
+    d0->r = _mm256_cvtps_pd(_mm256_castps256_ps128(f.r));
+    d1->r = _mm256_cvtps_pd(_mm256_extractf128_ps(f.r, 0x1));
+}
+
+static inline SimdFloat gmx_simdcall
+simdCvtDD2F(SimdDouble d0, SimdDouble d1)
+{
+    __m128 f0 = _mm256_cvtpd_ps(d0.r);
+    __m128 f1 = _mm256_cvtpd_ps(d1.r);
+    return {
+               _mm256_insertf128_ps(_mm256_castps128_ps256(f0), f1, 0x1)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_256_SIMD_DOUBLE_H

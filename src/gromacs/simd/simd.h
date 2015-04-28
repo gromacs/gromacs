@@ -295,9 +295,10 @@ typedef SimdDInt32               SimdInt32;
 typedef SimdFInt32               SimdInt32;
 #    endif
 
+#if GMX_SIMD_HAVE_INT32_ARITHMETICS
 /*! \brief Boolean SIMD type for usage with \ref gmx::SimdInt32.
  *
- * This type is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS is 1.
+ * This type is only available if \ref GMX_SIMD_HAVE_INT32_ARITHMETICS is 1.
  *
  * If GMX_DOUBLE is defined, this will be set to \ref SimdDIBool
  * internally, otherwise \ref SimdFIBool. This is necessary since some
@@ -318,6 +319,7 @@ typedef SimdDIBool               SimdIBool;
 #    else
 typedef SimdFIBool               SimdIBool;
 #    endif
+#endif
 
 /*! \}  end of name-group describing SIMD data types */
 
@@ -1381,11 +1383,12 @@ simdMulI(SimdInt32 a, SimdInt32 b)
 }
 
 /*! \}  end of name-group describing SimdInt32 arithmetics */
+#endif // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
-
+#if GMX_SIMD_HAVE_INT32_LOGICAL
 /*! \name SIMD integer comparison, booleans, and selection on SimdInt32
  *
- *  These instructions are available if \ref GMX_SIMD_HAVE_INT32_ARITHMETICS is 1.
+ *  These instructions are available if \ref GMX_SIMD_HAVE_INT32_LOGICAL is 1.
  *  \{
  */
 
@@ -1518,7 +1521,7 @@ simdBlendI(SimdInt32 a, SimdInt32 b, SimdIBool sel)
 }
 
 /*! \}  end of name-group describing SimdInt32 comparisons and booleans */
-#endif // GMX_SIMD_HAVE_INT32_ARITHMETICS
+#endif // GMX_SIMD_HAVE_INT32_LOGICAL
 
 
 /*! \name SIMD conversion operations
@@ -1578,6 +1581,7 @@ simdCvtI2R(SimdInt32 a)
 #endif
 }
 
+#if GMX_SIMD_HAVE_INT32_LOGICAL
 /*! \brief Convert from SimdBool to SimdIBool
  *
  * Uses \ref simdCvtDB2DIB if GMX_DOUBLE is set, otherwise \ref simdCvtFB2FIB.
@@ -1609,6 +1613,7 @@ simdCvtIB2B(SimdIBool a)
     return simdCvtFIB2FB(a);
 #endif
 }
+#endif // GMX_SIMD_HAVE_INT32_LOGICAL
 
 /*! \}    end of name-group describing SIMD conversions */
 
