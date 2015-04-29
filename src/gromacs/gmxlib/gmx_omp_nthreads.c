@@ -426,6 +426,7 @@ reportOpenmpSettings(FILE            *fplog,
                       modth.gnth_pme, modth.gnth_pme > 1 ? "s" : "",
                       cr->nnodes > 1 ? mpi_str : "");
     }
+    md_print_info(cr, fplog, "\n");
 }
 
 /*! \brief Detect and warn about oversubscription of cores.
