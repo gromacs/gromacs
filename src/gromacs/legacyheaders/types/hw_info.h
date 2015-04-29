@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,6 +79,7 @@ typedef struct
  *       (i.e. must be able to be shared among all threads) */
 typedef struct
 {
+    /* Data for our local physical node */
     gmx_gpu_info_t  gpu_info;            /* Information about GPUs detected in the system */
 
     gmx_cpuid_t     cpuid_info;          /* CPUID information about CPU detected;
@@ -87,6 +88,18 @@ typedef struct
     int             nthreads_hw_avail;   /* Number of hardware threads available; this number
                                             is based on the number of CPUs reported as available
                                             by the OS at the time of detection. */
+
+    /* Data reduced through MPI over all physical nodes */
+    int                 nphysicalnode;       /* Number of physical nodes */
+    int                 nhwthread_tot;       /* Sum of #hwthreads over all nodes */
+    int                 nhwthread_min;       /* Min #hwthreads over all nodes */
+    int                 nhwthread_max;       /* Max #hwthreads over all nodes */
+    int                 ngpu_compatible_tot; /* Sum of #GPUs over all nodes */
+    int                 ngpu_compatible_min; /* Min #GPUs over all nodes */
+    int                 ngpu_compatible_max; /* Max #GPUs over all nodes */
+
+    enum gmx_cpuid_simd simd_suggest_min;    /* Highest SIMD instruction set supported by all ranks */
+    enum gmx_cpuid_simd simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
 } gmx_hw_info_t;
 
 

@@ -294,17 +294,6 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
     bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != NULL);
     bMaxMpiThreadsSet = (getenv("GMX_MAX_MPI_THREADS") != NULL);
 
-    /* check the SIMD level mdrun is compiled with against hardware
-       capabilities */
-    /* TODO: Here we assume homogeneous hardware which is not necessarily
-             the case! Might not hurt to add an extra check over MPI. */
-    gmx_cpuid_simd_check(hwinfo->cpuid_info, fplog, SIMMASTER(cr));
-
-    check_use_of_rdtscp_on_this_cpu(fplog, cr, hwinfo);
-
-    /* NOTE: this print is only for and on one physical node */
-    print_gpu_detection_stats(fplog, &hwinfo->gpu_info, cr);
-
     if (hwinfo->gpu_info.ncuda_dev_compatible > 0)
     {
         std::string gpuUseageReport;
@@ -317,7 +306,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
         /* NOTE: this print is only for and on one physical node */
-        md_print_info(cr, fplog, gpuUseageReport.c_str());
+        md_print_info(cr, fplog, "%s\n", gpuUseageReport.c_str());
     }
 
     /* Need to ensure that we have enough GPUs:
@@ -666,10 +655,94 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 #endif
 }
 
+static void gmx_collect_hardware_mpi()
+{
+#ifdef GMX_LIB_MPI
+    int  rank_id;
+    int  nrank, rank, nhwthread, ngpu;
+    int *buf, *all;
+
+    rank_id   = gmx_physicalnode_id_hash();
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nrank);
+    nhwthread = hwinfo_g->nthreads_hw_avail;
+    ngpu      = hwinfo_g->gpu_info.ncuda_dev_compatible;
+
+    snew(buf, nrank);
+    snew(all, nrank);
+    buf[rank] = rank_id;
+
+    MPI_Allreduce(buf, all, nrank, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+    gmx_bool bFound;
+    int      nnode0, nhwthread0, ngpu0, r;
+
+    bFound     = FALSE;
+    nnode0     = 0;
+    nhwthread0 = 0;
+    ngpu0      = 0;
+    for (r = 0; r < nrank; r++)
+    {
+        if (all[r] == rank_id)
+        {
+            if (!bFound && r == rank)
+            {
+                /* We are the first rank in this physical node */
+                nnode0     = 1;
+                nhwthread0 = nhwthread;
+                ngpu0      = ngpu;
+            }
+            bFound = TRUE;
+        }
+    }
+
+    sfree(buf);
+    sfree(all);
+
+    int buf7[7], sum[3], maxmin[7];
+
+    /* We store both + and - values so we can get max+min with one MPI call */
+    buf7[0] = nnode0;
+    buf7[1] = nhwthread0;
+    buf7[2] = ngpu0;
+    buf7[3] = gmx_cpuid_simd_suggest(hwinfo_g->cpuid_info);
+    buf7[4] = -buf7[1];
+    buf7[5] = -buf7[2];
+    buf7[6] = -buf7[3];
+
+    MPI_Allreduce(buf7, sum,    3, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(buf7, maxmin, 7, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+
+    tMPI_Thread_mutex_lock(&hw_info_lock);
+    hwinfo_g->nphysicalnode       = sum[0];
+    hwinfo_g->nhwthread_tot       = sum[1];
+    hwinfo_g->nhwthread_min       = -maxmin[4];
+    hwinfo_g->nhwthread_max       = maxmin[1];
+    hwinfo_g->ngpu_compatible_tot = sum[2];
+    hwinfo_g->ngpu_compatible_min = -maxmin[5];
+    hwinfo_g->ngpu_compatible_max = maxmin[2];
+    hwinfo_g->simd_suggest_min    = static_cast<enum gmx_cpuid_simd>(-maxmin[6]);
+    hwinfo_g->simd_suggest_max    = static_cast<enum gmx_cpuid_simd>(maxmin[3]);
+    tMPI_Thread_mutex_unlock(&hw_info_lock);
+#else
+    tMPI_Thread_mutex_lock(&hw_info_lock);
+    hwinfo_g->nphysicalnode       = 1;
+    hwinfo_g->nhwthread_tot       = hwinfo_g->nthreads_hw_avail;
+    hwinfo_g->nhwthread_min       = hwinfo_g->nthreads_hw_avail;
+    hwinfo_g->nhwthread_max       = hwinfo_g->nthreads_hw_avail;
+    hwinfo_g->ngpu_compatible_tot = hwinfo_g->gpu_info.ncuda_dev_compatible;
+    hwinfo_g->ngpu_compatible_min = hwinfo_g->gpu_info.ncuda_dev_compatible;
+    hwinfo_g->ngpu_compatible_max = hwinfo_g->gpu_info.ncuda_dev_compatible;
+    hwinfo_g->simd_suggest_min    = gmx_cpuid_simd_suggest(hwinfo_g->cpuid_info);
+    hwinfo_g->simd_suggest_max    = gmx_cpuid_simd_suggest(hwinfo_g->cpuid_info);
+    tMPI_Thread_mutex_unlock(&hw_info_lock);
+#endif
+}
+
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs)
 {
-    int              ret;
+    int ret;
 
     /* make sure no one else is doing the same thing */
     ret = tMPI_Thread_mutex_lock(&hw_info_lock);
@@ -718,7 +791,101 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
     }
 
+    gmx_collect_hardware_mpi();
+
     return hwinfo_g;
+}
+
+static void print_detected_hardware(FILE *fp, const gmx_hw_info_t *hwinfo)
+{
+    fprintf(fp, "\n");
+    fprintf(fp, "Running on %d node%s with %d total hardware threads",
+            hwinfo->nphysicalnode,
+            hwinfo->nphysicalnode == 1 ? "" : "s",
+            hwinfo->nhwthread_tot);
+    if (hwinfo->gpu_info.bDetectGPUs)
+    {
+        fprintf(fp, " and %d compatible GPU%s",
+                hwinfo->ngpu_compatible_tot,
+                hwinfo->ngpu_compatible_tot == 1 ? "" : "s");
+    }
+    else if (bGPUBinary)
+    {
+        fprintf(fp, " (GPU detection deactivated)");
+    }
+    fprintf(fp, "\n");
+    fprintf(fp, "Hardware threads per node: %2d", hwinfo->nhwthread_min);
+    if (hwinfo->nhwthread_max > hwinfo->nhwthread_min)
+    {
+        fprintf(fp, " - %2d", hwinfo->nhwthread_max);
+    }
+    fprintf(fp, "\n");
+    fprintf(fp, "Compatible GPUs per node:  %2d", hwinfo->ngpu_compatible_min);
+    if (hwinfo->ngpu_compatible_max > hwinfo->ngpu_compatible_min)
+    {
+        fprintf(fp, " - %2d", hwinfo->ngpu_compatible_max);
+    }
+    fprintf(fp, "\n");
+#ifdef GMX_LIB_MPI
+    char host[255];
+    int  rank;
+
+    gmx_gethostname(host, 255);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    fprintf(fp, "Hardware detected on host %s (node of MPI rank %d):\n",
+            host, rank);
+#else
+    fprintf(fp, "Hardware detected:\n");
+#endif
+    fprintf(fp, "  CPU vendor: %s\n", gmx_cpuid_vendor_string[gmx_cpuid_vendor(hwinfo->cpuid_info)]);
+    fprintf(fp, "  CPU brand:  %s\n", gmx_cpuid_brand(hwinfo->cpuid_info));
+    fprintf(fp, "  SIMD instructions most likely to fit this hardware: %s",
+            gmx_cpuid_simd_string[hwinfo->simd_suggest_min]);
+    if (hwinfo->simd_suggest_max > hwinfo->simd_suggest_min)
+    {
+        fprintf(fp, " - %s", gmx_cpuid_simd_string[hwinfo->simd_suggest_max]);
+    }
+    fprintf(fp, "\n");
+    fprintf(fp, "  SIMD instructions selected at GROMACS compile time: %s\n",
+            gmx_cpuid_simd_string[gmx_compiled_simd()]);
+    if (bGPUBinary && (hwinfo->ngpu_compatible_tot > 0 ||
+                       hwinfo->gpu_info.ncuda_dev > 0))
+    {
+        fprintf(fp, "  %d GPU%s detected:\n",
+                hwinfo->gpu_info.ncuda_dev,
+                hwinfo->gpu_info.ncuda_dev == 1 ? "" : "s");
+        if (hwinfo->gpu_info.ncuda_dev > 0)
+        {
+            char buf[STRLEN];
+
+            sprint_gpus(buf, &hwinfo->gpu_info);
+            fprintf(fp, "%s\n", buf);
+        }
+    }
+    fprintf(fp, "\n");
+}
+
+void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+                                 const gmx_hw_info_t *hwinfo)
+{
+    if (fplog != NULL)
+    {
+        print_detected_hardware(fplog, hwinfo);
+    }
+
+    if (MULTIMASTER(cr))
+    {
+        print_detected_hardware(stderr, hwinfo);
+    }
+
+    /* Check the compiled SIMD instruction set against that of the node
+     * with the lowest SIMD level support.
+     */
+    gmx_cpuid_simd_check(hwinfo->simd_suggest_min, fplog, MULTIMASTER(cr));
+
+    /* For RDTSCP we only check on our local node and skip the MPI reduction */
+    check_use_of_rdtscp_on_this_cpu(fplog, cr, hwinfo);
 }
 
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
