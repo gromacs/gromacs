@@ -60,7 +60,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdrun.h"
@@ -582,10 +581,6 @@ int gmx_mdrun(int argc, char *argv[])
     {
         gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
                      Flags & MD_APPENDFILES, &fplog);
-        please_cite(fplog, "Hess2008b");
-        please_cite(fplog, "Spoel2005a");
-        please_cite(fplog, "Lindahl2001a");
-        please_cite(fplog, "Berendsen95a");
     }
     else
     {

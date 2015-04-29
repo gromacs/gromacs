@@ -80,14 +80,36 @@ struct gmx_gpu_info_t
  *       (i.e. must be able to be shared among all threads) */
 typedef struct
 {
-    struct gmx_gpu_info_t gpu_info;      /* Information about GPUs detected in the system */
+    /* Data for our local physical node */
+    struct gmx_gpu_info_t gpu_info;          /* Information about GPUs detected in the system */
 
-    gmx_cpuid_t           cpuid_info;    /* CPUID information about CPU detected;
-                                            NOTE: this will only detect the CPU thread 0 of the
-                                            current process runs on. */
-    int             nthreads_hw_avail;   /* Number of hardware threads available; this number
-                                            is based on the number of CPUs reported as available
-                                            by the OS at the time of detection. */
+    gmx_cpuid_t           cpuid_info;        /* CPUID information about CPU detected;
+                                                NOTE: this will only detect the CPU thread 0 of the
+                                                current process runs on. */
+    int                   ncore;             /* Number of cores, will be 0 when not detected */
+    int                   nthreads_hw_avail; /* Number of hardware threads available; this number
+                                                is based on the number of CPUs reported as available
+                                                by the OS at the time of detection. */
+
+    /* Data reduced through MPI over all physical nodes */
+    int                 nphysicalnode;       /* Number of physical nodes */
+    int                 ncore_tot;           /* Sum of #cores over all nodes, can be 0 */
+    int                 ncore_min;           /* Min #cores over all nodes */
+    int                 ncore_max;           /* Max #cores over all nodes */
+    int                 nhwthread_tot;       /* Sum of #hwthreads over all nodes */
+    int                 nhwthread_min;       /* Min #hwthreads over all nodes */
+    int                 nhwthread_max;       /* Max #hwthreads over all nodes */
+    int                 ngpu_compatible_tot; /* Sum of #GPUs over all nodes */
+    int                 ngpu_compatible_min; /* Min #GPUs over all nodes */
+    int                 ngpu_compatible_max; /* Max #GPUs over all nodes */
+
+    /* The values below are only used for printing, so here it's not an issue
+     * that stricly speaking SIMD instruction sets can't be uniquely ordered.
+     */
+    enum gmx_cpuid_simd simd_suggest_min;    /* Highest SIMD instruction set supported by all ranks */
+    enum gmx_cpuid_simd simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
+
+    gmx_bool            bIdenticalGPUs;      /* TRUE if all ranks have the same type(s) and order of GPUs */
 } gmx_hw_info_t;
 
 
