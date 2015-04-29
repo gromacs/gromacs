@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,12 @@ extern "C" {
    it. Caller is responsible for freeing this pointer. */
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs);
+
+/* Print information about the detected hardware to fplog (if != NULL)
+ * and to stderr the master rank.
+ */
+void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+                                 const gmx_hw_info_t *hwinfo);
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
