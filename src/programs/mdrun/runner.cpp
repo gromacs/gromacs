@@ -1020,6 +1020,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      * global for this process (MPI rank). */
     hwinfo = gmx_detect_hardware(fplog, cr, bTryUseGPU);
 
+    gmx_print_detected_hardware(fplog, cr, hwinfo);
 
     snew(state, 1);
     if (SIMMASTER(cr))
@@ -1175,6 +1176,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (fplog != NULL)
     {
         pr_inputrec(fplog, 0, "Input Parameters", inputrec, FALSE);
+        fprintf(fplog, "\n");
     }
 
     /* now make sure the state is initialized and propagated */
