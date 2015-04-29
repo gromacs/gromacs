@@ -255,7 +255,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
         gmx::printBinaryInformation(fp, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    fprintf(fp, "\n\n");
+    fprintf(fp, "\n");
 
     fflush(fp);
     debug_gmx();
