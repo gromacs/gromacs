@@ -127,8 +127,8 @@ enum gmx_cpuid_feature
 
 /* Currently supported SIMD instruction sets, intrinsics or other similar combinations
  * in Gromacs. There is not always a 1-to-1 correspondence with feature flags; on some AMD
- * hardware we prefer to use 128bit AVX instructions (although 256-bit ones could be executed),
- * and we still haven't written the AVX2 kernels.
+ * hardware we prefer to use 128bit AVX instructions (although 256-bit ones could be executed).
+ * These are listed in increasing order for compatible architectures.
  */
 enum gmx_cpuid_simd
 {
@@ -167,6 +167,11 @@ gmx_cpuid_simd_string[GMX_CPUID_NSIMD];
 /* Abstract data type with CPU detection information. Set by gmx_cpuid_init(). */
 typedef struct gmx_cpuid *
     gmx_cpuid_t;
+
+
+/* Return the SIMD instruction set GROMACS was compiled with. */
+enum gmx_cpuid_simd
+gmx_compiled_simd           ();
 
 
 /* Fill the data structure by using CPU detection instructions.
@@ -316,9 +321,12 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                    cpuid);
  * would suggest for the current hardware. Always print stats to the log file
  * if it is non-NULL, and if we don't have a match, print a warning in log
  * (if non-NULL) and if print_to_stderr!=0 also to stderr.
+ * The suggested SIMD instruction set simd_suggest is obtained with
+ * gmx_cpuid_simd_suggest(), but with MPI this might be different for
+ * different nodes, so it shoul be passed here after parallel reduction.
  */
 int
-gmx_cpuid_simd_check    (gmx_cpuid_t                cpuid,
+gmx_cpuid_simd_check    (enum gmx_cpuid_simd        simd_suggest,
                          FILE *                     log,
                          int                        print_to_stderr);
 
