@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2015, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -1316,7 +1316,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
             /* skip the reduction if there was no non-local work to do */
-            if (nbv->grp[eintLocal].nbl_lists.nbl[0]->nsci > 0)
+            if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
                                                nbv->grp[eintNonlocal].nbat, f);
@@ -1388,12 +1388,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        if (nbv->grp[eintLocal].nbl_lists.nbl[0]->nsci > 0)
-        {
-            /* skip the reduction if there was no non-local work to do */
-            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
-                                           nbv->grp[eintLocal].nbat, f);
-        }
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
+                                       nbv->grp[eintLocal].nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
