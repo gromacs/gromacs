@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS development team,
+ * Copyright (c) 2001-2012,2013,2015 The GROMACS development team,
  * check out http://www.gromacs.org for more information.
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
@@ -285,8 +285,11 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
-    /* don't launch the kernel if there is no work to do */
-    if (plist->nsci == 0)
+    /* Don't launch the non-local kernel if there is no work to do.
+       Doing the same for the local kernel is more complicated, since the
+       local part of the force array also depends only the non-local kernel.
+       So to avoid complicating the code, we always call the local kernel. */
+    if (iloc == eintNonlocal && plist->nsci == 0)
     {
         return;
     }
@@ -406,8 +409,8 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
     bool bCalcEner   = flags & GMX_FORCE_VIRIAL;
     bool bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
-    /* don't launch copy-back if there was no work to do */
-    if (cu_nb->plist[iloc]->nsci == 0)
+    /* don't launch non-local copy-back if there was no non-local work to do */
+    if (iloc == eintNonlocal && cu_nb->plist[iloc]->nsci > 0)
     {
         return;
     }
@@ -563,14 +566,15 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     bool    bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
-    bCalcEner = (bCalcEner || always_ener) && !never_ener; 
+    bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
-    /* don't launch wait/update timers & counters if there was no work to do
+    /* Don't launch wait/update timers & counters if there was no work to do,
+       but only for non-local, consistent with nbnxn_cuda_launch_kernel.
 
        NOTE: if timing with multiple GPUs (streams) becomes possible, the
        counters could end up being inconsistent due to not being incremented
        on some of the nodes! */
-    if (cu_nb->plist[iloc]->nsci == 0)
+    if (iloc == eintNonlocal && cu_nb->plist[iloc]->nsci == 0)
     {
         return;
     }
