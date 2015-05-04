@@ -1787,6 +1787,18 @@ void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
     return;
 }
 
+/*! \brief Return whether an end state with the given coupling-lambda
+ * value describes fully-interacting VDW.
+ *
+ * \param[in]  couple_lambda_value  Enumeration ecouplam value describing the end state
+ * \return                          Whether VDW is on (i.e. the user chose vdw or vdw-q in the .mdp file)
+ */
+static gmx_bool couple_lambda_has_vdw_on(int couple_lambda_value)
+{
+    return (couple_lambda_value == ecouplamVDW ||
+            couple_lambda_value == ecouplamVDWQ);
+}
+
 void get_ir(const char *mdparin, const char *mdparout,
             t_inputrec *ir, t_gromppopts *opts,
             warninp_t wi)
@@ -2436,8 +2448,8 @@ void get_ir(const char *mdparin, const char *mdparout,
          */
         if (ir->efep != efepNO && ir->fepvals->n_lambda == 0 &&
             ir->fepvals->sc_alpha != 0 &&
-            ((opts->couple_lam0 == ecouplamVDW  && opts->couple_lam0 == ecouplamVDWQ) ||
-             (opts->couple_lam1 == ecouplamVDWQ && opts->couple_lam1 == ecouplamVDW)))
+            (couple_lambda_has_vdw_on(opts->couple_lam0) &&
+             couple_lambda_has_vdw_on(opts->couple_lam1)))
         {
             warning(wi, "You are using soft-core interactions while the Van der Waals interactions are not decoupled (note that the sc-coul option is only active when using lambda states). Although this will not lead to errors, you will need much more sampling than without soft-core interactions. Consider using sc-alpha=0.");
         }
