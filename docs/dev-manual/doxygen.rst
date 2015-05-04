@@ -8,10 +8,7 @@ on C++ code and other new code that follows the new module layout.
 Parts of the guidelines are still applicable to documenting older code (e.g.,
 within ``gmxlib/`` or ``mdlib/``), in particular the guidelines about formatting
 the Doxygen comments and the use of ``\internal``.
-See `Doxygen documentation on code layout`__ for
-the overall structure of the documentation.
-
-__ doxygen-page-codelayout_
+See :ref:`dev-doc-layout` for the overall structure of the documentation.
 
 To get started quickly, you only need to read the first two sections to
 understand the overall structure of the documentation, and take a look at the
@@ -222,15 +219,12 @@ given below in the sections on individual code constructs.
 Modules as Doxygen groups
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As described in `Doxygen documentation for code layout`__
-each subdirectory under ``src/gromacs/``
+As described in :doc:`codelayout`, each subdirectory under ``src/gromacs/``
 represents a *module*, i.e., a somewhat coherent collection of routines.
 Doxygen cannot automatically generate a list of routines in a module; it only
 extracts various alphabetical indexes that contain more or less all documented
 functions and classes.  To help reading the documentation, the routines for a
 module should be visible in one place.
-
-__ doxygen-page-codelayout_
 
 |Gromacs| uses Doxygen groups to achieve this: for each documented module, there
 is a ``\defgroup`` definition for the module, and all the relevant classes and
@@ -278,14 +272,11 @@ Documenting specific code constructs
 This section describes the techical details and some tips and tricks for
 documenting specific code constructs such that useful documentation is
 produced.  If you are wondering where to document a certain piece of
-information, see the documentation structure section in
-`Doxygen documentation for code layout`__.
+information, see the documentation structure section in :ref:`dev-doc-layout`.
 The focus of the documentation should be on the overview content: Doxygen pages
 and the module documentation.  An experienced developer can relatively easily
 read and understand individual functions, but the documentation should help
 in getting the big picture.
-
-__ doxygen-page-codelayout_
 
 Doxygen pages
 ^^^^^^^^^^^^^
