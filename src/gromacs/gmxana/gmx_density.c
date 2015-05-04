@@ -334,7 +334,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
-    int          flags;
+    int          flags=0;
     t_trxframe   fr;
     double       invvol;
     int          natoms;        /* nr. atoms in trj */
@@ -354,11 +354,8 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
     {
         gmx_fatal(FARGS, "Invalid axes. Terminating\n");
     }
-
- /*   if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0) */
-    flags = TRX_NEED_X;
-
-    if(dens_opt[0][0] == 'p' || dens_opt[0][0] == 't' || dens_opt[0][0]=='T')
+    flags=TRX_NEED_X;
+    if(dens_opt[0][0] == 'p' || dens_opt[0][0] == 't' || dens_opt[0][0]=='T' || dens_opt[0][0]=='f' || dens_opt[0][0] == 'v' || dens_opt[0][0] == 'x')
        flags|=TRX_NEED_F|TRX_NEED_V;
 
     read_first_frame(oenv, &status, fn, &fr, flags);
@@ -463,13 +460,22 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
                 }
                 switch (dens_opt[0][0]) { 
                    case 'T':
-                      (*slDensity)[n][slice] += ( top->atoms.atom[index[n][i]].m*fr.v[i][2]*fr.v[i][2] * 1e-5 * AMU / (NANO * PICO *PICO ) )*invvol;
+                      (*slDensity)[n][slice] += ( top->atoms.atom[index[n][i]].m*fr.v[index[n][i]][2]*fr.v[index[n][i]][2] * 1e-5 * AMU / (NANO * PICO *PICO ) )*invvol;
+		     break;
+                   case 'f':
+                      (*slDensity)[n][slice] += (fr.f[index[n][i]][2])*invvol;
                      break;
                    case 'p':
-                      (*slDensity)[n][slice] += (fr.vir[i][2])*invvol;
+                      (*slDensity)[n][slice] += (fr.vir[index[n][i]][2])*invvol;
+                     break;
+                   case 'x':
+                      (*slDensity)[n][slice] += (fr.v[index[n][i]][0])*invvol;
+                     break;
+                   case 'v':
+                      (*slDensity)[n][slice] += (fr.v[index[n][i]][2])*invvol;
                      break;
                    case 't':
-                      (*slDensity)[n][slice] +=   (0.5)*(2.*fr.vir[i][2] - (fr.vir[i][0]+fr.vir[i][1]))*invvol;
+                      (*slDensity)[n][slice] +=   (0.5)*(2.*fr.vir[index[n][i]][2] - (fr.vir[index[n][i]][0]+fr.vir[index[n][i]][1]))*invvol;
                      break;
                    default:
                          (*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m*invvol;
@@ -543,6 +549,9 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
         case 'c': ylabel = "Charge density (e nm\\S-3\\N)"; break;
         case 'e': ylabel = "Electron density (e nm\\S-3\\N)"; break;
         case 'p': ylabel = "Pressure profile (bar)"; break;
+        case 'x': ylabel = "x-Velocity profile (nm/ps)"; break;
+        case 'v': ylabel = "Velocity profile (nm/ps)"; break;
+        case 'f': ylabel = "Force profile (kJ/nm^3)"; break;
         case 'T': ylabel = "Temperature profile (bar)"; break;
         case 't': ylabel = "Surface tension profile (bar)"; break;
     }
@@ -656,7 +665,7 @@ int gmx_density(int argc, char *argv[])
 
     output_env_t       oenv;
     static const char *dens_opt[] =
-    { NULL, "mass", "number", "charge", "electron", "pressure", "tension", "Temperature",NULL };
+    { NULL, "mass", "number", "charge", "electron", "pressure", "tension", "force","velocity", "xvelocity", "Temperature",NULL };
     static int         axis        = 2;  /* normal to memb. default z  */
     static const char *axtitle     = "Z";
     static int         nslices     = 50; /* nr of slices defined       */

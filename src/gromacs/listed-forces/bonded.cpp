@@ -68,6 +68,8 @@
 #include "pairs.h"
 #include "restcbt.h"
 
+rvec * global_vir = NULL;
+
 /*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {
     1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4,
@@ -483,6 +485,9 @@ real bonds(int nbonds,
             f[aj][m]           -= fij;
             fshift[ki][m]      += fij;
             fshift[CENTRAL][m] -= fij;
+	    if(global_vir!=NULL) { 
+		global_vir[ai][m] +=(1e25/AVOGADRO) * fij * dx[m];
+	    }
         }
     }               /* 59 TOTAL	*/
     return vtot;

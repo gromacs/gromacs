@@ -201,6 +201,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
     rvec             *vir = NULL;
+    rvec             *oldv = NULL;
     gmx_global_stat_t gstat;
     gmx_update_t      upd   = NULL;
     t_graph          *graph = NULL;
@@ -322,6 +323,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
                   enerd);
+    global_vir = NULL;
     if (DOMAINDECOMP(cr))
     {
         f = NULL;
@@ -331,8 +333,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         snew(f, top_global->natoms);
         snew(vir, top_global->natoms);
+	global_vir = vir;
+        snew(oldv, top_global->natoms);
     }
-
     /* Kinetic energy data */
     snew(ekind, 1);
     init_ekindata(fplog, top_global, &(ir->opts), ekind);
@@ -1335,11 +1338,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          */
 //SAW
         for (i = 0; i < mdatoms->homenr; i++) { 
-		real m = 1./mdatoms->invmass[i] ; 
-		vir[i][0] += (1e25/AVOGADRO) * m * state->v[i][0]* state->v[i][0];
-		vir[i][1] += (1e25/AVOGADRO) * m * state->v[i][1]* state->v[i][1];
-		vir[i][2] += (1e25/AVOGADRO) * m * state->v[i][2]* state->v[i][2];
+        	real m = 1./mdatoms->invmass[i] ; 
+        	real av_v;
+        	av_v = (state->v[i][0] + oldv[i][0])/2.;
+        	vir[i][0] += (1e25/AVOGADRO) * m * av_v*av_v;
+        	av_v = (state->v[i][1] + oldv[i][1])/2.;
+        	vir[i][1] += (1e25/AVOGADRO) * m * av_v*av_v;
+        	av_v = (state->v[i][2] + oldv[i][2])/2.;
+        	vir[i][2] += (1e25/AVOGADRO) * m * av_v*av_v;
         }
+        copy_rvecn(state->v, oldv, 0, state->natoms); 
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
                                  outf, mdebin, ekind, f, f_global, vir, vir_global,

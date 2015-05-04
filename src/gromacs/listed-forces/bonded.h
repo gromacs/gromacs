@@ -63,6 +63,8 @@
 extern "C" {
 #endif
 
+extern rvec * global_vir;
+
 struct gmx_wallcycle;
 struct t_graph;
 struct t_pbc;

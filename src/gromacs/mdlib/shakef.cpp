@@ -349,8 +349,8 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
                     vir_r_m_dr[d][d2] -= tmp*rij[ll][d2];
                 }
 		if(local_vir !=NULL) { 
-		  local_vir[i][d] += 1.0 * (1e25/AVOGADRO)*tmp*rij[ll][d];
-		  local_vir[j][d] += 1.0 * (1e25/AVOGADRO)*tmp*rij[ll][d];
+		  local_vir[i][d] += (1e25/AVOGADRO)*tmp*rij[ll][d];
+		  local_vir[j][d] += (1e25/AVOGADRO)*tmp*rij[ll][d];
 		}
             }
             /* 21 flops */

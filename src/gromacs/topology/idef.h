@@ -43,6 +43,7 @@
 extern "C" {
 #endif
 
+extern rvec * global_vir;
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST 6

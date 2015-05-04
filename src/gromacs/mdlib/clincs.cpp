@@ -506,7 +506,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                      gmx_bool bCalcDHDL,
                      real wangle, int *warn,
                      real invdt, rvec *v,
-                     gmx_bool bCalcVir, tensor vir_r_m_dr)
+                     gmx_bool bCalcVir, tensor vir_r_m_dr, rvec *local_vir)
 {
     int      b0, b1, b, i, j, k, n, iter;
     real     tmp0, tmp1, tmp2, mvb, rlen, len, len2, dlen2, wfac;
@@ -729,6 +729,12 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                 {
                     vir_r_m_dr[i][j] -= tmp1*r[b][j];
                 }
+		if(local_vir !=NULL) { 
+		  int ii = bla[2*b];
+		  int jj = bla[2*b+1];
+		  local_vir[ii][i] += 1.*(1e25/AVOGADRO)*tmp1*r[b][i];
+		  local_vir[jj][i] += 1.*(1e25/AVOGADRO)*tmp1*r[b][i];
+		}
             }
         } /* 22 ncons flops */
     }
@@ -1479,7 +1485,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          gmx_bool bCalcVir, tensor vir_r_m_dr,
                          int econq,
                          t_nrnb *nrnb,
-                         int maxwarn, int *warncount)
+                         int maxwarn, int *warncount, rvec * local_vir)
 {
     gmx_bool  bCalcDHDL;
     char      buf[STRLEN], buf2[22], buf3[STRLEN];
@@ -1585,7 +1591,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                      bCalcDHDL,
                      ir->LincsWarnAngle, &warn,
                      invdt, v, bCalcVir,
-                     th == 0 ? vir_r_m_dr : lincsd->th[th].vir_r_m_dr);
+                     th == 0 ? vir_r_m_dr : lincsd->th[th].vir_r_m_dr, local_vir);
         }
 
         if (bLog && fplog && lincsd->nc > 0)
