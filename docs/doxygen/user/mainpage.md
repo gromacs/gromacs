@@ -49,9 +49,6 @@ To understand the inner workings of \Gromacs, or if you want to contribute to
 Currently, only parts of the code are documented here.  The following pages
 give an overview of some of the topics that are documented:
 
- - \subpage page_codelayout <br/>
-   This is a good place to start to understand how to
-   navigate the code and the documentation.
  - \subpage page_analysisframework <br/>
    Provides an overview of the framework that the \Gromacs library provides for
    writing (trajectory) analysis tools.
@@ -64,6 +61,9 @@ give an overview of some of the topics that are documented:
  - \subpage page_simd <br/>
    Documentation about the new SIMD module that makes it possible to write
    highly accelerated CPU code that is still portable.
+
+ - \subpage page_modulegraph <br/>
+   Automatically generated module dependency graph.
 \endif
 
 This list will hopefully expand over time.
