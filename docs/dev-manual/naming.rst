@@ -26,7 +26,7 @@ Files
   common prefix to every file name in the directory) and the remaining part of
   the name is unique enough.
 
-.. TODO: Copy/move relevant content from Doxygen page_codelayout here, and add
+.. TODO: Copy/move relevant content from codelayout.rst here, and add
    details.
 
 .. TODO: Consider usage of underscores vs dashes in file names.

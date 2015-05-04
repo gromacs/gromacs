@@ -12,15 +12,17 @@ require the documentation to be updated in sync.  Wiki pages at
 http://www.gromacs.org/Developer_Zone contain additional information (much of
 it outdated, though), and can be linked from relevant locations in this guide.
 
-The guide is currently split into two main parts:
+The guide is currently split into a few main parts:
 
- * Generic guidelines to follow when developing |Gromacs|.
-   For some of the guidelines, scripts exist (see below) to automatically
-   reformat the code and/or enforce the guidelines for each commit.
- * Instructions on what tools are used, and how to use them.
+* Overview of the |Gromacs| codebase.
+* Generic guidelines to follow when developing |Gromacs|.
+  For some of the guidelines, scripts exist (see below) to automatically
+  reformat the code and/or enforce the guidelines for each commit.
+* Instructions on what tools are used, and how to use them.
 
 .. toctree::
    :maxdepth: 2
 
+   overview
    style
    tools

@@ -7,6 +7,7 @@ Development-time tools
    doxygen
    gmxtree
    uncrustify
+   testutils
 
 .. TODO: Add details for most of the tools, either in the form of links to wiki,
    or to a separate page that explains more details.
@@ -50,10 +51,7 @@ unit testing (CTest)
   |Gromacs| uses a unit testing framework based on Google C++ Testing
   Framework (gtest) and CTest.  All unit tests are automatically run on Jenkins
   for each commit.
-  Details can be found on a separate page on
-  `unit testing in the Doxygen documentation`__
-
-__ doxygen-page-unittesting_
+  Details can be found on a separate page on :doc:`testutils`.
 
 regression tests
 
