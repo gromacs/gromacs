@@ -73,7 +73,7 @@
    real norm(rvec a)                                = | a |
    double dnorm(dvec a)                             = | a |
    void cprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
-   void dprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
+   void dcprod(rvec a,rvec b,rvec c)                c = a x b (cross product)
    void dprod(rvec a,rvec b,rvec c)                 c = a * b (direct product)
    real cos_angle(rvec a,rvec b)
    real cos_angle_no_table(rvec a,rvec b)
