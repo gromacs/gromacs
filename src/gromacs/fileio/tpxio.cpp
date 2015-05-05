@@ -350,7 +350,7 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
     gmx_fio_do_real(fio, pcrd->init);
     gmx_fio_do_real(fio, pcrd->rate);
 
-    if (bRead && pcrd->eGeom == epullgANGLE)
+    if (bRead && (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgDIHEDRAL))
     {
         /* Convert degrees to radians after reading the tpr */
         pcrd->init *= DEG2RAD;
