@@ -324,9 +324,16 @@ Since the potential now depends on the coordinates of two additional groups defi
 \label{fig:pulldirrel} 
 \end{figure}   
 
-\subsubsection{Definition of the angle pull geometry}
-Four pull groups are required for {\tt pull-coord?-geometry = angle}. E.g., the {\tt .mdp} option {\tt pull-coord?-groups = 1 2 2 4}
-defines the angle between the vector from group 1 to 2 and the vector from group 2 to 4. The angle takes values in the interval (0, 180) deg.
+\subsubsection{Definition of the angle and dihedral pull geometries}
+Four pull groups are required for {\tt pull-coord?-geometry = angle}. In the same way as for geometries with two groups, each consecutive pair of groups
+$i$ and $i+1$ define a vector connecting groups $i$ and $i+1$. The angle is defined as the angle between the two resulting vectors.
+E.g., the {\tt .mdp} option {\tt pull-coord?-groups = 1 2 2 4} defines the angle between the vector from group 1 to 2 and the vector from group 2 to 4.
+The angle takes values in the interval (0, 180) deg.
+The dihedral geometry requires six pull groups. These pair up in the same way as described above and define three vectors. The dihedral angle is defined as the angle between the two
+planes spanned by the two first and the two last vectors. Equivalently, the dihedral angle can be seen as the angle between the first and the third
+vector when these vectors are projected onto a plane normal to the second vector (the axis vector).
+A typical case is the dihedral angle between four consecutive atoms 1, 2, 3, 4 which would be specified by the {\tt .mdp} option
+{\tt pull-coord?-groups = 1 2 2 3 3 4}. The dihedral angle takes values in the interval (-180, 180) deg and has periodic boundaries.
 
 \subsubsection{Limitations}
 There is one theoretical limitation:

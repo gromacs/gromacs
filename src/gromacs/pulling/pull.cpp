@@ -77,7 +77,8 @@
 
 bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
 {
-    return (pcrd->eGeom == epullgANGLE);
+    return (pcrd->eGeom == epullgANGLE ||
+            pcrd->eGeom == epullgDIHEDRAL);
 }
 
 double pull_conversion_factor_userinput2internal(const t_pull_coord *pcrd)
@@ -134,6 +135,17 @@ static void pull_print_group_x(FILE *out, ivec dim,
     }
 }
 
+static void pull_print_coord_dr_components(FILE *out, const ivec dim, const dvec dr)
+{
+    for (int m = 0; m < DIM; m++)
+    {
+        if (dim[m])
+        {
+            fprintf(out, "\t%g", dr[m]);
+        }
+    }
+}
+
 static void pull_print_coord_dr(FILE *out, const pull_coord_work_t *pcrd,
                                 gmx_bool bPrintRefValue,
                                 gmx_bool bPrintComponents)
@@ -149,24 +161,14 @@ static void pull_print_coord_dr(FILE *out, const pull_coord_work_t *pcrd,
 
     if (bPrintComponents)
     {
-        int m;
-
-        for (m = 0; m < DIM; m++)
-        {
-            if (pcrd->params.dim[m])
-            {
-                fprintf(out, "\t%g", pcrd->dr01[m]);
-            }
-        }
+        pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->dr01);
         if (pcrd->params.ngroup > 2)
         {
-            for (m = 0; m < DIM; m++)
-            {
-                if (pcrd->params.dim[m])
-                {
-                    fprintf(out, "\t%g", pcrd->dr23[m]);
-                }
-            }
+            pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->dr23);
+        }
+        if (pcrd->params.ngroup > 4)
+        {
+            pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->dr45);
         }
     }
 }
@@ -199,12 +201,9 @@ static void pull_print_x(FILE *out, struct pull_t *pull, double t)
                                    &pull->group[pcrd->params.group[0]]);
             }
 
-            pull_print_group_x(out, pcrd->params.dim, &pull->group[pcrd->params.group[1]]);
-
-            if (pcrd->params.eGeom == epullgANGLE)
+            for (int g = 1; g < pcrd->params.ngroup; g++)
             {
-                pull_print_group_x(out, pcrd->params.dim, &pull->group[pcrd->params.group[2]]);
-                pull_print_group_x(out, pcrd->params.dim, &pull->group[pcrd->params.group[3]]);
+                pull_print_group_x(out, pcrd->params.dim, &pull->group[pcrd->params.group[g]]);
             }
         }
     }
@@ -237,6 +236,37 @@ void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time)
     }
 }
 
+static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int coord_index, char **setname, int *nsets_ptr)
+{
+    /*  Loop over the distance vectors and print their components. Each vector is made up of two consecutive groups. */
+    for (int g = 0; g < pcrd->params.ngroup; g += 2)
+    {
+        /* Loop over the components */
+        for (int m  = 0; m < DIM; m++)
+        {
+            if (pcrd->params.dim[m])
+            {
+                char legend[STRLEN];
+
+                if (g == 0 && pcrd->params.ngroup <= 2)
+                {
+                    /*  For the simplest case we print a simplified legend without group indices, just the cooordinate index
+                        and which dimensional component it is. */
+                    sprintf(legend, "%d %s%c", coord_index + 1, "d", 'X' + m);
+                }
+                else
+                {
+                    /* Otherwise, print also the group indices (relative to the coordinate, not the global ones). */
+                    sprintf(legend, "%d %s %d-%d %s%c", coord_index + 1, "g", g + 1, g + 2, "d", 'X' + m);
+                }
+
+                setname[*nsets_ptr] = gmx_strdup(legend);
+                (*nsets_ptr)++;
+            }
+        }
+    }
+}
+
 static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                            const gmx_output_env_t *oenv,
                            gmx_bool bCoord, unsigned long Flags)
@@ -266,11 +296,11 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
         }
 
         /* With default mdp options only the actual coordinate value is printed (1),
-         * but optionally the reference value (1),
-         * the group COMs for all the groups (ngroups*DIM, max ngroups = 4)
-         * and the components of the distance vectors can be printed ((ngroups/2)*DIM).
+         * but optionally the reference value (+ 1),
+         * the group COMs for all the groups (+ ngroups*DIM)
+         * and the components of the distance vectors can be printed (+ (ngroups/2)*DIM).
          */
-        snew(setname, pull->ncoord*(1 + 1 + 4*DIM + 2*DIM));
+        snew(setname, pull->ncoord*(1 + 1 + c_pullCoordNgroupMax*DIM + c_pullCoordNgroupMax/2*DIM));
 
         nsets = 0;
         for (c = 0; c < pull->ncoord; c++)
@@ -293,35 +323,13 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                 }
                 if (pull->params.bPrintComp)
                 {
-                    /* The pull coord distance components */
-                    for (m = 0; m < DIM; m++)
-                    {
-                        if (pull->coord[c].params.dim[m])
-                        {
-                            sprintf(buf, "%d %s%c", c+1, "d", 'X'+m);
-                            setname[nsets] = gmx_strdup(buf);
-                            nsets++;
-                        }
-                    }
-                    if (pull->coord[c].params.eGeom == epullgANGLE)
-                    {
-                        for (m = 0; m < DIM; m++)
-                        {
-                            if (pull->coord[c].params.dim[m])
-                            {
-                                sprintf(buf, "%d %s%c", c+1, "d", 'X'+m);
-                                setname[nsets] = gmx_strdup(buf);
-                                nsets++;
-                            }
-                        }
-                    }
+                    set_legend_for_coord_components(&pull->coord[c], c, setname, &nsets);
                 }
 
                 if (pull->params.bPrintCOM)
                 {
-                    int ngroup, g;
-                    ngroup = (pull->coord[c].params.eGeom == epullgDIRRELATIVE ||
-                              pull->coord[c].params.eGeom == epullgANGLE) ? 4 : 2;
+                    int g, ngroup;
+                    ngroup = pull->coord[c].params.ngroup;
 
                     for (g = 0; g < ngroup; g++)
                     {
@@ -330,7 +338,7 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                         {
                             if (pull->coord[c].params.dim[m])
                             {
-                                sprintf(buf, "%d %s%d %c", c+1, "g", g + 1, 'X'+m);
+                                sprintf(buf, "%d %s %d %c", c+1, "g", g + 1, 'X'+m);
                                 setname[nsets] = gmx_strdup(buf);
                                 nsets++;
                             }
@@ -511,10 +519,15 @@ static void apply_forces_coord(struct pull_t * pull, int coord,
         }
         apply_forces_grp(&pull->group[pcrd->params.group[1]], md, pcrd->f01, 1, f);
 
-        if (pcrd->params.eGeom == epullgANGLE)
+        if (pcrd->params.ngroup > 2)
         {
             apply_forces_grp(&pull->group[pcrd->params.group[2]], md, pcrd->f23, -1, f);
             apply_forces_grp(&pull->group[pcrd->params.group[3]], md, pcrd->f23,  1, f);
+        }
+        if (pcrd->params.ngroup > 4)
+        {
+            apply_forces_grp(&pull->group[pcrd->params.group[4]], md, pcrd->f45, -1, f);
+            apply_forces_grp(&pull->group[pcrd->params.group[5]], md, pcrd->f45,  1, f);
         }
     }
 }
@@ -608,9 +621,6 @@ static void get_pull_coord_dr(struct pull_t *pull,
 
     pcrd = &pull->coord[coord_ind];
 
-    pgrp0 = &pull->group[pcrd->params.group[0]];
-    pgrp1 = &pull->group[pcrd->params.group[1]];
-
     if (pcrd->params.eGeom == epullgDIRPBC)
     {
         md2 = -1;
@@ -649,7 +659,17 @@ static void get_pull_coord_dr(struct pull_t *pull,
                     pcrd->vec[XX], pcrd->vec[YY], pcrd->vec[ZZ]);
         }
     }
-    if (pcrd->params.eGeom == epullgANGLE)
+
+    pgrp0 = &pull->group[pcrd->params.group[0]];
+    pgrp1 = &pull->group[pcrd->params.group[1]];
+
+    low_get_pull_coord_dr(pull, pcrd, pbc,
+                          pgrp1->x,
+                          pcrd->params.eGeom == epullgCYL ? pull->dyna[coord_ind].x : pgrp0->x,
+                          md2,
+                          pcrd->dr01);
+
+    if (pcrd->params.ngroup > 2)
     {
         pull_group_work_t *pgrp2, *pgrp3;
         pgrp2 = &pull->group[pcrd->params.group[2]];
@@ -660,20 +680,32 @@ static void get_pull_coord_dr(struct pull_t *pull,
                               pgrp2->x,
                               md2,
                               pcrd->dr23);
-        if (debug)
-        {
-            fprintf(debug, "pull coord dr23 %d vector: %6.3f %6.3f %6.3f\n",
-                    coord_ind,
-                    pcrd->dr23[XX], pcrd->dr23[YY], pcrd->dr23[ZZ]);
-        }
-
     }
+    if (pcrd->params.ngroup > 4)
+    {
+        pull_group_work_t *pgrp4, *pgrp5;
+        pgrp4 = &pull->group[pcrd->params.group[4]];
+        pgrp5 = &pull->group[pcrd->params.group[5]];
 
-    low_get_pull_coord_dr(pull, pcrd, pbc,
-                          pgrp1->x,
-                          pcrd->params.eGeom == epullgCYL ? pull->dyna[coord_ind].x : pgrp0->x,
-                          md2,
-                          pcrd->dr01);
+        low_get_pull_coord_dr(pull, pcrd, pbc,
+                              pgrp5->x,
+                              pgrp4->x,
+                              md2,
+                              pcrd->dr45);
+    }
+}
+
+/* Modify x so that it is periodic in [-pi, pi) */
+static void make_periodic_2pi(double *x)
+{
+    if (*x >= M_PI)
+    {
+        *x -= M_2PI;
+    }
+    else if (*x < -M_PI)
+    {
+        *x += M_2PI;
+    }
 }
 
 /* This function should always be used to modify pcrd->value_ref */
@@ -688,7 +720,7 @@ static void low_set_pull_coord_reference_value(pull_coord_work_t *pcrd,
             gmx_fatal(FARGS, "Pull reference distance for coordinate %d (%f) needs to be non-negative", coord_ind + 1, value_ref);
         }
     }
-    else if (pull_coordinate_is_angletype(&pcrd->params))
+    else if (pcrd->params.eGeom == epullgANGLE)
     {
         if (value_ref < 0 || value_ref > M_PI)
         {
@@ -705,8 +737,33 @@ static void update_pull_coord_reference_value(pull_coord_work_t *pcrd, int coord
     if (pcrd->params.rate != 0)
     {
         double value_ref = (pcrd->params.init + pcrd->params.rate*t)*pull_conversion_factor_userinput2internal(&pcrd->params);
+
+        /* Allow pulling to be periodic for dihedral angles */
+        if (pcrd->params.eGeom == epullgDIHEDRAL)
+        {
+            make_periodic_2pi(&value_ref);
+        }
+
         low_set_pull_coord_reference_value(pcrd, coord_ind, value_ref);
     }
+}
+
+/* Returns the dihedral angle. Updates the plane normal vectors m, n. */
+static double get_dihedral_angle_coord(pull_coord_work_t *pcrd)
+{
+    double phi, sign;
+    dvec   dr32; /* store instead of dr23? */
+
+    dsvmul(-1, pcrd->dr23, dr32);
+    dcprod(pcrd->dr01, dr32, pcrd->planevec_m);  /* Normal of first plane */
+    dcprod(dr32, pcrd->dr45, pcrd->planevec_n);  /* Normal of second plane */
+    phi = gmx_dangle(pcrd->planevec_m, pcrd->planevec_n);
+
+    /* Note: the sign below is opposite of that in the bondeds or Bekker 1994
+     * because there r_ij = ri - rj, while here dr01 = r_1 - r_0
+     */
+    sign = (diprod(pcrd->dr01, pcrd->planevec_n) < 0.0) ? 1.0 : -1.0;
+    return sign*phi;
 }
 
 /* Calculates pull->coord[coord_ind].value.
@@ -743,6 +800,9 @@ static void get_pull_coord_distance(struct pull_t *pull,
         case epullgANGLE:
             pcrd->value = gmx_dangle(pcrd->dr01, pcrd->dr23);
             break;
+        case epullgDIHEDRAL:
+            pcrd->value = get_dihedral_angle_coord(pcrd);
+            break;
         default:
             gmx_incons("Unsupported pull type in get_pull_coord_distance");
     }
@@ -776,6 +836,11 @@ static double get_pull_coord_deviation(struct pull_t *pull,
          */
         dev = 0;
     }
+    else if (pcrd->params.eGeom == epullgDIHEDRAL)
+    {
+        /* The reference value should be in (-PI, PI). The deviation should also be in (-PI, PI) */
+        make_periodic_2pi(&dev);
+    }
 
     return dev;
 }
@@ -802,6 +867,7 @@ void clear_pull_forces(struct pull_t *pull)
     {
         clear_dvec(pull->coord[i].f01);
         clear_dvec(pull->coord[i].f23);
+        clear_dvec(pull->coord[i].f45);
         pull->coord[i].f_scal = 0;
     }
 }
@@ -1165,11 +1231,40 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
     sfree(rnew);
 }
 
+static void add_virial_coord_dr(tensor vir, const dvec dr, const dvec f)
+{
+    for (int j = 0; j < DIM; j++)
+    {
+        for (int m = 0; m < DIM; m++)
+        {
+            vir[j][m] -= 0.5*f[j]*dr[m];
+        }
+    }
+}
+
+/* Adds the pull contribution to the virial */
+static void add_virial_coord(tensor vir, const pull_coord_work_t *pcrd)
+{
+    if (vir != NULL && pcrd->params.eGeom != epullgDIRPBC)
+    {
+        /* Add the pull contribution for each distance vector to the virial. */
+        add_virial_coord_dr(vir, pcrd->dr01, pcrd->f01);
+        if (pcrd->params.ngroup > 2)
+        {
+            add_virial_coord_dr(vir, pcrd->dr23, pcrd->f23);
+        }
+        if (pcrd->params.ngroup > 4)
+        {
+            add_virial_coord_dr(vir, pcrd->dr45, pcrd->f45);
+        }
+    }
+}
+
 static void calc_pull_coord_force(pull_coord_work_t *pcrd,
                                   double dev, real lambda,
                                   real *V, tensor vir, real *dVdl)
 {
-    int    j, m;
+    int    m;
     real   k, dkdl;
 
     k    = (1.0 - lambda)*pcrd->params.k + lambda*pcrd->params.kB;
@@ -1223,7 +1318,7 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
             double invdr01, invdr23 = 0;
             double a, b, a01, a23, b01, b23;
 
-            /* The force is a sum of one vector along dr and one along dr23.
+            /* The force is a sum of one vector along dr01 and one along dr23.
              * Below are the coefficents.
              */
             invdr01 = 1./dnorm(pcrd->dr01);
@@ -1237,10 +1332,51 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
 
             for (m = 0; m < DIM; m++)
             {
-                /* f_scal is here dV/dtheta */
+                /* f_scal is here -dV/dtheta */
                 pcrd->f01[m] = pcrd->f_scal*(a01*pcrd->dr23[m] - b01*pcrd->dr01[m]);
                 pcrd->f23[m] = pcrd->f_scal*(a23*pcrd->dr01[m] - b23*pcrd->dr23[m]);
             }
+        }
+    }
+    else if (pcrd->params.eGeom == epullgDIHEDRAL)
+    {
+        double m2, n2, tol, sqrdist_32;
+        dvec   dr32;
+        /* Note: there is a small difference here compared to the
+           dihedral force calculations in the bondeds (ref: Bekker 1994).
+           There rij = ri - rj, while here dr01 = r1 - r0.
+           However, all distance vectors occur in form of cross or inner products
+           so that two signs cancel and we end up with the same expressions.
+           Also, we treat the more general case of 6 groups (0..5) instead of 4 (i, j, k, l).
+         */
+        m2 = diprod(pcrd->planevec_m, pcrd->planevec_m);
+        n2 = diprod(pcrd->planevec_n, pcrd->planevec_n);
+        dsvmul(-1, pcrd->dr23, dr32);
+        sqrdist_32 = diprod(dr32, dr32);
+        tol        = sqrdist_32*GMX_REAL_EPS; /* Avoid tiny angles */
+        if ((m2 > tol) && (n2 > tol))
+        {
+            double a_01, a_23_01, a_23_45, a_45;
+            double inv_dist_32, inv_sqrdist_32, dist_32;
+            dvec   u, v;
+            inv_dist_32    = gmx::invsqrt(sqrdist_32);
+            inv_sqrdist_32 = inv_dist_32*inv_dist_32;
+            dist_32        = sqrdist_32*inv_dist_32;
+
+            /* Forces on groups 0, 1 */
+            a_01 = pcrd->f_scal*dist_32/m2;             /* f_scal is -dV/dphi */
+            dsvmul(-a_01, pcrd->planevec_m, pcrd->f01); /* added sign to get force on group 1, not 0 */
+
+            /* Forces on groups 4, 5 */
+            a_45 = -pcrd->f_scal*dist_32/n2;
+            dsvmul(a_45, pcrd->planevec_n, pcrd->f45); /* force on group 5 */
+
+            /* Force on groups 2, 3 (defining the axis) */
+            a_23_01 = -diprod(pcrd->dr01, dr32)*inv_sqrdist_32;
+            a_23_45 = -diprod(pcrd->dr45, dr32)*inv_sqrdist_32;
+            dsvmul(-a_23_01, pcrd->f01, u);                     /* added sign to get force from group 0, not 1 */
+            dsvmul(a_23_45, pcrd->f45, v);
+            dvec_sub(u, v, pcrd->f23);                          /* force on group 3 */
         }
     }
     else
@@ -1251,27 +1387,7 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
         }
     }
 
-    if (vir != NULL && pcrd->params.eGeom != epullgDIRPBC)
-    {
-        /* Add the pull contribution to the virial */
-        for (j = 0; j < DIM; j++)
-        {
-            for (m = 0; m < DIM; m++)
-            {
-                vir[j][m] -= 0.5*pcrd->f01[j]*pcrd->dr01[m];
-            }
-        }
-        if (pcrd->params.eGeom == epullgANGLE)
-        {
-            for (j = 0; j < DIM; j++)
-            {
-                for (m = 0; m < DIM; m++)
-                {
-                    vir[j][m] -= 0.5*pcrd->f23[j]*pcrd->dr23[m];
-                }
-            }
-        }
-    }
+    add_virial_coord(vir, pcrd);
 }
 
 void set_pull_coord_reference_value(struct pull_t *pull,
@@ -1297,9 +1413,9 @@ void set_pull_coord_reference_value(struct pull_t *pull,
     {
         real   V = 0, dVdl = 0;
         double f_scal_old;
-        dvec   f01_old, f23_old;
+        dvec   f01_old, f23_old, f45_old;
         double dev;
-        int    j, m;
+        int    m;
 
         if (pcrd->params.eType == epullCONSTRAINT)
         {
@@ -1311,8 +1427,10 @@ void set_pull_coord_reference_value(struct pull_t *pull,
 
         f_scal_old = pcrd->f_scal;
         copy_dvec(pcrd->f01, f01_old);
+
         /* Note: f23, f45 will only actually be used for certain geometries */
         copy_dvec(pcrd->f23, f23_old);
+        copy_dvec(pcrd->f45, f45_old);
 
         /* Calculate the new forces, ingnore V, vir and dVdl */
         calc_pull_coord_force(pcrd, dev, lambda, &V, NULL, &dVdl);
@@ -1329,29 +1447,10 @@ void set_pull_coord_reference_value(struct pull_t *pull,
         {
             pcrd->f01[m] = 0.5*(-f01_old[m] + pcrd->f01[m]);
             pcrd->f23[m] = 0.5*(-f23_old[m] + pcrd->f23[m]);
+            pcrd->f45[m] = 0.5*(-f45_old[m] + pcrd->f45[m]);
         }
 
-        if (vir != NULL && pcrd->params.eGeom != epullgDIRPBC)
-        {
-            /* Add the pull contribution to the virial */
-            for (j = 0; j < DIM; j++)
-            {
-                for (m = 0; m < DIM; m++)
-                {
-                    vir[j][m] -= 0.5*pcrd->f01[j]*pcrd->dr01[m];
-                }
-            }
-            if (pcrd->params.eGeom == epullgANGLE)
-            {
-                for (j = 0; j < DIM; j++)
-                {
-                    for (m = 0; m < DIM; m++)
-                    {
-                        vir[j][m] -= 0.5*pcrd->f23[j]*pcrd->dr23[m];
-                    }
-                }
-            }
-        }
+        add_virial_coord(vir, pcrd);
 
         apply_forces_coord(pull, coord_ind, md, f);
     }
@@ -1836,6 +1935,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             case epullgDIST:
             case epullgDIRRELATIVE:  /* Direction vector is determined at each step */
             case epullgANGLE:
+            case epullgDIHEDRAL:
                 break;
             case epullgDIR:
             case epullgDIRPBC:
@@ -1861,7 +1961,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             /* Check restrictions of the constraint pull code */
             if (pcrd->params.eGeom == epullgCYL ||
                 pcrd->params.eGeom == epullgDIRRELATIVE ||
-                pcrd->params.eGeom == epullgANGLE)
+                pcrd->params.eGeom == epullgANGLE ||
+                pcrd->params.eGeom == epullgDIHEDRAL)
             {
                 gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
                           epull_names[pcrd->params.eType],
@@ -1880,7 +1981,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         {
             pull->bCylinder = TRUE;
         }
-        else if (pcrd->params.eGeom == epullgANGLE)
+        else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL)
         {
             pull->bAngle = TRUE;
         }
