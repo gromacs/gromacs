@@ -65,14 +65,14 @@ typedef struct {
 } t_pull_group;
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */
-#define PULL_COORD_NGROUP_MAX 4
+static const int c_pullCoordNgroupMax = 6;
 
 /*! \brief Struct that defines a pull coordinate */
 typedef struct {
     int      eType;                        /**< The pull type: umbrella, constraint, ... */
     int      eGeom;                        /**< The pull geometry */
     int      ngroup;                       /**< The number of groups, depends on eGeom */
-    int      group[PULL_COORD_NGROUP_MAX]; /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
+    int      group[c_pullCoordNgroupMax];  /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
     ivec     dim;                          /**< Used to select components for constraint */
     rvec     origin;                       /**< The origin for the absolute reference */
     rvec     vec;                          /**< The pull vector, direction or position */

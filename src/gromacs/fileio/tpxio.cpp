@@ -292,7 +292,7 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
          */
         gmx_fio_do_int(fio,  pcrd->eGeom);
         gmx_fio_do_int(fio,  pcrd->ngroup);
-        if (pcrd->ngroup <= PULL_COORD_NGROUP_MAX)
+        if (pcrd->ngroup <= c_pullCoordNgroupMax)
         {
             gmx_fio_ndo_int(fio, pcrd->group, pcrd->ngroup);
         }
@@ -350,7 +350,7 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
     gmx_fio_do_real(fio, pcrd->init);
     gmx_fio_do_real(fio, pcrd->rate);
 
-    if (bRead && pcrd->eGeom == epullgANGLE)
+    if (bRead && (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgDIHEDRAL))
     {
         /* Convert degrees to radians after reading the tpr */
         pcrd->init *= DEG2RAD;
