@@ -36,6 +36,9 @@
  * \brief
  * Implements gmx::CommandLineProgramContext.
  *
+ * See \linktodevmanual{relocatable-binaries,developer guide section on
+ * relocatable binaries} for explanation of the searching logic.
+ *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
