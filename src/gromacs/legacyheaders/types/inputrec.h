@@ -106,19 +106,20 @@ typedef struct {
     atom_id     pbcatom;    /* The reference atom for pbc (global number) */
 } t_pull_group;
 
+#define PULL_COORD_NGROUP_MAX 6               /* Better place for this? */
 typedef struct {
-    int         eType;      /* The pull type: umbrella, constraint, ... */
-    int         eGeom;      /* The pull geometry */
-    int         ngroup;     /* The number of groups */
-    int         group[4];   /* The pull groups, index in group in t_pull */
-    ivec        dim;        /* Used to select components for constraint */
-    rvec        origin;     /* The origin for the absolute reference */
-    rvec        vec;        /* The pull vector, direction or position */
-    gmx_bool    bStart;     /* Set init based on the initial structure */
-    real        init;       /* Initial reference displacement */
-    real        rate;       /* Rate of motion (nm/ps) */
-    real        k;          /* force constant */
-    real        kB;         /* force constant for state B */
+    int         eType;                        /* The pull type: umbrella, constraint, ... */
+    int         eGeom;                        /* The pull geometry */
+    int         ngroup;                       /* The number of groups */
+    int         group[PULL_COORD_NGROUP_MAX]; /* The pull groups, index in group in t_pull */
+    ivec        dim;                          /* Used to select components for constraint */
+    rvec        origin;                       /* The origin for the absolute reference */
+    rvec        vec;                          /* The pull vector, direction or position */
+    gmx_bool    bStart;                       /* Set init based on the initial structure */
+    real        init;                         /* Initial reference displacement */
+    real        rate;                         /* Rate of motion (nm/ps) */
+    real        k;                            /* force constant */
+    real        kB;                           /* force constant for state B */
 } t_pull_coord;
 
 typedef struct {
