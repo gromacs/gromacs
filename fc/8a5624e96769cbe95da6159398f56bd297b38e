@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+1: Roland Schulz <roland@rschulz.eu>
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Wed, 06 May 2015 00:05:49 +0200
+Reviewed-on: https://gerrit.gromacs.org/4540
+Project: gromacs
+Branch: refs/heads/release-4-6
