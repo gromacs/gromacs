@@ -65,7 +65,7 @@ typedef struct {
 } t_pull_group;
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */
-#define PULL_COORD_NGROUP_MAX 4
+#define PULL_COORD_NGROUP_MAX 6
 
 /*! \brief Struct that defines a pull coordinate */
 typedef struct {
