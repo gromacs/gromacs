@@ -1699,6 +1699,15 @@ applicable pulling coordinate.
       the first to the second group and the vector connecting the third
       to the fourth group.
 
+   .. mdp-value:: dihedral
+
+      Pull along a dihedral angle defined by six groups. These pairwise
+      define three vectors: the vector connecting group 1 to group 2,
+      group 3 to group 4, and group 5 to group 6. The dihedral angle is
+      then defined as the angle between two planes: the plane spanned by the
+      the two first vectors and the plane spanned the two last vectors.
+
+
 .. mdp:: pull-coord1-groups
 
    The group indices on which this pull coordinate will operate.
