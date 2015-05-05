@@ -113,6 +113,7 @@ if (SPHINX_FOUND)
         dev-manual/includestyle.rst
         dev-manual/naming.rst
         dev-manual/overview.rst
+        dev-manual/relocatable-binaries.rst
         dev-manual/style.rst
         dev-manual/testutils.rst
         dev-manual/tools.rst
