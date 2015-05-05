@@ -5,3 +5,4 @@ Overview of |Gromacs| codebase
    :maxdepth: 2
 
    codelayout
+   relocatable-binaries
