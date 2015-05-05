@@ -82,11 +82,10 @@ static void init_pull_group(t_pull_group *pg,
     }
 }
 
-static void process_pull_dim(char *dim_buf, ivec dim)
+static void process_pull_dim(char *dim_buf, ivec dim, const t_pull_coord *pcrd)
 {
     int           ndim, d, nchar, c;
     char         *ptr, pulldim1[STRLEN];
-    t_pull_coord *pcrd;
 
     ptr  = dim_buf;
     ndim = 0;
@@ -118,6 +117,14 @@ static void process_pull_dim(char *dim_buf, ivec dim)
     {
         gmx_fatal(FARGS, "All entries in pull dim are N");
     }
+    if ((pcrd->eGeom == epullgDIHEDRAL) && (ndim < 3))
+    {
+        gmx_fatal(FARGS, "Pull geometry dihedral is only useful with pull-dim = Y Y Y");
+    }
+    if ((pcrd->eGeom == epullgANGLE) && (ndim < 2))
+    {
+        gmx_fatal(FARGS, "Pull geometry angle is only useful with pull-dim = Y for at least 2 dimensions");
+    }
 }
 
 static void init_pull_coord(t_pull_coord *pcrd,
@@ -131,7 +138,8 @@ static void init_pull_coord(t_pull_coord *pcrd,
 
     if (pcrd->eType == epullCONSTRAINT && (pcrd->eGeom == epullgCYL ||
                                            pcrd->eGeom == epullgDIRRELATIVE ||
-                                           pcrd->eGeom == epullgANGLE))
+                                           pcrd->eGeom == epullgANGLE ||
+                                           pcrd->eGeom == epullgDIHEDRAL))
     {
         gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
                   epull_names[pcrd->eType],
@@ -139,7 +147,7 @@ static void init_pull_coord(t_pull_coord *pcrd,
                   epull_names[epullUMBRELLA]);
     }
 
-    process_pull_dim(dim_buf, pcrd->dim);
+    process_pull_dim(dim_buf, pcrd->dim, pcrd);
 
     string2dvec(origin_buf, origin);
     if (pcrd->group[0] != 0 && dnorm(origin) > 0)
@@ -167,13 +175,22 @@ static void init_pull_coord(t_pull_coord *pcrd,
     }
     else if (pcrd->eGeom == epullgANGLE)
     {
-        if (pcrd->init < 0)
+        if (pcrd->init < 0 || pcrd->init > M_PI)
         {
-            sprintf(buf, "The initial pull angle (%g) is negative while the angle should be in the range of 0 to pi.",
+            sprintf(buf, "The initial pull angle (%g) should be in the range of 0 to pi.",
                     pcrd->init);
             warning_error(wi, buf);
         }
 
+    }
+    else if (pcrd->eGeom == epullgDIHEDRAL)
+    {
+        if (pcrd->init < -M_PI || pcrd->init > M_PI)
+        {
+            sprintf(buf, "The initial pull dihedral angle (%g) should be in the range of -pi to pi.",
+                    pcrd->init);
+            warning_error(wi, buf);
+        }
     }
     else if (pcrd->eGeom != epullgDIRRELATIVE)
     {
@@ -277,9 +294,20 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         sprintf(buf, "pull-coord%d-geometry", i);
         EETYPE(buf,             pcrd->eGeom, epullg_names);
 
-        pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE || pcrd->eGeom == epullgANGLE ? 4 : 2);
+        switch (pcrd->eGeom)
+        {
+            case epullgDIHEDRAL:
+                pcrd->ngroup = 6; break;
+            case epullgDIRRELATIVE:
+            case epullgANGLE:
+                pcrd->ngroup = 4; break;
+            default:
+                pcrd->ngroup = 2; break;
+        }
 
-        nscan = sscanf(groups, "%d %d %d %d %d", &pcrd->group[0], &pcrd->group[1], &pcrd->group[2], &pcrd->group[3], &idum);
+        nscan = sscanf(groups, "%d %d %d %d %d %d %d",
+                       &pcrd->group[0], &pcrd->group[1], &pcrd->group[2], &pcrd->group[3],
+                       &pcrd->group[4], &pcrd->group[5], &idum);
         if (nscan != pcrd->ngroup)
         {
             sprintf(wbuf, "%s should contain %d pull group indices with geometry %s",
@@ -464,6 +492,8 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         t_pull_group *pgrp0, *pgrp1;
         double        value;
         real          init = 0;
+        gmx_bool      bAngle;
+        double        unitfactor;
 
         pcrd  = &pull->coord[c];
 
@@ -482,14 +512,16 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
 
         get_pull_coord_value(pull_work, c, &pbc, &value);
 
-        sprintf(buf, pcrd->eGeom == epullgANGLE ? "degrees" : "nm");
-        fprintf(stderr, " %10.3f %s", value, buf);
+        bAngle     = (pcrd->eGeom == epullgANGLE) || (pcrd->eGeom == epullgDIHEDRAL);
+        unitfactor = bAngle ? RAD2DEG : 1;
+        sprintf(buf, bAngle ? "degrees" : "nm");
+        fprintf(stderr, " %10.3f %s", value*unitfactor, buf);
 
         if (pcrd->bStart)
         {
             pcrd->init = value + init;
         }
-        fprintf(stderr, "     %10.3f %s\n", pcrd->init, buf);
+        fprintf(stderr, "     %10.3f %s\n", pcrd->init*unitfactor, buf);
     }
 
     finish_pull(pull_work);
