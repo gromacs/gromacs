@@ -198,9 +198,9 @@ Doxygen
   `Doxygen <http://www.doxygen.org>`_ is used to extract documentation from
   source code comments.  Also some other overview
   content is laid out by Doxygen from Markdown source files.  Currently, version
-  1.8.5 is required for a warning-free build.  Thorough explanation of the
-  Doxygen setup and instructions for documenting the source code can be found on
-  a separate page: :doc:`doxygen`.
+  |EXPECTED_DOXYGEN_VERSION| is required for a warning-free build.  Thorough
+  explanation of the Doxygen setup and instructions for documenting the source
+  code can be found on a separate page: :doc:`doxygen`.
 
 graphviz (dot)
   The Doxygen documentation uses ``dot`` from `graphviz

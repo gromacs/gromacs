@@ -55,6 +55,8 @@ option(GMX_BUILD_WEBPAGE "Whether to try to configure to build the GROMACS stati
 option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
 mark_as_advanced(GMX_BUILD_WEBPAGE GMX_BUILD_MANUAL)
 
+set(EXPECTED_DOXYGEN_VERSION 1.8.5)
+
 find_package(PythonInterp)
 find_package(Sphinx 1.2.3 COMPONENTS pygments)
 
@@ -150,6 +152,7 @@ if (SPHINX_FOUND)
     gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
         EXTRA_VARS
             SPHINX_EXTENSION_PATH
+            EXPECTED_DOXYGEN_VERSION
             GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
             SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
