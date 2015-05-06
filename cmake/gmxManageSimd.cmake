@@ -412,6 +412,20 @@ elseif(${GMX_SIMD} STREQUAL "IBM_VMX")
 
 elseif(${GMX_SIMD} STREQUAL "IBM_VSX")
 
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+        # VSX uses the same function API as Altivec/VMX, so make sure we tune for the current CPU and not VMX.
+        gmx_test_cflag(GNU_C_VSX_NATIVE   "-mcpu=native -mtune=native" SIMD_C_FLAGS)
+        gmx_test_cflag(GNU_CXX_VSX_NATIVE "-mcpu=native -mtune=native" SIMD_CXX_FLAGS)
+        if(NOT BUILD_CPU_BRAND MATCHES "POWER7")
+            # Enable power8 vector extensions on all platforms except old Power7.
+            gmx_test_cflag(GNU_C_POWER8VECTOR   "-mpower8-vector -mpower8-fusion -mdirect-move" SIMD_C_FLAGS)
+            gmx_test_cflag(GNU_CXX_POWER8VECTOR "-mpower8-vector -mpower8-fusion -mdirect-move" SIMD_CXX_FLAGS)
+        endif()
+        if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+            message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+        endif()
+    endif()
+
     gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
                               "#include<altivec.h>
                               int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"

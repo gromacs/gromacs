@@ -420,7 +420,14 @@ TEST_F(SimdMathTest, gmxSimdCosR)
 /*! \brief Function wrapper for tan(x), with argument/return in default Gromacs precision */
 real ref_tan(real x)
 {
+#if defined(__ibmxl__) && !defined(GMX_DOUBLE)
+    /* xlC-13.1 has some strange behaviour where tan(x) with a float argument incorrectly
+     * returns -0.0 for the argument 0.0 at -O3 optimization. tanf() seems to avoid it.
+     */
+    return tanf(x);
+#else
     return tan(x);
+#endif
 }
 
 TEST_F(SimdMathTest, gmxSimdTanR)
