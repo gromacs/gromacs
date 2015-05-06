@@ -105,9 +105,9 @@ these subdirectories to start browsing (for |Gromacs| developers, the
 warnings are also produced as ``docs/doxygen/doxygen-*.log``, so you can inspect them after
 the run.
 
-You will need Doxygen 1.8.5 to build the current documentation.  Other versions
-may work, but likely also produce warnings.  Additionally,
-`graphviz <http://www.graphviz.org>`_ and
+You will need Doxygen |EXPECTED_DOXYGEN_VERSION| to build the current
+documentation.  Other versions may work, but likely also produce warnings.
+Additionally, `graphviz <http://www.graphviz.org>`_ and
 `mscgen <http://www.mcternan.me.uk/mscgen/>`_ are required for some graphs in
 the documentation, and ``latex`` for formulas.  Working versions are likely
 available through most package managers.  It is possible to build the
