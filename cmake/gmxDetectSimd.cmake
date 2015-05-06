@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@
 # we rely on inline asm support for GNU!
 include(gmxTestInlineASM)
 
-function(gmx_suggest_x86_simd _suggested_simd)
+function(gmx_suggest_simd _suggested_simd)
 
     gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
@@ -100,10 +100,8 @@ function(gmx_detect_simd _suggested_simd)
             set(${_suggested_simd} "Sparc64_HPC_ACE")
         elseif(GMX_TARGET_MIC)
             set(${_suggested_simd} "MIC")
-        elseif(GMX_TARGET_X86)
-            gmx_suggest_x86_simd(${_suggested_simd})
         else()
-            set(${_suggested_simd} "None")
+            gmx_suggest_simd(${_suggested_simd})
         endif()
 
         set(${_suggested_simd} ${${_suggested_simd}} PARENT_SCOPE)
