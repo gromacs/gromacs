@@ -36,214 +36,666 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD_FLOAT_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD_FLOAT_H
 
-#include <math.h>
+#include "config.h"
 
-#include <altivec.h>
+#include <cstdint>
 
-#include "impl_ibm_vmx_common.h"
+#include "gromacs/utility/basedefinitions.h"
 
-/* Make sure we do not screw up c++ - undefine vector/bool, and rely on __vector and __bool */
-#undef vector
-#undef bool
+#include "impl_ibm_vmx_definitions.h"
 
-/****************************************************
- *      SINGLE PRECISION SIMD IMPLEMENTATION        *
- ****************************************************/
-#define SimdFloat            __vector float
-#define simdLoadF(m)         vec_ld(0, (const __vector float *)(m))
-#define simdLoad1F(m)        simdLoad1F_ibm_vmx(m)
-#define simdSet1F(x)         simdSet1F_ibm_vmx(x)
-#define simdStoreF(m, x)     vec_st(x, 0, (__vector float *)(m))
-#undef  simdLoadUF
-#undef  simdStoreUF
-#define simdSetZeroF()       ((__vector float)vec_splat_u32(0))
-#define simdAddF(a, b)       vec_add(a, b)
-#define simdSubF(a, b)       vec_sub(a, b)
-#define simdMulF(a, b)       vec_mul(a, b)
-#define simdFmaddF(a, b, c)  vec_madd(a, b, c)
-#define simdFmsubF(a, b, c)  vec_sub(vec_mul(a, b), c)
-/* IBM uses an alternative FMA definition, so -a*b+c=-(a*b-c) is "nmsub" */
-#define simdFnmaddF(a, b, c) vec_nmsub(a, b, c)
-/* IBM uses an alternative FMA definition, so -a*b-c=-(a*b+c) is "nmadd" */
-#define simdFnmsubF(a, b, c) vec_sub(simdSetZeroF(), vec_madd(a, b, c))
-#define simdAndF(a, b)       vec_and(a, b)
-#define simdAndNotF(a, b)    vec_andc(b, a)
-#define simdOrF(a, b)        vec_or(a, b)
-#define simdXorF(a, b)       vec_xor(a, b)
-#define simdRsqrtF(a)        vec_rsqrte(a)
-#define simdRcpF(a)          vec_re(a)
-#define simdAbsF(a)         vec_abs(a)
-#define simdNegF(a)         vec_xor(a, (__vector float)vec_sl(vec_splat_u32(-1), vec_splat_u32(-1)))
-#define simdMaxF(a, b)       vec_max(a, b)
-#define simdMinF(a, b)       vec_min(a, b)
-#define simdRoundF(a)        vec_round(a)
-#define simdTruncF(a)        vec_trunc(a)
-#define simdFractionF(x)     vec_sub(x, vec_trunc(x))
-#define simdGetExponentF(a) simdGetExponentF_ibm_vmx(a)
-#define simdGetMantissaF(a) simdGetMantissaF_ibm_vmx(a)
-#define simdSetExponentF(a) simdSetExponentF_ibm_vmx(a)
-/* integer datatype corresponding to float: SimdFInt32 */
-#define SimdFInt32          __vector int
-#define simdLoadFI(m)        vec_ld(0, (const __vector int *)(m))
-#define simdSet1FI(i)        simdSet1FI_ibm_vmx((int)(i))
-#define simdStoreFI(m, x)    vec_st(x, 0, (__vector int *)(m))
-#undef  simdLoadUFI
-#undef  simdStoreUFI
-#define simdSetZeroFI()      vec_splat_s32(0)
-#define simdCvtF2I(a)        vec_cts(vec_round(a), 0)
-#define simdCvttF2I(a)       vec_cts(a, 0)
-#define simdCvtI2F(a)        vec_ctf(a, 0)
-#undef  simdExtractFI
-/* Integer logical ops on SimdFInt32 */
-/* The shift constant magic requires an explanation:
- * VMX only allows literals up to 15 to be created directly with vec_splat_u32,
- * and we need to be able to shift up to 31 bits. The code on the right hand
- * side splits the constant in three parts with values in the range 0..15.
- * Since the argument has to be a constant (but our and VMX requirement), these
- * constants will be evaluated at compile-time, and if one or two parts evaluate
- * to zero they will be removed with -O2 or higher optimization (checked).
- */
-#define simdSlliFI(a, i)      vec_sl(a, vec_add(vec_add(vec_splat_u32( (((i&0xF)+(i/16))&0xF)+i/31 ), vec_splat_u32( (i/16)*15 )), vec_splat_u32( (i/31)*15 )))
-#define simdSrliFI(a, i)      vec_sr(a, vec_add(vec_add(vec_splat_u32( (((i&0xF)+(i/16))&0xF)+i/31 ), vec_splat_u32( (i/16)*15 )), vec_splat_u32( (i/31)*15 )))
-#define simdAndFI(a, b)       vec_and(a, b)
-#define simdAndNotFI(a, b)   vec_andc(b, a)
-#define simdOrFI(a, b)        vec_or(a, b)
-#define simdXorFI(a, b)       vec_xor(a, b)
-/* Integer arithmetic ops on SimdFInt32 */
-#define simdAddFI(a, b)       vec_add(a, b)
-#define simdSubFI(a, b)       vec_sub(a, b)
-#define simdMulFI(a, b)       vec_mule((__vector short)a, (__vector short)b)
-/* Boolean & comparison operations on SimdFloat */
-#define SimdFBool           __vector __bool int
-#define simdCmpEqF(a, b)     vec_cmpeq(a, b)
-#define simdCmpLtF(a, b)     vec_cmplt(a, b)
-#define simdCmpLeF(a, b)     vec_cmple(a, b)
-#define simdAndFB(a, b)      vec_and(a, b)
-#define simdOrFB(a, b)       vec_or(a, b)
-#define simdAnyTrueFB(a)     vec_any_ne(a, (__vector __bool int)vec_splat_u32(0))
-#define simdMaskF(a, sel)    vec_and(a, (__vector float)sel)
-#define simdMaskNotF(a, sel) vec_andc(a, (__vector float)sel)
-#define simdBlendF(a, b, sel)    vec_sel(a, b, sel)
-#define simdReduceF(a)       simdReduceF_ibm_vmx(a)
-/* Boolean & comparison operations on SimdFInt32 */
-#define SimdFIBool          __vector __bool int
-#define simdCmpEqFI(a, b)     vec_cmpeq(a, b)
-#define simdCmpLtFI(a, b)     vec_cmplt(a, b)
-#define simdAndFIB(a, b)      vec_and(a, b)
-#define simdOrFIB(a, b)       vec_or(a, b)
-#define simdAnyTrueFIB(a)          vec_any_ne(a, (__vector __bool int)vec_splat_u32(0))
-#define simdMaskFI(a, sel)    vec_and(a, (__vector int)sel)
-#define simdMaskNotFI(a, sel) vec_andc(a, (__vector int)sel)
-#define simdBlendFI(a, b, sel)    vec_sel(a, b, sel)
-/* Conversions between different booleans */
-#define simdCvtFB2FIB(x)     (x)
-#define simdCvtFIB2FB(x)     (x)
-
-/* Double is not available with VMX SIMD */
-
-/****************************************************
- * IMPLEMENTATION HELPER FUNCTIONS                  *
- ****************************************************/
-static inline SimdFloat
-simdSet1F_ibm_vmx(const float x)
+namespace gmx
 {
-    /* In the old days when PPC was all big endian we could
-     * use the vec_lvsl() instruction to permute bytes based on
-     * a load adress. However, at least with gcc-4.8.2 the bytes
-     * end up reversed on Power8 running little endian (Linux).
-     * Since this is not a critical instruction we work around
-     * it by first putting the data in an aligned position before
-     * loading, so we can avoid vec_lvsl() entirely. We can
-     * do this slightly faster on GCC with alignment attributes.
-     */
-    __vector float vx;
-#ifdef __GNUC__
-    float alignedx __attribute ((aligned (16)));
-    alignedx = x;
-    vx       = vec_lde(0, &alignedx);
-#else
-    struct {
-        vector float vx; float x[4];
-    } conv;
-    conv.x[0] = x;
-    vx        = vec_lde(0, conv.x);
+
+class SimdFloat
+{
+    public:
+        SimdFloat() {}
+
+        SimdFloat(float f)
+        {
+            __vector unsigned char perm;
+
+            simdInternal_ = vec_lde(0, const_cast<float *>(&f));
+            perm          = vec_lvsl(0, const_cast<float *>(&f));
+            simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
+            simdInternal_ = vec_splat(simdInternal_, 0);
+        }
+
+        // Internal utility constructor to simplify return statements
+        SimdFloat(__vector float simd) : simdInternal_(simd) {}
+
+        __vector float  simdInternal_;
+};
+
+class SimdFInt32
+{
+    public:
+        SimdFInt32() {}
+
+        SimdFInt32(std::int32_t i)
+        {
+            __vector unsigned char perm;
+
+            simdInternal_ = vec_lde(0, const_cast<int *>(&i));
+            perm          = vec_lvsl(0, const_cast<int *>(&i));
+            simdInternal_ = vec_perm(simdInternal_, simdInternal_, perm);
+            simdInternal_ = vec_splat(simdInternal_, 0);
+        }
+
+
+        // Internal utility constructor to simplify return statements
+        SimdFInt32(__vector signed int simd) : simdInternal_(simd) {}
+
+        __vector signed int  simdInternal_;
+};
+
+class SimdFBool
+{
+    public:
+        SimdFBool() {}
+
+        SimdFBool(bool b) : simdInternal_( reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0))) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFBool(__vector vmxBool int simd) : simdInternal_(simd) {}
+
+        __vector vmxBool int  simdInternal_;
+};
+
+class SimdFIBool
+{
+    public:
+        SimdFIBool() {}
+
+        SimdFIBool(bool b) : simdInternal_( reinterpret_cast<__vector vmxBool int>(vec_splat_u32( b ? 0xFFFFFFFF : 0))) {}
+
+        // Internal utility constructor to simplify return statements
+        SimdFIBool(__vector vmxBool int simd) : simdInternal_(simd) {}
+
+        __vector vmxBool int  simdInternal_;
+};
+
+static inline SimdFloat gmx_simdcall
+load(const float *m)
+{
+    return {
+               vec_ld(0, const_cast<float *>(m))
+    };
+}
+
+static inline void gmx_simdcall
+store(float *m, SimdFloat a)
+{
+    vec_st(a.simdInternal_, 0, const_cast<float *>(m));
+}
+
+static inline SimdFloat gmx_simdcall
+setZeroF()
+{
+    return {
+               reinterpret_cast<__vector float>(vec_splat_u32(0))
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+loadFI(const std::int32_t * m)
+{
+    return {
+               vec_ld(0, const_cast<int *>(m))
+    };
+}
+
+static inline void gmx_simdcall
+store(std::int32_t * m, SimdFInt32 a)
+{
+    vec_st(a.simdInternal_, 0, const_cast<int *>(m));
+}
+
+static inline SimdFInt32 gmx_simdcall
+setZeroFI()
+{
+    return {
+               vec_splat_s32(0)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator&(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+andNot(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_andc(b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator|(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator^(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_xor(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator+(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_add(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator-(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_sub(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator-(SimdFloat x)
+{
+    return {
+               vec_xor(x.simdInternal_, reinterpret_cast<__vector float>(vec_sl(vec_splat_u32(-1), vec_splat_u32(-1))))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+operator*(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, reinterpret_cast<__vector float>(vec_splat_u32(0)) )
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fms(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vec_madd(a.simdInternal_, b.simdInternal_, -c.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               vec_nmsub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+{
+    return {
+               -vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+rsqrt(SimdFloat x)
+{
+    return {
+               vec_rsqrte(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+rcp(SimdFloat x)
+{
+    return {
+               vec_re(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
+{
+    return {
+               vec_add(a.simdInternal_, vec_and(b.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_)))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
+{
+    SimdFloat prod = a * b;
+
+    return {
+               vec_and(prod.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
+{
+    SimdFloat prod = fma(a, b, c);
+
+    return {
+               vec_and(prod.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzRsqrt(SimdFloat x, SimdFBool m)
+{
+#ifndef NDEBUG
+    SimdFloat one(1.0f);
+    x.simdInternal_ = vec_sel(one.simdInternal_, x.simdInternal_, m.simdInternal_);
 #endif
-    return vec_splat(vx, 0);
+    return {
+               vec_and(vec_rsqrte(x.simdInternal_), reinterpret_cast<__vector float>(m.simdInternal_))
+    };
 }
 
-static inline SimdFloat
-simdLoad1F_ibm_vmx(const float * m)
+static inline SimdFloat gmx_simdcall
+maskzRcp(SimdFloat x, SimdFBool m)
 {
-    return simdSet1F_ibm_vmx(*m);
-}
-
-static inline SimdFInt32
-simdSet1FI_ibm_vmx(const int x)
-{
-    /* See comment in simdSet1F_ibm_vmx why we
-     * cannot use vec_lvsl().
-     */
-    __vector int vx;
-#ifdef __GNUC__
-    int alignedx __attribute ((aligned (16)));
-    alignedx = x;
-    vx       = vec_lde(0, &alignedx);
-#else
-    struct {
-        vector int vx; int x[4];
-    } conv;
-    conv.x[0] = x;
-    vx        = vec_lde(0, conv.x);
+#ifndef NDEBUG
+    SimdFloat one(1.0f);
+    x.simdInternal_ = vec_sel(one.simdInternal_, x.simdInternal_, m.simdInternal_);
 #endif
-    return vec_splat(vx, 0);
+    return {
+               vec_and(vec_re(x.simdInternal_), reinterpret_cast<__vector float>(m.simdInternal_))
+    };
 }
 
-
-static inline SimdFloat
-simdGetExponentF_ibm_vmx(SimdFloat x)
+static inline SimdFloat gmx_simdcall
+abs(SimdFloat x)
 {
-    /* Generate 0x7F800000 without memory operations */
-    SimdFloat     expmask = (__vector float)simdSlliFI(vec_add(vec_splat_s32(15), vec_sl(vec_splat_s32(15), vec_splat_u32(4))), 23);
-    SimdFInt32    i127    = vec_sub(vec_sl(vec_splat_s32(1), vec_splat_u32(7)), vec_splat_s32(1));
-    SimdFInt32    iexp;
-
-    iexp = (__vector int)simdAndF(x, expmask);
-    iexp = vec_sub(simdSrliFI(iexp, 23), i127);
-    return vec_ctf(iexp, 0);
+    return {
+               vec_abs( x.simdInternal_ )
+    };
 }
 
-static inline SimdFloat
-simdGetMantissaF_ibm_vmx(SimdFloat x)
+static inline SimdFloat gmx_simdcall
+max(SimdFloat a, SimdFloat b)
 {
-    SimdFloat     expmask = (__vector float)simdSlliFI(vec_add(vec_splat_s32(15), vec_sl(vec_splat_s32(15), vec_splat_u32(4))), 23);
-
-    /* Get mantissa. By taking the absolute value (to get rid of the sign bit) we can
-     * use the same mask as for simdGetExponentF() (but complement it). Since
-     * these two routines are typically called together, this will save a few operations.
-     */
-    x = simdAndNotF(expmask, vec_abs(x));
-    /* Reset zero (but correctly biased) exponent */
-    return simdOrF(x, vec_ctf(vec_splat_s32(1), 0));
+    return {
+               vec_max(a.simdInternal_, b.simdInternal_)
+    };
 }
 
-static inline SimdFloat
-simdSetExponentF_ibm_vmx(SimdFloat x)
+static inline SimdFloat gmx_simdcall
+min(SimdFloat a, SimdFloat b)
 {
-    SimdFInt32  iexp = simdCvtF2I(x);
-    SimdFInt32  i127 = vec_sub(vec_sl(vec_splat_s32(1), vec_splat_u32(7)), vec_splat_s32(1));
-
-    iexp = simdSlliFI(vec_add(iexp, i127), 23);
-    return (__vector float)iexp;
+    return {
+               vec_min(a.simdInternal_, b.simdInternal_)
+    };
 }
 
-static inline float
-simdReduceF_ibm_vmx(SimdFloat x)
+static inline SimdFloat gmx_simdcall
+round(SimdFloat x)
 {
-    float res;
-    x = vec_add(x, vec_sld(x, x, 8));
-    x = vec_add(x, vec_sld(x, x, 4));
-    vec_ste(x, 0, &res);
+    return {
+               vec_round( x.simdInternal_ )
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+trunc(SimdFloat x)
+{
+    return {
+               vec_trunc( x.simdInternal_ )
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+frexp(SimdFloat value, SimdFInt32 * exponent)
+{
+    // Generate constants without memory operations
+    const __vector signed int exponentMask = vec_sl(vec_add(vec_splat_s32(15), vec_sl(vec_splat_s32(15), vec_splat_u32(4))),
+                                                    vec_add(vec_splat_u32(15), vec_splat_u32(8)));                  // 0x7F800000
+    const __vector signed int exponentBias = vec_sub(vec_sl(vec_splat_s32(1), vec_splat_u32(7)), vec_splat_s32(2)); // 126
+    const SimdFloat           half(0.5f);
+    __vector signed int       iExponent;
+
+    iExponent               = vec_and(reinterpret_cast<__vector signed int>(value.simdInternal_), exponentMask);
+    iExponent               = vec_sr(iExponent, vec_add(vec_splat_u32(15), vec_splat_u32(8)));
+    iExponent               = vec_sub(iExponent, exponentBias);
+    exponent->simdInternal_ = iExponent;
+
+    return {
+               vec_or( vec_andc(value.simdInternal_, reinterpret_cast<__vector float>(exponentMask)), half.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+ldexp(SimdFloat value, SimdFInt32 exponent)
+{
+    const __vector signed int exponentBias = vec_sub(vec_sl(vec_splat_s32(1), vec_splat_u32(7)), vec_splat_s32(1)); // 127
+    __vector signed int       iExponent;
+
+    iExponent  = vec_add(exponent.simdInternal_, exponentBias);
+    iExponent  = vec_sl(iExponent, vec_add(vec_splat_u32(15), vec_splat_u32(8)));
+
+    return {
+               vec_madd(value.simdInternal_, reinterpret_cast<__vector float>(iExponent), reinterpret_cast<__vector float>(vec_splat_u32(0)))
+    };
+}
+
+static inline float gmx_simdcall
+reduce(SimdFloat a)
+{
+    __vector float c = a.simdInternal_;
+    float          res;
+
+    // calculate sum
+    c = vec_add(c, vec_sld(c, c, 8));
+    c = vec_add(c, vec_sld(c, c, 4));
+    vec_ste(c, 0, &res);
     return res;
 }
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD_FLOAT_H */
+static inline SimdFBool gmx_simdcall
+operator==(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_cmpeq(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator!=(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_or(vec_cmpgt(a.simdInternal_, b.simdInternal_),
+                      vec_cmplt(a.simdInternal_, b.simdInternal_))
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator<(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_cmplt(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator<=(SimdFloat a, SimdFloat b)
+{
+    return {
+               vec_cmple(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+testBits(SimdFloat a)
+{
+    return {
+               vec_cmpgt(reinterpret_cast<__vector unsigned int>(a.simdInternal_), vec_splat_u32(0))
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator&&(SimdFBool a, SimdFBool b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+operator||(SimdFBool a, SimdFBool b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdFBool a)
+{
+    return vec_any_ne(a.simdInternal_, reinterpret_cast<__vector vmxBool int>(vec_splat_u32(0)));
+}
+
+static inline SimdFloat gmx_simdcall
+selectByMask(SimdFloat a, SimdFBool m)
+{
+    return {
+               vec_and(a.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+selectByNotMask(SimdFloat a, SimdFBool m)
+{
+    return {
+               vec_andc(a.simdInternal_, reinterpret_cast<__vector float>(m.simdInternal_))
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+blend(SimdFloat a, SimdFloat b, SimdFBool sel)
+{
+    return {
+               vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator<<(SimdFInt32 a, int n)
+{
+    // The shift constant magic requires an explanation:
+    // VMX only allows literals up to 15 to be created directly with vec_splat_u32,
+    // and we need to be able to shift up to 31 bits. The code on the right hand
+    // side splits the constant in three parts with values in the range 0..15.
+    // Since the argument has to be a constant (both our and VMX requirement), these
+    // constants will be evaluated at compile-time, and if one or two parts evaluate
+    // to zero they will be removed with -O2 or higher optimization (checked).
+
+    return {
+               vec_sl(a.simdInternal_, vec_add(vec_add(vec_splat_u32( (((n&0xF)+(n/16))&0xF)+n/31 ), vec_splat_u32( (n/16)*15 )), vec_splat_u32( (n/31)*15 )))
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator>>(SimdFInt32 a, int n)
+{
+    // The shift constant magic requires an explanation:
+    // VMX only allows literals up to 15 to be created directly with vec_splat_u32,
+    // and we need to be able to shift up to 31 bits. The code on the right hand
+    // side splits the constant in three parts with values in the range 0..15.
+    // Since the argument has to be a constant (both our and VMX requirement), these
+    // constants will be evaluated at compile-time, and if one or two parts evaluate
+    // to zero they will be removed with -O2 or higher optimization (checked).
+
+    return {
+               vec_sr(a.simdInternal_, vec_add(vec_add(vec_splat_u32( (((n&0xF)+(n/16))&0xF)+n/31 ), vec_splat_u32( (n/16)*15 )), vec_splat_u32( (n/31)*15 )))
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator&(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+andNot(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vec_andc(b.simdInternal_, a.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator|(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator^(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vec_xor(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator+(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vec_add(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator-(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vec_sub(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+operator*(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               a.simdInternal_ * b.simdInternal_
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+operator==(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vec_cmpeq(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+testBits(SimdFInt32 a)
+{
+    return {
+               vec_cmpgt(reinterpret_cast<__vector unsigned int>(a.simdInternal_), vec_splat_u32(0))
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+operator<(SimdFInt32 a, SimdFInt32 b)
+{
+    return {
+               vec_cmplt(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+operator&&(SimdFIBool a, SimdFIBool b)
+{
+    return {
+               vec_and(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+operator||(SimdFIBool a, SimdFIBool b)
+{
+    return {
+               vec_or(a.simdInternal_, b.simdInternal_)
+    };
+}
+
+static inline bool gmx_simdcall
+anyTrue(SimdFIBool a)
+{
+    return vec_any_ne(a.simdInternal_, reinterpret_cast<__vector vmxBool int>(vec_splat_u32(0)));
+}
+
+static inline SimdFInt32 gmx_simdcall
+selectByMask(SimdFInt32 a, SimdFIBool m)
+{
+    return {
+               vec_and(a.simdInternal_, reinterpret_cast<__vector signed int>(m.simdInternal_))
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+selectByNotMask(SimdFInt32 a, SimdFIBool m)
+{
+    return {
+               vec_andc(a.simdInternal_, reinterpret_cast<__vector signed int>(m.simdInternal_))
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+{
+    return {
+               vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+cvtR2I(SimdFloat a)
+{
+    return {
+               vec_cts(vec_round(a.simdInternal_), 0)
+    };
+}
+
+static inline SimdFInt32 gmx_simdcall
+cvttR2I(SimdFloat a)
+{
+    return {
+               vec_cts(a.simdInternal_, 0)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+cvtI2R(SimdFInt32 a)
+{
+    return {
+               vec_ctf(a.simdInternal_, 0)
+    };
+}
+
+static inline SimdFIBool gmx_simdcall
+cvtB2IB(SimdFBool a)
+{
+    return {
+               a.simdInternal_
+    };
+}
+
+static inline SimdFBool gmx_simdcall
+cvtIB2B(SimdFIBool a)
+{
+    return {
+               a.simdInternal_
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD_FLOAT_H
