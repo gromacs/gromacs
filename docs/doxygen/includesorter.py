@@ -300,10 +300,20 @@ class IncludeSorter(object):
         """Check that includes within a file are sorted."""
         # TODO: Make the checking work without full contents of the file
         lines = fileobj.get_contents()
-        self._changed = False
+        is_sorted = True
+        details = None
         for block in fileobj.get_include_blocks():
-            self._sort_include_block(block, lines)
-        return not self._changed
+            self._changed = False
+            sorted_lines = self._sort_include_block(block, lines)
+            if self._changed:
+                is_sorted = False
+                # TODO: Do a proper diff to show the actual changes.
+                if details is None:
+                    details = ["Correct order/style is:"]
+                else:
+                    details.append("    ...")
+                details.extend(["    " + x.rstrip() for x in sorted_lines])
+        return (is_sorted, details)
 
 def main():
     """Run the include sorter script."""
