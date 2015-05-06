@@ -302,8 +302,15 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
-    /* don't launch the kernel if there is no work to do */
-    if (plist->nsci == 0)
+    /* Don't launch the non-local kernel if there is no work to do.
+       Doing the same for the local kernel is more complicated, since the
+       local part of the force array also depends on the non-local kernel.
+       So to avoid complicating the code and to reduce the risk of bugs,
+       we always call the local kernel, the local x+q copy and later (not in
+       this function) the stream wait, local f copyback and the f buffer
+       clearing. All these operations, except for the local interaction kernel,
+       are needed for the non-local interactions. */
+    if (iloc == eintNonlocal && plist->nsci == 0)
     {
         return;
     }
@@ -425,8 +432,8 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
     bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
-    /* don't launch copy-back if there was no work to do */
-    if (cu_nb->plist[iloc]->nsci == 0)
+    /* don't launch non-local copy-back if there was no non-local work to do */
+    if (iloc == eintNonlocal && cu_nb->plist[iloc]->nsci == 0)
     {
         return;
     }
@@ -481,7 +488,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
     }
 
     /* With DD the local D2H transfer can only start after the non-local
-       has been launched. */
+       kernel has finished. */
     if (iloc == eintLocal && cu_nb->bUseTwoStreams)
     {
         stat = cudaStreamWaitEvent(stream, cu_nb->nonlocal_done, 0);
@@ -494,8 +501,8 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
-       placed after the non-local kernel because we first need the non-local
-       data back first. */
+       placed after the non-local kernel because we want the non-local data
+       back first. */
     if (iloc == eintNonlocal)
     {
         stat = cudaEventRecord(cu_nb->nonlocal_done, stream);
@@ -584,12 +591,14 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
-    /* don't launch wait/update timers & counters if there was no work to do
+    /* Launch wait/update timers & counters, unless doing the non-local phase
+       when there is not actually work to do. This is consistent with
+       nbnxn_cuda_launch_kernel.
 
        NOTE: if timing with multiple GPUs (streams) becomes possible, the
        counters could end up being inconsistent due to not being incremented
        on some of the nodes! */
-    if (cu_nb->plist[iloc]->nsci == 0)
+    if (iloc == eintNonlocal && cu_nb->plist[iloc]->nsci == 0)
     {
         return;
     }
