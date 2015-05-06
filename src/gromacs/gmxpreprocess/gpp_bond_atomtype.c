@@ -56,7 +56,8 @@ int get_bond_atomtype_type(char *str, t_bond_atomtype at)
 
     for (i = 0; (i < ga->nr); i++)
     {
-        if (gmx_strcasecmp(str, *(ga->atomname[i])) == 0)
+	/* Atom types are always case sensitive */
+        if (strcmp(str, *(ga->atomname[i])) == 0)
         {
             return i;
         }
