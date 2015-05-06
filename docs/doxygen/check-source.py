@@ -148,12 +148,6 @@ def check_include(fileobj, includedfile, reporter):
     if not otherfile:
         reporter.code_issue(includedfile,
                 "includes non-local file as {0}".format(includedfile))
-    # TODO: Reinstantiate a check once there is clarity on what we want
-    # to enforce.
-    #elif fileobj.is_installed() and not includedfile.is_relative():
-    #    reporter.code_issue(includedfile,
-    #            "installed header includes {0} using non-relative path"
-    #            .format(includedfile))
     if not otherfile:
         return
     if fileobj.is_installed() and not otherfile.is_installed():
@@ -360,9 +354,11 @@ def check_all(tree, reporter, check_ignored):
         check_file(fileobj, reporter)
         for includedfile in fileobj.get_includes():
             check_include(fileobj, includedfile, reporter)
-        if fileobj.should_includes_be_sorted() \
-                and not includesorter.check_sorted(fileobj):
-            reporter.code_issue(fileobj, "include style/order is not consistent")
+        if fileobj.should_includes_be_sorted():
+            is_sorted, details = includesorter.check_sorted(fileobj)
+            if not is_sorted:
+                reporter.code_issue(fileobj,
+                        "include style/order is not consistent", details)
 
     for classobj in tree.get_classes():
         check_class(classobj, reporter)
