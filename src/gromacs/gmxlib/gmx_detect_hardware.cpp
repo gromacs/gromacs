@@ -94,7 +94,7 @@ static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
 
 /* FW decl. */
-static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int count);
+static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank);
 static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
                                     const gmx_gpu_opt_t  *gpu_opt);
 
@@ -1081,6 +1081,12 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
         gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!", ShortProgram());
     }
 
+    if (!(cr->duty & DUTY_PP))
+    {
+        /* Our rank is not doing PP, we don't use a GPU */
+        return;
+    }
+
     if (gpu_opt->bUserSet)
     {
         /* Check the GPU IDs passed by the user.
@@ -1116,7 +1122,7 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
     else
     {
         pick_compatible_gpus(&hwinfo_g->gpu_info, gpu_opt);
-        limit_num_gpus_used(gpu_opt, cr->nrank_pp_intranode);
+        set_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
     }
 
     /* If the user asked for a GPU, check whether we have a GPU */
@@ -1126,25 +1132,58 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
     }
 }
 
-/* If we detected more compatible GPUs than we can use, limit the
- * number. We print detailed messages about this later in
- * gmx_check_hw_runconf_consistency.
+/* Select the GPUs we will use. This is an operation local to each physical
+ * node. If we have less MPI ranks than GPUs, we will waste some GPUs.
+ * nrank and rank are the rank count and id for PP processes in our node.
  */
-static void limit_num_gpus_used(gmx_gpu_opt_t *gpu_opt, int maxNumberToUse)
+static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
 {
     GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
-    GMX_RELEASE_ASSERT(maxNumberToUse >= 1,
+    GMX_RELEASE_ASSERT(nrank >= 1,
                        gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
-                                         maxNumberToUse, gpu_opt->n_dev_compatible).c_str());
+                                         rank, gpu_opt->n_dev_compatible).c_str());
 
-    /* Don't increase the number of GPUs used beyond (e.g.) the number
-       of PP ranks */
-    gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_compatible, maxNumberToUse);
+    if (gpu_opt->n_dev_compatible == 0)
+    {
+        char host[255];
+
+        gmx_gethostname(host, 255);
+        gmx_fatal(FARGS, "A GPU was requested on host %s, but no compatible GPUs were detected. All nodes with PP ranks need to have GPUs. If you intended to use GPU acceleration in a parallel run, you can either avoid using the nodes that don't have GPUs or place PME ranks on these nodes.", host);
+    }
+
+    int nshare;
+
+    nshare = 1;
+    if (nrank > gpu_opt->n_dev_compatible)
+    {
+        if (nrank % gpu_opt->n_dev_compatible == 0)
+        {
+            nshare = nrank/gpu_opt->n_dev_compatible;
+        }
+        else
+        {
+            if (rank == 0)
+            {
+                gmx_fatal(FARGS, "The number of MPI ranks (%d) in a physical node is not a multiple of the number of GPUs (%d). Select a different number of MPI ranks or use the -gpu_id option to manually specify the GPU to be used.",
+                          nrank, gpu_opt->n_dev_compatible);
+            }
+
+#ifdef GMX_MPI
+            /* We use a global barrier to prevent ranks from continuing with
+             * an invalid setup.
+             */
+            MPI_Barrier(MPI_COMM_WORLD);
+#endif
+        }
+    }
+
+    /* Here we will waste GPUs when nrank < gpu_opt->n_dev_compatible */
+    gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_compatible*nshare, nrank);
     snew(gpu_opt->dev_use, gpu_opt->n_dev_use);
     for (int i = 0; i != gpu_opt->n_dev_use; ++i)
     {
         /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-        gpu_opt->dev_use[i] = gpu_opt->dev_compatible[i];
+        gpu_opt->dev_use[i] = gpu_opt->dev_compatible[i/nshare];
     }
 }
 
