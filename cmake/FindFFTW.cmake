@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -100,14 +100,50 @@ if (${FFTW}_FOUND)
     message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
   endif()
 
-  # Check for FFTW3 compiled with --enable-avx, which is slower for GROMACS than --enable-sse or --enable-sse2
-  foreach(AVX_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx)
+  # Check for FFTW3 compiled with --enable-sse
+  foreach(SSE_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse)
     if (FFTW_LIBRARY_CHANGED)
-      unset(${FFTW}_HAVE_${AVX_FUNCTION} CACHE)
+      unset(${FFTW}_HAVE_${SSE_FUNCTION} CACHE)
     endif()
-    check_library_exists("${${FFTW}_LIBRARIES}" "${AVX_FUNCTION}" "" ${FFTW}_HAVE_${AVX_FUNCTION})
-    if(${FFTW}_HAVE_${AVX_FUNCTION})
-      set(${FFTW}_HAVE_AVX TRUE)
+    check_library_exists("${${FFTW}_LIBRARIES}" "${SSE_FUNCTION}" "" ${FFTW}_HAVE_${SSE_FUNCTION})
+    if(${FFTW}_HAVE_${SSE_FUNCTION})
+      set(${FFTW}_HAVE_SSE TRUE)
+      break()
+    endif()
+  endforeach()
+
+  # Check for FFTW3 compiled with --enable-sse2
+  foreach(SSE2_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2)
+    if (FFTW_LIBRARY_CHANGED)
+      unset(${FFTW}_HAVE_${SSE2_FUNCTION} CACHE)
+    endif()
+    check_library_exists("${${FFTW}_LIBRARIES}" "${SSE2_FUNCTION}" "" ${FFTW}_HAVE_${SSE2_FUNCTION})
+    if(${FFTW}_HAVE_${SSE2_FUNCTION})
+      set(${FFTW}_HAVE_SSE2 TRUE)
+      break()
+    endif()
+  endforeach()
+
+  # Check for FFTW3 with 128-bit AVX compiled with --enable-avx
+  foreach(AVX_128_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_128)
+    if (FFTW_LIBRARY_CHANGED)
+      unset(${FFTW}_HAVE_${AVX_128_FUNCTION} CACHE)
+    endif()
+    check_library_exists("${${FFTW}_LIBRARIES}" "${AVX_128_FUNCTION}" "" ${FFTW}_HAVE_${AVX_128_FUNCTION})
+    if(${FFTW}_HAVE_${AVX_128_FUNCTION})
+      set(${FFTW}_HAVE_AVX_128 TRUE)
+      break()
+    endif()
+  endforeach()
+
+  # Check for FFTW3 with 128-bit AVX2 compiled with --enable-avx2
+  foreach(AVX2_128_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2_128)
+    if (FFTW_LIBRARY_CHANGED)
+      unset(${FFTW}_HAVE_${AVX2_128_FUNCTION} CACHE)
+    endif()
+    check_library_exists("${${FFTW}_LIBRARIES}" "${AVX2_128_FUNCTION}" "" ${FFTW}_HAVE_${AVX2_128_FUNCTION})
+    if(${FFTW}_HAVE_${AVX2_128_FUNCTION})
+      set(${FFTW}_HAVE_AVX2_128 TRUE)
       break()
     endif()
   endforeach()
