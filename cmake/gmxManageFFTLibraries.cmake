@@ -87,11 +87,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
       message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
-    endif()
-
-    if((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND ${FFTW}_HAVE_AVX)
+    else()
+      if((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2))
         # If we're not using SIMD instructions, we don't care about FFTW performance on x86 either
-        message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
+        message(WARNING "The FFTW library was compiled without --enable-see or --enable-sse2 to enable SSE(2) SIMD instructions. AVX instructions were probably enabled. This will give sub-optimal performance. For AVX enabled processors you should compile a different FFTW library with --enable-sse2 in addition to --enable-avx. The FFTW library will determine at runtime which SIMD instruction set is fastest for different parts of the FFTs.")
+        endif()
     endif()
 
     set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
