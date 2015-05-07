@@ -85,14 +85,14 @@ if(GMX_BUILD_MANUAL)
 endif()
 
 if (SPHINX_FOUND)
-    # We need to copy all the Sphinx input files to a single directory, and
-    # since some of them are (or will be) generated, we just copy everything
-    # into the build tree, to this directory.
+    # We need to have all the Sphinx input files in a single directory, and
+    # since some of them are generated, we copy everything into the build tree,
+    # to this directory.
     set(SPHINX_INPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sphinx-input)
     set(SPHINX_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/conf.py)
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
     set(SPHINX_EXTENSION_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-    if(REGRESSIONTEST_MD5SUM)
+    if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_TARBALL)
         # The real build of the webpage happens from the tarball, and
         # this should be set to the matching MD5 sum.
         set(REGRESSIONTEST_MD5SUM_STRING "${REGRESSIONTEST_MD5SUM}")
@@ -101,13 +101,6 @@ if (SPHINX_FOUND)
         # need a default value.
         set(REGRESSIONTEST_MD5SUM_STRING "unknown")
     endif()
-    gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
-        EXTRA_VARS
-            SPHINX_EXTENSION_PATH
-            GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
-            REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
-            SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
-        COMMENT "Configuring Sphinx configuration file")
     set(SPHINX_SOURCE_FILES
         index.rst
         download.rst
@@ -138,6 +131,26 @@ if (SPHINX_FOUND)
         conf.py
         links.dat
         )
+
+    # Remove other rst files from the build tree, since they confuse Sphinx.
+    file(GLOB_RECURSE _obsolete_sources RELATIVE ${SPHINX_INPUT_DIR}
+         ${SPHINX_INPUT_DIR}/*.rst)
+    list(REMOVE_ITEM _obsolete_sources ${SPHINX_SOURCE_FILES})
+    foreach(_file ${_obsolete_sources})
+        # Skip generated files.
+        if (NOT _file MATCHES "^(programs/.*|man/bytopic)\\.rst$")
+            message(STATUS "Removing obsolete Sphinx input ${_file}")
+            file(REMOVE ${SPHINX_INPUT_DIR}/${_file})
+        endif()
+    endforeach()
+
+    gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
+        EXTRA_VARS
+            SPHINX_EXTENSION_PATH
+            GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
+            REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
+            SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
+        COMMENT "Configuring Sphinx configuration file")
     set(SPHINX_INPUT_FILES ${SPHINX_CONFIG_VARS_FILE})
     foreach(_file ${SPHINX_SOURCE_FILES})
         add_custom_command(
@@ -153,6 +166,7 @@ if (SPHINX_FOUND)
     endforeach()
     gmx_add_custom_output_target(sphinx-input OUTPUT STAMP
         DEPENDS ${SPHINX_INPUT_FILES})
+    # TODO: Make this remove obsolete .rst files.
     gmx_add_custom_output_target(sphinx-programs OUTPUT STAMP
         COMMAND ${CMAKE_COMMAND} -E make_directory programs
         COMMAND gmx -quiet help -export rst
