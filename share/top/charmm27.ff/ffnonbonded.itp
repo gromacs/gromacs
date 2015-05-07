@@ -157,11 +157,6 @@ MNH2	0	0.000000	0.00	A	0.0	0.0
 MCH3	0	0.000000	0.00	A	0.0	0.0
 MCH3S	0	0.000000	0.00	A	0.0	0.0
 MW      0       0.000000        0.00    A       0.0     0.0
-; Ions and noble gases (useful for tutorials)
-Cu2+	29	63.54600	2.00	A	2.08470e-01	4.76976e+00
-Ar	18	39.94800	0.00	A	3.41000e-01	2.74580e-02
-; Added by DvdS 05/2005 copied from GROMACS force field.
-SI	14	28.08000	0.00	A	3.38550e-01	2.44704e+00
 
 [ pairtypes ]
 ; i	j	func	sigma1-4	epsilon1-4 ; THESE ARE 1-4 INTERACTIONS
