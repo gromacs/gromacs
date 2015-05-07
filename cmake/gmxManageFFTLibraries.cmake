@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -87,11 +87,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
       message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
-    endif()
-
-    if((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND ${FFTW}_HAVE_AVX)
-        # If we're not using SIMD instructions, we don't care about FFTW performance on x86 either
-        message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
+    else()
+      if(${GMX_SIMD} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2 OR ${FFTW}_HAVE_AVX_128 OR ${FFTW}_HAVE_AVX2_128))
+        # If we end up here we have an AVX Gromacs build, and FFTW with SIMD, but no 128-bit SIMD, this means AVX is enabled for FFTW.
+        message(WARNING "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with both SSE2 and AVX instruction support (use both --enable-sse2 and --enable-avx). The FFTW library will determine at runtime which SIMD instruction set is fastest for different parts of the FFTs.")
+        endif()
     endif()
 
     set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
