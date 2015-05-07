@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,10 +35,31 @@
 # As stated in README.Gromacs, this file is not part of GMock, but is written
 # specifically for the GROMACS build system from scratch.
 
+# Avoid compiler warnings with GCC 5, which doesn't like the way
+# GoogleTest makes int variables that hold the results of
+# value-parameterized test registration calls, and then doesn't use
+# them. Because these definitions are created by the
+# test-instantiation macros, there's no good way to suppress them;
+# we'd prefer to avoid modifying GoogleTest source, and don't wish to
+# embed compiler-specific suppressions in all our test-code source
+# files.
+#
+# TODO when updating GoogleTest in future, check if this is still needed
+if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5")
+    if(NOT DEFINED CXXFLAGS_NOUNUSEDVARIABLE)
+        check_cxx_compiler_flag("-Wno-unused-variable" CXXFLAGS_NOUNUSEDVARIABLE)
+    endif()
+    if(CXXFLAGS_NOUNUSEDVARIABLE)
+        list(APPEND GMOCK_COMPILE_FLAGS "-Wno-unused-variable")
+    endif()
+endif()
+
 include(gmxGetGmockTupleWorkaround)
 get_gmock_tuple_workaround(GMOCK_COMPILE_DEFINITIONS)
 set(GMOCK_COMPILE_DEFINITIONS "_GNU_SOURCE=1;${GMOCK_COMPILE_DEFINITIONS}")
+
 set(GMOCK_COMPILE_DEFINITIONS ${GMOCK_COMPILE_DEFINITIONS} PARENT_SCOPE)
+set(GMOCK_COMPILE_FLAGS ${GMOCK_COMPILE_FLAGS} PARENT_SCOPE)
 
 # GTest/GMock suggest linking with pthreads when available for thread safety
 set(CMAKE_THREAD_PREFER_PTHREAD 1)
@@ -69,6 +90,7 @@ endif()
 
 add_library(gmock STATIC ${UNITTEST_TARGET_OPTIONS} ${GMOCK_SOURCES} ${GTEST_SOURCES})
 set_property(TARGET gmock APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS};GTEST_CAN_STREAM_RESULTS=0")
+set_property(TARGET gmock APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
 
 set(GMOCK_LIBRARIES gmock ${PTHREADS_LIBRARIES} PARENT_SCOPE)
 set(GTEST_LIBRARIES ${GMOCK_LIBRARIES} PARENT_SCOPE)
