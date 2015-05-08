@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,26 @@
 #define GMX_SIMD_IMPL_SPARC64_HPC_ACE_H
 
 #include <math.h>
-/* Fujitsu header borrows the name from SSE2, since some instructions have aliases */
+
+/* Fujitsu header borrows the name from SSE2, since some instructions have aliases.
+ * Environment/compiler version GM-1.2.0-17 seems to be buggy; when -Xg is
+ * defined to enable GNUC extensions, this sets _ISOC99_SOURCE, which in
+ * turn causes all intrinsics to be declared inline _instead_ of static. This
+ * leads to duplicate symbol errors at link time.
+ * To work around this we unset this before including the HPC-ACE header, and
+ * reset the value afterwards.
+ */
+#ifdef _ISOC99_SOURCE
+#    undef _ISOC99_SOURCE
+#    define SAVE_ISOC99_SOURCE
+#endif
+
 #include <emmintrin.h>
+
+#ifdef SAVE_ISOC99_SOURCE
+#    define _ISOC99_SOURCE
+#    undef SAVE_ISOC99_SOURCE
+#endif
 
 
 /* Sparc64 HPC-ACE SIMD instruction wrappers
@@ -428,5 +446,6 @@ gmx_simd_set_exponent_d_sparc64_hpc_ace(gmx_simd_double_t x)
 
 
 /* No SIMD4 support, since both single & double are only 2-wide */
+
 
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_H */
