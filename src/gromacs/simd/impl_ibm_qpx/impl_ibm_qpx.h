@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,16 +43,21 @@
 
 #include "config.h"
 
+#include <stdio.h>
+
 /* IBM QPX SIMD instruction wrappers
  *
  * Please see documentation in gromacs/simd/simd.h for the available
  * defines.
  */
+
+#define GMX_SIMD_V2
+
 /* Capability definitions for IBM QPX */
 #define GMX_SIMD_HAVE_FLOAT
 #define GMX_SIMD_HAVE_DOUBLE
 #define GMX_SIMD_HAVE_HARDWARE
-#undef  GMX_SIMD_HAVE_STOREU
+#undef  GMX_SIMD_HAVE_LOADU
 #undef  GMX_SIMD_HAVE_STOREU
 #undef  GMX_SIMD_HAVE_LOGICAL
 #define GMX_SIMD_HAVE_FMA
@@ -61,10 +66,16 @@
 #undef  GMX_SIMD_HAVE_FINT32_EXTRACT
 #undef  GMX_SIMD_HAVE_FINT32_LOGICAL
 #undef  GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#undef  GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
+
 #define GMX_SIMD_HAVE_DINT32
 #undef  GMX_SIMD_HAVE_DINT32_EXTRACT
 #undef  GMX_SIMD_HAVE_DINT32_LOGICAL
 #undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#undef  GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+
+#undef  GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT  /* No need for half-simd, width is 4 */
+#undef  GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE /* No need for half-simd, width is 4 */
 #define GMX_SIMD4_HAVE_FLOAT
 #define GMX_SIMD4_HAVE_DOUBLE
 
@@ -90,7 +101,7 @@
 #    define gmx_simd_load1_f(m)   vec_lds(0, (float *)(m))
 #define gmx_simd_set1_f(x)        vec_splats(x)
 /* No support for unaligned load/store */
-#define gmx_simd_setzero_f        gmx_simd_setzero_ibm_qpx
+#define gmx_simd_setzero_f()       vec_splats(0.0)
 #define gmx_simd_add_f(a, b)       vec_add(a, b)
 #define gmx_simd_sub_f(a, b)       vec_sub(a, b)
 #define gmx_simd_mul_f(a, b)       vec_mul(a, b)
@@ -106,6 +117,16 @@
 /* gmx_simd_xor_f not supported - no bitwise logical ops */
 #define gmx_simd_rsqrt_f(a)       vec_rsqrte(a)
 #define gmx_simd_rcp_f(a)         vec_re(a)
+#define gmx_simd_mul_mask_f(a, b, m)       gmx_simd_blendzero_f(vec_mul(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  gmx_simd_blendzero_f(vec_madd(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_blendzero_f(vec_re(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_blendzero_f(vec_rsqrte(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_blendzero_f(vec_re(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_blendzero_f(vec_rsqrte(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(a)        vec_abs(a)
 #define gmx_simd_fneg_f           gmx_simd_fneg_ibm_qpx
 #define gmx_simd_max_f(a, b)       vec_sel(b, a, vec_sub(a, b))
@@ -130,7 +151,7 @@
 #endif
 #define gmx_simd_set1_fi(i)       gmx_simd_set1_int_ibm_qpx(i)
 #define gmx_simd_store_fi(m, x)    vec_st(x, 0, (int *)(m))
-#define gmx_simd_setzero_fi       gmx_simd_setzero_ibm_qpx
+#define gmx_simd_setzero_fi()     vec_splats(0.0)
 #define gmx_simd_cvt_f2i(a)       vec_ctiw(a)
 #define gmx_simd_cvtt_f2i(a)      vec_ctiwz(a)
 #define gmx_simd_cvt_i2f(a)       vec_cfid(a)
@@ -140,6 +161,7 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t          vector4double
 #define gmx_simd_cmpeq_f(a, b)     vec_cmpeq(a, b)
+#define gmx_simd_cmpnz_f(a)        vec_not(vec_cmpeq(a, vec_splats(0.0)))
 #define gmx_simd_cmplt_f(a, b)     vec_cmplt((a), (b))
 #define gmx_simd_cmple_f(a, b)     gmx_simd_or_fb(vec_cmpeq(a, b), vec_cmplt(a, b))
 #define gmx_simd_and_fb(a, b)      vec_and(a, b)
@@ -150,9 +172,21 @@
 #define gmx_simd_blendv_f(a, b, sel)  vec_sel(a, b, sel)
 #define gmx_simd_reduce_f(a)       gmx_simd_reduce_ibm_qpx(a)
 
-
 /* Boolean & comparison operations on gmx_simd_fint32_t not supported */
 /* Conversions between different booleans not supported */
+
+/* Higher-level utility functions */
+#define gmx_simd_gather_load_transpose_f             gmx_simd_gather_load_transpose_f_ibm_qpx
+#define gmx_simd_best_pair_alignment_f               gmx_simd_best_pair_alignment_f_ibm_qpx
+#define gmx_simd_gather_loadu_transpose_f            gmx_simd_gather_loadu_transpose_f_ibm_qpx
+#define gmx_simd_transpose_scatter_storeu_f          gmx_simd_transpose_scatter_storeu_f_ibm_qpx
+#define gmx_simd_transpose_scatter_incru_f           gmx_simd_transpose_scatter_incru_f_ibm_qpx
+#define gmx_simd_transpose_scatter_decru_f           gmx_simd_transpose_scatter_decru_f_ibm_qpx
+#define gmx_simd_expand_scalars_to_triplets_f        gmx_simd_expand_scalars_to_triplets_ibm_qpx
+#define gmx_simd_gather_load_bysimdint_transpose_f   gmx_simd_gather_load_bysimdint_transpose_f_ibm_qpx
+#define gmx_simd_gather_loadu_bysimdint_transpose_f  gmx_simd_gather_loadu_bysimdint_transpose_f_ibm_qpx
+#define gmx_simd_reduce_incr_4_return_sum_f          gmx_simd_reduce_incr_4_return_sum_f_ibm_qpx
+
 
 static __attribute__((always_inline)) vector4double
 gmx_simd_fneg_ibm_qpx(vector4double a)
@@ -173,7 +207,7 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
 #    define gmx_simd_load1_d(m)   vec_lds(0, (double *)(m))
 #define gmx_simd_set1_d(x)        vec_splats(x)
 /* No support for unaligned load/store */
-#define gmx_simd_setzero_d        gmx_simd_setzero_ibm_qpx
+#define gmx_simd_setzero_d()       vec_splats(0.0)
 #define gmx_simd_add_d(a, b)       vec_add(a, b)
 #define gmx_simd_sub_d(a, b)       vec_sub(a, b)
 #define gmx_simd_mul_d(a, b)       vec_mul(a, b)
@@ -189,6 +223,16 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
 /* gmx_simd_xor_d not supported - no bitwise logical ops */
 #define gmx_simd_rsqrt_d(a)       vec_rsqrte(a)
 #define gmx_simd_rcp_d(a)         vec_re(a)
+#define gmx_simd_mul_mask_d(a, b, m)       gmx_simd_blendzero_d(vec_mul(a, b), m)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  gmx_simd_blendzero_d(vec_madd(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_d(a, m)      gmx_simd_blendzero_d(vec_re(a), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    gmx_simd_blendzero_d(vec_rsqrte(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_d(a, m)      gmx_simd_blendzero_d(vec_re(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    gmx_simd_blendzero_d(vec_rsqrte(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_d(a)        vec_abs(a)
 #define gmx_simd_fneg_d           gmx_simd_fneg_ibm_qpx
 #define gmx_simd_max_d(a, b)       vec_sel(b, a, vec_sub(a, b))
@@ -213,7 +257,7 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
 #endif
 #define gmx_simd_set1_di(i)       gmx_simd_set1_int_ibm_qpx(i)
 #define gmx_simd_store_di(m, x)   vec_st(x, 0, (int *)(m))
-#define gmx_simd_setzero_di       gmx_simd_setzero_ibm_qpx
+#define gmx_simd_setzero_di()     vec_splats(0.0)
 #define gmx_simd_cvt_d2i(a)       vec_ctiw(a)
 #define gmx_simd_cvtt_d2i(a)      vec_ctiwz(a)
 #define gmx_simd_cvt_i2d(a)       vec_cfid(a)
@@ -223,6 +267,7 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t          vector4double
 #define gmx_simd_cmpeq_d(a, b)     vec_cmpeq(a, b)
+#define gmx_simd_cmpnz_d(a)        vec_not(vec_cmpeq(a, vec_splats(0.0)))
 #define gmx_simd_cmplt_d(a, b)     vec_cmplt((a), (b))
 #define gmx_simd_cmple_d(a, b)     gmx_simd_or_fb(vec_cmpeq(a, b), vec_cmplt(a, b))
 #define gmx_simd_and_db(a, b)      vec_and(a, b)
@@ -236,15 +281,27 @@ gmx_simd_fneg_ibm_qpx(vector4double a)
 /* Boolean & comparison operations on gmx_simd_dint32_t not supported */
 /* Conversions between different booleans not supported */
 
+/* Float-double conversions */
+/* Conversions between different booleans */
+#define gmx_simd_cvt_f2d(x)       (x)
+#define gmx_simd_cvt_d2f(x)       (x)
+
+/* Higher-level utility functions */
+#define gmx_simd_gather_load_transpose_d             gmx_simd_gather_load_transpose_d_ibm_qpx
+#define gmx_simd_best_pair_alignment_d               gmx_simd_best_pair_alignment_d_ibm_qpx
+#define gmx_simd_gather_loadu_transpose_d            gmx_simd_gather_loadu_transpose_d_ibm_qpx
+#define gmx_simd_transpose_scatter_storeu_d          gmx_simd_transpose_scatter_storeu_d_ibm_qpx
+#define gmx_simd_transpose_scatter_incru_d           gmx_simd_transpose_scatter_incru_d_ibm_qpx
+#define gmx_simd_transpose_scatter_decru_d           gmx_simd_transpose_scatter_decru_d_ibm_qpx
+#define gmx_simd_expand_scalars_to_triplets_d        gmx_simd_expand_scalars_to_triplets_ibm_qpx
+#define gmx_simd_gather_load_bysimdint_transpose_d   gmx_simd_gather_load_bysimdint_transpose_d_ibm_qpx
+#define gmx_simd_gather_loadu_bysimdint_transpose_d  gmx_simd_gather_loadu_bysimdint_transpose_d_ibm_qpx
+#define gmx_simd_reduce_incr_4_return_sum_d          gmx_simd_reduce_incr_4_return_sum_d_ibm_qpx
+
 
 /****************************************************
  * IMPLEMENTATION HELPER FUNCTIONS                  *
  ****************************************************/
-static __attribute__((always_inline)) vector4double gmx_simdcall
-gmx_simd_setzero_ibm_qpx(void)
-{
-    return vec_splats(0.0);
-}
 
 static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_get_exponent_ibm_qpx(vector4double x)
@@ -312,13 +369,14 @@ gmx_simd_reduce_ibm_qpx(vector4double x)
     y = vec_add(y, x);
     z = vec_sldw(y, y, 1);
     y = vec_add(y, z);
+
     return vec_extract(y, 0);
 }
 
 static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_set1_int_ibm_qpx(int i)
 {
-    int idata[4] __attribute__((aligned(32)));
+    int idata[4] __attribute__((aligned(16)));
 
     idata[0] = i;
 
@@ -337,6 +395,415 @@ gmx_simd_anytrue_bool_ibm_qpx(vector4double a)
     a = vec_or(a, b);
     return (vec_extract(a, 0) > 0);
 }
+
+/****************************************************
+ * Single precision higher-level utility functions  *
+ ****************************************************/
+#ifdef __cplusplus
+
+/* Internal macro for transposes */
+#define GMX_QPX_TRANSPOSE4(v0, v1, v2, v3)                        \
+    {                                                                 \
+        vector4double gmx_qpx_t0 = vec_perm(v0, v2, vec_gpci(00415)); \
+        vector4double gmx_qpx_t1 = vec_perm(v0, v2, vec_gpci(02637)); \
+        vector4double gmx_qpx_t2 = vec_perm(v1, v3, vec_gpci(00415)); \
+        vector4double gmx_qpx_t3 = vec_perm(v1, v3, vec_gpci(02637)); \
+        v0 = vec_perm(gmx_qpx_t0, gmx_qpx_t2, vec_gpci(00415));       \
+        v1 = vec_perm(gmx_qpx_t0, gmx_qpx_t2, vec_gpci(02637));       \
+        v2 = vec_perm(gmx_qpx_t1, gmx_qpx_t3, vec_gpci(00415));       \
+        v3 = vec_perm(gmx_qpx_t1, gmx_qpx_t3, vec_gpci(02637));       \
+    }
+
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_load_transpose_f_ibm_qpx(const float *        base,
+                                         const gmx_int32_t    offset[],
+                                         gmx_simd_float_t    &v0,
+                                         gmx_simd_float_t    &v1,
+                                         gmx_simd_float_t    &v2,
+                                         gmx_simd_float_t    &v3)
+{
+    v0  = gmx_simd_load_f( base + align * offset[0] );
+    v1  = gmx_simd_load_f( base + align * offset[1] );
+    v2  = gmx_simd_load_f( base + align * offset[2] );
+    v3  = gmx_simd_load_f( base + align * offset[3] );
+    GMX_QPX_TRANSPOSE4(v0, v1, v2, v3);
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_load_transpose_f_ibm_qpx(const float *        base,
+                                         const gmx_int32_t    offset[],
+                                         gmx_simd_float_t    &v0,
+                                         gmx_simd_float_t    &v1)
+{
+    gmx_simd_float_t t0, t1, t2, t3;
+    t0 = vec_ld2(0, (float *)(base + align * offset[0]) );
+    t1 = vec_ld2(0, (float *)(base + align * offset[1]) );
+    t2 = vec_ld2(0, (float *)(base + align * offset[2]) );
+    t3 = vec_ld2(0, (float *)(base + align * offset[3]) );
+    t0 = vec_perm(t0, t2, vec_gpci(00415));
+    t1 = vec_perm(t1, t3, vec_gpci(00415));
+    v0 = vec_perm(t0, t1, vec_gpci(00415));
+    v1 = vec_perm(t0, t1, vec_gpci(02637));
+}
+
+static const int gmx_simd_best_pair_alignment_f_ibm_qpx = 2;
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_loadu_transpose_f_ibm_qpx(const float *        base,
+                                          const gmx_int32_t    offset[],
+                                          gmx_simd_float_t    &v0,
+                                          gmx_simd_float_t    &v1,
+                                          gmx_simd_float_t    &v2)
+{
+    gmx_simd_float_t             t1, t2, t3, t4, t5, t6, t7, t8;
+
+    if ( (align & 0x3) == 0)
+    {
+        gmx_simd_float_t t3;
+        gmx_simd_gather_load_transpose_f_ibm_qpx<align>(base, offset, v0, v1, v2, t3);
+    }
+    else
+    {
+        t1  = vec_perm(vec_splats(base[align * offset[0]]), vec_splats(base[align * offset[0] + 1]), vec_gpci(00415));
+        t2  = vec_perm(vec_splats(base[align * offset[1]]), vec_splats(base[align * offset[1] + 1]), vec_gpci(00415));
+        t3  = vec_perm(vec_splats(base[align * offset[2]]), vec_splats(base[align * offset[2] + 1]), vec_gpci(00415));
+        t4  = vec_perm(vec_splats(base[align * offset[3]]), vec_splats(base[align * offset[3] + 1]), vec_gpci(00415));
+
+        t5  = vec_splats( *(base + align * offset[0] + 2) );
+        t6  = vec_splats( *(base + align * offset[1] + 2) );
+        t7  = vec_splats( *(base + align * offset[2] + 2) );
+        t8  = vec_splats( *(base + align * offset[3] + 2) );
+
+        t1  = vec_perm(t1, t2, vec_gpci(00415));
+        t3  = vec_perm(t3, t4, vec_gpci(00415));
+        v0  = vec_perm(t1, t3, vec_gpci(00145));
+        v1  = vec_perm(t3, t1, vec_gpci(06723));
+        t5  = vec_perm(t5, t6, vec_gpci(00415));
+        t7  = vec_perm(t7, t8, vec_gpci(00415));
+        v2  = vec_perm(t5, t7, vec_gpci(00145));
+    }
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_transpose_scatter_storeu_f_ibm_qpx(float *                        base,
+                                            const gmx_int32_t              offset[],
+                                            gmx_simd_float_t               v0,
+                                            gmx_simd_float_t               v1,
+                                            gmx_simd_float_t gmx_unused    v2)
+{
+    base[align * offset[0]    ] = vec_extract(v0, 0);
+    base[align * offset[0] + 1] = vec_extract(v1, 0);
+    base[align * offset[0] + 2] = vec_extract(v2, 0);
+    base[align * offset[1]    ] = vec_extract(v0, 1);
+    base[align * offset[1] + 1] = vec_extract(v1, 1);
+    base[align * offset[1] + 2] = vec_extract(v2, 1);
+    base[align * offset[2]    ] = vec_extract(v0, 2);
+    base[align * offset[2] + 1] = vec_extract(v1, 2);
+    base[align * offset[2] + 2] = vec_extract(v2, 2);
+    base[align * offset[3]    ] = vec_extract(v0, 3);
+    base[align * offset[3] + 1] = vec_extract(v1, 3);
+    base[align * offset[3] + 2] = vec_extract(v2, 3);
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_transpose_scatter_incru_f_ibm_qpx(float *                       base,
+                                           const gmx_int32_t             offset[],
+                                           gmx_simd_float_t              v0,
+                                           gmx_simd_float_t              v1,
+                                           gmx_simd_float_t gmx_unused   v2)
+{
+    base[align * offset[0]    ] += vec_extract(v0, 0);
+    base[align * offset[0] + 1] += vec_extract(v1, 0);
+    base[align * offset[0] + 2] += vec_extract(v2, 0);
+    base[align * offset[1]    ] += vec_extract(v0, 1);
+    base[align * offset[1] + 1] += vec_extract(v1, 1);
+    base[align * offset[1] + 2] += vec_extract(v2, 1);
+    base[align * offset[2]    ] += vec_extract(v0, 2);
+    base[align * offset[2] + 1] += vec_extract(v1, 2);
+    base[align * offset[2] + 2] += vec_extract(v2, 2);
+    base[align * offset[3]    ] += vec_extract(v0, 3);
+    base[align * offset[3] + 1] += vec_extract(v1, 3);
+    base[align * offset[3] + 2] += vec_extract(v2, 3);
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_transpose_scatter_decru_f_ibm_qpx(float *                       base,
+                                           const gmx_int32_t             offset[],
+                                           gmx_simd_float_t              v0,
+                                           gmx_simd_float_t              v1,
+                                           gmx_simd_float_t gmx_unused   v2)
+{
+    base[align * offset[0]    ] -= vec_extract(v0, 0);
+    base[align * offset[0] + 1] -= vec_extract(v1, 0);
+    base[align * offset[0] + 2] -= vec_extract(v2, 0);
+    base[align * offset[1]    ] -= vec_extract(v0, 1);
+    base[align * offset[1] + 1] -= vec_extract(v1, 1);
+    base[align * offset[1] + 2] -= vec_extract(v2, 1);
+    base[align * offset[2]    ] -= vec_extract(v0, 2);
+    base[align * offset[2] + 1] -= vec_extract(v1, 2);
+    base[align * offset[2] + 2] -= vec_extract(v2, 2);
+    base[align * offset[3]    ] -= vec_extract(v0, 3);
+    base[align * offset[3] + 1] -= vec_extract(v1, 3);
+    base[align * offset[3] + 2] -= vec_extract(v2, 3);
+}
+
+static __attribute__((always_inline)) void
+gmx_simd_expand_scalars_to_triplets_ibm_qpx(gmx_simd_float_t    scalar,
+                                            gmx_simd_float_t   &triplets0,
+                                            gmx_simd_float_t   &triplets1,
+                                            gmx_simd_float_t   &triplets2)
+{
+    triplets0 = vec_perm(scalar, scalar, vec_gpci(00001));
+    triplets1 = vec_perm(scalar, scalar, vec_gpci(01122));
+    triplets2 = vec_perm(scalar, scalar, vec_gpci(02333));
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_load_bysimdint_transpose_f_ibm_qpx(const float *       base,
+                                                   gmx_simd_fint32_t   offset,
+                                                   gmx_simd_float_t   &v0,
+                                                   gmx_simd_float_t   &v1,
+                                                   gmx_simd_float_t   &v2,
+                                                   gmx_simd_float_t   &v3)
+{
+    int __attribute__ ((aligned (16))) ioffset[4];
+
+    gmx_simd_store_fi(ioffset, offset);
+    gmx_simd_gather_load_transpose_f_ibm_qpx<align>(base, ioffset, v0, v1, v2, v3);
+}
+
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_load_bysimdint_transpose_f_ibm_qpx(const float *       base,
+                                                   gmx_simd_fint32_t   offset,
+                                                   gmx_simd_float_t   &v0,
+                                                   gmx_simd_float_t   &v1)
+{
+    int __attribute__ ((aligned (16))) ioffset[4];
+
+    gmx_simd_store_fi(ioffset, offset);
+    gmx_simd_gather_load_transpose_f_ibm_qpx<align>(base, ioffset, v0, v1);
+}
+
+static __attribute__((always_inline)) float
+gmx_simd_reduce_incr_4_return_sum_f_ibm_qpx(float *           m,
+                                            gmx_simd_float_t  v0,
+                                            gmx_simd_float_t  v1,
+                                            gmx_simd_float_t  v2,
+                                            gmx_simd_float_t  v3)
+{
+    GMX_QPX_TRANSPOSE4(v0, v1, v2, v3);
+    v0 = vec_add(v0, v1);
+    v2 = vec_add(v2, v3);
+    v0 = vec_add(v0, v2);
+    v2 = vec_add(v0, gmx_simd_load_f(m));
+    gmx_simd_store_f(m, v2);
+
+    return gmx_simd_reduce_ibm_qpx(v0);
+}
+#endif /* __cplusplus */
+
+
+/****************************************************
+ * Double precision higher-level utility functions  *
+ ****************************************************/
+#ifdef __cplusplus
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_load_transpose_d_ibm_qpx(const double *        base,
+                                         const gmx_int32_t     offset[],
+                                         gmx_simd_double_t    &v0,
+                                         gmx_simd_double_t    &v1,
+                                         gmx_simd_double_t    &v2,
+                                         gmx_simd_double_t    &v3)
+{
+    v0  = gmx_simd_load_d( base + align * offset[0] );
+    v1  = gmx_simd_load_d( base + align * offset[1] );
+    v2  = gmx_simd_load_d( base + align * offset[2] );
+    v3  = gmx_simd_load_d( base + align * offset[3] );
+    GMX_QPX_TRANSPOSE4(v0, v1, v2, v3);
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_load_transpose_d_ibm_qpx(const double *       base,
+                                         const gmx_int32_t    offset[],
+                                         gmx_simd_double_t   &v0,
+                                         gmx_simd_double_t   &v1)
+{
+    gmx_simd_double_t t0, t1, t2, t3;
+    t0 = vec_ld2(0, (double *)(base + align * offset[0]) );
+    t1 = vec_ld2(0, (double *)(base + align * offset[1]) );
+    t2 = vec_ld2(0, (double *)(base + align * offset[2]) );
+    t3 = vec_ld2(0, (double *)(base + align * offset[3]) );
+    t0 = vec_perm(t0, t2, vec_gpci(00415));
+    t1 = vec_perm(t1, t3, vec_gpci(00415));
+    v0 = vec_perm(t0, t1, vec_gpci(00415));
+    v1 = vec_perm(t0, t1, vec_gpci(02637));
+}
+
+static const int gmx_simd_best_pair_alignment_d_ibm_qpx = 2;
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_loadu_transpose_d_ibm_qpx(const double *       base,
+                                          const gmx_int32_t    offset[],
+                                          gmx_simd_double_t   &v0,
+                                          gmx_simd_double_t   &v1,
+                                          gmx_simd_double_t   &v2)
+{
+    gmx_simd_double_t t1, t2, t3, t4, t5, t6, t7, t8;
+
+    if ( (align & 0x3) == 0)
+    {
+        gmx_simd_double_t t3;
+        gmx_simd_gather_load_transpose_d_ibm_qpx<align>(base, offset, v0, v1, v2, t3);
+    }
+    else
+    {
+        t1  = vec_perm(vec_splats(base[align * offset[0]]), vec_splats(base[align * offset[0] + 1]), vec_gpci(00415));
+        t2  = vec_perm(vec_splats(base[align * offset[1]]), vec_splats(base[align * offset[1] + 1]), vec_gpci(00415));
+        t3  = vec_perm(vec_splats(base[align * offset[2]]), vec_splats(base[align * offset[2] + 1]), vec_gpci(00415));
+        t4  = vec_perm(vec_splats(base[align * offset[3]]), vec_splats(base[align * offset[3] + 1]), vec_gpci(00415));
+
+        t5  = vec_splats( *(base + align * offset[0] + 2) );
+        t6  = vec_splats( *(base + align * offset[1] + 2) );
+        t7  = vec_splats( *(base + align * offset[2] + 2) );
+        t8  = vec_splats( *(base + align * offset[3] + 2) );
+
+        t1  = vec_perm(t1, t2, vec_gpci(00415));
+        t3  = vec_perm(t3, t4, vec_gpci(00415));
+        v0  = vec_perm(t1, t3, vec_gpci(00145));
+        v1  = vec_perm(t3, t1, vec_gpci(06723));
+        t5  = vec_perm(t5, t6, vec_gpci(00415));
+        t7  = vec_perm(t7, t8, vec_gpci(00415));
+        v2  = vec_perm(t5, t7, vec_gpci(00145));
+    }
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_transpose_scatter_storeu_d_ibm_qpx(double *            base,
+                                            const gmx_int32_t   offset[],
+                                            gmx_simd_double_t   v0,
+                                            gmx_simd_double_t   v1,
+                                            gmx_simd_double_t   v2)
+{
+    base[align * offset[0]    ] = vec_extract(v0, 0);
+    base[align * offset[0] + 1] = vec_extract(v1, 0);
+    base[align * offset[0] + 2] = vec_extract(v2, 0);
+    base[align * offset[1]    ] = vec_extract(v0, 1);
+    base[align * offset[1] + 1] = vec_extract(v1, 1);
+    base[align * offset[1] + 2] = vec_extract(v2, 1);
+    base[align * offset[2]    ] = vec_extract(v0, 2);
+    base[align * offset[2] + 1] = vec_extract(v1, 2);
+    base[align * offset[2] + 2] = vec_extract(v2, 2);
+    base[align * offset[3]    ] = vec_extract(v0, 3);
+    base[align * offset[3] + 1] = vec_extract(v1, 3);
+    base[align * offset[3] + 2] = vec_extract(v2, 3);
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_transpose_scatter_incru_d_ibm_qpx(double *            base,
+                                           const gmx_int32_t   offset[],
+                                           gmx_simd_double_t   v0,
+                                           gmx_simd_double_t   v1,
+                                           gmx_simd_double_t   v2)
+{
+    base[align * offset[0]    ] += vec_extract(v0, 0);
+    base[align * offset[0] + 1] += vec_extract(v1, 0);
+    base[align * offset[0] + 2] += vec_extract(v2, 0);
+    base[align * offset[1]    ] += vec_extract(v0, 1);
+    base[align * offset[1] + 1] += vec_extract(v1, 1);
+    base[align * offset[1] + 2] += vec_extract(v2, 1);
+    base[align * offset[2]    ] += vec_extract(v0, 2);
+    base[align * offset[2] + 1] += vec_extract(v1, 2);
+    base[align * offset[2] + 2] += vec_extract(v2, 2);
+    base[align * offset[3]    ] += vec_extract(v0, 3);
+    base[align * offset[3] + 1] += vec_extract(v1, 3);
+    base[align * offset[3] + 2] += vec_extract(v2, 3);
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_transpose_scatter_decru_d_ibm_qpx(double *            base,
+                                           const gmx_int32_t   offset[],
+                                           gmx_simd_double_t   v0,
+                                           gmx_simd_double_t   v1,
+                                           gmx_simd_double_t   v2)
+{
+    base[align * offset[0]    ] -= vec_extract(v0, 0);
+    base[align * offset[0] + 1] -= vec_extract(v1, 0);
+    base[align * offset[0] + 2] -= vec_extract(v2, 0);
+    base[align * offset[1]    ] -= vec_extract(v0, 1);
+    base[align * offset[1] + 1] -= vec_extract(v1, 1);
+    base[align * offset[1] + 2] -= vec_extract(v2, 1);
+    base[align * offset[2]    ] -= vec_extract(v0, 2);
+    base[align * offset[2] + 1] -= vec_extract(v1, 2);
+    base[align * offset[2] + 2] -= vec_extract(v2, 2);
+    base[align * offset[3]    ] -= vec_extract(v0, 3);
+    base[align * offset[3] + 1] -= vec_extract(v1, 3);
+    base[align * offset[3] + 2] -= vec_extract(v2, 3);
+}
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_load_bysimdint_transpose_d_ibm_qpx(const double *      base,
+                                                   gmx_simd_dint32_t   offset,
+                                                   gmx_simd_double_t  &v0,
+                                                   gmx_simd_double_t  &v1,
+                                                   gmx_simd_double_t  &v2,
+                                                   gmx_simd_double_t  &v3)
+{
+    int __attribute__ ((aligned (16))) ioffset[4];
+
+    gmx_simd_store_di(ioffset, offset);
+    gmx_simd_gather_load_transpose_d_ibm_qpx<align>(base, ioffset, v0, v1, v2, v3);
+}
+
+
+template <int align>
+static __attribute__((always_inline)) void
+gmx_simd_gather_load_bysimdint_transpose_d_ibm_qpx(const double  *      base,
+                                                   gmx_simd_dint32_t    offset,
+                                                   gmx_simd_double_t   &v0,
+                                                   gmx_simd_double_t   &v1)
+{
+    int __attribute__ ((aligned (16))) ioffset[4];
+
+    gmx_simd_store_di(ioffset, offset);
+    gmx_simd_gather_load_transpose_d_ibm_qpx<align>(base, ioffset, v0, v1);
+}
+
+static __attribute__((always_inline)) double
+gmx_simd_reduce_incr_4_return_sum_d_ibm_qpx(double *           m,
+                                            gmx_simd_double_t  v0,
+                                            gmx_simd_double_t  v1,
+                                            gmx_simd_double_t  v2,
+                                            gmx_simd_double_t  v3)
+{
+    GMX_QPX_TRANSPOSE4(v0, v1, v2, v3);
+    v0 = vec_add(v0, v1);
+    v2 = vec_add(v2, v3);
+    v0 = vec_add(v0, v2);
+    v2 = vec_add(v0, gmx_simd_load_d(m));
+    gmx_simd_store_d(m, v2);
+
+    return gmx_simd_reduce_ibm_qpx(v0);
+}
+#endif /* __cplusplus */
+
 
 /* QPX is already 4-wide both in single and double, so just reuse for SIMD4 */
 
@@ -373,6 +840,7 @@ gmx_simd_anytrue_bool_ibm_qpx(vector4double a)
 #define gmx_simd4_get_mantissa_f         gmx_simd_get_mantissa_f
 #define gmx_simd4_set_exponent_f         gmx_simd_set_exponent_f
 #define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_ibm_qpx
+#define gmx_simd4_transpose_f            gmx_simd4_transpose_ibm_qpx
 #define gmx_simd4_fint32_t               gmx_simd_fint32_t
 #define gmx_simd4_load_fi                gmx_simd_load_fi
 #define gmx_simd4_load1_fi               gmx_simd_load1_fi
@@ -428,6 +896,7 @@ gmx_simd_anytrue_bool_ibm_qpx(vector4double a)
 #define gmx_simd4_get_mantissa_d         gmx_simd_get_mantissa_d
 #define gmx_simd4_set_exponent_d         gmx_simd_set_exponent_d
 #define gmx_simd4_dotproduct3_d          gmx_simd4_dotproduct3_d_ibm_qpx
+#define gmx_simd4_transpose_d            gmx_simd4_transpose_ibm_qpx
 #define gmx_simd4_dint32_t               gmx_simd_dint32_t
 #define gmx_simd4_load_di                gmx_simd_load_di
 #define gmx_simd4_load1_di               gmx_simd_load1_di
@@ -467,6 +936,15 @@ gmx_simd4_dotproduct3_f_ibm_qpx(vector4double a, vector4double b)
 {
     return (float)gmx_simd4_dotproduct3_d_ibm_qpx(a, b);
 }
+
+#ifdef __cplusplus
+static __attribute__((always_inline)) void gmx_simdcall
+gmx_simd4_transpose_ibm_qpx(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                            gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    GMX_QPX_TRANSPOSE4(v0, v1, v2, v3);
+}
+#endif
 
 /* Function to check whether SIMD operations have resulted in overflow.
  * For now, this is unfortunately a dummy for this architecture.
