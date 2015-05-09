@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_H
 #define GMX_SIMD_IMPL_ARM_NEON_ASIMD_H
 
+#include "config.h"
+
 #include <math.h>
 
 #include <arm_neon.h>
@@ -48,12 +50,16 @@
 /* Inherit single-precision and integer part from 32-bit arm */
 #include "gromacs/simd/impl_arm_neon/impl_arm_neon.h"
 
+/* The GMX_SIMD_V2 define is inherited from 32-bit arm_neon */
+
 /* Override some capability definitions from ARM 32-bit NEON - we now have double */
 #define GMX_SIMD_HAVE_DOUBLE
 #define GMX_SIMD_HAVE_DINT32
 #define GMX_SIMD_HAVE_DINT32_EXTRACT
 #define GMX_SIMD_HAVE_DINT32_LOGICAL
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+#undef  GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE  /* No need for half-simd, width is 2 */
 
 /* Implementation details */
 #define GMX_SIMD_DOUBLE_WIDTH        2
@@ -131,6 +137,16 @@
 #define gmx_simd_rsqrt_iter_d(lu, x) vmulq_f64(lu, vrsqrtsq_f64(vmulq_f64(lu, lu), x))
 #define gmx_simd_rcp_d              vrecpeq_f64
 #define gmx_simd_rcp_iter_d(lu, x)   vmulq_f64(lu, vrecpsq_f64(lu, x))
+#define gmx_simd_mul_mask_d(a, b, m)       gmx_simd_blendzero_d(gmx_simd_mul_d(a, b), m)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  gmx_simd_blendzero_d(gmx_simd_fmadd_d(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_d(a, m)      gmx_simd_blendzero_d(gmx_simd_rcp_d(a), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    gmx_simd_blendzero_d(gmx_simd_rsqrt_d(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_d(a, m)      gmx_simd_blendzero_d(gmx_simd_rcp_d(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    gmx_simd_blendzero_d(gmx_simd_rsqrt_d(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_d(x)         vabsq_f64(x)
 #define gmx_simd_fneg_d(x)         vnegq_f64(x)
 #define gmx_simd_max_d             vmaxq_f64
@@ -167,6 +183,7 @@
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t           uint64x2_t
 #define gmx_simd_cmpeq_d           vceqq_f64
+#define gmx_simd_cmpnz_d(a)        vtstq_u64((uint64x2_t)a, (uint64x2_t)a)
 #define gmx_simd_cmplt_d           vcltq_f64
 #define gmx_simd_cmple_d           vcleq_f64
 #define gmx_simd_and_db            vandq_u64
@@ -189,6 +206,17 @@
 /* Conversions between different booleans */
 #define gmx_simd_cvt_db2dib(x)     vqmovn_u64(x)
 #define gmx_simd_cvt_dib2db(x)     vorrq_u64(vmovl_u32(x), vshlq_n_u64(vmovl_u32(x), 32))
+/* Higher-level utility functions */
+#define gmx_simd_gather_load_transpose_d             gmx_simd_gather_load_transpose_d_arm_neon_asimd
+#define gmx_simd_best_pair_alignment_d               gmx_simd_best_pair_alignment_d_arm_neon_asimd
+#define gmx_simd_gather_loadu_transpose_d            gmx_simd_gather_loadu_transpose_d_arm_neon_asimd
+#define gmx_simd_transpose_scatter_storeu_d          gmx_simd_transpose_scatter_storeu_d_arm_neon_asimd
+#define gmx_simd_transpose_scatter_incru_d           gmx_simd_transpose_scatter_incru_d_arm_neon_asimd
+#define gmx_simd_transpose_scatter_decru_d           gmx_simd_transpose_scatter_decru_d_arm_neon_asimd
+#define gmx_simd_expand_scalars_to_triplets_d        gmx_simd_expand_scalars_to_triplets_d_arm_neon_asimd
+#define gmx_simd_gather_load_bysimdint_transpose_d   gmx_simd_gather_load_bysimdint_transpose_d_arm_neon_asimd
+#define gmx_simd_gather_loadu_bysimdint_transpose_d  gmx_simd_gather_loadu_bysimdint_transpose_d_arm_neon_asimd
+#define gmx_simd_reduce_incr_4_return_sum_d          gmx_simd_reduce_incr_4_return_sum_d_arm_neon_asimd
 
 /* Float/double conversion */
 #define gmx_simd_cvt_f2dd(f, d0, d1)  { *d0 = vcvt_f64_f32(vget_low_f32(f)); *d1 = vcvt_high_f64_f32(f); }
@@ -258,5 +286,201 @@ gmx_simd_reduce_d_arm_neon_asimd(gmx_simd_double_t a)
     a = vpaddq_f64(a, a);
     return vgetq_lane_f64(a, 0);
 }
+
+/****************************************************
+ * Double precision higher-level utility functions  *
+ ****************************************************/
+#ifdef __cplusplus
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_d_arm_neon_asimd(const double *        base,
+                                                const gmx_int32_t     offset[],
+                                                gmx_simd_double_t    &v0,
+                                                gmx_simd_double_t    &v1,
+                                                gmx_simd_double_t    &v2,
+                                                gmx_simd_double_t    &v3)
+{
+    float64x2_t t1, t2, t3, t4;
+    t1  = gmx_simd_load_d(base + align * offset[0]);
+    t2  = gmx_simd_load_d(base + align * offset[1]);
+    t3  = gmx_simd_load_d(base + align * offset[0] + 2);
+    t4  = gmx_simd_load_d(base + align * offset[1] + 2);
+    v0  = vuzp1q_f64(t1, t2);
+    v1  = vuzp2q_f64(t1, t2);
+    v2  = vuzp1q_f64(t3, t4);
+    v3  = vuzp2q_f64(t3, t4);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_d_arm_neon_asimd(const double *        base,
+                                                const gmx_int32_t     offset[],
+                                                gmx_simd_double_t    &v0,
+                                                gmx_simd_double_t    &v1)
+{
+    float64x2_t t1, t2;
+    t1  = gmx_simd_load_d(base + align * offset[0]);
+    t2  = gmx_simd_load_d(base + align * offset[1]);
+    v0  = vuzp1q_f64(t1, t2);
+    v1  = vuzp2q_f64(t1, t2);
+}
+
+static const int gmx_simd_best_pair_alignment_d_arm_neon_asimd = 2;
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_transpose_d_arm_neon_asimd(const double *        base,
+                                                 const gmx_int32_t     offset[],
+                                                 gmx_simd_double_t    &v0,
+                                                 gmx_simd_double_t    &v1,
+                                                 gmx_simd_double_t    &v2)
+{
+    float64x2_t t1, t2;
+    float64x1_t t3, t4;
+    t1  = gmx_simd_loadu_d(base + align * offset[0]);
+    t2  = gmx_simd_loadu_d(base + align * offset[1]);
+    t3  = vld1_f64(base + align * offset[0] + 2);
+    t4  = vld1_f64(base + align * offset[1] + 2);
+    v0  = vuzp1q_f64(t1, t2);
+    v1  = vuzp2q_f64(t1, t2);
+    v2  = vcombine_f64(t3, t4);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_storeu_d_arm_neon_asimd(double *              base,
+                                                   const gmx_int32_t     offset[],
+                                                   gmx_simd_double_t     v0,
+                                                   gmx_simd_double_t     v1,
+                                                   gmx_simd_double_t     v2)
+{
+    float64x2_t t0, t1;
+    t0  = vuzp1q_f64(v0, v1);
+    t1  = vuzp2q_f64(v0, v1);
+    vst1q_f64(base + align * offset[0], t0);
+    vst1q_f64(base + align * offset[1], t1);
+    vst1_f64(base + align * offset[0] + 2, vget_low_f64(v2));
+    vst1_f64(base + align * offset[1] + 2, vget_high_f64(v2));
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_incru_d_arm_neon_asimd(double *              base,
+                                                  const gmx_int32_t     offset[],
+                                                  gmx_simd_double_t     v0,
+                                                  gmx_simd_double_t     v1,
+                                                  gmx_simd_double_t     v2)
+{
+    float64x2_t t0, t1, t2, t3;
+    t0  = vuzp1q_f64(v0, v1);
+    t1  = vuzp2q_f64(v0, v1);
+
+    t2  = gmx_simd_loadu_d(base + align * offset[0]);
+    t3  = gmx_simd_loadu_d(base + align * offset[1]);
+    t2  = gmx_simd_add_d(t2, t0);
+    t3  = gmx_simd_add_d(t3, t1);
+    gmx_simd_storeu_d(base + align * offset[0], t2);
+    gmx_simd_storeu_d(base + align * offset[1], t3);
+
+    base[ align * offset[0] + 2 ] += vget_low_f64(v2);
+    base[ align * offset[1] + 2 ] += vget_high_f64(v2);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_decru_d_arm_neon_asimd(double *              base,
+                                                  const gmx_int32_t     offset[],
+                                                  gmx_simd_double_t     v0,
+                                                  gmx_simd_double_t     v1,
+                                                  gmx_simd_double_t     v2)
+{
+    float64x2_t t0, t1, t2, t3;
+    t0  = vuzp1q_f64(v0, v1);
+    t1  = vuzp2q_f64(v0, v1);
+
+    t2  = gmx_simd_loadu_d(base + align * offset[0]);
+    t3  = gmx_simd_loadu_d(base + align * offset[1]);
+    t2  = gmx_simd_sub_d(t2, t0);
+    t3  = gmx_simd_sub_d(t3, t1);
+    gmx_simd_storeu_d(base + align * offset[0], t2);
+    gmx_simd_storeu_d(base + align * offset[1], t3);
+
+    base[ align * offset[0] + 2 ] -= vget_low_f64(v2);
+    base[ align * offset[1] + 2 ] -= vget_high_f64(v2);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd_expand_scalars_to_triplets_d_arm_neon_asimd(gmx_simd_double_t    scalar,
+                                                     gmx_simd_double_t   &triplets0,
+                                                     gmx_simd_double_t   &triplets1,
+                                                     gmx_simd_double_t   &triplets2)
+{
+    triplets0 = vuzp1q_f64(scalar, scalar);
+    triplets1 = scalar;
+    triplets2 = vuzp2q_f64(scalar, scalar);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_d_arm_neon_asimd(const double *       base,
+                                                          gmx_simd_dint32_t    offset,
+                                                          gmx_simd_double_t   &v0,
+                                                          gmx_simd_double_t   &v1,
+                                                          gmx_simd_double_t   &v2,
+                                                          gmx_simd_double_t   &v3)
+{
+    int ioffset[4] __attribute__((aligned(16)));
+    gmx_simd_store_di(ioffset, offset);
+    gmx_simd_gather_load_transpose_d_arm_neon_asimd<align>(base, ioffset, v0, v1, v2, v3);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_d_arm_neon_asimd(const double *       base,
+                                                          gmx_simd_dint32_t    offset,
+                                                          gmx_simd_double_t   &v0,
+                                                          gmx_simd_double_t   &v1)
+{
+    int ioffset[4] __attribute__((aligned(16)));
+    gmx_simd_store_di(ioffset, offset);
+    gmx_simd_gather_load_transpose_d_arm_neon_asimd<align>(base, ioffset, v0, v1);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_bysimdint_transpose_d_arm_neon_asimd(const double *       base,
+                                                           gmx_simd_dint32_t    offset,
+                                                           gmx_simd_double_t   &v0,
+                                                           gmx_simd_double_t   &v1)
+{
+    gmx_simd_gather_load_bysimdint_transpose_d_arm_neon_asimd<align>(base, offset, v0, v1);
+}
+
+static gmx_inline double
+gmx_simd_reduce_incr_4_return_sum_d_arm_neon_asimd(double *           m,
+                                                   gmx_simd_double_t  v0,
+                                                   gmx_simd_double_t  v1,
+                                                   gmx_simd_double_t  v2,
+                                                   gmx_simd_double_t  v3)
+{
+    float64x2_t t1, t2, t3, t4;
+
+    t1 = vuzp1q_f64(v0, v1);
+    t2 = vuzp2q_f64(v0, v1);
+    t3 = vuzp1q_f64(v2, v3);
+    t4 = vuzp2q_f64(v2, v3);
+
+    t1 = gmx_simd_add_d(t1, t2);
+    t3 = gmx_simd_add_d(t3, t4);
+
+    t2 = gmx_simd_add_d(t1, gmx_simd_load_d(m));
+    t4 = gmx_simd_add_d(t3, gmx_simd_load_d(m + 2));
+    gmx_simd_store_d(m, t2);
+    gmx_simd_store_d(m + 2, t4);
+
+    t1 = gmx_simd_add_d(t1, t3);
+    return gmx_simd_reduce_d_arm_neon_asimd(t1);
+}
+#endif /* __cplusplus */
 
 #endif /* GMX_SIMD_IMPL_ARM_NEON_ASIMD_H */
