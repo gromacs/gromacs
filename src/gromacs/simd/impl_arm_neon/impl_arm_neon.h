@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_H
 #define GMX_SIMD_IMPL_ARM_NEON_H
 
+#include "config.h"
+
 #include <math.h>
 
 #include <arm_neon.h>
@@ -44,6 +46,8 @@
  *
  * Please see documentation in gromacs/simd/simd.h for defines.
  */
+
+#define GMX_SIMD_V2
 
 /* Capability definitions for ARM 32-bit NEON */
 #define GMX_SIMD_HAVE_FLOAT
@@ -58,10 +62,16 @@
 #define GMX_SIMD_HAVE_FINT32_EXTRACT
 #define GMX_SIMD_HAVE_FINT32_LOGICAL
 #define GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
+#undef  GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT  /* No need for half-simd, width is 4 */
+
 #undef  GMX_SIMD_HAVE_DINT32
 #undef  GMX_SIMD_HAVE_DINT32_EXTRACT
 #undef  GMX_SIMD_HAVE_DINT32_LOGICAL
 #undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#undef  GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+#undef  GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
+
 #define GMX_SIMD4_HAVE_FLOAT
 #undef  GMX_SIMD4_HAVE_DOUBLE
 
@@ -106,6 +116,16 @@
 #define gmx_simd_rsqrt_iter_f(lu, x) vmulq_f32(lu, vrsqrtsq_f32(vmulq_f32(lu, lu), x))
 #define gmx_simd_rcp_f              vrecpeq_f32
 #define gmx_simd_rcp_iter_f(lu, x)   vmulq_f32(lu, vrecpsq_f32(lu, x))
+#define gmx_simd_mul_mask_f(a, b, m)       gmx_simd_blendzero_f(gmx_simd_mul_f(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  gmx_simd_blendzero_f(gmx_simd_fmadd_f(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_blendzero_f(gmx_simd_rcp_f(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_blendzero_f(gmx_simd_rsqrt_f(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_blendzero_f(gmx_simd_rcp_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_blendzero_f(gmx_simd_rsqrt_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(x)         vabsq_f32(x)
 #define gmx_simd_fneg_f(x)         vnegq_f32(x)
 #define gmx_simd_max_f             vmaxq_f32
@@ -142,6 +162,7 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t           uint32x4_t
 #define gmx_simd_cmpeq_f           vceqq_f32
+#define gmx_simd_cmpnz_f(a)        vtstq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(a))
 #define gmx_simd_cmplt_f           vcltq_f32
 #define gmx_simd_cmple_f           vcleq_f32
 #define gmx_simd_and_fb            vandq_u32
@@ -164,6 +185,17 @@
 /* Conversions between different booleans */
 #define gmx_simd_cvt_fb2fib(x)     (x)
 #define gmx_simd_cvt_fib2fb(x)     (x)
+/* Higher-level utility functions */
+#define gmx_simd_gather_load_transpose_f             gmx_simd_gather_load_transpose_f_arm_neon
+#define gmx_simd_best_pair_alignment_f               gmx_simd_best_pair_alignment_f_arm_neon
+#define gmx_simd_gather_loadu_transpose_f            gmx_simd_gather_loadu_transpose_f_arm_neon
+#define gmx_simd_transpose_scatter_storeu_f          gmx_simd_transpose_scatter_storeu_f_arm_neon
+#define gmx_simd_transpose_scatter_incru_f           gmx_simd_transpose_scatter_incru_f_arm_neon
+#define gmx_simd_transpose_scatter_decru_f           gmx_simd_transpose_scatter_decru_f_arm_neon
+#define gmx_simd_expand_scalars_to_triplets_f        gmx_simd_expand_scalars_to_triplets_f_arm_neon
+#define gmx_simd_gather_load_bysimdint_transpose_f   gmx_simd_gather_load_bysimdint_transpose_f_arm_neon
+#define gmx_simd_gather_loadu_bysimdint_transpose_f  gmx_simd_gather_loadu_bysimdint_transpose_f_arm_neon
+#define gmx_simd_reduce_incr_4_return_sum_f          gmx_simd_reduce_incr_4_return_sum_f_arm_neon
 
 /****************************************************
  *     NO DOUBLE PRECISION SIMD AVAILABLE           *
@@ -229,6 +261,253 @@ gmx_simd_anytrue_fb_arm_neon(gmx_simd_fbool_t a)
     return (vgetq_lane_u32(a, 0) != 0);
 }
 
+/****************************************************
+ * Single precision higher-level utility functions  *
+ ****************************************************/
+#ifdef __cplusplus
+
+#define GMX_NEON_TRANSPOSE4(v0, v1, v2, v3)                            \
+    {                                                                   \
+        float32x4x2_t gmx_neon_t0, gmx_neon_t1;                          \
+        float32x4x2_t gmx_neon_t2, gmx_neon_t3;                          \
+        gmx_neon_t0 = vuzpq_f32(v0, v2);                                \
+        gmx_neon_t1 = vuzpq_f32(v1, v3);                                \
+        gmx_neon_t2 = vtrnq_f32(gmx_neon_t0.val[0], gmx_neon_t1.val[0]); \
+        gmx_neon_t3 = vtrnq_f32(gmx_neon_t0.val[1], gmx_neon_t1.val[1]); \
+        v0          = gmx_neon_t2.val[0];                                        \
+        v1          = gmx_neon_t3.val[0];                                        \
+        v2          = gmx_neon_t2.val[1];                                        \
+        v3          = gmx_neon_t3.val[1];                                        \
+    }
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_f_arm_neon(const float *        base,
+                                          const gmx_int32_t    offset[],
+                                          gmx_simd_float_t    &v0,
+                                          gmx_simd_float_t    &v1,
+                                          gmx_simd_float_t    &v2,
+                                          gmx_simd_float_t    &v3)
+{
+    /* Unfortunately we cannot use the beautiful Neon structured load
+     * instructions since the data comes from four memory locations.
+     */
+    v0  = gmx_simd_load_f( base + align * offset[0] );
+    v1  = gmx_simd_load_f( base + align * offset[1] );
+    v2  = gmx_simd_load_f( base + align * offset[2] );
+    v3  = gmx_simd_load_f( base + align * offset[3] );
+    GMX_NEON_TRANSPOSE4(v0, v1, v2, v3);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_transpose_f_arm_neon(const float *        base,
+                                          const gmx_int32_t    offset[],
+                                          gmx_simd_float_t    &v0,
+                                          gmx_simd_float_t    &v1)
+{
+    float32x4x2_t tmp;
+    v0  = vcombine_f32(vld1_f32( base + align * offset[0] ),
+                       vld1_f32( base + align * offset[2] ));
+    v1  = vcombine_f32(vld1_f32( base + align * offset[1] ),
+                       vld1_f32( base + align * offset[3] ));
+    tmp = vtrnq_f32(v0, v1);
+    v0  = tmp.val[0];
+    v1  = tmp.val[1];
+}
+
+static const int gmx_simd_best_pair_alignment_f_arm_neon = 2;
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_transpose_f_arm_neon(const float *        base,
+                                           const gmx_int32_t    offset[],
+                                           gmx_simd_float_t    &v0,
+                                           gmx_simd_float_t    &v1,
+                                           gmx_simd_float_t    &v2)
+{
+    float32x4x2_t tmp;
+    v0  = vcombine_f32(vld1_f32( base + align * offset[0] ),
+                       vld1_f32( base + align * offset[2] ));
+    v1  = vcombine_f32(vld1_f32( base + align * offset[1] ),
+                       vld1_f32( base + align * offset[3] ));
+    tmp = vtrnq_f32(v0, v1);
+    v0  = tmp.val[0];
+    v1  = tmp.val[1];
+    v2  = vld1q_lane_f32( base + align * offset[0] + 2, v2, 0);
+    v2  = vld1q_lane_f32( base + align * offset[1] + 2, v2, 1);
+    v2  = vld1q_lane_f32( base + align * offset[2] + 2, v2, 2);
+    v2  = vld1q_lane_f32( base + align * offset[3] + 2, v2, 3);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_storeu_f_arm_neon(float *             base,
+                                             const gmx_int32_t   offset[],
+                                             gmx_simd_float_t    v0,
+                                             gmx_simd_float_t    v1,
+                                             gmx_simd_float_t    v2)
+{
+    float32x4x2_t tmp;
+    tmp = vtrnq_f32(v0, v1);
+
+    vst1_f32( base + align * offset[0], vget_low_f32(tmp.val[0]) );
+    vst1_f32( base + align * offset[1], vget_low_f32(tmp.val[1]) );
+    vst1_f32( base + align * offset[2], vget_high_f32(tmp.val[0]) );
+    vst1_f32( base + align * offset[3], vget_high_f32(tmp.val[1]) );
+
+    vst1q_lane_f32( base + align * offset[0] + 2, v2, 0);
+    vst1q_lane_f32( base + align * offset[1] + 2, v2, 1);
+    vst1q_lane_f32( base + align * offset[2] + 2, v2, 2);
+    vst1q_lane_f32( base + align * offset[3] + 2, v2, 3);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_incru_f_arm_neon(float *            base,
+                                            const gmx_int32_t  offset[],
+                                            gmx_simd_float_t   v0,
+                                            gmx_simd_float_t   v1,
+                                            gmx_simd_float_t   v2)
+{
+    float32x4x2_t tmp;
+    float32x2_t   t0, t1, t2, t3;
+    tmp = vtrnq_f32(v0, v1);
+
+    t0 = vget_low_f32(tmp.val[0]);
+    t1 = vget_low_f32(tmp.val[1]);
+    t2 = vget_high_f32(tmp.val[0]);
+    t3 = vget_high_f32(tmp.val[1]);
+
+    t0 = vadd_f32(t0, vld1_f32(base + align * offset[0]));
+    t1 = vadd_f32(t1, vld1_f32(base + align * offset[1]));
+    t2 = vadd_f32(t2, vld1_f32(base + align * offset[2]));
+    t3 = vadd_f32(t3, vld1_f32(base + align * offset[3]));
+
+    vst1_f32(base + align * offset[0], t0);
+    vst1_f32(base + align * offset[1], t1);
+    vst1_f32(base + align * offset[2], t2);
+    vst1_f32(base + align * offset[3], t3);
+
+    base[ align * offset[0] + 2] += vgetq_lane_f32(v2, 0);
+    base[ align * offset[1] + 2] += vgetq_lane_f32(v2, 1);
+    base[ align * offset[2] + 2] += vgetq_lane_f32(v2, 2);
+    base[ align * offset[3] + 2] += vgetq_lane_f32(v2, 3);
+}
+
+template <int align>
+static gmx_inline void
+gmx_simd_transpose_scatter_decru_f_arm_neon(float *            base,
+                                            const gmx_int32_t  offset[],
+                                            gmx_simd_float_t   v0,
+                                            gmx_simd_float_t   v1,
+                                            gmx_simd_float_t   v2)
+{
+    float32x4x2_t tmp;
+    float32x2_t   t0, t1, t2, t3;
+    tmp = vtrnq_f32(v0, v1);
+
+    t0 = vget_low_f32(tmp.val[0]);
+    t1 = vget_low_f32(tmp.val[1]);
+    t2 = vget_high_f32(tmp.val[0]);
+    t3 = vget_high_f32(tmp.val[1]);
+
+    t0 = vsub_f32(vld1_f32(base + align * offset[0]), t0);
+    t1 = vsub_f32(vld1_f32(base + align * offset[1]), t1);
+    t2 = vsub_f32(vld1_f32(base + align * offset[2]), t2);
+    t3 = vsub_f32(vld1_f32(base + align * offset[3]), t3);
+
+    vst1_f32(base + align * offset[0], t0);
+    vst1_f32(base + align * offset[1], t1);
+    vst1_f32(base + align * offset[2], t2);
+    vst1_f32(base + align * offset[3], t3);
+
+    base[ align * offset[0] + 2] -= vgetq_lane_f32(v2, 0);
+    base[ align * offset[1] + 2] -= vgetq_lane_f32(v2, 1);
+    base[ align * offset[2] + 2] -= vgetq_lane_f32(v2, 2);
+    base[ align * offset[3] + 2] -= vgetq_lane_f32(v2, 3);
+}
+
+static gmx_inline void
+gmx_simd_expand_scalars_to_triplets_f_arm_neon(gmx_simd_float_t    scalar,
+                                               gmx_simd_float_t   &triplets0,
+                                               gmx_simd_float_t   &triplets1,
+                                               gmx_simd_float_t   &triplets2)
+{
+    float32x2_t lo, hi;
+    float32x4_t t0, t1, t2, t3;
+
+    lo = vget_low_f32(scalar);
+    hi = vget_high_f32(scalar);
+
+    t0 = vdupq_lane_f32(lo, 0);
+    t1 = vdupq_lane_f32(lo, 1);
+    t2 = vdupq_lane_f32(hi, 0);
+    t3 = vdupq_lane_f32(hi, 1);
+
+    triplets0 = vextq_f32(t0, t1, 1);
+    triplets1 = vextq_f32(t1, t2, 2);
+    triplets2 = vextq_f32(t2, t3, 3);
+}
+
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_f_arm_neon(const float *       base,
+                                                    gmx_simd_fint32_t   offset,
+                                                    gmx_simd_float_t   &v0,
+                                                    gmx_simd_float_t   &v1,
+                                                    gmx_simd_float_t   &v2,
+                                                    gmx_simd_float_t   &v3)
+{
+    int ioffset[4] __attribute__((aligned(16)));
+    gmx_simd_store_fi(ioffset, offset);
+    gmx_simd_gather_load_transpose_f_arm_neon<align>(base, ioffset, v0, v1, v2, v3);
+}
+
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_load_bysimdint_transpose_f_arm_neon(const float *       base,
+                                                    gmx_simd_fint32_t   offset,
+                                                    gmx_simd_float_t   &v0,
+                                                    gmx_simd_float_t   &v1)
+{
+    int ioffset[4] __attribute__((aligned(16)));
+    gmx_simd_store_fi(ioffset, offset);
+    gmx_simd_gather_load_transpose_f_arm_neon<align>(base, ioffset, v0, v1);
+}
+
+
+template <int align>
+static gmx_inline void
+gmx_simd_gather_loadu_bysimdint_transpose_f_arm_neon(const float *       base,
+                                                     gmx_simd_fint32_t   offset,
+                                                     gmx_simd_float_t   &v0,
+                                                     gmx_simd_float_t   &v1)
+{
+    gmx_simd_gather_load_bysimdint_transpose_f_arm_neon<align>(base, offset, v0, v1);
+}
+
+
+static gmx_inline float
+gmx_simd_reduce_incr_4_return_sum_f_arm_neon(float *           m,
+                                             gmx_simd_float_t  v0,
+                                             gmx_simd_float_t  v1,
+                                             gmx_simd_float_t  v2,
+                                             gmx_simd_float_t  v3)
+{
+    GMX_NEON_TRANSPOSE4(v0, v1, v2, v3);
+    v0 = gmx_simd_add_f(v0, v1);
+    v2 = gmx_simd_add_f(v2, v3);
+    v0 = gmx_simd_add_f(v0, v2);
+    v2 = gmx_simd_add_f(v0, gmx_simd_load_f(m));
+    gmx_simd_store_f(m, v2);
+
+    return gmx_simd_reduce_f_arm_neon(v0);
+}
+#endif /* __cplusplus */
+
 
 /* ARM 32-bit Neon is already 4-wide in single, so just reuse float type for SIMD4 */
 #define gmx_simd4_float_t                gmx_simd_float_t
@@ -258,6 +537,7 @@ gmx_simd_anytrue_fb_arm_neon(gmx_simd_fbool_t a)
 #define gmx_simd4_round_f                gmx_simd_round_f
 #define gmx_simd4_trunc_f                gmx_simd_trunc_f
 #define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_arm_neon
+#define gmx_simd4_transpose_f            gmx_simd4_transpose_f_arm_neon
 #define gmx_simd4_fbool_t                gmx_simd_fbool_t
 #define gmx_simd4_cmpeq_f                gmx_simd_cmpeq_f
 #define gmx_simd4_cmplt_f                gmx_simd_cmplt_f
@@ -279,6 +559,24 @@ gmx_simd4_dotproduct3_f_arm_neon(gmx_simd_float_t a, gmx_simd_float_t b)
     /* set 4th element to 0, then add all of them */
     c = vsetq_lane_f32(0.0f, c, 3);
     return gmx_simd_reduce_f_arm_neon(c);
+}
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_f_arm_neon(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                               gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    GMX_NEON_TRANSPOSE4(v0, v1, v2, v3);
+}
+#endif
+
+/* Function to check whether SIMD operations have resulted in overflow.
+ * For now, this is unfortunately a dummy for this architecture.
+ */
+static int
+gmx_simd_check_and_reset_overflow(void)
+{
+    return 0;
 }
 
 #endif /* GMX_SIMD_IMPL_ARM_NEON_H */
