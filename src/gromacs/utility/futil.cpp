@@ -587,19 +587,10 @@ void gmx_tmpnam(char *buf)
 #else
     int fd = mkstemp(buf);
 
-    switch (fd)
+    if (fd < 0)
     {
-        case EINVAL:
-            gmx_fatal(FARGS, "Invalid template %s for mkstemp", buf);
-            break;
-        case EEXIST:
-            gmx_fatal(FARGS, "mkstemp created existing file", buf);
-            break;
-        case EACCES:
-            gmx_fatal(FARGS, "Permission denied for opening %s", buf);
-            break;
-        default:
-            break;
+        gmx_fatal(FARGS, "Creating temporary file %s: %s", buf,
+                  strerror(errno));
     }
     close(fd);
 #endif
