@@ -594,7 +594,7 @@ TEST_F(SimdFloatingpointUtilTest, gmxSimdReduceIncr4Sum)
     EXPECT_REAL_EQ_TOL(sum0 + sum1 + sum2 + sum3, tstsum, tolerance);
 }
 
-#ifdef GMX_SIMD_HAVE_HSIMD_UTIL
+#ifdef GMX_SIMD_HAVE_HSIMD_UTIL_REAL
 
 TEST_F(SimdFloatingpointUtilTest, gmxSimdLoadDualHsimd)
 {
