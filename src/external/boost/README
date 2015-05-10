@@ -1,7 +1,8 @@
 Steps to produce minimal version of BOOST:
 1) Download Boost (current minimal version is derived from 1.55.0)
 2) Extract
-3) Edit Boost files to uncomment unnessary includes (search for GMX in minimal version and copy all changes)
+3) Edit Boost files to uncomment unnessary includes and insert warning-suppression pragmas
+   (search for GMX in minimal version and copy all changes)
 4) Make sure our subset works even with compilers not listed
    among the boost ones (in particular, Fujistu in native mode):
    - Edit config/select_compiler_config.hpp to add the fallback

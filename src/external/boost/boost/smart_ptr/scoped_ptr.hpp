@@ -21,6 +21,12 @@
 # include <memory>          // for std::auto_ptr
 #endif
 
+//GMX_INSERTED
+#if (__GNUC__ >= 5)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 namespace boost
 {
 
@@ -153,5 +159,10 @@ template<class T> inline T * get_pointer(scoped_ptr<T> const & p) BOOST_NOEXCEPT
 }
 
 } // namespace boost
+
+//GMX_INSERTED
+#if (__GNUC__ >= 5)
+#pragma GCC diagnostic pop
+#endif
 
 #endif // #ifndef BOOST_SMART_PTR_SCOPED_PTR_HPP_INCLUDED
