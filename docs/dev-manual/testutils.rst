@@ -9,7 +9,7 @@ they are easy to run after every change to check that nothing has been broken.
 Finding, building and running
 -----------------------------
 
-As described in :doc:`codelayout`, ``src/gromacs/`` is divided into modules,
+As described in :ref:`dev-source-layout`, ``src/gromacs/`` is divided into modules,
 each corresponding to a subdirectory.  If available, unit tests for that module
 can be found in a ``tests/`` subdirectory under the top-level module directory.
 Typically, tests for code in :file:`{file}.h` in the module is in a corresponding
