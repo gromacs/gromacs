@@ -3536,8 +3536,8 @@ gmx_simd_cvt_dd2f(gmx_simd_double_t d0, gmx_simd_double_t d1)
  * \param[out] v2     3rd component of data, base[align*offset[i] + 2] for each i.
  * \param[out] v3     4th component of data, base[align*offset[i] + 2] for each i.
  *
- * The floating-point memory locations must be aligned, but only to four
- * elements even if the SIMD implementation is even wider.
+ * The floating-point memory locations must be aligned, but only to the smaller
+ * of four elements and the floating-point SIMD width.
  *
  * The offset memory must be aligned to the corresponding integer SIMD type,
  * i.e. GMX_SIMD_FINT32_WIDTH in single, or GMX_SIMD_DINT32_WIDTH in double.
@@ -3555,10 +3555,13 @@ gmx_simd_gather_load_transpose_f(const float *        base,
                                  gmx_simd_float_t    &v3)
 {
     int i;
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_FLOAT_WIDTH > 4) ? 4 : GMX_SIMD_FLOAT_WIDTH;
+#endif
 
     assert((size_t)offset % (GMX_SIMD_FINT32_WIDTH*sizeof(gmx_int32_t)) == 0);
-    assert((size_t)base % (4*sizeof(float)) == 0);
-    assert(align % 4 == 0);
+    assert((size_t)base % (align_req*sizeof(float)) == 0);
+    assert(align % align_req == 0);
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
@@ -3581,8 +3584,8 @@ gmx_simd_gather_load_transpose_f(const float *        base,
  * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
  * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
  *
- * The floating-point memory locations must be aligned, but only to two
- * elements even if the SIMD implementation is even wider.
+ * The floating-point memory locations must be aligned, but only to the smaller
+ * of two elements and the floating-point SIMD width.
  *
  * The offset memory must be aligned to the corresponding integer SIMD type,
  * i.e. GMX_SIMD_FINT32_WIDTH in single, or GMX_SIMD_DINT32_WIDTH in double.
@@ -3603,10 +3606,13 @@ gmx_simd_gather_load_transpose_f(const float *        base,
                                  gmx_simd_float_t    &v1)
 {
     int i;
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_FLOAT_WIDTH > 2) ? 2 : GMX_SIMD_FLOAT_WIDTH;
+#endif
 
     assert((size_t)offset % (GMX_SIMD_FINT32_WIDTH*sizeof(gmx_int32_t)) == 0);
-    assert((size_t)base % (2*sizeof(float)) == 0);
-    assert(align % 2 == 0);
+    assert((size_t)base % (align_req*sizeof(float)) == 0);
+    assert(align % align_req == 0);
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
@@ -3859,8 +3865,8 @@ gmx_simd_expand_scalars_to_triplets_f(gmx_simd_float_t    scalar,
  * \param[out] v2     Third component, base[align*offset[i] + 2] for each i.
  * \param[out] v3     Fourth component, base[align*offset[i] + 3] for each i.
  *
- * The memory locations must be aligned, but only to four elements even if the
- * SIMD implementation is even wider.
+ * The floating-point memory locations must be aligned, but only to the smaller
+ * of four elements and the floating-point SIMD width.
  *
  * \note You should NOT scale offsets before calling this routine; it is
  *       done internally by using the alignment template parameter instead.
@@ -3879,9 +3885,12 @@ gmx_simd_gather_load_bysimdint_transpose_f(const float *       base,
                                            gmx_simd_float_t   &v3)
 {
     int i;
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_FLOAT_WIDTH > 4) ? 4 : GMX_SIMD_FLOAT_WIDTH;
+#endif
 
-    assert((size_t)base % (4*sizeof(float)) == 0);
-    assert(align % 4 == 0);
+    assert((size_t)base % (align_req*sizeof(float)) == 0);
+    assert(align % align_req == 0);
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
@@ -3943,8 +3952,8 @@ gmx_simd_gather_loadu_bysimdint_transpose_f(const float *       base,
  * \param[out] v0     First component, base[align*offset[i]] for each i.
  * \param[out] v1     Second component, base[align*offset[i] + 1] for each i.
  *
- * The memory locations must be aligned, but only to four elements even if the
- * SIMD implementation is even wider.
+ * The floating-point memory locations must be aligned, but only to the smaller
+ * of two elements and the floating-point SIMD width.
  *
  * \note You should NOT scale offsets before calling this routine; it is
  *       done internally by using the alignment template parameter instead.
@@ -3960,8 +3969,12 @@ gmx_simd_gather_load_bysimdint_transpose_f(const float *       base,
                                            gmx_simd_float_t   &v0,
                                            gmx_simd_float_t   &v1)
 {
-    assert((size_t)base % (2*sizeof(float)) == 0);
-    assert(align % 2 == 0);
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_FLOAT_WIDTH > 2) ? 2 : GMX_SIMD_FLOAT_WIDTH;
+#endif
+
+    assert((size_t)base % (align_req*sizeof(float)) == 0);
+    assert(align % align_req == 0);
 
     gmx_simd_gather_loadu_bysimdint_transpose_f<align>(base, offset, v0, v1);
 }
@@ -3977,7 +3990,8 @@ gmx_simd_gather_load_bysimdint_transpose_f(const float *       base,
  *
  * \return Sum of all elements in the four SIMD variables.
  *
- * The pointer m must be aligned to four elements.
+ * The pointer m must be aligned to the smaller of four elements and the
+ * floating-point SIMD width.
  *
  * \note This is a special routine intended for the Gromacs nonbonded kernels.
  * It is used in the epilogue of the outer loop, where the variables will
@@ -3999,8 +4013,11 @@ gmx_simd_reduce_incr_4_return_sum_f(float *           m,
 {
     /* Note that the 4 here corresponds to the 4 m-elements, not any SIMD width */
     float sum[4];
+#ifndef NDEBUG
+    int   align_req = (GMX_SIMD_FLOAT_WIDTH > 4) ? 4 : GMX_SIMD_FLOAT_WIDTH;
+#endif
 
-    assert((size_t)m % (4*sizeof(float)) == 0);
+    assert((size_t)m % (align_req*sizeof(float)) == 0);
 
     sum[0] = gmx_simd_reduce_f(v0);
     sum[1] = gmx_simd_reduce_f(v1);
@@ -4205,7 +4222,8 @@ gmx_simd_decr_hsimd_f(float *           m,
  * to the half-SIMD-register operations. This also means it must be aligned
  * to half the integer SIMD width (i.e., GMX_SIMD_FINT32_WIDTH/2).
  *
- * The floating-point memory must be aligned to at least two elements.
+ * The floating-point memory locations must be aligned, but only to the smaller
+ * of two elements and the floating-point SIMD width.
  *
  * This routine is primarily designed to load nonbonded parameters in the
  * kernels. It is the equivalent of the full-width routine
@@ -4230,10 +4248,14 @@ gmx_simd_gather_load_transpose_hsimd_f(const float *       base0,
                                        gmx_simd_float_t   &v1)
 {
     int i;
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_FLOAT_WIDTH > 2) ? 2 : GMX_SIMD_FLOAT_WIDTH;
+#endif
 
     assert((size_t)offset % (GMX_SIMD_FINT32_WIDTH/2*sizeof(gmx_int32_t)) == 0);
-    assert((size_t)base0 % (2*sizeof(float)) == 0);
-    assert((size_t)base1 % (2*sizeof(float)) == 0);
+    assert((size_t)base0 % (align_req*sizeof(float)) == 0);
+    assert((size_t)base1 % (align_req*sizeof(float)) == 0);
+    assert(align % align_req == 0);
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH/2; i++)
     {
@@ -4253,7 +4275,8 @@ gmx_simd_gather_load_transpose_hsimd_f(const float *       base0,
  *
  * \return Sum of all elements in the four SIMD variables.
  *
- * The pointer m must be aligned to at least 4 elements.
+ * The pointer m must be aligned, but only to the smaller
+ * of four elements and the floating-point SIMD width.
  *
  * \note This is the half-SIMD-width version of
  * \ref gmx_simd_reduce_incr_4_return_sum_r. The only difference is that the
@@ -4271,8 +4294,11 @@ gmx_simd_reduce_incr_4_return_sum_hsimd_f(float *            m,
     /* The 4 here corresponds to the 4 elements in memory, not any SIMD width */
     float sum[4];
     int   i;
+#ifndef NDEBUG
+    int   align_req = (GMX_SIMD_FLOAT_WIDTH > 4) ? 4 : GMX_SIMD_FLOAT_WIDTH;
+#endif
 
-    assert((size_t)m % (4*sizeof(float)) == 0);
+    assert((size_t)m % (align_req*sizeof(float)) == 0);
 
     for (i = 0; i < 4; i++)
     {
@@ -4328,8 +4354,8 @@ gmx_simd_reduce_incr_4_return_sum_hsimd_f(float *            m,
  * \param[out] v2     3rd component of data, base[align*offset[i] + 2] for each i.
  * \param[out] v3     4th component of data, base[align*offset[i] + 2] for each i.
  *
- * The floating-point memory locations must be aligned, but only to four
- * elements even if the SIMD implementation is even wider.
+ * The floating-point memory locations must be aligned, but only to the smaller
+ * of four elements and the floating-point SIMD width.
  *
  * The offset memory must be aligned to the corresponding integer SIMD type,
  * i.e. GMX_SIMD_FINT32_WIDTH in single, or GMX_SIMD_DINT32_WIDTH in double.
@@ -4347,10 +4373,13 @@ gmx_simd_gather_load_transpose_d(const double *        base,
                                  gmx_simd_double_t    &v3)
 {
     int i;
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_DOUBLE_WIDTH > 4) ? 4 : GMX_SIMD_DOUBLE_WIDTH;
+#endif
 
     assert((size_t)offset % (GMX_SIMD_DINT32_WIDTH*sizeof(gmx_int32_t)) == 0);
-    assert((size_t)base % (4*sizeof(double)) == 0);
-    assert(align % 4 == 0);
+    assert((size_t)base % (align_req*sizeof(double)) == 0);
+    assert(align % align_req == 0);
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
@@ -4373,8 +4402,8 @@ gmx_simd_gather_load_transpose_d(const double *        base,
  * \param[out] v0     1st component of data, base[align*offset[i]] for each i.
  * \param[out] v1     2nd component of data, base[align*offset[i] + 1] for each i.
  *
- * The floating-point memory locations must be aligned, but only to two
- * elements even if the SIMD implementation is even wider.
+ * The floating-point memory locations must be aligned, but only to the smaller
+ * of two elements and the floating-point SIMD width.
  *
  * The offset memory must be aligned to the corresponding integer SIMD type,
  * i.e. GMX_SIMD_FINT32_WIDTH in single, or GMX_SIMD_DINT32_WIDTH in double.
@@ -4390,10 +4419,13 @@ gmx_simd_gather_load_transpose_d(const double *        base,
                                  gmx_simd_double_t    &v1)
 {
     int i;
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_DOUBLE_WIDTH > 2) ? 2 : GMX_SIMD_DOUBLE_WIDTH;
+#endif
 
     assert((size_t)offset % (GMX_SIMD_DINT32_WIDTH*sizeof(gmx_int32_t)) == 0);
-    assert((size_t)base % (2*sizeof(double)) == 0);
-    assert(align % 2 == 0);
+    assert((size_t)base % (align_req*sizeof(double)) == 0);
+    assert(align % align_req == 0);
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
@@ -4564,9 +4596,12 @@ gmx_simd_gather_load_bysimdint_transpose_d(const double *       base,
                                            gmx_simd_double_t   &v3)
 {
     int i;
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_DOUBLE_WIDTH > 4) ? 4 : GMX_SIMD_DOUBLE_WIDTH;
+#endif
 
-    assert((size_t)base % (4*sizeof(double)) == 0);
-    assert(align % 4 == 0);
+    assert((size_t)base % (align_req*sizeof(double)) == 0);
+    assert(align % align_req == 0);
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
@@ -4626,10 +4661,14 @@ gmx_simd_gather_load_bysimdint_transpose_d(const double *       base,
                                            gmx_simd_double_t   &v0,
                                            gmx_simd_double_t   &v1)
 {
-    assert((size_t)base % (2*sizeof(double)) == 0);
-    assert(align % 2 == 0);
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_DOUBLE_WIDTH > 2) ? 2 : GMX_SIMD_DOUBLE_WIDTH;
+#endif
 
-    gmx_simd_gather_loadu_bysimdint_transpose_f<align>(base, offset, v0, v1);
+    assert((size_t)base % (align_req*sizeof(double)) == 0);
+    assert(align % align_req == 0);
+
+    gmx_simd_gather_loadu_bysimdint_transpose_d<align>(base, offset, v0, v1);
 }
 
 
@@ -4646,8 +4685,11 @@ gmx_simd_reduce_incr_4_return_sum_d(double *           m,
 {
     /* Note that the 4 here corresponds to the 4 m-elements, not any SIMD width */
     double sum[4];
+#ifndef NDEBUG
+    int    align_req = (GMX_SIMD_DOUBLE_WIDTH > 4) ? 4 : GMX_SIMD_DOUBLE_WIDTH;
+#endif
 
-    assert((size_t)m % (4*sizeof(double)) == 0);
+    assert((size_t)m % (align_req*sizeof(double)) == 0);
 
     sum[0] = gmx_simd_reduce_d(v0);
     sum[1] = gmx_simd_reduce_d(v1);
@@ -4790,10 +4832,14 @@ gmx_simd_gather_load_transpose_hsimd_d(const double *       base0,
                                        gmx_simd_double_t   &v1)
 {
     int i;
+#ifndef NDEBUG
+    int align_req = (GMX_SIMD_DOUBLE_WIDTH > 2) ? 2 : GMX_SIMD_DOUBLE_WIDTH;
+#endif
 
     assert((size_t)offset % (GMX_SIMD_DINT32_WIDTH/2*sizeof(gmx_int32_t)) == 0);
-    assert((size_t)base0 % (2*sizeof(double)) == 0);
-    assert((size_t)base1 % (2*sizeof(double)) == 0);
+    assert((size_t)base0 % (align_req*sizeof(double)) == 0);
+    assert((size_t)base1 % (align_req*sizeof(double)) == 0);
+    assert(align % align_req == 0);
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH/2; i++)
     {
@@ -4817,8 +4863,11 @@ gmx_simd_reduce_incr_4_return_sum_hsimd_d(double *           m,
     /* The 4 here corresponds to the 4 elements, not any SIMD width */
     double sum[4];
     int    i;
+#ifndef NDEBUG
+    int    align_req = (GMX_SIMD_DOUBLE_WIDTH > 4) ? 4 : GMX_SIMD_DOUBLE_WIDTH;
+#endif
 
-    assert((size_t)m % (4*sizeof(double)) == 0);
+    assert((size_t)m % (align_req*sizeof(double)) == 0);
 
     for (i = 0; i < 4; i++)
     {
