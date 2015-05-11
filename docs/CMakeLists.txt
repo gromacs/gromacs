@@ -105,7 +105,6 @@ if (SPHINX_FOUND)
         index.rst
         download.rst
         dev-manual/index.rst
-        dev-manual/codelayout.rst
         dev-manual/doxygen.rst
         dev-manual/doxygen-links.rst
         dev-manual/formatting.rst
