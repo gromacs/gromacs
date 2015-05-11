@@ -219,7 +219,7 @@ given below in the sections on individual code constructs.
 Modules as Doxygen groups
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As described in :doc:`codelayout`, each subdirectory under ``src/gromacs/``
+As described in :ref:`dev-source-layout`, each subdirectory under ``src/gromacs/``
 represents a *module*, i.e., a somewhat coherent collection of routines.
 Doxygen cannot automatically generate a list of routines in a module; it only
 extracts various alphabetical indexes that contain more or less all documented

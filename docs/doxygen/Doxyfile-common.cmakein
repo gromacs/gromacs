@@ -61,6 +61,7 @@ EXTRACT_STATIC         = YES
 
 ALIASES               += Gromacs=GROMACS
 ALIASES               += linktodevmanual{2}="<A HREF=\"../../dev-manual/\1.html\">\2</A>"
+ALIASES               += linktodevmanual{3}="<A HREF=\"../../dev-manual/\1.html#\2\">\3</A>"
 
 DOT_IMAGE_FORMAT       = svg
 DOT_MULTI_TARGETS      = YES

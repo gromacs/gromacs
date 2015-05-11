@@ -191,7 +191,7 @@ Notes on \Gromacs API
 
 The headers for the public \Gromacs API are installed in `include/gromacs/`
 under the installation directory.  The layout reflects the source code layout
-under the `src/gromacs/` directory (see \linktodevmanual{codelayout,Source
+under the `src/gromacs/` directory (see \linktodevmanual{overview,dev-doc-layout,Source
 code layout}).  The headers
 directly under `include/gromacs/` do not contain any declarations, but instead
 include a collection of headers from subdirectories.
