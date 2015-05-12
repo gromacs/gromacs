@@ -299,13 +299,6 @@ if(GMX_BUILD_WEBPAGE)
     endif()
 endif()
 
-# TODO Get rid of the remaining content in old-html
-add_custom_target(webpage-old-images
-    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/old-html ${HTML_OUTPUT_DIR}
-    COMMENT "Copying flowchart images"
-    VERBATIM
-    )
-
 if(HTML_BUILD_IS_POSSIBLE)
     # Make the PDF reference guide
     # TODO Try to make the PDF arrive directly in ${HTML_OUTPUT_DIR}
@@ -327,12 +320,8 @@ if(HTML_BUILD_IS_POSSIBLE)
 
     # Add a top-level target for the others to hook onto
     add_custom_target(webpage
-        DEPENDS
-           ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf
-           ${extra_webpage_dependencies}
-        VERBATIM
-        )
-    add_dependencies(webpage webpage-sphinx webpage-old-images doxygen-all)
+        DEPENDS ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf)
+    add_dependencies(webpage webpage-sphinx doxygen-all)
 else()
     add_custom_target(webpage
         COMMAND ${CMAKE_COMMAND} -E echo "Cannot build webpage because of missing requirements. Check cmake status output for reasons"
