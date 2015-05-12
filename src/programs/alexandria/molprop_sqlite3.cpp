@@ -85,7 +85,7 @@ void ReadSqlite3(const char                       *sqlite_file,
     char sql_str[1024];
     const char                 *iupac, *cas, *csid, *prop, *unit, *ref, *classification, *source;
     double                      value, error, temperature;
-    int                         cidx, rc, nbind, nexp_prop;
+    int                         cidx, rc, nbind, nexp_prop, theory;
     t_synonym                  *syn  = NULL, key, *keyptr;
     int                         nsyn = 0, maxsyn = 0;
 
@@ -146,7 +146,7 @@ void ReadSqlite3(const char                       *sqlite_file,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error,ref.ref,ds.source FROM molecules as mol,gasproperty as gp,proptypes as pt, datasource as ds,reference as ref WHERE ((ref.refid=gp.refid) AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
+    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error,ref.ref,ds.theory,ds.source FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,reference as ref,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (ref.refid=gp.refid) AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, NULL));
 
@@ -154,9 +154,6 @@ void ReadSqlite3(const char                       *sqlite_file,
     {
         fprintf(debug, "sql_str = '%s'\nvariable = '%s'\n", sql_str,
                 sqlite3_bind_parameter_name(stmt, 1));
-    }
-    if (NULL != debug)
-    {
         nbind = sqlite3_bind_parameter_count(stmt);
         fprintf(debug, "%d binding parameter(s) in the statement\n%s\n", nbind, sql_str);
     }
@@ -214,10 +211,14 @@ void ReadSqlite3(const char                       *sqlite_file,
                         value          = sqlite3_column_double(stmt, cidx++);
                         error          = sqlite3_column_double(stmt, cidx++);
                         ref            = (char *)sqlite3_column_text(stmt, cidx++);
+                        theory         = sqlite3_column_int(stmt, cidx++);
                         source         = (char *)sqlite3_column_text(stmt, cidx++);
-                        nexp_prop++;
 
-                        bool bExp = (0 == gmx_strcasecmp(source, "Experiment"));
+                        bool bExp = (0 == theory);
+                        if (bExp)
+                        {
+                            nexp_prop++;
+                        }
                         //printf("source = %s prop = %s value = %10g bExp = %d\n",
                         //      source, prop, value, (int) bExp);
                         if (bExp)
@@ -236,7 +237,8 @@ void ReadSqlite3(const char                       *sqlite_file,
                                      (strcasecmp(prop, "DeltaGform") == 0) ||
                                      (strcasecmp(prop, "DeltaSform") == 0) ||
                                      (strcasecmp(prop, "S0") == 0) ||
-                                     (strcasecmp(prop, "cp") == 0))
+                                     (strcasecmp(prop, "cp") == 0) ||
+                                     (strcasecmp(prop, "cv") == 0))
                             {
                                 exper.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
                             }
@@ -260,7 +262,8 @@ void ReadSqlite3(const char                       *sqlite_file,
                                      (strcasecmp(prop, "DeltaGform") == 0) ||
                                      (strcasecmp(prop, "DeltaSform") == 0) ||
                                      (strcasecmp(prop, "S0") == 0) ||
-                                     (strcasecmp(prop, "cp") == 0))
+                                     (strcasecmp(prop, "cp") == 0) ||
+                                     (strcasecmp(prop, "cv") == 0))
 
                             {
                                 calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
