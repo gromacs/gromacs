@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,10 +36,15 @@
 #
 # gmx_detect_simd(GMX_SUGGESTED_SIMD)
 #
-# Try to detect CPU information and suggest SIMD instructions
-# (such as SSE/AVX) that fits the current CPU. These functions assume
-# that gmx_detect_target_architecture() has already been run, so that
-# things like GMX_TARGET_X86 are already available.
+# Try to detect CPU information and suggest SIMD instruction set
+# that fits the current CPU. This should work on all architectures
+# where we are not cross-compiling; depending on the architecture the
+# detection will either use special assembly instructions (like cpuid),
+# preprocessor defines, or probing /proc/cpuinfo on Linux.
+# 
+# This assumes gmx_detect_target_architecture() has already been run,
+# so that things like GMX_TARGET_X86 are already available.
+# (otherwise we cannot use inline ASM on x86).
 #
 # Sets ${GMX_SUGGESTED_SIMD} in the parent scope if
 # GMX_SIMD is not set (e.g. by the user, or a previous run
@@ -49,8 +54,9 @@
 # we rely on inline asm support for GNU!
 include(gmxTestInlineASM)
 
-function(gmx_suggest_x86_simd _suggested_simd)
+function(gmx_suggest_simd _suggested_simd)
 
+    # for x86 we need inline asm to use cpuid
     gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
     if(GMX_X86_GCC_INLINE_ASM)
@@ -66,28 +72,36 @@ function(gmx_suggest_x86_simd _suggested_simd)
     if(GMX_TARGET_X86)
         set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
     endif()
-    try_run(GMX_CPUID_RUN_SIMD GMX_CPUID_COMPILED
-            ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS ${_compile_definitions}
-            RUN_OUTPUT_VARIABLE OUTPUT_TMP
-            COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
-            ARGS "-simd")
 
-    if(NOT GMX_CPUID_COMPILED)
-        message(WARNING "Cannot compile CPUID code, which means no SIMD instructions.")
-        message(STATUS "Compile output: ${GMX_CPUID_COMPILE_OUTPUT}")
-        set(OUTPUT_TMP "None")
-    elseif(NOT GMX_CPUID_RUN_SIMD EQUAL 0)
-        message(WARNING "Cannot run CPUID code, which means no SIMD instructions.")
-        message(STATUS "Run output: ${OUTPUT_TMP}")
-        set(OUTPUT_TMP "None")
-    endif(NOT GMX_CPUID_COMPILED)
+    # We need to execute the binary, so this only works if not cross-compiling.
+    # However, note that we are NOT limited to x86.
+    if(NOT CMAKE_CROSSCOMPILING)
+        try_run(GMX_CPUID_RUN_SIMD GMX_CPUID_COMPILED
+                ${CMAKE_BINARY_DIR}
+                ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+                COMPILE_DEFINITIONS ${_compile_definitions}
+                RUN_OUTPUT_VARIABLE OUTPUT_TMP
+                COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
+                ARGS "-simd")
 
-    string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
+        if(NOT GMX_CPUID_COMPILED)
+            message(WARNING "Cannot compile CPUID code, which means no SIMD instructions.")
+            message(STATUS "Compile output: ${GMX_CPUID_COMPILE_OUTPUT}")
+            set(OUTPUT_TMP "None")
+        elseif(NOT GMX_CPUID_RUN_SIMD EQUAL 0)
+            message(WARNING "Cannot run CPUID code, which means no SIMD instructions.")
+            message(STATUS "Run output: ${OUTPUT_TMP}")
+            set(OUTPUT_TMP "None")
+        endif(NOT GMX_CPUID_COMPILED)
 
-    set(${_suggested_simd} "${OUTPUT_SIMD}" PARENT_SCOPE)
-    message(STATUS "Detected best SIMD instructions for this CPU - ${OUTPUT_SIMD}")
+        string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
+
+        set(${_suggested_simd} "${OUTPUT_SIMD}" PARENT_SCOPE)
+        message(STATUS "Detected best SIMD instructions for this CPU - ${OUTPUT_SIMD}")
+    else()
+        set(${_suggested_simd} "None" PARENT_SCOPE)
+        message(WARNING "Cannot detect SIMD architecture for this cross-compile; you should check it manually.")
+    endif()
 endfunction()
 
 function(gmx_detect_simd _suggested_simd)
@@ -100,10 +114,8 @@ function(gmx_detect_simd _suggested_simd)
             set(${_suggested_simd} "Sparc64_HPC_ACE")
         elseif(GMX_TARGET_MIC)
             set(${_suggested_simd} "MIC")
-        elseif(GMX_TARGET_X86)
-            gmx_suggest_x86_simd(${_suggested_simd})
         else()
-            set(${_suggested_simd} "None")
+            gmx_suggest_simd(${_suggested_simd})
         endif()
 
         set(${_suggested_simd} ${${_suggested_simd}} PARENT_SCOPE)
