@@ -412,6 +412,17 @@ elseif(${GMX_SIMD} STREQUAL "IBM_VMX")
 
 elseif(${GMX_SIMD} STREQUAL "IBM_VSX")
 
+    # Altivec was originally single-only, and it took a while for compilers
+    # to support the double-precision features in VSX.
+    if(GMX_DOUBLE)
+        if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+            message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+        endif()
+        if (${CMAKE_CXX_COMPILER_ID} MATCHES "XL" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "12.0")
+            message(FATAL_ERROR "Using VSX SIMD in double precision with XLC requires XLC-13.0 or later.")
+        endif()
+    endif()
+
     gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
                               "#include<altivec.h>
                               int main(){vector double x,y=vec_splats(1.0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
