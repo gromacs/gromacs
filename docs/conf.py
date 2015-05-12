@@ -66,6 +66,7 @@ sys.path.append(gmx_sphinx_extension_path)
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.graphviz',
     'sphinx.ext.pngmath',
     'sphinx.ext.ifconfig',
     'gmxsphinx'
