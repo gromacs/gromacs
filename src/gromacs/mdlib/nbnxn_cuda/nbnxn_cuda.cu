@@ -131,6 +131,9 @@ static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
     int max_grid_x_size;
 
     assert(dinfo);
+    /* CUDA does not accept grid dimension of 0 (which can happen e.g. with an
+       empty domain) and that case should be handled before this point. */
+    assert(nwork_units > 0);
 
     max_grid_x_size = dinfo->prop.maxGridSize[0];
 
