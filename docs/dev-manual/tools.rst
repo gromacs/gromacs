@@ -162,8 +162,6 @@ You need to enable at least some of the following CMake options:
   Option that controls 1) whether shell completions are built automatically,
   and 2) whether built man pages are installed if available (the user still needs
   to build the ``man`` target manually before installing)
-``GMX_BUILD_WEBPAGE``
-  Option needed for compiling all the documentation into the webpage
 
 Some documentation cannot be built if the CMake option
 ``GMX_BUILD_MDRUN_ONLY`` is enabled, or when cross-compiling, as it
