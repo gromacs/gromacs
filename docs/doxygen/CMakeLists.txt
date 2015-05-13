@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -214,9 +214,28 @@ if (DOXYGEN_FOUND)
             --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
             --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt)
         add_custom_target(check-source      COMMAND ${check_source_command}
-            COMMENT "Checking Doxygen documentation" VERBATIM)
+            COMMENT "Checking source code for various issues" VERBATIM)
         add_custom_target(check-source-fast COMMAND ${check_source_command}
-            COMMENT "Checking Doxygen documentation" VERBATIM)
+            COMMENT "Checking source code for various issues" VERBATIM)
         add_dependencies(check-source       doxygen-xml)
     endif()
+else()
+    function (add_disabled_doxygen_target TARGET)
+        add_custom_target(${TARGET}
+            COMMAND ${CMAKE_COMMAND} -E echo
+                "Cannot build/run target ${TARGET} because Doxygen is not available"
+            COMMENT "Doxygen not available" VERBATIM)
+    endfunction()
+    add_disabled_doxygen_target(doxygen-all)
+    add_disabled_doxygen_target(doxygen-all-fast)
+    add_disabled_doxygen_target(doxygen-xml)
+    add_disabled_doxygen_target(doxygen-user)
+    add_disabled_doxygen_target(doxygen-lib)
+    add_disabled_doxygen_target(doxygen-lib-fast)
+    add_disabled_doxygen_target(doxygen-full)
+    add_disabled_doxygen_target(doxygen-full-fast)
+    add_disabled_doxygen_target(check-source)
+    add_disabled_doxygen_target(check-source-fast)
+    add_disabled_doxygen_target(dep-graphs)
+    add_disabled_doxygen_target(dep-graphs-fast)
 endif()

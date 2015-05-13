@@ -32,23 +32,32 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if (BUILD_IS_INSOURCE)
-    # UseLATEX.cmake does not work with an in-source build
-    message(STATUS "Cannot build the manual when building in the source directory")
+# TODO: Consider whether this could just be replaced by using
+# GMX_DEVELOPER_BUILD to control this as well.
+option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
+mark_as_advanced(GMX_BUILD_MANUAL)
+
+set(MANUAL_BUILD_IS_POSSIBLE ON)
+set(MANUAL_BUILD_NOT_POSSIBLE_REASON)
+if (NOT GMX_BUILD_MANUAL)
+    # Make sure we only do detection of manual-building dependencies
+    # when the user opted in for that.
     set(MANUAL_BUILD_IS_POSSIBLE OFF)
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "GMX_BUILD_MANUAL is not ON")
+elseif (BUILD_IS_INSOURCE)
+    # UseLATEX.cmake does not work with an in-source build
+    set(MANUAL_BUILD_IS_POSSIBLE OFF)
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "the build is in-source")
 else()
-    INCLUDE(UseLATEX.cmake)
+    include(UseLATEX.cmake)
 
     if(NOT PDFLATEX_COMPILER OR NOT IMAGEMAGICK_CONVERT)
-        # No pdflatex was found, so don't build the manual.
-        message(STATUS "A required dependency of the manual (pdflatex, ImageMagick's convert) was not found, so the manual build will not be available")
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
+        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "pdflatex or some other dependency (ImageMagick convert) is not available")
 
         # TODO Later, identify other dependencies like bibtex,
         # make_index, date, some graphics conversion program,
         # etc. Perhaps patch UseLATEX.cmake and contribute upstream.
-    else()
-        set(MANUAL_BUILD_IS_POSSIBLE ON)
     endif()
 endif()
 
@@ -95,8 +104,10 @@ if(MANUAL_BUILD_IS_POSSIBLE)
     # to be built.
     add_custom_target(manual DEPENDS pdf)
 else()
-    # TODO Arrange for the "make manual" target to explain that this can't
-    # be done
+    add_custom_target(manual
+        COMMAND ${CMAKE_COMMAND} -E echo
+        "Cannot build PDF manual, because ${MANUAL_BUILD_NOT_POSSIBLE_REASON}"
+        VERBATIM)
 endif()
 
 set(MANUAL_BUILD_IS_POSSIBLE ${MANUAL_BUILD_IS_POSSIBLE} PARENT_SCOPE)
