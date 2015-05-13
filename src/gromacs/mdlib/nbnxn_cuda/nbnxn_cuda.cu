@@ -170,6 +170,7 @@ static inline int calc_nb_kernel_nblock(int nwork_units, gmx_device_info_t *dinf
     int max_grid_x_size;
 
     assert(dinfo);
+    assert(nwork_units > 0);
 
     max_grid_x_size = dinfo->prop.maxGridSize[0];
 
