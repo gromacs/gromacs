@@ -43,6 +43,7 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nmsimplex.h"
+#include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/txtdump.h"

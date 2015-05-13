@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria project.
  *
- * Copyright (C) 2014 David van der Spoel and Paul J. van Maaren
+ * Copyright (C) 2014,2015 David van der Spoel and Paul J. van Maaren
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,21 +22,24 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
+
 #include <math.h>
-#include <string.h>
 #include <stdio.h>
-#include "gromacs/ewald/ewald-util.h"
-#include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/utility/real.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/topology/atomprop.h"
+#include <string.h>
+
 #include "coulombintegrals/coulombintegrals.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/xvgr.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
+
 #include "poldata.h"
 #include "poldata_xml.h"
 

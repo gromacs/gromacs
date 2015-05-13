@@ -106,8 +106,6 @@ target_link_libraries(libalexandria libgromacs)
 
 set_target_properties(libalexandria PROPERTIES
                       OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}"
-                      SOVERSION ${LIBRARY_SOVERSION}
-                      VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
 list(APPEND GMX_EXTRA_LIBRARIES libalexandria libgromacs)
