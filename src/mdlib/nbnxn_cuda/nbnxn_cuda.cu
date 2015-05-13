@@ -292,7 +292,8 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
        we always call the local kernel, the local x+q copy and later (not in
        this function) the stream wait, local f copyback and the f buffer
        clearing. All these operations, except for the local interaction kernel,
-       are needed for the non-local interactions. */
+       are needed for the non-local interactions. The skip of the local kernel
+       call is taken care of later in this function. */
     if (iloc == eintNonlocal && plist->nsci == 0)
     {
         return;
@@ -341,6 +342,12 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
     {
         stat = cudaEventRecord(t->stop_nb_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
+    }
+
+    if (plist->nsci == 0)
+    {
+        /* Don't launch an empty local kernel (not allowed with CUDA) */
+        return;
     }
 
     /* beginning of timed nonbonded calculation section */
