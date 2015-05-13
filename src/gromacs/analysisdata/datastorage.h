@@ -250,11 +250,12 @@ class AnalysisDataStorageFrame
  * forwarded to frameCount(), tryGetDataFrame() and requestStorage().
  * Storage properties should be set up, and then startDataStorage() or
  * startParallelDataStorage() called.
- * New frames can then be added using startFrame(), currentFrame() and
- * finishFrame() methods.  When all frames are ready, finishDataStorage() must
- * be called.  These methods (and AnalysisDataStorageFrame::finishPointSet())
- * take the responsibility of calling all the notification methods in
- * AnalysisDataModuleManager,
+ * New frames can then be added using startFrame(), currentFrame(),
+ * finishFrame(), and finishFrameSerial() methods (the last is only necessary
+ * if startParallelDataStorage() is used).  When all frames are ready,
+ * finishDataStorage() must be called.  These methods (and
+ * AnalysisDataStorageFrame::finishPointSet()) take the responsibility of
+ * calling all the notification methods in AnalysisDataModuleManager,
  *
  * \todo
  * Proper multi-threaded implementation.
@@ -385,7 +386,7 @@ class AnalysisDataStorage
          */
         AnalysisDataStorageFrame &startFrame(int index, real x, real dx);
         /*! \brief
-         * Obtain a frame object for an in-progress frame.
+         * Obtains a frame object for an in-progress frame.
          *
          * \param[in] index  Frame index.
          * \retval  Frame object corresponding to \p index.
@@ -408,6 +409,21 @@ class AnalysisDataStorage
          * \see AnalysisDataStorageFrame::finishFrame()
          */
         void finishFrame(int index);
+        /*! \brief
+         * Performs in-order sequential processing for a data frame.
+         *
+         * \param[in] index  Frame index.
+         *
+         * If startParallelDataStorage() has been called with options that
+         * indicate parallelism, this method must be called after
+         * `finishFrame(index)` (or the equivalent call in
+         * AnalysisDataStorageFrame), such that it is called in the correct
+         * order sequentially for each frame.
+         *
+         * If there is no parallelism, this method does nothing; the equivalent
+         * processing is done already during finishFrame().
+         */
+        void finishFrameSerial(int index);
         /*! \brief
          * Finishes storing data.
          *

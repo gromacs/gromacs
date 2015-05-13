@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ int gmx_trjorder(int argc, char *argv[])
         "of the first n waters is made, the ordered trajectory can be used",
         "with any Gromacs program to analyze the n closest waters.",
         "[PAR]",
-        "If the output file is a [TT].pdb[tt] file, the distance to the reference target",
+        "If the output file is a [REF].pdb[ref] file, the distance to the reference target",
         "will be stored in the B-factor field in order to color with e.g. Rasmol.",
         "[PAR]",
         "With option [TT]-nshell[tt] the number of molecules within a shell",
@@ -374,7 +374,7 @@ int gmx_trjorder(int argc, char *argv[])
     }
     if (fp)
     {
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     gmx_rmpbc_done(gpbc);
 

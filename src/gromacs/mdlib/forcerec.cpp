@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,15 +40,16 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/ewald/ewald-util.h"
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/ewald/ewald.h"
+#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/gpu_utils.h"
 #include "gromacs/legacyheaders/inputrec.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
@@ -57,27 +58,31 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/pmalloc_cuda.h"
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
+#include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "nbnxn_gpu_jit_support.h"
 
 t_forcerec *mk_forcerec(void)
 {
@@ -1534,32 +1539,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
 }
 
 
-static void init_forcerec_f_threads(t_forcerec *fr, int nenergrp)
-{
-    int t, i;
-
-    /* These thread local data structures are used for bondeds only */
-    fr->nthreads = gmx_omp_nthreads_get(emntBonded);
-
-    if (fr->nthreads > 1)
-    {
-        snew(fr->f_t, fr->nthreads);
-        /* Thread 0 uses the global force and energy arrays */
-        for (t = 1; t < fr->nthreads; t++)
-        {
-            fr->f_t[t].f        = NULL;
-            fr->f_t[t].f_nalloc = 0;
-            snew(fr->f_t[t].fshift, SHIFTS);
-            fr->f_t[t].grpp.nener = nenergrp*nenergrp;
-            for (i = 0; i < egNR; i++)
-            {
-                snew(fr->f_t[t].grpp.ener[i], fr->f_t[t].grpp.nener);
-            }
-        }
-    }
-}
-
-
 gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
                                       const t_commrec  *cr,
                                       const t_inputrec *ir,
@@ -1700,7 +1679,7 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
             returnvalue = "not available";
 #endif /* GMX_NBNXN_SIMD */
             break;
-        case nbnxnk8x8x8_CUDA: returnvalue   = "CUDA"; break;
+        case nbnxnk8x8x8_GPU: returnvalue    = "GPU"; break;
         case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
 
         case nbnxnkNR:
@@ -1738,7 +1717,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
     }
     else if (bUseGPU)
     {
-        *kernel_type = nbnxnk8x8x8_CUDA;
+        *kernel_type = nbnxnk8x8x8_GPU;
     }
 
     if (*kernel_type == nbnxnkNotSet)
@@ -1775,7 +1754,8 @@ static void pick_nbnxn_kernel(FILE                *fp,
     }
 }
 
-static void pick_nbnxn_resources(const t_commrec     *cr,
+static void pick_nbnxn_resources(FILE                *fp,
+                                 const t_commrec     *cr,
                                  const gmx_hw_info_t *hwinfo,
                                  gmx_bool             bDoNonbonded,
                                  gmx_bool            *bUseGPU,
@@ -1801,24 +1781,26 @@ static void pick_nbnxn_resources(const t_commrec     *cr,
      * Note that you should freezing the system as otherwise it will explode.
      */
     *bEmulateGPU = (bEmulateGPUEnvVarSet ||
-                    (!bDoNonbonded &&
-                     gpu_opt->ncuda_dev_use > 0));
+                    (!bDoNonbonded && gpu_opt->n_dev_use > 0));
 
     /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
      */
-    if (gpu_opt->ncuda_dev_use > 0 && !(*bEmulateGPU))
+    if (gpu_opt->n_dev_use > 0 && !(*bEmulateGPU))
     {
         /* Each PP node will use the intra-node id-th device from the
          * list of detected/selected GPUs. */
-        if (!init_gpu(cr->rank_pp_intranode, gpu_err_str,
+        if (!init_gpu(fp, cr->rank_pp_intranode, gpu_err_str,
                       &hwinfo->gpu_info, gpu_opt))
         {
             /* At this point the init should never fail as we made sure that
              * we have all the GPUs we need. If it still does, we'll bail. */
+            /* TODO the decorating of gpu_err_str is nicer if it
+               happens inside init_gpu. Out here, the decorating with
+               the MPI rank makes sense. */
             gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
                       cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
-                                        cr->rank_pp_intranode),
+                      get_cuda_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
+                                             cr->rank_pp_intranode),
                       gpu_err_str);
         }
 
@@ -1958,15 +1940,18 @@ static void potential_switch_constants(real rsw, real rc,
     sc->c5 =  -6*pow(rc - rsw, -5);
 }
 
+/*! \brief Construct interaction constants
+ *
+ * This data is used (particularly) by search and force code for
+ * short-range interactions. Many of these are constant for the whole
+ * simulation; some are constant only after PME tuning completes.
+ */
 static void
 init_interaction_const(FILE                       *fp,
-                       const t_commrec gmx_unused *cr,
                        interaction_const_t       **interaction_const,
-                       const t_forcerec           *fr,
-                       real                        rtab)
+                       const t_forcerec           *fr)
 {
     interaction_const_t *ic;
-    gmx_bool             bUsesSimpleTables = TRUE;
     const real           minusSix          = -6.0;
     const real           minusTwelve       = -12.0;
 
@@ -2090,10 +2075,19 @@ init_interaction_const(FILE                       *fp,
     }
 
     *interaction_const = ic;
+}
 
-    if (fr->nbv != NULL && fr->nbv->bUseGPU)
+/*! \brief Manage initialization within the NBNXN module of
+ * run-time constants.
+ */
+static void
+initialize_gpu_constants(const t_commrec gmx_unused      *cr,
+                         interaction_const_t             *interaction_const,
+                         const struct nonbonded_verlet_t *nbv)
+{
+    if (nbv != NULL && nbv->bUseGPU)
     {
-        nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv->grp);
+        nbnxn_gpu_init_const(nbv->gpu_nbv, interaction_const, nbv->grp);
 
         /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
          * also sharing texture references. To keep the code simple, we don't
@@ -2105,7 +2099,7 @@ init_interaction_const(FILE                       *fp,
          *
          * Note that we could omit this barrier if GPUs are not shared (or
          * texture objects are used), but as this is initialization code, there
-         * is not point in complicating things.
+         * is no point in complicating things.
          */
 #ifdef GMX_THREAD_MPI
         if (PAR(cr))
@@ -2115,8 +2109,6 @@ init_interaction_const(FILE                       *fp,
 #endif  /* GMX_THREAD_MPI */
     }
 
-    bUsesSimpleTables = uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1);
-    init_interaction_const_tables(fp, ic, bUsesSimpleTables, rtab);
 }
 
 static void init_nb_verlet(FILE                *fp,
@@ -2137,7 +2129,7 @@ static void init_nb_verlet(FILE                *fp,
 
     snew(nbv, 1);
 
-    pick_nbnxn_resources(cr, fr->hwinfo,
+    pick_nbnxn_resources(fp, cr, fr->hwinfo,
                          fr->bNonbonded,
                          &nbv->bUseGPU,
                          &bEmulateGPU,
@@ -2184,12 +2176,14 @@ static void init_nb_verlet(FILE                *fp,
 
     if (nbv->bUseGPU)
     {
+        nbnxn_gpu_compile_kernels(cr->rank_pp_intranode, cr->nodeid, &fr->hwinfo->gpu_info, fr->gpu_opt, fr->ic);
+
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        nbnxn_cuda_init(fp, &nbv->cu_nbv,
-                        &fr->hwinfo->gpu_info, fr->gpu_opt,
-                        cr->rank_pp_intranode,
-                        (nbv->ngrp > 1) && !bHybridGPURun);
+        nbnxn_gpu_init(fp, &nbv->gpu_nbv,
+                       &fr->hwinfo->gpu_info, fr->gpu_opt,
+                       cr->rank_pp_intranode,
+                       (nbv->ngrp > 1) && !bHybridGPURun);
 
         if ((env = getenv("GMX_NB_MIN_CI")) != NULL)
         {
@@ -2209,7 +2203,7 @@ static void init_nb_verlet(FILE                *fp,
         }
         else
         {
-            nbv->min_ci_balanced = nbnxn_cuda_min_ci_balanced(nbv->cu_nbv);
+            nbv->min_ci_balanced = nbnxn_gpu_min_ci_balanced(nbv->gpu_nbv);
             if (debug)
             {
                 fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
@@ -2232,16 +2226,8 @@ static void init_nb_verlet(FILE                *fp,
 
     for (i = 0; i < nbv->ngrp; i++)
     {
-        if (nbv->grp[0].kernel_type == nbnxnk8x8x8_CUDA)
-        {
-            nb_alloc = &pmalloc;
-            nb_free  = &pfree;
-        }
-        else
-        {
-            nb_alloc = NULL;
-            nb_free  = NULL;
-        }
+        gpu_set_host_malloc_and_free(nbv->grp[0].kernel_type == nbnxnk8x8x8_GPU,
+                                     &nb_alloc, &nb_free);
 
         nbnxn_init_pairlist_set(&nbv->grp[i].nbl_lists,
                                 nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
@@ -2296,6 +2282,11 @@ static void init_nb_verlet(FILE                *fp,
             nbv->grp[i].nbat = nbv->grp[0].nbat;
         }
     }
+}
+
+gmx_bool usingGpu(nonbonded_verlet_t *nbv)
+{
+    return nbv != NULL && nbv->bUseGPU;
 }
 
 void init_forcerec(FILE              *fp,
@@ -2478,7 +2469,8 @@ void init_forcerec(FILE              *fp,
         {
             fprintf(fp,
                     "\nFound environment variable GMX_DISABLE_SIMD_KERNELS.\n"
-                    "Disabling the usage of any SIMD-specific kernel routines (e.g. SSE2/SSE4.1/AVX).\n\n");
+                    "Disabling the usage of any SIMD-specific non-bonded & bonded kernel routines\n"
+                    "(e.g. SSE2/SSE4.1/AVX).\n\n");
         }
     }
 
@@ -3219,9 +3211,12 @@ void init_forcerec(FILE              *fp,
     }
 
     /* Initialize the thread working data for bonded interactions */
-    init_forcerec_f_threads(fr, mtop->groups.grps[egcENER].nr);
+    init_bonded_threading(fp, fr, mtop->groups.grps[egcENER].nr);
 
     snew(fr->excl_load, fr->nthreads+1);
+
+    /* fr->ic is used both by verlet and group kernels (to some extent) now */
+    init_interaction_const(fp, &fr->ic, fr);
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
@@ -3233,8 +3228,10 @@ void init_forcerec(FILE              *fp,
         init_nb_verlet(fp, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
     }
 
-    /* fr->ic is used both by verlet and group kernels (to some extent) now */
-    init_interaction_const(fp, cr, &fr->ic, fr, rtab);
+    initialize_gpu_constants(cr, fr->ic, fr->nbv);
+    init_interaction_const_tables(fp, fr->ic,
+                                  uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1),
+                                  rtab);
 
     if (ir->eDispCorr != edispcNO)
     {
@@ -3309,14 +3306,16 @@ void forcerec_set_excl_load(t_forcerec           *fr,
     }
 }
 
-/* Frees GPU memory and destroys the CUDA context.
+/* Frees GPU memory and destroys the GPU context.
  *
  * Note that this function needs to be called even if GPUs are not used
  * in this run because the PME ranks have no knowledge of whether GPUs
  * are used or not, but all ranks need to enter the barrier below.
  */
-void free_gpu_resources(const t_forcerec *fr,
-                        const t_commrec  *cr)
+void free_gpu_resources(const t_forcerec     *fr,
+                        const t_commrec      *cr,
+                        const gmx_gpu_info_t *gpu_info,
+                        const gmx_gpu_opt_t  *gpu_opt)
 {
     gmx_bool bIsPPrankUsingGPU;
     char     gpu_err_str[STRLEN];
@@ -3326,7 +3325,7 @@ void free_gpu_resources(const t_forcerec *fr,
     if (bIsPPrankUsingGPU)
     {
         /* free nbnxn data in GPU memory */
-        nbnxn_cuda_free(fr->nbv->cu_nbv);
+        nbnxn_gpu_free(fr->nbv->gpu_nbv);
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
          * destroying the context in free_gpu() as some ranks may be sharing
@@ -3342,10 +3341,10 @@ void free_gpu_resources(const t_forcerec *fr,
 #endif  /* GMX_THREAD_MPI */
 
         /* uninitialize GPU (by destroying the context) */
-        if (!free_gpu(gpu_err_str))
+        if (!free_cuda_gpu(cr->rank_pp_intranode, gpu_err_str, gpu_info, gpu_opt))
         {
             gmx_warning("On rank %d failed to free GPU #%d: %s",
-                        cr->nodeid, get_current_gpu_device_id(), gpu_err_str);
+                        cr->nodeid, get_current_cuda_gpu_device_id(), gpu_err_str);
         }
     }
 }

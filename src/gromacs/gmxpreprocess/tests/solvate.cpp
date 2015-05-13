@@ -37,6 +37,7 @@
  * Tests for solvation.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 
 #include "gmxpre.h"
@@ -46,68 +47,64 @@
 #include "gromacs/utility/futil.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/integrationtests.h"
+#include "testutils/testfilemanager.h"
 
 namespace
 {
 
-//! Helper typedef
-typedef int (*CMainFunction)(int argc, char *argv[]);
+using gmx::test::CommandLine;
 
-//! Test fixture for gmx solvate
-class SolvateTest : public gmx::test::IntegrationTestFixture
+class SolvateTest : public gmx::test::CommandLineTestBase
 {
     public:
-        //! Constructor
         SolvateTest()
-            : cpFileName(fileManager_.getInputFilePath("spc-and-methanol.gro")),
-              topFileName(fileManager_.getInputFilePath("spc-and-methanol.top")),
-              outputFileName(fileManager_.getTemporaryFilePath("out.gro")),
-              theFunction(gmx_solvate)
         {
-            caller.append("solvate");
-            caller.addOption("-o", outputFileName);
+            setOutputFile("-o", "out.gro");
         }
 
-    public:
-        //! Name of file to use for -cp
-        std::string            cpFileName;
-        //! Name of input file to use for -p (if used)
-        std::string            topFileName;
-        //! Name of output file to use for -o
-        std::string            outputFileName;
-        //! Helper object for managing the call to gmx_solvate
-        gmx::test::CommandLine caller;
-        //! Points to the function to be tested
-        CMainFunction          theFunction;
+        void runTest(const CommandLine &args)
+        {
+            CommandLine &cmdline = commandLine();
+            cmdline.merge(args);
+
+            ASSERT_EQ(0, gmx_solvate(cmdline.argc(), cmdline.argv()));
+        }
 };
 
 TEST_F(SolvateTest, cs_box_Works)
 {
-    caller.append("-cs"); // use default solvent box
-    caller.addOption("-box", "1.1");
-
-    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
+    // use default solvent box (-cs without argument)
+    const char *const cmdline[] = {
+        "solvate", "-cs", "-box", "1.1"
+    };
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SolvateTest, cs_cp_Works)
 {
-    caller.append("-cs"); // use default solvent box
-    caller.addOption("-cp", cpFileName);
-
-    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
+    // use default solvent box (-cs without argument)
+    const char *const cmdline[] = {
+        "solvate", "-cs"
+    };
+    setInputFile("-cp", "spc-and-methanol.gro");
+    runTest(CommandLine(cmdline));
 }
 
 TEST_F(SolvateTest, cs_cp_p_Works)
 {
-    caller.append("-cs"); // use default solvent box
-    caller.addOption("-cp", cpFileName);
+    // use default solvent box (-cs without argument)
+    const char *const cmdline[] = {
+        "solvate", "-cs"
+    };
+    setInputFile("-cp", "spc-and-methanol.gro");
 
-    std::string modifiableTopFileName = fileManager_.getTemporaryFilePath(".top");
+    // TODO: Consider adding a convenience method for this.
+    std::string topFileName           = fileManager().getInputFilePath("spc-and-methanol.top");
+    std::string modifiableTopFileName = fileManager().getTemporaryFilePath(".top");
     gmx_file_copy(topFileName.c_str(), modifiableTopFileName.c_str(), true);
-    caller.addOption("-p", modifiableTopFileName);
+    commandLine().addOption("-p", modifiableTopFileName);
 
-    ASSERT_EQ(0, theFunction(caller.argc(), caller.argv()));
+    runTest(CommandLine(cmdline));
 }
 
 } // namespace

@@ -25,32 +25,42 @@ tasks:
 The %main() method also catches all exceptions, and if one is caught, prints an
 error message and terminates the program cleanly.
 
-Command line manager
+Command line modules
+====================
+
+All modules within the wrapper binary are implemented as classes that implement
+the gmx::CommandLineModuleInterface interface.  There is generally some helper
+class in between:
+ * General C++ modules typically use gmx::Options for their command-line
+   handling.  Instead of each module implementing parsing and help separately
+   with identical code, they implement gmx::CommandLineOptionsModuleInterface
+   instead.  The framework then provides a bridge class that contains the
+   common code and wraps gmx::CommandLineOptionsModuleInterface into a
+   gmx::CommandLineModuleInterface.
+ * For C++ trajectory analysis modules, there is a general implementation for
+   running the gmx::TrajectoryAnalysisModule subclasses in cmdlinerunner.cpp.
+ * For old C-style %main() functions, see \ref section_wrapperbinary_cmain.
+
+Command line manager {#section_wrapperbinary_manager}
 ====================
 
 The core of the wrapper binary is the gmx::CommandLineModuleManager::run()
 method.  This method:
- 1. Checks whether the binary is invoked through a symlink.  If it is, it
-    searches the registered modules for names matching the name of the symlink
-    (with certain prefixes in the symlink name ignored).  If a match is found,
-    it continues as if the command was invoked as `gmx` _module_ `...`, where
-    _module_ is the name of the found module and `...` are the rest of the
-    arguments.
- 2. Parses the command line arguments before the module name as arguments to
+ 1. Parses the command line arguments before the module name as arguments to
     the wrapper binary.  Some arguments such as `-h` and `-version` cause rest
     of the command (the module name and all that follows) to be ignored.
- 3. If a module is specified, also checks the command line arguments after the
+ 2. If a module is specified, also checks the command line arguments after the
     module name for the options understood by the wrapper binary, such as `-h`
     and `-version` (see below for details of how `-h` works).  Any such options
     are handled by the manager and removed from the command line for further
     processing.
- 4. Print the startup header (contents of which can be controlled by the
+ 3. Print the startup header (contents of which can be controlled by the
     command line options).
- 5. If a command line option requests termination after the startup header
+ 4. If a command line option requests termination after the startup header
     (such as `-version`), return.
- 6. Passes control to the selected module.  If there is no module specified,
+ 5. Passes control to the selected module.  If there is no module specified,
     the help module is invoked (see below).
- 7. Print a quote at the end, and return the exit code from the module.
+ 6. Print a quote at the end, and return the exit code from the module.
 
 Command line help
 -----------------
@@ -80,15 +90,13 @@ provides methods to add additional help topics.  Currently, this is used to
 expose some reference material for the selections (the same content that is
 accessible using `help` in the selection prompt).
 
-Help export for other formats
------------------------------
+Help in other formats
+---------------------
 
-The build system provides two targets, `make man` and `make html`, to generate
-man pages and online HTML help for the commands.  These targets are run
-automatically as part of `make` if `GMX_BUILD_HELP=ON` is set in CMake.
-Otherwise, they can be run manually.  Internally, these execute
-`gmx help -export` _format_, which triggers special handling in the internal
-help module.
+The build system provides a target, `make sphinx-programs`, that generates
+reStructuredText help for the commands, which in turn is used to generate man
+and HTML help.  Internally, this executes `gmx help -export rst`, which
+triggers special handling in the internal help module.
 
 If this option is set, the help module loops through all the modules in the
 binary, writing help for each into a separate file.  The help module writes
@@ -99,18 +107,9 @@ using a different help context than for console output).
 Additionally, a list of all the modules is generated (`gromacs.7` for man
 pages, and alphabetical and by-topic lists for the HTML pages).
 
-Part of the functionality depends on template files and other data files that
-the help module reads from `share/man/` and `share/html/` and uses to generate
-its output.
+TODO: Document/link to existing documentation for targets that use the rst help
 
-Part of the HTML help is stored as partial HTML files under `share/html/`.
-To produce the full HTML pages, the `gmx help -export html` command creates
-`header.html` from a `header.html.in` template file.  This file is used by a
-separate CMake script that is run by `make html` to add headers and footers to
-these partial HTML files.
-The final HTML help is produced in `share/html/final/`.
-
-Handling C %main() functions
+Handling C %main() functions {#section_wrapperbinary_cmain}
 ----------------------------
 
 Many pre-5.0 modules are still implemented as a function with a C %main()

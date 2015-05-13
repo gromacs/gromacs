@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@ scripts.  In the latter case, the IncludeSorter provides the main interface.
 
 The sorting assumes some conventions (e.g., that system headers are included
 with angle brackets instead of quotes).  Generally, these conventions are
-checked by the doxygen-check.py script.
+checked by the check-source.py script.
 """
 
 import os.path
@@ -203,7 +203,7 @@ class GroupedSorter(object):
         elif included_file.get_name() == 'gmxpre.h':
             group = IncludeGroup.pre
             path = self._get_path(included_file, group, None)
-        elif included_file.get_name() in ('config.h', 'gmx_header_config.h'):
+        elif included_file.get_name() == 'config.h':
             group = IncludeGroup.config
             path = self._get_path(included_file, group, None)
         else:
@@ -300,10 +300,20 @@ class IncludeSorter(object):
         """Check that includes within a file are sorted."""
         # TODO: Make the checking work without full contents of the file
         lines = fileobj.get_contents()
-        self._changed = False
+        is_sorted = True
+        details = None
         for block in fileobj.get_include_blocks():
-            self._sort_include_block(block, lines)
-        return not self._changed
+            self._changed = False
+            sorted_lines = self._sort_include_block(block, lines)
+            if self._changed:
+                is_sorted = False
+                # TODO: Do a proper diff to show the actual changes.
+                if details is None:
+                    details = ["Correct order/style is:"]
+                else:
+                    details.append("    ...")
+                details.extend(["    " + x.rstrip() for x in sorted_lines])
+        return (is_sorted, details)
 
 def main():
     """Run the include sorter script."""

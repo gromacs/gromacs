@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,8 @@
  */
 /*! \internal \file
  *
- * \brief This file defines functions necessary for mdrun and tools to
- * compute energies and forces for bonded interactions.
+ * \brief This file defines low-level functions necessary for
+ * computing energies and forces for listed interactions.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  *
@@ -47,26 +47,17 @@
 
 #include "bonded.h"
 
-#include "config.h"
-
 #include <assert.h>
 
 #include <cmath>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
+#include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
@@ -114,83 +105,6 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
         return CENTRAL;
     }
 }
-
-#ifdef GMX_SIMD_HAVE_REAL
-
-/* SIMD PBC data structure, containing 1/boxdiag and the box vectors */
-typedef struct {
-    gmx_simd_real_t inv_bzz;
-    gmx_simd_real_t inv_byy;
-    gmx_simd_real_t inv_bxx;
-    gmx_simd_real_t bzx;
-    gmx_simd_real_t bzy;
-    gmx_simd_real_t bzz;
-    gmx_simd_real_t byx;
-    gmx_simd_real_t byy;
-    gmx_simd_real_t bxx;
-} pbc_simd_t;
-
-/*! \brief Set the SIMD pbc data from a normal t_pbc struct */
-static void set_pbc_simd(const t_pbc *pbc, pbc_simd_t *pbc_simd)
-{
-    rvec inv_bdiag;
-    int  d;
-
-    /* Setting inv_bdiag to 0 effectively turns off PBC */
-    clear_rvec(inv_bdiag);
-    if (pbc != NULL)
-    {
-        for (d = 0; d < pbc->ndim_ePBC; d++)
-        {
-            inv_bdiag[d] = 1.0/pbc->box[d][d];
-        }
-    }
-
-    pbc_simd->inv_bzz = gmx_simd_set1_r(inv_bdiag[ZZ]);
-    pbc_simd->inv_byy = gmx_simd_set1_r(inv_bdiag[YY]);
-    pbc_simd->inv_bxx = gmx_simd_set1_r(inv_bdiag[XX]);
-
-    if (pbc != NULL)
-    {
-        pbc_simd->bzx = gmx_simd_set1_r(pbc->box[ZZ][XX]);
-        pbc_simd->bzy = gmx_simd_set1_r(pbc->box[ZZ][YY]);
-        pbc_simd->bzz = gmx_simd_set1_r(pbc->box[ZZ][ZZ]);
-        pbc_simd->byx = gmx_simd_set1_r(pbc->box[YY][XX]);
-        pbc_simd->byy = gmx_simd_set1_r(pbc->box[YY][YY]);
-        pbc_simd->bxx = gmx_simd_set1_r(pbc->box[XX][XX]);
-    }
-    else
-    {
-        pbc_simd->bzx = gmx_simd_setzero_r();
-        pbc_simd->bzy = gmx_simd_setzero_r();
-        pbc_simd->bzz = gmx_simd_setzero_r();
-        pbc_simd->byx = gmx_simd_setzero_r();
-        pbc_simd->byy = gmx_simd_setzero_r();
-        pbc_simd->bxx = gmx_simd_setzero_r();
-    }
-}
-
-/*! \brief Correct distance vector *dx,*dy,*dz for PBC using SIMD */
-static gmx_inline void
-pbc_dx_simd(gmx_simd_real_t *dx, gmx_simd_real_t *dy, gmx_simd_real_t *dz,
-            const pbc_simd_t *pbc)
-{
-    gmx_simd_real_t sh;
-
-    sh  = gmx_simd_round_r(gmx_simd_mul_r(*dz, pbc->inv_bzz));
-    *dx = gmx_simd_fnmadd_r(sh, pbc->bzx, *dx);
-    *dy = gmx_simd_fnmadd_r(sh, pbc->bzy, *dy);
-    *dz = gmx_simd_fnmadd_r(sh, pbc->bzz, *dz);
-
-    sh  = gmx_simd_round_r(gmx_simd_mul_r(*dy, pbc->inv_byy));
-    *dx = gmx_simd_fnmadd_r(sh, pbc->byx, *dx);
-    *dy = gmx_simd_fnmadd_r(sh, pbc->byy, *dy);
-
-    sh  = gmx_simd_round_r(gmx_simd_mul_r(*dx, pbc->inv_bxx));
-    *dx = gmx_simd_fnmadd_r(sh, pbc->bxx, *dx);
-}
-
-#endif /* GMX_SIMD_HAVE_REAL */
 
 /*! \brief Morse potential bond
  *
@@ -1050,10 +964,10 @@ real angles(int nbonds,
 
 #ifdef GMX_SIMD_HAVE_REAL
 
-/* As angles, but using SIMD to calculate many dihedrals at once.
+/* As angles, but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
  */
-static gmx_inline void
+void
 angles_noener_simd(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
                    const rvec x[], rvec f[],
@@ -1114,9 +1028,6 @@ angles_noener_simd(int nbonds,
             coeff[s]                     = forceparams[type].harmonic.krA;
             coeff[GMX_SIMD_REAL_WIDTH+s] = forceparams[type].harmonic.rA*DEG2RAD;
 
-            /* If you can't use pbc_dx_simd below for PBC, e.g. because
-             * you can't round in SIMD, use pbc_rvec_sub here.
-             */
             /* Store the non PBC corrected distances packed and aligned */
             for (m = 0; m < DIM; m++)
             {
@@ -1141,8 +1052,8 @@ angles_noener_simd(int nbonds,
         rkjy_S    = gmx_simd_load_r(dr + 4*GMX_SIMD_REAL_WIDTH);
         rkjz_S    = gmx_simd_load_r(dr + 5*GMX_SIMD_REAL_WIDTH);
 
-        pbc_dx_simd(&rijx_S, &rijy_S, &rijz_S, &pbc_simd);
-        pbc_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, &pbc_simd);
+        pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, &pbc_simd);
+        pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, &pbc_simd);
 
         rij_rkj_S = gmx_simd_iprod_r(rijx_S, rijy_S, rijz_S,
                                      rkjx_S, rkjy_S, rkjz_S);
@@ -1557,9 +1468,6 @@ dih_angle_simd(const rvec *x,
 
     for (s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
     {
-        /* If you can't use pbc_dx_simd below for PBC, e.g. because
-         * you can't round in SIMD, use pbc_rvec_sub here.
-         */
         for (m = 0; m < DIM; m++)
         {
             dr[s + (0*DIM + m)*GMX_SIMD_REAL_WIDTH] = x[ai[s]][m] - x[aj[s]][m];
@@ -1578,9 +1486,9 @@ dih_angle_simd(const rvec *x,
     rkly_S = gmx_simd_load_r(dr + 7*GMX_SIMD_REAL_WIDTH);
     rklz_S = gmx_simd_load_r(dr + 8*GMX_SIMD_REAL_WIDTH);
 
-    pbc_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc);
-    pbc_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc);
-    pbc_dx_simd(&rklx_S, &rkly_S, &rklz_S, pbc);
+    pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc);
+    pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc);
+    pbc_correct_dx_simd(&rklx_S, &rkly_S, &rklz_S, pbc);
 
     gmx_simd_cprod_r(rijx_S, rijy_S, rijz_S,
                      rkjx_S, rkjy_S, rkjz_S,
@@ -1923,7 +1831,7 @@ void make_dp_periodic(real *dp)  /* 1 flop? */
 }
 
 /* As pdihs above, but without calculating energies and shift forces */
-static void
+void
 pdihs_noener(int nbonds,
              const t_iatom forceatoms[], const t_iparams forceparams[],
              const rvec x[], rvec f[],
@@ -1979,7 +1887,7 @@ pdihs_noener(int nbonds,
 #ifdef GMX_SIMD_HAVE_REAL
 
 /* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
-static void
+void
 pdihs_noener_simd(int nbonds,
                   const t_iatom forceatoms[], const t_iparams forceparams[],
                   const rvec x[], rvec f[],
@@ -2106,7 +2014,7 @@ pdihs_noener_simd(int nbonds,
  * the RB potential instead of a harmonic potential.
  * This function can replace rbdihs() when no energy and virial are needed.
  */
-static void
+void
 rbdihs_noener_simd(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
                    const rvec x[], rvec f[],
@@ -2319,314 +2227,6 @@ real idihs(int nbonds,
     }
 
     *dvdlambda += dvdl_term;
-    return vtot;
-}
-
-
-/*! \brief returns dx, rdist, and dpdl for functions posres() and fbposres()
- */
-static void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
-                      const rvec comA_sc, const rvec comB_sc,
-                      real lambda,
-                      t_pbc *pbc, int refcoord_scaling, int npbcdim,
-                      rvec dx, rvec rdist, rvec dpdl)
-{
-    int  m, d;
-    real posA, posB, L1, ref = 0.;
-    rvec pos;
-
-    L1 = 1.0-lambda;
-
-    for (m = 0; m < DIM; m++)
-    {
-        posA = pos0A[m];
-        posB = pos0B[m];
-        if (m < npbcdim)
-        {
-            switch (refcoord_scaling)
-            {
-                case erscNO:
-                    ref      = 0;
-                    rdist[m] = L1*posA + lambda*posB;
-                    dpdl[m]  = posB - posA;
-                    break;
-                case erscALL:
-                    /* Box relative coordinates are stored for dimensions with pbc */
-                    posA *= pbc->box[m][m];
-                    posB *= pbc->box[m][m];
-                    assert(npbcdim <= DIM);
-                    for (d = m+1; d < npbcdim; d++)
-                    {
-                        posA += pos0A[d]*pbc->box[d][m];
-                        posB += pos0B[d]*pbc->box[d][m];
-                    }
-                    ref      = L1*posA + lambda*posB;
-                    rdist[m] = 0;
-                    dpdl[m]  = posB - posA;
-                    break;
-                case erscCOM:
-                    ref      = L1*comA_sc[m] + lambda*comB_sc[m];
-                    rdist[m] = L1*posA       + lambda*posB;
-                    dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
-                    break;
-                default:
-                    gmx_fatal(FARGS, "No such scaling method implemented");
-            }
-        }
-        else
-        {
-            ref      = L1*posA + lambda*posB;
-            rdist[m] = 0;
-            dpdl[m]  = posB - posA;
-        }
-
-        /* We do pbc_dx with ref+rdist,
-         * since with only ref we can be up to half a box vector wrong.
-         */
-        pos[m] = ref + rdist[m];
-    }
-
-    if (pbc)
-    {
-        pbc_dx(pbc, x, pos, dx);
-    }
-    else
-    {
-        rvec_sub(x, pos, dx);
-    }
-}
-
-/*! \brief Computes forces and potential for flat-bottom cylindrical restraints.
- *         Returns the flat-bottom potential. */
-static real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bool bInvert)
-{
-    int     d;
-    real    dr, dr2, invdr, v, rfb2;
-
-    dr2  = 0.0;
-    rfb2 = sqr(rfb);
-    v    = 0.0;
-
-    for (d = 0; d < DIM; d++)
-    {
-        if (d != fbdim)
-        {
-            dr2 += sqr(dx[d]);
-        }
-    }
-
-    if  (dr2 > 0.0 &&
-         ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
-         )
-    {
-        dr     = sqrt(dr2);
-        invdr  = 1./dr;
-        v      = 0.5*kk*sqr(dr - rfb);
-        for (d = 0; d < DIM; d++)
-        {
-            if (d != fbdim)
-            {
-                fm[d] = -kk*(dr-rfb)*dx[d]*invdr; /* Force pointing to the center */
-            }
-        }
-    }
-
-    return v;
-}
-
-/*! \brief Adds forces of flat-bottomed positions restraints to f[]
- *         and fixes vir_diag. Returns the flat-bottomed potential. */
-real fbposres(int nbonds,
-              const t_iatom forceatoms[], const t_iparams forceparams[],
-              const rvec x[], rvec f[], rvec vir_diag,
-              t_pbc *pbc,
-              int refcoord_scaling, int ePBC, rvec com)
-/* compute flat-bottomed positions restraints */
-{
-    int              i, ai, m, d, type, npbcdim = 0, fbdim;
-    const t_iparams *pr;
-    real             vtot, kk, v;
-    real             dr, dr2, rfb, rfb2, fact;
-    rvec             com_sc, rdist, dx, dpdl, fm;
-    gmx_bool         bInvert;
-
-    npbcdim = ePBC2npbcdim(ePBC);
-
-    if (refcoord_scaling == erscCOM)
-    {
-        clear_rvec(com_sc);
-        for (m = 0; m < npbcdim; m++)
-        {
-            assert(npbcdim <= DIM);
-            for (d = m; d < npbcdim; d++)
-            {
-                com_sc[m] += com[d]*pbc->box[d][m];
-            }
-        }
-    }
-
-    vtot = 0.0;
-    for (i = 0; (i < nbonds); )
-    {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        pr   = &forceparams[type];
-
-        /* same calculation as for normal posres, but with identical A and B states, and lambda==0 */
-        posres_dx(x[ai], forceparams[type].fbposres.pos0, forceparams[type].fbposres.pos0,
-                  com_sc, com_sc, 0.0,
-                  pbc, refcoord_scaling, npbcdim,
-                  dx, rdist, dpdl);
-
-        clear_rvec(fm);
-        v = 0.0;
-
-        kk   = pr->fbposres.k;
-        rfb  = pr->fbposres.r;
-        rfb2 = sqr(rfb);
-
-        /* with rfb<0, push particle out of the sphere/cylinder/layer */
-        bInvert = FALSE;
-        if (rfb < 0.)
-        {
-            bInvert = TRUE;
-            rfb     = -rfb;
-        }
-
-        switch (pr->fbposres.geom)
-        {
-            case efbposresSPHERE:
-                /* spherical flat-bottom posres */
-                dr2 = norm2(dx);
-                if (dr2 > 0.0 &&
-                    ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
-                    )
-                {
-                    dr   = sqrt(dr2);
-                    v    = 0.5*kk*sqr(dr - rfb);
-                    fact = -kk*(dr-rfb)/dr; /* Force pointing to the center pos0 */
-                    svmul(fact, dx, fm);
-                }
-                break;
-            case efbposresCYLINDERX:
-                /* cylindrical flat-bottom posres in y-z plane. fm[XX] = 0. */
-                fbdim = XX;
-                v     = do_fbposres_cylinder(fbdim, fm, dx, rfb, kk, bInvert);
-                break;
-            case efbposresCYLINDERY:
-                /* cylindrical flat-bottom posres in x-z plane. fm[YY] = 0. */
-                fbdim = YY;
-                v     = do_fbposres_cylinder(fbdim, fm, dx, rfb, kk, bInvert);
-                break;
-            case efbposresCYLINDER:
-            /* equivalent to efbposresCYLINDERZ for backwards compatibility */
-            case efbposresCYLINDERZ:
-                /* cylindrical flat-bottom posres in x-y plane. fm[ZZ] = 0. */
-                fbdim = ZZ;
-                v     = do_fbposres_cylinder(fbdim, fm, dx, rfb, kk, bInvert);
-                break;
-            case efbposresX: /* fbdim=XX */
-            case efbposresY: /* fbdim=YY */
-            case efbposresZ: /* fbdim=ZZ */
-                /* 1D flat-bottom potential */
-                fbdim = pr->fbposres.geom - efbposresX;
-                dr    = dx[fbdim];
-                if ( ( dr > rfb && bInvert == FALSE ) || ( 0 < dr && dr < rfb && bInvert == TRUE )  )
-                {
-                    v         = 0.5*kk*sqr(dr - rfb);
-                    fm[fbdim] = -kk*(dr - rfb);
-                }
-                else if ( (dr < (-rfb) && bInvert == FALSE ) || ( (-rfb) < dr && dr < 0 && bInvert == TRUE ))
-                {
-                    v         = 0.5*kk*sqr(dr + rfb);
-                    fm[fbdim] = -kk*(dr + rfb);
-                }
-                break;
-        }
-
-        vtot += v;
-
-        for (m = 0; (m < DIM); m++)
-        {
-            f[ai][m]   += fm[m];
-            /* Here we correct for the pbc_dx which included rdist */
-            vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm[m];
-        }
-    }
-
-    return vtot;
-}
-
-
-real posres(int nbonds,
-            const t_iatom forceatoms[], const t_iparams forceparams[],
-            const rvec x[], rvec f[], rvec vir_diag,
-            t_pbc *pbc,
-            real lambda, real *dvdlambda,
-            int refcoord_scaling, int ePBC, rvec comA, rvec comB)
-{
-    int              i, ai, m, d, type, npbcdim = 0;
-    const t_iparams *pr;
-    real             L1;
-    real             vtot, kk, fm;
-    rvec             comA_sc, comB_sc, rdist, dpdl, dx;
-    gmx_bool         bForceValid = TRUE;
-
-    if ((f == NULL) || (vir_diag == NULL))    /* should both be null together! */
-    {
-        bForceValid = FALSE;
-    }
-
-    npbcdim = ePBC2npbcdim(ePBC);
-
-    if (refcoord_scaling == erscCOM)
-    {
-        clear_rvec(comA_sc);
-        clear_rvec(comB_sc);
-        for (m = 0; m < npbcdim; m++)
-        {
-            assert(npbcdim <= DIM);
-            for (d = m; d < npbcdim; d++)
-            {
-                comA_sc[m] += comA[d]*pbc->box[d][m];
-                comB_sc[m] += comB[d]*pbc->box[d][m];
-            }
-        }
-    }
-
-    L1 = 1.0 - lambda;
-
-    vtot = 0.0;
-    for (i = 0; (i < nbonds); )
-    {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        pr   = &forceparams[type];
-
-        /* return dx, rdist, and dpdl */
-        posres_dx(x[ai], forceparams[type].posres.pos0A, forceparams[type].posres.pos0B,
-                  comA_sc, comB_sc, lambda,
-                  pbc, refcoord_scaling, npbcdim,
-                  dx, rdist, dpdl);
-
-        for (m = 0; (m < DIM); m++)
-        {
-            kk          = L1*pr->posres.fcA[m] + lambda*pr->posres.fcB[m];
-            fm          = -kk*dx[m];
-            vtot       += 0.5*kk*dx[m]*dx[m];
-            *dvdlambda +=
-                0.5*(pr->posres.fcB[m] - pr->posres.fcA[m])*dx[m]*dx[m]
-                + fm*dpdl[m];
-
-            /* Here we correct for the pbc_dx which included rdist */
-            if (bForceValid)
-            {
-                f[ai][m]    += fm;
-                vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
-            }
-        }
-    }
-
     return vtot;
 }
 
@@ -3325,13 +2925,12 @@ cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *ipp2)
 
 }
 
-/*! \brief Compute CMAP dihedral energies and forces */
-static real
+real
 cmap_dihs(int nbonds,
           const t_iatom forceatoms[], const t_iparams forceparams[],
           const gmx_cmap_t *cmap_grid,
           const rvec x[], rvec f[], rvec fshift[],
-          const t_pbc *pbc, const t_graph *g,
+          const struct t_pbc *pbc, const struct t_graph *g,
           real gmx_unused lambda, real gmx_unused *dvdlambda,
           const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
           int  gmx_unused *global_atom_index)
@@ -4292,491 +3891,3 @@ real tab_dihs(int nbonds,
 }
 
 //! \endcond
-
-/*! \brief Return true if ftype is an explicit pair-listed LJ or
- * COULOMB interaction type: bonded LJ (usually 1-4), or special
- * listed non-bonded for FEP. */
-static bool
-isPairInteraction(int ftype)
-{
-    return ((ftype) >= F_LJ14 && (ftype) <= F_LJC_PAIRS_NB);
-}
-
-gmx_bool
-ftype_is_bonded_potential(int ftype)
-{
-    return
-        (interaction_function[ftype].flags & IF_BOND) &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES) &&
-        (ftype < F_GB12 || ftype > F_GB14);
-}
-
-/*! \brief Zero thread-local force-output buffers */
-static void zero_thread_forces(f_thread_t *f_t, int n,
-                               int nblock, int blocksize)
-{
-    int b, a0, a1, a, i, j;
-
-    if (n > f_t->f_nalloc)
-    {
-        f_t->f_nalloc = over_alloc_large(n);
-        srenew(f_t->f, f_t->f_nalloc);
-    }
-
-    if (f_t->red_mask != 0)
-    {
-        for (b = 0; b < nblock; b++)
-        {
-            if (f_t->red_mask && (1U<<b))
-            {
-                a0 = b*blocksize;
-                a1 = std::min((b+1)*blocksize, n);
-                for (a = a0; a < a1; a++)
-                {
-                    clear_rvec(f_t->f[a]);
-                }
-            }
-        }
-    }
-    for (i = 0; i < SHIFTS; i++)
-    {
-        clear_rvec(f_t->fshift[i]);
-    }
-    for (i = 0; i < F_NRE; i++)
-    {
-        f_t->ener[i] = 0;
-    }
-    for (i = 0; i < egNR; i++)
-    {
-        for (j = 0; j < f_t->grpp.nener; j++)
-        {
-            f_t->grpp.ener[i][j] = 0;
-        }
-    }
-    for (i = 0; i < efptNR; i++)
-    {
-        f_t->dvdl[i] = 0;
-    }
-}
-
-/*! \brief The max thread number is arbitrary, we used a fixed number
- * to avoid memory management.  Using more than 16 threads is probably
- * never useful performance wise. */
-#define MAX_BONDED_THREADS 256
-
-/*! \brief Reduce thread-local force buffers */
-static void reduce_thread_force_buffer(int n, rvec *f,
-                                       int nthreads, f_thread_t *f_t,
-                                       int nblock, int block_size)
-{
-    int b;
-
-    if (nthreads > MAX_BONDED_THREADS)
-    {
-        gmx_fatal(FARGS, "Can not reduce bonded forces on more than %d threads",
-                  MAX_BONDED_THREADS);
-    }
-
-    /* This reduction can run on any number of threads,
-     * independently of nthreads.
-     */
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (b = 0; b < nblock; b++)
-    {
-        rvec *fp[MAX_BONDED_THREADS];
-        int   nfb, ft, fb;
-        int   a0, a1, a;
-
-        /* Determine which threads contribute to this block */
-        nfb = 0;
-        for (ft = 1; ft < nthreads; ft++)
-        {
-            if (f_t[ft].red_mask & (1U<<b))
-            {
-                fp[nfb++] = f_t[ft].f;
-            }
-        }
-        if (nfb > 0)
-        {
-            /* Reduce force buffers for threads that contribute */
-            a0 =  b   *block_size;
-            a1 = (b+1)*block_size;
-            a1 = std::min(a1, n);
-            for (a = a0; a < a1; a++)
-            {
-                for (fb = 0; fb < nfb; fb++)
-                {
-                    rvec_inc(f[a], fp[fb][a]);
-                }
-            }
-        }
-    }
-}
-
-/*! \brief Reduce thread-local forces */
-static void reduce_thread_forces(int n, rvec *f, rvec *fshift,
-                                 real *ener, gmx_grppairener_t *grpp, real *dvdl,
-                                 int nthreads, f_thread_t *f_t,
-                                 int nblock, int block_size,
-                                 gmx_bool bCalcEnerVir,
-                                 gmx_bool bDHDL)
-{
-    if (nblock > 0)
-    {
-        /* Reduce the bonded force buffer */
-        reduce_thread_force_buffer(n, f, nthreads, f_t, nblock, block_size);
-    }
-
-    /* When necessary, reduce energy and virial using one thread only */
-    if (bCalcEnerVir)
-    {
-        int t, i, j;
-
-        for (i = 0; i < SHIFTS; i++)
-        {
-            for (t = 1; t < nthreads; t++)
-            {
-                rvec_inc(fshift[i], f_t[t].fshift[i]);
-            }
-        }
-        for (i = 0; i < F_NRE; i++)
-        {
-            for (t = 1; t < nthreads; t++)
-            {
-                ener[i] += f_t[t].ener[i];
-            }
-        }
-        for (i = 0; i < egNR; i++)
-        {
-            for (j = 0; j < f_t[1].grpp.nener; j++)
-            {
-                for (t = 1; t < nthreads; t++)
-                {
-
-                    grpp->ener[i][j] += f_t[t].grpp.ener[i][j];
-                }
-            }
-        }
-        if (bDHDL)
-        {
-            for (i = 0; i < efptNR; i++)
-            {
-
-                for (t = 1; t < nthreads; t++)
-                {
-                    dvdl[i] += f_t[t].dvdl[i];
-                }
-            }
-        }
-    }
-}
-
-/*! \brief Calculate one element of the list of bonded interactions
-    for this thread */
-static real calc_one_bond(int thread,
-                          int ftype, const t_idef *idef,
-                          const rvec x[], rvec f[], rvec fshift[],
-                          t_forcerec *fr,
-                          const t_pbc *pbc, const t_graph *g,
-                          gmx_grppairener_t *grpp,
-                          t_nrnb *nrnb,
-                          real *lambda, real *dvdl,
-                          const t_mdatoms *md, t_fcdata *fcd,
-                          gmx_bool bCalcEnerVir,
-                          int *global_atom_index)
-{
-    int      nat1, nbonds, efptFTYPE;
-    real     v = 0;
-    t_iatom *iatoms;
-    int      nb0, nbn;
-
-    if (IS_RESTRAINT_TYPE(ftype))
-    {
-        efptFTYPE = efptRESTRAINT;
-    }
-    else
-    {
-        efptFTYPE = efptBONDED;
-    }
-
-    nat1      = interaction_function[ftype].nratoms + 1;
-    nbonds    = idef->il[ftype].nr/nat1;
-    iatoms    = idef->il[ftype].iatoms;
-
-    nb0 = idef->il_thread_division[ftype*(idef->nthreads+1)+thread];
-    nbn = idef->il_thread_division[ftype*(idef->nthreads+1)+thread+1] - nb0;
-
-    if (!isPairInteraction(ftype))
-    {
-        if (ftype == F_CMAP)
-        {
-            v = cmap_dihs(nbn, iatoms+nb0,
-                          idef->iparams, &idef->cmap_grid,
-                          x, f, fshift,
-                          pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
-                          md, fcd, global_atom_index);
-        }
-#ifdef GMX_SIMD_HAVE_REAL
-        else if (ftype == F_ANGLES &&
-                 !bCalcEnerVir && fr->efep == efepNO)
-        {
-            /* No energies, shift forces, dvdl */
-            angles_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
-                               idef->iparams,
-                               x, f,
-                               pbc, g, lambda[efptFTYPE], md, fcd,
-                               global_atom_index);
-            v = 0;
-        }
-#endif
-        else if (ftype == F_PDIHS &&
-                 !bCalcEnerVir && fr->efep == efepNO)
-        {
-            /* No energies, shift forces, dvdl */
-#ifdef GMX_SIMD_HAVE_REAL
-            pdihs_noener_simd
-#else
-            pdihs_noener
-#endif
-                (nbn, idef->il[ftype].iatoms+nb0,
-                idef->iparams,
-                x, f,
-                pbc, g, lambda[efptFTYPE], md, fcd,
-                global_atom_index);
-            v = 0;
-        }
-#ifdef GMX_SIMD_HAVE_REAL
-        else if (ftype == F_RBDIHS &&
-                 !bCalcEnerVir && fr->efep == efepNO)
-        {
-            /* No energies, shift forces, dvdl */
-            rbdihs_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
-                               idef->iparams,
-                               (const rvec*)x, f,
-                               pbc, g, lambda[efptFTYPE], md, fcd,
-                               global_atom_index);
-            v = 0;
-        }
-#endif
-        else
-        {
-            v = interaction_function[ftype].ifunc(nbn, iatoms+nb0,
-                                                  idef->iparams,
-                                                  x, f, fshift,
-                                                  pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
-                                                  md, fcd, global_atom_index);
-        }
-    }
-    else
-    {
-        v = do_pairs(ftype, nbn, iatoms+nb0, idef->iparams, x, f, fshift,
-                     pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
-    }
-
-    if (thread == 0)
-    {
-        inc_nrnb(nrnb, interaction_function[ftype].nrnb_ind, nbonds);
-    }
-
-    return v;
-}
-
-void calc_bonds(const gmx_multisim_t *ms,
-                const t_idef *idef,
-                const rvec x[], history_t *hist,
-                rvec f[], t_forcerec *fr,
-                const struct t_pbc *pbc, const struct t_graph *g,
-                gmx_enerdata_t *enerd, t_nrnb *nrnb,
-                real *lambda,
-                const t_mdatoms *md,
-                t_fcdata *fcd, int *global_atom_index,
-                int force_flags)
-{
-    gmx_bool      bCalcEnerVir;
-    int           i;
-    real          dvdl[efptNR]; /* The dummy array is to have a place to store the dhdl at other values
-                                                        of lambda, which will be thrown away in the end*/
-    const  t_pbc *pbc_null;
-    int           thread;
-
-    assert(fr->nthreads == idef->nthreads);
-
-    bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
-
-    for (i = 0; i < efptNR; i++)
-    {
-        dvdl[i] = 0.0;
-    }
-    if (fr->bMolPBC)
-    {
-        pbc_null = pbc;
-    }
-    else
-    {
-        pbc_null = NULL;
-    }
-
-#ifdef DEBUG
-    if (g && debug)
-    {
-        p_graph(debug, "Bondage is fun", g);
-    }
-#endif
-
-    /* Do pre force calculation stuff which might require communication */
-    if (idef->il[F_ORIRES].nr)
-    {
-        enerd->term[F_ORIRESDEV] =
-            calc_orires_dev(ms, idef->il[F_ORIRES].nr,
-                            idef->il[F_ORIRES].iatoms,
-                            idef->iparams, md, x,
-                            pbc_null, fcd, hist);
-    }
-    if (idef->il[F_DISRES].nr)
-    {
-        calc_disres_R_6(idef->il[F_DISRES].nr,
-                        idef->il[F_DISRES].iatoms,
-                        idef->iparams, x, pbc_null,
-                        fcd, hist);
-#ifdef GMX_MPI
-        if (fcd->disres.nsystems > 1)
-        {
-            gmx_sum_sim(2*fcd->disres.nres, fcd->disres.Rt_6, ms);
-        }
-#endif
-    }
-
-#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
-    for (thread = 0; thread < fr->nthreads; thread++)
-    {
-        int                ftype;
-        real              *epot, v;
-        /* thread stuff */
-        rvec              *ft, *fshift;
-        real              *dvdlt;
-        gmx_grppairener_t *grpp;
-
-        if (thread == 0)
-        {
-            ft     = f;
-            fshift = fr->fshift;
-            epot   = enerd->term;
-            grpp   = &enerd->grpp;
-            dvdlt  = dvdl;
-        }
-        else
-        {
-            zero_thread_forces(&fr->f_t[thread], fr->natoms_force,
-                               fr->red_nblock, 1<<fr->red_ashift);
-
-            ft     = fr->f_t[thread].f;
-            fshift = fr->f_t[thread].fshift;
-            epot   = fr->f_t[thread].ener;
-            grpp   = &fr->f_t[thread].grpp;
-            dvdlt  = fr->f_t[thread].dvdl;
-        }
-        /* Loop over all bonded force types to calculate the bonded forces */
-        for (ftype = 0; (ftype < F_NRE); ftype++)
-        {
-            if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
-            {
-                v = calc_one_bond(thread, ftype, idef, x,
-                                  ft, fshift, fr, pbc_null, g, grpp,
-                                  nrnb, lambda, dvdlt,
-                                  md, fcd, bCalcEnerVir,
-                                  global_atom_index);
-                epot[ftype] += v;
-            }
-        }
-    }
-    if (fr->nthreads > 1)
-    {
-        reduce_thread_forces(fr->natoms_force, f, fr->fshift,
-                             enerd->term, &enerd->grpp, dvdl,
-                             fr->nthreads, fr->f_t,
-                             fr->red_nblock, 1<<fr->red_ashift,
-                             bCalcEnerVir,
-                             force_flags & GMX_FORCE_DHDL);
-    }
-    if (force_flags & GMX_FORCE_DHDL)
-    {
-        for (i = 0; i < efptNR; i++)
-        {
-            enerd->dvdl_nonlin[i] += dvdl[i];
-        }
-    }
-
-    /* Copy the sum of violations for the distance restraints from fcd */
-    if (fcd)
-    {
-        enerd->term[F_DISRESVIOL] = fcd->disres.sumviol;
-
-    }
-}
-
-void calc_bonds_lambda(const t_idef *idef,
-                       const rvec x[],
-                       t_forcerec *fr,
-                       const struct t_pbc *pbc, const struct t_graph *g,
-                       gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
-                       real *lambda,
-                       const t_mdatoms *md,
-                       t_fcdata *fcd,
-                       int *global_atom_index)
-{
-    int           ftype, nr_nonperturbed, nr;
-    real          v;
-    real          dvdl_dum[efptNR];
-    rvec         *f, *fshift;
-    const  t_pbc *pbc_null;
-    t_idef        idef_fe;
-
-    if (fr->bMolPBC)
-    {
-        pbc_null = pbc;
-    }
-    else
-    {
-        pbc_null = NULL;
-    }
-
-    /* Copy the whole idef, so we can modify the contents locally */
-    idef_fe          = *idef;
-    idef_fe.nthreads = 1;
-    snew(idef_fe.il_thread_division, F_NRE*(idef_fe.nthreads+1));
-
-    /* We already have the forces, so we use temp buffers here */
-    snew(f, fr->natoms_force);
-    snew(fshift, SHIFTS);
-
-    /* Loop over all bonded force types to calculate the bonded energies */
-    for (ftype = 0; (ftype < F_NRE); ftype++)
-    {
-        if (ftype_is_bonded_potential(ftype))
-        {
-            /* Set the work range of thread 0 to the perturbed bondeds only */
-            nr_nonperturbed                       = idef->il[ftype].nr_nonperturbed;
-            nr                                    = idef->il[ftype].nr;
-            idef_fe.il_thread_division[ftype*2+0] = nr_nonperturbed;
-            idef_fe.il_thread_division[ftype*2+1] = nr;
-
-            /* This is only to get the flop count correct */
-            idef_fe.il[ftype].nr = nr - nr_nonperturbed;
-
-            if (nr - nr_nonperturbed > 0)
-            {
-                v = calc_one_bond(0, ftype, &idef_fe,
-                                  x, f, fshift, fr, pbc_null, g,
-                                  grpp, nrnb, lambda, dvdl_dum,
-                                  md, fcd, TRUE,
-                                  global_atom_index);
-                epot[ftype] += v;
-            }
-        }
-    }
-
-    sfree(fshift);
-    sfree(f);
-
-    sfree(idef_fe.il_thread_division);
-}

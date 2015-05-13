@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,7 @@ static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip
             lambda = eigval[i]*AMU;
             w      = sqrt(BOLTZMANN*temp/lambda)/NANO;
             hwkT   = (hbar*w)/(BOLTZMANN*temp);
-            dS     = (hwkT/(exp(hwkT) - 1) - log(1-exp(-hwkT)));
+            dS     = (hwkT/gmx_expm1(hwkT) - gmx_log1p(-exp(-hwkT)));
             S     += dS;
             if (debug)
             {
@@ -484,7 +484,7 @@ static void overlap(const char *outfile, int natoms,
         fprintf(out, "%5d  %5.3f\n", eignr2[x]+1, overlap/noutvec);
     }
 
-    gmx_ffclose(out);
+    xvgrclose(out);
 }
 
 static void project(const char *trajfile, t_topology *top, int ePBC, matrix topbox,
@@ -670,7 +670,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             }
             fprintf(xvgrout, "%10.5f %10.5f\n", inprod[0][i], inprod[noutvec-1][i]);
         }
-        gmx_ffclose(xvgrout);
+        xvgrclose(xvgrout);
     }
 
     if (threedplotfile)
@@ -992,8 +992,8 @@ int gmx_anaeig(int argc, char *argv[])
         "eigenvector [TT]-first[tt] will be written unless [TT]-first[tt] and",
         "[TT]-last[tt] have been set explicitly, in which case all eigenvectors",
         "will be written to separate files. Chain identifiers will be added",
-        "when writing a [TT].pdb[tt] file with two or three structures (you",
-        "can use [TT]rasmol -nmrpdb[tt] to view such a [TT].pdb[tt] file).[PAR]",
+        "when writing a [REF].pdb[ref] file with two or three structures (you",
+        "can use [TT]rasmol -nmrpdb[tt] to view such a [REF].pdb[ref] file).[PAR]",
 
         "  Overlap calculations between covariance analysis:[BR]",
         "  [BB]Note:[bb] the analysis should use the same fitting structure[PAR]",
@@ -1009,10 +1009,12 @@ int gmx_anaeig(int argc, char *argv[])
 
         "When [TT]-v[tt], [TT]-eig[tt], [TT]-v2[tt] and [TT]-eig2[tt] are given,",
         "a single number for the overlap between the covariance matrices is",
-        "generated. The formulas are:[BR]",
-        "        difference = sqrt(tr((sqrt(M1) - sqrt(M2))^2))[BR]",
-        "normalized overlap = 1 - difference/sqrt(tr(M1) + tr(M2))[BR]",
-        "     shape overlap = 1 - sqrt(tr((sqrt(M1/tr(M1)) - sqrt(M2/tr(M2)))^2))[BR]",
+        "generated. The formulas are::",
+        "",
+        "         difference = sqrt(tr((sqrt(M1) - sqrt(M2))^2))",
+        " normalized overlap = 1 - difference/sqrt(tr(M1) + tr(M2))",
+        "      shape overlap = 1 - sqrt(tr((sqrt(M1/tr(M1)) - sqrt(M2/tr(M2)))^2))",
+        "",
         "where M1 and M2 are the two covariance matrices and tr is the trace",
         "of a matrix. The numbers are proportional to the overlap of the square",
         "root of the fluctuations. The normalized overlap is the most useful",

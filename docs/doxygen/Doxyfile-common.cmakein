@@ -10,8 +10,7 @@ FILE_PATTERNS          = *.c *.cpp *.h *.md
 # FILE_PATTERNS         += *.cu *.cuh
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
-EXCLUDE                = @CMAKE_CURRENT_SOURCE_DIR@/examples \
-                         @CMAKE_SOURCE_DIR@/src/contrib \
+EXCLUDE                = @CMAKE_SOURCE_DIR@/src/contrib \
                          @CMAKE_SOURCE_DIR@/src/external \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.h \
@@ -61,6 +60,7 @@ EXTRACT_LOCAL_CLASSES  = NO
 EXTRACT_STATIC         = YES
 
 ALIASES               += Gromacs=GROMACS
+ALIASES               += linktodevmanual{2}="<A HREF=\"../../dev-manual/\1.html\">\2</A>"
 
 DOT_IMAGE_FORMAT       = svg
 DOT_MULTI_TARGETS      = YES

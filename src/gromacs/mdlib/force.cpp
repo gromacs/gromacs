@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,9 +44,10 @@
 #include <math.h>
 #include <string.h>
 
-#include "gromacs/ewald/ewald-util.h"
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/ewald/ewald.h"
+#include "gromacs/ewald/long-range-correction.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdrun.h"
@@ -59,8 +60,9 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -169,7 +171,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     matrix      boxs;
     rvec        box_size;
     t_pbc       pbc;
-    real        dvdl_dum[efptNR], dvdl_nb[efptNR], lam_i[efptNR];
+    real        dvdl_dum[efptNR], dvdl_nb[efptNR];
 
 #ifdef GMX_MPI
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
@@ -275,6 +277,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         {
             for (i = 0; i < enerd->n_lambda; i++)
             {
+                real lam_i[efptNR];
+
                 for (j = 0; j < efptNR; j++)
                 {
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
@@ -343,7 +347,13 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     /* Shift the coordinates. Must be done before listed forces and PPPM,
      * but is also necessary for SHAKE and update, therefore it can NOT
      * go when no listed forces have to be evaluated.
+     *
+     * The shifting and PBC code is deliberately not timed, since with
+     * the Verlet scheme it only takes non-zero time with triclinic
+     * boxes, and even then the time is around a factor of 100 less
+     * than the next smallest counter.
      */
+
 
     /* Here sometimes we would not need to shift with NBFonly,
      * but we do so anyhow for consistency of the returned coordinates.
@@ -365,6 +375,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         ((flags & GMX_FORCE_LISTED)
          || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)))
     {
+        /* TODO There are no electrostatics methods that require this
+           transformation, when using the Verlet scheme, so update the
+           above conditional. */
         /* Since all atoms are in the rectangular or triclinic unit-cell,
          * only single box vector shifts (2 in x) are required.
          */
@@ -372,41 +385,11 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     }
     debug_gmx();
 
-    if (flags & GMX_FORCE_LISTED)
-    {
-        wallcycle_sub_start(wcycle, ewcsLISTED);
-        calc_bonds(cr->ms,
-                   idef, (const rvec *) x, hist, f, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
-                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
-                   flags);
-
-        /* Check if we have to determine energy differences
-         * at foreign lambda's.
-         */
-        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) &&
-            idef->ilsort != ilsortNO_FE)
-        {
-            if (idef->ilsort != ilsortFE_SORTED)
-            {
-                gmx_incons("The bonded interactions are not sorted for free energy");
-            }
-            for (i = 0; i < enerd->n_lambda; i++)
-            {
-                reset_foreign_enerdata(enerd);
-                for (j = 0; j < efptNR; j++)
-                {
-                    lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
-                }
-                calc_bonds_lambda(idef, (const rvec *) x, fr, &pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
-                                  fcd, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
-                enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-            }
-        }
-        debug_gmx();
-
-        wallcycle_sub_stop(wcycle, ewcsLISTED);
-    }
+    do_force_listed(wcycle, box, ir->fepvals, cr->ms,
+                    idef, (const rvec *) x, hist, f, fr,
+                    &pbc, graph, enerd, nrnb, lambda, md, fcd,
+                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+                    flags);
 
     where();
 
@@ -495,14 +478,11 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
                     ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
                                        cr, t, fr,
-                                       md->chargeA,
-                                       md->nChargePerturbed ? md->chargeB : NULL,
-                                       md->sqrt_c6A,
-                                       md->nTypePerturbed ? md->sqrt_c6B : NULL,
-                                       md->sigmaA,
-                                       md->nTypePerturbed ? md->sigmaB : NULL,
-                                       md->sigma3A,
-                                       md->nTypePerturbed ? md->sigma3B : NULL,
+                                       md->chargeA, md->chargeB,
+                                       md->sqrt_c6A, md->sqrt_c6B,
+                                       md->sigmaA, md->sigmaB,
+                                       md->sigma3A, md->sigma3B,
+                                       md->nChargePerturbed || md->nTypePerturbed,
                                        ir->cutoff_scheme != ecutsVERLET,
                                        excl, x, bSB ? boxs : box, mu_tot,
                                        ir->ewald_geometry,
@@ -526,6 +506,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
             if (EEL_PME_EWALD(fr->eeltype) && fr->n_tpi == 0)
             {
+                /* This is not in a subcounter because it takes a
+                   negligible and constant-sized amount of time */
                 Vcorr_q += ewald_charge_correction(cr, fr, lambda[efptCOUL], box,
                                                    &dvdl_long_range_correction_q,
                                                    fr->vir_el_recip);

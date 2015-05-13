@@ -384,6 +384,9 @@ gmx_check_thread_affinity_set(FILE            *fplog,
     int       i, ret, cpu_count, cpu_set;
     gmx_bool  bAllSet;
 #endif
+#ifdef GMX_LIB_MPI
+    gmx_bool  bAllSet_All;
+#endif
 
     assert(hw_opt);
     if (!bAfterOpenmpInit)
@@ -457,6 +460,11 @@ gmx_check_thread_affinity_set(FILE            *fplog,
     {
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
+
+#ifdef GMX_LIB_MPI
+    MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
+    bAllSet = bAllSet_All;
+#endif
 
     if (!bAllSet)
     {

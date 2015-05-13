@@ -177,6 +177,13 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
 
 
 void
+AnalysisData::finishFrameSerial(int frameIndex)
+{
+    impl_->storage_.finishFrameSerial(frameIndex);
+}
+
+
+void
 AnalysisData::finishData(AnalysisDataHandle handle)
 {
     Impl::HandleList::iterator i;

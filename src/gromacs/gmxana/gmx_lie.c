@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -144,7 +144,7 @@ int gmx_lie(int argc, char *argv[])
         "To utilize [TT]g_lie[tt] correctly, two simulations are required: one with the",
         "molecule of interest bound to its receptor and one with the molecule in water.",
         "Both need to utilize [TT]energygrps[tt] such that Coul-SR(A-B), LJ-SR(A-B), etc. terms",
-        "are written to the [TT].edr[tt] file. Values from the molecule-in-water simulation",
+        "are written to the [REF].edr[ref] file. Values from the molecule-in-water simulation",
         "are necessary for supplying suitable values for -Elj and -Eqq."
     };
     static real        lie_lj = 0, lie_qq = 0, fac_lj = 0.181, fac_qq = 0.5;
@@ -207,7 +207,7 @@ int gmx_lie(int argc, char *argv[])
         }
     }
     close_enx(fp);
-    gmx_ffclose(out);
+    xvgrclose(out);
     fprintf(stderr, "\n");
 
     if (nframes > 0)

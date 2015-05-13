@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -149,7 +149,7 @@ typedef struct swap_group
 /*! \internal \brief
  * Main (private) data structure for the position swapping protocol.
  */
-typedef struct swap
+typedef struct t_swap
 {
     int               swapdim;                       /**< One of XX, YY, ZZ                               */
     t_pbc            *pbc;                           /**< Needed to make molecules whole.                 */

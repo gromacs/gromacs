@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -954,8 +954,7 @@ static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
 }
 
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
-                                gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel,
-                                gmx_bool bSaveEkinOld)
+                                gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     int           g;
     t_grp_tcstat *tcstat  = ekind->tcstat;
@@ -963,10 +962,8 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
     int           nthread, thread;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
-       an option, but not supported now.  Additionally, if we are doing iterations.
+       an option, but not supported now.
        bEkinAveVel: If TRUE, we sum into ekin, if FALSE, into ekinh.
-       bSavEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't copy over the ekinh_old.
-       If FALSE, we overrwrite it.
      */
 
     /* group velocities are calculated in update_ekindata and
@@ -975,27 +972,19 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
      */
     for (g = 0; (g < opts->ngtc); g++)
     {
-
-        if (!bSaveEkinOld)
-        {
-            copy_mat(tcstat[g].ekinh, tcstat[g].ekinh_old);
-        }
+        copy_mat(tcstat[g].ekinh, tcstat[g].ekinh_old);
         if (bEkinAveVel)
         {
             clear_mat(tcstat[g].ekinf);
+            tcstat[g].ekinscalef_nhc = 1.0;   /* need to clear this -- logic is complicated! */
         }
         else
         {
             clear_mat(tcstat[g].ekinh);
         }
-        if (bEkinAveVel)
-        {
-            tcstat[g].ekinscalef_nhc = 1.0; /* need to clear this -- logic is complicated! */
-        }
     }
     ekind->dekindl_old = ekind->dekindl;
-
-    nthread = gmx_omp_nthreads_get(emntUpdate);
+    nthread            = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
@@ -1151,11 +1140,11 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
 }
 
 void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel);
     }
     else
     {
@@ -1254,7 +1243,7 @@ void set_deform_reference_box(gmx_update_t upd, gmx_int64_t step, matrix box)
 }
 
 static void deform(gmx_update_t upd,
-                   int start, int homenr, rvec x[], matrix box, matrix *scale_tot,
+                   int start, int homenr, rvec x[], matrix box,
                    const t_inputrec *ir, gmx_int64_t step)
 {
     matrix bnew, invbox, mu;
@@ -1301,13 +1290,6 @@ static void deform(gmx_update_t upd,
         x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
         x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
         x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
-    }
-    if (scale_tot != NULL)
-    {
-        /* The transposes of the scaling matrices are stored,
-         * so we need to do matrix multiplication in the inverse order.
-         */
-        mmul_ur0(*scale_tot, mu, *scale_tot);
     }
 }
 
@@ -1499,11 +1481,15 @@ static void combine_forces(gmx_update_t upd,
                 {
                     xp[i][d] = state->x[i][d] + fac*f_lr[i][d]*md->invmass[i];
                 }
+                else
+                {
+                    xp[i][d] = state->x[i][d];
+                }
             }
         }
-        constrain(NULL, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, 1.0, md,
+        constrain(NULL, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
                   state->x, xp, xp, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
-                  NULL, vir_lr_constr, nrnb, econqCoord, ir->epc == epcMTTK, state->veta, state->veta);
+                  NULL, vir_lr_constr, nrnb, econqForce);
     }
 
     /* Add nstcalclr-1 times the LR force to the sum of both forces
@@ -1522,7 +1508,6 @@ void update_constraints(FILE             *fplog,
                         gmx_int64_t       step,
                         real             *dvdlambda, /* the contribution to be added to the bonded interactions */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
-                        gmx_ekindata_t   *ekind,
                         t_mdatoms        *md,
                         t_state          *state,
                         gmx_bool          bMolPBC,
@@ -1536,8 +1521,7 @@ void update_constraints(FILE             *fplog,
                         gmx_update_t      upd,
                         gmx_constr_t      constr,
                         gmx_bool          bFirstHalf,
-                        gmx_bool          bCalcVir,
-                        real              vetanew)
+                        gmx_bool          bCalcVir)
 {
     gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double               dt;
@@ -1590,22 +1574,20 @@ void update_constraints(FILE             *fplog,
         if (EI_VV(inputrec->eI) && bFirstHalf)
         {
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, ekind, cr, step, 1, 1.0, md,
+                      inputrec, cr, step, 1, 1.0, md,
                       state->x, state->v, state->v,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc,
-                      inputrec->epc == epcMTTK, state->veta, vetanew);
+                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc);
         }
         else
         {
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, ekind, cr, step, 1, 1.0, md,
+                      inputrec, cr, step, 1, 1.0, md,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, bCalcVir ? &vir_con : NULL, nrnb, econqCoord,
-                      inputrec->epc == epcMTTK, state->veta, state->veta);
+                      state->v, bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1680,11 +1662,11 @@ void update_constraints(FILE             *fplog,
             wallcycle_start(wcycle, ewcCONSTR);
 
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, NULL, cr, step, 1, 0.5, md,
+                      inputrec, cr, step, 1, 0.5, md,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, NULL, nrnb, econqCoord, FALSE, 0, 0);
+                      state->v, NULL, nrnb, econqCoord);
 
             wallcycle_stop(wcycle, ewcCONSTR);
         }
@@ -1724,11 +1706,11 @@ void update_constraints(FILE             *fplog,
             /* Constrain the coordinates xprime */
             wallcycle_start(wcycle, ewcCONSTR);
             constrain(NULL, bLog, bEner, constr, idef,
-                      inputrec, NULL, cr, step, 1, 1.0, md,
+                      inputrec, cr, step, 1, 1.0, md,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
+                      NULL, NULL, nrnb, econqCoord);
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }
@@ -1739,6 +1721,13 @@ void update_constraints(FILE             *fplog,
 
     if (!(bFirstHalf)) /* in the first half of vv, no shift. */
     {
+        /* NOTE This part of the update actually does not belong with
+         * the constraints, since we also call it without constraints.
+         * But currently we always integrate to a temporary buffer and
+         * then copy the results back here.
+         */
+        wallcycle_start_nocount(wcycle, ewcUPDATE);
+
         if (graph && (graph->nnodes > 0))
         {
             unshift_x(graph, state->box, state->x, upd->xp);
@@ -1753,15 +1742,17 @@ void update_constraints(FILE             *fplog,
         }
         else
         {
+#ifndef __clang_analyzer__
             // cppcheck-suppress unreadVariable
             nth = gmx_omp_nthreads_get(emntUpdate);
-
+#endif
 #pragma omp parallel for num_threads(nth) schedule(static)
             for (i = start; i < nrend; i++)
             {
                 copy_rvec(upd->xp[i], state->x[i]);
             }
         }
+        wallcycle_stop(wcycle, ewcUPDATE);
 
         dump_it_all(fplog, "After unshift",
                     state->natoms, state->x, upd->xp, state->v, force);
@@ -1775,7 +1766,6 @@ void update_box(FILE             *fplog,
                 t_mdatoms        *md,
                 t_state          *state,
                 rvec              force[],   /* forces on home particles */
-                matrix           *scale_tot,
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
                 gmx_update_t      upd)
@@ -1796,8 +1786,16 @@ void update_box(FILE             *fplog,
         case (epcNO):
             break;
         case (epcBERENDSEN):
-            berendsen_pscale(inputrec, pcoupl_mu, state->box, state->box_rel,
-                             start, homenr, state->x, md->cFREEZE, nrnb);
+            /* We should only scale after a step where the pressure (kinetic
+             * energy and virial) was calculated. This happens after the
+             * coordinate update, whereas the current routine is called before
+             * that, so we scale when step % nstpcouple = 1 instead of 0.
+             */
+            if (inputrec->nstpcouple == 1 || (step % inputrec->nstpcouple == 1))
+            {
+                berendsen_pscale(inputrec, pcoupl_mu, state->box, state->box_rel,
+                                 start, homenr, state->x, md->cFREEZE, nrnb);
+            }
             break;
         case (epcPARRINELLORAHMAN):
             /* The box velocities were updated in do_pr_pcoupl in the update
@@ -1848,17 +1846,9 @@ void update_box(FILE             *fplog,
             break;
     }
 
-    if ((!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))) && scale_tot)
-    {
-        /* The transposes of the scaling matrices are stored,
-         * therefore we need to reverse the order in the multiplication.
-         */
-        mmul_ur0(*scale_tot, pcoupl_mu, *scale_tot);
-    }
-
     if (DEFORM(*inputrec))
     {
-        deform(upd, start, homenr, state->x, state->box, scale_tot, inputrec, step);
+        deform(upd, start, homenr, state->x, state->box, inputrec, step);
     }
     where();
     dump_it_all(fplog, "After update",
@@ -2128,6 +2118,12 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, co
 
     if (ir->etc == etcANDERSEN && constr != NULL)
     {
+        /* Currently, Andersen thermostat does not support constrained
+           systems. Functionality exists in the andersen_tcoupl
+           function in GROMACS 4.5.7 to allow this combination. That
+           code could be ported to the current random-number
+           generation approach, but has not yet been done because of
+           lack of time and resources. */
         gmx_fatal(FARGS, "Normal Andersen is currently not supported with constraints, use massive Andersen instead");
     }
 

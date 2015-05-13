@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,6 @@
 #include "gmxpre.h"
 
 #include "nbnxn_search.h"
-
-#include "config.h"
 
 #include <assert.h>
 #include <math.h>
@@ -243,7 +241,7 @@ static int nbnxn_kernel_to_ci_size(int nb_kernel_type)
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
             return NBNXN_CPU_CLUSTER_I_SIZE;
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             /* The cluster size for super/sub lists is only set here.
              * Any value should work for the pair-search and atomdata code.
@@ -277,7 +275,7 @@ int nbnxn_kernel_to_cj_size(int nb_kernel_type)
         case nbnxnk4xN_SIMD_2xNN:
             cj_size = nbnxn_simd_width/2;
             break;
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             cj_size = nbnxn_kernel_to_ci_size(nb_kernel_type);
             break;
@@ -309,7 +307,7 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 
     switch (nb_kernel_type)
     {
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             return FALSE;
 
@@ -572,6 +570,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 
     copy_rvec(corner0, grid->c0);
     copy_rvec(corner1, grid->c1);
+    copy_rvec(size,    grid->size);
 
     return nc_max;
 }
@@ -1008,7 +1007,6 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
 
 /* Prints the average bb size, used for debug output */
 static void print_bbsizes_simple(FILE                *fp,
-                                 const nbnxn_search_t nbs,
                                  const nbnxn_grid_t  *grid)
 {
     int  c, d;
@@ -1024,19 +1022,20 @@ static void print_bbsizes_simple(FILE                *fp,
     }
     dsvmul(1.0/grid->nc, ba, ba);
 
-    fprintf(fp, "ns bb: %4.2f %4.2f %4.2f  %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
-            nbs->box[XX][XX]/grid->ncx,
-            nbs->box[YY][YY]/grid->ncy,
-            nbs->box[ZZ][ZZ]*grid->ncx*grid->ncy/grid->nc,
+    fprintf(fp, "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
+            grid->sx,
+            grid->sy,
+            grid->atom_density > 0 ?
+            grid->na_c/(grid->atom_density*grid->sx*grid->sy) : 0.0,
             ba[XX], ba[YY], ba[ZZ],
-            ba[XX]*grid->ncx/nbs->box[XX][XX],
-            ba[YY]*grid->ncy/nbs->box[YY][YY],
-            ba[ZZ]*grid->nc/(grid->ncx*grid->ncy*nbs->box[ZZ][ZZ]));
+            ba[XX]/grid->sx,
+            ba[YY]/grid->sy,
+            grid->atom_density > 0 ?
+            ba[ZZ]/(grid->na_c/(grid->atom_density*grid->sx*grid->sy)) : 0.0);
 }
 
 /* Prints the average bb size, used for debug output */
 static void print_bbsizes_supersub(FILE                *fp,
-                                   const nbnxn_search_t nbs,
                                    const nbnxn_grid_t  *grid)
 {
     int  ns, c, s;
@@ -1078,14 +1077,16 @@ static void print_bbsizes_supersub(FILE                *fp,
     }
     dsvmul(1.0/ns, ba, ba);
 
-    fprintf(fp, "ns bb: %4.2f %4.2f %4.2f  %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
-            nbs->box[XX][XX]/(grid->ncx*GPU_NSUBCELL_X),
-            nbs->box[YY][YY]/(grid->ncy*GPU_NSUBCELL_Y),
-            nbs->box[ZZ][ZZ]*grid->ncx*grid->ncy/(grid->nc*GPU_NSUBCELL_Z),
+    fprintf(fp, "ns bb: grid %4.2f %4.2f %4.2f abs %4.2f %4.2f %4.2f rel %4.2f %4.2f %4.2f\n",
+            grid->sx/GPU_NSUBCELL_X,
+            grid->sy/GPU_NSUBCELL_Y,
+            grid->atom_density > 0 ?
+            grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z) : 0.0,
             ba[XX], ba[YY], ba[ZZ],
-            ba[XX]*grid->ncx*GPU_NSUBCELL_X/nbs->box[XX][XX],
-            ba[YY]*grid->ncy*GPU_NSUBCELL_Y/nbs->box[YY][YY],
-            ba[ZZ]*grid->nc*GPU_NSUBCELL_Z/(grid->ncx*grid->ncy*nbs->box[ZZ][ZZ]));
+            ba[XX]*GPU_NSUBCELL_X/grid->sx,
+            ba[YY]*GPU_NSUBCELL_Y/grid->sy,
+            grid->atom_density > 0 ?
+            ba[ZZ]/(grid->na_sc/(grid->atom_density*grid->sx*grid->sy*GPU_NSUBCELL_Z)) : 0.0);
 }
 
 /* Potentially sorts atoms on LJ coefficients !=0 and ==0.
@@ -1333,7 +1334,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
         sort_atoms(ZZ, FALSE, dd_zone,
                    nbs->a+ash, na, x,
                    grid->c0[ZZ],
-                   1.0/nbs->box[ZZ][ZZ], ncz*grid->na_sc,
+                   1.0/grid->size[ZZ], ncz*grid->na_sc,
                    sort_work);
 
         /* Fill the ncz cells in this column */
@@ -1418,7 +1419,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
         sort_atoms(ZZ, FALSE, dd_zone,
                    nbs->a+ash, na, x,
                    grid->c0[ZZ],
-                   1.0/nbs->box[ZZ][ZZ], ncz*grid->na_sc,
+                   1.0/grid->size[ZZ], ncz*grid->na_sc,
                    sort_work);
 
         /* This loop goes over the supercells and subcells along z at once */
@@ -1742,14 +1743,14 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     {
         if (grid->bSimple)
         {
-            print_bbsizes_simple(debug, nbs, grid);
+            print_bbsizes_simple(debug, grid);
         }
         else
         {
             fprintf(debug, "ns non-zero sub-cells: %d average atoms %.2f\n",
                     grid->nsubc_tot, (a1-a0)/(double)grid->nsubc_tot);
 
-            print_bbsizes_supersub(debug, nbs, grid);
+            print_bbsizes_supersub(debug, grid);
         }
     }
 }
@@ -1767,7 +1768,7 @@ static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
     }
     for (b = 0; b < flags->nflag; b++)
     {
-        flags->flag[b] = 0;
+        bitmask_clear(&(flags->flag[b]));
     }
 }
 
@@ -2623,7 +2624,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
     fprintf(fp, "nbl na_sc %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
             nbl->na_sc, rl, nbl->ncj, nbl->ncj/(double)grid->nc,
             nbl->ncj/(double)grid->nc*grid->na_sc,
-            nbl->ncj/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/det(nbs->box)));
+            nbl->ncj/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j cell list length %.1f\n",
             0.25*nbl->ncj/(double)nbl->nci);
@@ -2673,7 +2674,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     fprintf(fp, "nbl na_c %d rl %g ncp %d per cell %.1f atoms %.1f ratio %.2f\n",
             nbl->na_ci, rl, nbl->nci_tot, nbl->nci_tot/(double)grid->nsubc_tot,
             nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c,
-            nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nsubc_tot*grid->na_c/det(nbs->box)));
+            nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nsubc_tot*grid->na_c/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j super cell list length %.1f\n",
             0.25*nbl->ncj4/(double)nbl->nsci);
@@ -3259,12 +3260,6 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
                         inner_e = ge - (se << na_cj_2log);
 
                         nbl->cj[found].excl &= ~(1U<<((inner_i<<na_cj_2log) + inner_e));
-/* The next code line is usually not needed. We do not want to version
- * away the above line, because there is logic that relies on being
- * able to detect easily whether any exclusions exist. */
-#if (defined GMX_SIMD_IBM_QPX)
-                        nbl->cj[found].interaction_mask_indices[inner_i] &= ~(1U << inner_e);
-#endif
                     }
                 }
             }
@@ -3567,7 +3562,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                 nlist->gid[nri]      = 0;
                 nlist->shift[nri]    = nbl_sci->shift & NBNXN_CI_SHIFT;
 
-                bFEP_i = (gridi->fep[c_abs - gridi->cell0] & (1 << i));
+                bFEP_i = (gridi->fep[c_abs - gridi->cell0*GPU_NSUBCELL] & (1 << i));
 
                 xi = nbat->x[ind_i*nbat->xstride+XX] + shx;
                 yi = nbat->x[ind_i*nbat->xstride+YY] + shy;
@@ -4340,6 +4335,12 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
 
     grid = &nbs->grid[0];
 
+    if (min_ci_balanced <= 0 || grid->nc >= min_ci_balanced || grid->nc == 0)
+    {
+        /* We don't need to worry */
+        return -1;
+    }
+
     ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*GPU_NSUBCELL_X);
     ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*GPU_NSUBCELL_Y);
     ls[ZZ] = (grid->c1[ZZ] - grid->c0[ZZ])*grid->ncx*grid->ncy/(grid->nc*GPU_NSUBCELL_Z);
@@ -4388,22 +4389,14 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
         nsp_est = nsp_est_nl;
     }
 
-    if (min_ci_balanced <= 0 || grid->nc >= min_ci_balanced || grid->nc == 0)
-    {
-        /* We don't need to worry */
-        nsubpair_max = -1;
-    }
-    else
-    {
-        /* Thus the (average) maximum j-list size should be as follows */
-        nsubpair_max = max(1, (int)(nsp_est/min_ci_balanced+0.5));
+    /* Thus the (average) maximum j-list size should be as follows */
+    nsubpair_max = max(1, (int)(nsp_est/min_ci_balanced+0.5));
 
-        /* Since the target value is a maximum (this avoids high outliers,
-         * which lead to load imbalance), not average, we add half the
-         * number of pairs in a cj4 block to get the average about right.
-         */
-        nsubpair_max += GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE/2;
-    }
+    /* Since the target value is a maximum (this avoids high outliers,
+     * which lead to load imbalance), not average, we add half the
+     * number of pairs in a cj4 block to get the average about right.
+     */
+    nsubpair_max += GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE/2;
 
     if (debug)
     {
@@ -4846,7 +4839,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int               ndistc;
     int               ncpcheck;
     int               gridi_flag_shift = 0, gridj_flag_shift = 0;
-    unsigned int     *gridj_flag       = NULL;
+    gmx_bitmask_t    *gridj_flag       = NULL;
     int               ncj_old_i, ncj_old_j;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);
@@ -5329,7 +5322,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                             break;
 #endif
                                         case nbnxnk8x8x8_PlainC:
-                                        case nbnxnk8x8x8_CUDA:
+                                        case nbnxnk8x8x8_GPU:
                                             check_subcell_list_space_supersub(nbl, cl-cf+1);
                                             for (cj = cf; cj <= cl; cj++)
                                             {
@@ -5352,7 +5345,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                         cbl = nbl->cj[nbl->ncj-1].cj >> gridj_flag_shift;
                                         for (cb = cbf; cb <= cbl; cb++)
                                         {
-                                            gridj_flag[cb] = 1U<<th;
+                                            bitmask_init_bit(&gridj_flag[cb], th);
                                         }
                                     }
                                 }
@@ -5417,7 +5410,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
         if (bFBufferFlag && nbl->ncj > ncj_old_i)
         {
-            work->buffer_flags.flag[(gridi->cell0+ci)>>gridi_flag_shift] = 1U<<th;
+            bitmask_init_bit(&(work->buffer_flags.flag[(gridi->cell0+ci)>>gridi_flag_shift]), th);
         }
     }
 
@@ -5451,8 +5444,8 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
                                 int                         nsrc,
                                 const nbnxn_buffer_flags_t *dest)
 {
-    int                 s, b;
-    const unsigned int *flag;
+    int            s, b;
+    gmx_bitmask_t *flag;
 
     for (s = 0; s < nsrc; s++)
     {
@@ -5460,33 +5453,35 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
 
         for (b = 0; b < dest->nflag; b++)
         {
-            dest->flag[b] |= flag[b];
+            bitmask_union(&(dest->flag[b]), flag[b]);
         }
     }
 }
 
 static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
 {
-    int nelem, nkeep, ncopy, nred, b, c, out;
+    int           nelem, nkeep, ncopy, nred, b, c, out;
+    gmx_bitmask_t mask_0;
 
     nelem = 0;
     nkeep = 0;
     ncopy = 0;
     nred  = 0;
+    bitmask_init_bit(&mask_0, 0);
     for (b = 0; b < flags->nflag; b++)
     {
-        if (flags->flag[b] == 1)
+        if (bitmask_is_equal(flags->flag[b], mask_0))
         {
             /* Only flag 0 is set, no copy of reduction required */
             nelem++;
             nkeep++;
         }
-        else if (flags->flag[b] > 0)
+        else if (!bitmask_is_zero(flags->flag[b]))
         {
             c = 0;
             for (out = 0; out < nout; out++)
             {
-                if (flags->flag[b] & (1U<<out))
+                if (bitmask_is_set(flags->flag[b], out))
                 {
                     c++;
                 }

@@ -1,0 +1,5 @@
+test molecule for insertion at origin
+ 2
+    1X       X1    1   0.000   0.000   0.000
+    1X       X2    2   0.008  -0.045  -0.127
+   3.01000   3.01000   3.01000

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,12 +37,9 @@
 
 #include <stdio.h>
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-
 #include "buildinfo.h"
 
-void gmx_print_version_info_gpu(FILE *fp)
+void gmx_print_version_info_cuda_gpu(FILE *fp)
 {
     int cuda_driver, cuda_runtime;
     fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);

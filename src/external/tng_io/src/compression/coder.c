@@ -1,7 +1,7 @@
 /* This code is part of the tng compression routines.
  *
- * Written by Daniel Spangberg
- * Copyright (c) 2010, 2013, The GROMACS development team.
+ * Written by Daniel Spangberg and Magnus Lundborg
+ * Copyright (c) 2010, 2013-2014 The GROMACS development team.
  *
  *
  * This program is free software; you can redistribute it and/or
@@ -44,19 +44,17 @@ void DECLSPECDLLEXPORT Ptngc_coder_deinit(struct coder *coder_inst)
 
 TNG_INLINE void DECLSPECDLLEXPORT Ptngc_out8bits(struct coder *coder_inst, unsigned char **output)
 {
-  int pack_temporary_bits=coder_inst->pack_temporary_bits;
-  unsigned int pack_temporary=coder_inst->pack_temporary;
-  while (pack_temporary_bits>=8)
+  while (coder_inst->pack_temporary_bits>=8)
     {
-      unsigned int mask=~(0xFFU<<(pack_temporary_bits-8));
-      unsigned char out=(unsigned char)(pack_temporary>>(pack_temporary_bits-8));
+      unsigned int mask;
+      unsigned char out;
+      coder_inst->pack_temporary_bits-=8;
+      mask=~(0xFFU<<(coder_inst->pack_temporary_bits));
+      out=(unsigned char)(coder_inst->pack_temporary>>(coder_inst->pack_temporary_bits));
       **output=out;
       (*output)++;
-      pack_temporary_bits-=8;
-      pack_temporary&=mask;
+      coder_inst->pack_temporary&=mask;
     }
-  coder_inst->pack_temporary_bits=pack_temporary_bits;
-  coder_inst->pack_temporary=pack_temporary;
 }
 
 void DECLSPECDLLEXPORT Ptngc_write_pattern(struct coder *coder_inst, unsigned int pattern,
@@ -80,7 +78,7 @@ void DECLSPECDLLEXPORT Ptngc_write_pattern(struct coder *coder_inst, unsigned in
 
 /* Write up to 24 bits */
 TNG_INLINE void DECLSPECDLLEXPORT Ptngc_writebits(struct coder *coder_inst,
-                                unsigned int value, int nbits,
+                                unsigned int value, const int nbits,
                                 unsigned char **output_ptr)
 {
   /* Make room for the bits. */
@@ -91,7 +89,7 @@ TNG_INLINE void DECLSPECDLLEXPORT Ptngc_writebits(struct coder *coder_inst,
 }
 
 /* Write up to 32 bits */
-void DECLSPECDLLEXPORT Ptngc_write32bits(struct coder *coder_inst,unsigned int value,
+void DECLSPECDLLEXPORT Ptngc_write32bits(struct coder *coder_inst, unsigned int value,
                        int nbits, unsigned char **output_ptr)
 {
   unsigned int mask;
@@ -102,11 +100,11 @@ void DECLSPECDLLEXPORT Ptngc_write32bits(struct coder *coder_inst,unsigned int v
   while (nbits>8)
     {
       /* Make room for the bits. */
+      nbits-=8;
       coder_inst->pack_temporary<<=8;
       coder_inst->pack_temporary_bits+=8;
-      coder_inst->pack_temporary|=(value&mask)>>(nbits-8);
+      coder_inst->pack_temporary|=(value&mask)>>(nbits);
       Ptngc_out8bits(coder_inst,output_ptr);
-      nbits-=8;
       mask>>=8;
     }
   if (nbits)
@@ -167,8 +165,8 @@ static int write_stop_bit_code(struct coder *coder_inst, unsigned int s,
   return 0;
 }
 
-static int pack_stopbits_item(struct coder *coder_inst,int item,
-                              unsigned char **output, int coding_parameter)
+static int pack_stopbits_item(struct coder *coder_inst, const int item,
+                              unsigned char **output, const int coding_parameter)
 {
     /* Find this symbol in table. */
     int s=0;
@@ -180,8 +178,8 @@ static int pack_stopbits_item(struct coder *coder_inst,int item,
 }
 
 static int pack_triplet(struct coder *coder_inst, unsigned int *s,
-                        unsigned char **output, int coding_parameter,
-                        unsigned int max_base, int maxbits)
+                        unsigned char **output, const int coding_parameter,
+                        const unsigned int max_base, const int maxbits)
 {
   /* Determine base for this triplet. */
   unsigned int min_base=1U<<coding_parameter;
@@ -213,7 +211,7 @@ static int pack_triplet(struct coder *coder_inst, unsigned int *s,
   return 0;
 }
 
-void DECLSPECDLLEXPORT Ptngc_pack_flush(struct coder *coder_inst,unsigned char **output)
+void DECLSPECDLLEXPORT Ptngc_pack_flush(struct coder *coder_inst, unsigned char **output)
 {
   /* Zero-fill just enough. */
   if (coder_inst->pack_temporary_bits>0)
@@ -221,8 +219,8 @@ void DECLSPECDLLEXPORT Ptngc_pack_flush(struct coder *coder_inst,unsigned char *
 }
 
 unsigned char DECLSPECDLLEXPORT *Ptngc_pack_array(struct coder *coder_inst,
-                                int *input, int *length, int coding,
-                                int coding_parameter, int natoms, int speed)
+                                int *input, int *length, const int coding,
+                                const int coding_parameter, const int natoms, const int speed)
 {
   if ((coding==TNG_COMPRESS_ALGO_BWLZH1) || (coding==TNG_COMPRESS_ALGO_BWLZH2))
     {
@@ -246,7 +244,6 @@ unsigned char DECLSPECDLLEXPORT *Ptngc_pack_array(struct coder *coder_inst,
             {
               int item=input[k*3*natoms+i*3+j];
               pval[cnt++]=(unsigned int)(item+most_negative);
-
             }
       if (speed>=5)
         bwlzh_compress(pval,n,output+4,length);
@@ -340,7 +337,7 @@ unsigned char DECLSPECDLLEXPORT *Ptngc_pack_array(struct coder *coder_inst,
 
 static int unpack_array_stop_bits(struct coder *coder_inst,
                                   unsigned char *packed,int *output,
-                                  int length, int coding_parameter)
+                                  const int length, const int coding_parameter)
 {
   int i,j;
   unsigned int extract_mask=0x80;
@@ -395,7 +392,7 @@ static int unpack_array_stop_bits(struct coder *coder_inst,
 
 static int unpack_array_triplet(struct coder *coder_inst,
                                 unsigned char *packed, int *output,
-                                int length, int coding_parameter)
+                                int length, const int coding_parameter)
 {
   int i,j;
   unsigned int extract_mask=0x80;
@@ -469,7 +466,7 @@ static int unpack_array_triplet(struct coder *coder_inst,
 
 static int unpack_array_bwlzh(struct coder *coder_inst,
                               unsigned char *packed, int *output,
-                              int length, int natoms)
+                              const int length, const int natoms)
 {
   int i,j,k,n=length;
   unsigned int *pval=warnmalloc(n*sizeof *pval);
@@ -494,8 +491,8 @@ static int unpack_array_bwlzh(struct coder *coder_inst,
 
 int DECLSPECDLLEXPORT Ptngc_unpack_array(struct coder *coder_inst,
                        unsigned char *packed, int *output,
-                       int length, int coding, int coding_parameter,
-                       int natoms)
+                       const int length, const int coding, const int coding_parameter,
+                       const int natoms)
 {
   if ((coding==TNG_COMPRESS_ALGO_STOPBIT) ||
       (coding==TNG_COMPRESS_ALGO_VEL_STOPBIT_INTER))

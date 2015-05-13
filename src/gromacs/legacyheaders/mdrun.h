@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,6 @@
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/globsig.h"
 #include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/timing/wallcycle.h"
 
@@ -72,7 +71,6 @@ extern "C" {
 #define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 #define MD_TUNEPME        (1<<20)
-#define MD_TESTVERLET     (1<<22)
 #define MD_IMDWAIT        (1<<23)
 #define MD_IMDTERM        (1<<24)
 #define MD_IMDPULL        (1<<25)
@@ -98,7 +96,6 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                  gmx_membed_t membed,
                                  real cpt_period, real max_hours,
-                                 const char *deviceOptions,
                                  int imdport,
                                  unsigned long Flags,
                                  gmx_walltime_accounting_t walltime_accounting);
@@ -160,7 +157,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             const char *deviceOptions, int imdport, unsigned long Flags);
+             int imdport, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 void bcast_state(const struct t_commrec *cr, t_state *state);

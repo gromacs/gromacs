@@ -220,8 +220,7 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
                real tol, rvec x[], rvec prime[], real omega,
                gmx_bool bFEP, real lambda, real scaled_lagrange_multiplier[],
                real invdt, rvec *v,
-               gmx_bool bCalcVir, tensor vir_r_m_dr, int econq,
-               t_vetavars *vetavar)
+               gmx_bool bCalcVir, tensor vir_r_m_dr, int econq)
 {
     rvec    *rij;
     real    *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
@@ -277,7 +276,7 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
             cshake(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, scaled_lagrange_multiplier, &error);
             break;
         case econqVeloc:
-            crattle(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, scaled_lagrange_multiplier, &error, invdt, vetavar);
+            crattle(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0], half_of_reduced_mass, omega, invmass, distance_squared_tolerance, scaled_lagrange_multiplier, &error, invdt);
             break;
     }
 
@@ -317,12 +316,12 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         if ((econq == econqCoord) && v != NULL)
         {
             /* Correct the velocities */
-            mm = scaled_lagrange_multiplier[ll]*invmass[i]*invdt/vetavar->rscale;
+            mm = scaled_lagrange_multiplier[ll]*invmass[i]*invdt;
             for (d = 0; d < DIM; d++)
             {
                 v[ia[1]][d] += mm*rij[ll][d];
             }
-            mm = scaled_lagrange_multiplier[ll]*invmass[j]*invdt/vetavar->rscale;
+            mm = scaled_lagrange_multiplier[ll]*invmass[j]*invdt;
             for (d = 0; d < DIM; d++)
             {
                 v[ia[2]][d] -= mm*rij[ll][d];
@@ -333,14 +332,7 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         /* constraint virial */
         if (bCalcVir)
         {
-            if (econq == econqCoord)
-            {
-                mm = scaled_lagrange_multiplier[ll]/vetavar->rvscale;
-            }
-            if (econq == econqVeloc)
-            {
-                mm = scaled_lagrange_multiplier[ll]/(vetavar->vscale*vetavar->vscale_nhc[0]);
-            }
+            mm = scaled_lagrange_multiplier[ll];
             for (d = 0; d < DIM; d++)
             {
                 tmp = mm*rij[ll][d];
@@ -415,7 +407,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
                  t_nrnb *nrnb, real *scaled_lagrange_multiplier, real lambda, real *dvdlambda,
                  real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
-                 gmx_bool bDumpOnError, int econq, t_vetavars *vetavar)
+                 gmx_bool bDumpOnError, int econq)
 {
     t_iatom *iatoms;
     real     dt_2, dvdl;
@@ -441,7 +433,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
                            ir->efep != efepNO, lambda, scaled_lagrange_multiplier, invdt, v, bCalcVir, vir_r_m_dr,
-                           econq, vetavar);
+                           econq);
 
 #ifdef DEBUGSHAKE
         check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
@@ -516,7 +508,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
 void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
              real constraint_distance_squared[], real vp[], real rij[], real m2[], real omega,
              real invmass[], real distance_squared_tolerance[], real scaled_lagrange_multiplier[],
-             int *nerror, real invdt, t_vetavars *vetavar)
+             int *nerror, real invdt)
 {
     /*
      *     r.c. van schaik and w.f. van gunsteren
@@ -530,13 +522,10 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
     int          ll, i, j, i3, j3, l3;
     int          ix, iy, iz, jx, jy, jz;
     real         constraint_distance_squared_ll;
-    real         vpijd, vx, vy, vz, acor, xdotd, fac, im, jm;
+    real         vpijd, vx, vy, vz, acor, fac, im, jm;
     real         xh, yh, zh, rijx, rijy, rijz;
     int          nit, error, nconv;
-    real         veta, vscale_nhc, iconvf;
-
-    veta       = vetavar->veta;
-    vscale_nhc = vetavar->vscale_nhc[0];  /* for now, just use the first state */
+    real         iconvf;
 
     // TODO nconv is used solely as a boolean, so we should write the
     // code like that
@@ -567,25 +556,22 @@ void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
 
             vpijd   = vx*rijx+vy*rijy+vz*rijz;
             constraint_distance_squared_ll = constraint_distance_squared[ll];
-            /* this is r(t+dt) \dotproduct \dot{r}(t+dt) */
-            xdotd   = vpijd*vscale_nhc + veta*constraint_distance_squared_ll;
 
             /* iconv is zero when the error is smaller than a bound */
-            iconvf   = fabs(xdotd)*(distance_squared_tolerance[ll]/invdt);
+            iconvf   = fabs(vpijd)*(distance_squared_tolerance[ll]/invdt);
 
             if (iconvf > 1)
             {
                 nconv     = static_cast<int>(iconvf);
                 fac       = omega*2.0*m2[ll]/constraint_distance_squared_ll;
-                acor      = -fac*xdotd;
+                acor      = -fac*vpijd;
                 scaled_lagrange_multiplier[ll] += acor;
-
                 xh        = rijx*acor;
                 yh        = rijy*acor;
                 zh        = rijz*acor;
 
-                im        = invmass[i]/vscale_nhc;
-                jm        = invmass[j]/vscale_nhc;
+                im        = invmass[i];
+                jm        = invmass[j];
 
                 vp[ix] += xh*im;
                 vp[iy] += yh*im;

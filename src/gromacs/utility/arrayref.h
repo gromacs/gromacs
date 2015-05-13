@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,6 +152,22 @@ class ArrayRef
             : begin_(begin), end_(end)
         {
             GMX_ASSERT(end >= begin, "Invalid range");
+        }
+        /*! \brief
+         * Constructs a reference to a whole vector.
+         *
+         * \param[in] v  Vector to reference.
+         *
+         * Passed vector must remain valid and not be reallocated for the
+         * lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * std::vector to a method that takes ArrayRef.
+         */
+        ArrayRef(std::vector<T> &v)
+            : begin_((!v.empty()) ? &v[0] : NULL),
+              end_((!v.empty()) ? &v[0] + v.size() : NULL)
+        {
         }
         //! \cond
         // Doxygen 1.8.5 doesn't parse the declaration correctly...
@@ -392,6 +408,22 @@ class ConstArrayRef
             : begin_(begin), end_(end)
         {
             GMX_ASSERT(end >= begin, "Invalid range");
+        }
+        /*! \brief
+         * Constructs a reference to a whole vector.
+         *
+         * \param[in] v  Vector to reference.
+         *
+         * Passed vector must remain valid and not be reallocated for the
+         * lifetime of this object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * std::vector to a method that takes ConstArrayRef.
+         */
+        ConstArrayRef(const std::vector<T> &v)
+            : begin_((!v.empty()) ? &v[0] : NULL),
+              end_((!v.empty()) ? &v[0] + v.size() : NULL)
+        {
         }
         //! \cond
         // Doxygen 1.8.5 doesn't parse the declaration correctly...

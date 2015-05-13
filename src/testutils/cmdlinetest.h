@@ -54,6 +54,10 @@
 
 namespace gmx
 {
+
+class CommandLineModuleInterface;
+class CommandLineOptionsModuleInterface;
+
 namespace test
 {
 
@@ -187,6 +191,8 @@ class CommandLine
  *      setOutputFileNoTest()).
  *   3. Checking the contents of some of the output files using
  *      TestReferenceData (setOutputFile() and checkOutputFiles()).
+ *   4. Static methods for easily executing command-line modules
+ *      (various overloads of runModule()).
  *
  * All files created during the test are cleaned up at the end of the test.
  *
@@ -199,6 +205,33 @@ class CommandLine
 class CommandLineTestHelper
 {
     public:
+        /*! \brief
+         * Runs a command-line program that implements CommandLineModuleInterface.
+         *
+         * \param[in,out] module       Module to run.
+         *     The function does not take ownership.
+         * \param[in,out] commandLine  Command line parameters to pass.
+         *     This is only modified if \p module modifies it.
+         * \returns The return value of the module.
+         * \throws  unspecified  Any exception thrown by the module.
+         */
+        static int
+        runModule(CommandLineModuleInterface *module, CommandLine *commandLine);
+        /*! \brief
+         * Runs a command-line program that implements
+         * CommandLineOptionsModuleInterface.
+         *
+         * \param[in] factory          Factory method for the module to run.
+         * \param[in,out] commandLine  Command line parameters to pass.
+         *     This is only modified if the module modifies it.
+         * \returns The return value of the module.
+         * \throws  unspecified  Any exception thrown by the factory or the
+         *     module.
+         */
+        static int
+        runModule(CommandLineOptionsModuleInterface *(*factory)(),
+                  CommandLine                      *commandLine);
+
         /*! \brief
          * Initializes an instance.
          *
@@ -222,6 +255,21 @@ class CommandLineTestHelper
         void setInputFileContents(CommandLine *args, const char *option,
                                   const char *extension,
                                   const std::string &contents);
+        /*! \brief
+         * Generates and sets an input file.
+         *
+         * \param[in,out] args      CommandLine to which to add the option.
+         * \param[in]     option    Option to set.
+         * \param[in]     extension Extension for the file to create.
+         * \param[in]     contents  Text to write to the input file.
+         *
+         * Creates a temporary file with contents from \p contents (each array
+         * entry on its own line), and adds \p option to \p args with a value
+         * that points to the generated file.
+         */
+        void setInputFileContents(CommandLine *args, const char *option,
+                                  const char *extension,
+                                  const ConstArrayRef<const char *> &contents);
         /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.
          *
@@ -332,6 +380,14 @@ class CommandLineTestBase : public ::testing::Test
                                   const char        *extension,
                                   const std::string &contents);
         /*! \brief
+         * Generates and sets an input file.
+         *
+         * \see CommandLineTestHelper::setInputFileContents()
+         */
+        void setInputFileContents(const char                        *option,
+                                  const char                        *extension,
+                                  const ConstArrayRef<const char *> &contents);
+        /*! \brief
          * Sets an output file parameter and adds it to the set of tested files.
          *
          * \see CommandLineTestHelper::setOutputFile()
@@ -355,6 +411,16 @@ class CommandLineTestBase : public ::testing::Test
          * Does not throw.
          */
         CommandLine &commandLine();
+        /*! \brief
+         * Returns the internal TestFileManager object used to manage the
+         * files.
+         *
+         * Derived test fixtures can use this to manage files in cases the
+         * canned methods are not sufficient.
+         *
+         * Does not throw.
+         */
+        TestFileManager &fileManager();
         /*! \brief
          * Returns the root reference data checker.
          *

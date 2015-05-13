@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -190,6 +190,63 @@ TEST_F(FileNameOptionManagerTest, GivesErrorOnMissingRequiredInputFile)
     EXPECT_NO_THROW_GMX(assigner.start());
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_THROW_GMX(options_.finish(), gmx::InvalidInputError);
+}
+
+TEST_F(FileNameOptionManagerTest, AcceptsMissingInputFileIfSpecified)
+{
+    std::string value;
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                FileNameOption("f").store(&value)
+                                    .filetype(gmx::eftIndex).inputFile()
+                                    .allowMissing()));
+    EXPECT_TRUE(value.empty());
+
+    gmx::OptionsAssigner assigner(&options_);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("missing.ndx"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_EQ("missing.ndx", value);
+}
+
+TEST_F(FileNameOptionManagerTest, AcceptsMissingDefaultInputFileIfSpecified)
+{
+    std::string value;
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                FileNameOption("f").store(&value)
+                                    .filetype(gmx::eftIndex).inputFile()
+                                    .defaultBasename("missing")
+                                    .allowMissing()));
+
+    gmx::OptionsAssigner assigner(&options_);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_EQ("missing.ndx", value);
+}
+
+TEST_F(FileNameOptionManagerTest, AcceptsMissingRequiredInputFileIfSpecified)
+{
+    std::string value;
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                FileNameOption("f").store(&value).required()
+                                    .filetype(gmx::eftIndex).inputFile()
+                                    .defaultBasename("missing")
+                                    .allowMissing()));
+    EXPECT_EQ("missing.ndx", value);
+
+    gmx::OptionsAssigner assigner(&options_);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_EQ("missing.ndx", value);
 }
 
 TEST_F(FileNameOptionManagerTest, AddsMissingExtensionBasedOnExistingFile)

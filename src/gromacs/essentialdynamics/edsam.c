@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1202,6 +1202,7 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm
         init_edsamstate(ed, EDstate);
 
         /* The master opens the ED output file */
+        /* TODO This file is never closed... */
         if (Flags & MD_APPENDFILES)
         {
             ed->edo = gmx_fio_fopen(opt2fn("-eo", nfile, fnm), "a+");
@@ -1793,7 +1794,6 @@ static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms)
         /* Keep the curr_edi pointer for the case that the next group is empty: */
         last_edi = curr_edi;
         /* Let's prepare to read in the next edi data set: */
-        /* cppcheck-suppress uninitvar Fixed in cppcheck 1.65 */
         curr_edi = edi_read;
     }
     if (edi_nr == 0)
@@ -3183,4 +3183,17 @@ void do_edsam(t_inputrec     *ir,
     } /* END of loop over ED groups */
 
     ed->bFirst = FALSE;
+}
+
+void done_ed(gmx_edsam_t *ed)
+{
+    if (*ed)
+    {
+        /* ed->edo is opened sometimes with xvgropen, sometimes with
+         * gmx_fio_fopen, so we use the least common denominator for
+         * closing. */
+        gmx_fio_fclose((*ed)->edo);
+    }
+
+    /* TODO deallocate ed and set pointer to NULL */
 }

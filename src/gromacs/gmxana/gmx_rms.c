@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,7 +114,7 @@ int gmx_rms(int argc, char *argv[])
         "Option [TT]-prev[tt] produces the comparison with a previous frame",
         "the specified number of frames ago.[PAR]",
 
-        "Option [TT]-m[tt] produces a matrix in [TT].xpm[tt] format of",
+        "Option [TT]-m[tt] produces a matrix in [REF].xpm[ref] format of",
         "comparison values of each structure in the trajectory with respect to",
         "each other structure. This file can be visualized with for instance",
         "[TT]xv[tt] and can be converted to postscript with [gmx-xpm2ps].[PAR]",
@@ -125,7 +125,7 @@ int gmx_rms(int argc, char *argv[])
 
         "Option [TT]-mw[tt] controls whether mass weighting is done or not.",
         "If you select the option (default) and ",
-        "supply a valid [TT].tpr[tt] file masses will be taken from there, ",
+        "supply a valid [REF].tpr[ref] file masses will be taken from there, ",
         "otherwise the masses will be deduced from the [TT]atommass.dat[tt] file in",
         "[TT]GMXLIB[tt]. This is fine for proteins, but not",
         "necessarily for other molecules. A default mass of 12.011 amu (carbon)",
@@ -1151,7 +1151,7 @@ int gmx_rms(int argc, char *argv[])
         }
         fprintf(fp, "\n");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     if (bMirror)
     {
@@ -1189,7 +1189,7 @@ int gmx_rms(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     if (bAv)
@@ -1201,7 +1201,7 @@ int gmx_rms(int argc, char *argv[])
         {
             fprintf(fp, "%10d  %10g\n", j, rlstot/teller);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     if (bNorm)
@@ -1211,7 +1211,7 @@ int gmx_rms(int argc, char *argv[])
         {
             fprintf(fp, "%10d  %10g\n", j, rlsnorm[j]/teller);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     do_view(oenv, opt2fn_null("-a", NFILE, fnm), "-graphtype bar");
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);

@@ -50,6 +50,9 @@
 #include <sstream>
 #include <vector>
 
+#include <boost/scoped_ptr.hpp>
+
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/file.h"
@@ -258,6 +261,26 @@ class CommandLineTestHelper::Impl
  * CommandLineTestHelper
  */
 
+// static
+int CommandLineTestHelper::runModule(
+        CommandLineModuleInterface *module, CommandLine *commandLine)
+{
+    CommandLineModuleSettings settings;
+    module->init(&settings);
+    return module->run(commandLine->argc(), commandLine->argv());
+}
+
+// static
+int CommandLineTestHelper::runModule(
+        CommandLineOptionsModuleInterface::FactoryMethod  factory,
+        CommandLine                                      *commandLine)
+{
+    // The name and description are not used in the tests, so they can be NULL.
+    boost::scoped_ptr<CommandLineModuleInterface> module(
+            CommandLineOptionsModuleInterface::createModule(NULL, NULL, factory));
+    return runModule(module.get(), commandLine);
+}
+
 CommandLineTestHelper::CommandLineTestHelper(TestFileManager *fileManager)
     : impl_(new Impl(fileManager))
 {
@@ -271,9 +294,27 @@ void CommandLineTestHelper::setInputFileContents(
         CommandLine *args, const char *option, const char *extension,
         const std::string &contents)
 {
+    GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
     File::writeFileFromString(fullFilename, contents);
+    args->addOption(option, fullFilename);
+}
+
+void CommandLineTestHelper::setInputFileContents(
+        CommandLine *args, const char *option, const char *extension,
+        const ConstArrayRef<const char *> &contents)
+{
+    GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
+    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
+                formatString("%d.%s", args->argc(), extension));
+    File        file(fullFilename, "w");
+    ConstArrayRef<const char *>::const_iterator i;
+    for (i = contents.begin(); i != contents.end(); ++i)
+    {
+        file.writeLine(*i);
+    }
+    file.close();
     args->addOption(option, fullFilename);
 }
 
@@ -354,6 +395,14 @@ void CommandLineTestBase::setInputFileContents(
                                         contents);
 }
 
+void CommandLineTestBase::setInputFileContents(
+        const char *option, const char *extension,
+        const ConstArrayRef<const char *> &contents)
+{
+    impl_->helper_.setInputFileContents(&impl_->cmdline_, option, extension,
+                                        contents);
+}
+
 void CommandLineTestBase::setOutputFile(
         const char *option, const char *filename)
 {
@@ -369,6 +418,11 @@ void CommandLineTestBase::setOutputFileNoTest(
 CommandLine &CommandLineTestBase::commandLine()
 {
     return impl_->cmdline_;
+}
+
+TestFileManager &CommandLineTestBase::fileManager()
+{
+    return impl_->tempFiles_;
 }
 
 TestReferenceChecker CommandLineTestBase::rootChecker()

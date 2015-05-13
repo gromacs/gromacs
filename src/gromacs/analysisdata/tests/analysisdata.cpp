@@ -413,7 +413,10 @@ TYPED_TEST(AnalysisDataCommonTest, CallsModuleCorrectlyWithOutOfOrderFrames)
     ASSERT_NO_THROW_GMX(handle2 = this->data_.startData(options));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 1, handle1));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 0, handle2));
+    ASSERT_NO_THROW_GMX(this->data_.finishFrameSerial(0));
+    ASSERT_NO_THROW_GMX(this->data_.finishFrameSerial(1));
     ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 2, handle1));
+    ASSERT_NO_THROW_GMX(this->data_.finishFrameSerial(2));
     ASSERT_NO_THROW_GMX(handle1.finishData());
     ASSERT_NO_THROW_GMX(handle2.finishData());
 }

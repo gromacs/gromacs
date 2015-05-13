@@ -216,8 +216,9 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
         selections.evaluate(&frame, ppbc);
         module->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        module->finishFrameSerial(nframes);
 
-        nframes++;
+        ++nframes;
     }
     while (common.readNextFrame());
     module->finishFrames(pdata.get());

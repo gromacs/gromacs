@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,6 +68,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 static gmx_bool be_cool(void)
 {
@@ -192,7 +193,7 @@ static void printCopyright(FILE *fp)
     };
     static const char * const CopyrightText[] = {
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-        "Copyright (c) 2001-2014, The GROMACS development team at",
+        "Copyright (c) 2001-2015, The GROMACS development team at",
         "Uppsala University, Stockholm University and",
         "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
@@ -383,6 +384,11 @@ void please_cite(FILE *fp, const char *key)
           "Thermodynamics of liquids: standard molar entropies and heat capacities of common solvents from 2PT molecular dynamics",
           "Phys. Chem. Chem. Phys.",
           13, 2011, "169-181" },
+        { "Caleman2008a",
+          "C. Caleman and D. van der Spoel",
+          "Picosecond Melting of Ice by an Infrared Laser Pulse: A Simulation Study",
+          "Angew. Chem. Int. Ed",
+          47, 2008, "1417-1420" },
         { "Caleman2011b",
           "C. Caleman and P. J. van Maaren and M. Hong and J. S. Hub and L. T. da Costa and D. van der Spoel",
           "Force Field Benchmark of Organic Liquids: Density, Enthalpy of Vaporization, Heat Capacities, Surface Tension, Isothermal Compressibility, Volumetric Expansion Coefficient, and Dielectric Constant",
@@ -628,15 +634,19 @@ const char *ShortProgram(void)
 
 const char *Program(void)
 {
+    const char *programName = NULL;
+
     try
     {
-        return gmx::getProgramContext().fullBinaryPath();
+        programName = gmx::getProgramContext().fullBinaryPath();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+    return programName;
 }
 
 
-extern void gmx_print_version_info_gpu(FILE *fp);
+extern void gmx_print_version_info_cuda_gpu(FILE *fp);
 
 static void gmx_print_version_info(FILE *fp)
 {
@@ -667,7 +677,7 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "MPI library:        none\n");
 #endif
 #ifdef GMX_OPENMP
-    fprintf(fp, "OpenMP support:     enabled\n");
+    fprintf(fp, "OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)\n", GMX_OPENMP_MAX_THREADS);
 #else
     fprintf(fp, "OpenMP support:     disabled\n");
 #endif
@@ -680,12 +690,7 @@ static void gmx_print_version_info(FILE *fp)
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
-#ifndef __MIC__
     fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
-#else
-    fprintf(fp, "SIMD instructions:  %s\n", "Intel MIC");
-#endif
-
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP
     fprintf(fp, "RDTSCP usage:       enabled\n");
@@ -740,7 +745,7 @@ static void gmx_print_version_info(FILE *fp)
             BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
             bExternalBoost ? " (external)" : " (internal)");
 #ifdef GMX_GPU
-    gmx_print_version_info_gpu(fp);
+    gmx_print_version_info_cuda_gpu(fp);
 #endif
 }
 
@@ -807,17 +812,18 @@ void printBinaryInformation(FILE                            *fp,
     fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
             gmx_version(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
-    if (binaryPath != NULL && binaryPath[0] != '\0')
+    if (!gmx::isNullOrEmpty(binaryPath))
     {
         fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
     }
-    const char *const libraryPath = programContext.defaultLibraryDataPath();
-    if (libraryPath != NULL && libraryPath[0] != '\0')
+    const gmx::InstallationPrefixInfo installPrefix = programContext.installationPrefix();
+    if (!gmx::isNullOrEmpty(installPrefix.path))
     {
-        fprintf(fp, "%sLibrary dir:  %s%s\n", prefix, libraryPath, suffix);
+        fprintf(fp, "%sData prefix:  %s%s%s\n", prefix, installPrefix.path,
+                installPrefix.bSourceLayout ? " (source tree)" : "", suffix);
     }
     const char *const commandLine = programContext.commandLine();
-    if (commandLine != NULL && commandLine[0] != '\0')
+    if (!gmx::isNullOrEmpty(commandLine))
     {
         fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
                 prefix, suffix, prefix, commandLine, suffix);

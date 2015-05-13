@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,7 @@ if(CMAKE_HOST_UNIX)
     if(GMX_BUILD_HOSTNAME AND NOT "${GMX_BUILD_HOSTNAME}" STREQUAL "${TMP_HOSTNAME}")
         message(WARNING "
             The CMake cache, probably generated on a different host (${GMX_BUILD_HOSTNAME}),
-            is being reused! This could lead to inconsitencies; therefore, it is
+            is being reused! This could lead to inconsistencies; therefore, it is
             recommended to regenerate the cache!")
     endif()
     set(GMX_BUILD_HOSTNAME "${TMP_HOSTNAME}" CACHE INTERNAL
@@ -172,30 +172,25 @@ endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 include(gmxManageGPU)
 
-if(GMX_CPU_ACCELERATION)
-    # Stay compatible with old Jenkins command line options for specific SIMD acceleration
-    set(GMX_SIMD "${GMX_CPU_ACCELERATION}" CACHE STRING "SIMD instruction set level and compiler optimization" FORCE)
-    message("You set GMX_CPU_ACCELERATION, which is deprecated, and will be removed in a later version of GROMACS. It is replaced by GMX_SIMD. For now, copying the value from GMX_CPU_ACCELERATION to GMX_SIMD.")
-    # TODO remove all references to GMX_CPU_ACCELERATION in master branch
-endif()
-
-if(NOT GMX_TARGET_MIC)
-    include(gmxDetectSimd)
-    gmx_detect_simd(GMX_SUGGESTED_SIMD)
-else()
-    set(GMX_SUGGESTED_SIMD "None")
-endif()
+include(gmxDetectSimd)
+gmx_detect_simd(GMX_SUGGESTED_SIMD)
 
 gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "${GMX_SUGGESTED_SIMD}"
-    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX_512F AVX_512ER MIC ARM_NEON ARM_NEON_ASIMD IBM_QPX IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
+
+if(GMX_TARGET_MIC)
+    set(GMX_FFT_LIBRARY_DEFAULT "mkl")
+else()
+    set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
+endif()
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
     "FFT library"
-    "fftw3"
+    "${GMX_FFT_LIBRARY_DEFAULT}"
     fftw3 mkl "fftpack[built-in]")
 gmx_dependent_option(
     GMX_BUILD_OWN_FFTW
@@ -231,9 +226,6 @@ option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
 
-if(UNIX)
-    option(GMX_SYMLINK_OLD_BINARY_NAMES "Create symbolic links for pre-5.0 binary names" ON)
-endif()
 option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
 option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
@@ -336,7 +328,6 @@ check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
 
 check_include_files(regex.h      HAVE_POSIX_REGEX)
-check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 # TODO: It could be nice to inform the user if no regex support is found,
 # as selections won't be fully functional.
 
@@ -359,6 +350,7 @@ check_function_exists(nice              HAVE_NICE)
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
+check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 
 include(TestSchedAffinity)
 test_sched_affinity(HAVE_SCHED_AFFINITY)
@@ -401,6 +393,11 @@ include(gmxManageSharedLibraries)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
+
+# TNG wants zlib if it is available. And static libxml2 might have a dependency
+find_package(ZLIB QUIET)
+include(gmxTestZLib)
+gmx_test_zlib(HAVE_ZLIB)
 
 # Unconditionally find the package, as it is also required for unit
 # tests. This exports LIBXML2_FOUND, which we should not use because
@@ -498,7 +495,6 @@ tmpi_enable_cxx()
 if(GMX_THREAD_MPI)
     # enable MPI functions
     tmpi_enable()
-    set(GMX_MPI 1)
     set(MPI_IN_PLACE_EXISTS 1)
 endif()
 # If atomics are manually disabled a define is needed because atomics.h doesn't depend on config.h
@@ -525,6 +521,9 @@ endif()
 # Detect boost unless GMX_EXTERNAL_BOOST is explicitly OFF
 # Used for default if GMX_EXTERNAL_BOOST is not defined (first CMake pass)
 if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
+    if(DEFINED Boost_INCLUDE_DIR)
+        set(Boost_FIND_QUIETLY TRUE)
+    endif()
     find_package(Boost 1.44.0)
     if(Boost_FOUND AND Boost_VERSION VERSION_LESS "104400")
         set(Boost_FOUND FALSE)
@@ -555,13 +554,6 @@ if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
     message(FATAL_ERROR
         "Cannot build unit tests without libxml2. "
         "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
-endif()
-
-if(GMX_USE_TNG AND NOT GMX_EXTERNAL_TNG)
-    # TNG wants zlib if it is available
-    find_package(ZLIB QUIET)
-    include(gmxTestZLib)
-    gmx_test_zlib(HAVE_ZLIB)
 endif()
 
 ########################################################################
@@ -621,16 +613,23 @@ gmx_test__finite(HAVE__FINITE)
 include(gmxTestCXX11)
 gmx_test_cxx11(GMX_CXX11_SUPPORTED GMX_CXX11_FLAGS)
 include(CMakeDependentOption)
+# clang with some older versions of boost fail to work with C++11
+if(CMAKE_CXX_COMPILER_ID MATCHES Clang AND
+    (Boost_VERSION VERSION_EQUAL 104601 OR Boost_VERSION VERSION_EQUAL 104700))
+    set(CLANG_AND_OLD_EXTERNAL_BOOST TRUE)
+endif()
 # nvcc does not support C++11 flags, so with GPUs we prefer to skip C++11 flags
 # entirely to keep the compilation environment uniform.
 cmake_dependent_option(GMX_CXX11
     "Use C++11 features"
-    ON "GMX_CXX11_SUPPORTED AND NOT GMX_GPU" OFF)
+    ON "GMX_CXX11_SUPPORTED AND NOT GMX_GPU AND NOT CLANG_AND_OLD_EXTERNAL_BOOST" OFF)
 mark_as_advanced(GMX_CXX11)
 if(GMX_CXX11)
     set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
 endif()
 
+# Now we can test for CXX11_REGEX include file
+check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
@@ -643,11 +642,12 @@ endif()
 # Process SIMD instruction settings
 ##################################################
 # This checks what flags to add in order to
-# support the SIMD instructions we need, and sets
-# correct defines for the SIMD instructions supported.
-include(gmxTestSimd)
-gmx_test_simd()
-
+# support the SIMD instructions we need, it sets
+# correct defines for the SIMD instructions supported,
+# and adds advanced options to control accuracy
+# for SIMD math operations.
+include(gmxManageSimd)
+gmx_manage_simd()
 
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
@@ -727,18 +727,18 @@ if(GMX_FAHCORE)
   include_directories(${COREWRAP_INCLUDE_DIR})
 endif()
 
-# Value of AUTO tries to generate things, but will only produce warnings if
-# that fails.
+# Value of GMX_BUILD_HELP=AUTO tries to generate things, but will only
+# produce warnings if that fails.
 set(build_help_default AUTO)
-if (SOURCE_IS_SOURCE_DISTRIBUTION)
+if (SOURCE_IS_SOURCE_DISTRIBUTION OR CMAKE_CROSSCOMPILING)
     set(build_help_default OFF)
 endif()
-gmx_option_trivalue(GMX_BUILD_HELP "Build man pages, HTML help, and completions automatically (requires that compiled binaries can be executed on the build host)" ${build_help_default})
+gmx_option_trivalue(GMX_BUILD_HELP "Build completions automatically (requires that compiled binaries can be executed on the build host) and install man pages if built (requires building the 'man' target manually)" ${build_help_default})
 mark_as_advanced(GMX_BUILD_HELP)
 if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
     message(FATAL_ERROR
-        "Rebuilding HTML and man pages or shell completions is not supported "
-        "for in-source builds from a source distribution. "
+        "Rebuilding shell completions or man pages is not supported for "
+        "in-source builds from a source distribution. "
         "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
 endif()
 
@@ -788,6 +788,8 @@ mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
 # customizing the install locations.
 set(LIB_INSTALL_DIR       ${GMX_LIB_INSTALL_DIR})
 set(BIN_INSTALL_DIR       bin)
+# This variable also gets written into config.h for use in finding the data
+# directories.
 set(DATA_INSTALL_DIR      share/${GMX_DATA_INSTALL_DIR})
 set(MAN_INSTALL_DIR       share/man)
 # If the nesting level wrt. the installation root is changed,
@@ -796,11 +798,6 @@ set(CMAKE_INSTALL_DIR     share/cmake)
 # TODO: Make GMXRC adapt if this is changed
 set(PKGCONFIG_INSTALL_DIR ${LIB_INSTALL_DIR}/pkgconfig)
 set(INCL_INSTALL_DIR      include)
-
-# These variables get written into config.h for use in finding the data
-# directories.
-set(GMXLIB_SEARCH_DIR share/${GMX_DATA_INSTALL_DIR}/top)
-set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 
 list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR})
 

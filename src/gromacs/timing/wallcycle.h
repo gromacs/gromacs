@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,10 +37,12 @@
 #ifndef GMX_TIMING_WALLCYCLE_H
 #define GMX_TIMING_WALLCYCLE_H
 
+/* NOTE: None of the routines here are safe to call within an OpenMP
+ * region */
+
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/types/commrec_fwd.h"
-#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -48,6 +50,7 @@ extern "C" {
 #endif
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
+struct gmx_wallclock_gpu_t;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
@@ -66,8 +69,14 @@ enum {
     ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
     ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
     ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
-    ewcsLISTED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
-    ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
+    ewcsLISTED,
+    ewcsLISTED_FEP,
+    ewcsRESTRAINTS,
+    ewcsLISTED_BUF_OPS,
+    ewcsNONBONDED,
+    ewcsEWALD_CORRECTION,
+    ewcsNB_X_BUF_OPS,
+    ewcsNB_F_BUF_OPS,
     ewcsNR
 };
 
@@ -96,7 +105,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-                     gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
+                     gmx_wallcycle_t wc, struct gmx_wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
@@ -107,6 +116,9 @@ void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters);
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs);
 /* Set the start sub cycle count for ewcs */
+
+void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs);
+/* Set the start sub cycle count for ewcs without increasing the call count */
 
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs);
 /* Stop the sub cycle count for ewcs */

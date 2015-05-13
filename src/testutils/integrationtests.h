@@ -96,9 +96,6 @@ class IntegrationTestFixture : public ::testing::Test
          * temporary output files and cleaning up files.
          */
         ::gmx::test::TestFileManager fileManager_;
-
-        //! Number of backup files to write
-        static std::string s_maxBackup;
 };
 
 } // namespace test

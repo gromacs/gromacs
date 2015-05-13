@@ -65,7 +65,7 @@
 
 // This macro makes the actions a bit shorter, since nearly every action needs
 // this call.
-#define ADD_TOKEN _gmx_sel_lexer_add_token(yytext, yyleng, state)
+#define ADD_TOKEN _gmx_sel_lexer_add_token(yylloc, yytext, yyleng, state)
 
 // Set YY_BREAK to an empty value to avoid warnings (for the PGI compiler)
 // when we have return statements followed by break. Instead, we add breaks
@@ -101,7 +101,7 @@ COMMENT    (#.*)
     gmx_sel_lexer_t *state = yyget_extra(yyscanner);
     int              retval;
     /* Return a token if one is pending */
-    retval = _gmx_sel_lexer_process_pending(yylval, state);
+    retval = _gmx_sel_lexer_process_pending(yylval, yylloc, state);
     if (retval != 0)
     {
         return retval;
@@ -133,7 +133,7 @@ COMMENT    (#.*)
 {REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 {STRING}        { yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
-\\\n            { _gmx_sel_lexer_add_token(" ", 1, state); break; }
+\\\n            { _gmx_sel_lexer_add_token(yylloc, " ", 1, state); break; }
 ";"|\n          {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
@@ -143,7 +143,7 @@ COMMENT    (#.*)
                     }
                     else
                     {
-                        _gmx_sel_lexer_add_token(" ", 1, state);
+                        _gmx_sel_lexer_add_token(yylloc, " ", 1, state);
                     }
                     break;
                 }
@@ -164,8 +164,8 @@ xor             { ADD_TOKEN; return XOR; }
 not|"!"         { ADD_TOKEN; return NOT; }
 {CMPOP}         { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 
-{IDENTIFIER}    { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
+{IDENTIFIER}    { return _gmx_sel_lexer_process_identifier(yylval, yylloc, yytext, yyleng, state); }
 
-[[:space:]]+    { _gmx_sel_lexer_add_token(" ", 1, state); break; }
+[[:space:]]+    { _gmx_sel_lexer_add_token(yylloc, " ", 1, state); break; }
 [_[:alnum:]]+   { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 .               { ADD_TOKEN; return yytext[0]; }

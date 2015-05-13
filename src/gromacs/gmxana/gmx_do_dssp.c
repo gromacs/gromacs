@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -425,7 +426,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     }
     fprintf(fp, "\n");
 
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     sfree(leg);
     sfree(count);
 }
@@ -450,9 +451,9 @@ int gmx_do_dssp(int argc, char *argv[])
         "Even newer versions (which at the time of writing are not yet released)",
         "are assumed to have the same syntax as 2.0.0.[PAR]",
         "The structure assignment for each residue and time is written to an",
-        "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
+        "[REF].xpm[ref] matrix file. This file can be visualized with for instance",
         "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
-        "Individual chains are separated by light grey lines in the [TT].xpm[tt] and",
+        "Individual chains are separated by light grey lines in the [REF].xpm[ref] and",
         "postscript files.",
         "The number of residues with each secondary structure type and the",
         "total secondary structure ([TT]-sss[tt]) count as a function of",
@@ -682,7 +683,7 @@ int gmx_do_dssp(int argc, char *argv[])
     close_trj(status);
     if (fTArea)
     {
-        gmx_ffclose(fTArea);
+        xvgrclose(fTArea);
     }
     gmx_rmpbc_done(gpbc);
 
@@ -731,7 +732,7 @@ int gmx_do_dssp(int argc, char *argv[])
             {
                 fprintf(acc, "%5d  %10g %10g\n", i+1, av_area[i], norm_av_area[i]);
             }
-            gmx_ffclose(acc);
+            xvgrclose(acc);
         }
     }
 

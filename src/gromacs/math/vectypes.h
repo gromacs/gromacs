@@ -56,4 +56,119 @@ typedef int     ivec[DIM];
 
 typedef int     imatrix[DIM][DIM];
 
+#ifdef __cplusplus
+
+namespace gmx
+{
+
+/*! \brief
+ * C++ class for 3D vectors.
+ *
+ * \tparam ValueType  Type
+ *
+ * This class provides a C++ version of rvec/dvec/ivec that can be put into STL
+ * containers etc.  It is more or less a drop-in replacement for `rvec` and
+ * friends: it can be used in most contexts that accept the equivalent C type.
+ * However, there are two cases where explicit conversion is necessary:
+ *  - An array of these objects needs to be converted with as_vec_array() (or
+ *    convenience methods like as_rvec_array()).
+ *  - Passing an RVec as a `const rvec &` parameter to a function needs an
+ *    explicit call to as_vec().  The implicit conversion should work for this
+ *    as well, but cppcheck parses the necessary implicit conversion operator
+ *    incorrectly and MSVC fails to compile code that relies on the implicit
+ *    conversion, so the explicit method is necessary.
+ *
+ * For the array conversion to work, the compiler should not add any extra
+ * alignment/padding in the layout of this class;  that this actually works as
+ * intended is tested in the unit tests.
+ *
+ * \inpublicapi
+ */
+template <typename ValueType>
+class BasicVector
+{
+    public:
+        //! Underlying raw C array type (rvec/dvec/ivec).
+        typedef ValueType RawArray[DIM];
+
+        //! Constructs default (uninitialized) vector.
+        BasicVector() {}
+        //! Constructs a vector from given values.
+        BasicVector(ValueType x, ValueType y, ValueType z)
+        {
+            x_[XX] = x;
+            x_[YY] = y;
+            x_[ZZ] = z;
+        }
+        /*! \brief
+         * Constructs a vector from given values.
+         *
+         * This constructor is not explicit to support implicit conversions
+         * that allow, e.g., calling `std::vector<RVec>:``:push_back()` directly
+         * with an `rvec` parameter.
+         */
+        BasicVector(const RawArray x)
+        {
+            x_[XX] = x[XX];
+            x_[YY] = x[YY];
+            x_[ZZ] = x[ZZ];
+        }
+        //! Indexing operator to make the class work as the raw array.
+        ValueType &operator[](int i) { return x_[i]; }
+        //! Indexing operator to make the class work as the raw array.
+        ValueType operator[](int i) const { return x_[i]; }
+        // The conversion functions below could more accurately return
+        // RawArray &, but this fails with cppcheck and does not solve the
+        // issue with MSVC, so as_vec() should be used instead.
+        //! Makes BasicVector usable in contexts where a raw C array is expected.
+        operator ValueType *() { return x_; }
+        //! Makes BasicVector usable in contexts where a raw C array is expected.
+        operator const ValueType *() const { return x_; }
+
+        //! Converts to a raw C array where implicit conversion does not work.
+        RawArray &as_vec() { return x_; }
+        //! Converts to a raw C array where implicit conversion does not work.
+        const RawArray &as_vec() const { return x_; }
+
+    private:
+        RawArray x_;
+};
+
+/*! \brief
+ * Casts a gmx::BasicVector array into an equivalent raw C array.
+ */
+template <typename ValueType> static inline
+typename BasicVector<ValueType>::RawArray *
+as_vec_array(BasicVector<ValueType> *x)
+{
+    return reinterpret_cast<typename BasicVector<ValueType>::RawArray *>(x);
+}
+
+/*! \brief
+ * Casts a gmx::BasicVector array into an equivalent raw C array.
+ */
+template <typename ValueType> static inline
+const typename BasicVector<ValueType>::RawArray *
+as_vec_array(const BasicVector<ValueType> *x)
+{
+    return reinterpret_cast<const typename BasicVector<ValueType>::RawArray *>(x);
+}
+
+//! Shorthand for C++ `rvec`-equivalent type.
+typedef BasicVector<real> RVec;
+//! Casts a gmx::RVec array into an `rvec` array.
+static inline rvec *as_rvec_array(RVec *x)
+{
+    return as_vec_array(x);
+}
+//! Casts a gmx::RVec array into an `rvec` array.
+static inline const rvec *as_rvec_array(const RVec *x)
+{
+    return as_vec_array(x);
+}
+
+} // namespace gmx
+
+#endif
+
 #endif

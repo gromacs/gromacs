@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/genconf.h"
 #include "gromacs/gmxpreprocess/grompp.h"
@@ -236,6 +237,11 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModuleNoNice(manager, &gmx_mdrun, "mdrun",
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
 
+    gmx::CommandLineOptionsModuleInterface::registerModule(
+            manager, gmx::InsertMoleculesInfo::name,
+            gmx::InsertMoleculesInfo::shortDescription,
+            &gmx::InsertMoleculesInfo::create);
+
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
                    "Assign secondary structure and calculate solvent accessible surface area");
@@ -245,8 +251,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Convert energy files");
     registerModule(manager, &gmx_solvate, "solvate",
                    "Solvate a system");
-    registerModule(manager, &gmx_insert_molecules, "insert-molecules",
-                   "Insert molecules into existing vacancies");
     registerObsoleteTool(manager, "genbox");
     registerModule(manager, &gmx_genconf, "genconf",
                    "Multiply a conformation in 'random' orientations");
@@ -350,7 +354,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Generate an ensemble of structures from the normal modes");
     registerModule(manager, &gmx_nmtraj, "nmtraj",
                    "Generate a virtual oscillating trajectory from an eigenvector");
-    registerModule(manager, &gmx_options, "options", NULL);
     registerModule(manager, &gmx_order, "order",
                    "Compute the order parameter per atom for carbon tails");
     registerModule(manager, &gmx_pme_error, "pme_error",
@@ -363,8 +366,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate principal axes of inertia for a group of atoms");
     registerModule(manager, &gmx_rama, "rama",
                    "Compute Ramachandran plots");
-    registerModule(manager, &gmx_rdf, "rdf",
-                   "Calculate radial distribution functions");
     registerModule(manager, &gmx_rms, "rms",
                    "Calculate RMSDs with a reference structure and RMSD matrices");
     registerModule(manager, &gmx_rmsdist, "rmsdist",

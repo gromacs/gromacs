@@ -98,6 +98,8 @@ function(gmx_detect_simd _suggested_simd)
             # HPC-ACE is always present. In the future we
             # should add detection for HPC-ACE2 here.
             set(${_suggested_simd} "Sparc64_HPC_ACE")
+        elseif(GMX_TARGET_MIC)
+            set(${_suggested_simd} "MIC")
         elseif(GMX_TARGET_X86)
             gmx_suggest_x86_simd(${_suggested_simd})
         else()

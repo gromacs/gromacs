@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -129,6 +129,11 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
 void do_flood(t_commrec *cr, t_inputrec *ir, rvec x[], rvec force[], gmx_edsam_t ed,
               matrix box, gmx_int64_t step, gmx_bool bNS);
 
+/*! \brief Clean up
+ *
+ * \param ed                The essential dynamics data
+ */
+void done_ed(gmx_edsam_t *ed);
 
 #ifdef __cplusplus
 }

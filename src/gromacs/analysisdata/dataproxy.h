@@ -91,6 +91,7 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         virtual void frameStarted(const AnalysisDataFrameHeader &frame);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
+        virtual void frameFinishedSerial(int frameIndex);
         virtual void dataFinished();
 
     private:

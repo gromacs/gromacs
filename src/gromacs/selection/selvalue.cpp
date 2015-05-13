@@ -48,12 +48,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-/*!
- * \param[out] val  Output structure
- *
- * The type of \p val is not touched.
- * Any contents of \p val are discarded without freeing.
- */
 void
 _gmx_selvalue_clear(gmx_ana_selvalue_t *val)
 {
@@ -62,28 +56,33 @@ _gmx_selvalue_clear(gmx_ana_selvalue_t *val)
     val->nalloc = 0;
 }
 
-/*!
- * \param[in,out] val  Value structure to allocate.
- * \param[in]     n    Maximum number of values needed.
- * \returns       Zero on success.
- *
- * Reserves memory for the values within \p val to store at least \p n values,
- * of the type specified in the \p val structure.
- *
- * If the type is \ref POS_VALUE or \ref GROUP_VALUE, memory is reserved for
- * the data structures, but no memory is reserved inside these newly allocated
- * data structures.
- * Similarly, for \ref STR_VALUE values, the pointers are set to NULL.
- * For other values, the memory is uninitialized.
- */
-int
+void
+_gmx_selvalue_free(gmx_ana_selvalue_t *val)
+{
+    if (val->nalloc > 0)
+    {
+        if (val->type == POS_VALUE)
+        {
+            delete[] val->u.p;
+        }
+        else
+        {
+            sfree(val->u.ptr);
+        }
+    }
+    // TODO: It causes a memory leak somewhere if val->nr is assigned zero here...
+    val->u.ptr  = NULL;
+    val->nalloc = 0;
+}
+
+void
 _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n)
 {
     int  i;
 
     if (val->nalloc == -1)
     {
-        return 0;
+        return;
     }
 
     if (!val->u.ptr || val->nalloc < n)
@@ -115,34 +114,31 @@ _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n)
         }
         val->nalloc = n;
     }
-    return 0;
 }
 
-/*!
- * \param[in,out] val    Value structure to allocate.
- * \param[in]     ptr    Pointer where the values should be stored.
- * \returns       Zero on success.
- *
- * Automatic memory management is disabled for \p ptr, unless \p ptr is NULL.
- */
-int
+void
+_gmx_selvalue_getstore_and_release(gmx_ana_selvalue_t *val, void **ptr, int *nalloc)
+{
+    *ptr        = val->u.ptr;
+    *nalloc     = val->nalloc;
+    val->u.ptr  = NULL;
+    val->nalloc = 0;
+}
+
+void
 _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr)
 {
+    GMX_ASSERT(val->nalloc <= 0,
+               "Memory leak from discarding an existing value");
     val->u.ptr  = ptr;
     val->nalloc = (ptr ? -1 : 0);
-    return 0;
 }
 
-/*!
- * \param[in,out] val    Value structure to allocate.
- * \param[in]     ptr    Pointer where the values should be stored.
- * \param[in]     nalloc Number of values allocated for \p ptr.
- * \returns       Zero on success.
- */
-int
+void
 _gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc)
 {
+    GMX_ASSERT(val->nalloc <= 0 || (ptr == val->u.ptr && nalloc == val->nalloc),
+               "Memory leak from discarding an existing value");
     val->u.ptr  = ptr;
     val->nalloc = nalloc;
-    return 0;
 }

@@ -216,7 +216,6 @@
  [ dihedrals ]
     CA     C    +N    +H    
      O     C    +N    +H    
-    -C     N    CA    CB    
     -C     N    CA     C    
     CA     C    +N   +CA    
      O     C    +N   +CA    

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
             }
         }
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 static void average_residues(double f[], double **U, int uind,
@@ -191,22 +191,22 @@ int gmx_rmsf(int argc, char *argv[])
         "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
         "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
         "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
-        "values, which are written to a [TT].pdb[tt] file with the coordinates, of the",
-        "structure file, or of a [TT].pdb[tt] file when [TT]-q[tt] is specified.",
+        "values, which are written to a [REF].pdb[ref] file with the coordinates, of the",
+        "structure file, or of a [REF].pdb[ref] file when [TT]-q[tt] is specified.",
         "Option [TT]-ox[tt] writes the B-factors to a file with the average",
         "coordinates.[PAR]",
         "With the option [TT]-od[tt] the root mean square deviation with",
         "respect to the reference structure is calculated.[PAR]",
         "With the option [TT]-aniso[tt], [THISMODULE] will compute anisotropic",
         "temperature factors and then it will also output average coordinates",
-        "and a [TT].pdb[tt] file with ANISOU records (corresonding to the [TT]-oq[tt]",
+        "and a [REF].pdb[ref] file with ANISOU records (corresonding to the [TT]-oq[tt]",
         "or [TT]-ox[tt] option). Please note that the U values",
         "are orientation-dependent, so before comparison with experimental data",
         "you should verify that you fit to the experimental coordinates.[PAR]",
-        "When a [TT].pdb[tt] input file is passed to the program and the [TT]-aniso[tt]",
+        "When a [REF].pdb[ref] input file is passed to the program and the [TT]-aniso[tt]",
         "flag is set",
         "a correlation plot of the Uij will be created, if any anisotropic",
-        "temperature factors are present in the [TT].pdb[tt] file.[PAR]",
+        "temperature factors are present in the [REF].pdb[ref] file.[PAR]",
         "With option [TT]-dir[tt] the average MSF (3x3) matrix is diagonalized.",
         "This shows the directions in which the atoms fluctuate the most and",
         "the least."
@@ -497,7 +497,7 @@ int gmx_rmsf(int argc, char *argv[])
                         pdb_bfac);
             }
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     else
     {
@@ -511,7 +511,7 @@ int gmx_rmsf(int argc, char *argv[])
                         bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, sqrt(rmsf[i]));
             }
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     for (i = 0; i < isize; i++)
@@ -540,7 +540,7 @@ int gmx_rmsf(int argc, char *argv[])
                         bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i]+1, sqrt(rmsf[i]));
             }
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     if (opt2bSet("-oq", NFILE, fnm))

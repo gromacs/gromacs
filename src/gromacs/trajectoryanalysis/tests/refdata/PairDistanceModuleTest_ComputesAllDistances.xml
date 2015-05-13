@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">pairdist -ref 'resindex 1' -refgrouping none -sel 'resindex 3' -selgrouping none</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="dist">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">9</Int>
+          <DataValue>
+            <Real Name="Value">2.2360679774997898</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.4142135623730951</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3.1622776601683795</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2.2360679774997898</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.4142135623730951</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2.2360679774997898</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2.8284271247461903</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>

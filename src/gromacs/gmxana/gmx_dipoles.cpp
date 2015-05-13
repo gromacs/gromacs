@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -404,7 +404,7 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
         /* Swap x0 and x1 */
         x0 = x1;
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 gmx_bool read_mu_from_enx(ener_file_t fmu, int Vol, ivec iMu, rvec mu, real *vol,
@@ -686,7 +686,7 @@ static void dump_slab_dipoles(const char *fn, int idim, int nslice,
                 slab_dipole[i][ZZ]/nframes,
                 mutot);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     do_view(oenv, fn, "-autoscale xy -nxy");
 }
 
@@ -1336,18 +1336,18 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         close_trj(status);
     }
 
-    gmx_ffclose(outmtot);
-    gmx_ffclose(outaver);
-    gmx_ffclose(outeps);
+    xvgrclose(outmtot);
+    xvgrclose(outaver);
+    xvgrclose(outeps);
 
     if (fnadip)
     {
-        gmx_ffclose(adip);
+        xvgrclose(adip);
     }
 
     if (cosaver)
     {
-        gmx_ffclose(caver);
+        xvgrclose(caver);
     }
 
     if (dip3d)
@@ -1456,7 +1456,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             fprintf(outdd, "%10g  %10f\n",
                     (i*mu_max)/ndipbin, dipole_bin[i]/(double)teller);
         }
-        gmx_ffclose(outdd);
+        xvgrclose(outdd);
         sfree(dipole_bin);
     }
     if (bGkr)
@@ -1575,7 +1575,7 @@ int gmx_dipoles(int argc, char *argv[])
         { "-rcmax",    FALSE, etREAL, {&rcmax},
           "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterion based on the box length will be used." },
         { "-phi",      FALSE, etBOOL, {&bPhi},
-          "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [TT].xpm[tt] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted." },
+          "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the [REF].xpm[ref] file from the [TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is plotted." },
         { "-nlevels",  FALSE, etINT, {&nlevels},
           "Number of colors in the cmap output" },
         { "-ndegrees", FALSE, etINT, {&ndegrees},

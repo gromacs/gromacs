@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,8 +54,6 @@
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxpreprocess/add_par.h"
-#include "gromacs/gmxpreprocess/calc_verletbuf.h"
-#include "gromacs/gmxpreprocess/compute_io.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -76,6 +74,8 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/calc_verletbuf.h"
+#include "gromacs/mdlib/compute_io.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
@@ -85,6 +85,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/snprintf.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
@@ -402,6 +403,8 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
     }
 }
 
+/* TODO Decide whether this function can be consolidated with
+ * gmx_mtop_ftype_count */
 static gmx_bool nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
 {
     int nint, mb;
@@ -624,11 +627,21 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
                     nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
             warning(wi, buf);
         }
+
+        /* Do more checks, mostly related to constraints */
         if (bVerbose)
         {
             fprintf(stderr, "double-checking input for internal consistency...\n");
         }
-        double_check(ir, state->box, nint_ftype(sys, molinfo, F_CONSTR), wi);
+        {
+            int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
+                                             nint_ftype(sys, molinfo, F_CONSTRNC));
+            int bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
+            double_check(ir, state->box,
+                         bHasNormalConstraints,
+                         bHasAnyConstraints,
+                         wi);
+        }
     }
 
     if (bGenVel)
@@ -776,7 +789,7 @@ static void cont_status(const char *slog, const char *ener,
 
     /* Set the relative box lengths for preserving the box shape.
      * Note that this call can lead to differences in the last bit
-     * with respect to using gmx convert-tpr to create a [TT].tpx[tt] file.
+     * with respect to using gmx convert-tpr to create a [REF].tpx[ref] file.
      */
     set_box_rel(ir, state);
 
@@ -1423,29 +1436,26 @@ int gmx_grompp(int argc, char *argv[])
         "only the atom types are used for generating interaction parameters.[PAR]",
 
         "[THISMODULE] uses a built-in preprocessor to resolve includes, macros, ",
-        "etc. The preprocessor supports the following keywords:[PAR]",
-        "#ifdef VARIABLE[BR]",
-        "#ifndef VARIABLE[BR]",
-        "#else[BR]",
-        "#endif[BR]",
-        "#define VARIABLE[BR]",
-        "#undef VARIABLE[BR]"
-        "#include \"filename\"[BR]",
-        "#include <filename>[PAR]",
+        "etc. The preprocessor supports the following keywords::",
+        "",
+        "    #ifdef VARIABLE",
+        "    #ifndef VARIABLE",
+        "    #else",
+        "    #endif",
+        "    #define VARIABLE",
+        "    #undef VARIABLE",
+        "    #include \"filename\"",
+        "    #include <filename>",
+        "",
         "The functioning of these statements in your topology may be modulated by",
-        "using the following two flags in your [TT].mdp[tt] file:[PAR]",
-        "[TT]define = -DVARIABLE1 -DVARIABLE2[BR]",
-        "include = -I/home/john/doe[tt][BR]",
+        "using the following two flags in your [REF].mdp[ref] file::",
+        "",
+        "    define = -DVARIABLE1 -DVARIABLE2",
+        "    include = -I/home/john/doe",
+        "",
         "For further information a C-programming textbook may help you out.",
         "Specifying the [TT]-pp[tt] flag will get the pre-processed",
         "topology file written out so that you can verify its contents.[PAR]",
-
-        /* cpp has been unnecessary for some time, hasn't it?
-            "If your system does not have a C-preprocessor, you can still",
-            "use [TT]grompp[tt], but you do not have access to the features ",
-            "from the cpp. Command line options to the C-preprocessor can be given",
-            "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
-         */
 
         "When using position restraints a file with restraint coordinates",
         "can be supplied with [TT]-r[tt], otherwise restraining will be done",
@@ -1459,7 +1469,7 @@ int gmx_grompp(int argc, char *argv[])
         "unless the [TT]-time[tt] option is used. Only if this information",
         "is absent will the coordinates in the [TT]-c[tt] file be used.",
         "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
-        "in your [TT].mdp[tt] file. An energy file can be supplied with",
+        "in your [REF].mdp[ref] file. An energy file can be supplied with",
         "[TT]-e[tt] to read Nose-Hoover and/or Parrinello-Rahman coupling",
         "variables.[PAR]",
 
@@ -1470,7 +1480,7 @@ int gmx_grompp(int argc, char *argv[])
         "You then supply the old checkpoint file directly to [gmx-mdrun]",
         "with [TT]-cpi[tt]. If you wish to change the ensemble or things",
         "like output frequency, then supplying the checkpoint file to",
-        "[THISMODULE] with [TT]-t[tt] along with a new [TT].mdp[tt] file",
+        "[THISMODULE] with [TT]-t[tt] along with a new [REF].mdp[ref] file",
         "with [TT]-f[tt] is the recommended procedure.[PAR]",
 
         "By default, all bonded interactions which have constant energy due to",
@@ -2024,9 +2034,9 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
-    if (ir->ePull != epullNO)
+    if (ir->bPull)
     {
-        set_pull_init(ir, sys, state.x, state.box, state.lambda[efptMASS], oenv, opts->pull_start);
+        set_pull_init(ir, sys, state.x, state.box, state.lambda[efptMASS], oenv);
     }
 
     if (ir->bRot)

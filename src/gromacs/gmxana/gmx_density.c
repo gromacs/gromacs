@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -551,7 +551,7 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
         fprintf(den, "\n");
     }
 
-    gmx_ffclose(den);
+    xvgrclose(den);
 }
 
 int gmx_density(int argc, char *argv[])
@@ -579,10 +579,12 @@ int gmx_density(int argc, char *argv[])
         "Densities are in kg/m^3, and number densities or electron densities can also be",
         "calculated. For electron densities, a file describing the number of",
         "electrons for each type of atom should be provided using [TT]-ei[tt].",
-        "It should look like:[BR]",
-        "   [TT]2[tt][BR]",
-        "   [TT]atomname = nrelectrons[tt][BR]",
-        "   [TT]atomname = nrelectrons[tt][BR]",
+        "It should look like::",
+        "",
+        "   2",
+        "   atomname = nrelectrons",
+        "   atomname = nrelectrons",
+        "",
         "The first line contains the number of lines to read from the file.",
         "There should be one line for each unique atom name in your system.",
         "The number of electrons for each atom is modified by its atomic",

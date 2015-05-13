@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,9 @@
 
 #include "config.h"
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/legacyheaders/calcgrid.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
@@ -48,25 +48,25 @@
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
 /* Parameters and setting for one PP-PME setup */
 typedef struct {
-    real      rcut_coulomb;    /* Coulomb cut-off                              */
-    real      rlist;           /* pair-list cut-off                            */
-    real      rlistlong;       /* LR pair-list cut-off                         */
-    int       nstcalclr;       /* frequency of evaluating long-range forces for group scheme */
-    real      spacing;         /* (largest) PME grid spacing                   */
-    ivec      grid;            /* the PME grid dimensions                      */
-    real      grid_efficiency; /* ineffiency factor for non-uniform grids <= 1 */
-    real      ewaldcoeff_q;    /* Electrostatic Ewald coefficient            */
-    real      ewaldcoeff_lj;   /* LJ Ewald coefficient, only for the call to send_switchgrid */
-    gmx_pme_t pmedata;         /* the data structure used in the PME code      */
-    int       count;           /* number of times this setup has been timed    */
-    double    cycles;          /* the fastest time for this setup in cycles    */
+    real              rcut_coulomb;    /* Coulomb cut-off                              */
+    real              rlist;           /* pair-list cut-off                            */
+    real              rlistlong;       /* LR pair-list cut-off                         */
+    int               nstcalclr;       /* frequency of evaluating long-range forces for group scheme */
+    real              spacing;         /* (largest) PME grid spacing                   */
+    ivec              grid;            /* the PME grid dimensions                      */
+    real              grid_efficiency; /* ineffiency factor for non-uniform grids <= 1 */
+    real              ewaldcoeff_q;    /* Electrostatic Ewald coefficient            */
+    real              ewaldcoeff_lj;   /* LJ Ewald coefficient, only for the call to send_switchgrid */
+    struct gmx_pme_t *pmedata;         /* the data structure used in the PME code      */
+    int               count;           /* number of times this setup has been timed    */
+    double            cycles;          /* the fastest time for this setup in cycles    */
 } pme_setup_t;
 
 /* In the initial scan, step by grids that are at least a factor 0.8 coarser */
@@ -114,7 +114,7 @@ struct pme_load_balancing {
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
                       const t_inputrec *ir, matrix box,
                       const interaction_const_t *ic,
-                      gmx_pme_t pmedata)
+                      struct gmx_pme_t *pmedata)
 {
     pme_load_balancing_t pme_lb;
     real                 spm, sp;
@@ -440,17 +440,17 @@ static void switch_to_stage1(pme_load_balancing_t pme_lb)
     pme_lb->cur = pme_lb->start - 1;
 }
 
-gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
-                          t_commrec                  *cr,
-                          FILE                       *fp_err,
-                          FILE                       *fp_log,
-                          t_inputrec                 *ir,
-                          t_state                    *state,
-                          double                      cycles,
-                          interaction_const_t        *ic,
-                          struct nonbonded_verlet_t  *nbv,
-                          gmx_pme_t                  *pmedata,
-                          gmx_int64_t                 step)
+gmx_bool pme_load_balance(pme_load_balancing_t       pme_lb,
+                          t_commrec                 *cr,
+                          FILE                      *fp_err,
+                          FILE                      *fp_log,
+                          t_inputrec                *ir,
+                          t_state                   *state,
+                          double                     cycles,
+                          interaction_const_t       *ic,
+                          struct nonbonded_verlet_t *nbv,
+                          struct gmx_pme_t **        pmedata,
+                          gmx_int64_t                step)
 {
     gmx_bool     OK;
     pme_setup_t *set;
@@ -702,7 +702,7 @@ gmx_bool pme_load_balance(pme_load_balancing_t        pme_lb,
     }
 
     bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
-    nbnxn_cuda_pme_loadbal_update_param(nbv, ic);
+    nbnxn_gpu_pme_loadbal_update_param(nbv, ic);
 
     /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
      * also sharing texture references. To keep the code simple, we don't

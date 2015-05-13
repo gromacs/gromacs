@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -436,6 +436,27 @@ TEST_F(ParseCommonArgsTest, HandlesNonExistentOptionalInputFiles)
     parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("trj.xtc", opt2fn("-f", nfile(), fnm));
+    done_filenms(nfile(), fnm);
+}
+
+TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
+{
+    t_filenm          fnm[] = {
+        { efCPT, "-c",  "file1", ffOPTRD | ffALLOW_MISSING },
+        { efCPT, "-c2", "file2", ffOPTRD | ffALLOW_MISSING },
+        { efCPT, "-c3", "file3", ffOPTRD | ffALLOW_MISSING },
+        { efCPT, "-c4", "file4", ffOPTRD | ffALLOW_MISSING },
+        { efTRX, "-f",  "trj",   ffOPTRD | ffALLOW_MISSING }
+    };
+    const char *const cmdline[] = {
+        "test", "-c2", "-c3", "nonexistent", "-c4", "nonexistent.cpt", "-f", "nonexistent"
+    };
+    parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
+    EXPECT_STREQ("file1.cpt", opt2fn("-c", nfile(), fnm));
+    EXPECT_STREQ("file2.cpt", opt2fn("-c2", nfile(), fnm));
+    EXPECT_STREQ("nonexistent.cpt", opt2fn("-c3", nfile(), fnm));
+    EXPECT_STREQ("nonexistent.cpt", opt2fn("-c4", nfile(), fnm));
+    EXPECT_STREQ("nonexistent.xtc", opt2fn("-f", nfile(), fnm));
     done_filenms(nfile(), fnm);
 }
 

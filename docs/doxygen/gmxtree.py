@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -360,14 +360,11 @@ class GeneratorSourceFile(File):
         File.scan_contents(self, sourcetree, keep_contents or detect_defines)
         if detect_defines:
             self._defines = []
-            define_re = r'^#.*define\s*(\w*)'
+            define_re = r'^#.*define\s+(\w*)'
             for line in self.get_contents():
                 match = re.match(define_re, line)
                 if match:
                     self._defines.append(match.group(1))
-            # Hard-code the contents of gmx_header_config.h to avoid
-            # unnecessary complexity.
-            self._defines.append('GMX_NATIVE_WINDOWS')
 
     def get_defines(self):
         """Return set of possible defines from config.h.cmakein.
@@ -479,10 +476,13 @@ class ModuleDependency(object):
         self._othermodule = othermodule
         self._includedfiles = []
         self._cyclesuppression = None
+        self._is_test_only_dependency = True
 
     def add_included_file(self, includedfile):
         """Add IncludedFile that is part of this dependency."""
         assert includedfile.get_file().get_module() == self._othermodule
+        if not includedfile.get_including_file().is_test_file():
+            self._is_test_only_dependency = False
         self._includedfiles.append(includedfile)
 
     def set_cycle_suppression(self):
@@ -492,6 +492,10 @@ class ModuleDependency(object):
     def is_cycle_suppressed(self):
         """Return whether cycles containing this dependency are suppressed."""
         return self._cyclesuppression is not None
+
+    def is_test_only_dependency(self):
+        """Return whether this dependency is only from test code."""
+        return self._is_test_only_dependency
 
     def get_other_module(self):
         """Get module that this dependency is to."""
@@ -964,8 +968,7 @@ class GromacsTree(object):
             fileobj = self._files.get(filename)
             if fileobj is not None:
                 if fileobj.get_name() not in ('config.h', 'config.h.cmakein',
-                        'gmxpre-config.h', 'gmxpre-config.h.cmakein',
-                        'gmx_header_config.h'):
+                        'gmxpre-config.h', 'gmxpre-config.h.cmakein'):
                     defines = re.findall(define_re, text)
                     fileobj.add_used_config_h_defines(defines)
 

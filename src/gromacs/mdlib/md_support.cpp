@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/mdrun.h"
@@ -51,13 +51,13 @@
 #include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
-
-/* Is the signal in one simulation independent of other simulations? */
-gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
+#include "gromacs/utility/snprintf.h"
 
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */
@@ -173,31 +173,6 @@ int multisim_nstsimsync(const t_commrec *cr,
     return nmin;
 }
 
-void init_global_signals(globsig_t *gs, const t_commrec *cr,
-                         const t_inputrec *ir, int repl_ex_nst)
-{
-    int i;
-
-    if (MULTISIM(cr))
-    {
-        gs->nstms = multisim_nstsimsync(cr, ir, repl_ex_nst);
-        if (debug)
-        {
-            fprintf(debug, "Syncing simulations for checkpointing and termination every %d steps\n", gs->nstms);
-        }
-    }
-    else
-    {
-        gs->nstms = 1;
-    }
-
-    for (i = 0; i < eglsNR; i++)
-    {
-        gs->sig[i] = 0;
-        gs->set[i] = 0;
-    }
-}
-
 void copy_coupling_state(t_state *statea, t_state *stateb,
                          gmx_ekindata_t *ekinda, gmx_ekindata_t *ekindb, t_grpopts* opts)
 {
@@ -288,30 +263,25 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
-                     globsig_t *gs, gmx_bool bInterSimGS,
+                     struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
                      matrix box, gmx_mtop_t *top_global,
                      gmx_bool *bSumEkinhOld, int flags)
 {
-    int      i, gsi;
-    real     gs_buf[eglsNR];
     tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp;
-    gmx_bool bStopCM, bGStat, bIterate,
-             bFirstIterate, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
+    gmx_bool bStopCM, bGStat,
+             bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
     real     prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
-    bStopCM  = flags & CGLO_STOPCM;
-    bGStat   = flags & CGLO_GSTAT;
-
+    bStopCM       = flags & CGLO_STOPCM;
+    bGStat        = flags & CGLO_GSTAT;
     bReadEkin     = (flags & CGLO_READEKIN);
     bScaleEkin    = (flags & CGLO_SCALEEKIN);
     bEner         = flags & CGLO_ENERGY;
     bTemp         = flags & CGLO_TEMPERATURE;
     bPres         = (flags & CGLO_PRESSURE);
     bConstrain    = (flags & CGLO_CONSTRAINT);
-    bIterate      = (flags & CGLO_ITERATE);
-    bFirstIterate = (flags & CGLO_FIRSTITERATE);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -340,8 +310,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         else
         {
-
-            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel, bIterate);
+            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel);
         }
 
         debug_gmx();
@@ -366,54 +335,18 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         else
         {
-            if (gs != NULL)
-            {
-                for (i = 0; i < eglsNR; i++)
-                {
-                    gs_buf[i] = gs->sig[i];
-                }
-            }
+            gmx::ArrayRef<real> signalBuffer = prepareSignalBuffer(gs);
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                             ir, ekind, constr, bStopCM ? vcm : NULL,
-                            gs != NULL ? eglsNR : 0, gs_buf,
+                            signalBuffer.size(), signalBuffer.data(),
                             top_global, state,
                             *bSumEkinhOld, flags);
                 wallcycle_stop(wcycle, ewcMoveE);
             }
-            if (gs != NULL)
-            {
-                if (MULTISIM(cr) && bInterSimGS)
-                {
-                    if (MASTER(cr))
-                    {
-                        /* Communicate the signals between the simulations */
-                        gmx_sum_sim(eglsNR, gs_buf, cr->ms);
-                    }
-                    /* Communicate the signals form the master to the others */
-                    gmx_bcast(eglsNR*sizeof(gs_buf[0]), gs_buf, cr);
-                }
-                for (i = 0; i < eglsNR; i++)
-                {
-                    if (bInterSimGS || gs_simlocal[i])
-                    {
-                        /* Set the communicated signal only when it is non-zero,
-                         * since signals might not be processed at each MD step.
-                         */
-                        gsi = (gs_buf[i] >= 0 ?
-                               (int)(gs_buf[i] + 0.5) :
-                               (int)(gs_buf[i] - 0.5));
-                        if (gsi != 0)
-                        {
-                            gs->set[i] = gsi;
-                        }
-                        /* Turn off the local signal */
-                        gs->sig[i] = 0;
-                    }
-                }
-            }
+            handleSignals(gs, cr, bInterSimGS);
             *bSumEkinhOld = FALSE;
         }
     }
@@ -449,8 +382,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
            Leap with AveVel is not supported; it's not clear that it will actually work.
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
-           bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.
-           If FALSE, we go ahead and erase over it.
          */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
                                        bEkinAveVel, bScaleEkin);
@@ -467,7 +398,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                       corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
     }
 
-    if (bEner && bFirstIterate)
+    if (bEner)
     {
         enerd->term[F_DISPCORR]  = enercorr;
         enerd->term[F_EPOT]     += enercorr;

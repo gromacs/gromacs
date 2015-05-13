@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,6 @@
 
 #include "cmdlinemodulemanager.h"
 
-#include "config.h"
-
 #include <cstdio>
 
 #include <string>
@@ -56,11 +54,13 @@
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
@@ -146,7 +146,7 @@ class CMainCommandLineModule : public CommandLineModuleInterface
 CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
     : options_(NULL, NULL), bHelp_(false), bHidden_(false),
       bQuiet_(false), bVersion_(false), bCopyright_(true),
-      niceLevel_(19), debugLevel_(0)
+      niceLevel_(19), bBackup_(true), bFpexcept_(false), debugLevel_(0)
 {
     binaryInfoSettings_.copyright(true);
 }
@@ -170,6 +170,10 @@ void CommandLineCommonOptionsHolder::initOptions()
                            .description("Print copyright information on startup"));
     options_.addOption(IntegerOption("nice").store(&niceLevel_)
                            .description("Set the nicelevel (default depends on command)"));
+    options_.addOption(BooleanOption("backup").store(&bBackup_)
+                           .description("Write backups if output files exist"));
+    options_.addOption(BooleanOption("fpexcept").store(&bFpexcept_)
+                           .hidden().description("Enable floating-point exceptions"));
     options_.addOption(IntegerOption("debug").store(&debugLevel_)
                            .hidden().defaultValueIfSet(1)
                            .description("Write file with debug information, "
@@ -242,24 +246,6 @@ class CommandLineModuleManager::Impl
          */
         CommandLineModuleMap::const_iterator
         findModuleByName(const std::string &name) const;
-        /*! \brief
-         * Finds a module that the name of the binary.
-         *
-         * \param[in] invokedName  Name by which the program was invoked.
-         * \throws    std::bad_alloc if out of memory.
-         * \returns   Iterator to the found module, or
-         *      \c modules_.end() if not found.
-         *
-         * Checks whether the program is invoked through a symlink whose name
-         * is different from \a binaryName_, and if so, checks
-         * if a module name matches the name of the symlink.
-         *
-         * Note that the \p invokedName parameter is currently not necessary
-         * (as the program context object is also available and provides this
-         * value), but it clarifies the control flow.
-         */
-        CommandLineModuleMap::const_iterator
-        findModuleFromBinaryName(const char *invokedName) const;
 
         /*! \brief
          * Processes command-line options for the wrapper binary.
@@ -353,45 +339,12 @@ CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
     return modules_.find(name);
 }
 
-CommandLineModuleMap::const_iterator
-CommandLineModuleManager::Impl::findModuleFromBinaryName(
-        const char *invokedName) const
-{
-    std::string moduleName = invokedName;
-#ifdef GMX_BINARY_SUFFIX
-    moduleName = stripSuffixIfPresent(moduleName, GMX_BINARY_SUFFIX);
-#endif
-    if (moduleName == binaryName_)
-    {
-        return modules_.end();
-    }
-    if (startsWith(moduleName, "g_"))
-    {
-        moduleName.erase(0, 2);
-    }
-    if (startsWith(moduleName, "gmx"))
-    {
-        moduleName.erase(0, 3);
-    }
-    return findModuleByName(moduleName);
-}
-
 CommandLineModuleInterface *
 CommandLineModuleManager::Impl::processCommonOptions(
         CommandLineCommonOptionsHolder *optionsHolder, int *argc, char ***argv)
 {
     // Check if we are directly invoking a certain module.
     CommandLineModuleInterface *module = singleModule_;
-    if (module == NULL)
-    {
-        // Also check for invokation through named symlinks.
-        CommandLineModuleMap::const_iterator moduleIter
-            = findModuleFromBinaryName(programContext_.programName());
-        if (moduleIter != modules_.end())
-        {
-            module = moduleIter->second.get();
-        }
-    }
 
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
@@ -562,6 +515,8 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     module->init(&settings);
     optionsHolder.adjustFromSettings(settings);
 
+    gmx_set_max_backup_count(optionsHolder.shouldBackup() ? -1 : 0);
+
     // Open the debug file.
     if (optionsHolder.debugLevel() > 0)
     {
@@ -585,6 +540,11 @@ int CommandLineModuleManager::run(int argc, char *argv[])
             gmx_set_nice(optionsHolder.niceLevel());
             bNiceSet = true;
         }
+    }
+    if (optionsHolder.enableFPExceptions())
+    {
+        //TODO: currently it is always enabled for mdrun (verlet) and tests.
+        gmx_feenableexcept();
     }
 
     int rc = 0;

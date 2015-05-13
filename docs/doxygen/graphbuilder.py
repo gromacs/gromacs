@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -130,7 +130,8 @@ class Edge(object):
         elif self._edgetype == EdgeType.intramodule:
             properties = ''
         elif self._edgetype == EdgeType.test:
-            properties = 'color=".33 .8 .8", style=dashed'
+            # TODO: Consider if only some test edges should be made non-constraints
+            properties = 'color=".33 .8 .8", style=dashed, constraint=no'
         elif self._edgetype == EdgeType.libimpl:
             properties = 'color=".66 .8 .8", style=dashed'
         elif self._edgetype == EdgeType.pubimpl:

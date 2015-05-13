@@ -29,10 +29,10 @@ struct coder
 
 struct coder DECLSPECDLLEXPORT *Ptngc_coder_init(void);
 void DECLSPECDLLEXPORT Ptngc_coder_deinit(struct coder *coder);
-unsigned char DECLSPECDLLEXPORT *Ptngc_pack_array(struct coder *coder,int *input, int *length, int coding, int coding_parameter, int natoms, int speed);
-int DECLSPECDLLEXPORT Ptngc_unpack_array(struct coder *coder,unsigned char *packed,int *output, int length, int coding, int coding_parameter, int natoms);
+unsigned char DECLSPECDLLEXPORT *Ptngc_pack_array(struct coder *coder,int *input, int *length, const int coding, const int coding_parameter, const int natoms, const int speed);
+int DECLSPECDLLEXPORT Ptngc_unpack_array(struct coder *coder,unsigned char *packed,int *output, const int length, const int coding, const int coding_parameter, const int natoms);
 unsigned char DECLSPECDLLEXPORT *Ptngc_pack_array_xtc2(struct coder *coder,int *input, int *length);
-int DECLSPECDLLEXPORT Ptngc_unpack_array_xtc2(struct coder *coder,unsigned char *packed,int *output, int length);
+int DECLSPECDLLEXPORT Ptngc_unpack_array_xtc2(struct coder *coder, unsigned char *packed, int *output, const int length);
 unsigned char DECLSPECDLLEXPORT *Ptngc_pack_array_xtc3(int *input, int *length, int natoms, int speed);
 int DECLSPECDLLEXPORT Ptngc_unpack_array_xtc3(unsigned char *packed,int *output, int length, int natoms);
 
@@ -40,7 +40,7 @@ void DECLSPECDLLEXPORT Ptngc_out8bits(struct coder *coder, unsigned char **outpu
 void DECLSPECDLLEXPORT Ptngc_pack_flush(struct coder *coder,unsigned char **output);
 void DECLSPECDLLEXPORT Ptngc_write_pattern(struct coder *coder,unsigned int pattern, int nbits, unsigned char **output);
 
-void DECLSPECDLLEXPORT Ptngc_writebits(struct coder *coder,unsigned int value,int nbits, unsigned char **output_ptr);
+void DECLSPECDLLEXPORT Ptngc_writebits(struct coder *coder, unsigned int value, const int nbits, unsigned char **output_ptr);
 void DECLSPECDLLEXPORT Ptngc_write32bits(struct coder *coder,unsigned int value,int nbits, unsigned char **output_ptr);
 void DECLSPECDLLEXPORT Ptngc_writemanybits(struct coder *coder,unsigned char *value,int nbits, unsigned char **output_ptr);
 

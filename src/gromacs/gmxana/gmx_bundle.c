@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,7 @@ int gmx_bundle(int argc, char *argv[])
         "[PAR]",
         "With option [TT]-oa[tt] the top, mid (or kink when [TT]-ok[tt] is set)",
         "and bottom points of each axis",
-        "are written to a [TT].pdb[tt] file each frame. The residue numbers correspond",
+        "are written to a [REF].pdb[ref] file each frame. The residue numbers correspond",
         "to the axis numbers. When viewing this file with Rasmol, use the",
         "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
         "display the reference axis."
@@ -425,17 +425,17 @@ int gmx_bundle(int argc, char *argv[])
     {
         close_trx(fpdb);
     }
-    gmx_ffclose(flen);
-    gmx_ffclose(fdist);
-    gmx_ffclose(fz);
-    gmx_ffclose(ftilt);
-    gmx_ffclose(ftiltr);
-    gmx_ffclose(ftiltl);
+    xvgrclose(flen);
+    xvgrclose(fdist);
+    xvgrclose(fz);
+    xvgrclose(ftilt);
+    xvgrclose(ftiltr);
+    xvgrclose(ftiltl);
     if (bKink)
     {
-        gmx_ffclose(fkink);
-        gmx_ffclose(fkinkr);
-        gmx_ffclose(fkinkl);
+        xvgrclose(fkink);
+        xvgrclose(fkinkr);
+        xvgrclose(fkinkl);
     }
 
     return 0;

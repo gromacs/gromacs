@@ -181,9 +181,13 @@ class CommandLineCommonOptionsHolder
         {
             return bQuiet_ && !bVersion_;
         }
+        //! Returns whether backups should be made.
+        bool shouldBackup() const { return bBackup_; }
 
         //! Returns the nice level.
         int niceLevel() const { return niceLevel_; }
+        //! Returns whether floating-point exception should be enabled
+        bool enableFPExceptions() const { return bFpexcept_; }
         //! Returns the debug level.
         int debugLevel() const { return debugLevel_; }
 
@@ -200,6 +204,8 @@ class CommandLineCommonOptionsHolder
         bool                         bVersion_;
         bool                         bCopyright_;
         int                          niceLevel_;
+        bool                         bBackup_;
+        bool                         bFpexcept_;
         int                          debugLevel_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineCommonOptionsHolder);

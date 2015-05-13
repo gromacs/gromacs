@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -91,9 +91,9 @@ endif()
 
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
-add_subdirectory(gmxpreprocess)
 add_subdirectory(listed-forces)
 add_subdirectory(commandline)
+add_subdirectory(domdec)
 add_subdirectory(ewald)
 add_subdirectory(fft)
 add_subdirectory(linearalgebra)
@@ -114,6 +114,7 @@ add_subdirectory(imd)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(legacyheaders)
     add_subdirectory(gmxana)
+    add_subdirectory(gmxpreprocess)
     add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
     add_subdirectory(analysisdata)
@@ -204,7 +205,7 @@ target_link_libraries(libgromacs
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
-                      SOVERSION ${LIBRARY_SOVERSION}
+                      SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 

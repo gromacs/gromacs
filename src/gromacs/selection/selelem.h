@@ -239,12 +239,40 @@ namespace gmx
 
 class ExceptionInitializer;
 
+//! \cond internal
 /*! \brief
  * Function pointer for evaluating a gmx::SelectionTreeElement.
  */
 typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t         *data,
                              const SelectionTreeElementPointer &sel,
                              gmx_ana_index_t                   *g);
+//! \endcond
+
+/*! \internal
+ * \brief
+ * Stores the location of a selection element in the selection text.
+ *
+ * The location is stored as a range in the pretty-printed selection text
+ * (where whitespace has been sanitized), and can be used to extract that text
+ * for error messages and other diagnostic purposes.
+ * During parsing, the extraction is done with _gmx_sel_lexer_get_text().
+ *
+ * This needs to be a plain C struct for Bison to properly deal with it.
+ */
+struct SelectionLocation
+{
+    //! Returns an empty location.
+    static SelectionLocation createEmpty()
+    {
+        SelectionLocation empty = {0, 0};
+        return empty;
+    }
+
+    //! Start index of the string where this element has been parsed from.
+    int  startIndex;
+    //! End index of the string where this element has been parsed from.
+    int  endIndex;
+};
 
 /*! \internal \brief
  * Represents an element of a selection expression.
@@ -255,7 +283,8 @@ class SelectionTreeElement
         /*! \brief
          * Allocates memory and performs common initialization.
          *
-         * \param[in] type Type of selection element to create.
+         * \param[in] type     Type of selection element to create.
+         * \param[in] location Location of the element.
          *
          * \a type is set to \p type,
          * \a v::type is set to \ref GROUP_VALUE for boolean and comparison
@@ -264,7 +293,7 @@ class SelectionTreeElement
          * is also set for \ref SEL_BOOLEAN elements).
          * All the pointers are set to NULL.
          */
-        explicit SelectionTreeElement(e_selelem_t type);
+        SelectionTreeElement(e_selelem_t type, const SelectionLocation &location);
         ~SelectionTreeElement();
 
         //! Frees the memory allocated for the \a v union.
@@ -303,6 +332,9 @@ class SelectionTreeElement
 
         //! Returns the name of the element.
         const std::string &name() const { return name_; }
+        //! Returns the location of the element.
+        const SelectionLocation &location() const { return location_; }
+
         /*! \brief
          * Sets the name of the element.
          *
@@ -441,9 +473,16 @@ class SelectionTreeElement
         /*! \brief
          * Name of the element.
          *
-         * This field is only used for informative purposes.
+         * This field is only used for diagnostic purposes.
          */
         std::string                         name_;
+        /*! \brief
+         * Location of the element in the selection text.
+         *
+         * This field is only used for diagnostic purposes (including error
+         * messages).
+         */
+        SelectionLocation                   location_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(SelectionTreeElement);
 };
@@ -465,7 +504,19 @@ void
 _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
                        e_selvalue_t                            vtype);
 
-/** Frees the memory allocated for a selection method. */
+/*! \brief
+ * Frees the memory allocated for a selection method parameter.
+ *
+ * \param[in] param Parameter to free.
+ */
+void
+_gmx_selelem_free_param(struct gmx_ana_selparam_t *param);
+/*! \brief
+ * Frees the memory allocated for a selection method.
+ *
+ * \param[in] method Method to free.
+ * \param[in] mdata  Method data to free.
+ */
 void
 _gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata);
 

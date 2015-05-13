@@ -42,7 +42,7 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"

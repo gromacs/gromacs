@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -294,6 +294,7 @@
 #include "selmethod.h"
 
 using std::min;
+using gmx::SelectionLocation;
 using gmx::SelectionTreeElement;
 using gmx::SelectionTreeElementPointer;
 
@@ -786,20 +787,21 @@ extract_item_subselections(const SelectionTreeElementPointer &sel,
         /* The latter check excludes variable references. */
         if (child->type == SEL_SUBEXPRREF && child->child->type != SEL_SUBEXPR)
         {
+            SelectionLocation location = child->child->location();
             /* Create the root element for the subexpression */
             if (!root)
             {
-                root.reset(new SelectionTreeElement(SEL_ROOT));
+                root.reset(new SelectionTreeElement(SEL_ROOT, location));
                 subexpr = root;
             }
             else
             {
-                subexpr->next.reset(new SelectionTreeElement(SEL_ROOT));
+                subexpr->next.reset(new SelectionTreeElement(SEL_ROOT, location));
                 subexpr = subexpr->next;
             }
             /* Create the subexpression element and
              * move the actual subexpression under the created element. */
-            subexpr->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
+            subexpr->child.reset(new SelectionTreeElement(SEL_SUBEXPR, location));
             _gmx_selelem_set_vtype(subexpr->child, child->v.type);
             subexpr->child->child = child->child;
             child->child          = subexpr->child;
@@ -978,7 +980,7 @@ reorder_boolean_static_children(const SelectionTreeElementPointer &sel)
     {
         // Add a dummy head element that precedes the first child.
         SelectionTreeElementPointer dummy(
-                new SelectionTreeElement(SEL_BOOLEAN));
+                new SelectionTreeElement(SEL_BOOLEAN, SelectionLocation::createEmpty()));
         dummy->next = sel->child;
         SelectionTreeElementPointer prev  = dummy;
         SelectionTreeElementPointer child = dummy;
@@ -1873,7 +1875,7 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
             if ((sel->flags & SEL_DYNAMIC)
                 && sel->v.type != GROUP_VALUE && sel->v.type != POS_VALUE)
             {
-                sel->v.nr = isize;
+                sel->v.nr = ((sel->flags & SEL_SINGLEVAL) ? 1 : isize);
             }
             /* If the method is char-valued, pre-allocate the strings. */
             if (sel->u.expr.method->flags & SMETH_CHARVAL)
@@ -1942,7 +1944,7 @@ evaluate_boolean_static_part(gmx_sel_evaluate_t                *data,
         child->next.reset();
         sel->cdata->evaluate(data, sel, g);
         /* Replace the subexpressions with the result */
-        child.reset(new SelectionTreeElement(SEL_CONST));
+        child.reset(new SelectionTreeElement(SEL_CONST, SelectionLocation::createEmpty()));
         child->flags      = SEL_FLAGSSET | SEL_SINGLEVAL | SEL_ALLOCVAL | SEL_ALLOCDATA;
         _gmx_selelem_set_vtype(child, GROUP_VALUE);
         child->evaluate   = NULL;

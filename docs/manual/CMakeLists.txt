@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -71,32 +71,17 @@ if(MANUAL_BUILD_IS_POSSIBLE)
     #
     # Only files that can be built should be listed in DEPENDS. Makefile
     # rules are generated for those files.
-    #
-    # The .mdp options section is now intended to be built directly
-    # from a GROMACS source directory. This facilitates drafting
-    # updates in that HTML file without copying files by hand.
-
-    ADD_CUSTOM_COMMAND(OUTPUT ${output_dir}/mdp_opt.tex
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/mkmdp ARGS ${CMAKE_CURRENT_SOURCE_DIR}/../old-html
-        DEPENDS mkmdp ${CMAKE_CURRENT_SOURCE_DIR}/../old-html/online/mdp_opt.html
-        )
 
     # Finally, the command to build the manual.
 
     ADD_LATEX_DOCUMENT(gromacs.tex
         # Normal LaTeX \included files
         INPUTS algorithms.tex  defunits.tex    implement.tex  macros.tex     special.tex
-        analyse.tex     files.tex       install.tex    topology.tex
+        analyse.tex     files.tex       topology.tex
         averages.tex    forcefield.tex  gromacs.tex    intro.tex      programs.tex
 
         # CMake does variable replacement in these files
         CONFIGURE macros.tex
-
-        # These files we're responsible for creating in the
-        # add_custom_targets() above. They should not be in the git
-        # repository, or its directory, or the dependencies will not work
-        # properly.
-        DEPENDS mdp_opt.tex
 
         BIBFILES monster.bib unpubl.bib
         IMAGE_DIRS plots

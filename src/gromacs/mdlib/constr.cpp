@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,12 +45,12 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdrun.h"
@@ -99,67 +99,6 @@ typedef struct {
     atom_id iatom[3];
     atom_id blocknr;
 } t_sortblock;
-
-/* delta_t should be used instead of ir->delta_t, to permit the time
-   step to be scaled by the calling code */
-static void *init_vetavars(t_vetavars *vars,
-                           gmx_bool constr_deriv,
-                           real veta, real vetanew,
-                           t_inputrec *ir, real delta_t,
-                           gmx_ekindata_t *ekind, gmx_bool bPscal)
-{
-    double g;
-    int    i;
-
-    /* first, set the alpha integrator variable */
-    if ((ir->opts.nrdf[0] > 0) && bPscal)
-    {
-        vars->alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
-    }
-    else
-    {
-        vars->alpha = 1.0;
-    }
-    g             = 0.5*veta*delta_t;
-    vars->rscale  = exp(g)*series_sinhx(g);
-    g             = -0.25*vars->alpha*veta*delta_t;
-    vars->vscale  = exp(g)*series_sinhx(g);
-    vars->rvscale = vars->vscale*vars->rscale;
-    vars->veta    = vetanew;
-
-    if (constr_deriv)
-    {
-        snew(vars->vscale_nhc, ir->opts.ngtc);
-        if ((ekind == NULL) || (!bPscal))
-        {
-            for (i = 0; i < ir->opts.ngtc; i++)
-            {
-                vars->vscale_nhc[i] = 1;
-            }
-        }
-        else
-        {
-            for (i = 0; i < ir->opts.ngtc; i++)
-            {
-                vars->vscale_nhc[i] = ekind->tcstat[i].vscale_nhc;
-            }
-        }
-    }
-    else
-    {
-        vars->vscale_nhc = NULL;
-    }
-
-    return vars;
-}
-
-static void free_vetavars(t_vetavars *vars)
-{
-    if (vars->vscale_nhc != NULL)
-    {
-        sfree(vars->vscale_nhc);
-    }
-}
 
 static int pcomp(const void *p1, const void *p2)
 {
@@ -326,7 +265,7 @@ static void pr_sortblock(FILE *fp, const char *title, int nsb, t_sortblock sb[])
 
 gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
-                   t_idef *idef, t_inputrec *ir, gmx_ekindata_t *ekind,
+                   t_idef *idef, t_inputrec *ir,
                    t_commrec *cr,
                    gmx_int64_t step, int delta_step,
                    real step_scaling,
@@ -335,8 +274,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    gmx_bool bMolPBC, matrix box,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq, gmx_bool bPscal,
-                   real veta, real vetanew)
+                   t_nrnb *nrnb, int econq)
 {
     gmx_bool    bOK, bDump;
     int         start, homenr;
@@ -349,7 +287,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     int         nsettle;
     t_pbc       pbc, *pbc_null;
     char        buf[22];
-    t_vetavars  vetavar;
     int         nth, th;
 
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
@@ -364,10 +301,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     homenr = md->homenr;
 
     scaled_delta_t = step_scaling * ir->delta_t;
-
-    /* set constants for pressure control integration */
-    init_vetavars(&vetavar, econq != econqCoord,
-                  veta, vetanew, ir, scaled_delta_t, ekind, bPscal);
 
     /* Prepare time step for use in constraint implementations, and
        avoid generating inf when ir->delta_t = 0. */
@@ -480,7 +413,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               idef, ir, x, xprime, nrnb,
                               constr->lagr, lambda, dvdlambda,
                               invdt, v, vir != NULL, vir_r_m_dr,
-                              constr->maxwarn >= 0, econq, &vetavar);
+                              constr->maxwarn >= 0, econq);
                 break;
             case (econqVeloc):
                 bOK = bshakef(fplog, constr->shaked,
@@ -488,7 +421,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               idef, ir, x, min_proj, nrnb,
                               constr->lagr, lambda, dvdlambda,
                               invdt, NULL, vir != NULL, vir_r_m_dr,
-                              constr->maxwarn >= 0, econq, &vetavar);
+                              constr->maxwarn >= 0, econq);
                 break;
             default:
                 gmx_fatal(FARGS, "Internal error, SHAKE called for constraining something else than coordinates");
@@ -543,8 +476,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                                 x[0], xprime[0],
                                 invdt, v ? v[0] : NULL, calcvir_atom_end,
                                 th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
-                                th == 0 ? &settle_error : &constr->settle_error[th],
-                                &vetavar);
+                                th == 0 ? &settle_error : &constr->settle_error[th]);
                     }
                 }
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
@@ -582,8 +514,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                                     pbc_null,
                                     x,
                                     xprime, min_proj, calcvir_atom_end,
-                                    th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
-                                    &vetavar);
+                                    th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th]);
                     }
                 }
                 /* This is an overestimate */
@@ -602,8 +533,14 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         /* Combine virial and error info of the other threads */
         for (i = 1; i < nth; i++)
         {
-            m_add(vir_r_m_dr, constr->vir_r_m_dr_th[i], vir_r_m_dr);
             settle_error = constr->settle_error[i];
+        }
+        if (vir != NULL)
+        {
+            for (i = 1; i < nth; i++)
+            {
+                m_add(vir_r_m_dr, constr->vir_r_m_dr_th[i], vir_r_m_dr);
+            }
         }
 
         if (econq == econqCoord && settle_error >= 0)
@@ -630,8 +567,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             }
         }
     }
-
-    free_vetavars(&vetavar);
 
     if (vir != NULL)
     {
@@ -679,7 +614,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (econq == econqCoord)
     {
-        if (ir->ePull == epullCONSTRAINT)
+        if (ir->bPull && ir->pull->bConstraint)
         {
             if (EI_DYNAMICS(ir->eI))
             {
@@ -1236,7 +1171,9 @@ gmx_constr_t init_constraints(FILE *fplog,
         gmx_mtop_ftype_count(mtop, F_CONSTRNC);
     nset = gmx_mtop_ftype_count(mtop, F_SETTLE);
 
-    if (ncon+nset == 0 && ir->ePull != epullCONSTRAINT && ed == NULL)
+    if (ncon+nset == 0 &&
+        !(ir->bPull && ir->pull->bConstraint) &&
+        ed == NULL)
     {
         return NULL;
     }
@@ -1352,6 +1289,11 @@ gmx_constr_t init_constraints(FILE *fplog,
                 make_at2settle(mtop->moltype[mt].atoms.nr,
                                &mtop->moltype[mt].ilist[F_SETTLE]);
         }
+    }
+
+    if ((ncon + nset) > 0 && ir->epc == epcMTTK)
+    {
+        gmx_fatal(FARGS, "Constraints are not implemented with MTTK pressure control.");
     }
 
     constr->maxwarn = 999;

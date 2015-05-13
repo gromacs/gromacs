@@ -177,10 +177,14 @@ class AbstractPlotModule : public AnalysisDataModuleSerial
          * Set plot title.
          */
         void setTitle(const char *title);
+        //! \copydoc setTitle(const char *)
+        void setTitle(const std::string &title);
         /*! \brief
          * Set plot subtitle.
          */
         void setSubtitle(const char *subtitle);
+        //! \copydoc setSubtitle(const char *)
+        void setSubtitle(const std::string &subtitle);
         /*! \brief
          * Set X axis label.
          */

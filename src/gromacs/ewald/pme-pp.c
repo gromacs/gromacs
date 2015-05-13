@@ -43,9 +43,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sighandler.h"
 #include "gromacs/legacyheaders/typedefs.h"

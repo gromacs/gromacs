@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/snprintf.h"
 
 #include "geminate.h"
 
@@ -1416,6 +1417,7 @@ static void reset_nhbonds(t_donors *ddd)
 }
 
 void pbc_correct_gem(rvec dx, matrix box, rvec hbox);
+void pbc_in_gridbox(rvec dx, matrix box);
 
 static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                        gmx_bool bBox, matrix box, rvec hbox,
@@ -1565,30 +1567,19 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                         {
                             copy_rvec(x[ad[i]], xtemp);
                         }
-                        pbc_correct_gem(x[ad[i]], box, hbox);
-                    }
-                    for (m = DIM-1; m >= 0; m--)
-                    {
-                        if (TRUE || !hb->bGem)
-                        {
-                            /* put atom in the box */
-                            while (x[ad[i]][m] < 0)
-                            {
-                                rvec_inc(x[ad[i]], box[m]);
-                            }
-                            while (x[ad[i]][m] >= box[m][m])
-                            {
-                                rvec_dec(x[ad[i]], box[m]);
-                            }
+                        pbc_in_gridbox(x[ad[i]], box);
+
+                        for (m = DIM-1; m >= 0; m--)
+                        {   /* determine grid index of atom */
+                            grididx[m] = x[ad[i]][m]*invdelta[m];
+                            grididx[m] = (grididx[m]+ngrid[m]) % ngrid[m];
                         }
-                        /* determine grid index of atom */
-                        grididx[m] = x[ad[i]][m]*invdelta[m];
-                        grididx[m] = (grididx[m]+ngrid[m]) % ngrid[m];
+                        if (hb->bGem)
+                        {
+                            copy_rvec(xtemp, x[ad[i]]); /* copy back */
+                        }
                     }
-                    if (hb->bGem)
-                    {
-                        copy_rvec(xtemp, x[ad[i]]); /* copy back */
-                    }
+
                     gx = grididx[XX];
                     gy = grididx[YY];
                     gz = grididx[ZZ];
@@ -1744,6 +1735,29 @@ void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
                 rvec_inc(dx, box[m]);
             }
             if (dx[m] >= hbox[m])
+            {
+                bDone = FALSE;
+                rvec_dec(dx, box[m]);
+            }
+        }
+    }
+}
+
+void pbc_in_gridbox(rvec dx, matrix box)
+{
+    int      m;
+    gmx_bool bDone = FALSE;
+    while (!bDone)
+    {
+        bDone = TRUE;
+        for (m = DIM-1; m >= 0; m--)
+        {
+            if (dx[m] < 0)
+            {
+                bDone = FALSE;
+                rvec_inc(dx, box[m]);
+            }
+            if (dx[m] >= box[m][m])
             {
                 bDone = FALSE;
                 rvec_dec(dx, box[m]);
@@ -2233,7 +2247,7 @@ static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bC
         integral += x1;
     }
     integral *= dt;
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     printf("%s lifetime = %.2f ps\n", bContact ? "Contact" : "HB", integral);
     printf("Note that the lifetime obtained in this manner is close to useless\n");
     printf("Use the -ac option instead and check the Forward lifetime\n");
@@ -2401,7 +2415,7 @@ static void smooth_tail(int n, real t[], real c[], real sigma_c[], real start,
     }
     fitparm[1] = 0.95;
     do_lmfit(n, c, sigma_c, 0, t, start, t[n-1], oenv, bDebugMode(),
-             effnEXP2, fitparm, 0);
+             effnEXP2, fitparm, 0, NULL);
 }
 
 void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
@@ -3273,7 +3287,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                 fprintf(fp, "%10g  %10g  %10g  %10g  %10g\n",
                         hb->time[j]-hb->time[0], ct[j], cct[j], ght[j], kt[j]);
             }
-            gmx_ffclose(fp);
+            xvgrclose(fp);
 
             analyse_corr(nn, hb->time, ct, ght, kt, NULL, NULL, NULL,
                          fit_start, temp, smooth_tail_start, oenv);
@@ -3328,21 +3342,31 @@ static void init_hbframe(t_hbdata *hb, int nframes, real t)
     /*set_hb(hb->hbmap[i][j]->h[m],nframes-hb->hbmap[i][j]->n0,HB_NO);*/
 }
 
-static void analyse_donor_props(const char *fn, t_hbdata *hb, int nframes, real t,
-                                const output_env_t oenv)
+static FILE *open_donor_properties_file(const char        *fn,
+                                        t_hbdata          *hb,
+                                        const output_env_t oenv)
 {
-    static FILE *fp    = NULL;
-    const char  *leg[] = { "Nbound", "Nfree" };
-    int          i, j, k, nbound, nb, nhtot;
+    FILE       *fp    = NULL;
+    const char *leg[] = { "Nbound", "Nfree" };
 
-    if (!fn)
+    if (!fn || !hb)
+    {
+        return NULL;
+    }
+
+    fp = xvgropen(fn, "Donor properties", output_env_get_xvgr_tlabel(oenv), "Number", oenv);
+    xvgr_legend(fp, asize(leg), leg, oenv);
+
+    return fp;
+}
+
+static void analyse_donor_properties(FILE *fp, t_hbdata *hb, int nframes, real t)
+{
+    int i, j, k, nbound, nb, nhtot;
+
+    if (!fp || !hb)
     {
         return;
-    }
-    if (!fp)
-    {
-        fp = xvgropen(fn, "Donor properties", output_env_get_xvgr_tlabel(oenv), "Number", oenv);
-        xvgr_legend(fp, asize(leg), leg, oenv);
     }
     nbound = 0;
     nhtot  = 0;
@@ -3545,40 +3569,41 @@ int gmx_hbond(int argc, char *argv[])
 
         /*    "It is also possible to analyse specific hydrogen bonds with",
               "[TT]-sel[tt]. This index file must contain a group of atom triplets",
-              "Donor Hydrogen Acceptor, in the following way:[PAR]",
+              "Donor Hydrogen Acceptor, in the following way::",
+           "",
+           "[ selected ]",
+           "     20    21    24",
+           "     25    26    29",
+           "      1     3     6",
+           "",
+           "Note that the triplets need not be on separate lines.",
+           "Each atom triplet specifies a hydrogen bond to be analyzed,",
+           "note also that no check is made for the types of atoms.[PAR]",
          */
-        "[TT]",
-        "[ selected ][BR]",
-        "     20    21    24[BR]",
-        "     25    26    29[BR]",
-        "      1     3     6[BR]",
-        "[tt][BR]",
-        "Note that the triplets need not be on separate lines.",
-        "Each atom triplet specifies a hydrogen bond to be analyzed,",
-        "note also that no check is made for the types of atoms.[PAR]",
 
-        "[BB]Output:[bb][BR]",
-        "[TT]-num[tt]:  number of hydrogen bonds as a function of time.[BR]",
-        "[TT]-ac[tt]:   average over all autocorrelations of the existence",
-        "functions (either 0 or 1) of all hydrogen bonds.[BR]",
-        "[TT]-dist[tt]: distance distribution of all hydrogen bonds.[BR]",
-        "[TT]-ang[tt]:  angle distribution of all hydrogen bonds.[BR]",
-        "[TT]-hx[tt]:   the number of n-n+i hydrogen bonds as a function of time",
-        "where n and n+i stand for residue numbers and i ranges from 0 to 6.",
-        "This includes the n-n+3, n-n+4 and n-n+5 hydrogen bonds associated",
-        "with helices in proteins.[BR]",
-        "[TT]-hbn[tt]:  all selected groups, donors, hydrogens and acceptors",
-        "for selected groups, all hydrogen bonded atoms from all groups and",
-        "all solvent atoms involved in insertion.[BR]",
-        "[TT]-hbm[tt]:  existence matrix for all hydrogen bonds over all",
-        "frames, this also contains information on solvent insertion",
-        "into hydrogen bonds. Ordering is identical to that in [TT]-hbn[tt]",
-        "index file.[BR]",
-        "[TT]-dan[tt]: write out the number of donors and acceptors analyzed for",
-        "each timeframe. This is especially useful when using [TT]-shell[tt].[BR]",
-        "[TT]-nhbdist[tt]: compute the number of HBonds per hydrogen in order to",
-        "compare results to Raman Spectroscopy.",
-        "[PAR]",
+        "[BB]Output:[bb]",
+        "",
+        " * [TT]-num[tt]:  number of hydrogen bonds as a function of time.",
+        " * [TT]-ac[tt]:   average over all autocorrelations of the existence",
+        "   functions (either 0 or 1) of all hydrogen bonds.",
+        " * [TT]-dist[tt]: distance distribution of all hydrogen bonds.",
+        " * [TT]-ang[tt]:  angle distribution of all hydrogen bonds.",
+        " * [TT]-hx[tt]:   the number of n-n+i hydrogen bonds as a function of time",
+        "   where n and n+i stand for residue numbers and i ranges from 0 to 6.",
+        "   This includes the n-n+3, n-n+4 and n-n+5 hydrogen bonds associated",
+        "   with helices in proteins.",
+        " * [TT]-hbn[tt]:  all selected groups, donors, hydrogens and acceptors",
+        "   for selected groups, all hydrogen bonded atoms from all groups and",
+        "   all solvent atoms involved in insertion.",
+        " * [TT]-hbm[tt]:  existence matrix for all hydrogen bonds over all",
+        "   frames, this also contains information on solvent insertion",
+        "   into hydrogen bonds. Ordering is identical to that in [TT]-hbn[tt]",
+        "   index file.",
+        " * [TT]-dan[tt]: write out the number of donors and acceptors analyzed for",
+        "   each timeframe. This is especially useful when using [TT]-shell[tt].",
+        " * [TT]-nhbdist[tt]: compute the number of HBonds per hydrogen in order to",
+        "   compare results to Raman Spectroscopy.",
+        "",
         "Note: options [TT]-ac[tt], [TT]-life[tt], [TT]-hbn[tt] and [TT]-hbm[tt]",
         "require an amount of memory proportional to the total numbers of donors",
         "times the total number of acceptors in the selected group(s)."
@@ -3624,7 +3649,7 @@ int gmx_hbond(int argc, char *argv[])
         { "-smooth", FALSE, etREAL, {&smooth_tail_start},
           "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/[GRK]tau[grk])" },
         { "-dump",  FALSE, etINT, {&nDump},
-          "Dump the first N hydrogen bond ACFs in a single [TT].xvg[tt] file for debugging" },
+          "Dump the first N hydrogen bond ACFs in a single [REF].xvg[ref] file for debugging" },
         { "-max_hb", FALSE, etREAL, {&maxnhb},
           "Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly" },
         { "-merge", FALSE, etBOOL, {&bMerge},
@@ -3688,7 +3713,7 @@ int gmx_hbond(int argc, char *argv[])
     int                   grp, nabin, nrbin, bin, resdist, ihb;
     char                **leg;
     t_hbdata             *hb, *hbptr;
-    FILE                 *fp, *fpins = NULL, *fpnhb = NULL;
+    FILE                 *fp, *fpins = NULL, *fpnhb = NULL, *donor_properties = NULL;
     t_gridcell         ***grid;
     t_ncell              *icell, *jcell, *kcell;
     ivec                  ngrid;
@@ -3946,6 +3971,8 @@ int gmx_hbond(int argc, char *argv[])
     printf("Found %d donors and %d acceptors\n", hb->d.nrd, hb->a.nra);
     /*if (bSelected)
        snew(donors[gr0D], dons[gr0D].nrd);*/
+
+    donor_properties = open_donor_properties_file(opt2fn_null("-don", NFILE, fnm), hb, oenv);
 
     if (bHBmap)
     {
@@ -4375,10 +4402,7 @@ int gmx_hbond(int argc, char *argv[])
 #pragma omp barrier
 #pragma omp single
                 {
-                    if (hb != NULL)
-                    {
-                        analyse_donor_props(opt2fn_null("-don", NFILE, fnm), hb, k, t, oenv);
-                    }
+                    analyse_donor_properties(donor_properties, hb, k, t);
                 }
 
 #pragma omp single
@@ -4448,9 +4472,15 @@ int gmx_hbond(int argc, char *argv[])
     free_grid(ngrid, &grid);
 
     close_trj(status);
+
+    if (donor_properties)
+    {
+        xvgrclose(donor_properties);
+    }
+
     if (fpnhb)
     {
-        gmx_ffclose(fpnhb);
+        xvgrclose(fpnhb);
     }
 
     /* Compute maximum possible number of different hbonds */
@@ -4516,7 +4546,7 @@ int gmx_hbond(int argc, char *argv[])
         aver_nhb  += hb->nhb[i];
         aver_dist += hb->ndist[i];
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     aver_nhb  /= nframes;
     aver_dist /= nframes;
     /* Print HB distance distribution */
@@ -4539,7 +4569,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             fprintf(fp, "%10g %10g\n", (i+0.5)*rbin, rdist[i]/(rbin*(real)sum));
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     /* Print HB angle distribution */
@@ -4560,7 +4590,7 @@ int gmx_hbond(int argc, char *argv[])
         {
             fprintf(fp, "%10g %10g\n", (i+0.5)*abin, adist[i]/(abin*(real)sum));
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     /* Print HB in alpha-helix */
@@ -4578,7 +4608,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
     if (!bNN)
     {
@@ -4775,7 +4805,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
     }
 
     return 0;

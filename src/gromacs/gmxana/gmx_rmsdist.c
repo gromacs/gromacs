@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -639,7 +639,7 @@ int gmx_rmsdist(int argc, char *argv[])
         "of atom pairs with 1/r^3 and 1/r^6 averaged distance below the",
         "maximum distance ([TT]-max[tt], which will default to 0.6 in this case)",
         "can be generated, by default averaging over equivalent hydrogens",
-        "(all triplets of hydrogens named *[123]). Additionally a list of",
+        "(all triplets of hydrogens named \\*[123]). Additionally a list of",
         "equivalent atoms can be supplied ([TT]-equiv[tt]), each line containing",
         "a set of equivalent atoms specified as residue number and name and",
         "atom name; e.g.:[PAR]",
@@ -798,7 +798,7 @@ int gmx_rmsdist(int argc, char *argv[])
     while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 
     close_trj(status);
 

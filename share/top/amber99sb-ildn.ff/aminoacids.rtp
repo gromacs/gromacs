@@ -1650,11 +1650,11 @@
     -C     N
  [ dihedrals ]
      N    CA    CB   CG2        torsion_ILE_N_CA_CB_CG2_mult1
-     B    CA    CB   CG2        torsion_ILE_N_CA_CB_CG2_mult2
+     N    CA    CB   CG2        torsion_ILE_N_CA_CB_CG2_mult2
  [ impropers ]
-    -C    CA     N     H    
-    CA   OC1     C   OC2    
-                        
+    -C    CA     N     H
+    CA   OC1     C   OC2
+
 [ CVAL ]
  [ atoms ]
      N    N           -0.38210     1
@@ -2693,10 +2693,10 @@
      C    +N
  [ dihedrals ]
      N    CA    CB   CG2        torsion_ILE_N_CA_CB_CG2_mult1
-     B    CA    CB   CG2        torsion_ILE_N_CA_CB_CG2_mult2
+     N    CA    CB   CG2        torsion_ILE_N_CA_CB_CG2_mult2
  [ impropers ]
     CA    +N     C     O
-                        
+
 [ NVAL ]
  [ atoms ]
      N    N3           0.05770     1

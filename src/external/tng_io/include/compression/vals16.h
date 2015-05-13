@@ -12,10 +12,10 @@
 #ifndef VALS16_H
 #define VALS16_H
 
-void Ptngc_comp_conv_to_vals16(unsigned int *vals,int nvals,
-			 unsigned int *vals16, int *nvals16);
+void Ptngc_comp_conv_to_vals16(unsigned int *vals, const int nvals,
+                               unsigned int *vals16, int *nvals16);
 
-void Ptngc_comp_conv_from_vals16(unsigned int *vals16,int nvals16,
-			   unsigned int *vals, int *nvals);
+void Ptngc_comp_conv_from_vals16(unsigned int *vals16, const int nvals16,
+                                 unsigned int *vals, int *nvals);
 
 #endif

@@ -312,6 +312,7 @@ gmx_load1_exclfilter(int e)
 static gmx_inline gmx_exclfilter gmx_simdcall
 gmx_load_exclusion_filter(const unsigned *i)
 {
+    /* cppcheck-suppress invalidPointerCast */
     return gmx_simd_load_r((real *) (i));
 }
 

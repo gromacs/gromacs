@@ -63,6 +63,9 @@ inline void sfree_wrapper(T *p)
  *
  * Currently only implements some operations; other operations can be added
  * if they become necessary.
+ * The presence of a release() method is not strictly according to `scoped_ptr`
+ * design, but makes it easier to make existing C code exception-safe, and does
+ * not really warrant a separate class for such a purpose.
  *
  * This class provides a basic guard/smart pointer for C pointers.
  *
@@ -80,16 +83,20 @@ class scoped_cptr
          *
          * \param[in] ptr  Pointer to use for initialization.
          */
-        explicit scoped_cptr(T *ptr) : ptr_(ptr) {}
+        explicit scoped_cptr(T *ptr = NULL) : ptr_(ptr) {}
         //! Frees the pointer passed to the constructor.
         ~scoped_cptr() { D(ptr_); }
         //! Returns the stored pointer.
-        T * get() const { return ptr_; }
+        T *get() const { return ptr_; }
         //! Check for non-null pointer in boolean context.
 #ifdef GMX_CXX11
         explicit
 #endif
         operator bool () const { return ptr_ != 0; }
+        //! Sets the pointer and frees previous pointer if necessary.
+        void reset(T *ptr) { D(ptr_); ptr_ = ptr; }
+        //! Clears the pointer without freeing the memory, and returns the old value.
+        T *release() { T *ptr = ptr_; ptr_ = NULL; return ptr; }
 
     private:
         T                    *ptr_;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -127,7 +127,7 @@ int gmx_polystat(int argc, char *argv[])
         "are usually all trans and therefore only every second bond aligns.",
         "The persistence length is defined as number of bonds where",
         "the average cos reaches a value of 1/e. This point is determined",
-        "by a linear interpolation of log(<cos>)."
+        "by a linear interpolation of [LOG]<cos>[log]."
     };
     static gmx_bool bMW  = TRUE, bPC = FALSE;
     t_pargs         pa[] = {
@@ -464,14 +464,14 @@ int gmx_polystat(int argc, char *argv[])
 
     close_trx(status);
 
-    gmx_ffclose(out);
+    xvgrclose(out);
     if (outv)
     {
-        gmx_ffclose(outv);
+        xvgrclose(outv);
     }
     if (outp)
     {
-        gmx_ffclose(outp);
+        xvgrclose(outp);
     }
 
     sum_eed2_tot /= frame;
@@ -514,7 +514,7 @@ int gmx_polystat(int argc, char *argv[])
         {
             fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
         }
-        gmx_ffclose(outi);
+        xvgrclose(outi);
     }
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");

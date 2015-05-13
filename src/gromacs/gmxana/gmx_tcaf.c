@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             }
             fprintf(fp, "\n");
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         do_view(oenv, fn_trans, "-nxy");
     }
 
@@ -169,7 +169,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         }
         fprintf(fp, "\n");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     do_view(oenv, fn_tc, "-nxy");
 
     if (fn_cub)
@@ -208,7 +208,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         fitparms[0]  = 1;
         fitparms[1]  = 1;
         do_lmfit(ncorr, tcaf[k], sig, dt, 0, 0, ncorr*dt,
-                 oenv, bDebugMode(), effnVAC, fitparms, 0);
+                 oenv, bDebugMode(), effnVAC, fitparms, 0, NULL);
         eta = 1000*fitparms[1]*rho/
             (4*fitparms[0]*PICO*norm2(kfac[k])/(NANO*NANO));
         fprintf(stdout, "k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
@@ -220,7 +220,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         }
         fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
     do_view(oenv, fn_tcf, "-nxy");
 
     if (fn_cub)
@@ -233,7 +233,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             fitparms[0]  = 1;
             fitparms[1]  = 1;
             do_lmfit(ncorr, tcafc[k], sig, dt, 0, 0, ncorr*dt,
-                     oenv, bDebugMode(), effnVAC, fitparms, 0);
+                     oenv, bDebugMode(), effnVAC, fitparms, 0, NULL);
             eta = 1000*fitparms[1]*rho/
                 (4*fitparms[0]*PICO*norm2(kfac[kset_c[k]])/(NANO*NANO));
             fprintf(stdout,
@@ -247,10 +247,10 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             fprintf(fp_cub, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(fp_vk, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
-        gmx_ffclose(fp_cub);
+        xvgrclose(fp_cub);
         do_view(oenv, fn_cub, "-nxy");
     }
-    gmx_ffclose(fp_vk);
+    xvgrclose(fp_vk);
     do_view(oenv, fn_vk, "-nxy");
 }
 

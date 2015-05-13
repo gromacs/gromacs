@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -257,27 +257,37 @@ TEST_F(SimdFloatingpointTest, gmxSimdSetExponentR)
 
 TEST_F(SimdFloatingpointTest, gmxSimdRsqrtR)
 {
-    gmx_simd_real_t x      = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    gmx_simd_real_t ref    = setSimdRealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    gmx_simd_real_t x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
+    gmx_simd_real_t ref                = setSimdRealFrom3R(0.5, 1.0/sqrt(M_PI), 1.0/sqrt(1234567890.0));
+    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+
+    if (shiftbits < 0)
+    {
+        shiftbits = 0;
+    }
 
     /* Set the allowed ulp error as 2 to the power of the number of bits in
      * the mantissa that do not have to be correct after the table lookup.
      */
-    setUlpTol(1LL << (std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS));
-
+    setUlpTol(1LL << shiftbits);
     GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_rsqrt_r(x));
 }
 
 TEST_F(SimdFloatingpointTest, gmxSimdRcpR)
 {
-    gmx_simd_real_t x      = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    gmx_simd_real_t ref    = setSimdRealFrom3R(0.25, 1.0/M_PI, 1.0/1234567890.0);
+    gmx_simd_real_t x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
+    gmx_simd_real_t ref                = setSimdRealFrom3R(0.25, 1.0/M_PI, 1.0/1234567890.0);
+    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS;
+
+    if (shiftbits < 0)
+    {
+        shiftbits = 0;
+    }
 
     /* Set the allowed ulp error as 2 to the power of the number of bits in
      * the mantissa that do not have to be correct after the table lookup.
      */
-    setUlpTol(1LL << (std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS));
-
+    setUlpTol(1LL << shiftbits);
     GMX_EXPECT_SIMD_REAL_NEAR(ref, gmx_simd_rcp_r(x));
 }
 

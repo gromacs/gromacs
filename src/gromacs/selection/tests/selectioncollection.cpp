@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1028,12 +1028,25 @@ TEST_F(SelectionCollectionDataTest, HandlesUnsortedIndexGroupsInSelectionsDelaye
     ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
+
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)
 {
     static const char * const selections[] = {
         "[1, -2, 3.5]"
     };
-    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+             | efTestPositionMapping);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesConstantPositionsWithModifiers)
+{
+    static const char * const selections[] = {
+        "[0, 0, 0] plus [0, 1, 0]"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
+             | efTestPositionMapping);
     runTest("simple.gro", selections);
 }
 
@@ -1129,7 +1142,27 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForKeywords)
 TEST_F(SelectionCollectionDataTest, HandlesPositionModifiersForMethods)
 {
     static const char * const selections[] = {
-        "res_cog distance from cog of resnr 1 < 2"
+        "res_cog distance from cog of resnr 1 < 2",
+        "res_cog within 2 of cog of resnr 1"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesKeywordOfPositions)
+{
+    static const char * const selections[] = {
+        "x < y of cog of resnr 2"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesKeywordOfPositionsInArithmetic)
+{
+    static const char * const selections[] = {
+        "x - y of cog of resnr 2 < 0"
     };
     setFlags(TestFlags() | efTestEvaluation);
     runTest("simple.gro", selections);

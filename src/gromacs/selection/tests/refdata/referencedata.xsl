@@ -66,6 +66,24 @@
     </table>
 </xsl:template>
 
+<xsl:template match="OrgIdGroups">
+    <h2>Groups: <xsl:value-of select="@Name"/></h2>
+    <table>
+        <tr>
+            <td>Group count:</td>
+            <td><xsl:value-of select="Int[@Name='GroupCount']"/></td>
+        </tr>
+        <tr>
+            <td>OrgId</td>
+            <td>
+                <xsl:call-template name="SequenceAsCSV">
+                    <xsl:with-param name="root" select="Sequence[@Name='OrgId']"/>
+                </xsl:call-template>
+            </td>
+        </tr>
+    </table>
+</xsl:template>
+
 <!-- Position calculation reference data -->
 
 <xsl:template match="InitializedPositions">

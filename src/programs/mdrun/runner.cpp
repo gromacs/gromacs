@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,15 +46,14 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/ewald/ewald-util.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/gmxpreprocess/calc_verletbuf.h"
+#include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
@@ -73,7 +72,9 @@
 #include "gromacs/legacyheaders/sighandler.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -93,8 +94,6 @@
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
-
-#include "gromacs/legacyheaders/gpu_utils.h"
 
 typedef struct {
     gmx_integrator_t *func;
@@ -147,7 +146,6 @@ struct mdrunner_arglist
     real            pforce;
     real            cpt_period;
     real            max_hours;
-    const char     *deviceOptions;
     int             imdport;
     unsigned long   Flags;
 };
@@ -184,7 +182,7 @@ static void mdrunner_start_fn(void *arg)
              mc.nbpu_opt, mc.nstlist_cmdline,
              mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
              mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
-             mc.cpt_period, mc.max_hours, mc.deviceOptions, mc.imdport, mc.Flags);
+             mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including
@@ -203,7 +201,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                          real pforce, real cpt_period, real max_hours,
-                                         const char *deviceOptions, unsigned long Flags)
+                                         unsigned long Flags)
 {
     int                      ret;
     struct mdrunner_arglist *mda;
@@ -254,7 +252,6 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->pforce          = pforce;
     mda->cpt_period      = cpt_period;
     mda->max_hours       = max_hours;
-    mda->deviceOptions   = deviceOptions;
     mda->Flags           = Flags;
 
     /* now spawn new threads that start mdrunner_start_fn(), while
@@ -309,20 +306,22 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
          * two CPUs with HT, so we need a limit<16; thus we use 12.
          * A reasonable limit for Intel Sandy and Ivy bridge,
          * not knowing the topology, is 16 threads.
+         * Below we check for Intel and AVX, which for now includes
+         * Sandy/Ivy Bridge, Has/Broadwell. By checking for AVX instead of
+         * model numbers we ensure also future Intel CPUs are covered.
          */
         const int nthreads_omp_always_faster             =  4;
         const int nthreads_omp_always_faster_Nehalem     = 12;
-        const int nthreads_omp_always_faster_SandyBridge = 16;
-        gmx_bool  bIntel_Family6;
+        const int nthreads_omp_always_faster_Intel_AVX   = 16;
+        gmx_bool  bIntelAVX;
 
-        bIntel_Family6 =
+        bIntelAVX =
             (gmx_cpuid_vendor(hwinfo->cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
-             gmx_cpuid_family(hwinfo->cpuid_info) == 6);
+             gmx_cpuid_feature(hwinfo->cpuid_info, GMX_CPUID_FEATURE_X86_AVX));
 
         if (nthreads_tot <= nthreads_omp_always_faster ||
-            (bIntel_Family6 &&
-             ((gmx_cpuid_model(hwinfo->cpuid_info) >= nthreads_omp_always_faster_Nehalem && nthreads_tot <= nthreads_omp_always_faster_Nehalem) ||
-              (gmx_cpuid_model(hwinfo->cpuid_info) >= nthreads_omp_always_faster_SandyBridge && nthreads_tot <= nthreads_omp_always_faster_SandyBridge))))
+            ((gmx_cpuid_is_intel_nehalem(hwinfo->cpuid_info) && nthreads_tot <= nthreads_omp_always_faster_Nehalem) ||
+             (bIntelAVX && nthreads_tot <= nthreads_omp_always_faster_Intel_AVX)))
         {
             /* Use pure OpenMP parallelization */
             nthreads_tmpi = 1;
@@ -374,10 +373,11 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     }
 
     bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET &&
-                  hwinfo->gpu_info.ncuda_dev_compatible > 0);
+                  hwinfo->gpu_info.n_dev_compatible > 0);
+
     if (bCanUseGPU)
     {
-        ngpu = hwinfo->gpu_info.ncuda_dev_compatible;
+        ngpu = hwinfo->gpu_info.n_dev_compatible;
     }
     else
     {
@@ -753,99 +753,6 @@ static void prepare_verlet_scheme(FILE                           *fplog,
     }
 }
 
-static void convert_to_verlet_scheme(FILE *fplog,
-                                     t_inputrec *ir,
-                                     gmx_mtop_t *mtop, real box_vol)
-{
-    const char *conv_mesg = "Converting input file with group cut-off scheme to the Verlet cut-off scheme";
-
-    md_print_warn(NULL, fplog, "%s\n", conv_mesg);
-
-    ir->cutoff_scheme = ecutsVERLET;
-    ir->verletbuf_tol = 0.005;
-
-    if (ir->rcoulomb != ir->rvdw)
-    {
-        gmx_fatal(FARGS, "The VdW and Coulomb cut-offs are different, whereas the Verlet scheme only supports equal cut-offs");
-    }
-
-    if (ir->vdwtype == evdwUSER || EEL_USER(ir->coulombtype))
-    {
-        gmx_fatal(FARGS, "User non-bonded potentials are not (yet) supported with the Verlet scheme");
-    }
-    else if (ir_vdw_switched(ir) || ir_coulomb_switched(ir))
-    {
-        if (ir_vdw_switched(ir) && ir->vdw_modifier == eintmodNONE)
-        {
-            ir->vdwtype = evdwCUT;
-
-            switch (ir->vdwtype)
-            {
-                case evdwSHIFT:  ir->vdw_modifier = eintmodFORCESWITCH; break;
-                case evdwSWITCH: ir->vdw_modifier = eintmodPOTSWITCH; break;
-                default: gmx_fatal(FARGS, "The Verlet scheme does not support Van der Waals interactions of type '%s'", evdw_names[ir->vdwtype]);
-            }
-        }
-        if (ir_coulomb_switched(ir) && ir->coulomb_modifier == eintmodNONE)
-        {
-            if (EEL_FULL(ir->coulombtype))
-            {
-                /* With full electrostatic only PME can be switched */
-                ir->coulombtype      = eelPME;
-                ir->coulomb_modifier = eintmodPOTSHIFT;
-            }
-            else
-            {
-                md_print_warn(NULL, fplog, "NOTE: Replacing %s electrostatics with reaction-field with epsilon-rf=inf\n", eel_names[ir->coulombtype]);
-                ir->coulombtype      = eelRF;
-                ir->epsilon_rf       = 0.0;
-                ir->coulomb_modifier = eintmodPOTSHIFT;
-            }
-        }
-
-        /* We set the pair energy error tolerance to a small number.
-         * Note that this is only for testing. For production the user
-         * should think about this and set the mdp options.
-         */
-        ir->verletbuf_tol = 1e-4;
-    }
-
-    if (inputrec2nboundeddim(ir) != 3)
-    {
-        gmx_fatal(FARGS, "Can only convert old tpr files to the Verlet cut-off scheme with 3D pbc");
-    }
-
-    if (ir->efep != efepNO || ir->implicit_solvent != eisNO)
-    {
-        gmx_fatal(FARGS, "Will not convert old tpr files to the Verlet cut-off scheme with free-energy calculations or implicit solvent");
-    }
-
-    if (EI_DYNAMICS(ir->eI) && !(EI_MD(ir->eI) && ir->etc == etcNO))
-    {
-        verletbuf_list_setup_t ls;
-
-        verletbuf_get_list_setup(FALSE, &ls);
-        calc_verlet_buffer_size(mtop, box_vol, ir, -1, &ls, NULL, &ir->rlist);
-    }
-    else
-    {
-        real rlist_fac;
-
-        if (EI_MD(ir->eI))
-        {
-            rlist_fac       = 1 + verlet_buffer_ratio_NVE_T0;
-        }
-        else
-        {
-            rlist_fac       = 1 + verlet_buffer_ratio_nodynamics;
-        }
-        ir->verletbuf_tol   = -1;
-        ir->rlist           = rlist_fac*std::max(ir->rvdw, ir->rcoulomb);
-    }
-
-    gmx_mtop_remove_chargegroups(mtop);
-}
-
 static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 {
     fprintf(fp, "hw_opt: nt %d ntmpi %d ntomp %d ntomp_pme %d gpu_id '%s'\n",
@@ -950,10 +857,12 @@ static void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
     gmx_parse_gpu_ids(&hw_opt->gpu_opt);
 
 #ifdef GMX_THREAD_MPI
-    if (hw_opt->gpu_opt.ncuda_dev_use > 0 && hw_opt->nthreads_tmpi == 0)
+    if (hw_opt->gpu_opt.n_dev_use > 0
+        &&
+        hw_opt->nthreads_tmpi == 0)
     {
         /* Set the number of MPI threads equal to the number of GPUs */
-        hw_opt->nthreads_tmpi = hw_opt->gpu_opt.ncuda_dev_use;
+        hw_opt->nthreads_tmpi = hw_opt->gpu_opt.n_dev_use;
 
         if (hw_opt->nthreads_tot > 0 &&
             hw_opt->nthreads_tmpi > hw_opt->nthreads_tot)
@@ -1007,31 +916,36 @@ static void override_nsteps_cmdline(FILE            *fplog,
                                     t_inputrec      *ir,
                                     const t_commrec *cr)
 {
-    char sbuf[STEPSTRSIZE];
-
     assert(ir);
     assert(cr);
 
     /* override with anything else than the default -2 */
     if (nsteps_cmdline > -2)
     {
-        char stmp[STRLEN];
+        char sbuf_steps[STEPSTRSIZE];
+        char sbuf_msg[STRLEN];
 
         ir->nsteps = nsteps_cmdline;
-        if (EI_DYNAMICS(ir->eI))
+        if (EI_DYNAMICS(ir->eI) && nsteps_cmdline != -1)
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps, %.3f ps",
-                    gmx_step_str(nsteps_cmdline, sbuf),
-                    nsteps_cmdline*ir->delta_t);
+            sprintf(sbuf_msg, "Overriding nsteps with value passed on the command line: %s steps, %.3g ps",
+                    gmx_step_str(nsteps_cmdline, sbuf_steps),
+                    fabs(nsteps_cmdline*ir->delta_t));
         }
         else
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps",
-                    gmx_step_str(nsteps_cmdline, sbuf));
+            sprintf(sbuf_msg, "Overriding nsteps with value passed on the command line: %s steps",
+                    gmx_step_str(nsteps_cmdline, sbuf_steps));
         }
 
-        md_print_warn(cr, fplog, "%s\n", stmp);
+        md_print_warn(cr, fplog, "%s\n", sbuf_msg);
     }
+    else if (nsteps_cmdline < -2)
+    {
+        gmx_fatal(FARGS, "Invalid nsteps value passed on the command line: %d",
+                  nsteps_cmdline);
+    }
+    /* Do nothing if nsteps_cmdline == -2 */
 }
 
 int mdrunner(gmx_hw_opt_t *hw_opt,
@@ -1045,9 +959,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             const char *deviceOptions, int imdport, unsigned long Flags)
+             int imdport, unsigned long Flags)
 {
-    gmx_bool                  bForceUseGPU, bTryUseGPU;
+    gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD, bCantUseGPU;
     t_inputrec               *inputrec;
     t_state                  *state = NULL;
     matrix                    box;
@@ -1060,7 +974,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     t_fcdata                 *fcd           = NULL;
     real                      ewaldcoeff_q  = 0;
     real                      ewaldcoeff_lj = 0;
-    gmx_pme_t                *pmedata       = NULL;
+    struct gmx_pme_t        **pmedata       = NULL;
     gmx_vsite_t              *vsite         = NULL;
     gmx_constr_t              constr;
     int                       nChargePerturbed = -1, nTypePerturbed = 0, status;
@@ -1087,8 +1001,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fplog = NULL;
     }
 
+    bRerunMD     = (Flags & MD_RERUN);
     bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+    /* Rerun execution time is dominated by I/O and pair search, so
+     * GPUs are not very useful, plus they do not support more than
+     * one energy group. Don't select them when they can't be used,
+     * unless the user requested it, then fatal_error is called later.
+     *
+     * TODO it would be nice to notify the user that if this check
+     * causes GPUs not to be used that this is what is happening, and
+     * why, but that will be easier to do after some future
+     * cleanup. */
+    bCantUseGPU = bRerunMD && (inputrec->opts.ngener > 1);
+    bTryUseGPU  = bTryUseGPU && !(bCantUseGPU && !bForceUseGPU);
 
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
@@ -1101,16 +1027,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, NULL, mtop);
 
-        if (inputrec->cutoff_scheme != ecutsVERLET &&
-            ((Flags & MD_TESTVERLET) || getenv("GMX_VERLET_SCHEME") != NULL))
-        {
-            convert_to_verlet_scheme(fplog, inputrec, mtop, det(state->box));
-        }
-
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (hwinfo->gpu_info.ncuda_dev_compatible > 0 ||
+            bUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0 ||
                        getenv("GMX_EMULATE_GPU") != NULL);
 
             /* TODO add GPU kernels for this and replace this check by:
@@ -1140,12 +1060,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 gmx_fatal(FARGS, "Can not set nstlist with the group cut-off scheme");
             }
 
-            if (hwinfo->gpu_info.ncuda_dev_compatible > 0)
+            if (hwinfo->gpu_info.n_dev_compatible > 0)
             {
                 md_print_warn(cr, fplog,
                               "NOTE: GPU(s) found, but the current simulation can not use GPUs\n"
-                              "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n"
-                              "      (for quick performance testing you can use the -testverlet option)\n");
+                              "      To use a GPU, set the mdp option: cutoff-scheme = Verlet\n");
             }
 
             if (bForceUseGPU)
@@ -1223,7 +1142,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                         nbpu_opt, nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
-                                        cpt_period, max_hours, deviceOptions,
+                                        cpt_period, max_hours,
                                         Flags);
             /* the main thread continues here with a new cr. We don't deallocate
                the old cr because other threads may still be reading it. */
@@ -1281,7 +1200,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   );
     }
 
-    if ((Flags & MD_RERUN) &&
+    if (bRerunMD &&
         (EI_ENERGY_MINIMIZATION(inputrec->eI) || eiNM == inputrec->eI))
     {
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
@@ -1464,6 +1383,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
+#ifndef NDEBUG
+    if (integrator[inputrec->eI].func != do_tpi &&
+        inputrec->cutoff_scheme == ecutsVERLET)
+    {
+        gmx_feenableexcept();
+    }
+#endif
     if (PAR(cr))
     {
         /* The master rank decided on the use of GPUs,
@@ -1487,7 +1413,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     else
     {
         /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.ncuda_dev_use = 0;
+        hw_opt->gpu_opt.n_dev_use = 0;
     }
 
     /* check consistency across ranks of things like SIMD
@@ -1666,7 +1592,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Assumes uniform use of the number of OpenMP threads */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntDefault));
 
-        if (inputrec->ePull != epullNO)
+        if (inputrec->bPull)
         {
             /* Initialize pull code */
             init_pull(fplog, inputrec, nfile, fnm, mtop, cr, oenv, inputrec->fepvals->init_lambda,
@@ -1711,12 +1637,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                       membed,
                                       cpt_period, max_hours,
-                                      deviceOptions,
                                       imdport,
                                       Flags,
                                       walltime_accounting);
 
-        if (inputrec->ePull != epullNO)
+        if (inputrec->bPull)
         {
             finish_pull(inputrec->pull);
         }
@@ -1747,7 +1672,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
 
     /* Free GPU memory and context */
-    free_gpu_resources(fr, cr);
+    free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);
 
     if (opt2bSet("-membed", nfile, fnm))
     {
@@ -1767,6 +1692,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     rc = (int)gmx_get_stop_condition();
+
+    done_ed(&ed);
 
 #ifdef GMX_THREAD_MPI
     /* we need to join all threads. The sub-threads join when they

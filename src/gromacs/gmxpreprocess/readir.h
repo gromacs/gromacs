@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,6 @@ typedef struct {
     gmx_bool bOrire;
     gmx_bool bMorse;
     char    *wall_atomtype[2];
-    gmx_bool pull_start;
     char    *couple_moltype;
     int      couple_lam0;
     int      couple_lam1;
@@ -90,7 +89,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 int search_string(const char *s, int ng, char *gn[]);
 /* Returns the index of string s in the index groups */
 
-void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr,
+void double_check(t_inputrec *ir, matrix box,
+                  gmx_bool bHasNormalConstraints,
+                  gmx_bool bHasAnyConstraints,
                   warninp_t wi);
 /* Do more checks */
 
@@ -126,7 +127,7 @@ void do_index(const char* mdparin,
 /* Routines In readpull.c */
 
 char **read_pullparams(int *ninp_p, t_inpfile **inp,
-                       t_pull *pull, gmx_bool *bStart,
+                       t_pull *pull,
                        warninp_t wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
@@ -139,9 +140,9 @@ void make_pull_coords(t_pull *pull);
 /* Process the pull coordinates after reading the pull groups */
 
 void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
-                   const output_env_t oenv, gmx_bool bStart);
+                   const output_env_t oenv);
 /* Prints the initial pull group distances in x.
- * If bStart adds the distance to the initial reference location.
+ * If requested, adds the current distance to the initial reference location.
  */
 
 int str_nelem(const char *str, int maxptr, char *ptr[]);

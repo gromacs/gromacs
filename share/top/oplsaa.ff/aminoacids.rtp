@@ -1590,14 +1590,6 @@
  [ atoms ]
     BA   opls_414   2.000     0
 
-; Metal ions 
-[ CU ]
- [ atoms ]
-    CU   Cu2+       2.000     0
-
-[ FE ]
- [ atoms ]
-    FE   Fe2+       2.000     0
 
 ; Ethanol - CA is the carbon bound to the OH group
 [ EtOH ]
@@ -1620,6 +1612,7 @@
    CA    HA2
    CA    OH
    OH    HO
+
 
 ; New All atom DMSO model, DvdS, 17/06/2006
 ; Use at your own risk!

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,9 +88,9 @@ static const t_nrnb_data nbdata[eNRNB] = {
 
     { "Pair Search distance check",      9 }, /* nbnxn pair dist. check */
     /* nbnxn kernel flops are based on inner-loops without exclusion checks.
-     * Plain Coulomb runs through the RF kernels, except with CUDA.
+     * Plain Coulomb runs through the RF kernels, except with GPUs.
      * invsqrt is counted as 6 flops: 1 for _mm_rsqt_ps + 5 for iteration.
-     * The flops are equal for plain-C, x86 SIMD and CUDA, except for:
+     * The flops are equal for plain-C, x86 SIMD and GPUs, except for:
      * - plain-C kernel uses one flop more for Coulomb-only (F) than listed
      * - x86 SIMD LJ geom-comb.rule kernels (fastest) use 2 more flops
      * - x86 SIMD LJ LB-comb.rule kernels (fast) use 3 (8 for F+E) more flops

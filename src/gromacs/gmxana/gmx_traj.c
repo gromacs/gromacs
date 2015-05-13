@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -464,7 +464,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
             fprintf(fp, "%-5d  %10.3f  %10.3f  %10.3f\n", 1+i,
                     sum[index[i]][XX], sum[index[i]][YY], sum[index[i]][ZZ]);
         }
-        gmx_ffclose(fp);
+        xvgrclose(fp);
         max  = 0;
         maxi = 0;
         for (i = 0; i < isize; i++)
@@ -584,7 +584,7 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
     {
         fprintf(fp, "%10.3e  %10d\n", i*binwidth, histo[i]);
     }
-    gmx_ffclose(fp);
+    xvgrclose(fp);
 }
 
 int gmx_traj(int argc, char *argv[])
@@ -605,7 +605,7 @@ int gmx_traj(int argc, char *argv[])
         "provided velocities are present in the trajectory file.",
         "This implies [TT]-com[tt].[PAR]",
         "Options [TT]-cv[tt] and [TT]-cf[tt] write the average velocities",
-        "and average forces as temperature factors to a [TT].pdb[tt] file with",
+        "and average forces as temperature factors to a [REF].pdb[ref] file with",
         "the average coordinates or the coordinates at [TT]-ctime[tt].",
         "The temperature factors are scaled such that the maximum is 10.",
         "The scaling can be changed with the option [TT]-scale[tt].",
@@ -614,7 +614,7 @@ int gmx_traj(int argc, char *argv[])
         "desired frame. When averaging over frames you might need to use",
         "the [TT]-nojump[tt] option to obtain the correct average coordinates.",
         "If you select either of these option the average force and velocity",
-        "for each atom are written to an [TT].xvg[tt] file as well",
+        "for each atom are written to an [REF].xvg[ref] file as well",
         "(specified with [TT]-av[tt] or [TT]-af[tt]).[PAR]",
         "Option [TT]-vd[tt] computes a velocity distribution, i.e. the",
         "norm of the vector is plotted. In addition in the same graph",
@@ -650,7 +650,7 @@ int gmx_traj(int argc, char *argv[])
         { "-ctime", FALSE, etREAL, {&ctime},
           "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
         { "-scale", FALSE, etREAL, {&scale},
-          "Scale factor for [TT].pdb[tt] output, 0 is autoscale" }
+          "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
     FILE           *outx   = NULL, *outv = NULL, *outf = NULL, *outb = NULL, *outt = NULL;
     FILE           *outekt = NULL, *outekr = NULL;
@@ -1055,7 +1055,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (bOX)
     {
-        gmx_ffclose(outx);
+        xvgrclose(outx);
     }
     if (bOXT)
     {
@@ -1063,27 +1063,27 @@ int gmx_traj(int argc, char *argv[])
     }
     if (bOV)
     {
-        gmx_ffclose(outv);
+        xvgrclose(outv);
     }
     if (bOF)
     {
-        gmx_ffclose(outf);
+        xvgrclose(outf);
     }
     if (bOB)
     {
-        gmx_ffclose(outb);
+        xvgrclose(outb);
     }
     if (bOT)
     {
-        gmx_ffclose(outt);
+        xvgrclose(outt);
     }
     if (bEKT)
     {
-        gmx_ffclose(outekt);
+        xvgrclose(outekt);
     }
     if (bEKR)
     {
-        gmx_ffclose(outekr);
+        xvgrclose(outekr);
     }
 
     if (bVD)

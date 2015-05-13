@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -836,8 +836,8 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_real(fp, "inputrec->wall_density[1]", -1, ir1->wall_density[1], ir2->wall_density[1], ftol, abstol);
     cmp_real(fp, "inputrec->wall_ewald_zfac", -1, ir1->wall_ewald_zfac, ir2->wall_ewald_zfac, ftol, abstol);
 
-    cmp_int(fp, "inputrec->ePull", -1, ir1->ePull, ir2->ePull);
-    if (ir1->ePull == ir2->ePull && ir1->ePull != epullNO)
+    cmp_bool(fp, "inputrec->bPull", -1, ir1->bPull, ir2->bPull);
+    if (ir1->bPull && ir2->bPull)
     {
         cmp_pull(fp);
     }
@@ -1010,7 +1010,7 @@ void comp_tpx(const char *fn1, const char *fn2,
         }
         else
         {
-            if (ir[0].ePull != epullNO)
+            if (ir[0].bPull)
             {
                 comp_pull_AB(stdout, ir->pull, ftol, abstol);
             }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,14 +32,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ *  \brief Define CUDA implementation of nbnxn_gpu.h
+ *
+ *  \author Szilard Pall <pall.szilard@gmail.com>
+ */
 #include "gmxpre.h"
-
-#include "nbnxn_cuda.h"
 
 #include "config.h"
 
 #include <assert.h>
 #include <stdlib.h>
+
+#include "gromacs/mdlib/nbnxn_gpu.h"
 
 #if defined(_MSVC)
 #include <limits>
@@ -56,14 +61,15 @@
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 
 #include "nbnxn_cuda_types.h"
 
-#if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ >= 300
+#if defined HAVE_CUDA_TEXOBJ_SUPPORT && __CUDA_ARCH__ >= 300
 #define USE_TEXOBJ
 #endif
 
@@ -79,6 +85,36 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 /* Convenience defines */
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
 #define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
+
+/* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
+ * warp-pairs per block.
+ *
+ * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
+ * blocks/multiproc, is the fastest even though this setup gives low occupancy.
+ * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
+ * per multiprocessor is reduced proportionally to get the original number of max
+ * threads in flight (and slightly lower performance).
+ * - On CC 3.7 there are enough registers to double the number of threads; using
+ * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
+ * with low-register use).
+ *
+ * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
+ * shuffle-based reduction, hence CC >= 3.0.
+ */
+
+/* Kernel launch bounds as function of NTHREAD_Z.
+ * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
+ */
+#if __CUDA_ARCH__ == 370
+#define NTHREAD_Z           (2)
+#define MIN_BLOCKS_PER_MP   (16)
+#else
+#define NTHREAD_Z           (1)
+#define MIN_BLOCKS_PER_MP   (16)
+#endif
+#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
+
 
 /***** The kernels come here *****/
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh"
@@ -107,6 +143,7 @@ texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 #undef CALC_ENERGIES
 #undef PRUNE_NBL
 
+
 /*! Nonbonded kernel function pointer type */
 typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t,
                                      const cu_nbparam_t,
@@ -128,7 +165,7 @@ static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 static unsigned int poll_wait_pattern = (0x7FU << 23);
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
-static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
+static inline int calc_nb_kernel_nblock(int nwork_units, gmx_device_info_t *dinfo)
 {
     int max_grid_x_size;
 
@@ -241,7 +278,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required()
+static inline int calc_shmem_required(const int num_threads_z)
 {
     int shmem;
 
@@ -249,8 +286,8 @@ static inline int calc_shmem_required()
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
-    /* cj in shared memory, for both warps separately */
-    shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
+    /* cj in shared memory, for each warp separately */
+    shmem += num_threads_z * 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
 #ifdef IATYPE_SHMEM
     /* i-atom types in shared memory */
     shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
@@ -279,10 +316,10 @@ static inline int calc_shmem_required()
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
  */
-void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
-                              const nbnxn_atomdata_t *nbatom,
-                              int                     flags,
-                              int                     iloc)
+void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
+                             const nbnxn_atomdata_t *nbatom,
+                             int                     flags,
+                             int                     iloc)
 {
     cudaError_t          stat;
     int                  adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
@@ -291,21 +328,28 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
     dim3                 dim_block, dim_grid;
     nbnxn_cu_kfunc_ptr_t nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
 
-    cu_atomdata_t       *adat    = cu_nb->atdat;
-    cu_nbparam_t        *nbp     = cu_nb->nbparam;
-    cu_plist_t          *plist   = cu_nb->plist[iloc];
-    cu_timers_t         *t       = cu_nb->timers;
-    cudaStream_t         stream  = cu_nb->stream[iloc];
+    cu_atomdata_t       *adat    = nb->atdat;
+    cu_nbparam_t        *nbp     = nb->nbparam;
+    cu_plist_t          *plist   = nb->plist[iloc];
+    cu_timers_t         *t       = nb->timers;
+    cudaStream_t         stream  = nb->stream[iloc];
 
-    bool                 bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool                 bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool                 bCalcFshift = flags & GMX_FORCE_VIRIAL;
-    bool                 bDoTime     = cu_nb->bDoTime;
+    bool                 bDoTime     = nb->bDoTime;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
-    /* don't launch the kernel if there is no work to do */
-    if (plist->nsci == 0)
+    /* Don't launch the non-local kernel if there is no work to do.
+       Doing the same for the local kernel is more complicated, since the
+       local part of the force array also depends on the non-local kernel.
+       So to avoid complicating the code and to reduce the risk of bugs,
+       we always call the local kernel, the local x+q copy and later (not in
+       this function) the stream wait, local f copyback and the f buffer
+       clearing. All these operations, except for the local interaction kernel,
+       are needed for the non-local interactions. */
+    if (iloc == eintNonlocal && plist->nsci == 0)
     {
         return;
     }
@@ -324,16 +368,16 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
 
     /* When we get here all misc operations issues in the local stream are done,
        so we record that in the local stream and wait for it in the nonlocal one. */
-    if (cu_nb->bUseTwoStreams)
+    if (nb->bUseTwoStreams)
     {
         if (iloc == eintLocal)
         {
-            stat = cudaEventRecord(cu_nb->misc_ops_done, stream);
+            stat = cudaEventRecord(nb->misc_ops_done, stream);
             CU_RET_ERR(stat, "cudaEventRecord on misc_ops_done failed");
         }
         else
         {
-            stat = cudaStreamWaitEvent(stream, cu_nb->misc_ops_done, 0);
+            stat = cudaStreamWaitEvent(stream, nb->misc_ops_done, 0);
             CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_done failed");
         }
     }
@@ -368,19 +412,30 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
                                     bCalcEner,
                                     plist->bDoPrune || always_prune);
 
-    /* kernel launch config */
-    nblock    = calc_nb_kernel_nblock(plist->nsci, cu_nb->dev_info);
-    dim_block = dim3(CL_SIZE, CL_SIZE, 1);
+    /* Kernel launch config:
+     * - The thread block dimensions match the size of i-clusters, j-clusters,
+     *   and j-cluster concurrency, in x, y, and z, respectively.
+     * - The 1D block-grid contains as many blocks as super-clusters.
+     */
+    int num_threads_z = 1;
+    if (nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7)
+    {
+        num_threads_z = 2;
+    }
+    nblock    = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
+    dim_block = dim3(CL_SIZE, CL_SIZE, num_threads_z);
     dim_grid  = dim3(nblock, 1, 1);
-    shmem     = calc_shmem_required();
+    shmem     = calc_shmem_required(num_threads_z);
 
     if (debug)
     {
         fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
-                "Grid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
+                "\tGrid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                "\tShMem: %d\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, plist->nsci*NCL_PER_SUPERCL,
-                NCL_PER_SUPERCL, plist->na_c);
+                NCL_PER_SUPERCL, plist->na_c,
+                shmem);
     }
 
     nb_kernel<<< dim_grid, dim_block, shmem, stream>>> (*adat, *nbp, *plist, bCalcFshift);
@@ -393,10 +448,10 @@ void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
     }
 }
 
-void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
-                               const nbnxn_atomdata_t *nbatom,
-                               int                     flags,
-                               int                     aloc)
+void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
+                              const nbnxn_atomdata_t *nbatom,
+                              int                     flags,
+                              int                     aloc)
 {
     cudaError_t stat;
     int         adat_begin, adat_len, adat_end; /* local/nonlocal offset and length used for xq and f */
@@ -419,16 +474,16 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
         gmx_incons(stmp);
     }
 
-    cu_atomdata_t   *adat    = cu_nb->atdat;
-    cu_timers_t     *t       = cu_nb->timers;
-    bool             bDoTime = cu_nb->bDoTime;
-    cudaStream_t     stream  = cu_nb->stream[iloc];
+    cu_atomdata_t   *adat    = nb->atdat;
+    cu_timers_t     *t       = nb->timers;
+    bool             bDoTime = nb->bDoTime;
+    cudaStream_t     stream  = nb->stream[iloc];
 
-    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
+    bool             bCalcEner   = flags & GMX_FORCE_ENERGY;
     bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
-    /* don't launch copy-back if there was no work to do */
-    if (cu_nb->plist[iloc]->nsci == 0)
+    /* don't launch non-local copy-back if there was no non-local work to do */
+    if (iloc == eintNonlocal && nb->plist[iloc]->nsci == 0)
     {
         return;
     }
@@ -438,13 +493,13 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
     {
         adat_begin  = 0;
         adat_len    = adat->natoms_local;
-        adat_end    = cu_nb->atdat->natoms_local;
+        adat_end    = nb->atdat->natoms_local;
     }
     else
     {
         adat_begin  = adat->natoms_local;
         adat_len    = adat->natoms - adat->natoms_local;
-        adat_end    = cu_nb->atdat->natoms;
+        adat_end    = nb->atdat->natoms;
     }
 
     /* beginning of timed D2H section */
@@ -454,7 +509,7 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
         CU_RET_ERR(stat, "cudaEventRecord failed");
     }
 
-    if (!cu_nb->bUseStreamSync)
+    if (!nb->bUseStreamSync)
     {
         /* For safety reasons set a few (5%) forces to NaN. This way even if the
            polling "hack" fails with some future NVIDIA driver we'll get a crash. */
@@ -483,10 +538,10 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
     }
 
     /* With DD the local D2H transfer can only start after the non-local
-       has been launched. */
-    if (iloc == eintLocal && cu_nb->bUseTwoStreams)
+       kernel has finished. */
+    if (iloc == eintLocal && nb->bUseTwoStreams)
     {
-        stat = cudaStreamWaitEvent(stream, cu_nb->nonlocal_done, 0);
+        stat = cudaStreamWaitEvent(stream, nb->nonlocal_done, 0);
         CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");
     }
 
@@ -496,11 +551,11 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
-       placed after the non-local kernel because we first need the non-local
-       data back first. */
+       placed after the non-local kernel because we want the non-local data
+       back first. */
     if (iloc == eintNonlocal)
     {
-        stat = cudaEventRecord(cu_nb->nonlocal_done, stream);
+        stat = cudaEventRecord(nb->nonlocal_done, stream);
         CU_RET_ERR(stat, "cudaEventRecord on nonlocal_done failed");
     }
 
@@ -510,17 +565,17 @@ void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
         /* DtoH fshift */
         if (bCalcFshift)
         {
-            cu_copy_D2H_async(cu_nb->nbst.fshift, adat->fshift,
-                              SHIFTS * sizeof(*cu_nb->nbst.fshift), stream);
+            cu_copy_D2H_async(nb->nbst.fshift, adat->fshift,
+                              SHIFTS * sizeof(*nb->nbst.fshift), stream);
         }
 
         /* DtoH energies */
         if (bCalcEner)
         {
-            cu_copy_D2H_async(cu_nb->nbst.e_lj, adat->e_lj,
-                              sizeof(*cu_nb->nbst.e_lj), stream);
-            cu_copy_D2H_async(cu_nb->nbst.e_el, adat->e_el,
-                              sizeof(*cu_nb->nbst.e_el), stream);
+            cu_copy_D2H_async(nb->nbst.e_lj, adat->e_lj,
+                              sizeof(*nb->nbst.e_lj), stream);
+            cu_copy_D2H_async(nb->nbst.e_el, adat->e_el,
+                              sizeof(*nb->nbst.e_el), stream);
         }
     }
 
@@ -548,10 +603,10 @@ static inline bool atomic_cas(volatile unsigned int *ptr,
 #endif
 }
 
-void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
-                         const nbnxn_atomdata_t *nbatom,
-                         int flags, int aloc,
-                         real *e_lj, real *e_el, rvec *fshift)
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
+                            const nbnxn_atomdata_t *nbatom,
+                            int flags, int aloc,
+                            real *e_lj, real *e_el, rvec *fshift)
 {
     /* NOTE:  only implemented for single-precision at this time */
     cudaError_t            stat;
@@ -575,23 +630,25 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
         gmx_incons(stmp);
     }
 
-    cu_plist_t      *plist    = cu_nb->plist[iloc];
-    cu_timers_t     *timers   = cu_nb->timers;
-    wallclock_gpu_t *timings  = cu_nb->timings;
-    nb_staging       nbst     = cu_nb->nbst;
+    cu_plist_t                 *plist    = nb->plist[iloc];
+    cu_timers_t                *timers   = nb->timers;
+    struct gmx_wallclock_gpu_t *timings  = nb->timings;
+    nb_staging                  nbst     = nb->nbst;
 
-    bool             bCalcEner   = flags & GMX_FORCE_VIRIAL;
-    bool             bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                        bCalcEner   = flags & GMX_FORCE_ENERGY;
+    bool                        bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
 
-    /* don't launch wait/update timers & counters if there was no work to do
+    /* Launch wait/update timers & counters, unless doing the non-local phase
+       when there is not actually work to do. This is consistent with
+       nbnxn_cuda_launch_kernel.
 
        NOTE: if timing with multiple GPUs (streams) becomes possible, the
        counters could end up being inconsistent due to not being incremented
        on some of the nodes! */
-    if (cu_nb->plist[iloc]->nsci == 0)
+    if (iloc == eintNonlocal && nb->plist[iloc]->nsci == 0)
     {
         return;
     }
@@ -599,16 +656,16 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     /* calculate the atom data index range based on locality */
     if (LOCAL_A(aloc))
     {
-        adat_end = cu_nb->atdat->natoms_local;
+        adat_end = nb->atdat->natoms_local;
     }
     else
     {
-        adat_end = cu_nb->atdat->natoms;
+        adat_end = nb->atdat->natoms;
     }
 
-    if (cu_nb->bUseStreamSync)
+    if (nb->bUseStreamSync)
     {
-        stat = cudaStreamSynchronize(cu_nb->stream[iloc]);
+        stat = cudaStreamSynchronize(nb->stream[iloc]);
         CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
     }
     else
@@ -626,7 +683,7 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
     }
 
     /* timing data accumulation */
-    if (cu_nb->bDoTime)
+    if (nb->bDoTime)
     {
         /* only increase counter once (at local F wait) */
         if (LOCAL_I(iloc))
@@ -705,7 +762,7 @@ const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_
 
 /*! Set up the cache configuration for the non-bonded kernels,
  */
-void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo)
+void nbnxn_cuda_set_cacheconfig(gmx_device_info_t *devinfo)
 {
     cudaError_t stat;
 

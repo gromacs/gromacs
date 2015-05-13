@@ -39,8 +39,8 @@
 #include <math.h>
 #include <string.h>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/domdec.h"
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"

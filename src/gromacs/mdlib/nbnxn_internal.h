@@ -36,7 +36,7 @@
 #ifndef _nbnxn_internal_h
 #define _nbnxn_internal_h
 
-#include "gromacs/legacyheaders/domdec.h"
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
@@ -98,6 +98,7 @@ typedef struct {
 typedef struct {
     rvec          c0;               /* The lower corner of the (local) grid        */
     rvec          c1;               /* The upper corner of the (local) grid        */
+    rvec          size;             /* c1 - c0                                     */
     real          atom_density;     /* The atom number density for the local grid  */
 
     gmx_bool      bSimple;          /* Is this grid simple or super/sub            */
