@@ -95,7 +95,7 @@ if(REGRESSIONTEST_PATH)
 
     # gmxtests target builds all binaries required for running gmxtest
     add_custom_target(gmxtests DEPENDS gmx)
-    add_dependencies(check gmxtests)
+    add_dependencies(run-ctest gmxtests)
 
     if(GMX_DOUBLE)
         list(APPEND ARGS -double)
