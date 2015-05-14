@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,9 @@
 # Input: FFTW variable contains the FFTW component to build,
 #        either fftw or fftwf for double or single precision
 
+string(TOUPPER "${FFTW}" UPPERFFTW)
+string(TOLOWER "${FFTW}" LOWERFFTW)
+
 set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION "" CACHE INTERNAL "Optimization flags for FFTW compilation")
 if(${CMAKE_CURRENT_BINARY_DIR} MATCHES ".*[[:space:]].*")
     message(FATAL_ERROR "An internal limitation of FFTW means GROMACS cannot build FFTW in a directory with whitespace in its name. Either use a system FFTW, build it yourself, or build GROMACS in a different location.")
@@ -58,6 +61,9 @@ endif()
 # Testing shows FFTW configured with --enable-avx is never better than --enable-sse2, so we do the latter always.
 if(${GMX_SIMD} MATCHES "^(SSE|AVX)")
     set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION --enable-sse2 CACHE INTERNAL "Optimization flags for FFTW compilation")
+    # Fake the result of the SIMD test, so the checks for x86 SIMD
+    # suport are silent
+    set(${UPPERFFTW}_HAVE_SSE2 TRUE PARENT_SCOPE)
 endif()
 
 # Allow cross-compiles
@@ -117,12 +123,11 @@ endif()
 
 ExternalProject_get_property(${EXTERNAL_FFTW_BUILD_TARGET} INSTALL_DIR)
 
-string(TOUPPER "${FFTW}" UPPERFFTW)
-string(TOLOWER "${FFTW}" LOWERFFTW)
 string(REGEX REPLACE "fftw" "fftw3" FFTW_LIBNAME ${LOWERFFTW})
 set(${UPPERFFTW}_LIBRARIES ${INSTALL_DIR}/lib/lib${FFTW_LIBNAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(${UPPERFFTW}_INCLUDE_DIRS ${INSTALL_DIR}/include PARENT_SCOPE)
 set(${UPPERFFTW}_FOUND TRUE PARENT_SCOPE)
+# TODO This is only true on x86, but does not actually cause a problem
 set(${UPPERFFTW}_HAVE_SIMD TRUE PARENT_SCOPE)
 
 add_library(gmxfftw STATIC IMPORTED GLOBAL)
