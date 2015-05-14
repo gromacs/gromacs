@@ -65,42 +65,37 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         set(FFTW fftwf)
     endif()
 
-    # Note that these calls are expected to function the same way,
-    # particularly with respect to setting CMake variables that
-    # record the presence of particular FFTW SIMD support.
-    # TODO There is no need for this requirement, all the remaining
-    # code here can be refactored to have just one check of
-    # GMX_BUILD_OWN_FFTW, which simplifies both code paths.
     if(GMX_BUILD_OWN_FFTW)
-      add_subdirectory(src/contrib/fftw)
-    else()
-      find_package(FFTW COMPONENTS ${FFTW})
-    endif()
-
-    string(TOUPPER "${FFTW}" FFTW)
-    if(NOT ${FFTW}_FOUND)
-      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for mixed-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-GMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
-    endif()
-
-    set(PKG_FFT "${${FFTW}_PKG}")
-    if (GMX_BUILD_OWN_FFTW)
+        add_subdirectory(src/contrib/fftw)
         include_directories(BEFORE ${${FFTW}_INCLUDE_DIRS})
+        # libgmxfftw is always built static, so libgromacs does not
+        # have a dependency on anything, so PKG_FFT should be empty
+        set(PKG_FFT "")
+        set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3 build managed by GROMACS")
     else()
+        string(TOLOWER "${FFTW}" LOWERFFTW)
+        find_package(FFTW COMPONENTS ${LOWERFFTW})
+
+        if(NOT ${FFTW}_FOUND)
+            MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for mixed-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-GMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
+        endif()
+
+        set(PKG_FFT "${${FFTW}_PKG}")
         include_directories(${${FFTW}_INCLUDE_DIRS})
+
+        if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
+            message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
+        else()
+            if(${GMX_SIMD} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2 OR ${FFTW}_HAVE_AVX_128 OR ${FFTW}_HAVE_AVX2_128))
+                # If we end up here we have an AVX Gromacs build, and FFTW with SIMD, but no 128-bit SIMD, this means AVX is enabled for FFTW.
+                message(WARNING "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with both SSE2 and AVX instruction support (use both --enable-sse2 and --enable-avx). The FFTW library will determine at runtime which SIMD instruction set is fastest for different parts of the FFTs.")
+            endif()
+        endif()
+        set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
     endif()
+
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
     set(GMX_FFT_FFTW3 1)
-
-    if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
-      message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
-    else()
-      if(${GMX_SIMD} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2 OR ${FFTW}_HAVE_AVX_128 OR ${FFTW}_HAVE_AVX2_128))
-        # If we end up here we have an AVX Gromacs build, and FFTW with SIMD, but no 128-bit SIMD, this means AVX is enabled for FFTW.
-        message(WARNING "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with both SSE2 and AVX instruction support (use both --enable-sse2 and --enable-avx). The FFTW library will determine at runtime which SIMD instruction set is fastest for different parts of the FFTs.")
-        endif()
-    endif()
-
-    set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     # Intel 11 and up makes life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their
