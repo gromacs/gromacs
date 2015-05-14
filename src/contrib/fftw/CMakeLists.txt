@@ -61,9 +61,6 @@ endif()
 # Testing shows FFTW configured with --enable-avx is never better than --enable-sse2, so we do the latter always.
 if(${GMX_SIMD} MATCHES "^(SSE|AVX)")
     set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION --enable-sse2 CACHE INTERNAL "Optimization flags for FFTW compilation")
-    # Fake the result of the SIMD test, so the checks for x86 SIMD
-    # suport are silent
-    set(${UPPERFFTW}_HAVE_SSE2 TRUE PARENT_SCOPE)
 endif()
 
 # Allow cross-compiles
@@ -126,9 +123,6 @@ ExternalProject_get_property(${EXTERNAL_FFTW_BUILD_TARGET} INSTALL_DIR)
 string(REGEX REPLACE "fftw" "fftw3" FFTW_LIBNAME ${LOWERFFTW})
 set(${UPPERFFTW}_LIBRARIES ${INSTALL_DIR}/lib/lib${FFTW_LIBNAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(${UPPERFFTW}_INCLUDE_DIRS ${INSTALL_DIR}/include PARENT_SCOPE)
-set(${UPPERFFTW}_FOUND TRUE PARENT_SCOPE)
-# TODO This is only true on x86, but does not actually cause a problem
-set(${UPPERFFTW}_HAVE_SIMD TRUE PARENT_SCOPE)
 
 add_library(gmxfftw STATIC IMPORTED GLOBAL)
 set_target_properties(gmxfftw PROPERTIES IMPORTED_LOCATION ${${UPPERFFTW}_LIBRARIES})
