@@ -65,6 +65,12 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         set(FFTW fftwf)
     endif()
 
+    # Note that these calls are expected to function the same way,
+    # particularly with respect to setting CMake variables that
+    # record the presence of particular FFTW SIMD support.
+    # TODO There is no need for this requirement, all the remaining
+    # code here can be refactored to have just one check of
+    # GMX_BUILD_OWN_FFTW, which simplifies both code paths.
     if(GMX_BUILD_OWN_FFTW)
       add_subdirectory(src/contrib/fftw)
     else()
