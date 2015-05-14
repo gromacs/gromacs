@@ -70,10 +70,10 @@
 
 
 #undef  gmx_simd4_rsqrt_f
-#define gmx_simd4_rsqrt_f(x)       _mm512_castps512_ps128(_mm512_rsqrt28_ps(_mm512_castps128_ps512(x)))
+#define gmx_simd4_rsqrt_f(x)       _mm512_rsqrt28_ps(x)
 
 #undef  gmx_simd4_rsqrt_d
-#define gmx_simd4_rsqrt_d(x)       _mm512_castpd512_pd256(_mm512_rsqrt28_pd(_mm512_castpd256_pd512(x)))
+#define gmx_simd4_rsqrt_d(x)       _mm512_rsqrt28_pd(x)
 
 static gmx_inline __m512
 gmx_simd_exp_f_x86_avx_512er(__m512 x)
