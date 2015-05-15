@@ -64,6 +64,7 @@ gmx_build_unit_test(
     multisim.cpp
     multisimtest.cpp
     replicaexchange.cpp
+    domain_decomposition.cpp
     # files with code for test fixtures
     moduletest.cpp
     # pseudo-library for code for mdrun
