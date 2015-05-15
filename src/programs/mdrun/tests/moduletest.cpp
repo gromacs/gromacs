@@ -51,6 +51,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "programs/mdrun/mdrun_main.h"
 
 #include "testutils/cmdlinetest.h"
@@ -119,6 +120,7 @@ SimulationRunner::SimulationRunner(IntegrationTestFixture *fixture) :
 void
 SimulationRunner::useEmptyMdpFile()
 {
+    // TODO When removing the group scheme, update actual and potential users of useEmptyMdpFile
     useStringAsMdpFile("cutoff-scheme = Group\n");
 }
 
@@ -148,6 +150,12 @@ SimulationRunner::useTopGroAndNdxFromDatabase(const char *name)
     ndxFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".ndx").c_str());
 }
 
+void
+SimulationRunner::useGroFromDatabase(const char *name)
+{
+    groFileName_ = fixture_->fileManager_.getInputFilePath((std::string(name) + ".gro").c_str());
+}
+
 int
 SimulationRunner::callGromppOnThisRank()
 {
@@ -167,15 +175,23 @@ SimulationRunner::callGromppOnThisRank()
 int
 SimulationRunner::callGrompp()
 {
+    int returnValue = 0;
 #ifdef GMX_LIB_MPI
-    // When compiled with external MPI, only call one instance of the
-    // grompp function
-    if (0 != gmx_node_rank())
-    {
-        return 0;
-    }
+    // When compiled with external MPI, we're trying to run mdrun with
+    // MPI, but we need to make sure that we only do grompp on one
+    // rank
+    if (0 == gmx_node_rank())
 #endif
-    return callGromppOnThisRank();
+    {
+        returnValue = callGromppOnThisRank();
+    }
+#ifdef GMX_LIB_MPI
+    // Make sure rank zero has written the .tpr file before other
+    // ranks try to read it. Thread-MPI and serial do this just fine
+    // on their own.
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    return returnValue;
 }
 
 int
@@ -185,6 +201,7 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
        to this function. Passing a non-const reference might make it
        easier to write code that incorrectly re-uses callerRef after
        the call to this function. */
+
     CommandLine caller(callerRef);
     caller.addOption("-s", tprFileName_);
 
@@ -200,9 +217,22 @@ SimulationRunner::callMdrun(const CommandLine &callerRef)
         caller.addOption("-nsteps", nsteps_);
     }
 
+#ifdef GMX_MPI
+#  ifdef GMX_GPU
+#    ifdef GMX_THREAD_MPI
+    int         numGpusNeeded = g_numThreads;
+#    else   /* Must be real MPI */
+    int         numGpusNeeded = gmx_node_num();
+#    endif
+    std::string gpuIdString(numGpusNeeded, '0');
+    caller.addOption("-gpu_id", gpuIdString.c_str());
+#  endif
+#endif
+
 #ifdef GMX_THREAD_MPI
     caller.addOption("-nt", g_numThreads);
 #endif
+
 #ifdef GMX_OPENMP
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
