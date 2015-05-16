@@ -83,7 +83,6 @@
 #include "types/nlistheuristics.h"
 #include "types/iteratedconstraints.h"
 #include "nbnxn_cuda_data_mgmt.h"
-
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trajectory_writing.h"
@@ -1087,7 +1086,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* averages the current forces and set the velocities to the first velocity on all the atoms in the same groups. */
             if (ir->bAve)
             {
-                do_averaging(state->v, f, ir->ave);
+                do_averaging(state->v, f, ir->ave, 0, 0, NULL);
             }
         }
 
@@ -1557,7 +1556,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* we need to do it again here because the averages have been altered by sd. */
                 if (ir->bAve)
                 {
-                    do_averaging(state->v, f, ir->ave);
+                    do_averaging(state->v, f, ir->ave, ir->eI==eiSD1, ir->delta_t, get_xprime(state,upd));
                 }
                 update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
                                    fr->bMolPBC, graph, f,

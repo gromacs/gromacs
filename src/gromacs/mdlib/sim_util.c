@@ -803,11 +803,13 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
 }
 
 
-void do_averaging(rvec v[], rvec f[], t_ave *ave)
+void do_averaging(rvec v[], rvec f[], t_ave *ave, gmx_bool bDoSD1, real dt, rvec x[])
 {
     /* average the forces and velocities of particles in the group
        together.  No symmetry support yet. No resetting to positions,
        so will only preserve existing symmetry. */
+
+    /* we need dt if we need to remove the effects of SD1 */
 
     int g,i,d;
     rvec sumf,sumv;
@@ -835,6 +837,18 @@ void do_averaging(rvec v[], rvec f[], t_ave *ave)
             sumf[d] /= aveg->nat;
         }
 
+        if (bDoSD1)
+        {
+            /* need to subtract off the effect of the random seed for sd1, and use the random force from the
+               first atom in the index */
+            for (i = 0; i < aveg->nat; i++)
+            {
+                for (d = 0; d < DIM; d++)
+                {
+                    x[aveg->ind[i]][d] -= 0.5*dt*(v[aveg->ind[i]][d] - sumv[d]);
+                }
+            }
+        }
         for (i = 0; i < aveg->nat; i++)
         {
             for (d = 0; d < DIM; d++)

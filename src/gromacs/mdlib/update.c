@@ -1454,7 +1454,7 @@ void update_pcouple(FILE             *fplog,
     }
 }
 
-static rvec *get_xprime(const t_state *state, gmx_update_t upd)
+rvec *get_xprime(const t_state *state, gmx_update_t upd)
 {
     if (state->nalloc > upd->xp_nalloc)
     {
