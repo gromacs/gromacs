@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@ namespace gmx
 {
 
 class CommandLineHelpContext;
-class File;
+class FileOutputRedirectorInterface;
 class ProgramContextInterface;
 
 class CommandLineHelpModuleImpl;
@@ -115,12 +115,12 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         void setModuleOverride(const CommandLineModuleInterface &module);
 
         /*! \brief
-         * Sets a file to write help output to instead of default `stdout`.
+         * Sets a file redirector for writing help output.
          *
          * Used for unit testing; see
-         * CommandLineModuleManager::setOutputRedirect() for more details.
+         * CommandLineModuleManager::setOutputRedirector() for more details.
          */
-        void setOutputRedirect(File *output);
+        void setOutputRedirector(FileOutputRedirectorInterface *output);
 
         virtual const char *name() const { return "help"; }
         virtual const char *shortDescription() const

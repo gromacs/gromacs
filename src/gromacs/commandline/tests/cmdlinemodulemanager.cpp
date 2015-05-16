@@ -39,12 +39,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-// For GMX_BINARY_SUFFIX
 #include "gmxpre.h"
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
-#include "config.h"
+#include <cstdio>
 
 #include <vector>
 
@@ -52,11 +51,15 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/utility/file.h"
 
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/cmdlinetest.h"
+#include "testutils/stringtest.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -65,6 +68,16 @@ namespace
 
 using gmx::test::CommandLine;
 using gmx::test::MockHelpTopic;
+
+/*! \brief
+ * Helper method to disable nice() calls from CommandLineModuleManager.
+ *
+ * \ingroup module_commandline
+ */
+void disableNice(gmx::CommandLineModuleSettings *settings)
+{
+    settings->setDefaultNiceLevel(0);
+}
 
 /********************************************************************
  * MockModule
@@ -95,11 +108,6 @@ class MockModule : public gmx::CommandLineModuleInterface
         }
 
     private:
-        //! Disable nice() calls for tests.
-        void disableNice(gmx::CommandLineModuleSettings *settings)
-        {
-            settings->setDefaultNiceLevel(0);
-        }
         //! Checks the context passed to writeHelp().
         void checkHelpContext(const gmx::CommandLineHelpContext &context) const;
 
@@ -113,11 +121,10 @@ MockModule::MockModule(const char *name, const char *description)
 {
     using ::testing::_;
     using ::testing::Invoke;
-    using ::testing::WithArg;
     ON_CALL(*this, init(_))
-        .WillByDefault(WithArg<0>(Invoke(this, &MockModule::disableNice)));
+        .WillByDefault(Invoke(&disableNice));
     ON_CALL(*this, writeHelp(_))
-        .WillByDefault(WithArg<0>(Invoke(this, &MockModule::checkHelpContext)));
+        .WillByDefault(Invoke(this, &MockModule::checkHelpContext));
 }
 
 void MockModule::checkHelpContext(const gmx::CommandLineHelpContext &context) const
@@ -132,25 +139,56 @@ void MockModule::checkHelpContext(const gmx::CommandLineHelpContext &context) co
 }
 
 /********************************************************************
+ * MockOptionsModule
+ */
+
+/*! \internal \brief
+ * Mock implementation of gmx::CommandLineOptionsModuleInterface.
+ *
+ * \ingroup module_commandline
+ */
+class MockOptionsModule : public gmx::CommandLineOptionsModuleInterface
+{
+    public:
+        MockOptionsModule();
+
+        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
+        MOCK_METHOD1(initOptions, void(gmx::Options *options));
+        MOCK_METHOD1(optionsFinished, void(gmx::Options *options));
+        MOCK_METHOD0(run, int());
+};
+
+MockOptionsModule::MockOptionsModule()
+{
+    using ::testing::_;
+    using ::testing::Invoke;
+    ON_CALL(*this, init(_))
+        .WillByDefault(Invoke(&disableNice));
+}
+
+/********************************************************************
  * Test fixture for the tests
  */
 
-class CommandLineModuleManagerTest : public ::testing::Test
+class CommandLineModuleManagerTest : public gmx::test::StringTestBase
 {
     public:
         void initManager(const CommandLine &args, const char *realBinaryName);
-        MockModule    &addModule(const char *name, const char *description);
-        MockHelpTopic &addHelpTopic(const char *name, const char *title);
+        MockModule        &addModule(const char *name, const char *description);
+        MockOptionsModule &addOptionsModule(const char *name, const char *description);
+        MockHelpTopic     &addHelpTopic(const char *name, const char *title);
 
         gmx::CommandLineModuleManager &manager() { return *manager_; }
 
-        void ignoreManagerOutput();
+        void redirectManagerOutput()
+        {
+            manager_->setOutputRedirector(&initOutputRedirector(&fileManager_));
+        }
 
     private:
         boost::scoped_ptr<gmx::CommandLineProgramContext> programContext_;
         boost::scoped_ptr<gmx::CommandLineModuleManager>  manager_;
         gmx::test::TestFileManager                        fileManager_;
-        boost::scoped_ptr<gmx::File>                      outputFile_;
 };
 
 void CommandLineModuleManagerTest::initManager(
@@ -172,19 +210,21 @@ CommandLineModuleManagerTest::addModule(const char *name, const char *descriptio
     return *module;
 }
 
+MockOptionsModule &
+CommandLineModuleManagerTest::addOptionsModule(const char *name, const char *description)
+{
+    MockOptionsModule *module = new MockOptionsModule();
+    gmx::CommandLineOptionsModuleInterface::registerModule(
+            &manager(), name, description, module);
+    return *module;
+}
+
 MockHelpTopic &
 CommandLineModuleManagerTest::addHelpTopic(const char *name, const char *title)
 {
     MockHelpTopic *topic = new MockHelpTopic(name, title, "Help text");
     manager().addHelpTopic(gmx::HelpTopicPointer(topic));
     return *topic;
-}
-
-void CommandLineModuleManagerTest::ignoreManagerOutput()
-{
-    outputFile_.reset(
-            new gmx::File(fileManager_.getTemporaryFilePath("out.txt"), "w"));
-    manager().setOutputRedirect(outputFile_.get());
 }
 
 /********************************************************************
@@ -198,12 +238,13 @@ TEST_F(CommandLineModuleManagerTest, RunsGeneralHelp)
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    ignoreManagerOutput();
+    redirectManagerOutput();
     addModule("module", "First module");
     addModule("other", "Second module");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
+    checkRedirectedOutputFiles();
 }
 
 TEST_F(CommandLineModuleManagerTest, RunsModule)
@@ -311,6 +352,52 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
+}
+
+/*! \brief
+ * Initializes Options for help export tests.
+ *
+ * \ingroup module_commandline
+ */
+void initOptionsBasic(gmx::Options *options)
+{
+    const char *const desc[] = {
+        "Sample description",
+        "for testing [THISMODULE]."
+    };
+    options->setDescription(desc);
+    options->addOption(gmx::IntegerOption("int"));
+}
+
+TEST_F(CommandLineModuleManagerTest, ExportsHelp)
+{
+    const char *const cmdline[] = {
+        "test", "help", "-export", "rst"
+    };
+    // TODO: Find a more elegant solution, or get rid of the links.dat altogether.
+    gmx::File::writeFileFromString("links.dat", "");
+    CommandLine       args(cmdline);
+    initManager(args, "test");
+    redirectManagerOutput();
+    MockOptionsModule &mod1 = addOptionsModule("module", "First module");
+    MockOptionsModule &mod2 = addOptionsModule("other", "Second module");
+    {
+        gmx::CommandLineModuleGroup group = manager().addModuleGroup("Group 1");
+        group.addModule("module");
+    }
+    {
+        gmx::CommandLineModuleGroup group = manager().addModuleGroup("Group 2");
+        group.addModule("other");
+    }
+    using ::testing::_;
+    using ::testing::Invoke;
+    EXPECT_CALL(mod1, initOptions(_)).WillOnce(Invoke(&initOptionsBasic));
+    EXPECT_CALL(mod2, initOptions(_));
+    int rc = 0;
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+    checkRedirectedOutputFiles();
+    std::remove("links.dat");
 }
 
 } // namespace
