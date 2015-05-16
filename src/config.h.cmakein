@@ -47,21 +47,6 @@
 /* TODO: For now, disable Doxygen warnings from here */
 /*! \cond */
 
-/* Binary suffix for the created binaries */
-#define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
-
-/* Installation prefix (default location of data files) */
-#define CMAKE_INSTALL_PREFIX "@CMAKE_INSTALL_PREFIX@"
-
-/* Location of data files in the installation directory */
-#define DATA_INSTALL_DIR "@DATA_INSTALL_DIR@"
-
-/* Source directory for the build */
-#cmakedefine CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@"
-
-/* Binary directory for the build */
-#cmakedefine CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@"
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */

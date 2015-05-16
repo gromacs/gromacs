@@ -55,6 +55,7 @@
 
 #include "thread_mpi/mutex.h"
 
+#include "buildinfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
