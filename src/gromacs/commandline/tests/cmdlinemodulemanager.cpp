@@ -39,12 +39,9 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
-// For GMX_BINARY_SUFFIX
 #include "gmxpre.h"
 
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-
-#include "config.h"
 
 #include <vector>
 

@@ -43,14 +43,13 @@
 
 #include "testinit.h"
 
-#include "config.h"
-
 #include <cstdio>
 #include <cstdlib>
 
 #include <boost/scoped_ptr.hpp>
 #include <gmock/gmock.h>
 
+#include "buildinfo.h"
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineinit.h"

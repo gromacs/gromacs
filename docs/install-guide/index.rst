@@ -379,9 +379,8 @@ configuration, in particular if you need to resolve errors.
 
 A key thing to consider here is the setting of
 ``CMAKE_INSTALL_PREFIX``. You will need to be able to write to this
-directory in order to install |Gromacs| later, and if you change your
-mind later, changing it in the cache triggers a full re-build,
-unfortunately. So if you do not have super-user privileges on your
+directory in order to install |Gromacs| later.
+So if you do not have super-user privileges on your
 machine, then you will need to choose a sensible location within your
 home directory for your |Gromacs| installation. Even if you do have
 super-user privileges, you should use them only for the installation

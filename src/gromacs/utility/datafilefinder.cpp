@@ -43,13 +43,12 @@
 
 #include "datafilefinder.h"
 
-#include "config.h"
-
 #include <cstdlib>
 
 #include <string>
 #include <vector>
 
+#include "buildinfo.h"
 #include "gromacs/utility/directoryenumerator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
