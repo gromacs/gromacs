@@ -140,6 +140,12 @@ File::File(const std::string &filename, const char *mode)
     open(filename, mode);
 }
 
+File::File(const FileInitializer &initializer)
+    : impl_(new Impl(NULL, true))
+{
+    open(initializer.filename_, initializer.mode_);
+}
+
 File::File(FILE *fp, bool bClose)
     : impl_(new Impl(fp, bClose))
 {

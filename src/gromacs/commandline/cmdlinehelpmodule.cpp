@@ -60,6 +60,7 @@
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/fileredirector.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -99,7 +100,7 @@ class CommandLineHelpModuleImpl
         const CommandLineModuleInterface *moduleOverride_;
         bool                              bHidden_;
 
-        File                             *outputOverride_;
+        FileOutputRedirectorInterface    *outputRedirector_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModuleImpl);
 };
@@ -171,6 +172,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
     // to determine such a set...
     writeSubTopicList(context,
                       "Additional help is available on the following topics:");
+    // TODO: Make these respect the binary name passed in, to make tests work better.
     context.writeTextBlock("To access the help, use '[PROGRAM] help <topic>'.");
     context.writeTextBlock("For help on a command, use '[PROGRAM] help <command>'.");
 }
@@ -434,14 +436,16 @@ class HelpExportReStructuredText : public HelpExportInterface
         virtual void finishModuleGroupExport();
 
     private:
-        HelpLinks                links_;
-        boost::scoped_ptr<File>  indexFile_;
-        boost::scoped_ptr<File>  manPagesFile_;
+        FileOutputRedirectorInterface  *outputRedirector_;
+        HelpLinks                       links_;
+        boost::scoped_ptr<File>         indexFile_;
+        boost::scoped_ptr<File>         manPagesFile_;
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(
         const CommandLineHelpModuleImpl &helpModule)
-    : links_(eHelpOutputFormat_Rst)
+    : outputRedirector_(helpModule.outputRedirector_),
+      links_(eHelpOutputFormat_Rst)
 {
     File             linksFile("links.dat", "r");
     std::string      line;
@@ -458,10 +462,12 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 
 void HelpExportReStructuredText::startModuleExport()
 {
-    indexFile_.reset(new File("programs/byname.rst", "w"));
+    indexFile_.reset(
+            new File(outputRedirector_->openFileForWriting("programs/byname.rst")));
     indexFile_->writeLine("Tools by Name");
     indexFile_->writeLine("=============");
-    manPagesFile_.reset(new File("conf-man.py", "w"));
+    manPagesFile_.reset(
+            new File(outputRedirector_->openFileForWriting("conf-man.py")));
     manPagesFile_->writeLine("man_pages = [");
 }
 
@@ -472,7 +478,7 @@ void HelpExportReStructuredText::exportModuleHelp(
 {
     // TODO: Ideally, the file would only be touched if it really changes.
     // This would make Sphinx reruns much faster.
-    File file("programs/" + tag + ".rst", "w");
+    File file(outputRedirector_->openFileForWriting("programs/" + tag + ".rst"));
     file.writeLine(formatString(".. _%s:", displayName.c_str()));
     if (0 == displayName.compare("gmx mdrun"))
     {
@@ -518,10 +524,12 @@ void HelpExportReStructuredText::finishModuleExport()
 
 void HelpExportReStructuredText::startModuleGroupExport()
 {
-    indexFile_.reset(new File("programs/bytopic.rst", "w"));
+    indexFile_.reset(
+            new File(outputRedirector_->openFileForWriting("programs/bytopic.rst")));
     indexFile_->writeLine("Tools by Topic");
     indexFile_->writeLine("==============");
-    manPagesFile_.reset(new File("man/bytopic.rst", "w"));
+    manPagesFile_.reset(
+            new File(outputRedirector_->openFileForWriting("man/bytopic.rst")));
 }
 
 void HelpExportReStructuredText::exportModuleGroup(
@@ -642,7 +650,7 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
     : rootTopic_(new RootHelpTopic(*this)), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false),
-      outputOverride_(NULL)
+      outputRedirector_(&defaultFileOutputRedirector())
 {
 }
 
@@ -714,9 +722,10 @@ void CommandLineHelpModule::setModuleOverride(
     impl_->moduleOverride_ = &module;
 }
 
-void CommandLineHelpModule::setOutputRedirect(File *output)
+void CommandLineHelpModule::setOutputRedirector(
+        FileOutputRedirectorInterface *output)
 {
-    impl_->outputOverride_ = output;
+    impl_->outputRedirector_ = output;
 }
 
 int CommandLineHelpModule::run(int argc, char *argv[])
@@ -749,15 +758,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         return 0;
     }
 
-    File *outputFile = &File::standardOutput();
-    if (impl_->outputOverride_ != NULL)
-    {
-        outputFile = impl_->outputOverride_;
-    }
+    File &outputFile = impl_->outputRedirector_->standardOutput();
     HelpLinks                                 links(eHelpOutputFormat_Console);
     initProgramLinks(&links, *impl_);
     boost::scoped_ptr<CommandLineHelpContext> context(
-            new CommandLineHelpContext(outputFile,
+            new CommandLineHelpContext(&outputFile,
                                        eHelpOutputFormat_Console, &links));
     context->setShowHidden(impl_->bHidden_);
     if (impl_->moduleOverride_ != NULL)
