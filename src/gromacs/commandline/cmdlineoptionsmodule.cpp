@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,6 +73,12 @@ class CommandLineOptionsModule : public CommandLineModuleInterface
             : name_(name), description_(description), factory_(factory)
         {
         }
+        CommandLineOptionsModule(const char *name, const char *description,
+                                 CommandLineOptionsModuleInterface *module)
+            : name_(name), description_(description), factory_(NULL),
+              module_(module)
+        {
+        }
         virtual const char *name() const { return name_; }
         virtual const char *shortDescription() const { return description_; }
 
@@ -91,7 +97,11 @@ class CommandLineOptionsModule : public CommandLineModuleInterface
 
 void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
 {
-    module_.reset(factory_());
+    if (!module_)
+    {
+        GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
+        module_.reset(factory_());
+    }
     module_->init(settings);
 }
 
@@ -104,7 +114,14 @@ int CommandLineOptionsModule::run(int argc, char *argv[])
 
 void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) const
 {
-    boost::scoped_ptr<CommandLineOptionsModuleInterface> module(factory_());
+    boost::scoped_ptr<CommandLineOptionsModuleInterface> moduleGuard;
+    CommandLineOptionsModuleInterface                   *module = module_.get();
+    if (!module)
+    {
+        GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
+        moduleGuard.reset(factory_());
+        module = moduleGuard.get();
+    }
     Options options(name(), shortDescription());
     module->initOptions(&options);
     CommandLineHelpWriter(options)
@@ -162,6 +179,16 @@ void CommandLineOptionsModuleInterface::registerModule(
 {
     CommandLineModulePointer module(createModule(name, description, factory));
     manager->addModule(move(module));
+}
+
+// static
+void CommandLineOptionsModuleInterface::registerModule(
+        CommandLineModuleManager *manager, const char *name,
+        const char *description, CommandLineOptionsModuleInterface *module)
+{
+    CommandLineModulePointer wrapperModule(
+            new CommandLineOptionsModule(name, description, module));
+    manager->addModule(move(wrapperModule));
 }
 
 } // namespace gmx

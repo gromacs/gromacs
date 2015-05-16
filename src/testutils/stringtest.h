@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,15 +45,20 @@
 
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 
-#include "testutils/refdata.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
+
+class FileOutputRedirectorInterface;
+
 namespace test
 {
+
+class TestFileManager;
+class TestReferenceChecker;
 
 /*! \libinternal \brief
  * Test fixture for tests that check string formatting.
@@ -73,6 +78,18 @@ class StringTestBase : public ::testing::Test
         ~StringTestBase();
 
         /*! \brief
+         * Creates a redirector that directs all output to temporary files.
+         *
+         * \param[in] fileManager  File manager to use for temporary files.
+         *
+         * Can only be called once in a test.
+         *
+         * \see checkRedirectedOutputFiles()
+         */
+        FileOutputRedirectorInterface &
+        initOutputRedirector(TestFileManager *fileManager);
+
+        /*! \brief
          * Returns the root checker for this test's reference data.
          *
          * Can be used to perform custom checks against reference data (e.g.,
@@ -81,14 +98,14 @@ class StringTestBase : public ::testing::Test
         TestReferenceChecker &checker();
 
         /*! \brief
-         * Check a string.
+         * Checks a string.
          *
          * \param[in] text  String to check.
          * \param[in] id    Unique (within a single test) id for the string.
          */
         void checkText(const std::string &text, const char *id);
         /*! \brief
-         * Check contents of a file as a single string.
+         * Checks contents of a file as a single string.
          *
          * \param[in] filename  Name of the file to check.
          * \param[in] id        Unique (within a single test) id for the string.
@@ -97,10 +114,23 @@ class StringTestBase : public ::testing::Test
          * single string and calls checkText().
          */
         void checkFileContents(const std::string &filename, const char *id);
+        /*! \brief
+         * Checks contents of all files redirected with initOutputRedirector().
+         *
+         * Uses the same logic as checkFileContents() to check each file
+         * (including `stdout`) that has been created using the redirector
+         * returned by initOutputRedirector().
+         *
+         * initOutputRedirector() must have been called.
+         * This method should be called once all output using the redirector
+         * has occurred.
+         */
+        void checkRedirectedOutputFiles();
 
     private:
-        TestReferenceData                       data_;
-        boost::scoped_ptr<TestReferenceChecker> checker_;
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test
