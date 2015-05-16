@@ -2104,11 +2104,14 @@ Free energy calculations
 .. mdp:: sc-coul
 
    (no)
-   Whether to apply the soft core free energy interaction
+   Whether to apply the soft-core free energy interaction
    transformation to the Columbic interaction of a molecule. Default
    is no, as it is generally more efficient to turn off the Coulomic
    interactions linearly before turning off the van der Waals
-   interactions.
+   interactions. Note that it is only taken into account when lambda
+   states are used, not with :mdp:`couple-lambda0` /
+   :mdp:`couple-lambda1`, and you can still turn off soft-core
+   interactions by setting :mdp:`sc-alpha` to 0.
 
 .. mdp:: sc-power
 

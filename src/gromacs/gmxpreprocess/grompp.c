@@ -1515,7 +1515,7 @@ int gmx_grompp(int argc, char *argv[])
     t_inputrec        *ir;
     int                natoms, nvsite, comb, mt;
     t_params          *plist;
-    t_state            state;
+    t_state           *state;
     matrix             box;
     real               max_spacing, fudgeQQ;
     double             reppow;
@@ -1634,8 +1634,9 @@ int gmx_grompp(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "%s does not exist", fn);
     }
+    snew(state, 1);
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
-               opts, ir, bZero, bGenVel, bVerbose, &state,
+               opts, ir, bZero, bGenVel, bVerbose, state,
                atype, sys, &nmi, &mi, plist, &comb, &reppow, &fudgeQQ,
                opts->bMorse,
                wi);
@@ -1824,7 +1825,7 @@ int gmx_grompp(int argc, char *argv[])
     /* Check velocity for virtual sites and shells */
     if (bGenVel)
     {
-        check_vel(sys, state.v);
+        check_vel(sys, state->v);
     }
 
     /* check for shells and inpurecs */
@@ -1856,7 +1857,7 @@ int gmx_grompp(int argc, char *argv[])
     }
     do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm),
              sys, bVerbose, ir,
-             bGenVel ? state.v : NULL,
+             bGenVel ? state->v : NULL,
              wi);
 
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 &&
@@ -1874,7 +1875,7 @@ int gmx_grompp(int argc, char *argv[])
                 }
                 else
                 {
-                    buffer_temp = calc_temp(sys, ir, state.v);
+                    buffer_temp = calc_temp(sys, ir, state->v);
                 }
                 if (buffer_temp > 0)
                 {
@@ -1925,13 +1926,13 @@ int gmx_grompp(int argc, char *argv[])
                     warning_note(wi, warn_buf);
                 }
 
-                set_verlet_buffer(sys, ir, buffer_temp, state.box, wi);
+                set_verlet_buffer(sys, ir, buffer_temp, state->box, wi);
             }
         }
     }
 
     /* Init the temperature coupling state */
-    init_gtc_state(&state, ir->opts.ngtc, 0, ir->opts.nhchainlength); /* need to add nnhpres here? */
+    init_gtc_state(state, ir->opts.ngtc, 0, ir->opts.nhchainlength); /* need to add nnhpres here? */
 
     if (bVerbose)
     {
@@ -1971,24 +1972,24 @@ int gmx_grompp(int argc, char *argv[])
             fprintf(stderr, "getting data from old trajectory ...\n");
         }
         cont_status(ftp2fn(efTRN, NFILE, fnm), ftp2fn_null(efEDR, NFILE, fnm),
-                    bNeedVel, bGenVel, fr_time, ir, &state, sys, oenv);
+                    bNeedVel, bGenVel, fr_time, ir, state, sys, oenv);
     }
 
     if (ir->ePBC == epbcXY && ir->nwall != 2)
     {
-        clear_rvec(state.box[ZZ]);
+        clear_rvec(state->box[ZZ]);
     }
 
     if (ir->cutoff_scheme != ecutsVERLET && ir->rlist > 0)
     {
         set_warning_line(wi, mdparin, -1);
-        check_chargegroup_radii(sys, ir, state.x, wi);
+        check_chargegroup_radii(sys, ir, state->x, wi);
     }
 
     if (EEL_FULL(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
         /* Calculate the optimal grid dimensions */
-        copy_mat(state.box, box);
+        copy_mat(state->box, box);
         if (ir->ePBC == epbcXY && ir->nwall == 2)
         {
             svmul(ir->wall_ewald_zfac, box[ZZ], box[ZZ]);
@@ -2012,13 +2013,13 @@ int gmx_grompp(int argc, char *argv[])
        potentially conflict if not handled correctly. */
     if (ir->efep != efepNO)
     {
-        state.fep_state = ir->fepvals->init_fep_state;
+        state->fep_state = ir->fepvals->init_fep_state;
         for (i = 0; i < efptNR; i++)
         {
             /* init_lambda trumps state definitions*/
             if (ir->fepvals->init_lambda >= 0)
             {
-                state.lambda[i] = ir->fepvals->init_lambda;
+                state->lambda[i] = ir->fepvals->init_lambda;
             }
             else
             {
@@ -2028,7 +2029,7 @@ int gmx_grompp(int argc, char *argv[])
                 }
                 else
                 {
-                    state.lambda[i] = ir->fepvals->all_lambda[i][state.fep_state];
+                    state->lambda[i] = ir->fepvals->all_lambda[i][state->fep_state];
                 }
             }
         }
@@ -2036,12 +2037,12 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bPull)
     {
-        set_pull_init(ir, sys, state.x, state.box, state.lambda[efptMASS], oenv);
+        set_pull_init(ir, sys, state->x, state->box, state->lambda[efptMASS], oenv);
     }
 
     if (ir->bRot)
     {
-        set_reference_positions(ir->rot, state.x, state.box,
+        set_reference_positions(ir->rot, state->x, state->box,
                                 opt2fn("-ref", NFILE, fnm), opt2bSet("-ref", NFILE, fnm),
                                 wi);
     }
@@ -2050,7 +2051,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (EEL_PME(ir->coulombtype))
     {
-        float ratio = pme_load_estimate(sys, ir, state.box);
+        float ratio = pme_load_estimate(sys, ir, state->box);
         fprintf(stderr, "Estimate for the relative computational load of the PME mesh part: %.2f\n", ratio);
         /* With free energy we might need to do PME both for the A and B state
          * charges. This will double the cost, but the optimal performance will
@@ -2092,11 +2093,13 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     done_warning(wi, FARGS);
-    write_tpx_state(ftp2fn(efTPR, NFILE, fnm), ir, &state, sys);
+    write_tpx_state(ftp2fn(efTPR, NFILE, fnm), ir, state, sys);
 
     /* Output IMD group, if bIMD is TRUE */
-    write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);
+    write_IMDgroup_to_file(ir->bIMD, ir, state, sys, NFILE, fnm);
 
+    done_state(state);
+    sfree(state);
     done_atomtype(atype);
     done_mtop(sys, TRUE);
     done_inputrec_strings();

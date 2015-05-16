@@ -544,9 +544,9 @@ int gmx_covar(int argc, char *argv[])
         if (nframes-1 < ndim)
         {
             end = nframes-1;
-            fprintf(out, "WARNING: there are fewer frames in your trajectory than there are\n");
-            fprintf(out, "degrees of freedom in your system. Only generating the first\n");
-            fprintf(out, "%d out of %d eigenvectors and eigenvalues.\n", end, (int)ndim);
+            fprintf(stderr, "\nWARNING: there are fewer frames in your trajectory than there are\n");
+            fprintf(stderr, "degrees of freedom in your system. Only generating the first\n");
+            fprintf(stderr, "%d out of %d eigenvectors and eigenvalues.\n", end, (int)ndim);
         }
         else
         {
