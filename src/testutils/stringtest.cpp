@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,10 +43,22 @@
 
 #include "stringtest.h"
 
+#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <boost/scoped_ptr.hpp>
+
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/fileredirector.h"
 
+#include "testutils/refdata.h"
+#include "testutils/testexceptions.h"
+#include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 
 namespace gmx
@@ -58,6 +70,27 @@ namespace
 {
 //! Stores the -stdout flag value to print out values instead of checking them.
 bool g_bWriteToStdOut = false;
+
+/*! \brief
+ * Helper for checking a block of text, e.g., implementing the `-stdout`
+ * option.
+ *
+ * \ingroup module_testutils
+ */
+void checkTextImpl(TestReferenceChecker *checker, const std::string &text,
+                   const char *id)
+{
+    if (g_bWriteToStdOut)
+    {
+        printf("%s:\n", id);
+        printf("%s[END]\n", text.c_str());
+    }
+    else
+    {
+        checker->checkStringBlock(text, id);
+    }
+}
+
 }
 
 // TODO: Only add this option to those test binaries that actually need it
@@ -73,7 +106,92 @@ GMX_TEST_OPTIONS(StringTestOptions, options)
 }
 //! \endcond
 
+/********************************************************************
+ * TestFileOutputRedirector
+ */
+
+/*! \internal
+ * \brief
+ * Implementation of FileOutputRedirectorInterface for tests.
+ *
+ * This class redirects all output files to temporary files managed by a
+ * TestFileManager, and supports checking the contents of these files using the
+ * reference data framework.
+ *
+ * \ingroup module_testutils
+ */
+class TestFileOutputRedirector : public FileOutputRedirectorInterface
+{
+    public:
+        //! Initializes the redirector with the given file manager.
+        explicit TestFileOutputRedirector(TestFileManager *fileManager)
+            : fileManager_(*fileManager)
+        {
+        }
+
+        virtual File &standardOutput()
+        {
+            if (!stdoutFile_)
+            {
+                const std::string path = fileManager_.getTemporaryFilePath("stdout.txt");
+                stdoutFile_.reset(new File(path, "w"));
+                fileList_.push_back(FileListEntry("<stdout>", path));
+            }
+            return *stdoutFile_;
+        }
+        virtual FileInitializer openFileForWriting(const char *filename)
+        {
+            std::string       suffix = filename;
+            std::replace(suffix.begin(), suffix.end(), '/', '_');
+            const std::string path = fileManager_.getTemporaryFilePath(suffix);
+            fileList_.push_back(FileListEntry(filename, path));
+            return FileInitializer(fileList_.back().second.c_str(), "w");
+        }
+
+        /*! \brief
+         * Checks the contents of all redirected files.
+         */
+        void checkRedirectedFiles(TestReferenceChecker *checker)
+        {
+            if (stdoutFile_)
+            {
+                stdoutFile_->close();
+                stdoutFile_.reset();
+            }
+            std::vector<FileListEntry>::const_iterator i;
+            for (i = fileList_.begin(); i != fileList_.end(); ++i)
+            {
+                const std::string text = File::readToString(i->second);
+                checkTextImpl(checker, text, i->first.c_str());
+            }
+        }
+
+    private:
+        typedef std::pair<std::string, std::string> FileListEntry;
+
+        TestFileManager            &fileManager_;
+        boost::scoped_ptr<File>     stdoutFile_;
+        std::vector<FileListEntry>  fileList_;
+};
+
+/********************************************************************
+ * StringTestBase::Impl
+ */
+
+class StringTestBase::Impl
+{
+    public:
+        TestReferenceData                           data_;
+        boost::scoped_ptr<TestReferenceChecker>     checker_;
+        boost::scoped_ptr<TestFileOutputRedirector> redirector_;
+};
+
+/********************************************************************
+ * StringTestBase
+ */
+
 StringTestBase::StringTestBase()
+    : impl_(new Impl)
 {
 }
 
@@ -81,35 +199,48 @@ StringTestBase::~StringTestBase()
 {
 }
 
+FileOutputRedirectorInterface &
+StringTestBase::initOutputRedirector(TestFileManager *fileManager)
+{
+    if (impl_->redirector_)
+    {
+        GMX_THROW(TestException("initOutputRedirector() called more than once"));
+    }
+    impl_->redirector_.reset(new TestFileOutputRedirector(fileManager));
+    return *impl_->redirector_;
+}
+
 TestReferenceChecker &
 StringTestBase::checker()
 {
-    if (checker_.get() == NULL)
+    if (!impl_->checker_)
     {
-        checker_.reset(new TestReferenceChecker(data_.rootChecker()));
+        impl_->checker_.reset(new TestReferenceChecker(impl_->data_.rootChecker()));
     }
-    return *checker_;
+    return *impl_->checker_;
 }
 
 void
 StringTestBase::checkText(const std::string &text, const char *id)
 {
-    if (g_bWriteToStdOut)
-    {
-        printf("%s:\n", id);
-        printf("%s[END]\n", text.c_str());
-    }
-    else
-    {
-        checker().checkStringBlock(text, id);
-    }
+    checkTextImpl(&checker(), text, id);
 }
 
 void
 StringTestBase::checkFileContents(const std::string &filename, const char *id)
 {
-    std::string text = File::readToString(filename);
+    const std::string text = File::readToString(filename);
     checkText(text, id);
+}
+
+void
+StringTestBase::checkRedirectedOutputFiles()
+{
+    if (!impl_->redirector_)
+    {
+        GMX_THROW(TestException("initOutputRedirector() not called"));
+    }
+    impl_->redirector_->checkRedirectedFiles(&checker());
 }
 
 } // namespace test

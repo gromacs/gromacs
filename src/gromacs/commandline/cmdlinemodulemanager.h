@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@ class CommandLineModuleGroup;
 class CommandLineModuleGroupData;
 class CommandLineModuleInterface;
 class CommandLineProgramContext;
-class File;
+class FileOutputRedirectorInterface;
 
 //! \addtogroup module_commandline
 //! \{
@@ -192,17 +192,21 @@ class CommandLineModuleManager
         /*! \brief
          * Redirects the output of the module manager to a file.
          *
-         * \param[in] output  File to write the output to.
+         * \param[in] output  File redirector to use for output.
          *
          * Normally, the module manager prints explicitly requested text such
          * as help output to `stdout`, but this method can be used to redirect
-         * that output to a file.  This is used for unit tests, either to keep
-         * them quiet or to verify that output.  To keep implementation options
-         * open, behavior with `output == NULL` is undefined and should not be
-         * relied on.  For tests, there should only be need to call this a
-         * single time, right after creating the manager.
+         * that output to a file.  For exporting help from the module manager,
+         * several files are written, and can be redirected with this method as
+         * well.
+         *
+         * This is used for unit tests, either to keep them quiet or to verify
+         * that output.  To keep implementation options open, behavior with
+         * `output == NULL` is undefined and should not be relied on.
+         * For tests, there should only be need to call this a single time,
+         * right after creating the manager.
          */
-        void setOutputRedirect(File *output);
+        void setOutputRedirector(FileOutputRedirectorInterface *output);
 
         /*! \brief
          * Makes the manager always run a single module.

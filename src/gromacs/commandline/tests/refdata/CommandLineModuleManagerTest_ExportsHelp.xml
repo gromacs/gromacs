@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="programs/byname.rst"><![CDATA[
+Tools by Name
+=============
+* :doc:`test help <test-help>` - Print help information
+* :doc:`test module <test-module>` - First module
+* :doc:`test other <test-other>` - Second module
+]]></String>
+  <String Name="conf-man.py"><![CDATA[
+man_pages = [
+    ('programs/test-help', 'test-help', "Print help information", '', 1),
+    ('programs/test-module', 'test-module', "First module", '', 1),
+    ('programs/test-other', 'test-other', "Second module", '', 1),
+    ('man/gromacs.7', 'gromacs', 'molecular dynamics simulation suite', '', 7)
+]
+]]></String>
+  <String Name="programs/test-help.rst"><![CDATA[
+.. _test help:
+
+test help
+=========
+
+.. only:: man
+
+   See also
+   --------
+
+   :manpage:`gromacs(7)`
+
+   More information about |Gromacs| is available at <http://www.gromacs.org/>.
+]]></String>
+  <String Name="programs/test-module.rst"><![CDATA[
+.. _test module:
+
+test module
+===========
+Synopsis
+--------
+::
+
+    test module [-int <int>]
+
+Description
+-----------
+Sample description
+for testing ``test module``.
+
+Options
+-------
+Other options:
+
+``-int`` <int>
+
+
+
+.. only:: man
+
+   See also
+   --------
+
+   :manpage:`gromacs(7)`
+
+   More information about |Gromacs| is available at <http://www.gromacs.org/>.
+]]></String>
+  <String Name="programs/test-other.rst"><![CDATA[
+.. _test other:
+
+test other
+==========
+Synopsis
+--------
+::
+
+    test other
+
+
+.. only:: man
+
+   See also
+   --------
+
+   :manpage:`gromacs(7)`
+
+   More information about |Gromacs| is available at <http://www.gromacs.org/>.
+]]></String>
+  <String Name="programs/bytopic.rst"><![CDATA[
+Tools by Topic
+==============
+Group 1
+-------
+| :doc:`test module <test-module>` - First module
+
+Group 2
+-------
+| :doc:`test other <test-other>` - Second module
+
+]]></String>
+  <String Name="man/bytopic.rst"><![CDATA[
+Group 1
++++++++
+| ``test module`` - First module
+
+Group 2
++++++++
+| ``test other`` - Second module
+
+]]></String>
+</ReferenceData>

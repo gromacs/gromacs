@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,7 +108,7 @@ class CommandLineOptionsModuleInterface
          *     returned by \p factory.  Caller must `delete` the object.
          * \throws  std::bad_alloc if out of memory.
          *
-         * This is mainly used by unit tests that want to bypass
+         * This is mainly used by tests that want to bypass
          * CommandLineModuleManager.
          */
         static CommandLineModuleInterface *
@@ -152,6 +152,27 @@ class CommandLineOptionsModuleInterface
         registerModule(CommandLineModuleManager *manager,
                        const char *name, const char *description,
                        FactoryMethod factory);
+        /*! \brief
+         * Registers a module to this manager.
+         *
+         * \param     manager     Manager to register to.
+         * \param[in] name        Name for the module.
+         * \param[in] description Short description for the module.
+         * \param[in] module      Module to register.
+         *     The method takes ownership (must have been allocated with `new`).
+         * \throws  std::bad_alloc if out of memory.
+         *
+         * This method internally creates a CommandLineModuleInterface module
+         * with the given \p name and \p description, and adds that to
+         * \p manager.
+         *
+         * This method is mainly used by tests that need to have a reference to
+         * the CommandLineOptionsModuleInterface instance (e.g., for mocking).
+         */
+        static void
+        registerModule(CommandLineModuleManager *manager,
+                       const char *name, const char *description,
+                       CommandLineOptionsModuleInterface *module);
 
         virtual ~CommandLineOptionsModuleInterface();
 
