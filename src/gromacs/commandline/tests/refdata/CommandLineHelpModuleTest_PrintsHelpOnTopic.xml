@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="&lt;stdout&gt;"><![CDATA[
+TEST TOPIC
+
+Help text
+
+Available subtopics:
+    sub1  Subtopic 1
+    sub2  Subtopic 2
+]]></String>
+</ReferenceData>

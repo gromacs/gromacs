@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,17 +34,23 @@
  */
 /*! \internal \file
  * \brief
- * Tests gmx::CommandLineModuleManager.
+ * Tests gmx::CommandLineHelpModule through gmx::CommandLineModuleManager.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 #include "gmxpre.h"
 
-#include "gromacs/commandline/cmdlinemodulemanager.h"
+#include <cstdio>
 
 #include <gmock/gmock.h>
 
+#include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
+#include "gromacs/utility/file.h"
+
+#include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 
@@ -54,99 +60,93 @@ namespace
 {
 
 using gmx::test::CommandLine;
+using gmx::test::MockHelpTopic;
 using gmx::test::MockModule;
+using gmx::test::MockOptionsModule;
 
-typedef gmx::test::CommandLineModuleManagerTestBase CommandLineModuleManagerTest;
+typedef gmx::test::CommandLineModuleManagerTestBase CommandLineHelpModuleTest;
 
-TEST_F(CommandLineModuleManagerTest, RunsModule)
+TEST_F(CommandLineHelpModuleTest, PrintsGeneralHelp)
 {
     const char *const cmdline[] = {
-        "test", "module", "-flag", "yes"
+        "test"
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
+    redirectManagerOutput();
+    addModule("module", "First module");
     addModule("other", "Second module");
-    using ::testing::_;
-    using ::testing::Args;
-    using ::testing::ElementsAreArray;
-    EXPECT_CALL(mod1, init(_));
-    EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+    addHelpTopic("topic", "Test topic");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
+    checkRedirectedOutputFiles();
 }
 
-TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
+TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
 {
     const char *const cmdline[] = {
-        "test", "help", "module"
+        "test", "help", "topic"
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
-    addModule("other", "Second module");
+    redirectManagerOutput();
+    addModule("module", "First module");
+    MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
+    topic.addSubTopic("sub1", "Subtopic 1", "");
+    topic.addSubTopic("sub2", "Subtopic 2", "");
     using ::testing::_;
-    EXPECT_CALL(mod1, writeHelp(_));
-    mod1.setExpectedDisplayName("test module");
+    EXPECT_CALL(topic, writeHelp(_));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
+    checkRedirectedOutputFiles();
 }
 
-TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
+/*! \brief
+ * Initializes Options for help export tests.
+ *
+ * \ingroup module_commandline
+ */
+void initOptionsBasic(gmx::Options *options)
+{
+    const char *const desc[] = {
+        "Sample description",
+        "for testing [THISMODULE]."
+    };
+    options->setDescription(desc);
+    options->addOption(gmx::IntegerOption("int"));
+}
+
+TEST_F(CommandLineHelpModuleTest, ExportsHelp)
 {
     const char *const cmdline[] = {
-        "test", "module", "-h"
+        "test", "help", "-export", "rst"
     };
+    // TODO: Find a more elegant solution, or get rid of the links.dat altogether.
+    gmx::File::writeFileFromString("links.dat", "");
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
-    addModule("other", "Second module");
+    redirectManagerOutput();
+    MockOptionsModule &mod1 = addOptionsModule("module", "First module");
+    MockOptionsModule &mod2 = addOptionsModule("other", "Second module");
+    {
+        gmx::CommandLineModuleGroup group = manager().addModuleGroup("Group 1");
+        group.addModule("module");
+    }
+    {
+        gmx::CommandLineModuleGroup group = manager().addModuleGroup("Group 2");
+        group.addModule("other");
+    }
     using ::testing::_;
-    EXPECT_CALL(mod1, writeHelp(_));
-    mod1.setExpectedDisplayName("test module");
+    using ::testing::Invoke;
+    EXPECT_CALL(mod1, initOptions(_)).WillOnce(Invoke(&initOptionsBasic));
+    EXPECT_CALL(mod2, initOptions(_));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
-}
-
-TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
-{
-    const char *const cmdline[] = {
-        "g_module", "-h"
-    };
-    CommandLine       args(cmdline);
-    initManager(args, "g_module");
-    MockModule        mod(NULL, NULL);
-    manager().setSingleModule(&mod);
-    using ::testing::_;
-    EXPECT_CALL(mod, writeHelp(_));
-    mod.setExpectedDisplayName("g_module");
-    int rc = 0;
-    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
-}
-
-TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
-{
-    const char *const cmdline[] = {
-        "test", "test", "-flag", "yes"
-    };
-    CommandLine       args(cmdline);
-    initManager(args, "test");
-    MockModule       &mod1 = addModule("test", "Test module");
-    addModule("other", "Second module");
-    using ::testing::_;
-    using ::testing::Args;
-    using ::testing::ElementsAreArray;
-    EXPECT_CALL(mod1, init(_));
-    EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
-    int rc = 0;
-    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
-    ASSERT_EQ(0, rc);
+    checkRedirectedOutputFiles();
+    std::remove("links.dat");
 }
 
 } // namespace
