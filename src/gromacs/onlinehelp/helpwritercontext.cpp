@@ -465,9 +465,9 @@ class HelpWriterContext::Impl
         //! Shorthand for a list of markup/other replacements.
         typedef std::vector<ReplaceItem> ReplaceList;
 
-        //! Initializes the context with the given state.
-        explicit Impl(const StatePointer &state)
-            : state_(state)
+        //! Initializes the context with the given state and section depth.
+        Impl(const StatePointer &state, int sectionDepth)
+            : state_(state), sectionDepth_(sectionDepth)
         {
             initDefaultReplacements();
         }
@@ -500,6 +500,8 @@ class HelpWriterContext::Impl
         StatePointer            state_;
         //! List of markup/other replacements.
         ReplaceList             replacements_;
+        //! Number of subsections above this context.
+        int                     sectionDepth_;
 
     private:
         GMX_DISALLOW_ASSIGN(Impl);
@@ -672,13 +674,13 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
  */
 
 HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, NULL))))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, NULL)), 0))
 {
 }
 
 HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format,
                                      const HelpLinks *links)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, links))))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, links)), 0))
 {
     if (links != NULL)
     {
@@ -701,6 +703,12 @@ HelpWriterContext::~HelpWriterContext()
 {
 }
 
+HelpWriterContext &HelpWriterContext::operator=(const HelpWriterContext &other)
+{
+    impl_.reset(new Impl(*other.impl_));
+    return *this;
+}
+
 void HelpWriterContext::setReplacement(const std::string &search,
                                        const std::string &replace)
 {
@@ -715,6 +723,13 @@ HelpOutputFormat HelpWriterContext::outputFormat() const
 File &HelpWriterContext::outputFile() const
 {
     return impl_->state_->file_;
+}
+
+HelpWriterContext
+HelpWriterContext::createSubSection(const std::string &title) const
+{
+    writeTitle(title);
+    return HelpWriterContext(new Impl(impl_->state_, impl_->sectionDepth_ + 1));
 }
 
 std::string
@@ -747,6 +762,7 @@ void HelpWriterContext::writeTitle(const std::string &title) const
         case eHelpOutputFormat_Rst:
             file.writeLine(title);
             file.writeLine(std::string(title.length(), '-'));
+            // TODO: Add section depth here.
             break;
         default:
             GMX_THROW(NotImplementedError(

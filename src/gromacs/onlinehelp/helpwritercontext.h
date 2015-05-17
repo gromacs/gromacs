@@ -123,7 +123,7 @@ class HelpLinks
  *
  * The state of a context object (excluding the fact that the output file is
  * written to) does not change after initial construction of the object.
- * Copying creates a context object that shares state with the source.
+ * Copy and assign create context objects that share state with the source.
  *
  * TODO: This class will need additional work as part of Redmine issue #969.
  *
@@ -153,6 +153,9 @@ class HelpWriterContext
         //! Creates a copy of the context.
         HelpWriterContext(const HelpWriterContext &other);
         ~HelpWriterContext();
+
+        //! Assigns a context object.
+        HelpWriterContext &operator=(const HelpWriterContext &other);
 
         /*! \brief
          * Adds a string replacement for markup subsitution.
@@ -185,6 +188,25 @@ class HelpWriterContext
          * Does not throw.
          */
         File &outputFile() const;
+
+        /*! \brief
+         * Creates a subsection in the output help.
+         *
+         * \param[in] title  Title for the subsection.
+         * \returns   HelpWriterContext for writing the subsection.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         *
+         * Writes \p title using writeTitle() and returns a context object
+         * that can be used to write the help for the subsection.
+         * The whole subsection should be written out using the returned
+         * context before calling any further methods in the parent context.
+         *
+         * This method is only necessary if the subsection will contain further
+         * subsections.  If there is only one level of subsections, it is
+         * possible to use writeTitle() directly.
+         */
+        HelpWriterContext createSubSection(const std::string &title) const;
 
         /*! \brief
          * Substitutes markup used in help text and wraps lines.
@@ -270,8 +292,6 @@ class HelpWriterContext
         explicit HelpWriterContext(Impl *impl);
 
         PrivateImplPointer<Impl> impl_;
-
-        GMX_DISALLOW_ASSIGN(HelpWriterContext);
 };
 
 } // namespace gmx
