@@ -422,6 +422,15 @@ mark_as_advanced(GMX_XML)
 #    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 #endif()
 
+#
+# Intel TBB is optional. Even for the future the single-threaded version should
+# work without it, but we will gradually switch to using TBB instead of thread-MPI or OpenMP.
+# For now we _try_ to enable it by default, but we will not issue any fatal error if it is not found.
+#
+option(GMX_TBB "Use Intel TBB for multithreading" ON)
+include(gmxManageTBB)
+
+
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
 
@@ -783,9 +792,9 @@ if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
+        list(APPEND CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     else()
-        set(CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
+        list(APPEND CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
