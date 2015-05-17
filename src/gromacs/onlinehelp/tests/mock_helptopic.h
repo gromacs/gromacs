@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,6 +71,18 @@ class MockHelpTopic : public AbstractCompositeHelpTopic
         MockHelpTopic &addSubTopic(const char *name, const char *title,
                                    const char *text);
         using AbstractCompositeHelpTopic::addSubTopic;
+
+        /*! \brief
+         * Calls base class writeHelp() method.
+         *
+         * This provides the possibility for the mock to do the actual help
+         * writing.  The caller must set this as the writeHelp() action, as
+         * most tests do not want to get the output.
+         */
+        void writeHelpBase(const HelpWriterContext &context)
+        {
+            AbstractCompositeHelpTopic::writeHelp(context);
+        }
 
     private:
         virtual std::string helpText() const;
