@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2014, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,6 +34,13 @@
 
 add_executable(template template.cpp)
 target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
+if(APPLE)
+    # The commercial TBB library is buggy and does not set rpath correctly
+    add_custom_command(TARGET template POST_BUILD COMMAND install_name_tool
+                   -change libtbb.dylib @rpath/libtbb.dylib
+                   -change libtbbmalloc.dylib @rpath/libtbbmalloc.dylib $<TARGET_FILE:template>)
+endif()
+
 install(FILES CMakeLists.txt.template
         DESTINATION ${DATA_INSTALL_DIR}/template
         RENAME CMakeLists.txt

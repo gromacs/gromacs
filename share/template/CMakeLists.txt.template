@@ -40,3 +40,9 @@ endif()
 
 add_executable(template template.cpp)
 target_link_libraries(template ${GROMACS_LIBRARIES})
+if(APPLE)
+    # The commercial TBB library is buggy and does not set rpath correctly
+    add_custom_command(TARGET template POST_BUILD COMMAND install_name_tool
+                   -change libtbb.dylib @rpath/libtbb.dylib
+                   -change libtbbmalloc.dylib @rpath/libtbbmalloc.dylib $<TARGET_FILE:template>)
+endif()

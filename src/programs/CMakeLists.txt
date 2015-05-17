@@ -66,6 +66,13 @@ else()
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
     target_link_libraries(gmx libgromacs ${GMX_EXE_LINKER_FLAGS})
+    if(APPLE)
+        # The commercial TBB library is buggy and does not set rpath correctly
+        add_custom_command(TARGET gmx POST_BUILD COMMAND install_name_tool
+                           -change libtbb.dylib @rpath/libtbb.dylib
+                           -change libtbbmalloc.dylib @rpath/libtbbmalloc.dylib $<TARGET_FILE:gmx>)
+    endif()
+
     if(GMX_X11)
         target_link_libraries(gmx ${X11_LIBRARIES})
     endif()

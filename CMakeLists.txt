@@ -422,6 +422,25 @@ mark_as_advanced(GMX_XML)
 #    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 #endif()
 
+#
+# Intel TBB is optional. Even for the future the single-threaded version should
+# work without it, but we will gradually switch to using TBB instead of thread-MPI or OpenMP.
+#
+find_package(TBB)
+if(TBB_FOUND)
+    include_directories(${TBB_INCLUDE_DIRS})
+    if(APPLE)
+        # The commercial version of TBB is screwed up on OS X, and does not
+        # set its rpath id correctly..We fix this by setting rpath explcitly
+        # here, and then alter the build targets to add the rpath prefix.
+        # The last element of list should contain a filename with full path
+        list(GET TBB_LIBRARIES -1 TMP_TBB_PATH)
+        # get the directory part and add to rpath
+        string(REGEX MATCH "/.*/" TMP_TBB_PATH ${TMP_TBB_PATH})
+        list(APPEND CMAKE_INSTALL_RPATH ${TMP_TBB_PATH})
+    endif()
+endif()
+
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
 
@@ -783,9 +802,9 @@ if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
+        list(APPEND CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     else()
-        set(CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
+        list(APPEND CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
