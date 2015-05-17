@@ -487,9 +487,9 @@ void HelpExportReStructuredText::exportModuleHelp(
         file.writeLine(".. _mdrun_mpi:");
     }
     file.writeLine();
-    file.writeLine(displayName);
-    file.writeLine(std::string(displayName.length(), '='));
+
     CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_);
+    context.enterSubSection(displayName);
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
 
