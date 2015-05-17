@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,6 +94,8 @@ class CommandLineHelpContext
         void setModuleDisplayName(const std::string &name);
         //! Sets whether hidden options should be shown in help output.
         void setShowHidden(bool bHidden);
+        //! \copydoc HelpWriterContext::enterSubSection()
+        void enterSubSection(const std::string &title);
 
         //! Returns the lower-level context for writing the help.
         const HelpWriterContext &writerContext() const;
