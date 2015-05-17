@@ -20,6 +20,7 @@ Other options:
 
 Additional help is available on the following topics:
     commands  List of available commands
+    topic     Test topic
 To access the help, use 'commandline-test help <topic>'.
 For help on a command, use 'commandline-test help <command>'.
 ]]></String>
