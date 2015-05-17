@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,21 +32,31 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_executable(template template.cpp)
-target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
+# Managing configuration for Intel Threading Building Blocks
 
-include(gmxFixOSXRPATH)
-gmx_fix_osx_rpath(template)
+if(GMX_TBB)
 
-install(FILES CMakeLists.txt.template
-        DESTINATION ${DATA_INSTALL_DIR}/template
-        RENAME CMakeLists.txt
-        COMPONENT development)
+    if(TBB_FOUND)
+        include_directories(${TBB_INCLUDE_DIRS})
 
-install(FILES README template.cpp Makefile.pkg
-        DESTINATION ${DATA_INSTALL_DIR}/template
-        COMPONENT development)
+        # Base TBB library is available if TBB_FOUND=TRUE, but tbbmalloc is optional
+        list(APPEND GMX_EXTRA_LIBRARIES ${TBB_LIBRARIES})
+        if(TBB_MALLOC_LIBRARIES)
+            list(APPEND GMX_EXTRA_LIBRARIES ${TBB_MALLOC_LIBRARIES})
+        endif()
 
-install(FILES cmake/FindGROMACS.cmake
-        DESTINATION ${DATA_INSTALL_DIR}/template/cmake
-        COMPONENT development)
+        if(APPLE)
+            # The commercial version of TBB is screwed up on OS X, and does not
+            # set its rpath id correctly. We fix this by setting rpath explicitly
+            # here, and then alter the build targets to add the rpath prefix.
+            # The last element of list should contain a filename with full path
+            list(GET TBB_LIBRARIES -1 TMP_TBB_PATH)
+            # get the directory part and add to rpath
+            get_filename_component(TMP_TBB_PATH "${TMP_TBB_PATH}" DIRECTORY)
+            list(APPEND CMAKE_INSTALL_RPATH ${TMP_TBB_PATH})
+            list(APPEND CMAKE_BUILD_RPATH ${TMP_TBB_PATH})
+        endif()
+    else()
+        message(FATAL_ERROR "Intel TBB support requested, but not found.")
+    endif()
+endif()

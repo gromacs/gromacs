@@ -168,6 +168,9 @@
 /* Use the Portable Hardware Locality package (hwloc) */
 #cmakedefine01 GMX_HWLOC
 
+/* Use Intel TBB for multithreading */
+#cmakedefine GMX_TBB
+
 /* Can and should use nice(3) to set priority */
 #cmakedefine01 GMX_USE_NICE
 
