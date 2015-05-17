@@ -764,7 +764,7 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
 
 static void do_ave(t_fileio *fio, t_ave *ave, gmx_bool bRead)
 {
-    int g;
+    int i, g;
     t_avegrp *aveg;
 
     gmx_fio_do_int(fio, ave->nave);
@@ -781,6 +781,16 @@ static void do_ave(t_fileio *fio, t_ave *ave, gmx_bool bRead)
             snew(aveg->ind, aveg->nat);
         }
         gmx_fio_ndo_int(fio, aveg->ind, aveg->nat);
+    }
+    gmx_fio_do_int(fio, ave->nrot);
+    if (bRead)
+    {
+        snew(ave->rot, ave->nrot);
+    }
+    for (i = 0; i < ave->nrot; i++) {
+        gmx_fio_do_rvec(fio,ave->rot[i][XX]);
+        gmx_fio_do_rvec(fio,ave->rot[i][YY]);
+        gmx_fio_do_rvec(fio,ave->rot[i][ZZ]);
     }
 }
 

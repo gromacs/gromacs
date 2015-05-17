@@ -813,7 +813,15 @@ void do_averaging(rvec v[], rvec f[], t_ave *ave, gmx_bool bDoSD1, real dt, rvec
 
     int g,i,d;
     rvec sumf,sumv;
+    rvec dum;
     t_avegrp *aveg;
+    matrix *irot;
+
+    /* invert the matrices (do it here to avoid storing the inversions rotations) */
+    snew(irot,ave->nrot);
+    for (i = 0; i < ave->nrot; i++) {
+        m_inv(ave->rot[i],irot[i]);
+    }
 
     for (g = 0; g < ave->nave; g++) {
         aveg = &ave->grp[g];
@@ -823,12 +831,15 @@ void do_averaging(rvec v[], rvec f[], t_ave *ave, gmx_bool bDoSD1, real dt, rvec
             /* set the velocities to the first velocity */
             sumv[d] = v[aveg->ind[0]][d];
         }
+
         /* Average the forces */
         for (i = 0; i < aveg->nat; i++)
         {
+            /* rotate the vector into the primitive direction */
+            mvmul(irot[i],f[aveg->ind[i]],dum);
             for (d = 0; d < DIM; d++)
             {
-                sumf[d] += f[aveg->ind[i]][d];
+                sumf[d] += dum[d];
             }
         }
 
@@ -851,11 +862,10 @@ void do_averaging(rvec v[], rvec f[], t_ave *ave, gmx_bool bDoSD1, real dt, rvec
         }
         for (i = 0; i < aveg->nat; i++)
         {
-            for (d = 0; d < DIM; d++)
-            {
-                f[aveg->ind[i]][d] = sumf[d];
-                v[aveg->ind[i]][d] = sumv[d];
-            }
+            /* the force is the rotate force of the primative force */
+            mvmul(ave->rot[i],sumf,f[aveg->ind[i]]);
+            /* the velocity is the rotated velocity of the primitive velocity */
+            mvmul(ave->rot[i],sumv,v[aveg->ind[i]]);
         }
     }
 }

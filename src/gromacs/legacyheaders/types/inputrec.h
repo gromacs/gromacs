@@ -281,8 +281,10 @@ typedef struct {
 
 /* averaging group */
 typedef struct {
-    int          nave;       /* Number of rotation groups                     */
-    t_avegrp    *grp;        /* Groups to average                             */
+    int          nave;       /* Number of rotation groups                             */
+    int          nrot;       /* the number of rotation matrices (one per atom in each averaging group) */
+    t_avegrp    *grp;        /* Groups to average                                     */
+    matrix      *rot;        /* The list of rotation matrices of the group members    */
 } t_ave;
 
 /* Abstract type for IMD only defined in IMD.c */

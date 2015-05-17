@@ -642,6 +642,15 @@ static void pr_pull_coord(FILE *fp, int indent, int c, t_pull_coord *pcrd)
     PR("kB", pcrd->kB);
 }
 
+static void pr_ave_group(FILE *fp, int indent, int g, t_avegrp *aveg)
+{
+    pr_indent(fp, indent);
+    fprintf(fp, "ave-group %d (number of atoms %d):\n", g, aveg->nat);
+    indent += 2;
+    pr_ivec_block(fp, indent, "atom", aveg->ind, aveg->nat, TRUE);
+}
+
+
 static void pr_simtempvals(FILE *fp, int indent, t_simtemp *simtemp, int n_lambda)
 {
     PS("simulated-tempering-scaling", ESIMTEMP(simtemp->eSimTempScale));
@@ -772,6 +781,24 @@ static void pr_pull(FILE *fp, int indent, t_pull *pull)
     for (g = 0; g < pull->ncoord; g++)
     {
         pr_pull_coord(fp, indent, g, &pull->coord[g]);
+    }
+}
+
+static void pr_ave(FILE *fp, int indent, t_ave *ave, gmx_bool bMDPformat)
+{
+    int i, g;
+    char buf[STRLEN];
+
+    PI("ave-nave", ave->nave);
+    for (g = 0; g < ave->nave; g++)
+    {
+        pr_ave_group(fp, indent, g, &ave->grp[g]);
+    }
+    PI("ave-nrot", ave->nrot);
+    for (i = 0; i < ave->nrot; i++)
+    {
+        sprintf(buf,"ave-rotation%d",i);
+        pr_matrix(fp, indent, buf, ave->rot[i], bMDPformat);
     }
 }
 
@@ -1028,6 +1055,12 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         if (ir->ePull != epullNO)
         {
             pr_pull(fp, indent, ir->pull);
+        }
+
+        /* FORCED SYMMETRY */
+        if (ir->bAve)
+        {
+            pr_ave(fp, indent, ir->ave, bMDPformat);
         }
 
         /* ENFORCED ROTATION */

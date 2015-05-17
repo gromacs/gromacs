@@ -48,14 +48,31 @@
 
 #include "gmx_fatal.h"
 
+static void string2matrix(char buf[], matrix m)
+{
+    int i,j;
+    double dum[3][3];
+    if (sscanf(buf, "%lf%lf%lf%lf%lf%lf%lf%lf%lf", &(dum[XX][XX]), &(dum[XX][YY]), &(dum[XX][ZZ]),  &(dum[YY][XX]), &(dum[YY][YY]), &(dum[YY][ZZ]),  &(dum[ZZ][XX]), &(dum[ZZ][YY]), &(dum[ZZ][ZZ])) != 9)
+    {
+        gmx_fatal(FARGS, "Expected nine numbers at input line %s", buf);
+    }
+    for (i=0;i<DIM;i++)
+    {
+        for (j=0;j<DIM;j++) {
+            m[i][j] = dum[i][j];
+        }
+    }
+}
+
 extern char **read_aveparams(int *ninp_p, t_inpfile **inp_p, t_ave *ave,
                              warninp_t wi)
 {
-    int         ninp, g, m;
+    int         i, ninp, g, m;
     t_inpfile  *inp;
     const char *tmp;
     char      **grpbuf;
     char        buf[STRLEN];
+    char        bufdum[STRLEN];
     char        warn_buf[STRLEN];
     dvec        vec;
     t_avegrp   *aveg;
@@ -65,7 +82,10 @@ extern char **read_aveparams(int *ninp_p, t_inpfile **inp_p, t_ave *ave,
 
     /* read averaging parameters */
     CTYPE("Number of averaging groups");
-    ITYPE("ave-ngroups",     ave->nave, 1);
+    ITYPE("ave-ngroups",     ave->nave, 0);
+    /* number of rotation matrices must match the number of atoms per group (not the number of groups) */
+    CTYPE("Number of rotation matrices"); 
+    ITYPE("ave-nrot",     ave->nrot, 0);
 
     if (ave->nave < 1)
     {
@@ -85,6 +105,20 @@ extern char **read_aveparams(int *ninp_p, t_inpfile **inp_p, t_ave *ave,
         STYPE(buf, grpbuf[g], "");
     }
 
+    /* read the averaging group rotation matrices */
+
+    if (ave->nrot > 0) {
+        snew(ave->rot,ave->nrot);
+        for (i = 0; i < ave->nrot; i++)
+        {
+            /* MRS: there should be error checking here to make sure that there 
+               actually are nrot rotation groups. Not sure what that code woulrd look like */
+            CTYPE("Averaging group rotation matrix");
+            sprintf(buf, "ave-rotation%d", g);
+            STYPE(buf, bufdum, "1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0");
+            string2matrix(bufdum, ave->rot[i]);
+        }
+    }
     *ninp_p   = ninp;
     *inp_p    = inp;
 
@@ -93,16 +127,15 @@ extern char **read_aveparams(int *ninp_p, t_inpfile **inp_p, t_ave *ave,
 
 extern void make_averaging_groups(t_ave *ave, char **avegnames, t_blocka *grps, char **gnames)
 {
-    int       g, ig = -1, i;
+    int       g, i, natpergrp, ig = -1;
     t_avegrp *aveg;
-
-
+    
     for (g = 0; g < ave->nave; g++)
     {
         aveg      = &ave->grp[g];
         ig        = search_string(avegnames[g], grps->nr, gnames);
         aveg->nat = grps->index[ig+1] - grps->index[ig];
-
+        
         if (aveg->nat > 0)
         {
             fprintf(stderr, "Averaging group %d '%s' has %d atoms\n", g, avegnames[g], aveg->nat);
@@ -115,6 +148,33 @@ extern void make_averaging_groups(t_ave *ave, char **avegnames, t_blocka *grps, 
         else
         {
             gmx_fatal(FARGS, "Averaging group %d '%s' is empty", g, avegnames[g]);
+        }
+    }
+
+    /* all averaging groups should have the same number of atoms */
+
+    natpergrp = ave->grp[0].nat;
+    for (g = 0; g < ave->nave; g++)
+    {
+        if (natpergrp != ave->grp[0].nat) 
+        {
+            gmx_fatal(FARGS, "Averaging group %d '%s' does not have the same number of atoms as averaging group 0 '%s'", g, avegnames[g],avegnames[0]);
+        }
+    }
+
+    /* if we have defined matrices, there should be the same number as atoms per group */
+    if ((ave->nrot > 0) && (natpergrp != ave->nrot))
+    {
+        gmx_fatal(FARGS, "Number of rotation matrices %s is not equal to the number of atoms per group %d", ave->nrot, natpergrp);
+    }
+    /* initialize averaging groups to identities if no groups specified*/
+    if (ave->nrot == 0) {
+        ave->nrot = natpergrp;
+        snew(ave->rot,ave->nrot);
+        for (i=0;i<natpergrp;i++) {
+            ave->rot[i][XX][XX] = 1.0;
+            ave->rot[i][YY][YY] = 1.0;
+            ave->rot[i][ZZ][ZZ] = 1.0;
         }
     }
 }
