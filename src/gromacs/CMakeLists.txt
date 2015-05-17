@@ -205,12 +205,16 @@ target_link_libraries(libgromacs
                       ${TNG_IO_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES}
+                     ${TBB_LIBRARIES} ${TBB_MALLOC_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OPENCL_LIBRARIES})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+include(gmxFixOSXRPATH)
+gmx_fix_osx_rpath(libgromacs)
 
 gmx_write_installed_header_list()
 

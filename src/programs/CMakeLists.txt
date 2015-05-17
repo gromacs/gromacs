@@ -36,6 +36,8 @@ file(GLOB MDRUN_SOURCES mdrun/*.cpp)
 # make an "object library" that we can re-use for multiple targets
 add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
 
+include(gmxFixOSXRPATH)
+
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
     # may break some generators, according to CMake documentation. If
@@ -66,6 +68,8 @@ else()
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
     target_link_libraries(gmx libgromacs ${GMX_EXE_LINKER_FLAGS})
+    gmx_fix_osx_rpath(gmx)
+
     if(GMX_X11)
         target_link_libraries(gmx ${X11_LIBRARIES})
     endif()
