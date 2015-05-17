@@ -123,9 +123,7 @@ class HelpLinks
  *
  * The state of a context object (excluding the fact that the output file is
  * written to) does not change after initial construction of the object.
- * Copying creates a context object that shares state with the source.
- *
- * TODO: This class will need additional work as part of Redmine issue #969.
+ * Copying creates a context objects that share state with the source.
  *
  * \inlibraryapi
  * \ingroup module_onlinehelp
@@ -185,6 +183,28 @@ class HelpWriterContext
          * Does not throw.
          */
         File &outputFile() const;
+
+        /*! \brief
+         * Creates a subsection in the output help.
+         *
+         * \param[in] title  Title for the subsection.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         *
+         * Writes \p title using writeTitle() and makes any further
+         * writeTitle() calls write headings one level deeper.
+         *
+         * Typical use for writing a subsection is to create a copy of the
+         * context for the parent section, and then call enterSubSection() on
+         * the copy.
+         * The whole subsection should be written out using the returned
+         * context before calling any further methods in the parent context.
+         *
+         * This method is only necessary if the subsection will contain further
+         * subsections.  If there is only one level of subsections, it is
+         * possible to use writeTitle() directly.
+         */
+        void enterSubSection(const std::string &title);
 
         /*! \brief
          * Substitutes markup used in help text and wraps lines.
