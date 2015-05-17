@@ -163,6 +163,9 @@
 /* Use OpenMP multithreading */
 #cmakedefine GMX_OPENMP
 
+/* Use Intel TBB for multithreading */
+#cmakedefine GMX_TBB
+
 /* Can and should use nice(3) to set priority */
 #cmakedefine GMX_USE_NICE
 

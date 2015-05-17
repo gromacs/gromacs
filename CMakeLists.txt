@@ -447,6 +447,16 @@ mark_as_advanced(GMX_XML)
 #    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 #endif()
 
+find_package(TBB)
+if(TBB_FOUND)
+    set(GMX_TBB_DEFAULT ON)
+else()
+    set(GMX_TBB_DEFAULT OFF)
+endif()
+option(GMX_TBB "Use Intel TBB for multithreading" ${GMX_TBB_DEFAULT})
+include(gmxManageTBB)
+
+
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
 
@@ -821,9 +831,9 @@ elseif((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
     if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
+        list(APPEND CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     else()
-        set(CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
+        list(APPEND CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)

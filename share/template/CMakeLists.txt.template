@@ -9,6 +9,17 @@ endif()
 # CMake modules are in a subdirectory to keep this file cleaner
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+# Some libraries on OSX do not set RPATH correctly. This is a copy of a macro
+# from the GROMACS distribution that adds @rpath prefixes to libraries without it.
+macro(gmx_fix_osx_rpath target)
+    if(APPLE)
+        # For each library from otool -L, add prefix @rpath if prefix is missing.
+        add_custom_command(TARGET ${target} POST_BUILD COMMAND
+                           for i in `otool -L $<TARGET_FILE:${target}> | awk '$$1~/^lib.*dylib/{print $$1}'`\;
+                           do install_name_tool -change $$i @rpath/$$i $<TARGET_FILE:${target}>\; done)
+    endif()
+endmacro()
+
 # In principle, this could be deduced from GROMACS_IS_DOUBLE returned by
 # find_package(GROMACS) based on the suffix alone, but it is clearer that the
 # user explicitly sets what they want to get, and then need to provide a suffix
@@ -40,3 +51,4 @@ endif()
 
 add_executable(template template.cpp)
 target_link_libraries(template ${GROMACS_LIBRARIES})
+gmx_fix_osx_rpath(template)

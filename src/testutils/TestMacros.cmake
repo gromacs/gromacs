@@ -32,6 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(gmxFixOSXRPATH)
+
 function (gmx_add_unit_test_object_library NAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
@@ -48,6 +50,7 @@ function (gmx_build_unit_test NAME EXENAME)
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
         target_link_libraries(${EXENAME} ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+        gmx_fix_osx_rpath(${EXENAME})
         file(RELATIVE_PATH _input_files_path ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
         set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
         file(MAKE_DIRECTORY ${_temporary_files_path})
