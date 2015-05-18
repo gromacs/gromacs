@@ -277,3 +277,10 @@
    ...
    fun:__kmpc_global_thread_num
 }
+# libstdc++.so.6
+{
+   malloc
+   Memcheck:Leak
+   ...
+   obj:*/libstdc++.so.6*
+}
