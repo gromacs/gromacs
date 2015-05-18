@@ -2141,7 +2141,7 @@ int gmx_energy(int argc, char *argv[])
                 strcat(buf, ")");
             }
         }
-        out = xvgropen(opt2fn("-o", NFILE, fnm), "Gromacs Energies", "Time (ps)", buf,
+        out = xvgropen(opt2fn("-o", NFILE, fnm), "GROMACS Energies", "Time (ps)", buf,
                        oenv);
 
         snew(leg, nset+1);

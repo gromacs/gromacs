@@ -303,7 +303,7 @@ const char *const LimitationsHelpText::text[] = {
     "instead.[PAR]",
 
     "When [TT]name[tt] selection keyword is used together with PDB input",
-    "files, the behavior may be unintuitive. When Gromacs reads in a PDB",
+    "files, the behavior may be unintuitive. When GROMACS reads in a PDB",
     "file, 4 character atom names that start with a digit are transformed",
     "such that, e.g., 1HG2 becomes HG21, and the latter is what is matched",
     "by the [TT]name[tt] keyword. Use [TT]pdbname[tt] to match the atom name",

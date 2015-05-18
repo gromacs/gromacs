@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,7 +178,7 @@ static const char *help_atomname[] = {
     "[TT]name[tt] [TT]pdbname[tt] [TT]atomname[tt] [TT]pdbatomname[tt][PAR]",
 
     "These keywords select atoms by name. [TT]name[tt] selects atoms using",
-    "the Gromacs atom naming convention.",
+    "the GROMACS atom naming convention.",
     "For input formats other than PDB, the atom names are matched exactly",
     "as they appear in the input file. For PDB files, 4 character atom names",
     "that start with a digit are matched after moving the digit to the end",

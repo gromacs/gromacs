@@ -105,7 +105,7 @@ class ObsoleteToolModule : public gmx::CommandLineModuleInterface
         void printMessage() const
         {
             std::fprintf(stderr,
-                         "This tool has been removed from Gromacs 5.0. Please see\n"
+                         "This tool is no longer present in GROMACS. Please see\n"
                          "  http://www.gromacs.org/Documentation/How-tos/Tool_Changes_for_5.0\n"
                          "for ideas how to perform the same tasks with the "
                          "new tools.\n");

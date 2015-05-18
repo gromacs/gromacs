@@ -166,7 +166,7 @@ int gmx_mdrun(int argc, char *argv[])
         "with the step number.",
         "A simulation can be continued by reading the full state from file",
         "with option [TT]-cpi[tt]. This option is intelligent in the way that",
-        "if no checkpoint file is found, Gromacs just assumes a normal run and",
+        "if no checkpoint file is found, GROMACS just assumes a normal run and",
         "starts from the first step of the [REF].tpr[ref] file. By default the output",
         "will be appending to the existing output files. The checkpoint file",
         "contains checksums of all output files, such that you will never",

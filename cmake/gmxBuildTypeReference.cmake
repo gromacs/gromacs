@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # Custom build type "Reference", to be used for creating new
-# reference values in the Gromacs regression tests.
+# reference values in the GROMACS regression tests.
 set( CMAKE_CXX_FLAGS_REFERENCE "-O0 -g" CACHE STRING "C++ flags for regressiontests reference runs." FORCE)
 set( CMAKE_C_FLAGS_REFERENCE "-O0 -g" CACHE STRING "C flags for regressiontests reference runs." FORCE)
 set( CMAKE_EXE_LINKER_FLAGS_REFERENCE "" CACHE STRING "Linker flags for regressiontests reference runs.")
@@ -49,7 +49,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
     set(GMX_THREAD_MPI OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
 
     if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR NOT "${CMAKE_C_COMPILER_VERSION}" MATCHES "4.7")
-        message(WARNING "Reference values for regressiontests should use Gromacs compiled with "
+        message(WARNING "Reference values for regressiontests should use GROMACS compiled with "
             "gcc 4.7, but your configuration is using ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION}.")
     endif()
 endif()

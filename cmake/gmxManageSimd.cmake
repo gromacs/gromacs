@@ -61,7 +61,7 @@ set(GMX_SIMD_ACCURACY_BITS_SINGLE 22 CACHE STRING "Target mantissa bits for SIMD
 # and the first iteration can sometimes be done as a pair in single precision. This should
 # be plenty enough for Molecular Dynamics applications. Many of our double precision math
 # functions still achieve very close to full double precision, but we do not guarantee that
-# they will be able to achieve higher accuracy if you set this beyond 44 bits. Gromacs will
+# they will be able to achieve higher accuracy if you set this beyond 44 bits. GROMACS will
 # work - but some unit tests might fail.
 #
 set(GMX_SIMD_ACCURACY_BITS_DOUBLE 44 CACHE STRING "Target mantissa bits for SIMD double math")
@@ -226,7 +226,7 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return _mm_movemask_ps(x);
     gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
 
     set(GMX_SIMD_X86_AVX_128_FMA 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD Gromacs SIMD (with fused-multiply add)")
+    set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD GROMACS SIMD (with fused-multiply add)")
 
 elseif(${GMX_SIMD} STREQUAL "AVX_256")
 

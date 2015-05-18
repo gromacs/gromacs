@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -128,7 +128,7 @@ if (${FFTW}_FOUND)
       execute_process(COMMAND ${CMAKE_OBJDUMP} --reloc ${${FFTW}_LIBRARY} OUTPUT_VARIABLE ${FFTW}_OBJDUMP)
       if (${${FFTW}_OBJDUMP} MATCHES "R_X86_64" #Should always be true for static libraries. Checks that objdump works properly and that the library isn't dynamic
               AND NOT ${${FFTW}_OBJDUMP} MATCHES "R_X86_64_PLT32")
-          message(FATAL_ERROR "The FFTW library ${${FFTW}_LIBRARY} cannot be used with shared libraries. Provide a different FFTW library by setting ${FFTW}_LIBRARY. If you don't have a different one, recompile FFTW with \"--enable-shared\" or \"--with-pic\". Or disable shared libraries for Gromacs by setting BUILD_SHARED_LIBS to \"no\". Note: Disabling shared libraries requires up to 10x as much disk space.")
+          message(FATAL_ERROR "The FFTW library ${${FFTW}_LIBRARY} cannot be used with shared libraries. Provide a different FFTW library by setting ${FFTW}_LIBRARY. If you don't have a different one, recompile FFTW with \"--enable-shared\" or \"--with-pic\". Or disable shared libraries for GROMACS by setting BUILD_SHARED_LIBS to \"no\". Note: Disabling shared libraries requires up to 10x as much disk space.")
       endif()
   endif()
   set(CMAKE_REQUIRED_LIBRARIES)

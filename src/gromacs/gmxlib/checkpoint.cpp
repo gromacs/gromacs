@@ -1791,8 +1791,8 @@ static void check_match(FILE *fplog,
     if (mm)
     {
         const char msg_version_difference[] =
-            "The current Gromacs major & minor version are not identical to those that\n"
-            "generated the checkpoint file. In principle Gromacs does not support\n"
+            "The current GROMACS major & minor version are not identical to those that\n"
+            "generated the checkpoint file. In principle GROMACS does not support\n"
             "continuation from checkpoints between different versions, so we advise\n"
             "against this. If you still want to try your luck we recommend that you use\n"
             "the -noappend flag to keep your output files from the two versions separate.\n"
@@ -1800,7 +1800,7 @@ static void check_match(FILE *fplog,
             "file have changed between the different major & minor versions.\n";
 
         const char msg_mismatch_notice[] =
-            "Gromacs patchlevel, binary or parallel settings differ from previous run.\n"
+            "GROMACS patchlevel, binary or parallel settings differ from previous run.\n"
             "Continuation is exact, but not guaranteed to be binary identical.\n";
 
         const char msg_logdetails[] =

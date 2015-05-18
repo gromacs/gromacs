@@ -772,18 +772,18 @@ static void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
 #ifndef GMX_THREAD_MPI
     if (hw_opt->nthreads_tot > 0)
     {
-        gmx_fatal(FARGS, "Setting the total number of threads is only supported with thread-MPI and Gromacs was compiled without thread-MPI");
+        gmx_fatal(FARGS, "Setting the total number of threads is only supported with thread-MPI and GROMACS was compiled without thread-MPI");
     }
     if (hw_opt->nthreads_tmpi > 0)
     {
-        gmx_fatal(FARGS, "Setting the number of thread-MPI threads is only supported with thread-MPI and Gromacs was compiled without thread-MPI");
+        gmx_fatal(FARGS, "Setting the number of thread-MPI threads is only supported with thread-MPI and GROMACS was compiled without thread-MPI");
     }
 #endif
 
 #ifndef GMX_OPENMP
     if (hw_opt->nthreads_omp > 1)
     {
-        gmx_fatal(FARGS, "More than 1 OpenMP thread requested, but Gromacs was compiled without OpenMP support");
+        gmx_fatal(FARGS, "More than 1 OpenMP thread requested, but GROMACS was compiled without OpenMP support");
     }
     hw_opt->nthreads_omp = 1;
 #endif
@@ -825,7 +825,7 @@ static void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
 #ifndef GMX_OPENMP
     if (hw_opt->nthreads_omp > 1)
     {
-        gmx_fatal(FARGS, "OpenMP threads are requested, but Gromacs was compiled without OpenMP support");
+        gmx_fatal(FARGS, "OpenMP threads are requested, but GROMACS was compiled without OpenMP support");
     }
 #endif
 
@@ -1358,7 +1358,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (MULTISIM(cr))
     {
         md_print_info(cr, fplog,
-                      "This is simulation %d out of %d running as a composite Gromacs\n"
+                      "This is simulation %d out of %d running as a composite GROMACS\n"
                       "multi-simulation job. Setup for this simulation:\n\n",
                       cr->ms->sim, cr->ms->nsim);
     }

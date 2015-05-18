@@ -278,7 +278,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     if (ir->cutoff_scheme == ecutsGROUP)
     {
         warning_note(wi,
-                     "The group cutoff scheme is deprecated in Gromacs 5.0 and will be removed in a future "
+                     "The group cutoff scheme is deprecated since GROMACS 5.0 and will be removed in a future "
                      "release when all interaction forms are supported for the verlet scheme. The verlet "
                      "scheme already scales better, and it is compatible with GPUs and other accelerators.");
 
@@ -657,7 +657,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "Can't use postive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
 
-        sprintf(err_buf, "Can only use expanded ensemble with md-vv for now; should be supported for other integrators in 5.0");
+        sprintf(err_buf, "Can only use expanded ensemble with md-vv (for now)");
         CHECK(!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED));
 
         sprintf(err_buf, "Free-energy not implemented for Ewald");
