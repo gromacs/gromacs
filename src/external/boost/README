@@ -1,7 +1,8 @@
 Steps to produce minimal version of BOOST:
 1) Download Boost (current minimal version is derived from 1.55.0)
 2) Extract
-3) Edit Boost files to uncomment unnessary includes (search for GMX in minimal version and copy all changes)
+3) Edit Boost files to uncomment unnessary includes and insert warning-suppression pragmas
+   (search for GMX in minimal version and copy all changes)
    Alternative make a patch by diffing against unmodified version and applying patch. Such as
    diff /path/to/boost_1_55_0 . -rwu |grep -v ^"Only in" > patch && patch -p? < patch
 4) Make sure our subset works even with compilers not listed

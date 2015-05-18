@@ -44,6 +44,12 @@
 # include <boost/utility/addressof.hpp>
 #endif
 
+//GMX_INSERTED
+#if (__GNUC__ >= 5)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 namespace boost
 {
 
@@ -595,6 +601,11 @@ inline shared_count::shared_count( weak_count const & r, sp_nothrow_tag ): pi_( 
 } // namespace detail
 
 } // namespace boost
+
+//GMX_INSERTED
+#if (__GNUC__ >= 5)
+#pragma GCC diagnostic pop
+#endif
 
 #ifdef __BORLANDC__
 # pragma warn .8027     // Functions containing try are not expanded inline

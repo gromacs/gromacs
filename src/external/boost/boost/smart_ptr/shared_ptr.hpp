@@ -52,6 +52,12 @@
 #endif
 #endif
 
+//GMX_INSERTED
+#if (__GNUC__ >= 5)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 namespace boost
 {
 
@@ -1029,6 +1035,11 @@ template< class T > std::size_t hash_value( boost::shared_ptr<T> const & p ) BOO
 }
 
 } // namespace boost
+
+//GMX_INSERTED
+#if (__GNUC__ >= 5)
+#pragma GCC diagnostic pop
+#endif
 
 #endif  // #if defined(BOOST_NO_MEMBER_TEMPLATES) && !defined(BOOST_MSVC6_MEMBER_TEMPLATES)
 

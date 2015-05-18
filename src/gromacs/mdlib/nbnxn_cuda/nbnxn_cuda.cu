@@ -170,6 +170,9 @@ static inline int calc_nb_kernel_nblock(int nwork_units, gmx_device_info_t *dinf
     int max_grid_x_size;
 
     assert(dinfo);
+    /* CUDA does not accept grid dimension of 0 (which can happen e.g. with an
+       empty domain) and that case should be handled before this point. */
+    assert(nwork_units > 0);
 
     max_grid_x_size = dinfo->prop.maxGridSize[0];
 
@@ -348,7 +351,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
        we always call the local kernel, the local x+q copy and later (not in
        this function) the stream wait, local f copyback and the f buffer
        clearing. All these operations, except for the local interaction kernel,
-       are needed for the non-local interactions. */
+       are needed for the non-local interactions. The skip of the local kernel
+       call is taken care of later in this function. */
     if (iloc == eintNonlocal && plist->nsci == 0)
     {
         return;
@@ -397,6 +401,12 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     {
         stat = cudaEventRecord(t->stop_nb_h2d[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
+    }
+
+    if (plist->nsci == 0)
+    {
+        /* Don't launch an empty local kernel (not allowed with CUDA) */
+        return;
     }
 
     /* beginning of timed nonbonded calculation section */
