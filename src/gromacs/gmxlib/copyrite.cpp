@@ -749,6 +749,11 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "TNG support:        disabled\n");
 #endif
+#if GMX_HWLOC
+    fprintf(fp, "Hwloc support:      enabled\n");
+#else
+    fprintf(fp, "Hwloc support:      disabled\n");
+#endif
 #if HAVE_EXTRAE
     unsigned major, minor, revision;
     Extrae_get_version(&major, &minor, &revision);
