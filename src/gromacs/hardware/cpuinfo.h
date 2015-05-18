@@ -150,9 +150,9 @@ class CpuInfo
         /*! \libinternal \brief Entry with basic information for a single logical processor */
         struct LogicalProcessor
         {
-            int socket;   //!< Rank of the current socket in the system
-            int core;     //!< Rank of the current core in its socket
-            int hwThread; //!< Rank of logical processor in its core
+            int socketRankInMachine; //!< Relative rank of the current socket in the system
+            int coreRankInSocket;    //!< Relative rank of the current core in its socket
+            int hwThreadRankInCore;  //!< Relative rank of logical processor in its core
         };
 
     public:

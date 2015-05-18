@@ -43,15 +43,14 @@
 #ifndef GMX_HARDWARE_HARDWARETOPOLOGY_H
 #define GMX_HARDWARE_HARDWARETOPOLOGY_H
 
+#include <cstdint>
+
 #include <vector>
-
-#include "gromacs/hardware/cpuinfo.h"
-
 
 namespace gmx
 {
 
-/*! \libinternal \brief Information about sockets, cores, hardware threads, numa, and caches
+/*! \libinternal \brief Information about sockets, cores, threads, numa, caches
  *
  * This class is the main GROMACS interface to provide information about the
  * hardware of the system we are running on. Internally, it uses either
@@ -77,33 +76,88 @@ class HardwareTopology
             FullWithDevices        //!< Information about devices on the PCI bus
         };
 
-        // For now the structures describing the machine are very basic, but they
-        // will grow to include e.g. cache and core-group information in the future.
+        /*! \libinternal \brief Information about a single cache level */
+        struct Cache
+        {
+            int                    level;          //!< Level relative to core (starts at 1)
+            std::size_t            size;           //!< size in bytes, 0 if unknown
+            int                    linesize;       //!< size of each cache line in bytes, 0 if unknown
+            int                    associativity;  //!< associativity, -1 means fully associative
+            int                    shared;         //!< Number of logical processors sharing this cache
+        };
 
-        /*! \libinternal \brief Information about a single hardware thread in a core */
+        /*! \libinternal \brief Information about a single hardware thread in a core
+         *
+         * The id of the thread typically increases continuously as you walk
+         * through sockets and cores in order of their ids. In general, this can
+         * be different from the logical processor id provided by the operating
+         * system. To achieve better load balancing when using SMT, Linux
+         * typically assigns logical processors in a round-robin fashion
+         * over all cores.
+         */
         struct HWThread
         {
+            int                    id;                 //!< Absolute id of this thread in hardware topology
             int                    logicalProcessorId; //!< Id of the operating system logical processor
         };
 
         /*! \libinternal \brief Information about a single core in a socket */
         struct Core
         {
+            int                    id;              //!< Absolute id of this core in hardware topology
+            int                    numaNodeId;      //!< id of the numa node of this core
             std::vector<HWThread>  hwThreads;       //!< All the hardware threads in this core
         };
 
-        /*! \libinternal \brief Information about a single core in the system */
+        /*! \libinternal \brief Information about a single socket in the system */
         struct Socket
         {
+            int                    id;             //!< Absolute id of this socket in hardware topology
             std::vector<Core>      cores;          //!< All the cores in this socket
+        };
+
+        /*! \libinternal \brief Information about each numa node in system */
+        struct NumaNode
+        {
+            int                    id;                 //!< Absolute id of numa node in hardware topology
+            std::size_t            memory;             //!< Total detected memory in bytes
+            std::vector<int>       logicalProcessorId; //!< Vector of all the logical processors in this node
+        };
+
+        /*! \libinternal \brief Information about a single numa node */
+        struct Numa
+        {
+            std::vector<NumaNode>               nodes;              //!< Information about each numa node
+            float                               baseLatency;        //!< Scale factor for relative latencies
+            std::vector< std::vector<float> >   relativeLatency;    //!< 2D matrix of relative latencies between nodes
+            float                               maxRelativeLatency; //!< Largest relative latency
+        };
+
+        /*! \libinternal \brief Information about a single PCI device.
+         *
+         *  \note On many systems the PCI bus is not directly connected to any numa node.
+         *        For these systems the numaNodeId will be -1, so you cannot rely on this
+         *        number reflecting a specific numa node.
+         */
+        struct Device
+        {
+            std::uint16_t          vendorId;    //!< Vendor identification
+            std::uint16_t          deviceId;    //!< Vendor-specific device identification
+            std::uint16_t          classId;     //!< class (high 8 bits) and subclass (low 8 bits)
+            std::uint16_t          domain;      //!< Domain, usually 0 for PCI bus
+            std::uint8_t           bus;         //!< Bus number in domain
+            std::uint8_t           dev;         //!< Device on bus
+            std::uint8_t           func;        //!< Function id for multi-function devices
+            int                    numaNodeId;  //!< Numa node, -1 if the bus is not located inside a node
         };
 
         /*! \libinternal \brief Information about socket, core and hwthread for a logical processor */
         struct LogicalProcessor
         {
-            int                socket;   //!< Index of socket in machine
-            int                core;     //!< Index of core in socket
-            int                hwThread; //!< Index of hardware thread in core
+            int                    socketRankInMachine; //!< Index of socket in machine
+            int                    coreRankInSocket;    //!< Index of core in socket
+            int                    hwThreadRankInCore;  //!< Index of hardware thread in core
+            int                    numaNodeId;          //!< Index of numa node
         };
 
         /*! \libinternal \brief Hardware topology information about the entire machine
@@ -126,6 +180,9 @@ class HardwareTopology
             int                            logicalProcessorCount; //!< Number of logical processors in system
             std::vector<LogicalProcessor>  logicalProcessors;     //!< Map logical processors to socket/core
             std::vector<Socket>            sockets;               //!< All the sockets in the system
+            std::vector<Cache>             caches;                //!< Caches in increasing level order
+            Numa                           numa;                  //!< Structure with all numa information
+            std::vector<Device>            devices;               //!< Devices on PCI bus
         };
 
     public:

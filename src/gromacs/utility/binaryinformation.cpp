@@ -59,6 +59,10 @@
 #include <extrae_user_events.h>
 #endif
 
+#if GMX_HWLOC
+#include <hwloc.h>
+#endif
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -254,6 +258,14 @@ void gmx_print_version_info(FILE *fp)
     fprintf(fp, "TNG support:        enabled\n");
 #else
     fprintf(fp, "TNG support:        disabled\n");
+#endif
+#if GMX_HWLOC
+    fprintf(fp, "Hwloc support:      hwloc-%d.%d.%d\n",
+            HWLOC_API_VERSION>>16,
+            (HWLOC_API_VERSION>>8) & 0xFF,
+            HWLOC_API_VERSION & 0xFF);
+#else
+    fprintf(fp, "Hwloc support:      disabled\n");
 #endif
 #if HAVE_EXTRAE
     unsigned major, minor, revision;

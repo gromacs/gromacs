@@ -569,26 +569,26 @@ detectX86LogicalProcessors()
             // a single socket or core. Extract, renumber, and check that things make sense.
             unsigned int               hwThreadMask  = (1 << hwThreadBits) - 1;
             unsigned int               coreMask      = (1 << coreBits) - 1;
-            std::vector<unsigned int>  hwThreads;
-            std::vector<unsigned int>  cores;
-            std::vector<unsigned int>  sockets;
+            std::vector<unsigned int>  hwThreadRanks;
+            std::vector<unsigned int>  coreRanks;
+            std::vector<unsigned int>  socketRanks;
 
             for (auto a : apicID)
             {
-                hwThreads.push_back( static_cast<int>( a & hwThreadMask ) );
-                cores.push_back( static_cast<int>( ( a >> hwThreadBits ) & coreMask ) );
-                sockets.push_back( static_cast<int>( a >> ( coreBits + hwThreadBits ) ) );
+                hwThreadRanks.push_back( static_cast<int>( a & hwThreadMask ) );
+                coreRanks.push_back( static_cast<int>( ( a >> hwThreadBits ) & coreMask ) );
+                socketRanks.push_back( static_cast<int>( a >> ( coreBits + hwThreadBits ) ) );
             }
 
-            renumberIndex(&hwThreads);
-            renumberIndex(&cores);
-            renumberIndex(&sockets);
+            renumberIndex(&hwThreadRanks);
+            renumberIndex(&coreRanks);
+            renumberIndex(&socketRanks);
 
-            unsigned int  nHwThreads = 1 + *std::max_element(hwThreads.begin(), hwThreads.end());
-            unsigned int  nCores     = 1 + *std::max_element(cores.begin(), cores.end());
-            unsigned int  nSockets   = 1 + *std::max_element(sockets.begin(), sockets.end());
+            unsigned int  hwThreadRankSize = 1 + *std::max_element(hwThreadRanks.begin(), hwThreadRanks.end());
+            unsigned int  coreRankSize     = 1 + *std::max_element(coreRanks.begin(), coreRanks.end());
+            unsigned int  socketRankSize   = 1 + *std::max_element(socketRanks.begin(), socketRanks.end());
 
-            if (nSockets * nCores * nHwThreads == apicID.size() )
+            if (socketRankSize * coreRankSize * hwThreadRankSize == apicID.size() )
             {
                 // Alright, everything looks consistent, so put it in the result
                 for (std::size_t i = 0; i < apicID.size(); i++)
@@ -596,7 +596,7 @@ detectX86LogicalProcessors()
                     // While the internal APIC IDs are always unsigned integers, we also cast to
                     // plain integers for the externally exposed vectors, since that will make
                     // it possible to use '-1' for invalid entries in the future.
-                    logicalProcessors.push_back( { int(sockets[i]), int(cores[i]), int(hwThreads[i]) } );
+                    logicalProcessors.push_back( { int(socketRanks[i]), int(coreRanks[i]), int(hwThreadRanks[i]) } );
                 }
             }
         }
@@ -879,7 +879,6 @@ CpuInfo CpuInfo::detect()
     detectX86Features(&result.brandString_, &result.family_, &result.model_,
                       &result.stepping_, &result.features_);
     result.logicalProcessors_ = detectX86LogicalProcessors();
-
 #else   // not x86
 
 #    if defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64__
@@ -1063,7 +1062,7 @@ main(int argc, char **argv)
         // Undocumented debug option, usually not present in standalone version
         for (auto &t : cpuInfo.logicalProcessors() )
         {
-            printf("%3u %3u %3u\n", t.socket, t.core, t.hwThread);
+            printf("%3u %3u %3u\n", t.socketRankInMachine, t.coreRankInSocket, t.hwThreadRankInCore);
         }
     }
     return 0;
