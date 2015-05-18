@@ -172,6 +172,9 @@
 /* Use OpenMP multithreading */
 #cmakedefine GMX_OPENMP
 
+/* Use the Portable Hardware Locality package (hwloc) */
+#cmakedefine01 GMX_HWLOC
+
 /* Can and should use nice(3) to set priority */
 #cmakedefine GMX_USE_NICE
 
