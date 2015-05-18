@@ -562,7 +562,7 @@ void print_top_comment(FILE       *out,
 
     if (strchr(ffdir, '/') == NULL)
     {
-        fprintf(out, ";\tForce field was read from the standard Gromacs share directory.\n;\n\n");
+        fprintf(out, ";\tForce field was read from the standard GROMACS share directory.\n;\n\n");
     }
     else if (ffdir[0] == '.')
     {

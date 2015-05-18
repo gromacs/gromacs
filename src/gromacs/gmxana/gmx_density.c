@@ -565,7 +565,7 @@ int gmx_density(int argc, char *argv[])
         "of an arbitrary group, in absolute box coordinates. If you are calculating",
         "profiles along the Z axis box dimension bZ, output would be from -bZ/2 to",
         "bZ/2 if you center based on the entire system.",
-        "Note that this behaviour has changed in Gromacs 5.0; earlier versions",
+        "Note that this behaviour has changed in GROMACS 5.0; earlier versions",
         "merely performed a static binning in (0,bZ) and shifted the output. Now",
         "we compute the center for each frame and bin in (-bZ/2,bZ/2).[PAR]",
 
@@ -598,7 +598,7 @@ int gmx_density(int argc, char *argv[])
         "The first problem that while both proteins and lipids have low volume",
         "compressibility, lipids have quite high area compressiblity. This means the",
         "shape of the box (thickness and area/lipid) will fluctuate substantially even",
-        "for a fully relaxed system. Since Gromacs places the box between the origin",
+        "for a fully relaxed system. Since GROMACS places the box between the origin",
         "and positive coordinates, this in turn means that a bilayer centered in the",
         "box will move a bit up/down due to these fluctuations, and smear out your",
         "profile. The easiest way to fix this (if you want pressure coupling) is",

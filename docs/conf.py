@@ -34,7 +34,7 @@
 
 # -*- coding: utf-8 -*-
 #
-# Gromacs documentation build configuration file, created by
+# GROMACS documentation build configuration file, created by
 # sphinx-quickstart on Tue Jan 13 14:28:44 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -163,7 +163,7 @@ rst_epilog += """
 .. _MKL: https://software.intel.com/en-us/intel-mkl
 .. _VMD: http://www.ks.uiuc.edu/Research/vmd/
 .. _PyMOL: http://www.pymol.org
-.. _continuous integration server used by Gromacs: http://jenkins.gromacs.org
+.. _continuous integration server used by GROMACS: http://jenkins.gromacs.org
 .. _Jenkins: http://jenkins-ci.org
 .. _webpage: http://www.gromacs.org
 .. _ftp site: ftp://ftp.gromacs.org/pub/gromacs/
@@ -273,8 +273,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'Gromacs.tex', u'Gromacs Documentation',
-   u'Gromacs development team', 'manual'),
+  ('index', 'Gromacs.tex', u'GROMACS Documentation',
+   u'GROMACS development team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -314,8 +314,8 @@ execfile('conf-man.py')
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Gromacs', u'Gromacs Documentation',
-   u'Gromacs development team', 'Gromacs', 'One line description of project.',
+  ('index', 'GROMACS', u'GROMACS Documentation',
+   u'GROMACS development team', 'GROMACS', 'One line description of project.',
    'Miscellaneous'),
 ]
 

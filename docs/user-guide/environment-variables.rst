@@ -1,10 +1,10 @@
 Environment Variables
 =====================
 
-Gromacs programs may be influenced by the use of
+|Gromacs| programs may be influenced by the use of
 environment variables.  First of all, the variables set in
 the ``GMXRC`` file are essential for running and
-compiling Gromacs. Some other useful environment variables are
+compiling |Gromacs|. Some other useful environment variables are
 listed in the following sections. Most environment variables function
 by being set in your shell to any non-NULL value. Specific
 requirements are described below if other values need to be set. You
@@ -20,7 +20,7 @@ Output Control
         Print constraint virial and force virial energy terms.
 
 ``GMX_MAXBACKUP``
-        Gromacs automatically backs up old
+        |Gromacs| automatically backs up old
         copies of files when trying to write a new file of the same
         name, and this variable controls the maximum number of
         backups that will be made, default 99. If set to 0 it fails to
@@ -48,7 +48,7 @@ Output Control
         ``ghostview`` and ``rasmol``. Set to empty to disable
         automatic viewing of a particular file type. The command will
         be forked off and run in the background at the same priority
-        as the Gromacs tool (which might not be what you want).
+        as the |Gromacs| tool (which might not be what you want).
         Be careful not to use a command which blocks the terminal
         (e.g. ``vi``), since multiple instances might be run.
 

@@ -1609,7 +1609,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
 #ifdef GMX_NBNXN_SIMD_4XN
             *kernel_type = nbnxnk4xN_SIMD_4xN;
 #else
-            gmx_fatal(FARGS, "SIMD 4xN kernels requested, but Gromacs has been compiled without support for these kernels");
+            gmx_fatal(FARGS, "SIMD 4xN kernels requested, but GROMACS has been compiled without support for these kernels");
 #endif
         }
         if (getenv("GMX_NBNXN_SIMD_2XNN") != NULL)
@@ -1617,7 +1617,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
 #ifdef GMX_NBNXN_SIMD_2XNN
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
 #else
-            gmx_fatal(FARGS, "SIMD 2x(N+N) kernels requested, but Gromacs has been compiled without support for these kernels");
+            gmx_fatal(FARGS, "SIMD 2x(N+N) kernels requested, but GROMACS has been compiled without support for these kernels");
 #endif
         }
 

@@ -79,7 +79,7 @@ module and documenting it.
 
   * Consistent usage of ::
 
-        #include "..." // This should be used for Gromacs headers
+        #include "..." // This should be used for GROMACS headers
 
     and ::
 

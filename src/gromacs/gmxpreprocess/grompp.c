@@ -1710,7 +1710,7 @@ int gmx_grompp(int argc, char *argv[])
                       "\n"
                       "It appears as if you are trying to run a QM/MM calculation, but the force\n"
                       "field you are using does not contain atom numbers fields. This is an\n"
-                      "optional field (introduced in Gromacs 3.3) for general runs, but mandatory\n"
+                      "optional field (introduced in GROMACS 3.3) for general runs, but mandatory\n"
                       "for QM/MM. The good news is that it is easy to add - put the atom number as\n"
                       "an integer just before the mass column in ffXXXnb.itp.\n"
                       "NB: United atoms have the same atom numbers as normal ones.\n\n");

@@ -2508,7 +2508,7 @@ int gmx_tune_pme(int argc, char *argv[])
     sep_line(fp);
     fprintf(fp, "\n      P E R F O R M A N C E   R E S U L T S\n");
     sep_line(fp);
-    fprintf(fp, "%s for Gromacs %s\n", output_env_get_program_display_name(oenv),
+    fprintf(fp, "%s for GROMACS %s\n", output_env_get_program_display_name(oenv),
             gmx_version());
     if (!bThreads)
     {

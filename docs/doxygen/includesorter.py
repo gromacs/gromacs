@@ -338,7 +338,7 @@ def main():
     # version.
     parser.add_option('-s', '--style', type='choice', default='pub-priv',
                       choices=('single-group', 'pub-priv', 'pub-local'),
-                      help='Style for Gromacs includes')
+                      help='Style for GROMACS includes')
     parser.add_option('--absolute', action='store_true',
                       help='Write all include paths relative to src/')
     options, args = parser.parse_args()

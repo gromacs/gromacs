@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,8 +74,8 @@ int gmx_principal(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[THISMODULE] calculates the three principal axes of inertia for a group",
-        "of atoms. NOTE: Old versions of Gromacs wrote the output data in a",
-        "strange transposed way. As of Gromacs-5.0, the output file paxis1.dat",
+        "of atoms. NOTE: Old versions of GROMACS wrote the output data in a",
+        "strange transposed way. As of GROMACS 5.0, the output file paxis1.dat",
         "contains the x/y/z components of the first (major) principal axis for",
         "each frame, and similarly for the middle and minor axes in paxis2.dat",
         "and paxis3.dat."

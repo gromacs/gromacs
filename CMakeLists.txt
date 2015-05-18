@@ -158,7 +158,7 @@ mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
-option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
+option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
@@ -498,7 +498,7 @@ if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
     if(NOT DEFINED GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
         message("Boost >= 1.44 not found. Using minimal internal version. "
                 "This may cause trouble if you plan on compiling/linking other "
-                "software that uses Boost against Gromacs.")
+                "software that uses Boost against GROMACS.")
     endif()
 endif()
 option(GMX_EXTERNAL_BOOST "Use external Boost instead of minimal built-in version"
@@ -507,7 +507,7 @@ if(GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
     message(FATAL_ERROR
         "Boost >= 1.44 not found. "
         "You can set GMX_EXTERNAL_BOOST=OFF to compile against minimal "
-        "version of Boost included with Gromacs.")
+        "version of Boost included with GROMACS.")
 endif()
 
 if(NOT DEFINED GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ function (gmx_cpack_write_config)
     set(CPACK_PACKAGE_VENDOR  "gromacs.org")
     set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-        "Gromacs - a toolkit for high-performance molecular simulation")
+        "GROMACS - a toolkit for high-performance molecular simulation")
     # Set version info.
     set(CPACK_PACKAGE_VERSION_MAJOR ${GMX_VERSION_MAJOR})
     set(CPACK_PACKAGE_VERSION_MINOR ${GMX_VERSION_MINOR})
