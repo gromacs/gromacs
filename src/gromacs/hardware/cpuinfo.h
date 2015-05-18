@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -150,9 +150,9 @@ class CpuInfo
         /*! \libinternal \brief Entry with basic information for a single logical processor */
         struct LogicalProcessor
         {
-            int socket;   //!< Rank of the current socket in the system
-            int core;     //!< Rank of the current core in its socket
-            int hwThread; //!< Rank of logical processor in its core
+            int socketRankInMachine; //!< Relative rank of the current socket in the system
+            int coreRankInSocket;    //!< Relative rank of the current core in its socket
+            int hwThreadRankInCore;  //!< Relative rank of logical processor in its core
         };
 
     public:
