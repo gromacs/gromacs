@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ extern "C"
 extern const char _gmx_ver_string[];
 //! Full git hash of the latest commit.
 extern const char _gmx_full_git_hash[];
-//! Full git hash of the latest commit in a central Gromacs repository.
+//! Full git hash of the latest commit in a central \Gromacs repository.
 extern const char _gmx_central_base_hash[];
 
 //! \}

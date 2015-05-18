@@ -1,4 +1,4 @@
-Gromacs is a versatile and high-performance toolkit for molecular simulations, and extensively used both in biomolecular and materials sciences.
+GROMACS is a versatile and high-performance toolkit for molecular simulations, and extensively used both in biomolecular and materials sciences.
 
 The precompiled binary distributions come with threads support for efficient parallelization on multi-core workstations, but if you want to use large-scale MPI parallelization you will need to build from source on the target system due to MPI library compatibility issues.
 

@@ -99,7 +99,7 @@ int gmx_trjorder(int argc, char *argv[])
         "In that case the reference group would be the protein and the group",
         "of molecules would consist of all the water atoms. When an index group",
         "of the first n waters is made, the ordered trajectory can be used",
-        "with any Gromacs program to analyze the n closest waters.",
+        "with any GROMACS program to analyze the n closest waters.",
         "[PAR]",
         "If the output file is a [REF].pdb[ref] file, the distance to the reference target",
         "will be stored in the B-factor field in order to color with e.g. Rasmol.",

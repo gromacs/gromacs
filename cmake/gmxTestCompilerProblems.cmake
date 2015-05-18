@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ macro(gmx_test_compiler_problems)
     endif()
 
     if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
-        message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to  compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
+        message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to  compile GROMACS. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
     endif()
 
     if(CMAKE_COMPILER_IS_GNUCC AND

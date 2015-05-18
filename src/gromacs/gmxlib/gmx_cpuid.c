@@ -1348,7 +1348,7 @@ gmx_cpuid_simd_check(gmx_cpuid_t   cpuid,
         }
         if (print_to_stderr)
         {
-            fprintf(stderr, "Compiled SIMD instructions: %s (Gromacs could use %s on this machine, which is better)\n",
+            fprintf(stderr, "Compiled SIMD instructions: %s (GROMACS could use %s on this machine, which is better)\n",
                     gmx_cpuid_simd_string[compiled_simd],
                     gmx_cpuid_simd_string[simd]);
         }

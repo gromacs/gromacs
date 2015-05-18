@@ -285,7 +285,7 @@ Lines contain the following information (top to bottom):
  * box vectors (free format, space separated reals), values:
    v1(x) v2(y) v3(z) v1(y) v1(z) v2(x) v2(z) v3(x) v3(y),
    the last 6 values may be omitted (they will be set to zero).
-   Gromacs only supports boxes with v1(y)=v1(z)=v2(z)=0.
+   |Gromacs| only supports boxes with v1(y)=v1(z)=v2(z)=0.
 
 This format is fixed, ie. all columns are in a fixed
 position. Optionally (for now only yet with trjconv) you can write gro

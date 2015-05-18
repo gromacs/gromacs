@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,19 +161,19 @@ class Regex::Impl
         explicit Impl(const char * /*value*/)
         {
             GMX_THROW(NotImplementedError(
-                              "Gromacs is compiled without regular expression support"));
+                              "GROMACS is compiled without regular expression support"));
         }
         explicit Impl(const std::string & /*value*/)
         {
             GMX_THROW(NotImplementedError(
-                              "Gromacs is compiled without regular expression support"));
+                              "GROMACS is compiled without regular expression support"));
         }
 
         bool match(const char * /*value*/) const
         {
             // Should never be reached.
             GMX_THROW(NotImplementedError(
-                              "Gromacs is compiled without regular expression support"));
+                              "GROMACS is compiled without regular expression support"));
         }
 };
 #endif

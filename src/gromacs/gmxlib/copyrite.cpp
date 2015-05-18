@@ -650,7 +650,7 @@ extern void gmx_print_version_info_cuda_gpu(FILE *fp);
 
 static void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Gromacs version:    %s\n", gmx_version());
+    fprintf(fp, "GROMACS version:    %s\n", gmx_version());
     const char *const git_hash = gmx_version_git_full_hash();
     if (git_hash[0] != '\0')
     {

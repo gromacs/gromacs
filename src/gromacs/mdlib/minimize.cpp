@@ -2678,9 +2678,9 @@ double do_nm(FILE *fplog, t_commrec *cr,
     if (bIsMaster)
     {
         fprintf(stderr,
-                "NOTE: This version of Gromacs has been compiled in single precision,\n"
+                "NOTE: This version of GROMACS has been compiled in single precision,\n"
                 "      which MIGHT not be accurate enough for normal mode analysis.\n"
-                "      Gromacs now uses sparse matrix storage, so the memory requirements\n"
+                "      GROMACS now uses sparse matrix storage, so the memory requirements\n"
                 "      are fairly modest even if you recompile in double precision.\n\n");
     }
 #endif
