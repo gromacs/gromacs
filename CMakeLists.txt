@@ -427,6 +427,14 @@ mark_as_advanced(GMX_XML)
 #    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 #endif()
 
+option(GMX_HWLOC "Add support for hwloc Portable Hardware locality library" ON)
+if(GMX_HWLOC)
+    find_package(Hwloc)
+    if(NOT HWLOC_FOUND)
+        set(GMX_HWLOC OFF CACHE BOOL "Add support for hwloc Portable Hardware locality library" FORCE)
+    endif()
+endif()
+
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
 
