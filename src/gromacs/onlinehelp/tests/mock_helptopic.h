@@ -76,8 +76,7 @@ class MockHelpTopic : public AbstractCompositeHelpTopic
          * Calls base class writeHelp() method.
          *
          * This provides the possibility for the mock to do the actual help
-         * writing.  The caller must set this as the writeHelp() action, as
-         * most tests do not want to get the output.
+         * writing.
          */
         void writeHelpBase(const HelpWriterContext &context)
         {

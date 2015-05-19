@@ -14,6 +14,8 @@ be found at the links below:
    /programs/byname
    /programs/bytopic
 
+   /programs/selections
+
 .. toctree::
    :hidden:
    :glob:

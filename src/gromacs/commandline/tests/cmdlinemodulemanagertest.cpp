@@ -177,10 +177,6 @@ MockHelpTopic &
 CommandLineModuleManagerTestBase::addHelpTopic(const char *name, const char *title)
 {
     MockHelpTopic *topic = new MockHelpTopic(name, title, "Help text");
-    using ::testing::_;
-    using ::testing::Invoke;
-    ON_CALL(*topic, writeHelp(_))
-        .WillByDefault(Invoke(topic, &MockHelpTopic::writeHelpBase));
     manager().addHelpTopic(gmx::HelpTopicPointer(topic));
     return *topic;
 }
