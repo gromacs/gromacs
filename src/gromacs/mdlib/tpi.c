@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015 by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -467,7 +467,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             gmx_fatal(FARGS, "Unknown integrator %s", ei_names[inputrec->eI]);
     }
 
-#ifdef GMX_SIMD
+#if defined GMX_SIMD_X86_SSE2_OR_HIGHER || defined __MIC__
     /* Make sure we don't detect SIMD overflow generated before this point */
     gmx_simd_check_and_reset_overflow();
 #endif
@@ -671,7 +671,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
             epot               = enerd->term[F_EPOT];
             bEnergyOutOfBounds = FALSE;
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
+#if defined GMX_SIMD_X86_SSE2_OR_HIGHER || defined __MIC__
             /* With SSE the energy can overflow, check for this */
             if (gmx_simd_check_and_reset_overflow())
             {
