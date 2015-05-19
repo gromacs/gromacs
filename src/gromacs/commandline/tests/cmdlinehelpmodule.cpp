@@ -142,6 +142,7 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
     MockHelpTopic &topic1 = addHelpTopic("topic1", "Test topic");
     MockHelpTopic &sub1   = topic1.addSubTopic("sub1", "Subtopic 1", "Sub text");
     MockHelpTopic &sub2   = topic1.addSubTopic("sub2", "Subtopic 2", "Sub text");
+    MockHelpTopic &sub3   = topic1.addSubTopic("other", "Out-of-order subtopic", "Sub text");
     MockHelpTopic &topic2 = addHelpTopic("topic2", "Another topic");
     using ::testing::_;
     using ::testing::Invoke;
@@ -150,6 +151,7 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
     EXPECT_CALL(topic1, writeHelp(_));
     EXPECT_CALL(sub1, writeHelp(_));
     EXPECT_CALL(sub2, writeHelp(_));
+    EXPECT_CALL(sub3, writeHelp(_));
     EXPECT_CALL(topic2, writeHelp(_));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
