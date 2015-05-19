@@ -107,4 +107,22 @@ Group 2
 | ``test other`` - Second module
 
 ]]></String>
+  <String Name="programs/topic1.rst"><![CDATA[
+Test topic
+==========
+Help text
+
+Subtopic 1
+----------
+Sub text
+
+Subtopic 2
+----------
+Sub text
+]]></String>
+  <String Name="programs/topic2.rst"><![CDATA[
+Another topic
+=============
+Help text
+]]></String>
 </ReferenceData>

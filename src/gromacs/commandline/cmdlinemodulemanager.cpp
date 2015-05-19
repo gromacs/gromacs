@@ -319,7 +319,7 @@ void CommandLineModuleManager::Impl::addModule(CommandLineModulePointer module)
     HelpTopicPointer helpTopic(helpModule_->createModuleHelpTopic(*module));
     modules_.insert(std::make_pair(std::string(module->name()),
                                    move(module)));
-    helpModule_->addTopic(move(helpTopic));
+    helpModule_->addTopic(move(helpTopic), false);
 }
 
 void CommandLineModuleManager::Impl::ensureHelpModuleExists()
@@ -475,7 +475,7 @@ CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
 void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 {
     impl_->ensureHelpModuleExists();
-    impl_->helpModule_->addTopic(move(topic));
+    impl_->helpModule_->addTopic(move(topic), true);
 }
 
 int CommandLineModuleManager::run(int argc, char *argv[])

@@ -109,6 +109,80 @@ namespace
 {
 
 /********************************************************************
+ * HelpExportInterface
+ */
+
+/*! \brief
+ * Callbacks for exporting help information for command-line modules.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportInterface
+{
+    public:
+        //! Shorthand for a list of modules contained in a group.
+        typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
+
+        virtual ~HelpExportInterface() {};
+
+        /*! \brief
+         * Called once before exporting individual modules.
+         *
+         * Can, e.g., open shared output files (e.g., if the output is written
+         * into a single file, or if a separate index is required) and write
+         * headers into them.
+         */
+        virtual void startModuleExport() = 0;
+        /*! \brief
+         * Called to export the help for each module.
+         *
+         * \param[in] module      Module for which the help should be exported.
+         * \param[in] tag         Unique tag for the module (gmx-something).
+         * \param[in] displayName Display name for the module (gmx something).
+         */
+        virtual void exportModuleHelp(
+            const CommandLineModuleInterface &module,
+            const std::string                &tag,
+            const std::string                &displayName) = 0;
+        /*! \brief
+         * Called after all modules have been exported.
+         *
+         * Can close files opened in startModuleExport(), write footers to them
+         * etc.
+         */
+        virtual void finishModuleExport() = 0;
+
+        /*! \brief
+         * Called once before exporting module groups.
+         *
+         * Can, e.g., open a single output file for listing all the groups.
+         */
+        virtual void startModuleGroupExport() = 0;
+        /*! \brief
+         * Called to export the help for each module group.
+         *
+         * \param[in] title    Title for the group.
+         * \param[in] modules  List of modules in the group.
+         */
+        virtual void exportModuleGroup(const char                *title,
+                                       const ModuleGroupContents &modules) = 0;
+        /*! \brief
+         * Called after all module groups have been exported.
+         *
+         * Can close files opened in startModuleGroupExport(), write footers to them
+         * etc.
+         */
+        virtual void finishModuleGroupExport() = 0;
+
+        /*! \brief
+         * Called to export the help for a top-level topic.
+         *
+         * \param[in] topic   Topic to export.
+         */
+        virtual void exportTopic(const HelpTopicInterface &topic) = 0;
+};
+
+/********************************************************************
  * RootHelpTopic
  */
 
@@ -142,13 +216,39 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
         {
         }
 
+        //! Adds a top-level topic and optionally marks it as exported.
+        void addTopic(HelpTopicPointer topic, bool bExported)
+        {
+            if (bExported)
+            {
+                exportedTopics_.push_back(topic->name());
+            }
+            addSubTopic(move(topic));
+        }
+        //! Exports all the top-level topics with the given exporter.
+        void exportHelp(HelpExportInterface *exporter) const;
+
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
         const CommandLineHelpModuleImpl  &helpModule_;
+        std::vector<std::string>          exportedTopics_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
+
+void RootHelpTopic::exportHelp(HelpExportInterface *exporter) const
+{
+    std::vector<std::string>::const_iterator topicName;
+    for (topicName = exportedTopics_.begin();
+         topicName != exportedTopics_.end();
+         ++topicName)
+    {
+        const HelpTopicInterface *topic = findSubTopic(topicName->c_str());
+        GMX_RELEASE_ASSERT(topic != NULL, "Exported help topic no longer found");
+        exporter->exportTopic(*topic);
+    }
+}
 
 void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
@@ -308,71 +408,8 @@ void ModuleHelpTopic::writeHelp(const HelpWriterContext & /*context*/) const
 }
 
 /********************************************************************
- * HelpExportInterface
+ * HelpExportReStructuredText
  */
-
-/*! \brief
- * Callbacks for exporting help information for command-line modules.
- *
- * \ingroup module_commandline
- */
-class HelpExportInterface
-{
-    public:
-        //! Shorthand for a list of modules contained in a group.
-        typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
-
-        virtual ~HelpExportInterface() {};
-
-        /*! \brief
-         * Called once before exporting individual modules.
-         *
-         * Can, e.g., open shared output files (e.g., if the output is written
-         * into a single file, or if a separate index is required) and write
-         * headers into them.
-         */
-        virtual void startModuleExport() = 0;
-        /*! \brief
-         * Called to export the help for each module.
-         *
-         * \param[in] module      Module for which the help should be exported.
-         * \param[in] tag         Unique tag for the module (gmx-something).
-         * \param[in] displayName Display name for the module (gmx something).
-         */
-        virtual void exportModuleHelp(
-            const CommandLineModuleInterface &module,
-            const std::string                &tag,
-            const std::string                &displayName) = 0;
-        /*! \brief
-         * Called after all modules have been exported.
-         *
-         * Can close files opened in startModuleExport(), write footers to them
-         * etc.
-         */
-        virtual void finishModuleExport() = 0;
-
-        /*! \brief
-         * Called once before exporting module groups.
-         *
-         * Can, e.g., open a single output file for listing all the groups.
-         */
-        virtual void startModuleGroupExport() = 0;
-        /*! \brief
-         * Called to export the help for each module group.
-         *
-         * \param[in] title    Title for the group.
-         * \param[in] modules  List of modules in the group.
-         */
-        virtual void exportModuleGroup(const char                *title,
-                                       const ModuleGroupContents &modules) = 0;
-        /*! \brief
-         * Called after all module groups have been exported.
-         *
-         * Can close files opened in startModuleGroupExport(), write footers to them
-         * etc.
-         */
-        virtual void finishModuleGroupExport() = 0;
-};
 
 /*! \internal \brief
  * Adds hyperlinks to modules within this binary.
@@ -407,10 +444,6 @@ void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpMod
     }
 }
 
-/********************************************************************
- * HelpExportReStructuredText
- */
-
 /*! \internal \brief
  * Implements export for web pages as reStructuredText.
  *
@@ -434,6 +467,8 @@ class HelpExportReStructuredText : public HelpExportInterface
         virtual void exportModuleGroup(const char                *title,
                                        const ModuleGroupContents &modules);
         virtual void finishModuleGroupExport();
+
+        virtual void exportTopic(const HelpTopicInterface &topic);
 
     private:
         FileOutputRedirectorInterface  *outputRedirector_;
@@ -571,6 +606,15 @@ void HelpExportReStructuredText::finishModuleGroupExport()
     manPagesFile_.reset();
 }
 
+void HelpExportReStructuredText::exportTopic(const HelpTopicInterface &topic)
+{
+    const std::string path("programs/" + std::string(topic.name()) + ".rst");
+    File              file(outputRedirector_->openFileForWriting(path));
+    HelpWriterContext context(&file, eHelpOutputFormat_Rst, &links_);
+    HelpManager       manager(topic, context);
+    manager.writeCurrentTopic();
+}
+
 /********************************************************************
  * HelpExportCompletion
  */
@@ -597,6 +641,8 @@ class HelpExportCompletion : public HelpExportInterface
         virtual void exportModuleGroup(const char                * /*title*/,
                                        const ModuleGroupContents & /*modules*/) {}
         virtual void finishModuleGroupExport() {}
+
+        virtual void exportTopic(const HelpTopicInterface & /*topic*/) {}
 
     private:
         ShellCompletionWriter    bashWriter_;
@@ -642,6 +688,7 @@ void HelpExportCompletion::finishModuleExport()
 /********************************************************************
  * CommandLineHelpModuleImpl implementation
  */
+
 CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
         const ProgramContextInterface    &programContext,
         const std::string                &binaryName,
@@ -681,6 +728,8 @@ void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter) const
         exporter->exportModuleGroup((*group)->title(), (*group)->modules());
     }
     exporter->finishModuleGroupExport();
+
+    rootTopic_->exportHelp(exporter);
 }
 
 /********************************************************************
@@ -706,9 +755,9 @@ HelpTopicPointer CommandLineHelpModule::createModuleHelpTopic(
     return HelpTopicPointer(new ModuleHelpTopic(module, *impl_));
 }
 
-void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
+void CommandLineHelpModule::addTopic(HelpTopicPointer topic, bool bExported)
 {
-    impl_->rootTopic_->addSubTopic(move(topic));
+    impl_->rootTopic_->addTopic(move(topic), bExported);
 }
 
 void CommandLineHelpModule::setShowHidden(bool bHidden)
@@ -731,7 +780,7 @@ void CommandLineHelpModule::setOutputRedirector(
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
     // Add internal topics lazily here.
-    addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)));
+    addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)), false);
 
     const char *const exportFormats[] = { "rst", "completion" };
     std::string       exportFormat;

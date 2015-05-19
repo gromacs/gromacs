@@ -140,24 +140,32 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
 {
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "Subtopic listing is not implemented for this output format"));
+        Impl::SubTopicMap::const_iterator topic;
+        for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
+        {
+            const char *const title = topic->second->title();
+            if (!isNullOrEmpty(title))
+            {
+                context.outputFile().writeLine();
+                HelpWriterContext subContext(context);
+                subContext.enterSubSection(title);
+                topic->second->writeHelp(subContext);
+            }
+        }
+        return true;
     }
     int maxNameLength = 0;
     Impl::SubTopicMap::const_iterator topic;
     for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
     {
-        const char *title = topic->second->title();
-        if (title == NULL || title[0] == '\0')
+        const char *const title = topic->second->title();
+        if (!isNullOrEmpty(title))
         {
-            continue;
-        }
-        int nameLength = static_cast<int>(topic->first.length());
-        if (nameLength > maxNameLength)
-        {
-            maxNameLength = nameLength;
+            int nameLength = static_cast<int>(topic->first.length());
+            if (nameLength > maxNameLength)
+            {
+                maxNameLength = nameLength;
+            }
         }
     }
     if (maxNameLength == 0)
@@ -172,9 +180,9 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
     file.writeLine(title);
     for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
     {
-        const char *name  = topic->first.c_str();
-        const char *title = topic->second->title();
-        if (title != NULL && title[0] != '\0')
+        const char *const name  = topic->first.c_str();
+        const char *const title = topic->second->title();
+        if (!isNullOrEmpty(title))
         {
             formatter.clear();
             formatter.addColumnLine(0, name);

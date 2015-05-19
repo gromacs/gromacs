@@ -100,10 +100,12 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         /*! \brief
          * Adds a top-level help topic.
          *
-         * \param[in] topic  Help topic to add.
+         * \param[in] topic     Help topic to add.
+         * \param[in] bExported Whether this topic will be directly exported to
+         *     the user guide.
          * \throws    std::bad_alloc if out of memory.
          */
-        void addTopic(HelpTopicPointer topic);
+        void addTopic(HelpTopicPointer topic, bool bExported);
         //! Sets whether hidden options will be shown in help.
         void setShowHidden(bool bHidden);
         /*! \brief

@@ -157,10 +157,10 @@ const char *const CmdLineHelpText::text[] = {
     "Depending on the tool, two additional command-line arguments may be",
     "available to control the behavior:",
     "",
-    " * [TT]-seltype[tt] can be used to specify the default type of",
-    "   positions to calculate for each selection.",
-    " * [TT]-selrpos[tt] can be used to specify the default type of",
-    "   positions used in selecting atoms by coordinates.",
+    "* [TT]-seltype[tt] can be used to specify the default type of",
+    "  positions to calculate for each selection.",
+    "* [TT]-selrpos[tt] can be used to specify the default type of",
+    "  positions used in selecting atoms by coordinates.",
     "",
     "See the \"positions\" subtopic for more information on these options.",
 };
@@ -227,7 +227,7 @@ const char *const ExamplesHelpText::text[] = {
     "",
 
     "Centers of mass of residues 1 to 5 and 10::",
-    ""
+    "",
     "  res_com of resnr 1 to 5 10",
     "",
 
@@ -418,25 +418,25 @@ const char *const SyntaxHelpText::text[] = {
     "would be valid.[PAR]",
 
     "Selections are composed of three main types of expressions, those that",
-    "define atoms ([TT]ATOM_EXPR[tt]s), those that define positions",
-    "([TT]POS_EXPR[tt]s), and those that evaluate to numeric values",
-    "([TT]NUM_EXPR[tt]s). Each selection should be a [TT]POS_EXPR[tt]",
+    "define atoms ([TT]ATOM_EXPR[tt]), those that define positions",
+    "([TT]POS_EXPR[tt]), and those that evaluate to numeric values",
+    "([TT]NUM_EXPR[tt]). Each selection should be a [TT]POS_EXPR[tt]",
     "or a [TT]ATOM_EXPR[tt] (the latter is automatically converted to",
     "positions). The basic rules are as follows:",
     "",
-    " * An expression like [TT]NUM_EXPR1 < NUM_EXPR2[tt] evaluates to an",
-    "   [TT]ATOM_EXPR[tt] that selects all the atoms for which the comparison",
-    "   is true.",
-    " * Atom expressions can be combined with boolean operations such as",
-    "   [TT]not ATOM_EXPR[tt], [TT]ATOM_EXPR and ATOM_EXPR[tt], or",
-    "   [TT]ATOM_EXPR or ATOM_EXPR[tt]. Parentheses can be used to alter the",
-    "   evaluation order.",
-    " * [TT]ATOM_EXPR[tt] expressions can be converted into [TT]POS_EXPR[tt]",
-    "   expressions in various ways, see the \"positions\" subtopic for more",
-    "   details.",
-    " * [TT]POS_EXPR[tt] can be converted into [TT]NUM_EXPR[tt] using syntax",
-    "   like \"x of POS_EXPR\". Currently, this is only supported for single",
-    "   positions like in expression \"x of cog of ATOM_EXPR\".",
+    "* An expression like [TT]NUM_EXPR1 < NUM_EXPR2[tt] evaluates to an",
+    "  [TT]ATOM_EXPR[tt] that selects all the atoms for which the comparison",
+    "  is true.",
+    "* Atom expressions can be combined with boolean operations such as",
+    "  [TT]not ATOM_EXPR[tt], [TT]ATOM_EXPR and ATOM_EXPR[tt], or",
+    "  [TT]ATOM_EXPR or ATOM_EXPR[tt]. Parentheses can be used to alter the",
+    "  evaluation order.",
+    "* [TT]ATOM_EXPR[tt] expressions can be converted into [TT]POS_EXPR[tt]",
+    "  expressions in various ways, see the \"positions\" subtopic for more",
+    "  details.",
+    "* [TT]POS_EXPR[tt] can be converted into [TT]NUM_EXPR[tt] using syntax",
+    "  like \"[TT]x of POS_EXPR[tt]\". Currently, this is only supported for single",
+    "  positions like in expression \"[TT]x of cog of ATOM_EXPR[tt]\".",
     "",
 
     "Some keywords select atoms based on string values such as the atom name.",
@@ -539,6 +539,17 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
             MethodList;
 
         /*! \brief
+         * Prints markup for starting a list of keywords.
+         */
+        void writeKeywordListStart(const HelpWriterContext &context,
+                                   const char              *heading) const;
+        /*! \brief
+         * Prints markup for ending a list of keywords.
+         */
+        void writeKeywordListEnd(const HelpWriterContext &context,
+                                 const char              *extraInfo) const;
+
+        /*! \brief
          * Prints a brief list of keywords (selection methods) available.
          *
          * \param[in] context  Context for printing the help.
@@ -579,45 +590,60 @@ KeywordsHelpTopic::KeywordsHelpTopic()
 
 void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    if (context.outputFormat() != eHelpOutputFormat_Console)
-    {
-        GMX_THROW(NotImplementedError(
-                          "Selection help is not implemented for this output format"));
-    }
-    // TODO: The markup here is not really appropriate, and printKeywordList()
-    // still prints raw text, but these are waiting for discussion of the
-    // markup format in #969.
     context.writeTextBlock(helpText());
     context.writeTextBlock("");
 
     // Print the list of keywords
-    context.writeTextBlock("Keywords that select atoms by an integer property:");
-    context.writeTextBlock("(use in expressions or like \"atomnr 1 to 5 7 9\")");
+    writeKeywordListStart(context, "Keywords that select atoms by an integer property:");
     printKeywordList(context, INT_VALUE, false);
-    context.writeTextBlock("");
+    writeKeywordListEnd(context, "(use in expressions or like \"atomnr 1 to 5 7 9\")");
 
-    context.writeTextBlock("Keywords that select atoms by a numeric property:");
-    context.writeTextBlock("(use in expressions or like \"occupancy 0.5 to 1\")");
+    writeKeywordListStart(context, "Keywords that select atoms by a numeric property:");
     printKeywordList(context, REAL_VALUE, false);
-    context.writeTextBlock("");
+    writeKeywordListEnd(context, "(use in expressions or like \"occupancy 0.5 to 1\")");
 
-    context.writeTextBlock("Keywords that select atoms by a string property:");
-    context.writeTextBlock("(use like \"name PATTERN [PATTERN] ...\")");
+    writeKeywordListStart(context, "Keywords that select atoms by a string property:");
     printKeywordList(context, STR_VALUE, false);
-    context.writeTextBlock("");
+    writeKeywordListEnd(context, "(use like \"name PATTERN [PATTERN] ...\")");
 
-    context.writeTextBlock("Additional keywords that directly select atoms:");
+    writeKeywordListStart(context, "Additional keywords that directly select atoms:");
     printKeywordList(context, GROUP_VALUE, false);
-    context.writeTextBlock("");
+    writeKeywordListEnd(context, NULL);
 
-    context.writeTextBlock("Keywords that directly evaluate to positions:");
-    context.writeTextBlock("(see also \"positions\" subtopic)");
+    writeKeywordListStart(context, "Keywords that directly evaluate to positions:");
     printKeywordList(context, POS_VALUE, false);
-    context.writeTextBlock("");
+    writeKeywordListEnd(context, "(see also \"positions\" subtopic)");
 
-    context.writeTextBlock("Additional keywords:");
+    writeKeywordListStart(context, "Additional keywords:");
     printKeywordList(context, POS_VALUE, true);
     printKeywordList(context, NO_VALUE, true);
+    writeKeywordListEnd(context, NULL);
+}
+
+void KeywordsHelpTopic::writeKeywordListStart(const HelpWriterContext &context,
+                                              const char              *heading) const
+{
+    context.writeTextBlock(heading);
+    if (context.outputFormat() == eHelpOutputFormat_Rst)
+    {
+        context.writeTextBlock("");
+        context.writeTextBlock("::");
+        context.writeTextBlock("");
+    }
+}
+
+void KeywordsHelpTopic::writeKeywordListEnd(const HelpWriterContext &context,
+                                            const char              *extraInfo) const
+{
+    if (context.outputFormat() == eHelpOutputFormat_Rst)
+    {
+        context.writeTextBlock("");
+    }
+    if (!isNullOrEmpty(extraInfo))
+    {
+        context.writeTextBlock(extraInfo);
+    }
+    context.writeTextBlock("");
 }
 
 void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
