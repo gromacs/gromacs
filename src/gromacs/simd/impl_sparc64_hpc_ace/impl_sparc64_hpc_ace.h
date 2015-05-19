@@ -429,4 +429,11 @@ gmx_simd_set_exponent_d_sparc64_hpc_ace(gmx_simd_double_t x)
 
 /* No SIMD4 support, since both single & double are only 2-wide */
 
+/* Function to check whether SIMD operations have resulted in overflow */
+static gmx_inline int
+gmx_simd_check_and_reset_overflow(void)
+{
+    return 0;
+}
+
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_H */
