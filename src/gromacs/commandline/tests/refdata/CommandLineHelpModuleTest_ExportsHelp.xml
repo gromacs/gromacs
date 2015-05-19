@@ -119,6 +119,10 @@ Sub text
 Subtopic 2
 ----------
 Sub text
+
+Out-of-order subtopic
+---------------------
+Sub text
 ]]></String>
   <String Name="programs/topic2.rst"><![CDATA[
 Another topic

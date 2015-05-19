@@ -662,14 +662,14 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
 HelpTopicPointer createSelectionHelpTopic()
 {
     CompositeHelpTopicPointer root(new CompositeHelpTopic<CommonHelpText>);
-    root->registerSubTopic<SimpleHelpTopic<ArithmeticHelpText> >();
     root->registerSubTopic<SimpleHelpTopic<CmdLineHelpText> >();
-    root->registerSubTopic<SimpleHelpTopic<EvaluationHelpText> >();
-    root->registerSubTopic<SimpleHelpTopic<ExamplesHelpText> >();
-    root->registerSubTopic<KeywordsHelpTopic>();
-    root->registerSubTopic<SimpleHelpTopic<LimitationsHelpText> >();
-    root->registerSubTopic<SimpleHelpTopic<PositionsHelpText> >();
     root->registerSubTopic<SimpleHelpTopic<SyntaxHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<PositionsHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<ArithmeticHelpText> >();
+    root->registerSubTopic<KeywordsHelpTopic>();
+    root->registerSubTopic<SimpleHelpTopic<EvaluationHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<LimitationsHelpText> >();
+    root->registerSubTopic<SimpleHelpTopic<ExamplesHelpText> >();
     return move(root);
 }
 //! \endcond
