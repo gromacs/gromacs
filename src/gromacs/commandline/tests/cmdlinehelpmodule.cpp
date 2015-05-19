@@ -139,10 +139,18 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
         gmx::CommandLineModuleGroup group = manager().addModuleGroup("Group 2");
         group.addModule("other");
     }
+    MockHelpTopic &topic1 = addHelpTopic("topic1", "Test topic");
+    MockHelpTopic &sub1   = topic1.addSubTopic("sub1", "Subtopic 1", "Sub text");
+    MockHelpTopic &sub2   = topic1.addSubTopic("sub2", "Subtopic 2", "Sub text");
+    MockHelpTopic &topic2 = addHelpTopic("topic2", "Another topic");
     using ::testing::_;
     using ::testing::Invoke;
     EXPECT_CALL(mod1, initOptions(_)).WillOnce(Invoke(&initOptionsBasic));
     EXPECT_CALL(mod2, initOptions(_));
+    EXPECT_CALL(topic1, writeHelp(_));
+    EXPECT_CALL(sub1, writeHelp(_));
+    EXPECT_CALL(sub2, writeHelp(_));
+    EXPECT_CALL(topic2, writeHelp(_));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
