@@ -303,7 +303,7 @@ gmx_ana_selmethod_t sm_keyword_int = {
     NULL,
     &evaluate_keyword_int,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /** Selection method data for real keyword evaluation. */
@@ -318,7 +318,7 @@ gmx_ana_selmethod_t sm_keyword_real = {
     NULL,
     &evaluate_keyword_real,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /** Selection method data for string keyword evaluation. */
@@ -333,7 +333,7 @@ gmx_ana_selmethod_t sm_keyword_str = {
     NULL,
     &evaluate_keyword_str,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /*! \brief

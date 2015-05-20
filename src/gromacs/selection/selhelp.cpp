@@ -43,6 +43,7 @@
 
 #include "selhelp.h"
 
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -53,6 +54,7 @@
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "selmethod.h"
@@ -495,7 +497,7 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
         }
         virtual const char *title() const
         {
-            return NULL;
+            return method_.help.helpTitle;
         }
 
     protected:
@@ -560,6 +562,11 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
         void printKeywordList(const HelpWriterContext &context,
                               e_selvalue_t type, bool bModifiers) const;
 
+        /*! \brief
+         * Prints the detailed help for keywords for rst export.
+         */
+        void writeKeywordSubTopics(const HelpWriterContext &context) const;
+
         MethodList              methods_;
 };
 
@@ -618,6 +625,8 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
     printKeywordList(context, POS_VALUE, true);
     printKeywordList(context, NO_VALUE, true);
     writeKeywordListEnd(context, NULL);
+
+    writeKeywordSubTopics(context);
 }
 
 void KeywordsHelpTopic::writeKeywordListStart(const HelpWriterContext &context,
@@ -655,11 +664,14 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
     for (iter = methods_.begin(); iter != methods_.end(); ++iter)
     {
         const gmx_ana_selmethod_t &method = *iter->second;
-        bool bIsModifier                  = (method.flags & SMETH_MODIFIER) != 0;
+        const bool                 bIsModifier
+            = (method.flags & SMETH_MODIFIER) != 0;
         if (method.type == type && bModifiers == bIsModifier)
         {
-            bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != NULL);
-            file.writeString(formatString(" %c ", bHasHelp ? '*' : ' '));
+            const bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != NULL);
+            const bool bPrintStar
+                = bHasHelp && context.outputFormat() == eHelpOutputFormat_Console;
+            file.writeString(formatString(" %c ", bPrintStar ? '*' : ' '));
             if (method.help.syntax != NULL)
             {
                 file.writeLine(method.help.syntax);
@@ -674,6 +686,51 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
                 file.writeLine(symname);
             }
         }
+    }
+}
+
+void KeywordsHelpTopic::writeKeywordSubTopics(const HelpWriterContext &context) const
+{
+    if (context.outputFormat() != eHelpOutputFormat_Rst)
+    {
+        return;
+    }
+    std::set<std::string>      usedSymbols;
+    MethodList::const_iterator iter;
+    for (iter = methods_.begin(); iter != methods_.end(); ++iter)
+    {
+        const gmx_ana_selmethod_t &method = *iter->second;
+        const bool                 bHasHelp
+            = (method.help.nlhelp > 0 && method.help.help != NULL);
+        if (!bHasHelp || usedSymbols.count(iter->first) > 0)
+        {
+            continue;
+        }
+
+        std::string                title;
+        if (method.help.helpTitle != NULL)
+        {
+            title = method.help.helpTitle;
+            title.append(" - ");
+        }
+        title.append(iter->first);
+        MethodList::const_iterator mergeIter = iter;
+        for (++mergeIter; mergeIter != methods_.end(); ++mergeIter)
+        {
+            if (mergeIter->second->help.help == method.help.help)
+            {
+                title.append(", ");
+                title.append(mergeIter->first);
+                usedSymbols.insert(mergeIter->first);
+            }
+        }
+
+        const HelpTopicInterface *subTopic = findSubTopic(iter->first.c_str());
+        GMX_RELEASE_ASSERT(subTopic != NULL, "Keyword subtopic no longer exists");
+        HelpWriterContext         subContext(context);
+        subContext.enterSubSection(title);
+        subTopic->writeHelp(subContext);
+        context.writeTextBlock("");
     }
 }
 

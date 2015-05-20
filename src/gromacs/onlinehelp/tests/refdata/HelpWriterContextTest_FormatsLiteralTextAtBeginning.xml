@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Console"><![CDATA[
+    literal block
+    another line
+
+Normal paragraph]]></String>
+  <String Name="reStructuredText"><![CDATA[
+::
+
+    literal block
+    another line
+
+Normal paragraph]]></String>
+</ReferenceData>

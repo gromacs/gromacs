@@ -155,6 +155,19 @@ TEST_F(HelpWriterContextTest, FormatsLiteralText)
     testFormatting(text);
 }
 
+TEST_F(HelpWriterContextTest, FormatsLiteralTextAtBeginning)
+{
+    const char *const text[] = {
+        "::",
+        "",
+        "    literal block",
+        "    another line",
+        "",
+        "Normal paragraph"
+    };
+    testFormatting(text);
+}
+
 TEST_F(HelpWriterContextTest, FormatsBulletList)
 {
     const char *const text[] = {
