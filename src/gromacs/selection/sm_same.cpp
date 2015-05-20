@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -170,10 +170,11 @@ static gmx_ana_selparam_t smparams_same_str[] = {
 };
 
 /** Help text for the \p same selection method. */
-static const char *help_same[] = {
-    "EXTENDING SELECTIONS[PAR]",
-
-    "[TT]same KEYWORD as ATOM_EXPR[tt][PAR]",
+static const char *const help_same[] = {
+    "::",
+    "",
+    "  same KEYWORD as ATOM_EXPR",
+    "",
 
     "The keyword [TT]same[tt] can be used to select all atoms for which",
     "the given [TT]KEYWORD[tt] matches any of the atoms in [TT]ATOM_EXPR[tt].",
@@ -192,7 +193,8 @@ gmx_ana_selmethod_t sm_same = {
     &init_frame_same_int,
     &evaluate_same_int,
     NULL,
-    {"same KEYWORD as ATOM_EXPR", asize(help_same), help_same},
+    {"same KEYWORD as ATOM_EXPR",
+     "Extending selections", asize(help_same), help_same},
 };
 
 /*! \brief
@@ -213,7 +215,7 @@ static gmx_ana_selmethod_t sm_same_str = {
     &init_frame_same_str,
     &evaluate_same_str,
     NULL,
-    {"same KEYWORD as ATOM_EXPR", asize(help_same), help_same},
+    {NULL, NULL, 0, NULL},
 };
 
 static void *

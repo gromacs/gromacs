@@ -630,6 +630,10 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
                     bLiteral = true;
                     if (paragraph.length() == 2)
                     {
+                        if (breakSize == 0)
+                        {
+                            nextBreakSize = 0;
+                        }
                         continue;
                     }
                     if (paragraph[paragraph.length() - 3] == ' ')
