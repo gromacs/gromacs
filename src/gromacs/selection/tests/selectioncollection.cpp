@@ -994,6 +994,32 @@ TEST_F(SelectionCollectionDataTest, HandlesWithinConstantPositions)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesOverlappingIntegerRanges)
+{
+    static const char * const selections[] = {
+        "atomnr 2 to 4 5 to 8",
+        "atomnr 2 to 5 4 to 7"
+    };
+    ASSERT_NO_FATAL_FAILURE(runTest(10, selections));
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesOverlappingRealRanges)
+{
+    static const char * const selections[] = {
+        "charge {-0.3 to -0.1 0.3 to 0.7}",
+        "charge {0.1 to -0.3 0 to 0.5}"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    for (int i = 0; i < top_->atoms.nr; ++i)
+    {
+        top_->atoms.atom[i].q = i / 10.0 - 0.5;
+    }
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesForcedStringMatchingMode)
 {
     static const char * const selections[] = {
