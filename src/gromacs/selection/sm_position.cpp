@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -153,7 +153,7 @@ gmx_ana_selmethod_t sm_keyword_pos = {
     NULL,
     &evaluate_pos,
     NULL,
-    {NULL, 0, NULL},
+    {NULL, NULL, 0, NULL},
 };
 
 /** Selection method data for the \p cog method. */
@@ -168,7 +168,7 @@ gmx_ana_selmethod_t sm_cog = {
     NULL,
     &evaluate_pos,
     NULL,
-    {"cog of ATOM_EXPR [pbc]", 0, NULL},
+    {"cog of ATOM_EXPR [pbc]", NULL, 0, NULL},
 };
 
 /** Selection method data for the \p com method. */
@@ -183,7 +183,7 @@ gmx_ana_selmethod_t sm_com = {
     NULL,
     &evaluate_pos,
     NULL,
-    {"com of ATOM_EXPR [pbc]", 0, NULL},
+    {"com of ATOM_EXPR [pbc]", NULL, 0, NULL},
 };
 
 /*!

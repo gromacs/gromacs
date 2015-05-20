@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@
        &init_frame_example,
        &evaluate_example,
         NULL,
-       {"example from POS_EXPR [cutoff REAL]", 0, NULL},
+       {"example from POS_EXPR [cutoff REAL]", NULL, 0, NULL},
    };
  * \endcode
  *
@@ -616,6 +616,13 @@ struct gmx_ana_selmethod_help_t
      */
     const char         *syntax;
     /*! \brief
+     * Title for the help text in \p help.
+     *
+     * If NULL, the name of the method is used.
+     * Only used if `nlhelp > 0`.
+     */
+    const char         *helpTitle;
+    /*! \brief
      * Number of strings in \p help.
      *
      * Set to 0 if \p help is NULL.
@@ -627,7 +634,7 @@ struct gmx_ana_selmethod_help_t
      * If there is no help available in addition to \p syntax, this can be set
      * to NULL.
      */
-    const char        **help;
+    const char *const  *help;
 };
 
 /*! \internal
