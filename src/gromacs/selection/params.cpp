@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -388,7 +388,7 @@ parse_values_range(const SelectionParserValueList &values,
         qsort(rdata, n, 2*sizeof(real), &cmp_real_range);
         for (i = j = 2; i < 2*n; i += 2)
         {
-            if (rdata[j-1]+1 >= rdata[i])
+            if (rdata[j-1] >= rdata[i])
             {
                 if (rdata[i+1] > rdata[j-1])
                 {

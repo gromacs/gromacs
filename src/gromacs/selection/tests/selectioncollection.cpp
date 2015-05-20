@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -991,6 +991,32 @@ TEST_F(SelectionCollectionDataTest, HandlesWithinConstantPositions)
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesOverlappingIntegerRanges)
+{
+    static const char * const selections[] = {
+        "atomnr 2 to 4 5 to 8",
+        "atomnr 2 to 5 4 to 7"
+    };
+    ASSERT_NO_FATAL_FAILURE(runTest(10, selections));
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesOverlappingRealRanges)
+{
+    static const char * const selections[] = {
+        "charge {-0.35 to -0.05 0.25 to 0.75}",
+        "charge {0.05 to -0.3 -0.05 to 0.55}"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    for (int i = 0; i < top_->atoms.nr; ++i)
+    {
+        top_->atoms.atom[i].q = i / 10.0 - 0.5;
+    }
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
 }
 
 
