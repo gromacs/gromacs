@@ -1087,6 +1087,16 @@ TEST_F(SelectionCollectionDataTest, HandlesEmptySelectionWithUnevaluatedExpressi
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesEmptyReferenceForSame)
+{
+    static const char * const selections[] = {
+        "same residue as none",
+        "same resname as none"
+    };
+    runTest("simple.gro", selections);
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
 {
     static const char * const selections[] = {
