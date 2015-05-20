@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -343,6 +343,10 @@ init_frame_same_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pb
 
     /* Collapse adjacent values, and check whether the array is sorted. */
     d->bSorted = true;
+    if (d->nas == 0)
+    {
+        return;
+    }
     for (i = 1, j = 0; i < d->nas; ++i)
     {
         if (d->as.i[i] != d->as.i[j])
@@ -469,6 +473,10 @@ init_frame_same_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pb
      * For strings, it's unlikely that the values would be sorted originally,
      * so set bSorted always to false. */
     d->bSorted        = false;
+    if (d->nas == 0)
+    {
+        return;
+    }
     d->as_s_sorted[0] = d->as.s[0];
     for (i = 1, j = 0; i < d->nas; ++i)
     {
