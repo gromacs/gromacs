@@ -1499,6 +1499,7 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
     t_grpopts *opts;
     int        i;
     real       Ek, Ek_ref1, Ek_ref, Ek_new;
+    real       ndeg;
 
     opts = &ir->opts;
 
@@ -1518,7 +1519,15 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
             Ek_ref1 = 0.5*opts->ref_t[i]*BOLTZ;
             Ek_ref  = Ek_ref1*opts->nrdf[i];
 
-            Ek_new  = vrescale_resamplekin(Ek, Ek_ref, opts->nrdf[i],
+            if (ir->bAve) 
+            {
+                ndeg = opts->nrdf[i]/ir->ave->nrot; /* divide by the number of equivalent atoms */
+            }
+            else
+            {
+                ndeg = opts->nrdf[i];
+            }
+            Ek_new  = vrescale_resamplekin(Ek, Ek_ref, ndeg,
                                            opts->tau_t[i]/dt,
                                            step, ir->ld_seed);
 
