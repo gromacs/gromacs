@@ -525,7 +525,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
 
     mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
                                      top_global, step, (double)step,
-                                     &state->s, state_global, state->f, f_global,NULL,NULL);
+                                     &state->s, state_global, state->f, f_global,NULL,NULL,NULL,NULL);
 
     if (confout != NULL && MASTER(cr))
     {
@@ -752,7 +752,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     do_force(fplog, cr, inputrec,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, ems->s.x, &ems->s.hist,
-             ems->f, NULL,force_vir, mdatoms, enerd, fcd,
+             ems->f, NULL,NULL,force_vir, mdatoms, enerd, fcd,
              ems->s.lambda, graph, fr, vsite, mu_tot, t, NULL, NULL, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
@@ -1833,7 +1833,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         }
 
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                         top_global, step, (real)step, state, state, f, f,NULL,NULL);
+                                         top_global, step, (real)step, state, state, f, f,NULL,NULL,NULL,NULL);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 

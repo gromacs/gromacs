@@ -59,6 +59,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
                      rvec                        * gmx_restrict          vvir,
+                     real                        * gmx_restrict          eener,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -69,15 +70,15 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
     real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f,*vir;
+    real             *shiftvec,*fshift,*x,*f,*vir,*ener,pener;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,virix0,viriy0,viriz0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,virix0,viriy0,viriz0,eneri0;
     int              vdwioffset1;
-    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1,virix1,viriy1,viriz1;
+    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1,virix1,viriy1,viriz1,eneri1;
     int              vdwioffset2;
-    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2,virix2,viriy2,viriz2;
+    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2,virix2,viriy2,viriz2,eneri2;
     int              vdwioffset3;
-    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3,virix3,viriy3,viriz3;
+    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3,virix3,viriy3,viriz3,eneri3;
     int              vdwjidx0;
     real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
     int              vdwjidx1;
@@ -106,6 +107,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
+    ener             = eener;
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -185,24 +187,28 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
         virix0             = 0.0;
         viriy0             = 0.0;
         viriz0             = 0.0;
+	eneri0             = 0.0;
         fix1             = 0.0;
         fiy1             = 0.0;
         fiz1             = 0.0;
         virix1             = 0.0;
         viriy1             = 0.0;
         viriz1             = 0.0;
+	eneri1             = 0.0;
         fix2             = 0.0;
         fiy2             = 0.0;
         fiz2             = 0.0;
         virix2             = 0.0;
         viriy2             = 0.0;
         viriz2             = 0.0;
+	eneri2             = 0.0;
         fix3             = 0.0;
         fiy3             = 0.0;
         fiz3             = 0.0;
         virix3             = 0.0;
         viriy3             = 0.0;
         viriz3             = 0.0;
+	eneri3             = 0.0;
 
         /* Reset potential sums */
         velecsum         = 0.0;
@@ -211,6 +217,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
         /* Start inner kernel loop */
         for(jidx=j_index_start; jidx<j_index_end; jidx++)
         {
+            pener            = 0.0;
             /* Get j neighbor index, and coordinate index */
             jnr              = jjnr[jidx];
             j_coord_offset   = DIM*jnr;
@@ -311,6 +318,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             vvdwsum         += vvdw;
+            pener           += vvdw;
 
             fscal            = fvdw;
 
@@ -336,6 +344,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*0+XX] += virx;
             vir[j_coord_offset+DIM*0+YY] += viry;
             vir[j_coord_offset+DIM*0+ZZ] += virz;
+            eneri0             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -347,6 +357,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -372,6 +383,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*1+XX] += virx;
             vir[j_coord_offset+DIM*1+YY] += viry;
             vir[j_coord_offset+DIM*1+ZZ] += virz;
+            eneri1             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -383,6 +396,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -408,6 +422,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*2+XX] += virx;
             vir[j_coord_offset+DIM*2+YY] += viry;
             vir[j_coord_offset+DIM*2+ZZ] += virz;
+            eneri1             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -419,6 +435,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -444,6 +461,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*3+XX] += virx;
             vir[j_coord_offset+DIM*3+YY] += viry;
             vir[j_coord_offset+DIM*3+ZZ] += virz;
+            eneri1             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -455,6 +474,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -480,6 +500,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*1+XX] += virx;
             vir[j_coord_offset+DIM*1+YY] += viry;
             vir[j_coord_offset+DIM*1+ZZ] += virz;
+            eneri2             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -491,6 +513,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -516,6 +539,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*2+XX] += virx;
             vir[j_coord_offset+DIM*2+YY] += viry;
             vir[j_coord_offset+DIM*2+ZZ] += virz;
+            eneri2             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -527,6 +552,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -552,6 +578,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*3+XX] += virx;
             vir[j_coord_offset+DIM*3+YY] += viry;
             vir[j_coord_offset+DIM*3+ZZ] += virz;
+            eneri2             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -563,6 +591,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -588,6 +617,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*1+XX] += virx;
             vir[j_coord_offset+DIM*1+YY] += viry;
             vir[j_coord_offset+DIM*1+ZZ] += virz;
+            eneri3             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -599,6 +630,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -624,6 +656,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*2+XX] += virx;
             vir[j_coord_offset+DIM*2+YY] += viry;
             vir[j_coord_offset+DIM*2+ZZ] += virz;
+            eneri3             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -635,6 +669,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
 
             /* Update potential sums from outer loop */
             velecsum        += velec;
+            pener           += velec;
 
             fscal            = felec;
 
@@ -660,6 +695,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
             vir[j_coord_offset+DIM*3+XX] += virx;
             vir[j_coord_offset+DIM*3+YY] += viry;
             vir[j_coord_offset+DIM*3+ZZ] += virz;
+            eneri3             += pener;
+            ener[jnr] += pener;
 
             /* Inner loop uses 304 flops */
         }
@@ -672,6 +709,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
         vir[i_coord_offset+DIM*0+XX] += virix0;
         vir[i_coord_offset+DIM*0+YY] += viriy0;
         vir[i_coord_offset+DIM*0+ZZ] += viriz0;
+        ener[inr]       += eneri0;
         tx                         += fix0;
         ty                         += fiy0;
         tz                         += fiz0;
@@ -681,6 +719,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
         vir[i_coord_offset+DIM*1+XX] += virix1;
         vir[i_coord_offset+DIM*1+YY] += viriy1;
         vir[i_coord_offset+DIM*1+ZZ] += viriz1;
+        ener[inr]       += eneri1;
         tx                         += fix1;
         ty                         += fiy1;
         tz                         += fiz1;
@@ -690,6 +729,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
         vir[i_coord_offset+DIM*2+XX] += virix2;
         vir[i_coord_offset+DIM*2+YY] += viriy2;
         vir[i_coord_offset+DIM*2+ZZ] += viriz2;
+        ener[inr]       += eneri2;
         tx                         += fix2;
         ty                         += fiy2;
         tz                         += fiz2;
@@ -699,6 +739,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_VF_c
         vir[i_coord_offset+DIM*3+XX] += virix3;
         vir[i_coord_offset+DIM*3+YY] += viriy3;
         vir[i_coord_offset+DIM*3+ZZ] += viriz3;
+        ener[inr]       += eneri3;
         tx                         += fix3;
         ty                         += fiy3;
         tz                         += fiz3;
@@ -737,6 +778,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
                      rvec                        * gmx_restrict          vvir,
+                     real                        * gmx_restrict          eener,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -747,15 +789,15 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
     real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f,*vir;
+    real             *shiftvec,*fshift,*x,*f,*vir,*ener,pener;
     int              vdwioffset0;
-    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,virix0,viriy0,viriz0;
+    real             ix0,iy0,iz0,fix0,fiy0,fiz0,iq0,isai0,virix0,viriy0,viriz0,eneri0;
     int              vdwioffset1;
-    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1,virix1,viriy1,viriz1;
+    real             ix1,iy1,iz1,fix1,fiy1,fiz1,iq1,isai1,virix1,viriy1,viriz1,eneri1;
     int              vdwioffset2;
-    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2,virix2,viriy2,viriz2;
+    real             ix2,iy2,iz2,fix2,fiy2,fiz2,iq2,isai2,virix2,viriy2,viriz2,eneri2;
     int              vdwioffset3;
-    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3,virix3,viriy3,viriz3;
+    real             ix3,iy3,iz3,fix3,fiy3,fiz3,iq3,isai3,virix3,viriy3,viriz3,eneri3;
     int              vdwjidx0;
     real             jx0,jy0,jz0,fjx0,fjy0,fjz0,jq0,isaj0;
     int              vdwjidx1;
@@ -784,6 +826,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
+    ener             = eener;
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -863,28 +906,33 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
         virix0             = 0.0;
         viriy0             = 0.0;
         viriz0             = 0.0;
+	eneri0             = 0.0;
         fix1             = 0.0;
         fiy1             = 0.0;
         fiz1             = 0.0;
         virix1             = 0.0;
         viriy1             = 0.0;
         viriz1             = 0.0;
+	eneri1             = 0.0;
         fix2             = 0.0;
         fiy2             = 0.0;
         fiz2             = 0.0;
         virix2             = 0.0;
         viriy2             = 0.0;
         viriz2             = 0.0;
+	eneri2             = 0.0;
         fix3             = 0.0;
         fiy3             = 0.0;
         fiz3             = 0.0;
         virix3             = 0.0;
         viriy3             = 0.0;
         viriz3             = 0.0;
+	eneri3             = 0.0;
 
         /* Start inner kernel loop */
         for(jidx=j_index_start; jidx<j_index_end; jidx++)
         {
+            pener            = 0.0;
             /* Get j neighbor index, and coordinate index */
             jnr              = jjnr[jidx];
             j_coord_offset   = DIM*jnr;
@@ -1006,6 +1054,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*0+XX] += virx;
             vir[j_coord_offset+DIM*0+YY] += viry;
             vir[j_coord_offset+DIM*0+ZZ] += virz;
+            eneri0             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1039,6 +1089,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*1+XX] += virx;
             vir[j_coord_offset+DIM*1+YY] += viry;
             vir[j_coord_offset+DIM*1+ZZ] += virz;
+            eneri1             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1072,6 +1124,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*2+XX] += virx;
             vir[j_coord_offset+DIM*2+YY] += viry;
             vir[j_coord_offset+DIM*2+ZZ] += virz;
+            eneri1             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1105,6 +1159,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*3+XX] += virx;
             vir[j_coord_offset+DIM*3+YY] += viry;
             vir[j_coord_offset+DIM*3+ZZ] += virz;
+            eneri1             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1138,6 +1194,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*1+XX] += virx;
             vir[j_coord_offset+DIM*1+YY] += viry;
             vir[j_coord_offset+DIM*1+ZZ] += virz;
+            eneri2             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1171,6 +1229,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*2+XX] += virx;
             vir[j_coord_offset+DIM*2+YY] += viry;
             vir[j_coord_offset+DIM*2+ZZ] += virz;
+            eneri2             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1204,6 +1264,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*3+XX] += virx;
             vir[j_coord_offset+DIM*3+YY] += viry;
             vir[j_coord_offset+DIM*3+ZZ] += virz;
+            eneri2             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1237,6 +1299,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*1+XX] += virx;
             vir[j_coord_offset+DIM*1+YY] += viry;
             vir[j_coord_offset+DIM*1+ZZ] += virz;
+            eneri3             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1270,6 +1334,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*2+XX] += virx;
             vir[j_coord_offset+DIM*2+YY] += viry;
             vir[j_coord_offset+DIM*2+ZZ] += virz;
+            eneri3             += pener;
+            ener[jnr] += pener;
 
             /**************************
              * CALCULATE INTERACTIONS *
@@ -1303,6 +1369,8 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
             vir[j_coord_offset+DIM*3+XX] += virx;
             vir[j_coord_offset+DIM*3+YY] += viry;
             vir[j_coord_offset+DIM*3+ZZ] += virz;
+            eneri3             += pener;
+            ener[jnr] += pener;
 
             /* Inner loop uses 292 flops */
         }
@@ -1315,6 +1383,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
         vir[i_coord_offset+DIM*0+XX] += virix0;
         vir[i_coord_offset+DIM*0+YY] += viriy0;
         vir[i_coord_offset+DIM*0+ZZ] += viriz0;
+        ener[inr]       += eneri0;
         tx                         += fix0;
         ty                         += fiy0;
         tz                         += fiz0;
@@ -1324,6 +1393,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
         vir[i_coord_offset+DIM*1+XX] += virix1;
         vir[i_coord_offset+DIM*1+YY] += viriy1;
         vir[i_coord_offset+DIM*1+ZZ] += viriz1;
+        ener[inr]       += eneri1;
         tx                         += fix1;
         ty                         += fiy1;
         tz                         += fiz1;
@@ -1333,6 +1403,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
         vir[i_coord_offset+DIM*2+XX] += virix2;
         vir[i_coord_offset+DIM*2+YY] += viriy2;
         vir[i_coord_offset+DIM*2+ZZ] += viriz2;
+        ener[inr]       += eneri2;
         tx                         += fix2;
         ty                         += fiy2;
         tz                         += fiz2;
@@ -1342,6 +1413,7 @@ nb_kernel_ElecCoul_VdwBham_GeomW4W4_F_c
         vir[i_coord_offset+DIM*3+XX] += virix3;
         vir[i_coord_offset+DIM*3+YY] += viriy3;
         vir[i_coord_offset+DIM*3+ZZ] += viriz3;
+        ener[inr]       += eneri3;
         tx                         += fix3;
         ty                         += fiy3;
         tz                         += fiz3;

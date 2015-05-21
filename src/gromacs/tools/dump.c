@@ -210,6 +210,7 @@ static void list_trn(const char *fn)
     int             nframe, indent;
     char            buf[256];
     rvec           *x, *v, *f, *vir;
+    real           *pener;
     matrix          box;
     t_trnheader     trn;
     gmx_bool        bOK;
@@ -224,12 +225,14 @@ static void list_trn(const char *fn)
         snew(x, trn.natoms);
         snew(v, trn.natoms);
         snew(f, trn.natoms);
+        snew(pener, trn.natoms);
         snew(vir, trn.natoms);
         if (fread_htrn(fpread, &trn,
                        trn.box_size ? box : NULL,
                        trn.x_size   ? x : NULL,
                        trn.v_size   ? v : NULL,
                        trn.f_size   ? f : NULL,
+                       trn.f_size   ? pener : NULL,
 		       trn.f_size   ? vir : NULL))
         {
             sprintf(buf, "%s frame %d", fn, nframe);

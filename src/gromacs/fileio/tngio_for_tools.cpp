@@ -210,6 +210,7 @@ void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
                    (const rvec *) frame->x,
                    (const rvec *) frame->v,
                    (const rvec *) frame->f,
+                   (const real *) frame->pener,
                    (const rvec *) frame->vir);
 #else
     GMX_UNUSED_VALUE(output);

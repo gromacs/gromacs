@@ -246,7 +246,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      rvec *f_local, rvec *f_global, rvec *vir_local, rvec *vir_global)
+                                      rvec *f_local, rvec *f_global, real *pener_local, real *pener_global,rvec *vir_local, rvec *vir_global)
 {
     rvec *local_v;
     rvec *global_v;
@@ -319,6 +319,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                            (mdof_flags & MDOF_X) ? state_global->x : NULL,
                            (mdof_flags & MDOF_V) ? global_v : NULL,
                            (mdof_flags & MDOF_F) ? f_global : NULL,
+                           (mdof_flags & MDOF_F) ? pener_global : NULL,
                            (mdof_flags & MDOF_F) ? vir_global : NULL);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
@@ -332,6 +333,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                            (mdof_flags & MDOF_X) ? (const rvec *) state_global->x : NULL,
                            (mdof_flags & MDOF_V) ? (const rvec *) global_v : NULL,
                            (mdof_flags & MDOF_F) ? (const rvec *) f_global : NULL,
+                           (mdof_flags & MDOF_F) ? (const real *) pener_global : NULL,
                            (mdof_flags & MDOF_F) ? (const rvec *) vir_global : NULL);
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
@@ -373,7 +375,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                            (const rvec *) state_local->box,
                            of->natoms_x_compressed,
                            (const rvec *) xxtc,
-                           NULL,
+                           NULL,NULL,
                            NULL,NULL);
             if (of->natoms_x_compressed != of->natoms_global)
             {

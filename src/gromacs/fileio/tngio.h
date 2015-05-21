@@ -129,6 +129,7 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                     const rvec      *x,
                     const rvec      *v,
                     const rvec      *f,
+                    const real      *pener,
                     const rvec      *vir);
 
 /*! \brief Write the current frame set to disk. Perform compression

@@ -355,7 +355,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
         gmx_fatal(FARGS, "Invalid axes. Terminating\n");
     }
     flags=TRX_NEED_X;
-    if(dens_opt[0][0] == 'p' || dens_opt[0][0] == 't' || dens_opt[0][0]=='T' || dens_opt[0][0]=='f' || dens_opt[0][0] == 'v' )
+    if(dens_opt[0][0] == 'p' || dens_opt[0][0] == 't' || dens_opt[0][0]=='T' || dens_opt[0][0]=='f' || dens_opt[0][0] == 'v' || dens_opt[0][0] == 'E')
        flags|=TRX_NEED_F|TRX_NEED_V;
 
     read_first_frame(oenv, &status, fn, &fr, flags);
@@ -471,8 +471,11 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
                    case 'v':
                       (*slDensity)[n][slice] += (fr.v[index[n][i]][2])*invvol;
                      break;
-                   case 't':
-                      (*slDensity)[n][slice] +=   (0.5)*(2.*fr.vir[index[n][i]][2] - (fr.vir[index[n][i]][0]+fr.vir[index[n][i]][1]))*invvol;
+                   case 't': 
+                      (*slDensity)[n][slice] +=   (-0.5)*( fr.vir[index[n][i]][0]+fr.vir[index[n][i]][1] )*invvol;
+		     break;
+                   case 'E': 
+                      (*slDensity)[n][slice] +=   fr.pener[index[n][i]]*invvol;
                      break;
                    default:
                          (*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m*invvol;
@@ -550,6 +553,7 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
         case 'f': ylabel = "Force profile (kJ/nm^3)"; break;
         case 'T': ylabel = "Temperature profile (bar)"; break;
         case 't': ylabel = "Surface tension profile (bar)"; break;
+        case 'E': ylabel = "Energy density (kJ/nm^3)"; break;
     }
 
     den = xvgropen(afile,
@@ -661,7 +665,7 @@ int gmx_density(int argc, char *argv[])
 
     output_env_t       oenv;
     static const char *dens_opt[] =
-    { NULL, "mass", "number", "charge", "electron", "pressure", "tension", "force","velocity", "Temperature",NULL };
+    { NULL, "mass", "number", "charge", "electron", "pressure", "tension", "force","velocity", "Temperature", "Energy", NULL };
     static int         axis        = 2;  /* normal to memb. default z  */
     static const char *axtitle     = "Z";
     static int         nslices     = 50; /* nr of slices defined       */

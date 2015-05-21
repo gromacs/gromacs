@@ -118,6 +118,7 @@ void
                      rvec                        * gmx_restrict          xx,
                      rvec                        * gmx_restrict          ff,
                      rvec                        * gmx_restrict          vvir,
+                     real                        * gmx_restrict          eener,
                      t_forcerec                  * gmx_restrict          fr,
                      t_mdatoms                   * gmx_restrict     mdatoms,
                      nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
@@ -130,10 +131,10 @@ void
     int              nri,inr,ggid,iidx,jidx,jnr,outeriter,inneriter;
     real             shX,shY,shZ,tx,ty,tz,virx,viry,virz,fscal,rcutoff,rcutoff2;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             *shiftvec,*fshift,*x,*f,*vir;
+    real             *shiftvec,*fshift,*x,*f,*vir,*ener,pener;
     /* #for I in PARTICLES_I */
     int              vdwioffset{I};
-    real             ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I},virix{I},viriy{I},viriz{I};
+    real             ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I},virix{I},viriy{I},viriz{I},eneri{I};
     /* #endfor */
     /* #for J in PARTICLES_J */
     int              vdwjidx{J};
@@ -181,6 +182,7 @@ void
     x                = xx[0];
     f                = ff[0];
     vir              = vvir[0];
+    ener             = eener;
 
     nri              = nlist->nri;
     iinr             = nlist->iinr;
@@ -356,6 +358,7 @@ void
         virix{I}             = 0.0;
         viriy{I}             = 0.0;
         viriz{I}             = 0.0;
+	eneri{I}             = 0.0;
         /*     #endfor */
         /* #endif */
 
@@ -393,6 +396,7 @@ void
         /* Start inner kernel loop */
         for(jidx=j_index_start; jidx<j_index_end; jidx++)
         {
+            pener            = 0.0;
             /* Get j neighbor index, and coordinate index */
             jnr              = jjnr[jidx];
             j_coord_offset   = DIM*jnr;
@@ -800,6 +804,7 @@ void
             /* Update potential sums from outer loop */
             /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
             velecsum        += velec;
+            pener           += velec;
             /*             #define INNERFLOPS INNERFLOPS+1 */
             /*             #if KERNEL_ELEC=='GeneralizedBorn' */
             vgbsum          += vgb;
@@ -808,6 +813,7 @@ void
             /*         #endif */
             /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
             vvdwsum         += vvdw;
+            pener           += vvdw;
             /*             #define INNERFLOPS INNERFLOPS+1 */
             /*         #endif */
             /*     #endif */
@@ -845,6 +851,8 @@ void
             vir[j_coord_offset+DIM*{J}+XX] += virx;
             vir[j_coord_offset+DIM*{J}+YY] += viry;
             vir[j_coord_offset+DIM*{J}+ZZ] += virz;
+            eneri{I}             += pener;
+            ener[jnr] += pener;
 
             /*         #define INNERFLOPS INNERFLOPS+9 */
             /*     #endif */
@@ -874,6 +882,7 @@ void
         vir[i_coord_offset+DIM*{I}+XX] += virix{I};
         vir[i_coord_offset+DIM*{I}+YY] += viriy{I};
         vir[i_coord_offset+DIM*{I}+ZZ] += viriz{I};
+        ener[inr]       += eneri{I};
         tx                         += fix{I};
         ty                         += fiy{I};
         tz                         += fiz{I};

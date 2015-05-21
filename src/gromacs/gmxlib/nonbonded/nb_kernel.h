@@ -74,6 +74,7 @@ typedef void
                  rvec *                    x,
                  rvec *                    f,
                  rvec *                    vir,
+                 real *                    pener,
                  t_forcerec *              fr,
                  t_mdatoms *               mdatoms,
                  nb_kernel_data_t *        kernel_data,

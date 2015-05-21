@@ -198,9 +198,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
     rvec             *vir_global = NULL;
+    real             *pener_global = NULL;
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
     rvec             *vir = NULL;
+    real             *pener = NULL;
     rvec             *oldv = NULL;
     gmx_global_stat_t gstat;
     gmx_update_t      upd   = NULL;
@@ -324,6 +326,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
                   enerd);
     global_vir = NULL;
+    global_pener = NULL;
     if (DOMAINDECOMP(cr))
     {
         f = NULL;
@@ -333,7 +336,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         snew(f, top_global->natoms);
         snew(vir, top_global->natoms);
+        snew(pener, top_global->natoms);
 	global_vir = vir;
+	global_pener = pener;
         snew(oldv, top_global->natoms);
     }
     /* Kinetic energy data */
@@ -414,6 +419,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         state    = serial_init_local_state(state_global);
         f_global = f;
         vir_global = vir;
+        pener_global = pener;
 
         atoms2md(top_global, ir, 0, NULL, top_global->natoms, mdatoms);
 
@@ -1099,7 +1105,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 // SAW
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
-                     f, vir, force_vir, mdatoms, enerd, fcd,
+                     f, vir, pener, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
@@ -1350,7 +1356,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         copy_rvecn(state->v, oldv, 0, state->natoms); 
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
-                                 outf, mdebin, ekind, f, f_global, vir, vir_global,
+                                 outf, mdebin, ekind, f, f_global, pener, pener_global, vir, vir_global,
                                  &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
@@ -1358,6 +1364,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         for (i = 0; i < state_global->natoms; i++)
         {
         	clear_rvec(vir[i]);
+		pener[i]=0.0;
         }
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
         bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);

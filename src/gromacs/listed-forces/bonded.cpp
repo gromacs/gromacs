@@ -69,6 +69,7 @@
 #include "restcbt.h"
 
 rvec * global_vir = NULL;
+real * global_pener = NULL;
 
 /*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {

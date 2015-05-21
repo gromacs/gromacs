@@ -151,6 +151,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                        rvec       f_longrange[],
                        rvec       vir[],
                        rvec       vir_longrange[],
+		       real       pener[],
                        gmx_enerdata_t *enerd,
                        t_fcdata   *fcd,
                        gmx_localtop_t *top,
@@ -268,7 +269,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         }
 
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(fr, x, f, f_longrange, vir, vir_longrange, md, excl,
+        do_nonbonded(fr, x, f, f_longrange, vir, vir_longrange, pener, md, excl,
                      &enerd->grpp, nrnb,
                      lambda, dvdl_nb, -1, -1, donb_flags);
 
@@ -286,7 +287,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
                 reset_foreign_enerdata(enerd);
-                do_nonbonded(fr, x, f, f_longrange,vir,vir_longrange, md, excl,
+                do_nonbonded(fr, x, f, f_longrange,vir,vir_longrange, pener, md, excl,
                              &(enerd->foreign_grpp), nrnb,
                              lam_i, dvdl_dum, -1, -1,
                              (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);

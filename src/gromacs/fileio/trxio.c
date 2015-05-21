@@ -310,6 +310,7 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
 {
     char  title[STRLEN];
     rvec *xout = NULL, *vout = NULL, *fout = NULL, *virout = NULL;
+    real *penerout = NULL;
     int   i, ftp = -1;
     real  prec;
 
@@ -365,9 +366,11 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             {
                 snew(fout, nind);
                 snew(virout, nind);
+                snew(penerout, nind);
                 for (i = 0; i < nind; i++)
                 {
                     copy_rvec(fr->f[ind[i]], fout[i]);
+                    penerout[i] = fr->pener[ind[i]];
                     copy_rvec(fr->vir[ind[i]], virout[i]);
                 }
             }
@@ -396,7 +399,7 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             break;
         case efTRR:
             fwrite_trn(status->fio, nframes_read(status),
-                       fr->time, fr->step, fr->box, nind, xout, vout, fout, virout);
+                       fr->time, fr->step, fr->box, nind, xout, vout, fout, penerout, virout);
             break;
         case efGRO:
         case efPDB:
@@ -444,6 +447,7 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             if (virout)
             {
                 sfree(virout);
+                sfree(penerout);
             }
         /* no break */
         case efXTC:
@@ -552,7 +556,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             break;
         case efTRR:
             fwrite_trn(status->fio, fr->step, fr->time, fr->lambda, fr->box, fr->natoms,
-                       fr->bX ? fr->x : NULL, fr->bV ? fr->v : NULL, fr->bF ? fr->f : NULL, fr->bF ? fr->vir : NULL);
+                       fr->bX ? fr->x : NULL, fr->bV ? fr->v : NULL, fr->bF ? fr->f : NULL, fr->bF ? fr->pener : NULL, fr->bF ? fr->vir : NULL);
             break;
         case efGRO:
         case efPDB:
@@ -674,13 +678,14 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
         if (fr->flags & (TRX_READ_F | TRX_NEED_F))
         {
             if (fr->f == NULL)
-            {
+            { // SAW
                 snew(fr->f, sh.natoms);
+                snew(fr->pener, sh.natoms);
                 snew(fr->vir, sh.natoms);
             }
             fr->bF = sh.f_size > 0;
         }
-        if (fread_htrn(status->fio, &sh, fr->box, fr->x, fr->v, fr->f, fr->vir))
+        if (fread_htrn(status->fio, &sh, fr->box, fr->x, fr->v, fr->f, fr->pener, fr->vir))
         {
             bRet = TRUE;
         }
@@ -1043,7 +1048,6 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             break;
     }
     fr->tf = fr->time;
-
     /* Return FALSE if we read a frame that's past the set ending time. */
     if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
     {

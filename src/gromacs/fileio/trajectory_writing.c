@@ -64,6 +64,8 @@ do_md_trajectory_writing(FILE           *fplog,
                          gmx_ekindata_t *ekind,
                          rvec           *f,
                          rvec           *f_global,
+                         real           *pener,
+                         real           *pener_global,
                          rvec           *vir,
                          rvec           *vir_global,
                          int            *nchkpt,
@@ -143,7 +145,7 @@ do_md_trajectory_writing(FILE           *fplog,
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, f, f_global, vir, vir_global);
+                                         step, t, state, state_global, f, f_global, pener, pener_global, vir, vir_global);
         if (bCPT)
         {
             (*nchkpt)++;
