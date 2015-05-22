@@ -17,6 +17,7 @@ All other content is in the following top-level directories:
   Some content here is copied and/or adapted from newer versions of CMake than
   the minimum currently supported.
   Default suppression file for valgrind is also included here.
+  See :doc:`build-system` for details of the build system.
 :file:`docs/`
   Contains the build system logic and source code for all documentation, both
   user-facing and developer-facing.  Some of the documentation is generated
@@ -44,6 +45,7 @@ Source code organization
 
 The following figure shows a high-level view of components of what gets built
 from the source code under :file:`src/` and how the code is organized.
+The build system is described in detail in :doc:`build-system`.
 With default options, the green and white components are built as part of the
 default target.  If ``GMX_BUILD_MDRUN_ONLY`` is ``ON``, then the blue and white
 components are built instead; :file:`libgromacs_mdrun` is built from a subset
@@ -153,6 +155,8 @@ included at the root level.  All actual code is in subdirectories:
   directories are built using our custom build rules into :file:`libgromacs`,
   or in some cases into the test binaries.  Some CMake options change which
   parts of this code are included in the build.
+  See :doc:`build-system` for some explanation about how the code in this
+  directory is used.
 :file:`src/contrib/`
   Contains collection of less well maintained code that may or may
   not compile.  It is not included in the build.
@@ -190,7 +194,7 @@ intra-module/intra-file.
 See :doc:`naming` for some common naming patterns for files that can help
 locating declarations.
 
-Tests, and data required for them, are in a ``tests/`` subdirectory under
+Tests, and data required for them, are in a :file:`tests/` subdirectory under
 the module directory.
 See :doc:`testutils` for more details.
 
@@ -209,7 +213,8 @@ Documentation organization
 All documentation (including this developer guide) is produced from source
 files under :file:`docs/`, except for some command-line help that is generated
 from the source code (by executing the compiled :file:`gmx` binary).
-The build system provides various custom targets that build the documentation.
+The build system provides various custom targets that build the documentation;
+see :doc:`build-system` for details.
 
 :file:`docs/fragments/`
   Contains reStructuredText fragments used through ``.. include::`` mechanism

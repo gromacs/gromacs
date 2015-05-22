@@ -25,6 +25,7 @@ The guide is currently split into a few main parts:
    :maxdepth: 2
 
    overview
+   build-system
    relocatable-binaries
    style
    tools

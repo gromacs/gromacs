@@ -58,3 +58,6 @@ def setup(app):
     app.add_object_type('mdp-value', 'mdp-value',
             parse_node = mdp_parser.parse_value,
             objname='mdp value')
+    app.add_object_type('cmake', 'cmake',
+            indextemplate='pair: %s; cmake option',
+            objname='CMake cache variable')
