@@ -1458,8 +1458,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
                 }
+                if (ir->bAve)
+                {
+                    do_averaging(state->v, f, ir->ave, 0, 0, NULL);
+                }
             }
-            do_averaging(state->v, f, ir->ave, 0, 0, NULL);
         }
 
         if (bIterativeCase && do_per_step(step, ir->nstpcouple))
