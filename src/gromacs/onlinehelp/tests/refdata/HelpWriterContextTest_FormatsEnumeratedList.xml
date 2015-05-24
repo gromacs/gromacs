@@ -4,30 +4,42 @@
   <String Name="Console"><![CDATA[
 Sample list:
 
-* first item
-* second item
-  that spans
-  multiple
-  lines
-* third item
-  that has a
-  single long
-  line
+1. first item
+2. second item
+   that spans
+   multiple
+   lines
+3. third item
+   that has a
+   single long
+   line
+
+9.  Item with
+    extra
+    indentation
+10. Double
+    digit item
 
 Normal
 paragraph]]></String>
   <String Name="reStructuredText"><![CDATA[
 Sample list:
 
-* first item
-* second item
+1. first item
+2. second item
 that
-  spans
+   spans
 multiple lines
-* third item
+3. third item
 that has a
 single long
 line
+
+9.  Item with
+extra
+indentation
+10. Double
+digit item
 
 Normal
 paragraph]]></String>

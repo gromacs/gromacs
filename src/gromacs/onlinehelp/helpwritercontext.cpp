@@ -309,8 +309,7 @@ std::string toUpperCase(const std::string &text)
  * \param[in] text  Input text.
  * \returns   \p text with all sequences of more than two newlines replaced
  *     with just two newlines.
- *
- * Does not throw.
+ * \throws    std::bad_alloc if out of memory.
  */
 std::string removeExtraNewlinesRst(const std::string &text)
 {
@@ -340,6 +339,36 @@ std::string removeExtraNewlinesRst(const std::string &text)
         result.resize(last + 1);
     }
     return result;
+}
+
+/*! \brief
+ * Returns `true` if a list item starts in \p text at \p index.
+ *
+ * Does not throw.
+ */
+bool startsListItem(const std::string &text, size_t index)
+{
+    if (text.length() <= index + 1)
+    {
+        return false;
+    }
+    if (text[index] == '*' && std::isspace(text[index+1]))
+    {
+        return true;
+    }
+    if (std::isdigit(text[index]))
+    {
+        while (index < text.length() && std::isdigit(text[index]))
+        {
+            ++index;
+        }
+        if (text.length() > index + 1 && text[index] == '.'
+            && std::isspace(text[index+1]))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 //! \}
@@ -606,8 +635,7 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
                             ++currentIndent;
                             continue;
                         }
-                        else if (i + 1 < result.length()
-                                 && result[i] == '*' && result[i + 1] == ' ')
+                        else if (startsListItem(result, i))
                         {
                             if (currentLine > 0)
                             {
@@ -619,7 +647,17 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
                                 nextBreakSize = 1;
                                 break;
                             }
-                            indent = currentIndent + 2;
+                            int prefixLength = 0;
+                            while (!std::isspace(result[i + prefixLength]))
+                            {
+                                ++prefixLength;
+                            }
+                            while (i + prefixLength < result.length()
+                                   && std::isspace(result[i + prefixLength]))
+                            {
+                                ++prefixLength;
+                            }
+                            indent = currentIndent + prefixLength;
                         }
                         bLineStart = false;
                     }
