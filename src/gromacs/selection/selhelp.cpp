@@ -316,7 +316,7 @@ const char        KeywordsHelpText::title[] =
     "Selection keywords";
 const char *const KeywordsHelpText::text[] = {
     "The following selection keywords are currently available.",
-    "For keywords marked with a star, additional help is available through",
+    "For keywords marked with a plus, additional help is available through",
     "a subtopic KEYWORD, where KEYWORD is the name of the keyword.",
 };
 
@@ -389,39 +389,39 @@ const char        PositionsHelpText::name[]  = "positions";
 const char        PositionsHelpText::title[] =
     "Specifying positions in selections";
 const char *const PositionsHelpText::text[] = {
-    "Possible ways of specifying positions in selections are:[PAR]",
-
+    "Possible ways of specifying positions in selections are:",
+    "",
     "1. A constant position can be defined as [TT][XX, YY, ZZ][tt], where",
-    "[TT]XX[tt], [TT]YY[tt] and [TT]ZZ[tt] are real numbers.[PAR]",
-
+    "   [TT]XX[tt], [TT]YY[tt] and [TT]ZZ[tt] are real numbers.[PAR]",
+    "",
     "2. [TT]com of ATOM_EXPR [pbc][tt] or [TT]cog of ATOM_EXPR [pbc][tt]",
-    "calculate the center of mass/geometry of [TT]ATOM_EXPR[tt]. If",
-    "[TT]pbc[tt] is specified, the center is calculated iteratively to try",
-    "to deal with cases where [TT]ATOM_EXPR[tt] wraps around periodic",
-    "boundary conditions.[PAR]",
-
+    "   calculate the center of mass/geometry of [TT]ATOM_EXPR[tt]. If",
+    "   [TT]pbc[tt] is specified, the center is calculated iteratively to try",
+    "   to deal with cases where [TT]ATOM_EXPR[tt] wraps around periodic",
+    "   boundary conditions.",
+    "",
     "3. [TT]POSTYPE of ATOM_EXPR[tt] calculates the specified positions for",
-    "the atoms in [TT]ATOM_EXPR[tt].",
-    "[TT]POSTYPE[tt] can be [TT]atom[tt], [TT]res_com[tt], [TT]res_cog[tt],",
-    "[TT]mol_com[tt] or [TT]mol_cog[tt], with an optional prefix [TT]whole_[tt]",
-    "[TT]part_[tt] or [TT]dyn_[tt].",
-    "[TT]whole_[tt] calculates the centers for the whole residue/molecule,",
-    "even if only part of it is selected.",
-    "[TT]part_[tt] prefix calculates the centers for the selected atoms, but",
-    "uses always the same atoms for the same residue/molecule. The used atoms",
-    "are determined from the the largest group allowed by the selection.",
-    "[TT]dyn_[tt] calculates the centers strictly only for the selected atoms.",
-    "If no prefix is specified, whole selections default to [TT]part_[tt] and",
-    "other places default to [TT]whole_[tt].",
-    "The latter is often desirable to select the same molecules in different",
-    "tools, while the first is a compromise between speed ([TT]dyn_[tt]",
-    "positions can be slower to evaluate than [TT]part_[tt]) and intuitive",
-    "behavior.[PAR]",
-
+    "   the atoms in [TT]ATOM_EXPR[tt].",
+    "   [TT]POSTYPE[tt] can be [TT]atom[tt], [TT]res_com[tt], [TT]res_cog[tt],",
+    "   [TT]mol_com[tt] or [TT]mol_cog[tt], with an optional prefix [TT]whole_[tt]",
+    "   [TT]part_[tt] or [TT]dyn_[tt].",
+    "   [TT]whole_[tt] calculates the centers for the whole residue/molecule,",
+    "   even if only part of it is selected.",
+    "   [TT]part_[tt] prefix calculates the centers for the selected atoms, but",
+    "   uses always the same atoms for the same residue/molecule. The used atoms",
+    "   are determined from the the largest group allowed by the selection.",
+    "   [TT]dyn_[tt] calculates the centers strictly only for the selected atoms.",
+    "   If no prefix is specified, whole selections default to [TT]part_[tt] and",
+    "   other places default to [TT]whole_[tt].",
+    "   The latter is often desirable to select the same molecules in different",
+    "   tools, while the first is a compromise between speed ([TT]dyn_[tt]",
+    "   positions can be slower to evaluate than [TT]part_[tt]) and intuitive",
+    "   behavior.",
+    "",
     "4. [TT]ATOM_EXPR[tt], when given for whole selections, is handled as 3.",
-    "above, using the position type from the command-line argument",
-    "[TT]-seltype[tt].[PAR]",
-
+    "   above, using the position type from the command-line argument",
+    "   [TT]-seltype[tt].",
+    "",
     "Selection keywords that select atoms based on their positions, such as",
     "[TT]dist from[tt], use by default the positions defined by the",
     "[TT]-selrpos[tt] command-line option.",
@@ -677,11 +677,13 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 void KeywordsHelpTopic::writeKeywordListStart(const HelpWriterContext &context,
                                               const char              *heading) const
 {
-    context.writeTextBlock(heading);
+    std::string fullHeading("* ");
+    fullHeading.append(heading);
+    context.writeTextBlock(fullHeading);
     if (context.outputFormat() == eHelpOutputFormat_Rst)
     {
         context.writeTextBlock("");
-        context.writeTextBlock("::");
+        context.writeTextBlock("  ::");
         context.writeTextBlock("");
     }
 }
@@ -695,7 +697,9 @@ void KeywordsHelpTopic::writeKeywordListEnd(const HelpWriterContext &context,
     }
     if (!isNullOrEmpty(extraInfo))
     {
-        context.writeTextBlock(extraInfo);
+        std::string fullInfo("  ");
+        fullInfo.append(extraInfo);
+        context.writeTextBlock(fullInfo);
     }
     context.writeTextBlock("");
 }
@@ -714,9 +718,9 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
         if (method.type == type && bModifiers == bIsModifier)
         {
             const bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != NULL);
-            const bool bPrintStar
+            const bool bPrintHelpMark
                 = bHasHelp && context.outputFormat() == eHelpOutputFormat_Console;
-            file.writeString(formatString(" %c ", bPrintStar ? '*' : ' '));
+            file.writeString(formatString("   %c ", bPrintHelpMark ? '+' : ' '));
             if (method.help.syntax != NULL)
             {
                 file.writeLine(method.help.syntax);
