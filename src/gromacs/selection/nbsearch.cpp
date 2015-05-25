@@ -36,6 +36,8 @@
  * \brief
  * Implements neighborhood searching for analysis (from nbsearch.h).
  *
+ * High-level overview of the algorithm is at \ref page_analysisnbsearch.
+ *
  * \todo
  * The grid implementation could still be optimized in several different ways:
  *   - Pruning grid cells from the search list if they are completely outside
@@ -567,6 +569,9 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(
         else
         {
             cellCount = std::max(1, static_cast<int>(box[dd][dd] / targetsize));
+            // TODO: If the cell count is one or two, it would be better to
+            // just fall back to bSingleCell[dd] = true, and leave the rest to
+            // the efficiency check later.
             if (bGridPBC_[dd] && cellCount < 3)
             {
                 return false;
