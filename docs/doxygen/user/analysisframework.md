@@ -32,6 +32,10 @@ out of the framework.  The main features are:
    such language bindings in the framework (no such integration is implemented
    at this time, though).
 
+There are also some reusable analysis routines that can be used independent of
+the framework:
+ - \subpage page_analysisnbsearch
+
 For a crash course on how to implement an analysis tool using the framework, see
 \subpage page_analysistemplate.
 
