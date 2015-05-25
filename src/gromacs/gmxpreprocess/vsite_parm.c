@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1013,10 +1013,9 @@ static void check_vsite_constraints(t_params *plist,
 static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                               int cftype, int vsite_type[])
 {
-    int          ftype, i, j, parnr, k, l, m, n, nvsite, nOut, kept_i, vsnral, vsitetype;
+    int          ftype, i, j, parnr, k, l, m, n, nvsite, nOut, kept_i, vsitetype;
     int          nconverted, nremoved;
-    atom_id      atom, oatom, constr, at1, at2;
-    atom_id      vsiteatoms[MAXATOMLIST];
+    atom_id      atom, oatom, at1, at2;
     gmx_bool     bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
     t_params    *ps;
 
@@ -1026,13 +1025,15 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     }
 
     ps         = &(plist[cftype]);
-    vsnral     = 0;
     kept_i     = 0;
     nconverted = 0;
     nremoved   = 0;
     nOut       = 0;
     for (i = 0; (i < ps->nr); i++) /* for all bonds in the plist */
     {
+        int            vsnral      = 0;
+        const atom_id *first_atoms = NULL;
+
         bKeep   = FALSE;
         bRemove = FALSE;
         bAllFD  = TRUE;
@@ -1087,31 +1088,36 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                 }
                 if (!bRemove)
                 {
+                    /* TODO This fragment, and corresponding logic in
+                       clean_vsite_angles and clean_vsite_dihs should
+                       be refactored into a common function */
                     if (nvsite == 1)
                     {
                         /* if this is the first vsite we encounter then
                            store construction atoms */
-                        vsnral = NRAL(pindex[atom].ftype)-1;
-                        for (m = 0; (m < vsnral); m++)
-                        {
-                            vsiteatoms[m] =
-                                plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-                        }
+                        /* TODO This would be nicer to implement with
+                           a C++ "vector view" class" with an
+                           STL-container-like interface. */
+                        vsnral      = NRAL(pindex[atom].ftype) - 1;
+                        first_atoms = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
                     }
                     else
                     {
+                        assert(vsnral != 0);
+                        assert(first_atoms != NULL);
                         /* if it is not the first then
                            check if this vsite is constructed from the same atoms */
                         if (vsnral == NRAL(pindex[atom].ftype)-1)
                         {
                             for (m = 0; (m < vsnral) && !bKeep; m++)
                             {
+                                const atom_id *atoms;
+
                                 bPresent = FALSE;
-                                constr   =
-                                    plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+                                atoms    = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
                                 for (n = 0; (n < vsnral) && !bPresent; n++)
                                 {
-                                    if (constr == vsiteatoms[n])
+                                    if (atoms[m] == first_atoms[n])
                                     {
                                         bPresent = TRUE;
                                     }
@@ -1155,6 +1161,9 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                 bKeep = TRUE;
             }
 
+            /* TODO This loop and the corresponding loop in
+               check_vsite_angles should be refactored into a common
+               function */
             /* check if all non-vsite atoms are used in construction: */
             bFirstTwo = TRUE;
             for (k = 0; (k < 2) && !bKeep; k++) /* for all atoms in the bond */
@@ -1165,7 +1174,9 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                     bUsed = FALSE;
                     for (m = 0; (m < vsnral) && !bUsed; m++)
                     {
-                        if (atom == vsiteatoms[m])
+                        assert(first_atoms != NULL);
+
+                        if (atom == first_atoms[m])
                         {
                             bUsed     = TRUE;
                             bFirstTwo = bFirstTwo && m < 2;
@@ -1184,11 +1195,13 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
 
             if (!( bAllFD && bFirstTwo ) )
             {
+                /* TODO Why is this code more complex than the
+                   corresponding code in clean_vsite_angles? */
                 /* check if all constructing atoms are constrained together */
                 for (m = 0; m < vsnral && !bKeep; m++) /* all constr. atoms */
                 {
-                    at1      = vsiteatoms[m];
-                    at2      = vsiteatoms[(m+1) % vsnral];
+                    at1      = first_atoms[m];
+                    at2      = first_atoms[(m+1) % vsnral];
                     bPresent = FALSE;
                     for (ftype = 0; ftype < F_NRE; ftype++)
                     {
@@ -1270,17 +1283,18 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                                int cftype, int vsite_type[],
                                at2vsitecon_t *at2vc)
 {
-    int          i, j, parnr, k, l, m, n, nvsite, kept_i, vsnral, vsitetype;
-    atom_id      atom, constr, at1, at2;
-    atom_id      vsiteatoms[MAXATOMLIST];
+    int          i, j, parnr, k, l, m, n, nvsite, kept_i, vsitetype;
+    atom_id      atom, at1, at2;
     gmx_bool     bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
     t_params    *ps;
 
     ps     = &(plist[cftype]);
-    vsnral = 0;
     kept_i = 0;
     for (i = 0; (i < ps->nr); i++) /* for all angles in the plist */
     {
+        int            vsnral      = 0;
+        const atom_id *first_atoms = NULL;
+
         bKeep    = FALSE;
         bAll3FAD = TRUE;
         /* check if all virtual sites are constructed from the same atoms */
@@ -1295,38 +1309,39 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                 if (nvsite == 1)
                 {
                     /* store construction atoms of first vsite */
-                    vsnral = NRAL(pindex[atom].ftype)-1;
-                    for (m = 0; (m < vsnral); m++)
-                    {
-                        vsiteatoms[m] =
-                            plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-                    }
+                    vsnral      = NRAL(pindex[atom].ftype) - 1;
+                    first_atoms = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
                 }
                 else
-                /* check if this vsite is constructed from the same atoms */
-                if (vsnral == NRAL(pindex[atom].ftype)-1)
                 {
-                    for (m = 0; (m < vsnral) && !bKeep; m++)
+                    assert(vsnral != 0);
+                    assert(first_atoms != NULL);
+                    /* check if this vsite is constructed from the same atoms */
+                    if (vsnral == NRAL(pindex[atom].ftype)-1)
                     {
-                        bPresent = FALSE;
-                        constr   =
-                            plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-                        for (n = 0; (n < vsnral) && !bPresent; n++)
+                        for (m = 0; (m < vsnral) && !bKeep; m++)
                         {
-                            if (constr == vsiteatoms[n])
+                            const atom_id *atoms;
+
+                            bPresent = FALSE;
+                            atoms    = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
+                            for (n = 0; (n < vsnral) && !bPresent; n++)
                             {
-                                bPresent = TRUE;
+                                if (atoms[m] == first_atoms[n])
+                                {
+                                    bPresent = TRUE;
+                                }
+                            }
+                            if (!bPresent)
+                            {
+                                bKeep = TRUE;
                             }
                         }
-                        if (!bPresent)
-                        {
-                            bKeep = TRUE;
-                        }
                     }
-                }
-                else
-                {
-                    bKeep = TRUE;
+                    else
+                    {
+                        bKeep = TRUE;
+                    }
                 }
             }
         }
@@ -1348,7 +1363,9 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                 bUsed = FALSE;
                 for (m = 0; (m < vsnral) && !bUsed; m++)
                 {
-                    if (atom == vsiteatoms[m])
+                    assert(first_atoms != NULL);
+
+                    if (atom == first_atoms[m])
                     {
                         bUsed     = TRUE;
                         bFirstTwo = bFirstTwo && m < 2;
@@ -1366,8 +1383,8 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
             /* check if all constructing atoms are constrained together */
             for (m = 0; m < vsnral && !bKeep; m++) /* all constr. atoms */
             {
-                at1      = vsiteatoms[m];
-                at2      = vsiteatoms[(m+1) % vsnral];
+                at1      = first_atoms[m];
+                at2      = first_atoms[(m+1) % vsnral];
                 bPresent = FALSE;
                 for (j = 0; j < at2vc[at1].nr; j++)
                 {
@@ -1410,11 +1427,11 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     kept_i = 0;
     for (i = 0; (i < ps->nr); i++) /* for all dihedrals in the plist */
     {
-        int      ftype, parnr, k, l, m, n, nvsite;
-        int      vsnral = 0;            /* keep the compiler happy */
-        atom_id  atom, constr;
-        atom_id  vsiteatoms[4] = { 0 }; /* init to zero to make gcc4.8 happy */
-        gmx_bool bKeep, bUsed, bPresent;
+        int            ftype, parnr, k, l, m, n, nvsite;
+        int            vsnral      = 0;
+        const atom_id *first_atoms = NULL;
+        atom_id        atom;
+        gmx_bool       bKeep, bUsed, bPresent;
 
 
         bKeep = FALSE;
@@ -1428,35 +1445,34 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                 if (nvsite == 0)
                 {
                     /* store construction atoms of first vsite */
-                    vsnral = NRAL(pindex[atom].ftype)-1;
-                    assert(vsnral <= 4);
-                    for (m = 0; (m < vsnral); m++)
-                    {
-                        vsiteatoms[m] =
-                            plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-                    }
+                    vsnral      = NRAL(pindex[atom].ftype) - 1;
+                    first_atoms = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
                     if (debug)
                     {
                         fprintf(debug, "dih w. vsite: %d %d %d %d\n",
                                 ps->param[i].AI+1, ps->param[i].AJ+1,
                                 ps->param[i].AK+1, ps->param[i].AL+1);
                         fprintf(debug, "vsite %d from: %d %d %d\n",
-                                atom+1, vsiteatoms[0]+1, vsiteatoms[1]+1, vsiteatoms[2]+1);
+                                atom+1, first_atoms[0]+1, first_atoms[1]+1, first_atoms[2]+1);
                     }
                 }
                 else
                 {
+                    assert(vsnral != 0);
+                    assert(first_atoms != NULL);
+
                     /* check if this vsite is constructed from the same atoms */
                     if (vsnral == NRAL(pindex[atom].ftype)-1)
                     {
                         for (m = 0; (m < vsnral) && !bKeep; m++)
                         {
+                            const atom_id *atoms;
+
                             bPresent = FALSE;
-                            constr   =
-                                plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+                            atoms    = plist[pindex[atom].ftype].param[pindex[atom].parnr].a + 1;
                             for (n = 0; (n < vsnral) && !bPresent; n++)
                             {
-                                if (constr == vsiteatoms[n])
+                                if (atoms[m] == first_atoms[n])
                                 {
                                     bPresent = TRUE;
                                 }
@@ -1468,6 +1484,9 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                         }
                     }
                 }
+                /* TODO clean_site_bonds and _angles do this increment
+                   at the top of the loop. Refactor this for
+                   consistency */
                 nvsite++;
             }
         }
@@ -1482,6 +1501,9 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
            construction of virtual sites. If so, keep it, if not throw away: */
         for (k = 0; (k < 4) && !bKeep; k++) /* for all atoms in the dihedral */
         {
+            assert(vsnral != 0);
+            assert(first_atoms != NULL);
+
             atom = ps->param[i].a[k];
             if (vsite_type[atom] == NOTSET)
             {
@@ -1489,7 +1511,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                 bUsed = FALSE;
                 for (m = 0; (m < vsnral) && !bUsed; m++)
                 {
-                    if (atom == vsiteatoms[m])
+                    if (atom == first_atoms[m])
                     {
                         bUsed = TRUE;
                     }
@@ -1601,7 +1623,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
             }
         }
 
-        /* remove things with vsite atoms */
+        /* remove interactions that include virtual sites */
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             if ( ( ( interaction_function[ftype].flags & IF_BOND ) && bRmVSiteBds ) ||
@@ -1621,7 +1643,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
                 }
             }
         }
-        /* check if we have constraints left with virtual sites in them */
+        /* check that no remaining constraints include virtual sites */
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             if (interaction_function[ftype].flags & IF_CONSTRAINT)
