@@ -38,6 +38,7 @@
 
 #include "pull.h"
 
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1573,6 +1574,8 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
              */
             for (m = 0; m < pull->npbcdim; m++)
             {
+                /* By construction, npbcdim <= DIM */
+                assert(m < DIM);
                 if (pulldim[m] == 1 && pgrp->nat > 1)
                 {
                     if (pgrp->pbcatom >= 0)
