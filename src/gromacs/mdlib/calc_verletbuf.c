@@ -217,7 +217,11 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 
                 if (ft != F_VSITEN)
                 {
-                    for (j = 1; j < NRAL(ft); j++)
+                    const int maxj = NRAL(ft);
+                    /* only vsiten can have more than four constructing atoms */
+                    assert(maxj <= 5);
+
+                    for (j = 1; j < maxj; j++)
                     {
                         cam[j] = moltype->atoms.atom[il->iatoms[i+1+j]].m;
                         if (cam[j] == 0)
