@@ -38,6 +38,7 @@
 
 #include "pull.h"
 
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1571,6 +1572,8 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
             /* Determine if we need to take PBC into account for calculating
              * the COM's of the pull groups.
              */
+            /* By construction, npbcdim <= DIM */
+            assert(pull->npbcdim <= DIM);
             for (m = 0; m < pull->npbcdim; m++)
             {
                 if (pulldim[m] == 1 && pgrp->nat > 1)
