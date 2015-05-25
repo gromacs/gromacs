@@ -530,7 +530,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         }
         if (IR_TWINRANGE(*ir))
         {
-            check_nst("nstlist", ir->nstlist,
+            check_nst("nstcalclr", ir->nstcalclr,
                       "nstcalcenergy", &ir->nstcalcenergy, wi);
             if (ir->epc != epcNO)
             {
@@ -755,6 +755,19 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             {
                 sprintf(err_buf, "%s[%d] must be between 0 and 1", efpt_names[i], j);
                 CHECK((fep->all_lambda[i][j] < 0) || (fep->all_lambda[i][j] > 1));
+            }
+        }
+
+        if (IR_TWINRANGE(*ir))
+        {
+            sprintf(err_buf, "nstdhdl must be divisible by nstcalclr");
+            CHECK(ir->fepvals->nstdhdl > 0 &&
+                  ir->fepvals->nstdhdl % ir->nstcalclr != 0);
+
+            if (ir->efep == efepEXPANDED)
+            {
+                sprintf(err_buf, "nstexpanded must be divisible by nstcalclr");
+                CHECK(ir->expandedvals->nstexpanded % ir->nstcalclr != 0);
             }
         }
     }

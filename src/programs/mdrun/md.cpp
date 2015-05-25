@@ -521,16 +521,37 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     debug_gmx();
 
-    /* set free energy calculation frequency as the minimum
-       greatest common denominator of nstdhdl, nstexpanded, and repl_ex_nst*/
-    nstfep = ir->fepvals->nstdhdl;
-    if (ir->bExpanded)
+    if (IR_TWINRANGE(*ir) && repl_ex_nst % ir->nstcalclr != 0)
     {
-        nstfep = gmx_greatest_common_divisor(ir->fepvals->nstdhdl, nstfep);
+        /* We should exchange at nstcalclr steps to get correct integration */
+        gmx_fatal(FARGS, "The replica exchange period (%d) is not divisible by nstcalclr (%d)", repl_ex_nst, ir->nstcalclr);
     }
-    if (repl_ex_nst > 0)
+
+    if (ir->efep != efepNO)
     {
-        nstfep = gmx_greatest_common_divisor(repl_ex_nst, nstfep);
+        /* Set free energy calculation frequency as the greatest common
+         * denominator of nstdhdl and repl_ex_nst.
+         * Check for nstcalclr with twin-range, since we need the long-range
+         * contribution to the free-energy at the correct (nstcalclr) steps.
+         */
+        nstfep = ir->fepvals->nstdhdl;
+        if (ir->bExpanded)
+        {
+            if (IR_TWINRANGE(*ir) &&
+                ir->expandedvals->nstexpanded % ir->nstcalclr != 0)
+            {
+                gmx_fatal(FARGS, "nstexpanded should be divisible by nstcalclr");
+            }
+        }
+        if (repl_ex_nst > 0)
+        {
+            nstfep = gmx_greatest_common_divisor(repl_ex_nst, nstfep);
+        }
+        /* We checked divisibility of repl_ex_nst and nstcalclr above */
+        if (IR_TWINRANGE(*ir) && nstfep % ir->nstcalclr != 0)
+        {
+            gmx_incons("nstfep not divisible by nstcalclr");
+        }
     }
 
     /* I'm assuming we need global communication the first time! MRS */
@@ -760,7 +781,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             set_current_lambdas(step, ir->fepvals, bRerunMD, &rerun_fr, state_global, state, lam0);
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
-            bDoFEP       = (do_per_step(step, nstfep) && (ir->efep != efepNO));
+            bDoFEP       = ((ir->efep != efepNO) && do_per_step(step, nstfep));
             bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
                             && (ir->bExpanded) && (step > 0) && (!bStartingFromCpt));
         }
@@ -845,7 +866,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* Determine whether or not to do Neighbour Searching and LR */
             bNStList = (ir->nstlist > 0  && step % ir->nstlist == 0);
 
-            bNS = (bFirstStep || bExchanged || bNeedRepartition || bNStList || bDoFEP);
+            bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
         }
 
         /* check whether we should stop because another simulation has
