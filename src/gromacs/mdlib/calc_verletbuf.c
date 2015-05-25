@@ -208,8 +208,8 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
             for (i = 0; i < il->nr; i += 1+NRAL(ft))
             {
                 const t_iparams *ip;
-                real             cam[5] = {0}, inv_mass, coeff, m_aj;
-                int              a1, j, aj;
+                real             inv_mass, coeff, m_aj;
+                int              a1, aj;
 
                 ip = &ffparams->iparams[il->iatoms[i]];
 
@@ -217,7 +217,13 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 
                 if (ft != F_VSITEN)
                 {
-                    for (j = 1; j < NRAL(ft); j++)
+                    /* Only vsiten can have more than four
+                       constructing atoms, so NRAL(ft) <= 5 */
+                    real      cam[5]    = {0};
+                    const int maxj      = NRAL(ft);
+
+                    assert(maxj <= 5);
+                    for (int j = 1; j < maxj; j++)
                     {
                         cam[j] = moltype->atoms.atom[il->iatoms[i+1+j]].m;
                         if (cam[j] == 0)
@@ -232,64 +238,69 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                                       il->iatoms[i+1+j]+1);
                         }
                     }
-                }
 
-                switch (ft)
+                    switch (ft)
+                    {
+                        case F_VSITE2:
+                            /* Exact */
+                            vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a));
+                            break;
+                        case F_VSITE3:
+                            /* Exact */
+                            vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b));
+                            break;
+                        case F_VSITEN:
+                            gmx_incons("Invalid vsite type");
+                            break;
+                        default:
+                            /* Use the mass of the lightest constructing atom.
+                             * This is an approximation.
+                             * If the distance of the virtual site to the
+                             * constructing atom is less than all distances
+                             * between constructing atoms, this is a safe
+                             * over-estimate of the displacement of the vsite.
+                             * This condition holds for all H mass replacement
+                             * vsite constructions, except for SP2/3 groups.
+                             * In SP3 groups one H will have a F_VSITE3
+                             * construction, so even there the total drift
+                             * estimate shouldn't be far off.
+                             */
+                            vsite_m[a1] = cam[1];
+                            for (int j = 2; j < maxj; j++)
+                            {
+                                vsite_m[a1] = min(vsite_m[a1], cam[j]);
+                            }
+                            (*n_nonlin_vsite)++;
+                            break;
+                    }
+                }
+                else
                 {
-                    case F_VSITE2:
-                        /* Exact */
-                        vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a));
-                        break;
-                    case F_VSITE3:
-                        /* Exact */
-                        vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b));
-                        break;
-                    case F_VSITEN:
-                        /* Exact */
-                        inv_mass = 0;
-                        for (j = 0; j < 3*ffparams->iparams[il->iatoms[i]].vsiten.n; j += 3)
+                    int j;
+
+                    /* Exact */
+                    inv_mass = 0;
+                    for (j = 0; j < 3*ffparams->iparams[il->iatoms[i]].vsiten.n; j += 3)
+                    {
+                        aj    = il->iatoms[i+j+2];
+                        coeff = ffparams->iparams[il->iatoms[i+j]].vsiten.a;
+                        if (moltype->atoms.atom[aj].ptype == eptVSite)
                         {
-                            aj    = il->iatoms[i+j+2];
-                            coeff = ffparams->iparams[il->iatoms[i+j]].vsiten.a;
-                            if (moltype->atoms.atom[aj].ptype == eptVSite)
-                            {
-                                m_aj = vsite_m[aj];
-                            }
-                            else
-                            {
-                                m_aj = moltype->atoms.atom[aj].m;
-                            }
-                            if (m_aj <= 0)
-                            {
-                                gmx_incons("The mass of a vsiten constructing atom is <= 0");
-                            }
-                            inv_mass += coeff*coeff/m_aj;
+                            m_aj = vsite_m[aj];
                         }
-                        vsite_m[a1] = 1/inv_mass;
-                        /* Correct for loop increment of i */
-                        i += j - 1 - NRAL(ft);
-                        break;
-                    default:
-                        /* Use the mass of the lightest constructing atom.
-                         * This is an approximation.
-                         * If the distance of the virtual site to the
-                         * constructing atom is less than all distances
-                         * between constructing atoms, this is a safe
-                         * over-estimate of the displacement of the vsite.
-                         * This condition holds for all H mass replacement
-                         * vsite constructions, except for SP2/3 groups.
-                         * In SP3 groups one H will have a F_VSITE3
-                         * construction, so even there the total drift
-                         * estimate shouldn't be far off.
-                         */
-                        assert(j >= 1);
-                        vsite_m[a1] = cam[1];
-                        for (j = 2; j < NRAL(ft); j++)
+                        else
                         {
-                            vsite_m[a1] = min(vsite_m[a1], cam[j]);
+                            m_aj = moltype->atoms.atom[aj].m;
                         }
-                        (*n_nonlin_vsite)++;
-                        break;
+                        if (m_aj <= 0)
+                        {
+                            gmx_incons("The mass of a vsiten constructing atom is <= 0");
+                        }
+                        inv_mass += coeff*coeff/m_aj;
+                    }
+                    vsite_m[a1] = 1/inv_mass;
+                    /* Correct for loop increment of i */
+                    i += j - 1 - NRAL(ft);
                 }
                 if (gmx_debug_at)
                 {
