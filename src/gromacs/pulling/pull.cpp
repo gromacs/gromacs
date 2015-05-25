@@ -38,6 +38,7 @@
 
 #include "pull.h"
 
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,6 +61,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 static void pull_print_group_x(FILE *out, ivec dim, const t_pull_group *pgrp)
@@ -1575,8 +1577,10 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
             /* Determine if we need to take PBC into account for calculating
              * the COM's of the pull groups.
              */
+            GMX_RELEASE_ASSERT(pull->npbcdim <= DIM, "npbcdim must be <= the number of dimensions");
             for (m = 0; m < pull->npbcdim; m++)
             {
+                GMX_RELEASE_ASSERT(m <= DIM, "npbcdim must be <= the number of dimensions");
                 if (pulldim[m] == 1 && pgrp->nat > 1)
                 {
                     if (pgrp->pbcatom >= 0)
