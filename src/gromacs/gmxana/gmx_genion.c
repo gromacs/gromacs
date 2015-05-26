@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -238,15 +238,17 @@ void sort_ions(int nsa, int nw, int repl[], atom_id index[],
 static void update_topol(const char *topinout, int p_num, int n_num,
                          const char *p_name, const char *n_name, char *grpname)
 {
-#define TEMP_FILENM "temp.top"
     FILE    *fpin, *fpout;
     char     buf[STRLEN], buf2[STRLEN], *temp, **mol_line = NULL;
     int      line, i, nsol, nmol_line, sol_line, nsol_last;
     gmx_bool bMolecules;
+    char     temporary_filename[STRLEN];
 
     printf("\nProcessing topology\n");
     fpin  = gmx_ffopen(topinout, "r");
-    fpout = gmx_ffopen(TEMP_FILENM, "w");
+    strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+    gmx_tmpnam(temporary_filename);
+    fpout = gmx_ffopen(temporary_filename, "w");
 
     line       = 0;
     bMolecules = FALSE;
@@ -342,8 +344,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     /* use gmx_ffopen to generate backup of topinout */
     fpout = gmx_ffopen(topinout, "w");
     gmx_ffclose(fpout);
-    rename(TEMP_FILENM, topinout);
-#undef TEMP_FILENM
+    rename(temporary_filename, topinout);
 }
 
 int gmx_genion(int argc, char *argv[])
