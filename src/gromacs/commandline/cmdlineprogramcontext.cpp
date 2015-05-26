@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -252,7 +252,13 @@ std::string findDefaultLibraryDataPath(const std::string &binaryPath)
         // If running directly from the build tree, try to use the source
         // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
-        if (Path::startsWith(searchPath, CMAKE_BINARY_DIR))
+        std::string buildBinPath;
+#ifdef CMAKE_INTDIR /*In multi-configuration build systems the output subdirectory*/
+        buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin", CMAKE_INTDIR);
+#else
+        buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin");
+#endif
+        if (Path::isEquivalent(searchPath, buildBinPath))
         {
             std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
             if (isAcceptableLibraryPath(testPath))
