@@ -180,6 +180,12 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
     {
         fft5d_execute(pfft_setup->p2, thread, wcycle);
     }
+
+    bool my_debug_check = false;
+    if (my_debug_check) {
+      fprintf(stderr, "3d exec %p %p\n",
+	      pfft_setup->p1->lin, pfft_setup->p1->lout);
+    }
     return 0;
 }
 

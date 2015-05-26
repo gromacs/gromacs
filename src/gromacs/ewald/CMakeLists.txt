@@ -32,8 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB EWALD_SOURCES *.cpp)
+file(GLOB EWALD_SOURCES *.cpp *.cu)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${EWALD_SOURCES} PARENT_SCOPE)
+set(EWALD_SOURCES ${EWALD_SOURCES} PARENT_SCOPE)
 
 if (BUILD_TESTING)
 #    add_subdirectory(tests)

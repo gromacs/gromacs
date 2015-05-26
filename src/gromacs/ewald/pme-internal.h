@@ -65,6 +65,10 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
 
+typedef struct gmx_parallel_3dfft_gpu *
+    gmx_parallel_3dfft_gpu_t;
+
+
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6
 #define PME_GRID_QA    0
@@ -285,6 +289,7 @@ typedef struct gmx_pme_t {
     int                       cfftgrid_nx, cfftgrid_ny, cfftgrid_nz;
 
     gmx_parallel_3dfft_t     *pfft_setup;
+    gmx_parallel_3dfft_gpu_t  *pfft_setup_gpu;
 
     int                      *nnx, *nny, *nnz;
     real                     *fshx, *fshy, *fshz;
@@ -376,5 +381,69 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
                                  matrix vir_lj, real energy_lj,
                                  real dvdlambda_q, real dvdlambda_lj,
                                  float cycles);
+
+
+/* Send the PME mesh force, virial and energy to the PP-only nodes */
+
+
+typedef real *splinevec[DIM];
+void make_bsplines_gpu(splinevec theta_v, splinevec dtheta_v, int order,
+		       rvec fractx_v[], int nr, int ind[], real coefficient[],
+		       gmx_bool bDoSplines, int thread);
+
+void spread_coefficients_bsplines_thread_gpu_2
+(int pnx, int pny, int pnz, int offx, int offy, int offz,
+ real *grid, int order, ivec *atc_idx, int *spline_ind, int spline_n,
+ real *atc_coefficient, splinevec *spline_theta, int atc_n_foo,
+ int thread);
+
+
+void calc_interpolation_idx_gpu_mid
+(int nx, int ny, int nz,
+ int start_ix, int start_iy, int start_iz,
+ real rxx, real ryx, real ryy, real rzx, real rzy, real rzz,
+ int *g2tx, int *g2ty, int *g2tz,
+ real *fshx, real *fshy,
+ int *nnx, int *nny, int *nnz,
+ rvec *xptr_v, ivec *idxptr_v, rvec *fptr_v,
+ int start, int end, int thread);
+
+
+  // FFT
+#include "gromacs/fft/fft.h"
+#include "gromacs/utility/gmxmpi.h"
+
+int
+    gmx_parallel_3dfft_init_gpu   (gmx_parallel_3dfft_gpu_t *    pfft_setup,
+                               ivec                      ndata,
+                               real **real_data,
+                               t_complex **complex_data,
+                               MPI_Comm                  comm[2],
+                               gmx_bool                  bReproducible,
+			       int                       nthreads);
+
+int
+gmx_parallel_3dfft_real_limits_gpu(gmx_parallel_3dfft_gpu_t      pfft_setup,
+                               ivec                      local_ndata,
+                               ivec                      local_offset,
+			       ivec                      local_size);
+
+
+int
+gmx_parallel_3dfft_complex_limits_gpu(gmx_parallel_3dfft_gpu_t      pfft_setup,
+                                  ivec                      complex_order,
+                                  ivec                      local_ndata,
+                                  ivec                      local_offset,
+				  ivec                      local_size);
+
+int
+gmx_parallel_3dfft_execute_gpu(gmx_parallel_3dfft_gpu_t    pfft_setup,
+                           enum gmx_fft_direction  dir,
+                           int                     thread,
+			   gmx_wallcycle_t         wcycle);
+
+int
+gmx_parallel_3dfft_destroy_gpu(gmx_parallel_3dfft_gpu_t    pfft_setup);
+
 
 #endif
