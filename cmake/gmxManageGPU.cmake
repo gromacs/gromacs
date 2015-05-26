@@ -75,6 +75,7 @@ if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
         set(FIND_CUDA_QUIETLY QUIET)
     endif()
     find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
+    # CUDA_ADD_CUFFT_TO_TARGET(${TARGET})
 
     # Cmake 2.8.12 (and CMake 3.0) introduced a new bug where the cuda
     # library dir is added twice as an rpath on APPLE, which in turn causes

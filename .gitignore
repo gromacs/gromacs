@@ -14,3 +14,6 @@ lib*.pc
 .cproject
 CMakeLists.txt.user
 /VersionInfo*.cmake
+
+cmake
+build*

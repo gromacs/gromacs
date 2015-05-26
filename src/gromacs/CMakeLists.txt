@@ -170,6 +170,15 @@ if (GMX_GPU)
             OPTIONS
             RELWITHDEBINFO -g
             DEBUG -g -D_DEBUG_=1)
+    cuda_add_cufft_to_target(libgromacs)
+
+    # PME-only lib... (try...) FIX
+    cuda_add_library(libgromacs-pmeonly ${EWALD_SOURCES}
+            OPTIONS
+	    EXCLUDE_FROM_ALL
+            RELWITHDEBINFO -g
+            DEBUG -g -D_DEBUG_=1)
+    cuda_add_cufft_to_target(libgromacs-pmeonly)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
@@ -205,6 +214,20 @@ target_link_libraries(libgromacs
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
+                      SOVERSION ${LIBRARY_SOVERSION_MAJOR}
+                      VERSION ${LIBRARY_VERSION}
+                      COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+# PME-only lib... (try...) FIX
+target_link_libraries(libgromacs-pmeonly
+                      # ${EXTRAE_LIBRARIES}
+                      # ${GMX_EXTRA_LIBRARIES}
+                      # ${TNG_IO_LIBRARIES}
+                      ${FFT_LIBRARIES} # ${LINEAR_ALGEBRA_LIBRARIES}
+                      # ${XML_LIBRARIES}
+                      ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
+set_target_properties(libgromacs-pmeonly PROPERTIES
+                      OUTPUT_NAME "gromacs-pmeonly${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
