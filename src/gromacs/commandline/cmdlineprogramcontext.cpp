@@ -252,7 +252,13 @@ std::string findDefaultLibraryDataPath(const std::string &binaryPath)
         // If running directly from the build tree, try to use the source
         // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
-        if (Path::startsWith(searchPath, CMAKE_BINARY_DIR))
+        std::string buildBinPath;
+#ifdef CMAKE_INTDIR
+        buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin", CMAKE_INTDIR);
+#else
+        buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin");
+#endif
+        if (Path::isEquivalent(searchPath, buildBinPath))
         {
             std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
             if (isAcceptableLibraryPath(testPath))
