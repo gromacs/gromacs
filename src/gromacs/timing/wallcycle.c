@@ -904,7 +904,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         }
     }
 
-    if (cyc_sum[ewcMoveE] > tot*0.05)
+    if (cyc_sum[ewcMoveE] > tot*0.05 && tot > 0)
     {
         /* Only the sim master calls this function, so always print to stderr */
         md_print_warn(NULL, fplog,
