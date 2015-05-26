@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -485,7 +485,6 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
 static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                        gmx_atomprop_t aps)
 {
-#define TEMP_FILENM "temp.top"
     FILE       *fpin, *fpout;
     char        buf[STRLEN], buf2[STRLEN], *temp;
     const char *topinout;
@@ -525,9 +524,13 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
     topinout  = ftp2fn(efTOP, NFILE, fnm);
     if (ftp2bSet(efTOP, NFILE, fnm) )
     {
+        char temporary_filename[STRLEN];
+        strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+
         fprintf(stderr, "Processing topology\n");
         fpin    = gmx_ffopen(topinout, "r");
-        fpout   = gmx_ffopen(TEMP_FILENM, "w");
+        gmx_tmpnam(temporary_filename);
+        fpout   = gmx_ffopen(temporary_filename, "w");
         line    = 0;
         bSystem = bMolecules = FALSE;
         while (fgets(buf, STRLEN, fpin))
@@ -607,9 +610,8 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
         /* use gmx_ffopen to generate backup of topinout */
         fpout = gmx_ffopen(topinout, "w");
         gmx_ffclose(fpout);
-        rename(TEMP_FILENM, topinout);
+        rename(temporary_filename, topinout);
     }
-#undef TEMP_FILENM
 }
 
 int gmx_solvate(int argc, char *argv[])
