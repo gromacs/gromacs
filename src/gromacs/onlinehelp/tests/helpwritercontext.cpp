@@ -207,4 +207,38 @@ TEST_F(HelpWriterContextTest, FormatsEnumeratedList)
     testFormatting(text);
 }
 
+TEST_F(HelpWriterContextTest, FormatsSimpleTable)
+{
+    const char *const text[] = {
+        "Simple table:",
+        "",
+        "============  =============",
+        "First column  Second header",
+        "============  =============",
+        "text          text",
+        "============  =============",
+        "",
+        "Normal paragraph",
+        "again."
+    };
+    testFormatting(text);
+}
+
+TEST_F(HelpWriterContextTest, FormatsGridTable)
+{
+    const char *const text[] = {
+        "Grid table:",
+        "",
+        "+--------------+---------------+",
+        "| First column | Second header |",
+        "+--------------+---------------+",
+        "| text         | text          |",
+        "+--------------+---------------+",
+        "",
+        "Normal paragraph",
+        "again."
+    };
+    testFormatting(text);
+}
+
 } // namespace
