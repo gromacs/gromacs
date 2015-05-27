@@ -371,6 +371,45 @@ bool startsListItem(const std::string &text, size_t index)
     return false;
 }
 
+/*! \brief
+ * Returns `true` if a table starts in \p text at \p index.
+ *
+ * The function only inspects the first line for something that looks like a
+ * reStructuredText table, and accepts also some malformed tables.
+ * Any issues should be apparent when Sphinx parses the reStructuredText
+ * export, so full validation is not done here.
+ *
+ * Does not throw.
+ */
+bool startsTable(const std::string &text, size_t index)
+{
+    if (text[index] == '=')
+    {
+        while (index < text.length() && text[index] != '\n')
+        {
+            if (text[index] != '=' && !std::isspace(text[index]))
+            {
+                return false;
+            }
+            ++index;
+        }
+        return true;
+    }
+    else if (text[index] == '+')
+    {
+        while (index < text.length() && text[index] != '\n')
+        {
+            if (text[index] != '-' && text[index] != '+')
+            {
+                return false;
+            }
+            ++index;
+        }
+        return true;
+    }
+    return false;
+}
+
 //! \}
 
 }   // namespace
@@ -658,6 +697,10 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
                                 ++prefixLength;
                             }
                             indent = currentIndent + prefixLength;
+                        }
+                        else if (currentLine == 0 && startsTable(result, i))
+                        {
+                            bLiteral = true;
                         }
                         bLineStart = false;
                     }
