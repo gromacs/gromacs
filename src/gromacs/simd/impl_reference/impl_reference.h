@@ -80,8 +80,18 @@
 /*! \brief Defined if the SIMD implementation supports unaligned stores. */
 #define GMX_SIMD_HAVE_STOREU
 
-/*! \brief Defined if SIMD implementation has logical operations on floating-point data. */
-#define GMX_SIMD_HAVE_LOGICAL
+/*! \brief Defined if SIMD implementation has logical operations on floating-point data.
+ *
+ * \todo This seems like it should work for the reference
+ * implementation, but xor_sign and trig-function tests can fail for
+ * some SIMD widths, probably because
+ * gmx_simd_set1_f(GMX_FLOAT_NEGZERO) sometimes does not work.  Of
+ * course, negative zero compares equal to zero, and so until we
+ * implement a bitwise check for equality, we can't use the SIMD tests
+ * to test for correctness here.
+ */
+#define GMX_SIMD_HAVE_LOGICAL  /* For Doxygen */
+#undef GMX_SIMD_HAVE_LOGICAL   /* Reference implementation setting */
 
 /*! \brief Defined if SIMD fused multiply-add uses hardware instructions */
 #define GMX_SIMD_HAVE_FMA  /* For Doxygen */
@@ -1601,7 +1611,7 @@ gmx_simd_andnot_d(gmx_simd_double_t a, gmx_simd_double_t b)
 #else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
-        conv1.i = conv1.i & conv2.i;
+        conv1.i = (~conv1.i) & conv2.i;
         c.r[i]  = conv1.r;
 #endif
     }
@@ -1638,7 +1648,7 @@ gmx_simd_or_d(gmx_simd_double_t a, gmx_simd_double_t b)
 #else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
-        conv1.i = conv1.i & conv2.i;
+        conv1.i = conv1.i | conv2.i;
         c.r[i]  = conv1.r;
 #endif
     }
@@ -1675,7 +1685,7 @@ gmx_simd_xor_d(gmx_simd_double_t a, gmx_simd_double_t b)
 #else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
-        conv1.i = conv1.i & conv2.i;
+        conv1.i = conv1.i ^ conv2.i;
         c.r[i]  = conv1.r;
 #endif
     }
