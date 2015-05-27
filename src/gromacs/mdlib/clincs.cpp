@@ -68,7 +68,10 @@
 #include "gromacs/utility/smalloc.h"
 
 /* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
-#if defined GMX_SIMD_HAVE_REAL && !(defined _MSC_VER && _MSC_VER < 1700)
+/* A bug in ICC after version 15.0.1 breaks calc_dr_x_xp_simd */
+/* TODO: Restore SIMD for future Intel compiler versions once bug is fixed. */
+#define INTEL_LINCS_BUG ((__ICC == 1500 || __ICL == 1500) && __INTEL_COMPILER_UPDATE >= 2)
+#if defined GMX_SIMD_HAVE_REAL && !(defined _MSC_VER && _MSC_VER < 1700) && !(INTEL_LINCS_BUG)
 #define LINCS_SIMD
 #endif
 
