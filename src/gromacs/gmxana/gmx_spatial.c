@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,43 +54,53 @@ static const double bohr = 0.529177249;  /* conversion factor to compensate for 
 int gmx_spatial(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[THISMODULE] calculates the spatial distribution function and ",
-        "outputs it in a form that can be read by VMD as Gaussian98 cube format. ",
-        "For a system of 32,000 atoms and a 50 ns trajectory, the SDF can be generated ",
-        "in about 30 minutes, with most of the time dedicated to the two runs through ",
-        "[TT]trjconv[tt] that are required to center everything properly. ",
-        "This also takes a whole bunch of space (3 copies of the trajectory file). ",
-        "Still, the pictures are pretty and very informative when the fitted selection is properly made. ",
-        "3-4 atoms in a widely mobile group (like a free amino acid in solution) works ",
-        "well, or select the protein backbone in a stable folded structure to get the SDF ",
-        "of solvent and look at the time-averaged solvation shell. ",
-        "It is also possible using this program to generate the SDF based on some arbitrary ",
-        "Cartesian coordinate. To do that, simply omit the preliminary [gmx-trjconv] steps. \n",
-        "USAGE: \n",
-        "1. Use [gmx-make_ndx] to create a group containing the atoms around which you want the SDF \n",
-        "2. [TT]gmx trjconv -s a.tpr -f a.tng -o b.tng -boxcenter tric -ur compact -pbc none[tt] \n",
-        "3. [TT]gmx trjconv -s a.tpr -f b.tng -o c.tng -fit rot+trans[tt] \n",
-        "4. run [THISMODULE] on the [TT]c.tng[tt] output of step #3. \n",
-        "5. Load [TT]grid.cube[tt] into VMD and view as an isosurface. \n",
-        "[BB]Note[bb] that systems such as micelles will require [TT]gmx trjconv -pbc cluster[tt] between steps 1 and 2\n",
-        "WARNINGS:[BR]",
-        "The SDF will be generated for a cube that contains all bins that have some non-zero occupancy. ",
-        "However, the preparatory [TT]-fit rot+trans[tt] option to [gmx-trjconv] implies that your system will be rotating ",
-        "and translating in space (in order that the selected group does not). Therefore the values that are ",
-        "returned will only be valid for some region around your central group/coordinate that has full overlap ",
-        "with system volume throughout the entire translated/rotated system over the course of the trajectory. ",
-        "It is up to the user to ensure that this is the case. \n",
-        "BUGS:[BR]",
-        "When the allocated memory is not large enough, a segmentation fault may occur. This is usually detected ",
-        "and the program is halted prior to the fault while displaying a warning message suggesting the use of the [TT]-nab[tt] (Number of Additional Bins)",
-        "option. However, the program does not detect all such events. If you encounter a segmentation fault, run it again ",
-        "with an increased [TT]-nab[tt] value. \n",
-        "RISKY OPTIONS:[BR]",
-        "To reduce the amount of space and time required, you can output only the coords ",
-        "that are going to be used in the first and subsequent run through [gmx-trjconv]. ",
-        "However, be sure to set the [TT]-nab[tt] option to a sufficiently high value since ",
-        "memory is allocated for cube bins based on the initial coordinates and the [TT]-nab[tt] ",
-        "option value. \n"
+        "[THISMODULE] calculates the spatial distribution function and",
+        "outputs it in a form that can be read by VMD as Gaussian98 cube format.",
+        "For a system of 32,000 atoms and a 50 ns trajectory, the SDF can be generated",
+        "in about 30 minutes, with most of the time dedicated to the two runs through",
+        "[TT]trjconv[tt] that are required to center everything properly.",
+        "This also takes a whole bunch of space (3 copies of the trajectory file).",
+        "Still, the pictures are pretty and very informative when the fitted selection is properly made.",
+        "3-4 atoms in a widely mobile group (like a free amino acid in solution) works",
+        "well, or select the protein backbone in a stable folded structure to get the SDF",
+        "of solvent and look at the time-averaged solvation shell.",
+        "It is also possible using this program to generate the SDF based on some arbitrary",
+        "Cartesian coordinate. To do that, simply omit the preliminary [gmx-trjconv] steps.",
+        "",
+        "Usage:",
+        "",
+        "1. Use [gmx-make_ndx] to create a group containing the atoms around which you want the SDF",
+        "2. [TT]gmx trjconv -s a.tpr -f a.tng -o b.tng -boxcenter tric -ur compact -pbc none[tt]",
+        "3. [TT]gmx trjconv -s a.tpr -f b.tng -o c.tng -fit rot+trans[tt]",
+        "4. run [THISMODULE] on the [TT]c.tng[tt] output of step #3.",
+        "5. Load [TT]grid.cube[tt] into VMD and view as an isosurface.",
+        "",
+        "[BB]Note[bb] that systems such as micelles will require [TT]gmx trjconv -pbc cluster[tt] between steps 1 and 2.",
+        "",
+        "Warnings",
+        "^^^^^^^^",
+        "",
+        "The SDF will be generated for a cube that contains all bins that have some non-zero occupancy.",
+        "However, the preparatory [TT]-fit rot+trans[tt] option to [gmx-trjconv] implies that your system will be rotating",
+        "and translating in space (in order that the selected group does not). Therefore the values that are",
+        "returned will only be valid for some region around your central group/coordinate that has full overlap",
+        "with system volume throughout the entire translated/rotated system over the course of the trajectory.",
+        "It is up to the user to ensure that this is the case.",
+        "",
+        "Risky options",
+        "^^^^^^^^^^^^^",
+        "",
+        "To reduce the amount of space and time required, you can output only the coords",
+        "that are going to be used in the first and subsequent run through [gmx-trjconv].",
+        "However, be sure to set the [TT]-nab[tt] option to a sufficiently high value since",
+        "memory is allocated for cube bins based on the initial coordinates and the [TT]-nab[tt]",
+        "option value."
+    };
+    const char     *bugs[] = {
+        "When the allocated memory is not large enough, a segmentation fault may occur. This is usually detected "
+        "and the program is halted prior to the fault while displaying a warning message suggesting the use of the [TT]-nab[tt] (Number of Additional Bins) "
+        "option. However, the program does not detect all such events. If you encounter a segmentation fault, run it again "
+        "with an increased [TT]-nab[tt] value."
     };
 
     static gmx_bool bPBC         = FALSE;
@@ -155,7 +165,7 @@ int gmx_spatial(int argc, char *argv[])
     /* This is the routine responsible for adding default options,
      * calling the X/motif interface, etc. */
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }

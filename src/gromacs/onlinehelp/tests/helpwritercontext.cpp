@@ -241,4 +241,22 @@ TEST_F(HelpWriterContextTest, FormatsGridTable)
     testFormatting(text);
 }
 
+TEST_F(HelpWriterContextTest, FormatsTitles)
+{
+    // Console formatting does not currently work without the paragraph breaks
+    // after the title.
+    const char *const text[] = {
+        "Title",
+        "=====",
+        "",
+        "Some text without spacing",
+        "",
+        "Subtitle",
+        "++++++++",
+        "",
+        "More text",
+    };
+    testFormatting(text);
+}
+
 } // namespace
