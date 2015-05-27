@@ -131,7 +131,6 @@ const t_sandr sandrTty[] = {
     { "[TANH]", "tanh(" },
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
-    { "[BR]", "\n"},
     { "[GRK]", "" },
     { "[grk]", "" }
 };
@@ -181,8 +180,6 @@ const t_sandr sandrRst[] = {
     { "[TANH]", "tanh(" },
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
-    // [BR] is fundamentally incompatible with rst
-    { "[BR]", "\n\n"},
     { "[GRK]", "" },
     { "[grk]", "" }
 };
@@ -400,6 +397,29 @@ bool startsTable(const std::string &text, size_t index)
         while (index < text.length() && text[index] != '\n')
         {
             if (text[index] != '-' && text[index] != '+')
+            {
+                return false;
+            }
+            ++index;
+        }
+        return true;
+    }
+    return false;
+}
+
+/*! \brief
+ * Returns `true` if a line in \p text starting at \p index is a title underline.
+ *
+ * Does not throw.
+ */
+bool isTitleUnderline(const std::string &text, size_t index)
+{
+    const char firstChar = text[index];
+    if (std::ispunct(firstChar))
+    {
+        while (index < text.length() && text[index] != '\n')
+        {
+            if (text[index] != firstChar)
             {
                 return false;
             }
@@ -701,6 +721,16 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
                         else if (currentLine == 0 && startsTable(result, i))
                         {
                             bLiteral = true;
+                        }
+                        else if (currentLine == 1 && isTitleUnderline(result, i))
+                        {
+                            // TODO: Nicer formatting that shares
+                            // implementation with writeTitle() and honors the
+                            // nesting depths etc.
+                            if (i > 0)
+                            {
+                                paragraph[paragraph.length() - 1] = '\n';
+                            }
                         }
                         bLineStart = false;
                     }

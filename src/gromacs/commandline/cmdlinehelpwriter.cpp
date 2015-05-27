@@ -629,13 +629,7 @@ void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
     for (i = bugs_.begin(); i != bugs_.end(); ++i)
     {
         const char *const       bug = *i;
-        TextLineWrapperSettings settings;
-        settings.setIndent(2);
-        settings.setFirstLineIndent(0);
-        settings.setLineLength(78);
-        context.outputFile().writeLine(
-                context.substituteMarkupAndWrapToString(
-                        settings, formatString("* %s", bug)));
+        context.writeTextBlock(formatString("* %s", bug));
     }
 }
 
