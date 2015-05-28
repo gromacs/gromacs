@@ -1301,7 +1301,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     static real        angle          = 135.0, distance = 0.3, posre_fc = 1000;
     static real        long_bond_dist = 0.25, short_bond_dist = 0.05;
     static const char *vsitestr[]     = { NULL, "none", "hydrogens", "aromatics", NULL };
-    static const char *watstr[]       = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
+    static const char *watstr[]       = { NULL, "select", "none", "spc", "spce", "tip3p", "tip4p", "tip5p", "swm4-ndp", "swm6", NULL };
     static const char *chainsep[]     = { NULL, "id_or_ter", "id_and_ter", "ter", "id", "interactive", NULL };
     static const char *merge[]        = {NULL, "no", "all", "interactive", NULL };
     static const char *ff             = "select";
