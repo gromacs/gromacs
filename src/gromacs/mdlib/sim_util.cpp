@@ -1183,7 +1183,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (!bUseOrEmulGPU || bDiffKernels)
+    if ((!bUseOrEmulGPU || bDiffKernels) && (flags & GMX_FORCE_NONBONDED))
     {
         int aloc;
 
@@ -1247,7 +1247,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         do_flood(cr, inputrec, x, f, ed, box, step, bNS);
     }
 
-    if (bUseOrEmulGPU && !bDiffKernels)
+    if ((bUseOrEmulGPU && !bDiffKernels) && (flags & GMX_FORCE_NONBONDED))
     {
         /* wait for non-local forces (or calculate in emulation mode) */
         if (DOMAINDECOMP(cr))
@@ -1303,7 +1303,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcMOVEF);
     }
 
-    if (bUseOrEmulGPU)
+    if (bUseOrEmulGPU && (flags & GMX_FORCE_NONBONDED))
     {
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
