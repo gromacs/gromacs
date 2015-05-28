@@ -721,7 +721,8 @@ int gmx_trjconv(int argc, char *argv[])
         "trajectories must be concatenated without having double frames.[PAR]",
 
         "Option [TT]-dump[tt] can be used to extract a frame at or near",
-        "one specific time from your trajectory.[PAR]",
+        "one specific time from your trajectory, but only works reliably",
+        "if the time interval between frames is uniform.[PAR]",
 
         "Option [TT]-drop[tt] reads an [TT].xvg[tt] file with times and values.",
         "When options [TT]-dropunder[tt] and/or [TT]-dropover[tt] are set,",
