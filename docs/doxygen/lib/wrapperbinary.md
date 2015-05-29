@@ -97,6 +97,9 @@ The build system provides a target, `make sphinx-programs`, that generates
 reStructuredText help for the commands, which in turn is used to generate man
 and HTML help.  Internally, this executes `gmx help -export rst`, which
 triggers special handling in the internal help module.
+See documentation for
+\linktodevmanual{build-system,special targets in the build system} for details
+of which targets to use for generating the documentation..
 
 If this option is set, the help module loops through all the modules in the
 binary, writing help for each into a separate file.  The help module writes
@@ -106,8 +109,6 @@ using a different help context than for console output).
 
 Additionally, a list of all the modules is generated (`gromacs.7` for man
 pages, and alphabetical and by-topic lists for the HTML pages).
-
-TODO: Document/link to existing documentation for targets that use the rst help
 
 Handling C %main() functions {#section_wrapperbinary_cmain}
 ----------------------------
