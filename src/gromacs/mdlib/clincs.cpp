@@ -207,7 +207,18 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_float_t   row0,
 #endif /* AVX */
 
 
-
+// Type and data alignment specification
+//
+// alignas(x) is not used even with GMX_CXX11 because it isn't in the list of
+// tested features and thus might not be supported.
+#if defined(_MSC_VER)
+#  define GMX_ALIGNMENT(x) __declspec(align(x))
+#elif defined(__GNUC__)
+#  define GMX_ALIGNMENT(x) __attribute__ ((__aligned__(x)))
+#else
+#  define GMX_NO_ALIGNMENT
+#  define GMX_ALIGNMENT(x)
+#endif
 
 #ifdef GMX_SIMD_HAVE_REAL
 /*! \brief Store differences between indexed rvecs in SIMD registers.
@@ -217,7 +228,7 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_float_t   row0,
  *
  * \param[in]     v           Array of rvecs
  * \param[in]     pair_index  Index pairs for GMX_SIMD_REAL_WIDTH vector pairs
- * \param[in,out] buf_aligned Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
+ * \param[in,out] buf         Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
  * \param[out]    dx          SIMD register with x difference
  * \param[out]    dy          SIMD register with y difference
  * \param[out]    dz          SIMD register with z difference
@@ -225,7 +236,7 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_float_t   row0,
 static gmx_inline void gmx_simdcall
 gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
                                           const int       *pair_index,
-                                          real gmx_unused *buf_aligned,
+                                          real gmx_unused *buf,
                                           gmx_simd_real_t *dx,
                                           gmx_simd_real_t *dy,
                                           gmx_simd_real_t *dz)
@@ -243,6 +254,12 @@ gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
 
     gmx_hack_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
 #else
+#if defined __ICC || defined __ICL
+    GMX_ALIGNMENT(GMX_SIMD_REAL_WIDTH*sizeof(real)) real buf_aligned[3*GMX_SIMD_REAL_WIDTH];
+#else
+    real* buf_aligned = buf;
+#endif
+
     int i, m;
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -266,14 +283,14 @@ gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
  * \param[in]     x           SIMD register with x-components of the vectors
  * \param[in]     y           SIMD register with y-components of the vectors
  * \param[in]     z           SIMD register with z-components of the vectors
- * \param[in,out] buf_aligned Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
+ * \param[in,out] buf         Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
  * \param[out]    v           Array of GMX_SIMD_REAL_WIDTH rvecs
  */
 static gmx_inline void gmx_simdcall
 gmx_simd_store_vec_to_rvec(gmx_simd_real_t  x,
                            gmx_simd_real_t  y,
                            gmx_simd_real_t  z,
-                           real gmx_unused *buf_aligned,
+                           real gmx_unused *buf,
                            rvec            *v)
 {
 #if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
@@ -288,6 +305,12 @@ gmx_simd_store_vec_to_rvec(gmx_simd_real_t  x,
         gmx_hack_simd4_store3_r(v[i], s4[i]);
     }
 #else
+#if defined __ICC || defined __ICL
+    GMX_ALIGNMENT(GMX_SIMD_REAL_WIDTH*sizeof(real)) real buf_aligned[3*GMX_SIMD_REAL_WIDTH];
+#else
+    real* buf_aligned = buf;
+#endif
+
     int i, m;
 
     gmx_simd_store_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH, x);
