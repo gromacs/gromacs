@@ -217,7 +217,6 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_float_t   row0,
  *
  * \param[in]     v           Array of rvecs
  * \param[in]     pair_index  Index pairs for GMX_SIMD_REAL_WIDTH vector pairs
- * \param[in,out] buf_aligned Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
  * \param[out]    dx          SIMD register with x difference
  * \param[out]    dy          SIMD register with y difference
  * \param[out]    dz          SIMD register with z difference
@@ -225,7 +224,6 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_float_t   row0,
 static gmx_inline void gmx_simdcall
 gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
                                           const int       *pair_index,
-                                          real gmx_unused *buf_aligned,
                                           gmx_simd_real_t *dx,
                                           gmx_simd_real_t *dy,
                                           gmx_simd_real_t *dz)
@@ -244,19 +242,23 @@ gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
     gmx_hack_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
 #else
     int i, m;
+    union {
+        gmx_simd_real_t s[3];
+        real            r[3*GMX_SIMD_REAL_WIDTH];
+    } buf;
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         /* Store the distances packed and aligned */
         for (m = 0; m < DIM; m++)
         {
-            buf_aligned[m*GMX_SIMD_REAL_WIDTH + i] =
+            buf.r[m*GMX_SIMD_REAL_WIDTH + i] =
                 v[pair_index[i*2]][m] - v[pair_index[i*2 + 1]][m];
         }
     }
-    *dx = gmx_simd_load_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH);
-    *dy = gmx_simd_load_r(buf_aligned + 1*GMX_SIMD_REAL_WIDTH);
-    *dz = gmx_simd_load_r(buf_aligned + 2*GMX_SIMD_REAL_WIDTH);
+    *dx = buf.s[0];
+    *dy = buf.s[1];
+    *dz = buf.s[2];
 #endif
 }
 
@@ -266,14 +268,12 @@ gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
  * \param[in]     x           SIMD register with x-components of the vectors
  * \param[in]     y           SIMD register with y-components of the vectors
  * \param[in]     z           SIMD register with z-components of the vectors
- * \param[in,out] buf_aligned Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
  * \param[out]    v           Array of GMX_SIMD_REAL_WIDTH rvecs
  */
 static gmx_inline void gmx_simdcall
 gmx_simd_store_vec_to_rvec(gmx_simd_real_t  x,
                            gmx_simd_real_t  y,
                            gmx_simd_real_t  z,
-                           real gmx_unused *buf_aligned,
                            rvec            *v)
 {
 #if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
@@ -289,16 +289,20 @@ gmx_simd_store_vec_to_rvec(gmx_simd_real_t  x,
     }
 #else
     int i, m;
+    union {
+        gmx_simd_real_t s[3];
+        real            r[3*GMX_SIMD_REAL_WIDTH];
+    } buf;
 
-    gmx_simd_store_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH, x);
-    gmx_simd_store_r(buf_aligned + 1*GMX_SIMD_REAL_WIDTH, y);
-    gmx_simd_store_r(buf_aligned + 2*GMX_SIMD_REAL_WIDTH, z);
+    buf.s[0] = x;
+    buf.s[1] = y;
+    buf.s[2] = z;
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         for (m = 0; m < DIM; m++)
         {
-            v[i][m] = buf_aligned[m*GMX_SIMD_REAL_WIDTH + i];
+            v[i][m] = buf.r[m*GMX_SIMD_REAL_WIDTH + i];
         }
     }
 #endif
@@ -320,7 +324,6 @@ typedef struct {
     int    ind_nalloc; /* allocation size of ind and ind_r */
     tensor vir_r_m_dr; /* temporary variable for virial calculation */
     real   dhdlambda;  /* temporary variable for lambda derivative */
-    real  *simd_buf;   /* Aligned work array for SIMD */
 } lincs_task_t;
 
 typedef struct gmx_lincsdata {
@@ -654,8 +657,6 @@ calc_dr_x_f_simd(int                       b0,
                  const rvec * gmx_restrict f,
                  const real * gmx_restrict blc,
                  const pbc_simd_t *        pbc_simd,
-                 real * gmx_restrict       vbuf1,
-                 real * gmx_restrict       vbuf2,
                  rvec * gmx_restrict       r,
                  real * gmx_restrict       rhs,
                  real * gmx_restrict       sol)
@@ -669,7 +670,7 @@ calc_dr_x_f_simd(int                       b0,
         gmx_simd_real_t rx_S, ry_S, rz_S, n2_S, il_S;
         gmx_simd_real_t fx_S, fy_S, fz_S, ip_S, rhs_S;
 
-        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf1,
+        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2,
                                                   &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
@@ -681,9 +682,9 @@ calc_dr_x_f_simd(int                       b0,
         ry_S  = gmx_simd_mul_r(ry_S, il_S);
         rz_S  = gmx_simd_mul_r(rz_S, il_S);
 
-        gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r + bs);
+        gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, r + bs);
 
-        gmx_hack_simd_gather_rvec_dist_pair_index(f, bla + bs*2, vbuf2,
+        gmx_hack_simd_gather_rvec_dist_pair_index(f, bla + bs*2,
                                                   &fx_S, &fy_S, &fz_S);
 
         ip_S  = gmx_simd_iprod_r(rx_S, ry_S, rz_S,
@@ -749,8 +750,6 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
      */
     calc_dr_x_f_simd(b0, b1, bla, x, f, blc,
                      &pbc_simd,
-                     lincsd->task[th].simd_buf,
-                     lincsd->task[th].simd_buf + GMX_SIMD_REAL_WIDTH*DIM,
                      r, rhs1, sol);
 
 #else /* LINCS_SIMD */
@@ -894,8 +893,6 @@ calc_dr_x_xp_simd(int                       b0,
                   const real * gmx_restrict bllen,
                   const real * gmx_restrict blc,
                   const pbc_simd_t *        pbc_simd,
-                  real * gmx_restrict       vbuf1,
-                  real * gmx_restrict       vbuf2,
                   rvec * gmx_restrict       r,
                   real * gmx_restrict       rhs,
                   real * gmx_restrict       sol)
@@ -909,7 +906,7 @@ calc_dr_x_xp_simd(int                       b0,
         gmx_simd_real_t rx_S, ry_S, rz_S, n2_S, il_S;
         gmx_simd_real_t rxp_S, ryp_S, rzp_S, ip_S, rhs_S;
 
-        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf1,
+        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2,
                                                   &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
@@ -921,9 +918,9 @@ calc_dr_x_xp_simd(int                       b0,
         ry_S  = gmx_simd_mul_r(ry_S, il_S);
         rz_S  = gmx_simd_mul_r(rz_S, il_S);
 
-        gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, vbuf1, r + bs);
+        gmx_simd_store_vec_to_rvec(rx_S, ry_S, rz_S, r + bs);
 
-        gmx_hack_simd_gather_rvec_dist_pair_index(xp, bla + bs*2, vbuf2,
+        gmx_hack_simd_gather_rvec_dist_pair_index(xp, bla + bs*2,
                                                   &rxp_S, &ryp_S, &rzp_S);
 
         pbc_correct_dx_simd(&rxp_S, &ryp_S, &rzp_S, pbc_simd);
@@ -1000,7 +997,6 @@ calc_dist_iter_simd(int                       b0,
                     const real * gmx_restrict blc,
                     const pbc_simd_t *        pbc_simd,
                     real                      wfac,
-                    real * gmx_restrict       vbuf,
                     real * gmx_restrict       rhs,
                     real * gmx_restrict       sol,
                     gmx_bool *                bWarn)
@@ -1022,7 +1018,7 @@ calc_dist_iter_simd(int                       b0,
         gmx_simd_real_t rx_S, ry_S, rz_S, n2_S;
         gmx_simd_real_t len_S, len2_S, dlen2_S, lc_S, blc_S;
 
-        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2, vbuf,
+        gmx_hack_simd_gather_rvec_dist_pair_index(x, bla + bs*2,
                                                   &rx_S, &ry_S, &rz_S);
 
         pbc_correct_dx_simd(&rx_S, &ry_S, &rz_S, pbc_simd);
@@ -1110,8 +1106,6 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
      */
     calc_dr_x_xp_simd(b0, b1, bla, x, xp, bllen, blc,
                       &pbc_simd,
-                      lincsd->task[th].simd_buf,
-                      lincsd->task[th].simd_buf + GMX_SIMD_REAL_WIDTH*DIM,
                       r, rhs1, sol);
 
 #else /* LINCS_SIMD */
@@ -1234,7 +1228,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
 
 #ifdef LINCS_SIMD
         calc_dist_iter_simd(b0, b1, bla, xp, bllen, blc, &pbc_simd, wfac,
-                            lincsd->task[th].simd_buf, rhs1, sol, bWarn);
+                            rhs1, sol, bWarn);
 #else
         calc_dist_iter(b0, b1, bla, xp, bllen, blc, pbc, wfac,
                        rhs1, sol, bWarn);
@@ -1660,15 +1654,6 @@ gmx_lincsdata_t init_lincs(FILE *fplog, gmx_mtop_t *mtop,
         /* Allocate an extra elements for "task-overlap" constraints */
         snew(li->task, li->ntask + 1);
     }
-    int th;
-#pragma omp parallel for num_threads(li->ntask)
-    for (th = 0; th < li->ntask; th++)
-    {
-        /* Per thread SIMD load buffer for loading 2 simd_width rvecs */
-        snew_aligned(li->task[th].simd_buf, 2*simd_width*DIM,
-                     align_bytes);
-    }
-
     if (bPLINCS || li->ncg_triangle > 0)
     {
         please_cite(fplog, "Hess2008a");
