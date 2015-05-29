@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -220,6 +220,33 @@ typedef uint64_t gmx_uint64_t;
 #else
 #define gmx_noreturn
 #endif
+#endif
+
+/*! \def GMX_ALIGNMENT
+ * Aligned variable are supported */
+/*! \def GMX_ALIGNED(type, alignment)
+ * \brief
+ * Declare variable with data alignment
+ *
+ * \param[in] type       Type of variable
+ * \param[in] alignment  Alignment in multiples of type
+ *
+ * Typical usage:
+ * \code
+   GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf[...];
+   \endcode
+ */
+// alignas(x) is not used even with GMX-CXX11 because it isn't in the list of
+// tested features and thus might not be supported.
+#if defined(_MSC_VER)
+#  define GMX_ALIGNMENT 1
+#  define GMX_ALIGNED(type, alignment) __declspec(align(alignment*sizeof(type))) type
+#elif defined(__GNUC__)
+#  define GMX_ALIGNMENT 1
+#  define GMX_ALIGNED(type, alignment) __attribute__ ((__aligned__(alignment*sizeof(type)))) type
+#else
+#  define GMX_ALIGNMENT 0
+#  define GMX_ALIGNED(type, alignment)
 #endif
 
 /*! \brief
