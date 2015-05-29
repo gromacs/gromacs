@@ -222,6 +222,22 @@ typedef uint64_t gmx_uint64_t;
 #endif
 #endif
 
+
+/*! \def GMX_ALIGNMENT
+ * \brief
+ * Attribute to variable specifying data alignment
+ */
+// alignas(x) is not used even with GMX_CXX11 because it isn't in the list of
+// tested features and thus might not be supported.
+#if defined(_MSC_VER)
+#  define GMX_ALIGNMENT(x) __declspec(align(x))
+#elif defined(__GNUC__)
+#  define GMX_ALIGNMENT(x) __attribute__ ((__aligned__(x)))
+#else
+#  define GMX_NO_ALIGNMENT
+#  define GMX_ALIGNMENT(x)
+#endif
+
 /*! \brief
  * Macro to explicitly ignore an unused value.
  *
