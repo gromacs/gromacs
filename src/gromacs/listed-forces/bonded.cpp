@@ -177,7 +177,7 @@ gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_float_t *a,
  * \param[in]     v           Array of rvecs
  * \param[in]     index0      Index into the vector array
  * \param[in]     index1      Index into the vector array
- * \param[in,out] buf_aligned Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
+ * \param[in,out] buf         Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
  * \param[out]    dx          SIMD register with x difference
  * \param[out]    dy          SIMD register with y difference
  * \param[out]    dz          SIMD register with z difference
@@ -186,7 +186,7 @@ static gmx_inline void gmx_simdcall
 gmx_hack_simd_gather_rvec_dist_two_index(const rvec      *v,
                                          const int       *index0,
                                          const int       *index1,
-                                         real gmx_unused *buf_aligned,
+                                         real gmx_unused *buf,
                                          gmx_simd_real_t *dx,
                                          gmx_simd_real_t *dy,
                                          gmx_simd_real_t *dz)
@@ -204,6 +204,12 @@ gmx_hack_simd_gather_rvec_dist_two_index(const rvec      *v,
     }
     gmx_hack_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
 #else /* generic SIMD */
+#if GMX_ALIGNMENT
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf_aligned[3*GMX_SIMD_REAL_WIDTH];
+#else
+    real* buf_aligned = buf;
+#endif
+
     int i, m;
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
