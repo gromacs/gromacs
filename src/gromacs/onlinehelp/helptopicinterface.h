@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -31,19 +31,6 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
- */
-/*! \libinternal \defgroup module_onlinehelp Help Formatting for Online Help (onlinehelp)
- * \ingroup group_utilitymodules
- * \brief
- * Provides functionality for formatting help text for console and other
- * formats.
- *
- * This module provides helper functions and classes for formatting console
- * help, as well as man pages and HTML help from the source code.  It should
- * not be necessary to call any methods in this module outside the \Gromacs
- * library.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \libinternal \file
  * \brief
