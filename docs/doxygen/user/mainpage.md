@@ -52,6 +52,8 @@ give an overview of some of the topics that are documented:
  - \subpage page_analysisframework <br/>
    Provides an overview of the framework that the \Gromacs library provides for
    writing (trajectory) analysis tools.
+ - \subpage page_onlinehelp <br/>
+   Provides an overview of the formatting markup available in help texts.
  - \subpage page_usinglibrary <br/>
    Provides general guidance for writing software that uses the \Gromacs
    library.
