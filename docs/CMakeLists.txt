@@ -120,7 +120,6 @@ if (SPHINX_FOUND)
         dev-manual/tools.rst
         dev-manual/uncrustify.rst
         install-guide/index.rst
-        man/gromacs.7.rst
         user-guide/index.rst
         user-guide/getting-started.rst
         user-guide/flow.rst
