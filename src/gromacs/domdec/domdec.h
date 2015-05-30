@@ -110,6 +110,9 @@ void dd_get_ns_ranges(gmx_domdec_t *dd, int icg,
 /*! \brief Returns the atom range in the local state for atoms involved in virtual sites */
 int dd_natoms_vsite(gmx_domdec_t *dd);
 
+/*! \brief Returns the atom range in the local state for atoms involved in shells/Drudes */
+int dd_natoms_shell(gmx_domdec_t *dd);
+
 /*! \brief Sets the atom range for atom in the local state for atoms received in constraints communication */
 void dd_get_constraint_range(gmx_domdec_t *dd,
                              int *at_start, int *at_end);

@@ -1303,8 +1303,8 @@ void add_quartic_restraint_force(t_inputrec *ir, gmx_shellfc_t shfc, rvec x[], r
             du = k*power*(pow((rbond - r),(power-2)));
             for (d=0; d<DIM; d++)
             {
-                f[s][d] += du*dx[d];
-                f[n][d] -= du*dx[d];
+                f[s][d] -= du*dx[d];
+                f[n][d] += du*dx[d];
             }
         }
     }
@@ -1357,7 +1357,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
     if (DOMAINDECOMP(cr))
     {
-        nat = dd_natoms_vsite(cr->dd);
+        nat = dd_natoms_shell(cr->dd);
         if (nflexcon > 0)
         {
             dd_get_constraint_range(cr->dd, &dd_ac0, &dd_ac1);
