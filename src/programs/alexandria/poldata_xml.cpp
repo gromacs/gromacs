@@ -74,7 +74,7 @@ enum {
     exmlELEM, exmlNAME, exmlDESC,
     exmlATYPE, exmlMILLER, exmlVALENCE, exmlBOSQUE,
     exmlNEIGHBORS, exmlAROMATIC,
-    exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS,
+    exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS, exmlEREF,
     exmlFUNCTION,
     exmlATOM1, exmlATOM2, exmlATOM3, exmlATOM4,
     exmlSIGMA, exmlBONDORDER, exmlPARAMS,
@@ -104,7 +104,7 @@ static const char *exml_names[exmlNR] = {
     "elem", "name", "description",
     "atype", "miller", "valence", "bosque",
     "neighbors", "aromatic",
-    "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams",
+    "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams", "ref_enthalpy",
     "function",
     "atom1", "atom2", "atom3", "atom4",
     "sigma", "bondorder", "params",
@@ -278,14 +278,16 @@ static void process_attr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlATYPE]) &&
                 NN(xbuf[exmlPTYPE]) &&
                 NN(xbuf[exmlBTYPE]) &&
-                NN(xbuf[exmlVDWPARAMS]))
+                NN(xbuf[exmlVDWPARAMS]) &&
+                NN(xbuf[exmlEREF]))
             {
                 gmx_poldata_add_atype(pd, xbuf[exmlELEM],
                                       xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
                                       xbuf[exmlATYPE],
                                       xbuf[exmlPTYPE],
                                       xbuf[exmlBTYPE],
-                                      xbuf[exmlVDWPARAMS]);
+                                      xbuf[exmlVDWPARAMS],
+                                      atof(xbuf[exmlEREF]));
             }
             break;
         case exmlBONDING_RULE:
@@ -522,7 +524,7 @@ static void add_xml_poldata(xmlNodePtr parent, gmx_poldata_t pd)
     *epref, *desc, *params, *func;
     char  *neighbors, *zeta, *qstr, *rowstr;
     double polarizability, sig_pol, length, tau_ahc, alpha_ahp, angle, J0, chi0,
-           bondorder, sigma, fudgeQQ, fudgeLJ, valence;
+        bondorder, sigma, fudgeQQ, fudgeLJ, valence, ref_enthalpy;
 
     child = add_xml_child(parent, exml_names[exmlATOMTYPES]);
     tmp   = gmx_poldata_get_force_field(pd);
@@ -549,7 +551,7 @@ static void add_xml_poldata(xmlNodePtr parent, gmx_poldata_t pd)
     {
         char *ptype;
         while (1 == gmx_poldata_get_atype(pd, &elem, &desc, &atype, &ptype, &btype,
-                                          &vdwparams))
+                                          &vdwparams, &ref_enthalpy))
         {
             grandchild = add_xml_child(child, exml_names[exmlATOMTYPE]);
             add_xml_char(grandchild, exml_names[exmlELEM], elem);
@@ -558,6 +560,7 @@ static void add_xml_poldata(xmlNodePtr parent, gmx_poldata_t pd)
             add_xml_char(grandchild, exml_names[exmlPTYPE], ptype);
             add_xml_char(grandchild, exml_names[exmlBTYPE], btype);
             add_xml_char(grandchild, exml_names[exmlVDWPARAMS], vdwparams);
+            add_xml_double(grandchild, exml_names[exmlEREF], ref_enthalpy);
             sfree(elem);
             sfree(desc);
             sfree(atype);

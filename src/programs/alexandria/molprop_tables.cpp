@@ -769,6 +769,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, gmx_poldata_t pd)
     int                     npcol[NEQG]  = { 2, 3, 3 };
     const char             *clab[3]      = { "$J_0$", "$\\chi_0$", "$\\zeta$" };
     int                     ncol;
+    double                  ref_enthalpy;
     alexandria::LongTable   lt(fp, true, NULL);
 
     ncol = 1;
@@ -807,7 +808,8 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, gmx_poldata_t pd)
                                       &(gt_type[cur]),
                                       &ptype,
                                       &btype,
-                                      &spref))
+                                      &spref,
+                                      &ref_enthalpy))
     {
         if (((NULL == gt_type[prev]) || (strcmp(gt_type[cur], gt_type[prev]) != 0)))
         {

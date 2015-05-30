@@ -44,6 +44,7 @@ typedef struct {
 
 typedef struct {
     char   *desc, *type, *ptype, *btype, *elem, *vdwparams;
+    double  ref_enthalpy;
 } t_ffatype;
 
 typedef struct {
@@ -369,7 +370,8 @@ void gmx_poldata_add_atype(gmx_poldata_t pd,
                            const char   *atype,
                            const char   *ptype,
                            const char   *btype,
-                           const char   *vdwparams)
+                           const char   *vdwparams,
+                           double        ref_enthalpy)
 {
     t_ffatype *sp;
     int        i;
@@ -393,6 +395,7 @@ void gmx_poldata_add_atype(gmx_poldata_t pd,
         sp->ptype          = strdup(ptype);
         sp->btype          = strdup(btype);
         sp->vdwparams      = strdup(vdwparams);
+        sp->ref_enthalpy   = ref_enthalpy;
         gmx_poldata_add_btype(pd, btype);
     }
     else
@@ -905,7 +908,8 @@ int gmx_poldata_get_atype(gmx_poldata_t pd,
                           char        **atype,
                           char        **ptype,
                           char        **btype,
-                          char        **vdwparams)
+                          char        **vdwparams,
+                          double       *ref_enthalpy)
 {
     t_ffatype *sp;
 
@@ -918,6 +922,7 @@ int gmx_poldata_get_atype(gmx_poldata_t pd,
         assign_str(ptype, sp->ptype);
         assign_str(btype, sp->btype);
         assign_str(vdwparams, sp->vdwparams);
+        *ref_enthalpy = sp->ref_enthalpy;
         pd->nalexandria_c++;
         return 1;
     }

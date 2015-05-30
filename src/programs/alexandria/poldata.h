@@ -88,7 +88,8 @@ extern void gmx_poldata_add_atype(gmx_poldata_t pd, const char *elem,
                                   const char *atype,
                                   const char *ptype,
                                   const char *btype,
-                                  const char *vdwparams);
+                                  const char *vdwparams,
+                                  double      ref_enthalpy);
 
 extern void gmx_poldata_set_ptype_polarizability(gmx_poldata_t pd, const char *ptype,
                                                  double polarizability, double sig_pol);
@@ -155,7 +156,8 @@ extern int gmx_poldata_get_atype(gmx_poldata_t pd,
                                  char        **atype,
                                  char        **ptype,
                                  char        **btype,
-                                 char        **vdwparams);
+                                 char        **vdwparams,
+                                 double       *ref_enthalpy);
 
 extern int gmx_poldata_get_ptype(gmx_poldata_t pd,
                                  char        **ptype,
