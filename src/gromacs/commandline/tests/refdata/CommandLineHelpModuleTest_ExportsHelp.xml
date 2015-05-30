@@ -13,7 +13,7 @@ man_pages = [
     ('programs/test-help', 'test-help', "Print help information", '', 1),
     ('programs/test-module', 'test-module', "First module", '', 1),
     ('programs/test-other', 'test-other', "Second module", '', 1),
-    ('man/gromacs.7', 'gromacs', 'molecular dynamics simulation suite', '', 7)
+    ('programs/test', 'test', 'molecular dynamics simulation suite', '', 1)
 ]
 ]]></String>
   <String Name="programs/test-help.rst"><![CDATA[
@@ -27,7 +27,7 @@ test help
    See also
    --------
 
-   :manpage:`gromacs(7)`
+   :manpage:`test(1)`
 
    More information about |Gromacs| is available at <http://www.gromacs.org/>.
 ]]></String>
@@ -60,7 +60,7 @@ Other options:
    See also
    --------
 
-   :manpage:`gromacs(7)`
+   :manpage:`test(1)`
 
    More information about |Gromacs| is available at <http://www.gromacs.org/>.
 ]]></String>
@@ -81,7 +81,7 @@ Synopsis
    See also
    --------
 
-   :manpage:`gromacs(7)`
+   :manpage:`test(1)`
 
    More information about |Gromacs| is available at <http://www.gromacs.org/>.
 ]]></String>
@@ -99,12 +99,14 @@ Group 2
 ]]></String>
   <String Name="man/bytopic.rst"><![CDATA[
 Group 1
-+++++++
-| ``test module`` - First module
+^^^^^^^
+:manpage:`test-module(1)`
+  First module
 
 Group 2
-+++++++
-| ``test other`` - Second module
+^^^^^^^
+:manpage:`test-other(1)`
+  Second module
 
 ]]></String>
   <String Name="programs/topic1.rst"><![CDATA[
@@ -128,5 +130,49 @@ Sub text
 Another topic
 =============
 Help text
+]]></String>
+  <String Name="programs/test.rst"><![CDATA[
+:orphan:
+
+molecular dynamics simulation suite
+===================================
+Synopsis
+--------
+::
+
+    test [-[no]h] [-[no]quiet] [-[no]version] [-[no]copyright] [-nice <int>]
+         [-[no]backup]
+
+Description
+-----------
+|Gromacs| is a full-featured suite of programs to perform molecular
+dynamics simulations, i.e., to simulate the behavior of systems with
+hundreds to millions of particles using Newtonian equations of motion.
+It is primarily used for research on proteins, lipids, and polymers, but
+can be applied to a wide variety of chemical and biological research
+questions.
+
+Options
+-------
+Other options:
+
+``-[no]h``  (no)
+    Print help and quit
+``-[no]quiet``  (no)
+    Do not print common startup info or quotes
+``-[no]version``  (no)
+    Print extended version information and quit
+``-[no]copyright``  (yes)
+    Print copyright information on startup
+``-nice`` <int> (19)
+    Set the nicelevel (default depends on command)
+``-[no]backup``  (yes)
+    Write backups if output files exist
+
+test commands
+-------------
+The following commands are available. Please refer to their individual man pages or ``commandline-test help <command>`` for further details.
+
+.. include:: /man/bytopic.rst
 ]]></String>
 </ReferenceData>

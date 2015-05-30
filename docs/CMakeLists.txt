@@ -120,7 +120,6 @@ if (SPHINX_FOUND)
         dev-manual/tools.rst
         dev-manual/uncrustify.rst
         install-guide/index.rst
-        man/gromacs.7.rst
         user-guide/index.rst
         user-guide/getting-started.rst
         user-guide/flow.rst
@@ -175,6 +174,7 @@ if (SPHINX_FOUND)
     # TODO: Make this remove obsolete .rst files.
     gmx_add_custom_output_target(sphinx-programs OUTPUT STAMP
         COMMAND ${CMAKE_COMMAND} -E make_directory programs
+        COMMAND ${CMAKE_COMMAND} -E make_directory man
         COMMAND gmx -quiet help -export rst
         DEPENDS gmx
         WORKING_DIRECTORY ${SPHINX_INPUT_DIR}
