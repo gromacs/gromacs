@@ -187,6 +187,12 @@ else()
     set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
 endif()
 
+if(GMX_TARGET_MIC)
+    set(GMX_FFT_LIBRARY_DEFAULT "mkl")
+else()
+    set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
+endif()
+
 gmx_option_multichoice(
     GMX_FFT_LIBRARY
     "FFT library"

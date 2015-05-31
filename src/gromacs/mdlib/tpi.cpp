@@ -70,7 +70,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
@@ -464,7 +463,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             gmx_fatal(FARGS, "Unknown integrator %s", ei_names[inputrec->eI]);
     }
 
-#ifdef GMX_SIMD
+#if defined GMX_SIMD_X86_SSE2_OR_HIGHER || defined __MIC__
     /* Make sure we don't detect SIMD overflow generated before this point */
     gmx_simd_check_and_reset_overflow();
 #endif
@@ -668,7 +667,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
             epot               = enerd->term[F_EPOT];
             bEnergyOutOfBounds = FALSE;
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
+#if defined GMX_SIMD_X86_SSE2_OR_HIGHER || defined __MIC__
             /* With SSE the energy can overflow, check for this */
             if (gmx_simd_check_and_reset_overflow())
             {
