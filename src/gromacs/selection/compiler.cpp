@@ -1872,11 +1872,6 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
                                "Output initialization must be provided for "
                                "SMETH_VARNUMVAL selection methods");
             alloc_selection_data(sel, isize, true);
-            if ((sel->flags & SEL_DYNAMIC)
-                && sel->v.type != GROUP_VALUE && sel->v.type != POS_VALUE)
-            {
-                sel->v.nr = ((sel->flags & SEL_SINGLEVAL) ? 1 : isize);
-            }
             /* If the method is char-valued, pre-allocate the strings. */
             if (sel->u.expr.method->flags & SMETH_CHARVAL)
             {
@@ -1895,16 +1890,6 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
                         snew(sel->v.u.s[i], 2);
                     }
                 }
-            }
-        }
-        /* Clear the values for dynamic output to avoid valgrind warnings. */
-        if ((sel->flags & SEL_DYNAMIC) && sel->v.type == REAL_VALUE)
-        {
-            int i;
-
-            for (i = 0; i < sel->v.nr; ++i)
-            {
-                sel->v.u.r[i] = 0.0;
             }
         }
     }
@@ -2146,8 +2131,10 @@ analyze_static(gmx_sel_evaluate_t                *data,
 
         case SEL_EXPRESSION:
         case SEL_MODIFIER:
+        {
+            const int isize = g ? g->isize : 0;
             _gmx_sel_evaluate_method_params(data, sel, g);
-            init_method(sel, data->top, g ? g->isize : 0);
+            init_method(sel, data->top, isize);
             if (!(sel->flags & SEL_DYNAMIC))
             {
                 sel->cdata->evaluate(data, sel, g);
@@ -2165,13 +2152,29 @@ analyze_static(gmx_sel_evaluate_t                *data,
                 {
                     sel->cdata->evaluate(data, sel, g);
                 }
+                else
+                {
+                    if (sel->v.type != GROUP_VALUE && sel->v.type != POS_VALUE)
+                    {
+                        sel->v.nr = ((sel->flags & SEL_SINGLEVAL) ? 1 : isize);
+                    }
+                    // Clear the values for dynamic output to avoid
+                    // uninitialized memory.
+                    if (sel->v.type == REAL_VALUE)
+                    {
+                        for (int i = 0; i < sel->v.nr; ++i)
+                        {
+                            sel->v.u.r[i] = 0.0;
+                        }
+                    }
+                }
                 if (bDoMinMax && g)
                 {
                     gmx_ana_index_copy(sel->cdata->gmax, g, true);
                 }
             }
             break;
-
+        }
         case SEL_BOOLEAN:
             if (!(sel->flags & SEL_DYNAMIC))
             {
