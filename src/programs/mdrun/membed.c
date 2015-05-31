@@ -886,14 +886,16 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 /* Write a topology where the number of molecules is correct for the system after embedding */
 static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
 {
-#define TEMP_FILENM "temp.top"
-    int        bMolecules = 0;
+    int        bMolecules         = 0;
     FILE      *fpin, *fpout;
     char       buf[STRLEN], buf2[STRLEN], *temp;
     int        i, *nmol_rm, nmol, line;
+    char       temporary_filename[STRLEN];
 
     fpin  = gmx_ffopen(topfile, "r");
-    fpout = gmx_ffopen(TEMP_FILENM, "w");
+    strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+    gmx_tmpnam(temporary_filename);
+    fpout = gmx_ffopen(temporary_filename, "w");
 
     snew(nmol_rm, mtop->nmoltype);
     for (i = 0; i < rm_p->nr; i++)
@@ -962,8 +964,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     /* use gmx_ffopen to generate backup of topinout */
     fpout = gmx_ffopen(topfile, "w");
     gmx_ffclose(fpout);
-    rename(TEMP_FILENM, topfile);
-#undef TEMP_FILENM
+    rename(temporary_filename, topfile);
 }
 
 void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x)
