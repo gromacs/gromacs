@@ -45,9 +45,6 @@ extern gpu_flags gather_gpu_flags;
                 real gval  = grid[index_xy+(k0[i]+ithz)];  \
                 fxy1 += thz[iorder+ithz]*gval;            \
                 fz1  += dthz[iorder+ithz]*gval;           \
-		if (i < 10 && ithx == order - 1 && ithy == ithx && ithz == ithy)  \
-		printf("gpu %d gval %f fxy %f fz %f tx,dx %f,%f ty,dy %f,%f\n",  \
-		       i, gval, fxy1, fz1, tx, dx, ty, dy);		\
             }                                      \
             fx += dx*ty*fxy1;                      \
             fy += tx*dy*fxy1;                      \
@@ -85,16 +82,16 @@ static __global__ void gather_f_bsplines_kernel
       DO_FSPLINE(order);
       break;
     }
-    if (i < 10)
-      printf("GPU gather_f_bsplines after DO_FSPLINE %d %f,%f,%f\n", i, (double)fx, (double)fy, (double)fz);
+    /*if (i < 10)
+      printf("GPU gather_f_bsplines after DO_FSPLINE %d %f,%f,%f\n", i, (double)fx, (double)fy, (double)fz);*/
 
     atc_f[idim + XX] += -coefficient*( fx*nx*rxx );
     atc_f[idim + YY] += -coefficient*( fx*nx*ryx + fy*ny*ryy );
     atc_f[idim + ZZ] += -coefficient*( fx*nx*rzx + fy*ny*rzy + fz*nz*rzz );
 
-    printf("kernel coeff=%f f=%f,%f,%f\n",
+    /*printf("kernel coeff=%f f=%f,%f,%f\n",
 	   (double) coefficient,
-	   (double) fx, (double) fy, (double) fz);
+	   (double) fx, (double) fy, (double) fz);*/
 
     /* Since the energy and not forces are interpolated
      * the net force might not be exactly zero.
@@ -246,7 +243,7 @@ void gather_f_bsplines_gpu_2
     dthz_d = dthz_h;
 
 
-    int block_size = 32;
+    int block_size = 64;
     int n_blocks = (n + block_size - 1) / block_size;
 
     gather_f_bsplines_kernel<<<n_blocks, block_size>>>

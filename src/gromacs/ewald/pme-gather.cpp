@@ -116,7 +116,7 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
     rzy   = pme->recipbox[ZZ][YY];
     rzz   = pme->recipbox[ZZ][ZZ];
 
-  fprintf(stderr, "CPU gather_f_bsplines!!!! %d\n", order);
+    //fprintf(stderr, "CPU gather_f_bsplines!!!! %d\n", order);
 
     for (nn = 0; nn < spline->n; nn++)
     {
@@ -177,11 +177,11 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
                     DO_FSPLINE(order);
                     break;
             }
-	    if (nn<10) {
+	    /*if (nn<10) {
 	      fprintf(stderr, "cpu %d gval %f fxy %f fz %f tx,dx %f,%f ty,dy %f,%f\n", \
 		      nn, gval, fxy1, fz1, tx, dx, ty, dy);		\
 	      fprintf(stderr, "CPU gather_f_bsplines after DO_FSPLINE %d->%d %f,%f,%f\n", nn, n, (double)fx, (double)fy, (double)fz);
-	    }
+	      }*/
 
             atc->f[n][XX] += -coefficient*( fx*nx*rxx );
             atc->f[n][YY] += -coefficient*( fx*nx*ryx + fy*ny*ryy );

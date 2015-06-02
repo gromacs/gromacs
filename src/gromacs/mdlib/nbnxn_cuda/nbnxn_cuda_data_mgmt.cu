@@ -526,6 +526,11 @@ static void init_timings(gmx_wallclock_gpu_t *t)
             t->ktime[i][j].c = 0;
         }
     }
+    for (i = 0; i < 7; i++)
+    {
+      t->pme_time[i].t = 0.0;
+      t->pme_time[i].c = 0;
+    }
 }
 
 void nbnxn_gpu_init(FILE                 *fplog,

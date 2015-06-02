@@ -35,12 +35,12 @@ bool check_vs_cpu_verbose(const gpu_flags &flags) {
 
 
 gpu_flags calcspline_gpu_flags(gpu_flags::BOTH);
-gpu_flags interpol_gpu_flags(gpu_flags::BOTH_CHECK);
-gpu_flags spread_gpu_flags(gpu_flags::BOTH_CHECK);
-gpu_flags spread_bunching_gpu_flags(gpu_flags::BOTH_CHECK);
-gpu_flags gather_gpu_flags(gpu_flags::BOTH_CHECK);
+gpu_flags interpol_gpu_flags(gpu_flags::BOTH/*_CHECK*/);
+gpu_flags spread_gpu_flags(gpu_flags::BOTH/*_CHECK*/);
+gpu_flags spread_bunching_gpu_flags(gpu_flags::BOTH/*_CHECK*/);
+gpu_flags gather_gpu_flags(gpu_flags::BOTH/*_CHECK*/);
 gpu_flags fft_gpu_flags(gpu_flags::BOTH);
-gpu_flags solve_gpu_flags(gpu_flags::BOTH_CHECK);
+gpu_flags solve_gpu_flags(gpu_flags::BOTH/*_CHECK*/);
 
 
 

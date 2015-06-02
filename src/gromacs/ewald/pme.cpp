@@ -836,6 +836,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
 {
     pme_atomcomm_t *atc;
     pmegrids_t     *grid;
+    gmx_wallcycle_t wcycle;
 
     if (pme->nnodes > 1)
     {
@@ -864,7 +865,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
     grid = &pme->pmegrid[PME_GRID_QA];
 
     /* Only calculate the spline coefficients, don't actually spread */
-    spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
+    spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA, wcycle);
 
     *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
@@ -1055,7 +1056,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             wallcycle_start(wcycle, ewcPME_SPREADGATHER);
 
             /* Spread the coefficients on a grid */
-            spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
+            spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index, wcycle);
 
             if (bFirst)
             {
@@ -1106,9 +1107,14 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 if (thread == 0)
                 {
                     wallcycle_start(wcycle, ewcPME_FFT);
+		    wallcycle_sub_start(wcycle, ewcsPME_FFT_R2C);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
                                            thread, wcycle);
+                if (thread == 0)
+                {
+		    wallcycle_sub_stop(wcycle, ewcsPME_FFT_R2C);
+		}
                 gmx_parallel_3dfft_execute_gpu(pfft_setup_gpu, GMX_FFT_REAL_TO_COMPLEX,
                                            thread, wcycle);
                 if (thread == 0)
@@ -1121,6 +1127,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 if (thread == 0)
                 {
                     wallcycle_start(wcycle, (grid_index < DO_Q ? ewcPME_SOLVE : ewcLJPME));
+		    wallcycle_sub_start(wcycle, ewcsPME_SOLVE);
                 }
                 if (grid_index < DO_Q)
                 {
@@ -1141,6 +1148,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                 if (thread == 0)
                 {
+		    wallcycle_sub_stop(wcycle, ewcsPME_SOLVE);
                     wallcycle_stop(wcycle, (grid_index < DO_Q ? ewcPME_SOLVE : ewcLJPME));
                     where();
                     inc_nrnb(nrnb, eNR_SOLVEPME, loop_count);
@@ -1154,9 +1162,14 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 {
                     where();
                     wallcycle_start(wcycle, ewcPME_FFT);
+		    wallcycle_sub_start(wcycle, ewcsPME_FFT_C2R);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
                                            thread, wcycle);
+                if (thread == 0)
+                {
+		    wallcycle_sub_stop(wcycle, ewcsPME_FFT_C2R);
+		}
                 gmx_parallel_3dfft_execute_gpu(pfft_setup_gpu, GMX_FFT_COMPLEX_TO_REAL,
                                            thread, wcycle);
                 if (thread == 0)
@@ -1215,9 +1228,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                                   &atc->spline[thread],
 				  pme->bFEP ? (grid_index % 2 == 0 ? 1.0-lambda : lambda) : 1.0,
 				  thread);
+		wallcycle_sub_start(wcycle, ewcsPME_GATHER);
                 gather_f_bsplines(pme, grid, bClearF, atc,
                                   &atc->spline[thread],
                                   pme->bFEP ? (grid_index % 2 == 0 ? 1.0-lambda : lambda) : 1.0);
+		wallcycle_sub_stop(wcycle, ewcsPME_GATHER);
                 gather_f_bsplines_gpu(pme, grid, bClearF, atc,
                                   &atc->spline[thread],
 				  pme->bFEP ? (grid_index % 2 == 0 ? 1.0-lambda : lambda) : 1.0,
@@ -1341,7 +1356,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 {
                     wallcycle_start(wcycle, ewcPME_SPREADGATHER);
                     /* Spread the c6 on a grid */
-                    spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
+                    spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index, wcycle);
 
                     if (bFirst)
                     {
@@ -1493,9 +1508,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 		        gather_f_bsplines_gpu_pre(pme, grid, bClearF, &pme->atc[0],
                                           &pme->atc[0].spline[thread],
 					  scale, thread);
+			wallcycle_sub_start(wcycle, ewcsPME_GATHER);
                         gather_f_bsplines(pme, grid, bClearF, &pme->atc[0],
                                           &pme->atc[0].spline[thread],
                                           scale);
+			wallcycle_sub_stop(wcycle, ewcsPME_GATHER);
                         gather_f_bsplines_gpu(pme, grid, bClearF, &pme->atc[0],
                                           &pme->atc[0].spline[thread],
 					  scale, thread);

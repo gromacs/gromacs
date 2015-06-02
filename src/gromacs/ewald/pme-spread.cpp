@@ -47,6 +47,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/timing/wallcycle.h"
 
 #include "pme-internal.h"
 #include "pme-simd.h"
@@ -1001,7 +1002,8 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
 void spread_on_grid(struct gmx_pme_t *pme,
                     pme_atomcomm_t *atc, pmegrids_t *grids,
                     gmx_bool bCalcSplines, gmx_bool bSpread,
-                    real *fftgrid, gmx_bool bDoSplines, int grid_index)
+                    real *fftgrid, gmx_bool bDoSplines, int grid_index,
+		    gmx_wallcycle_t wcycle)
 {
     int nthread, thread;
 #ifdef PME_TIME_THREADS
@@ -1030,7 +1032,9 @@ void spread_on_grid(struct gmx_pme_t *pme,
             /* Compute fftgrid index for all atoms,
              * with help of some extra variables.
              */
+	    wallcycle_sub_start(wcycle, ewcsPME_INTERPOL_IDX);
             calc_interpolation_idx(pme, atc, start, grid_index, end, thread);
+	    wallcycle_sub_stop(wcycle, ewcsPME_INTERPOL_IDX);
 	    calc_interpolation_idx_gpu(pme, atc, start, grid_index, end, thread);
         }
     }
@@ -1080,8 +1084,10 @@ void spread_on_grid(struct gmx_pme_t *pme,
 
         if (bCalcSplines)
         {
+	    wallcycle_sub_start(wcycle, ewcsPME_CALCSPLINE);
             make_bsplines(spline->theta, spline->dtheta, pme->pme_order,
                           atc->fractx, spline->n, spline->ind, atc->coefficient, bDoSplines);
+	    wallcycle_sub_stop(wcycle, ewcsPME_CALCSPLINE);
             make_bsplines_gpu(spline->theta, spline->dtheta, pme->pme_order,
 			      atc->fractx, spline->n, spline->ind, atc->coefficient, bDoSplines, thread);
         }
@@ -1092,7 +1098,9 @@ void spread_on_grid(struct gmx_pme_t *pme,
 #ifdef PME_TIME_SPREAD
             ct1a = omp_cyc_start();
 #endif
+	    wallcycle_sub_start(wcycle, ewcsPME_SPREAD);
             spread_coefficients_bsplines_thread(grid, atc, spline, pme->spline_work);
+	    wallcycle_sub_stop(wcycle, ewcsPME_SPREAD);
             spread_coefficients_bsplines_thread_gpu(grid, atc, spline, pme->spline_work, thread);
 
             if (pme->bUseThreads)

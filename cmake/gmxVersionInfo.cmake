@@ -357,7 +357,7 @@ if (GMX_GIT_VERSION_INFO)
             -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfo.cmake
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMENT "Generating git version information")
-    # list(APPEND VERSION_INFO_DEPS git-version-info)
+    list(APPEND VERSION_INFO_DEPS git-version-info)
 else()
     # If the version info is static, just generate the CMake script with the
     # version variables during the CMake run.

@@ -427,9 +427,9 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
                 denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
                 tmp1[kx]  = -factor*m2k;
 
-		if (iyz == iyz0 && kx == kxstart)
+		/*if (iyz == iyz0 && kx == kxstart)
 		  printf
-		    ("SOLVE_CPU mhxk %f mhyk %f mhzk %f m2k %f denom %f tmp1 %f\n", (double) mhxk, (double) mhyk, (double) mhzk, (double) m2k, (double) denom[kx], (double) tmp1[kx]);
+		  ("SOLVE_CPU mhxk %f mhyk %f mhzk %f m2k %f denom %f tmp1 %f\n", (double) mhxk, (double) mhyk, (double) mhzk, (double) m2k, (double) denom[kx], (double) tmp1[kx]);*/
             }
 
             for (kx = maxkx; kx < kxend; kx++)
