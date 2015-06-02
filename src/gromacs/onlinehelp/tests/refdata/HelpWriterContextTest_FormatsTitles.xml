@@ -4,7 +4,6 @@
   <String Name="Console"><![CDATA[
 Title
 =====
-
 Some text without spacing
 
 Subtitle
@@ -14,7 +13,6 @@ More text]]></String>
   <String Name="reStructuredText"><![CDATA[
 Title
 =====
-
 Some text without spacing
 
 Subtitle

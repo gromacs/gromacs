@@ -57,26 +57,24 @@ output:
    reStructuredText).  This means that block quotes are also rendered
    reasonably, since they are just indented paragraphs.
  - Literal blocks, i.e., indented paragraphs where the preceding paragraph ends
-   with `::`.  Line breaks within such paragraphs are preserved (but
-   varying indentation is not currently implemented).  The rules for handling
-   the `::` are the same as in reStructuredText.
+   with `::`.  Line breaks within such paragraphs are preserved.  The rules for
+   handling the `::` are the same as in reStructuredText.
+   Multiple paragraphs within a literal block are not currently supported.
  - Titles, i.e., a line underlined by a punctuation character.
    Title formatting is currently preserved as-is, so it must be manually
    ensured that the used punctuation character properly fits into the context
    (i.e., other titles in the same generated reStructuredText document).
    Titles with both under- and overline are not currently supported.
  - Bullet lists.  Only lists that start with `*` are currently recognized.
-   Indentation for the second and subsequent lines is either 2 (if the bullet
-   text is on a single line in input), or determined from the second line in
-   the input.
+   Indentation for the second and subsequent lines is determined from
+   the first non-space character after the bullet and/or from the second line
+   in the input (if these are not the same, the minimum is used).
    Note that in reStructuredText, the `*` must not be indented with respect to
    the preceding paragraph; otherwise, the bullet list is rendered within a
-   block quote.
+   block quote.  Also, an empty line needs to precede a bullet list.
  - Enumerated lists.  Only lists that start with digits are supported (e.g.,
    `1.`).  Multi-digit numbers can be used.
-   Indentation for the second and subsequent lines is determined either from
-   the first non-space character after the period (if there is a single line in
-   the input), or from the second line in the input.
+   Indentation is determined as for bullet lists.
    Lists are not renumbered automatically.
 
 \Gromacs-specific markup
