@@ -168,6 +168,20 @@ TEST_F(HelpWriterContextTest, FormatsLiteralTextAtBeginning)
     testFormatting(text);
 }
 
+TEST_F(HelpWriterContextTest, FormatsLiteralTextWithIndentation)
+{
+    const char *const text[] = {
+        "Sample paragraph::",
+        "",
+        "    literal block",
+        "      another indented line",
+        "",
+        "Normal paragraph",
+        "with wrapping"
+    };
+    testFormatting(text);
+}
+
 TEST_F(HelpWriterContextTest, FormatsBulletList)
 {
     const char *const text[] = {
@@ -243,12 +257,9 @@ TEST_F(HelpWriterContextTest, FormatsGridTable)
 
 TEST_F(HelpWriterContextTest, FormatsTitles)
 {
-    // Console formatting does not currently work without the paragraph breaks
-    // after the title.
     const char *const text[] = {
         "Title",
         "=====",
-        "",
         "Some text without spacing",
         "",
         "Subtitle",

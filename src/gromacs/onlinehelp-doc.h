@@ -44,6 +44,8 @@
  *    output formats from the same input strings and API calls.  Whenever
  *    possible, the output format should be abstracted using this interface,
  *    but in some cases code still writes out raw reStructuredText.
+ *  - rstparser.h provides the functionality to parse reStructuredText such that
+ *    it can be rewrapped for console output.
  *  - helpformat.h provides some general text-processing classes, currently
  *    focused on producing aligned tables for console output.
  *  - helptopicinterface.h, helptopic.h, and helpmanager.h provide classes for

@@ -57,6 +57,8 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "rstparser.h"
+
 namespace gmx
 {
 
@@ -338,98 +340,6 @@ std::string removeExtraNewlinesRst(const std::string &text)
     return result;
 }
 
-/*! \brief
- * Returns `true` if a list item starts in \p text at \p index.
- *
- * Does not throw.
- */
-bool startsListItem(const std::string &text, size_t index)
-{
-    if (text.length() <= index + 1)
-    {
-        return false;
-    }
-    if (text[index] == '*' && std::isspace(text[index+1]))
-    {
-        return true;
-    }
-    if (std::isdigit(text[index]))
-    {
-        while (index < text.length() && std::isdigit(text[index]))
-        {
-            ++index;
-        }
-        if (text.length() > index + 1 && text[index] == '.'
-            && std::isspace(text[index+1]))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-/*! \brief
- * Returns `true` if a table starts in \p text at \p index.
- *
- * The function only inspects the first line for something that looks like a
- * reStructuredText table, and accepts also some malformed tables.
- * Any issues should be apparent when Sphinx parses the reStructuredText
- * export, so full validation is not done here.
- *
- * Does not throw.
- */
-bool startsTable(const std::string &text, size_t index)
-{
-    if (text[index] == '=')
-    {
-        while (index < text.length() && text[index] != '\n')
-        {
-            if (text[index] != '=' && !std::isspace(text[index]))
-            {
-                return false;
-            }
-            ++index;
-        }
-        return true;
-    }
-    else if (text[index] == '+')
-    {
-        while (index < text.length() && text[index] != '\n')
-        {
-            if (text[index] != '-' && text[index] != '+')
-            {
-                return false;
-            }
-            ++index;
-        }
-        return true;
-    }
-    return false;
-}
-
-/*! \brief
- * Returns `true` if a line in \p text starting at \p index is a title underline.
- *
- * Does not throw.
- */
-bool isTitleUnderline(const std::string &text, size_t index)
-{
-    const char firstChar = text[index];
-    if (std::ispunct(firstChar))
-    {
-        while (index < text.length() && text[index] != '\n')
-        {
-            if (text[index] != firstChar)
-            {
-                return false;
-            }
-            ++index;
-        }
-        return true;
-    }
-    return false;
-}
-
 //! \}
 
 }   // namespace
@@ -636,140 +546,18 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
             const int   baseIndent          = wrapper->settings().indent();
             result = repall(result, sandrTty);
             result = replaceLinks(result);
-            std::string paragraph;
+            std::string          paragraph;
             paragraph.reserve(result.length());
-            size_t      i             = 0;
-            int         nextBreakSize = 0;
-            bool        bLiteral      = false;
-            while (i < result.length())
+            RstParagraphIterator iter(result);
+            while (iter.nextParagraph())
             {
-                while (i < result.length() && result[i] == '\n')
-                {
-                    ++i;
-                }
-                if (i == result.length())
-                {
-                    break;
-                }
-                const int breakSize     = nextBreakSize;
-                int       currentLine   = 0;
-                bool      bLineStart    = true;
-                int       currentIndent = 0;
-                int       firstIndent   = 0;
-                int       indent        = 0;
-                paragraph.clear();
-                for (;; ++i)
-                {
-                    if (result[i] == '\n' || i == result.length())
-                    {
-                        if (currentLine == 0)
-                        {
-                            firstIndent = currentIndent;
-                        }
-                        else if (currentLine == 1)
-                        {
-                            indent = currentIndent;
-                        }
-                        ++currentLine;
-                        bLineStart    = true;
-                        currentIndent = 0;
-                        if (i + 1 >= result.length() || result[i + 1] == '\n')
-                        {
-                            nextBreakSize = 2;
-                            break;
-                        }
-                        if (!bLiteral)
-                        {
-                            if (!std::isspace(result[i - 1]))
-                            {
-                                paragraph.push_back(' ');
-                            }
-                            continue;
-                        }
-                    }
-                    else if (bLineStart)
-                    {
-                        if (std::isspace(result[i]))
-                        {
-                            ++currentIndent;
-                            continue;
-                        }
-                        else if (startsListItem(result, i))
-                        {
-                            if (currentLine > 0)
-                            {
-                                while (i > 0 && result[i - 1] != '\n')
-                                {
-                                    --i;
-                                }
-                                paragraph     = stripString(paragraph);
-                                nextBreakSize = 1;
-                                break;
-                            }
-                            int prefixLength = 0;
-                            while (!std::isspace(result[i + prefixLength]))
-                            {
-                                ++prefixLength;
-                            }
-                            while (i + prefixLength < result.length()
-                                   && std::isspace(result[i + prefixLength]))
-                            {
-                                ++prefixLength;
-                            }
-                            indent = currentIndent + prefixLength;
-                        }
-                        else if (currentLine == 0 && startsTable(result, i))
-                        {
-                            bLiteral = true;
-                        }
-                        else if (currentLine == 1 && isTitleUnderline(result, i))
-                        {
-                            // TODO: Nicer formatting that shares
-                            // implementation with writeTitle() and honors the
-                            // nesting depths etc.
-                            if (i > 0)
-                            {
-                                paragraph[paragraph.length() - 1] = '\n';
-                            }
-                        }
-                        bLineStart = false;
-                    }
-                    paragraph.push_back(result[i]);
-                }
-                if (endsWith(paragraph, "::"))
-                {
-                    bLiteral = true;
-                    if (paragraph.length() == 2)
-                    {
-                        if (breakSize == 0)
-                        {
-                            nextBreakSize = 0;
-                        }
-                        continue;
-                    }
-                    if (paragraph[paragraph.length() - 3] == ' ')
-                    {
-                        paragraph.resize(paragraph.length() - 3);
-                    }
-                    else
-                    {
-                        paragraph.resize(paragraph.length() - 1);
-                    }
-                }
-                else
-                {
-                    bLiteral = false;
-                }
-                if (breakSize > 0)
-                {
-                    wrapper->wrap(std::string(breakSize, '\n'));
-                }
-                wrapper->settings().setFirstLineIndent(baseFirstLineIndent + firstIndent);
-                wrapper->settings().setIndent(baseIndent + indent);
+                iter.getParagraphText(&paragraph);
+                wrapper->settings().setFirstLineIndent(baseFirstLineIndent + iter.firstLineIndent());
+                wrapper->settings().setIndent(baseIndent + iter.indent());
                 wrapper->wrap(paragraph);
-                wrapper->settings().setFirstLineIndent(baseFirstLineIndent);
-                wrapper->settings().setIndent(baseIndent);
             }
+            wrapper->settings().setFirstLineIndent(baseFirstLineIndent);
+            wrapper->settings().setIndent(baseIndent);
             break;
         }
         case eHelpOutputFormat_Rst:

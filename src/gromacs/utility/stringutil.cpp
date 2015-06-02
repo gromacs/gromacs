@@ -323,7 +323,11 @@ TextLineWrapper::formatLine(const std::string &input,
         --lineEnd;
     }
 
-    size_t      lineLength = lineEnd - lineStart;
+    const size_t lineLength = lineEnd - lineStart;
+    if (lineLength == 0)
+    {
+        return std::string();
+    }
     std::string result(indent, ' ');
     result.append(input, lineStart, lineLength);
     if (bContinuation && settings_.continuationChar_ != '\0')

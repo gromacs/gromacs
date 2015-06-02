@@ -238,6 +238,8 @@ TEST(ReplaceAllTest, HandlesPossibleRecursiveMatches)
 const char g_wrapText[] = "A quick brown fox jumps over the lazy dog";
 //! Test string for wrapping with embedded line breaks.
 const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
+//! Test string for wrapping with embedded line breaks and an empty line.
+const char g_wrapText3[] = "A quick brown fox jumps\n\nover the lazy dog";
 //! Test string for wrapping with a long word.
 const char g_wrapTextLongWord[]
     = "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
@@ -329,6 +331,16 @@ TEST_F(TextLineWrapperTest, HandlesIndent)
     checkText(wrapper.wrapToString(g_wrapText2), "WrappedWithNoLimit");
     wrapper.settings().setLineLength(16);
     checkText(wrapper.wrapToString(g_wrapText2), "WrappedAt14");
+}
+
+TEST_F(TextLineWrapperTest, HandlesIndentWithEmptyLines)
+{
+    gmx::TextLineWrapper wrapper;
+    wrapper.settings().setIndent(2);
+
+    checkText(wrapper.wrapToString(g_wrapText3), "WrappedWithNoLimit");
+    wrapper.settings().setLineLength(16);
+    checkText(wrapper.wrapToString(g_wrapText3), "WrappedAt14");
 }
 
 TEST_F(TextLineWrapperTest, HandlesHangingIndent)
