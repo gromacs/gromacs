@@ -43,6 +43,8 @@
 #ifndef GMX_COMMANDLINE_CMDLINEHELPCONTEXT_H
 #define GMX_COMMANDLINE_CMDLINEHELPCONTEXT_H
 
+#include <string>
+
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -75,7 +77,8 @@ class CommandLineHelpContext
          * Wraps the constructor of HelpWriterContext.
          */
         CommandLineHelpContext(File *file, HelpOutputFormat format,
-                               const HelpLinks *links);
+                               const HelpLinks *links,
+                               const std::string &programName);
         //! Creates a context for a particular HelpWriterContext.
         explicit CommandLineHelpContext(const HelpWriterContext &writerContext);
         /*! \brief

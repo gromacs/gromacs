@@ -97,9 +97,11 @@ class CommandLineHelpContext::Impl
 };
 
 CommandLineHelpContext::CommandLineHelpContext(
-        File *file, HelpOutputFormat format, const HelpLinks *links)
+        File *file, HelpOutputFormat format, const HelpLinks *links,
+        const std::string &programName)
     : impl_(new Impl(file, format, links))
 {
+    impl_->writerContext_.setReplacement("[PROGRAM]", programName);
 }
 
 CommandLineHelpContext::CommandLineHelpContext(

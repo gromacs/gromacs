@@ -138,12 +138,13 @@ class TestProgramContext : public ProgramContextInterface
 //! Prints the command-line options for the unit test binary.
 void printHelp(const Options &options)
 {
+    const std::string &program = getProgramContext().displayName();
     std::fprintf(stderr,
                  "\nYou can use the following GROMACS-specific command-line flags\n"
                  "to control the behavior of the tests:\n\n");
     CommandLineHelpContext context(&File::standardError(),
-                                   eHelpOutputFormat_Console, NULL);
-    context.setModuleDisplayName(getProgramContext().displayName());
+                                   eHelpOutputFormat_Console, NULL, program);
+    context.setModuleDisplayName(program);
     CommandLineHelpWriter(options).writeHelp(context);
 }
 

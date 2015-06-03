@@ -168,7 +168,7 @@ Other options:
 
 test commands
 -------------
-The following commands are available. Please refer to their individual man pages or ``commandline-test help <command>`` for further details.
+The following commands are available. Please refer to their individual man pages or ``test help <command>`` for further details.
 
 .. include:: /fragments/bytopic-man.rst
 ]]></String>

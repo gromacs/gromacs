@@ -470,11 +470,8 @@ class HelpWriterContext::Impl
         Impl(const StatePointer &state, int sectionDepth)
             : state_(state), sectionDepth_(sectionDepth)
         {
-            initDefaultReplacements();
         }
 
-        //! Initializes default replacements for the chosen output format.
-        void initDefaultReplacements();
         //! Adds a new replacement.
         void addReplacement(const std::string &search,
                             const std::string &replace)
@@ -507,12 +504,6 @@ class HelpWriterContext::Impl
     private:
         GMX_DISALLOW_ASSIGN(Impl);
 };
-
-void HelpWriterContext::Impl::initDefaultReplacements()
-{
-    const char *program = getProgramContext().programName();
-    addReplacement("[PROGRAM]", program);
-}
 
 std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) const
 {

@@ -127,7 +127,7 @@ const char *const CmdLineHelpText::text[] = {
     "if they are complex or for scripting.[PAR]",
 
     "Each tool has different command-line arguments for specifying selections",
-    "(listed by [TT][PROGRAM] help <tool>[tt]).",
+    "(see the help for the individual tools).",
     "You can either pass a single string containing all selections (separated",
     "by semicolons), or multiple strings, each containing one selection.",
     "Note that you need to quote the selections to protect them from the",
