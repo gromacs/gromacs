@@ -122,6 +122,13 @@ static const char *wcsn[ewcsNR] =
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",
+    "PME interpol",
+    "PME spline",
+    "PME spread",
+    "PME fft r2c",
+    "PME solve",
+    "PME fft c2r",
+    "PME gather",
 };
 
 gmx_bool wallcycle_have_counter(void)
@@ -799,6 +806,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                 tot_k += gpu_t->ktime[i][j].t;
             }
         }
+        for (i = 0; i < 7; i++)
+	{
+	  tot_k += gpu_t->pme_time[i].t;
+	}
         tot_gpu += tot_k;
 
         tot_cpu_overlap = wc->wcc[ewcFORCE].c;
@@ -827,6 +838,11 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                 }
             }
         }
+        for (i = 0; i < 7; i++)
+	{
+	  print_gputimes(fplog, wcsn[ewcsPME_INTERPOL_IDX + i],
+			 gpu_t->pme_time[i].c, gpu_t->pme_time[i].t, tot_gpu);
+	}
 
         print_gputimes(fplog, "F D2H",  gpu_t->nb_c, gpu_t->nb_d2h_t, tot_gpu);
         fprintf(fplog, "%s\n", hline);

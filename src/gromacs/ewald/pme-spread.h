@@ -45,6 +45,7 @@ void
 spread_on_grid(struct gmx_pme_t *pme,
                pme_atomcomm_t *atc, pmegrids_t *grids,
                gmx_bool bCalcSplines, gmx_bool bSpread,
-               real *fftgrid, gmx_bool bDoSplines, int grid_index);
+               real *fftgrid, gmx_bool bDoSplines, int grid_index,
+	       gmx_wallcycle_t wcycle);
 
 #endif

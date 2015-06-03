@@ -47,6 +47,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/timing/wallcycle.h"
 
 #include "pme-internal.h"
 #include "pme-simd.h"
@@ -167,8 +168,111 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
         {
             tpl->i[tpl_n[atc->thread_idx[i]]++] = i;
         }
-        /* Now tpl_n contains the cummulative count again */
+        /* Now tpl_n contains the cumulative count again */
     }
+}
+
+static void calc_interpolation_idx_gpu(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
+				       int start, int grid_index, int end, int thread) {
+  //fprintf(stderr, "Hello calc_interpol..._gpu\n");
+  int nx = pme->nkx;
+  int ny = pme->nky;
+  int nz = pme->nkz;
+  int start_ix = pme->pmegrid_start_ix;
+  int start_iy = pme->pmegrid_start_iy;
+  int start_iz = pme->pmegrid_start_iz;
+  real rxx = pme->recipbox[XX][XX];
+  real ryx = pme->recipbox[YY][XX];
+  real ryy = pme->recipbox[YY][YY];
+  real rzx = pme->recipbox[ZZ][XX];
+  real rzy = pme->recipbox[ZZ][YY];
+  real rzz = pme->recipbox[ZZ][ZZ];
+  int *g2tx = pme->pmegrid[grid_index].g2t[XX];
+  int *g2ty = pme->pmegrid[grid_index].g2t[YY];
+  int *g2tz = pme->pmegrid[grid_index].g2t[ZZ];
+  real *fshx = pme->fshx;
+  real *fshy = pme->fshy;
+  int *nnx = pme->nnx;
+  int *nny = pme->nny;
+  int *nnz = pme->nnz;
+
+  rvec *xptr = atc->x;
+  ivec *idxptr = atc->idx;
+  rvec *fptr = atc->fractx;
+
+  gmx_bool bThreads = (atc->nthread > 1);
+
+  int            *thread_idx = NULL;
+  thread_plist_t *tpl = NULL;
+  int            *tpl_n = NULL;
+  if (bThreads)
+  {
+    thread_idx = atc->thread_idx;
+    tpl   = &atc->thread_plist[thread];
+    tpl_n = tpl->n;
+    int i;
+    for (i = 0; i < atc->nthread; i++)
+    {
+      tpl_n[i] = 0;
+    }
+  }
+
+  //fprintf(stderr, "Hello calc_interpol..._gpu_mid\n");
+  calc_interpolation_idx_gpu_mid(nx, ny, nz,
+				 start_ix, start_iy, start_iz,
+				 rxx, ryx, ryy, rzx, rzy, rzz,
+				 g2tz, g2ty, g2tz,
+				 fshx, fshy,
+				 nnx, nny, nnz,
+				 xptr, idxptr, fptr,
+				 start, end, thread);
+
+  if (bThreads)
+  {
+    int i;
+    for (i = start; i < end; i++)
+    {
+      int *idxptr = atc->idx[i];
+#ifdef DEBUG
+        range_check(idxptr[XX], 0, pme->pmegrid_nx);
+        range_check(idxptr[YY], 0, pme->pmegrid_ny);
+        range_check(idxptr[ZZ], 0, pme->pmegrid_nz);
+#endif
+      int thread_i  = g2tx[idxptr[XX]] + g2ty[idxptr[YY]] + g2tz[idxptr[ZZ]];
+      thread_idx[i] = thread_i;
+      tpl_n[thread_i]++;
+    }
+
+        /* Make a list of particle indices sorted on thread */
+
+        /* Get the cumulative count */
+        for (i = 1; i < atc->nthread; i++)
+        {
+            tpl_n[i] += tpl_n[i-1];
+        }
+        /* The current implementation distributes particles equally
+         * over the threads, so we could actually allocate for that
+         * in pme_realloc_atomcomm_things.
+         */
+        if (tpl_n[atc->nthread-1] > tpl->nalloc)
+        {
+            tpl->nalloc = over_alloc_large(tpl_n[atc->nthread-1]);
+            srenew(tpl->i, tpl->nalloc);
+        }
+        /* Set tpl_n to the cumulative start */
+        for (i = atc->nthread-1; i >= 1; i--)
+        {
+            tpl_n[i] = tpl_n[i-1];
+        }
+        tpl_n[0] = 0;
+
+        /* Fill our thread local array with indices sorted on thread */
+        for (i = start; i < end; i++)
+        {
+            tpl->i[tpl_n[atc->thread_idx[i]]++] = i;
+        }
+        /* Now tpl_n contains the cumulative count again */
+  }
 }
 
 static void make_thread_local_ind(pme_atomcomm_t *atc,
@@ -389,6 +493,37 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
     }
 }
 
+static void spread_coefficients_bsplines_thread_gpu(pmegrid_t                    *pmegrid,
+						    pme_atomcomm_t               *atc,
+						    splinedata_t                 *spline,
+						    struct pme_spline_work gmx_unused *work,
+						    int thread)
+{
+    int pnx = pmegrid->s[XX];
+    int pny = pmegrid->s[YY];
+    int pnz = pmegrid->s[ZZ];
+
+    int offx = pmegrid->offset[XX];
+    int offy = pmegrid->offset[YY];
+    int offz = pmegrid->offset[ZZ];
+
+    real *grid     = pmegrid->grid;
+    int order = pmegrid->order;
+    ivec *atc_idx = atc->idx;
+    int *spline_ind = spline->ind;
+    int spline_n = spline->n;
+    real *atc_coefficient = atc->coefficient;
+    splinevec *spline_theta = &spline->theta;
+    int atc_n_foo = atc->n; // for bunch testing
+    spread_coefficients_bsplines_thread_gpu_2
+      (pnx, pny, pnz, offx, offy, offz,
+       grid, order, atc_idx, spline_ind, spline_n,
+       atc_coefficient, spline_theta,
+       atc_n_foo,
+       thread);
+}
+
+
 static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
                             int grid_index, int thread, real *fftgrid)
 {
@@ -402,6 +537,10 @@ static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
     real *grid_th;
 
     gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
+                                   local_fft_ndata,
+                                   local_fft_offset,
+                                   local_fft_size);
+    gmx_parallel_3dfft_real_limits_gpu(pme->pfft_setup_gpu[grid_index],
                                    local_fft_ndata,
                                    local_fft_offset,
                                    local_fft_size);
@@ -467,6 +606,11 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
                                    local_fft_ndata,
                                    local_fft_offset,
                                    local_fft_size);
+    gmx_parallel_3dfft_real_limits_gpu(pme->pfft_setup_gpu[grid_index],
+                                   local_fft_ndata,
+                                   local_fft_offset,
+                                   local_fft_size);
+
     fft_nx = local_fft_ndata[XX];
     fft_ny = local_fft_ndata[YY];
     fft_nz = local_fft_ndata[ZZ];
@@ -717,6 +861,10 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
                                    local_fft_ndata,
                                    local_fft_offset,
                                    local_fft_size);
+    gmx_parallel_3dfft_real_limits_gpu(pme->pfft_setup_gpu[grid_index],
+                                   local_fft_ndata,
+                                   local_fft_offset,
+                                   local_fft_size);
 
     if (pme->nnodes_minor > 1)
     {
@@ -852,7 +1000,8 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
 void spread_on_grid(struct gmx_pme_t *pme,
                     pme_atomcomm_t *atc, pmegrids_t *grids,
                     gmx_bool bCalcSplines, gmx_bool bSpread,
-                    real *fftgrid, gmx_bool bDoSplines, int grid_index)
+                    real *fftgrid, gmx_bool bDoSplines, int grid_index,
+		    gmx_wallcycle_t wcycle)
 {
     int nthread, thread;
 #ifdef PME_TIME_THREADS
@@ -881,7 +1030,10 @@ void spread_on_grid(struct gmx_pme_t *pme,
             /* Compute fftgrid index for all atoms,
              * with help of some extra variables.
              */
+	    wallcycle_sub_start(wcycle, ewcsPME_INTERPOL_IDX);
             calc_interpolation_idx(pme, atc, start, grid_index, end, thread);
+	    wallcycle_sub_stop(wcycle, ewcsPME_INTERPOL_IDX);
+	    calc_interpolation_idx_gpu(pme, atc, start, grid_index, end, thread);
         }
     }
 #ifdef PME_TIME_THREADS
@@ -930,8 +1082,12 @@ void spread_on_grid(struct gmx_pme_t *pme,
 
         if (bCalcSplines)
         {
+	    wallcycle_sub_start(wcycle, ewcsPME_CALCSPLINE);
             make_bsplines(spline->theta, spline->dtheta, pme->pme_order,
                           atc->fractx, spline->n, spline->ind, atc->coefficient, bDoSplines);
+	    wallcycle_sub_stop(wcycle, ewcsPME_CALCSPLINE);
+            make_bsplines_gpu(spline->theta, spline->dtheta, pme->pme_order,
+			      atc->fractx, spline->n, spline->ind, atc->coefficient, bDoSplines, thread);
         }
 
         if (bSpread)
@@ -940,7 +1096,10 @@ void spread_on_grid(struct gmx_pme_t *pme,
 #ifdef PME_TIME_SPREAD
             ct1a = omp_cyc_start();
 #endif
+	    wallcycle_sub_start(wcycle, ewcsPME_SPREAD);
             spread_coefficients_bsplines_thread(grid, atc, spline, pme->spline_work);
+	    wallcycle_sub_stop(wcycle, ewcsPME_SPREAD);
+            spread_coefficients_bsplines_thread_gpu(grid, atc, spline, pme->spline_work, thread);
 
             if (pme->bUseThreads)
             {

@@ -279,6 +279,18 @@ gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *t
 }
 #endif
 
+int solve_pme_yzx_gpu(real pme_epsilon_r,
+		      int nx, int ny, int nz,
+		      ivec complex_order, ivec local_ndata, ivec local_offset, ivec local_size,
+		      real rxx, real ryx, real ryy, real rzx, real rzy, real rzz,
+		      //real *mhx, real *mhy, real *mhz, real *m2, real *denom, real *tmp1, real *eterm, real *m2inv,
+		      splinevec pme_bsp_mod,
+		      matrix work_vir_q, real *work_energy_q,
+		      t_complex *grid,
+		      real ewaldcoeff, real vol,
+		      gmx_bool bEnerVir,
+		      int nthread, int thread);
+
 int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
                   real ewaldcoeff, real vol,
                   gmx_bool bEnerVir,
@@ -312,6 +324,11 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_QA],
+                                      complex_order,
+                                      local_ndata,
+                                      local_offset,
+                                      local_size);
+    gmx_parallel_3dfft_complex_limits_gpu(pme->pfft_setup_gpu[PME_GRID_QA],
                                       complex_order,
                                       local_ndata,
                                       local_offset,
@@ -409,6 +426,10 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
                 m2[kx]    = m2k;
                 denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
                 tmp1[kx]  = -factor*m2k;
+
+		/*if (iyz == iyz0 && kx == kxstart)
+		  printf
+		  ("SOLVE_CPU mhxk %f mhyk %f mhzk %f m2k %f denom %f tmp1 %f\n", (double) mhxk, (double) mhyk, (double) mhzk, (double) m2k, (double) denom[kx], (double) tmp1[kx]);*/
             }
 
             for (kx = maxkx; kx < kxend; kx++)
@@ -526,9 +547,29 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
         work->energy_q = 0.5*energy;
     }
 
+    int solve_gpu = 0;
+    if (solve_gpu)
+      solve_pme_yzx_gpu(pme->epsilon_r,
+		      nx, ny, nz,
+		      complex_order, local_ndata, local_offset, local_size,
+		      rxx, ryx, ryy, rzx, rzy, rzz,
+		      pme->bsp_mod,
+		      work->vir_lj, &work->energy_lj,
+		      grid, ewaldcoeff, vol, bEnerVir, nthread, thread);
+
     /* Return the loop count */
     return local_ndata[YY]*local_ndata[XX];
 }
+
+int solve_pme_lj_yzx_gpu(int nx, int ny, int nz,
+			 ivec complex_order, ivec local_ndata, ivec local_offset, ivec local_size,
+			 real rxx, real ryx, real ryy, real rzx, real rzy, real rzz,
+			 //real *mhx, real *mhy, real *mhz, real *m2, real *denom, real *tmp1, real *tmp2,
+			 splinevec pme_bsp_mod,
+			 matrix work_vir_lj, real *work_energy_lj,
+			 t_complex **grid, gmx_bool bLB,
+			 real ewaldcoeff, real vol,
+			 gmx_bool bEnerVir, int nthread, int thread);
 
 int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
                      real ewaldcoeff, real vol,
@@ -558,6 +599,11 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
     gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_C6A],
+                                      complex_order,
+                                      local_ndata,
+                                      local_offset,
+                                      local_size);
+    gmx_parallel_3dfft_complex_limits_gpu(pme->pfft_setup_gpu[PME_GRID_C6A],
                                       complex_order,
                                       local_ndata,
                                       local_offset,
@@ -834,6 +880,13 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
         /* This energy should be corrected for a charged system */
         work->energy_lj = 0.5*energy;
     }
+    solve_pme_lj_yzx_gpu(nx, ny, nz,
+			 complex_order, local_ndata, local_offset, local_size,
+			 rxx, ryx, ryy, rzx, rzy, rzz,
+			 //mhx, mhy, mhz, m2, denom, tmp1, tmp2,
+			 pme->bsp_mod,
+			 work->vir_lj, &work->energy_lj,
+			 grid, bLB, ewaldcoeff, vol, bEnerVir, nthread, thread);
     /* Return the loop count */
     return local_ndata[YY]*local_ndata[XX];
 }

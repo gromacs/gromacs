@@ -177,6 +177,33 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
 
+    //fprintf(stderr, "Hello before FIX TRY NOT\n");
+  if (0==1) { // FIX TRY NOT
+
+
+        // check what effects bSB has
+        int  status            = 0;
+        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
+        real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
+        bool bSB = (ir->nwall == 2); // FIX
+        status = gmx_pme_do(fr->pmedata,
+                0, md->homenr - fr->n_tpi,
+                x, fr->f_novirsum,
+                md->chargeA, md->chargeB,
+                md->sqrt_c6A, md->sqrt_c6B,
+                md->sigmaA, md->sigmaB,
+                bSB ? boxs : box, cr,
+                DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
+                DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
+                nrnb, wcycle,
+                fr->vir_el_recip, fr->ewaldcoeff_q,
+                fr->vir_lj_recip, fr->ewaldcoeff_lj,
+                &Vlr_q, &Vlr_lj,
+                lambda[efptCOUL], lambda[efptVDW],
+                &dvdl_long_range_q, &dvdl_long_range_lj, pme_flags);
+
+  }
+
     set_pbc(&pbc, fr->ePBC, box);
 
     /* reset free energy components */

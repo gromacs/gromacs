@@ -65,6 +65,8 @@ struct gmx_wallclock_gpu_t
     int     nb_c;                                      /**< total call count of the nonbonded gpu operations */
     double  pl_h2d_t;                                  /**< pair search step host to device transfer time */
     int     pl_h2d_c;                                  /**< pair search step  host to device transfer call count */
+
+  struct gmx_nbnxn_kernel_timing_data_t pme_time[7];
 };
 
 #ifdef __cplusplus

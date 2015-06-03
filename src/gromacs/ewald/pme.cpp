@@ -167,6 +167,7 @@ int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
         sfree((*pmedata)->fftgrid[i]);
         sfree((*pmedata)->cfftgrid[i]);
         gmx_parallel_3dfft_destroy((*pmedata)->pfft_setup[i]);
+        gmx_parallel_3dfft_destroy_gpu((*pmedata)->pfft_setup_gpu[i]);
     }
 
     sfree((*pmedata)->lb_buf1);
@@ -728,6 +729,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     snew(pme->fftgrid, pme->ngrids);
     snew(pme->cfftgrid, pme->ngrids);
     snew(pme->pfft_setup, pme->ngrids);
+    snew(pme->pfft_setup_gpu, pme->ngrids);
 
     for (i = 0; i < pme->ngrids; ++i)
     {
@@ -747,6 +749,10 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                           pme->overlap[1].s2g1[pme->nodeid_minor]-pme->overlap[1].s2g0[pme->nodeid_minor+1]);
             /* This routine will allocate the grid data to fit the FFTs */
             gmx_parallel_3dfft_init(&pme->pfft_setup[i], ndata,
+                                    &pme->fftgrid[i], &pme->cfftgrid[i],
+                                    pme->mpi_comm_d,
+                                    bReproducible, pme->nthread);
+            gmx_parallel_3dfft_init_gpu(&pme->pfft_setup_gpu[i], ndata,
                                     &pme->fftgrid[i], &pme->cfftgrid[i],
                                     pme->mpi_comm_d,
                                     bReproducible, pme->nthread);
@@ -830,6 +836,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
 {
     pme_atomcomm_t *atc;
     pmegrids_t     *grid;
+    gmx_wallcycle_t wcycle;
 
     if (pme->nnodes > 1)
     {
@@ -858,7 +865,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
     grid = &pme->pmegrid[PME_GRID_QA];
 
     /* Only calculate the spline coefficients, don't actually spread */
-    spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
+    spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA, wcycle);
 
     *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
@@ -918,6 +925,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     real                 scale, lambda;
     gmx_bool             bClearF;
     gmx_parallel_3dfft_t pfft_setup;
+    gmx_parallel_3dfft_gpu_t pfft_setup_gpu;
     real              *  fftgrid;
     t_complex          * cfftgrid;
     int                  thread;
@@ -1001,6 +1009,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         fftgrid    = pme->fftgrid[grid_index];
         cfftgrid   = pme->cfftgrid[grid_index];
         pfft_setup = pme->pfft_setup[grid_index];
+        pfft_setup_gpu = pme->pfft_setup_gpu[grid_index];
         switch (grid_index)
         {
             case 0: coefficient = chargeA + start; break;
@@ -1047,7 +1056,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             wallcycle_start(wcycle, ewcPME_SPREADGATHER);
 
             /* Spread the coefficients on a grid */
-            spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
+            spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index, wcycle);
 
             if (bFirst)
             {
@@ -1086,6 +1095,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         }
 
         /* Here we start a large thread parallel region */
+	//fprintf(stderr, "fft+solve parallel region %d\n", pme->nthread);
 #pragma omp parallel num_threads(pme->nthread) private(thread)
         {
             thread = gmx_omp_get_thread_num();
@@ -1097,8 +1107,15 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 if (thread == 0)
                 {
                     wallcycle_start(wcycle, ewcPME_FFT);
+		    wallcycle_sub_start(wcycle, ewcsPME_FFT_R2C);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
+                                           thread, wcycle);
+                if (thread == 0)
+                {
+		    wallcycle_sub_stop(wcycle, ewcsPME_FFT_R2C);
+		}
+                gmx_parallel_3dfft_execute_gpu(pfft_setup_gpu, GMX_FFT_REAL_TO_COMPLEX,
                                            thread, wcycle);
                 if (thread == 0)
                 {
@@ -1110,6 +1127,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 if (thread == 0)
                 {
                     wallcycle_start(wcycle, (grid_index < DO_Q ? ewcPME_SOLVE : ewcLJPME));
+		    wallcycle_sub_start(wcycle, ewcsPME_SOLVE);
                 }
                 if (grid_index < DO_Q)
                 {
@@ -1130,6 +1148,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                 if (thread == 0)
                 {
+		    wallcycle_sub_stop(wcycle, ewcsPME_SOLVE);
                     wallcycle_stop(wcycle, (grid_index < DO_Q ? ewcPME_SOLVE : ewcLJPME));
                     where();
                     inc_nrnb(nrnb, eNR_SOLVEPME, loop_count);
@@ -1143,8 +1162,15 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 {
                     where();
                     wallcycle_start(wcycle, ewcPME_FFT);
+		    wallcycle_sub_start(wcycle, ewcsPME_FFT_C2R);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
+                                           thread, wcycle);
+                if (thread == 0)
+                {
+		    wallcycle_sub_stop(wcycle, ewcsPME_FFT_C2R);
+		}
+                gmx_parallel_3dfft_execute_gpu(pfft_setup_gpu, GMX_FFT_COMPLEX_TO_REAL,
                                            thread, wcycle);
                 if (thread == 0)
                 {
@@ -1198,9 +1224,19 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
             for (thread = 0; thread < pme->nthread; thread++)
             {
+	        gather_f_bsplines_gpu_pre(pme, grid, bClearF, atc,
+                                  &atc->spline[thread],
+				  pme->bFEP ? (grid_index % 2 == 0 ? 1.0-lambda : lambda) : 1.0,
+				  thread);
+		wallcycle_sub_start(wcycle, ewcsPME_GATHER);
                 gather_f_bsplines(pme, grid, bClearF, atc,
                                   &atc->spline[thread],
                                   pme->bFEP ? (grid_index % 2 == 0 ? 1.0-lambda : lambda) : 1.0);
+		wallcycle_sub_stop(wcycle, ewcsPME_GATHER);
+                gather_f_bsplines_gpu(pme, grid, bClearF, atc,
+                                  &atc->spline[thread],
+				  pme->bFEP ? (grid_index % 2 == 0 ? 1.0-lambda : lambda) : 1.0,
+				  thread);
             }
 
             where();
@@ -1311,6 +1347,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 pmegrid    = &pme->pmegrid[grid_index];
                 fftgrid    = pme->fftgrid[grid_index];
                 pfft_setup = pme->pfft_setup[grid_index];
+                pfft_setup_gpu = pme->pfft_setup_gpu[grid_index];
                 calc_next_lb_coeffs(pme, local_sigma);
                 grid = pmegrid->grid.grid;
                 where();
@@ -1319,7 +1356,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                 {
                     wallcycle_start(wcycle, ewcPME_SPREADGATHER);
                     /* Spread the c6 on a grid */
-                    spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index);
+                    spread_on_grid(pme, &pme->atc[0], pmegrid, bFirst, TRUE, fftgrid, bDoSplines, grid_index, wcycle);
 
                     if (bFirst)
                     {
@@ -1356,6 +1393,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         }
 
                         gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
+                                                   thread, wcycle);
+                        gmx_parallel_3dfft_execute_gpu(pfft_setup_gpu, GMX_FFT_REAL_TO_COMPLEX,
                                                    thread, wcycle);
                         if (thread == 0)
                         {
@@ -1410,6 +1449,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     pmegrid    = &pme->pmegrid[grid_index];
                     fftgrid    = pme->fftgrid[grid_index];
                     pfft_setup = pme->pfft_setup[grid_index];
+                    pfft_setup_gpu = pme->pfft_setup_gpu[grid_index];
                     grid       = pmegrid->grid.grid;
                     calc_next_lb_coeffs(pme, local_sigma);
                     where();
@@ -1424,6 +1464,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         }
 
                         gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
+                                                   thread, wcycle);
+                        gmx_parallel_3dfft_execute_gpu(pfft_setup_gpu, GMX_FFT_COMPLEX_TO_REAL,
                                                    thread, wcycle);
                         if (thread == 0)
                         {
@@ -1463,9 +1505,17 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
                     for (thread = 0; thread < pme->nthread; thread++)
                     {
+		        gather_f_bsplines_gpu_pre(pme, grid, bClearF, &pme->atc[0],
+                                          &pme->atc[0].spline[thread],
+					  scale, thread);
+			wallcycle_sub_start(wcycle, ewcsPME_GATHER);
                         gather_f_bsplines(pme, grid, bClearF, &pme->atc[0],
                                           &pme->atc[0].spline[thread],
                                           scale);
+			wallcycle_sub_stop(wcycle, ewcsPME_GATHER);
+                        gather_f_bsplines_gpu(pme, grid, bClearF, &pme->atc[0],
+                                          &pme->atc[0].spline[thread],
+					  scale, thread);
                     }
                     where();
 

@@ -49,4 +49,17 @@ real
 gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
                        pme_atomcomm_t *atc);
 
+
+void
+gather_f_bsplines_gpu_pre(struct gmx_pme_t *pme, real *grid,
+			  gmx_bool bClearF, pme_atomcomm_t *atc,
+			  splinedata_t *spline,
+			  real scale, int thread);
+
+void
+gather_f_bsplines_gpu(struct gmx_pme_t *pme, real *grid,
+		      gmx_bool bClearF, pme_atomcomm_t *atc,
+		      splinedata_t *spline,
+		      real scale, int thread);
+
 #endif
