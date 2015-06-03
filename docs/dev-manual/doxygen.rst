@@ -808,4 +808,4 @@ documented mostly along these guidelines.  Some comments in
 ``src/gromacs/selection/`` (in particular, any C-like code) predate the
 introduction of these guidelines, so those are not the best examples.
 
-.. include:: doxygen-links.rst
+.. include:: /fragments/doxygen-links.rst
