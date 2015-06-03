@@ -298,7 +298,6 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         // to determine such a set...
         writeSubTopicList(context,
                           "Additional help is available on the following topics:");
-        // TODO: Make these respect the binary name passed in, to make tests work better.
         context.writeTextBlock("To access the help, use '[PROGRAM] help <topic>'.");
         context.writeTextBlock("For help on a command, use '[PROGRAM] help <command>'.");
     }
@@ -564,7 +563,7 @@ void HelpExportReStructuredText::exportModuleHelp(
     }
     file.writeLine();
 
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_);
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_, binaryName_);
     context.enterSubSection(displayName);
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
@@ -651,10 +650,11 @@ void HelpExportReStructuredText::finishModuleGroupExport()
 
 void HelpExportReStructuredText::exportTopic(const HelpTopicInterface &topic)
 {
-    const std::string path("onlinehelp/" + std::string(topic.name()) + ".rst");
-    File              file(outputRedirector_->openFileForWriting(path));
-    HelpWriterContext context(&file, eHelpOutputFormat_Rst, &links_);
-    HelpManager       manager(topic, context);
+    const std::string      path("onlinehelp/" + std::string(topic.name()) + ".rst");
+    File                   file(outputRedirector_->openFileForWriting(path));
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_,
+                                   binaryName_);
+    HelpManager            manager(topic, context.writerContext());
     manager.writeCurrentTopic();
 }
 
@@ -853,7 +853,8 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     File                  &outputFile = impl_->outputRedirector_->standardOutput();
     HelpLinks              links(eHelpOutputFormat_Console);
     initProgramLinks(&links, *impl_);
-    CommandLineHelpContext context(&outputFile, eHelpOutputFormat_Console, &links);
+    CommandLineHelpContext context(&outputFile, eHelpOutputFormat_Console, &links,
+                                   impl_->binaryName_);
     context.setShowHidden(impl_->bHidden_);
     if (impl_->moduleOverride_ != NULL)
     {
