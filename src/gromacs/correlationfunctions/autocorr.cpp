@@ -45,9 +45,12 @@
 
 #include "autocorr.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/correlationfunctions/integrate.h"
@@ -87,16 +90,12 @@ static void low_do_four_core(int nfour, int nframes, real c1[], real cfour[],
                              int nCos)
 {
     int  i = 0;
-    int  fftcode;
-    real aver, *ans;
 
-    aver = 0.0;
     switch (nCos)
     {
         case enNorm:
             for (i = 0; (i < nframes); i++)
             {
-                aver    += c1[i];
                 cfour[i] = c1[i];
             }
             break;
@@ -116,7 +115,7 @@ static void low_do_four_core(int nfour, int nframes, real c1[], real cfour[],
             gmx_fatal(FARGS, "nCos = %d, %s %d", nCos, __FILE__, __LINE__);
     }
 
-    fftcode = many_auto_correl(1, nframes, nfour, &cfour);
+    many_auto_correl(1, nframes, nfour, &cfour);
 }
 
 /*! \brief Routine to comput ACF without FFT. */
@@ -578,7 +577,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
     if (bFour)
     {
         c0 = log((double)nframes)/log(2.0);
-        k  = c0;
+        k  = (int)c0;
         if (k < c0)
         {
             k++;
@@ -606,7 +605,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
      * In this loop the actual correlation functions are computed, but without
      * normalizing them.
      */
-    k = max(1, pow(10, (int)(log(nitem)/log(100))));
+    k = std::max((int)1, (int)std::pow(10, (int)(std::log(nitem)/std::log(100))));
     for (i = 0; i < nitem; i++)
     {
         if (bVerbose && ((i%k == 0 || i == nitem-1)))
@@ -660,10 +659,10 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
         else
         {
             sum = print_and_integrate(fp, nout, dt, c1[0], NULL, 1);
-            if (bVerbose)
-            {
-                printf("Correlation time (integral over corrfn): %g (ps)\n", sum);
-            }
+        }
+        if (bVerbose)
+        {
+            printf("Correlation time (integral over corrfn): %g (ps)\n", sum);
         }
     }
     else
