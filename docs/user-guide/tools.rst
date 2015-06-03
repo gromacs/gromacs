@@ -1,69 +1,109 @@
-Command-line tools
-==================
-
-|Gromacs| includes many tools for preparing, running and analysing
-molecular dynamics simulations. These are all structured as part of the
-gmx wrapper binary, and invoked with commands like :ref:`gmx grompp`.
-:ref:`mdrun <gmx mdrun>` is the only other binary that
-:ref:`can be built <building just the mdrun binary>`; in the normal
-build it can be run with ``gmx mdrun``. Documentation for these can
-be found at the links below:
-
-.. toctree::
-
-   /programs/byname
-   /programs/bytopic
-
-   /programs/selections
+Command-line reference
+======================
 
 .. toctree::
    :hidden:
    :glob:
 
-   /programs/gmx-*
+   /onlinehelp/gmx
+   /onlinehelp/gmx-*
 
-Common options and behaviour
-----------------------------
+|Gromacs| includes many tools for preparing, running and analysing
+molecular dynamics simulations. These are all structured as part of a single
+:command:`gmx` wrapper binary, and invoked with commands like :command:`gmx grompp`.
+:ref:`mdrun <gmx mdrun>` is the only other binary that
+:ref:`can be built <building just the mdrun binary>`; in the normal
+build it can be run with :command:`gmx mdrun`. Documentation for these can
+be found at the respective sections below, as well as on man pages (e.g.,
+:manpage:`gmx-grompp(1)`) and with :samp:`gmx help {command}` or
+:samp:`gmx {command} -h`.
 
-Optional files are not used unless the option is set, in contrast to
-non-optional files, where the default file name is used when the option is
-not set.
+Command-line interface and conventions
+--------------------------------------
 
-All |Gromacs| tools will accept file options without a file extension or
-filename being specified. In such cases the default filenames will be
-used. With multiple input file types, such as generic structure format,
-the directory will be searched for files of each type with the supplied
-or default name. When no such file is found, or with output files the
-first file type will be used.
+All |Gromacs| commands require an option before any arguments (i.e., all
+command-line arguments need to be preceded by an argument starting with a
+dash, and values not starting with a dash are arguments to the preceding
+option).  Most options, except for boolean flags, expect an argument (or
+multiple in some cases) after the option name.
+The argument must be a separate command-line argument, i.e., separated by
+space, as in ``-f traj.xtc``.  If more than one argument needs to be given to
+an option, they should be similarly separated from each other.
+Some options also have default arguments, i.e., just specifying the option
+without any argument uses the default argument.
+If an option is not specified at all, a default value is used; in the case of
+optional files, the default might be not to use that file (see below).
 
-All |Gromacs| tools check if the command line options are valid. If this
-is not the case, the program will be halted.
+All |Gromacs| command options start with a single dash, whether they are
+single- or multiple-letter options.  However, two dashes are also recognized
+(starting from 5.1).
 
-All |Gromacs| tools have 3 hidden options:
+In addition to command-specific options, some options are handled by the
+:command:`gmx` wrapper, and can be specified for any command.  See
+:doc:`wrapper binary help </onlinehelp/gmx>` for the list of such options.
+These options are recognized both before the command name (e.g.,
+:command:`gmx -quiet grompp`) as well as after the command name (e.g.,
+:command:`gmx grompp -quiet`).
+There is also a ``-hidden`` option that can be specified in combination with
+``-h`` to show help for advanced/developer-targeted options.
 
-+-------------------+--------+---------------+-------------------------------------------------+
-| option            | type   | default       | description                                     |
-+===================+========+===============+=================================================+
-| ``-[no]hidden``   | bool   | \[``yes``\]   | \[hidden\] Print description for hidden options |
-+-------------------+--------+---------------+-------------------------------------------------+
-| ``-[no]quiet``    | bool   | \[``no``\]    | \[hidden\] Do not print help info               |
-+-------------------+--------+---------------+-------------------------------------------------+
-| ``-[no]debug``    | bool   | \[``no``\]    | \[hidden\] Write file with debug information    |
-+-------------------+--------+---------------+-------------------------------------------------+
-
-Many tools accept enumerated options (enum), which should be used with
-one of the arguments listed in the option description. The argument may
-be abbreviated, and the first match to the shortest argument in the list
-will be selected.
-
-Many tools also use options that may accept a vector of values. Either 1
-or 3 parameters can be supplied; when only one parameter is supplied the
-two other values are also set to this value.
-
-All |Gromacs| tools can read compressed (``*.Z``) or g-zipped (``*.gz``)
-files. There might be a problem with reading compressed [.tng] or [.xtc]
-files, but these will not compress very well anyway.
-
-Most |Gromacs| tools can process a trajectory with fewer atoms than the
+Most analysis commands can process a trajectory with fewer atoms than the
 run input or structure file, but only if the trajectory consists of the
-first n atoms of the run input or structure file.
+first *n* atoms of the run input or structure file.
+
+Handling specific types of command-line options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+boolean options
+  Boolean flags can be specified like ``-pbc`` and negated like ``-nopbc``.
+  It is also possible to use an explicit value like ``-pbc no`` and
+  ``-pbc yes``.
+file name options
+  Options that accept files names have features that support using default file
+  names:
+
+  * If a required option is not set, the default is used.
+  * If an option is marked optional, the file is not used unless the option
+    is set (or other conditions make the file required).
+  * If an option is set, and no file name is provided, the default is always
+    used.
+
+  All such options will accept file names without a file extension.
+  The extension is automatically appended in such a case.
+  When multiple input formats are accepted, such as a generic structure format,
+  the directory will be searched for files of each type with the supplied or
+  default name. When no file with a recognized extension is found, an error is given.
+  For output files with multiple formats, a default file type will be used.
+
+  Some file formats can also be read from compressed (:file:`.Z` or
+  :file:`.gz`) formats.
+enum options
+  Enumerated options (enum) should be used with one of the arguments listed in
+  the option description. The argument may be abbreviated, and the first match
+  to the shortest argument in the list will be selected.
+vector options
+  Some options accept a vector of values.  Either 1 or 3 parameters can be
+  supplied; when only one parameter is supplied the two other values are also
+  set to this value.
+selection options
+  See :doc:`/onlinehelp/selections`.
+
+Commands by name
+----------------
+
+.. include:: /fragments/byname.rst
+
+Commands by topic
+-----------------
+
+.. include:: /fragments/bytopic.rst
+
+Special topics
+--------------
+
+The information in these topics is also accessible through
+:samp:`gmx help {topic}` on the command line.
+
+.. toctree::
+
+   /onlinehelp/selections

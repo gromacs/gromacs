@@ -259,4 +259,4 @@ documentation exported from source files
 
 __ doxygen-page-wrapperbinary_
 
-.. include:: doxygen-links.rst
+.. include:: /fragments/doxygen-links.rst
