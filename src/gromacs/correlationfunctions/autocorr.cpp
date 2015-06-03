@@ -45,9 +45,12 @@
 
 #include "autocorr.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/correlationfunctions/integrate.h"
@@ -88,7 +91,7 @@ static void low_do_four_core(int nfour, int nframes, real c1[], real cfour[],
 {
     int  i = 0;
     int  fftcode;
-    real aver, *ans;
+    real aver;
 
     aver = 0.0;
     switch (nCos)
@@ -606,7 +609,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
      * In this loop the actual correlation functions are computed, but without
      * normalizing them.
      */
-    k = max(1, pow(10, (int)(log(nitem)/log(100))));
+    k = std::max(1, (int)pow(10, (int)(log(nitem)/log(100))));
     for (i = 0; i < nitem; i++)
     {
         if (bVerbose && ((i%k == 0 || i == nitem-1)))
