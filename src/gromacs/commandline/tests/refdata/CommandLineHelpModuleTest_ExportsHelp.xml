@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="programs/byname.rst"><![CDATA[
-Tools by Name
-=============
-* :doc:`test help <test-help>` - Print help information
-* :doc:`test module <test-module>` - First module
-* :doc:`test other <test-other>` - Second module
+  <String Name="fragments/byname.rst"><![CDATA[
+* :doc:`test </onlinehelp/test>` - molecular dynamics simulation suite
+* :doc:`test help </onlinehelp/test-help>` - Print help information
+* :doc:`test module </onlinehelp/test-module>` - First module
+* :doc:`test other </onlinehelp/test-other>` - Second module
 ]]></String>
   <String Name="conf-man.py"><![CDATA[
 man_pages = [
@@ -16,7 +15,7 @@ man_pages = [
     ('programs/test', 'test', 'molecular dynamics simulation suite', '', 1)
 ]
 ]]></String>
-  <String Name="programs/test-help.rst"><![CDATA[
+  <String Name="onlinehelp/test-help.rst"><![CDATA[
 .. _test help:
 
 test help
@@ -31,7 +30,7 @@ test help
 
    More information about |Gromacs| is available at <http://www.gromacs.org/>.
 ]]></String>
-  <String Name="programs/test-module.rst"><![CDATA[
+  <String Name="onlinehelp/test-module.rst"><![CDATA[
 .. _test module:
 
 test module
@@ -64,7 +63,7 @@ Other options:
 
    More information about |Gromacs| is available at <http://www.gromacs.org/>.
 ]]></String>
-  <String Name="programs/test-other.rst"><![CDATA[
+  <String Name="onlinehelp/test-other.rst"><![CDATA[
 .. _test other:
 
 test other
@@ -85,19 +84,19 @@ Synopsis
 
    More information about |Gromacs| is available at <http://www.gromacs.org/>.
 ]]></String>
-  <String Name="programs/bytopic.rst"><![CDATA[
-Tools by Topic
-==============
+  <String Name="fragments/bytopic.rst"><![CDATA[
 Group 1
--------
-| :doc:`test module <test-module>` - First module
+^^^^^^^
+:doc:`test module </onlinehelp/test-module>`
+  First module
 
 Group 2
--------
-| :doc:`test other <test-other>` - Second module
+^^^^^^^
+:doc:`test other </onlinehelp/test-other>`
+  Second module
 
 ]]></String>
-  <String Name="man/bytopic.rst"><![CDATA[
+  <String Name="fragments/bytopic-man.rst"><![CDATA[
 Group 1
 ^^^^^^^
 :manpage:`test-module(1)`
@@ -109,7 +108,7 @@ Group 2
   Second module
 
 ]]></String>
-  <String Name="programs/topic1.rst"><![CDATA[
+  <String Name="onlinehelp/topic1.rst"><![CDATA[
 Test topic
 ==========
 Help text
@@ -126,14 +125,12 @@ Out-of-order subtopic
 ---------------------
 Sub text
 ]]></String>
-  <String Name="programs/topic2.rst"><![CDATA[
+  <String Name="onlinehelp/topic2.rst"><![CDATA[
 Another topic
 =============
 Help text
 ]]></String>
-  <String Name="programs/test.rst"><![CDATA[
-:orphan:
-
+  <String Name="onlinehelp/test.rst"><![CDATA[
 molecular dynamics simulation suite
 ===================================
 Synopsis
@@ -173,6 +170,6 @@ test commands
 -------------
 The following commands are available. Please refer to their individual man pages or ``commandline-test help <command>`` for further details.
 
-.. include:: /man/bytopic.rst
+.. include:: /fragments/bytopic-man.rst
 ]]></String>
 </ReferenceData>
