@@ -236,4 +236,4 @@ white
 Each edge signifies an include dependency; there is no additional information
 currently included.
 
-.. include:: doxygen-links.rst
+.. include:: /fragments/doxygen-links.rst
