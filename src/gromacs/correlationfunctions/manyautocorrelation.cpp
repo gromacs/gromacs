@@ -43,9 +43,12 @@
 
 #include "manyautocorrelation.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -57,7 +60,7 @@ int many_auto_correl(int nfunc, int ndata, int nfft, real **c)
     #pragma omp parallel
     {
         typedef real complex[2];
-        int          i, t, j, fftcode;
+        int          i, j, fftcode;
         gmx_fft_t    fft1;
         complex     *in, *out;
         int          i0, i1;
@@ -70,7 +73,7 @@ int many_auto_correl(int nfunc, int ndata, int nfft, real **c)
             // fprintf(stderr, "There are %d threads for correlation functions\n", nthreads);
         }
         i0 = thread_id*nfunc/nthreads;
-        i1 = min(nfunc, (thread_id+1)*nfunc/nthreads);
+        i1 = std::min(nfunc, (thread_id+1)*nfunc/nthreads);
 
         fftcode = gmx_fft_init_1d(&fft1, nfft, GMX_FFT_FLAG_CONSERVATIVE);
         /* Allocate temporary arrays */
