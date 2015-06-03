@@ -304,13 +304,14 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
     }
     else
     {
+        // TODO: This should not really end up on the HTML page.
         context.writeTitle(formatString("%s commands", helpModule_.binaryName_.c_str()));
         context.writeTextBlock(
                 "The following commands are available. Please refer to their "
                 "individual man pages or [TT][PROGRAM] help <command>[tt] "
                 "for further details.");
         context.writeTextBlock("");
-        context.writeTextBlock(".. include:: /man/bytopic.rst");
+        context.writeTextBlock(".. include:: /fragments/bytopic-man.rst");
     }
 }
 
@@ -537,9 +538,10 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 void HelpExportReStructuredText::startModuleExport()
 {
     indexFile_.reset(
-            new File(outputRedirector_->openFileForWriting("programs/byname.rst")));
-    indexFile_->writeLine("Tools by Name");
-    indexFile_->writeLine("=============");
+            new File(outputRedirector_->openFileForWriting("fragments/byname.rst")));
+    indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
+                                       binaryName_.c_str(), binaryName_.c_str(),
+                                       RootHelpText::title));
     manPagesFile_.reset(
             new File(outputRedirector_->openFileForWriting("conf-man.py")));
     manPagesFile_->writeLine("man_pages = [");
@@ -552,7 +554,7 @@ void HelpExportReStructuredText::exportModuleHelp(
 {
     // TODO: Ideally, the file would only be touched if it really changes.
     // This would make Sphinx reruns much faster.
-    File file(outputRedirector_->openFileForWriting("programs/" + tag + ".rst"));
+    File file(outputRedirector_->openFileForWriting("onlinehelp/" + tag + ".rst"));
     file.writeLine(formatString(".. _%s:", displayName.c_str()));
     if (0 == displayName.compare(binaryName_ + " mdrun"))
     {
@@ -578,7 +580,7 @@ void HelpExportReStructuredText::exportModuleHelp(
     file.writeLine("   More information about |Gromacs| is available at <http://www.gromacs.org/>.");
     file.close();
 
-    indexFile_->writeLine(formatString("* :doc:`%s <%s>` - %s",
+    indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
                                        displayName.c_str(), tag.c_str(),
                                        module.shortDescription()));
     manPagesFile_->writeLine(
@@ -603,11 +605,9 @@ void HelpExportReStructuredText::finishModuleExport()
 void HelpExportReStructuredText::startModuleGroupExport()
 {
     indexFile_.reset(
-            new File(outputRedirector_->openFileForWriting("programs/bytopic.rst")));
-    indexFile_->writeLine("Tools by Topic");
-    indexFile_->writeLine("==============");
+            new File(outputRedirector_->openFileForWriting("fragments/bytopic.rst")));
     manPagesFile_.reset(
-            new File(outputRedirector_->openFileForWriting("man/bytopic.rst")));
+            new File(outputRedirector_->openFileForWriting("fragments/bytopic-man.rst")));
 }
 
 void HelpExportReStructuredText::exportModuleGroup(
@@ -615,7 +615,7 @@ void HelpExportReStructuredText::exportModuleGroup(
         const ModuleGroupContents &modules)
 {
     indexFile_->writeLine(title);
-    indexFile_->writeLine(std::string(std::strlen(title), '-'));
+    indexFile_->writeLine(std::string(std::strlen(title), '^'));
     manPagesFile_->writeLine(title);
     manPagesFile_->writeLine(std::string(std::strlen(title), '^'));
 
@@ -630,7 +630,7 @@ void HelpExportReStructuredText::exportModuleGroup(
         GMX_RELEASE_ASSERT(dashPos != std::string::npos,
                            "There should always be at least one dash in the tag");
         displayName[dashPos] = ' ';
-        indexFile_->writeLine(formatString("| :doc:`%s <%s>` - %s",
+        indexFile_->writeLine(formatString(":doc:`%s </onlinehelp/%s>`\n  %s",
                                            displayName.c_str(), tag.c_str(),
                                            module->second));
         manPagesFile_->writeLine(formatString(":manpage:`%s(1)`\n  %s",
@@ -651,14 +651,9 @@ void HelpExportReStructuredText::finishModuleGroupExport()
 
 void HelpExportReStructuredText::exportTopic(const HelpTopicInterface &topic)
 {
-    const std::string path("programs/" + std::string(topic.name()) + ".rst");
+    const std::string path("onlinehelp/" + std::string(topic.name()) + ".rst");
     File              file(outputRedirector_->openFileForWriting(path));
     HelpWriterContext context(&file, eHelpOutputFormat_Rst, &links_);
-    if (topic.name() == binaryName_)
-    {
-        context.writeTextBlock(":orphan:");
-        context.writeTextBlock("");
-    }
     HelpManager       manager(topic, context);
     manager.writeCurrentTopic();
 }
