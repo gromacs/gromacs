@@ -109,7 +109,6 @@ if (SPHINX_FOUND)
         dev-manual/index.rst
         dev-manual/codelayout.rst
         dev-manual/doxygen.rst
-        dev-manual/doxygen-links.rst
         dev-manual/formatting.rst
         dev-manual/gmxtree.rst
         dev-manual/includestyle.rst
@@ -119,6 +118,7 @@ if (SPHINX_FOUND)
         dev-manual/testutils.rst
         dev-manual/tools.rst
         dev-manual/uncrustify.rst
+        fragments/doxygen-links.rst
         install-guide/index.rst
         user-guide/index.rst
         user-guide/getting-started.rst
@@ -141,8 +141,11 @@ if (SPHINX_FOUND)
          ${SPHINX_INPUT_DIR}/*.rst)
     list(REMOVE_ITEM _obsolete_sources ${SPHINX_SOURCE_FILES})
     foreach(_file ${_obsolete_sources})
-        # Skip generated files.
-        if (NOT _file MATCHES "^(programs/.*|man/bytopic)\\.rst$")
+        # Skip generated files in onlinehelp/, and fragments.
+        # The latter do not cause issues with obsolete files, as they
+        # are not considered as Sphinx input files, but will only be
+        # included using an explicit .. include::.
+        if (NOT _file MATCHES "^(onlinehelp|fragments)/.*\\.rst$")
             message(STATUS "Removing obsolete Sphinx input ${_file}")
             file(REMOVE ${SPHINX_INPUT_DIR}/${_file})
         endif()
@@ -173,8 +176,7 @@ if (SPHINX_FOUND)
         DEPENDS ${SPHINX_INPUT_FILES})
     # TODO: Make this remove obsolete .rst files.
     gmx_add_custom_output_target(sphinx-programs OUTPUT STAMP
-        COMMAND ${CMAKE_COMMAND} -E make_directory programs
-        COMMAND ${CMAKE_COMMAND} -E make_directory man
+        COMMAND ${CMAKE_COMMAND} -E make_directory onlinehelp
         COMMAND gmx -quiet help -export rst
         DEPENDS gmx
         WORKING_DIRECTORY ${SPHINX_INPUT_DIR}

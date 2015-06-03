@@ -196,4 +196,4 @@ Here are some things to keep in mind when working with the unit tests:
 .. _Google Test Primer: http://code.google.com/p/googletest/wiki/V1_7_Primer
 .. _Google Mock: http://code.google.com/p/googlemock/
 
-.. include:: doxygen-links.rst
+.. include:: /fragments/doxygen-links.rst
