@@ -464,11 +464,6 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             gmx_fatal(FARGS, "Unknown integrator %s", ei_names[inputrec->eI]);
     }
 
-#ifdef GMX_SIMD
-    /* Make sure we don't detect SIMD overflow generated before this point */
-    gmx_simd_check_and_reset_overflow();
-#endif
-
     while (bNotLastFrame)
     {
         frame_step      = rerun_fr.step;
@@ -668,17 +663,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
             epot               = enerd->term[F_EPOT];
             bEnergyOutOfBounds = FALSE;
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-            /* With SSE the energy can overflow, check for this */
-            if (gmx_simd_check_and_reset_overflow())
-            {
-                if (debug)
-                {
-                    fprintf(debug, "Found an SSE overflow, assuming the energy is out of bounds\n");
-                }
-                bEnergyOutOfBounds = TRUE;
-            }
-#endif
+
             /* If the compiler doesn't optimize this check away
              * we catch the NAN energies.
              * The epot>GMX_REAL_MAX check catches inf values,

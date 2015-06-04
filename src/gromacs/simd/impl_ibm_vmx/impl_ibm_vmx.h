@@ -348,13 +348,4 @@ gmx_simd4_dotproduct3_f_ibm_vmx(gmx_simd4_float_t a, gmx_simd4_float_t b)
     return gmx_simd_reduce_f_ibm_vmx(c);
 }
 
-/* Function to check whether SIMD operations have resulted in overflow.
- * For now, this is unfortunately a dummy for this architecture.
- */
-static int
-gmx_simd_check_and_reset_overflow(void)
-{
-    return 0;
-}
-
 #endif /* GMX_SIMD_IMPLEMENTATION_IBM_VMX_H */
