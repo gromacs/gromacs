@@ -70,7 +70,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
