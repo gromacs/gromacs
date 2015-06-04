@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3692,18 +3692,6 @@ gmx_simd4_dotproduct3_d(gmx_simd_double_t a, gmx_simd_double_t b)
 
 /*! \} */
 
-
-/*! \brief Return 1 if SIMD floating-point ops have overflowed, and reset check.
-
- * This function to check whether SIMD operations have resulted in overflow,
- * and returns 1 if it occured, 0 otherwise.
- * For now, this is unfortunately a dummy for all architectures except x86.
- */
-static int
-gmx_simd_check_and_reset_overflow(void)
-{
-    return 0;
-}
 
 /*! \} */
 /*! \endcond */

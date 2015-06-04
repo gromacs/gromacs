@@ -373,29 +373,6 @@ gmx_simd_reduce_d_sse2(__m128d a)
     return f;
 }
 
-/* Function to check whether SIMD operations have resulted in overflow */
-static int
-gmx_simd_check_and_reset_overflow(void)
-{
-    int MXCSR;
-    int sse_overflow;
-
-    MXCSR = _mm_getcsr();
-    /* The overflow flag is bit 3 in the register */
-    if (MXCSR & 0x0008)
-    {
-        sse_overflow = 1;
-        /* Set the overflow flag to zero */
-        MXCSR = MXCSR & 0xFFF7;
-        _mm_setcsr(MXCSR);
-    }
-    else
-    {
-        sse_overflow = 0;
-    }
-    return sse_overflow;
-}
-
 /* SSE2 is already 4-wide in single, so we just reuse float datatype for SIMD4.
  * SSE2 cannot do double-precision SIMD4.
  */
