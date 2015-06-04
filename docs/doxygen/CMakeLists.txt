@@ -111,7 +111,7 @@ if (DOXYGEN_FOUND)
             ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
             ${CMAKE_CURRENT_BINARY_DIR}/RunDoxygen.cmake)
         if (GMX_COMPACT_DOXYGEN)
-            list(APPEND doxygen_deps ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-compact)
+            list(APPEND doxygen_deps ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact)
         endif()
         gmx_add_custom_output_target(doxygen-source-timestamp
             OUTPUT STAMP
@@ -210,7 +210,6 @@ if (DOXYGEN_FOUND)
             ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check-source.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
             -l ${CMAKE_CURRENT_BINARY_DIR}/check-source.log
-            --exitcode
             --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
             --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt)
         add_custom_target(check-source      COMMAND ${check_source_command}
