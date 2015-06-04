@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Erik Lindahl <erik@kth.se>
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Thu, 04 Jun 2015 20:39:45 +0200
+Reviewed-on: https://gerrit.gromacs.org/4678
+Project: gromacs
+Branch: refs/heads/master
