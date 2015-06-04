@@ -615,15 +615,6 @@ gmx_simd4_dotproduct3_f_ibm_vsx(gmx_simd4_float_t a, gmx_simd4_float_t b)
     return vec_extract(sum, 0);
 }
 
-/* Function to check whether SIMD operations have resulted in overflow.
- * For now, this is unfortunately a dummy for this architecture.
- */
-static int
-gmx_simd_check_and_reset_overflow(void)
-{
-    return 0;
-}
-
 /* Undefine our temporary work-arounds so they are not used by mistake */
 #undef gmx_vsx_f2d
 #undef gmx_vsx_d2f
