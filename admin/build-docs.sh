@@ -91,10 +91,13 @@ rm -rf build
 mkdir build
 cd build
 
+cmake_args="-DGMX_BUILD_HELP=ON -DGMX_BUILD_MANUAL=ON"
+if [[ $GERRIT_MODE ]] ; then
+    cmake_args+=" -DGMX_COMPACT_DOXYGEN=ON"
+fi
 # Make a configuration that is fast, just for building docs.
-cmake ..  "$@" \
-    -DGMX_BUILD_HELP=yes -DGMX_BUILD_MANUAL=yes \
-    -DCMAKE_BUILD_TYPE=Debug -DGMX_OPENMP=off -DGMX_SIMD=None -DGMX_GPU=no
+cmake_args+=" -DCMAKE_BUILD_TYPE=Debug -DGMX_OPENMP=OFF -DGMX_SIMD=None -DGMX_GPU=OFF"
+cmake ..  ${cmake_args} "$@"
 
 # Need to make gmx to export rst help.
 make gmx -j 2 || echo "FAILED to make gmx"
