@@ -111,7 +111,7 @@ if (DOXYGEN_FOUND)
             ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
             ${CMAKE_CURRENT_BINARY_DIR}/RunDoxygen.cmake)
         if (GMX_COMPACT_DOXYGEN)
-            list(APPEND doxygen_deps ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-compact)
+            list(APPEND doxygen_deps ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact)
         endif()
         gmx_add_custom_output_target(doxygen-source-timestamp
             OUTPUT STAMP
