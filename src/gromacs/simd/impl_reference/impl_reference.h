@@ -698,30 +698,19 @@ gmx_simd_and_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
     gmx_simd_float_t  c;
     int               i;
-#ifdef __cplusplus
-    gmx_int32_t       val1, val2, res;
-#else
     union
     {
         float        r;
         gmx_int32_t  i;
     }
     conv1, conv2;
-#endif
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-#ifdef __cplusplus
-        val1   = reinterpret_cast<int &>(a.r[i]);
-        val2   = reinterpret_cast<int &>(b.r[i]);
-        res    = val1 & val2;
-        c.r[i] = reinterpret_cast<float &>(res);
-#else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
         conv1.i = conv1.i & conv2.i;
         c.r[i]  = conv1.r;
-#endif
     }
     return c;
 }
@@ -739,30 +728,19 @@ gmx_simd_andnot_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
     gmx_simd_float_t  c;
     int               i;
-#ifdef __cplusplus
-    gmx_int32_t       val1, val2, res;
-#else
     union
     {
         float        r;
         gmx_int32_t  i;
     }
     conv1, conv2;
-#endif
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-#ifdef __cplusplus
-        val1   = reinterpret_cast<int &>(a.r[i]);
-        val2   = reinterpret_cast<int &>(b.r[i]);
-        res    = (~val1) & val2;
-        c.r[i] = reinterpret_cast<float &>(res);
-#else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
         conv1.i = (~conv1.i) & conv2.i;
         c.r[i]  = conv1.r;
-#endif
     }
     return c;
 }
@@ -780,30 +758,19 @@ gmx_simd_or_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
     gmx_simd_float_t  c;
     int               i;
-#ifdef __cplusplus
-    gmx_int32_t       val1, val2, res;
-#else
     union
     {
         float        r;
         gmx_int32_t  i;
     }
     conv1, conv2;
-#endif
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-#ifdef __cplusplus
-        val1   = reinterpret_cast<int &>(a.r[i]);
-        val2   = reinterpret_cast<int &>(b.r[i]);
-        res    = val1 | val2;
-        c.r[i] = reinterpret_cast<float &>(res);
-#else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
         conv1.i = conv1.i | conv2.i;
         c.r[i]  = conv1.r;
-#endif
     }
     return c;
 }
@@ -821,30 +788,19 @@ gmx_simd_xor_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
     gmx_simd_float_t  c;
     int               i;
-#ifdef __cplusplus
-    gmx_int32_t       val1, val2, res;
-#else
     union
     {
         float        r;
         gmx_int32_t  i;
     }
     conv1, conv2;
-#endif
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
-#ifdef __cplusplus
-        val1   = reinterpret_cast<int &>(a.r[i]);
-        val2   = reinterpret_cast<int &>(b.r[i]);
-        res    = val1 ^ val2;
-        c.r[i] = reinterpret_cast<float &>(res);
-#else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
         conv1.i = conv1.i ^ conv2.i;
         c.r[i]  = conv1.r;
-#endif
     }
     return c;
 }
@@ -1543,30 +1499,19 @@ gmx_simd_and_d(gmx_simd_double_t a, gmx_simd_double_t b)
 {
     gmx_simd_double_t  c;
     int                i;
-#ifdef __cplusplus
-    gmx_int64_t        val1, val2, res;
-#else
     union
     {
         double       r;
         gmx_int64_t  i;
     }
     conv1, conv2;
-#endif
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-#ifdef __cplusplus
-        val1   = reinterpret_cast<gmx_int64_t &>(a.r[i]);
-        val2   = reinterpret_cast<gmx_int64_t &>(b.r[i]);
-        res    = val1 & val2;
-        c.r[i] = reinterpret_cast<double &>(res);
-#else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
         conv1.i = conv1.i & conv2.i;
         c.r[i]  = conv1.r;
-#endif
     }
     return c;
 }
@@ -1580,30 +1525,19 @@ gmx_simd_andnot_d(gmx_simd_double_t a, gmx_simd_double_t b)
 {
     gmx_simd_double_t  c;
     int                i;
-#ifdef __cplusplus
-    gmx_int64_t        val1, val2, res;
-#else
     union
     {
         double       r;
         gmx_int64_t  i;
     }
     conv1, conv2;
-#endif
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-#ifdef __cplusplus
-        val1   = reinterpret_cast<gmx_int64_t &>(a.r[i]);
-        val2   = reinterpret_cast<gmx_int64_t &>(b.r[i]);
-        res    = (~val1) & val2;
-        c.r[i] = reinterpret_cast<double &>(res);
-#else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
-        conv1.i = conv1.i & conv2.i;
+        conv1.i = (~conv1.i) & conv2.i;
         c.r[i]  = conv1.r;
-#endif
     }
     return c;
 }
@@ -1617,30 +1551,19 @@ gmx_simd_or_d(gmx_simd_double_t a, gmx_simd_double_t b)
 {
     gmx_simd_double_t  c;
     int                i;
-#ifdef __cplusplus
-    gmx_int64_t        val1, val2, res;
-#else
     union
     {
         double       r;
         gmx_int64_t  i;
     }
     conv1, conv2;
-#endif
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-#ifdef __cplusplus
-        val1   = reinterpret_cast<gmx_int64_t &>(a.r[i]);
-        val2   = reinterpret_cast<gmx_int64_t &>(b.r[i]);
-        res    = val1 | val2;
-        c.r[i] = reinterpret_cast<double &>(res);
-#else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
-        conv1.i = conv1.i & conv2.i;
+        conv1.i = conv1.i | conv2.i;
         c.r[i]  = conv1.r;
-#endif
     }
     return c;
 }
@@ -1654,30 +1577,19 @@ gmx_simd_xor_d(gmx_simd_double_t a, gmx_simd_double_t b)
 {
     gmx_simd_double_t  c;
     int                i;
-#ifdef __cplusplus
-    gmx_int64_t        val1, val2, res;
-#else
     union
     {
         double       r;
         gmx_int64_t  i;
     }
     conv1, conv2;
-#endif
 
     for (i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
-#ifdef __cplusplus
-        val1   = reinterpret_cast<gmx_int64_t &>(a.r[i]);
-        val2   = reinterpret_cast<gmx_int64_t &>(b.r[i]);
-        res    = val1 ^ val2;
-        c.r[i] = reinterpret_cast<double &>(res);
-#else
         conv1.r = a.r[i];
         conv2.r = b.r[i];
-        conv1.i = conv1.i & conv2.i;
+        conv1.i = conv1.i ^ conv2.i;
         c.r[i]  = conv1.r;
-#endif
     }
     return c;
 }
