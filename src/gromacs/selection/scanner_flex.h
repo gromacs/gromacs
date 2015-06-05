@@ -4,7 +4,7 @@
 
 #line 6 "scanner_flex.h"
 #line 50 "scanner.l"
-#if !_gmx_sel_yyIN_HEADER
+#if !defined _gmx_sel_yyIN_HEADER
 #include "gmxpre.h"
 #endif
 
