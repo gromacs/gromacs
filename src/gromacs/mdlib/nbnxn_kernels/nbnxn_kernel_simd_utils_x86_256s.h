@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,6 +155,7 @@ gmx_2_mm_to_m256(__m128 in0, __m128 in1)
     return _mm256_insertf128_ps(_mm256_castps128_ps256(in0), in1, 1);
 }
 
+#ifdef UNROLLJ
 #if UNROLLJ == 8
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
@@ -206,7 +207,7 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
     *c12_S = gmx_2_mm_to_m256(c12t_S[0], c12t_S[1]);
 }
 #endif
-
+#endif
 
 /* The load_table functions below are performance critical.
  * The routines issue UNROLLI*UNROLLJ _mm_load_ps calls.

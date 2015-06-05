@@ -109,7 +109,7 @@ MACRO(gmx_c_flags)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
         endif()
         GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value -Wunused-parameter" GMXC_CFLAGS)
-        GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wno-sign-compare -Wpointer-arith" GMXC_CFLAGS)
+        GMX_TEST_CFLAG(CFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wno-sign-compare -Wpointer-arith -Wundef" GMXC_CFLAGS)
         # Since 4.8 on by default. For previous version disabling is a no-op. Only disabling for Release because with assert
         # the warnings are OK.
         GMX_TEST_CFLAG(CFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CFLAGS_RELEASE_ONLY)
@@ -130,7 +130,7 @@ MACRO(gmx_c_flags)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
         # Problematic with CUDA
         # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith -Wundef" GMXC_CXXFLAGS)
         GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
         # new in gcc 4.5
         GMX_TEST_CXXFLAG(CXXFLAGS_EXCESS_PREC "-fexcess-precision=fast" GMXC_CXXFLAGS_RELEASE)
@@ -152,7 +152,6 @@ MACRO(gmx_c_flags)
                 endif()
             endif()
 # 177: function/variable ".." was declared but never referenced
-# 193: zero used for undefined preprocessing identifier ".."
 # 271: trailing comma is nonstandard
 # 304: access control not specified ("public" by default)
 # 383: value copied to temporary, reference to temporary used
@@ -174,7 +173,7 @@ MACRO(gmx_c_flags)
 #3346: dynamic exception specifications are deprecated
 #11074: Inlining inhibited by limit max-size(/max-total-size)
 #11076: To get full report use -opt-report=3 -opt-report-phase ipo (shown for previous remark)
-            GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "-w3 -wd177 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_DEBUG "-O0" GMXC_CFLAGS_DEBUG) #icc defaults to -O2 even with -g
@@ -187,7 +186,7 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CFLAG(CFLAGS_PRAGMA "/wd161" GMXC_CFLAGS)
                 endif()
             endif()
-            GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
+            GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd177 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
     endif()
@@ -204,7 +203,7 @@ MACRO(gmx_c_flags)
 #All but the following warnings are identical for the C-compiler (see above)
 #1782: #pragma once is obsolete
 #2282: unrecognized GCC pragma
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd193 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076 -wd1782 -wd2282" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-w3 -wd177 -wd271 -wd304 -wd383 -wd424 -wd444 -wd522 -wd593 -wd869 -wd981 -wd1418 -wd1419 -wd1572 -wd1599 -wd2259 -wd2415 -wd2547 -wd2557 -wd3280 -wd3346 -wd11074 -wd11076 -wd1782 -wd2282" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops -alias-const -ansi-alias" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_DEBUG "-O0" GMXC_CXXFLAGS_DEBUG)
             GMX_TEST_CXXFLAG(CXXFLAGS_FP_RELASSERT "-fp-model except -fp-model precise" GMXC_CXXFLAGS_RELWITHASSERT)
@@ -216,7 +215,7 @@ MACRO(gmx_c_flags)
                     GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "/wd161" GMXC_CXXFLAGS)
                 endif()
             endif()
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd193 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782 /wd2282" GMXC_CXXFLAGS)
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W3 /wd177 /wd271 /wd304 /wd383 /wd424 /wd444 /wd522 /wd593 /wd869 /wd981 /wd1418 /wd1419 /wd1572 /wd1599 /wd2259 /wd2415 /wd2547 /wd2557 /wd3280 /wd3346 /wd1782 /wd2282" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
     endif()
