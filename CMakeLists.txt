@@ -484,6 +484,15 @@ if(WIN32)
     add_definitions(-DNOMINMAX)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Work-around for cmake bug #10837
+    if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Intel" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_INCLUDE_SYSTEM_FLAG_C "-isystem ")
+    endif()
+    if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Intel" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem ")
+    endif()
+endif()
+
 # Detect boost unless GMX_EXTERNAL_BOOST is explicitly OFF
 # Used for default if GMX_EXTERNAL_BOOST is not defined (first CMake pass)
 if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
@@ -817,10 +826,10 @@ endif()
 install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
 
 if(GMX_EXTERNAL_BOOST)
-    include_directories(${Boost_INCLUDE_DIRS})
+    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
     list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 else()
-    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/boost)
+    include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/boost)
     list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR}/gromacs/external/boost)
     list(APPEND INSTALLED_HEADED_DEFINITIONS "-DBOOST_NO_TYPEID")
     # typeid not supported for minimal internal version

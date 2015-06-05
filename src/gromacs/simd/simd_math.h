@@ -1516,11 +1516,11 @@ gmx_simd_invsqrt_pair_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
 #endif
     gmx_simd_cvt_f2dd(luf, &lu0, &lu1);
     /* Last iteration(s) performed in double - if we had 22 bits, this gets us to 44 (~1e-15) */
-#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_ACCURACY_BITS_SINGLE < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu0 = gmx_simd_rsqrt_iter_d(lu0, x0);
     lu1 = gmx_simd_rsqrt_iter_d(lu1, x1);
 #endif
-#if (GMX_SIMD_MATH_TARGET_SINGLE_BITS*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
+#if (GMX_SIMD_ACCURACY_BITS_SINGLE*2 < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu0 = gmx_simd_rsqrt_iter_d(lu0, x0);
     lu1 = gmx_simd_rsqrt_iter_d(lu1, x1);
 #endif
