@@ -583,7 +583,7 @@ void HelpExportReStructuredText::exportModuleHelp(
                                        displayName.c_str(), tag.c_str(),
                                        module.shortDescription()));
     manPagesFile_->writeLine(
-            formatString("    ('programs/%s', '%s', \"%s\", '', 1),",
+            formatString("    ('onlinehelp/%s', '%s', \"%s\", '', 1),",
                          tag.c_str(), tag.c_str(), module.shortDescription()));
 }
 
@@ -593,7 +593,7 @@ void HelpExportReStructuredText::finishModuleExport()
     indexFile_.reset();
     // TODO: Generalize.
     manPagesFile_->writeLine(
-            formatString("    ('programs/%s', '%s', '%s', '', 1)",
+            formatString("    ('onlinehelp/%s', '%s', '%s', '', 1)",
                          binaryName_.c_str(), binaryName_.c_str(),
                          RootHelpText::title));
     manPagesFile_->writeLine("]");
