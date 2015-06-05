@@ -758,7 +758,7 @@ static void pr_fepvals(FILE *fp, int indent, t_lambda *fep, gmx_bool bMDPformat)
     PD("dh-hist-spacing", fep->dh_hist_spacing);
     PS("separate-dhdl-file", SEPDHDLFILETYPE(fep->separate_dhdl_file));
     PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
-};
+}
 
 static void pr_pull(FILE *fp, int indent, t_pull *pull)
 {

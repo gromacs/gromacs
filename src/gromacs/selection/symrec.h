@@ -123,6 +123,10 @@ class SelectionParserSymbol
         friend class SelectionParserSymbolTable;
 };
 
+#ifdef __INTEL_COMPILER
+#pragma warning( push )
+#pragma warning( disable : 444 ) //destructor for base class ".." is not virtual
+#endif
 /*! \internal
  * \brief
  * Input iterator for iterating symbols of a given type.
@@ -194,6 +198,9 @@ class SelectionParserSymbolIterator
          */
         friend class SelectionParserSymbolTable;
 };
+#ifdef __INTEL_COMPILER
+#pragma warning( pop )
+#endif
 
 /*! \internal \brief
  * Symbol table for the selection parser.
