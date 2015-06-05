@@ -47,7 +47,7 @@
  * \ingroup module_selection
  */
 %top{
-#if !_gmx_sel_yyIN_HEADER
+#if !defined _gmx_sel_yyIN_HEADER
 #include "gmxpre.h"
 #endif
 

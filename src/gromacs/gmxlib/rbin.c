@@ -86,7 +86,7 @@ int add_binr(t_bin *b, int nr, real r[])
     /* Copy pointer */
     rbuf = b->rbuf+b->nreal;
 
-#if (__ICC == 1500 || __ICL == 1500) && defined __MIC__
+#if (defined __ICC && __ICC == 1500 || defined __ICL && __ICL == 1500) && defined __MIC__
 #pragma novector /* Work-around for incorrect vectorization */
 #endif
     for (i = 0; (i < nr); i++)

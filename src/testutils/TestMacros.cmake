@@ -34,7 +34,7 @@
 
 function (gmx_add_unit_test_object_library NAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
+        include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
         add_library(${NAME} OBJECT ${UNITTEST_TARGET_OPTIONS} ${ARGN})
         set_property(TARGET ${NAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${NAME} APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
@@ -43,7 +43,7 @@ endfunction ()
 
 function (gmx_build_unit_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
+        include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
