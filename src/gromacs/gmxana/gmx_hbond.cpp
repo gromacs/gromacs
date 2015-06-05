@@ -912,8 +912,8 @@ static void reset_nhbonds(t_donors *ddd)
     }
 }
 
-void pbc_correct_gem(rvec dx, matrix box, rvec hbox);
-void pbc_in_gridbox(rvec dx, matrix box);
+static void pbc_correct_gem(rvec dx, matrix box, rvec hbox);
+static void pbc_in_gridbox(rvec dx, matrix box);
 
 static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                        gmx_bool bBox, matrix box, rvec hbox,
@@ -1186,7 +1186,7 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
     g = NULL;
 }
 
-void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
+static void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
 {
     int      m;
     gmx_bool bDone = FALSE;
@@ -1209,7 +1209,7 @@ void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
     }
 }
 
-void pbc_in_gridbox(rvec dx, matrix box)
+static void pbc_in_gridbox(rvec dx, matrix box)
 {
     int      m;
     gmx_bool bDone = FALSE;

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,9 +111,9 @@ struct gmx_fft
 
 
 int
-gmx_fft_init_1d(gmx_fft_t *        pfft,
-                int                nx,
-                gmx_fft_flag       flags)
+gmx_fft_init_1d(gmx_fft_t *             pfft,
+                int                     nx,
+                gmx_fft_flag gmx_unused flags)
 {
     gmx_fft_t      fft;
     int            d;
@@ -187,9 +187,9 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
 
 
 int
-gmx_fft_init_1d_real(gmx_fft_t *        pfft,
-                     int                nx,
-                     gmx_fft_flag       flags)
+gmx_fft_init_1d_real(gmx_fft_t *             pfft,
+                     int                     nx,
+                     gmx_fft_flag gmx_unused flags)
 {
     gmx_fft_t      fft;
     int            d;
@@ -271,10 +271,10 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
 
 
 int
-gmx_fft_init_2d_real(gmx_fft_t *        pfft,
-                     int                nx,
-                     int                ny,
-                     gmx_fft_flag       flags)
+gmx_fft_init_2d_real(gmx_fft_t *             pfft,
+                     int                     nx,
+                     int                     ny,
+                     gmx_fft_flag gmx_unused flags)
 {
     gmx_fft_t      fft;
     int            d;
