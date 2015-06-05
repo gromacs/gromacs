@@ -137,7 +137,7 @@ typedef uint64_t gmx_uint64_t;
  * to indicate a function is inlined.
  * C++ code should use plain `inline`, as that is already in C++98.
  */
-#if !defined __cplusplus && _MSC_VER
+#if !defined __cplusplus && defined _MSC_VER
 #define gmx_inline __inline
 #else
 /* C++ or C99 */

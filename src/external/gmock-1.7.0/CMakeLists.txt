@@ -37,6 +37,7 @@
 
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag("-Wno-unused-variable" HAS_NO_UNUSED_VARIABLE)
+check_cxx_compiler_flag("-Wno-undef" HAS_NO_UNDEF)
 
 # Avoid compiler warnings with GCC 5, which doesn't like the way
 # Google Test makes int variables that hold the results of
@@ -85,6 +86,9 @@ include_directories(BEFORE ${GMOCK_DIR})
 
 if (HAS_NO_UNUSED_VARIABLE)
     set_source_files_properties(${GTEST_SOURCES} PROPERTIES COMPILE_FLAGS "-Wno-unused-variable")
+endif()
+if (HAS_NO_UNDEF)
+    set_source_files_properties(${GTEST_SOURCES} ${GMOCK_SOURCES} PROPERTIES COMPILE_FLAGS "-Wno-undef")
 endif()
 
 add_library(gmock STATIC ${UNITTEST_TARGET_OPTIONS} ${GMOCK_SOURCES} ${GTEST_SOURCES})
