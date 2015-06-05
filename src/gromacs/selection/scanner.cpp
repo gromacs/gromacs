@@ -1,6 +1,6 @@
 #line 2 "scanner.cpp"
 #line 50 "scanner.l"
-#if !_gmx_sel_yyIN_HEADER
+#if !defined _gmx_sel_yyIN_HEADER
 #include "gmxpre.h"
 #endif
 

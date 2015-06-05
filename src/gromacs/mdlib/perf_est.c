@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
      */
     ndx      = 0;
     ndx_excl = 0;
-#if __ICC == 1400 || __ICL == 1400
+#if defined _ICC && __ICC == 1400 || defined __ICL && __ICL == 1400
 #pragma novector /* Work-around for incorrect vectorization */
 #endif
     for (mb = 0; mb < mtop->nmolblock; mb++)
