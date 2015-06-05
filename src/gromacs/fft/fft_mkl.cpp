@@ -111,9 +111,9 @@ struct gmx_fft
 
 
 int
-gmx_fft_init_1d(gmx_fft_t *        pfft,
-                int                nx,
-                gmx_fft_flag       flags)
+gmx_fft_init_1d(gmx_fft_t *             pfft,
+                int                     nx,
+                gmx_fft_flag gmx_unused flags)
 {
     gmx_fft_t      fft;
     int            d;
@@ -187,9 +187,9 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
 
 
 int
-gmx_fft_init_1d_real(gmx_fft_t *        pfft,
-                     int                nx,
-                     gmx_fft_flag       flags)
+gmx_fft_init_1d_real(gmx_fft_t *             pfft,
+                     int                     nx,
+                     gmx_fft_flag gmx_unused flags)
 {
     gmx_fft_t      fft;
     int            d;
@@ -271,10 +271,10 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
 
 
 int
-gmx_fft_init_2d_real(gmx_fft_t *        pfft,
-                     int                nx,
-                     int                ny,
-                     gmx_fft_flag       flags)
+gmx_fft_init_2d_real(gmx_fft_t *             pfft,
+                     int                     nx,
+                     int                     ny,
+                     gmx_fft_flag gmx_unused flags)
 {
     gmx_fft_t      fft;
     int            d;
