@@ -65,15 +65,14 @@ This build checks the source code for formatting such as consistent indentation
 and use of braces, as well as for copyright headers.  See :doc:`formatting` for
 the guidelines that are enforced.
 
-Technically, the build simply runs :file:`admin/uncrustify.sh` as ::
-
-  admin/uncrustify.sh check --rev=HEAD^
-
-to check the formatting in the changes for the commit.
-If the return value is non-zero (i.e., any changes would be required), the
-build is marked unstable.
-Currently, only the console log of the build shows what actually was the issue.
-See :doc:`uncrustify` for more details on the script and uncrustify.
+Technically, the build simply runs :file:`admin/run-uncrustify.sh` to check the
+formatting in the changes for the commit.
+If the any changes are required, the build is marked unstable.
+If the script completely fails (should be rare), the build fails.
+A file with issues found by the script is archived as an artifact in the build,
+and a summary is reported back to Gerrit (or the actual issues if there are
+only a few).
+See :doc:`uncrustify` for more details on uncrustify and on scripts to run it.
 
 .. TODO: Provide links to the build system page, once there are on the git
    commit chain...
