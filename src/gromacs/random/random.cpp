@@ -397,7 +397,7 @@ gmx_rng_cycle_2uniform(gmx_uint64_t ctr1, gmx_uint64_t ctr2,
                        gmx_uint64_t key1, gmx_uint64_t key2,
                        double* rnd)
 {
-    const gmx_int64_t  mask_53bits     = 0x1FFFFFFFFFFFFF;
+    const gmx_int64_t  mask_53bits     = 0x1FFFFFFFFFFFFFULL;
     const double       two_power_min53 = 1.0/9007199254740992.0;
 
     threefry2x64_ctr_t ctr  = {{ctr1, ctr2}};
