@@ -185,6 +185,10 @@ extern int gmx_poldata_get_ptype_pol(gmx_poldata_t pd, const char *ptype,
                                      double *polarizability, double *sig_pol);
 extern int gmx_poldata_get_atype_pol(gmx_poldata_t pd, const char *atype,
                                      double *polarizability, double *sig_pol);
+
+extern int gmx_poldata_get_atype_ref_enthalpy(gmx_poldata_t pd, const char *atype,
+                                              double *Href);
+
 /* Return 1 if OK, 0 if not found */
 extern int gmx_poldata_bonding_rule_valence(gmx_poldata_t pd, char *gt_brule, double *valence);
 

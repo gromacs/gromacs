@@ -1417,9 +1417,9 @@ static void write_top2(FILE *out, char *molname,
 
 static void print_top_header2(FILE *fp, gmx_poldata_t pd, gmx_atomprop_t aps, bool bPol)
 {
-    char *elem, *desc, *gt_type, *ptype, *btype, *gt_old;
-    char *vdwparams;
-    int   atomnumber;
+    char  *elem, *desc, *gt_type, *ptype, *btype, *gt_old;
+    char  *vdwparams;
+    int    atomnumber;
     double ref_enthalpy;
     real   mass;
 
@@ -2011,12 +2011,13 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
 void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
 {
     int     i, m, np;
-    double  poltot, pol, sigpol, sptot;
+    double  poltot, pol, sigpol, sptot, ereftot, eref;
     rvec    mu;
 
-    poltot = 0;
-    sptot  = 0;
-    np     = 0;
+    poltot  = 0;
+    sptot   = 0;
+    ereftot = 0;
+    np      = 0;
     clear_rvec(mu);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
@@ -2026,6 +2027,11 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
             np++;
             poltot += pol;
             sptot  += sqr(sigpol);
+        }
+        if (1 ==
+            gmx_poldata_get_atype_ref_enthalpy(pd, *topology_->atoms.atomtype[i], &eref))
+        {
+            ereftot += eref;
         }
         for (m = 0; (m < DIM); m++)
         {
@@ -2039,6 +2045,7 @@ void MyMol::PrintQPol(FILE *fp, gmx_poldata_t pd)
             qq, mm, mutot);
     fprintf(fp, "Polarizability is %.2f +/- %.2f A^3.\n",
             poltot, sqrt(sptot/topology_->atoms.nr));
+    fprintf(fp, "Reference enthalpy is %.3f kJ/mol\n", ereftot);
 }
 
 void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])

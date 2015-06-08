@@ -846,6 +846,22 @@ int gmx_poldata_get_atype_pol(gmx_poldata_t pd, const char *atype,
     return 0;
 }
 
+int gmx_poldata_get_atype_ref_enthalpy(gmx_poldata_t pd, const char *atype,
+                                       double *Href)
+{
+    int i;
+
+    for (i = 0; (i < pd->nalexandria); i++)
+    {
+        if (strcmp(atype, pd->alexandria[i].type) == 0)
+        {
+            *Href = pd->alexandria[i].ref_enthalpy;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 char *gmx_poldata_ptype_to_miller(gmx_poldata_t pd, const char *ptype)
 {
     int i;
