@@ -40,6 +40,7 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "gromacs/legacyheaders/md_logging.h"
@@ -596,7 +597,7 @@ static void print_gputimes(FILE *fplog, const char *name,
         sprintf(num, "          ");
         sprintf(avg_perf, "          ");
     }
-    if (t != tot_t)
+    if (t != tot_t && tot_t > 0)
     {
         fprintf(fplog, " %-29s %10s%12.3f   %s   %5.1f\n",
                 name, num, t/1000, avg_perf, 100 * t/tot_t);
@@ -656,11 +657,19 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     }
 
     nth_pp  = wc->nthreads_pp;
+    assert(nth_pp > 0);
+
     nth_pme = wc->nthreads_pme;
+    assert(nth_pme > 0);
 
     cyc_sum = wc->cycles_sum;
 
+    assert(nnodes > 0);
+    assert(npme >= 0);
     npp     = nnodes - npme;
+    /* npme is the number of PME-only ranks used, and we always do PP work */
+    assert(npp > 0);
+
     nth_tot = npp*nth_pp + npme*nth_pme;
 
     /* When using PME-only nodes, the next line is valid for both
@@ -669,20 +678,28 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     tot        = cyc_sum[ewcRUN];
     tot_for_pp = 0;
 
-    /* Conversion factor from cycles to seconds */
-    if (tot > 0)
+    if (tot <= 0.0)
     {
-        c2t     = realtime/tot;
-        c2t_pp  = c2t * nth_tot / (double) (npp*nth_pp);
-        if (npme > 0)
-        {
-            c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
-        }
+        /* TODO This is heavy handed, but until someone reworks the
+           code so that it is provably robust with respect to
+           non-positive values for all possible timer and cycle
+           counters, there is less value gained from printing whatever
+           timing data might still be sensible for some non-Jenkins
+           run, than is lost from diagnosing Jenkins FP exceptions on
+           runs about whose execution time we don't care. */
+        md_print_warn(NULL, fplog, "WARNING: A total of %f CPU cycles was recorded, so mdrun cannot print a time accounting\n", tot);
+        return;
+    }
+
+    /* Conversion factor from cycles to seconds */
+    c2t     = realtime/tot;
+    c2t_pp  = c2t * nth_tot / (double) (npp*nth_pp);
+    if (npme > 0)
+    {
+        c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
     }
     else
     {
-        c2t     = 0;
-        c2t_pp  = 0;
         c2t_pme = 0;
     }
 
@@ -834,9 +851,12 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         fprintf(fplog, "%s\n", hline);
 
         gpu_cpu_ratio = tot_gpu/tot_cpu_overlap;
-        fprintf(fplog, "\nForce evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
-                tot_gpu/gpu_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
-                gpu_cpu_ratio);
+        if (gpu_t->nb_c > 0 && wc->wcc[ewcFORCE].n > 0)
+        {
+            fprintf(fplog, "\nForce evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
+                    tot_gpu/gpu_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
+                    gpu_cpu_ratio);
+        }
 
         /* only print notes related to CPU-GPU load balance with PME */
         if (wc->wcc[ewcPMEMESH].n > 0)
@@ -910,7 +930,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         }
     }
 
-    if (cyc_sum[ewcMoveE] > tot*0.05 && tot > 0)
+    if (cyc_sum[ewcMoveE] > tot*0.05)
     {
         /* Only the sim master calls this function, so always print to stderr */
         md_print_warn(NULL, fplog,
