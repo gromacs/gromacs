@@ -497,9 +497,6 @@ int alex_gentop(int argc, char *argv[])
                                 pd, aps);
         }
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
-
-        //! Print final information for the user.
-        mymol.PrintQPol(stdout, pd);
     }
     else
     {

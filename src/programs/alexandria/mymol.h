@@ -84,7 +84,8 @@ class MyMol : public MolProp
         immStatus        immAtoms_, immCharges_, immTopology_;
         std::string      forcefield_;
         bool             bHaveShells_, bHaveVSites_;
-
+        double           ref_enthalpy_, qtot_, mass_tot_, mutot_;
+        double           polarizability_, sig_pol_;
         //! Determine whether a molecule has symmetry (within a certain tolerance)
         bool IsSymmetric(real toler);
 
@@ -161,8 +162,8 @@ class MyMol : public MolProp
                            gmx_poldata_t           pd,
                            gmx_atomprop_t          aps);
 
-        //! Print some info about the molecule to a file
-        void PrintQPol(FILE *fp, gmx_poldata_t pd);
+        //! Compute/derive global info about the molecule
+        void CalcQPol(gmx_poldata_t pd);
 
         //! Set the force field
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
