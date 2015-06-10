@@ -4818,9 +4818,22 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
     /* Without domain decomposition
      * or with less than 3 blocks per task, divide in nth blocks.
      */
-    if (!bDomDec || ci_block*3*nth > gridi->nc)
+    if (!bDomDec || nth*3*ci_block > gridi->nc)
     {
         ci_block = (gridi->nc + nth - 1)/nth;
+    }
+
+    if (ci_block > 1 && (nth - 1)*ci_block >= gridi->nc)
+    {
+        /* Some threads have no work. Although reducing the block size
+         * does not decrease the block count on the first few threads,
+         * with GPUs better mixing of "upper" cells that have more empty
+         * clusters results in a somewhat lower max load over all threads.
+         * Without GPUs the regime of so few atoms per thread is less
+         * performance relevant, but with 8-wide SIMD the same reasoning
+         * applies, since the pair list uses 4 i-atom "sub-clusters".
+         */
+        ci_block--;
     }
 
     return ci_block;
