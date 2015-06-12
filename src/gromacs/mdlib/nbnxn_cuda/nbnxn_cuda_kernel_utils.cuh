@@ -54,7 +54,7 @@
 
 
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
-const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
+#define supercl_interaction_mask  ((1U << NCL_PER_SUPERCL) - 1U)
 
 /*! Apply force switch,  force + energy version. */
 static inline __device__
