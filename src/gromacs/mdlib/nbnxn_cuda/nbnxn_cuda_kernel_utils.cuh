@@ -59,9 +59,6 @@
 #define ONE_TWELVETH_F  0.08333333f
 
 
-/*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
-const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
-
 /*! Apply force switch,  force + energy version. */
 static inline __device__
 void calculate_force_switch_F(const  cu_nbparam_t nbparam,
