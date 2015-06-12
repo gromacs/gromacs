@@ -157,6 +157,14 @@
  */
 #define NBNXN_NA_SC_MAX (GPU_NSUBCELL*NBNXN_GPU_CLUSTER_SIZE)
 
+/* 4x4 kernel diagonal mask */
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG      = 0x08ceU;
+/* 4x2 kernel diagonal masks */
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_0 = 0x0002U;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_1 = 0x002fU;
+/* 4x8 kernel diagonal masks */
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
+static const unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
 
 static void nbs_cycle_clear(nbnxn_cycle_t *cc)
 {
