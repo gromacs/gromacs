@@ -133,7 +133,10 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     md_print_warn(cr, fplog, "step %s: resetting all time and cycle counters\n",
                   gmx_step_str(step, sbuf));
 
-    nbnxn_gpu_reset_timings(nbv);
+    if (use_GPU(nbv))
+    {
+        nbnxn_gpu_reset_timings(nbv);
+    }
 
     wallcycle_stop(wcycle, ewcRUN);
     wallcycle_reset_all(wcycle);
