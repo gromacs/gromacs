@@ -298,9 +298,14 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
 #ifndef HAVE_NVML
     if (bGpuCanUseApplicationClocks)
     {
-        md_print_warn( fplog, "NVML support was not found in CUDA library %d.%d, so your GPU of type %s cannot use application clock support to improve performance.\n",
-                       prop->major,
-                       prop->minor,
+        int cuda_driver  = 0;
+        int cuda_runtime = 0;
+        cudaDriverGetVersion(&cuda_driver);
+        cudaRuntimeGetVersion(&cuda_runtime);
+        md_print_warn( fplog, "Note: NVML support was not found (CUDA runtime %d.%d, driver %d.%d), so your\n"
+                              "      %s GPU cannot use application clock support to improve performance.\n",
+                       cuda_runtime/1000, cuda_runtime%100,
+                       cuda_driver/1000, cuda_driver%100,
                        prop->name );
     }
     return true;
