@@ -240,19 +240,24 @@ recommends either
 * that you build FFTW from the source code.
 
 If you build FFTW from source yourself, get the most recent version
-and follow the `FFTW installation guide`_.
-Choose the precision for FFTW (i.e. single or float vs. double) to
+and follow the `FFTW installation guide`_. Note that we have recently
+contributed new SIMD optimization for several extra platforms to
+FFTW, which will appear in FFTW-3.3.5 (for now it is available in the
+FFTW repository on github, or you can find a very unofficial prerelease
+version at ftp://ftp.gromacs.org/pub/prerequisite_software ).
+Choose the precision for FFTW (i.e. single/float vs. double) to
 match whether you will later use mixed or double precision for
 |Gromacs|. There is no need to compile FFTW with
 threading or MPI support, but it does no harm. On x86 hardware,
-compile *only* with ``--enable-sse2`` (regardless of precision) even if
-your processors can take advantage of AVX extensions. Since |Gromacs|
-uses fairly short transform lengths we do not benefit from the FFTW
-AVX acceleration, and because of memory system performance
-limitations, it can even degrade |Gromacs| performance by around
-20%. There is no way for |Gromacs| to limit the use to SSE2 SIMD at run
-time if AVX support has been compiled into FFTW, so you need to set
-this at compile time.
+compile with *both* ``--enable-sse2`` and ``--enable-avx`` for
+FFTW-3.3.4 and earlier. As of FFTW-3.3.5 you should also add
+``--enable-avx2``. FFTW will create a fat library with codelets
+for all different instruction sets, and pick the fastest supported
+one at runtime. On IBM Power8, you definitely want the upcoming
+FFTW-3.3.5 and use ``--enable-vsx`` for SIMD support. If you are
+using a Cray, there is a special modified (commercial) version of
+FFTs using the FFTW interface which might be faster, but we have
+not yet tested this extensively.
 
 Using MKL
 ^^^^^^^^^
