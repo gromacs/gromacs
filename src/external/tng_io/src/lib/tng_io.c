@@ -5611,41 +5611,46 @@ static tng_function_status tng_data_read(const tng_trajectory_t tng_data,
         {
             memcpy(data->values, contents, full_data_len);
         }
-        switch(datatype)
+        /* Endianness is handled by the TNG compression library. TNG compressed blocks are always written
+         * as little endian by the compression library. */
+        if(codec_id != TNG_TNG_COMPRESSION)
         {
-        case TNG_FLOAT_DATA:
-            if(tng_data->input_endianness_swap_func_32)
+            switch(datatype)
             {
-                for(i = 0; i < full_data_len; i+=size)
+            case TNG_FLOAT_DATA:
+                if(tng_data->input_endianness_swap_func_32)
                 {
-                    if(tng_data->input_endianness_swap_func_32(tng_data,
-                        (int32_t *)((char *)data->values + i))
-                        != TNG_SUCCESS)
+                    for(i = 0; i < full_data_len; i+=size)
                     {
-                        fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                __FILE__, __LINE__);
+                        if(tng_data->input_endianness_swap_func_32(tng_data,
+                            (int32_t *)((char *)data->values + i))
+                            != TNG_SUCCESS)
+                        {
+                            fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                    __FILE__, __LINE__);
+                        }
                     }
                 }
-            }
-            break;
-        case TNG_INT_DATA:
-        case TNG_DOUBLE_DATA:
-            if(tng_data->input_endianness_swap_func_64)
-            {
-                for(i = 0; i < full_data_len; i+=size)
+                break;
+            case TNG_INT_DATA:
+            case TNG_DOUBLE_DATA:
+                if(tng_data->input_endianness_swap_func_64)
                 {
-                    if(tng_data->input_endianness_swap_func_64(tng_data,
-                        (int64_t *)((char *)data->values + i))
-                        != TNG_SUCCESS)
+                    for(i = 0; i < full_data_len; i+=size)
                     {
-                        fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                __FILE__, __LINE__);
+                        if(tng_data->input_endianness_swap_func_64(tng_data,
+                            (int64_t *)((char *)data->values + i))
+                            != TNG_SUCCESS)
+                        {
+                            fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                    __FILE__, __LINE__);
+                        }
                     }
                 }
+                break;
+            case TNG_CHAR_DATA:
+                break;
             }
-            break;
-        case TNG_CHAR_DATA:
-            break;
         }
     }
 
@@ -6030,91 +6035,56 @@ static tng_function_status tng_data_block_write(const tng_trajectory_t tng_data,
         if(data->values)
         {
             memcpy(contents, data->values, full_data_len);
-            switch(data->datatype)
+            /* If writing TNG compressed data the endianness is taken into account by the compression
+             * routines. TNG compressed data is always written as little endian. */
+            if(data->codec_id != TNG_TNG_COMPRESSION)
             {
-            case TNG_FLOAT_DATA:
-                if(data->codec_id == TNG_UNCOMPRESSED || data-> codec_id == TNG_GZIP_COMPRESSION ||
-                   data->codec_id == TNG_TNG_COMPRESSION)
+                switch(data->datatype)
                 {
-                    if(tng_data->output_endianness_swap_func_32)
+                case TNG_FLOAT_DATA:
+                    if(data->codec_id == TNG_UNCOMPRESSED || data->codec_id == TNG_GZIP_COMPRESSION)
                     {
-                        for(i = 0; i < full_data_len; i+=size)
+                        if(tng_data->output_endianness_swap_func_32)
                         {
-                            if(tng_data->output_endianness_swap_func_32(tng_data,
-                               (int32_t *)(contents + i))
-                               != TNG_SUCCESS)
+                            for(i = 0; i < full_data_len; i+=size)
                             {
-                                fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                        __FILE__, __LINE__);
+                                if(tng_data->output_endianness_swap_func_32(tng_data,
+                                (int32_t *)(contents + i))
+                                != TNG_SUCCESS)
+                                {
+                                    fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                            __FILE__, __LINE__);
+                                }
                             }
                         }
                     }
-                }
-                else
-                {
-                    multiplier = data->compression_multiplier;
-                    if(fabs(multiplier - 1.0) > 0.00001 ||
-                       tng_data->output_endianness_swap_func_32)
+                    else
                     {
-                        for(i = 0; full_data_len; i+=size)
+                        multiplier = data->compression_multiplier;
+                        if(fabs(multiplier - 1.0) > 0.00001 ||
+                        tng_data->output_endianness_swap_func_32)
                         {
-                            *(float *)(contents + i) *= (float)multiplier;
-                            if(tng_data->output_endianness_swap_func_32 &&
-                            tng_data->output_endianness_swap_func_32(tng_data,
-                            (int32_t *)(contents + i))
-                            != TNG_SUCCESS)
+                            for(i = 0; full_data_len; i+=size)
                             {
-                                fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                        __FILE__, __LINE__);
+                                *(float *)(contents + i) *= (float)multiplier;
+                                if(tng_data->output_endianness_swap_func_32 &&
+                                tng_data->output_endianness_swap_func_32(tng_data,
+                                (int32_t *)(contents + i))
+                                != TNG_SUCCESS)
+                                {
+                                    fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                            __FILE__, __LINE__);
+                                }
                             }
                         }
                     }
-                }
-                break;
-            case TNG_INT_DATA:
-                if(tng_data->output_endianness_swap_func_64)
-                {
-                    for(i = 0; i < full_data_len; i+=size)
-                    {
-                        if(tng_data->output_endianness_swap_func_64(tng_data,
-                           (int64_t *)(contents + i))
-                           != TNG_SUCCESS)
-                        {
-                            fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                    __FILE__, __LINE__);
-                        }
-                    }
-                }
-                break;
-            case TNG_DOUBLE_DATA:
-                if(data->codec_id == TNG_UNCOMPRESSED || data-> codec_id == TNG_GZIP_COMPRESSION ||
-                   data->codec_id == TNG_TNG_COMPRESSION)
-                {
+                    break;
+                case TNG_INT_DATA:
                     if(tng_data->output_endianness_swap_func_64)
                     {
                         for(i = 0; i < full_data_len; i+=size)
                         {
                             if(tng_data->output_endianness_swap_func_64(tng_data,
-                               (int64_t *)(contents + i))
-                               != TNG_SUCCESS)
-                            {
-                                fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
-                                        __FILE__, __LINE__);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    multiplier = data->compression_multiplier;
-                    if(fabs(multiplier - 1.0) > 0.00001 ||
-                       tng_data->output_endianness_swap_func_64)
-                    {
-                        for(i = 0; i < full_data_len; i+=size)
-                        {
-                            *(double *)(contents + i) *= multiplier;
-                            if(tng_data->output_endianness_swap_func_64 &&
-                            tng_data->output_endianness_swap_func_64(tng_data,
                             (int64_t *)(contents + i))
                             != TNG_SUCCESS)
                             {
@@ -6123,10 +6093,48 @@ static tng_function_status tng_data_block_write(const tng_trajectory_t tng_data,
                             }
                         }
                     }
+                    break;
+                case TNG_DOUBLE_DATA:
+                    if(data->codec_id == TNG_UNCOMPRESSED || data-> codec_id == TNG_GZIP_COMPRESSION)
+                    {
+                        if(tng_data->output_endianness_swap_func_64)
+                        {
+                            for(i = 0; i < full_data_len; i+=size)
+                            {
+                                if(tng_data->output_endianness_swap_func_64(tng_data,
+                                (int64_t *)(contents + i))
+                                != TNG_SUCCESS)
+                                {
+                                    fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                            __FILE__, __LINE__);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        multiplier = data->compression_multiplier;
+                        if(fabs(multiplier - 1.0) > 0.00001 ||
+                        tng_data->output_endianness_swap_func_64)
+                        {
+                            for(i = 0; i < full_data_len; i+=size)
+                            {
+                                *(double *)(contents + i) *= multiplier;
+                                if(tng_data->output_endianness_swap_func_64 &&
+                                tng_data->output_endianness_swap_func_64(tng_data,
+                                (int64_t *)(contents + i))
+                                != TNG_SUCCESS)
+                                {
+                                    fprintf(stderr, "TNG library: Cannot swap byte order. %s: %d\n",
+                                            __FILE__, __LINE__);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case TNG_CHAR_DATA:
+                    break;
                 }
-                break;
-            case TNG_CHAR_DATA:
-                break;
             }
         }
         else
@@ -6148,7 +6156,7 @@ static tng_function_status tng_data_block_write(const tng_trajectory_t tng_data,
                                 &contents, &block_data_len);
             if(stat != TNG_SUCCESS)
             {
-                fprintf(stderr, "TNG library: Could not write tng compressed block data. %s: %d\n",
+                fprintf(stderr, "TNG library: Could not write TNG compressed block data. %s: %d\n",
                     __FILE__, __LINE__);
                 if(stat == TNG_CRITICAL)
                 {
@@ -15222,26 +15230,24 @@ tng_function_status DECLSPECDLLEXPORT tng_util_trajectory_open
         return(TNG_CRITICAL);
     }
 
-    if(mode == 'r' || mode == 'a')
-    {
-        tng_input_file_set(*tng_data_p, filename);
-
-        /* Read the file headers */
-        tng_file_headers_read(*tng_data_p, TNG_USE_HASH);
-
-        stat = tng_num_frame_sets_get(*tng_data_p, &(*tng_data_p)->n_trajectory_frame_sets);
-
-        if(stat != TNG_SUCCESS)
-        {
-            return(stat);
-        }
-    }
-
     if(mode == 'w')
     {
         stat = tng_output_file_set(*tng_data_p, filename);
+        return(stat);
     }
-    else if(mode == 'a')
+    tng_input_file_set(*tng_data_p, filename);
+
+    /* Read the file headers */
+    tng_file_headers_read(*tng_data_p, TNG_USE_HASH);
+
+    stat = tng_num_frame_sets_get(*tng_data_p, &(*tng_data_p)->n_trajectory_frame_sets);
+
+    if(stat != TNG_SUCCESS)
+    {
+        return(stat);
+    }
+
+    if(mode == 'a')
     {
         if((*tng_data_p)->output_file)
         {
