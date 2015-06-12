@@ -82,6 +82,12 @@ const gmx_bool bGPUBinary = TRUE;
 const gmx_bool bGPUBinary = FALSE;
 #endif
 
+/* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
+const char * const gpu_detect_res_str[egpuNR] =
+{
+    "compatible", "inexistent", "incompatible", "insane"
+};
+
 static const char * invalid_gpuid_hint =
     "A delimiter-free sequence of valid numeric IDs of available GPUs is expected.";
 
