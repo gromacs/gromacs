@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ get_thread_affinity_layout(FILE *fplog,
         {
             /* We don't know anything about the hardware, don't pin */
             md_print_warn(cr, fplog,
-                          "NOTE: We don't know how many logical cores we have, will not pin threads");
+                          "NOTE: No information on available cores, thread pinning disabled.");
 
             return -1;
         }
@@ -110,7 +110,7 @@ get_thread_affinity_layout(FILE *fplog,
     {
         /* We are oversubscribing, don't pin */
         md_print_warn(NULL, fplog,
-                      "WARNING: Oversubscribing the CPU, will not pin threads");
+                      "NOTE: Oversubscribing the CPU, will not pin threads");
 
         return -1;
     }
@@ -119,8 +119,7 @@ get_thread_affinity_layout(FILE *fplog,
     {
         /* We are oversubscribing, don't pin */
         md_print_warn(NULL, fplog,
-                      "WARNING: The requested pin offset is too large for the available logical cores,\n"
-                      "         will not pin threads");
+                      "WARNING: Requested offset too large for available cores, thread pinning disabled.");
 
         return -1;
     }
@@ -158,8 +157,7 @@ get_thread_affinity_layout(FILE *fplog,
         {
             /* We are oversubscribing, don't pin */
             md_print_warn(NULL, fplog,
-                          "WARNING: The requested pinning stride is too large for the available logical cores,\n"
-                          "         will not pin threads");
+                          "WARNING: Requested stride too large for available cores, thread pinning disabled.");
 
             return -1;
         }
@@ -207,14 +205,12 @@ gmx_set_thread_affinity(FILE                *fplog,
      * want to support. */
     if (tMPI_Thread_setaffinity_support() != TMPI_SETAFFINITY_SUPPORT_YES)
     {
-        /* we know Mac OS doesn't support setting thread affinity, so there's
+        /* we know Mac OS & BlueGene do not support setting thread affinity, so there's
            no point in warning the user in that case. In any other case
            the user might be able to do something about it. */
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(__bg__)
         md_print_warn(NULL, fplog,
-                      "Can not set thread affinities on the current platform. On NUMA systems this\n"
-                      "can cause performance degradation. If you think your platform should support\n"
-                      "setting affinities, contact the GROMACS developers.");
+                      "NOTE: Cannot set thread affinities on the current platform.");
 #endif  /* __APPLE__ */
         return;
     }
@@ -359,9 +355,8 @@ gmx_set_thread_affinity(FILE                *fplog,
             }
 
             md_print_warn(NULL, fplog,
-                          "WARNING: %sAffinity setting %sfailed.\n"
-                          "         This can cause performance degradation! If you think your setting are\n"
-                          "         correct, contact the GROMACS developers.",
+                          "NOTE: %sAffinity setting %sfailed. This can cause performance degradation.\n"
+                          "      If you think your settings are correct, ask on the gmx-users list.",
                           sbuf1, sbuf2);
         }
     }
