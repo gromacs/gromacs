@@ -135,10 +135,10 @@ molecular dynamics simulation suite
 ===================================
 Synopsis
 --------
-::
+.. parsed-literal::
 
-    test [-[no]h] [-[no]quiet] [-[no]version] [-[no]copyright] [-nice <int>]
-         [-[no]backup]
+    test [:strong:`-[no]h`] [:strong:`-[no]quiet`] [:strong:`-[no]version`] [:strong:`-[no]copyright`] [:strong:`-nice` :emphasis:`<int>`]
+         [:strong:`-[no]backup`]
 
 Description
 -----------
