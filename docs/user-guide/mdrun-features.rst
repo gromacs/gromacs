@@ -131,3 +131,104 @@ and executes 100 steps. `mdrun -maxh 2.5` will terminate the
 simulation shortly before 2.5 hours elapse, which can be useful when
 running under cluster queues (as long as the queueing system does not
 ever suspend the simulation).
+
+Running a membrane protein embedding simulation
+-----------------------------------------------
+
+This is a module to help embed a membrane protein into an equilibrated
+lipid bilayer at a position and orientation specified by the user. The
+main advantage is that it is possible to use very complex lipid bilayers
+with a number of different components that have been relaxed for a
+long time in a previous simulation. In theory that could be accomplished
+with a procedure similar to genbox, but since lipids are much larger
+than water molecules it will lead to a large vacuum layer between the
+protein and membrane if we remove all molecules where any atom is
+overlapping. Instead, this module works by first artifically shrinking
+the protein in the xy-plane, then it removes lipids that overlap with
+a much smaller core, after which we gradually push the protein atoms
+back to their initial positions, while using normal dynamics for the
+rest of the system so lipids adapt to the protein.
+
+To use membrane embedding, start by building a lipid bilayer that is
+just-so-slightly larger in the xy-plane than what you expect to need
+in the end, and make sure you have enough water outside the membrane
+to accomodate globular domains. Place the protein in the same coordinate
+file (and topology) as your lipid bilayer, and make sure it is in the
+orientation and position you want right in the middle of the bilayer.
+
+The first settings have to be entered in the mdp file that controls
+your simulation. You need an energy group corresponding to your
+protein, this group should be frozen (all dimensions), and we should
+exclude all interactions inside the protein to avoid problems when it
+is distorted. For instance:
+
+::
+
+    integrator     = md
+    energygrps     = Protein
+    freezegrps     = Protein
+    freezedim      = Y Y Y
+    energygrp_excl = Protein Protein
+
+You will also need a number of settings for the actual membrane
+embedding process. These are entered as similar name and value pairs,
+but in the separate text data file ``embed.dat`` that you provide as
+the argument to the ``-membed`` option (we refer to the below
+when explaining the process). The embedding works in for stages:
+
+1. The protein is resized around its center of mass by a factor
+   ``xy`` in the xy-plane (the bilayer plane), and a factor ``z``
+   along the z-axis (normal to the bilayer). If the height of the
+   protein is the same or smaller than the thickness of the
+   membrane, a z-fraction larger than 1.0 can prevent the protein
+   from being enveloped by the lipids.
+
+2. All lipid and solvent molecules overlapping with the resized
+   protein are removed. All interactions inside the protein are
+   turned off to prevent numerical issues for small values of the
+   scaling fractions.
+
+3. A single md step is performed, where atoms in the rest of the
+   system are moved.
+
+4. The resize factors are adjusted by the small amounts
+   (1-xy)/nxy and (1-z)/nz, where ``nxy`` and ``nz`` are the
+   number of iterations to use.  The resize factor for the xy-plane
+   is adjusted first. The resize factor for the z-direction is not
+   changed until the xy factor is 1.0 (after ``nxy`` iterations).
+
+5. Steps 3 and 4 are repeated until the protein has again reached
+   its original size, i.e. after nxy+nz iterations. After the
+   embedding you might still want to perform a short relaxation.
+
+Parameters that can be specified in ``embed.dat``, with default
+values that will be used if the setting is omitted:
+
+- ``xyinit`` (0.5) Resize factor for the protein in the xy
+  dimension before starting embedding.
+
+- ``xyend`` (1.0) Final resize factor in the xy dimension.
+
+- ``zinit`` (1.0) Resize factor for the protein in the z
+   dimension before starting embedding.
+
+- ``zend`` (1.0) Final resize faction in the z dimension.
+
+- ``nxy`` (1000) Number of iteration for the xy dimension.
+
+- ``nz`` (0) Number of iterations for the z dimension.
+
+- ``rad`` (0.22) Probe radius to check for overlap between
+  the group to embed and the membrane.
+
+- ``pieces`` (1) Perform piecewise resize. Select parts of the group
+  to insert and resize these with respect to their own geometrical center.
+
+- ``asymmetry`` (no) Allow asymmetric insertion, i.e. the number of
+  lipids removed from the upper and lower leaflet will not be checked.
+
+- ``ndiff`` (0) Number of lipids that will additionally be removed
+  from the lower (negative number) or upper (positive number)
+  membrane leaflet.
+
+- ``maxwarn`` (0) Largest number of membed warnings allowed.
