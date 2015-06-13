@@ -1142,14 +1142,15 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         {
             warn++;
             fprintf(stderr, "\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d)"
-                    " is probably too small.\nIncrease -nz or maxwarn.\n\n", warn, ins, it_z);
+                    " is probably too small.\nIncrease -nz or the maxwarn setting in the membed input file.\n\n", warn, ins, it_z);
         }
 
         if (it_xy+it_z > inputrec->nsteps)
         {
             warn++;
             fprintf(stderr, "\nWarning %d:\nThe number of growth steps (-nxy + -nz) is larger than the "
-                    "number of steps in the tpr.\n\n", warn);
+                    "number of steps in the tpr.\n"
+                    "(increase maxwarn in the membed input file to override)\n\n", warn);
         }
 
         fr_id = -1;
@@ -1225,13 +1226,13 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             warn++;
             fprintf(stderr, "\nWarning %d:\nThe xy-area is very small compared to the area of the protein.\n"
                     "This might cause pressure problems during the growth phase. Just try with\n"
-                    "current setup (-maxwarn + 1), but if pressure problems occur, lower the\n"
-                    "compressibility in the mdp-file or use no pressure coupling at all.\n\n", warn);
+                    "current setup and increase 'maxwarn' in your membed settings file, but lower the\n"
+                    "compressibility in the mdp-file or disable pressure coupling if problems occur.\n\n", warn);
         }
 
         if (warn > maxwarn)
         {
-            gmx_fatal(FARGS, "Too many warnings.\n");
+            gmx_fatal(FARGS, "Too many warnings (override by setting maxwarn in the membed input file)\n");
         }
 
         printf("The estimated area of the protein in the membrane is %.3f nm^2\n", prot_area);
@@ -1294,7 +1295,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             warn++;
             fprintf(stderr, "\nWarning %d:\nTrying to remove a larger lipid area than the estimated "
                     "protein area\nTry making the -xyinit resize factor smaller or increase "
-                    "maxwarn.\n\n", warn);
+                    "maxwarn in the membed input file.\n\n", warn);
         }
 
         /*remove all lipids and waters overlapping and update all important structures*/
@@ -1310,8 +1311,8 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
 
         if (warn > maxwarn)
         {
-            gmx_fatal(FARGS, "Too many warnings.\nIf you are sure these warnings are harmless, "
-                      "you can increase -maxwarn");
+            gmx_fatal(FARGS, "Too many warnings.\nIf you are sure these warnings are harmless,\n"
+                      "you can increase the maxwarn setting in the membed input file.");
         }
 
         if (ftp2bSet(efTOP, nfile, fnm))
