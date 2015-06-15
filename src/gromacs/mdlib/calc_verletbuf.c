@@ -47,7 +47,8 @@
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -121,23 +122,29 @@ typedef struct
 void verletbuf_get_list_setup(gmx_bool                bGPU,
                               verletbuf_list_setup_t *list_setup)
 {
-    list_setup->cluster_size_i     = NBNXN_CPU_CLUSTER_I_SIZE;
-
     if (bGPU)
     {
-        list_setup->cluster_size_j = NBNXN_GPU_CLUSTER_SIZE;
+        /* The CUDA kernels split the j-clusters in two halves */
+        list_setup->cluster_size_i = nbnxn_kernel_to_ci_size(nbnxnk8x8x8_GPU);
+        list_setup->cluster_size_j = nbnxn_kernel_to_cj_size(nbnxnk8x8x8_GPU)/2;
     }
     else
     {
-#ifndef GMX_NBNXN_SIMD
-        list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
-#else
-        list_setup->cluster_size_j = GMX_SIMD_REAL_WIDTH;
+        int kernel_type;
+
+#ifdef GMX_NBNXN_SIMD
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We assume the smallest cluster size to be on the safe side */
-        list_setup->cluster_size_j /= 2;
+        kernel_type = nbnxnk4xN_SIMD_2xNN;
+#else
+        kernel_type = nbnxnk4xN_SIMD_4xN;
 #endif
+#else
+        kernel_type = nbnxnk4x4_PlainC;
 #endif
+
+        list_setup->cluster_size_i = nbnxn_kernel_to_ci_size(kernel_type);
+        list_setup->cluster_size_j = nbnxn_kernel_to_cj_size(kernel_type);
     }
 }
 
