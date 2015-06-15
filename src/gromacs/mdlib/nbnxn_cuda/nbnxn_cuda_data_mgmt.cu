@@ -52,7 +52,6 @@
 #include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
-#include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
@@ -119,22 +118,12 @@ static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);
     and the table GPU array. If called with an already allocated table,
     it just re-uploads the table.
  */
-static void init_ewald_coulomb_force_table(cu_nbparam_t            *nbp,
-                                           const gmx_device_info_t *dev_info)
+static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
+                                           cu_nbparam_t              *nbp,
+                                           const gmx_device_info_t   *dev_info)
 {
-    float       *ftmp, *coul_tab;
-    int          tabsize;
-    double       tabscale;
+    float       *coul_tab;
     cudaError_t  stat;
-
-    tabsize     = GPU_EWALD_COULOMB_FORCE_TABLE_SIZE;
-    /* Subtract 2 iso 1 to avoid access out of range due to rounding */
-    tabscale    = (tabsize - 2) / sqrt(nbp->rcoulomb_sq);
-
-    pmalloc((void**)&ftmp, tabsize*sizeof(*ftmp));
-
-    table_spline3_fill_ewald_lr(ftmp, NULL, NULL, tabsize,
-                                1/tabscale, nbp->ewald_beta, v_q_ewald_lr);
 
     /* If the table pointer == NULL the table is generated the first time =>
        the array pointer will be saved to nbparam and the texture is bound.
@@ -142,7 +131,7 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t            *nbp,
     coul_tab = nbp->coulomb_tab;
     if (coul_tab == NULL)
     {
-        stat = cudaMalloc((void **)&coul_tab, tabsize*sizeof(*coul_tab));
+        stat = cudaMalloc((void **)&coul_tab, ic->tabq_size*sizeof(*coul_tab));
         CU_RET_ERR(stat, "cudaMalloc failed on coul_tab");
 
         nbp->coulomb_tab = coul_tab;
@@ -171,15 +160,16 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t            *nbp,
             GMX_UNUSED_VALUE(dev_info);
             cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
             stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
-                                   coul_tab, &cd, tabsize*sizeof(*coul_tab));
+                                   coul_tab, &cd,
+                                   ic->tabq_size*sizeof(*coul_tab));
             CU_RET_ERR(stat, "cudaBindTexture on coulomb_tab_texref failed");
         }
     }
 
-    cu_copy_H2D(coul_tab, ftmp, tabsize*sizeof(*coul_tab));
+    cu_copy_H2D(coul_tab, ftmp, ic->tabq_size*sizeof(*coul_tab));
 
-    nbp->coulomb_tab_size     = tabsize;
-    nbp->coulomb_tab_scale    = tabscale;
+    nbp->coulomb_tab_size     = ic->tabq_size;
+    nbp->coulomb_tab_scale    = ic->tabq_scale;
 
     pfree(ftmp);
 }
@@ -448,7 +438,7 @@ void nbnxn_gpu_pme_loadbal_update_param(const nonbonded_verlet_t    *nbv,
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  nb->dev_info);
 
-    init_ewald_coulomb_force_table(nb->nbparam, nb->dev_info);
+    init_ewald_coulomb_force_table(ic, nb->nbparam, nb->dev_info);
 }
 
 /*! Initializes the pair list data structure. */
