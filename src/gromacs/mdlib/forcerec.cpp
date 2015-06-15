@@ -71,7 +71,6 @@
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
-#include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
@@ -1740,7 +1739,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
     {
         fprintf(fp, "\nUsing %s %dx%d non-bonded kernels\n\n",
                 lookup_nbnxn_kernel_name(*kernel_type),
-                nbnxn_kernel_pairlist_simple(*kernel_type) ? NBNXN_CPU_CLUSTER_I_SIZE : NBNXN_GPU_CLUSTER_SIZE,
+                nbnxn_kernel_to_ci_size(*kernel_type),
                 nbnxn_kernel_to_cj_size(*kernel_type));
 
         if (nbnxnk4x4_PlainC == *kernel_type ||
