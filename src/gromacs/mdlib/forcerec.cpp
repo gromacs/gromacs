@@ -1833,27 +1833,25 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
 }
 
 static void init_ewald_f_table(interaction_const_t *ic,
-                               gmx_bool             bUsesSimpleTables,
                                real                 rtab)
 {
     real maxr;
 
-    if (bUsesSimpleTables)
-    {
-        /* Get the Ewald table spacing based on Coulomb and/or LJ
-         * Ewald coefficients and rtol.
-         */
-        ic->tabq_scale = ewald_spline3_table_scale(ic);
+    /* Get the Ewald table spacing based on Coulomb and/or LJ
+     * Ewald coefficients and rtol.
+     */
+    ic->tabq_scale = ewald_spline3_table_scale(ic);
 
-        maxr           = (rtab > ic->rcoulomb) ? rtab : ic->rcoulomb;
-        ic->tabq_size  = (int)(maxr*ic->tabq_scale) + 2;
+    if (ic->cutoff_scheme == ecutsVERLET ||
+        ic->coulomb_modifier != eintmodNONE)
+    {
+        maxr = ic->rcoulomb;
     }
     else
     {
-        ic->tabq_size = GPU_EWALD_COULOMB_FORCE_TABLE_SIZE;
-        /* Subtract 2 iso 1 to avoid access out of range due to rounding */
-        ic->tabq_scale = (ic->tabq_size - 2)/ic->rcoulomb;
+        maxr = rtab;
     }
+    ic->tabq_size  = (int)(maxr*ic->tabq_scale) + 2;
 
     sfree_aligned(ic->tabq_coul_FDV0);
     sfree_aligned(ic->tabq_coul_F);
@@ -1885,12 +1883,11 @@ static void init_ewald_f_table(interaction_const_t *ic,
 
 void init_interaction_const_tables(FILE                *fp,
                                    interaction_const_t *ic,
-                                   gmx_bool             bUsesSimpleTables,
                                    real                 rtab)
 {
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
-        init_ewald_f_table(ic, bUsesSimpleTables, rtab);
+        init_ewald_f_table(ic, rtab);
 
         if (fp != NULL)
         {
@@ -1956,6 +1953,8 @@ init_interaction_const(FILE                       *fp,
     const real           minusTwelve       = -12.0;
 
     snew(ic, 1);
+
+    ic->cutoff_scheme   = fr->cutoff_scheme;
 
     /* Just allocate something so we can free it */
     snew_aligned(ic->tabq_coul_FDV0, 16, 32);
@@ -3228,9 +3227,7 @@ void init_forcerec(FILE              *fp,
     }
 
     initialize_gpu_constants(cr, fr->ic, fr->nbv);
-    init_interaction_const_tables(fp, fr->ic,
-                                  uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1),
-                                  rtab);
+    init_interaction_const_tables(fp, fr->ic, rtab);
 
     if (ir->eDispCorr != edispcNO)
     {

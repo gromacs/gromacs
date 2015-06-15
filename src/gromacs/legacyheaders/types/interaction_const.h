@@ -68,6 +68,8 @@ typedef struct {
 } switch_consts_t;
 
 typedef struct {
+    int             cutoff_scheme;
+
     /* VdW */
     int             vdwtype;
     int             vdw_modifier;
