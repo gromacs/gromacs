@@ -155,12 +155,8 @@ gmx_bool uses_simple_tables(int                        cutoff_scheme,
 
 void init_interaction_const_tables(FILE                *fp,
                                    interaction_const_t *ic,
-                                   gmx_bool             bSimpleTable,
                                    real                 rtab);
-/* Initializes the tables in the interaction constant data structure.
- * Setting verlet_kernel_type to -1 always initializes tables for
- * use with group kernels.
- */
+/* Initializes the tables in the interaction constant data structure. */
 
 void init_forcerec(FILE              *fplog,
                    const output_env_t oenv,
