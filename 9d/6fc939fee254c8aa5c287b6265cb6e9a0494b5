@@ -1,0 +1,10 @@
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+1: Berk Hess <hess@kth.se>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Verified+1: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-by: Szilárd Páll <pall.szilard@gmail.com>
+Submitted-at: Tue, 16 Jun 2015 00:52:55 +0200
+Reviewed-on: https://gerrit.gromacs.org/4715
+Project: gromacs
+Branch: refs/heads/master
