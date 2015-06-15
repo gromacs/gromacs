@@ -556,7 +556,6 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     double       cycles_fast;
     char         buf[STRLEN], sbuf[22];
     real         rtab;
-    gmx_bool     bUsesSimpleTables = TRUE;
 
     if (PAR(cr))
     {
@@ -812,7 +811,9 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
         }
     }
 
-    bUsesSimpleTables = uses_simple_tables(ir->cutoff_scheme, nbv, 0);
+    /* We always re-initialize the tables whether they are used or not */
+    init_interaction_const_tables(NULL, ic, rtab);
+
     nbnxn_gpu_pme_loadbal_update_param(nbv, ic);
 
     /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
@@ -833,12 +834,6 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
         gmx_barrier(cr);
     }
 #endif  /* GMX_THREAD_MPI */
-
-    /* Usually we won't need the simple tables with GPUs.
-     * But we do with hybrid acceleration and with free energy.
-     * To avoid bugs, we always re-initialize the simple tables here.
-     */
-    init_interaction_const_tables(NULL, ic, bUsesSimpleTables, rtab);
 
     if (!pme_lb->bSepPMERanks)
     {
