@@ -7,9 +7,6 @@ A more detailed example is available in :doc:`getting-started`.
 Several steps of energy minimization may be necessary,
 these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
 
-.. URL="file-formats.html#pdb"
-.. ../programs/gmx-pdb2gmx.html
-
 .. digraph:: flowchart
 
    node [ shape=box, width=1.5 ]
@@ -24,7 +21,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    pdb2gmx [
      label="Generate a GROMACS topology\ngmx pdb2gmx"
      tooltip="Convert PDB file to GROMACS coordinate file and topology"
-     URL="../programs/gmx-pdb2gmx.html"
+     URL="../onlinehelp/gmx-pdb2gmx.html"
      width=3
      group=main
    ]
@@ -34,7 +31,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    editconf [
      label="Enlarge the box\ngmx editconf"
      tooltip="Adjust box size and placement of molecule"
-     URL="../programs/gmx-editconf.html"
+     URL="../onlinehelp/gmx-editconf.html"
    ]
 
    pdb2gmx -> editconf [
@@ -46,7 +43,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    solvate [
      label="Solvate protein\ngmx solvate"
      tooltip="Fill box with water (solvate molecule)"
-     URL="../programs/gmx-solvate.html"
+     URL="../onlinehelp/gmx-solvate.html"
      width=3
      group=main
    ]
@@ -72,7 +69,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    grompp [
      label="Generate mdrun input file\ngmx grompp"
      tooltip="Process parameters, coordinates and topology and write binary topology"
-     URL="../programs/gmx-grompp.html"
+     URL="../onlinehelp/gmx-grompp.html"
      width=3
      group=main
    ]
@@ -94,7 +91,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    mdrun [
      label="Run the simulation (EM or MD)\ngmx mdrun"
      tooltip="The moment you have all been waiting for! START YOUR MD RUN"
-     URL="../programs/gmx-mdrun.html"
+     URL="../onlinehelp/gmx-mdrun.html"
      width=3
      group=main
    ]
@@ -113,7 +110,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    analysis [
      label="Analysis\ngmx ...\ngmx view"
      tooltip="Your favourite GROMACS analysis tool"
-     URL="../programs/bytopic.html"
+     URL="../onlinehelp/bytopic.html"
    ]
 
    mdrun -> analysis [
@@ -125,7 +122,7 @@ these consist of cycles: :ref:`gmx grompp` -> :ref:`gmx mdrun`.
    energy [
      label="Analysis\ngmx energy"
      tooltip="Energy plots, averages and fluctuations"
-     URL="../programs/gmx-energy.html"
+     URL="../onlinehelp/gmx-energy.html"
    ]
 
    mdrun -> energy [
