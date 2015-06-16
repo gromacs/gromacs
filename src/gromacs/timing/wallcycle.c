@@ -388,6 +388,17 @@ static gmx_bool is_pme_subcounter(int ewc)
     return (ewc >= ewcPME_REDISTXF && ewc < ewcPMEWAITCOMM);
 }
 
+/* Subtract counter ewc_sub timed inside a timing block for ewc_main */
+static void subtract_cycles(wallcc_t *wcc, int ewc_main, int ewc_sub)
+{
+    if (wcc[ewc_sub].n > 0)
+    {
+        assert(wcc[ewc_main].c >= wcc[ewc_sub].c);
+
+        wcc[ewc_main].c -= wcc[ewc_sub].c;
+    }
+}
+
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 {
     wallcc_t *wcc;
@@ -439,26 +450,15 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         }
     }
 
-    if (wcc[ewcDDCOMMLOAD].n > 0)
-    {
-        wcc[ewcDOMDEC].c -= wcc[ewcDDCOMMLOAD].c;
-    }
-    if (wcc[ewcDDCOMMBOUND].n > 0)
-    {
-        wcc[ewcDOMDEC].c -= wcc[ewcDDCOMMBOUND].c;
-    }
-    if (wcc[ewcPME_FFTCOMM].n > 0)
-    {
-        wcc[ewcPME_FFT].c -= wcc[ewcPME_FFTCOMM].c;
-    }
+    subtract_cycles(wcc, ewcDOMDEC, ewcDDCOMMLOAD);
+    subtract_cycles(wcc, ewcDOMDEC, ewcDDCOMMBOUND);
+
+    subtract_cycles(wcc, ewcPME_FFT, ewcPME_FFTCOMM);
 
     if (cr->npmenodes == 0)
     {
         /* All nodes do PME (or no PME at all) */
-        if (wcc[ewcPMEMESH].n > 0)
-        {
-            wcc[ewcFORCE].c -= wcc[ewcPMEMESH].c;
-        }
+        subtract_cycles(wcc, ewcFORCE, ewcPMEMESH);
     }
     else
     {
@@ -466,6 +466,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         if (wcc[ewcPMEMESH].n > 0)
         {
             /* This must be a PME only node, calculate the Wait + Comm. time */
+            assert(wcc[ewcRUN].c >= wcc[ewcPMEMESH].c);
             wcc[ewcPMEWAITCOMM].c = wcc[ewcRUN].c - wcc[ewcPMEMESH].c;
         }
     }

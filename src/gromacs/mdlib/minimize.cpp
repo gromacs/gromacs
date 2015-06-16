@@ -673,14 +673,12 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
                                    t_nrnb *nrnb, gmx_wallcycle_t wcycle)
 {
     /* Repartition the domain decomposition */
-    wallcycle_start(wcycle, ewcDOMDEC);
     dd_partition_system(fplog, step, cr, FALSE, 1,
                         NULL, top_global, ir,
                         &ems->s, &ems->f,
                         mdatoms, top, fr, vsite, NULL, constr,
                         nrnb, wcycle, FALSE);
     dd_store_state(cr->dd, &ems->s);
-    wallcycle_stop(wcycle, ewcDOMDEC);
 }
 
 static void evaluate_energy(FILE *fplog, t_commrec *cr,

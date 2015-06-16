@@ -414,7 +414,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             state_global, top_global, ir,
                             state, &f, mdatoms, top, fr,
                             vsite, shellfc, constr,
-                            nrnb, wcycle, FALSE);
+                            nrnb, NULL, FALSE);
 
     }
 
@@ -917,7 +917,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             if (DOMAINDECOMP(cr))
             {
                 /* Repartition the domain decomposition */
-                wallcycle_start(wcycle, ewcDOMDEC);
                 dd_partition_system(fplog, step, cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
@@ -925,7 +924,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     vsite, shellfc, constr,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
-                wallcycle_stop(wcycle, ewcDOMDEC);
             }
         }
 

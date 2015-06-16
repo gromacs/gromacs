@@ -9329,6 +9329,8 @@ void dd_partition_system(FILE                *fplog,
     real               grid_density;
     char               sbuf[22];
 
+    wallcycle_start(wcycle, ewcDOMDEC);
+
     dd   = cr->dd;
     comm = dd->comm;
 
@@ -9915,4 +9917,6 @@ void dd_partition_system(FILE                *fplog,
         check_index_consistency(dd, top_global->natoms, ncg_mtop(top_global),
                                 "after partitioning");
     }
+
+    wallcycle_stop(wcycle, ewcDOMDEC);
 }
