@@ -804,7 +804,7 @@ int gmx_rmsdist(int argc, char *argv[])
 
     close_trj(status);
 
-    calc_rms(isize, teller, dtot, dtot2, mean, &meanmax, rms, &rmsmax, rmsc, &rmscmax);
+    calc_rms(isize, teller, dtot, dtot2, rms, &rmsmax, rmsc, &rmscmax, mean, &meanmax);
     fprintf(stderr, "rmsmax = %g, rmscmax = %g\n", rmsmax, rmscmax);
 
     if (bNMR)
