@@ -1663,11 +1663,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if ( (bExchanged || bNeedRepartition) && DOMAINDECOMP(cr) )
         {
+            wallcycle_start(wcycle, ewcDOMDEC);
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
                                 state, &f, mdatoms, top, fr,
                                 vsite, shellfc, constr,
                                 nrnb, wcycle, FALSE);
+            wallcycle_stop(wcycle, ewcDOMDEC);
         }
 
         bFirstStep       = FALSE;
