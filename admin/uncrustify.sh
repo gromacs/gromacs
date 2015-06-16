@@ -276,7 +276,11 @@ elif [[ $action == update-workdir ]] ; then
 fi
 
 # Report what was done
-sort $tmpdir/messages | tee $srcdir/$warning_file
+if [ "$warning_file" ]; then
+     sort $tmpdir/messages | tee $srcdir/$warning_file
+else
+     sort $tmpdir/messages
+fi
 
 rm -rf $tmpdir
 exit $changes
