@@ -494,12 +494,12 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
                       cr->mpi_comm_mysim);
         for (i = 0; i < ewcNR; i++)
         {
-            wcc[i].n = (int)(buf[i] + 0.5);
+            wcc[i].n = (gmx_cycles_t)(buf[i] + 0.5);
         }
 #ifdef GMX_CYCLE_SUBCOUNTERS
         for (i = 0; i < ewcsNR; i++)
         {
-            wc->wcsc[i].n = (int)(buf[ewcNR+i] + 0.5);
+            wc->wcsc[i].n = (gmx_cycles_t)(buf[ewcNR+i] + 0.5);
         }
 #endif
 
