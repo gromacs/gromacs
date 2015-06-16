@@ -972,7 +972,12 @@ TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelections)
         "group \"GrpA\"",
         "GrpB",
         "1",
-        "group \"GrpB\" and resname RB"
+        // These test that the name of the group is not too eagerly promoted to
+        // the name of the selection.
+        "group \"GrpB\" and resname RB",
+        "group \"GrpA\" permute 5 3 2 1 4",
+        "group \"GrpA\" plus group \"GrpB\"",
+        "res_cog of group \"GrpA\""
     };
     setFlags(TestFlags() | efTestSelectionNames);
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
