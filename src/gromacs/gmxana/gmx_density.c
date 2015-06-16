@@ -159,7 +159,7 @@ void center_coords(t_atoms *atoms, atom_id *index_center, int ncenter,
         com[m] /= tmass;
     }
     calc_box_center(ecenterDEF, box, box_center);
-    rvec_sub(box_center, com, shift);
+    rvec_sub(com, box_center, shift);
 
     /* Important - while the center was calculated based on a group, we should move all atoms */
     for (i = 0; (i < atoms->nr); i++)
