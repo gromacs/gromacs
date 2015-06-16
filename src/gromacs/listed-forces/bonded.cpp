@@ -96,10 +96,10 @@ gmx_hack_simd_transpose4_r(gmx_simd_double_t *row0,
     tmp2  = _mm256_unpacklo_pd(*row2, *row3);
     tmp1  = _mm256_unpackhi_pd(*row0, *row1);
     tmp3  = _mm256_unpackhi_pd(*row2, *row3);
-    *row0 = _mm256_permute2f128_pd(tmp0, tmp2, 0b00100000);
-    *row1 = _mm256_permute2f128_pd(tmp1, tmp3, 0b00100000);
-    *row2 = _mm256_permute2f128_pd(tmp0, tmp2, 0b00110001);
-    *row3 = _mm256_permute2f128_pd(tmp1, tmp3, 0b00110001);
+    *row0 = _mm256_permute2f128_pd(tmp0, tmp2, 0x20);
+    *row1 = _mm256_permute2f128_pd(tmp1, tmp3, 0x20);
+    *row2 = _mm256_permute2f128_pd(tmp0, tmp2, 0x31);
+    *row3 = _mm256_permute2f128_pd(tmp1, tmp3, 0x31);
 }
 
 static gmx_inline void gmx_simdcall
@@ -136,10 +136,10 @@ gmx_hack_simd_transpose4_r(gmx_simd_float_t *row0,
     tmp2  = _mm256_unpacklo_ps(*row2, *row3);
     tmp1  = _mm256_unpackhi_ps(*row0, *row1);
     tmp3  = _mm256_unpackhi_ps(*row2, *row3);
-    *row0 = _mm256_shuffle_ps(tmp0, tmp2, 0b0100010001000100);
-    *row1 = _mm256_shuffle_ps(tmp0, tmp2, 0b1110111011101110);
-    *row2 = _mm256_shuffle_ps(tmp1, tmp3, 0b0100010001000100);
-    *row3 = _mm256_shuffle_ps(tmp1, tmp3, 0b1110111011101110);
+    *row0 = _mm256_shuffle_ps(tmp0, tmp2, 0x44);
+    *row1 = _mm256_shuffle_ps(tmp0, tmp2, 0xEE);
+    *row2 = _mm256_shuffle_ps(tmp1, tmp3, 0x44);
+    *row3 = _mm256_shuffle_ps(tmp1, tmp3, 0xEE);
 }
 
 static gmx_inline void gmx_simdcall
