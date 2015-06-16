@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,6 +65,17 @@ extern struct gmx_ana_selmethod_t sm_keyword_pos;
 void
 _gmx_selelem_print_compare_info(FILE *fp, void *data);
 
+/*! \brief
+ * Returns whether the selection element is a default position keyword.
+ *
+ * \param[in] sel   Selection element to query.
+ * \returns   ``true`` if ``sel`` represents a position keyword evaluation that
+ *     uses the default (implicit) position keyword.
+ *
+ * This method only works before the selection has been compiled.
+ */
+bool
+_gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel);
 /** Sets the position type for position keyword evaluation. */
 void
 _gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type);

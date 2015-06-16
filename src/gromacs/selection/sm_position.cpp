@@ -225,6 +225,19 @@ set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data)
     ((t_methoddata_pos *)data)->pcc = pcc;
 }
 
+bool
+_gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel)
+{
+    if (sel.type != SEL_EXPRESSION || !sel.u.expr.method
+        || sel.u.expr.method->name != sm_keyword_pos.name)
+    {
+        return false;
+    }
+
+    t_methoddata_pos *d = static_cast<t_methoddata_pos *>(sel.u.expr.mdata);
+    return d->type == NULL;
+}
+
 /*!
  * \param[in,out] sel   Selection element to initialize.
  * \param[in]     type  One of the enum values acceptable for
