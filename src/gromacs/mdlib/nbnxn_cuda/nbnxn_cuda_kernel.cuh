@@ -160,7 +160,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     unsigned int tidxi  = threadIdx.x;
     unsigned int tidxj  = threadIdx.y;
     unsigned int tidx   = threadIdx.y * blockDim.x + threadIdx.x;
+#if NTHREAD_Z == 1
+    unsigned int tidxz  = 0;
+#else
     unsigned int tidxz  = threadIdx.z;
+#endif
     unsigned int bidx   = blockIdx.x;
     unsigned int widx   = tidx / WARP_SIZE; /* warp index */
 
