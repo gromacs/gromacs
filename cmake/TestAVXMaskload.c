@@ -13,5 +13,6 @@ int main()
 #else
     a = _mm256_maskload_pd(d,mask);
 #endif
+    return 0;
 }
 

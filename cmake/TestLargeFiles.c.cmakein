@@ -19,6 +19,6 @@ int main(int argc, char **argv)
 
   fseeko( fp, offset, SEEK_CUR );
   fclose(fp);
-  return 0;
+  return off_t_is_large[0] || argc;
 }
 
