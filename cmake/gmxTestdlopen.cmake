@@ -49,6 +49,7 @@ MACRO(GMX_TEST_DLOPEN VARIABLE)
       "#include <dlfcn.h>
 int main(void) {
   dlopen(0,0);
+  return 0;
 }" ${VARIABLE})
 
     IF(${VARIABLE})

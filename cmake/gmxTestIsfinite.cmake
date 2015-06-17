@@ -61,6 +61,7 @@ MACRO(gmx_test_isfinite VARIABLE)
 int main(void) {
   float f;
   isfinite(f);
+  return 0;
 }" isfinite_compile_ok)
 
     if(isfinite_compile_ok)
