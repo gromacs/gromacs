@@ -73,6 +73,7 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -807,7 +808,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
 }
 
 static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
-                              gmx_mtop_t *mtop,
+                              gmx_mtop_t *top_global,
                               em_state_t *s_min, em_state_t *s_b)
 {
     rvec          *fm, *fb, *fmg;
@@ -831,7 +832,7 @@ static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms
      * This conflicts with the spirit of domain decomposition,
      * but to fully optimize this a much more complicated algorithm is required.
      */
-    snew(fmg, mtop->natoms);
+    snew(fmg, top_global->natoms);
 
     ncg   = s_min->s.ncg_gl;
     cg_gl = s_min->s.cg_gl;
@@ -847,7 +848,7 @@ static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms
             i++;
         }
     }
-    gmx_sum(mtop->natoms*3, fmg[0], cr);
+    gmx_sum(top_global->natoms*3, fmg[0], cr);
 
     /* Now we will determine the part of the sum for the cgs in state s_b */
     ncg         = s_b->s.ncg_gl;
@@ -855,7 +856,7 @@ static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms
     partsum     = 0;
     i           = 0;
     gf          = 0;
-    grpnrFREEZE = mtop->groups.grpnr[egcFREEZE];
+    grpnrFREEZE = top_global->groups.grpnr[egcFREEZE];
     for (c = 0; c < ncg; c++)
     {
         cg = cg_gl[c];
@@ -884,7 +885,7 @@ static double reorder_partsum(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms
 }
 
 static real pr_beta(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
-                    gmx_mtop_t *mtop,
+                    gmx_mtop_t *top_global,
                     em_state_t *s_min, em_state_t *s_b)
 {
     rvec  *fm, *fb;
@@ -925,7 +926,7 @@ static real pr_beta(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
     else
     {
         /* We need to reorder cgs while summing */
-        sum = reorder_partsum(cr, opts, mdatoms, mtop, s_min, s_b);
+        sum = reorder_partsum(cr, opts, mdatoms, top_global, s_min, s_b);
     }
     if (PAR(cr))
     {
@@ -935,6 +936,30 @@ static real pr_beta(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
     return sum/sqr(s_min->fnorm);
 }
 
+namespace gmx
+{
+
+/*! \copydoc gmx_integrator_t (FILE *fplog, t_commrec *cr,
+                                 int nfile, const t_filenm fnm[],
+                                 const output_env_t oenv, gmx_bool bVerbose,
+                                 gmx_bool bCompact, int nstglobalcomm,
+                                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                                 int stepout,
+                                 t_inputrec *inputrec,
+                                 gmx_mtop_t *top_global, t_fcdata *fcd,
+                                 t_state *state_global,
+                                 t_mdatoms *mdatoms,
+                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                                 gmx_edsam_t ed,
+                                 t_forcerec *fr,
+                                 InteractionTables *interaction_tables,
+                                 int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                                 gmx_membed_t membed,
+                                 real cpt_period, real max_hours,
+                                 int imdport,
+                                 unsigned long Flags,
+                                 gmx_walltime_accounting_t walltime_accounting)
+ */
 double do_cg(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
              const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
@@ -948,6 +973,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t gmx_unused ed,
              t_forcerec *fr,
+             gmx::InteractionTables gmx_unused *interaction_tables,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -1480,7 +1506,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
          */
         converged = converged || (s_min->fmax < inputrec->em_tol);
 
-    } /* End of the loop */
+    }   /* End of the loop */
 
     /* IMD cleanup, if bIMD is TRUE. */
     IMD_finalize(inputrec->bIMD, inputrec->imd);
@@ -1558,9 +1584,30 @@ double do_cg(FILE *fplog, t_commrec *cr,
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
-} /* That's all folks */
+}   /* That's all folks */
 
 
+/*! \copydoc gmx_integrator_t (FILE *fplog, t_commrec *cr,
+                                 int nfile, const t_filenm fnm[],
+                                 const output_env_t oenv, gmx_bool bVerbose,
+                                 gmx_bool bCompact, int nstglobalcomm,
+                                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                                 int stepout,
+                                 t_inputrec *inputrec,
+                                 gmx_mtop_t *top_global, t_fcdata *fcd,
+                                 t_state *state_global,
+                                 t_mdatoms *mdatoms,
+                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                                 gmx_edsam_t ed,
+                                 t_forcerec *fr,
+                                 InteractionTables *interaction_tables,
+                                 int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                                 gmx_membed_t membed,
+                                 real cpt_period, real max_hours,
+                                 int imdport,
+                                 unsigned long Flags,
+                                 gmx_walltime_accounting_t walltime_accounting)
+ */
 double do_lbfgs(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
                 const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
@@ -1569,11 +1616,12 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 int gmx_unused stepout,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
-                t_state *state,
+                t_state *state_global,
                 t_mdatoms *mdatoms,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                 gmx_edsam_t gmx_unused ed,
                 t_forcerec *fr,
+                gmx::InteractionTables gmx_unused *interaction_tables,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -1617,7 +1665,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         gmx_fatal(FARGS, "The combination of constraints and L-BFGS minimization is not implemented. Either do not use constraints, or use another minimizer (e.g. steepest descent).");
     }
 
-    n        = 3*state->natoms;
+    n        = 3*state_global->natoms;
     nmaxcorr = inputrec->nbfgscorr;
 
     /* Allocate memory */
@@ -1657,7 +1705,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     /* Init em */
     init_em(fplog, LBFGS, cr, inputrec,
-            state, top_global, &ems, &top, &f, &f_global,
+            state_global, top_global, &ems, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
     /* Do_lbfgs is not completely updated like do_steep and do_cg,
@@ -1666,7 +1714,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     sfree(ems.s.x);
     sfree(ems.f);
 
-    xx = (real *)state->x;
+    xx = (real *)state_global->x;
     ff = (real *)f;
 
     start = 0;
@@ -1704,9 +1752,9 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     if (vsite)
     {
-        construct_vsites(vsite, state->x, 1, NULL,
+        construct_vsites(vsite, state_global->x, 1, NULL,
                          top->idef.iparams, top->idef.il,
-                         fr->ePBC, fr->bMolPBC, cr, state->box);
+                         fr->ePBC, fr->bMolPBC, cr, state_global->box);
     }
 
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
@@ -1714,7 +1762,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
      * We do not unshift, so molecules are always whole
      */
     neval++;
-    ems.s.x = state->x;
+    ems.s.x = state_global->x;
     ems.f   = f;
     evaluate_energy(fplog, cr,
                     top_global, &ems, top,
@@ -1727,10 +1775,10 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     {
         /* Copy stuff to the energy bin for easy printing etc. */
         upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                   mdatoms->tmass, enerd, state, inputrec->fepvals, inputrec->expandedvals, state->box,
+                   mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
                    NULL, NULL, vir, pres, NULL, mu_tot, constr);
 
-        print_ebin_header(fplog, step, step, state->lambda[efptFEP]);
+        print_ebin_header(fplog, step, step, state_global->lambda[efptFEP]);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
                    TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
@@ -1751,7 +1799,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     if (MASTER(cr))
     {
-        double sqrtNumAtoms = sqrt(static_cast<double>(state->natoms));
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
         fprintf(stderr, "Using %d BFGS correction steps.\n\n", nmaxcorr);
         fprintf(stderr, "   F-max             = %12.5e on atom %d\n", fmax, nfmax+1);
         fprintf(stderr, "   F-Norm            = %12.5e\n", fnorm/sqrtNumAtoms);
@@ -1818,7 +1866,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         }
 
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                         top_global, step, (real)step, state, state, f, f);
+                                         top_global, step, (real)step, state_global, state_global, f, f);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
@@ -2264,19 +2312,19 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         {
             if (bVerbose)
             {
-                double sqrtNumAtoms = sqrt(static_cast<double>(state->natoms));
+                double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
                 fprintf(stderr, "\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
                         step, Epot, fnorm/sqrtNumAtoms, fmax, nfmax+1);
             }
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
-                       mdatoms->tmass, enerd, state, inputrec->fepvals, inputrec->expandedvals, state->box,
+                       mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
                        NULL, NULL, vir, pres, NULL, mu_tot, constr);
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
             if (do_log)
             {
-                print_ebin_header(fplog, step, step, state->lambda[efptFEP]);
+                print_ebin_header(fplog, step, step, state_global->lambda[efptFEP]);
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
@@ -2284,7 +2332,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         }
 
         /* Send x and E to IMD client, if bIMD is TRUE. */
-        if (do_IMD(inputrec->bIMD, step, cr, TRUE, state->box, state->x, inputrec, 0, wcycle) && MASTER(cr))
+        if (do_IMD(inputrec->bIMD, step, cr, TRUE, state_global->box, state_global->x, inputrec, 0, wcycle) && MASTER(cr))
         {
             IMD_send_positions(inputrec->imd);
         }
@@ -2297,7 +2345,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
          */
         converged = converged || (fmax < inputrec->em_tol);
 
-    } /* End of the loop */
+    }   /* End of the loop */
 
     /* IMD cleanup, if bIMD is TRUE. */
     IMD_finalize(inputrec->bIMD, inputrec->imd);
@@ -2322,7 +2370,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
      */
     if (!do_log) /* Write final value to log since we didn't do anythin last step */
     {
-        print_ebin_header(fplog, step, step, state->lambda[efptFEP]);
+        print_ebin_header(fplog, step, step, state_global->lambda[efptFEP]);
     }
     if (!do_ene || !do_log) /* Write final energy file entries */
     {
@@ -2348,11 +2396,11 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     do_f = !do_per_step(step, inputrec->nstfout);
     write_em_traj(fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, step,
-                  &ems, state, f);
+                  &ems, state_global, f);
 
     if (MASTER(cr))
     {
-        double sqrtNumAtoms = sqrt(static_cast<double>(state->natoms));
+        double sqrtNumAtoms = sqrt(static_cast<double>(state_global->natoms));
         print_converged(stderr, LBFGS, inputrec->em_tol, step, converged,
                         number_steps, Epot, fmax, nfmax, fnorm/sqrtNumAtoms);
         print_converged(fplog, LBFGS, inputrec->em_tol, step, converged,
@@ -2367,9 +2415,29 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
-} /* That's all folks */
+}   /* That's all folks */
 
-
+/*! \copydoc gmx_integrator_t (FILE *fplog, t_commrec *cr,
+                                 int nfile, const t_filenm fnm[],
+                                 const output_env_t oenv, gmx_bool bVerbose,
+                                 gmx_bool bCompact, int nstglobalcomm,
+                                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                                 int stepout,
+                                 t_inputrec *inputrec,
+                                 gmx_mtop_t *top_global, t_fcdata *fcd,
+                                 t_state *state_global,
+                                 t_mdatoms *mdatoms,
+                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                                 gmx_edsam_t ed,
+                                 t_forcerec *fr,
+                                 InteractionTables *interaction_tables,
+                                 int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                                 gmx_membed_t membed,
+                                 real cpt_period, real max_hours,
+                                 int imdport,
+                                 unsigned long Flags,
+                                 gmx_walltime_accounting_t walltime_accounting)
+ */
 double do_steep(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
                 const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
@@ -2383,6 +2451,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                 gmx_edsam_t gmx_unused  ed,
                 t_forcerec *fr,
+                gmx::InteractionTables gmx_unused *interaction_tables,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -2573,7 +2642,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
         }
 
         count++;
-    } /* End of the loop  */
+    }   /* End of the loop  */
 
     /* IMD cleanup, if bIMD is TRUE. */
     IMD_finalize(inputrec->bIMD, inputrec->imd);
@@ -2606,9 +2675,29 @@ double do_steep(FILE *fplog, t_commrec *cr,
     walltime_accounting_set_nsteps_done(walltime_accounting, count);
 
     return 0;
-} /* That's all folks */
+}   /* That's all folks */
 
-
+/*! \copydoc gmx_integrator_t (FILE *fplog, t_commrec *cr,
+                                 int nfile, const t_filenm fnm[],
+                                 const output_env_t oenv, gmx_bool bVerbose,
+                                 gmx_bool bCompact, int nstglobalcomm,
+                                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                                 int stepout,
+                                 t_inputrec *inputrec,
+                                 gmx_mtop_t *top_global, t_fcdata *fcd,
+                                 t_state *state_global,
+                                 t_mdatoms *mdatoms,
+                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                                 gmx_edsam_t ed,
+                                 t_forcerec *fr,
+                                 InteractionTables *interaction_tables,
+                                 int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                                 gmx_membed_t membed,
+                                 real cpt_period, real max_hours,
+                                 int imdport,
+                                 unsigned long Flags,
+                                 gmx_walltime_accounting_t walltime_accounting)
+ */
 double do_nm(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
              const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused  bCompact,
@@ -2622,6 +2711,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t  gmx_unused ed,
              t_forcerec *fr,
+             gmx::InteractionTables gmx_unused *interaction_tables,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -2892,3 +2982,5 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
     return 0;
 }
+
+} // namespace gmx
