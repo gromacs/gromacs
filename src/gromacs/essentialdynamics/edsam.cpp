@@ -2708,7 +2708,7 @@ void init_edsam(const gmx_mtop_t *mtop,
                    "The pointer to the essential dynamics parameters is undefined");
 
         /* Loop over all ED/flooding data sets (usually only one, though) */
-        for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
+        for (nr_edi = 1; (NULL != edi) && (nr_edi <= EDstate->nED); nr_edi++)
         {
             /* For multiple ED groups we use the output frequency that was specified
              * in the first set */
@@ -2913,7 +2913,7 @@ void init_edsam(const gmx_mtop_t *mtop,
 
         /* Loop over all ED data sets (usually only one, though) */
         edi = ed->edpar;
-        for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
+        for (nr_edi = 1; (NULL != edi) && (nr_edi <= EDstate->nED); nr_edi++)
         {
             edi->sref.anrs_loc = edi->sref.anrs;
             edi->sav.anrs_loc  = edi->sav.anrs;
