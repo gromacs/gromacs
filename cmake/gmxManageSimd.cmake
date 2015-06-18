@@ -43,10 +43,10 @@ macro(gmx_use_clang_as_with_gnu_compilers_on_osx)
     # does not support AVX, so we need to tell the linker to use the clang
     # compilers assembler instead - and this has to happen before we detect AVX
     # flags.
-    if(APPLE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    if(APPLE AND "x${CMAKE_C_COMPILER_ID}" STREQUAL "xGNU")
         gmx_test_cflag(GNU_C_USE_CLANG_AS "-Wa,-q" SIMD_C_FLAGS)
     endif()
-    if(APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if(APPLE AND "x${CMAKE_CXX_COMPILER_ID}" STREQUAL "xGNU")
         gmx_test_cxxflag(GNU_CXX_USE_CLANG_AS "-Wa,-q" SIMD_CXX_FLAGS)
     endif()
 endmacro()
