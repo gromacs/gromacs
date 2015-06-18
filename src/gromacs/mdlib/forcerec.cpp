@@ -64,7 +64,6 @@
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/qmmm.h"
-#include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -82,6 +81,8 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/tables/forcetable.h"
+#include "gromacs/tables/tables.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1837,61 +1838,67 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
     return bUsesSimpleTables;
 }
 
-static void init_ewald_f_table(interaction_const_t *ic,
-                               real                 rtab)
+static void vector_duplicate_aligned(const std::vector<double>  &vIn,
+                                     real                      **vOut)
 {
-    real maxr;
+    if (NULL != *vOut)
+    {
+        sfree_aligned(*vOut);
+    }
+    snew_aligned(*vOut, vIn.size()+32, 32);
+    unsigned int n = 0;
+    for (std::vector<double>::const_iterator ri = vIn.begin(); (ri < vIn.end()); ++ri)
+    {
+        (*vOut)[n++] = *ri;
+    }
+}
+
+static void init_ewald_f_table(interaction_const_t *ic)
+{
+    double                 beta_coul = ic->ewaldcoeff_q;
+    double                 beta_vdw  = ic->ewaldcoeff_lj;
+    gmx::InteractionTables iTables(ic->eeltype,
+                                   ic->ewaldcoeff_q,
+                                   ic->rcoulomb,
+                                   &beta_coul,
+                                   v_q_ewald_lr,
+                                   NULL,
+                                   NULL,
+                                   ic->vdwtype,
+                                   ic->ewaldcoeff_lj,
+                                   ic->rvdw,
+                                   &beta_vdw,
+                                   v_lj_ewald_lr,
+                                   NULL,
+                                   NULL,
+                                   0,
+                                   0);
 
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
      */
-    ic->tabq_scale = ewald_spline3_table_scale(ic);
-
-    if (ic->cutoff_scheme == ecutsVERLET)
-    {
-        maxr = ic->rcoulomb;
-    }
-    else
-    {
-        maxr = std::max(ic->rcoulomb, rtab);
-    }
-    ic->tabq_size  = static_cast<int>(maxr*ic->tabq_scale) + 2;
-
-    sfree_aligned(ic->tabq_coul_FDV0);
-    sfree_aligned(ic->tabq_coul_F);
-    sfree_aligned(ic->tabq_coul_V);
-
-    sfree_aligned(ic->tabq_vdw_FDV0);
-    sfree_aligned(ic->tabq_vdw_F);
-    sfree_aligned(ic->tabq_vdw_V);
-
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
     {
-        /* Create the original table data in FDV0 */
-        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
-        snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
-        snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
+        vector_duplicate_aligned(iTables.coulombF(), &ic->tabq_coul_F);
+        vector_duplicate_aligned(iTables.coulombV(), &ic->tabq_coul_V);
+        vector_duplicate_aligned(iTables.coulombFDV0(), &ic->tabq_coul_FDV0);
     }
 
     if (EVDW_PME(ic->vdwtype))
     {
-        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size*4, 32);
-        snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
-        snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
-        table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+        vector_duplicate_aligned(iTables.vdwF(), &ic->tabq_vdw_F);
+        vector_duplicate_aligned(iTables.vdwV(), &ic->tabq_vdw_V);
+        vector_duplicate_aligned(iTables.vdwFDV0(), &ic->tabq_vdw_FDV0);
     }
 }
 
-void init_interaction_const_tables(FILE                *fp,
-                                   interaction_const_t *ic,
-                                   real                 rtab)
+void init_interaction_const_tables(FILE                   *fp,
+                                   interaction_const_t    *ic,
+                                   real gmx_unused         rtab)
 {
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
-        init_ewald_f_table(ic, rtab);
+        init_ewald_f_table(ic);
 
         if (fp != NULL)
         {
@@ -1959,12 +1966,6 @@ init_interaction_const(FILE                       *fp,
     snew(ic, 1);
 
     ic->cutoff_scheme   = fr->cutoff_scheme;
-
-    /* Just allocate something so we can free it */
-    snew_aligned(ic->tabq_coul_FDV0, 16, 32);
-    snew_aligned(ic->tabq_coul_F, 16, 32);
-    snew_aligned(ic->tabq_coul_V, 16, 32);
-
     ic->rlist           = fr->rlist;
     ic->rlistlong       = fr->rlistlong;
 
@@ -2277,21 +2278,21 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
     return nbv != NULL && nbv->bUseGPU;
 }
 
-void init_forcerec(FILE              *fp,
-                   const output_env_t oenv,
-                   t_forcerec        *fr,
-                   t_fcdata          *fcd,
-                   const t_inputrec  *ir,
-                   const gmx_mtop_t  *mtop,
-                   const t_commrec   *cr,
-                   matrix             box,
-                   const char        *tabfn,
-                   const char        *tabafn,
-                   const char        *tabpfn,
-                   const char        *tabbfn,
-                   const char        *nbpu_opt,
-                   gmx_bool           bNoSolvOpt,
-                   real               print_force)
+void init_forcerec(FILE                   *fp,
+                   const output_env_t      oenv,
+                   t_forcerec             *fr,
+                   t_fcdata               *fcd,
+                   const t_inputrec       *ir,
+                   const gmx_mtop_t       *mtop,
+                   const t_commrec        *cr,
+                   matrix                  box,
+                   const char             *tabfn,
+                   const char             *tabafn,
+                   const char             *tabpfn,
+                   const char             *tabbfn,
+                   const char             *nbpu_opt,
+                   gmx_bool                bNoSolvOpt,
+                   real                    print_force)
 {
     int            i, m, negp_pp, negptable, egi, egj;
     real           rtab;
