@@ -63,6 +63,8 @@ struct gmx_mtop_t;
 
 namespace gmx
 {
+class InteractionTables;
+
 /*! \brief Integrator algorithm implementation.
  *
  * \param[in] fplog               Log file for output
