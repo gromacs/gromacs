@@ -37,10 +37,10 @@
 macro(gmx_test_compiler_problems)
 
     # Warn if C and C++ compilers do not match
-    if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    if(NOT CMAKE_C_COMPILER_ID STREQUAL CMAKE_CXX_COMPILER_ID)
         message(WARNING "The ids of the C and C++ compilers do not match (${CMAKE_C_COMPILER_ID} and ${CMAKE_CXX_COMPILER_ID}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
-    if(NOT "${CMAKE_C_COMPILER_VERSION}" STREQUAL "${CMAKE_CXX_COMPILER_VERSION}")
+    if(NOT CMAKE_C_COMPILER_VERSION STREQUAL CMAKE_CXX_COMPILER_VERSION)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
@@ -69,10 +69,10 @@ macro(gmx_test_compiler_problems)
     # (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
     # We can work around this by not using the integrated assembler (except on OS X
     # which has an outdated assembler that does not support AVX instructions).
-    if (${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.3")
+    if (CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.3")
         set(GMX_USE_CLANG_C_FMA_BUG_WORKAROUND TRUE)
     endif()
-    if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
         set(GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND TRUE)
     endif()
 
