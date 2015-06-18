@@ -106,6 +106,9 @@ static void realloc_bins(double **bin, int *nbin, int nbin_new)
     }
 }
 
+namespace gmx
+{
+
 double do_tpi(FILE *fplog, t_commrec *cr,
               int nfile, const t_filenm fnm[],
               const output_env_t oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
@@ -119,6 +122,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_edsam_t gmx_unused ed,
               t_forcerec *fr,
+              gmx::InteractionTables gmx_unused *interaction_tables,
               int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
               gmx_membed_t gmx_unused membed,
               real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -812,7 +816,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
         }
 
         bNotLastFrame = read_next_frame(oenv, status, &rerun_fr);
-    } /* End of the loop  */
+    }   /* End of the loop  */
     walltime_accounting_end(walltime_accounting);
 
     close_trj(status);
@@ -864,3 +868,5 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     return 0;
 }
+
+} // namespace gmx
