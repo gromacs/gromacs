@@ -161,13 +161,31 @@ double v_lj_ewald_lr(double beta, double r)
     }
 }
 
-void table_spline3_fill_ewald_lr(real                                 *table_f,
-                                 real                                 *table_v,
-                                 real                                 *table_fdv0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr)
+/* This function generates input for quadratic spline table interpolation.
+ * The force table table_f is always generated. The potential and combined
+ * tables table_v and table_fdv0 are not generated when NULL is passed.
+ * ntab entries with spacing dx are generated.
+ * Input can be generated using either an analytical function, passed
+ * as function pointer v_lr with a first parameter beta or using table input.
+ * Table input can be passed as a potential alone, using table_in_v or
+ * combined with a force table table_in_f. A stride is used (which can be 1):
+ * V(i*dx) = table_in_v(i*stride*dx). When no force table input is passed,
+ * the stride has to be a multiple of 2.
+ * Note that the table input should be smooth, e.g. not containing noise
+ * from an (iterative) Boltzmann inversion procedure.
+ */
+static void
+table_spline3_fill(real                                 *table_f,
+                   real                                 *table_v,
+                   real                                 *table_fdv0,
+                   int                                   ntab,
+                   double                                dx,
+                   real                                  beta,
+                   real_space_grid_contribution_computer v_lr,
+                   const double                         *table_in_v,
+                   const double                         *table_in_f,
+                   int                                   table_in_size,
+                   int                                   stride)
 {
     real     tab_max;
     int      i, i_inrange;
@@ -176,9 +194,27 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
     double   v_r0, v_r1, v_inrange, vi, a0, a1, a2dx;
     double   x_r0;
 
-    /* This function is called using either v_ewald_lr or v_lj_ewald_lr as a function argument
-     * depending on wether we should create electrostatic or Lennard-Jones Ewald tables.
-     */
+    if (v_lr != NULL && table_in_v != NULL)
+    {
+        gmx_incons("Both analytical function and table input passed");
+    }
+
+    if (table_in_v != NULL)
+    {
+        if (stride <= 0)
+        {
+            gmx_fatal(FARGS, "The stride for the table input should be positive");
+        }
+        if (table_in_f == NULL && stride % 2 != 0)
+        {
+            gmx_fatal(FARGS, "For filling a quadratic spline table with tabulated potential input only (i.e. no force input), the stride has to be a mulitple of 2, not odd (%d)", stride);
+        }
+        if (table_in_size < ntab*stride)
+        {
+            gmx_fatal(FARGS, "The table input size (%d) is smaller than the requested output table size (%d) times the stride (%d)",
+                      table_in_size, ntab, stride);
+        }
+    }
 
     if (ntab < 2)
     {
@@ -205,7 +241,14 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
     {
         x_r0 = i*dx;
 
-        v_r0 = (*v_lr)(beta, x_r0);
+        if (v_lr != NULL)
+        {
+            v_r0 = (*v_lr)(beta, x_r0);
+        }
+        else
+        {
+            v_r0 = table_in_v[i*stride];
+        }
 
         if (!bOutOfRange)
         {
@@ -231,7 +274,14 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
         }
 
         /* Get the potential at table point i-1 */
-        v_r1 = (*v_lr)(beta, (i-1)*dx);
+        if (v_lr != NULL)
+        {
+            v_r1 = (*v_lr)(beta, (i-1)*dx);
+        }
+        else
+        {
+            v_r1 = table_in_v[(i - 1)*stride];
+        }
 
         if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
         {
@@ -240,10 +290,27 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
 
         if (!bOutOfRange)
         {
-            /* Calculate the average second derivative times dx over interval i-1 to i.
-             * Using the function values at the end points and in the middle.
-             */
-            a2dx = (v_r0 + v_r1 - 2*(*v_lr)(beta, x_r0-0.5*dx))/(0.25*dx);
+            /* Calculate the average second derivative times dx over interval i-1 to i */
+            if (v_lr != NULL || table_in_f == NULL)
+            {
+                /* Use the function values at the end points and the middle */
+                double v_mid;
+
+                if (v_lr != NULL)
+                {
+                    v_mid = (*v_lr)(beta, x_r0 - 0.5*dx);
+                }
+                else
+                {
+                    v_mid = table_in_v[i*stride - stride/2];
+                }
+                a2dx = (v_r0 + v_r1 - 2*v_mid)/(0.25*dx);
+            }
+            else
+            {
+                /* Use the forces at the end points */
+                a2dx = -table_in_f[i*stride] + table_in_f[(i - 1)*stride];
+            }
             /* Set the derivative of the spline to match the difference in potential
              * over the interval plus the average effect of the quadratic term.
              * This is the essential step for minimizing the error in the force.
@@ -307,6 +374,23 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
         table_fdv0[4*(ntab-1)+2]  = table_v[(ntab-1)];
         table_fdv0[4*(ntab-1)+3]  = 0.0;
     }
+}
+
+/* This function is called using either v_ewald_lr or v_lj_ewald_lr as
+ * a function argument depending on wether we should create electrostatic
+ * or Lennard-Jones Ewald tables.
+ */
+void table_spline3_fill_ewald_lr(real                                 *table_f,
+                                 real                                 *table_v,
+                                 real                                 *table_fdv0,
+                                 int                                   ntab,
+                                 double                                dx,
+                                 real                                  beta,
+                                 real_space_grid_contribution_computer v_lr)
+{
+    table_spline3_fill(table_f, table_v, table_fdv0,
+                       ntab, dx, beta, v_lr,
+                       NULL, NULL, 0, 0);
 }
 
 /* Returns the spacing for a function using the maximum of
