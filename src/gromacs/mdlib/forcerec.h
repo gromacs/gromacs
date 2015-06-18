@@ -103,21 +103,22 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
-void init_forcerec(FILE                   *fplog,
-                   const output_env_t      oenv,
-                   t_forcerec             *fr,
-                   t_fcdata               *fcd,
-                   const t_inputrec       *ir,
-                   const gmx_mtop_t       *mtop,
-                   const t_commrec        *cr,
-                   matrix                  box,
-                   const char             *tabfn,
-                   const char             *tabafn,
-                   const char             *tabpfn,
-                   const char             *tabbfn,
-                   const char             *nbpu_opt,
-                   gmx_bool                bNoSolvOpt,
-                   real                    print_force);
+
+void init_forcerec(FILE               *fplog,
+                   const output_env_t  oenv,
+                   t_forcerec         *fr,
+                   t_fcdata           *fcd,
+                   const t_inputrec   *ir,
+                   const gmx_mtop_t   *mtop,
+                   const t_commrec    *cr,
+                   matrix              box,
+                   const char         *tabfn,
+                   const char         *tabafn,
+                   const char         *tabpfn,
+                   const char         *tabbfn,
+                   const char         *nbpu_opt,
+                   gmx_bool            bNoSolvOpt,
+                   real                print_force);
 
 /*! \brief Divide exclusions over threads
  *
