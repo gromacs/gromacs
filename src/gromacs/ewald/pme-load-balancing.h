@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/tables/tables.h"
 #include "gromacs/timing/wallcycle.h"
 
 /*! \brief Object to manage PME load balancing */
@@ -84,17 +85,18 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
  * Should be called after the ewcSTEP cycle counter has been stopped.
  * Returns if the load balancing is printing to fp_err.
  */
-void pme_loadbal_do(pme_load_balancing_t *pme_lb,
-                    t_commrec            *cr,
-                    FILE                 *fp_err,
-                    FILE                 *fp_log,
-                    t_inputrec           *ir,
-                    t_forcerec           *fr,
-                    t_state              *state,
-                    gmx_wallcycle_t       wcycle,
-                    gmx_int64_t           step,
-                    gmx_int64_t           step_rel,
-                    gmx_bool             *bPrinting);
+void pme_loadbal_do(pme_load_balancing_t   *pme_lb,
+                    t_commrec              *cr,
+                    FILE                   *fp_err,
+                    FILE                   *fp_log,
+                    t_inputrec             *ir,
+                    t_forcerec             *fr,
+                    t_state                *state,
+                    gmx::InteractionTables *interaction_tables,
+                    gmx_wallcycle_t         wcycle,
+                    gmx_int64_t             step,
+                    gmx_int64_t             step_rel,
+                    gmx_bool               *bPrinting);
 
 /*! \brief Finish the PME load balancing and print the settings when fplog!=NULL */
 void pme_loadbal_done(pme_load_balancing_t *pme_lb,
