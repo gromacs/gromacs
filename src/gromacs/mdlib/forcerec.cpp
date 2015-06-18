@@ -67,6 +67,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec-threading.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/longrangetables.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
@@ -86,10 +87,13 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/tables/forcetable.h"
+#include "gromacs/tables/splinetable.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -1816,51 +1820,65 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
     return bUsesSimpleTables;
 }
 
-static void init_ewald_f_table(interaction_const_t *ic,
-                               real                 rtab)
+static void vector_duplicate_aligned(const std::vector<real>  &vIn,
+                                     real                    **vOut)
 {
-    real maxr;
+    if (NULL != *vOut)
+    {
+        sfree_aligned(*vOut);
+    }
+    snew_aligned(*vOut, vIn.size()+32, 32);
+    std::copy(vIn.begin(), vIn.end(), *vOut);
+}
 
+static void init_ewald_f_table(interaction_const_t *ic, double rtab)
+{
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
      */
-    ic->tabq_scale = ewald_spline3_table_scale(ic);
+    double scale        = longRangeCorrectionTableScale(ic->eeltype,
+                                                        ic->ewaldcoeff_q,
+                                                        ic->rcoulomb,
+                                                        ic->vdwtype,
+                                                        ic->ewaldcoeff_lj,
+                                                        ic->rvdw);
+    /* Get size of the table */
+    std::size_t ntable = longRangeCorrectionTableSize(rtab, scale);
 
-    if (ic->cutoff_scheme == ecutsVERLET)
-    {
-        maxr = ic->rcoulomb;
-    }
-    else
-    {
-        maxr = std::max(ic->rcoulomb, rtab);
-    }
-    ic->tabq_size  = static_cast<int>(maxr*ic->tabq_scale) + 2;
-
-    sfree_aligned(ic->tabq_coul_FDV0);
-    sfree_aligned(ic->tabq_coul_F);
-    sfree_aligned(ic->tabq_coul_V);
-
-    sfree_aligned(ic->tabq_vdw_FDV0);
-    sfree_aligned(ic->tabq_vdw_F);
-    sfree_aligned(ic->tabq_vdw_V);
-
+    ic->tabq_scale = scale;
+    ic->tabq_size  = ntable;
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
     {
-        /* Create the original table data in FDV0 */
-        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
-        snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
-        snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
+        try
+        {
+            std::vector<double> beta_coul;
+            beta_coul.push_back(ic->ewaldcoeff_q);
+            GMX_RELEASE_ASSERT((scale > 0),
+                               "Table spacing should be larger than 0");
+            const gmx::QuadraticSplineTable coulomb(ntable, 1.0/scale,
+                                                    v_q_ewald_lr, beta_coul);
+            vector_duplicate_aligned(coulomb.F(),    &ic->tabq_coul_F);
+            vector_duplicate_aligned(coulomb.V(),    &ic->tabq_coul_V);
+            vector_duplicate_aligned(coulomb.FDV0(), &ic->tabq_coul_FDV0);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     if (EVDW_PME(ic->vdwtype))
     {
-        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size*4, 32);
-        snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
-        snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
-        table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+        try
+        {
+            std::vector<double> beta_vdw;
+            beta_vdw.push_back(ic->ewaldcoeff_lj);
+            GMX_RELEASE_ASSERT((scale > 0),
+                               "Table spacing should be larger than 0");
+            const gmx::QuadraticSplineTable vdw(ntable, 1.0/scale,
+                                                v_lj_ewald_lr, beta_vdw);
+            vector_duplicate_aligned(vdw.F(), &ic->tabq_vdw_F);
+            vector_duplicate_aligned(vdw.V(), &ic->tabq_vdw_V);
+            vector_duplicate_aligned(vdw.FDV0(), &ic->tabq_vdw_FDV0);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 
@@ -1875,7 +1893,7 @@ void init_interaction_const_tables(FILE                *fp,
         if (fp != NULL)
         {
             fprintf(fp, "Initialized non-bonded Ewald correction tables, spacing: %.2e size: %d\n\n",
-                    1/ic->tabq_scale, ic->tabq_size);
+                    1.0/ic->tabq_scale, ic->tabq_size);
         }
     }
 }
@@ -1936,12 +1954,6 @@ init_interaction_const(FILE                       *fp,
     snew(ic, 1);
 
     ic->cutoff_scheme   = fr->cutoff_scheme;
-
-    /* Just allocate something so we can free it */
-    snew_aligned(ic->tabq_coul_FDV0, 16, 32);
-    snew_aligned(ic->tabq_coul_F, 16, 32);
-    snew_aligned(ic->tabq_coul_V, 16, 32);
-
     ic->rlist           = fr->rlist;
 
     /* Lennard-Jones */
