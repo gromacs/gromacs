@@ -2624,7 +2624,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
             nbl->ncj/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j cell list length %.1f\n",
-            0.25*nbl->ncj/(double)nbl->nci);
+            0.25*nbl->ncj/(double)max(nbl->nci, 1));
 
     for (s = 0; s < SHIFTS; s++)
     {
@@ -2645,7 +2645,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
         }
     }
     fprintf(fp, "nbl cell pairs, total: %d excl: %d %.1f%%\n",
-            nbl->ncj, npexcl, 100*npexcl/(double)nbl->ncj);
+            nbl->ncj, npexcl, 100*npexcl/(double)max(nbl->ncj, 1));
     for (s = 0; s < SHIFTS; s++)
     {
         if (cs[s] > 0)
@@ -2662,6 +2662,8 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     const nbnxn_grid_t *grid;
     int                 i, j4, j, si, b;
     int                 c[GPU_NSUBCELL+1];
+    double              sum_nsp, sum_nsp2;
+    int                 nsp_max;
 
     /* This code only produces correct statistics with domain decomposition */
     grid = &nbs->grid[0];
@@ -2678,12 +2680,18 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     fprintf(fp, "nbl average i sub cell list length %.1f\n",
             nbl->nci_tot/((double)nbl->ncj4));
 
+    sum_nsp  = 0;
+    sum_nsp2 = 0;
+    nsp_max  = 0;
     for (si = 0; si <= GPU_NSUBCELL; si++)
     {
         c[si] = 0;
     }
     for (i = 0; i < nbl->nsci; i++)
     {
+        int nsp;
+
+        nsp = 0;
         for (j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
         {
             for (j = 0; j < NBNXN_GPU_JGROUP_SIZE; j++)
@@ -2696,14 +2704,30 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
                         b++;
                     }
                 }
+                nsp += b;
                 c[b]++;
             }
         }
+        sum_nsp  += nsp;
+        sum_nsp2 += nsp*nsp;
+        nsp_max   = max(nsp_max, nsp);
     }
-    for (b = 0; b <= GPU_NSUBCELL; b++)
+    if (nbl->nsci > 0)
     {
-        fprintf(fp, "nbl j-list #i-subcell %d %7d %4.1f\n",
-                b, c[b], 100.0*c[b]/(double)(nbl->ncj4*NBNXN_GPU_JGROUP_SIZE));
+        sum_nsp  /= nbl->nsci;
+        sum_nsp2 /= nbl->nsci;
+    }
+    fprintf(fp, "nbl #cluster-pairs: av %.1f stddev %.1f max %d\n",
+            sum_nsp, sqrt(sum_nsp2 - sum_nsp*sum_nsp), nsp_max);
+
+    if (nbl->ncj4 > 0)
+    {
+        for (b = 0; b <= GPU_NSUBCELL; b++)
+        {
+            fprintf(fp, "nbl j-list #i-subcell %d %7d %4.1f\n",
+                    b, c[b],
+                    100.0*c[b]/(double)(nbl->ncj4*NBNXN_GPU_JGROUP_SIZE));
+        }
     }
 }
 
