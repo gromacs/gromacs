@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="tableSize">7</Int>
+  <Real Name="tableSpacing">0.029999999999999999</Real>
+  <Real Name="distance">0.15434999999999999</Real>
+  <Real Name="energy">0.023823922499999997</Real>
+  <Real Name="force">-0.30870000000000003</Real>
+  <Sequence Name="F">
+    <Int Name="Length">8</Int>
+    <Real>-0</Real>
+    <Real>-0.059999999999999984</Real>
+    <Real>-0.12000000000000001</Real>
+    <Real>-0.17999999999999994</Real>
+    <Real>-0.23999999999999999</Real>
+    <Real>-0.30000000000000004</Real>
+    <Real>-0.35999999999999999</Real>
+    <Real>-0.41999999999999982</Real>
+  </Sequence>
+  <Sequence Name="V">
+    <Int Name="Length">8</Int>
+    <Real>0</Real>
+    <Real>0.00089999999999999998</Real>
+    <Real>0.0035999999999999999</Real>
+    <Real>0.0080999999999999996</Real>
+    <Real>0.0144</Real>
+    <Real>0.022499999999999999</Real>
+    <Real>0.032399999999999998</Real>
+    <Real>0.044099999999999993</Real>
+  </Sequence>
+  <Sequence Name="FDV0">
+    <Int Name="Length">32</Int>
+    <Real>-0</Real>
+    <Real>-0.059999999999999984</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.059999999999999984</Real>
+    <Real>-0.060000000000000026</Real>
+    <Real>0.00089999999999999998</Real>
+    <Real>0</Real>
+    <Real>-0.12000000000000001</Real>
+    <Real>-0.059999999999999928</Real>
+    <Real>0.0035999999999999999</Real>
+    <Real>0</Real>
+    <Real>-0.17999999999999994</Real>
+    <Real>-0.060000000000000053</Real>
+    <Real>0.0080999999999999996</Real>
+    <Real>0</Real>
+    <Real>-0.23999999999999999</Real>
+    <Real>-0.060000000000000053</Real>
+    <Real>0.0144</Real>
+    <Real>0</Real>
+    <Real>-0.30000000000000004</Real>
+    <Real>-0.059999999999999942</Real>
+    <Real>0.022499999999999999</Real>
+    <Real>0</Real>
+    <Real>-0.35999999999999999</Real>
+    <Real>-0.059999999999999831</Real>
+    <Real>0.032399999999999998</Real>
+    <Real>0</Real>
+    <Real>-0.41999999999999982</Real>
+    <Real>0.41999999999999982</Real>
+    <Real>0.044099999999999993</Real>
+    <Real>0</Real>
+  </Sequence>
+</ReferenceData>
