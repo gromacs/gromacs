@@ -107,7 +107,6 @@ gmx_bool can_use_allvsall(const struct t_inputrec *ir,
  * and fp (if !=NULL) on the master node.
  */
 
-
 gmx_bool nbnxn_acceleration_supported(FILE                           *fplog,
                                       const struct t_commrec         *cr,
                                       const struct t_inputrec        *ir,
