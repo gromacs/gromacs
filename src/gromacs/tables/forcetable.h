@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,50 +32,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_TABLES_FORCETABLE_H
+#define GMX_TABLES_FORCETABLE_H
 
-#ifndef _tables_h
-#define _tables_h
+#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/simple.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
-
-typedef double (*real_space_grid_contribution_computer)(double, double);
-/* Function pointer used to tell table_spline3_fill_ewald_lr whether it
- * should calculate the grid contribution for electrostatics or LJ.
+t_forcetable make_tables(FILE *fp, const output_env_t oenv,
+                         const t_forcerec *fr, gmx_bool bVerbose,
+                         const char *fn, real rtab, int flags);
+/* Return tables for inner loops. When bVerbose the tables are printed
+ * to .xvg files
  */
 
-void table_spline3_fill_ewald_lr(real                                 *table_F,
-                                 real                                 *table_V,
-                                 real                                 *table_FDV0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr);
-/* Fill tables of ntab points with spacing dr with the ewald long-range
- * (mesh) force.
- * There are three separate tables with format FDV0, F, and V.
- * This function interpolates the Ewald mesh potential contribution
- * with coefficient beta using a quadratic spline.
- * The force can then be interpolated linearly.
+bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
+/* Return a table for bonded interactions,
+ * angle should be: bonds 0, angles 1, dihedrals 2
  */
 
-real ewald_spline3_table_scale(const interaction_const_t *ic);
-/* Return the scaling for the Ewald quadratic spline tables. */
+/* Return a table for GB calculations */
+t_forcetable make_gb_table(const output_env_t oenv,
+                           const t_forcerec  *fr);
 
-double v_q_ewald_lr(double beta, double r);
-/* Return the real space grid contribution for Ewald*/
+/* Read a table for AdResS Thermo Force calculations */
+extern t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
+                                   const t_forcerec *fr,
+                                   const char *fn,
+                                   matrix box);
 
-double v_lj_ewald_lr(double beta, double r);
-/* Return the real space grid contribution for LJ-Ewald*/
 
-#ifdef __cplusplus
-}
-#endif
 
-#endif  /* _tables\_h */
+#endif  /* GMX_TABLES_FORCETABLE_H */
