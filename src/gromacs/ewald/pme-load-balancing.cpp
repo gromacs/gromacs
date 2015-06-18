@@ -56,12 +56,13 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/legacyheaders/calcgrid.h"
-#include "gromacs/legacyheaders/force.h"
+//#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -554,6 +555,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
                  t_state                   *state,
                  double                     cycles,
                  interaction_const_t       *ic,
+                 gmx::InteractionTables    *it,
                  struct nonbonded_verlet_t *nbv,
                  struct gmx_pme_t **        pmedata,
                  gmx_int64_t                step)
@@ -819,7 +821,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
     }
 
     /* We always re-initialize the tables whether they are used or not */
-    init_interaction_const_tables(NULL, ic, rtab);
+    init_interaction_const_tables(NULL, ic, it, rtab);
 
     nbnxn_gpu_pme_loadbal_update_param(nbv, ic);
 
@@ -897,17 +899,18 @@ static void continue_pme_loadbal(pme_load_balancing_t *pme_lb,
     pme_lb->start            = pme_lb->lower_limit;
 }
 
-void pme_loadbal_do(pme_load_balancing_t *pme_lb,
-                    t_commrec            *cr,
-                    FILE                 *fp_err,
-                    FILE                 *fp_log,
-                    t_inputrec           *ir,
-                    t_forcerec           *fr,
-                    t_state              *state,
-                    gmx_wallcycle_t       wcycle,
-                    gmx_int64_t           step,
-                    gmx_int64_t           step_rel,
-                    gmx_bool             *bPrinting)
+void pme_loadbal_do(pme_load_balancing_t   *pme_lb,
+                    t_commrec              *cr,
+                    FILE                   *fp_err,
+                    FILE                   *fp_log,
+                    t_inputrec             *ir,
+                    t_forcerec             *fr,
+                    t_state                *state,
+                    gmx::InteractionTables *it,
+                    gmx_wallcycle_t         wcycle,
+                    gmx_int64_t             step,
+                    gmx_int64_t             step_rel,
+                    gmx_bool               *bPrinting)
 {
     int    n_prev;
     double cycles_prev;
@@ -1014,7 +1017,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         pme_load_balance(pme_lb, cr,
                          fp_err, fp_log,
                          ir, state, pme_lb->cycles_c - cycles_prev,
-                         fr->ic, fr->nbv, &fr->pmedata,
+                         fr->ic, it, fr->nbv, &fr->pmedata,
                          step);
 
         /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */

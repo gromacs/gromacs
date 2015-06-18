@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "forcerec.h"
 
 #include <assert.h>
 #include <math.h>
@@ -61,7 +61,6 @@
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/qmmm.h"
-#include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -79,6 +78,8 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/tables/forcetable.h"
+#include "gromacs/tables/tables.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1834,15 +1835,21 @@ gmx_bool uses_simple_tables(int                 cutoff_scheme,
     return bUsesSimpleTables;
 }
 
-static void init_ewald_f_table(interaction_const_t *ic,
-                               real                 rtab)
+static void init_ewald_f_table(interaction_const_t    *ic,
+                               gmx::InteractionTables *it,
+                               real                    rtab)
 {
     real maxr;
 
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
      */
-    ic->tabq_scale = ewald_spline3_table_scale(ic);
+    ic->tabq_scale = it->tabScale(ic->eeltype,
+                                  ic->ewaldcoeff_q,
+                                  ic->rcoulomb,
+                                  ic->vdwtype,
+                                  ic->ewaldcoeff_lj,
+                                  ic->rvdw);
 
     if (ic->cutoff_scheme == ecutsVERLET)
     {
@@ -1854,41 +1861,42 @@ static void init_ewald_f_table(interaction_const_t *ic,
     }
     ic->tabq_size  = static_cast<int>(maxr*ic->tabq_scale) + 2;
 
-    sfree_aligned(ic->tabq_coul_FDV0);
-    sfree_aligned(ic->tabq_coul_F);
-    sfree_aligned(ic->tabq_coul_V);
-
-    sfree_aligned(ic->tabq_vdw_FDV0);
-    sfree_aligned(ic->tabq_vdw_F);
-    sfree_aligned(ic->tabq_vdw_V);
-
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
     {
+        double beta = ic->ewaldcoeff_q;
         /* Create the original table data in FDV0 */
-        snew_aligned(ic->tabq_coul_FDV0, ic->tabq_size*4, 32);
-        snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
-        snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
-        table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
+        it->fillEwaldSpline3(ic->tabq_size,
+                             1.0/ic->tabq_scale,
+                             &beta,
+                             gmx::etCoulomb,
+                             v_q_ewald_lr);
+        ic->tabq_coul_F    = it->coulombF();
+        ic->tabq_coul_V    = it->coulombV();
+        ic->tabq_coul_FDV0 = it->coulombFDV0();
     }
 
     if (EVDW_PME(ic->vdwtype))
     {
-        snew_aligned(ic->tabq_vdw_FDV0, ic->tabq_size*4, 32);
-        snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
-        snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
-        table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+        double beta = ic->ewaldcoeff_lj;
+        it->fillEwaldSpline3(ic->tabq_size,
+                             1.0/ic->tabq_scale,
+                             &beta,
+                             gmx::etLJ,
+                             v_lj_ewald_lr);
+        ic->tabq_vdw_F    = it->vdwF();
+        ic->tabq_vdw_V    = it->vdwV();
+        ic->tabq_vdw_FDV0 = it->vdwFDV0();
     }
 }
 
-void init_interaction_const_tables(FILE                *fp,
-                                   interaction_const_t *ic,
-                                   real                 rtab)
+void init_interaction_const_tables(FILE                   *fp,
+                                   interaction_const_t    *ic,
+                                   gmx::InteractionTables *it,
+                                   real                    rtab)
 {
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
-        init_ewald_f_table(ic, rtab);
+        init_ewald_f_table(ic, it, rtab);
 
         if (fp != NULL)
         {
@@ -2274,21 +2282,22 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
     return nbv != NULL && nbv->bUseGPU;
 }
 
-void init_forcerec(FILE              *fp,
-                   const output_env_t oenv,
-                   t_forcerec        *fr,
-                   t_fcdata          *fcd,
-                   const t_inputrec  *ir,
-                   const gmx_mtop_t  *mtop,
-                   const t_commrec   *cr,
-                   matrix             box,
-                   const char        *tabfn,
-                   const char        *tabafn,
-                   const char        *tabpfn,
-                   const char        *tabbfn,
-                   const char        *nbpu_opt,
-                   gmx_bool           bNoSolvOpt,
-                   real               print_force)
+void init_forcerec(FILE                   *fp,
+                   const output_env_t      oenv,
+                   t_forcerec             *fr,
+                   t_fcdata               *fcd,
+                   const t_inputrec       *ir,
+                   const gmx_mtop_t       *mtop,
+                   const t_commrec        *cr,
+                   matrix                  box,
+                   const char             *tabfn,
+                   const char             *tabafn,
+                   const char             *tabpfn,
+                   const char             *tabbfn,
+                   const char             *nbpu_opt,
+                   gmx::InteractionTables *interaction_tables,
+                   gmx_bool                bNoSolvOpt,
+                   real                    print_force)
 {
     int            i, m, negp_pp, negptable, egi, egj;
     real           rtab;
@@ -3221,7 +3230,7 @@ void init_forcerec(FILE              *fp,
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, fr);
-    init_interaction_const_tables(fp, fr->ic, rtab);
+    init_interaction_const_tables(fp, fr->ic, interaction_tables, rtab);
 
     if (fr->cutoff_scheme == ecutsVERLET)
     {
