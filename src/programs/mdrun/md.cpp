@@ -93,6 +93,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/compute_io.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
@@ -164,6 +165,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              t_mdatoms *mdatoms,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t ed, t_forcerec *fr,
+             gmx::InteractionTables *interaction_tables,
              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t membed,
              real cpt_period, real max_hours,
              int imdport,
@@ -757,7 +759,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             pme_loadbal_do(pme_loadbal, cr,
                            (bVerbose && MASTER(cr)) ? stderr : NULL,
                            fplog,
-                           ir, fr, state, wcycle,
+                           ir, fr, state,
+                           interaction_tables, wcycle,
                            step, step_rel,
                            &bPMETunePrinting);
         }

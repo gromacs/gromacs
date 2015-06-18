@@ -67,12 +67,13 @@
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -948,6 +949,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t gmx_unused ed,
              t_forcerec *fr,
+             gmx::InteractionTables gmx_unused *interaction_tables,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -1574,6 +1576,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                 gmx_edsam_t gmx_unused ed,
                 t_forcerec *fr,
+                gmx::InteractionTables gmx_unused *interaction_tables,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -2383,6 +2386,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                 gmx_edsam_t gmx_unused  ed,
                 t_forcerec *fr,
+                gmx::InteractionTables gmx_unused *interaction_tables,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -2622,6 +2626,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t  gmx_unused ed,
              t_forcerec *fr,
+             gmx::InteractionTables gmx_unused *interaction_tables,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
