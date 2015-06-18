@@ -106,6 +106,30 @@ static void realloc_bins(double **bin, int *nbin, int nbin_new)
     }
 }
 
+namespace gmx
+{
+
+/*! \copydoc gmx_integrator_t (FILE *fplog, t_commrec *cr,
+                               int nfile, const t_filenm fnm[],
+                               const output_env_t oenv, gmx_bool bVerbose,
+                               gmx_bool bCompact, int nstglobalcomm,
+                               gmx_vsite_t *vsite, gmx_constr_t constr,
+                               int stepout,
+                               t_inputrec *inputrec,
+                               gmx_mtop_t *top_global, t_fcdata *fcd,
+                               t_state *state_global,
+                               t_mdatoms *mdatoms,
+                               t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                               gmx_edsam_t ed,
+                               t_forcerec *fr,
+                               InteractionTables *interaction_tables,
+                               int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                               gmx_membed_t membed,
+                               real cpt_period, real max_hours,
+                               int imdport,
+                               unsigned long Flags,
+                               gmx_walltime_accounting_t walltime_accounting)
+ */
 double do_tpi(FILE *fplog, t_commrec *cr,
               int nfile, const t_filenm fnm[],
               const output_env_t oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
@@ -114,11 +138,12 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               int gmx_unused stepout,
               t_inputrec *inputrec,
               gmx_mtop_t *top_global, t_fcdata *fcd,
-              t_state *state,
+              t_state *state_global,
               t_mdatoms *mdatoms,
               t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_edsam_t gmx_unused ed,
               t_forcerec *fr,
+              gmx::InteractionTables gmx_unused *interaction_tables,
               int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
               gmx_membed_t gmx_unused membed,
               real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -207,7 +232,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     /*
        init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
-       state->box,fr,mdatoms,top,cr,nfile,fnm,NULL,NULL);*/
+       state_global->box,fr,mdatoms,top,cr,nfile,fnm,NULL,NULL);*/
     /* We never need full pbc for TPI */
     fr->ePBC = epbcXYZ;
     /* Determine the temperature for the Boltzmann weighting */
@@ -280,14 +305,14 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     for (i = a_tp0; i < a_tp1; i++)
     {
         /* Copy the coordinates of the molecule to be insterted */
-        copy_rvec(state->x[i], x_mol[i-a_tp0]);
+        copy_rvec(state_global->x[i], x_mol[i-a_tp0]);
         /* Check if we need to print electrostatic energies */
         bCharge |= (mdatoms->chargeA[i] != 0 ||
                     (mdatoms->chargeB && mdatoms->chargeB[i] != 0));
     }
     bRFExcl = (bCharge && EEL_RF(fr->eeltype) && fr->eeltype != eelRF_NEC);
 
-    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), state->x, fr->cg_cm);
+    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), state_global->x, fr->cg_cm);
     if (bCavity)
     {
         if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog)
@@ -489,11 +514,11 @@ double do_tpi(FILE *fplog, t_commrec *cr,
         /* Copy the coordinates from the input trajectory */
         for (i = 0; i < rerun_fr.natoms; i++)
         {
-            copy_rvec(rerun_fr.x[i], state->x[i]);
+            copy_rvec(rerun_fr.x[i], state_global->x[i]);
         }
-        copy_mat(rerun_fr.box, state->box);
+        copy_mat(rerun_fr.box, state_global->box);
 
-        V    = det(state->box);
+        V    = det(state_global->box);
         logV = log(V);
 
         bStateChanged = TRUE;
@@ -521,7 +546,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                     gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd+2);
                     for (d = 0; d < DIM; d++)
                     {
-                        x_init[d] = rnd[d]*state->box[d][d];
+                        x_init[d] = rnd[d]*state_global->box[d][d];
                     }
                 }
                 if (inputrec->nstlist == 1)
@@ -593,26 +618,26 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             if (a_tp1 - a_tp0 == 1)
             {
                 /* Insert a single atom, just copy the insertion location */
-                copy_rvec(x_tp, state->x[a_tp0]);
+                copy_rvec(x_tp, state_global->x[a_tp0]);
             }
             else
             {
                 /* Copy the coordinates from the top file */
                 for (i = a_tp0; i < a_tp1; i++)
                 {
-                    copy_rvec(x_mol[i-a_tp0], state->x[i]);
+                    copy_rvec(x_mol[i-a_tp0], state_global->x[i]);
                 }
                 /* Rotate the molecule randomly */
                 gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd);
                 gmx_rng_cycle_2uniform(frame_step, rnd_count++, seed, RND_SEED_TPI, rnd+2);
-                rotate_conf(a_tp1-a_tp0, state->x+a_tp0, NULL,
+                rotate_conf(a_tp1-a_tp0, state_global->x+a_tp0, NULL,
                             2*M_PI*rnd[0],
                             2*M_PI*rnd[1],
                             2*M_PI*rnd[2]);
                 /* Shift to the insertion location */
                 for (i = a_tp0; i < a_tp1; i++)
                 {
-                    rvec_inc(state->x[i], x_tp);
+                    rvec_inc(state_global->x[i], x_tp);
                 }
             }
 
@@ -640,9 +665,9 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             cr->nnodes = 1;
             do_force(fplog, cr, inputrec,
                      step, nrnb, wcycle, top, &top_global->groups,
-                     state->box, state->x, &state->hist,
+                     state_global->box, state_global->x, &state_global->hist,
                      f, force_vir, mdatoms, enerd, fcd,
-                     state->lambda,
+                     state_global->lambda,
                      NULL, fr, NULL, mu_tot, t, NULL, NULL, FALSE,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
                      (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DO_LR : 0) |
@@ -652,7 +677,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             bNS           = FALSE;
 
             /* Calculate long range corrections to pressure and energy */
-            calc_dispcorr(inputrec, fr, top_global->natoms, state->box,
+            calc_dispcorr(inputrec, fr, top_global->natoms, state_global->box,
                           lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
             /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
             enerd->term[F_DISPCORR]  = enercorr;
@@ -767,8 +792,8 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             {
                 sprintf(str, "t%g_step%d.pdb", t, (int)step);
                 sprintf(str2, "t: %f step %d ener: %f", t, (int)step, epot);
-                write_sto_conf_mtop(str, str2, top_global, state->x, state->v,
-                                    inputrec->ePBC, state->box);
+                write_sto_conf_mtop(str, str2, top_global, state_global->x, state_global->v,
+                                    inputrec->ePBC, state_global->box);
             }
 
             step++;
@@ -812,7 +837,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
         }
 
         bNotLastFrame = read_next_frame(oenv, status, &rerun_fr);
-    } /* End of the loop  */
+    }   /* End of the loop  */
     walltime_accounting_end(walltime_accounting);
 
     close_trj(status);
@@ -864,3 +889,5 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     return 0;
 }
+
+} // namespace gmx
