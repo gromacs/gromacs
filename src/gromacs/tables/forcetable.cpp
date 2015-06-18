@@ -36,13 +36,14 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/tables.h"
+#include "forcetable.h"
 
-#include <math.h>
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -130,266 +131,6 @@ typedef struct {
 #define pow3(x) ((x)*(x)*(x))
 #define pow4(x) ((x)*(x)*(x)*(x))
 #define pow5(x) ((x)*(x)*(x)*(x)*(x))
-
-double v_q_ewald_lr(double beta, double r)
-{
-    if (r == 0)
-    {
-        return beta*2/sqrt(M_PI);
-    }
-    else
-    {
-        return gmx_erfd(beta*r)/r;
-    }
-}
-
-double v_lj_ewald_lr(double beta, double r)
-{
-    double br, br2, br4, r6, factor;
-    if (r == 0)
-    {
-        return pow(beta, 6)/6;
-    }
-    else
-    {
-        br     = beta*r;
-        br2    = br*br;
-        br4    = br2*br2;
-        r6     = pow(r, 6.0);
-        factor = (1.0 - exp(-br2)*(1 + br2 + 0.5*br4))/r6;
-        return factor;
-    }
-}
-
-void table_spline3_fill_ewald_lr(real                                 *table_f,
-                                 real                                 *table_v,
-                                 real                                 *table_fdv0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr)
-{
-    real     tab_max;
-    int      i, i_inrange;
-    double   dc, dc_new;
-    gmx_bool bOutOfRange;
-    double   v_r0, v_r1, v_inrange, vi, a0, a1, a2dx;
-    double   x_r0;
-
-    /* This function is called using either v_ewald_lr or v_lj_ewald_lr as a function argument
-     * depending on wether we should create electrostatic or Lennard-Jones Ewald tables.
-     */
-
-    if (ntab < 2)
-    {
-        gmx_fatal(FARGS, "Can not make a spline table with less than 2 points");
-    }
-
-    /* We need some margin to be able to divide table values by r
-     * in the kernel and also to do the integration arithmetics
-     * without going out of range. Furthemore, we divide by dx below.
-     */
-    tab_max = GMX_REAL_MAX*0.0001;
-
-    /* This function produces a table with:
-     * maximum energy error: V'''/(6*12*sqrt(3))*dx^3
-     * maximum force error:  V'''/(6*4)*dx^2
-     * The rms force error is the max error times 1/sqrt(5)=0.45.
-     */
-
-    bOutOfRange = FALSE;
-    i_inrange   = ntab;
-    v_inrange   = 0;
-    dc          = 0;
-    for (i = ntab-1; i >= 0; i--)
-    {
-        x_r0 = i*dx;
-
-        v_r0 = (*v_lr)(beta, x_r0);
-
-        if (!bOutOfRange)
-        {
-            i_inrange = i;
-            v_inrange = v_r0;
-
-            vi = v_r0;
-        }
-        else
-        {
-            /* Linear continuation for the last point in range */
-            vi = v_inrange - dc*(i - i_inrange)*dx;
-        }
-
-        if (table_v != NULL)
-        {
-            table_v[i] = vi;
-        }
-
-        if (i == 0)
-        {
-            continue;
-        }
-
-        /* Get the potential at table point i-1 */
-        v_r1 = (*v_lr)(beta, (i-1)*dx);
-
-        if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
-        {
-            bOutOfRange = TRUE;
-        }
-
-        if (!bOutOfRange)
-        {
-            /* Calculate the average second derivative times dx over interval i-1 to i.
-             * Using the function values at the end points and in the middle.
-             */
-            a2dx = (v_r0 + v_r1 - 2*(*v_lr)(beta, x_r0-0.5*dx))/(0.25*dx);
-            /* Set the derivative of the spline to match the difference in potential
-             * over the interval plus the average effect of the quadratic term.
-             * This is the essential step for minimizing the error in the force.
-             */
-            dc = (v_r0 - v_r1)/dx + 0.5*a2dx;
-        }
-
-        if (i == ntab - 1)
-        {
-            /* Fill the table with the force, minus the derivative of the spline */
-            table_f[i] = -dc;
-        }
-        else
-        {
-            /* tab[i] will contain the average of the splines over the two intervals */
-            table_f[i] += -0.5*dc;
-        }
-
-        if (!bOutOfRange)
-        {
-            /* Make spline s(x) = a0 + a1*(x - xr) + 0.5*a2*(x - xr)^2
-             * matching the potential at the two end points
-             * and the derivative dc at the end point xr.
-             */
-            a0   = v_r0;
-            a1   = dc;
-            a2dx = (a1*dx + v_r1 - a0)*2/dx;
-
-            /* Set dc to the derivative at the next point */
-            dc_new = a1 - a2dx;
-
-            if (dc_new != dc_new || dc_new < -tab_max || dc_new > tab_max)
-            {
-                bOutOfRange = TRUE;
-            }
-            else
-            {
-                dc = dc_new;
-            }
-        }
-
-        table_f[(i-1)] = -0.5*dc;
-    }
-    /* Currently the last value only contains half the force: double it */
-    table_f[0] *= 2;
-
-    if (table_v != NULL && table_fdv0 != NULL)
-    {
-        /* Copy to FDV0 table too. Allocation occurs in forcerec.c,
-         * init_ewald_f_table().
-         */
-        for (i = 0; i < ntab-1; i++)
-        {
-            table_fdv0[4*i]     = table_f[i];
-            table_fdv0[4*i+1]   = table_f[i+1]-table_f[i];
-            table_fdv0[4*i+2]   = table_v[i];
-            table_fdv0[4*i+3]   = 0.0;
-        }
-        table_fdv0[4*(ntab-1)]    = table_f[(ntab-1)];
-        table_fdv0[4*(ntab-1)+1]  = -table_f[(ntab-1)];
-        table_fdv0[4*(ntab-1)+2]  = table_v[(ntab-1)];
-        table_fdv0[4*(ntab-1)+3]  = 0.0;
-    }
-}
-
-/* Returns the spacing for a function using the maximum of
- * the third derivative, x_scale (unit 1/length)
- * and function tolerance.
- */
-static double spline3_table_scale(double third_deriv_max,
-                                  double x_scale,
-                                  double func_tol)
-{
-    double deriv_tol;
-    double sc_deriv, sc_func;
-
-    /* Force tolerance: single precision accuracy */
-    deriv_tol = GMX_FLOAT_EPS;
-    sc_deriv  = sqrt(third_deriv_max/(6*4*deriv_tol*x_scale))*x_scale;
-
-    /* Don't try to be more accurate on energy than the precision */
-    func_tol  = max(func_tol, GMX_REAL_EPS);
-    sc_func   = pow(third_deriv_max/(6*12*sqrt(3)*func_tol), 1.0/3.0)*x_scale;
-
-    return max(sc_deriv, sc_func);
-}
-
-/* The scale (1/spacing) for third order spline interpolation
- * of the Ewald mesh contribution which needs to be subtracted
- * from the non-bonded interactions.
- * Since there is currently only one spacing for Coulomb and LJ,
- * the finest spacing is used if both Ewald types are present.
- *
- * Note that we could also implement completely separate tables
- * for Coulomb and LJ Ewald, each with their own spacing.
- * The current setup with the same spacing can provide slightly
- * faster kernels with both Coulomb and LJ Ewald, especially
- * when interleaving both tables (currently not implemented).
- */
-real ewald_spline3_table_scale(const interaction_const_t *ic)
-{
-    real sc;
-
-    sc = 0;
-
-    if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype))
-    {
-        double erf_x_d3 = 1.0522; /* max of (erf(x)/x)''' */
-        double etol;
-        real   sc_q;
-
-        /* Energy tolerance: 0.1 times the cut-off jump */
-        etol  = 0.1*gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
-
-        sc_q  = spline3_table_scale(erf_x_d3, ic->ewaldcoeff_q, etol);
-
-        if (debug)
-        {
-            fprintf(debug, "Ewald Coulomb quadratic spline table spacing: %f 1/nm\n", 1/sc_q);
-        }
-
-        sc    = max(sc, sc_q);
-    }
-
-    if (EVDW_PME(ic->vdwtype))
-    {
-        double func_d3 = 0.42888; /* max of (x^-6 (1 - exp(-x^2)(1+x^2+x^4/2)))''' */
-        double xrc2, etol;
-        real   sc_lj;
-
-        /* Energy tolerance: 0.1 times the cut-off jump */
-        xrc2  = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-        etol  = 0.1*exp(-xrc2)*(1 + xrc2 + xrc2*xrc2/2.0);
-
-        sc_lj = spline3_table_scale(func_d3, ic->ewaldcoeff_lj, etol);
-
-        if (debug)
-        {
-            fprintf(debug, "Ewald LJ quadratic spline table spacing: %f 1/nm\n", 1/sc_lj);
-        }
-
-        sc = max(sc, sc_lj);
-    }
-
-    return sc;
-}
 
 /* Calculate the potential and force for an r value
  * in exactly the same way it is done in the inner loop.
@@ -499,7 +240,6 @@ static void spline_forces(int nx, double h, double v[], gmx_bool bS3, gmx_bool b
     /* To make life easy we initially set the spacing to 1
      * and correct for this at the end.
      */
-    beta = 2;
     if (bS3)
     {
         /* Fit V''' at the start */
@@ -793,8 +533,6 @@ static void read_tables(FILE *fp, const char *fn,
 
 static void done_tabledata(t_tabledata *td)
 {
-    int i;
-
     if (!td)
     {
         return;
@@ -923,7 +661,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         }
         else
         {
-            rc12 = pow(rc, -reppow);
+            rc12 = std::pow(rc, -reppow);
         }
 
         switch (tp)
@@ -975,7 +713,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         }
         else
         {
-            r12 = pow(r, -reppow);
+            r12 = std::pow(r, -reppow);
         }
         Vtab  = 0.0;
         Ftab  = 0.0;
@@ -1372,7 +1110,7 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     }
 }
 
-t_forcetable make_tables(FILE *out, const output_env_t oenv,
+t_forcetable make_tables(FILE *out, const struct gmx_output_env_t *oenv,
                          const t_forcerec *fr,
                          gmx_bool bVerbose, const char *fn,
                          real rtab, int flags)
@@ -1383,7 +1121,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     t_tabledata    *td;
     gmx_bool        b14only, bReadTab, bGenTab;
     real            x0, y0, yp;
-    int             i, j, k, nx, nx0, tabsel[etiNR];
+    int             k, nx, nx0, tabsel[etiNR];
     real            scalefactor;
 
     t_forcetable    table;
@@ -1417,7 +1155,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     /* Check whether we have to read or generate */
     bReadTab = FALSE;
     bGenTab  = FALSE;
-    for (i = 0; (i < etiNR); i++)
+    for (unsigned int i = 0; (i < etiNR); i++)
     {
         if (ETAB_USER(tabsel[i]))
         {
@@ -1458,7 +1196,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
 #else
             table.scale = 500.0;
 #endif
-            nx = table.n = rtab*table.scale;
+            nx = table.n = static_cast<int>(rtab*table.scale);
         }
     }
     if (fr->bBHAM)
@@ -1529,7 +1267,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
                 fp = xvgropen(fns[k], fns[k], "r", "V", oenv);
             }
             /* plot the output 5 times denser than the table data */
-            for (i = 5*((nx0+1)/2); i < 5*table.n; i++)
+            for (int i = 5*((nx0+1)/2); i < 5*table.n; i++)
             {
                 x0 = i*table.r/(5*(table.n-1));
                 evaluate_table(table.data, 4*k, 12, table.scale, x0, &y0, &yp);
@@ -1544,32 +1282,18 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     return table;
 }
 
-t_forcetable make_gb_table(const output_env_t oenv,
-                           const t_forcerec  *fr)
+t_forcetable make_gb_table(const struct gmx_output_env_t *oenv,
+                           const t_forcerec              *fr)
 {
     const char     *fns[3]   = { "gbctab.xvg", "gbdtab.xvg", "gbrtab.xvg" };
-    const char     *fns14[3] = { "gbctab14.xvg", "gbdtab14.xvg", "gbrtab14.xvg" };
     FILE           *fp;
     t_tabledata    *td;
-    gmx_bool        bReadTab, bGenTab;
+    gmx_bool        bReadTab;
     real            x0, y0, yp;
-    int             i, j, k, nx, nx0, tabsel[etiNR];
+    int             i, nx, nx0;
     double          r, r2, Vtab, Ftab, expterm;
 
     t_forcetable    table;
-
-    double          abs_error_r, abs_error_r2;
-    double          rel_error_r, rel_error_r2;
-    double          rel_error_r_old = 0, rel_error_r2_old = 0;
-    double          x0_r_error, x0_r2_error;
-
-
-    /* Only set a Coulomb table for GB */
-    /*
-       tabsel[0]=etabGB;
-       tabsel[1]=-1;
-       tabsel[2]=-1;
-     */
 
     /* Set the table dimensions for GB, not really necessary to
      * use etiNR (since we only have one table, but ...)
@@ -1580,19 +1304,18 @@ t_forcetable make_gb_table(const output_env_t oenv,
     table.r             = fr->gbtabr;
     table.scale         = fr->gbtabscale;
     table.scale_exp     = 0;
-    table.n             = table.scale*table.r;
+    table.n             = static_cast<int>(table.scale*table.r);
     table.formatsize    = 4;
     table.ninteractions = 1;
     table.stride        = table.formatsize*table.ninteractions;
     nx0                 = 0;
-    nx                  = table.scale*table.r;
+    nx                  = table.n;
 
     /* Check whether we have to read or generate
      * We will always generate a table, so remove the read code
      * (Compare with original make_table function
      */
     bReadTab = FALSE;
-    bGenTab  = TRUE;
 
     /* Each table type (e.g. coul,lj6,lj12) requires four
      * numbers per datapoint. For performance reasons we want
@@ -1694,7 +1417,7 @@ t_forcetable make_gb_table(const output_env_t oenv,
 
 }
 
-t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
+t_forcetable make_atf_table(FILE *out, const struct gmx_output_env_t *oenv,
                             const t_forcerec *fr,
                             const char *fn,
                             matrix box)
@@ -1732,8 +1455,6 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
     table.scale     = 0;
     table.n         = 0;
     table.scale_exp = 0;
-    nx0             = 10;
-    nx              = 0;
 
     read_tables(out, fn, 1, 0, td);
     rtab      = td[0].x[td[0].nx-1];
@@ -1803,18 +1524,9 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
 {
     t_tabledata   td;
-    double        start;
     int           i;
     bondedtable_t tab;
 
-    if (angle < 2)
-    {
-        start = 0;
-    }
-    else
-    {
-        start = -180.0;
-    }
     read_tables(fplog, fn, 1, angle, &td);
     if (angle > 0)
     {
