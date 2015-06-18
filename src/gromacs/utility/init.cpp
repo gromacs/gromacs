@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,9 +82,34 @@ void init(int *argc, char ***argv)
     else
     {
 #ifdef GMX_FAHCORE
-        (void) fah_MPI_Init(argc, argv);
+        fah_MPI_Init(argc, argv);
 #else
-        (void) MPI_Init(argc, argv);
+#    ifdef GMX_OPENMP
+        /* Formally we need to use MPI_Init_thread and ask for MPI_THREAD_FUNNELED
+         * level of thread support when using OpenMP. However, in practice we
+         * have never seen any problems with just using MPI_Init(). Some MPI
+         * libraries only claim to support MPI_THREAD_SINGLE, but that might be
+         * related to thread-safety of complex memory stuff that we don't do. To
+         * avoid requiring users to recompile and install new libraries for something
+         * that isn't really a problem, we first check for thread
+         * support, and if that doesn't work we simply use the simple MPI_Init().
+         * Note that MPICH does not allow us to call MPI_Query_thread() before
+         * we have initialized the library.
+         *
+         * If we _ever_ observe any problems for any MPI library, we will need
+         * to change this, but until that happens it's better to let users live
+         * in ignorance rather than spitting out warnings for things that have
+         * never been shown to cause any problems.
+         */
+        int provided;
+        MPI_Init_thread(argc, argv, MPI_THREAD_FUNNELED, &provided);
+        if (provided < MPI_THREAD_FUNNELED)
+        {
+            MPI_Init(argc, argv);
+        }
+#    else
+        MPI_Init(argc, argv);
+#    endif
 #endif
     }
     // Bump the counter to record this initialization event
