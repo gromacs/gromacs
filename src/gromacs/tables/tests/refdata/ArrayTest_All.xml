@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="coulombF">
+    <Int Name="Length">20</Int>
+    <Real>2.3240066659990788e-07</Real>
+    <Real>0.14693720117115994</Real>
+    <Real>0.29386882467778763</Real>
+    <Real>0.44078929327848093</Real>
+    <Real>0.58769303056640876</Real>
+    <Real>0.73457446139521809</Real>
+    <Real>0.88142801230921974</Real>
+    <Real>1.0282481119333826</Real>
+    <Real>1.1750291914292008</Real>
+    <Real>1.3217656848875285</Real>
+    <Real>1.4684520297567578</Real>
+    <Real>1.6150826672618845</Real>
+    <Real>1.7616520428176479</Real>
+    <Real>1.9081546064527108</Real>
+    <Real>2.0545848132197113</Real>
+    <Real>2.200937123616848</Real>
+    <Real>2.347206004003672</Real>
+    <Real>2.493385927014184</Real>
+    <Real>2.6394713719616245</Real>
+    <Real>2.7854568252730108</Real>
+  </Sequence>
+  <Sequence Name="coulombV">
+    <Int Name="Length">20</Int>
+    <Real>8.7515340000789603</Real>
+    <Real>8.7515032402632471</Real>
+    <Real>8.7514109619837317</Real>
+    <Real>8.7512571687432121</Real>
+    <Real>8.7510418663793796</Real>
+    <Real>8.7507650630644047</Real>
+    <Real>8.7504267693042923</Real>
+    <Real>8.7500269979381073</Real>
+    <Real>8.7495657641370119</Real>
+    <Real>8.7490430854031072</Real>
+    <Real>8.7484589815681328</Real>
+    <Real>8.747813474791954</Real>
+    <Real>8.7471065895609197</Real>
+    <Real>8.7463383526859939</Real>
+    <Real>8.745508793300754</Real>
+    <Real>8.7446179428591968</Real>
+    <Real>8.7436658351333651</Real>
+    <Real>8.7426525062108134</Real>
+    <Real>8.7415779944918945</Real>
+    <Real>8.7404423406868723</Real>
+  </Sequence>
+  <Sequence Name="coulombFDV0">
+    <Int Name="Length">20</Int>
+    <Real>2.3240066659990788e-07</Real>
+    <Real>0.14693696877049334</Real>
+    <Real>8.7515340000789603</Real>
+    <Real>0</Real>
+    <Real>0.14693720117115994</Real>
+    <Real>0.1469316235066277</Real>
+    <Real>8.7515032402632471</Real>
+    <Real>0</Real>
+    <Real>0.29386882467778763</Real>
+    <Real>0.1469204686006933</Real>
+    <Real>8.7514109619837317</Real>
+    <Real>0</Real>
+    <Real>0.44078929327848093</Real>
+    <Real>0.14690373728792783</Real>
+    <Real>8.7512571687432121</Real>
+    <Real>0</Real>
+    <Real>0.58769303056640876</Real>
+    <Real>0.14688143082880933</Real>
+    <Real>8.7510418663793796</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Sequence Name="vdwF">
+    <Int Name="Length">20</Int>
+    <Real>177.99175372254777</Real>
+    <Real>6.8331898419931889</Real>
+    <Real>-38.39518341832143</Real>
+    <Real>57.736508841969837</Real>
+    <Real>78.073390207677292</Real>
+    <Real>96.943610645378428</Real>
+    <Real>115.89248105127101</Real>
+    <Real>135.49574712594108</Real>
+    <Real>154.76889593940791</Real>
+    <Real>174.05497802949264</Real>
+    <Real>193.38564144883287</Real>
+    <Real>212.72097768290388</Real>
+    <Real>232.0341981747228</Real>
+    <Real>251.3479043152052</Real>
+    <Real>270.67074124765907</Real>
+    <Real>289.97892878950722</Real>
+    <Real>309.28350605708317</Real>
+    <Real>328.58180023921648</Real>
+    <Real>347.87579191822715</Real>
+    <Real>367.16186152737203</Real>
+  </Sequence>
+  <Sequence Name="vdwV">
+    <Int Name="Length">20</Int>
+    <Real>1485.5978034037225</Real>
+    <Real>1485.5232818598361</Real>
+    <Real>1485.5822530375947</Real>
+    <Real>1485.5624341918467</Real>
+    <Real>1485.5331103894625</Real>
+    <Real>1485.4966061296341</Real>
+    <Real>1485.4520958016369</Real>
+    <Real>1485.3993917104976</Real>
+    <Real>1485.3386705914425</Real>
+    <Real>1485.2698164975318</Real>
+    <Real>1485.1929023625862</Real>
+    <Real>1485.1078874529094</Real>
+    <Real>1485.0147801620919</Real>
+    <Real>1484.9135917332221</Real>
+    <Real>1484.8043115803214</Real>
+    <Real>1484.6869458921528</Real>
+    <Real>1484.5614956881716</Real>
+    <Real>1484.4279650939966</Real>
+    <Real>1484.286355818351</Real>
+    <Real>1484.1366694679941</Real>
+  </Sequence>
+  <Sequence Name="vdwFDV0">
+    <Int Name="Length">20</Int>
+    <Real>177.99175372254777</Real>
+    <Real>-171.1585638805546</Real>
+    <Real>1485.5978034037225</Real>
+    <Real>0</Real>
+    <Real>6.8331898419931889</Real>
+    <Real>-45.228373260314619</Real>
+    <Real>1485.5232818598361</Real>
+    <Real>0</Real>
+    <Real>-38.39518341832143</Real>
+    <Real>96.13169226029126</Real>
+    <Real>1485.5822530375947</Real>
+    <Real>0</Real>
+    <Real>57.736508841969837</Real>
+    <Real>20.336881365707455</Real>
+    <Real>1485.5624341918467</Real>
+    <Real>0</Real>
+    <Real>78.073390207677292</Real>
+    <Real>18.870220437701136</Real>
+    <Real>1485.5331103894625</Real>
+    <Real>0</Real>
+  </Sequence>
+</ReferenceData>
