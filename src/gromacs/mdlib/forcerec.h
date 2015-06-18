@@ -43,6 +43,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/tables/tables.h"
 #include "gromacs/timing/wallcycle.h"
 
 /*! \brief Create a new forcerec structure */
@@ -78,10 +79,12 @@ forcerec_set_ranges(t_forcerec *fr,
  * Initializes the tables in the interaction constant data structure.
  * \param[in] fp   File for debugging output
  * \param[in] ic   Structure holding the table constant
+ * \param[in] interaction_tables Class holding tables for non bonded forces
  * \param[in] rtab The additional distance to add to tables
  */
 void init_interaction_const_tables(FILE                   *fp,
                                    interaction_const_t    *ic,
+                                   gmx::InteractionTables *interaction_tables,
                                    real                    rtab);
 
 /*! \brief Initialize forcerec structure.
@@ -100,9 +103,11 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  tabpfn      Table potential file for proper dihedrals
  * \param[in]  tabbfn      Table potential file for bonds
  * \param[in]  nbpu_opt    Nonbonded Processing Unit (GPU/CPU etc.)
+ * \param[in]  interaction_tables Class holding tables for non bonded forces
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
+
 void init_forcerec(FILE                   *fplog,
                    const output_env_t      oenv,
                    t_forcerec             *fr,
@@ -116,6 +121,7 @@ void init_forcerec(FILE                   *fplog,
                    const char             *tabpfn,
                    const char             *tabbfn,
                    const char             *nbpu_opt,
+                   gmx::InteractionTables *interaction_tables,
                    gmx_bool                bNoSolvOpt,
                    real                    print_force);
 

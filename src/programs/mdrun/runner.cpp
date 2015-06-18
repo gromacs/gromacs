@@ -684,6 +684,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
     gmx_bool                  bUseGPU            = FALSE;
+    gmx::InteractionTables   *interaction_tables = new(gmx::InteractionTables);
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -1163,6 +1164,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                       opt2fn("-tablep", nfile, fnm),
                       opt2fn("-tableb", nfile, fnm),
                       nbpu_opt,
+                      interaction_tables,
                       FALSE,
                       pforce);
 
@@ -1336,6 +1338,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      nstepout, inputrec, mtop,
                                      fcd, state,
                                      mdatoms, nrnb, wcycle, ed, fr,
+                                     interaction_tables,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                      membed,
                                      cpt_period, max_hours,
