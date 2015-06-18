@@ -61,7 +61,6 @@
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/qmmm.h"
-#include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -79,6 +78,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/tables/tables.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1869,7 +1869,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
         snew_aligned(ic->tabq_coul_F, ic->tabq_size, 32);
         snew_aligned(ic->tabq_coul_V, ic->tabq_size, 32);
         table_spline3_fill_ewald_lr(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, v_q_ewald_lr);
+                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_q, &v_q_ewald_lr);
     }
 
     if (EVDW_PME(ic->vdwtype))
@@ -1878,7 +1878,7 @@ static void init_ewald_f_table(interaction_const_t *ic,
         snew_aligned(ic->tabq_vdw_F, ic->tabq_size, 32);
         snew_aligned(ic->tabq_vdw_V, ic->tabq_size, 32);
         table_spline3_fill_ewald_lr(ic->tabq_vdw_F, ic->tabq_vdw_V, ic->tabq_vdw_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, v_lj_ewald_lr);
+                                    ic->tabq_size, 1/ic->tabq_scale, ic->ewaldcoeff_lj, &v_lj_ewald_lr);
     }
 }
 
