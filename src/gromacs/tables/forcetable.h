@@ -50,29 +50,10 @@ typedef double (*real_space_grid_contribution_computer)(double, double);
  * should calculate the grid contribution for electrostatics or LJ.
  */
 
-void table_spline3_fill_ewald_lr(real                                 *table_F,
-                                 real                                 *table_V,
-                                 real                                 *table_FDV0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr);
-/* Fill tables of ntab points with spacing dr with the ewald long-range
- * (mesh) force.
- * There are three separate tables with format FDV0, F, and V.
- * This function interpolates the Ewald mesh potential contribution
- * with coefficient beta using a quadratic spline.
- * The force can then be interpolated linearly.
+bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
+/* Return a table for bonded interactions,
+ * angle should be: bonds 0, angles 1, dihedrals 2
  */
-
-real ewald_spline3_table_scale(const interaction_const_t *ic);
-/* Return the scaling for the Ewald quadratic spline tables. */
-
-double v_q_ewald_lr(double beta, double r);
-/* Return the real space grid contribution for Ewald*/
-
-double v_lj_ewald_lr(double beta, double r);
-/* Return the real space grid contribution for LJ-Ewald*/
 
 t_forcetable make_tables(FILE *fp,
                          const t_forcerec *fr,
