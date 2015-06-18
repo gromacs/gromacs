@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
 
 CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
 {
-    gmx::init(argc, argv);
+    gmx::mpiInit(argc, argv);
     GMX_RELEASE_ASSERT(!g_commandLineContext,
                        "initForCommandLine() calls cannot be nested");
 #ifdef GMX_LIB_MPI
@@ -132,7 +132,7 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
 
 void finalizeForCommandLine()
 {
-    gmx::finalize();
+    gmx::mpiFinalize();
     setProgramContext(NULL);
     g_commandLineContext.reset();
 }
