@@ -51,14 +51,14 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <string.h>
-
 #ifdef GMX_NATIVE_WINDOWS
 #include <windows.h>
 #else
 #include <unistd.h>
 #endif
+
+#include <cerrno>
+#include <cstring>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -811,8 +811,6 @@ static void imd_sync_nodes(t_inputrec *ir, t_commrec *cr, double t)
 {
     int              new_nforces = 0;
     t_gmx_IMD_setup *IMDsetup;
-    int              start, end, i;
-
 
     IMDsetup = ir->imd->setup;
 

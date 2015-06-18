@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ewald">
+    <Int Name="Length">20</Int>
+    <Real>3.3599194285472702</Real>
+    <Real>3.2862675945912745</Real>
+    <Real>3.1698781319128244</Real>
+    <Real>3.0192804542396301</Real>
+    <Real>2.8446225346140608</Real>
+    <Real>2.6563607080761069</Real>
+    <Real>2.464103160257419</Real>
+    <Real>2.2757849455740886</Real>
+    <Real>2.0972493247171644</Real>
+    <Real>1.9322102929506215</Real>
+    <Real>1.7825010636788368</Real>
+    <Real>1.6484841693928844</Real>
+    <Real>1.5295066670649062</Real>
+    <Real>1.42431504763381</Real>
+    <Real>1.3313830445510917</Real>
+    <Real>1.2491393576291936</Real>
+    <Real>1.176105105479248</Real>
+    <Real>1.1109618525111771</Real>
+    <Real>1.0525729933895143</Real>
+    <Real>0.99997790950300136</Real>
+  </Sequence>
+</ReferenceData>

@@ -81,19 +81,58 @@ enum {
     ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
-typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
+namespace gmx
+{
+//! Forward declaration to prevent inclusion of header file.
+class InteractionTables;
+
+/*! \brief Integrator algorithm implementation.
+ *
+ * \param[in] fplog               Log file for output
+ * \param[in] cr                  Communication record
+ * \param[in] nfile               Number of files
+ * \param[in] fnm                 Filename structure array
+ * \param[in] oenv                Output information
+ * \param[in] bVerbose            Verbose output or not
+ * \param[in] bCompact            Compact output or not
+ * \param[in] nstglobalcomm       How often global communication is done
+ * \param[in] vsite               Virtual site information
+ * \param[in] constr              Constraint information
+ * \param[in] stepout             How often we writen to the console
+ * \param[in] inputrec            Input record with mdp options
+ * \param[in] top_global          Molecular topology for the whole system
+ * \param[in] fcd                 Force and constraint data
+ * \param[in] state_global        The state (x, v, f, box etc.) of the whole system
+ * \param[in] mdatoms             Structure containing atom information
+ * \param[in] nrnb                Accounting for floating point operations
+ * \param[in] wcycle              Wall cycle timing information
+ * \param[in] ed                  Essential dynamics sampling information
+ * \param[in] fr                  Force record with cut-off information and more
+ * \param[in] interaction_tables  Tabulated interactions
+ * \param[in] repl_ex_nst         How often we do replica exchange (in steps)
+ * \param[in] repl_ex_nex         How many replicas we have
+ * \param[in] repl_ex_seed        The seed for Monte Carlo swaps
+ * \param[in] membed              Membrane embedding information
+ * \param[in] cpt_period          How often to checkpoint the simulation
+ * \param[in] max_hours           Maximume length of the simulation (wall time)
+ * \param[in] imdport             Interactive MD port (socket)
+ * \param[in] Flags               Flags to control mdrun
+ * \param[in] walltime_accounting More timing information
+ */
+typedef double gmx_integrator_t (FILE *fplog, t_commrec *cr,
                                  int nfile, const t_filenm fnm[],
                                  const output_env_t oenv, gmx_bool bVerbose,
                                  gmx_bool bCompact, int nstglobalcomm,
                                  gmx_vsite_t *vsite, gmx_constr_t constr,
                                  int stepout,
                                  t_inputrec *inputrec,
-                                 gmx_mtop_t *mtop, t_fcdata *fcd,
-                                 t_state *state,
+                                 gmx_mtop_t *top_global, t_fcdata *fcd,
+                                 t_state *state_global,
                                  t_mdatoms *mdatoms,
                                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                  gmx_edsam_t ed,
                                  t_forcerec *fr,
+                                 InteractionTables *interaction_tables,
                                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                  gmx_membed_t membed,
                                  real cpt_period, real max_hours,
@@ -103,27 +142,76 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
 
 /* ROUTINES from md.c */
 
+//! The normal molecular dynamics integrator.
 gmx_integrator_t do_md;
-
 
 /* ROUTINES from minimize.c */
 
+//! Steepest descents energy minimization
 gmx_integrator_t do_steep;
-/* Do steepest descents EM */
 
+//! Conjugate gradient energy minimization
 gmx_integrator_t do_cg;
-/* Do conjugate gradient EM */
 
+//! Conjugate gradient  energy minimization using the L-BFGS algorithm
 gmx_integrator_t do_lbfgs;
-/* Do conjugate gradient L-BFGS */
 
+//! Normal mode analysis
 gmx_integrator_t do_nm;
-/* Do normal mode analysis */
 
 /* ROUTINES from tpi.c */
 
+//! Test particle insertion.
 gmx_integrator_t do_tpi;
-/* Do test particle insertion */
+
+/*! \brief Driver routine, that calls the different methods.
+ *
+ * \param[in] hw_opt          Hardware options
+ * \param[in] fplog           Log file for messages
+ * \param[in] cr              Communication record
+ * \param[in] nfile           Number of files
+ * \param[in] fnm             The filename structures
+ * \param[in] oenv            Output environment parameters
+ * \param[in] bVerbose        Verbosity on or off
+ * \param[in] bCompact        Compact log files on or off
+ * \param[in] nstglobalcomm   Number of steps between global communication
+ * \param[in] ddxyz           The division of the box into subboxes
+ * \param[in] dd_node_order   Directive for order of the nodes in domain decomposition
+ * \param[in] rdd             Distance to add to subbox size
+ * \param[in] rconstr         Distance to do with constraints
+ * \param[in] dddlb_opt       Another domain decomposition option
+ * \param[in] dlb_scale       And another one
+ * \param[in] ddcsx           A string to do with DD in X direction
+ * \param[in] ddcsy           A string to do with DD in Y direction
+ * \param[in] ddcsz           A string to do with DD in Z direction
+ * \param[in] nbpu_opt        Another option
+ * \param[in] nstlist_cmdline Command line option to do with neighborsearching
+ * \param[in] nsteps_cmdline  Command line option about number of steps
+ * \param[in] nstepout        How often to write to the console
+ * \param[in] resetstep       How often to reset SOMETHING
+ * \param[in] nmultisim       Number of quasi-independent simulations to start
+ * \param[in] repl_ex_nst     Number of steps between replica exchanges
+ * \param[in] repl_ex_nex     Number of replica's
+ * \param[in] repl_ex_seed    Random number seed for Monte Carlo
+ * \param[in] pforce          The P-Force
+ * \param[in] cpt_period      Checkpointing period
+ * \param[in] max_hours       Max length of simulation in wall time
+ * \param[in] imdport         The port for interactive MD
+ * \param[in] Flags           More magic flags.
+ */
+int mdrunner(gmx_hw_opt_t *hw_opt,
+             FILE *fplog, t_commrec *cr, int nfile,
+             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+             gmx_bool bCompact, int nstglobalcomm, ivec ddxyz, int dd_node_order,
+             real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
+             const char *ddcsx, const char *ddcsy, const char *ddcsz,
+             const char *nbpu_opt, int nstlist_cmdline,
+             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
+             int nmultisim, int repl_ex_nst, int repl_ex_nex,
+             int repl_ex_seed, real pforce, real cpt_period, real max_hours,
+             int imdport, unsigned long Flags);
+
+} // namespace gmx
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
@@ -148,18 +236,6 @@ void set_state_entries(t_state *state, const t_inputrec *ir);
 void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop);
 
-int mdrunner(gmx_hw_opt_t *hw_opt,
-             FILE *fplog, t_commrec *cr, int nfile,
-             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm, ivec ddxyz, int dd_node_order,
-             real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
-             const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt, int nstlist_cmdline,
-             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
-             int nmultisim, int repl_ex_nst, int repl_ex_nex,
-             int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             int imdport, unsigned long Flags);
-/* Driver routine, that calls the different methods */
 
 void bcast_state(const struct t_commrec *cr, t_state *state);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
