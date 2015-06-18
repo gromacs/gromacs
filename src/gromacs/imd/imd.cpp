@@ -51,18 +51,19 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <string.h>
-
 #ifdef GMX_NATIVE_WINDOWS
 #include <windows.h>
 #else
 #include <unistd.h>
 #endif
 
+#include <cerrno>
+#include <cstring>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/imd/gmx_htonl.h"
 #include "gromacs/imd/imdsocket.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/mdrun.h"
@@ -243,17 +244,17 @@ const char *eIMDType_names[IMD_NR + 1] = {
 static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t length)
 {
     /* We (ab-)use htonl network function for the correct endianness */
-    header->type   = htonl((gmx_int32_t) type);
-    header->length = htonl(length);
+    header->type   = gmx_htonl((gmx_int32_t) type);
+    header->length = gmx_htonl(length);
 }
 
 
-/*! \brief Swaps the endianess of the header. */
+/*! \brief Swaps the endianness of the header. */
 static void swap_header(IMDHeader *header)
 {
     /* and vice versa... */
-    header->type   = ntohl(header->type);
-    header->length = ntohl(header->length);
+    header->type   = gmx_ntohl(header->type);
+    header->length = gmx_ntohl(header->length);
 }
 
 
@@ -811,8 +812,6 @@ static void imd_sync_nodes(t_inputrec *ir, t_commrec *cr, double t)
 {
     int              new_nforces = 0;
     t_gmx_IMD_setup *IMDsetup;
-    int              start, end, i;
-
 
     IMDsetup = ir->imd->setup;
 

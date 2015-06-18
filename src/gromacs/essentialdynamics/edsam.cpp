@@ -2094,7 +2094,7 @@ static void do_radacc(rvec *xcoll, t_edpar *edi)
     if (rad < edi->vecs.radacc.radius)
     {
         ratio = edi->vecs.radacc.radius/rad - 1.0;
-        rad   = edi->vecs.radacc.radius;
+        //rad   = edi->vecs.radacc.radius;
     }
     else
     {
@@ -2135,7 +2135,7 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
     if (edi->buf->do_radcon != NULL)
     {
         bFirst = FALSE;
-        loc    = edi->buf->do_radcon;
+        //loc    = edi->buf->do_radcon;
     }
     else
     {
@@ -2189,14 +2189,14 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
 
     if (rad != edi->vecs.radcon.radius)
     {
-        rad = 0.0;
+        //rad = 0.0;
         for (i = 0; i < edi->vecs.radcon.neig; i++)
         {
             /* calculate the projections, radius */
             loc->proj[i] = projectx(edi, xcoll, edi->vecs.radcon.vec[i]);
-            rad         += pow(loc->proj[i] - edi->vecs.radcon.refproj[i], 2);
+            //rad         += pow(loc->proj[i] - edi->vecs.radcon.refproj[i], 2);
         }
-        rad = sqrt(rad);
+        //rad = sqrt(rad);
     }
 }
 
@@ -2443,7 +2443,7 @@ static void add_to_string_aligned(char **str, char *buf)
 }
 
 
-static void nice_legend(const char ***setname, int *nsets, char **LegendStr, char *value, char *unit, char EDgroupchar)
+static void nice_legend(const char ***setname, int *nsets, char **LegendStr, const char *value, const char *unit, char EDgroupchar)
 {
     char tmp[STRLEN], tmp2[STRLEN];
 
@@ -2710,7 +2710,7 @@ void init_edsam(const gmx_mtop_t *mtop,
         /* Reset pointer to first ED data set which contains the actual ED data */
         edi = ed->edpar;
         /* Loop over all ED/flooding data sets (usually only one, though) */
-        for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
+        for (nr_edi = 1; (NULL != edi) && (nr_edi <= EDstate->nED); nr_edi++)
         {
             /* For multiple ED groups we use the output frequency that was specified
              * in the first set */
@@ -2915,7 +2915,7 @@ void init_edsam(const gmx_mtop_t *mtop,
 
         /* Loop over all ED data sets (usually only one, though) */
         edi = ed->edpar;
-        for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
+        for (nr_edi = 1; (NULL != edi) && (nr_edi <= EDstate->nED); nr_edi++)
         {
             edi->sref.anrs_loc = edi->sref.anrs;
             edi->sav.anrs_loc  = edi->sav.anrs;
