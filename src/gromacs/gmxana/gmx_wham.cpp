@@ -44,6 +44,7 @@
 
 #include "config.h"
 
+#include <algorithm>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
