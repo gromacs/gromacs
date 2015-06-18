@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="tableSize">8</Int>
+  <Real Name="tableSpacing">0.029999999999999999</Real>
+  <Real Name="distance">0.1764</Real>
+  <Real Name="energy">0.030420000000000003</Real>
+  <Real Name="force">-0.30158400000000002</Real>
+</ReferenceData>

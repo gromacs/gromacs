@@ -56,7 +56,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/legacyheaders/calcgrid.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sim_util.h"
@@ -899,17 +898,17 @@ static void continue_pme_loadbal(pme_load_balancing_t *pme_lb,
     pme_lb->start            = pme_lb->lower_limit;
 }
 
-void pme_loadbal_do(pme_load_balancing_t *pme_lb,
-                    t_commrec            *cr,
-                    FILE                 *fp_err,
-                    FILE                 *fp_log,
-                    t_inputrec           *ir,
-                    t_forcerec           *fr,
-                    t_state              *state,
-                    gmx_wallcycle_t       wcycle,
-                    gmx_int64_t           step,
-                    gmx_int64_t           step_rel,
-                    gmx_bool             *bPrinting)
+void pme_loadbal_do(pme_load_balancing_t   *pme_lb,
+                    t_commrec              *cr,
+                    FILE                   *fp_err,
+                    FILE                   *fp_log,
+                    t_inputrec             *ir,
+                    t_forcerec             *fr,
+                    t_state                *state,
+                    gmx_wallcycle_t         wcycle,
+                    gmx_int64_t             step,
+                    gmx_int64_t             step_rel,
+                    gmx_bool               *bPrinting)
 {
     int    n_prev;
     double cycles_prev;

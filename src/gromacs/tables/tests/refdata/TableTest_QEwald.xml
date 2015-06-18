@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ewald">
+    <Int Name="Length">40</Int>
+    <Real>3.3851375012865379</Real>
+    <Real>3.3848836331102818</Real>
+    <Real>3.3841222341735433</Real>
+    <Real>3.3828539209221082</Real>
+    <Real>3.3810797196654216</Real>
+    <Real>3.3788010649291227</Real>
+    <Real>3.3760197971542292</Real>
+    <Real>3.3727381597486232</Real>
+    <Real>3.3689587954980018</Real>
+    <Real>3.3646847423450761</Real>
+    <Real>3.3599194285472702</Real>
+    <Real>3.3546666672246941</Real>
+    <Real>3.3489306503115963</Real>
+    <Real>3.3427159419259147</Real>
+    <Real>3.3360274711729079</Real>
+    <Real>3.3288705244001462</Real>
+    <Real>3.3212507369224</Real>
+    <Real>3.3131740842361528</Real>
+    <Real>3.3046468727445864</Real>
+    <Real>3.2956757300149588</Real>
+    <Real>3.2862675945912745</Real>
+    <Real>3.0192804542396301</Real>
+    <Real>2.6563607080761069</Real>
+    <Real>2.2757849455740886</Real>
+    <Real>1.9322102929506215</Real>
+    <Real>1.6484841693928844</Real>
+    <Real>1.42431504763381</Real>
+    <Real>1.2491393576291936</Real>
+    <Real>1.1109618525111771</Real>
+    <Real>0.99997790950300136</Real>
+    <Real>0.90908812935473038</Real>
+    <Real>0.83333303678083903</Real>
+    <Real>0.76923074246750101</Real>
+    <Real>0.71428571224607551</Real>
+    <Real>0.66666666653558926</Real>
+    <Real>0.6249999999929049</Real>
+    <Real>0.58823529411732389</Real>
+    <Real>0.55555555555554315</Real>
+    <Real>0.52631578947368374</Real>
+    <Real>0.5</Real>
+  </Sequence>
+</ReferenceData>
