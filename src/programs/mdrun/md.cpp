@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "md.h"
+
 #include "config.h"
 
 #include <math.h>
@@ -154,22 +156,45 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
-double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
-             int nstglobalcomm,
-             gmx_vsite_t *vsite, gmx_constr_t constr,
-             int stepout, t_inputrec *ir,
-             gmx_mtop_t *top_global,
-             t_fcdata *fcd,
-             t_state *state_global,
-             t_mdatoms *mdatoms,
-             t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed, t_forcerec *fr,
-             int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t membed,
-             real cpt_period, real max_hours,
-             int imdport,
-             unsigned long Flags,
-             gmx_walltime_accounting_t walltime_accounting)
+/*! \libinternal
+    \copydoc integrator_t (FILE *fplog, t_commrec *cr,
+                           int nfile, const t_filenm fnm[],
+                           const output_env_t oenv, gmx_bool bVerbose,
+                           gmx_bool bCompact, int nstglobalcomm,
+                           gmx_vsite_t *vsite, gmx_constr_t constr,
+                           int stepout,
+                           t_inputrec *inputrec,
+                           gmx_mtop_t *top_global, t_fcdata *fcd,
+                           t_state *state_global,
+                           t_mdatoms *mdatoms,
+                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                           gmx_edsam_t ed,
+                           t_forcerec *fr,
+                           InteractionTables *interaction_tables,
+                           int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                           gmx_membed_t membed,
+                           real cpt_period, real max_hours,
+                           int imdport,
+                           unsigned long Flags,
+                           gmx_walltime_accounting_t walltime_accounting)
+ */
+double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
+                  const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
+                  int nstglobalcomm,
+                  gmx_vsite_t *vsite, gmx_constr_t constr,
+                  int stepout, t_inputrec *ir,
+                  gmx_mtop_t *top_global,
+                  t_fcdata *fcd,
+                  t_state *state_global,
+                  t_mdatoms *mdatoms,
+                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                  gmx_edsam_t ed, t_forcerec *fr,
+                  gmx::InteractionTables *interaction_tables,
+                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t membed,
+                  real cpt_period, real max_hours,
+                  int imdport,
+                  unsigned long Flags,
+                  gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_mdoutf_t    outf = NULL;
     gmx_int64_t     step, step_rel;
@@ -758,7 +783,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             pme_loadbal_do(pme_loadbal, cr,
                            (bVerbose && MASTER(cr)) ? stderr : NULL,
                            fplog,
-                           ir, fr, state, wcycle,
+                           ir, fr, state,
+                           interaction_tables, wcycle,
                            step, step_rel,
                            &bPMETunePrinting);
         }

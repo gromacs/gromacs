@@ -246,7 +246,10 @@ static void sort_inp(int ninp, t_inpfile inp[])
             inp[i].count = mm++;
         }
     }
-    gmx_qsort(inp, ninp, static_cast<size_t>(sizeof(inp[0])), inp_comp);
+    if (ninp > 2)
+    {
+        gmx_qsort(inp, ninp, static_cast<size_t>(sizeof(inp[0])), inp_comp);
+    }
 }
 
 void write_inpfile(const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUnknown,
