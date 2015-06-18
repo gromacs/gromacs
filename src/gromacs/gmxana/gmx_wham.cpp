@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <algorithm>
 #include <sstream>
 
 #include "gromacs/commandline/pargs.h"
