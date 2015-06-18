@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,49 +49,60 @@
 extern "C" {
 #endif
 
-#define ANGSTROM     (1e-10)                               /* Old...	*/
-#define KILO         (1e3)                                 /* Thousand	*/
-#define NANO         (1e-9)                                /* A Number	*/
-#define PICO         (1e-12)                               /* A Number	*/
-#define A2NM         (ANGSTROM/NANO)                       /* NANO	        */
-#define NM2A         (NANO/ANGSTROM)                       /* 10.0		*/
-#define RAD2DEG      (180.0/M_PI)                          /* Conversion	*/
-#define DEG2RAD      (M_PI/180.0)                          /* id		*/
-#define CAL2JOULE    (4.184)                               /* id		*/
-#define E_CHARGE         (1.60217733e-19)                  /* Coulomb	*/
+#define ANGSTROM         (1e-10)                           /* Old...	*/
+#define KILO             (1e3)                             /* Thousand	*/
+#define NANO             (1e-9)                            /* A Number	*/
+#define PICO             (1e-12)                           /* A Number	*/
+#define A2NM             (ANGSTROM/NANO)                   /* NANO	        */
+#define NM2A             (NANO/ANGSTROM)                   /* 10.0		*/
+#define RAD2DEG          (180.0/M_PI)                      /* Conversion	*/
+#define DEG2RAD          (M_PI/180.0)                      /* id		*/
+#define CAL2JOULE        (4.184)                           /* id		*/
+#define E_CHARGE         (1.602176565e-19)                 /* Coulomb, NIST 2010 CODATA */
 
-#define AMU              (1.6605402e-27)                   /* kg           */
-#define BOLTZMANN    (1.380658e-23)                        /* (J/K)	*/
-#define AVOGADRO     (6.0221367e23)                        /* ()		*/
+#define AMU              (1.660538921e-27)                 /* kg, NIST 2010 CODATA  */
+#define BOLTZMANN        (1.3806488e-23)                   /* (J/K, NIST 2010 CODATA */
+#define AVOGADRO         (6.02214129e23)                   /* no unit, NIST 2010 CODATA */
 #define RGAS             (BOLTZMANN*AVOGADRO)              /* (J/(mol K))  */
 #define BOLTZ            (RGAS/KILO)                       /* (kJ/(mol K)) */
 #define FARADAY          (E_CHARGE*AVOGADRO)               /* (C/mol)      */
 #define ELECTRONVOLT     (E_CHARGE*AVOGADRO/KILO)          /* (kJ/mol)   */
-#define PLANCK1          (6.6262e-34)                      /* J s */
-#define PLANCK           (6.6262e-34*AVOGADRO/(PICO*KILO)) /* (kJ/mol) ps */
+#define PLANCK1          (6.62606957e-34)                  /* J s, NIST 2010 CODATA */
+#define PLANCK           (PLANCK1*AVOGADRO/(PICO*KILO))    /* (kJ/mol) ps */
 
-#define EPSILON0     (5.72765E-4)                          /* (e^2 / Na (kJ nm))
-                                                              == (e^2 mol/(kJ nm)) */
+#define EPSILON0_SI      (8.854187817e-12)                 /* F/m,  NIST 2010 CODATA */
+/* Epsilon in our MD units: (e^2 / Na (kJ nm)) == (e^2 mol/(kJ nm)) */
+#define EPSILON0         (EPSILON0_SI*NANO*KILO)/(E_CHARGE*E_CHARGE*AVOGADRO)
 
-#define SPEED_OF_LIGHT   (2.9979245800E05)                 /* nm/ps                */
-#define ATOMICMASS_keV   (940000.0)                        /* Atomic mass in keV   */
-#define ELECTRONMASS_keV (512.0)                           /* Electron mas in keV  */
+#define SPEED_OF_LIGHT   (2.99792458E05)                   /* nm/ps, NIST 2010 CODATA */
+#define ATOMICMASS_keV   (931494.061)                      /* Atomic mass in keV, NIST 2010 CODATA   */
+#define ELECTRONMASS_keV (510.998928)                      /* Electron mas in keV, NIST 2010 CODATA  */
 
-/* Improved accuracy (PL & EL, 20090421) */
-#define FACEL        (332.0636930*CAL2JOULE) /* (10 * (ONE_4PI_EPS0)) */
-#define ONE_4PI_EPS0     (FACEL*0.1)         /* 1/(4*pi*e0)*/
-#define PRESFAC           (16.6054)          /* bar / pressure unity */
-#define ENM2DEBYE         48.0321            /* Convert electron nm  *
-                                              * to debye             */
-#define DEBYE2ENM         0.02081941
+#define RYDBERG          (1.0973731568539e-02)             /* nm^-1, NIST 2010 CODATA */
+
+#define ONE_4PI_EPS0     (1.0/(4.0*M_PI*EPSILON0))
+#define FACEL            10.0*ONE_4PI_EPS0
+
+/* Pressure in MD units is:
+ * 1 bar = 1e5 Pa = 1e5 kg m^-1 s^-2 = 1e-28 kg nm^-1 ps^-2 = 1e-28 / AMU amu nm^1 ps ^2
+ */
+#define BAR_MDUNITS      (1e5*NANO*PICO*PICO/AMU)
+#define PRESFAC          (1.0/BAR_MDUNITS)
+
+/* DEBYE2ENM should be (1e-21*PICO)/(SPEED_OF_LIGHT*E_CHARGE*NANO*NANO),
+ * but we need to factor out some of the exponents to avoid single-precision overflows.
+ */
+#define DEBYE2ENM        (1e-15/(SPEED_OF_LIGHT*E_CHARGE))
+#define ENM2DEBYE        (1.0/DEBYE2ENM)
+
 /* to convert from a acceleration in (e V)/(amu nm) */
 /* FIELDFAC is also Faraday's constant and E_CHARGE/(1e6 AMU) */
-#define FIELDFAC          (FARADAY/KILO)
+#define FIELDFAC         (FARADAY/KILO)
 
 /* to convert AU to MD units: */
-#define HARTREE2KJ        4.3597482e-21
-#define BOHR2NM           0.0529177249
-#define HARTREE_BOHR2MD   (HARTREE2KJ*AVOGADRO/BOHR2NM)
+#define HARTREE2KJ       ((2.0*RYDBERG*PLANCK*SPEED_OF_LIGHT)/AVOGADRO)
+#define BOHR2NM          (0.052917721092)                  /* nm^-1, NIST 2010 CODATA */
+#define HARTREE_BOHR2MD  (HARTREE2KJ*AVOGADRO/BOHR2NM)
 
 
 /* The four basic units */

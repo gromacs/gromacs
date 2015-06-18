@@ -67,7 +67,9 @@ is the notation commonly used. If you encounter an error, let us know.
 vicinity of unity for most relevant molecular quantities. Let us call
 them {\em MD units}. The basic units in this system are nm, ps, K,
 electron charge (e) and atomic mass unit (u), see
-\tabref{basicunits}.
+\tabref{basicunits}. The values used in {\gromacs}  are taken from the
+CODATA Internationally recommended 2010 values of 
+fundamental physical constants (see \verb+http://nist.gov+).
 \begin{table}
 \centerline{
 \begin{tabular}{|l|c|l|}
@@ -75,13 +77,11 @@ electron charge (e) and atomic mass unit (u), see
 Quantity	& Symbol&  Unit						\\
 \hline			
 length		&  r	&  nm $= 10^{-9}$ m				\\
-mass		&  m	&  u (atomic mass unit)	$=$ 
-				1.6605402(10)$\times 10^{-27}$ kg	\\
-		&	&  ($1/12$ the mass of a $^{12}$C atom)		\\
-		&	&  $1.6605402(10)\times 10^{-27}$ kg		\\
+mass		&  m	&  u (unified atomic mass unit)	$=$ 
+				$1.660\,538\,921(73) \times 10^{-27}$ kg	\\
 time		&  t	&  ps $= 10^{-12}$ s				\\
-charge		&  q	&  {\it e} $=$ electronic charge $=
-				1.60217733(49)\times 10^{-19}$ C	\\
+charge		&  q	&  {\it e} $=$ elementary charge $=
+				1.602\,176\,565(35)\times 10^{-19}$ C	\\
 temperature	&  T	&  K  						\\
 \dline
 \end{tabular}
@@ -103,14 +103,14 @@ energy		& $E,V$	   & kJ~mol$^{-1}$			\\
 Force		& $\ve{F}$ & kJ~mol$^{-1}$~nm$^{-1}$		\\
 pressure	& $p$	   & kJ~mol$^{-1}$~nm$^{-3} =
 				10^{30}/N_{AV}$~Pa		\\
-        	&	   & $1.660\,54\times 10^6$~Pa $= 
-				16.6054$~bar         		\\
+        	&	   & $1.660\,538\,921\times 10^6$~Pa $= 
+				16.605\,389\,21$~bar         		\\
 velocity	& $v$	   & nm~ps$^{-1} = 1000$ m s$^{-1}$		\\
 dipole moment   & $\mu$	   & \emph{e}~nm                		\\ 
 electric potential& $\Phi$ & kJ~mol$^{-1}$~\emph{e}$^{-1} = 
-				0.010\,364\,272(3)$ Volt   	\\
+				0.010\,364\,269\,19(32)$ Volt   	\\
 electric field	& $E$	   & kJ~mol$^{-1}$~nm$^{-1}$~\emph{e}$^{-1} =
-				1.036\,427\,2(3) \times 10^7$~V m$^{-1}$	\\
+ 				1.036\,426\,919(32) \times 10^7$~V m$^{-1}$	\\
 \dline
 \end{tabular}
 }
@@ -119,7 +119,7 @@ electric field	& $E$	   & kJ~mol$^{-1}$~nm$^{-1}$~\emph{e}$^{-1} =
 \end{table}
 
 The {\bf electric conversion factor} $f=\frac{1}{4 \pi
-\varepsilon_o}=138.935\,485(9)$ kJ~mol$^{-1}$~nm~e$^{-2}$. It relates
+\varepsilon_o}=138.935\,457\,8(39)$ kJ~mol$^{-1}$~nm~e$^{-2}$. It relates
 the mechanical quantities to the electrical quantities as in
 \beq
  V = f \frac{q^2}{r} \mbox{\ \ or\ \ } F = f \frac{q^2}{r^2}
@@ -139,7 +139,7 @@ With these definitions, $q\Phi$ is an energy and $q\ve{E}$ is a
 force. The units are those given in \tabref{derivedunits}:
 about 10 mV for potential. Thus, the potential of an electronic charge
 at a distance of 1 nm equals $f \approx 140$ units $\approx
-1.4$~V. (exact value: 1.439965 V)
+1.4$~V. (exact value: $1.439\,964\,5$ V)
 
 {\bf Note} that these units are mutually consistent; changing any of the
 units is likely to produce inconsistencies and is therefore {\em
@@ -156,18 +156,18 @@ In terms of the MD units, the usual physical constants take on
 different values (see \tabref{consts}). All quantities are per mol rather than per
 molecule. There is no distinction between Boltzmann's constant $k$ and
 the gas constant $R$: their value is
-$0.008\,314\,51$~kJ~mol$^{-1}$~K$^{-1}$.
+$0.008\,314\,462\,1$~kJ~mol$^{-1}$~K$^{-1}$.
 \begin{table}
 \centerline{
 \begin{tabular}{|c|l|l|}
 \dline
 Symbol	& Name			& Value					\\
 \hline
-$N_{AV}$& Avogadro's number 	& $6.022\,136\,7(36)\times 10^{23}$  mol$^{-1}$	\\
-$R$   	& gas constant 	& $8.314\,510(70)\times 10^{-3}$~kJ~mol$^{-1}$~K$^{-1}$	\\
+$N_{AV}$& Avogadro's number 	& $6.022\,141\,29(27)\times 10^{23}$  mol$^{-1}$	\\
+$R$   	& gas constant 	& $8.314\,462\,1(75)\times 10^{-3}$~kJ~mol$^{-1}$~K$^{-1}$	\\
 $k_B$  	& Boltzmann's constant  & \emph{idem}	\\
-$h$	& Planck's constant	& $0.399\,031\,32(24)$~kJ~mol$^{-1}$~ps \\
-$\hbar$	& Dirac's constant	& $0.063\,507\,807(38)$~kJ~mol$^{-1}$~ps \\
+$h$	& Planck's constant	& $0.399\,031\,271(17)$~kJ~mol$^{-1}$~ps \\
+$\hbar$	& Dirac's constant	& $0.063\,507\,799\,3(28)$~kJ~mol$^{-1}$~ps \\
 $c$	& velocity of light	& $299\,792.458$~nm~ps$^{-1}$ \\
 \dline
 \end{tabular}
@@ -182,12 +182,12 @@ use reduced units ({\ie}, setting
 $\epsilon_{ii}=\sigma_{ii}=m_i=k_B=1$ for one type of atoms). This is
 possible. When specifying the input in reduced units, the output will
 also be in reduced units. The one exception is the {\em
-temperature}, which is expressed in $0.008\,314\,51$ reduced
+temperature}, which is expressed in $0.008\,314\,462\,1$ reduced
 units. This is a consequence of using Boltzmann's constant in the
 evaluation of temperature in the code. Thus not $T$, but $k_BT$, is the
 reduced temperature. A {\gromacs} temperature $T=1$ means a reduced
 temperature of $0.008\ldots$ units; if a reduced temperature of 1 is
-required, the {\gromacs} temperature should be 120.2717.
+required, the {\gromacs} temperature should be $120.272\,36$.
 
 In \tabref{reduced} quantities are given for LJ potentials:
 \beq
