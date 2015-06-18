@@ -103,6 +103,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
+
 void init_forcerec(FILE                   *fplog,
                    const output_env_t      oenv,
                    t_forcerec             *fr,
