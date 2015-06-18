@@ -39,6 +39,7 @@
 #include "xdlghi.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
