@@ -661,14 +661,14 @@ int gmx_mdrun(int argc, char *argv[])
         gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
     }
 
-    if (nmultisim > 1)
+    if (nmultisim >= 1)
     {
 #ifndef GMX_THREAD_MPI
         gmx_bool bParFn = (multidir == NULL);
         init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
 #else
-        gmx_fatal(FARGS, "mdrun -multi is not supported with the thread library. "
-                  "Please compile GROMACS with MPI support");
+        gmx_fatal(FARGS, "mdrun -multi or -multidir are not supported with the thread-MPI library. "
+                  "Please compile GROMACS with a proper external MPI library.");
 #endif
     }
 
