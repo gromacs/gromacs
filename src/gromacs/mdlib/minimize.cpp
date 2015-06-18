@@ -82,6 +82,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "forcerec.h"
+
 typedef struct {
     t_state  s;
     rvec    *f;
@@ -948,6 +950,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t gmx_unused ed,
              t_forcerec *fr,
+             gmx::InteractionTables gmx_unused *interaction_tables,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -1574,6 +1577,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                 gmx_edsam_t gmx_unused ed,
                 t_forcerec *fr,
+                gmx::InteractionTables gmx_unused *interaction_tables,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -2383,6 +2387,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                 gmx_edsam_t gmx_unused  ed,
                 t_forcerec *fr,
+                gmx::InteractionTables gmx_unused *interaction_tables,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
@@ -2622,6 +2627,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t  gmx_unused ed,
              t_forcerec *fr,
+             gmx::InteractionTables gmx_unused *interaction_tables,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
