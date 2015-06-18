@@ -76,11 +76,11 @@
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
-    char gmx[6];
-    char main[6];
-    char nter[6];
-    char cter[6];
-    char bter[6];
+    char gmx[7];
+    char main[7];
+    char nter[7];
+    char cter[7];
+    char bter[7];
 } rtprename_t;
 
 
@@ -221,8 +221,19 @@ static void read_rtprename(const char *fname, FILE *fp,
     while (get_a_line(fp, line, STRLEN))
     {
         srenew(rr, n+1);
-        nc = sscanf(line, "%s %s %s %s %s %s",
+        /* line is NULL-terminated and length<STRLEN, so final arg cannot overflow.
+         * For other args, we read up to 6 chars (so we can detect if the length is > 5).
+         * Note that the buffer length has been increased to 7 to allow this.
+         */
+        nc = sscanf(line, "%6s %6s %6s %6s %6s %s",
                     rr[n].gmx, rr[n].main, rr[n].nter, rr[n].cter, rr[n].bter, buf);
+        if (strlen(rr[n].gmx) > 5 || strlen(rr[n].main) > 5 ||
+            strlen(rr[n].nter) > 5 || strlen(rr[n].cter) > 5 || strlen(rr[n].bter) > 5)
+        {
+            gmx_fatal(FARGS, "Residue renaming database '%s' has strings longer than 5 chars in first 5 columns:\n%s",
+                      fname, line);
+        }
+
         if (ncol == 0)
         {
             if (nc != 2 && nc != 5)
