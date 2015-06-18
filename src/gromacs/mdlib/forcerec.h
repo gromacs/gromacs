@@ -43,6 +43,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/tables/tables.h"
 #include "gromacs/timing/wallcycle.h"
 
 /*! \brief Create a new forcerec structure */
@@ -103,6 +104,7 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
+
 void init_forcerec(FILE                   *fplog,
                    const output_env_t      oenv,
                    t_forcerec             *fr,
