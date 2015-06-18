@@ -51,14 +51,14 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <string.h>
-
 #ifdef GMX_NATIVE_WINDOWS
 #include <windows.h>
 #else
 #include <unistd.h>
 #endif
+
+#include <cerrno>
+#include <cstring>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -276,7 +276,7 @@ static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t leng
 }
 
 
-/*! \brief Swaps the endianess of the header. */
+/*! \brief Swaps the endianness of the header. */
 static void swap_header(IMDHeader *header)
 {
     /* and vice versa... */
