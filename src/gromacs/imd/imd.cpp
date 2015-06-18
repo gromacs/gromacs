@@ -56,7 +56,9 @@
 
 #ifdef GMX_NATIVE_WINDOWS
 #include <windows.h>
+#include <Winsock2.h>
 #else
+#include <arpa/inet.h>
 #include <unistd.h>
 #endif
 
@@ -811,8 +813,6 @@ static void imd_sync_nodes(t_inputrec *ir, t_commrec *cr, double t)
 {
     int              new_nforces = 0;
     t_gmx_IMD_setup *IMDsetup;
-    int              start, end, i;
-
 
     IMDsetup = ir->imd->setup;
 

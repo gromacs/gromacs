@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/membedt.h"
+#include "gromacs/tables/tables.h"
 #include "gromacs/timing/wallcycle.h"
 
 #ifdef __cplusplus
@@ -94,6 +95,7 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                  gmx_edsam_t ed,
                                  t_forcerec *fr,
+                                 gmx::InteractionTables *interaction_tables,
                                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                  gmx_membed_t membed,
                                  real cpt_period, real max_hours,
