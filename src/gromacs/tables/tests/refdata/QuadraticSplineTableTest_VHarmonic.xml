@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="tableSize">3</Int>
+  <Real Name="tableSpacing">0.20000000000000001</Real>
+  <Sequence Name="F">
+    <Int Name="Length">4</Int>
+    <Real>-0</Real>
+    <Real>-0.40000000000000002</Real>
+    <Real>-0.79999999999999949</Real>
+    <Real>-1.2000000000000015</Real>
+  </Sequence>
+  <Sequence Name="V">
+    <Int Name="Length">4</Int>
+    <Real>0</Real>
+    <Real>0.040000000000000008</Real>
+    <Real>0.16000000000000003</Real>
+    <Real>0.3600000000000001</Real>
+  </Sequence>
+  <Sequence Name="FDV0">
+    <Int Name="Length">16</Int>
+    <Real>-0</Real>
+    <Real>-0.40000000000000002</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-0.40000000000000002</Real>
+    <Real>-0.39999999999999947</Real>
+    <Real>0.040000000000000008</Real>
+    <Real>0</Real>
+    <Real>-0.79999999999999949</Real>
+    <Real>-0.40000000000000202</Real>
+    <Real>0.16000000000000003</Real>
+    <Real>0</Real>
+    <Real>-1.2000000000000015</Real>
+    <Real>1.2000000000000015</Real>
+    <Real>0.3600000000000001</Real>
+    <Real>0</Real>
+  </Sequence>
+</ReferenceData>
