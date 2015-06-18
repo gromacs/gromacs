@@ -38,7 +38,6 @@
 #ifndef _force_h
 #define _force_h
 
-
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/tgroup.h"
@@ -97,28 +96,6 @@ t_forcerec *mk_forcerec(void);
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
-t_forcetable make_tables(FILE *fp, const output_env_t oenv,
-                         const t_forcerec *fr, gmx_bool bVerbose,
-                         const char *fn, real rtab, int flags);
-/* Return tables for inner loops. When bVerbose the tables are printed
- * to .xvg files
- */
-
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
-/* Return a table for bonded interactions,
- * angle should be: bonds 0, angles 1, dihedrals 2
- */
-
-/* Return a table for GB calculations */
-t_forcetable make_gb_table(const output_env_t oenv,
-                           const t_forcerec  *fr);
-
-/* Read a table for AdResS Thermo Force calculations */
-extern t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
-                                   const t_forcerec *fr,
-                                   const char *fn,
-                                   matrix box);
-
 void pr_forcerec(FILE *fplog, t_forcerec *fr);
 
 void
@@ -134,7 +111,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
  * If bPrintNote==TRUE, prints a note, if necessary, to stderr
  * and fp (if !=NULL) on the master node.
  */
-
 
 gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
                                       const t_commrec  *cr,
@@ -152,37 +128,6 @@ gmx_bool uses_simple_tables(int                        cutoff_scheme,
 /* Returns whether simple tables (i.e. not for use with GPUs) are used
  * with the type of kernel indicated.
  */
-
-void init_interaction_const_tables(FILE                *fp,
-                                   interaction_const_t *ic,
-                                   real                 rtab);
-/* Initializes the tables in the interaction constant data structure. */
-
-void init_forcerec(FILE              *fplog,
-                   const output_env_t oenv,
-                   t_forcerec        *fr,
-                   t_fcdata          *fcd,
-                   const t_inputrec  *ir,
-                   const gmx_mtop_t  *mtop,
-                   const t_commrec   *cr,
-                   matrix             box,
-                   const char        *tabfn,
-                   const char        *tabafn,
-                   const char        *tabpfn,
-                   const char        *tabbfn,
-                   const char        *nbpu_opt,
-                   gmx_bool           bNoSolvOpt,
-                   real               print_force);
-/* The Force rec struct must be created with mk_forcerec
- * The gmx_booleans have the following meaning:
- * bSetQ:    Copy the charges [ only necessary when they change ]
- * bMolEpot: Use the free energy stuff per molecule
- * print_force >= 0: print forces for atoms with force >= print_force
- */
-
-void forcerec_set_excl_load(t_forcerec           *fr,
-                            const gmx_localtop_t *top);
-/* Set the exclusion load for the local exclusions and possibly threads */
 
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */

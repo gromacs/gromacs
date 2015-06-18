@@ -76,6 +76,7 @@
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -97,17 +98,9 @@
 #include "corewrap.h"
 #endif
 
-typedef struct {
-    gmx_integrator_t *func;
-} gmx_intp_t;
-
-/* The array should match the eI array in include/types/enums.h */
-const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
-
 gmx_int64_t         deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
 
 #ifdef GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
@@ -591,6 +584,21 @@ static void override_nsteps_cmdline(FILE            *fplog,
     /* Do nothing if nsteps_cmdline == -2 */
 }
 
+namespace gmx
+{
+
+//! Structure holding a function pointer.
+typedef struct {
+    //! The actual integrator function.
+    gmx_integrator_t *func;
+} gmx_intp_t;
+
+/*! \brief Array of integrator functions
+ *
+ * Should match the eI array in include/types/enums.h
+ */
+static const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
+
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
@@ -632,7 +640,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_membed_t              membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU      = FALSE;
+    gmx_bool                  bUseGPU            = FALSE;
+    gmx::InteractionTables   *interaction_tables = new(gmx::InteractionTables);
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -1112,6 +1121,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                       opt2fn("-tablep", nfile, fnm),
                       opt2fn("-tableb", nfile, fnm),
                       nbpu_opt,
+                      interaction_tables,
                       FALSE,
                       pforce);
 
@@ -1285,6 +1295,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       nstepout, inputrec, mtop,
                                       fcd, state,
                                       mdatoms, nrnb, wcycle, ed, fr,
+                                      interaction_tables,
                                       repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                       membed,
                                       cpt_period, max_hours,
@@ -1358,3 +1369,5 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     return rc;
 }
+
+} // namespace gmx
