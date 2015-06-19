@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -615,7 +615,13 @@ R_g ~=~ \left({\frac{\sum_i \|{\bf r}_i\|^2 m_i}{\sum_i m_i}}\right)^{\half}
 \eeq
 where $m_i$ is the mass of atom $i$ and ${\bf r}_i$ the position of 
 atom $i$ with respect to the center of mass of the molecule. It is especially 
-useful to characterize polymer solutions and proteins.
+useful to characterize polymer solutions and proteins. The program will also
+provide the radius of gyration around the coordinate axis (or, optionally, principal axes)
+by only summing the radii components orthogonal to each axis, for instance
+\beq
+R_{g,x} ~=~ \left({\frac{\sum_i \left( r_{i,y}^2 + r_{i,z}^2 \right) m_i}{\sum_i m_i}}\right)^{\half}
+\label{eqn:rg}
+\eeq
 
 Sometimes it is interesting to plot the {\em distance} between two atoms,
 or the {\em minimum} distance between two groups of atoms
