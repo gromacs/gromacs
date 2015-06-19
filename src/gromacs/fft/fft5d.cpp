@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -453,7 +453,14 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         fprintf(debug, "Running on %d threads\n", nthreads);
     }
 
-#ifdef GMX_FFT_FFTW3                                                            /*if not FFTW - then we don't do a 3d plan but instead use only 1D plans */
+#ifdef GMX_FFT_FFTW3
+    /* Don't add more stuff here! We have already had at least one bug because we are reimplementing
+     * the low-level FFT interface instead of using the Gromacs FFT module. If we need more
+     * generic functionality it is far better to extend the interface so we can use it for
+     * all FFT libraries instead of writing FFTW-specific code here.
+     */
+
+    /*if not FFTW - then we don't do a 3d plan but instead use only 1D plans */
     /* It is possible to use the 3d plan with OMP threads - but in that case it is not allowed to be called from
      * within a parallel region. For now deactivated. If it should be supported it has to made sure that
      * that the execute of the 3d plan is in a master/serial block (since it contains it own parallel region)
@@ -466,10 +473,9 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         int inNG = NG, outMG = MG, outKG = KG;
 
         FFTW_LOCK;
-        if (!(flags&FFT5D_NOMEASURE))
-        {
-            fftwflags |= FFTW_MEASURE;
-        }
+
+        fftwflags |= (flags & FFT5D_NOMEASURE) ? FFTW_ESTIMATE : FFTW_MEASURE;
+
         if (flags&FFT5D_REALCOMPLEX)
         {
             if (!(flags&FFT5D_BACKWARD))        /*input pointer is not complex*/
