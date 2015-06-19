@@ -4,7 +4,7 @@
  * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at h=ttp://www.gromacs.org.
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -233,7 +233,7 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
 {
     int      npppn, ntmpi_pp;
     char     sbuf[STRLEN], th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
-    gmx_bool btMPI, bMPI, bMaxMpiThreadsSet, bNthreadsAuto, bEmulateGPU;
+    gmx_bool btMPI, bMPI, bNthreadsAuto, bEmulateGPU;
 
     assert(hwinfo);
     assert(cr);
@@ -259,7 +259,6 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
     /* GPU emulation detection is done later, but we need here as well
      * -- uncool, but there's no elegant workaround */
     bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != NULL);
-    bMaxMpiThreadsSet = (getenv("GMX_MAX_MPI_THREADS") != NULL);
 
     /* check the SIMD level mdrun is compiled with against hardware
        capabilities */
@@ -343,12 +342,11 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
                    limited the number GPUs used. */
                 md_print_warn(cr, fplog,
                               "NOTE: %d GPU%s were detected, but only %d PP thread-MPI thread%s can be started.\n"
-                              "      %s can use one GPU per PP tread-MPI thread, so only %d GPU%s will be used.%s\n",
+                              "      %s can use one GPU per PP tread-MPI thread, so only %d GPU%s will be used.\n",
                               ngpu_comp, gpu_comp_plural,
                               npppn, th_or_proc_plural,
                               ShortProgram(), npppn,
-                              npppn > 1 ? "s" : "",
-                              bMaxMpiThreadsSet ? "\n      Also, you can allow more threads to be used by increasing GMX_MAX_MPI_THREADS" : "");
+                              npppn > 1 ? "s" : "");
             }
         }
 
