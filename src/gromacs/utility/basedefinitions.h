@@ -240,8 +240,8 @@ typedef uint64_t gmx_uint64_t;
  */
 /* alignas(x) is not used even with GMX-CXX11 because it isn't in the list of
    tested features and thus might not be supported.
-   MSVC2010 has align but doesn't support sizeof inside. */
-#if defined(_MSC_VER) && (_MSC_VER >= 1700 || defined(__ICL))
+   MSVC before 2015 has align but doesn't support sizeof inside. */
+#if defined(_MSC_VER) && (_MSC_VER > 1800 || defined(__ICL))
 #  define GMX_ALIGNMENT 1
 #  define GMX_ALIGNED(type, alignment) __declspec(align(alignment*sizeof(type))) type
 #elif defined(__GNUC__) || defined(__clang__)
