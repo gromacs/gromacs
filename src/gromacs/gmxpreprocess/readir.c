@@ -1083,6 +1083,14 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         ir->epsilon_r  = 1.0;
     }
 
+    if (ir->epsilon_r == 0)
+    {
+        sprintf(err_buf,
+                "It is pointless to use long-range or Generalized Born electrostatics with infinite relative permittivity."
+                "Since you are effectively turning of electrostatics, a plain cutoff will be much faster.");
+        CHECK(EEL_FULL(ir->coulombtype) || ir->implicit_solvent == eisGBSA);
+    }
+
     if (getenv("GMX_DO_GALACTIC_DYNAMICS") == NULL)
     {
         sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
