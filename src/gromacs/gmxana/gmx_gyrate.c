@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -176,12 +176,16 @@ void calc_gyro_z(rvec x[], matrix box,
     fprintf(out, "\n");
 }
 
+
 int gmx_gyrate(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[THISMODULE] computes the radius of gyration of a molecule",
         "and the radii of gyration about the [IT]x[it]-, [IT]y[it]- and [IT]z[it]-axes,",
         "as a function of time. The atoms are explicitly mass weighted.[PAR]",
+        "The axis components corresponds to the mass-weighted root-mean-square",
+        "of the radii components orthogonal to each axis, for example:[PAR]",
+        "Rg(x) = sqrt((sum_i m_i (R_i(y)^2 + R_i(z)^2))/(sum_i m_i)).[PAR]",
         "With the [TT]-nmol[tt] option the radius of gyration will be calculated",
         "for multiple molecules by splitting the analysis group in equally",
         "sized parts.[PAR]",
@@ -220,7 +224,7 @@ int gmx_gyrate(int argc, char *argv[])
     atom_id        *index;
     output_env_t    oenv;
     gmx_rmpbc_t     gpbc   = NULL;
-    const char     *leg[]  = { "Rg", "RgX", "RgY", "RgZ" };
+    const char     *leg[]  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
     const char     *legI[] = { "Itot", "I1", "I2", "I3" };
 #define NLEG asize(leg)
     t_filenm        fnm[] = {
@@ -284,17 +288,17 @@ int gmx_gyrate(int argc, char *argv[])
     if (bQ)
     {
         out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Radius of Charge", "Time (ps)", "Rg (nm)", oenv);
+                       "Radius of Charge (total and around axes)", "Time (ps)", "Rg (nm)", oenv);
     }
     else if (bMOI)
     {
         out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Moments of inertia", "Time (ps)", "I (a.m.u. nm\\S2\\N)", oenv);
+                       "Moments of inertia (total and around axes)", "Time (ps)", "I (a.m.u. nm\\S2\\N)", oenv);
     }
     else
     {
         out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Radius of gyration", "Time (ps)", "Rg (nm)", oenv);
+                       "Radius of gyration (total and around axes)", "Time (ps)", "Rg (nm)", oenv);
     }
     if (bMOI)
     {
