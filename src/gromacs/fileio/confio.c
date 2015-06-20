@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -922,6 +922,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
                            rvec x[], rvec *v, matrix box)
 {
     char       name[6];
+    char       resname[6], oldresname[6];
     char       line[STRLEN+1], *ptr;
     char       buf[256];
     double     x1, y1, z1, x2, y2, z2;
@@ -951,6 +952,9 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     bFirst = TRUE;
 
     bVel = FALSE;
+
+    resname[0]     = '\0';
+    oldresname[0]  = '\0';
 
     /* just pray the arrays are big enough */
     for (i = 0; (i < natoms); i++)
@@ -999,9 +1003,9 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         memcpy(name, line, 5);
         name[5] = '\0';
         sscanf(name, "%d", &resnr);
-        memcpy(name, line+5, 5);
-        name[5] = '\0';
-        if (resnr != oldres)
+        sscanf(line+5, "%5s", resname);
+
+        if (resnr != oldres || strncmp(resname, oldresname, sizeof(resname)))
         {
             oldres = resnr;
             newres++;
@@ -1011,7 +1015,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
                           infile, natoms);
             }
             atoms->atom[i].resind = newres;
-            t_atoms_set_resinfo(atoms, i, symtab, name, resnr, ' ', 0, ' ');
+            t_atoms_set_resinfo(atoms, i, symtab, resname, resnr, ' ', 0, ' ');
         }
         else
         {
@@ -1021,6 +1025,9 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         /* atomname */
         memcpy(name, line+10, 5);
         atoms->atomname[i] = put_symtab(symtab, name);
+
+        /* Copy resname to oldresname after we are done with the sanity check above */
+        strncpy(oldresname, resname, sizeof(oldresname));
 
         /* eventueel controle atomnumber met i+1 */
 
