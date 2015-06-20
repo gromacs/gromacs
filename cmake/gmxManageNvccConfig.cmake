@@ -161,8 +161,32 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
     endif()
 
-    # finally set the damn flags
+    # Set the damn flags
     set(CUDA_NVCC_FLAGS
         "${_CUDA_ARCH_STR};-use_fast_math;${_HOST_COMPILER_OPTION_STRING}${CUDA_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Compiler flags for nvcc." FORCE)
+
+    # Try if it works for a trivial program
+    message(STATUS "Checking whether CUDA/host compiler combination is sane")
+    execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} ${CUDA_NVCC_FLAGS} ${CMAKE_SOURCE_DIR}/cmake/TestCuda.cu RESULT_VARIABLE CUDA_TEST_RESULT ERROR_VARIABLE CUDA_TEST_ERROR)
+    if(${CUDA_TEST_RESULT})
+        if(${CUDA_TEST_ERROR} MATCHES "nsupported.*version")
+            message(FATAL_ERROR "
+            Cannot compile trivial CUDA program. The error indicates the version of your
+            host compiler is not supported. Try upgrading CUDA, set a different host
+            compiler, or consider editing the host_config.h header in the CUDA include
+            directory to remove the compiler version check - that will often work fine.
+            Cuda nvcc: ${CUDA_NVCC_EXECUTABLE}
+            Host compiler (set with CUDA_HOST_COMPILER): ${CUDA_HOST_COMPILER}
+            ")
+        else()
+            message(FATAL_ERROR "
+            Cannot compile trivial Cuda program.
+            Cuda nvcc: ${CUDA_NVCC_EXECUTABLE}
+            Host compiler (set with CUDA_HOST_COMPILER): ${CUDA_HOST_COMPILER}
+            ")
+        endif()
+    else()
+        message(STATUS "Checking whether CUDA/host compiler combination is sane - yes")
+    endif()
 endif()
