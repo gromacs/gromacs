@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -61,32 +61,13 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
     if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
         if (NOT CMAKE_COMPILER_IS_GNUCC AND
             NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND UNIX AND NOT APPLE))
-            message(WARNING "
-            Will not set the nvcc host compiler because the current C compiler is not
-            compatible with nvcc:
-            ${CMAKE_C_COMPILER} (ID: ${CMAKE_C_COMPILER_ID})
-            Compatible compilers are: gcc on Linux and Mac OS X, the Intel Compiler on 64-bit
-            Linux and MSVC on Windows. Note that with newer CUDA releases this might change,
-            for up-to-date compatibility information check the NVIDIA documentation.
-            If nothing specified, nvcc will automatically pick the platform-default compiler;
-            Note that mixing compilers can cause errors.
-            To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-            setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
-            ")
+            message(WARNING "Will not set the nvcc host compiler because the current C compiler is not compatible with nvcc: ${CMAKE_C_COMPILER} (ID: ${CMAKE_C_COMPILER_ID}). Compatible compilers are: gcc on Linux and Mac OS X, the Intel Compiler on 64-bit Linux and MSVC on Windows. Note that with newer CUDA releases this might change, for up-to-date compatibility information check the NVIDIA documentation. If nothing specified, nvcc will automatically pick the platform-default compiler; note that mixing compilers can cause errors. To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure setting CUDA_HOST_COMPILER to the full path of a compatible compiler.")
         else()
             # do not use MPI compiler wrappers, as these are prone to brake nvcc
             if (GMX_MPI AND
                 NOT "${${MPI_PREFIX}_FOUND}" AND # FindMPI-based detection
                 NOT GMX_THREAD_MPI)
-                message(WARNING "
-            Will not set the nvcc host compiler because the current C compiler is an MPI
-            compiler wrapper: ${CMAKE_C_COMPILER}
-            MPI compiler wrappers are prone to not work with nvcc. You might get lucky,
-            but the safest is to use the C compiler that the MPI compiler wrapper uses
-            (if this is compatible).
-            To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-            setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
-            ")
+                message(WARNING "Will not set the nvcc host compiler because the current C compiler is an MPI compiler wrapper: ${CMAKE_C_COMPILER} MPI compiler wrappers are prone to not work with nvcc. You might get lucky, but the safest is to use the C compiler that the MPI compiler wrapper uses (if this is compatible). To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure setting CUDA_HOST_COMPILER to the full path of a compatible compiler.")
             else()
                 set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
                 set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
@@ -142,8 +123,7 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
 
     # the legacy CUDA kernels have been dropped, warn with CUDA 4.0
     if (CUDA_VERSION VERSION_EQUAL "4.0")
-        message(WARNING "The legacy GPU kernels optimized for older CUDA compilers, including the detected version 4.0, have been removed. To avoid performance loss, we strongly recommend upgrading to a newer CUDA toolkit.
-        ")
+        message(WARNING "The legacy GPU kernels optimized for older CUDA compilers, including the detected version 4.0, have been removed. To avoid performance loss, we strongly recommend upgrading to a newer CUDA toolkit.")
     endif()
 
     # Set the CUDA GPU architectures to compile for:
@@ -161,8 +141,21 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
         set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
     endif()
 
-    # finally set the damn flags
+    # Set the damn flags
     set(CUDA_NVCC_FLAGS
         "${_CUDA_ARCH_STR};-use_fast_math;${_HOST_COMPILER_OPTION_STRING}${CUDA_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Compiler flags for nvcc." FORCE)
+
+    # Try if it works for a trivial program
+    message(STATUS "Checking whether CUDA/host compiler combination is sane")
+    execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} ${CUDA_NVCC_FLAGS} ${CMAKE_SOURCE_DIR}/cmake/TestCuda.cu RESULT_VARIABLE CUDA_TEST_RESULT ERROR_VARIABLE CUDA_TEST_ERROR)
+    if(${CUDA_TEST_RESULT})
+        if(${CUDA_TEST_ERROR} MATCHES "nsupported.*version")
+            message(FATAL_ERROR "Cannot compile trivial CUDA program. The error indicates the version of your host compiler is not supported. Try upgrading CUDA, set a different host compiler, or consider editing the host_config.h header in the CUDA include directory to remove the compiler version check - that will sometimes work fine (you will likely get compile errors otherwise). Cuda nvcc: ${CUDA_NVCC_EXECUTABLE} Host compiler (set with CUDA_HOST_COMPILER): ${CUDA_HOST_COMPILER}")
+        else()
+            message(FATAL_ERROR "Cannot compile trivial CUDA program. CUDA nvcc: ${CUDA_NVCC_EXECUTABLE} Host compiler (set with CUDA_HOST_COMPILER): ${CUDA_HOST_COMPILER}")
+        endif()
+    else()
+        message(STATUS "Checking whether CUDA/host compiler combination is sane - yes")
+    endif()
 endif()
