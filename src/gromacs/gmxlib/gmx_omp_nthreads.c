@@ -511,7 +511,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
 #endif
 
     reportOpenmpSettings(fplog, cr, bOMP, bFullOmpSupport, bSepPME);
-    issueOversubscriptionWarning(fplog, cr, bSepPME, nthreads_hw_avail, nppn);
+    issueOversubscriptionWarning(fplog, cr, nthreads_hw_avail, nppn, bSepPME);
 }
 
 int gmx_omp_nthreads_get(int mod)
