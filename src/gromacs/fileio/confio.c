@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -922,11 +922,15 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
                            rvec x[], rvec *v, matrix box)
 {
     char       name[6];
+    char       resname[6], oldresname[6];
     char       line[STRLEN+1], *ptr;
     char       buf[256];
     double     x1, y1, z1, x2, y2, z2;
     rvec       xmin, xmax;
-    int        natoms, i, m, resnr, newres, oldres, ddist, c;
+    int        natoms, i, m, resnr, newres, oldres, origresnr, ddist, c;
+    int        lastOriginalResidueNumber;
+    int        alternateResidueNumber = 9000;
+    gmx_bool   renumberingActive;
     gmx_bool   bFirst, bVel;
     char      *p1, *p2, *p3;
 
@@ -950,7 +954,11 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
 
     bFirst = TRUE;
 
-    bVel = FALSE;
+    bVel              = FALSE;
+    renumberingActive = FALSE;
+
+    resname[0]     = '\0';
+    oldresname[0]  = '\0';
 
     /* just pray the arrays are big enough */
     for (i = 0; (i < natoms); i++)
@@ -998,9 +1006,51 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         /* residue number*/
         memcpy(name, line, 5);
         name[5] = '\0';
-        sscanf(name, "%d", &resnr);
-        memcpy(name, line+5, 5);
-        name[5] = '\0';
+        sscanf(name, "%d", &origresnr);
+        sscanf(line+5, "%5s", resname);
+
+        resnr = origresnr;
+
+        if (renumberingActive)
+        {
+            if (resnr == lastOriginalResidueNumber)
+            {
+                resnr = alternateResidueNumber;
+            }
+            else
+            {
+                /* Turn off renumbering when the numbers start to change again */
+                renumberingActive = FALSE;
+            }
+        }
+
+        if (resnr == oldres && strncmp(resname, oldresname, sizeof(resname)) )
+        {
+            gmx_warning("Residue name changing in from %s to %s in residue %d\n"
+                        "in gro file. This can happen if you converted a PDB\n"
+                        "file with insertion codes to gro format that does not support\n"
+                        "insertion codes. Trying to work around it by using extra\n"
+                        "residue numbers starting at index 9001, but this is still\n"
+                        "fragile when two adjacent residues have the same name.\n"
+                        "Note that you can recover the original PDB numbering by using\n"
+                        "gmx trjconv and supplying the original PDB file to the -s\n"
+                        "argument option.\n", oldresname, resname, origresnr);
+
+            /* Account for the rare case that the original number is identical to our alternate one... */
+            if (oldres == alternateResidueNumber+1)
+            {
+                ++alternateResidueNumber;
+            }
+
+            if (renumberingActive == FALSE)
+            {
+                lastOriginalResidueNumber = oldres;
+            }
+
+            renumberingActive = TRUE;
+            resnr             = ++alternateResidueNumber;
+        }
+
         if (resnr != oldres)
         {
             oldres = resnr;
@@ -1011,7 +1061,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
                           infile, natoms);
             }
             atoms->atom[i].resind = newres;
-            t_atoms_set_resinfo(atoms, i, symtab, name, resnr, ' ', 0, ' ');
+            t_atoms_set_resinfo(atoms, i, symtab, resname, resnr, ' ', 0, ' ');
         }
         else
         {
@@ -1021,6 +1071,9 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         /* atomname */
         memcpy(name, line+10, 5);
         atoms->atomname[i] = put_symtab(symtab, name);
+
+        /* Copy resname to oldresname after we are done with the sanity check above */
+        strncpy(oldresname, resname, sizeof(oldresname));
 
         /* eventueel controle atomnumber met i+1 */
 
