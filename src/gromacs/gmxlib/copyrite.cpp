@@ -578,7 +578,12 @@ void please_cite(FILE *fp, const char *key)
           "G. Lamoureux and B. Roux",
           "Modeling induced polarization with classical Drude oscillators: Theory and molecular dynamics simulation algorithm",
           "J. Chem. Phys.",
-          119, 2003, "3025-3039"}
+          119, 2003, "3025-3039"},
+        { "Lemkul2015",
+          "J. A. Lemkul, B. Roux, D. van der Spoel, and A. D. MacKerell Jr.",
+          "Implementation of Extended Lagrangian Dynamics in GROMACS for Polarizable Simulations Using the Classical Drude Oscillator Model",
+          "J. Comput. Chem.",
+          "In Press", 2015, "DOI: 10.1002/jcc.23937"}
     };
 #define NSTR (int)asize(citedb)
 
