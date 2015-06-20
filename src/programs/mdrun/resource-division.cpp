@@ -196,6 +196,19 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
     if (ngpu > 0)
     {
         nrank = ngpu;
+
+        /* When the user sets nthreads_omp, we can end up oversubscribing CPU cores
+         * if we simply start as many ranks as GPUs. To avoid this, we start as few
+         * tMPI ranks as necessary to avoid oversubscription and instead leave GPUs idle.
+         * If the user does not set the number of OpenMP threads, nthreads_omp==0 and
+         * this code has no effect.
+         */
+        assert(hw_opt->nthreads_omp >= 0);
+        while (nrank*hw_opt->nthreads_omp > hwinfo->nthreads_hw_avail && nrank > 1)
+        {
+            nrank--;
+        }
+
         if (nthreads_tot < nrank)
         {
             /* #thread < #gpu is very unlikely, but if so: waste gpu(s) */
