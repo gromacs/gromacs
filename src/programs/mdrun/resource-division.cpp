@@ -74,6 +74,12 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
     if (ngpu > 0)
     {
         nthreads_tmpi = ngpu;
+        while (hwinfo->nthreads_hw_avail < nthreads_tmpi*hw_opt->nthreads_omp)
+        {
+            nthreads_tmpi--;
+        }
+
+
         if (nthreads_tot > 0 && nthreads_tot < nthreads_tmpi)
         {
             nthreads_tmpi = nthreads_tot;
