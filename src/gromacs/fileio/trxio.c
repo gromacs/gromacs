@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,7 +80,7 @@ struct t_trxstatus
     int                     nxframe;
     t_fileio               *fio;
     tng_trajectory_t        tng;
-    int                     NATOMS;
+    int                     natoms;
     double                  DT, BOX[3];
     gmx_bool                bReadBox;
     char                   *persistent_line; /* Persistent line for reading g96 trajectories */
@@ -240,7 +240,7 @@ float trx_get_time_of_final_frame(t_trxstatus *status)
         lasttime =
             xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
                                         gmx_fio_getxdr(stfio),
-                                        status->xframe->natoms, &bOK);
+                                        status->natoms, &bOK);
         if (!bOK)
         {
             gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
@@ -1065,6 +1065,11 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
         }
     }
     fr->t0 = fr->time;
+
+    /* We need the number of atoms for random-access XTC searching, even when
+     * we don't have access to the actual frame data.
+     */
+    (*status)->natoms = fr->natoms;
 
     return (fr->natoms > 0);
 }
