@@ -1138,7 +1138,7 @@ void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
 
         sfree(checkres);
     }
-    else
+    else if (getenv("GMX_EMULATE_GPU") == NULL)
     {
         pick_compatible_gpus(&hwinfo_g->gpu_info, gpu_opt);
         set_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
