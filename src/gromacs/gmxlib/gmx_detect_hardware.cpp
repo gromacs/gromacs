@@ -92,6 +92,7 @@ static int                 n_hwinfo = 0;
 /* A lock to protect the hwinfo structure */
 static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 
+#define HOSTNAMELEN 80
 
 /* FW decl. */
 static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank);
@@ -122,7 +123,7 @@ static void print_gpu_detection_stats(FILE                 *fplog,
                                       const gmx_gpu_info_t *gpu_info,
                                       const t_commrec      *cr)
 {
-    char onhost[266], stmp[STRLEN];
+    char onhost[HOSTNAMELEN+10], stmp[STRLEN];
     int  ngpu;
 
     if (!gpu_info->bDetectGPUs)
@@ -136,7 +137,7 @@ static void print_gpu_detection_stats(FILE                 *fplog,
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
     /* We only print the detection on one, of possibly multiple, nodes */
     strncpy(onhost, " on host ", 10);
-    gmx_gethostname(onhost+9, 256);
+    gmx_gethostname(onhost + 9, HOSTNAMELEN);
 #else
     /* We detect all relevant GPUs */
     strncpy(onhost, "", 1);
@@ -157,18 +158,26 @@ static void print_gpu_detection_stats(FILE                 *fplog,
 /*! \brief Helper function for reporting GPU usage information
  * in the mdrun log file
  *
- * \param[in] gpu_info    Pointer to per-node GPU info struct
- * \param[in] gpu_opt     Pointer to per-node GPU options struct
- * \param[in] numPpRanks  Number of PP ranks per node
- * \return                String to write to the log file
- * \throws                std::bad_alloc if out of memory */
+ * \param[in] gpu_info       Pointer to per-node GPU info struct
+ * \param[in] gpu_opt        Pointer to per-node GPU options struct
+ * \param[in] numPpRanks     Number of PP ranks per node
+ * \param[in] bPrintHostName Print the hostname in the usage information
+ * \return                   String to write to the log file
+ * \throws                   std::bad_alloc if out of memory */
 static std::string
 makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
                    const gmx_gpu_opt_t  *gpu_opt,
-                   size_t                numPpRanks)
+                   size_t                numPpRanks,
+                   bool                  bPrintHostName)
 {
-    int ngpu_use  = gpu_opt->n_dev_use;
-    int ngpu_comp = gpu_info->n_dev_compatible;
+    int  ngpu_use  = gpu_opt->n_dev_use;
+    int  ngpu_comp = gpu_info->n_dev_compatible;
+    char host[HOSTNAMELEN];
+
+    if (bPrintHostName)
+    {
+        gmx_gethostname(host, HOSTNAMELEN);
+    }
 
     /* Issue a note if GPUs are available but not used */
     if (ngpu_comp > 0 && ngpu_use < 1)
@@ -187,6 +196,11 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
                                                       gpu_opt->n_dev_compatible),
                           ",", gmx::StringFormatter("%d"));
         bool bPluralGpus = gpu_opt->n_dev_compatible > 1;
+
+        if (bPrintHostName)
+        {
+            output += gmx::formatString("On host %s ", host);
+        }
         output += gmx::formatString("%d compatible GPU%s %s present, with ID%s %s\n",
                                     gpu_opt->n_dev_compatible,
                                     bPluralGpus ? "s" : "",
@@ -206,6 +220,10 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
         int         numGpusInUse = gmx_count_gpu_dev_unique(gpu_info, gpu_opt);
         bool        bPluralGpus  = numGpusInUse > 1;
 
+        if (bPrintHostName)
+        {
+            output += gmx::formatString("On host %s ", host);
+        }
         output += gmx::formatString("%d GPU%s %sselected for this run.\n"
                                     "Mapping of GPU ID%s to the %d PP rank%s in this node: %s\n",
                                     numGpusInUse, bPluralGpus ? "s" : "",
@@ -301,7 +319,8 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         {
             gpuUseageReport = makeGpuUsageReport(&hwinfo->gpu_info,
                                                  &hw_opt->gpu_opt,
-                                                 cr->nrank_pp_intranode);
+                                                 cr->nrank_pp_intranode,
+                                                 bMPI && cr->nnodes > 1);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -941,10 +960,10 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     }
 
 #ifdef GMX_LIB_MPI
-    char host[255];
+    char host[HOSTNAMELEN];
     int  rank;
 
-    gmx_gethostname(host, 255);
+    gmx_gethostname(host, HOSTNAMELEN);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     s += gmx::formatString("Hardware detected on host %s (the node of MPI rank %d):\n",
@@ -1145,9 +1164,9 @@ static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
 
     if (gpu_opt->n_dev_compatible == 0)
     {
-        char host[255];
+        char host[HOSTNAMELEN];
 
-        gmx_gethostname(host, 255);
+        gmx_gethostname(host, HOSTNAMELEN);
         gmx_fatal(FARGS, "A GPU was requested on host %s, but no compatible GPUs were detected. All nodes with PP ranks need to have GPUs. If you intended to use GPU acceleration in a parallel run, you can either avoid using the nodes that don't have GPUs or place PME ranks on these nodes.", host);
     }
 
