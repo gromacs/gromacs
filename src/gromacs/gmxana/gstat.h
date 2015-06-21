@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -427,8 +427,7 @@ void print_one (const output_env_t oenv, const char *base,
 /* Routines from g_hbond */
 void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                   real sigma_ct[], real sigma_nt[], real sigma_kt[],
-                  real fit_start, real temp, real smooth_tail_start,
-                  const output_env_t oenv);
+                  real fit_start, real temp);
 
 void compute_derivative(int nn, real x[], real y[], real dydx[]);
 

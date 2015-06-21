@@ -2384,37 +2384,9 @@ static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
     return chi2;
 }
 
-static void smooth_tail(int n, real t[], real c[], real sigma_c[], real start,
-                        const output_env_t oenv)
-{
-    FILE *fp;
-    real  e_1, fitparm[4];
-    int   i;
-
-    e_1 = exp(-1);
-    for (i = 0; (i < n); i++)
-    {
-        if (c[i] < e_1)
-        {
-            break;
-        }
-    }
-    if (i < n)
-    {
-        fitparm[0] = t[i];
-    }
-    else
-    {
-        fitparm[0] = 10;
-    }
-    fitparm[1] = 0.95;
-    do_lmfit(n, c, sigma_c, 0, t, start, t[n-1], oenv, bDebugMode(), effnEXP2, fitparm, 0);
-}
-
 void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                   real sigma_ct[], real sigma_nt[], real sigma_kt[],
-                  real fit_start, real temp, real smooth_tail_start,
-                  const output_env_t oenv)
+                  real fit_start, real temp)
 {
     int        i0, i;
     real       k = 1, kp = 1, kow = 1;
@@ -2422,12 +2394,6 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
     double     tmp, sn2 = 0, sc2 = 0, sk2 = 0, scn = 0, sck = 0, snk = 0;
     gmx_bool   bError = (sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL);
 
-    if (smooth_tail_start >= 0)
-    {
-        smooth_tail(n, t, ct, sigma_ct, smooth_tail_start, oenv);
-        smooth_tail(n, t, nt, sigma_nt, smooth_tail_start, oenv);
-        smooth_tail(n, t, kt, sigma_kt, smooth_tail_start, oenv);
-    }
     for (i0 = 0; (i0 < n-2) && ((t[i0]-t[0]) < fit_start); i0++)
     {
         ;
@@ -2583,7 +2549,7 @@ static void normalizeACF(real *ct, real *gt, int nhb, int len)
  */
 static void do_hbac(const char *fn, t_hbdata *hb,
                     int nDump, gmx_bool bMerge, gmx_bool bContact, real fit_start,
-                    real temp, gmx_bool R2, real smooth_tail_start, const output_env_t oenv,
+                    real temp, gmx_bool R2, const output_env_t oenv,
                     const char *gemType, int nThreads,
                     const int NN, const gmx_bool bBallistic, const gmx_bool bGemFit)
 {
@@ -3280,7 +3246,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
             gmx_ffclose(fp);
 
             analyse_corr(nn, hb->time, ct, ght, kt, NULL, NULL, NULL,
-                         fit_start, temp, smooth_tail_start, oenv);
+                         fit_start, temp);
 
             do_view(oenv, fn, NULL);
             sfree(rhbex);
@@ -3589,7 +3555,7 @@ int gmx_hbond(int argc, char *argv[])
     };
 
     static real        acut     = 30, abin = 1, rcut = 0.35, r2cut = 0, rbin = 0.005, rshell = -1;
-    static real        maxnhb   = 0, fit_start = 1, fit_end = 60, temp = 298.15, smooth_tail_start = -1, D = -1;
+    static real        maxnhb   = 0, fit_start = 1, fit_end = 60, temp = 298.15, D = -1;
     static gmx_bool    bNitAcc  = TRUE, bDA = TRUE, bMerge = TRUE;
     static int         nDump    = 0, nFitPoints = 100;
     static int         nThreads = 0, nBalExp = 4;
@@ -3625,8 +3591,6 @@ int gmx_hbond(int argc, char *argv[])
           "Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with [TT]-gemfit[tt])" },
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
-        { "-smooth", FALSE, etREAL, {&smooth_tail_start},
-          "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/[GRK]tau[grk])" },
         { "-dump",  FALSE, etINT, {&nDump},
           "Dump the first N hydrogen bond ACFs in a single [TT].xvg[tt] file for debugging" },
         { "-max_hb", FALSE, etREAL, {&maxnhb},
@@ -4619,7 +4583,7 @@ int gmx_hbond(int argc, char *argv[])
             }
             gemstring = strdup(gemType[hb->per->gemtype]);
             do_hbac(opt2fn("-ac", NFILE, fnm), hb, nDump,
-                    bMerge, bContact, fit_start, temp, r2cut > 0, smooth_tail_start, oenv,
+                    bMerge, bContact, fit_start, temp, r2cut > 0, oenv,
                     gemstring, nThreads, NN, bBallistic, bGemFit);
         }
         if (opt2bSet("-life", NFILE, fnm))
