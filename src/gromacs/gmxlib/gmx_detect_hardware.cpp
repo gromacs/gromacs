@@ -575,7 +575,7 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
 #elif defined(_SC_NPROC_CONF)
     ret = sysconf(_SC_NPROC_CONF);
 #else
-#warning "No valid sysconf argument value found. Executables will not be able to determine the number of hardware threads: mdrun will use 1 thread by default!"
+#warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
 #endif /* End of check for sysconf argument values */
 
 #else
@@ -592,7 +592,7 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
     if (ret != gmx_omp_get_num_procs())
     {
         md_print_warn(cr, fplog,
-                      "Number of hardware threads detected (%d) does not match the number reported by OpenMP (%d).\n"
+                      "Number of logical cores detected (%d) does not match the number reported by OpenMP (%d).\n"
                       "Consider setting the launch configuration manually!",
                       ret, gmx_omp_get_num_procs());
     }
@@ -883,7 +883,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     {
         s += gmx::formatString(" %d cores,", hwinfo->ncore_tot);
     }
-    s += gmx::formatString(" %d hardware threads", hwinfo->nhwthread_tot);
+    s += gmx::formatString(" %d logical cores", hwinfo->nhwthread_tot);
     if (hwinfo->gpu_info.bDetectGPUs)
     {
         s += gmx::formatString(", %d compatible GPU%s",
@@ -901,14 +901,14 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         /* Print per node hardware feature counts */
         if (hwinfo->ncore_max > 0)
         {
-            s += gmx::formatString("Cores per node:            %2d", hwinfo->ncore_min);
+            s += gmx::formatString("Cores per node:           %2d", hwinfo->ncore_min);
             if (hwinfo->ncore_max > hwinfo->ncore_min)
             {
                 s += gmx::formatString(" - %2d", hwinfo->ncore_max);
             }
             s += gmx::formatString("\n");
         }
-        s += gmx::formatString("Hardware threads per node: %2d", hwinfo->nhwthread_min);
+        s += gmx::formatString("Logical cores per node:   %2d", hwinfo->nhwthread_min);
         if (hwinfo->nhwthread_max > hwinfo->nhwthread_min)
         {
             s += gmx::formatString(" - %2d", hwinfo->nhwthread_max);
@@ -916,7 +916,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         s += gmx::formatString("\n");
         if (bGPUBinary)
         {
-            s += gmx::formatString("Compatible GPUs per node:  %2d",
+            s += gmx::formatString("Compatible GPUs per node: %2d",
                                    hwinfo->ngpu_compatible_min);
             if (hwinfo->ngpu_compatible_max > hwinfo->ngpu_compatible_min)
             {
