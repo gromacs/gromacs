@@ -406,6 +406,7 @@ reportOpenmpSettings(FILE            *fplog,
 #else
     const char *mpi_str = "per MPI process";
 #endif
+    int nth_min, nth_max, nth_pme_min, nth_pme_max;
 
     /* inform the user about the settings */
     if (!bOMP)
@@ -413,18 +414,58 @@ reportOpenmpSettings(FILE            *fplog,
         return;
     }
 
+#ifdef GMX_MPI
+    {
+        /* Get the min and max thread counts over the MPI ranks */
+        int buf_in[4], buf_out[4];
+
+        buf_in[0] = -modth.gnth;
+        buf_in[1] =  modth.gnth;
+        buf_in[2] = -modth.gnth_pme;
+        buf_in[3] =  modth.gnth_pme;
+
+        MPI_Allreduce(buf_in, buf_out, 4, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
+
+        nth_min     = -buf_out[0];
+        nth_max     =  buf_out[1];
+        nth_pme_min = -buf_out[2];
+        nth_pme_max =  buf_out[3];
+    }
+#else
+    nth_min     = modth.gnth;
+    nth_max     = modth.gnth;
+    nth_pme_min = modth.gnth_pme;
+    nth_pme_max = modth.gnth_pme;
+#endif
+
     /* for group scheme we print PME threads info only */
     if (bFullOmpSupport)
     {
-        md_print_info(cr, fplog, "Using %d OpenMP thread%s %s\n",
-                      modth.gnth, modth.gnth > 1 ? "s" : "",
-                      cr->nnodes > 1 ? mpi_str : "");
+        if (nth_max == nth_min)
+        {
+            md_print_info(cr, fplog, "Using %d OpenMP thread%s %s\n",
+                          nth_min, nth_min > 1 ? "s" : "",
+                          cr->nnodes > 1 ? mpi_str : "");
+        }
+        else
+        {
+            md_print_info(cr, fplog, "Using %d - %d OpenMP threads %s\n",
+                          nth_min, nth_max, mpi_str);
+        }
     }
-    if (bSepPME && modth.gnth_pme != modth.gnth)
+    if (bSepPME && (nth_pme_min != nth_min || nth_pme_max != nth_max))
     {
-        md_print_info(cr, fplog, "Using %d OpenMP thread%s %s for PME\n",
-                      modth.gnth_pme, modth.gnth_pme > 1 ? "s" : "",
-                      cr->nnodes > 1 ? mpi_str : "");
+        if (nth_pme_max != nth_pme_min)
+        {
+            md_print_info(cr, fplog, "Using %d OpenMP thread%s %s for PME\n",
+                          nth_pme_min, nth_pme_min > 1 ? "s" : "",
+                          cr->nnodes > 1 ? mpi_str : "");
+        }
+        else
+        {
+            md_print_info(cr, fplog, "Using %d - %d OpenMP threads %s for PME\n",
+                          nth_pme_min, nth_pme_max, mpi_str);
+        }
     }
     md_print_info(cr, fplog, "\n");
 }
