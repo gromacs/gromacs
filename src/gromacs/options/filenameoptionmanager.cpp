@@ -259,9 +259,18 @@ std::string FileNameOptionManager::completeDefaultFileName(
         return std::string();
     }
     const bool        bInput = option.isInputFile() || option.isInputOutputFile();
-    const std::string realPrefix
+    std::string realPrefix
         = !impl_->defaultFileName_.empty() ? impl_->defaultFileName_ : prefix;
     const bool        bAllowMissing = option.allowMissing();
+    // check for pull files and append.
+    if (option.name() == "px")
+    {
+        realPrefix.append("_pullx");
+    }
+    else if (option.name() == "pf")
+    {
+        realPrefix.append("_pullf");
+    }
     if (bInput)
     {
         std::string completedName = findExistingExtension(realPrefix, option);
