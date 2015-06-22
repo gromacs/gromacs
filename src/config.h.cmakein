@@ -259,6 +259,9 @@
 /* Define absolute path to OpenCL kernels */
 #define OCL_INSTALL_FULL_PATH "@OCL_INSTALL_FULL_PATH@"
 
+/* Location for caching of JIT artifacts */
+#cmakedefine GMX_JIT_CACHE_DIR "@GMX_JIT_CACHE_DIR@"
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
 
