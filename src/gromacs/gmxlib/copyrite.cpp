@@ -821,7 +821,7 @@ void printBinaryInformation(FILE                            *fp,
     const int   indent
         = centeringOffset(78 - strlen(prefix) - strlen(suffix), title.length()) + 1;
     fprintf(fp, "%s%*c%s%s\n", prefix, indent, ' ', title.c_str(), suffix);
-    fprintf(fp, "\n");
+    fprintf(fp, "%s\n", prefix);
     if (settings.bCopyright_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
