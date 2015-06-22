@@ -682,7 +682,7 @@ void nosehoover_KE(t_inputrec *ir, t_idef *idef, t_mdatoms *md, t_state *state,
     for (k=0; k < md->homenr; k++)
     {
         /* TODO: find hydrogen atoms...probably not the smartest way to do this */
-        if (md->massT[k] < 2.0)
+        if (md->massT[k] < 2.0 && md->ptype[k] == eptAtom)
         {
             ia = k;
             ma = md->massT[k];
@@ -930,7 +930,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, t_idef *ide
         for (k=0; k < md->homenr; k++)
         {
             /* TODO: find hydrogen atoms...probably not the smartest way to do this */
-            if (md->massT[k] < 2.0)
+            if (md->massT[k] < 2.0 && md->ptype[k] == eptAtom)
             {
                 ia = k;
                 ma = md->massT[k];
