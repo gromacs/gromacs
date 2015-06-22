@@ -623,8 +623,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
      * this is the first step, since we might be restarting from a checkpoint,
      * and in that case we are likely at an odd step where we should not
      * be doing any comm removal or constraints.
+     *
+     * Occasionally people run a normal simulation to completion, and then try to
+     * append by extending the number of steps. To achieve binary identical continuation
+     * in this case we should not stop COM motion here when bContinuation is true.
      */
-    bStopCM = (ir->comm_mode != ecmNO && do_per_step(ir->init_step, ir->nstcomm));
+    bStopCM = (ir->comm_mode != ecmNO && do_per_step(ir->init_step, ir->nstcomm) && !ir->bContinuation);
 
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
                   | (bStopCM ? CGLO_STOPCM : 0)
