@@ -593,6 +593,24 @@ flags must be set
 
     cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
 
+By default, |Gromacs| configured with OpenCL support will make a
+``.gromacs/|version|`` folder in the home directory of the user
+running ``mdrun``. The OpenCL kernels are compiled by ``mdrun`` only
+when they are actually used, which can be slow. So, this folder is
+used for caching the compiled version, so that the compilation does
+not have to be done again. When building |Gromacs| for use on a
+cluster where users' home folders are not accessible to the compute
+nodes, system administrators should set the CMake variable
+``GMX_JIT_CACHE_DIR`` to point to an appropriate folder where a user's
+application may write to a file. Users may also set the environment
+variable of the same name to override at run time either the default
+or the configured setting. ``mdrun`` will attempt to create such
+override folders if they do not exist, but it is most reliable to
+create them yourself if you need them. It is wise to delete the
+contents of any cache directories after re-building the same |Gromacs|
+version with e.g. a different compiler, compiler flags, or OpenCL
+runtime.
+
 Building |Gromacs| OpenCL support for a CUDA_ GPU works, but see the
 known limitations in the user guide. If you want to
 do so anyway, because NVIDIA OpenCL support is part of the CUDA

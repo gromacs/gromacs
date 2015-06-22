@@ -57,6 +57,9 @@
 
 #include <string>
 
+#include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -731,7 +734,7 @@ ocl_get_fastgen_define(
  * detected this function must return false.
  */
 bool
-check_ocl_cache(char            *ocl_binary_filename,
+check_ocl_cache(const char      *ocl_binary_filename,
                 char gmx_unused *build_options_string,
                 char gmx_unused *ocl_source,
                 size_t          *ocl_binary_size,
@@ -863,7 +866,7 @@ ocl_get_build_options_string(cl_context           context,
  * \param[in] file_name  Name of file to use for the cache
  */
 void
-print_ocl_binaries_to_file(cl_program program, char* file_name)
+print_ocl_binaries_to_file(cl_program program, const char* file_name)
 {
     size_t         ocl_binary_size = 0;
     unsigned char *ocl_binary      = NULL;
@@ -879,6 +882,86 @@ print_ocl_binaries_to_file(cl_program program, char* file_name)
     fclose(f);
 
     free(ocl_binary);
+}
+
+/*! \brief Construct and create (if needed) the OpenCL cache directory
+ *
+ * \return The path to the cache directory
+ *
+ * \todo Consider storing the name of the cache directory rather than
+ * reconstructing it upon every call of this function.
+ */
+std::string get_binary_cache_dir()
+{
+    std::string ocl_binary_cache_dir;
+
+    /* Let the user override the cache location, e.g. if the
+       directory that would otherwise be used is not accessible from
+       compute nodes. */
+    char *ocl_binary_cache_dir_override = getenv("GMX_JIT_CACHE_DIR");
+    if (NULL != ocl_binary_cache_dir_override)
+    {
+        ocl_binary_cache_dir.assign(ocl_binary_cache_dir_override);
+    }
+    else
+    {
+        // Try to use the cache location set in GMX_JIT_CACHE_DIR at configure time
+        ocl_binary_cache_dir.assign(GMX_JIT_CACHE_DIR);
+        if (ocl_binary_cache_dir.empty())
+        {
+            // Fall back on hard-coded default to ~/.gromacs/$version
+            // (or working directory)
+
+            std::string ocl_binary_cache_dir_base;
+            char       *home_dir = getenv("HOME");
+
+            if (NULL != home_dir)
+            {
+                // Linux and Mac should reach here
+                ocl_binary_cache_dir_base.assign(home_dir);
+            }
+            else
+            {
+                char *userprofile_dir = getenv("USERPROFILE");
+
+                if (NULL != userprofile_dir)
+                {
+                    // Native Windows should reach here
+                    ocl_binary_cache_dir_base.assign(userprofile_dir);
+                }
+                else
+                {
+                    // Fall back to the working directory
+                    ocl_binary_cache_dir_base.assign(".");
+                }
+            }
+
+            if (!gmx::Directory::exists(ocl_binary_cache_dir_base))
+            {
+                gmx_fatal(FARGS, "Could not find OpenCL cache base directory %s", ocl_binary_cache_dir_base.c_str());
+            }
+
+            ocl_binary_cache_dir = gmx::Path::join(ocl_binary_cache_dir_base,
+                                                   ".gromacs");
+            if (0 != gmx::Directory::create(ocl_binary_cache_dir))
+            {
+                gmx_fatal(FARGS, "Could not create OpenCL cache directory %s", ocl_binary_cache_dir.c_str());
+            }
+
+            // Remove any spaces from gmx_version() string
+            std::string version = gmx::replaceAll(gmx_version(), " ", "_");
+            ocl_binary_cache_dir = gmx::Path::join(ocl_binary_cache_dir,
+                                                   version);
+        }
+    }
+
+    /* The user is responsible for making sure this succeeds if they
+       have used one of the overrides. */
+    if (0 != gmx::Directory::create(ocl_binary_cache_dir))
+    {
+        gmx_fatal(FARGS, "Could not create OpenCL cache directory %s", ocl_binary_cache_dir.c_str());
+    }
+    return ocl_binary_cache_dir;
 }
 
 /*! \brief Compile the kernels as described by kernel src id and vendor spec
@@ -924,7 +1007,7 @@ ocl_compile_program(
     bool           bCacheOclBuild           = false;
     bool           bOclCacheValid           = false;
 
-    char           ocl_binary_filename[256] = { 0 };
+    std::string    ocl_binary_full_filename;
     size_t         ocl_binary_size          = 0;
     unsigned char *ocl_binary               = NULL;
 
@@ -966,11 +1049,23 @@ ocl_compile_program(
     bCacheOclBuild = (NULL == getenv("GMX_OCL_NOGENCACHE"));
     if (bCacheOclBuild)
     {
-        clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(ocl_binary_filename), ocl_binary_filename, NULL);
-        strcat(ocl_binary_filename, ".bin");
+        std::string ocl_binary_cache_dir = get_binary_cache_dir();
+
+        char        ocl_device_id_string[STRLEN];
+        clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(ocl_device_id_string), ocl_device_id_string, NULL);
+        /* Ensure null termination, since OpenCL docs don't state the
+           behaviour if the device has name that is too long to fit */
+        ocl_device_id_string[sizeof(ocl_device_id_string)-1] = '\0';
+        /* TODO Embed more metadata in the filename once the best
+           approach for GROMACS JIT caching becomes clear. */
+        std::string ocl_cache_filename("OpenCL_kernels_for_device_");
+        /* Make sure we avoid any issues with spaces in filenames */
+        ocl_cache_filename      += gmx::replaceAll(ocl_device_id_string, " ", "_");
+        ocl_cache_filename      += ".bin";
+        ocl_binary_full_filename = gmx::Path::normalize(gmx::Path::join(ocl_binary_cache_dir, ocl_cache_filename));
 
         /* Check if there's a valid cache available */
-        bOclCacheValid = check_ocl_cache(ocl_binary_filename,
+        bOclCacheValid = check_ocl_cache(ocl_binary_full_filename.c_str(),
                                          build_options_string,
                                          ocl_source,
                                          &ocl_binary_size, &ocl_binary);
@@ -1018,7 +1113,7 @@ ocl_compile_program(
                    valid => update it */
                 if (!bOclCacheValid)
                 {
-                    print_ocl_binaries_to_file(*p_program, ocl_binary_filename);
+                    print_ocl_binaries_to_file(*p_program, ocl_binary_full_filename.c_str());
                 }
             }
             else

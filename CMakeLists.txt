@@ -652,8 +652,10 @@ endif()
 ##################################################
 include(gmxManageFFTLibraries)
 
-
 include(gmxManageLinearAlgebraLibraries)
+
+set(GMX_JIT_CACHE_DIR "" CACHE INTERNAL "If non-empty, a location for mdrun to read and write JIT-compiled artifacts")
+mark_as_advanced(GMX_JIT_CACHE_DIR)
 
 # Whether GROMACS will really try to compile support for VMD plugins
 set(GMX_USE_PLUGINS OFF)
