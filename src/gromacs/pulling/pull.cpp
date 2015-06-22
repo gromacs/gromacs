@@ -63,9 +63,26 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull_internal.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+
+static std::string append_before_extension(std::string pathname,
+                                           std::string to_append)
+{
+    /* Appends to_append before last '.' in pathname */
+    size_t extPos = pathname.find_last_of('.');
+    if (extPos == std::string::npos)
+    {
+        return pathname + to_append;
+    }
+    else
+    {
+        return pathname.substr(0, extPos) + to_append +
+               pathname.substr(extPos, std::string::npos);
+    }
+}
 
 static void pull_print_group_x(FILE *out, ivec dim,
                                const pull_group_work_t *pgrp)
@@ -1867,12 +1884,48 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->out_f = NULL;
     if (bOutFile)
     {
-        if (pull->params.nstxout > 0)
+        /* Check for px and pf filename collision */
+        std::string px_filename, pf_filename;
+        std::string px_appended, pf_appended;
+        try
+        {
+            px_filename  = std::string(opt2fn("-px", nfile, fnm));
+            pf_filename  = std::string(opt2fn("-pf", nfile, fnm));
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
+
+        if ((pull->params.nstxout != 0) && (pull->params.nstfout != 0))
+        {
+            if (!opt2bSet("-px", nfile, fnm) && !opt2bSet("-pf", nfile, fnm) &&
+                (px_filename == pf_filename))
+            {
+                /* We are writing both pull files but neither set directly. */
+                try
+                {
+                    px_appended   = append_before_extension(px_filename, "_pullx");
+                    pf_appended   = append_before_extension(pf_filename, "_pullf");
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+                pull->out_x   = open_pull_out(px_appended.c_str(), pull, oenv,
+                                              TRUE, Flags);
+                pull->out_f = open_pull_out(pf_appended.c_str(), pull, oenv,
+                                            FALSE, Flags);
+                return pull;
+            }
+            else if (px_filename == pf_filename)
+            {
+                /* If one of -px and -pf is set but the filenames are identical: */
+                gmx_fatal(FARGS, "Identical pull_x and pull_f output filenames %s",
+                          px_filename.c_str());
+            }
+        }
+        if (pull->params.nstxout != 0)
         {
             pull->out_x = open_pull_out(opt2fn("-px", nfile, fnm), pull, oenv,
                                         TRUE, Flags);
         }
-        if (pull->params.nstfout > 0)
+        if (pull->params.nstfout != 0)
         {
             pull->out_f = open_pull_out(opt2fn("-pf", nfile, fnm), pull, oenv,
                                         FALSE, Flags);
