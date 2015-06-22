@@ -532,7 +532,10 @@ will take longer, the following builds will be very fast. AMD drivers,
 on the other hand, implement no caching and running a program can be
 very slow. |Gromacs| implements its own caching in this case, which is
 enabled by default. To disable it, set ``GMX_OCL_NOGENCACHE``
-environment variable.
+environment variable. The location of the cache needs to be readable
+and writable by mdrun at run time, and may be configured when you
+build |Gromacs|, or over-ridden at run time with the
+``GMX_JIT_CACHE_DIR`` environment variable.
 
 If you plan to modify the OpenCL kernels, you should disable any caching:
 

@@ -57,6 +57,7 @@
 
 #include <string>
 
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -731,7 +732,7 @@ ocl_get_fastgen_define(
  * detected this function must return false.
  */
 bool
-check_ocl_cache(char            *ocl_binary_filename,
+check_ocl_cache(const char      *ocl_binary_filename,
                 char gmx_unused *build_options_string,
                 char gmx_unused *ocl_source,
                 size_t          *ocl_binary_size,
@@ -863,7 +864,7 @@ ocl_get_build_options_string(cl_context           context,
  * \param[in] file_name  Name of file to use for the cache
  */
 void
-print_ocl_binaries_to_file(cl_program program, char* file_name)
+print_ocl_binaries_to_file(cl_program program, const char* file_name)
 {
     size_t         ocl_binary_size = 0;
     unsigned char *ocl_binary      = NULL;
@@ -924,7 +925,7 @@ ocl_compile_program(
     bool           bCacheOclBuild           = false;
     bool           bOclCacheValid           = false;
 
-    char           ocl_binary_filename[256] = { 0 };
+    std::string    ocl_binary_full_filename;
     size_t         ocl_binary_size          = 0;
     unsigned char *ocl_binary               = NULL;
 
@@ -966,11 +967,32 @@ ocl_compile_program(
     bCacheOclBuild = (NULL == getenv("GMX_OCL_NOGENCACHE"));
     if (bCacheOclBuild)
     {
-        clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(ocl_binary_filename), ocl_binary_filename, NULL);
-        strcat(ocl_binary_filename, ".bin");
+        char        ocl_device_id_string[STRLEN];
+        std::string ocl_binary_cache_dir = GMX_JIT_CACHE_DIR;
+
+        /* Let the user over-ride the cache location, e.g. if the
+           GROMACS installation didn't set GMX_JIT_CACHE_DIR cmake
+           cache variable to a file system accessible from compute
+           nodes. */
+        char *ocl_binary_cache_dir_override = getenv("GMX_JIT_CACHE_DIR");
+        if (NULL != ocl_binary_cache_dir_override)
+        {
+            ocl_binary_cache_dir.assign(ocl_binary_cache_dir_override);
+        }
+
+        clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(ocl_device_id_string), ocl_device_id_string, NULL);
+        /* Ensure null termination, since OpenCL docs don't state the
+           behaviour if the device has name that is too long to fie */
+        ocl_device_id_string[sizeof(ocl_device_id_string)-1] = '\0';
+        /* TODO Embed more metadata in the filename once the best
+           approach for GROMACS JIT caching becomes clear. */
+        std::string ocl_cache_filename("OpenCL_kernels_for_device_");
+        ocl_cache_filename      += gmx::replaceAll(ocl_device_id_string, " ", "_");
+        ocl_cache_filename      += ".bin";
+        ocl_binary_full_filename = gmx::Path::normalize(gmx::Path::join(ocl_binary_cache_dir, ocl_cache_filename));
 
         /* Check if there's a valid cache available */
-        bOclCacheValid = check_ocl_cache(ocl_binary_filename,
+        bOclCacheValid = check_ocl_cache(ocl_binary_full_filename.c_str(),
                                          build_options_string,
                                          ocl_source,
                                          &ocl_binary_size, &ocl_binary);
@@ -1018,7 +1040,7 @@ ocl_compile_program(
                    valid => update it */
                 if (!bOclCacheValid)
                 {
-                    print_ocl_binaries_to_file(*p_program, ocl_binary_filename);
+                    print_ocl_binaries_to_file(*p_program, ocl_binary_full_filename.c_str());
                 }
             }
             else
