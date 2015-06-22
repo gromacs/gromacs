@@ -619,9 +619,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         nstfep = gmx_greatest_common_divisor(repl_ex_nst,nstfep);
     }
 
-    /* I'm assuming we need global communication the first time! MRS */
+    /* Be REALLY careful about what flags you set here. You CANNOT assume
+     * this is the first step, since we might be restarting from a checkpoint,
+     * and in that case we should not do any modifications to the state.
+     */
+    bStopCM = (ir->comm_mode != ecmNO && !ir->bContinuation);
+
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
-                  | ((ir->comm_mode != ecmNO) ? CGLO_STOPCM : 0)
+                  | (bStopCM ? CGLO_STOPCM : 0)
                   | (bVV ? CGLO_PRESSURE : 0)
                   | (bVV ? CGLO_CONSTRAINT : 0)
                   | (bRerunMD ? CGLO_RERUNMD : 0)
@@ -1543,6 +1548,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (fr->bMolPBC)
                 {
                     /* Make molecules whole only for confout writing */
+                    /* NOTE: this changes the coordinates at the last step,
+                     * which in turn affects the velocities when constraining.
+                     * Without DD this leads to different Ekin and pressure
+                     * at the last step compared to a continued run.
+                     */
                     do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, state_global->x);
                 }
                 write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
