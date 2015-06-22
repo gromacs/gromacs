@@ -370,7 +370,8 @@ static int **get_shell_pbc(t_ilist *ilist,
                            t_atom *atom, t_mdatoms *md,
                            t_block *cgs, int *a2cg)
 {
-    int      ftype, nral, i, shi, shell, cg_v, a;
+    int      ftype, nral, i, shi, cg_v, a;
+    int      shell = -1;
     t_ilist *il;
     t_iatom *ia;
     int    **shell_pbc, *shell_pbc_f;
@@ -432,73 +433,77 @@ static int **get_shell_pbc(t_ilist *ilist,
                 {
                     shell = ia[i+2];
                 }
-                cg_v  = a2cg[shell];
-                /* A value of -2 signals that this shell and its bonded 
-                 * atoms are all within the same cg, so no pbc is required.
-                 */
-                shell_pbc_f[shi] = -2;
-                /* Check if connected atoms are outside the shell's cg */
-                for (a = 1; a < nral; a++)
+
+                if (shell != -1)
                 {
-                    if (a2cg[shell+a] != cg_v)
+                    cg_v  = a2cg[shell];
+                    /* A value of -2 signals that this shell and its bonded 
+                     * atoms are all within the same cg, so no pbc is required.
+                     */
+                    shell_pbc_f[shi] = -2;
+                    /* Check if connected atoms are outside the shell's cg */
+                    for (a = 1; a < nral; a++)
                     {
-                        shell_pbc_f[shi] = -1;
-                    }
-                }
-                if (shell_pbc_f[shi] == -1)
-                {
-                    /* Check if this is the first processed atom of a shell-only cg */
-                    bShellOnlyCG_and_FirstAtom = TRUE;
-                    for (a = cgs->index[cg_v]; a < cgs->index[cg_v+1]; a++)
-                    {
-                        /* Non-shells already have pbc set, so simply check for pbc_set */
-                        if (pbc_set[a])
+                        if (a2cg[shell+a] != cg_v)
                         {
-                            bShellOnlyCG_and_FirstAtom = FALSE;
-                            break;
+                            shell_pbc_f[shi] = -1;
                         }
                     }
-                    if (bShellOnlyCG_and_FirstAtom)
+                    if (shell_pbc_f[shi] == -1)
                     {
-                        /* First processed atom of a shell-only charge group.
-                         * The pbc of the input coordinates should be preserved.
-                         */
-                        shell_pbc_f[shi] = shell;
-                    }
-                    else if (cg_v != a2cg[shell+1])
-                    {
-                        /* This shell has a different charge group index
-                         * than it's first connected atom
-                         * and the charge group has more than one atom,
-                         * search for the first normal particle
-                         * or shell that already had its pbc defined.
-                         * If nothing is found, use full pbc for this shell.
-                         */
+                        /* Check if this is the first processed atom of a shell-only cg */
+                        bShellOnlyCG_and_FirstAtom = TRUE;
                         for (a = cgs->index[cg_v]; a < cgs->index[cg_v+1]; a++)
                         {
-                            if (a != shell && pbc_set[a])
+                            /* Non-shells already have pbc set, so simply check for pbc_set */
+                            if (pbc_set[a])
                             {
-                                shell_pbc_f[shi] = a;
-                                if (gmx_debug_at)
-                                {
-                                    fprintf(debug, "shell %d match pbc with atom %d\n",
-                                            shell+1, a+1);
-                                }
+                                bShellOnlyCG_and_FirstAtom = FALSE;
                                 break;
                             }
                         }
-                        if (gmx_debug_at)
+                        if (bShellOnlyCG_and_FirstAtom)
                         {
-                            fprintf(debug, "shell atom %d  cg %d - %d pbc atom %d\n",
-                                    shell+1, cgs->index[cg_v]+1, cgs->index[cg_v+1],
-                                    shell_pbc_f[shi]+1);
+                            /* First processed atom of a shell-only charge group.
+                             * The pbc of the input coordinates should be preserved.
+                             */
+                            shell_pbc_f[shi] = shell;
+                        }
+                        else if (cg_v != a2cg[shell+1])
+                        {
+                            /* This shell has a different charge group index
+                             * than its first connected atom
+                             * and the charge group has more than one atom,
+                             * search for the first normal particle
+                             * or shell that already had its pbc defined.
+                             * If nothing is found, use full pbc for this shell.
+                             */
+                            for (a = cgs->index[cg_v]; a < cgs->index[cg_v+1]; a++)
+                            {
+                                if (a != shell && pbc_set[a])
+                                {
+                                    shell_pbc_f[shi] = a;
+                                    if (gmx_debug_at)
+                                    {
+                                        fprintf(debug, "shell %d match pbc with atom %d\n",
+                                                shell+1, a+1);
+                                    }
+                                    break;
+                                }
+                            }
+                            if (gmx_debug_at)
+                            {
+                                fprintf(debug, "shell atom %d  cg %d - %d pbc atom %d\n",
+                                        shell+1, cgs->index[cg_v]+1, cgs->index[cg_v+1],
+                                        shell_pbc_f[shi]+1);
+                            }
                         }
                     }
-                }
-                i += 1+nral;
+                    i += 1+nral;
 
-                /* This shell now has its pbc defined */
-                pbc_set[shell] = 1;
+                    /* This shell now has its pbc defined */
+                    pbc_set[shell] = 1;
+                }
             }
         }
     }
