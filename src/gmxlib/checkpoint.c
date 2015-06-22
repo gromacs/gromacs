@@ -1486,11 +1486,11 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     flags_enh = 0;
     if (state->enerhist.nsum > 0 || state->enerhist.nsum_sim > 0)
     {
-        flags_enh |= (1<<eenhENERGY_N);
+        flags_enh |= ((1<<eenhENERGY_N) | (1<<eenhENERGY_NSTEPS));
         if (state->enerhist.nsum > 0)
         {
             flags_enh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
-                          (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSUM));
+                          (1<<eenhENERGY_NSUM));
         }
         if (state->enerhist.nsum_sim > 0)
         {
