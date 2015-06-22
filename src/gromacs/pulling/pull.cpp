@@ -1867,6 +1867,32 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->out_f = NULL;
     if (bOutFile)
     {
+        /* Check for px and pf filename collision */
+        std::string px_filename  = std::string(opt2fn("-px", nfile, fnm));
+        std::string pf_filename  = std::string(opt2fn("-pf", nfile, fnm));
+        std::string px_prepended = std::string("pullx_");
+        std::string pf_prepended = std::string("pullf_");
+
+        if (pull->params.nstxout && pull->params.nstfout &&
+            !opt2bSet("-px", nfile, fnm) && !opt2bSet("-pf", nfile, fnm))
+        {
+            /* We are writing both pull files but neither is set directly. */
+            fprintf(stderr, "Prepending to prevent pull file duplication\n");
+            px_prepended += px_filename;
+            pf_prepended += pf_filename;
+            pull->out_x   = open_pull_out(px_prepended.c_str(), pull, oenv,
+                                          TRUE, Flags);
+            pull->out_f = open_pull_out(pf_prepended.c_str(), pull, oenv,
+                                        TRUE, Flags);
+            return pull;
+        }
+        else if (pull->params.nstxout && pull->params.nstfout &&
+                 (px_filename == pf_filename))
+        {
+            /* If one of -px and -pf is set but the filenames are identical: */
+            gmx_fatal(FARGS, "Identical pull_x and pull_f output filenames %s",
+                      px_filename.c_str());
+        }
         if (pull->params.nstxout > 0)
         {
             pull->out_x = open_pull_out(opt2fn("-px", nfile, fnm), pull, oenv,
