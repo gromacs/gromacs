@@ -1868,14 +1868,6 @@ int gmx_grompp(int argc, char *argv[])
             gmx_fatal(FARGS, "Pressure coupling is not yet supported with extended Lagrangian.\n");
         }
 
-        /* note issues with multiple NH chains */
-        if (ir->etc == etcNOSEHOOVER && ir->opts.nhchainlength > 1)
-        {
-            sprintf(warn_buf, "Drude simulations are not yet compatible with multiple NH chains.\n"
-                              "Set nh-chain-length to 1.\n");
-            warning_note(wi, warn_buf);
-        }
-
         /* Moved from md.cpp */
         if (ir->eI == eiNM)
         {
