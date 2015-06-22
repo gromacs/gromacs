@@ -95,7 +95,7 @@ int continuing(char *s)
 
 
 char *fgets2(char *line, int n, FILE *stream)
-/* This routine reads a string from stream of max length n
+/* This routine reads a string from stream of max length n, including \0
  * and zero terminated, without newlines
  * line should be long enough (>= n)
  */
