@@ -121,7 +121,8 @@ int get_strings(const char *db, char ***strings)
 {
     FILE  *in;
     char **ptr;
-    char   buf[256];
+    char   fscanf_format[20];
+    char   buf[STRLEN];
     int    i, nstr;
 
     in = libopen(db);
@@ -132,10 +133,11 @@ int get_strings(const char *db, char ***strings)
         ffclose(in);
         return 0;
     }
+    sprintf(fscanf_format, "%s%d%s", "%", STRLEN - 1, "s");
     snew(ptr, nstr);
     for (i = 0; (i < nstr); i++)
     {
-        if (1 != fscanf(in, "%s", buf))
+        if (1 != fscanf(in, fscanf_format, buf))
         {
             gmx_fatal(FARGS, "Cannot read string from buffer");
         }
@@ -170,11 +172,11 @@ int search_str(int nstr, char **str, char *key)
 int fget_lines(FILE *in, char ***strings)
 {
     char **ptr;
-    char   buf[256];
+    char   buf[STRLEN];
     int    i, nstr;
     char  *pret;
 
-    pret = fgets(buf, 255, in);
+    pret = fgets(buf, STRLEN-1, in);
     if (pret == NULL  || sscanf(buf, "%d", &nstr) != 1)
     {
         gmx_warning("File is empty");
@@ -185,7 +187,7 @@ int fget_lines(FILE *in, char ***strings)
     snew(ptr, nstr);
     for (i = 0; (i < nstr); i++)
     {
-        fgets2(buf, 255, in);
+        fgets2(buf, STRLEN-1, in);
         ptr[i] = gmx_strdup(buf);
     }
 
