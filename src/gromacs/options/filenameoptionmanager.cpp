@@ -258,10 +258,10 @@ std::string FileNameOptionManager::completeDefaultFileName(
     {
         return std::string();
     }
-    const bool        bInput = option.isInputFile() || option.isInputOutputFile();
-    const std::string realPrefix
+    const bool              bInput = option.isInputFile() || option.isInputOutputFile();
+    const std::string       realPrefix
         = !impl_->defaultFileName_.empty() ? impl_->defaultFileName_ : prefix;
-    const bool        bAllowMissing = option.allowMissing();
+    const bool              bAllowMissing = option.allowMissing();
     if (bInput)
     {
         std::string completedName = findExistingExtension(realPrefix, option);
