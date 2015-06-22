@@ -652,6 +652,7 @@ endif()
 ##################################################
 include(gmxManageFFTLibraries)
 
+include(gmxManageJIT)
 
 include(gmxManageLinearAlgebraLibraries)
 
