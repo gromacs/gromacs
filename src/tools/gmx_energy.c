@@ -87,6 +87,7 @@ typedef struct {
     int             *steps;
     int             *points;
     enerdat_t       *s;
+    gmx_bool         bHaveSums;
 } enerdata_t;
 
 static double mypow(double x, double y)
@@ -703,7 +704,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
     {
         ed             = &edat->s[i];
         ed->bExactStat = FALSE;
-        if (edat->npoints > 0)
+        if (edat->bHaveSums)
         {
             /* All energy file sum entries 0 signals no exact sums.
              * But if all energy values are 0, we still have exact sums.
@@ -1172,7 +1173,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             esum = calc_sum(nset, edat, nbmin, nbmax);
         }
 
-        if (edat->npoints == 0)
+        if (!edat->bHaveSums)
         {
             nexact    = 0;
             nnotexact = nset;
@@ -2321,12 +2322,13 @@ int gmx_energy(int argc, char *argv[])
     }
 
     /* Initiate energies and set them to zero */
-    edat.nsteps  = 0;
-    edat.npoints = 0;
-    edat.nframes = 0;
-    edat.step    = NULL;
-    edat.steps   = NULL;
-    edat.points  = NULL;
+    edat.nsteps    = 0;
+    edat.npoints   = 0;
+    edat.nframes   = 0;
+    edat.step      = NULL;
+    edat.steps     = NULL;
+    edat.points    = NULL;
+    edat.bHaveSums = TRUE;
     snew(edat.s, nset);
 
     /* Initiate counters */
@@ -2404,41 +2406,43 @@ int gmx_energy(int argc, char *argv[])
                 else
                 {
                     edat.steps[nfr] = fr->nsteps;
+
+                    if (fr->nsum <= 1)
                     {
-                        if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
+                        /* mdrun only calculated the energy at energy output
+                         * steps. We don't need to check step intervals.
+                         */
+                        edat.points[nfr] = 1;
+                        for (i = 0; i < nset; i++)
                         {
-                            if (fr->nsum <= 1)
-                            {
-                                edat.points[nfr] = 1;
-                                for (i = 0; i < nset; i++)
-                                {
-                                    sss                    = set[i];
-                                    edat.s[i].es[nfr].sum  = fr->ener[sss].e;
-                                    edat.s[i].es[nfr].sum2 = 0;
-                                }
-                                edat.npoints += 1;
-                            }
-                            else
-                            {
-                                edat.points[nfr] = fr->nsum;
-                                for (i = 0; i < nset; i++)
-                                {
-                                    sss                    = set[i];
-                                    edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
-                                    edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
-                                }
-                                edat.npoints += fr->nsum;
-                            }
+                            sss                    = set[i];
+                            edat.s[i].es[nfr].sum  = fr->ener[sss].e;
+                            edat.s[i].es[nfr].sum2 = 0;
                         }
-                        else
-                        {
-                            /* The interval does not match fr->nsteps:
-                             * can not do exact averages.
-                             */
-                            edat.npoints = 0;
-                        }
-                        edat.nsteps = fr->step - start_step + 1;
+                        edat.npoints  += 1;
+                        edat.bHaveSums = FALSE;
                     }
+                    else if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
+                    {
+                        /* We have statistics  to the previous frame */
+                        edat.points[nfr] = fr->nsum;
+                        for (i = 0; i < nset; i++)
+                        {
+                            sss                    = set[i];
+                            edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
+                            edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
+                        }
+                        edat.npoints += fr->nsum;
+                    }
+                    else
+                    {
+                        /* The interval does not match fr->nsteps:
+                         * can not do exact averages.
+                         */
+                        edat.bHaveSums = FALSE;
+                    }
+
+                    edat.nsteps = fr->step - start_step + 1;
                 }
                 for (i = 0; i < nset; i++)
                 {
