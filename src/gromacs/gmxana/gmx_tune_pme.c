@@ -596,7 +596,7 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
     char      *cp;
     FILE      *fp;
     const char def_mpirun[]   = "mpirun";
-    const char def_mdrun[]    = "mdrun";
+    const char def_mdrun[]    = "gmx mdrun";
 
     const char empty_mpirun[] = "";
 
@@ -623,7 +623,7 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
     }
     else
     {
-        *cmd_mdrun  = gmx_strdup(def_mdrun);
+        gmx_fatal(FARGS, "Please set the environment variable MDRUN to the correct executable name, e.g. \"gmx mdrun\" or \"gmx_d mdrun\" for double precision.");
     }
 }
 
