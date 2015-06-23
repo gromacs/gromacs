@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria project.
  *
- * Copyright (C) 2014,2015 David van der Spoel and Paul J. van Maaren
+ * Copyright (C) 2014 David van der Spoel and Paul J. van Maaren
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 /*! \internal \brief
- * Implements part of the alexandria program
+ * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gmxpre.h"
@@ -1014,12 +1014,12 @@ static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeDistri
     ChargeDistributionModel    eqg_model;
     gmx_bool                  *bSplit;
     char                     **name;
-    double                     dV, V, dVp, Vp, rr, *J0, *chi0, **zeta, **q, qij, qkl;
+    double                     dV, V, dVp, Vp, rr, *J0, *chi0, **zeta, **q, qij, qkl, vc, vd, fd, fc, vr, fr;
     int                      **row, *nzeta;
     int                        natypemax = 32, natype = 0;
     int                        nzi0, nzi1, nzk0, nzk1;
     char                       buf[STRLEN], fnbuf[STRLEN];
-    char                       ns[3] = "ns";
+    char                       *ns[2] = {"","_s"};
 
     gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv);
     snew(name, natypemax);
@@ -1102,7 +1102,7 @@ static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeDistri
                     }
                     strncpy(fnbuf, fn, strlen(fn)-4);
                     fnbuf[strlen(fn)-4] = '\0';
-                    sprintf(buf, "%s-%s%c-%s%c.xvg", fnbuf, name[i], ns[bi],
+                    sprintf(buf, "%s_%s%s_%s%s.xvg", fnbuf, name[i], ns[bi],
                             name[k], ns[bk]);
                     fp = xvgropen(buf, buf, "r (nm)", "V (kJ/mol e)", oenv);
                     for (n = 0; (n <= nmax); n++)
@@ -1122,12 +1122,12 @@ static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeDistri
                                         break;
                                     case eqdAXg:
                                         dV  = Coulomb_GG(rr, zeta[i][j], zeta[k][l]);
-                                        dVp = DCoulomb_GG(rr, zeta[i][j], zeta[k][l]);
+                                        dVp = -1*DCoulomb_GG(rr, zeta[i][j], zeta[k][l]);
                                         break;
                                     case eqdAXs:
                                         dV  = Coulomb_SS(rr, row[i][j], row[k][l],
                                                          zeta[i][j], zeta[k][l]);
-                                        dVp = DCoulomb_SS(rr, row[i][j], row[k][l],
+                                        dVp = -1*DCoulomb_SS(rr, row[i][j], row[k][l],
                                                           zeta[i][j], zeta[k][l]);
                                         break;
                                     default:
@@ -1153,8 +1153,15 @@ static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeDistri
                                 V  += dV*(qij*qkl);
                                 Vp += dVp*(qij*qkl);
                             }
-                        }
-                        fprintf(fp, "%10.5e  %10.5e  %10.5e\n", rr, V, Vp);
+                        } 
+			double r = rr;
+			if(r>0){
+			  lo_do_ljc(r, &vc, &fc, &vd, &fd, &vr, &fr);
+			}
+			else {
+			  vc = fc = vd = fd= vr = fr = 0;
+			}
+                        fprintf(fp, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, V, Vp, vd, fd, vr, fr);
                     }
                     fclose(fp);
                 }
