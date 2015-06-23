@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -198,13 +198,14 @@ static gmx_bool contains_char(t_rbonded *s, char c)
     return bRet;
 }
 
-gmx_bool rbonded_atoms_exist_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
+int
+rbonded_find_atoms_in_list(t_rbonded *b, t_rbonded blist[], int nlist, int natoms)
 {
     int      i, k;
-    gmx_bool matchFound = FALSE;
+    int      foundPos = -1;
     gmx_bool atomsMatch;
 
-    for (i = 0; i < nlist && !matchFound; i++)
+    for (i = 0; i < nlist && foundPos < 0; i++)
     {
         atomsMatch = TRUE;
         for (k = 0; k < natoms && atomsMatch; k++)
@@ -220,21 +221,42 @@ gmx_bool rbonded_atoms_exist_in_list(t_rbonded *b, t_rbonded blist[], int nlist,
                 atomsMatch = atomsMatch && !strcmp(b->a[k], blist[i].a[natoms-1-k]);
             }
         }
-        matchFound = atomsMatch;
+        if (atomsMatch)
+        {
+            foundPos = i;
+        }
     }
-    return matchFound;
+    return foundPos;
 }
 
 gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool bPlus)
 {
     int      i, j;
     gmx_bool bBondsRemoved;
+    int      nbHackblockStart;
+    int      index;
 
     bBondsRemoved = FALSE;
     for (i = 0; i < ebtsNR; i++)
     {
         if (s[i].nb > 0)
         {
+            /* Record how many bonds we have in the destination when we start.
+             *
+             * If an entry is present in the hackblock (destination), we will
+             * not add the one from the main rtp, since the point is for hackblocks
+             * to overwrite it. However, if there is no hackblock entry we do
+             * allow multiple main rtp entries since some forcefield insist on that.
+             *
+             * We accomplish this by checking the position we find an entry in;
+             * if that index is larger than the original (hackblock) destination
+             * size, it was added from the main rtp, and then we will allow more
+             * such entries. In contrast, if the entry found has a lower index
+             * it is a hackblock entry meant to override the main rtp, and then
+             * we don't add the main rtp one.
+             */
+            nbHackblockStart = d[i].nb;
+
             /* make space */
             srenew(d[i].b, d[i].nb + s[i].nb);
             for (j = 0; j < s[i].nb; j++)
@@ -243,7 +265,8 @@ gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool
                  * We are merging from the main rtp to the hackblocks, so this
                  * will mean the hackblocks overwrite the man rtp, as intended.
                  */
-                if (!rbonded_atoms_exist_in_list(&s[i].b[j], d[i].b, d[i].nb, btsNiatoms[i]))
+                index = rbonded_find_atoms_in_list(&s[i].b[j], d[i].b, d[i].nb, btsNiatoms[i]);
+                if (index < 0 || index >= nbHackblockStart)
                 {
                     if (!(bMin && contains_char(&s[i].b[j], '-'))
                         && !(bPlus && contains_char(&s[i].b[j], '+')))
