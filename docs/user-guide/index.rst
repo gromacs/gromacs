@@ -25,5 +25,5 @@ For background on algorithms and implementations, see the
    mdrun-performance
    mdp-options
    file-formats
-   tools
+   cmdline
    environment-variables
