@@ -118,24 +118,76 @@ Command changes between versions
 
 Starting from |Gromacs| 5.0, some of the analysis commands (and a few other
 commands as well) have changed significantly.
-In the process, some old analysis tools have been removed in favor of more
-powerful functionality that is available through an alternative tool.
-This page documents how to perform different tasks that were possible with the
-old tools with the new set of tools.
 
-Many of the new tools mentioned below now accept selections through one or more
-command-line options instead of prompting for an index group.  Please see
-:doc:`/onlinehelp/selections` additional information on how to use the
+One main driver for this has been that many new tools mentioned below now
+accept selections through one or more command-line options instead of prompting
+for a static index group.  To take full advantage of selections, the interface
+to the commands has changed somewhat, and some previous command-line options
+are no longer present as the same effect can be achieved with suitable
+selections.
+Please see :doc:`/onlinehelp/selections` additional information on how to use
 selections.
 
-5.0
-^^^
+In the process, some old analysis commands have been removed in favor of more
+powerful functionality that is available through an alternative tool.
+For removed or replaced commands, this page documents how to perform the same
+tasks with new tools.
+For new commands, a brief note on the available features is given.  See the
+linked help for the new commands for a full description.
+
+Version 5.1
+^^^^^^^^^^^
+
+General
+.......
+
+Symbolic links from 5.0 are no longer supported.  The only way to invoke a
+command is through :samp:`gmx {<command>}`.
+
+gmx pairdist
+............
+
+**new**
+
+:ref:`gmx pairdist` has been introduced as a selection-enabled replacement for
+:ref:`gmx mindist` (``gmx mindist`` still exists unchanged).  It can calculate
+min/max pairwise distances between a pair of selections, including, e.g.,
+per-residue minimum distances or distances from a single point to a set of
+residue-centers-of-mass.
+
+gmx rdf
+.......
+
+**rewritten**
+
+:ref:`gmx rdf` has been rewritten for 5.1 to use selections for specifying the
+points from which the RDFs are calculated.  The interface is mostly the same,
+except that there are new command-line options to specify the selections.
+The following additional changes have been made:
+
+* ``-com`` and ``-rdf`` options have been removed.  Equivalent functionality is
+  available through selections:
+
+  * ``-com`` can be replaced with a :samp:`com of {<selection>}` as the
+    reference selection.
+  * ``-rdf`` can be replaced with a suitable set of selections (e.g.,
+    :samp:`res_com of {<selection>}`) and/or using ``-seltype``.
+
+* ``-rmax`` option is added to specify a cutoff for the RDFs.  If set to a
+  value that is significantly smaller than half the box size, it can speed up
+  the calculation significantly if a grid-based neighborhood search can be
+  used.
+* ``-hq`` and ``-fade`` options have been removed, as they are simply
+  postprocessing steps on the raw numbers that can be easily done after the
+  analysis.
+
+Version 5.0
+^^^^^^^^^^^
 
 General
 .......
 
 Version 5.0 introduced the :command:`gmx` wrapper binary.
-
 For backwards compatibility, symbolic links are still created by default for
 old tools: e.g., ``g_order <options>`` is equivalent to ``gmx order <options>``, and
 ``g_order`` is simply a symbolic link on the file system.
@@ -143,27 +195,34 @@ old tools: e.g., ``g_order <options>`` is equivalent to ``gmx order <options>``,
 g_bond
 ......
 
+**replaced**
+
 This tool has been removed in 5.0. A replacement is :ref:`gmx distance`.
 
 You can provide your existing index file to :ref:`gmx distance`, and it will
-calculate the same distances.  The only difference is that ``-blen`` and
-``-tol`` options have different default values, and that you can control the
-output histogram with ``-binw``.  ``-aver`` and ``-averdist`` options are not
-present.  Instead, you can choose between the different things to calculate
-using ``-oav`` (corresponds to ``-d`` with ``-averdist``), ``-oall``
-(corresponds to ``-d`` without ``-averdist``), ``-oh`` (corresponds to ``-o``
-with ``-aver``), and ``-oallstat`` (corresponds to ``-l`` without ``-aver``).
+calculate the same distances.  The differences are:
+
+* ``-blen`` and ``-tol`` options have different default values.
+* You can control the output histogram with ``-binw``.
+* ``-aver`` and ``-averdist`` options are not present.  Instead, you can choose
+  between the different things to calculate using ``-oav`` (corresponds to
+  ``-d`` with ``-averdist``), ``-oall`` (corresponds to ``-d`` without
+  ``-averdist``), ``-oh`` (corresponds to ``-o`` with ``-aver``), and
+  ``-oallstat`` (corresponds to ``-l`` without ``-aver``).
+
 You can produce any combination of output files.  Compared to ``g_bond``,
 ``gmx distance -oall`` is currently missing labels for the output columns.
 
 g_dist
 ......
 
+**replaced**
+
 This tool has been removed in 5.0.  A replacement is :ref:`gmx distance` (for
 most options) or :ref:`gmx select` (for ``-dist`` or ``-lt``).
 
 If you had index groups A and B in :file:`index.ndx` for ``g_dist``, you can use the
-following command to compute the same distance with gmx distance::
+following command to compute the same distance with ``gmx distance``::
 
   gmx distance -n index.ndx -select 'com of group "A" plus com of group "B"' -oxyz -oall
 
@@ -176,8 +235,43 @@ If you used ``-dist D``, you can do the same calculation with ``gmx select``::
 You can select the output option that best suits your post-processing needs
 (``-olt`` is a replacement for ``g_dist -dist -lt``)
 
+gmx distance
+............
+
+**new**
+
+:ref:`gmx distance` has been introduced as a selection-enabled replacement for
+various tools that computed distances between fixed pairs of atoms (or
+centers-of-mass of groups).  It has a combination of the features of ``g_bond``
+and ``g_dist``, allowing computation of one or multiple distances, either
+between atom-atom pairs or centers-of-mass of groups, and providing a
+combination of output options that were available in one of the tools.
+
+gmx gangle
+..........
+
+**new**
+
+:ref:`gmx gangle` has been introduced as a selection-enabled replacement for
+``g_sgangle``.  In addition to supporting atom-atom vectors, centers-of-mass
+can be used as endpoints of the vectors, and there are a few additional angle
+types that can be calculated.  The command also has basic support for
+calculating normal angles between three atoms and/or centers-of-mass, making it
+a partial replacement for :ref:`gmx angle` as well.
+
+gmx freevolume
+..............
+
+**new**
+
+This tool has been introduced in 5.0.  It uses a Monte Carlo sampling method to
+calculate the fraction of free volume within the box (using a probe of a given
+size).
+
 g_sas
 .....
+
+**rewritten**
 
 This tool has been rewritten in 5.0, and renamed to :ref:`gmx sasa` (the
 underlying surface area calculation algorithm is still the same).
@@ -185,14 +279,15 @@ underlying surface area calculation algorithm is still the same).
 The main difference in the new tool is support for selections.  Instead of
 prompting for an index group, a (potentially dynamic) selection for the
 calculation can be given with ``-surface``.  Any number of output groups can be
-given with ``-output``. The total area of the ``-surface`` group is now always
-calculated. Please see ``gmx sasa -h``.
+given with ``-output``, allowing multiple parts of the surface area to be
+computed in a single run.  The total area of the ``-surface`` group is now
+always calculated.
 
 The tool no longer automatically divides the surface into hydrophobic and
 hydrophilic areas, and there is no ``-f_index`` option.  The same effects can
 be obtained by defining suitable selections for ``-output``.  If you want
 output that contains the same numbers as with the old tool for a calculation
-group A and output group B, you can use ::
+group ``A`` and output group ``B``, you can use ::
 
   gmx sasa -surface 'group "A"' -output '"Hydrophobic" group "A" and charge {-0.2 to 0.2}; "Hydrophilic" group "B" and not charge {-0.2 to 0.2}; "Total" group "B"'
 
@@ -205,8 +300,10 @@ in the new tool, but would not be very difficult to add if requested.
 g_sgangle
 .........
 
-This tool has been removed in 5.0. A replacement is :ref:`gmx gangle` (for angle
-calculation) and :ref:`gmx distance` (for ``-od``, ``-od1``, ``-od2``).
+**replaced**
+
+This tool has been removed in 5.0.  A replacement is :ref:`gmx gangle` (for
+angle calculation) and :ref:`gmx distance` (for ``-od``, ``-od1``, ``-od2``).
 
 If you had index groups A and B in index.ndx for ``g_sgangle``, you can use the
 following command to compute the same angle with ``gmx gangle``::
@@ -222,7 +319,7 @@ If you only had a single index group A in index.ndx and you used ``g_sgangle``
   gmx gangle -n index.ndx -g1 vector/plane -group1 'group "A"' -g2 z/t0 -oav
 
 For the distances, you can use :ref:`gmx distance` to compute one or more
-distances as you want. Both distances between centers of groups or individual
+distances as you want.  Both distances between centers of groups or individual
 atoms are supported using the new selection syntax.
 
 genbox
