@@ -596,7 +596,7 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
     char      *cp;
     FILE      *fp;
     const char def_mpirun[]   = "mpirun";
-    const char def_mdrun[]    = "mdrun";
+    const char def_mdrun[]    = "gmx mdrun";
 
     const char empty_mpirun[] = "";
 
