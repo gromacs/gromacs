@@ -106,7 +106,7 @@ class ObsoleteToolModule : public gmx::CommandLineModuleInterface
         {
             std::fprintf(stderr,
                          "This tool is no longer present in GROMACS. Please see\n"
-                         "  http://www.gromacs.org/Documentation/How-tos/Tool_Changes_for_5.0\n"
+                         "  http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/user-guide/cmdline.html#command-changes\n"
                          "for ideas how to perform the same tasks with the "
                          "new tools.\n");
         }
