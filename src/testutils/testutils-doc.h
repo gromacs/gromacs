@@ -51,6 +51,9 @@
  *  - gmx::test::TestFileManager (in testfilemanager.h) provides functionality
  *    for locating test input files from the source directory and managing
  *    temporary files that need to be created during the test.
+ *  - gmx::test::TestFileInputRedirector (in testfileredirector.h) provides
+ *    functionality for capturing file existence checks in code that uses
+ *    gmx::FileInputRedirectorInterface.
  *  - #GMX_TEST_OPTIONS macro provides facilities for adding custom command
  *    line options for the test binary.
  *  - testasserts.h provides several custom test assertions for better

@@ -51,6 +51,41 @@ namespace gmx
 {
 
 /*! \libinternal \brief
+ * Allows overriding file existence checks from code that supports it.
+ *
+ * The calling code should take in this interface and use the methods in it
+ * all file system operations that need to support this redirection.
+ * By default, the code can then use defaultFileInputRedirector() in case no
+ * redirection is needed.
+ *
+ * This allows tests to override the file existence checks without actually
+ * using the file system.
+ *
+ * With some further refactoring of the File class, this could also support
+ * redirecting input files from in-memory buffers as well, but for now the
+ * current capabilities are sufficient.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+class FileInputRedirectorInterface
+{
+    public:
+        virtual ~FileInputRedirectorInterface();
+
+        /*! \brief
+         * Checks whether the provided path exists (and is a file).
+         */
+        virtual bool fileExists(const char *filename) const = 0;
+
+        //! Convenience method to check file existence using an std::string path.
+        bool fileExists(const std::string &filename) const
+        {
+            return fileExists(filename.c_str());
+        }
+};
+
+/*! \libinternal \brief
  * Allows capturing `stdout` and file output from code that supports it.
  *
  * The calling code should take in this interface and use the File objects
@@ -92,10 +127,23 @@ class FileOutputRedirectorInterface
 
 //! \cond libapi
 /*! \brief
+ * Returns default implementation for FileInputRedirectorInterface.
+ *
+ * The returned implementation does not redirect anything, but just uses the
+ * file system normally.
+ *
+ * Does not throw.
+ *
+ * \ingroup module_utility
+ */
+FileInputRedirectorInterface &defaultFileInputRedirector();
+/*! \brief
  * Returns default implementation for FileOutputRedirectorInterface.
  *
  * The returned implementation does not redirect anything, but just opens the
  * files at requested locations.
+ *
+ * Does not throw.
  *
  * \ingroup module_utility
  */
