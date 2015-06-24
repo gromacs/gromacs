@@ -118,6 +118,15 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
                                           const gmx_device_info_t *dev_info);
 
 
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static bool use_texobj(const gmx_device_info_t *dev_info)
+{
+    /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+    return (dev_info->prop.major >= 3);
+}
+#endif
+
 /*! Tabulates the Ewald Coulomb force and initializes the size/scale
     and the table GPU array. If called with an already allocated table,
     it just re-uploads the table.
@@ -141,7 +150,7 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
 
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-    if (dev_info->prop.major >= 3)
+    if (use_texobj(dev_info))
     {
         cudaResourceDesc rd;
         memset(&rd, 0, sizeof(rd));
@@ -372,7 +381,7 @@ static void init_nbparam(cu_nbparam_t              *nbp,
 
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-    if (dev_info->prop.major >= 3)
+    if (use_texobj(dev_info))
     {
         cudaResourceDesc rd;
         cudaTextureDesc  td;
@@ -922,7 +931,7 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
     {
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-        if (dev_info->prop.major >= 3)
+        if (use_texobj(dev_info))
         {
             stat = cudaDestroyTextureObject(nbparam->coulomb_tab_texobj);
             CU_RET_ERR(stat, "cudaDestroyTextureObject on coulomb_tab_texobj failed");
@@ -1009,7 +1018,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-    if (nb->dev_info->prop.major >= 3)
+    if (use_texobj(nb->dev_info))
     {
         stat = cudaDestroyTextureObject(nbparam->nbfp_texobj);
         CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_texobj failed");
@@ -1026,7 +1035,7 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     {
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
-        if (nb->dev_info->prop.major >= 3)
+        if (use_texobj(nb->dev_info))
         {
             stat = cudaDestroyTextureObject(nbparam->nbfp_comb_texobj);
             CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_comb_texobj failed");
