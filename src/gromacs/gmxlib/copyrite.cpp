@@ -583,7 +583,7 @@ void please_cite(FILE *fp, const char *key)
           "J. A. Lemkul, B. Roux, D. van der Spoel, and A. D. MacKerell Jr.",
           "Implementation of Extended Lagrangian Dynamics in GROMACS for Polarizable Simulations Using the Classical Drude Oscillator Model",
           "J. Comput. Chem.",
-          35, 2015, "DOI: 10.1002/jcc.23937"}
+          36, 2015, "1473-1479"}
     };
 #define NSTR (int)asize(citedb)
 
