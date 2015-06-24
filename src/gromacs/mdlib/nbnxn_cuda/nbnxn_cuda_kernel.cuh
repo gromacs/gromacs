@@ -58,6 +58,10 @@
 /* On Kepler pre-loading i-atom types to shmem gives a few %,
    but on Fermi it does not */
 #define IATYPE_SHMEM
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+// Texture objects seem to be much slower than old style textures
+//#define USE_TEXOBJ
+#endif
 #endif
 
 #if defined EL_EWALD_ANA || defined EL_EWALD_TAB
@@ -89,6 +93,21 @@
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
+
+/* Kernel launch bounds as function of NTHREAD_Z.
+ * - CC 3.5/5.2: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:     NTHREAD_Z=2, (128, 16) bounds
+ *
+ * Note: convenience macros, need to be undef-ed at the end of the file.
+ */
+#if __CUDA_ARCH__ == 370
+#define NTHREAD_Z           (2)
+#define MIN_BLOCKS_PER_MP   (16)
+#else
+#define NTHREAD_Z           (1)
+#define MIN_BLOCKS_PER_MP   (16)
+#endif
+#define THREADS_PER_BLOCK   (CL_SIZE*CL_SIZE*NTHREAD_Z)
 
 #if __CUDA_ARCH__ >= 350
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
@@ -579,6 +598,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #undef REDUCE_SHUFFLE
 #undef IATYPE_SHMEM
+#undef USE_TEXOBJ
+
+#undef NTHREAD_Z
+#undef MIN_BLOCKS_PER_MP
+#undef THREADS_PER_BLOCK
 
 #undef EL_EWALD_ANY
 #undef EXCLUSION_FORCES
