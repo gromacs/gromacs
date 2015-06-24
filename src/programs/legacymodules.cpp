@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -237,8 +237,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Compute the total dipole plus fluctuations");
     registerModule(manager, &gmx_disre, "disre",
                    "Analyze distance restraints");
-    registerModule(manager, &gmx_dos, "dos",
-                   "Analyze density of states and properties based on that");
     registerModule(manager, &gmx_dyecoupl, "dyecoupl",
                    "Extract dye dynamics from trajectories");
     registerModule(manager, &gmx_dyndom, "dyndom",
