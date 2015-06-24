@@ -69,10 +69,6 @@
 
 #include "nbnxn_cuda_types.h"
 
-#if defined HAVE_CUDA_TEXOBJ_SUPPORT && __CUDA_ARCH__ >= 300
-#define USE_TEXOBJ
-#endif
-
 /*! Texture reference for LJ C6/C12 parameters; bound to cu_nbparam_t.nbfp */
 texture<float, 1, cudaReadModeElementType> nbfp_texref;
 
@@ -281,9 +277,11 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int  eeltype,
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required(const int num_threads_z)
+static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t *dinfo)
 {
     int shmem;
+
+    assert(dinfo);
 
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
@@ -291,15 +289,17 @@ static inline int calc_shmem_required(const int num_threads_z)
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
-#ifdef IATYPE_SHMEM
-    /* i-atom types in shared memory */
-    shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
-#endif
-#if __CUDA_ARCH__ < 300
-    /* force reduction buffers in shared memory */
-    shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
-#endif
+    if (dinfo->prop.major >= 3)
+    {
+        /* i-atom types in shared memory */
+        shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
+    }
 
+    if (dinfo->prop.major < 3)
+    {
+        /* force reduction buffers in shared memory */
+        shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
+    }
     return shmem;
 }
 
@@ -435,7 +435,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     nblock    = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
     dim_block = dim3(CL_SIZE, CL_SIZE, num_threads_z);
     dim_grid  = dim3(nblock, 1, 1);
-    shmem     = calc_shmem_required(num_threads_z);
+    shmem     = calc_shmem_required(num_threads_z, nb->dev_info);
 
     if (debug)
     {
