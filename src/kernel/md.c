@@ -187,6 +187,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     rvec             *x_xtc    = NULL;
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
+    rvec             *x_for_confout = NULL;
     gmx_global_stat_t gstat;
     gmx_update_t      upd   = NULL;
     t_graph          *graph = NULL;
@@ -1540,6 +1541,25 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 (Flags & MD_CONFOUT) && MASTER(cr) &&
                 !bRerunMD && !bFFscan)
             {
+                if (fr->bMolPBC && state->x == state_global->x)
+                {
+                    /* This (single-rank) run needs to allocate a
+                       temporary array of size natoms so that any
+                       periodicity removal for mdrun -confout does not
+                       perturb the update and thus the final .edr
+                       output. This makes .cpt restarts look binary
+                       identical, and makes .edr restarts binary
+                       identical. */
+                    snew(x_for_confout, state_global->natoms);
+                    copy_rvecn(state_global->x, x_for_confout, 0, state_global->natoms);
+                }
+                else
+                {
+                    /* With DD, or no bMolPBC, it doesn't matter if
+                       we change state_global->x */
+                    x_for_confout = state_global->x;
+                }
+
                 /* x and v have been collected in write_traj,
                  * because a checkpoint file will always be written
                  * at the last step.
@@ -1548,17 +1568,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (fr->bMolPBC)
                 {
                     /* Make molecules whole only for confout writing */
-                    /* NOTE: this changes the coordinates at the last step,
-                     * which in turn affects the velocities when constraining.
-                     * Without DD this leads to different Ekin and pressure
-                     * at the last step compared to a continued run.
-                     */
-                    do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, state_global->x);
+                    do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, x_for_confout);
                 }
                 write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
                                     *top_global->name, top_global,
-                                    state_global->x, state_global->v,
+                                    x_for_confout, state_global->v,
                                     ir->ePBC, state->box);
+                if (fr->bMolPBC && state->x == state_global->x)
+                {
+                    sfree(x_for_confout);
+                }
                 debug_gmx();
             }
             wallcycle_stop(wcycle, ewcTRAJ);
