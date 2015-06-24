@@ -53,6 +53,7 @@
  */
 
 #if __CUDA_ARCH__ >= 300
+/* Note: convenience macros, need to be undef-ed at the end of the file. */
 #define REDUCE_SHUFFLE
 /* On Kepler pre-loading i-atom types to shmem gives a few %,
    but on Fermi it does not */
@@ -78,6 +79,7 @@
 /* Note: convenience macro, needs to be undef-ed at the end of the file. */
 #define LJ_EWALD
 #endif
+
 
 /*
    Kernel launch parameters:
@@ -574,6 +576,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 #endif
 }
+
+#undef REDUCE_SHUFFLE
+#undef IATYPE_SHMEM
 
 #undef EL_EWALD_ANY
 #undef EXCLUSION_FORCES
