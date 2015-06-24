@@ -53,7 +53,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/fileredirector.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -79,15 +79,16 @@ const char *const c_compressedExtensions[] =
  * The first match is returned.
  * Returns an empty string if no existing file is found.
  */
-std::string findExistingExtension(const std::string        &prefix,
-                                  const FileNameOptionInfo &option)
+std::string findExistingExtension(const std::string                  &prefix,
+                                  const FileNameOptionInfo           &option,
+                                  const FileInputRedirectorInterface *redirector)
 {
     ConstArrayRef<int>                 types = option.fileTypes();
     ConstArrayRef<int>::const_iterator i;
     for (i = types.begin(); i != types.end(); ++i)
     {
         std::string testFilename(prefix + ftp2ext_with_dot(*i));
-        if (File::exists(testFilename))
+        if (redirector->fileExists(testFilename))
         {
             return testFilename;
         }
@@ -109,12 +110,18 @@ std::string findExistingExtension(const std::string        &prefix,
 class FileNameOptionManager::Impl
 {
     public:
-        Impl() : bInputCheckingDisabled_(false) {}
+        Impl()
+            : redirector_(&defaultFileInputRedirector()),
+              bInputCheckingDisabled_(false)
+        {
+        }
 
+        //! Redirector for file existence checks.
+        const FileInputRedirectorInterface *redirector_;
         //! Global default file name, if set.
-        std::string     defaultFileName_;
+        std::string                         defaultFileName_;
         //! Whether input option processing has been disabled.
-        bool            bInputCheckingDisabled_;
+        bool                                bInputCheckingDisabled_;
 };
 
 /********************************************************************
@@ -128,6 +135,12 @@ FileNameOptionManager::FileNameOptionManager()
 
 FileNameOptionManager::~FileNameOptionManager()
 {
+}
+
+void FileNameOptionManager::setInputRedirector(
+        const FileInputRedirectorInterface *redirector)
+{
+    impl_->redirector_ = redirector;
 }
 
 void FileNameOptionManager::disableInputOptionChecking(bool bDisable)
@@ -169,7 +182,7 @@ std::string FileNameOptionManager::completeFileName(
     const int fileType = fn2ftp(value.c_str());
     if (bInput && !impl_->bInputCheckingDisabled_)
     {
-        if (fileType == efNR && File::exists(value))
+        if (fileType == efNR && impl_->redirector_->fileExists(value))
         {
             ConstArrayRef<const char *>                 compressedExtensions(c_compressedExtensions);
             ConstArrayRef<const char *>::const_iterator ext;
@@ -196,7 +209,8 @@ std::string FileNameOptionManager::completeFileName(
         }
         else if (fileType == efNR)
         {
-            std::string processedValue = findExistingExtension(value, option);
+            const std::string processedValue
+                = findExistingExtension(value, option, impl_->redirector_);
             if (!processedValue.empty())
             {
                 return processedValue;
@@ -225,7 +239,7 @@ std::string FileNameOptionManager::completeFileName(
             {
                 // TODO: Treat also library files.
             }
-            else if (!bAllowMissing && !File::exists(value))
+            else if (!bAllowMissing && !impl_->redirector_->fileExists(value))
             {
                 std::string message
                     = formatString("File '%s' does not exist or is not accessible.",
@@ -264,7 +278,8 @@ std::string FileNameOptionManager::completeDefaultFileName(
     const bool        bAllowMissing = option.allowMissing();
     if (bInput)
     {
-        std::string completedName = findExistingExtension(realPrefix, option);
+        const std::string completedName
+            = findExistingExtension(realPrefix, option, impl_->redirector_);
         if (!completedName.empty())
         {
             return completedName;

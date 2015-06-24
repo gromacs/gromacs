@@ -34,84 +34,40 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes and functions from fileredirector.h.
+ * Implements classes from testfileredirector.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_utility
+ * \ingroup module_testutils
  */
 #include "gmxpre.h"
 
-#include "fileredirector.h"
+#include "testfileredirector.h"
 
-#include "gromacs/utility/file.h"
+#include <set>
+#include <string>
 
 namespace gmx
 {
+namespace test
+{
 
-FileInputRedirectorInterface::~FileInputRedirectorInterface()
+TestFileInputRedirector::TestFileInputRedirector()
 {
 }
 
-FileOutputRedirectorInterface::~FileOutputRedirectorInterface()
+TestFileInputRedirector::~TestFileInputRedirector()
 {
 }
 
-namespace
+void TestFileInputRedirector::addExistingFile(const char *filename)
 {
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileInputRedirector().
- *
- * Does not redirect anything, but uses the file system as requested.
- *
- * \ingroup module_utility
- */
-class DefaultInputRedirector : public FileInputRedirectorInterface
-{
-    public:
-        virtual bool fileExists(const char *filename) const
-        {
-            return File::exists(filename);
-        }
-};
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileOutputRedirector().
- *
- * Does not redirect anything, but instead opens the files exactly as
- * requested.
- *
- * \ingroup module_utility
- */
-class DefaultOutputRedirector : public FileOutputRedirectorInterface
-{
-    public:
-        virtual File &standardOutput()
-        {
-            return File::standardOutput();
-        }
-        virtual FileInitializer openFileForWriting(const char *filename)
-        {
-            return FileInitializer(filename, "w");
-        }
-};
-
-}   // namespace
-
-//! \cond libapi
-FileInputRedirectorInterface &defaultFileInputRedirector()
-{
-    static DefaultInputRedirector instance;
-    return instance;
+    existingFiles_.insert(filename);
 }
 
-FileOutputRedirectorInterface &defaultFileOutputRedirector()
+bool TestFileInputRedirector::fileExists(const char *filename) const
 {
-    static DefaultOutputRedirector instance;
-    return instance;
+    return existingFiles_.count(filename) > 0;
 }
-//! \endcond
 
+} // namespace test
 } // namespace gmx

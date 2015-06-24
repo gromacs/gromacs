@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,17 @@
 
 include_directories(BEFORE ${GMOCK_INCLUDE_DIRS})
 include_directories(${LIBXML2_INCLUDE_DIR})
-file(GLOB TESTUTILS_SOURCES *.cpp)
+set(TESTUTILS_SOURCES
+    cmdlinetest.cpp
+    integrationtests.cpp
+    mpi-printer.cpp
+    refdata.cpp
+    stringtest.cpp
+    testasserts.cpp
+    testfilemanager.cpp
+    testfileredirector.cpp
+    testinit.cpp
+    testoptions.cpp)
 
 add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils)

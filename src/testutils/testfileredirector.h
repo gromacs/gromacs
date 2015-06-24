@@ -32,86 +32,62 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Implements classes and functions from fileredirector.h.
+ * Declares generic mock implementations for interfaces in fileredirector.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_utility
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
-#include "gmxpre.h"
+#ifndef GMX_TESTUTILS_TESTFILEREDIRECTOR_H
+#define GMX_TESTUTILS_TESTFILEREDIRECTOR_H
 
-#include "fileredirector.h"
+#include <set>
+#include <string>
 
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/fileredirector.h"
 
 namespace gmx
 {
-
-FileInputRedirectorInterface::~FileInputRedirectorInterface()
-{
-}
-
-FileOutputRedirectorInterface::~FileOutputRedirectorInterface()
-{
-}
-
-namespace
+namespace test
 {
 
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileInputRedirector().
+/*! \libinternal \brief
+ * In-memory implementation for FileInputRedirectorInterface for tests.
  *
- * Does not redirect anything, but uses the file system as requested.
+ * By default, this implementation will return `false` for all file existence
+ * checks.  To return `true` for a specific path, use addExistingFile().
  *
- * \ingroup module_utility
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
-class DefaultInputRedirector : public FileInputRedirectorInterface
+class TestFileInputRedirector : public FileInputRedirectorInterface
 {
     public:
-        virtual bool fileExists(const char *filename) const
-        {
-            return File::exists(filename);
-        }
+        TestFileInputRedirector();
+        virtual ~TestFileInputRedirector();
+
+        /*! \brief
+         * Marks the provided path as an existing file.
+         *
+         * \throws std::bad_alloc if out of memory.
+         *
+         * Further checks for existence of the given path will return `true`.
+         */
+        void addExistingFile(const char *filename);
+
+        // From FileInputRedirectorInterface
+        virtual bool fileExists(const char *filename) const;
+
+    private:
+        std::set<std::string> existingFiles_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(TestFileInputRedirector);
 };
 
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileOutputRedirector().
- *
- * Does not redirect anything, but instead opens the files exactly as
- * requested.
- *
- * \ingroup module_utility
- */
-class DefaultOutputRedirector : public FileOutputRedirectorInterface
-{
-    public:
-        virtual File &standardOutput()
-        {
-            return File::standardOutput();
-        }
-        virtual FileInitializer openFileForWriting(const char *filename)
-        {
-            return FileInitializer(filename, "w");
-        }
-};
-
-}   // namespace
-
-//! \cond libapi
-FileInputRedirectorInterface &defaultFileInputRedirector()
-{
-    static DefaultInputRedirector instance;
-    return instance;
-}
-
-FileOutputRedirectorInterface &defaultFileOutputRedirector()
-{
-    static DefaultOutputRedirector instance;
-    return instance;
-}
-//! \endcond
-
+} // namespace test
 } // namespace gmx
+
+#endif
