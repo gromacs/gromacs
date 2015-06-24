@@ -167,6 +167,8 @@ struct cu_nbparam
     shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
     switch_consts_t vdw_switch;       /**< VdW switch constants                     */
 
+    bool                 bUseTexObj;       /**< true if we use texture objects                                                     */
+
     /* LJ non-bonded parameters - accessed through texture memory */
     float               *nbfp;             /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
     cudaTextureObject_t  nbfp_texobj;      /**< texture object bound to nbfp                                                       */
