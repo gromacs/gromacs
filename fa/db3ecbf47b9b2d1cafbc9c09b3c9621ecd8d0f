@@ -1,0 +1,9 @@
+Code-Review+2: Berk Hess <hess@kth.se>
+Code-Review+1: Mark Abraham <mark.j.abraham@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Rossen Apostolov <rossen@kth.se>
+Submitted-by: Mark Abraham <mark.j.abraham@gmail.com>
+Submitted-at: Wed, 24 Jun 2015 23:09:05 +0200
+Reviewed-on: https://gerrit.gromacs.org/4773
+Project: gromacs
+Branch: refs/heads/release-5-0
