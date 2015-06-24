@@ -44,6 +44,13 @@
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
+
+#if defined HAVE_CUDA_TEXOBJ_SUPPORT && __CUDA_ARCH__ >= 300
+/* Note: convenience macro, needs to be undef-ed at the end of the file. */
+// Texture objects seem to be much slower than old style textures
+//#define USE_TEXOBJ
+#endif
+
 #define WARP_SIZE_POW2_EXPONENT     (5)
 #define CL_SIZE_POW2_EXPONENT       (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
 #define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
@@ -621,5 +628,7 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
     }
 }
 #endif /* __CUDA_ARCH__ */
+
+#undef USE_TEXOBJ
 
 #endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */
