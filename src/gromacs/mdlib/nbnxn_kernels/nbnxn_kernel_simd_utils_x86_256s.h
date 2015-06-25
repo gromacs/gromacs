@@ -37,6 +37,8 @@
 
 #include "config.h"
 
+#include "gromacs/mdlib/nbnxn_simd.h"
+
 /* This files contains all functions/macros for the SIMD kernels
  * which have explicit dependencies on the j-cluster size and/or SIMD-width.
  * The functionality which depends on the j-cluster size is:

@@ -52,6 +52,7 @@
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
+#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"

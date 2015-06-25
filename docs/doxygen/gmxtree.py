@@ -1069,4 +1069,5 @@ class GromacsTree(object):
         be checked."""
         return (self._files['src/config.h'],
                 self._files['src/gromacs/simd/simd.h'],
-                self._files['src/gromacs/ewald/pme-simd.h'])
+                self._files['src/gromacs/ewald/pme-simd.h'],
+                self._files['src/gromacs/mdlib/nbnxn_simd.h'])
