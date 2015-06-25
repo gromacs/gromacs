@@ -868,6 +868,7 @@ void do_averaging(rvec v[], rvec f[], t_ave *ave, gmx_bool bDoSD1, real dt, rvec
             mvmul(ave->rot[i],sumv,v[aveg->ind[i]]);
         }
     }
+    sfree(irot);
 }
 
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
