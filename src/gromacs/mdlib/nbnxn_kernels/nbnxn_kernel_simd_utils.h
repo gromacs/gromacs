@@ -38,6 +38,7 @@
 #include "config.h"
 
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/simd/simd.h"
 
 /*! \brief Provides hardware-specific utility routines for the SIMD kernels.
