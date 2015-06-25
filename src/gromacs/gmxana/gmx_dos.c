@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,6 +63,40 @@
 enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
 };
+
+static int calcMoleculesInIndexGroup(t_block *mols, int natoms, atom_id *index, int nindex)
+{
+    int   i    = 0;
+    int   mol  = 0;
+    int   nMol = 0;
+    int   j;
+
+    while (i < nindex)
+    {
+        while (index[i] > mols->index[mol])
+        {
+            mol++;
+            if (mol >= mols->nr)
+            {
+                gmx_fatal(FARGS, "Atom index out of range: %d", index[i]+1);
+            }
+        }
+        for (j = mols->index[mol]; j < mols->index[mol+1]; j++)
+        {
+            if (index[i] != j)
+            {
+                gmx_fatal(FARGS, "The index group does not consist of whole molecules");
+            }
+            i++;
+            if (i == natoms)
+            {
+                gmx_fatal(FARGS, "Index contains atom numbers larger than the topology");
+            }
+        }
+        nMol++;
+    }
+    return nMol;
+}
 
 static double FD(double Delta, double f)
 {
@@ -213,47 +247,6 @@ static real wEsolid(real nu, real beta)
     }
 }
 
-static void dump_fy(output_env_t oenv, real toler)
-{
-    FILE       *fp;
-    double      Delta, f, y, DD;
-    const char *leg[] = { "f", "fy", "y" };
-
-    DD = pow(10.0, 0.125);
-    fp = xvgropen("fy.xvg", "Fig. 2, Lin2003a", "Delta", "y or fy", oenv);
-    xvgr_legend(fp, asize(leg), leg, oenv);
-    if (output_env_get_print_xvgr_codes(oenv))
-    {
-        fprintf(fp, "@    world 1e-05, 0, 1000, 1\n");
-        fprintf(fp, "@    xaxes scale Logarithmic\n");
-    }
-    for (Delta = 1e-5; (Delta <= 1000); Delta *= DD)
-    {
-        f = calc_fluidicity(Delta, toler);
-        y = calc_y(f, Delta, toler);
-        fprintf(fp, "%10g  %10g  %10g  %10g\n", Delta, f, f*y, y);
-    }
-    xvgrclose(fp);
-}
-
-static void dump_w(output_env_t oenv, real beta)
-{
-    FILE       *fp;
-    double      nu;
-    const char *leg[] = { "wCv", "wS", "wA", "wE" };
-
-    fp = xvgropen("w.xvg", "Fig. 1, Berens1983a", "\\f{12}b\\f{4}h\\f{12}n",
-                  "w", oenv);
-    xvgr_legend(fp, asize(leg), leg, oenv);
-    for (nu = 1; (nu < 100); nu += 0.05)
-    {
-        fprintf(fp, "%10g  %10g  %10g  %10g  %10g\n", beta*PLANCK*nu,
-                wCsolid(nu, beta), wSsolid(nu, beta),
-                wAsolid(nu, beta), wEsolid(nu, beta));
-    }
-    xvgrclose(fp);
-}
-
 int gmx_dos(int argc, char *argv[])
 {
     const char         *desc[] = {
@@ -263,6 +256,11 @@ int gmx_dos(int argc, char *argv[])
         "all vibrations. For flexible systems that would be around a few fs",
         "between saving. Properties based on the DoS are printed on the",
         "standard output."
+        "Note that the density of states is calculated from the mass-weighted",
+        "autocorrelation, and by default only from the square of the real",
+        "component rather than absolute value. This means the shape can differ",
+        "substantially from the plain vibrational power spectrum you can",
+        "calculate with gmx velacc."
     };
     const char         *bugs[] = {
         "This program needs a lot of memory: total usage equals the number of atoms times 3 times number of frames times 4 (or 8 when run in double precision)."
@@ -283,10 +281,16 @@ int gmx_dos(int argc, char *argv[])
     gmx_fft_t           fft;
     double              cP, S, A, E, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
     double              wCdiff, wSdiff, wAdiff, wEdiff;
+    int                 grpNatoms;
+    atom_id            *index;
+    char               *grpname;
+    double              invNormalize;
+    gmx_bool            normalizeAutocorrelation;
 
-    static     gmx_bool bVerbose = TRUE, bAbsolute = FALSE, bNormalize = FALSE;
-    static     gmx_bool bRecip   = FALSE, bDump = FALSE;
+    static     gmx_bool bVerbose = TRUE, bAbsolute = FALSE, bNormalizeDos = FALSE;
+    static     gmx_bool bRecip   = FALSE;
     static     real     Temp     = 298.15, toler = 1e-6;
+
     t_pargs             pa[]     = {
         { "-v", FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy." },
@@ -294,14 +298,12 @@ int gmx_dos(int argc, char *argv[])
           "Use cm^-1 on X-axis instead of 1/ps for DoS plots." },
         { "-abs", FALSE, etBOOL, {&bAbsolute},
           "Use the absolute value of the Fourier transform of the VACF as the Density of States. Default is to use the real component only" },
-        { "-normdos", FALSE, etBOOL, {&bNormalize},
-          "Normalize the DoS such that it adds up to 3N. This is a hack that should not be necessary." },
+        { "-normdos", FALSE, etBOOL, {&bNormalizeDos},
+          "Normalize the DoS such that it adds up to 3N. This should usually not be necessary." },
         { "-T", FALSE, etREAL, {&Temp},
           "Temperature in the simulation" },
         { "-toler", FALSE, etREAL, {&toler},
-          "[HIDDEN]Tolerance when computing the fluidicity using bisection algorithm" },
-        { "-dump", FALSE, etBOOL, {&bDump},
-          "[HIDDEN]Dump the y/fy plot corresponding to Fig. 2 inLin2003a and the and the weighting functions corresponding to Fig. 1 in Berens1983a." }
+          "[HIDDEN]Tolerance when computing the fluidicity using bisection algorithm" }
     };
 
     t_filenm            fnm[] = {
@@ -330,30 +332,26 @@ int gmx_dos(int argc, char *argv[])
     }
 
     beta = 1/(Temp*BOLTZ);
-    if (bDump)
-    {
-        printf("Dumping reference figures. Thanks for your patience.\n");
-        dump_fy(oenv, toler);
-        dump_w(oenv, beta);
-        exit(0);
-    }
 
     fplog = gmx_fio_fopen(ftp2fn(efLOG, NFILE, fnm), "w");
     fprintf(fplog, "Doing density of states analysis based on trajectory.\n");
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
-                  TRUE);
+    read_tps_conf(ftp2fn(efTPX, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box, TRUE);
+
+    /* Handle index groups */
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
+
     V     = det(box);
     tmass = 0;
-    for (i = 0; (i < top.atoms.nr); i++)
+    for (i = 0; i < grpNatoms; i++)
     {
-        tmass += top.atoms.atom[i].m;
+        tmass += top.atoms.atom[index[i]].m;
     }
 
-    Natom = top.atoms.nr;
-    Nmol  = top.mols.nr;
+    Natom = grpNatoms;
+    Nmol  = calcMoleculesInIndexGroup(&top.mols, top.atoms.nr, index, grpNatoms);
     gnx   = Natom*DIM;
 
     /* Correlation stuff */
@@ -389,9 +387,9 @@ int gmx_dos(int argc, char *argv[])
         }
         for (i = 0; i < gnx; i += DIM)
         {
-            c1[i+XX][nframes] = fr.v[i/DIM][XX];
-            c1[i+YY][nframes] = fr.v[i/DIM][YY];
-            c1[i+ZZ][nframes] = fr.v[i/DIM][ZZ];
+            c1[i+XX][nframes] = fr.v[index[i/DIM]][XX];
+            c1[i+YY][nframes] = fr.v[index[i/DIM]][YY];
+            c1[i+ZZ][nframes] = fr.v[index[i/DIM]][ZZ];
         }
 
         t1 = fr.time;
@@ -412,6 +410,21 @@ int gmx_dos(int argc, char *argv[])
         printf("Going to do %d fourier transforms of length %d. Hang on.\n",
                gnx, nframes);
     }
+    /* Unfortunately the -normalize program option for the autocorrelation
+     * function calculation is added as a hack with a static variable in the
+     * autocorrelation.c source. That would work if we called the normal
+     * do_autocorr(), but this routine overrides that by directly calling
+     * the low-level functionality. That unfortunately leads to ignoring the
+     * default value for the option (which is to normalize).
+     * Since the absolute value seems to be important for the subsequent
+     * analysis below, we detect the value directly from the option, calculate
+     * the autocorrelation without normalization, and then apply the
+     * normalization just to the autocorrelation output
+     * (or not, if the user asked for a non-normalized autocorrelation).
+     */
+    normalizeAutocorrelation = opt2parg_bool("-normalize", npargs, ppa);
+
+    /* Note that we always disable normalization here, regardless of user settings */
     low_do_autocorr(NULL, oenv, NULL, nframes, gnx, nframes, c1, dt, eacNormal, 0, FALSE,
                     FALSE, FALSE, -1, -1, 0);
     snew(dos, DOS_NR);
@@ -426,7 +439,7 @@ int gmx_dos(int argc, char *argv[])
     }
     for (i = 0; (i < gnx); i += DIM)
     {
-        mi = top.atoms.atom[i/DIM].m;
+        mi = top.atoms.atom[index[i/DIM]].m;
         for (j = 0; (j < nframes/2); j++)
         {
             c1j            = (c1[i+XX][j] + c1[i+YY][j] + c1[i+ZZ][j]);
@@ -434,20 +447,28 @@ int gmx_dos(int argc, char *argv[])
             dos[MVACF][j] += mi*c1j;
         }
     }
-    fp = xvgropen(opt2fn("-vacf", NFILE, fnm), "Velocity ACF",
+
+    fp = xvgropen(opt2fn("-vacf", NFILE, fnm), "Velocity autocorrelation function",
                   "Time (ps)", "C(t)", oenv);
     snew(tt, nframes/2);
+
+    invNormalize = normalizeAutocorrelation ? 1.0/dos[VACF][0] : 1.0;
+
     for (j = 0; (j < nframes/2); j++)
     {
         tt[j] = j*dt;
-        fprintf(fp, "%10g  %10g\n", tt[j], dos[VACF][j]);
+        fprintf(fp, "%10g  %10g\n", tt[j], dos[VACF][j] * invNormalize);
     }
     xvgrclose(fp);
-    fp = xvgropen(opt2fn("-mvacf", NFILE, fnm), "Mass-weighted velocity ACF",
+
+    fp = xvgropen(opt2fn("-mvacf", NFILE, fnm), "Mass-weighted velocity autocorrelation function",
                   "Time (ps)", "C(t)", oenv);
+
+    invNormalize = normalizeAutocorrelation ? 1.0/dos[VACF][0] : 1.0;
+
     for (j = 0; (j < nframes/2); j++)
     {
-        fprintf(fp, "%10g  %10g\n", tt[j], dos[MVACF][j]);
+        fprintf(fp, "%10g  %10g\n", tt[j], dos[MVACF][j] * invNormalize);
     }
     xvgrclose(fp);
 
@@ -482,7 +503,7 @@ int gmx_dos(int argc, char *argv[])
     }
     /* Normalize it */
     dostot = evaluate_integral(nframes/4, nu, dos[DOS], NULL, nframes/4, &stddev);
-    if (bNormalize)
+    if (bNormalizeDos)
     {
         for (j = 0; (j < nframes/4); j++)
         {
@@ -570,18 +591,6 @@ int gmx_dos(int argc, char *argv[])
     cP = BOLTZ * evaluate_integral(nframes/4, nu, dos[DOS_CP], NULL,
                                    nframes/4, &stddev);
     fprintf(fplog, "Heat capacity %g J/mol K\n", 1000*cP/Nmol);
-
-    /*
-       S  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_S],NULL,
-                                   nframes/4,&stddev);
-       fprintf(fplog,"Entropy %g J/mol K\n",1000*S/Nmol);
-       A  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_A],NULL,
-                                   nframes/4,&stddev);
-       fprintf(fplog,"Helmholtz energy %g kJ/mol\n",A/Nmol);
-       E  = BOLTZ * evaluate_integral(nframes/4,nu,dos[DOS_E],NULL,
-                                   nframes/4,&stddev);
-       fprintf(fplog,"Internal energy %g kJ/mol\n",E/Nmol);
-     */
     fprintf(fplog, "\nArrivederci!\n");
     gmx_fio_fclose(fplog);
 
