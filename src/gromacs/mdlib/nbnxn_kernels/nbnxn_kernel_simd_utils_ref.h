@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,7 +35,7 @@
 #ifndef _nbnxn_kernel_simd_utils_ref_h_
 #define _nbnxn_kernel_simd_utils_ref_h_
 
-#
+#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/simd/simd_math.h"
 
 typedef gmx_simd_int32_t        gmx_simd_ref_exclfilter;
