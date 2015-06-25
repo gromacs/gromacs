@@ -713,8 +713,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
 }
 
 static void luzar_correl(int nn, real *time, int nset, real **val, real temp,
-                         gmx_bool bError, real fit_start, real smooth_tail_start,
-                         const output_env_t oenv)
+                         gmx_bool bError, real fit_start)
 {
     const real tol = 1e-8;
     real      *kt;
@@ -742,13 +741,13 @@ static void luzar_correl(int nn, real *time, int nset, real **val, real temp,
             fprintf(debug, "RMS difference in derivatives is %g\n", sqrt(d2/nn));
         }
         analyse_corr(nn, time, val[0], val[2], kt, NULL, NULL, NULL, fit_start,
-                     temp, smooth_tail_start, oenv);
+                     temp);
         sfree(kt);
     }
     else if (nset == 6)
     {
         analyse_corr(nn, time, val[0], val[2], val[4],
-                     val[1], val[3], val[5], fit_start, temp, smooth_tail_start, oenv);
+                     val[1], val[3], val[5], fit_start, temp);
     }
     else
     {
@@ -1173,7 +1172,7 @@ int gmx_analyze(int argc, char *argv[])
     static gmx_bool    bEESEF     = FALSE, bEENLC = FALSE, bEeFitAc = FALSE, bPower = FALSE;
     static gmx_bool    bIntegrate = FALSE, bRegression = FALSE, bLuzar = FALSE, bLuzarError = FALSE;
     static int         nsets_in   = 1, d = 1, nb_min = 4, resol = 10, nBalExp = 4, nFitPoints = 100;
-    static real        temp       = 298.15, fit_start = 1, fit_end = 60, smooth_tail_start = -1, balTime = 0.2, diffusion = 5e-5, rcut = 0.35;
+    static real        temp       = 298.15, fit_start = 1, fit_end = 60, balTime = 0.2, diffusion = 5e-5, rcut = 0.35;
 
     /* must correspond to enum avbar* declared at beginning of file */
     static const char *avbar_opt[avbarNR+1] = {
@@ -1216,8 +1215,6 @@ int gmx_analyze(int argc, char *argv[])
           "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" },
         { "-fitend", FALSE, etREAL, {&fit_end},
           "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with [TT]-gem[tt]" },
-        { "-smooth", FALSE, etREAL, {&smooth_tail_start},
-          "If this value is >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: [MATH]y = A [EXP]-x/[GRK]tau[grk][exp][math]" },
         { "-nbmin",   FALSE, etINT, {&nb_min},
           "HIDDENMinimum number of blocks for block averaging" },
         { "-resol", FALSE, etINT, {&resol},
@@ -1488,7 +1485,7 @@ int gmx_analyze(int argc, char *argv[])
 
     if (bLuzar)
     {
-        luzar_correl(n, t, nset, val, temp, bXYdy, fit_start, smooth_tail_start, oenv);
+        luzar_correl(n, t, nset, val, temp, bXYdy, fit_start);
     }
 
     view_all(oenv, NFILE, fnm);

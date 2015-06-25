@@ -256,7 +256,7 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
         // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
         std::string buildBinPath;
-#ifdef CMAKE_INTDIR
+#ifdef CMAKE_INTDIR /*In multi-configuration build systems the output subdirectory*/
         buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin", CMAKE_INTDIR);
 #else
         buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin");

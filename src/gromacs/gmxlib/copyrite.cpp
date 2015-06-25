@@ -595,7 +595,17 @@ void please_cite(FILE *fp, const char *key)
           "N. Goga and A. J. Rzepiela and A. H. de Vries and S. J. Marrink and H. J. C. Berendsen",
           "Efficient Algorithms for Langevin and DPD Dynamics",
           "J. Chem. Theory Comput.",
-          8, 2012, "3637--3649"}
+          8, 2012, "3637--3649"},
+        { "Pronk2013",
+          "S. Pronk, S. Páll, R. Schulz, P. Larsson, P. Bjelkmar, R. Apostolov, M. R. Shirts, J. C. Smith, P. M. Kasson, D. van der Spoel, B. Hess, and E. Lindahl",
+          "GROMACS 4.5: a high-throughput and highly parallel open source molecular simulation toolkit",
+          "Bioinformatics",
+          29, 2013, "845-54"},
+        { "Pall2015",
+          "S. Páll, M. J. Abraham, C. Kutzner, B. Hess, E. Lindahl",
+          "Tackling Exascale Software Challenges in Molecular Dynamics Simulations with GROMACS",
+          "In S. Markidis & E. Laure (Eds.), Solving Software Challenges for Exascale",
+          8759, 2015, "3–27" }
     };
 #define NSTR (int)asize(citedb)
 
