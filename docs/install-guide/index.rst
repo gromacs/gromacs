@@ -58,7 +58,7 @@ appropriate value instead of ``xxx`` :
 * ``-DGMX_BUILD_MDRUN_ONLY=on`` for `building only mdrun`_, e.g. for compute cluster back-end nodes
 * ``-DGMX_DOUBLE=on`` to run |Gromacs| in double precision (slower, and not normally useful)
 * ``-DCMAKE_PREFIX_PATH=xxx`` to add a non-standard location for CMake to `search for libraries, headers or programs`_
-* ``-DCMAKE_INSTALL_PREFIX=xxx`` to install |Gromacs| to a non-standard location (default ``/usr/local/gromacs``)
+* ``-DCMAKE_INSTALL_PREFIX=xxx`` to install |Gromacs| to a `non-standard location`_ (default ``/usr/local/gromacs``)
 * ``-DBUILD_SHARED_LIBS=off`` to turn off the building of shared libraries to help with `static linking`_
 * ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
@@ -399,6 +399,22 @@ after each pass that does not produce errors.
 
 You cannot attempt to change compilers after the initial run of
 ``cmake``. If you need to change, clean up, and start again.
+
+.. _non-standard location:
+
+Where to install GROMACS
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A key thing to consider is the setting of
+``CMAKE_INSTALL_PREFIX``. You will need to be able to write to this
+directory in order to install GROMACS later, this directory cannot
+be the same as the build tree, and if you change your
+mind later, changing it in the cache triggers a full re-build,
+unfortunately. So if you do not have super-user privileges on your
+machine, then you will need to choose a sensible location within your
+home directory for your GROMACS installation. Even if you do have
+super-user privileges, you should use them only for the installation
+phase, and never for configuring, building, or running GROMACS!
 
 .. _cmake options:
 

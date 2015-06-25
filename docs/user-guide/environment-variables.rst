@@ -212,10 +212,6 @@ Performance and Run Control
         when set to a floating-point value, overrides the default tolerance of
         1e-5 for force-field floating-point parameters.
 
-``GMX_MAX_MPI_THREADS``
-        sets the maximum number of MPI-threads that :ref:`gmx mdrun`
-        can use.
-
 ``GMX_MAXCONSTRWARN``
         if set to -1, :ref:`gmx mdrun` will
         not exit if it produces too many LINCS warnings.

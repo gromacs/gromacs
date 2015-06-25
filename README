@@ -65,6 +65,13 @@ To help us fund development, we humbly ask that you cite the GROMACS papers:
   Bioinformatics 29 (2013) pp. 845-54
   DOI: 10.1093/bioinformatics/btt055
 
+* Tackling Exascale Software Challenges in Molecular Dynamics Simulations
+  with GROMACS
+  Szilárd Páll, Mark J. Abraham, Carsten Kutzner, Berk Hess, Erik Lindahl
+  In S. Markidis & E. Laure (Eds.), Solving Software Challenges for Exascale,
+  8759 (2015) pp. 3–27
+  DOI: 10.1007/978-3-319-15976-8_1
+
 There are a lot of cool features we'd like to include in future versions,
 but our resources are limited. All kinds of donations are welcome, both in 
 form of code, hardware and funding! Industrial users who choose to pay
