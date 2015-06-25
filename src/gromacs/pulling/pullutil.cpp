@@ -84,7 +84,7 @@ static void pull_reduce_real(t_commrec   *cr,
                           comm->mpi_comm_com);
 
             /* Copy the result from the buffer to the input/output data */
-            for (i = 0; i < nr; i++)
+            for (int i = 0; i < n; i++)
             {
                 data[i] = buf[i];
             }
@@ -124,7 +124,7 @@ static void pull_reduce_double(t_commrec   *cr,
                           comm->mpi_comm_com);
 
             /* Copy the result from the buffer to the input/output data */
-            for (i = 0; i < nr; i++)
+            for (int i = 0; i < n; i++)
             {
                 data[i] = buf[i];
             }
