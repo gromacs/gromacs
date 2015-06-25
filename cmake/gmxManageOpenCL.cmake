@@ -52,20 +52,12 @@ else ()
     return()
 endif()
 
-# Prevent warnings when linking against OpenCL > 1.1
-if (OPENCL_VERSION_STRING VERSION_GREATER 1.1)
-    set(OPENCL_DEFINITIONS "-DCL_USE_DEPRECATED_OPENCL_1_1_APIS")
-endif()
-
 # Tell compiler to hide warnings for comments caused by cl_gl_ext.h on Linux
 if (UNIX)
     set(OPENCL_DEFINITIONS ${OPENCL_DEFINITIONS} " -Wno-comment")
 endif()
 
 add_definitions(${OPENCL_DEFINITIONS})
-
-
-#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
 
 include_directories(${OPENCL_INCLUDE_DIRS})
 
