@@ -120,17 +120,6 @@ class File
         void close();
 
         /*! \brief
-         * Returns whether the file is an interactive terminal.
-         *
-         * Only works on Unix, otherwise always returns true.
-         * It only makes sense to call this for File::standardInput() and
-         * friends.
-         *
-         * Thie file must be open.
-         * Does not throw.
-         */
-        bool isInteractive() const;
-        /*! \brief
          * Returns a file handle for interfacing with C functions.
          *
          * The file must be open.
@@ -148,41 +137,6 @@ class File
          * The file must be open.
          */
         void readBytes(void *buffer, size_t bytes);
-        /*! \brief
-         * Reads a single line from the file.
-         *
-         * \param[out] line    String to receive the line.
-         * \returns    false if nothing was read because the file ended.
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     FileIOError on any I/O error.
-         *
-         * On error or when false is returned, \p line will be empty.
-         * Trailing space will be removed from the line.
-         * To loop over all lines in the file, use:
-         * \code
-           std::string line;
-           while (file.readLine(&line))
-           {
-               // ...
-           }
-           \endcode
-         */
-        bool readLine(std::string *line);
-        /*! \brief
-         * Reads a single line from the file.
-         *
-         * \param[out] line    String to receive the line.
-         * \returns    false if nothing was read because the file ended.
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     FileIOError on any I/O error.
-         *
-         * On error or when false is returned, \p line will be empty.
-         * Works as readLine(), except that terminating newline will be present
-         * in \p line if it was present in the file.
-         *
-         * \see readLine()
-         */
-        bool readLineWithTrailingSpace(std::string *line);
 
         /*! \brief
          * Writes a string to the file.
@@ -195,26 +149,6 @@ class File
         void writeString(const char *str);
         //! \copydoc writeString(const char *)
         void writeString(const std::string &str) { writeString(str.c_str()); }
-        /*! \brief
-         * Writes a line to the file.
-         *
-         * \param[in]  line  Line to write.
-         * \throws     FileIOError on any I/O error.
-         *
-         * If \p line does not end in a newline, one newline is appended.
-         * Otherwise, works as writeString().
-         *
-         * The file must be open.
-         */
-        void writeLine(const char *line);
-        //! \copydoc writeLine(const char *)
-        void writeLine(const std::string &line) { writeLine(line.c_str()); }
-        /*! \brief
-         * Writes a newline to the file.
-         *
-         * \throws     FileIOError on any I/O error.
-         */
-        void writeLine();
 
         /*! \brief
          * Checks whether a file exists and is a regular file.
@@ -227,13 +161,6 @@ class File
         static bool exists(const char *filename);
         //! \copydoc exists(const char *)
         static bool exists(const std::string &filename);
-
-        /*! \brief
-         * Returns a File object for accessing stdin.
-         *
-         * \throws    std::bad_alloc if out of memory (only on first call).
-         */
-        static File &standardInput();
 
         /*! \brief
          * Reads contents of a file to a std::string.
@@ -259,17 +186,6 @@ class File
                                         const std::string &text);
 
     private:
-        /*! \brief
-         * Initialize file object from an existing file handle.
-         *
-         * \param[in]  fp     %File handle to use (may be NULL).
-         * \param[in]  bClose Whether this object should close its file handle.
-         * \throws     std::bad_alloc if out of memory.
-         *
-         * Used internally to implement standardInput().
-         */
-        File(FILE *fp, bool bClose);
-
         class Impl;
 
         PrivateImplPointer<Impl> impl_;

@@ -100,7 +100,8 @@
  * implementations for these interfaces that just use the file system.
  *
  * The header textwriter.h provides gmx::TextWriter for more formatting support
- * when writing to a text stream.
+ * when writing to a text stream.  Similarly, textreader.h provides more
+ * formatting support when reading from a text stream.
  *
  * The header path.h declares helpers for manipulating paths as strings and for
  * managing directories and files.

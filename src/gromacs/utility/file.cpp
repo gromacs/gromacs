@@ -55,10 +55,6 @@
 
 #include <sys/stat.h>
 
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -140,11 +136,6 @@ File::File(const std::string &filename, const char *mode)
     open(filename, mode);
 }
 
-File::File(FILE *fp, bool bClose)
-    : impl_(new Impl(fp, bClose))
-{
-}
-
 File::~File()
 {
 }
@@ -175,17 +166,6 @@ void File::close()
         GMX_THROW_WITH_ERRNO(
                 FileIOError("Error while closing file"), "fclose", errno);
     }
-}
-
-bool File::isInteractive() const
-{
-    GMX_RELEASE_ASSERT(impl_->fp_ != NULL,
-                       "Attempted to access a file object that is not open");
-#ifdef HAVE_UNISTD_H
-    return isatty(fileno(impl_->fp_));
-#else
-    return true;
-#endif
 }
 
 FILE *File::handle()
@@ -220,46 +200,6 @@ void File::readBytes(void *buffer, size_t bytes)
     }
 }
 
-bool File::readLine(std::string *line)
-{
-    if (!readLineWithTrailingSpace(line))
-    {
-        return false;
-    }
-    size_t endPos = line->find_last_not_of(" \t\r\n");
-    if (endPos != std::string::npos)
-    {
-        line->resize(endPos + 1);
-    }
-    return true;
-}
-
-bool File::readLineWithTrailingSpace(std::string *line)
-{
-    line->clear();
-    const size_t bufsize = 256;
-    std::string  result;
-    char         buf[bufsize];
-    buf[0] = '\0';
-    FILE        *fp = handle();
-    while (fgets(buf, bufsize, fp) != NULL)
-    {
-        size_t length = std::strlen(buf);
-        result.append(buf, length);
-        if (length < bufsize - 1 || buf[length - 1] == '\n')
-        {
-            break;
-        }
-    }
-    if (ferror(fp))
-    {
-        GMX_THROW_WITH_ERRNO(FileIOError("Error while reading file"),
-                             "fgets", errno);
-    }
-    *line = result;
-    return !result.empty() || !feof(fp);
-}
-
 void File::writeString(const char *str)
 {
     if (fprintf(handle(), "%s", str) < 0)
@@ -267,22 +207,6 @@ void File::writeString(const char *str)
         GMX_THROW_WITH_ERRNO(FileIOError("Writing to file failed"),
                              "fprintf", errno);
     }
-}
-
-void File::writeLine(const char *line)
-{
-    size_t length = std::strlen(line);
-
-    writeString(line);
-    if (length == 0 || line[length-1] != '\n')
-    {
-        writeString("\n");
-    }
-}
-
-void File::writeLine()
-{
-    writeString("\n");
 }
 
 // static
@@ -318,13 +242,6 @@ bool File::exists(const char *filename)
 bool File::exists(const std::string &filename)
 {
     return exists(filename.c_str());
-}
-
-// static
-File &File::standardInput()
-{
-    static File stdinObject(stdin, false);
-    return stdinObject;
 }
 
 // static

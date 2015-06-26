@@ -61,7 +61,6 @@
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -130,20 +129,20 @@ namespace
 /*! \brief
  * Reads a single selection line from stdin.
  *
- * \param[in]  infile        File to read from (typically File::standardInput()).
+ * \param[in]  infile        Stream to read from (typically the StandardInputStream).
  * \param[in]  bInteractive  Whether to print interactive prompts.
  * \param[out] line          The read line in stored here.
  * \returns true if something was read, false if at end of input.
  *
  * Handles line continuation, reading also the continuing line(s) in one call.
  */
-bool promptLine(File *infile, bool bInteractive, std::string *line)
+bool promptLine(TextInputStream *infile, bool bInteractive, std::string *line)
 {
     if (bInteractive)
     {
         fprintf(stderr, "> ");
     }
-    if (!infile->readLineWithTrailingSpace(line))
+    if (!infile->readLine(line))
     {
         return false;
     }
@@ -157,7 +156,7 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
         std::string buffer;
         // Return value ignored, buffer remains empty and works correctly
         // if there is nothing to read.
-        infile->readLineWithTrailingSpace(&buffer);
+        infile->readLine(&buffer);
         line->append(buffer);
     }
     if (endsWith(*line, "\n"))
@@ -344,8 +343,8 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
         if (bStdIn)
         {
-            File       &stdinFile(File::standardInput());
-            const bool  bInteractive = _gmx_sel_is_lexer_interactive(scanner);
+            TextInputStream &stdinFile(StandardInputStream::instance());
+            const bool       bInteractive = _gmx_sel_is_lexer_interactive(scanner);
             if (bInteractive)
             {
                 printCurrentStatus(sc, grps, oldCount, maxnr, context, true);
@@ -694,8 +693,8 @@ SelectionCollection::parseFromFile(const std::string &filename)
 
     try
     {
-        yyscan_t scanner;
-        File     file(filename, "r");
+        yyscan_t      scanner;
+        TextInputFile file(filename);
         // TODO: Exception-safe way of using the lexer.
         _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
                             impl_->bExternalGroupsSet_,

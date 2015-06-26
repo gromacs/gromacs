@@ -43,8 +43,14 @@
 
 #include "filestream.h"
 
+#include "config.h"
+
 #include <cerrno>
 #include <cstdio>
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -52,6 +58,37 @@
 
 namespace gmx
 {
+
+namespace
+{
+
+//! Helper function for implementing readLine() for input streams.
+bool readLineImpl(FILE *fp, std::string *line)
+{
+    line->clear();
+    const size_t bufsize = 256;
+    std::string  result;
+    char         buf[bufsize];
+    buf[0] = '\0';
+    while (std::fgets(buf, bufsize, fp) != NULL)
+    {
+        const size_t length = std::strlen(buf);
+        result.append(buf, length);
+        if (length < bufsize - 1 || buf[length - 1] == '\n')
+        {
+            break;
+        }
+    }
+    if (std::ferror(fp))
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Error while reading file"),
+                             "fgets", errno);
+    }
+    *line = result;
+    return !result.empty() || !std::feof(fp);
+}
+
+}   // namespace
 
 namespace internal
 {
@@ -121,6 +158,64 @@ class FileStreamImpl
 }   // namespace internal
 
 using internal::FileStreamImpl;
+
+/********************************************************************
+ * StandardInputStream
+ */
+
+bool StandardInputStream::isInteractive() const
+{
+#ifdef HAVE_UNISTD_H
+    return isatty(fileno(stdin));
+#else
+    return true;
+#endif
+}
+
+bool StandardInputStream::readLine(std::string *line)
+{
+    return readLineImpl(stdin, line);
+}
+
+// static
+StandardInputStream &StandardInputStream::instance()
+{
+    static StandardInputStream stdinObject;
+    return stdinObject;
+}
+
+/********************************************************************
+ * TextInputFile
+ */
+
+TextInputFile::TextInputFile(const std::string &filename)
+    : impl_(new FileStreamImpl(filename.c_str(), "r"))
+{
+}
+
+TextInputFile::TextInputFile(FILE *fp)
+    : impl_(new FileStreamImpl(fp))
+{
+}
+
+TextInputFile::~TextInputFile()
+{
+}
+
+FILE *TextInputFile::handle()
+{
+    return impl_->handle();
+}
+
+bool TextInputFile::readLine(std::string *line)
+{
+    return readLineImpl(impl_->handle(), line);
+}
+
+void TextInputFile::close()
+{
+    impl_->close();
+}
 
 /********************************************************************
  * TextOutputFile

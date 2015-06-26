@@ -59,6 +59,86 @@ class FileStreamImpl;
 }
 
 /*! \libinternal \brief
+ * Text input stream implementation for reading from `stdin`.
+ *
+ * Implementations for the TextInputStream methods throw FileIOError on any
+ * I/O error.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+class StandardInputStream : public TextInputStream
+{
+    public:
+        /*! \brief
+         * Returns whether `stdin` is an interactive terminal.
+         *
+         * Only works on Unix, otherwise always returns true.
+         *
+         * Does not throw.
+         */
+        bool isInteractive() const;
+
+        // From TextInputStream
+        virtual bool readLine(std::string *line);
+        virtual void close() {}
+
+        /*! \brief
+         * Returns a stream for accessing `stdin`.
+         *
+         * Does not throw.
+         */
+        static StandardInputStream &instance();
+};
+
+/*! \libinternal \brief
+ * Text input stream implementation for reading from a file.
+ *
+ * Implementations for the TextInputStream methods throw FileIOError on any
+ * I/O error.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+class TextInputFile : public TextInputStream
+{
+    public:
+        /*! \brief
+         * Opens a text file as a stream.
+         *
+         * \param[in]  filename  Path to the file to open.
+         * \throws     std::bad_alloc if out of memory.
+         * \throws     FileIOError on any I/O error.
+         */
+        explicit TextInputFile(const std::string &filename);
+        /*! \brief
+         * Initializes file object from an existing file handle.
+         *
+         * \param[in]  fp     File handle to use.
+         * \throws     std::bad_alloc if out of memory.
+         *
+         * The caller is responsible of closing the file; close() does nothing
+         * for an object constructed this way.
+         */
+        explicit TextInputFile(FILE *fp);
+        virtual ~TextInputFile();
+
+        /*! \brief
+         * Returns a raw handle to the input file.
+         *
+         * This is provided for interoperability with older C-like code.
+         */
+        FILE *handle();
+
+        // From TextInputStream
+        virtual bool readLine(std::string *line);
+        virtual void close();
+
+    private:
+        PrivateImplPointer<internal::FileStreamImpl> impl_;
+};
+
+/*! \libinternal \brief
  * Text output stream implementation for writing to a file.
  *
  * Implementations for the TextOutputStream methods throw FileIOError on any
@@ -70,23 +150,9 @@ class FileStreamImpl;
 class TextOutputFile : public TextOutputStream
 {
     public:
-        /*! \brief
-         * Opens a text file as a stream.
-         *
-         * \param[in]  filename  Path to the file to open.
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     FileIOError on any I/O error.
-         */
+        //! \copydoc TextInputFile::TextInputFile(const std::string &)
         explicit TextOutputFile(const std::string &filename);
-        /*! \brief
-         * Initializes file object from an existing file handle.
-         *
-         * \param[in]  fp     File handle to use.
-         * \throws     std::bad_alloc if out of memory.
-         *
-         * The caller is responsible of closing the file; close() does nothing
-         * for an object constructed this way.
-         */
+        //! \copydoc TextInputFile::TextInputFile(FILE *)
         explicit TextOutputFile(FILE *fp);
         virtual ~TextOutputFile();
 
