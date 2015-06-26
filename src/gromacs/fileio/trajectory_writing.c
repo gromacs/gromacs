@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,6 +75,7 @@ do_md_trajectory_writing(FILE           *fplog,
                          )
 {
     int   mdof_flags;
+    rvec *x_for_confout = NULL;
 
     mdof_flags = 0;
     if (do_per_step(step, ir->nstxout))
@@ -154,6 +155,25 @@ do_md_trajectory_writing(FILE           *fplog,
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
         {
+            if (fr->bMolPBC && state->x == state_global->x)
+            {
+                /* This (single-rank) run needs to allocate a
+                   temporary array of size natoms so that any
+                   periodicity removal for mdrun -confout does not
+                   perturb the update and thus the final .edr
+                   output. This makes .cpt restarts look binary
+                   identical, and makes .edr restarts binary
+                   identical. */
+                snew(x_for_confout, state_global->natoms);
+                copy_rvecn(state_global->x, x_for_confout, 0, state_global->natoms);
+            }
+            else
+            {
+                /* With DD, or no bMolPBC, it doesn't matter if
+                   we change state_global->x */
+                x_for_confout = state_global->x;
+            }
+
             /* x and v have been collected in mdoutf_write_to_trajectory_files,
              * because a checkpoint file will always be written
              * at the last step.
@@ -162,12 +182,16 @@ do_md_trajectory_writing(FILE           *fplog,
             if (fr->bMolPBC)
             {
                 /* Make molecules whole only for confout writing */
-                do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, state_global->x);
+                do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, x_for_confout);
             }
             write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
                                 *top_global->name, top_global,
-                                state_global->x, state_global->v,
+                                x_for_confout, state_global->v,
                                 ir->ePBC, state->box);
+            if (fr->bMolPBC && state->x == state_global->x)
+            {
+                sfree(x_for_confout);
+            }
             debug_gmx();
         }
         wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);

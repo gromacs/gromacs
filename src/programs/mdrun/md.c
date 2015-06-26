@@ -548,9 +548,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         nstfep = gmx_greatest_common_divisor(repl_ex_nst, nstfep);
     }
 
-    /* I'm assuming we need global communication the first time! MRS */
+    /* Be REALLY careful about what flags you set here. You CANNOT assume
+     * this is the first step, since we might be restarting from a checkpoint,
+     * and in that case we should not do any modifications to the state.
+     */
+    bStopCM = (ir->comm_mode != ecmNO && !ir->bContinuation);
+
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
-                  | ((ir->comm_mode != ecmNO) ? CGLO_STOPCM : 0)
+                  | (bStopCM ? CGLO_STOPCM : 0)
                   | (bVV ? CGLO_PRESSURE : 0)
                   | (bVV ? CGLO_CONSTRAINT : 0)
                   | (bRerunMD ? CGLO_RERUNMD : 0)
