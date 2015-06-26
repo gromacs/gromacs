@@ -50,6 +50,26 @@
 namespace gmx
 {
 
+// static
+std::string TextReader::readFileToString(const char *filename)
+{
+    std::string result;
+    TextReader  reader(filename);
+    std::string line;
+    while (reader.readLine(&line))
+    {
+        result.append(line);
+    }
+    reader.close();
+    return result;
+}
+
+// static
+std::string TextReader::readFileToString(const std::string &filename)
+{
+    return readFileToString(filename.c_str());
+}
+
 class TextReader::Impl
 {
     public:

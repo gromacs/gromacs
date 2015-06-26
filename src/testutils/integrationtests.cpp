@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include <stdio.h>
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
@@ -69,7 +69,7 @@ void
 IntegrationTestFixture::redirectStringToStdin(const char* theString)
 {
     std::string fakeStdin("fake-stdin");
-    gmx::File::writeFileFromString(fakeStdin, theString);
+    gmx::TextWriter::writeFileFromString(fakeStdin, theString);
     if (NULL == std::freopen(fakeStdin.c_str(), "r", stdin))
     {
         GMX_THROW_WITH_ERRNO(FileIOError("Failed to redirect a string to stdin"),

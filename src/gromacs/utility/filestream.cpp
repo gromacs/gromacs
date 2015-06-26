@@ -188,6 +188,25 @@ StandardInputStream &StandardInputStream::instance()
  * TextInputFile
  */
 
+// static
+FILE *TextInputFile::openRawHandle(const char *filename)
+{
+    FILE *fp = fopen(filename, "r");
+    if (fp == NULL)
+    {
+        GMX_THROW_WITH_ERRNO(
+                FileIOError(formatString("Could not open file '%s'", filename)),
+                "fopen", errno);
+    }
+    return fp;
+}
+
+// static
+FILE *TextInputFile::openRawHandle(const std::string &filename)
+{
+    return openRawHandle(filename.c_str());
+}
+
 TextInputFile::TextInputFile(const std::string &filename)
     : impl_(new FileStreamImpl(filename.c_str(), "r"))
 {

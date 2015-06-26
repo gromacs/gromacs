@@ -63,6 +63,15 @@ class TextWriter::Impl
         TextOutputStreamPointer stream_;
 };
 
+// static
+void TextWriter::writeFileFromString(const std::string &filename,
+                                     const std::string &text)
+{
+    TextWriter file(filename);
+    file.writeString(text);
+    file.close();
+}
+
 TextWriter::TextWriter(const std::string &filename)
     : impl_(new Impl(TextOutputStreamPointer(new TextOutputFile(filename))))
 {

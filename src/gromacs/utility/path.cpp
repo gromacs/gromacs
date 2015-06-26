@@ -47,10 +47,12 @@
 
 #include <cctype>
 #include <cerrno>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include <sys/stat.h>
 
@@ -386,6 +388,44 @@ std::string Path::resolveSymlinks(const std::string &path)
     return result;
 }
 
+/********************************************************************
+ * File
+ */
+
+// static
+bool File::exists(const char *filename)
+{
+    if (filename == NULL)
+    {
+        return false;
+    }
+    FILE *test = std::fopen(filename, "r");
+    if (test == NULL)
+    {
+        return false;
+    }
+    else
+    {
+        std::fclose(test);
+        // Windows doesn't allow fopen of directory, so we don't need to check
+        // this separately.
+#ifndef GMX_NATIVE_WINDOWS
+        struct stat st_buf;
+        int         status = stat(filename, &st_buf);
+        if (status != 0 || !S_ISREG(st_buf.st_mode))
+        {
+            return false;
+        }
+#endif
+        return true;
+    }
+}
+
+// static
+bool File::exists(const std::string &filename)
+{
+    return exists(filename.c_str());
+}
 
 /********************************************************************
  * Directory

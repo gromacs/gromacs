@@ -104,6 +104,19 @@ class TextInputFile : public TextInputStream
 {
     public:
         /*! \brief
+         * Opens a file and returns a `FILE` handle.
+         *
+         * \param[in] filename  Path of the file to open.
+         * \throws    FileIOError on any I/O error.
+         *
+         * Instead of returning `NULL` on errors, throws an exception with
+         * additional details (including the file name and `errno`).
+         */
+        static FILE *openRawHandle(const char *filename);
+        //! \copydoc openRawHandle(const char *, const char *)
+        static FILE *openRawHandle(const std::string &filename);
+
+        /*! \brief
          * Opens a text file as a stream.
          *
          * \param[in]  filename  Path to the file to open.

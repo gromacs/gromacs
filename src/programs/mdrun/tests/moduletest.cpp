@@ -50,8 +50,8 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/textwriter.h"
 #include "programs/mdrun/mdrun_main.h"
 
 #include "testutils/cmdlinetest.h"
@@ -133,13 +133,13 @@ SimulationRunner::useStringAsMdpFile(const char *mdpString)
 void
 SimulationRunner::useStringAsMdpFile(const std::string &mdpString)
 {
-    gmx::File::writeFileFromString(mdpInputFileName_, mdpString);
+    gmx::TextWriter::writeFileFromString(mdpInputFileName_, mdpString);
 }
 
 void
 SimulationRunner::useStringAsNdxFile(const char *ndxString)
 {
-    gmx::File::writeFileFromString(ndxFileName_, ndxString);
+    gmx::TextWriter::writeFileFromString(ndxFileName_, ndxString);
 }
 
 void

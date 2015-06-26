@@ -48,7 +48,7 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/cmdlinetest.h"
@@ -123,7 +123,7 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
         "test", "help", "-export", "rst"
     };
     // TODO: Find a more elegant solution, or get rid of the links.dat altogether.
-    gmx::File::writeFileFromString("links.dat", "");
+    gmx::TextWriter::writeFileFromString("links.dat", "");
     CommandLine        args(cmdline);
     initManager(args, "test");
     MockOptionsModule &mod1 = addOptionsModule("module", "First module");

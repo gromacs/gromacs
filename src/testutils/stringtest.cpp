@@ -49,7 +49,7 @@
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/textreader.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testoptions.h"
@@ -136,7 +136,7 @@ StringTestBase::checkText(const std::string &text, const char *id)
 void
 StringTestBase::checkFileContents(const std::string &filename, const char *id)
 {
-    const std::string text = File::readToString(filename);
+    const std::string text = TextReader::readFileToString(filename);
     checkText(text, id);
 }
 

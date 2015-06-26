@@ -67,6 +67,19 @@ class TextWriter
 {
     public:
         /*! \brief
+         * Convenience method for writing a file from a string in a single call.
+         *
+         * \param[in] filename  Name of the file to read.
+         * \param[in] text      String to write to \p filename.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         *
+         * If \p filename exists, it is overwritten.
+         */
+        static void writeFileFromString(const std::string &filename,
+                                        const std::string &text);
+
+        /*! \brief
          * Creates a writer that writes to specified file.
          *
          * \param[in]  filename  Path to the file to open.
