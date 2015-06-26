@@ -49,6 +49,7 @@
 #include "coulomb.h"
 #include "calc_verletbuf.h"
 #include "../mdlib/nbnxn_consts.h"
+#include "../mdlib/nbnxn_simd.h"
 
 #ifdef GMX_NBNXN_SIMD
 /* The include below sets the SIMD instruction type (precision+width)
