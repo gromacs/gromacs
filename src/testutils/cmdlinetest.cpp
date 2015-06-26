@@ -55,9 +55,9 @@
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
@@ -298,7 +298,7 @@ void CommandLineTestHelper::setInputFileContents(
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
-    File::writeFileFromString(fullFilename, contents);
+    TextWriter::writeFileFromString(fullFilename, contents);
     args->addOption(option, fullFilename);
 }
 
@@ -346,7 +346,7 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
              outfile != impl_->outputFiles_.end();
              ++outfile)
         {
-            std::string output = File::readToString(outfile->path);
+            std::string output = TextReader::readFileToString(outfile->path);
             outputChecker.checkStringBlock(output, outfile->option.c_str());
         }
     }

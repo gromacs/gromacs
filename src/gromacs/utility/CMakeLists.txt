@@ -44,7 +44,6 @@ gmx_install_headers(
     errorcodes.h
     exceptions.h
     fatalerror.h
-    file.h
     flags.h
     futil.h
     gmxassert.h

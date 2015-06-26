@@ -85,6 +85,25 @@ class Path
         Path();
 };
 
+class File
+{
+    public:
+        /*! \brief
+         * Checks whether a file exists and is a regular file.
+         *
+         * \param[in] filename  Path to the file to check.
+         * \returns   `true` if \p filename exists and is accessible.
+         *
+         * Does not throw.
+         */
+        static bool exists(const char *filename);
+        //! \copydoc exists(const char *)
+        static bool exists(const std::string &filename);
+
+    private:
+        // Disallow instantiation.
+        File();
+};
 
 class Directory
 {

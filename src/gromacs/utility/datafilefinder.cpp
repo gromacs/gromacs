@@ -51,7 +51,7 @@
 #include "buildinfo.h"
 #include "gromacs/utility/directoryenumerator.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -133,7 +133,7 @@ FILE *DataFileFinder::openFile(const DataFileOptions &options) const
         fprintf(debug, "Opening library file %s\n", fn);
     }
 #endif
-    return File::openRawHandle(filename, "r");
+    return TextInputFile::openRawHandle(filename);
 }
 
 std::string DataFileFinder::findFile(const DataFileOptions &options) const

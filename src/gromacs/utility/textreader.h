@@ -68,6 +68,18 @@ class TextReader
 {
     public:
         /*! \brief
+         * Reads contents of a file to a std::string.
+         *
+         * \param[in] filename  Name of the file to read.
+         * \returns   The contents of \p filename.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         */
+        static std::string readFileToString(const char *filename);
+        //! \copydoc readFileToString(const char *)
+        static std::string readFileToString(const std::string &filename);
+
+        /*! \brief
          * Creates a reader that reads from specified file.
          *
          * \param[in]  filename  Path to the file to open.

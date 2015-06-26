@@ -70,7 +70,6 @@
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
