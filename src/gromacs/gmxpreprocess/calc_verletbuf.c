@@ -49,6 +49,7 @@
 #include "coulomb.h"
 #include "calc_verletbuf.h"
 #include "../mdlib/nbnxn_consts.h"
+#include "../mdlib/nbnxn_simd.h"
 
 #ifdef GMX_NBNXN_SIMD
 /* The include below sets the SIMD instruction type (precision+width)
@@ -117,20 +118,21 @@ typedef struct
     int                           n;    /* #atoms of this type in the system */
 } verletbuf_atomtype_t;
 
-void verletbuf_get_list_setup(gmx_bool                bGPU,
+void verletbuf_get_list_setup(gmx_bool                bSIMD,
+                              gmx_bool                bGPU,
                               verletbuf_list_setup_t *list_setup)
 {
     list_setup->cluster_size_i     = NBNXN_CPU_CLUSTER_I_SIZE;
+    list_setup->cluster_size_j     = NBNXN_CPU_CLUSTER_I_SIZE;
 
     if (bGPU)
     {
+        list_setup->cluster_size_i = NBNXN_GPU_CLUSTER_SIZE;
         list_setup->cluster_size_j = NBNXN_GPU_CLUSTER_SIZE;
     }
-    else
+#ifdef GMX_NBNXN_SIMD
+    else if (bSIMD)
     {
-#ifndef GMX_NBNXN_SIMD
-        list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
-#else
         list_setup->cluster_size_j = GMX_SIMD_REAL_WIDTH;
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We assume the smallest cluster size to be on the safe side */
