@@ -232,7 +232,6 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 

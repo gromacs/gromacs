@@ -60,11 +60,11 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/fileredirector.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "shellcompletions.h"
@@ -522,9 +522,9 @@ HelpExportReStructuredText::HelpExportReStructuredText(
       binaryName_(helpModule.binaryName_),
       links_(eHelpOutputFormat_Rst)
 {
-    File             linksFile("links.dat", "r");
-    std::string      line;
-    while (linksFile.readLine(&line))
+    TextReader   linksFile("links.dat");
+    std::string  line;
+    while (linksFile.readLineTrimmed(&line))
     {
         links_.addLink("[REF]." + line + "[ref]",
                        formatString(":ref:`.%s <%s>`", line.c_str(), line.c_str()),

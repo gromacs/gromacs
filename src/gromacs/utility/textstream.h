@@ -49,6 +49,48 @@ namespace gmx
 {
 
 /*! \libinternal \brief
+ * Interface for reading text.
+ *
+ * Concrete implementations can read the text from, e.g., a file or an in-memory
+ * string.  The main use is to allow unit tests to inject in-memory buffers
+ * instead of writing files to be read by the code under test, but there are
+ * also use cases outside the tests where it is useful to abstract out whether
+ * the input is from a real file or something else.
+ *
+ * To use more advanced formatting than reading raw lines, use TextReader.
+ *
+ * Both methods in the interface can throw std::bad_alloc or other exceptions
+ * that indicate failures to read from the stream.
+ *
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+class TextInputStream
+{
+    public:
+        virtual ~TextInputStream() {}
+
+        /*! \brief
+         * Reads a line (with newline included) from the stream.
+         *
+         * \param[out] line    String to receive the line.
+         * \returns    `false` if nothing was read because the stream ended.
+         *
+         * On error or when `false` is returned, \p line will be empty.
+         */
+        virtual bool readLine(std::string *line) = 0;
+        /*! \brief
+         * Closes the stream.
+         *
+         * It is not allowed to read from a stream after it has been closed.
+         * See TextOutputStream::close() for rationale for a close() method
+         * separate from the destructor.  For input, failures during close
+         * should be rare, but it is clearer to keep the interface symmetric.
+         */
+        virtual void close() = 0;
+};
+
+/*! \libinternal \brief
  * Interface for writing text.
  *
  * Concrete implementations can write the text to, e.g., a file or an in-memory
@@ -88,6 +130,8 @@ class TextOutputStream
         virtual void close() = 0;
 };
 
+//! Shorthand for a smart pointer to a TextInputStream.
+typedef boost::shared_ptr<TextInputStream> TextInputStreamPointer;
 //! Shorthand for a smart pointer to a TextOutputStream.
 typedef boost::shared_ptr<TextOutputStream> TextOutputStreamPointer;
 
