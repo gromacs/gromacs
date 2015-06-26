@@ -1386,7 +1386,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
                             &ls, &n_nonlin_vsite, &rlist_1x1);
 
     /* Set the pair-list buffer size in ir */
-    verletbuf_get_list_setup(FALSE, &ls);
+    verletbuf_get_list_setup(FALSE, FALSE, &ls);
     calc_verlet_buffer_size(mtop, det(box), ir, buffer_temp,
                             &ls, &n_nonlin_vsite, &ir->rlist);
 
@@ -1403,6 +1403,8 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     printf("Set rlist, assuming %dx%d atom pair-list, to %.3f nm, buffer size %.3f nm\n",
            ls.cluster_size_i, ls.cluster_size_j,
            ir->rlist, ir->rlist-max(ir->rvdw, ir->rcoulomb));
+
+    printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
     if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
     {
