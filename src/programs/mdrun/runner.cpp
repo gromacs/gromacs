@@ -398,7 +398,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         ir->nstlist = nstlist_cmdline;
     }
 
-    verletbuf_get_list_setup(bGPU, &ls);
+    verletbuf_get_list_setup(TRUE, bGPU, &ls);
 
     /* Allow rlist to make the list a given factor larger than the list
      * would be with the reference value for nstlist (10).
@@ -523,7 +523,7 @@ static void prepare_verlet_scheme(FILE                           *fplog,
          * calc_verlet_buffer_size gives the same results for 4x8 and 4x4
          * and 4x2 gives a larger buffer than 4x4, this is ok.
          */
-        verletbuf_get_list_setup(bUseGPU, &ls);
+        verletbuf_get_list_setup(TRUE, bUseGPU, &ls);
 
         calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL, &rlist_new);
 
