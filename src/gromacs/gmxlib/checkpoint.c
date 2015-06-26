@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1579,16 +1579,15 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     flags_enh = 0;
     if (state->enerhist.nsum > 0 || state->enerhist.nsum_sim > 0)
     {
-        flags_enh |= (1<<eenhENERGY_N);
+        flags_enh |= (1<<eenhENERGY_N) | (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSTEPS_SIM);
         if (state->enerhist.nsum > 0)
         {
             flags_enh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
-                          (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSUM));
+                          (1<<eenhENERGY_NSUM));
         }
         if (state->enerhist.nsum_sim > 0)
         {
-            flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSTEPS_SIM) |
-                          (1<<eenhENERGY_NSUM_SIM));
+            flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSUM_SIM));
         }
         if (state->enerhist.dht)
         {

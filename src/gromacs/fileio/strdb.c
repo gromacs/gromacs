@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,7 +124,7 @@ int get_strings(const char *db, char ***strings)
 {
     FILE  *in;
     char **ptr;
-    char   buf[256];
+    char   buf[STRLEN];
     int    i, nstr;
 
     in = libopen(db);
@@ -138,7 +138,7 @@ int get_strings(const char *db, char ***strings)
     snew(ptr, nstr);
     for (i = 0; (i < nstr); i++)
     {
-        if (1 != fscanf(in, "%s", buf))
+        if (NULL == fgets2(buf, STRLEN, in))
         {
             gmx_fatal(FARGS, "Cannot read string from buffer");
         }
@@ -177,7 +177,7 @@ int fget_lines(FILE *in, char ***strings)
     int    i, nstr;
     char  *pret;
 
-    pret = fgets(buf, STRLEN-1, in);
+    pret = fgets(buf, STRLEN, in);
     if (pret == NULL  || sscanf(buf, "%d", &nstr) != 1)
     {
         gmx_warning("File is empty");
@@ -188,7 +188,7 @@ int fget_lines(FILE *in, char ***strings)
     snew(ptr, nstr);
     for (i = 0; (i < nstr); i++)
     {
-        fgets2(buf, STRLEN-1, in);
+        fgets2(buf, STRLEN, in);
         ptr[i] = gmx_strdup(buf);
     }
 
