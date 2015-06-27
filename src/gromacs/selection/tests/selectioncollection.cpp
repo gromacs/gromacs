@@ -57,6 +57,7 @@
 #include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/interactivetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -149,6 +150,39 @@ SelectionCollectionTest::loadIndexGroups(const char *filename)
         gmx::test::TestFileManager::getInputFilePath(filename);
     gmx_ana_indexgrps_init(&grps_, NULL, fullpath.c_str());
     sc_.setIndexGroups(grps_);
+}
+
+
+/********************************************************************
+ * Test fixture for interactive SelectionCollection tests
+ */
+
+class SelectionCollectionInteractiveTest : public SelectionCollectionTest
+{
+    public:
+        SelectionCollectionInteractiveTest()
+            : helper_(data_.rootChecker())
+        {
+        }
+
+        void runTest(int count, bool bInteractive,
+                     const gmx::ConstArrayRef<const char *> &input);
+
+        gmx::test::TestReferenceData      data_;
+        gmx::test::InteractiveTestHelper  helper_;
+};
+
+void SelectionCollectionInteractiveTest::runTest(
+        int count, bool bInteractive,
+        const gmx::ConstArrayRef<const char *> &inputLines)
+{
+    helper_.setInputLines(inputLines);
+    // TODO: Check something about the returned selections as well.
+    ASSERT_NO_THROW_GMX(sc_.parseInteractive(
+                                count, &helper_.inputStream(),
+                                bInteractive ? &helper_.outputStream() : NULL,
+                                "for test context"));
+    helper_.checkSession();
 }
 
 
@@ -616,6 +650,150 @@ TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets3)
 }
 
 // TODO: Tests for more evaluation errors
+
+/********************************************************************
+ * Tests for interactive selection input
+ */
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesBasicInput)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "resname RB",
+        "\"Name\" resname RC"
+    };
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesContinuation)
+{
+    const char *const input[] = {
+        "resname RB and \\",
+        "resname RC"
+    };
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesSingleSelectionInput)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "resname RA"
+    };
+    runTest(1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesTwoSelectionInput)
+{
+    const char *const input[] = {
+        "resname RA",
+        "resname RB"
+    };
+    runTest(2, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesStatusWithGroups)
+{
+    const char *const input[] = {
+        "resname RA",
+        ""
+    };
+    loadIndexGroups("simple.ndx");
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesStatusWithExistingSelections)
+{
+    const char *const input[] = {
+        "",
+        "bar = resname RC",
+        "resname RA",
+        ""
+    };
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("foo = resname RA"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("resname RB"));
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesSingleSelectionInputStatus)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "",
+        "resname RB"
+    };
+    runTest(1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesTwoSelectionInputStatus)
+{
+    const char *const input[] = {
+        "\"Sel\" resname RA",
+        "",
+        "resname RB"
+    };
+    runTest(2, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesMultiSelectionInputStatus)
+{
+    const char *const input[] = {
+        "\"Sel\" resname RA",
+        "\"Sel2\" resname RB",
+        ""
+    };
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesNoFinalNewline)
+{
+    // TODO: There is an extra prompt printed after the input is finished; it
+    // would be cleaner not to have it, but it's only a cosmetic issue.
+    const char *const input[] = {
+        "resname RA"
+    };
+    helper_.setLastNewline(false);
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesEmptySelections)
+{
+    const char *const input[] = {
+        "resname RA;",
+        "; resname RB;;",
+        " ",
+        ";"
+    };
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesMultipleSelectionsOnLine)
+{
+    const char *const input[] = {
+        "resname RA; resname RB and \\",
+        "resname RC"
+    };
+    runTest(2, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesNoninteractiveInput)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "resname RB",
+        "\"Name\" resname RC"
+    };
+    runTest(-1, false, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesSingleSelectionInputNoninteractively)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "resname RA"
+    };
+    runTest(1, false, input);
+}
 
 
 /********************************************************************

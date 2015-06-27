@@ -188,26 +188,14 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
                   bool bInteractive)
 {
     int status    = YYPUSH_MORE;
-    int prevToken = 0;
     do
     {
         YYSTYPE value;
         YYLTYPE location;
         int     token = _gmx_sel_yylex(&value, &location, scanner);
-        if (bInteractive)
+        if (bInteractive && token == 0)
         {
-            if (token == 0)
-            {
-                break;
-            }
-            // Empty commands cause the interactive parser to print out
-            // status information. This avoids producing those unnecessarily,
-            // e.g., from "resname RA;;".
-            if (prevToken == CMD_SEP && token == CMD_SEP)
-            {
-                continue;
-            }
-            prevToken = token;
+            break;
         }
         status = _gmx_sel_yypush_parse(parserState, token, &value, &location, scanner);
     }

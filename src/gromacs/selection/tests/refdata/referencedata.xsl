@@ -165,6 +165,11 @@
 
 <xsl:key name="SelectionName" match="ParsedSelections/ParsedSelection" use="@Name"/>
 
+<xsl:template match="InteractiveSession">
+    <h2>Interactive Session</h2>
+    <xsl:apply-imports />
+</xsl:template>
+
 <xsl:template match="ParsedSelections">
     <h2>Parsed Selections</h2>
     <table border="1">

@@ -68,4 +68,31 @@ and use the copy_xsl.sh script to copy it to relevant locations.
     <xsl:value-of select="."/>
 </xsl:template>
 
+<xsl:template match="InteractiveSession">
+    <pre>
+        <xsl:for-each select="*">
+            <xsl:choose>
+                <xsl:when test="starts-with(@Name, 'Output')">
+                    <xsl:value-of select="substring(.,2)"/>
+                </xsl:when>
+                <xsl:when test="string-length(.)=1">
+                    <xsl:text>&#x25ba;</xsl:text>
+                    <xsl:text>&#xb6;</xsl:text>
+                </xsl:when>
+                <xsl:when test="contains(substring(.,2), '&#10;')">
+                    <xsl:text>&#x25ba;</xsl:text>
+                    <xsl:value-of select="translate(substring(.,2), '&#10;', '&#x23ce;')"/>
+                    <xsl:text>&#10;</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text>&#x25ba;</xsl:text>
+                    <xsl:value-of select="substring(.,2)"/>
+                    <xsl:text>&#xb6;</xsl:text>
+                </xsl:otherwise>
+            </xsl:choose>
+        </xsl:for-each>
+        <xsl:text>[EOF]</xsl:text>
+    </pre>
+</xsl:template>
+
 </xsl:stylesheet>

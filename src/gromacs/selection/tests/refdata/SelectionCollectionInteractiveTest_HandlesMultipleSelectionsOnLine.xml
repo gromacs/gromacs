@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <InteractiveSession Name="Interactive">
+    <String Name="Output0"><![CDATA[
+Specify 2 selections for test context:
+(one per line, <enter> for status/groups, 'help' for help)
+> ]]></String>
+    <String Name="Input1"><![CDATA[
+resname RA; resname RB and \
+]]></String>
+    <String Name="Output1"><![CDATA[
+... ]]></String>
+    <String Name="Input2"><![CDATA[
+resname RC
+]]></String>
+    <String Name="Output2"><![CDATA[
+Selection 'resname RA' parsed
+Selection 'resname RB and resname RC' parsed
+]]></String>
+  </InteractiveSession>
+</ReferenceData>

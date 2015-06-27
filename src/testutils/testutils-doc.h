@@ -58,6 +58,10 @@
  *    functionality for capturing file output (including `stdout`) from code
  *    that uses gmx::FileOutputRedirectorInterface, and checking that output
  *    against reference data.
+ *  - gmx::test::InteractiveTestHelper (in interactivetest.h) provides
+ *    a helper class for testing an interactive session that uses
+ *    gmx::TextInputStream and gmx::TextOutputStream for prompting input and
+ *    printing status messages.
  *  - #GMX_TEST_OPTIONS macro provides facilities for adding custom command
  *    line options for the test binary.
  *  - testasserts.h provides several custom test assertions for better
