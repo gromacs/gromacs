@@ -37,6 +37,7 @@ include_directories(${LIBXML2_INCLUDE_DIR})
 set(TESTUTILS_SOURCES
     cmdlinetest.cpp
     integrationtests.cpp
+    interactivetest.cpp
     mpi-printer.cpp
     refdata.cpp
     stringtest.cpp
