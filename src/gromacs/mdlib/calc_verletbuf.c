@@ -48,6 +48,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -118,25 +119,28 @@ typedef struct
     int                           n;    /* #atoms of this type in the system */
 } verletbuf_atomtype_t;
 
-void verletbuf_get_list_setup(gmx_bool                bGPU,
+void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
+                              gmx_bool                bGPU,
                               verletbuf_list_setup_t *list_setup)
 {
-    list_setup->cluster_size_i     = NBNXN_CPU_CLUSTER_I_SIZE;
-
     if (bGPU)
     {
-        list_setup->cluster_size_j = NBNXN_GPU_CLUSTER_SIZE;
+        list_setup->cluster_size_i     = NBNXN_GPU_CLUSTER_SIZE;
+        list_setup->cluster_size_j     = NBNXN_GPU_CLUSTER_SIZE;
     }
     else
     {
-#ifndef GMX_NBNXN_SIMD
-        list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
-#else
-        list_setup->cluster_size_j = GMX_SIMD_REAL_WIDTH;
+        list_setup->cluster_size_i     = NBNXN_CPU_CLUSTER_I_SIZE;
+        list_setup->cluster_size_j     = NBNXN_CPU_CLUSTER_I_SIZE;
+#ifdef GMX_NBNXN_SIMD
+        if (bSIMD)
+        {
+            list_setup->cluster_size_j = GMX_SIMD_REAL_WIDTH;
 #ifdef GMX_NBNXN_SIMD_2XNN
-        /* We assume the smallest cluster size to be on the safe side */
-        list_setup->cluster_size_j /= 2;
+            /* We assume the smallest cluster size to be on the safe side */
+            list_setup->cluster_size_j /= 2;
 #endif
+        }
 #endif
     }
 }
