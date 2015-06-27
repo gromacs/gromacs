@@ -761,6 +761,21 @@ check_ocl_cache(char            *ocl_binary_filename,
     return true;
 }
 
+static std::string
+escapeSpacesInString(std::string inputStr)
+{
+    std::string escapedStr;
+    for (std::string::size_type i = 0; i < inputStr.length(); i++)
+    {
+        if (inputStr[i] == ' ')
+        {
+            escapedStr.push_back('\\');
+        }
+        escapedStr.push_back(inputStr[i]);
+    }
+    return escapedStr;
+}
+
 /*! \brief Builds a string with build options for the OpenCL kernels */
 char*
 ocl_get_build_options_string(cl_context           context,
@@ -788,10 +803,10 @@ ocl_get_build_options_string(cl_context           context,
     /* Create include paths for kernel sources.
        All OpenCL kernel files are expected to be stored in one single folder. */
     {
-        std::string ocl_root_path = get_ocl_root_path();
+        std::string ocl_root_path = escapeSpacesInString(get_ocl_root_path());
 
-        char        incl_opt_start[] = "-I\"";
-        char        incl_opt_end[]   = "\"";
+        char        incl_opt_start[] = "-I";
+        char        incl_opt_end[]   = "";
         size_t      chars            = 0;
 
         custom_build_options_append =
