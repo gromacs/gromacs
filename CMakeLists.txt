@@ -356,7 +356,7 @@ check_cxx_symbol_exists(rsqrtf            math.h       HAVE_RSQRTF)
 check_cxx_symbol_exists(sqrtf             math.h       HAVE_SQRTF)
 
 include(CheckLibraryExists)
-check_library_exists(m sqrt "" HAVE_LIBM)
+find_library(HAVE_LIBM m)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 
