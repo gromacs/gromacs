@@ -788,10 +788,33 @@ ocl_get_build_options_string(cl_context           context,
     /* Create include paths for kernel sources.
        All OpenCL kernel files are expected to be stored in one single folder. */
     {
+        /* Apple does not seem to accept the quoted include paths other
+         * OpenCL implementations are happy with. Since the standard still says
+         * it should be quoted, we handle Apple as a special case.
+         */
+#ifdef __APPLE__
+        std::string unescaped_ocl_root_path = get_ocl_root_path();
+        std::string ocl_root_path;
+
+        char        incl_opt_start[] = "-I";
+        char        incl_opt_end[]   = "";
+
+        for (std::string::size_type i = 0; i < unescaped_ocl_root_path.length(); i++)
+        {
+            if (inputStr[i] == ' ')
+            {
+                ocl_root_path.push_back('\\');
+            }
+            ocl_root_path.push_back(unescaped_ocl_root_path[i]);
+        }
+        // Here the Apple ocl_root_path has all spaces prepended with a backslash
+#else
         std::string ocl_root_path = get_ocl_root_path();
 
         char        incl_opt_start[] = "-I\"";
         char        incl_opt_end[]   = "\"";
+
+#endif
         size_t      chars            = 0;
 
         custom_build_options_append =
