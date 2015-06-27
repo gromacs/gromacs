@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <InteractiveSession Name="Interactive">
+    <String Name="Output0"><![CDATA[
+Available static index groups:
+ Group  0 "GrpA" (5 atoms)
+ Group  1 "GrpB" (5 atoms)
+ Group  2 "GrpUnsorted" (8 atoms)
+Specify any number of selections for test context:
+(one per line, <enter> for status/groups, 'help' for help, Ctrl-D to end)
+> ]]></String>
+    <String Name="Input1"><![CDATA[
+resname RA
+]]></String>
+    <String Name="Output1"><![CDATA[
+Selection 'resname RA' parsed
+> ]]></String>
+    <String Name="Input2"><![CDATA[
+
+]]></String>
+    <String Name="Output2"><![CDATA[
+Available static index groups:
+ Group  0 "GrpA" (5 atoms)
+ Group  1 "GrpB" (5 atoms)
+ Group  2 "GrpUnsorted" (8 atoms)
+Specify any number of selections for test context:
+(one per line, <enter> for status/groups, 'help' for help, Ctrl-D to end)
+Currently provided selections:
+  1. resname RA
+> ]]></String>
+    <String Name="Input3"><![CDATA[
+]]></String>
+  </InteractiveSession>
+</ReferenceData>
