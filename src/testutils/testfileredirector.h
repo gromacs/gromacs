@@ -54,6 +54,8 @@ namespace gmx
 namespace test
 {
 
+class TestReferenceChecker;
+
 /*! \libinternal \brief
  * In-memory implementation for FileInputRedirectorInterface for tests.
  *
@@ -85,6 +87,40 @@ class TestFileInputRedirector : public FileInputRedirectorInterface
         std::set<std::string> existingFiles_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TestFileInputRedirector);
+};
+
+/*! \libinternal \brief
+ * In-memory implementation of FileOutputRedirectorInterface for tests.
+ *
+ * This class redirects all output files to in-memory buffers, and supports
+ * checking the contents of these files using the reference data framework.
+ *
+ * \ingroup module_testutils
+ */
+class TestFileOutputRedirector : public FileOutputRedirectorInterface
+{
+    public:
+        TestFileOutputRedirector();
+        virtual ~TestFileOutputRedirector();
+
+        /*! \brief
+         * Checks contents of all redirected files (including stdout).
+         *
+         * This method should not be called if the redirector will still be
+         * used for further output in the test.  Behavior is not designed for
+         * checking in the middle of the test, although that could potentially
+         * be changed if necessary.
+         */
+        void checkRedirectedFiles(TestReferenceChecker *checker);
+
+        // From FileOutputRedirectorInterface
+        virtual TextOutputStream &standardOutput();
+        virtual TextOutputStreamPointer openTextOutputFile(const char *filename);
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

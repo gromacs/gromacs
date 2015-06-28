@@ -32,87 +32,65 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Implements classes and functions from fileredirector.h.
+ * Declares interfaces for simple input/output streams.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
  * \ingroup module_utility
  */
-#include "gmxpre.h"
+#ifndef GMX_UTILITY_TEXTSTREAM_H
+#define GMX_UTILITY_TEXTSTREAM_H
 
-#include "fileredirector.h"
-
-#include "gromacs/utility/file.h"
-#include "gromacs/utility/filestream.h"
+#include <boost/shared_ptr.hpp>
 
 namespace gmx
 {
 
-FileInputRedirectorInterface::~FileInputRedirectorInterface()
-{
-}
-
-FileOutputRedirectorInterface::~FileOutputRedirectorInterface()
-{
-}
-
-namespace
-{
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileInputRedirector().
+/*! \libinternal \brief
+ * Interface for writing text.
  *
- * Does not redirect anything, but uses the file system as requested.
+ * Concrete implementations can write the text to, e.g., a file or an in-memory
+ * string.  The main use is to allow unit tests to inject in-memory buffers
+ * instead of reading in files produced by the code under test, but there are
+ * also use cases outside the tests where it is useful to abstract out whether
+ * the output is into a real file or something else.
  *
+ * To use more advanced formatting than writing plain strings, use TextWriter.
+ *
+ * Both methods in the interface can throw std::bad_alloc or other exceptions
+ * that indicate failures to write to the stream.
+ *
+ * \inlibraryapi
  * \ingroup module_utility
  */
-class DefaultInputRedirector : public FileInputRedirectorInterface
+class TextOutputStream
 {
     public:
-        virtual bool fileExists(const char *filename) const
-        {
-            return File::exists(filename);
-        }
+        virtual ~TextOutputStream() {}
+
+        /*! \brief
+         * Writes a given string to the stream.
+         */
+        virtual void write(const char *text) = 0;
+        /*! \brief
+         * Closes the stream.
+         *
+         * It is not allowed to write to a stream after it has been closed.
+         * A method separate from the destructor is provided such that errors
+         * that occur while closing the stream (e.g., when closing the file)
+         * can be handled using exceptions.
+         * The destructor is not allowed to throw, so code that wants to
+         * observe such errors needs to call close() after it has finished
+         * writing to the stream.
+         */
+        virtual void close() = 0;
 };
 
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileOutputRedirector().
- *
- * Does not redirect anything, but instead opens the files exactly as
- * requested.
- *
- * \ingroup module_utility
- */
-class DefaultOutputRedirector : public FileOutputRedirectorInterface
-{
-    public:
-        virtual TextOutputStream &standardOutput()
-        {
-            return TextOutputFile::standardOutput();
-        }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
-        {
-            return TextOutputStreamPointer(new TextOutputFile(filename));
-        }
-};
-
-}   // namespace
-
-//! \cond libapi
-FileInputRedirectorInterface &defaultFileInputRedirector()
-{
-    static DefaultInputRedirector instance;
-    return instance;
-}
-
-FileOutputRedirectorInterface &defaultFileOutputRedirector()
-{
-    static DefaultOutputRedirector instance;
-    return instance;
-}
-//! \endcond
+//! Shorthand for a smart pointer to a TextOutputStream.
+typedef boost::shared_ptr<TextOutputStream> TextOutputStreamPointer;
 
 } // namespace gmx
+
+#endif

@@ -52,43 +52,6 @@
 namespace gmx
 {
 
-class File;
-
-/*! \brief
- * Parameters for creating a File object.
- *
- * This class (mostly) replaces the ability to return a File object from a
- * function (since File is not copyable): returning a FileInitializer instead
- * allows the caller to construct the File object.
- *
- * \inpublicapi
- * \ingroup module_utility
- */
-class FileInitializer
-{
-    public:
-        /*! \brief
-         * Creates the initializer with given parameters.
-         *
-         * The passed strings must remain valid until the initializer is used
-         * to construct a File object.
-         */
-        FileInitializer(const char *filename, const char *mode)
-            : filename_(filename), mode_(mode)
-        {
-        }
-
-    private:
-        const char *filename_;
-        const char *mode_;
-
-        /*! \brief
-         * Needed to allow access to the parameters without otherwise
-         * unnecessary accessors.
-         */
-        friend class File;
-};
-
 /*! \brief
  * Basic file object.
  *
@@ -127,14 +90,6 @@ class File
         File(const char *filename, const char *mode);
         //! \copydoc File(const char *, const char *)
         File(const std::string &filename, const char *mode);
-        /*! \brief
-         * Creates a file object and opens a file.
-         *
-         * \param[in] initializer  Parameters to open the file.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         */
-        File(const FileInitializer &initializer);
         /*! \brief
          * Destroys the file object.
          *
@@ -279,18 +234,6 @@ class File
          * \throws    std::bad_alloc if out of memory (only on first call).
          */
         static File &standardInput();
-        /*! \brief
-         * Returns a File object for accessing stdout.
-         *
-         * \throws    std::bad_alloc if out of memory (only on first call).
-         */
-        static File &standardOutput();
-        /*! \brief
-         * Returns a File object for accessing stderr.
-         *
-         * \throws    std::bad_alloc if out of memory (only on first call).
-         */
-        static File &standardError();
 
         /*! \brief
          * Reads contents of a file to a std::string.
@@ -323,7 +266,7 @@ class File
          * \param[in]  bClose Whether this object should close its file handle.
          * \throws     std::bad_alloc if out of memory.
          *
-         * Used internally to implement standardOutput() and standardError().
+         * Used internally to implement standardInput().
          */
         File(FILE *fp, bool bClose);
 

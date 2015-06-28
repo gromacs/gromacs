@@ -34,85 +34,27 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes and functions from fileredirector.h.
+ * Implements classes from stringstream.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
 #include "gmxpre.h"
 
-#include "fileredirector.h"
+#include "stringstream.h"
 
-#include "gromacs/utility/file.h"
-#include "gromacs/utility/filestream.h"
+#include <string>
 
 namespace gmx
 {
 
-FileInputRedirectorInterface::~FileInputRedirectorInterface()
+void StringOutputStream::write(const char *str)
 {
+    str_.append(str);
 }
 
-FileOutputRedirectorInterface::~FileOutputRedirectorInterface()
+void StringOutputStream::close()
 {
 }
-
-namespace
-{
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileInputRedirector().
- *
- * Does not redirect anything, but uses the file system as requested.
- *
- * \ingroup module_utility
- */
-class DefaultInputRedirector : public FileInputRedirectorInterface
-{
-    public:
-        virtual bool fileExists(const char *filename) const
-        {
-            return File::exists(filename);
-        }
-};
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileOutputRedirector().
- *
- * Does not redirect anything, but instead opens the files exactly as
- * requested.
- *
- * \ingroup module_utility
- */
-class DefaultOutputRedirector : public FileOutputRedirectorInterface
-{
-    public:
-        virtual TextOutputStream &standardOutput()
-        {
-            return TextOutputFile::standardOutput();
-        }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
-        {
-            return TextOutputStreamPointer(new TextOutputFile(filename));
-        }
-};
-
-}   // namespace
-
-//! \cond libapi
-FileInputRedirectorInterface &defaultFileInputRedirector()
-{
-    static DefaultInputRedirector instance;
-    return instance;
-}
-
-FileOutputRedirectorInterface &defaultFileOutputRedirector()
-{
-    static DefaultOutputRedirector instance;
-    return instance;
-}
-//! \endcond
 
 } // namespace gmx

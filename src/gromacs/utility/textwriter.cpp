@@ -34,85 +34,90 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes and functions from fileredirector.h.
+ * Implements gmx::TextWriter.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
 #include "gmxpre.h"
 
-#include "fileredirector.h"
+#include "textwriter.h"
 
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/filestream.h"
+#include "gromacs/utility/nodelete.h"
+#include "gromacs/utility/textstream.h"
 
 namespace gmx
 {
 
-FileInputRedirectorInterface::~FileInputRedirectorInterface()
-{
-}
-
-FileOutputRedirectorInterface::~FileOutputRedirectorInterface()
-{
-}
-
-namespace
-{
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileInputRedirector().
- *
- * Does not redirect anything, but uses the file system as requested.
- *
- * \ingroup module_utility
- */
-class DefaultInputRedirector : public FileInputRedirectorInterface
+class TextWriter::Impl
 {
     public:
-        virtual bool fileExists(const char *filename) const
+        explicit Impl(const TextOutputStreamPointer &stream)
+            : stream_(stream)
         {
-            return File::exists(filename);
         }
+
+        TextOutputStreamPointer stream_;
 };
 
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileOutputRedirector().
- *
- * Does not redirect anything, but instead opens the files exactly as
- * requested.
- *
- * \ingroup module_utility
- */
-class DefaultOutputRedirector : public FileOutputRedirectorInterface
+TextWriter::TextWriter(const std::string &filename)
+    : impl_(new Impl(TextOutputStreamPointer(new TextOutputFile(filename))))
 {
-    public:
-        virtual TextOutputStream &standardOutput()
-        {
-            return TextOutputFile::standardOutput();
-        }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
-        {
-            return TextOutputStreamPointer(new TextOutputFile(filename));
-        }
-};
-
-}   // namespace
-
-//! \cond libapi
-FileInputRedirectorInterface &defaultFileInputRedirector()
-{
-    static DefaultInputRedirector instance;
-    return instance;
 }
 
-FileOutputRedirectorInterface &defaultFileOutputRedirector()
+TextWriter::TextWriter(TextOutputStream *stream)
+    : impl_(new Impl(TextOutputStreamPointer(stream, no_delete<TextOutputStream>())))
 {
-    static DefaultOutputRedirector instance;
-    return instance;
 }
-//! \endcond
+
+TextWriter::TextWriter(const TextOutputStreamPointer &stream)
+    : impl_(new Impl(stream))
+{
+}
+
+TextWriter::~TextWriter()
+{
+}
+
+TextOutputStream &TextWriter::stream()
+{
+    return *impl_->stream_;
+}
+
+void TextWriter::writeString(const char *str)
+{
+    impl_->stream_->write(str);
+}
+
+void TextWriter::writeString(const std::string &str)
+{
+    impl_->stream_->write(str.c_str());
+}
+
+void TextWriter::writeLine(const char *line)
+{
+    const size_t length = std::strlen(line);
+    writeString(line);
+    if (length == 0 || line[length-1] != '\n')
+    {
+        writeLine();
+    }
+}
+
+void TextWriter::writeLine(const std::string &line)
+{
+    writeLine(line.c_str());
+}
+
+void TextWriter::writeLine()
+{
+    writeString("\n");
+}
+
+void TextWriter::close()
+{
+    impl_->stream_->close();
+}
 
 } // namespace gmx

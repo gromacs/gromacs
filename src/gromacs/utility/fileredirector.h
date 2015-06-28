@@ -45,7 +45,7 @@
 
 #include <string>
 
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/textstream.h"
 
 namespace gmx
 {
@@ -94,10 +94,10 @@ class FileInputRedirectorInterface
  * redirection is needed.
  *
  * This allows tests to capture the file output without duplicating the
- * knowledge of which files are actually produced.  With some further
- * refactoring of the File class, this could support capturing the output into
- * in-memory buffers as well, but for now the current capabilities are
- * sufficient.
+ * knowledge of which files are actually produced.  The tests can also replace
+ * actual files with in-memory streams (e.g., a StringOutputStream), and test
+ * the output without actually accessing the file system and managing actual
+ * files.
  *
  * \inlibraryapi
  * \ingroup module_utility
@@ -108,20 +108,20 @@ class FileOutputRedirectorInterface
         virtual ~FileOutputRedirectorInterface();
 
         /*! \brief
-         * Returns a File object to use for `stdout` output.
+         * Returns a stream to use for `stdout` output.
          */
-        virtual File &standardOutput() = 0;
+        virtual TextOutputStream &standardOutput() = 0;
         /*! \brief
-         * Returns a File object to use for output to a given file.
+         * Returns a stream to use for output to a file at a given path.
          *
          * \param[in] filename  Requested file name.
          */
-        virtual FileInitializer openFileForWriting(const char *filename) = 0;
+        virtual TextOutputStreamPointer openTextOutputFile(const char *filename) = 0;
 
-        //! Convenience method to open a file using an std::string path.
-        FileInitializer openFileForWriting(const std::string &filename)
+        //! Convenience method to open a stream using an std::string path.
+        TextOutputStreamPointer openTextOutputFile(const std::string &filename)
         {
-            return openFileForWriting(filename.c_str());
+            return openTextOutputFile(filename.c_str());
         }
 };
 

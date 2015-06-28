@@ -59,8 +59,8 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "shellcompletions.h"
 
@@ -413,7 +413,7 @@ void SynopsisFormatter::start(const char *name)
 {
     currentLength_ = std::strlen(name) + 1;
     indent_        = std::min(currentLength_, 13);
-    File &file = context_.outputFile();
+    TextWriter &file = context_.outputFile();
     switch (context_.outputFormat())
     {
         case eHelpOutputFormat_Console:
@@ -436,7 +436,7 @@ void SynopsisFormatter::start(const char *name)
 
 void SynopsisFormatter::finish()
 {
-    File &file = context_.outputFile();
+    TextWriter &file = context_.outputFile();
     file.writeLine();
     file.writeLine();
 }
@@ -456,7 +456,7 @@ void SynopsisFormatter::formatOption(const OptionInfo &option)
     }
     fullOptionText.append(bFormatted_ ? "`]" : "]");
 
-    File       &file = context_.outputFile();
+    TextWriter &file = context_.outputFile();
     currentLength_ += totalLength;
     if (currentLength_ >= lineLength_)
     {

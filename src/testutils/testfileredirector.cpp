@@ -45,11 +45,23 @@
 
 #include <set>
 #include <string>
+#include <utility>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+
+#include "gromacs/utility/stringstream.h"
+
+#include "testutils/stringtest.h"
 
 namespace gmx
 {
 namespace test
 {
+
+/********************************************************************
+ * TestFileInputRedirector
+ */
 
 TestFileInputRedirector::TestFileInputRedirector()
 {
@@ -67,6 +79,60 @@ void TestFileInputRedirector::addExistingFile(const char *filename)
 bool TestFileInputRedirector::fileExists(const char *filename) const
 {
     return existingFiles_.count(filename) > 0;
+}
+
+/********************************************************************
+ * TestFileOutputRedirector::Impl
+ */
+
+class TestFileOutputRedirector::Impl
+{
+    public:
+        typedef boost::shared_ptr<StringOutputStream> StringStreamPointer;
+        typedef std::pair<std::string, StringStreamPointer> FileListEntry;
+
+        StringStreamPointer         stdoutStream_;
+        std::vector<FileListEntry>  fileList_;
+};
+
+/********************************************************************
+ * TestFileOutputRedirector
+ */
+
+TestFileOutputRedirector::TestFileOutputRedirector()
+    : impl_(new Impl)
+{
+}
+
+TestFileOutputRedirector::~TestFileOutputRedirector()
+{
+}
+
+TextOutputStream &TestFileOutputRedirector::standardOutput()
+{
+    if (!impl_->stdoutStream_)
+    {
+        impl_->stdoutStream_.reset(new StringOutputStream);
+        impl_->fileList_.push_back(Impl::FileListEntry("<stdout>", impl_->stdoutStream_));
+    }
+    return *impl_->stdoutStream_;
+}
+
+TextOutputStreamPointer
+TestFileOutputRedirector::openTextOutputFile(const char *filename)
+{
+    Impl::StringStreamPointer stream(new StringOutputStream);
+    impl_->fileList_.push_back(Impl::FileListEntry(filename, stream));
+    return stream;
+}
+
+void TestFileOutputRedirector::checkRedirectedFiles(TestReferenceChecker *checker)
+{
+    std::vector<Impl::FileListEntry>::const_iterator i;
+    for (i = impl_->fileList_.begin(); i != impl_->fileList_.end(); ++i)
+    {
+        StringTestBase::checkText(checker, i->second->toString(), i->first.c_str());
+    }
 }
 
 } // namespace test
