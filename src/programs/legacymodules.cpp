@@ -51,7 +51,6 @@
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/insert-molecules.h"
 #include "gromacs/gmxpreprocess/pdb2gmx.h"
-#include "gromacs/gmxpreprocess/protonate.h"
 #include "gromacs/gmxpreprocess/solvate.h"
 #include "gromacs/gmxpreprocess/x2top.h"
 #include "gromacs/tools/check.h"
@@ -228,9 +227,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModule(manager, &gmx_convert_tpr, "convert-tpr",
                    "Make a modifed run-input file");
     registerObsoleteTool(manager, "tpbconv");
-
-    registerModule(manager, &gmx_protonate, "protonate",
-                   "Protonate structures");
     registerModule(manager, &gmx_x2top, "x2top",
                    "Generate a primitive topology from coordinates");
 
@@ -413,7 +409,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         gmx::CommandLineModuleGroup group =
             manager->addModuleGroup("Generating topologies and coordinates");
         group.addModuleWithDescription("editconf", "Edit the box and write subgroups");
-        group.addModule("protonate");
         group.addModule("x2top");
         group.addModule("solvate");
         group.addModule("insert-molecules");

@@ -262,6 +262,17 @@ types that can be calculated.  The command also has basic support for
 calculating normal angles between three atoms and/or centers-of-mass, making it
 a partial replacement for :ref:`gmx angle` as well.
 
+gmx protonate
+
+**replaced**
+
+This was a very old tool originally written for united atom force fields,
+where it was necessary to generate all hydrogens after running a trajectory
+in order to calculate e.g. distance restraint violations. The functionality
+to simply protonate a structure is available in :ref:`gmx pdb2gmx`. 
+If there is significant interest, we might reintroduce it after moving to new
+topology formats in the future.
+
 gmx freevolume
 ..............
 
