@@ -53,10 +53,10 @@
 
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "rstparser.h"
 
@@ -438,9 +438,9 @@ class HelpWriterContext::Impl
         {
             public:
                 //! Initializes the state with the given parameters.
-                SharedState(File *file, HelpOutputFormat format,
+                SharedState(TextOutputStream *stream, HelpOutputFormat format,
                             const HelpLinks *links)
-                    : file_(*file), format_(format), links_(links)
+                    : file_(stream), format_(format), links_(links)
                 {
                 }
 
@@ -466,8 +466,8 @@ class HelpWriterContext::Impl
                     return *consoleOptionsFormatter_;
                 }
 
-                //! Output file to which the help is written.
-                File                   &file_;
+                //! Writer for writing the help.
+                TextWriter              file_;
                 //! Output format for the help output.
                 HelpOutputFormat        format_;
                 //! Links to use.
@@ -598,14 +598,14 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
  * HelpWriterContext
  */
 
-HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, NULL)), 0))
+HelpWriterContext::HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format)
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(stream, format, NULL)), 0))
 {
 }
 
-HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format,
+HelpWriterContext::HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format,
                                      const HelpLinks *links)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, links)), 0))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(stream, format, links)), 0))
 {
     if (links != NULL)
     {
@@ -639,9 +639,10 @@ HelpOutputFormat HelpWriterContext::outputFormat() const
     return impl_->state_->format_;
 }
 
-File &HelpWriterContext::outputFile() const
+TextWriter &HelpWriterContext::outputFile() const
 {
-    return impl_->state_->file_;
+    // TODO: Consider how to deal with the const/non-const difference better.
+    return const_cast<TextWriter &>(impl_->state_->file_);
 }
 
 void HelpWriterContext::enterSubSection(const std::string &title)
@@ -676,7 +677,7 @@ void HelpWriterContext::writeTitle(const std::string &title) const
     {
         return;
     }
-    File &file = outputFile();
+    TextWriter &file = outputFile();
     switch (outputFormat())
     {
         case eHelpOutputFormat_Console:
@@ -714,7 +715,7 @@ void HelpWriterContext::writeOptionItem(const std::string &name,
                                         const std::string &info,
                                         const std::string &description) const
 {
-    File &file = outputFile();
+    TextWriter &file = outputFile();
     switch (outputFormat())
     {
         case eHelpOutputFormat_Console:

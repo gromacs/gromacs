@@ -51,8 +51,9 @@
 namespace gmx
 {
 
-class File;
 class TextLineWrapperSettings;
+class TextOutputStream;
+class TextWriter;
 
 /*! \cond libapi */
 //! \libinternal Output format for help writing.
@@ -132,13 +133,13 @@ class HelpWriterContext
 {
     public:
         /*! \brief
-         * Initializes a context with the given output file and format.
+         * Initializes a context with the given output stream and format.
          *
          * \throws std::bad_alloc if out of memory.
          */
-        HelpWriterContext(File *file, HelpOutputFormat format);
+        HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format);
         /*! \brief
-         * Initializes a context with the given output file, format and links.
+         * Initializes a context with the given output stream, format and links.
          *
          * \throws std::bad_alloc if out of memory.
          *
@@ -146,7 +147,7 @@ class HelpWriterContext
          * is destructed.  The caller is responsible for ensuring that the
          * links object remains valid long enough.
          */
-        HelpWriterContext(File *file, HelpOutputFormat format,
+        HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format,
                           const HelpLinks *links);
         //! Creates a copy of the context.
         HelpWriterContext(const HelpWriterContext &other);
@@ -174,15 +175,15 @@ class HelpWriterContext
          */
         HelpOutputFormat outputFormat() const;
         /*! \brief
-         * Returns the raw output file for writing the help.
+         * Returns the raw writer for writing the help.
          *
-         * Using this file directly should be avoided, as it requires one to
+         * Using this writer directly should be avoided, as it requires one to
          * have different code for each output format.
          * Using other methods in this class should be preferred.
          *
          * Does not throw.
          */
-        File &outputFile() const;
+        TextWriter &outputFile() const;
 
         /*! \brief
          * Creates a subsection in the output help.

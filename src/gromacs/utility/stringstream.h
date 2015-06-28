@@ -32,87 +32,49 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Implements classes and functions from fileredirector.h.
+ * Declares implementations for textstream.h interfaces for input/output to
+ * in-memory strings.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
  * \ingroup module_utility
  */
-#include "gmxpre.h"
+#ifndef GMX_UTILITY_STRINGSTREAM_H
+#define GMX_UTILITY_STRINGSTREAM_H
 
-#include "fileredirector.h"
+#include <string>
 
-#include "gromacs/utility/file.h"
-#include "gromacs/utility/filestream.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/textstream.h"
 
 namespace gmx
 {
 
-FileInputRedirectorInterface::~FileInputRedirectorInterface()
-{
-}
-
-FileOutputRedirectorInterface::~FileOutputRedirectorInterface()
-{
-}
-
-namespace
-{
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileInputRedirector().
+/*! \libinternal \brief
+ * Text output stream implementation for writing to an in-memory string.
  *
- * Does not redirect anything, but uses the file system as requested.
+ * Implementations for the TextOutputStream methods throw std::bad_alloc if
+ * reallocation of the string fails.
  *
+ * \inlibraryapi
  * \ingroup module_utility
  */
-class DefaultInputRedirector : public FileInputRedirectorInterface
+class StringOutputStream : public TextOutputStream
 {
     public:
-        virtual bool fileExists(const char *filename) const
-        {
-            return File::exists(filename);
-        }
+        //! Returns the text written to the stream so far.
+        const std::string &toString() const { return str_; }
+
+        // From TextOutputStream
+        virtual void write(const char *text);
+        virtual void close();
+
+    private:
+        std::string str_;
 };
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileOutputRedirector().
- *
- * Does not redirect anything, but instead opens the files exactly as
- * requested.
- *
- * \ingroup module_utility
- */
-class DefaultOutputRedirector : public FileOutputRedirectorInterface
-{
-    public:
-        virtual TextOutputStream &standardOutput()
-        {
-            return TextOutputFile::standardOutput();
-        }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
-        {
-            return TextOutputStreamPointer(new TextOutputFile(filename));
-        }
-};
-
-}   // namespace
-
-//! \cond libapi
-FileInputRedirectorInterface &defaultFileInputRedirector()
-{
-    static DefaultInputRedirector instance;
-    return instance;
-}
-
-FileOutputRedirectorInterface &defaultFileOutputRedirector()
-{
-    static DefaultOutputRedirector instance;
-    return instance;
-}
-//! \endcond
 
 } // namespace gmx
+
+#endif
