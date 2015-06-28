@@ -60,7 +60,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
@@ -142,7 +142,7 @@ void printHelp(const Options &options)
     std::fprintf(stderr,
                  "\nYou can use the following GROMACS-specific command-line flags\n"
                  "to control the behavior of the tests:\n\n");
-    CommandLineHelpContext context(&File::standardError(),
+    CommandLineHelpContext context(&TextOutputFile::standardError(),
                                    eHelpOutputFormat_Console, NULL, program);
     context.setModuleDisplayName(program);
     CommandLineHelpWriter(options).writeHelp(context);

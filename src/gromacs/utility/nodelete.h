@@ -32,87 +32,40 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Implements classes and functions from fileredirector.h.
+ * Declares no_delete deleter for boost::shared_ptr.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
  * \ingroup module_utility
  */
-#include "gmxpre.h"
-
-#include "fileredirector.h"
-
-#include "gromacs/utility/file.h"
-#include "gromacs/utility/filestream.h"
+#ifndef GMX_UTILITY_NODELETE_H
+#define GMX_UTILITY_NODELETE_H
 
 namespace gmx
 {
 
-FileInputRedirectorInterface::~FileInputRedirectorInterface()
-{
-}
-
-FileOutputRedirectorInterface::~FileOutputRedirectorInterface()
-{
-}
-
-namespace
-{
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileInputRedirector().
+/*! \libinternal \brief
+ * Deleter for boost::shared_ptr that does nothing.
  *
- * Does not redirect anything, but uses the file system as requested.
+ * This is useful for cases where a class needs to keep a reference to another
+ * class, and optionally also manage the lifetime of that other class.
+ * The simplest construct (that does not force all callers to use heap
+ * allocation and boost::shared_ptr for the referenced class) is to use a
+ * single boost::shared_ptr to hold that reference, and use no_delete as the
+ * deleter if the lifetime is managed externally.
  *
+ * \inlibraryapi
  * \ingroup module_utility
  */
-class DefaultInputRedirector : public FileInputRedirectorInterface
+template <class T>
+struct no_delete
 {
-    public:
-        virtual bool fileExists(const char *filename) const
-        {
-            return File::exists(filename);
-        }
+    //! Deleter that does nothing.
+    void operator()(T *) {}
 };
-
-/*! \internal
- * \brief
- * Implements the redirector returned by defaultFileOutputRedirector().
- *
- * Does not redirect anything, but instead opens the files exactly as
- * requested.
- *
- * \ingroup module_utility
- */
-class DefaultOutputRedirector : public FileOutputRedirectorInterface
-{
-    public:
-        virtual TextOutputStream &standardOutput()
-        {
-            return TextOutputFile::standardOutput();
-        }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
-        {
-            return TextOutputStreamPointer(new TextOutputFile(filename));
-        }
-};
-
-}   // namespace
-
-//! \cond libapi
-FileInputRedirectorInterface &defaultFileInputRedirector()
-{
-    static DefaultInputRedirector instance;
-    return instance;
-}
-
-FileOutputRedirectorInterface &defaultFileOutputRedirector()
-{
-    static DefaultOutputRedirector instance;
-    return instance;
-}
-//! \endcond
 
 } // namespace gmx
+
+#endif

@@ -74,14 +74,13 @@ TEST_F(CommandLineHelpModuleTest, PrintsGeneralHelp)
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    redirectManagerOutput();
     addModule("module", "First module");
     addModule("other", "Second module");
     addHelpTopic("topic", "Test topic");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
-    checkRedirectedOutputFiles();
+    checkRedirectedOutput();
 }
 
 TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
@@ -91,7 +90,6 @@ TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
     };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    redirectManagerOutput();
     addModule("module", "First module");
     MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
     topic.addSubTopic("sub1", "Subtopic 1", "");
@@ -101,7 +99,7 @@ TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
-    checkRedirectedOutputFiles();
+    checkRedirectedOutput();
 }
 
 /*! \brief
@@ -126,9 +124,8 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
     };
     // TODO: Find a more elegant solution, or get rid of the links.dat altogether.
     gmx::File::writeFileFromString("links.dat", "");
-    CommandLine       args(cmdline);
+    CommandLine        args(cmdline);
     initManager(args, "test");
-    redirectManagerOutput();
     MockOptionsModule &mod1 = addOptionsModule("module", "First module");
     MockOptionsModule &mod2 = addOptionsModule("other", "Second module");
     {
@@ -156,7 +153,7 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
-    checkRedirectedOutputFiles();
+    checkRedirectedOutput();
     std::remove("links.dat");
 }
 

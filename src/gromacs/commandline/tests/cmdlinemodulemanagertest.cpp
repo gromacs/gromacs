@@ -56,7 +56,7 @@
 
 #include "gromacs/onlinehelp/tests/mock_helptopic.h"
 #include "testutils/cmdlinetest.h"
-#include "testutils/testfilemanager.h"
+#include "testutils/testfileredirector.h"
 
 namespace gmx
 {
@@ -131,9 +131,9 @@ MockOptionsModule::~MockOptionsModule()
 class CommandLineModuleManagerTestBase::Impl
 {
     public:
+        TestFileOutputRedirector                     redirector_;
         boost::scoped_ptr<CommandLineProgramContext> programContext_;
         boost::scoped_ptr<CommandLineModuleManager>  manager_;
-        TestFileManager                              fileManager_;
 };
 
 CommandLineModuleManagerTestBase::CommandLineModuleManagerTestBase()
@@ -154,6 +154,7 @@ void CommandLineModuleManagerTestBase::initManager(
     impl_->manager_.reset(new gmx::CommandLineModuleManager(
                                   realBinaryName, impl_->programContext_.get()));
     impl_->manager_->setQuiet(true);
+    impl_->manager_->setOutputRedirector(&impl_->redirector_);
 }
 
 MockModule &
@@ -186,9 +187,9 @@ CommandLineModuleManager &CommandLineModuleManagerTestBase::manager()
     return *impl_->manager_;
 }
 
-void CommandLineModuleManagerTestBase::redirectManagerOutput()
+void CommandLineModuleManagerTestBase::checkRedirectedOutput()
 {
-    impl_->manager_->setOutputRedirector(&initOutputRedirector(&impl_->fileManager_));
+    impl_->redirector_.checkRedirectedFiles(&checker());
 }
 
 } // namespace test
