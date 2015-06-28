@@ -45,7 +45,7 @@
 
 #include <string>
 
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/textstream.h"
 
 namespace gmx
 {
@@ -55,11 +55,10 @@ namespace gmx
  *
  * The calling code should take in this interface and use the methods in it
  * all file system operations that need to support this redirection.
- * By default, the code can then use defaultFileInputRedirector() in case no
- * redirection is needed.
  *
  * This allows tests to override the file existence checks without actually
- * using the file system.
+ * using the file system.  See FileOutputRedirectorInterface for notes on
+ * a typical usage pattern.
  *
  * With some further refactoring of the File class, this could also support
  * redirecting input files from in-memory buffers as well, but for now the
@@ -88,16 +87,25 @@ class FileInputRedirectorInterface
 /*! \libinternal \brief
  * Allows capturing `stdout` and file output from code that supports it.
  *
- * The calling code should take in this interface and use the File objects
+ * The calling code should take in this interface and use the stream objects
  * it returns for all output that needs to support this redirection.
- * By default, the code can then use defaultFileOutputRedirector() in case no
- * redirection is needed.
  *
- * This allows tests to capture the file output without duplicating the
- * knowledge of which files are actually produced.  With some further
- * refactoring of the File class, this could support capturing the output into
- * in-memory buffers as well, but for now the current capabilities are
- * sufficient.
+ * Currently, the (nearly) only purpose for this interface is for unit tests to
+ * capture the file output without duplicating the knowledge of which files are
+ * actually produced.  The tests can also replace actual files with in-memory
+ * streams (e.g., a StringOutputStream), and test the output without actually
+ * accessing the file system and managing actual files.
+ *
+ * As the main user for non-default implementation of this interface is tests,
+ * code using this interface generally uses a pattern where the redirector is
+ * initialized to defaultFileOutputRedirector(), and a separate setter is
+ * provided for tests to change the default.  This allows code outside the
+ * tests (and outside the code actually calling the redirector) to be written
+ * as if this interface did not exist (i.e., they do not need to pass the
+ * default instance).
+ *
+ * Also, the interface only supports text files, but can be generalized if/when
+ * there is a need for binary streams (see also TextOutputStream).
  *
  * \inlibraryapi
  * \ingroup module_utility
@@ -108,20 +116,20 @@ class FileOutputRedirectorInterface
         virtual ~FileOutputRedirectorInterface();
 
         /*! \brief
-         * Returns a File object to use for `stdout` output.
+         * Returns a stream to use for `stdout` output.
          */
-        virtual File &standardOutput() = 0;
+        virtual TextOutputStream &standardOutput() = 0;
         /*! \brief
-         * Returns a File object to use for output to a given file.
+         * Returns a stream to use for output to a file at a given path.
          *
          * \param[in] filename  Requested file name.
          */
-        virtual FileInitializer openFileForWriting(const char *filename) = 0;
+        virtual TextOutputStreamPointer openTextOutputFile(const char *filename) = 0;
 
-        //! Convenience method to open a file using an std::string path.
-        FileInitializer openFileForWriting(const std::string &filename)
+        //! Convenience method to open a stream using an std::string path.
+        TextOutputStreamPointer openTextOutputFile(const std::string &filename)
         {
-            return openFileForWriting(filename.c_str());
+            return openTextOutputFile(filename.c_str());
         }
 };
 

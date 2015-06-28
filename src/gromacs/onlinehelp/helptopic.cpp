@@ -49,9 +49,9 @@
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
@@ -180,7 +180,7 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
     {
         return false;
     }
-    File              &file = context.outputFile();
+    TextWriter        &file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(NULL, maxNameLength + 1, false);
     formatter.addColumn(NULL, 72 - maxNameLength, true);

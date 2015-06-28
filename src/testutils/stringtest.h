@@ -52,12 +52,9 @@
 namespace gmx
 {
 
-class FileOutputRedirectorInterface;
-
 namespace test
 {
 
-class TestFileManager;
 class TestReferenceChecker;
 
 /*! \libinternal \brief
@@ -74,20 +71,18 @@ class TestReferenceChecker;
 class StringTestBase : public ::testing::Test
 {
     public:
+        /*! \brief
+         * Checks a block of text.
+         *
+         * This static method is provided for code that does not derive from
+         * StringTestBase to use the same functionality, e.g., implementing the
+         * `-stdout` option.
+         */
+        static void checkText(TestReferenceChecker *checker,
+                              const std::string &text, const char *id);
+
         StringTestBase();
         ~StringTestBase();
-
-        /*! \brief
-         * Creates a redirector that directs all output to temporary files.
-         *
-         * \param[in] fileManager  File manager to use for temporary files.
-         *
-         * Can only be called once in a test.
-         *
-         * \see checkRedirectedOutputFiles()
-         */
-        FileOutputRedirectorInterface &
-        initOutputRedirector(TestFileManager *fileManager);
 
         /*! \brief
          * Returns the root checker for this test's reference data.
@@ -114,20 +109,6 @@ class StringTestBase : public ::testing::Test
          * single string and calls checkText().
          */
         void checkFileContents(const std::string &filename, const char *id);
-        /*! \brief
-         * Checks contents of all files redirected with initOutputRedirector().
-         *
-         * Uses the same logic as checkFileContents() to check each file
-         * (including `stdout`) that has been created using the redirector
-         * returned by initOutputRedirector().
-         *
-         * initOutputRedirector() must have been called.
-         * This method should not be called if the redirector will still be
-         * used for further output in the test.  Behavior is not designed for
-         * checking in the middle of the test, although that could potentially
-         * be changed if necessary.
-         */
-        void checkRedirectedOutputFiles();
 
     private:
         class Impl;

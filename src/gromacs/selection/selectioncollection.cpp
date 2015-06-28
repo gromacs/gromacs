@@ -62,6 +62,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -292,7 +293,7 @@ void printHelp(gmx_ana_selcollection_t *sc, const std::string &line)
     {
         sc->rootHelp = createSelectionHelpTopic();
     }
-    HelpWriterContext context(&File::standardError(),
+    HelpWriterContext context(&TextOutputFile::standardError(),
                               eHelpOutputFormat_Console);
     HelpManager       manager(*sc->rootHelp, context);
     try

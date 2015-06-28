@@ -65,6 +65,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "shellcompletions.h"
 
@@ -376,7 +377,7 @@ void CommandsHelpTopic::writeHelp(const HelpWriterContext &context) const
     context.writeTextBlock(
             "Usage: [PROGRAM] [<options>] <command> [<args>][PAR]"
             "Available commands:");
-    File              &file = context.outputFile();
+    TextWriter        &file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(NULL, maxNameLength + 1, false);
     formatter.addColumn(NULL, 72 - maxNameLength, true);
@@ -511,8 +512,8 @@ class HelpExportReStructuredText : public HelpExportInterface
         FileOutputRedirectorInterface  *outputRedirector_;
         const std::string              &binaryName_;
         HelpLinks                       links_;
-        boost::scoped_ptr<File>         indexFile_;
-        boost::scoped_ptr<File>         manPagesFile_;
+        boost::scoped_ptr<TextWriter>   indexFile_;
+        boost::scoped_ptr<TextWriter>   manPagesFile_;
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(
@@ -537,12 +538,14 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 void HelpExportReStructuredText::startModuleExport()
 {
     indexFile_.reset(
-            new File(outputRedirector_->openFileForWriting("fragments/byname.rst")));
+            new TextWriter(
+                    outputRedirector_->openTextOutputFile("fragments/byname.rst")));
     indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
                                        binaryName_.c_str(), binaryName_.c_str(),
                                        RootHelpText::title));
     manPagesFile_.reset(
-            new File(outputRedirector_->openFileForWriting("conf-man.py")));
+            new TextWriter(
+                    outputRedirector_->openTextOutputFile("conf-man.py")));
     manPagesFile_->writeLine("man_pages = [");
 }
 
@@ -553,31 +556,33 @@ void HelpExportReStructuredText::exportModuleHelp(
 {
     // TODO: Ideally, the file would only be touched if it really changes.
     // This would make Sphinx reruns much faster.
-    File file(outputRedirector_->openFileForWriting("onlinehelp/" + tag + ".rst"));
-    file.writeLine(formatString(".. _%s:", displayName.c_str()));
+    TextOutputStreamPointer file
+        = outputRedirector_->openTextOutputFile("onlinehelp/" + tag + ".rst");
+    TextWriter              writer(file);
+    writer.writeLine(formatString(".. _%s:", displayName.c_str()));
     if (0 == displayName.compare(binaryName_ + " mdrun"))
     {
         // Make an extra link target for the convenience of
         // MPI-specific documentation
-        file.writeLine(".. _mdrun_mpi:");
+        writer.writeLine(".. _mdrun_mpi:");
     }
-    file.writeLine();
+    writer.writeLine();
 
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_, binaryName_);
+    CommandLineHelpContext context(file.get(), eHelpOutputFormat_Rst, &links_, binaryName_);
     context.enterSubSection(displayName);
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
 
-    file.writeLine();
-    file.writeLine(".. only:: man");
-    file.writeLine();
-    file.writeLine("   See also");
-    file.writeLine("   --------");
-    file.writeLine();
-    file.writeLine(formatString("   :manpage:`%s(1)`", binaryName_.c_str()));
-    file.writeLine();
-    file.writeLine("   More information about |Gromacs| is available at <http://www.gromacs.org/>.");
-    file.close();
+    writer.writeLine();
+    writer.writeLine(".. only:: man");
+    writer.writeLine();
+    writer.writeLine("   See also");
+    writer.writeLine("   --------");
+    writer.writeLine();
+    writer.writeLine(formatString("   :manpage:`%s(1)`", binaryName_.c_str()));
+    writer.writeLine();
+    writer.writeLine("   More information about |Gromacs| is available at <http://www.gromacs.org/>.");
+    file->close();
 
     indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
                                        displayName.c_str(), tag.c_str(),
@@ -604,9 +609,11 @@ void HelpExportReStructuredText::finishModuleExport()
 void HelpExportReStructuredText::startModuleGroupExport()
 {
     indexFile_.reset(
-            new File(outputRedirector_->openFileForWriting("fragments/bytopic.rst")));
+            new TextWriter(
+                    outputRedirector_->openTextOutputFile("fragments/bytopic.rst")));
     manPagesFile_.reset(
-            new File(outputRedirector_->openFileForWriting("fragments/bytopic-man.rst")));
+            new TextWriter(
+                    outputRedirector_->openTextOutputFile("fragments/bytopic-man.rst")));
 }
 
 void HelpExportReStructuredText::exportModuleGroup(
@@ -650,12 +657,13 @@ void HelpExportReStructuredText::finishModuleGroupExport()
 
 void HelpExportReStructuredText::exportTopic(const HelpTopicInterface &topic)
 {
-    const std::string      path("onlinehelp/" + std::string(topic.name()) + ".rst");
-    File                   file(outputRedirector_->openFileForWriting(path));
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_,
-                                   binaryName_);
-    HelpManager            manager(topic, context.writerContext());
+    const std::string       path("onlinehelp/" + std::string(topic.name()) + ".rst");
+    TextOutputStreamPointer file(outputRedirector_->openTextOutputFile(path));
+    CommandLineHelpContext  context(file.get(), eHelpOutputFormat_Rst, &links_,
+                                    binaryName_);
+    HelpManager             manager(topic, context.writerContext());
     manager.writeCurrentTopic();
+    file->close();
 }
 
 /********************************************************************
@@ -850,7 +858,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         return 0;
     }
 
-    File                  &outputFile = impl_->outputRedirector_->standardOutput();
+    TextOutputStream      &outputFile = impl_->outputRedirector_->standardOutput();
     HelpLinks              links(eHelpOutputFormat_Console);
     initProgramLinks(&links, *impl_);
     CommandLineHelpContext context(&outputFile, eHelpOutputFormat_Console, &links,
