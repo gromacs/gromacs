@@ -56,10 +56,9 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/stringstream.h"
 
 #include "testutils/stringtest.h"
-#include "testutils/testfilemanager.h"
 
 namespace
 {
@@ -71,21 +70,19 @@ class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 
         void checkHelp(gmx::CommandLineHelpWriter *writer);
 
-        gmx::test::TestFileManager tempFiles_;
         bool                       bHidden_;
 };
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
-    std::string                 filename = tempFiles_.getTemporaryFilePath("helptext.txt");
-    gmx::File                   file(filename, "w");
-    gmx::CommandLineHelpContext context(&file, gmx::eHelpOutputFormat_Console,
+    gmx::StringOutputStream     stream;
+    gmx::CommandLineHelpContext context(&stream, gmx::eHelpOutputFormat_Console,
                                         NULL, "test");
     context.setShowHidden(bHidden_);
     writer->writeHelp(context);
-    file.close();
+    stream.close();
 
-    checkFileContents(filename, "HelpText");
+    checkText(stream.toString(), "HelpText");
 }
 
 

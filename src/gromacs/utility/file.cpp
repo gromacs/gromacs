@@ -140,12 +140,6 @@ File::File(const std::string &filename, const char *mode)
     open(filename, mode);
 }
 
-File::File(const FileInitializer &initializer)
-    : impl_(new Impl(NULL, true))
-{
-    open(initializer.filename_, initializer.mode_);
-}
-
 File::File(FILE *fp, bool bClose)
     : impl_(new Impl(fp, bClose))
 {
@@ -331,20 +325,6 @@ File &File::standardInput()
 {
     static File stdinObject(stdin, false);
     return stdinObject;
-}
-
-// static
-File &File::standardOutput()
-{
-    static File stdoutObject(stdout, false);
-    return stdoutObject;
-}
-
-// static
-File &File::standardError()
-{
-    static File stderrObject(stderr, false);
-    return stderrObject;
 }
 
 // static

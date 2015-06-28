@@ -54,6 +54,10 @@
  *  - gmx::test::TestFileInputRedirector (in testfileredirector.h) provides
  *    functionality for capturing file existence checks in code that uses
  *    gmx::FileInputRedirectorInterface.
+ *  - gmx::test::TestFileOutputRedirector (in testfileredirector.h) provides
+ *    functionality for capturing file output (including `stdout`) from code
+ *    that uses gmx::FileOutputRedirectorInterface, and checking that output
+ *    against reference data.
  *  - #GMX_TEST_OPTIONS macro provides facilities for adding custom command
  *    line options for the test binary.
  *  - testasserts.h provides several custom test assertions for better

@@ -53,9 +53,9 @@
 #include "gromacs/onlinehelp/helptopic.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "selmethod.h"
 #include "symrec.h"
@@ -708,7 +708,7 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
                                          e_selvalue_t             type,
                                          bool                     bModifiers) const
 {
-    File &file = context.outputFile();
+    TextWriter                &file = context.outputFile();
     MethodList::const_iterator iter;
     for (iter = methods_.begin(); iter != methods_.end(); ++iter)
     {

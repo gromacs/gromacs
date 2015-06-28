@@ -60,6 +60,7 @@ namespace test
 
 class CommandLine;
 class MockHelpTopic;
+class TestFileOutputRedirector;
 
 /*! \internal \brief
  * Mock implementation of gmx::CommandLineModuleInterface.
@@ -140,16 +141,14 @@ class CommandLineModuleManagerTestBase : public gmx::test::StringTestBase
         CommandLineModuleManager &manager();
 
         /*! \brief
-         * Redirects all manager output to files.
+         * Checks all output from the manager using reference data.
          *
-         * Can be used to silence tests that would otherwise print out
-         * something, and/or checkRedirectedFileContents() from the base class
-         * can be used to check the output.
+         * Both output to `stdout` and to files is checked.
          *
          * The manager is put into quiet mode by default, so the manager will
          * only print out information if, e.g., help is explicitly requested.
          */
-        void redirectManagerOutput();
+        void checkRedirectedOutput();
 
     private:
         class Impl;
