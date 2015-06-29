@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -242,10 +242,12 @@ struct nbnxn_cuda
     cudaStream_t     stream[2];      /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
-    cudaEvent_t    nonlocal_done;    /**< event triggered when the non-local non-bonded kernel
-                                        is done (and the local transfer can proceed)           */
-    cudaEvent_t    misc_ops_done;    /**< event triggered when the operations that precede the
-                                          main force calculations are done (e.g. buffer 0-ing) */
+    cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
+                                                   is done (and the local transfer can proceed)           */
+    cudaEvent_t    misc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
+                                                   the local stream that need to precede the
+                                                   non-local force calculations are done
+                                                   (e.g. f buffer 0-ing, local x/q H2D) */
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
