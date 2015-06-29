@@ -256,7 +256,23 @@ TEST_F(TextLineWrapperTest, HandlesEmptyStrings)
     EXPECT_EQ("", wrapper.wrapToString(""));
     EXPECT_EQ("", wrapper.wrapToString("   "));
     EXPECT_TRUE(wrapper.wrapToVector("").empty());
-    EXPECT_TRUE(wrapper.wrapToString("   ").empty());
+    {
+        std::vector<std::string> wrapped(wrapper.wrapToVector("   "));
+        ASSERT_EQ(1U, wrapped.size());
+        EXPECT_EQ("", wrapped[0]);
+    }
+}
+
+TEST_F(TextLineWrapperTest, HandlesTrailingWhitespace)
+{
+    gmx::TextLineWrapper wrapper;
+
+    EXPECT_EQ("line", wrapper.wrapToString("line   "));
+    EXPECT_EQ("line\n", wrapper.wrapToString("line   \n"));
+
+    wrapper.settings().setKeepFinalSpaces(true);
+    EXPECT_EQ("line   ", wrapper.wrapToString("line   "));
+    EXPECT_EQ("line\n", wrapper.wrapToString("line   \n"));
 }
 
 TEST_F(TextLineWrapperTest, HandlesTrailingNewlines)
@@ -368,14 +384,10 @@ TEST_F(TextLineWrapperTest, HandlesContinuationCharacter)
 TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
 {
     gmx::TextLineWrapper wrapper;
-
     wrapper.settings().setLineLength(14);
-    wrapper.settings().setStripLeadingWhitespace(true);
+
     checkText(wrapper.wrapToString(g_wrapTextWhitespace),
-              "WrappedAt14StripLeading");
-    wrapper.settings().setStripLeadingWhitespace(false);
-    checkText(wrapper.wrapToString(g_wrapTextWhitespace),
-              "WrappedAt14PreserveLeading");
+              "WrappedAt14");
 }
 
 } // namespace

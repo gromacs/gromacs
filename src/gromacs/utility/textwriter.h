@@ -53,6 +53,8 @@
 namespace gmx
 {
 
+class TextLineWrapperSettings;
+
 /*! \libinternal \brief
  * Writes text into a TextOutputStream.
  *
@@ -135,6 +137,15 @@ class TextWriter
 
         //! Returns the underlying stream for this writer.
         TextOutputStream &stream();
+
+        /*! \brief
+         * Allows adjusting wrapping settings for the writer.
+         *
+         * \todo
+         * Wrapping is not currently implemented for code that writes partial
+         * lines with writeString().
+         */
+        TextLineWrapperSettings &wrapperSettings();
 
         /*! \brief
          * Writes a string to the stream.

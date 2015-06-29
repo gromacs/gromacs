@@ -690,6 +690,7 @@ SelectionCollection::parseInteractive(int                count,
     if (statusStream != NULL)
     {
         statusWriter.reset(new TextWriter(statusStream));
+        statusWriter->wrapperSettings().setLineLength(78);
     }
     _gmx_sel_init_lexer(&scanner, &impl_->sc_, statusWriter.get(),
                         count, impl_->bExternalGroupsSet_, impl_->grps_);
