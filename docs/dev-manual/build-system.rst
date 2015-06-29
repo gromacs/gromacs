@@ -26,9 +26,63 @@ remove all possible build outputs.
 Build types
 -----------
 
+Build types is a CMake concept that provides overall control of how
+the build tools are used on the given platform to produce executable
+code. These can be set in CMake in various ways, including on a
+command line such as ``cmake -DCMAKE_BUILD_TYPE=Debug``. |Gromacs|
+supports the following standard CMake build types:
+
+**Release**
+  Fully optimized code intended for use in production simulation. This is the
+  default.
+
+**Debug**
+  Compiled code intended for use with debugging tools, with low optimization levels
+  and debug information for symbols.
+
+**RelWithDebInfo**
+  As Release, but with debug information for symbol names, which can help debugging
+  issues that only emerge in optimized code.
+
+**MinSizeRel**
+  As Release, but optimized to minimize the size of the resulting executable. This
+  is never a concern for |Gromacs| installations, so should not be used, but
+  probably works.
+
+Additionally, |Gromacs| provides the following build types for development and
+testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
+
+**Reference**
+  This build type compiles a version of |Gromacs| aimed solely at correctness. All
+  parallelization and optimization possibilities are disabled. This build type is
+  compiled with gcc 4.7 to generate the regression test reference values, against
+  which all other |Gromacs| builds are tested.
+
+**RelWithAssert**
+  As Release, but removes ``-DNDEBUG`` from compiler command lines, which makes
+  all assertion statements active (and can have other safety-related side effects
+  in |Gromacs| and code upon which it depends)
+
+**Profile**
+  As Release, but adds ``-pg`` for use with profiling tools. This is not
+  likely to be effective for profiling the performance of :ref:`gmx mdrun`, but can
+  be useful for the tools.
+
+**TSAN**
+  Builds |Gromacs| for use with ThreadSanitzer in gcc >= 4.8 and clang
+  >= 3.4 (http://clang.llvm.org/docs/ThreadSanitizer.html) to detect
+  data races. This disables the use of atomics in ThreadMPI,
+  preferring the mutex-based implementation.
+
+**ASAN**
+  Builds |Gromacs| for use with AddressSanitzer in gcc >= 4.8 and
+  clang >= 3.4 (http://clang.llvm.org/docs/AddressSanitizer.html) to
+  detect many kinds of memory mis-use. By default, AddressSanitizer
+  includes LeakSanitizer.
+
 **MSAN**
-  Builds |Gromacs| for use with AddressSanitzer in clang 3.4 (and
-  newer) (http://clang.llvm.org/docs/MemorySanitizer.html) to detect
+  Builds |Gromacs| for use with AddressSanitzer in clang >= 3.4
+  (http://clang.llvm.org/docs/MemorySanitizer.html) to detect
   reads of unitialized memory. This functionality requires that
   dependencies of the |Gromacs| build have been built in a compatible
   way (roughly, static libraries with ``-g -fsanitize=memory
@@ -42,6 +96,13 @@ Build types
 For all of the sanitizer builds, to get readable stack traces, you may
 need to ensure that the ``ASAN_SYMBOLIZER_PATH`` environment variable
 (or your ``PATH``) include that of the ``llvm-symbolizer`` binary.
+
+With some generators, CMake generates the build system for more than a
+single ``CMAKE_BUILD_TYPE`` from one pass over the ``CMakeLists.txt``
+files, so any code that uses ``CMAKE_BUILD_TYPE`` in
+``CMakeLists.txt`` directly will break. |Gromacs| does use such CMake
+code, so we do not fully support all these build types in such
+generators (which includes Visual Studio).
 
 CMake cache variables
 ---------------------
