@@ -384,8 +384,8 @@ _gmx_sel_lexer_add_token(YYLTYPE *yylloc, const char *str, int len,
 
 void
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    bool bInteractive, int maxnr, bool bGroups,
-                    struct gmx_ana_indexgrps_t *grps)
+                    gmx::TextWriter *statusWriter, int maxnr,
+                    bool bGroups, struct gmx_ana_indexgrps_t *grps)
 {
     int rc = _gmx_sel_yylex_init(scannerp);
     if (rc != 0)
@@ -401,7 +401,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->grps      = grps;
     state->nexpsel   = (maxnr > 0 ? static_cast<int>(sc->sel.size()) + maxnr : -1);
 
-    state->bInteractive = bInteractive;
+    state->statusWriter = statusWriter;
 
     snew(state->pselstr, STRSTORE_ALLOCSTEP);
     state->pselstr[0]                 = 0;
@@ -461,11 +461,11 @@ _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
     }
 }
 
-bool
-_gmx_sel_is_lexer_interactive(yyscan_t scanner)
+gmx::TextWriter *
+_gmx_sel_lexer_get_status_writer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
-    return state->bInteractive;
+    return state->statusWriter;
 }
 
 struct gmx_ana_selcollection_t *

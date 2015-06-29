@@ -135,7 +135,7 @@ COMMENT    (#.*)
 
 \\\n            { _gmx_sel_lexer_add_token(yylloc, " ", 1, state); break; }
 ";"|\n          {
-                    if (yytext[0] == ';' || state->bInteractive)
+                    if (yytext[0] == ';' || state->statusWriter != NULL)
                     {
                         rtrim(state->pselstr);
                         state->bCmdStart = true;
