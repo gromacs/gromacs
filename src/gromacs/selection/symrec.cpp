@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -315,8 +315,7 @@ SelectionParserSymbolTable::~SelectionParserSymbolTable()
 }
 
 const SelectionParserSymbol *
-SelectionParserSymbolTable::findSymbol(const std::string &name,
-                                       bool               bExact) const
+SelectionParserSymbolTable::findSymbol(const std::string &name) const
 {
     Impl::SymbolMap::const_iterator sym = impl_->symbols_.lower_bound(name);
     if (sym == impl_->symbols_.end())
@@ -326,20 +325,6 @@ SelectionParserSymbolTable::findSymbol(const std::string &name,
     if (sym->second->name() == name)
     {
         return sym->second.get();
-    }
-    if (!bExact && startsWith(sym->second->name(), name))
-    {
-        Impl::SymbolMap::const_iterator next = sym;
-        ++next;
-        if (next != impl_->symbols_.end()
-            && startsWith(next->second->name(), name))
-        {
-            GMX_THROW(InvalidInputError("'" + name + "' is ambiguous"));
-        }
-        if (sym->second->type() == SelectionParserSymbol::MethodSymbol)
-        {
-            return sym->second.get();
-        }
     }
     return NULL;
 }
