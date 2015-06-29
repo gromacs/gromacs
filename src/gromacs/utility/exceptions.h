@@ -60,6 +60,8 @@
 namespace gmx
 {
 
+class TextWriter;
+
 namespace internal
 {
 //! Internal container type for storing a list of nested exceptions.
@@ -444,6 +446,15 @@ std::string formatExceptionMessageToString(const std::exception &ex);
  * \throws    std::bad_alloc if out of memory.
  */
 void formatExceptionMessageToFile(FILE *fp, const std::exception &ex);
+/*! \brief
+ * Formats an error message for reporting an exception.
+ *
+ * \param     writer  Writer to use for writing the message.
+ * \param[in] ex      Exception to format.
+ * \throws    std::bad_alloc if out of memory.
+ */
+void formatExceptionMessageToWriter(TextWriter           *writer,
+                                    const std::exception &ex);
 /*! \brief
  * Handles an exception that is causing the program to terminate.
  *

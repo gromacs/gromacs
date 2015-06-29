@@ -77,6 +77,11 @@ TextWriter::TextWriter(const std::string &filename)
 {
 }
 
+TextWriter::TextWriter(FILE *fp)
+    : impl_(new Impl(TextOutputStreamPointer(new TextOutputFile(fp))))
+{
+}
+
 TextWriter::TextWriter(TextOutputStream *stream)
     : impl_(new Impl(TextOutputStreamPointer(stream, no_delete<TextOutputStream>())))
 {

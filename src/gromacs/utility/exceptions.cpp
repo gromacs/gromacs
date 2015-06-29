@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,7 @@
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "errorformat.h"
 
@@ -309,6 +310,40 @@ class MessageWriterFileNoThrow : public MessageWriterInterface
 };
 
 /*! \brief
+ * Exception information writer to format into a TextOutputStream.
+ */
+class MessageWriterTextWriter : public MessageWriterInterface
+{
+    public:
+        //! Initializes a writer that writes to the given stream.
+        explicit MessageWriterTextWriter(TextWriter *writer) : writer_(writer)
+        {
+        }
+
+        virtual void writeLine(const char *text, int indent)
+        {
+            // TODO: Line wrapping.
+            writer_->writeString(std::string(indent, ' '));
+            writer_->writeLine(text);
+        }
+        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                    int indent)
+        {
+            writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(),
+                      indent);
+            if (funcName != NULL)
+            {
+                writeLine(formatString("(call to %s() returned error code %d)",
+                                       funcName, errorNumber).c_str(),
+                          indent);
+            }
+        }
+
+    private:
+        TextWriter     *writer_;
+};
+
+/*! \brief
  * Exception information writer to format into an std::string.
  */
 class MessageWriterString : public MessageWriterInterface
@@ -517,6 +552,13 @@ void formatExceptionMessageToFile(FILE *fp, const std::exception &ex)
 {
     MessageWriterFileNoThrow writer(fp);
     formatExceptionMessageInternal(&writer, ex, 0);
+}
+
+void formatExceptionMessageToWriter(TextWriter           *writer,
+                                    const std::exception &ex)
+{
+    MessageWriterTextWriter messageWriter(writer);
+    formatExceptionMessageInternal(&messageWriter, ex, 0);
 }
 
 int processExceptionAtExit(const std::exception & /*ex*/)
