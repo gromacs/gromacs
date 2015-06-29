@@ -1,20 +1,6 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="fragments/byname.rst"><![CDATA[
-* :doc:`test </onlinehelp/test>` - molecular dynamics simulation suite
-* :doc:`test help </onlinehelp/test-help>` - Print help information
-* :doc:`test module </onlinehelp/test-module>` - First module
-* :doc:`test other </onlinehelp/test-other>` - Second module
-]]></String>
-  <String Name="conf-man.py"><![CDATA[
-man_pages = [
-    ('onlinehelp/test-help', 'test-help', "Print help information", '', 1),
-    ('onlinehelp/test-module', 'test-module', "First module", '', 1),
-    ('onlinehelp/test-other', 'test-other', "Second module", '', 1),
-    ('onlinehelp/test', 'test', 'molecular dynamics simulation suite', '', 1)
-]
-]]></String>
   <String Name="onlinehelp/test-help.rst"><![CDATA[
 .. _test help:
 
@@ -83,6 +69,20 @@ Synopsis
    :manpage:`test(1)`
 
    More information about |Gromacs| is available at <http://www.gromacs.org/>.
+]]></String>
+  <String Name="fragments/byname.rst"><![CDATA[
+* :doc:`test </onlinehelp/test>` - molecular dynamics simulation suite
+* :doc:`test help </onlinehelp/test-help>` - Print help information
+* :doc:`test module </onlinehelp/test-module>` - First module
+* :doc:`test other </onlinehelp/test-other>` - Second module
+]]></String>
+  <String Name="conf-man.py"><![CDATA[
+man_pages = [
+    ('onlinehelp/test-help', 'test-help', "Print help information", '', 1),
+    ('onlinehelp/test-module', 'test-module', "First module", '', 1),
+    ('onlinehelp/test-other', 'test-other', "Second module", '', 1),
+    ('onlinehelp/test', 'test', 'molecular dynamics simulation suite', '', 1)
+]
 ]]></String>
   <String Name="fragments/bytopic.rst"><![CDATA[
 Group 1
