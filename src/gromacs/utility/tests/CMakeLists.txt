@@ -35,4 +35,6 @@
 gmx_add_unit_test(UtilityUnitTests utility-test
                   arrayref.cpp
                   bitmask32.cpp bitmask64.cpp bitmask128.cpp
-                  stringutil.cpp)
+                  stringutil.cpp
+                  textwriter.cpp
+                  )

@@ -47,6 +47,7 @@
 
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/nodelete.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textstream.h"
 
 namespace gmx
@@ -58,9 +59,16 @@ class TextWriter::Impl
         explicit Impl(const TextOutputStreamPointer &stream)
             : stream_(stream)
         {
+            wrapper_.settings().setKeepFinalSpaces(true);
+        }
+
+        void writeWrappedString(const std::string &str)
+        {
+            stream_->write(wrapper_.wrapToString(str).c_str());
         }
 
         TextOutputStreamPointer stream_;
+        TextLineWrapper         wrapper_;
 };
 
 // static
@@ -101,21 +109,32 @@ TextOutputStream &TextWriter::stream()
     return *impl_->stream_;
 }
 
+TextLineWrapperSettings &TextWriter::wrapperSettings()
+{
+    return impl_->wrapper_.settings();
+}
+
 void TextWriter::writeString(const char *str)
 {
-    impl_->stream_->write(str);
+    if (impl_->wrapper_.isTrivial())
+    {
+        impl_->stream_->write(str);
+    }
+    else
+    {
+        impl_->writeWrappedString(str);
+    }
 }
 
 void TextWriter::writeString(const std::string &str)
 {
-    impl_->stream_->write(str.c_str());
+    impl_->writeWrappedString(str);
 }
 
 void TextWriter::writeLine(const char *line)
 {
-    const size_t length = std::strlen(line);
     writeString(line);
-    if (length == 0 || line[length-1] != '\n')
+    if (!endsWith(line, "\n"))
     {
         writeLine();
     }
@@ -123,7 +142,11 @@ void TextWriter::writeLine(const char *line)
 
 void TextWriter::writeLine(const std::string &line)
 {
-    writeLine(line.c_str());
+    writeString(line);
+    if (!endsWith(line, "\n"))
+    {
+        writeLine();
+    }
 }
 
 void TextWriter::writeLine()

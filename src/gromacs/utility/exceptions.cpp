@@ -322,20 +322,19 @@ class MessageWriterTextWriter : public MessageWriterInterface
 
         virtual void writeLine(const char *text, int indent)
         {
-            // TODO: Line wrapping.
-            writer_->writeString(std::string(indent, ' '));
+            writer_->wrapperSettings().setIndent(indent);
             writer_->writeLine(text);
         }
         virtual void writeErrNoInfo(int errorNumber, const char *funcName,
                                     int indent)
         {
-            writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(),
-                      indent);
+            writer_->wrapperSettings().setIndent(indent);
+            writer_->writeLine(formatString("Reason: %s", std::strerror(errorNumber)));
             if (funcName != NULL)
             {
-                writeLine(formatString("(call to %s() returned error code %d)",
-                                       funcName, errorNumber).c_str(),
-                          indent);
+                writer_->writeLine(
+                        formatString("(call to %s() returned error code %d)",
+                                     funcName, errorNumber));
             }
         }
 

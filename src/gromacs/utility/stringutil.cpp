@@ -57,15 +57,16 @@
 namespace gmx
 {
 
-bool endsWith(const std::string &str, const char *suffix)
+bool endsWith(const char *str, const char *suffix)
 {
-    if (suffix == NULL || suffix[0] == '\0')
+    if (isNullOrEmpty(suffix))
     {
         return true;
     }
-    size_t length = std::strlen(suffix);
-    return (str.length() >= length
-            && str.compare(str.length() - length, length, suffix) == 0);
+    const size_t strLength    = std::strlen(str);
+    const size_t suffixLength = std::strlen(suffix);
+    return (strLength >= suffixLength
+            && std::strcmp(&str[strLength - suffixLength], suffix) == 0);
 }
 
 std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
@@ -247,7 +248,7 @@ replaceAllWords(const std::string &input, const std::string &from,
 
 TextLineWrapperSettings::TextLineWrapperSettings()
     : maxLength_(0), indent_(0), firstLineIndent_(-1),
-      bStripLeadingWhitespace_(false), continuationChar_('\0')
+      bKeepFinalSpaces_(false), continuationChar_('\0')
 {
 }
 
@@ -256,13 +257,19 @@ TextLineWrapperSettings::TextLineWrapperSettings()
  * TextLineWrapper
  */
 
+bool TextLineWrapper::isTrivial() const
+{
+    return settings_.lineLength() == 0 && settings_.indent() == 0
+           && settings_.firstLineIndent_ <= 0;
+}
+
 size_t
 TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
 {
     size_t inputLength = std::strlen(input);
     bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Ignore leading whitespace if necessary.
-    if (!bFirstLine || settings_.bStripLeadingWhitespace_)
+    if (!bFirstLine)
     {
         lineStart += std::strspn(input + lineStart, " ");
         if (lineStart >= inputLength)
@@ -307,7 +314,7 @@ TextLineWrapper::formatLine(const std::string &input,
     size_t inputLength = input.length();
     bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Strip leading whitespace if necessary.
-    if (!bFirstLine || settings_.bStripLeadingWhitespace_)
+    if (!bFirstLine)
     {
         lineStart = input.find_first_not_of(' ', lineStart);
         if (lineStart >= inputLength)
@@ -318,9 +325,12 @@ TextLineWrapper::formatLine(const std::string &input,
     int  indent        = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
     bool bContinuation = (lineEnd < inputLength && input[lineEnd - 1] != '\n');
     // Strip trailing whitespace.
-    while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
+    if (!settings_.bKeepFinalSpaces_ || lineEnd < inputLength || input[inputLength - 1] == '\n')
     {
-        --lineEnd;
+        while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
+        {
+            --lineEnd;
+        }
     }
 
     const size_t lineLength = lineEnd - lineStart;
