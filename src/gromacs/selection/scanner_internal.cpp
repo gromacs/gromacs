@@ -281,7 +281,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
 
     /* Check if the identifier matches with a symbol */
     const gmx::SelectionParserSymbol *symbol
-        = state->sc->symtab->findSymbol(std::string(yytext, yyleng), false);
+        = state->sc->symtab->findSymbol(std::string(yytext, yyleng));
     /* If there is no match, return the token as a string */
     if (!symbol)
     {
