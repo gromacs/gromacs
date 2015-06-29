@@ -62,9 +62,12 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fileredirector.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textstream.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "shellcompletions.h"
@@ -491,8 +494,9 @@ class HelpExportReStructuredText : public HelpExportInterface
 {
     public:
         //! Initializes reST exporter.
-        explicit HelpExportReStructuredText(
-            const CommandLineHelpModuleImpl &helpModule);
+        HelpExportReStructuredText(
+            const CommandLineHelpModuleImpl &helpModule,
+            FileOutputRedirectorInterface   *outputRedirector);
 
         virtual void startModuleExport();
         virtual void exportModuleHelp(
@@ -517,8 +521,9 @@ class HelpExportReStructuredText : public HelpExportInterface
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(
-        const CommandLineHelpModuleImpl &helpModule)
-    : outputRedirector_(helpModule.outputRedirector_),
+        const CommandLineHelpModuleImpl &helpModule,
+        FileOutputRedirectorInterface   *outputRedirector)
+    : outputRedirector_(outputRedirector),
       binaryName_(helpModule.binaryName_),
       links_(eHelpOutputFormat_Rst)
 {
@@ -554,8 +559,6 @@ void HelpExportReStructuredText::exportModuleHelp(
         const std::string                &tag,
         const std::string                &displayName)
 {
-    // TODO: Ideally, the file would only be touched if it really changes.
-    // This would make Sphinx reruns much faster.
     TextOutputStreamPointer file
         = outputRedirector_->openTextOutputFile("onlinehelp/" + tag + ".rst");
     TextWriter              writer(file);
@@ -783,6 +786,76 @@ void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter)
     rootTopic_->exportHelp(exporter);
 }
 
+namespace
+{
+
+/********************************************************************
+ * ModificationCheckingFileOutputStream
+ */
+
+class ModificationCheckingFileOutputStream : public TextOutputStream
+{
+    public:
+        ModificationCheckingFileOutputStream(
+            const char                    *path,
+            FileOutputRedirectorInterface *redirector)
+            : path_(path), redirector_(redirector)
+        {
+        }
+
+        virtual void write(const char *str) { contents_.write(str); }
+        virtual void close()
+        {
+            const std::string &newContents = contents_.toString();
+            // TODO: Redirect these for unit tests.
+            if (File::exists(path_))
+            {
+                const std::string originalContents_
+                    = TextReader::readFileToString(path_);
+                if (originalContents_ == newContents)
+                {
+                    return;
+                }
+            }
+            TextWriter writer(redirector_->openTextOutputFile(path_));
+            writer.writeString(newContents);
+        }
+
+    private:
+        std::string                     path_;
+        StringOutputStream              contents_;
+        FileOutputRedirectorInterface  *redirector_;
+};
+
+/********************************************************************
+ * ModificationCheckingFileOutputRedirector
+ */
+
+class ModificationCheckingFileOutputRedirector : public FileOutputRedirectorInterface
+{
+    public:
+        explicit ModificationCheckingFileOutputRedirector(
+            FileOutputRedirectorInterface *redirector)
+            : redirector_(redirector)
+        {
+        }
+
+        virtual TextOutputStream &standardOutput()
+        {
+            return redirector_->standardOutput();
+        }
+        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
+        {
+            return TextOutputStreamPointer(
+                    new ModificationCheckingFileOutputStream(filename, redirector_));
+        }
+
+    private:
+        FileOutputRedirectorInterface  *redirector_;
+};
+
+}   // namespace
+
 /********************************************************************
  * CommandLineHelpModule
  */
@@ -841,10 +914,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     CommandLineParser(&options).parse(&argc, argv);
     if (!exportFormat.empty())
     {
-        boost::scoped_ptr<HelpExportInterface> exporter;
+        ModificationCheckingFileOutputRedirector redirector(impl_->outputRedirector_);
+        boost::scoped_ptr<HelpExportInterface>   exporter;
         if (exportFormat == "rst")
         {
-            exporter.reset(new HelpExportReStructuredText(*impl_));
+            exporter.reset(new HelpExportReStructuredText(*impl_, &redirector));
         }
         else if (exportFormat == "completion")
         {
