@@ -244,8 +244,10 @@ struct nbnxn_cuda
     /** events used for synchronization */
     cudaEvent_t    nonlocal_done;    /**< event triggered when the non-local non-bonded kernel
                                         is done (and the local transfer can proceed)           */
-    cudaEvent_t    misc_ops_done;    /**< event triggered when the operations that precede the
-                                          main force calculations are done (e.g. buffer 0-ing) */
+    cudaEvent_t    misc_ops_and_local_H2D_done; /**< event triggered when the operations that
+                                                   precede the non-local force calculations are
+                                                   done (e.g. buffer 0-ing and transfer of
+                                                   local and non-local x/q) */
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
