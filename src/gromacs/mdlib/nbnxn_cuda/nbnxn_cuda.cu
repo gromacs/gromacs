@@ -314,12 +314,13 @@ static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t
 
    These operations are issued in the local stream at the beginning of the step
    and therefore always complete before the local kernel launch. The non-local
-   kernel is launched after the local on the same device/context, so this is
+   kernel is launched after the local on the same device/context hence it is
    inherently scheduled after the operations in the local stream (including the
-   above "misc_ops").
-   However, for the sake of having a future-proof implementation, we use the
-   misc_ops_done event to record the point in time when the above  operations
-   are finished and synchronize with this event in the non-local stream.
+   above "misc_ops") on pre-GK110 devices with single hardware queue, but on later
+   devices with multiple hardware queues the dependency needs to be enforced.
+   We use the misc_ops_and_local_H2D_done event to record the point where
+   the local x+q H2D (and all preceding) tasks are complete and synchronize
+   with this event in the non-local stream before launching the non-bonded kernel.
  */
 void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
                              const nbnxn_atomdata_t *nbatom,
@@ -372,22 +373,6 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
         adat_len    = adat->natoms - adat->natoms_local;
     }
 
-    /* When we get here all misc operations issues in the local stream are done,
-       so we record that in the local stream and wait for it in the nonlocal one. */
-    if (nb->bUseTwoStreams)
-    {
-        if (iloc == eintLocal)
-        {
-            stat = cudaEventRecord(nb->misc_ops_done, stream);
-            CU_RET_ERR(stat, "cudaEventRecord on misc_ops_done failed");
-        }
-        else
-        {
-            stat = cudaStreamWaitEvent(stream, nb->misc_ops_done, 0);
-            CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_done failed");
-        }
-    }
-
     /* beginning of timed HtoD section */
     if (bDoTime)
     {
@@ -398,6 +383,23 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
     /* HtoD x, q */
     cu_copy_H2D_async(adat->xq + adat_begin, nbatom->x + adat_begin * 4,
                       adat_len * sizeof(*adat->xq), stream);
+
+    /* When we get here all misc operations issues in the local stream as well as
+       the local xq H2D are done,
+       so we record that in the local stream and wait for it in the nonlocal one. */
+    if (nb->bUseTwoStreams)
+    {
+        if (iloc == eintLocal)
+        {
+            stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, stream);
+            CU_RET_ERR(stat, "cudaEventRecord on misc_ops_and_local_H2D_done failed");
+        }
+        else
+        {
+            stat = cudaStreamWaitEvent(stream, nb->misc_ops_and_local_H2D_done, 0);
+            CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_and_local_H2D_done failed");
+        }
+    }
 
     if (bDoTime)
     {

@@ -622,8 +622,8 @@ void nbnxn_gpu_init(FILE                      *fplog,
     /* init events for sychronization (timing disabled for performance reasons!) */
     stat = cudaEventCreateWithFlags(&nb->nonlocal_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on nonlocal_done failed");
-    stat = cudaEventCreateWithFlags(&nb->misc_ops_done, cudaEventDisableTiming);
-    CU_RET_ERR(stat, "cudaEventCreate on misc_ops_one failed");
+    stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
+    CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
 
     /* On GPUs with ECC enabled, cudaStreamSynchronize shows a large overhead
      * (which increases with shorter time/step) caused by a known CUDA driver bug.
@@ -988,8 +988,8 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     stat = cudaEventDestroy(nb->nonlocal_done);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->nonlocal_done");
-    stat = cudaEventDestroy(nb->misc_ops_done);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_done");
+    stat = cudaEventDestroy(nb->misc_ops_and_local_H2D_done);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_and_local_H2D_done");
 
     if (nb->bDoTime)
     {
