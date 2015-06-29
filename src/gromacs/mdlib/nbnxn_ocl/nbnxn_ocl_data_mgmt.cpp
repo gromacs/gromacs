@@ -1065,10 +1065,10 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
         clReleaseEvent(nb->nonlocal_done);
         nb->nonlocal_done = NULL;
     }
-    if (nb->misc_ops_done)
+    if (nb->misc_ops_and_local_H2D_done)
     {
-        clReleaseEvent(nb->misc_ops_done);
-        nb->misc_ops_done = NULL;
+        clReleaseEvent(nb->misc_ops_and_local_H2D_done);
+        nb->misc_ops_and_local_H2D_done = NULL;
     }
 
     /* Free timers and timings */
