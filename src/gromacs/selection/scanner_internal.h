@@ -48,6 +48,7 @@
 namespace gmx
 {
 class SelectionParserSymbol;
+class TextWriter;
 }
 
 /* These need to be defined before including scanner_flex.h, because it
@@ -81,8 +82,8 @@ typedef struct gmx_sel_lexer_t
     //! Number of selections at which the parser should stop.
     int                              nexpsel;
 
-    //! Whether the parser is interactive.
-    bool                             bInteractive;
+    //! Writer to use for status output (if not NULL, parser is interactive).
+    gmx::TextWriter                 *statusWriter;
 
     //! Pretty-printed version of the string parsed since last clear.
     char                            *pselstr;

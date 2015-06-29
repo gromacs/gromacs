@@ -43,6 +43,8 @@
 #ifndef GMX_UTILITY_TEXTWRITER_H
 #define GMX_UTILITY_TEXTWRITER_H
 
+#include <cstdio>
+
 #include <string>
 
 #include "gromacs/utility/classhelpers.h"
@@ -90,6 +92,21 @@ class TextWriter
          * a file, without the need to construct multiple objects.
          */
         explicit TextWriter(const std::string &filename);
+        /*! \brief
+         * Creates a writer that writes to specified file.
+         *
+         * \param[in]  fp  File handle to write to.
+         * \throws     std::bad_alloc if out of memory.
+         * \throws     FileIOError on any I/O error.
+         *
+         * This constructor is provided for interoperability with C-like code
+         * for writing directly to an already opened file, without the need to
+         * construct multiple objects.
+         *
+         * The caller is responsible of closing \p fp; it is not allowed to
+         * call close() on the writer.
+         */
+        explicit TextWriter(FILE *fp);
         /*! \brief
          * Creates a writer that writes to specified stream.
          *
