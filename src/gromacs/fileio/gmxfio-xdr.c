@@ -36,9 +36,294 @@
  */
 #include "gmxpre.h"
 
+#include <stdio.h>
+#include <string.h>
+
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "gmxfio-impl.h"
+
+static const char *eioNames[eioNR] =
+{
+    "REAL", "INT", "GMX_STE_T", "UCHAR", "NUCHAR", "USHORT", "RVEC", "NRVEC",
+    "IVEC", "STRING"
+};
+
+/* check the number of items given against the type */
+static void gmx_fio_check_nitem(int eio, int nitem, const char *file, int line)
+{
+    if ((nitem != 1) && !((eio == eioNRVEC) || (eio == eioNUCHAR)))
+    {
+        gmx_fatal(FARGS,
+                  "nitem (%d) may differ from 1 only for %s or %s, not   for %s"
+                  "(%s, %d)", nitem, eioNames[eioNUCHAR], eioNames[eioNRVEC],
+                  eioNames[eio], file, line);
+    }
+}
+
+
+/* output a data type error. */
+static void gmx_fio_fe(t_fileio *fio, int eio, const char *desc,
+                       const char *srcfile, int line)
+{
+
+    gmx_fatal(FARGS, "Trying to %s %s type %d (%s), src %s, line %d",
+              fio->bRead ? "read" : "write", desc, eio,
+              ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown",
+              srcfile, line);
+}
+
+/* This is the part that reads xdr files.  */
+
+static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
+                       const char *desc, const char *srcfile, int line)
+{
+    unsigned char   ucdum, *ucptr;
+    bool_t          res = 0;
+    float           fvec[DIM];
+    double          dvec[DIM];
+    int             j, m, *iptr, idum;
+    gmx_int64_t     sdum;
+    real           *ptr;
+    unsigned short  us;
+    double          d = 0;
+    float           f = 0;
+
+    gmx_fio_check_nitem(eio, nitem, srcfile, line);
+    switch (eio)
+    {
+        case eioREAL:
+            if (fio->bDouble)
+            {
+                if (item && !fio->bRead)
+                {
+                    d = *((real *) item);
+                }
+                res = xdr_double(fio->xdr, &d);
+                if (item)
+                {
+                    *((real *) item) = d;
+                }
+            }
+            else
+            {
+                if (item && !fio->bRead)
+                {
+                    f = *((real *) item);
+                }
+                res = xdr_float(fio->xdr, &f);
+                if (item)
+                {
+                    *((real *) item) = f;
+                }
+            }
+            break;
+        case eioFLOAT:
+            if (item && !fio->bRead)
+            {
+                f = *((float *) item);
+            }
+            res = xdr_float(fio->xdr, &f);
+            if (item)
+            {
+                *((float *) item) = f;
+            }
+            break;
+        case eioDOUBLE:
+            if (item && !fio->bRead)
+            {
+                d = *((double *) item);
+            }
+            res = xdr_double(fio->xdr, &d);
+            if (item)
+            {
+                *((double *) item) = d;
+            }
+            break;
+        case eioINT:
+            if (item && !fio->bRead)
+            {
+                idum = *(int *) item;
+            }
+            res = xdr_int(fio->xdr, &idum);
+            if (item)
+            {
+                *(int *) item = idum;
+            }
+            break;
+        case eioINT64:
+            if (item && !fio->bRead)
+            {
+                sdum = *(gmx_int64_t *) item;
+            }
+            res = xdr_int64(fio->xdr, &sdum);
+            if (item)
+            {
+                *(gmx_int64_t *) item = sdum;
+            }
+            break;
+        case eioUCHAR:
+            if (item && !fio->bRead)
+            {
+                ucdum = *(unsigned char *) item;
+            }
+            res = xdr_u_char(fio->xdr, &ucdum);
+            if (item)
+            {
+                *(unsigned char *) item = ucdum;
+            }
+            break;
+        case eioNUCHAR:
+            ucptr = (unsigned char *) item;
+            res   = 1;
+            for (j = 0; (j < nitem) && res; j++)
+            {
+                res = xdr_u_char(fio->xdr, &(ucptr[j]));
+            }
+            break;
+        case eioUSHORT:
+            if (item && !fio->bRead)
+            {
+                us = *(unsigned short *) item;
+            }
+            res = xdr_u_short(fio->xdr, (unsigned short *) &us);
+            if (item)
+            {
+                *(unsigned short *) item = us;
+            }
+            break;
+        case eioRVEC:
+            if (fio->bDouble)
+            {
+                if (item && !fio->bRead)
+                {
+                    for (m = 0; (m < DIM); m++)
+                    {
+                        dvec[m] = ((real *) item)[m];
+                    }
+                }
+                res = xdr_vector(fio->xdr, (char *) dvec, DIM,
+                                 (unsigned int) sizeof(double),
+                                 (xdrproc_t) xdr_double);
+                if (item)
+                {
+                    for (m = 0; (m < DIM); m++)
+                    {
+                        ((real *) item)[m] = dvec[m];
+                    }
+                }
+            }
+            else
+            {
+                if (item && !fio->bRead)
+                {
+                    for (m = 0; (m < DIM); m++)
+                    {
+                        fvec[m] = ((real *) item)[m];
+                    }
+                }
+                res = xdr_vector(fio->xdr, (char *) fvec, DIM,
+                                 (unsigned int) sizeof(float),
+                                 (xdrproc_t) xdr_float);
+                if (item)
+                {
+                    for (m = 0; (m < DIM); m++)
+                    {
+                        ((real *) item)[m] = fvec[m];
+                    }
+                }
+            }
+            break;
+        case eioNRVEC:
+            ptr = NULL;
+            res = 1;
+            for (j = 0; (j < nitem) && res; j++)
+            {
+                if (item)
+                {
+                    ptr = ((rvec *) item)[j];
+                }
+                res = do_xdr(fio, ptr, 1, eioRVEC, desc, srcfile, line);
+            }
+            break;
+        case eioIVEC:
+            iptr = (int *) item;
+            res  = 1;
+            for (m = 0; (m < DIM) && res; m++)
+            {
+                if (item && !fio->bRead)
+                {
+                    idum = iptr[m];
+                }
+                res = xdr_int(fio->xdr, &idum);
+                if (item)
+                {
+                    iptr[m] = idum;
+                }
+            }
+            break;
+        case eioSTRING:
+        {
+            char *cptr;
+            int   slen;
+
+            if (item)
+            {
+                if (!fio->bRead)
+                {
+                    slen = strlen((char *) item) + 1;
+                }
+                else
+                {
+                    slen = 0;
+                }
+            }
+            else
+            {
+                slen = 0;
+            }
+
+            if (xdr_int(fio->xdr, &slen) <= 0)
+            {
+                gmx_fatal(FARGS, "wrong string length %d for string %s"
+                          " (source %s, line %d)", slen, desc, srcfile, line);
+            }
+            if (!item && fio->bRead)
+            {
+                snew(cptr, slen);
+            }
+            else
+            {
+                cptr = (char *)item;
+            }
+            if (cptr)
+            {
+                res = xdr_string(fio->xdr, &cptr, slen);
+            }
+            else
+            {
+                res = 1;
+            }
+            if (!item && fio->bRead)
+            {
+                sfree(cptr);
+            }
+            break;
+        }
+        default:
+            gmx_fio_fe(fio, eio, desc, srcfile, line);
+    }
+    if ((res == 0) && (fio->bDebug))
+    {
+        fprintf(stderr, "Error in xdr I/O %s %s to file %s (source %s, line %d)\n",
+                eioNames[eio], desc, fio->fn, srcfile, line);
+    }
+
+    return (res != 0);
+}
 
 /*******************************************************************
  *
@@ -93,18 +378,18 @@ gmx_bool gmx_fio_doe_gmx_bool(t_fileio *fio, gmx_bool *item,
                               const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
-    int      itmp;
 
     gmx_fio_lock(fio);
     if (fio->bRead)
     {
-        ret   = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
-        *item = itmp;
+        int itmp = 0;
+        ret      = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
+        *item    = itmp;
     }
     else
     {
-        itmp = *item;
-        ret  = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
+        int itmp = *item;
+        ret      = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -238,22 +523,21 @@ gmx_bool gmx_fio_ndoe_gmx_bool(t_fileio *fio, gmx_bool *item, int n,
                                const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret = TRUE;
-    int      i, itmp;
+    int      i;
 
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         if (fio->bRead)
         {
-            ret = ret && do_xdr(fio, &itmp, 1, eioINT, desc,
-                                srcfile, line);
-            item[i] = itmp;
+            int itmp = 0;
+            ret      = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
+            item[i]  = itmp;
         }
         else
         {
-            itmp = item[i];
-            ret  = ret && do_xdr(fio, &itmp, 1, eioINT, desc,
-                                 srcfile, line);
+            int itmp = item[i];
+            ret      = ret && do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
         }
     }
     gmx_fio_unlock(fio);
