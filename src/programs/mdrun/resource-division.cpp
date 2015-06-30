@@ -77,7 +77,7 @@ static const int min_atoms_per_gpu        = 900;
  * Sandy/Ivy Bridge, Has/Broadwell. By checking for AVX instead of
  * model numbers we ensure also future Intel CPUs are covered.
  */
-const int nthreads_omp_always_faster_default   =  6;
+const int nthreads_omp_always_faster_default   =  8;
 const int nthreads_omp_always_faster_Nehalem   = 12;
 const int nthreads_omp_always_faster_Intel_AVX = 16;
 /* For CPU only runs the fastest options are usually MPI or OpenMP only.
@@ -392,6 +392,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
      * OpenMP have been initialized. Check that here.
      */
 #ifdef GMX_THREAD_MPI
+    assert(nthreads_omp_always_faster_default >= nthreads_omp_mpi_ok_max);
     assert(hw_opt->nthreads_tmpi >= 1);
 #endif
     assert(gmx_omp_nthreads_get(emntDefault) >= 1);
