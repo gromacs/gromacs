@@ -1840,10 +1840,6 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
     int      idum;
     real     rdum;
 
-    if (!bRead)
-    {
-        gmx_fio_set_comment(fio, interaction_function[ftype].name);
-    }
     switch (ftype)
     {
         case F_ANGLES:
@@ -2160,21 +2156,12 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fatal(FARGS, "unknown function type %d (%s) in %s line %d",
                       ftype, interaction_function[ftype].name, __FILE__, __LINE__);
     }
-    if (!bRead)
-    {
-        gmx_fio_unset_comment(fio);
-    }
 }
 
-static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_version,
-                     int ftype)
+static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_version)
 {
     int      i, k, idum;
 
-    if (!bRead)
-    {
-        gmx_fio_set_comment(fio, interaction_function[ftype].name);
-    }
     if (file_version < 44)
     {
         for (i = 0; i < MAXNODES; i++)
@@ -2188,10 +2175,6 @@ static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_ver
         snew(ilist->iatoms, ilist->nr);
     }
     gmx_fio_ndo_int(fio, ilist->iatoms, ilist->nr);
-    if (!bRead)
-    {
-        gmx_fio_unset_comment(fio);
-    }
 }
 
 static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
@@ -2316,7 +2299,7 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
         }
         else
         {
-            do_ilist(fio, &ilist[j], bRead, file_version, j);
+            do_ilist(fio, &ilist[j], bRead, file_version);
             if (file_version < 78 && j == F_SETTLE && ilist[j].nr > 0)
             {
                 add_settle_atoms(&ilist[j]);
