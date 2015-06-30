@@ -235,6 +235,32 @@ void gpu_set_host_malloc_and_free(bool               bUseGpuKernels,
                                   gmx_host_alloc_t **nb_alloc,
                                   gmx_host_free_t  **nb_free);
 
+/*! \brief Print a general information message to stderr and to fplog if fplog!=NULL.
+ *
+ * This function is a duplicate of md_print_info() from \file md_logging.c
+ * because we don't have commrec in multiple places where we would like to output
+ * messages, so here we kae the assumption that if fplog!=NULL we're printing
+ * on the master node's stderr.
+ *
+ * \param[in]   fplog   Log file pointer
+ * \param[in]   fmt     format string followed by variable number of arguments to the print
+ */
+void cu_md_print_info(FILE       *fplog,
+                      const char *fmt, ...);
+
+/*! \brief  Print an important notes or warning message to stderr and to fplog if fplog!=NULL.
+ *
+ * This function is a duplicate of md_print_warn() from \file md_logging.c
+ * because we don't have commrec in multiple places where we would like to output
+ * messages, so here we kae the assumption that if fplog!=NULL we're printing
+ * on the master node's stderr.
+ *
+ * \param[in]   fplog   Log file pointer
+ * \param[in]   fmt     format string followed by variable number of arguments to the print
+ */
+void cu_md_print_warn(FILE       *fplog,
+                      const char *fmt, ...);
+
 #ifdef __cplusplus
 }
 #endif
