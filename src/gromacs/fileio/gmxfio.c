@@ -81,12 +81,6 @@ static t_fileio *open_files = NULL;
    during the simulation. */
 static tMPI_Thread_mutex_t open_file_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-const char                *eioNames[eioNR] =
-{
-    "REAL", "INT", "GMX_STE_T", "UCHAR", "NUCHAR", "USHORT", "RVEC", "NRVEC",
-    "IVEC", "STRING"
-};
-
 /******************************************************************
  *
  * Internal functions:
@@ -107,31 +101,6 @@ static int gmx_fio_int_flush(t_fileio* fio)
     }
 
     return rc;
-}
-
-
-/* check the number of items given against the type */
-void gmx_fio_check_nitem(int eio, int nitem, const char *file, int line)
-{
-    if ((nitem != 1) && !((eio == eioNRVEC) || (eio == eioNUCHAR)))
-    {
-        gmx_fatal(FARGS,
-                  "nitem (%d) may differ from 1 only for %s or %s, not   for %s"
-                  "(%s, %d)", nitem, eioNames[eioNUCHAR], eioNames[eioNRVEC],
-                  eioNames[eio], file, line);
-    }
-}
-
-
-/* output a data type error. */
-void gmx_fio_fe(t_fileio *fio, int eio, const char *desc,
-                const char *srcfile, int line)
-{
-
-    gmx_fatal(FARGS, "Trying to %s %s type %d (%s), src %s, line %d",
-              fio->bRead ? "read" : "write", desc, eio,
-              ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown",
-              srcfile, line);
 }
 
 /* lock the mutex associated with this fio. This needs to be done for every

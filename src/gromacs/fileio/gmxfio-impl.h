@@ -79,23 +79,9 @@ struct t_fileio
                                           a lock */
 };
 
-/** Names for different items that can be read/written with gmx_fio_do_*() */
-extern const char    *eioNames[eioNR];
-
-/** check the number of items against the allowed number of items */
-void gmx_fio_check_nitem(int eio, int nitem, const char *file,
-                         int line);
-/** check the output type against allowed values */
-void gmx_fio_fe(t_fileio *fio, int eio, const char *desc, const char *srcfile,
-                int line);
-
 /** lock the mutex associated with a fio  */
 void gmx_fio_lock(t_fileio *fio);
 /** unlock the mutex associated with a fio  */
 void gmx_fio_unlock(t_fileio *fio);
-
-/** xdr read/write routine */
-gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
-                const char *desc, const char *srcfile, int line);
 
 #endif
