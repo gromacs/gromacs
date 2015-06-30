@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,31 +142,6 @@ static gmx_bool do_trnheader(t_fileio *fio, gmx_bool bRead, t_trnheader *sh, gmx
     *bOK = *bOK && gmx_fio_do_real(fio, sh->lambda);
 
     return *bOK;
-}
-
-void pr_trnheader(FILE *fp, int indent, char *title, t_trnheader *sh)
-{
-    if (sh)
-    {
-        indent = pr_title(fp, indent, title);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "box_size    = %d\n", sh->box_size);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "x_size      = %d\n", sh->x_size);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "v_size      = %d\n", sh->v_size);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "f_size      = %d\n", sh->f_size);
-
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "natoms      = %d\n", sh->natoms);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "step        = %d\n", sh->step);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "t           = %e\n", sh->t);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "lambda      = %e\n", sh->lambda);
-    }
 }
 
 static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
