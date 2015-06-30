@@ -50,8 +50,9 @@ gmx_bool gmx_fio_writee_string(t_fileio *fio, const char *item,
                                const char *desc, const char *srcfile, int line)
 {
     gmx_bool ret;
+    void    *it = (void*)item; /* ugh.. */
     gmx_fio_lock(fio);
-    ret = fio->iotp->nwrite(fio, item, 1, eioSTRING, desc, srcfile, line);
+    ret = do_xdr(fio, it, 1, eioSTRING, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -61,14 +62,7 @@ gmx_bool gmx_fio_doe_real(t_fileio *fio, real *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioREAL, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioREAL, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioREAL, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 
@@ -79,14 +73,7 @@ gmx_bool gmx_fio_doe_float(t_fileio *fio, float *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioFLOAT, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioFLOAT, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioFLOAT, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -96,14 +83,7 @@ gmx_bool gmx_fio_doe_double(t_fileio *fio, double *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioDOUBLE, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioDOUBLE, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioDOUBLE, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -118,13 +98,13 @@ gmx_bool gmx_fio_doe_gmx_bool(t_fileio *fio, gmx_bool *item,
     gmx_fio_lock(fio);
     if (fio->bRead)
     {
-        ret   = fio->iotp->nread(fio, &itmp, 1, eioINT, desc, srcfile, line);
+        ret   = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
         *item = itmp;
     }
     else
     {
         itmp = *item;
-        ret  = fio->iotp->nwrite(fio, &itmp, 1, eioINT, desc, srcfile, line);
+        ret  = do_xdr(fio, &itmp, 1, eioINT, desc, srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -135,14 +115,7 @@ gmx_bool gmx_fio_doe_int(t_fileio *fio, int *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioINT, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioINT, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioINT, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -152,14 +125,7 @@ gmx_bool gmx_fio_doe_int64(t_fileio *fio, gmx_int64_t *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioINT64, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioINT64, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioINT64, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -169,14 +135,7 @@ gmx_bool gmx_fio_doe_uchar(t_fileio *fio, unsigned char *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioUCHAR, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioUCHAR, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioUCHAR, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -186,14 +145,7 @@ gmx_bool gmx_fio_doe_ushort(t_fileio *fio, unsigned short *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioUSHORT, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioUSHORT, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioUSHORT, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -203,14 +155,7 @@ gmx_bool gmx_fio_doe_rvec(t_fileio *fio, rvec *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioRVEC, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioRVEC, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioRVEC, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -220,14 +165,7 @@ gmx_bool gmx_fio_doe_ivec(t_fileio *fio, ivec *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioIVEC, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioIVEC, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioIVEC, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -237,14 +175,7 @@ gmx_bool gmx_fio_doe_string(t_fileio *fio, char *item,
 {
     gmx_bool ret;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = fio->iotp->nread(fio, item, 1, eioSTRING, desc, srcfile, line);
-    }
-    else
-    {
-        ret = fio->iotp->nwrite(fio, item, 1, eioSTRING, desc, srcfile, line);
-    }
+    ret = do_xdr(fio, item, 1, eioSTRING, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -260,16 +191,8 @@ gmx_bool gmx_fio_ndoe_real(t_fileio *fio, real *item, int n,
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        if (fio->bRead)
-        {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioREAL, desc,
-                                          srcfile, line);
-        }
-        else
-        {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioREAL, desc,
-                                           srcfile, line);
-        }
+        ret = ret && do_xdr(fio, &(item[i]), 1, eioREAL, desc,
+                            srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -285,16 +208,8 @@ gmx_bool gmx_fio_ndoe_float(t_fileio *fio, float *item, int n,
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        if (fio->bRead)
-        {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioFLOAT, desc,
-                                          srcfile, line);
-        }
-        else
-        {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioFLOAT, desc,
-                                           srcfile, line);
-        }
+        ret = ret && do_xdr(fio, &(item[i]), 1, eioFLOAT, desc,
+                            srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -310,16 +225,8 @@ gmx_bool gmx_fio_ndoe_double(t_fileio *fio, double *item, int n,
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        if (fio->bRead)
-        {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioDOUBLE, desc,
-                                          srcfile, line);
-        }
-        else
-        {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioDOUBLE, desc,
-                                           srcfile, line);
-        }
+        ret = ret && do_xdr(fio, &(item[i]), 1, eioDOUBLE, desc,
+                            srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -338,15 +245,15 @@ gmx_bool gmx_fio_ndoe_gmx_bool(t_fileio *fio, gmx_bool *item, int n,
     {
         if (fio->bRead)
         {
-            ret = ret && fio->iotp->nread(fio, &itmp, 1, eioINT, desc,
-                                          srcfile, line);
+            ret = ret && do_xdr(fio, &itmp, 1, eioINT, desc,
+                                srcfile, line);
             item[i] = itmp;
         }
         else
         {
             itmp = item[i];
-            ret  = ret && fio->iotp->nwrite(fio, &itmp, 1, eioINT, desc,
-                                            srcfile, line);
+            ret  = ret && do_xdr(fio, &itmp, 1, eioINT, desc,
+                                 srcfile, line);
         }
     }
     gmx_fio_unlock(fio);
@@ -361,16 +268,8 @@ gmx_bool gmx_fio_ndoe_int(t_fileio *fio, int *item, int n,
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        if (fio->bRead)
-        {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioINT, desc,
-                                          srcfile, line);
-        }
-        else
-        {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioINT, desc,
-                                           srcfile, line);
-        }
+        ret = ret && do_xdr(fio, &(item[i]), 1, eioINT, desc,
+                            srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -386,16 +285,8 @@ gmx_bool gmx_fio_ndoe_int64(t_fileio *fio, gmx_int64_t *item, int n,
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        if (fio->bRead)
-        {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioINT64, desc,
-                                          srcfile, line);
-        }
-        else
-        {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioINT64, desc,
-                                           srcfile, line);
-        }
+        ret = ret && do_xdr(fio, &(item[i]), 1, eioINT64, desc,
+                            srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -408,16 +299,8 @@ gmx_bool gmx_fio_ndoe_uchar(t_fileio *fio, unsigned char *item, int n,
 {
     gmx_bool ret = TRUE;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = ret && fio->iotp->nread(fio, item, n, eioNUCHAR, desc,
-                                      srcfile, line);
-    }
-    else
-    {
-        ret = ret && fio->iotp->nwrite(fio, item, n, eioNUCHAR, desc,
-                                       srcfile, line);
-    }
+    ret = ret && do_xdr(fio, item, n, eioNUCHAR, desc,
+                        srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -432,16 +315,8 @@ gmx_bool gmx_fio_ndoe_ushort(t_fileio *fio, unsigned short *item, int n,
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        if (fio->bRead)
-        {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioUSHORT, desc,
-                                          srcfile, line);
-        }
-        else
-        {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioUSHORT, desc,
-                                           srcfile, line);
-        }
+        ret = ret && do_xdr(fio, &(item[i]), 1, eioUSHORT, desc,
+                            srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -454,15 +329,7 @@ gmx_bool gmx_fio_ndoe_rvec(t_fileio *fio, rvec *item, int n,
 {
     gmx_bool ret = TRUE;
     gmx_fio_lock(fio);
-    if (fio->bRead)
-    {
-        ret = ret && fio->iotp->nread(fio, item, n, eioNRVEC, desc, srcfile, line);
-    }
-    else
-    {
-        ret = ret && fio->iotp->nwrite(fio, item, n, eioNRVEC, desc, srcfile,
-                                       line);
-    }
+    ret = ret && do_xdr(fio, item, n, eioNRVEC, desc, srcfile, line);
     gmx_fio_unlock(fio);
     return ret;
 }
@@ -477,16 +344,8 @@ gmx_bool gmx_fio_ndoe_ivec(t_fileio *fio, ivec *item, int n,
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        if (fio->bRead)
-        {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioIVEC, desc,
-                                          srcfile, line);
-        }
-        else
-        {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioIVEC, desc,
-                                           srcfile, line);
-        }
+        ret = ret && do_xdr(fio, &(item[i]), 1, eioIVEC, desc,
+                            srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;
@@ -502,16 +361,8 @@ gmx_bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
     gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
-        if (fio->bRead)
-        {
-            ret = ret && fio->iotp->nread(fio, &(item[i]), 1, eioSTRING, desc,
-                                          srcfile, line);
-        }
-        else
-        {
-            ret = ret && fio->iotp->nwrite(fio, &(item[i]), 1, eioSTRING, desc,
-                                           srcfile, line);
-        }
+        ret = ret && do_xdr(fio, &(item[i]), 1, eioSTRING, desc,
+                            srcfile, line);
     }
     gmx_fio_unlock(fio);
     return ret;

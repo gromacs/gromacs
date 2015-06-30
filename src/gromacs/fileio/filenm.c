@@ -259,26 +259,22 @@ const char *ftp2desc(int ftp)
     }
 }
 
-const char *ftp2ftype(int ftp)
+gmx_bool ftp_is_text(int ftp)
 {
     if ((ftp >= 0) && (ftp < efNR))
     {
-        switch (deffile[ftp].ftype)
-        {
-            case eftASC:
-                return "ASCII";
-            case eftXDR:
-                return "XDR portable";
-            case eftTNG:
-                return "TNG";
-            case eftGEN:
-                return "";
-            default:
-                gmx_fatal(FARGS, "Unknown filetype %d in ftp2ftype", deffile[ftp].ftype);
-                break;
-        }
+        return deffile[ftp].ftype == eftASC;
     }
-    return "unknown";
+    return FALSE;
+}
+
+gmx_bool ftp_is_xdr(int ftp)
+{
+    if ((ftp >= 0) && (ftp < efNR))
+    {
+        return deffile[ftp].ftype == eftXDR;
+    }
+    return FALSE;
 }
 
 const char *ftp2defnm(int ftp)
