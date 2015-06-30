@@ -119,8 +119,8 @@ const char *ftp2defnm(int ftp);
 const char *ftp2defopt(int ftp);
 /* Return default option name for file type */
 
-const char *ftp2ftype(int ftp);
-/* Return Binary or ASCII depending on file type */
+gmx_bool ftp_is_text(int ftp);
+gmx_bool ftp_is_xdr(int ftp);
 
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
 /* Return the filename belonging to cmd-line option opt, or NULL when

@@ -55,7 +55,6 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/md5.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -82,40 +81,11 @@ static t_fileio *open_files = NULL;
    during the simulation. */
 static tMPI_Thread_mutex_t open_file_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
-
-/* These simple lists define the I/O type for these files */
-static const int ftpXDR[] =
-{ efTPR, efTRR, efEDR, efXTC, efTNG, efMTX, efCPT };
-
-const char *eioNames[eioNR] =
+const char                *eioNames[eioNR] =
 {
     "REAL", "INT", "GMX_STE_T", "UCHAR", "NUCHAR", "USHORT", "RVEC", "NRVEC",
     "IVEC", "STRING"
 };
-
-
-static gmx_bool do_dummyread(t_fileio *fio, void *item, int nitem, int eio,
-                             const char *desc, const char *srcfile, int line);
-static gmx_bool do_dummywrite(t_fileio *fio, const void *item, int nitem, int eio,
-                              const char *desc, const char *srcfile, int line);
-
-const t_iotype dummy_iotype = {do_dummyread, do_dummywrite};
-
-static gmx_bool do_dummyread(
-        t_fileio gmx_unused *fio, void gmx_unused *item, int gmx_unused nitem, int gmx_unused eio,
-        const char gmx_unused *desc, const char gmx_unused *srcfile, int gmx_unused line)
-{
-    gmx_fatal(FARGS, "File type not set!");
-    return FALSE;
-}
-
-static gmx_bool do_dummywrite(
-        t_fileio gmx_unused *fio, const void gmx_unused *item, int gmx_unused nitem, int gmx_unused eio,
-        const char gmx_unused *desc, const char gmx_unused *srcfile, int gmx_unused line)
-{
-    gmx_fatal(FARGS, "File type not set!");
-    return FALSE;
-}
 
 /******************************************************************
  *
@@ -137,24 +107,6 @@ static int gmx_fio_int_flush(t_fileio* fio)
     }
 
     return rc;
-}
-
-/* returns TRUE if the file type ftp is in the set set */
-static gmx_bool in_ftpset(int ftp, int nset, const int set[])
-{
-    int      i;
-    gmx_bool bResult;
-
-    bResult = FALSE;
-    for (i = 0; (i < nset); i++)
-    {
-        if (ftp == set[i])
-        {
-            bResult = TRUE;
-        }
-    }
-
-    return bResult;
 }
 
 
@@ -181,21 +133,6 @@ void gmx_fio_fe(t_fileio *fio, int eio, const char *desc,
               ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown",
               srcfile, line);
 }
-
-
-/* set the reader/writer functions based on the file type */
-static void gmx_fio_set_iotype(t_fileio *fio)
-{
-    if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
-    {
-        fio->iotp = &xdr_iotype;
-    }
-    else
-    {
-        fio->iotp = &dummy_iotype;
-    }
-}
-
 
 /* lock the mutex associated with this fio. This needs to be done for every
    type of access to the fio's elements. */
@@ -405,7 +342,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     }
 
     /* Check if it should be opened as a binary file */
-    if (strncmp(ftp2ftype(fn2ftp(fn)), "ASCII", 5))
+    if (!ftp_is_text(fn2ftp(fn)))
     {
         /* Not ascii, add b to file mode */
         if ((strchr(newmode, 'b') == NULL) && (strchr(newmode, 'B') == NULL))
@@ -430,7 +367,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
         fio->fn     = gmx_strdup(fn);
 
         /* If this file type is in the list of XDR files, open it like that */
-        if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
+        if (ftp_is_xdr(fio->iFTP))
         {
             /* First check whether we have to make a backup,
              * only for writing, not for read or append.
@@ -485,9 +422,6 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     fio->bDebug            = FALSE;
     fio->bOpen             = TRUE;
 
-    /* set the reader/writer functions */
-    gmx_fio_set_iotype(fio);
-
     /* and now insert this file into the list of open files. */
     gmx_fio_insert(fio);
     return fio;
@@ -502,7 +436,7 @@ static int gmx_fio_close_locked(t_fileio *fio)
         gmx_fatal(FARGS, "File %s closed twice!\n", fio->fn);
     }
 
-    if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
+    if (ftp_is_xdr(fio->iFTP))
     {
         xdr_destroy(fio->xdr);
         sfree(fio->xdr);
@@ -549,7 +483,7 @@ int gmx_fio_fp_close(t_fileio *fio)
 {
     int rc = 0;
     gmx_fio_lock(fio);
-    if (!in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
+    if (!ftp_is_xdr(fio->iFTP))
     {
         rc      = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
         fio->fp = NULL;
@@ -784,11 +718,7 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
 
 void gmx_fio_checktype(t_fileio *fio)
 {
-    if (in_ftpset(fio->iFTP, asize(ftpXDR), ftpXDR))
-    {
-        return;
-    }
-    else
+    if (!ftp_is_xdr(fio->iFTP))
     {
         gmx_fatal(FARGS, "Can not read/write topologies to file type %s",
                   ftp2ext(fio->iFTP));

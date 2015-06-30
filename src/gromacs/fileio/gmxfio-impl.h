@@ -58,24 +58,9 @@
 
 #include "gromacs/fileio/xdrf.h"
 
-/** the reader function for t_iotype */
-typedef gmx_bool read_func (t_fileio *fio, void *item, int nitem, int eio,
-                            const char *desc, const char *srcfile, int line);
-/** the writer function for t_iotype */
-typedef gmx_bool write_func (t_fileio *fio, const void *item, int nitem, int eio,
-                             const char *desc, const char *srcfile, int line);
-
-
-typedef struct
-{
-    read_func  *nread;
-    write_func *nwrite;
-} t_iotype;
-
 struct t_fileio
 {
     FILE           *fp;                /* the file pointer */
-    const t_iotype *iotp;              /* file type */
     gmx_bool        bOpen,             /* the file is open */
                     bRead,             /* the file is open for reading */
                     bDouble,           /* write doubles instead of floats */
@@ -94,9 +79,6 @@ struct t_fileio
                                           a lock */
 };
 
-/** handlers for XDR read/write */
-extern const t_iotype xdr_iotype;
-
 /** Names for different items that can be read/written with gmx_fio_do_*() */
 extern const char    *eioNames[eioNR];
 
@@ -111,5 +93,9 @@ void gmx_fio_fe(t_fileio *fio, int eio, const char *desc, const char *srcfile,
 void gmx_fio_lock(t_fileio *fio);
 /** unlock the mutex associated with a fio  */
 void gmx_fio_unlock(t_fileio *fio);
+
+/** xdr read/write routine */
+gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
+                const char *desc, const char *srcfile, int line);
 
 #endif
