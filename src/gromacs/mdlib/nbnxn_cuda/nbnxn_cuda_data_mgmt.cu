@@ -52,6 +52,7 @@
 #include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
+#include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
@@ -85,34 +86,6 @@ extern void nbnxn_cuda_set_cacheconfig(gmx_device_info_t *devinfo);
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_texref();
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
-
-/* We should actually be using md_print_warn in md_logging.c,
- * but we can't include mpi.h in CUDA code.
- */
-static void md_print_warn(FILE       *fplog,
-                          const char *fmt, ...)
-{
-    va_list ap;
-
-    if (fplog != NULL)
-    {
-        /* We should only print to stderr on the master node,
-         * in most cases fplog is only set on the master node, so this works.
-         */
-        va_start(ap, fmt);
-        fprintf(stderr, "\n");
-        vfprintf(stderr, fmt, ap);
-        fprintf(stderr, "\n");
-        va_end(ap);
-
-        va_start(ap, fmt);
-        fprintf(fplog, "\n");
-        vfprintf(fplog, fmt, ap);
-        fprintf(fplog, "\n");
-        va_end(ap);
-    }
-}
-
 
 /* Fw. decl. */
 static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);
@@ -683,7 +656,7 @@ void nbnxn_gpu_init(FILE                      *fplog,
             /* only warn if polling should be used */
             if (bShouldUsePollSync)
             {
-                md_print_warn(fplog,
+                md_print_warn(NULL, fplog,
                               "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, but\n"
                               "      cudaStreamSynchronize waiting is forced by the GMX_CUDA_STREAMSYNC env. var.\n");
             }
@@ -694,7 +667,7 @@ void nbnxn_gpu_init(FILE                      *fplog,
 
             if (bShouldUsePollSync)
             {
-                md_print_warn(fplog,
+                md_print_warn(NULL, fplog,
                               "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, known to\n"
                               "      cause performance loss. Switching to the alternative polling GPU wait.\n"
                               "      If you encounter issues, switch back to standard GPU waiting by setting\n"
@@ -711,7 +684,7 @@ void nbnxn_gpu_init(FILE                      *fplog,
                         (bX86 && bTMPIAtomics) ?
                         "      GPU(s) are being oversubscribed." :
                         "      atomic operations are not supported by the platform/CPU+compiler.");
-                md_print_warn(fplog, sbuf);
+                md_print_warn(NULL, fplog, sbuf);
             }
         }
     }
@@ -721,7 +694,7 @@ void nbnxn_gpu_init(FILE                      *fplog,
         {
             nb->bUseStreamSync = false;
 
-            md_print_warn(fplog,
+            md_print_warn(NULL, fplog,
                           "NOTE: Polling wait for GPU synchronization requested by GMX_NO_CUDA_STREAMSYNC\n");
         }
         else

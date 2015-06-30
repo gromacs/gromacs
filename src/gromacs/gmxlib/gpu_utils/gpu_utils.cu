@@ -50,6 +50,7 @@
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
+#include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
@@ -177,59 +178,6 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 }
 
 #ifdef HAVE_NVML
-/* TODO: We should actually be using md_print_warn in md_logging.c,
- * but we can't include mpi.h in CUDA code.
- */
-static void md_print_info(FILE       *fplog,
-                          const char *fmt, ...)
-{
-    va_list ap;
-
-    if (fplog != NULL)
-    {
-        /* We should only print to stderr on the master node,
-         * in most cases fplog is only set on the master node, so this works.
-         */
-        va_start(ap, fmt);
-        vfprintf(stderr, fmt, ap);
-        va_end(ap);
-
-        va_start(ap, fmt);
-        vfprintf(fplog, fmt, ap);
-        va_end(ap);
-    }
-}
-#endif /*HAVE_NVML*/
-
-/* TODO: We should actually be using md_print_warn in md_logging.c,
- * but we can't include mpi.h in CUDA code.
- * This is replicated from nbnxn_cuda_data_mgmt.cu.
- */
-static void md_print_warn(FILE       *fplog,
-                          const char *fmt, ...)
-{
-    va_list ap;
-
-    if (fplog != NULL)
-    {
-        /* We should only print to stderr on the master node,
-         * in most cases fplog is only set on the master node, so this works.
-         */
-        va_start(ap, fmt);
-        fprintf(stderr, "\n");
-        vfprintf(stderr, fmt, ap);
-        fprintf(stderr, "\n");
-        va_end(ap);
-
-        va_start(ap, fmt);
-        fprintf(fplog, "\n");
-        vfprintf(fplog, fmt, ap);
-        fprintf(fplog, "\n");
-        va_end(ap);
-    }
-}
-
-#ifdef HAVE_NVML
 /*! \brief Determines and adds the NVML device ID to the passed \cuda_dev.
  *
  * Determines and adds the NVML device ID to the passed \cuda_dev. This is done by
@@ -302,7 +250,7 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
         int cuda_runtime = 0;
         cudaDriverGetVersion(&cuda_driver);
         cudaRuntimeGetVersion(&cuda_runtime);
-        md_print_warn( fplog, "Note: NVML support was not found (CUDA runtime %d.%d, driver %d.%d), so your\n"
+        md_print_warn( NULL, fplog, "Note: NVML support was not found (CUDA runtime %d.%d, driver %d.%d), so your\n"
                        "      %s GPU cannot use application clock support to improve performance.\n",
                        cuda_runtime/1000, cuda_runtime%100,
                        cuda_driver/1000, cuda_driver%100,
@@ -365,7 +313,7 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock && gpu_info->gpu_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED)
     {
         //TODO: Maybe need to think about something more user friendly here.
-        md_print_info( fplog, "Changing GPU clock rates by setting application clocks for %s to (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
+        md_print_info( NULL, fplog, "Changing GPU clock rates by setting application clocks for %s to (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
         nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->gpu_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
         HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
         gpu_info->gpu_dev[gpuid].nvml_ap_clocks_changed = true;
@@ -373,17 +321,17 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     else if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock)
     {
         //TODO: Maybe need to think about something more user friendly here.
-        md_print_warn( fplog, "Not possible to change GPU clocks to optimal value because of insufficient permissions to set application clocks for %s. Current values are (%d,%d). Max values are (%d,%d)\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clock permissions.\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
+        md_print_warn( NULL, fplog, "Not possible to change GPU clocks to optimal value because of insufficient permissions to set application clocks for %s. Current values are (%d,%d). Max values are (%d,%d)\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clock permissions.\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
     }
     else if (nvml_stat == NVML_SUCCESS && app_sm_clock == max_sm_clock)
     {
         //TODO: This should probably be integrated into the GPU Properties table.
-        md_print_info( fplog, "Application clocks (GPU clocks) for %s are (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock);
+        md_print_info( NULL, fplog, "Application clocks (GPU clocks) for %s are (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock);
     }
     else
     {
         //TODO: Maybe need to think about something more user friendly here.
-        md_print_warn( fplog,  "Not possible to change GPU clocks to optimal value because application clocks handling failed with NVML error (%d): %s.\n", nvml_stat, nvmlErrorString(nvml_stat));
+        md_print_warn( NULL, fplog,  "Not possible to change GPU clocks to optimal value because application clocks handling failed with NVML error (%d): %s.\n", nvml_stat, nvmlErrorString(nvml_stat));
     }
     return (nvml_stat == NVML_SUCCESS);
 #endif /*HAVE_NVML*/
