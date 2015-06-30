@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,23 +36,13 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
-#ifdef HAVE_IO_H
-#include <io.h>
-#endif
-
-#include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio_int.h"
-#include "gromacs/fileio/md5.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/fileio/gmxfio-impl.h"
+#include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 /* This is the part that reads xdr files.  */
@@ -67,8 +57,6 @@ static gmx_bool do_xdrwrite(t_fileio *fio, const void *item, int nitem, int eio,
 
 const t_iotype xdr_iotype = {do_xdrread, do_xdrwrite};
 
-
-#ifdef USE_XDR
 
 static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                        const char *desc, const char *srcfile, int line)
@@ -331,5 +319,3 @@ static gmx_bool do_xdrwrite(t_fileio *fio, const void *item, int nitem, int eio,
     void *it = (void*)item; /* ugh.. */
     return do_xdr(fio, it, nitem, eio, desc, srcfile, line);
 }
-
-#endif

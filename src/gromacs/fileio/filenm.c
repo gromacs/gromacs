@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,18 +48,13 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-/* XDR should be available on all platforms now,
- * but we keep the possibility of turning it off...
- */
-#define USE_XDR
-
 /* Use bitflag ... */
 #define IS_SET(fn) ((fn.flag & ffSET) != 0)
 #define IS_OPT(fn) ((fn.flag & ffOPT) != 0)
 
 enum
 {
-    eftASC, eftBIN, eftXDR, eftTNG, eftGEN, eftNR
+    eftASC, eftXDR, eftTNG, eftGEN, eftNR
 };
 
 /* To support multiple file types with one general (eg TRX) we have
@@ -67,36 +62,28 @@ enum
  */
 static const int trxs[] =
 {
-#ifdef USE_XDR
     efXTC, efTRR, efCPT,
-#endif
     efGRO, efG96, efPDB, efTNG
 };
 #define NTRXS asize(trxs)
 
 static const int trcompressed[] =
 {
-#ifdef USE_XDR
     efXTC,
-#endif
     efTNG
 };
 #define NTRCOMPRESSED asize(trcompressed)
 
 static const int tros[] =
 {
-#ifdef USE_XDR
     efXTC, efTRR,
-#endif
     efGRO, efG96, efPDB, efTNG
 };
 #define NTROS asize(tros)
 
 static const int trns[] =
 {
-#ifdef USE_XDR
     efTRR, efCPT,
-#endif
     efTNG
 };
 #define NTRNS asize(trns)
@@ -107,18 +94,14 @@ static const int stos[] =
 
 static const int stxs[] =
 {
-    efGRO, efG96, efPDB, efBRK, efENT, efESP
-#ifdef USE_XDR
-    , efTPR
-#endif
+    efGRO, efG96, efPDB, efBRK, efENT, efESP,
+    efTPR
 };
 #define NSTXS asize(stxs)
 
 static const int tpss[] =
 {
-#ifdef USE_XDR
     efTPR,
-#endif
     efGRO, efG96, efPDB, efBRK, efENT
 };
 #define NTPSS asize(tpss)
@@ -284,8 +267,6 @@ const char *ftp2ftype(int ftp)
         {
             case eftASC:
                 return "ASCII";
-            case eftBIN:
-                return "Binary";
             case eftXDR:
                 return "XDR portable";
             case eftTNG:

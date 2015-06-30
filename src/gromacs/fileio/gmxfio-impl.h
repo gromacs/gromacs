@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,8 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_FILEIO_GMXFIO_INT_H
-#define GMX_FILEIO_GMXFIO_INT_H
+#ifndef GMX_FILEIO_GMXFIO_IMPL_H
+#define GMX_FILEIO_GMXFIO_IMPL_H
 
 /* This is the new improved and thread safe version of gmxfio.  */
 
@@ -49,12 +49,6 @@
    at some point in the not-so-distant future.
 
    WARNING WARNING WARNING WARNING */
-
-
-/* XDR should be available on all platforms now,
- * but we keep the possibility of turning it off...
- */
-#define USE_XDR
 
 #include "thread_mpi/lock.h"
 
@@ -84,14 +78,11 @@ struct t_fileio
                     bRead,             /* the file is open for reading */
                     bDouble,           /* write doubles instead of floats */
                     bDebug,            /* the file ops should come with debug info */
-                    bStdio,            /* the file is actually stdin or stdout */
                     bReadWrite;        /* the file is open for reading and writing */
     char        *fn;                   /* the file name */
     XDR         *xdr;                  /* the xdr data pointer */
     enum xdr_op  xdrmode;              /* the xdr mode */
     int          iFTP;                 /* the file type identifier */
-
-    const char  *comment;              /* a comment string for debugging */
 
     t_fileio    *next, *prev;          /* next and previous file pointers in the
                                           linked list */
@@ -101,21 +92,10 @@ struct t_fileio
                                           a lock */
 };
 
-
-
-extern const t_iotype asc_iotype;
-extern const t_iotype bin_iotype;
 extern const t_iotype xdr_iotype;
-extern const t_iotype dummy_iotype;
 
 extern const char    *eioNames[eioNR];
 
-
-
-#define GMX_FIO_BUFLEN 256
-
-/* make a debug string if that is requested in the fio */
-const char *gmx_fio_dbgstr(t_fileio *fio, const char *desc, char *buf);
 /* check the number of items against the allowed number of items */
 void gmx_fio_check_nitem(int eio, int nitem, const char *file,
                          int line);
