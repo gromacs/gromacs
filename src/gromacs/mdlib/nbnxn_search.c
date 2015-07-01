@@ -4380,7 +4380,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
 
     ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*GPU_NSUBCELL_X);
     ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*GPU_NSUBCELL_Y);
-    ls[ZZ] = (grid->c1[ZZ] - grid->c0[ZZ])*grid->ncx*grid->ncy/(grid->nc*GPU_NSUBCELL_Z);
+    ls[ZZ] = grid->na_c/(grid->atom_density*ls[XX]*ls[YY]);
 
     /* The average squared length of the diagonal of a sub cell */
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
@@ -4410,10 +4410,24 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         /* 4 octants of a sphere */
         vol_est += 0.5*4.0/3.0*M_PI*pow(r_eff_sup, 3);
 
+        /* Estimate the number of cluster pairs as the local number of
+         * clusters times the volume they interact with times the density.
+         */
         nsp_est = grid->nsubc_tot*vol_est*grid->atom_density/grid->na_c;
 
         /* Subtract the non-local pair count */
         nsp_est -= nsp_est_nl;
+
+        /* For small cut-offs nsp_est will be an underesimate.
+         * With DD nsp_est_nl is an overestimate so nsp_est can get negative.
+         * So to avoid too small or negative nsp_est we set a minimum of
+         * all cells interacting with all 3^3 direct neighbors (3^3-1)/2+1=14.
+         * This might be a slight overestimate for small non-periodic groups of
+         * atoms as will occur for a local domain with DD, but for small
+         * groups of atoms we'll anyhow be limited by nsubpair_target_min,
+         * so this overestimation will not matter.
+         */
+        nsp_est = max(nsp_est, grid->nsubc_tot*14.0);
 
         if (debug)
         {
