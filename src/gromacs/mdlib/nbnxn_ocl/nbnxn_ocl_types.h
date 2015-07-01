@@ -299,7 +299,7 @@ struct gmx_nbnxn_ocl_t
     /** events used for synchronization */
     cl_event nonlocal_done;              /**< event triggered when the non-local non-bonded kernel
                                             is done (and the local transfer can proceed) */
-    cl_event isc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
+    cl_event misc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
                                             the local stream that need to precede the
                                             non-local force calculations are done
                                             (e.g. f buffer 0-ing, local x/q H2D) */
