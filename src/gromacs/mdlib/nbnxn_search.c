@@ -4414,6 +4414,14 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         /* Subtract the non-local pair count */
         nsp_est -= nsp_est_nl;
 
+        /* For small cut-offs nsp_est will be an underesimate.
+         * With DD nsp_est_nl is an overestimate so nsp_est can get negative.
+         * So to avoid too small or negative nsp_est we set a minimum of
+         * all cells interacting with all 3^3 direct neighbors. This might be
+         * a slight overestimate for vacuum systems, but we ignore that.
+         */
+        nsp_est = max(nsp_est, grid->nsubc_tot*13.0);
+
         if (debug)
         {
             fprintf(debug, "nsp_est local %5.1f non-local %5.1f\n",
