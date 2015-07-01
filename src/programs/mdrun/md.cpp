@@ -46,8 +46,8 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
-#include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/mdoutf.h"
 #include "gromacs/fileio/trajectory_writing.h"
