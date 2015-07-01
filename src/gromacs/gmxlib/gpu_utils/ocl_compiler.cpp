@@ -750,7 +750,7 @@ ocl_get_build_options_string(cl_context           context,
 
         for (std::string::size_type i = 0; i < unescaped_ocl_root_path.length(); i++)
         {
-            if (inputStr[i] == ' ')
+            if (unescaped_ocl_root_path[i] == ' ')
             {
                 ocl_root_path.push_back('\\');
             }
