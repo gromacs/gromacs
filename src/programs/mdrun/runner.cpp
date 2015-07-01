@@ -1077,10 +1077,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      * support and number of GPUs selected */
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
 
-    /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo, hw_opt, Flags & MD_NTOMPSET,
-                                       cr, fplog);
-
     if (DOMAINDECOMP(cr))
     {
         /* When we share GPUs over ranks, we need to know this for the DLB */
