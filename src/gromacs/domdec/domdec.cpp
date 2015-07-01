@@ -5580,6 +5580,9 @@ static float dd_f_imbal(gmx_domdec_t *dd)
 
 float dd_pme_f_ratio(gmx_domdec_t *dd)
 {
+    /* Should only be called on the DD master rank */
+    assert(DDMASTER(dd));
+
     if (dd->comm->load[0].mdf > 0 && dd->comm->cycl_n[ddCyclPME] > 0)
     {
         return dd->comm->load[0].pme/dd->comm->load[0].mdf;
@@ -7655,7 +7658,7 @@ void set_dd_dlb_max_cutoff(t_commrec *cr, real cutoff)
  */
 static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx_bool bValue)
 {
-    if (dd->comm->eDLB == edlbAUTO && !dd_dlb_is_locked(dd))
+    if (dd->comm->eDLB == edlbAUTO)
     {
         dd->comm->bCheckWhetherToTurnDlbOn = bValue;
     }
@@ -7668,7 +7671,7 @@ static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
 {
     const int nddp_chk_dlb = 100;
 
-    if (dd->comm->eDLB != edlbAUTO)
+    if (dd->comm->eDLB != edlbAUTO && !dd_dlb_is_locked(dd))
     {
         return FALSE;
     }

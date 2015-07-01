@@ -934,11 +934,19 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
         {
             pme_lb->bBalance = dd_dlb_is_on(cr->dd);
         }
-        else
+        /* We should ignore the first timing to avoid timing allocation
+         * overhead and there is a timing offset (see below), so use a factor 3.
+         */
+        else if (step_rel >= 3*ir->nstlist)
         {
             if (DDMASTER(cr->dd))
             {
-                /* PME node load is too high, start tuning */
+                /* If PME rank load is too high, start tuning.
+                 * Note that since the PME load balancing is called just
+                 * before DD repartitioning, the ratio returned by
+                 * dd_pme_f_ratio is not over the last nstlist steps,
+                 * but the nstlist steps before that.
+                 */
                 pme_lb->bBalance =
                     (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor);
             }
@@ -1019,7 +1027,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
     }
 
     if (!pme_lb->bBalance &&
-        (!pme_lb->bSepPMERanks || (step_rel <= pme_lb->step_rel_stop)))
+        (!pme_lb->bSepPMERanks || step_rel > pme_lb->step_rel_stop))
     {
         /* We have just deactivated the balancing and we're not measuring PP/PME
          * imbalance during the first steps of the run: deactivate the tuning.
