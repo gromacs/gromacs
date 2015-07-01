@@ -59,7 +59,7 @@ mark_as_advanced(SOURCE_MD5SUM)
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
 find_package(PythonInterp)
-find_package(Sphinx 1.2.3 COMPONENTS pygments)
+find_package(Sphinx 1.2.3 QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -249,6 +249,10 @@ else()
     add_custom_target(webpage-sphinx
         COMMAND ${CMAKE_COMMAND} -E echo
             "HTML pages cannot be built because Sphinx is not available"
+        VERBATIM)
+    add_custom_target(install-guide
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "INSTALL cannot be built because Sphinx is not available"
         VERBATIM)
     add_custom_target(man
         COMMAND ${CMAKE_COMMAND} -E echo
