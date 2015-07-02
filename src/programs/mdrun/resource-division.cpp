@@ -104,13 +104,6 @@ const int nthreads_omp_mpi_ok_min_gpu          =  2;
 const int nthreads_omp_mpi_target_max          =  6;
 
 
-#ifdef GMX_USE_OPENCL
-static const bool bGpuSharingSupported = false;
-#else
-static const bool bGpuSharingSupported = true;
-#endif
-
-
 static int nthreads_omp_always_faster(gmx_cpuid_t cpuid_info, gmx_bool bUseGPU)
 {
     int nth;
@@ -161,7 +154,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
             /* #thread < #gpu is very unlikely, but if so: waste gpu(s) */
             nrank = nthreads_tot;
         }
-        else if (bGpuSharingSupported &&
+        else if (gmx_gpu_sharing_supported() &&
                  (nthreads_tot > nthreads_omp_always_faster(hwinfo->cpuid_info,
                                                             ngpu > 0) ||
                   (ngpu > 1 && nthreads_tot/ngpu > nthreads_omp_mpi_target_max)))
@@ -233,10 +226,10 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     if (inputrec->eI == eiLBFGS ||
         inputrec->coulombtype == eelEWALD)
     {
-        md_print_warn(cr, fplog, "The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI thread.\n");
+        md_print_warn(cr, fplog, "The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI rank.\n");
         if (hw_opt->nthreads_tmpi > 1)
         {
-            gmx_fatal(FARGS, "You asked for more than 1 thread-MPI thread, but an algorithm doesn't support that");
+            gmx_fatal(FARGS, "You asked for more than 1 thread-MPI rank, but an algorithm doesn't support that");
         }
 
         return 1;
@@ -270,7 +263,18 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                   hwinfo->gpu_info.n_dev_compatible > 0);
     if (bCanUseGPU)
     {
-        ngpu = hwinfo->gpu_info.n_dev_compatible;
+        if (gmx_multiple_gpu_per_node_supported())
+        {
+            ngpu = hwinfo->gpu_info.n_dev_compatible;
+        }
+        else
+        {
+            if (hwinfo->gpu_info.n_dev_compatible > 1)
+            {
+                md_print_warn(cr, fplog, "More than one compatible GPU is available, but GROMACS can only use one of them. Using a single thread-MPI rank.\n");
+            }
+            ngpu = 1;
+        }
     }
     else
     {
@@ -435,7 +439,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     if (DOMAINDECOMP(cr) && cr->nnodes > 1)
     {
         if (nth_omp_max < nthreads_omp_mpi_ok_min ||
-            (!(ngpu > 0 && !bGpuSharingSupported) &&
+            (!(ngpu > 0 && !gmx_gpu_sharing_supported()) &&
              nth_omp_max > nthreads_omp_mpi_ok_max))
         {
             /* Note that we print target_max here, not ok_max */
@@ -461,7 +465,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     else
     {
         /* No domain decomposition (or only one domain) */
-        if (!(ngpu > 0 && !bGpuSharingSupported) &&
+        if (!(ngpu > 0 && !gmx_gpu_sharing_supported()) &&
             nth_omp_max > nthreads_omp_always_faster(hwinfo->cpuid_info, ngpu > 0))
         {
             /* To arrive here, the user/system set #ranks and/or #OMPthreads */
@@ -539,7 +543,7 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
     }
     if (hw_opt->nthreads_tmpi > 0)
     {
-        gmx_fatal(FARGS, "Setting the number of thread-MPI threads is only supported with thread-MPI and GROMACS was compiled without thread-MPI");
+        gmx_fatal(FARGS, "Setting the number of thread-MPI ranks is only supported with thread-MPI and GROMACS was compiled without thread-MPI");
     }
 #endif
 
@@ -560,14 +564,14 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
             hw_opt->nthreads_omp > 0 &&
             hw_opt->nthreads_tot != hw_opt->nthreads_tmpi*hw_opt->nthreads_omp)
         {
-            gmx_fatal(FARGS, "The total number of threads requested (%d) does not match the thread-MPI threads (%d) times the OpenMP threads (%d) requested",
+            gmx_fatal(FARGS, "The total number of threads requested (%d) does not match the thread-MPI ranks (%d) times the OpenMP threads (%d) requested",
                       hw_opt->nthreads_tot, hw_opt->nthreads_tmpi, hw_opt->nthreads_omp);
         }
 
         if (hw_opt->nthreads_tmpi > 0 &&
             hw_opt->nthreads_tot % hw_opt->nthreads_tmpi != 0)
         {
-            gmx_fatal(FARGS, "The total number of threads requested (%d) is not divisible by the number of thread-MPI threads requested (%d)",
+            gmx_fatal(FARGS, "The total number of threads requested (%d) is not divisible by the number of thread-MPI ranks requested (%d)",
                       hw_opt->nthreads_tot, hw_opt->nthreads_tmpi);
         }
 
