@@ -45,9 +45,10 @@
  * At the point we have already called check_and_update_hw_opt.
  * Thus all options should be internally consistent and consistent
  * with the hardware, except that ntmpi could be larger than #GPU.
+ * If necessary, this function will modify hw_opt->nthreads_omp.
  */
 int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
-                     const gmx_hw_opt_t  *hw_opt,
+                     gmx_hw_opt_t        *hw_opt,
                      const t_inputrec    *inputrec,
                      const gmx_mtop_t    *mtop,
                      const t_commrec     *cr,
