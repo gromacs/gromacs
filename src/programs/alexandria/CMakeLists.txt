@@ -107,6 +107,8 @@ set(ALEXANDRIA_SOURCES
 add_library(libalexandria ${ALEXANDRIA_SOURCES})	
 target_link_libraries(libalexandria libgromacs)
 
+add_library(alexandria_objlib OBJECT ${ALEXANDRIA_SOURCES})
+
 set_target_properties(libalexandria PROPERTIES
                       OUTPUT_NAME "alexandria${GMX_LIBS_SUFFIX}"
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")

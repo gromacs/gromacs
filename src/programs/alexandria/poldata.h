@@ -35,9 +35,6 @@
 #include "stringutil.h"
 /* This source code file is part of the Alexandria project */
 
-
-
-  //using namespace alexandria;
 /*! \brief
  * Enumerated type holding the charge distribution models used in PolData
  *
@@ -130,430 +127,431 @@ typedef struct {
 
 namespace alexandria
 {
+
 class Poldata
 {
-private:
+    private:
 
-    char          *filename;
-    int            nptype, nptype_c;
-    t_ptype       *ptype;
-    int            nalexandria, nalexandria_c;
-    t_ffatype     *alexandria;
-    int            nbtype;
-    char         **btype;
-    int            nbrule, nbrule_c;
-    t_brule       *brule;
-    char          *alexandria_polar_unit;
-    char          *alexandria_polar_ref;
-    char          *alexandria_forcefield;
-    int            nexcl;
-    double         fudgeQQ, fudgeLJ;
-    char          *gt_vdw_function, *gt_combination_rule;
-    int            gt_vdw_ftype, gt_comb_rule;
-    char          *gt_bond_function;
-    int            ngt_bond, ngt_bond_c, gt_bond_ftype;
-    char          *gt_length_unit;
-    t_gt_bond     *gt_bond;
-    char          *gt_angle_function;
-    int            ngt_angle, ngt_angle_c, gt_angle_ftype;
-    char          *gt_angle_unit;
-    t_gt_angle    *gt_angle;
-    char          *gt_dihedral_function[egdNR];
-    int            ngt_dihedral[egdNR], ngt_dihedral_c[egdNR], gt_dihedral_ftype[egdNR];
-    t_gt_dihedral *gt_dihedral[egdNR];
-    int            nmiller, nmiller_c;
-    t_miller      *miller;
-    char          *miller_tau_unit, *miller_ahp_unit;
-    int            nbosque, nbosque_c;
-    t_bosque      *bosque;
-    char          *bosque_polar_unit;
-    int            nsymcharges, nsymcharges_c;
-    t_symcharges  *symcharges;
-    int            nep, nep_c;
-    t_eemprops    *eep;
-    int            ner, ner_c;
-    t_epref       *epr;
-
-
+        char          *filename;
+        int            nptype, nptype_c;
+        t_ptype       *ptype;
+        int            nalexandria, nalexandria_c;
+        t_ffatype     *alexandria;
+        int            nbtype;
+        char         **btype;
+        int            nbrule, nbrule_c;
+        t_brule       *brule;
+        char          *alexandria_polar_unit;
+        char          *alexandria_polar_ref;
+        char          *alexandria_forcefield;
+        int            nexcl;
+        double         fudgeQQ, fudgeLJ;
+        char          *gt_vdw_function, *gt_combination_rule;
+        int            gt_vdw_ftype, gt_comb_rule;
+        char          *gt_bond_function;
+        int            ngt_bond, ngt_bond_c, gt_bond_ftype;
+        char          *gt_length_unit;
+        t_gt_bond     *gt_bond;
+        char          *gt_angle_function;
+        int            ngt_angle, ngt_angle_c, gt_angle_ftype;
+        char          *gt_angle_unit;
+        t_gt_angle    *gt_angle;
+        char          *gt_dihedral_function[egdNR];
+        int            ngt_dihedral[egdNR], ngt_dihedral_c[egdNR], gt_dihedral_ftype[egdNR];
+        t_gt_dihedral *gt_dihedral[egdNR];
+        int            nmiller, nmiller_c;
+        t_miller      *miller;
+        char          *miller_tau_unit, *miller_ahp_unit;
+        int            nbosque, nbosque_c;
+        t_bosque      *bosque;
+        char          *bosque_polar_unit;
+        int            nsymcharges, nsymcharges_c;
+        t_symcharges  *symcharges;
+        int            nep, nep_c;
+        t_eemprops    *eep;
+        int            ner, ner_c;
+        t_epref       *epr;
 
 
 
 
 
-    void add_btype(const char   *btype);
-
-    gmx_bool strcasestr_start(char *needle, char *haystack);
-
-    int count_neighbors(t_brule *brule, int nbond, char *nbhybrid[], int *score);
-
-    //int lo_gtb_comp(t_gt_bond *ba, t_gt_bond *bb);
-
-     
-
-t_gt_bond *search_bond(  char *atom1, char *atom2,
-			 double bondorder);
-
- int search_bondtype(  char *atom);
 
 
-t_eemprops *get_eep(ChargeDistributionModel eqd_model,
-		    const char *name);
+        void add_btype(const char   *btype);
 
-t_gt_dihedral *search_dihedral( int egd, char *atom1, char *atom2,
-					 char *atom3, char *atom4);
+        gmx_bool strcasestr_start(char *needle, char *haystack);
 
-public: 
+        int count_neighbors(t_brule *brule, int nbond, char *nbhybrid[], int *score);
+
+        //int lo_gtb_comp(t_gt_bond *ba, t_gt_bond *bb);
+
+
+
+        t_gt_bond *search_bond(  char *atom1, char *atom2,
+                                 double bondorder);
+
+        int search_bondtype(  char *atom);
+
+
+        t_eemprops *get_eep(ChargeDistributionModel eqd_model,
+                            const char             *name);
+
+        t_gt_dihedral *search_dihedral( int egd, char *atom1, char *atom2,
+                                        char *atom3, char *atom4);
+
+    public:
 //typedef struct gmx_poldata *gmx_poldata_t;
 
 //gmx_poldata_t gmx_poldata_init();
-Poldata(); //Constructor
+        Poldata(); //Constructor
 
-void  set_filename(char *fn2);
+        void  set_filename(char *fn2);
 
 
-int  get_natypes( );
-int  get_nptypes( );
-int  get_ngt_bond( );
-int  get_ngt_angle( );
-int  get_ngt_dihedral(  int egd);
+        int  get_natypes( );
+        int  get_nptypes( );
+        int  get_ngt_bond( );
+        int  get_ngt_angle( );
+        int  get_ngt_dihedral(  int egd);
 
-void  add_bonding_rule( 
-                                         char *gt_brule, char *atype,
-                                         char *geometry, int numbonds,
-                                         double valence, int iAromatic,
-                                         char *neighbors);
+        void  add_bonding_rule(
+            char *gt_brule, char *atype,
+            char *geometry, int numbonds,
+            double valence, int iAromatic,
+            char *neighbors);
 
-int  get_bonding_rule( 
-                                        char **gt_brule, char **atype,
-                                        char **geometry, int *numbonds,
-                                        double *valence, int *iAromatic,
-                                        char **neighbors);
+        int  get_bonding_rule(
+            char **gt_brule, char **atype,
+            char **geometry, int *numbonds,
+            double *valence, int *iAromatic,
+            char **neighbors);
 
-void  add_ptype( 
-                                  const char   *ptype,
-                                  const char   *miller,
-                                  const char   *bosque,
-                                  double        polarizability,
-                                  double        sig_pol);
+        void  add_ptype(
+            const char   *ptype,
+            const char   *miller,
+            const char   *bosque,
+            double        polarizability,
+            double        sig_pol);
 
-void  add_atype(  const char *elem,
-                                  const char *desc,
-                                  const char *atype,
-                                  const char *ptype,
-                                  const char *btype,
-                                  const char *vdwparams,
-                                  double      ref_enthalpy);
+        void  add_atype(  const char *elem,
+                          const char *desc,
+                          const char *atype,
+                          const char *ptype,
+                          const char *btype,
+                          const char *vdwparams,
+                          double      ref_enthalpy);
 
-void  set_ptype_polarizability(  const char *ptype,
-                                                 double polarizability, double sig_pol);
+        void  set_ptype_polarizability(  const char *ptype,
+                                         double polarizability, double sig_pol);
 
-void  set_force_field(  const char *forcefield);
+        void  set_force_field(  const char *forcefield);
 
-void  set_polar_unit(  const char *polar_unit);
+        void  set_polar_unit(  const char *polar_unit);
 
-void  set_polar_ref(  const char *polar_ref);
+        void  set_polar_ref(  const char *polar_ref);
 
-void  set_length_unit(  const char *length_unit);
+        void  set_length_unit(  const char *length_unit);
 
-void  set_vdw_function(  const char *func);
+        void  set_vdw_function(  const char *func);
 
-char * get_vdw_function( );
+        char * get_vdw_function( );
 
-int  get_vdw_ftype( );
+        int  get_vdw_ftype( );
 
-void  set_nexcl(  int nexcl);
+        void  set_nexcl(  int nexcl);
 
-int  get_nexcl( );
+        int  get_nexcl( );
 
-void  set_fudgeQQ(  double fudgeQQ);
+        void  set_fudgeQQ(  double fudgeQQ);
 
-double  get_fudgeQQ( );
+        double  get_fudgeQQ( );
 
-void  set_fudgeLJ(  double fudgeLJ);
+        void  set_fudgeLJ(  double fudgeLJ);
 
-double  get_fudgeLJ( );
+        double  get_fudgeLJ( );
 
-int get_atype_ref_enthalpy( const char *atype,
-			    double *Href);
+        int get_atype_ref_enthalpy( const char *atype,
+                                    double     *Href);
 
-void  set_combination_rule(  char *func);
+        void  set_combination_rule(  char *func);
 
-char * get_combination_rule( );
+        char * get_combination_rule( );
 
-int  get_comb_rule( );
+        int  get_comb_rule( );
 
-char * get_polar_unit( );
+        char * get_polar_unit( );
 
-char * get_polar_ref( );
+        char * get_polar_ref( );
 
-char * get_force_field( );
+        char * get_force_field( );
 
-char * get_length_unit( );
+        char * get_length_unit( );
 
 
 /* Return array of atomtypes compatible with the bonded neighbors.
    The array should be freed, but not the contents of the elements.
  */
-char ** get_bonding_rules(  char *elem,
-                                            int nbond, char *neighbors[],
-                                            const char *geometry,
-                                            int iAromatic);
+        char ** get_bonding_rules(  char *elem,
+                                    int nbond, char *neighbors[],
+                                    const char *geometry,
+                                    int iAromatic);
 
-char * get_geometry(  char *gt_brule);
+        char * get_geometry(  char *gt_brule);
 
-char * get_desc(  char *atype);
+        char * get_desc(  char *atype);
 
 /* Get the charge from the gentop.dat file */
-char * get_charge(  char *atype);
+        char * get_charge(  char *atype);
 
 /* Returns 1 if OK, 0 if last */
-int  get_atype( 
-                                 char        **elem,
-                                 char        **desc,
-                                 char        **atype,
-                                 char        **ptype,
-                                 char        **btype,
-                                 char        **vdwparams,
-                                 double       *ref_enthalpy);
+        int  get_atype(
+            char        **elem,
+            char        **desc,
+            char        **atype,
+            char        **ptype,
+            char        **btype,
+            char        **vdwparams,
+            double       *ref_enthalpy);
 
-int  get_ptype( 
-                                 char        **ptype,
-                                 char        **miller,
-                                 char        **bosque,
-                                 double       *polarizability,
-                                 double       *sig_pol);
+        int  get_ptype(
+            char        **ptype,
+            char        **miller,
+            char        **bosque,
+            double       *polarizability,
+            double       *sig_pol);
 
-const char * atype_to_ptype(  const char *atype);
+        const char * atype_to_ptype(  const char *atype);
 
-const char * atype_to_btype(  const char *atype);
-
-/* Return 1 if OK, 0 if not found */
-int  search_atype( 
-                                    char         *key,
-                                    char        **elem,
-                                    char        **desc,
-                                    char        **atype,
-                                    char        **ptype,
-                                    char        **btype,
-                                    char        **vdwparams);
+        const char * atype_to_btype(  const char *atype);
 
 /* Return 1 if OK, 0 if not found */
-int  get_ptype_pol(  const char *ptype,
-                                     double *polarizability, double *sig_pol);
-int  get_atype_pol(  const char *atype,
-                                     double *polarizability, double *sig_pol);
-
-int get_atype_ref_enthalpy(Poldata * pd, const char *atype,
-                                              double *Href);
+        int  search_atype(
+            char         *key,
+            char        **elem,
+            char        **desc,
+            char        **atype,
+            char        **ptype,
+            char        **btype,
+            char        **vdwparams);
 
 /* Return 1 if OK, 0 if not found */
-int  bonding_rule_valence(  char *gt_brule, double *valence);
+        int  get_ptype_pol(  const char *ptype,
+                             double *polarizability, double *sig_pol);
+        int  get_atype_pol(  const char *atype,
+                             double *polarizability, double *sig_pol);
 
-void  add_miller( 
-                                   char         *miller,
-                                   int           atomnumber,
-                                   double        tau_ahc,
-                                   double        alpha_ahp);
+        int get_atype_ref_enthalpy(Poldata * pd, const char *atype,
+                                   double *Href);
+
+/* Return 1 if OK, 0 if not found */
+        int  bonding_rule_valence(  char *gt_brule, double *valence);
+
+        void  add_miller(
+            char         *miller,
+            int           atomnumber,
+            double        tau_ahc,
+            double        alpha_ahp);
 
 /* Return 1 if "miller" was found */
-int  get_miller_pol( 
-                                      char         *miller,
-                                      int          *atomnumber,
-                                      double       *tau_ahc,
-                                      double       *alpha_ahp);
+        int  get_miller_pol(
+            char         *miller,
+            int          *atomnumber,
+            double       *tau_ahc,
+            double       *alpha_ahp);
 
-int  get_miller( 
-                                  char        **miller,
-                                  int          *atomnumber,
-                                  double       *tau_ahc,
-                                  double       *alpha_ahp);
+        int  get_miller(
+            char        **miller,
+            int          *atomnumber,
+            double       *tau_ahc,
+            double       *alpha_ahp);
 
-void  set_miller_units(  char *tau_unit,
-                                         char *ahp_unit);
+        void  set_miller_units(  char *tau_unit,
+                                 char *ahp_unit);
 
-void  get_miller_units(  char **tau_unit,
-                                         char **ahp_unit);
+        void  get_miller_units(  char **tau_unit,
+                                 char **ahp_unit);
 
 /* Returns miller name or NULL if not found */
-char * ptype_to_miller(  const char *ptype);
+        char * ptype_to_miller(  const char *ptype);
 
-void  add_bosque( 
-                                   char         *bosque,
-                                   double        polarizability);
+        void  add_bosque(
+            char         *bosque,
+            double        polarizability);
 
-int  get_bosque( 
-                                  char        **bosque,
-                                  double       *polarizability);
+        int  get_bosque(
+            char        **bosque,
+            double       *polarizability);
 
-void  set_bosque_unit(  char *polar_unit);
+        void  set_bosque_unit(  char *polar_unit);
 
-char * get_bosque_unit( );
+        char * get_bosque_unit( );
 
 /* Returns bosque name or NULL if not found */
-char * ptype_to_bosque(  const char *ptype);
+        char * ptype_to_bosque(  const char *ptype);
 
-int  get_bosque_pol(  char *bosque, double *polarizability);
+        int  get_bosque_pol(  char *bosque, double *polarizability);
 
 /* Return 1 on success or 0 otherwise */
-int  add_bond(  char *atom1, char *atom2,
-                                double length, double sigma, int ntrain,
-                                double bondorder, char *params);
+        int  add_bond(  char *atom1, char *atom2,
+                        double length, double sigma, int ntrain,
+                        double bondorder, char *params);
 
-int  set_bond_params(  char *atom1, char *atom2,
-                                       double length, double sigma, int ntrain,
-                                       double bondorder, char *params);
-
-/* Return bond-index 1-N or 0 if not found */
-int  get_bond(  char **atom1, char **atom2,
-                                double *length, double *sigma, int *ntrain,
-                                double *bondorder, char **params);
-
-void  set_bond_function(  char *fn);
-char * get_bond_function( );
-int  get_bond_ftype( );
+        int  set_bond_params(  char *atom1, char *atom2,
+                               double length, double sigma, int ntrain,
+                               double bondorder, char *params);
 
 /* Return bond-index 1-N or 0 if not found */
-int  search_bond(  char *atom1, char *atom2,
-                                   double *length, double *sigma, int *ntrain,
-                                   double *bondorder, char **params);
+        int  get_bond(  char **atom1, char **atom2,
+                        double *length, double *sigma, int *ntrain,
+                        double *bondorder, char **params);
+
+        void  set_bond_function(  char *fn);
+        char * get_bond_function( );
+        int  get_bond_ftype( );
+
+/* Return bond-index 1-N or 0 if not found */
+        int  search_bond(  char *atom1, char *atom2,
+                           double *length, double *sigma, int *ntrain,
+                           double *bondorder, char **params);
 
 /* Returns 1 if there is a bond, 0 if not. Toler is absolute in length-units. */
-int  elem_is_bond(  char *elem1, char *elem2,
-                                    double distance, double toler);
+        int  elem_is_bond(  char *elem1, char *elem2,
+                            double distance, double toler);
 
 /* Return maximal valence for a give element */
-double  elem_get_max_valence(  char *elem);
+        double  elem_get_max_valence(  char *elem);
 
 /* Return NULL-terminated array of potential bondorders */
-double * elem_get_bondorders(  char *elem1, char *elem2,
-                                               double distance, double toler);
+        double * elem_get_bondorders(  char *elem1, char *elem2,
+                                       double distance, double toler);
 /* Returns the bondorder. Toler is absolute in length-units. */
-double  atype_bondorder(  char *atype1, char *atype2,
-                                          double distance, double toler);
+        double  atype_bondorder(  char *atype1, char *atype2,
+                                  double distance, double toler);
 
-void  set_angle_function(  char *fn);
-char * get_angle_function( );
-int  get_angle_ftype( );
+        void  set_angle_function(  char *fn);
+        char * get_angle_function( );
+        int  get_angle_ftype( );
 
 /* Return 1 on success, 0 otherwise */
-int  add_angle( 
-                                 char *atom1, char *atom2,
-                                 char *atom3, double angle, double sigma,
-                                 int ntrain, char *params);
+        int  add_angle(
+            char *atom1, char *atom2,
+            char *atom3, double angle, double sigma,
+            int ntrain, char *params);
 
-int  set_angle_params(  char *atom1, char *atom2,
-                                        char *atom3,
-                                        double angle, double sigma, int ntrain, char *params);
-
-/* Return angle-index 1-N or 0 if not found */
-int  get_angle(  char **atom1, char **atom2,
-                                 char **atom3, double *angle, double *sigma,
-                                 int *ntrain, char **params);
+        int  set_angle_params(  char *atom1, char *atom2,
+                                char *atom3,
+                                double angle, double sigma, int ntrain, char *params);
 
 /* Return angle-index 1-N or 0 if not found */
-int  search_angle(  char *atom1, char *atom2,
-                                    char *atom3, double *angle, double *sigma,
-                                    int *ntrain, char **params);
+        int  get_angle(  char **atom1, char **atom2,
+                         char **atom3, double *angle, double *sigma,
+                         int *ntrain, char **params);
 
-void  set_angle_unit(  char *angle_unit);
+/* Return angle-index 1-N or 0 if not found */
+        int  search_angle(  char *atom1, char *atom2,
+                            char *atom3, double *angle, double *sigma,
+                            int *ntrain, char **params);
 
-char * get_angle_unit();
+        void  set_angle_unit(  char *angle_unit);
 
-void  set_dihedral_function(  int egd, char *fn);
-char * get_dihedral_function(  int egd);
-int  get_dihedral_ftype(  int egd);
+        char * get_angle_unit();
+
+        void  set_dihedral_function(  int egd, char *fn);
+        char * get_dihedral_function(  int egd);
+        int  get_dihedral_ftype(  int egd);
 
 /* Return 1 on success or 0 otherwise */
-int  add_dihedral(  int egd, char *atom1, char *atom2,
-                                    char *atom3, char *atom4,
-                                    double dihedral, double sigma,
-                                    int ntrain, char *params);
+        int  add_dihedral(  int egd, char *atom1, char *atom2,
+                            char *atom3, char *atom4,
+                            double dihedral, double sigma,
+                            int ntrain, char *params);
 
-int  set_dihedral_params(  int egd,
-                                           char *atom1, char *atom2,
-                                           char *atom3, char *atom4,
-                                           double angle, double sigma,
-                                           int ntrain, char *params);
-
-/* Return dihedral-index 1-N or 0 if not found */
-int  get_dihedral(  int egd,
-                                    char **atom1, char **atom2,
-                                    char **atom3, char **atom4,
-                                    double *dihedral, double *sigma,
-                                    int *ntrain, char **params);
+        int  set_dihedral_params(  int egd,
+                                   char *atom1, char *atom2,
+                                   char *atom3, char *atom4,
+                                   double angle, double sigma,
+                                   int ntrain, char *params);
 
 /* Return dihedral-index 1-N or 0 if not found */
-int  search_dihedral(  int egd,
-                                       char *atom1, char *atom2,
-                                       char *atom3, char *atom4,
-                                       double *dihedral, double *sigma,
-                                       int *ntrain, char **params);
+        int  get_dihedral(  int egd,
+                            char **atom1, char **atom2,
+                            char **atom3, char **atom4,
+                            double *dihedral, double *sigma,
+                            int *ntrain, char **params);
 
-void  set_dihedral_unit(  int egd,
-                                          char *dihedral_unit);
+/* Return dihedral-index 1-N or 0 if not found */
+        int  search_dihedral(  int egd,
+                               char *atom1, char *atom2,
+                               char *atom3, char *atom4,
+                               double *dihedral, double *sigma,
+                               int *ntrain, char **params);
 
-char * get_dihedral_unit(  int egd);
+        void  set_dihedral_unit(  int   egd,
+                                  char *dihedral_unit);
 
-void  add_symcharges(  char *central,
-                                       char *attached, int numattach);
+        char * get_dihedral_unit(  int egd);
 
-int  get_symcharges(  char **central,
-                                      char **attached, int *numattach);
+        void  add_symcharges(  char *central,
+                               char *attached, int numattach);
 
-int  search_symcharges(  char *central,
-                                         char *attached, int numattach);
+        int  get_symcharges(  char **central,
+                              char **attached, int *numattach);
 
-static ChargeDistributionModel name2eemtype(const char *name);
+        int  search_symcharges(  char *central,
+                                 char *attached, int numattach);
 
-static const char *get_eemtype_name(ChargeDistributionModel eem);
+        static ChargeDistributionModel name2eemtype(const char *name);
 
-char * get_eemref(  ChargeDistributionModel eqd_model);
+        static const char *get_eemtype_name(ChargeDistributionModel eem);
 
-int  get_numprops(  ChargeDistributionModel eqd_model);
+        char * get_eemref(  ChargeDistributionModel eqd_model);
 
-int  have_pol_support(  const char *atype);
+        int  get_numprops(  ChargeDistributionModel eqd_model);
 
-int  have_eem_support(  ChargeDistributionModel eqd_model,
-                                        const char *name,
-                                        gmx_bool bAllowZeroParameters);
+        int  have_pol_support(  const char *atype);
 
-double  get_j00(  ChargeDistributionModel eqd_model, char *name);
+        int  have_eem_support(  ChargeDistributionModel eqd_model,
+                                const char             *name,
+                                gmx_bool                bAllowZeroParameters);
 
-int  get_nzeta(  ChargeDistributionModel eqd_model, char *name);
+        double  get_j00(  ChargeDistributionModel eqd_model, char *name);
 
-double  get_zeta(  ChargeDistributionModel eqd_model, char *name, int zz);
+        int  get_nzeta(  ChargeDistributionModel eqd_model, char *name);
 
-char * get_qstr(  ChargeDistributionModel eqd_model, char *name);
+        double  get_zeta(  ChargeDistributionModel eqd_model, char *name, int zz);
 
-char * get_rowstr(  ChargeDistributionModel eqd_model, char *name);
+        char * get_qstr(  ChargeDistributionModel eqd_model, char *name);
 
-double  get_q(  ChargeDistributionModel eqd_model, char *name, int zz);
+        char * get_rowstr(  ChargeDistributionModel eqd_model, char *name);
 
-int  get_row(  ChargeDistributionModel eqd_model, char *name, int zz);
+        double  get_q(  ChargeDistributionModel eqd_model, char *name, int zz);
 
-double  get_chi0(  ChargeDistributionModel eqd_model, char *name);
+        int  get_row(  ChargeDistributionModel eqd_model, char *name, int zz);
 
-char * get_opts(  ChargeDistributionModel eqd_model, char *name);
+        double  get_chi0(  ChargeDistributionModel eqd_model, char *name);
 
-void  set_eemprops( 
-                                     ChargeDistributionModel eqd_model, char *name,
-                                     double J0, double chi0,
-                                     char *zeta, char *q, char *row);
+        char * get_opts(  ChargeDistributionModel eqd_model, char *name);
 
-int  get_eemprops( 
-                                    ChargeDistributionModel *eqd_model, char **name,
-                                    double *J0, double *chi0,
-                                    char **zeta, char **q, char **row);
+        void  set_eemprops(
+            ChargeDistributionModel eqd_model, char *name,
+            double J0, double chi0,
+            char *zeta, char *q, char *row);
 
-void  set_epref(  ChargeDistributionModel eqd_model, char *epref);
+        int  get_eemprops(
+            ChargeDistributionModel *eqd_model, char **name,
+            double *J0, double *chi0,
+            char **zeta, char **q, char **row);
 
-char * get_epref(ChargeDistributionModel eqd_model);
+        void  set_epref(  ChargeDistributionModel eqd_model, char *epref);
 
-int list_epref(  ChargeDistributionModel *eqd_model, char **epref);
+        char * get_epref(ChargeDistributionModel eqd_model);
 
-void  comm_eemprops(  t_commrec *cr);
+        int list_epref(  ChargeDistributionModel *eqd_model, char **epref);
 
-void  comm_force_parameters( t_commrec *cr);
+        void  comm_eemprops(  t_commrec *cr);
+
+        void  comm_force_parameters( t_commrec *cr);
 };
 }
 #endif

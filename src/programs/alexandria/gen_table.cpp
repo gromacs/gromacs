@@ -1022,7 +1022,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
     int                        natypemax = 32, natype = 0;
     int                        nzi0, nzi1, nzk0, nzk1;
     char                       buf[STRLEN], fnbuf[STRLEN];
-    char                       *ns[2] = {"","_s"};
+    const char                *ns[2] = {"", "_s"};
 
     gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv);
     snew(name, natypemax);
@@ -1032,8 +1032,8 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
     snew(q, natypemax);
     snew(row, natypemax);
     while (1 == pd->get_eemprops( &eqg_model, &name[natype],
-                                         &J0[natype], &chi0[natype],
-                                         NULL, NULL, NULL))
+                                  &J0[natype], &chi0[natype],
+                                  NULL, NULL, NULL))
     {
         if (eqg_model == iDistributionModel)
         {
@@ -1131,7 +1131,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
                                         dV  = Coulomb_SS(rr, row[i][j], row[k][l],
                                                          zeta[i][j], zeta[k][l]);
                                         dVp = -1*DCoulomb_SS(rr, row[i][j], row[k][l],
-                                                          zeta[i][j], zeta[k][l]);
+                                                             zeta[i][j], zeta[k][l]);
                                         break;
                                     default:
                                         gmx_fatal(FARGS, "Don't know how to handle model %s",
@@ -1156,14 +1156,16 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
                                 V  += dV*(qij*qkl);
                                 Vp += dVp*(qij*qkl);
                             }
-                        } 
-			double r = rr;
-			if(r>0){
-			  lo_do_ljc(r, &vc, &fc, &vd, &fd, &vr, &fr);
-			}
-			else {
-			  vc = fc = vd = fd= vr = fr = 0;
-			}
+                        }
+                        double r = rr;
+                        if (r > 0)
+                        {
+                            lo_do_ljc(r, &vc, &fc, &vd, &fd, &vr, &fr);
+                        }
+                        else
+                        {
+                            vc = fc = vd = fd = vr = fr = 0;
+                        }
                         fprintf(fp, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, V, Vp, vd, fd, vr, fr);
                     }
                     fclose(fp);
@@ -1305,7 +1307,7 @@ int alex_gen_table(int argc, char *argv[])
 #define NFILE asize(fnm)
     FILE                         *fp;
     const char                   *fn;
-    Poldata *                 pd;
+    Poldata     *                 pd;
     gmx_atomprop_t                aps;
     int                           eel = 0, m = 0;
     ChargeDistributionModel       iDistributionModel;
