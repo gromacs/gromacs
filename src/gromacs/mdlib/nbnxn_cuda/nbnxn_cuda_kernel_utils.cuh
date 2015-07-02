@@ -37,13 +37,14 @@
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
  */
+
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
-
-#if __CUDA_ARCH__ >= 300
+#if GMX_PTX_ARCH >= 300
 /* Note: convenience macro, needs to be undef-ed at the end of the file. */
 #define USE_TEXOBJ
 #endif
@@ -393,7 +394,7 @@ void reduce_force_j_generic(float *f_buf, float3 *fout,
 /*! Final j-force reduction; this implementation only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
+#if GMX_PTX_ARCH >= 300
 static inline __device__
 void reduce_force_j_warp_shfl(float3 f, float3 *fout,
                               int tidxi, int aidx)
@@ -517,7 +518,7 @@ void reduce_force_i(float *f_buf, float3 *f,
 /*! Final i-force reduction; this implementation works only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
+#if GMX_PTX_ARCH >= 300
 static inline __device__
 void reduce_force_i_warp_shfl(float3 fin, float3 *fout,
                               float *fshift_buf, bool bCalcFshift,
@@ -594,7 +595,7 @@ void reduce_energy_pow2(volatile float *buf,
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes and with sm >= 3.0
  */
-#if __CUDA_ARCH__ >= 300
+#if GMX_PTX_ARCH >= 300
 static inline __device__
 void reduce_energy_warp_shfl(float E_lj, float E_el,
                              float *e_lj, float *e_el,
@@ -618,7 +619,7 @@ void reduce_energy_warp_shfl(float E_lj, float E_el,
         atomicAdd(e_el, E_el);
     }
 }
-#endif /* __CUDA_ARCH__ */
+#endif /* GMX_PTX_ARCH */
 
 #undef USE_TEXOBJ
 
