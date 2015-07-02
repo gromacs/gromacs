@@ -603,7 +603,7 @@ int setup_specat_communication(gmx_domdec_t             *dd,
                   dd->ci[XX], dd->ci[YY], dd->ci[ZZ],
                   nrecv_local, ireq->n, specat_type,
                   specat_type, add_err,
-                  dd->bGridJump ? " or use the -rcon option of mdrun" : "");
+                  dd_dlb_is_on(dd) ? " or use the -rcon option of mdrun" : "");
     }
 
     spac->at_start = at_start;

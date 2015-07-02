@@ -161,7 +161,6 @@ struct gmx_domdec_t {
     ivec     nc;
     int      ndim;
     ivec     dim; /* indexed by 0 to ndim */
-    gmx_bool bGridJump;
 
     /* PBC from dim 0 to npbcdim */
     int npbcdim;
