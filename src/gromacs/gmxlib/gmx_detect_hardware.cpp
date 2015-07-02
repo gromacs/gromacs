@@ -77,28 +77,30 @@
 
 
 #ifdef GMX_GPU
-const gmx_bool bGPUBinary = TRUE;
+static const bool  bGPUBinary = TRUE;
 #  ifdef GMX_USE_OPENCL
-const char    *gpu_implementation        = "OpenCL";
+static const char *gpu_implementation       = "OpenCL";
 /* Our current OpenCL implementation only supports using exactly one
  * GPU per PP rank, so sharing is impossible */
-const gmx_bool bGpuSharingSupported      = FALSE;
+static const bool bGpuSharingSupported      = false;
 /* Our current OpenCL implementation is not known to handle
  * concurrency correctly (at context creation, JIT compilation, or JIT
  * cache-management stages). OpenCL runtimes need not support it
  * either; library MPI segfaults when creating OpenCL contexts;
  * thread-MPI seems to work but is not yet known to be safe. */
-const gmx_bool bMultiGpuPerNodeSupported = FALSE;
-#  else
-const char    *gpu_implementation        = "CUDA";
-const gmx_bool bGpuSharingSupported      = TRUE;
-const gmx_bool bMultiGpuPerNodeSupported = TRUE;
+static const bool bMultiGpuPerNodeSupported = false;
+#  else /* GMX_USE_OPENCL */
+// Our CUDA implementation supports everything
+static const char *gpu_implementation        = "CUDA";
+static const bool  bGpuSharingSupported      = true;
+static const bool  bMultiGpuPerNodeSupported = true;
 #  endif
-#else
-const gmx_bool bGPUBinary                = FALSE;
-const char    *gpu_implementation        = "non-GPU";
-const gmx_bool bGpuSharingSupported      = FALSE;
-const gmx_bool bMultiGpuPerNodeSupported = FALSE;
+#else /* GMX_GPU */
+// Not compiled with GPU support
+static const bool  bGPUBinary                = false;
+static const char *gpu_implementation        = "non-GPU";
+static const bool  bGpuSharingSupported      = false;
+static const bool  bMultiGpuPerNodeSupported = false;
 #endif
 
 /* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
@@ -123,6 +125,16 @@ static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank);
 static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
                                     const gmx_gpu_opt_t  *gpu_opt);
+
+gmx_bool gmx_multiple_gpu_per_node_supported()
+{
+    return bMultiGpuPerNodeSupported;
+}
+
+gmx_bool gmx_gpu_sharing_supported()
+{
+    return bMultiGpuPerNodeSupported;
+}
 
 static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info)
 {
@@ -440,7 +452,8 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
         }
         else
         {
-            if (ngpu_comp > npppn)
+            /* TODO Should we have a gpu_opt->n_dev_supported field? */
+            if (ngpu_comp > npppn && gmx_multiple_gpu_per_node_supported())
             {
                 md_print_warn(cr, fplog,
                               "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
@@ -460,13 +473,26 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
                  */
                 if (cr->rank_pp_intranode == 0)
                 {
+                    std::string reasonForLimit;
+                    if (ngpu_comp > 1 &&
+                        ngpu_use == 1 &&
+                        !gmx_multiple_gpu_per_node_supported())
+                    {
+                        reasonForLimit  = "can be used by ";
+                        reasonForLimit += gpu_implementation;
+                        reasonForLimit += " in GROMACS";
+                    }
+                    else
+                    {
+                        reasonForLimit = "was detected";
+                    }
                     gmx_fatal(FARGS,
                               "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
-                              "%s was started with %d PP %s%s%s, but only %d GPU%s were detected.",
+                              "%s was started with %d PP %s%s%s, but only %d GPU%s %s.",
                               th_or_proc, btMPI ? "s" : "es", pernode,
                               ShortProgram(), npppn, th_or_proc,
                               th_or_proc_plural, pernode,
-                              ngpu_use, gpu_use_plural);
+                              ngpu_use, gpu_use_plural, reasonForLimit.c_str());
                 }
             }
         }
@@ -552,7 +578,7 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     {
         int device_id;
 
-        device_id           = bGpuSharingSupported ? get_gpu_device_id(gpu_info, gpu_opt, i) : i;
+        device_id           = gmx_gpu_sharing_supported() ? get_gpu_device_id(gpu_info, gpu_opt, i) : i;
         uniq_ids[device_id] = 1;
     }
     /* Count the devices used. */
@@ -1121,11 +1147,11 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
         parse_digits_from_plain_string(env,
                                        &gpu_opt->n_dev_use,
                                        &gpu_opt->dev_use);
-        if (!bMultiGpuPerNodeSupported && 1 < gpu_opt->n_dev_use)
+        if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt->n_dev_use)
         {
             gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", gpu_implementation);
         }
-        if (!bGpuSharingSupported && anyGpuIdIsRepeated(gpu_opt))
+        if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(gpu_opt))
         {
             gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", gpu_implementation);
         }
@@ -1231,7 +1257,7 @@ static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     {
         if (nrank % gpu_opt->n_dev_compatible == 0)
         {
-            nshare = bGpuSharingSupported ? nrank/gpu_opt->n_dev_compatible : 1;
+            nshare = gmx_gpu_sharing_supported() ? nrank/gpu_opt->n_dev_compatible : 1;
         }
         else
         {
@@ -1252,7 +1278,7 @@ static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
 
     /* Here we will waste GPUs when nrank < gpu_opt->n_dev_compatible */
     gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_compatible*nshare, nrank);
-    if (!bMultiGpuPerNodeSupported)
+    if (!gmx_multiple_gpu_per_node_supported())
     {
         gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_use, 1);
     }

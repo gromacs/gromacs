@@ -104,13 +104,6 @@ const int nthreads_omp_mpi_ok_min_gpu          =  2;
 const int nthreads_omp_mpi_target_max          =  6;
 
 
-#ifdef GMX_USE_OPENCL
-static const bool bGpuSharingSupported = false;
-#else
-static const bool bGpuSharingSupported = true;
-#endif
-
-
 static int nthreads_omp_always_faster(gmx_cpuid_t cpuid_info, gmx_bool bUseGPU)
 {
     int nth;
@@ -161,7 +154,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
             /* #thread < #gpu is very unlikely, but if so: waste gpu(s) */
             nrank = nthreads_tot;
         }
-        else if (bGpuSharingSupported &&
+        else if (gmx_gpu_sharing_supported() &&
                  (nthreads_tot > nthreads_omp_always_faster(hwinfo->cpuid_info,
                                                             ngpu > 0) ||
                   (ngpu > 1 && nthreads_tot/ngpu > nthreads_omp_mpi_target_max)))
@@ -270,7 +263,18 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                   hwinfo->gpu_info.n_dev_compatible > 0);
     if (bCanUseGPU)
     {
-        ngpu = hwinfo->gpu_info.n_dev_compatible;
+        if (gmx_multiple_gpu_per_node_supported())
+        {
+            ngpu = hwinfo->gpu_info.n_dev_compatible;
+        }
+        else
+        {
+            if (hwinfo->gpu_info.n_dev_compatible > 1)
+            {
+                md_print_warn(cr, fplog, "More than one compatible GPU is available, but GROMACS can only use one of them. Using a single thread-MPI thread.\n");
+            }
+            ngpu = 1;
+        }
     }
     else
     {
@@ -435,7 +439,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     if (DOMAINDECOMP(cr) && cr->nnodes > 1)
     {
         if (nth_omp_max < nthreads_omp_mpi_ok_min ||
-            (!(ngpu > 0 && !bGpuSharingSupported) &&
+            (!(ngpu > 0 && !gmx_gpu_sharing_supported()) &&
              nth_omp_max > nthreads_omp_mpi_ok_max))
         {
             /* Note that we print target_max here, not ok_max */
@@ -461,7 +465,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     else
     {
         /* No domain decomposition (or only one domain) */
-        if (!(ngpu > 0 && !bGpuSharingSupported) &&
+        if (!(ngpu > 0 && !gmx_gpu_sharing_supported()) &&
             nth_omp_max > nthreads_omp_always_faster(hwinfo->cpuid_info, ngpu > 0))
         {
             /* To arrive here, the user/system set #ranks and/or #OMPthreads */
