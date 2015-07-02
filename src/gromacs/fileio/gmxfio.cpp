@@ -185,8 +185,6 @@ static void gmx_fio_insert(t_fileio *fio)
    NOTE: We also assume that the open_file_mutex has been locked */
 static void gmx_fio_remove(t_fileio *fio)
 {
-    t_fileio *prev;
-
     /* lock prev, because we're changing it */
     gmx_fio_lock(fio->prev);
 
@@ -275,10 +273,8 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
 t_fileio *gmx_fio_open(const char *fn, const char *mode)
 {
     t_fileio *fio = NULL;
-    int       i;
     char      newmode[5];
     gmx_bool  bRead, bReadWrite;
-    int       xdrid;
 
     /* sanitize the mode string */
     if (strncmp(mode, "r+", 2) == 0)
@@ -464,7 +460,7 @@ int gmx_fio_fp_close(t_fileio *fio)
 
 FILE * gmx_fio_fopen(const char *fn, const char *mode)
 {
-    FILE     *fp, *ret;
+    FILE     *ret;
     t_fileio *fio;
 
     fio = gmx_fio_open(fn, mode);
@@ -478,7 +474,6 @@ FILE * gmx_fio_fopen(const char *fn, const char *mode)
 int gmx_fio_fclose(FILE *fp)
 {
     t_fileio *cur;
-    t_fileio *found = NULL;
     int       rc    = -1;
 
     cur = gmx_fio_get_first();
@@ -608,8 +603,6 @@ int gmx_fio_get_file_md5(t_fileio *fio, gmx_off_t offset,
 /* The fio_mutex should ALWAYS be locked when this function is called */
 static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
 {
-    char buf[STRLEN];
-
     /* Flush the file, so we are sure it is written */
     if (gmx_fio_int_flush(fio))
     {
@@ -635,11 +628,8 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
 int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
                                       int                  *p_nfiles)
 {
-    int                   i, nfiles, rc, nalloc;
-    int                   pos_hi, pos_lo;
-    long                  pos;
+    int                   nfiles, nalloc;
     gmx_file_position_t * outputfiles;
-    char                  buf[STRLEN];
     t_fileio             *cur;
 
     nfiles = 0;
@@ -655,7 +645,6 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
            we call this routine... */
         if (cur->bOpen && !cur->bRead && cur->iFTP != efCPT)
         {
-            int ret;
             /* This is an output file currently open for writing, add it */
             if (nfiles == nalloc)
             {
@@ -754,8 +743,6 @@ int gmx_fio_flush(t_fileio* fio)
 static int gmx_fio_int_fsync(t_fileio *fio)
 {
     int rc    = 0;
-    int filen = -1;
-
 
     if (fio->fp)
     {
