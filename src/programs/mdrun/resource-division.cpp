@@ -111,6 +111,9 @@ static const bool bGpuSharingSupported = true;
 #endif
 
 
+/* Returns the maximum OpenMP thread count for which using a single MPI rank
+ * could be faster than using multiple ranks with the same total thread count.
+ */
 static int nthreads_omp_always_faster(gmx_cpuid_t cpuid_info, gmx_bool bUseGPU)
 {
     int nth;
@@ -139,6 +142,24 @@ static int nthreads_omp_always_faster(gmx_cpuid_t cpuid_info, gmx_bool bUseGPU)
     return nth;
 }
 
+/* Returns that maximum OpenMP thread count that passes the efficiency check */
+static int nthreads_omp_efficient_max(int         nrank,
+                                      gmx_cpuid_t cpuid_info,
+                                      gmx_bool    bUseGPU)
+{
+    if (nrank > 1)
+    {
+        return nthreads_omp_mpi_ok_max;
+    }
+    else
+    {
+        return nthreads_omp_always_faster(cpuid_info, bUseGPU);
+    }
+}
+
+/* Return the number of thread-MPI ranks to use.
+ * This is chosen such that we can always obey our own efficiency checks.
+ */
 static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
                                         int                  nthreads_tot,
@@ -210,6 +231,23 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
 }
 
 
+static int getMaxGpuUsable(const gmx_hw_info_t *hwinfo, int cutoff_scheme)
+{
+    /* This code relies on the fact that GPU are not detected when GPU
+     * acceleration was disabled at run time by the user.
+     */
+    if (cutoff_scheme == ecutsVERLET &&
+        hwinfo->gpu_info.n_dev_compatible > 0)
+    {
+        return hwinfo->gpu_info.n_dev_compatible;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
 #ifdef GMX_THREAD_MPI
 /* Get the number of MPI ranks to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
@@ -219,7 +257,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
  * with the hardware, except that ntmpi could be larger than #GPU.
  */
 int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
-                     const gmx_hw_opt_t  *hw_opt,
+                     gmx_hw_opt_t        *hw_opt,
                      const t_inputrec    *inputrec,
                      const gmx_mtop_t    *mtop,
                      const t_commrec     *cr,
@@ -227,7 +265,6 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 {
     int      nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int      min_atoms_per_mpi_rank;
-    gmx_bool bCanUseGPU;
 
     /* Check if an algorithm does not support parallel simulation.  */
     if (inputrec->eI == eiLBFGS ||
@@ -266,16 +303,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         nthreads_tot_max = nthreads_hw;
     }
 
-    bCanUseGPU = (inputrec->cutoff_scheme == ecutsVERLET &&
-                  hwinfo->gpu_info.n_dev_compatible > 0);
-    if (bCanUseGPU)
-    {
-        ngpu = hwinfo->gpu_info.n_dev_compatible;
-    }
-    else
-    {
-        ngpu = 0;
-    }
+    ngpu = getMaxGpuUsable(hwinfo, inputrec->cutoff_scheme);
 
     if (inputrec->cutoff_scheme == ecutsGROUP)
     {
@@ -297,7 +325,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     }
     else
     {
-        if (bCanUseGPU)
+        if (ngpu >= 1)
         {
             min_atoms_per_mpi_rank = min_atoms_per_gpu;
         }
@@ -361,6 +389,26 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         }
 
         nrank = nrank_new;
+
+        /* We reduced the number of tMPI ranks, which means we might violate
+         * our own efficiency checks if we simply use all hardware threads.
+         */
+        if (hw_opt->nthreads_omp <= 0 && hw_opt->nthreads_tot <= 0)
+        {
+            /* The user set neither the total nor the OpenMP thread count,
+             * we should use all hardware threads, unless we will violate
+             * our own efficiency limitation on the thread count.
+             */
+            int  nt_omp_max;
+
+            nt_omp_max = nthreads_omp_efficient_max(nrank, hwinfo->cpuid_info, ngpu >= 1);
+
+            if (nrank*nt_omp_max < hwinfo->nthreads_hw_avail)
+            {
+                /* Limit the number of OpenMP threads to start */
+                hw_opt->nthreads_omp = nt_omp_max;
+            }
+        }
 
         fprintf(stderr, "\n");
         fprintf(stderr, "NOTE: Parallelization is limited by the small number of atoms,\n");
