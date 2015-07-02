@@ -45,9 +45,10 @@
  * At the point we have already called check_and_update_hw_opt.
  * Thus all options should be internally consistent and consistent
  * with the hardware, except that ntmpi could be larger than #GPU.
+ * If necessary, this function will modify hw_opt->nthreads_omp.
  */
 int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
-                     const gmx_hw_opt_t  *hw_opt,
+                     gmx_hw_opt_t        *hw_opt,
                      const t_inputrec    *inputrec,
                      const gmx_mtop_t    *mtop,
                      const t_commrec     *cr,
@@ -58,12 +59,12 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
  * intended to catch cases where the user starts 1 MPI rank per hardware
  * thread or 1 rank per physical node.
  * With a sub-optimal setup a note is printed to fplog and stderr when
- * bNtOptSet==TRUE; with bNtOptSet==FALSE a fatal error is issued.
+ * bNtOmpSet==TRUE; with bNtOptOptionSet==FALSE a fatal error is issued.
  * This function should be called after thread-MPI and OpenMP are set up.
  */
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
-                                        gmx_bool             bNTOptSet,
+                                        gmx_bool             bNtOmpOptionSet,
                                         t_commrec           *cr,
                                         FILE                *fplog);
 
