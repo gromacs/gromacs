@@ -262,12 +262,12 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         int ngroup;
 
         pcrd = &pull->coord[i-1];
-        sprintf(buf, "pull-coord%d-groups", i);
-        STYPE(buf,              groups, "");
         sprintf(buf, "pull-coord%d-type", i);
         EETYPE(buf,             pcrd->eType, epull_names);
         sprintf(buf, "pull-coord%d-geometry", i);
         EETYPE(buf,             pcrd->eGeom, epullg_names);
+        sprintf(buf, "pull-coord%d-groups", i);
+        STYPE(buf,              groups, "");
 
         nscan  = sscanf(groups, "%d %d %d %d %d", &pcrd->group[0], &pcrd->group[1],  &pcrd->group[2], &pcrd->group[3], &idum);
         ngroup = (pcrd->eGeom == epullgDIRRELATIVE) ? 4 : 2;
