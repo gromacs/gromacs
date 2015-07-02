@@ -211,15 +211,21 @@ macro(GMX_SET_CUDA_NVCC_FLAGS)
         # the C++11 flag to CUDA. Then we can use the solution implemented in FindCUDA
         # (starting with 3.3 - can be backported). For now we need to remove the C++11
         # flag which means we need to manually propagate all other flags.
-        string(REGEX REPLACE "[-]+std=c\\+\\+0x" "" _CMAKE_CXX_FLAGS_NOCXX11 "${CMAKE_CXX_FLAGS}")
+        string(REGEX REPLACE "[-]+std=c\\+\\+0x" "" _CMAKE_CXX_FLAGS_SANITIZED "${CMAKE_CXX_FLAGS}")
 
         # The IBM xlc compiler chokes if we use both altivec and Cuda. Solve
         # this by not propagating the flag in this case.
         if(CMAKE_CXX_COMPILER_ID MATCHES "XL")
-            string(REGEX REPLACE "-qaltivec" "" _CMAKE_CXX_FLAGS_NOCXX11 "${_CMAKE_CXX_FLAGS_NOCXX11}")
+            string(REGEX REPLACE "-qaltivec" "" _CMAKE_CXX_FLAGS_SANITIZED "${_CMAKE_CXX_FLAGS_SANITIZED}")
         endif()
 
-        string(REPLACE " " "," _flags "${_CMAKE_CXX_FLAGS_NOCXX11}")
+        # CUDA versions prior to 7.5 come with a header (math_functions.h) which uses the _MSC_VER macro
+        # unconditionally, so we strip -Wundef from the propagatest flags for earlier CUDA versions.
+        if (CUDA_VERSION VERSION_LESS "7.5")
+            string(REGEX REPLACE "-Wundef" "" _CMAKE_CXX_FLAGS_SANITIZED "${_CMAKE_CXX_FLAGS_SANITIZED}")
+        endif()
+
+        string(REPLACE " " "," _flags "${_CMAKE_CXX_FLAGS_SANITIZED}")
         set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS};-Xcompiler;${_flags}")
 
         # Create list of all possible configurations. For multi-configuration this is CMAKE_CONFIGURATION_TYPES
