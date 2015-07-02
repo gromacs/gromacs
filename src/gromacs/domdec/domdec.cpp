@@ -216,9 +216,20 @@ enum {
 };
 
 enum {
-    edlbAUTO, edlbNO, edlbYES, edlbNR
+    edlbsOffForever,           /* DLB is off and will never be turned on */
+    edlbsOffCanTurnOn,         /* DLB is off and will turn on with imbalance */
+    edlbsOffTemporarilyLocked, /* DLB is off and temporarily can not turn on */
+    edlbsOn,                   /* DLB is on and will stay on forever */
+    edlbsNR
 };
-const char *edlb_names[edlbNR] = { "auto", "no", "yes" };
+/* Allowed DLB state transitions:
+ *   edlbsOffCanTurnOn         -> edlbsOn
+ *   edlbsOffCanTurnOn         -> edlbsOffForever
+ *   edlbsOffCanTurnOn         -> edlbsOffTemporarilyLocked
+ *   edlbsOffTemporarilyLocked -> edlbsOffCanTurnOn
+ */
+
+const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on" };
 
 typedef struct
 {
@@ -297,14 +308,10 @@ typedef struct gmx_domdec_comm
     t_blocka *cglink;
     char     *bLocalCG;
 
-    /* The DLB option */
-    int      eDLB;
-    /* Is eDLB=edlbAUTO locked such that we currently can't turn it on? */
-    gmx_bool bDLB_locked;
-    /* With eDLB=edlbAUTO, should we check if to DLB on at the next DD? */
+    /* The DLB state, possible values are defined above */
+    int      dlbState;
+    /* With dlbState=edlbsOffCanTurnOn, should we check if to DLB on at the next DD? */
     gmx_bool bCheckWhetherToTurnDlbOn;
-    /* Are we actually using DLB? */
-    gmx_bool bDynLoadBal;
 
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac;
@@ -3219,7 +3226,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
         }
     }
 
-    if (!comm->bDynLoadBal)
+    if (comm->dlbState != edlbsOn)
     {
         copy_rvec(cellsize_min, comm->cellsize_min);
     }
@@ -3815,7 +3822,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,
     copy_rvec(comm->cell_x0, comm->old_cell_x0);
     copy_rvec(comm->cell_x1, comm->old_cell_x1);
 
-    if (comm->bDynLoadBal)
+    if (comm->dlbState == edlbsOn)
     {
         if (DDMASTER(dd))
         {
@@ -3856,7 +3863,7 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t *dd,
         /* Without PBC we don't have restrictions on the outer cells */
         if (!(dim >= ddbox->npbcdim &&
               (dd->ci[dim] == 0 || dd->ci[dim] == dd->nc[dim] - 1)) &&
-            comm->bDynLoadBal &&
+            comm->dlbState == edlbsOn &&
             (comm->cell_x1[dim] - comm->cell_x0[dim])*ddbox->skew_fac[dim] <
             comm->cellsize_min[dim])
         {
@@ -5357,7 +5364,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
             if (dd->ci[dim] == dd->master_ci[dim])
             {
                 /* We are the root, process this row */
-                if (comm->bDynLoadBal)
+                if (comm->dlbState == edlbsOn)
                 {
                     root = comm->root[d];
                 }
@@ -5408,7 +5415,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
                         pos++;
                     }
                 }
-                if (comm->bDynLoadBal && root->bLimited)
+                if (comm->dlbState == edlbsOn && root->bLimited)
                 {
                     load->sum_m *= dd->nc[dim];
                     load->flags |= (1<<d);
@@ -5423,7 +5430,7 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
         comm->load_step  += comm->cycl[ddCyclStep];
         comm->load_sum   += comm->load[0].sum;
         comm->load_max   += comm->load[0].max;
-        if (comm->bDynLoadBal)
+        if (comm->dlbState == edlbsOn)
         {
             for (d = 0; d < dd->ndim; d++)
             {
@@ -5492,7 +5499,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
             fprintf(stderr, "%s", buf);
         }
         bLim = FALSE;
-        if (comm->bDynLoadBal)
+        if (comm->dlbState == edlbsOn)
         {
             sprintf(buf, " Steps where the load balancing was limited by -rdd, -rcon and/or -dds:");
             for (d = 0; d < dd->ndim; d++)
@@ -5535,7 +5542,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
             sprintf(buf,
                     "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
                     "      in the domain decomposition.\n", lossf*100);
-            if (!comm->bDynLoadBal)
+            if (comm->dlbState != edlbsOn)
             {
                 sprintf(buf+strlen(buf), "      You might want to use dynamic load balancing (option -dlb.)\n");
             }
@@ -5613,7 +5620,7 @@ static void dd_print_load(FILE *fplog, gmx_domdec_t *dd, gmx_int64_t step)
         fprintf(fplog, "\n");
     }
     fprintf(fplog, "DD  step %s", gmx_step_str(step, buf));
-    if (dd->comm->bDynLoadBal)
+    if (dd->comm->dlbState == edlbsOn)
     {
         fprintf(fplog, "  vol min/aver %5.3f%c",
                 dd_vol_min(dd), flags ? '!' : ' ');
@@ -5631,7 +5638,7 @@ static void dd_print_load(FILE *fplog, gmx_domdec_t *dd, gmx_int64_t step)
 
 static void dd_print_load_verbose(gmx_domdec_t *dd)
 {
-    if (dd->comm->bDynLoadBal)
+    if (dd->comm->dlbState == edlbsOn)
     {
         fprintf(stderr, "vol %4.2f%c ",
                 dd_vol_min(dd), dd_load_flags(dd) ? '!' : ' ');
@@ -5672,7 +5679,7 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
     if (bPartOfGroup)
     {
         dd->comm->mpi_comm_load[dim_ind] = c_row;
-        if (dd->comm->eDLB != edlbNO)
+        if (dd->comm->dlbState != edlbsOffForever)
         {
             if (dd->ci[dim] == dd->master_ci[dim])
             {
@@ -5966,7 +5973,7 @@ void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd)
         }
     }
 
-    if (dd->comm->eDLB != edlbNO)
+    if (dd->comm->dlbState != edlbsOffForever)
     {
         snew(dd->comm->root, dd->ndim);
     }
@@ -6543,60 +6550,60 @@ static int check_dlb_support(FILE *fplog, t_commrec *cr,
                              const char *dlb_opt, gmx_bool bRecordLoad,
                              unsigned long Flags, t_inputrec *ir)
 {
-    int           eDLB = -1;
+    int           dlbState = -1;
     char          buf[STRLEN];
 
     switch (dlb_opt[0])
     {
-        case 'a': eDLB = edlbAUTO; break;
-        case 'n': eDLB = edlbNO;   break;
-        case 'y': eDLB = edlbYES;  break;
+        case 'a': dlbState = edlbsOffCanTurnOn; break;
+        case 'n': dlbState = edlbsOffForever;   break;
+        case 'y': dlbState = edlbsOn;           break;
         default: gmx_incons("Unknown dlb_opt");
     }
 
     if (Flags & MD_RERUN)
     {
-        return edlbNO;
+        return edlbsOffForever;
     }
 
     if (!EI_DYNAMICS(ir->eI))
     {
-        if (eDLB == edlbYES)
+        if (dlbState == edlbsOn)
         {
             sprintf(buf, "NOTE: dynamic load balancing is only supported with dynamics, not with integrator '%s'\n", EI(ir->eI));
             dd_warning(cr, fplog, buf);
         }
 
-        return edlbNO;
+        return edlbsOffForever;
     }
 
     if (!bRecordLoad)
     {
         dd_warning(cr, fplog, "NOTE: Cycle counting is not supported on this architecture, will not use dynamic load balancing\n");
 
-        return edlbNO;
+        return edlbsOffForever;
     }
 
     if (Flags & MD_REPRODUCIBLE)
     {
-        switch (eDLB)
+        switch (dlbState)
         {
-            case edlbNO:
+            case edlbsOffForever:
                 break;
-            case edlbAUTO:
+            case edlbsOffCanTurnOn:
                 dd_warning(cr, fplog, "NOTE: reproducibility requested, will not use dynamic load balancing\n");
-                eDLB = edlbNO;
+                dlbState = edlbsOffForever;
                 break;
-            case edlbYES:
+            case edlbsOn:
                 dd_warning(cr, fplog, "WARNING: reproducibility requested with dynamic load balancing, the simulation will NOT be binary reproducible\n");
                 break;
             default:
-                gmx_fatal(FARGS, "Death horror: undefined case (%d) for load balancing choice", eDLB);
+                gmx_fatal(FARGS, "Death horror: undefined case (%d) for load balancing choice", dlbState);
                 break;
         }
     }
 
-    return eDLB;
+    return dlbState;
 }
 
 static void set_dd_dim(FILE *fplog, gmx_domdec_t *dd)
@@ -6742,16 +6749,15 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->eDLB                     = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
-    comm->bDLB_locked              = FALSE;
+    comm->dlbState                 = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
     comm->bCheckWhetherToTurnDlbOn = TRUE;
 
-    comm->bDynLoadBal = (comm->eDLB == edlbYES);
     if (fplog)
     {
-        fprintf(fplog, "Dynamic load balancing: %s\n", edlb_names[comm->eDLB]);
+        fprintf(fplog, "Dynamic load balancing: %s\n",
+                edlbs_names[comm->dlbState]);
     }
-    dd->bGridJump              = comm->bDynLoadBal;
+    dd->bGridJump              = (comm->dlbState == edlbsOn);
     comm->bPMELoadBalDLBLimits = FALSE;
 
     if (comm->nstSortCG)
@@ -6944,7 +6950,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
         /* We need to choose the optimal DD grid and possibly PME nodes */
         limit = dd_choose_grid(fplog, cr, dd, ir, mtop, box, ddbox,
-                               comm->eDLB != edlbNO, dlb_scale,
+                               comm->dlbState != edlbsOffForever, dlb_scale,
                                comm->cellsize_limit, comm->cutoff,
                                comm->bInterCGBondeds);
 
@@ -6953,7 +6959,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
             bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
             sprintf(buf, "Change the number of ranks or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
-                    comm->eDLB != edlbNO ? " or -dds" : "",
+                    comm->dlbState != edlbsOffForever ? " or -dds" : "",
                     bC ? " or your LINCS settings" : "");
 
             gmx_fatal_collective(FARGS, cr, NULL,
@@ -7048,7 +7054,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     *npme_y = comm->npmenodes_y;
 
     snew(comm->slb_frac, DIM);
-    if (comm->eDLB == edlbNO)
+    if (comm->dlbState == edlbsOffForever)
     {
         comm->slb_frac[XX] = get_slb_frac(fplog, "x", dd->nc[XX], sizex);
         comm->slb_frac[YY] = get_slb_frac(fplog, "y", dd->nc[YY], sizey);
@@ -7057,7 +7063,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     if (comm->bInterCGBondeds && comm->cutoff_mbody == 0)
     {
-        if (comm->bBondComm || comm->eDLB != edlbNO)
+        if (comm->bBondComm || comm->dlbState != edlbsOffForever)
         {
             /* Set the bonded communication distance to halfway
              * the minimum and the maximum,
@@ -7065,7 +7071,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
              */
             acs                = average_cellsize_min(dd, ddbox);
             comm->cutoff_mbody = 0.5*(r_bonded + acs);
-            if (comm->eDLB != edlbNO)
+            if (comm->dlbState != edlbsOffForever)
             {
                 /* Check if this does not limit the scaling */
                 comm->cutoff_mbody = std::min(comm->cutoff_mbody, dlb_scale*acs);
@@ -7156,14 +7162,14 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
         dd_warning(cr, fplog, "NOTE: the minimum cell size is smaller than 1.05 times the cell size limit, will not turn on dynamic load balancing\n");
 
         /* Change DLB from "auto" to "no". */
-        comm->eDLB = edlbNO;
+        comm->dlbState = edlbsOffForever;
 
         return;
     }
 
     dd_warning(cr, fplog, "NOTE: Turning on dynamic load balancing\n");
-    comm->bDynLoadBal = TRUE;
-    dd->bGridJump     = TRUE;
+    comm->dlbState = edlbsOn;
+    dd->bGridJump  = TRUE;
 
     set_dlb_limits(dd);
 
@@ -7453,7 +7459,7 @@ static void set_cell_limits_dlb(gmx_domdec_t      *dd,
     {
         comm->cutoff_mbody = std::min(comm->cutoff, comm->cellsize_limit);
     }
-    if (comm->bDynLoadBal)
+    if (comm->dlbState == edlbsOn)
     {
         set_dlb_limits(dd);
     }
@@ -7512,13 +7518,13 @@ void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
     {
         fprintf(debug, "The DD cut-off is %f\n", comm->cutoff);
     }
-    if (comm->eDLB != edlbNO)
+    if (comm->dlbState != edlbsOffForever)
     {
         set_cell_limits_dlb(dd, dlb_scale, ir, ddbox);
     }
 
-    print_dd_settings(fplog, dd, ir, comm->bDynLoadBal, dlb_scale, ddbox);
-    if (comm->eDLB == edlbAUTO)
+    print_dd_settings(fplog, dd, ir, comm->dlbState == edlbsOn, dlb_scale, ddbox);
+    if (comm->dlbState == edlbsOffCanTurnOn)
     {
         if (fplog)
         {
@@ -7574,7 +7580,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
 
         np = 1 + (int)(cutoff_req*inv_cell_size*ddbox.skew_fac[dim]);
 
-        if (dd->comm->eDLB != edlbNO && dim < ddbox.npbcdim &&
+        if (dd->comm->dlbState != edlbsOffForever && dim < ddbox.npbcdim &&
             dd->comm->cd[d].np_dlb > 0)
         {
             if (np > dd->comm->cd[d].np_dlb)
@@ -7593,12 +7599,12 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
         }
     }
 
-    if (dd->comm->eDLB != edlbNO)
+    if (dd->comm->dlbState != edlbsOffForever)
     {
         /* If DLB is not active yet, we don't need to check the grid jumps.
          * Actually we shouldn't, because then the grid jump data is not set.
          */
-        if (dd->comm->bDynLoadBal &&
+        if (dd->comm->dlbState == edlbsOn &&
             check_grid_jump(0, dd, cutoff_req, &ddbox, FALSE))
         {
             LocallyLimited = 1;
@@ -7658,10 +7664,8 @@ void set_dd_dlb_max_cutoff(t_commrec *cr, real cutoff)
  */
 static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx_bool bValue)
 {
-    if (dd->comm->eDLB == edlbAUTO)
+    if (dd->comm->dlbState == edlbsOffCanTurnOn)
     {
-        assert(!dd_dlb_is_locked(dd));
-
         dd->comm->bCheckWhetherToTurnDlbOn = bValue;
     }
 }
@@ -7673,7 +7677,7 @@ static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
 {
     const int nddp_chk_dlb = 100;
 
-    if (dd->comm->eDLB != edlbAUTO || dd_dlb_is_locked(dd))
+    if (dd->comm->dlbState != edlbsOffCanTurnOn)
     {
         return FALSE;
     }
@@ -7700,30 +7704,30 @@ static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
 
 gmx_bool dd_dlb_is_on(const gmx_domdec_t *dd)
 {
-    return dd->comm->bDynLoadBal;
+    return (dd->comm->dlbState == edlbsOn);
 }
 
 gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd)
 {
-    return dd->comm->bDLB_locked;
+    return (dd->comm->dlbState == edlbsOffTemporarilyLocked);
 }
 
 void dd_dlb_lock(gmx_domdec_t *dd)
 {
     /* We can only lock the DLB when it is set to auto, otherwise don't do anything */
-    if (dd->comm->eDLB == edlbAUTO)
+    if (dd->comm->dlbState == edlbsOffCanTurnOn)
     {
-        dd->comm->bDLB_locked = TRUE;
+        dd->comm->dlbState = edlbsOffTemporarilyLocked;
     }
 }
 
 void dd_dlb_unlock(gmx_domdec_t *dd)
 {
     /* We can only lock the DLB when it is set to auto, otherwise don't do anything */
-    if (dd->comm->eDLB == edlbAUTO)
+    if (dd->comm->dlbState == edlbsOffTemporarilyLocked)
     {
-        dd->comm->bDLB_locked = FALSE;
-        dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, !dd->comm->bDynLoadBal);
+        dd->comm->dlbState = edlbsOffCanTurnOn;
+        dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
     }
 }
 
@@ -9474,7 +9478,7 @@ void dd_partition_system(FILE                *fplog,
 
     bNStGlobalComm = (step % nstglobalcomm == 0);
 
-    if (!comm->bDynLoadBal)
+    if (comm->dlbState != edlbsOn)
     {
         bDoDLB = FALSE;
     }
@@ -9635,7 +9639,7 @@ void dd_partition_system(FILE                *fplog,
         set_ddbox(dd, bMasterState, cr, ir, state_local->box,
                   TRUE, &top_local->cgs, state_local->x, &ddbox);
 
-        bRedist = comm->bDynLoadBal;
+        bRedist = (comm->dlbState == edlbsOn);
     }
     else
     {
