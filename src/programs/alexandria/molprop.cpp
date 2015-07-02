@@ -708,7 +708,7 @@ void MolProp::Dump(FILE *fp)
     }
 }
 
-bool MolProp::GenerateComposition(gmx_poldata_t pd)
+bool MolProp::GenerateComposition(Poldata * pd)
 {
     CalculationIterator  ci;
     CalcAtomIterator     cai;
@@ -735,16 +735,16 @@ bool MolProp::GenerateComposition(gmx_poldata_t pd)
             AtomNum ans(cai->getObtype(), 1);
             mci_alexandria.AddAtom(ans);
 
-            const char *ptype = gmx_poldata_atype_to_ptype(pd, cai->getObtype().c_str());
+            const char *ptype = pd->atype_to_ptype(cai->getObtype().c_str());
             if (NULL != ptype)
             {
-                const char *bos_type = gmx_poldata_ptype_to_bosque(pd, ptype);
+                const char *bos_type = pd->ptype_to_bosque(ptype);
                 if (NULL != bos_type)
                 {
                     AtomNum anb(bos_type, 1);
                     mci_bosque.AddAtom(anb);
                 }
-                const char *mil_type = gmx_poldata_ptype_to_miller(pd, ptype);
+                const char *mil_type = pd->ptype_to_miller(ptype);
 
                 if (NULL != mil_type)
                 {

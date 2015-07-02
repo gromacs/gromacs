@@ -83,7 +83,7 @@ typedef struct {
 
 static void check_support(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mm,
-                          gmx_poldata_t                   pd,
+                          Poldata *                   pd,
                           t_commrec                      *cr,
                           bool                            bOpt[])
 {
@@ -106,16 +106,16 @@ static void check_support(FILE                           *fp,
                 switch (bt)
                 {
                     case ebtsBONDS:
-                        ft = gmx_poldata_get_bond_ftype(pd);
+                        ft = pd->get_bond_ftype();
                         break;
                     case ebtsANGLES:
-                        ft = gmx_poldata_get_angle_ftype(pd);
+                        ft = pd->get_angle_ftype();
                         break;
                     case ebtsPDIHS:
-                        ft = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
+                        ft = pd->get_dihedral_ftype(egdPDIHS);
                         break;
                     case ebtsIDIHS:
-                        ft = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
+                        ft = pd->get_dihedral_ftype( egdIDIHS);
                         break;
                     default:
                         gmx_fatal(FARGS, "Boe");
@@ -128,8 +128,8 @@ static void check_support(FILE                           *fp,
 
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    aai = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[ai]);
-                    aaj = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[aj]);
+                    aai = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[ai]);
+                    aaj = (char *)pd->atype_to_btype(*mymol->topology_->atoms.atomtype[aj]);
                     if ((NULL == aai) || (NULL == aaj))
                     {
                         bSupport = false;
@@ -137,19 +137,19 @@ static void check_support(FILE                           *fp,
                     switch (bt)
                     {
                         case ebtsBONDS:
-                            gt = gmx_poldata_search_bond(pd, aai, aaj, NULL,
+                            gt = pd->search_bond( aai, aaj, NULL,
                                                          NULL, NULL, NULL, NULL);
                             break;
                         case ebtsANGLES:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            aak = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[ak]);
+                            aak = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[ak]);
                             if (NULL == aak)
                             {
                                 bSupport = false;
                             }
                             else
                             {
-                                gt  = gmx_poldata_search_angle(pd, aai, aaj, aak, NULL,
+                                gt  = pd->search_angle( aai, aaj, aak, NULL,
                                                                NULL, NULL, NULL);
                             }
                             break;
@@ -157,15 +157,15 @@ static void check_support(FILE                           *fp,
                         case ebtsIDIHS:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            aak = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[ak]);
-                            aal = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[al]);
+                            aak = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[ak]);
+                            aal = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[al]);
                             if ((NULL == aak) || (NULL == aal))
                             {
                                 bSupport = false;
                             }
                             else
                             {
-                                gt  = gmx_poldata_search_dihedral(pd, (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
+                                gt  = pd->search_dihedral( (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
                                                                   aai, aaj, aak, aal,
                                                                   NULL, NULL, NULL, NULL);
                             }
@@ -203,7 +203,7 @@ static void check_support(FILE                           *fp,
 
 static opt_mask_t *analyze_idef(FILE                          *fp,
                                 std::vector<alexandria::MyMol> mm,
-                                gmx_poldata_t                  pd,
+                                Poldata *                  pd,
                                 bool                           bOpt[])
 {
     int         gt, i, bt, ai, aj, ak, al, ft;
@@ -225,20 +225,20 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
             switch (bt)
             {
                 case ebtsBONDS:
-                    omt->nb[bt] = gmx_poldata_get_ngt_bond(pd);
-                    ft          = gmx_poldata_get_bond_ftype(pd);
+                    omt->nb[bt] = pd->get_ngt_bond();
+                    ft          = pd->get_bond_ftype();
                     break;
                 case ebtsANGLES:
-                    omt->nb[bt] = gmx_poldata_get_ngt_angle(pd);
-                    ft          = gmx_poldata_get_angle_ftype(pd);
+                    omt->nb[bt] = pd->get_ngt_angle();
+                    ft          = pd->get_angle_ftype();
                     break;
                 case ebtsPDIHS:
-                    omt->nb[bt] = gmx_poldata_get_ngt_dihedral(pd, egdPDIHS);
-                    ft          = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
+                    omt->nb[bt] = pd->get_ngt_dihedral( egdPDIHS);
+                    ft          = pd->get_dihedral_ftype( egdPDIHS);
                     break;
                 case ebtsIDIHS:
-                    omt->nb[bt] = gmx_poldata_get_ngt_dihedral(pd, egdIDIHS);
-                    ft          = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
+                    omt->nb[bt] = pd->get_ngt_dihedral( egdIDIHS);
+                    ft          = pd->get_dihedral_ftype( egdIDIHS);
                     break;
                 default:
                     gmx_fatal(FARGS, "Boe");
@@ -253,14 +253,14 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                 {
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    aai = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[ai]);
-                    aaj = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[aj]);
+                    aai = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[ai]);
+                    aaj = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[aj]);
                     char buf[STRLEN];
                     gt = 0;
                     switch (bt)
                     {
                         case ebtsBONDS:
-                            gt = gmx_poldata_search_bond(pd, aai, aaj, NULL,
+                            gt = pd->search_bond( aai, aaj, NULL,
                                                          NULL, NULL, NULL, &params);
                             if (gt > 0)
                             {
@@ -269,8 +269,8 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                             break;
                         case ebtsANGLES:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            aak = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[ak]);
-                            gt  = gmx_poldata_search_angle(pd, aai, aaj, aak, NULL,
+                            aak = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[ak]);
+                            gt  = pd->search_angle( aai, aaj, aak, NULL,
                                                            NULL, NULL, &params);
                             if (gt > 0)
                             {
@@ -281,9 +281,9 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                         case ebtsIDIHS:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            aak = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[ak]);
-                            aal = (char *)gmx_poldata_atype_to_btype(pd, *mymol->topology_->atoms.atomtype[al]);
-                            gt  = gmx_poldata_search_dihedral(pd, (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
+                            aak = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[ak]);
+                            aal = (char *)pd->atype_to_btype( *mymol->topology_->atoms.atomtype[al]);
+                            gt  = pd->search_dihedral( (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
                                                               aai, aaj, aak, aal,
                                                               NULL, NULL, NULL, &params);
                             if (gt > 0)
@@ -488,19 +488,19 @@ void OptParam::List2Opt()
             switch (i)
             {
                 case ebtsBONDS:
-                    gmx_poldata_set_bond_params(_pd, _bad[i][j].ai[0],
+                    _pd->set_bond_params(_bad[i][j].ai[0],
                                                 _bad[i][j].ai[1],
                                                 0, 0, 0,
                                                 _bad[i][j].bondorder, buf);
                     break;
                 case ebtsANGLES:
-                    gmx_poldata_set_angle_params(_pd, _bad[i][j].ai[0],
+                    _pd->set_angle_params(_bad[i][j].ai[0],
                                                  _bad[i][j].ai[1],
                                                  _bad[i][j].ai[2],
                                                  0, 0, 0, buf);
                     break;
                 case ebtsPDIHS:
-                    gmx_poldata_set_dihedral_params(_pd, egdPDIHS,
+                    _pd->set_dihedral_params(egdPDIHS,
                                                     _bad[i][j].ai[0],
                                                     _bad[i][j].ai[1],
                                                     _bad[i][j].ai[2],
@@ -508,7 +508,7 @@ void OptParam::List2Opt()
                                                     0, 0, 0, buf);
                     break;
                 case ebtsIDIHS:
-                    gmx_poldata_set_dihedral_params(_pd, egdIDIHS,
+                    _pd->set_dihedral_params(egdIDIHS,
                                                     _bad[i][j].ai[0],
                                                     _bad[i][j].ai[1],
                                                     _bad[i][j].ai[2],
@@ -618,7 +618,7 @@ void OptParam::getDissociationEnergy(FILE *fplog)
             nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    ftb = gmx_poldata_get_bond_ftype(_pd);
+    ftb = _pd->get_bond_ftype();
     int j   = 0;
     for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
          (mymol < _mymol.end()); mymol++, j++)
@@ -627,9 +627,9 @@ void OptParam::getDissociationEnergy(FILE *fplog)
         {
             ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
             aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-            char *aai = (char *)gmx_poldata_atype_to_btype(_pd, *mymol->topology_->atoms.atomtype[ai]);
-            char *aaj = (char *)gmx_poldata_atype_to_btype(_pd, *mymol->topology_->atoms.atomtype[aj]);
-            if ((gt = gmx_poldata_search_bond(_pd, aai, aaj,
+            char *aai = (char *)_pd->atype_to_btype(*mymol->topology_->atoms.atomtype[ai]);
+            char *aaj = (char *)_pd->atype_to_btype(*mymol->topology_->atoms.atomtype[aj]);
+            if ((gt = _pd->search_bond(aai, aaj,
                                               NULL, NULL, NULL, NULL, NULL)) != 0)
             {
                 gti = _inv_gt[ebtsBONDS][gt-1];
@@ -778,7 +778,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     *nparam = 0;
     if (bOpt[ebtsBONDS])
     {
-        while ((gt = gmx_poldata_get_bond(_pd, &(ai[0]), &(ai[1]),
+        while ((gt = _pd->get_bond(&(ai[0]), &(ai[1]),
                                           NULL, NULL, NULL, &bondorder, &params)) > 0)
         {
             if (omt->ngtb[ebtsBONDS][gt-1] > 0)
@@ -821,7 +821,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     }
     if (bOpt[ebtsANGLES])
     {
-        while ((gt = gmx_poldata_get_angle(_pd, &(ai[0]), &(ai[1]), &(ai[2]),
+        while ((gt = _pd->get_angle(&(ai[0]), &(ai[1]), &(ai[2]),
                                            NULL, NULL, NULL, &params)) > 0)
         {
             if (omt->ngtb[ebtsANGLES][gt-1] > 0)
@@ -856,7 +856,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     }
     if (bOpt[ebtsPDIHS])
     {
-        while ((gt = gmx_poldata_get_dihedral(_pd, egdPDIHS,
+        while ((gt = _pd->get_dihedral(egdPDIHS,
                                               &(ai[0]), &(ai[1]), &(ai[2]), &(ai[3]),
                                               NULL, NULL, NULL, &params)) > 0)
         {
@@ -888,7 +888,7 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     }
     if (bOpt[ebtsIDIHS])
     {
-        while ((gt = gmx_poldata_get_dihedral(_pd, egdIDIHS,
+        while ((gt = _pd->get_dihedral( egdIDIHS,
                                               &(ai[0]), &(ai[1]), &(ai[2]), &(ai[3]),
                                               NULL, NULL, NULL, &params)) > 0)
         {
@@ -1028,7 +1028,7 @@ double OptParam::CalcDeviation()
     }
     if (PAR(_cr))
     {
-        gmx_poldata_comm_force_parameters(_pd, _cr);
+        _pd->comm_force_parameters( _cr);
     }
     if (NULL == debug)
     {
@@ -1701,7 +1701,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     alexandria::OptParam      opt;
     int                       nparam;
-    ChargeDistributionModel   iDistributionModel         = name2eemtype(cqdist[0]);
+    ChargeDistributionModel   iDistributionModel         = Poldata::name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 
     opt.Init(cr, bQM, bGaussianBug, iDistributionModel,
@@ -1750,7 +1750,7 @@ int alex_tune_fc(int argc, char *argv[])
         opt.PrintSpecs(fp, (char *)"After optimization",
                        opt2fn("-x", NFILE, fnm), oenv, true);
 
-        gmx_poldata_write(opt2fn("-o", NFILE, fnm), opt._pd, compress);
+	alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), opt._pd, compress);
 
         gmx_molselect_done(gms);
         done_filenms(NFILE, fnm);

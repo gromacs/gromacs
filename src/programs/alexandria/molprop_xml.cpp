@@ -36,7 +36,7 @@
 #include "molprop_xml.h"
 #include "stringutil.h"
 
-extern int xmlDoValidityCheckingDefaultValue;
+//int xmlDoValidityCheckingDefaultValue;
 
 static gmx_bool NN(char *x)
 {

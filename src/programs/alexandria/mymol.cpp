@@ -130,13 +130,13 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     return false;
 }
 
-void MyMol::getForceConstants(gmx_poldata_t pd)
+void MyMol::getForceConstants(Poldata *pd)
 {
     int    n;
     double xx, sx, bo;
     char  *params;
 
-#define ATP(ii) ((char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ii]))
+#define ATP(ii) ((char *)pd->atype_to_btype( *topology_->atoms.atomtype[ii]))
     for (std::vector<PlistWrapper>::iterator pw = plist_.begin();
          (pw < plist_.end()); ++pw)
     {
@@ -148,7 +148,7 @@ void MyMol::getForceConstants(gmx_poldata_t pd)
                 {
                     int ai = j->a[0];
                     int aj = j->a[1];
-                    if (0 < gmx_poldata_search_bond(pd,
+                    if (0 < pd->search_bond(
                                                     ATP(ai),
                                                     ATP(aj),
                                                     &xx, &sx, NULL, &bo, &params))
@@ -177,7 +177,7 @@ void MyMol::getForceConstants(gmx_poldata_t pd)
                 for (ParamIterator j = pw->beginParam();
                      (j < pw->endParam()); ++j)
                 {
-                    if (0 < gmx_poldata_search_angle(pd,
+                    if (0 < pd->search_angle(
                                                      ATP(j->a[0]),
                                                      ATP(j->a[1]),
                                                      ATP(j->a[2]),
@@ -208,7 +208,7 @@ void MyMol::getForceConstants(gmx_poldata_t pd)
                 for (ParamIterator j = pw->beginParam();
                      (j < pw->endParam()); ++j)
                 {
-                    if (0 < gmx_poldata_search_dihedral(pd, egdPDIHS,
+                    if (0 < pd->search_dihedral( egdPDIHS,
                                                         ATP(j->a[0]),
                                                         ATP(j->a[1]),
                                                         ATP(j->a[2]),
@@ -240,7 +240,7 @@ void MyMol::getForceConstants(gmx_poldata_t pd)
                 for (ParamIterator j = pw->beginParam();
                      (j < pw->endParam()); ++j)
                 {
-                    if (0 < gmx_poldata_search_dihedral(pd, egdIDIHS,
+                    if (0 < pd->search_dihedral( egdIDIHS,
                                                         ATP(j->a[0]),
                                                         ATP(j->a[1]),
                                                         ATP(j->a[2]),
@@ -485,7 +485,7 @@ static void generate_nbparam(int ftype, int comb, double ci[], double cj[],
     }
 }
 
-static void do_init_mtop(gmx_poldata_t pd,
+static void do_init_mtop(Poldata * pd,
                          gmx_mtop_t   *mtop_,
                          char        **molname,
                          t_atoms      *atoms)
@@ -522,7 +522,7 @@ static void do_init_mtop(gmx_poldata_t pd,
     mtop_->ffparams.ntypes = ntype*ntype;
     mtop_->ffparams.reppow = 12;
 
-    int vdw_type = gmx_poldata_get_vdw_ftype(pd);
+    int vdw_type = pd->get_vdw_ftype();
 
     snew(mtop_->ffparams.functype, mtop_->ffparams.ntypes);
     snew(mtop_->ffparams.iparams, mtop_->ffparams.ntypes);
@@ -547,7 +547,7 @@ static void do_init_mtop(gmx_poldata_t pd,
                     break;
                 default:
                     fprintf(stderr, "Invalid van der waals type %s\n",
-                            gmx_poldata_get_vdw_function(pd));
+                            pd->get_vdw_function());
             }
         }
     }
@@ -588,7 +588,7 @@ static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)
     blocka->nra          = nra;
 }
 
-static void plist_to_mtop(gmx_poldata_t             pd,
+static void plist_to_mtop(Poldata *             pd,
                           std::vector<PlistWrapper> plist,
                           gmx_mtop_t               *mtop_)
 {
@@ -597,7 +597,7 @@ static void plist_to_mtop(gmx_poldata_t             pd,
     int    n      = 0;
 
     /* Generate pairs */
-    fudgeLJ = gmx_poldata_get_fudgeLJ(pd);
+    fudgeLJ = pd->get_fudgeLJ();
 
     int nfptot = mtop_->ffparams.ntypes;
     for (std::vector<PlistWrapper>::iterator pw = plist.begin();
@@ -838,7 +838,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
             double q = 0;
             for (AtomicChargeIterator qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
-                ChargeDistributionModel qtp = name2eemtype(qi->getType().c_str());
+	      ChargeDistributionModel qtp = Poldata::name2eemtype(qi->getType().c_str());
                 if (qtp == iChargeDistributionModel)
                 {
                     myunit = string2unit((char *)qi->getUnit().c_str());
@@ -898,7 +898,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
 }
 
 immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
-                                  gmx_poldata_t           pd,
+                                  Poldata *           pd,
                                   const char             *lot,
                                   ChargeDistributionModel iChargeDistributionModel,
                                   int                     nexcl,
@@ -1008,7 +1008,7 @@ void MyMol::CalcMultipoles()
     dip_calc = norm(mu);
 }
 
-immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
+immStatus MyMol::GenerateCharges(Poldata * pd,
                                  gmx_atomprop_t ap,
                                  ChargeDistributionModel iChargeDistributionModel,
                                  ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
@@ -1021,7 +1021,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     char      qgen_msg[STRLEN];
     immStatus imm = immOK;
 
-    qgen_ = gentop_qgen_init(pd, &topology_->atoms, ap, x_,
+    qgen_ = new GentopQgen(pd, &topology_->atoms, ap, x_,
                              iChargeDistributionModel,
                              iChargeGenerationAlgorithm,
                              hfac, getCharge(), epsr);
@@ -1089,8 +1089,8 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                                                convert2gmx(epi->getV(), vu));
                         }
                     }
-                    eQGEN = generate_charges(NULL,
-                                             qgen_, gr_, getMolname().c_str(),
+                    eQGEN = qgen_->generate_charges(NULL,
+                                             gr_, getMolname().c_str(),
                                              pd, &topology_->atoms, 0.0001,
                                              10000, 1, ap);
                 }
@@ -1112,13 +1112,13 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                 {
                     gmx_fatal(FARGS, "Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n", getMolname().c_str());
                 }
-                eQGEN = generate_charges(NULL,
-                                         qgen_, NULL, getMolname().c_str(),
+                eQGEN = qgen_->generate_charges(NULL,
+                                         NULL, getMolname().c_str(),
                                          pd, &topology_->atoms, 0.0001,
                                          10000, 1, ap);
                 break;
         }
-        qgen_message(qgen_, sizeof(qgen_msg), qgen_msg, gr_);
+        qgen_->message(sizeof(qgen_msg), qgen_msg, gr_);
         if (eQGEN_OK != eQGEN)
         {
             imm = immChargeGeneration;
@@ -1187,7 +1187,7 @@ void MyMol::PrintConformation(const char *fn)
     write_sto_conf(fn, title, &topology_->atoms, x_, NULL, epbcNONE, box);
 }
 
-static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
+static void write_zeta_q(FILE *fp, GentopQgen * qgen,
                          t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel)
 {
     int    i, ii, j, k, nz, row;
@@ -1220,7 +1220,7 @@ static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
         {
             gmx_fatal(FARGS, "The first atom must be a real atom, not a shell");
         }
-        nz = gentop_qgen_get_nzeta(qgen, k);
+        nz = qgen->get_nzeta( k);
         if (nz != NOTSET)
         {
             bTypeSet = false;
@@ -1232,13 +1232,13 @@ static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
             {
                 fprintf(fp, "%5s %6s %3d",
                         *atoms->atomtype[i],
-                        get_eemtype_name(iChargeDistributionModel), (bAtom) ? nz : 1);
+                        Poldata::get_eemtype_name(iChargeDistributionModel), (bAtom) ? nz : 1);
             }
             for (j = (bAtom ? 0 : nz); (j < (bAtom ? nz : nz)); j++)
             {
-                row   = gentop_qgen_get_row(qgen, k, j);
-                q     = gentop_qgen_get_q(qgen, k, j);
-                zeta  = gentop_qgen_get_zeta(qgen, k, j);
+                row   = qgen->get_row( k, j);
+                q     = qgen->get_q( k, j);
+                zeta  = qgen->get_zeta( k, j);
                 if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET))
                 {
                     if (j == nz-1)
@@ -1269,7 +1269,7 @@ static void write_zeta_q(FILE *fp, gentop_qgen_t qgen,
     fprintf(fp, "\n");
 }
 
-static void write_zeta_q2(gentop_qgen_t qgen, gpp_atomtype_t atype,
+static void write_zeta_q2(GentopQgen * qgen, gpp_atomtype_t atype,
                           t_atoms *atoms, ChargeDistributionModel iChargeDistributionModel)
 {
     FILE      *fp;
@@ -1295,18 +1295,18 @@ static void write_zeta_q2(gentop_qgen_t qgen, gpp_atomtype_t atype,
         {
             gmx_fatal(FARGS, "The first atom must be a real atom, not a shell");
         }
-        nz = gentop_qgen_get_nzeta(qgen, k);
+        nz = qgen->get_nzeta( k);
         if (nz != NOTSET)
         {
-            fprintf(fp, "%6s  %5s  %5d", get_eemtype_name(iChargeDistributionModel),
+	  fprintf(fp, "%6s  %5s  %5d", Poldata::get_eemtype_name(iChargeDistributionModel),
                     get_atomtype_name(atoms->atom[i].type, atype),
                     (bAtom) ? nz-1 : 1);
             qtot = 0;
             for (j = (bAtom ? 0 : nz-1); (j < (bAtom ? nz-1 : nz)); j++)
             {
-                row   = gentop_qgen_get_row(qgen, k, j);
-                q     = gentop_qgen_get_q(qgen, k, j);
-                zeta  = gentop_qgen_get_zeta(qgen, k, j);
+                row   = qgen->get_row( k, j);
+                q     = qgen->get_q( k, j);
+                zeta  = qgen->get_zeta( k, j);
                 if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET))
                 {
                     qtot += q;
@@ -1375,7 +1375,7 @@ static void write_top2(FILE *out, char *molname,
                        std::vector<PlistWrapper> plist_,
                        t_excls excls[],
                        gpp_atomtype_t atype, int *cgnr, int nrexcl,
-                       gmx_poldata_t pd)
+                       Poldata * pd)
 /* NOTE: nrexcl is not the size of *excl! */
 {
     if (at && atype && cgnr)
@@ -1386,21 +1386,21 @@ static void write_top2(FILE *out, char *molname,
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
         print_bondeds2(out, d_bonds, F_BONDS,
-                       gmx_poldata_get_bond_ftype(pd),
+                       pd->get_bond_ftype(),
                        plist_);
         print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
         print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
         print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
         print_excl(out, at->nr, excls);
         print_bondeds2(out, d_angles, F_ANGLES,
-                       gmx_poldata_get_angle_ftype(pd), plist_);
+                       pd->get_angle_ftype(), plist_);
         print_bondeds2(out, d_angles, F_LINEAR_ANGLES, F_LINEAR_ANGLES,
                        plist_);
         print_bondeds2(out, d_dihedrals, F_PDIHS,
-                       gmx_poldata_get_dihedral_ftype(pd, egdPDIHS), plist_);
+                       pd->get_dihedral_ftype( egdPDIHS), plist_);
         /* Check whether the dihedrals use the same function */
         print_bondeds2(out, d_dihedrals, F_IDIHS,
-                       gmx_poldata_get_dihedral_ftype(pd, egdIDIHS), plist_);
+                       pd->get_dihedral_ftype( egdIDIHS), plist_);
         print_bondeds2(out, d_cmap, F_CMAP, F_CMAP, plist_);
         print_bondeds2(out, d_polarization, F_POLARIZATION, F_POLARIZATION,
                        plist_);
@@ -1415,7 +1415,8 @@ static void write_top2(FILE *out, char *molname,
     }
 }
 
-static void print_top_header2(FILE *fp, gmx_poldata_t pd, 
+
+static void print_top_header2(FILE *fp, Poldata * pd, 
                               gmx_atomprop_t aps, bool bPol,
                               std::vector<std::string> commercials,
                               bool bItp)
@@ -1438,16 +1439,16 @@ static void print_top_header2(FILE *fp, gmx_poldata_t pd,
     {
         fprintf(fp, "[ defaults ]\n");
         fprintf(fp, "; nbfunc         comb-rule       gen-pairs       fudgeLJ     fudgeQQ\n");
-        const char *ff = gmx_poldata_get_vdw_function(pd);
+        const char *ff = pd->get_vdw_function();
         if (strcasecmp(ff, "LJ_SR") == 0)
         {
             ff = "LJ";
         }
         fprintf(fp, "%-15s  %-15s no           %10g  %10g\n\n",
                 ff,
-                gmx_poldata_get_combination_rule(pd),
-                gmx_poldata_get_fudgeLJ(pd),
-                gmx_poldata_get_fudgeQQ(pd));
+                pd->get_combination_rule(),
+                pd->get_fudgeLJ(),
+                pd->get_fudgeQQ());
         
         fprintf(fp, "[ atomtypes ]\n");
         fprintf(fp, "%-7s%-6s  %6s  %11s  %10s  %5s %-s  %s\n",
@@ -1455,7 +1456,7 @@ static void print_top_header2(FILE *fp, gmx_poldata_t pd,
                 "Van_der_Waals", "Ref_Enthalpy");
         
         gt_old = NULL;
-        while (1 == gmx_poldata_get_atype(pd,
+        while (1 == pd->get_atype(
                                           &elem,
                                           &desc,
                                           &gt_type,
@@ -1494,7 +1495,7 @@ static void print_top_header2(FILE *fp, gmx_poldata_t pd,
 void MyMol::PrintTopology(const char             *fn,
                           ChargeDistributionModel iChargeDistributionModel,
                           bool                    bVerbose,
-                          gmx_poldata_t           pd,
+                          Poldata *           pd,
                           gmx_atomprop_t          aps)
 {
     FILE   *fp;
@@ -1698,7 +1699,7 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
+void MyMol::AddShells(Poldata * pd, ePolar epol)
 {
     int              i, j, k, iat, shell, ns = 0;
     std::vector<int> renum, inv_renum;
@@ -1726,7 +1727,7 @@ void MyMol::AddShells(gmx_poldata_t pd, ePolar epol)
     }
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        if (1 == gmx_poldata_get_atype_pol(pd, *topology_->atoms.atomtype[i],
+        if (1 == pd->get_atype_pol( *topology_->atoms.atomtype[i],
                                            &pol, &sigpol))
         {
             renum.push_back(i+ns);
@@ -1880,7 +1881,7 @@ immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 }
 
 void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
-                         gmx_poldata_t           pd,
+                         Poldata *           pd,
                          real                    spacing,
                          const char             *reffn,
                          const char             *pcfn,
@@ -1908,7 +1909,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
 
             sprintf(buf, "Potential generated by %s based on %s charges",
                     gentop_version,
-                    get_eemtype_name(iChargeDistributionModel));
+                    Poldata::get_eemtype_name(iChargeDistributionModel));
 
             if (NULL != difffn)
             {
@@ -1924,12 +1925,12 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
             if (NULL != rhofn)
             {
                 sprintf(buf, "Electron density generated by %s based on %s charges",
-                        gentop_version, get_eemtype_name(iChargeDistributionModel));
+                        gentop_version, Poldata::get_eemtype_name(iChargeDistributionModel));
                 gmx_resp_calc_rho(gr_);
                 gmx_resp_write_rho(gr_, rhofn, buf);
             }
             sprintf(buf, "Potential generated by %s based on %s charges",
-                    gentop_version, get_eemtype_name(iChargeDistributionModel));
+                    gentop_version, Poldata::get_eemtype_name(iChargeDistributionModel));
             if (NULL != potfn)
             {
                 gmx_resp_calc_pot(gr_);
@@ -1943,7 +1944,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
             {
                 sprintf(buf, "Potential difference generated by %s based on %s charges",
                         gentop_version,
-                        get_eemtype_name(iChargeDistributionModel));
+                        Poldata::get_eemtype_name(iChargeDistributionModel));
                 gmx_resp_write_diff_cube(grref, gr_, difffn, diffhistfn, buf, oenv, 0);
                 gmx_resp_destroy(grref);
             }
@@ -2037,7 +2038,11 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
     return imm;
 }
 
-void MyMol::CalcQPol(gmx_poldata_t pd)
+  /*<<<<<<< HEAD  TODO merge
+void MyMol::PrintQPol(FILE *fp, Poldata * pd)
+=======*/
+void MyMol::CalcQPol(Poldata * pd)
+
 {
     int     i, m, np;
     double  poltot, pol, sigpol, sptot, ereftot, eref;
@@ -2051,14 +2056,14 @@ void MyMol::CalcQPol(gmx_poldata_t pd)
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
         if (1 ==
-            gmx_poldata_get_atype_pol(pd, *topology_->atoms.atomtype[i], &pol, &sigpol))
+            pd->get_atype_pol( *topology_->atoms.atomtype[i], &pol, &sigpol))
         {
             np++;
             poltot += pol;
             sptot  += sqr(sigpol);
         }
         if (1 ==
-            gmx_poldata_get_atype_ref_enthalpy(pd, *topology_->atoms.atomtype[i], &eref))
+            pd->get_atype_ref_enthalpy(*topology_->atoms.atomtype[i], &eref))
         {
             ereftot += eref;
         }
@@ -2073,7 +2078,7 @@ void MyMol::CalcQPol(gmx_poldata_t pd)
     sig_pol_        = sqrt(sptot/topology_->atoms.nr);
 }
 
-void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
+void MyMol::UpdateIdef(Poldata * pd, bool bOpt[])
 {
     int    gt, i, tp, ai, aj, ak, al;
     int    ftb, fta, ftd;
@@ -2081,19 +2086,19 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
     int    lu;
     double value;
 
-    lu = string2unit(gmx_poldata_get_length_unit(pd));
+    lu = string2unit(pd->get_length_unit());
     if (bOpt[ebtsBONDS])
     {
-        ftb = gmx_poldata_get_bond_ftype(pd);
+        ftb = pd->get_bond_ftype();
         for (i = 0; (i < ltop_->idef.il[ftb].nr); i += interaction_function[ftb].nratoms+1)
         {
             tp  = ltop_->idef.il[ftb].iatoms[i];
             ai  = ltop_->idef.il[ftb].iatoms[i+1];
             aj  = ltop_->idef.il[ftb].iatoms[i+2];
-            aai = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ai]);
-            aaj = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[aj]);
+            aai = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[ai]);
+            aaj = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[aj]);
             /* Here unfortunately we need a case statement for the types */
-            if ((gt = gmx_poldata_search_bond(pd, aai, aaj, &value, NULL, NULL, NULL, &params)) != 0)
+            if ((gt = pd->search_bond( aai, aaj, &value, NULL, NULL, NULL, &params)) != 0)
             {
                 mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
 
@@ -2121,24 +2126,24 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
             }
             else
             {
-                gmx_fatal(FARGS, "There are no parameters for bond %s-%s in the force field", aai, aaj);
+                gmx_fatal(FARGS, "here are no parameters for bond %s-%s in the force field", aai, aaj);
             }
         }
     }
     if (bOpt[ebtsANGLES])
     {
-        fta = gmx_poldata_get_angle_ftype(pd);
+        fta = pd->get_angle_ftype();
         for (i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
         {
             tp  = ltop_->idef.il[fta].iatoms[i];
             ai  = ltop_->idef.il[fta].iatoms[i+1];
             aj  = ltop_->idef.il[fta].iatoms[i+2];
             ak  = ltop_->idef.il[fta].iatoms[i+3];
-            aai = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ai]);
-            aaj = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[aj]);
-            aak = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ak]);
+            aai = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[ai]);
+            aaj = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[aj]);
+            aak = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[ak]);
 
-            if ((gt = gmx_poldata_search_angle(pd, aai, aaj, aak, &value,
+            if ((gt = pd->search_angle( aai, aaj, aak, &value,
                                                NULL, NULL, &params)) != 0)
             {
                 mtop_->ffparams.iparams[tp].harmonic.rA     =
@@ -2159,13 +2164,13 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
             }
             else
             {
-                gmx_fatal(FARGS, "There are no parameters for angle %s-%s-%s in the force field", aai, aaj, aak);
+                gmx_fatal(FARGS, "here are no parameters for angle %s-%s-%s in the force field", aai, aaj, aak);
             }
         }
     }
     if (bOpt[ebtsPDIHS])
     {
-        ftd = gmx_poldata_get_dihedral_ftype(pd, egdPDIHS);
+        ftd = pd->get_dihedral_ftype( egdPDIHS);
 
         for (i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
         {
@@ -2174,11 +2179,11 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
             aj  = ltop_->idef.il[ftd].iatoms[i+2];
             ak  = ltop_->idef.il[ftd].iatoms[i+3];
             al  = ltop_->idef.il[ftd].iatoms[i+4];
-            aai = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ai]);
-            aaj = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[aj]);
-            aak = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ak]);
-            aal = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[al]);
-            if ((gt = gmx_poldata_search_dihedral(pd, egdPDIHS, aai, aaj, aak, aal,
+            aai = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[ai]);
+            aaj = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[aj]);
+            aak = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[ak]);
+            aal = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[al]);
+            if ((gt = pd->search_dihedral( egdPDIHS, aai, aaj, aak, aal,
                                                   &value, NULL, NULL, &params)) != 0)
             {
                 mtop_->ffparams.iparams[tp].pdihs.phiA = value;
@@ -2214,7 +2219,7 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
     }
     if (bOpt[ebtsIDIHS])
     {
-        ftd = gmx_poldata_get_dihedral_ftype(pd, egdIDIHS);
+        ftd = pd->get_dihedral_ftype( egdIDIHS);
 
         for (i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
         {
@@ -2223,11 +2228,11 @@ void MyMol::UpdateIdef(gmx_poldata_t pd, bool bOpt[])
             aj  = ltop_->idef.il[ftd].iatoms[i+2];
             ak  = ltop_->idef.il[ftd].iatoms[i+3];
             al  = ltop_->idef.il[ftd].iatoms[i+4];
-            aai = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ai]);
-            aaj = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[aj]);
-            aak = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[ak]);
-            aal = (char *)gmx_poldata_atype_to_btype(pd, *topology_->atoms.atomtype[al]);
-            if ((gt = gmx_poldata_search_dihedral(pd, egdIDIHS, aai, aaj, aak, aal,
+            aai = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[ai]);
+            aaj = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[aj]);
+            aak = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[ak]);
+            aal = (char *)pd->atype_to_btype( *topology_->atoms.atomtype[al]);
+            if ((gt = pd->search_dihedral(egdIDIHS, aai, aaj, aak, aal,
                                                   &value, NULL, NULL, &params)) != 0)
             {
                 mtop_->ffparams.iparams[tp].harmonic.rA     =

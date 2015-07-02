@@ -29,6 +29,8 @@
 #include "gromacs/topology/atomprop.h"
 #include "poldata_xml.h"
 
+using namespace alexandria;
+
 int alex_poldata_test(int argc, char*argv[])
 {
     static const char               *desc[] = {
@@ -48,8 +50,8 @@ int alex_poldata_test(int argc, char*argv[])
     }
 
     gmx_atomprop_t aps  = gmx_atomprop_init();
-    gmx_poldata_t  pd   = gmx_poldata_read(opt2fn("-f", NFILE, fnm), aps);
-    gmx_poldata_write(opt2fn("-o", NFILE, fnm), pd, 0);
+    Poldata *  pd   = alexandria::PoldataXml::read(opt2fn("-f", NFILE, fnm), aps);
+    alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), pd, 0);
 
     return 0;
 }

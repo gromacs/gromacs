@@ -26,12 +26,37 @@
 
 #include "poldata.h"
 #include "gromacs/topology/atomprop.h"
+#include "xml_util.h"
 
+
+//extern int xmlDoValidityCheckingDefaultValue;
+namespace alexandria
+{
+  //using namespace alexandria;
 /* This source code file is part of the Alexandria project */
+class PoldataXml
+{
+ public:
 
-extern void gmx_poldata_write(const char *fn, gmx_poldata_t pd,
+  PoldataXml(){}
+
+static void write(const char *fn, Poldata * pd,
                               gmx_bool bCompress);
 
-extern gmx_poldata_t gmx_poldata_read(const char *fn, gmx_atomprop_t aps);
+static Poldata * read(const char *fn, gmx_atomprop_t aps);
 
+ private:
+static void sp(int n, char buf[], int maxindent);
+
+static void process_attr(FILE *fp, xmlAttrPtr attr, int elem,
+		  int indent, Poldata  * pd);
+
+static void process_tree(FILE *fp, xmlNodePtr tree, int indent,
+		  Poldata * pd, gmx_atomprop_t aps);
+
+static void add_xml_poldata(xmlNodePtr parent, Poldata * pd);
+
+
+};
+}
 #endif

@@ -10,9 +10,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
+ * MERCHANTABILITY or FITN
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -37,164 +35,59 @@
 #include "gmx_simple_comm.h"
 #include "stringutil.h"
 
-typedef struct {
-    char   *type, *miller, *bosque;
-    double  polarizability, sig_pol;
-} t_ptype;
 
-typedef struct {
-    char   *desc, *type, *ptype, *btype, *elem, *vdwparams;
-    double  ref_enthalpy;
-} t_ffatype;
-
-typedef struct {
-    char                    *elem, *rule, *type, *neighbors, *geometry;
-    int                      numbonds, iAromatic;
-    double                   valence;
-    std::vector<std::string> nb;
-} t_brule;
-
-typedef struct {
-    char   *atom1, *atom2, *params;
-    char    elem1[4], elem2[4];
-    double  length, sigma, bondorder;
-    int     ntrain;
-} t_gt_bond;
-
-typedef struct {
-    char   *atom1, *atom2, *atom3, *params;
-    double  angle, sigma;
-    int     ntrain;
-} t_gt_angle;
-
-typedef struct {
-    char   *atom1, *atom2, *atom3, *atom4, *params;
-    double  dihedral, sigma;
-    int     ntrain;
-} t_gt_dihedral;
-
-typedef struct {
-    char   *bosque;
-    double  polarizability;
-} t_bosque;
-
-typedef struct {
-    char   *miller;
-    int     atomnumber;
-    double  tau_ahc, alpha_ahp;
-} t_miller;
-
-typedef struct {
-    char *central;
-    char *attached;
-    int   numattach;
-} t_symcharges;
-
-#define EEMBUFSIZE 256
-#define MAXZETA    12
-typedef struct {
-    ChargeDistributionModel eqd_model;
-    int                     nzeta, row[MAXZETA];
-    char                    name[EEMBUFSIZE], zetastr[EEMBUFSIZE], qstr[EEMBUFSIZE], rowstr[EEMBUFSIZE];
-    double                  J0, chi0, q[MAXZETA], zeta[MAXZETA];
-} t_eemprops;
-
-typedef struct {
-    ChargeDistributionModel eqd_model;
-    char                   *epref;
-} t_epref;
-
-typedef struct gmx_poldata {
-    char          *filename;
-    int            nptype, nptype_c;
-    t_ptype       *ptype;
-    int            nalexandria, nalexandria_c;
-    t_ffatype     *alexandria;
-    int            nbtype;
-    char         **btype;
-    int            nbrule, nbrule_c;
-    t_brule       *brule;
-    char          *alexandria_polar_unit;
-    char          *alexandria_polar_ref;
-    char          *alexandria_forcefield;
-    int            nexcl;
-    double         fudgeQQ, fudgeLJ;
-    char          *gt_vdw_function, *gt_combination_rule;
-    int            gt_vdw_ftype, gt_comb_rule;
-    char          *gt_bond_function;
-    int            ngt_bond, ngt_bond_c, gt_bond_ftype;
-    char          *gt_length_unit;
-    t_gt_bond     *gt_bond;
-    char          *gt_angle_function;
-    int            ngt_angle, ngt_angle_c, gt_angle_ftype;
-    char          *gt_angle_unit;
-    t_gt_angle    *gt_angle;
-    char          *gt_dihedral_function[egdNR];
-    int            ngt_dihedral[egdNR], ngt_dihedral_c[egdNR], gt_dihedral_ftype[egdNR];
-    t_gt_dihedral *gt_dihedral[egdNR];
-    int            nmiller, nmiller_c;
-    t_miller      *miller;
-    char          *miller_tau_unit, *miller_ahp_unit;
-    int            nbosque, nbosque_c;
-    t_bosque      *bosque;
-    char          *bosque_polar_unit;
-    int            nsymcharges, nsymcharges_c;
-    t_symcharges  *symcharges;
-    int            nep, nep_c;
-    t_eemprops    *eep;
-    int            ner, ner_c;
-    t_epref       *epr;
-} gmx_poldata;
+int gtb_comp(const void *a, const void *b);
+int gtd_comp(const void *a, const void *b);
 
 #define assign_str(dst, src)  if (dst) { if (src) {*dst = strdup(src); }else{*dst = NULL; }}
 #define assign_scal(dst, src) if (dst) *dst = src
 
-gmx_poldata_t gmx_poldata_init()
+namespace alexandria
 {
-    gmx_poldata_t pd;
+
+Poldata::Poldata()
+{
     int           i;
 
-    snew(pd, 1);
 
     /* Initiate some crucial variables */
-    pd->nexcl          = NOTSET;
-    pd->fudgeQQ        = NOTSET;
-    pd->fudgeLJ        = NOTSET;
-    pd->gt_comb_rule   = NOTSET;
-    pd->gt_vdw_ftype   = NOTSET;
-    pd->gt_bond_ftype  = NOTSET;
-    pd->gt_angle_ftype = NOTSET;
+    this->nexcl          = NOTSET;
+    this->fudgeQQ        = NOTSET;
+    this->fudgeLJ        = NOTSET;
+    this->gt_comb_rule   = NOTSET;
+    this->gt_vdw_ftype   = NOTSET;
+    this->gt_bond_ftype  = NOTSET;
+    this->gt_angle_ftype = NOTSET;
     for (i = 0; (i < egdNR); i++)
     {
-        pd->gt_dihedral_ftype[i] = NOTSET;
+        this->gt_dihedral_ftype[i] = NOTSET;
     }
 
-    return pd;
 }
 
-void gmx_poldata_set_filename(gmx_poldata_t pd, char *fn2)
+void Poldata::set_filename( char *fn2)
 {
     if (NULL == fn2)
     {
-        fprintf(stderr, "Trying to set poldata filename to NULL\n");
+        fprintf(stderr, "Trying to set Poldata filename to NULL\n");
         return;
     }
-    if (NULL != pd->filename)
+    if (NULL != this->filename)
     {
-        fprintf(stderr, "Overwriting poldata filename from %s to %s\n",
-                pd->filename, fn2);
-        sfree(pd->filename);
+        fprintf(stderr, "Overwriting Poldata filename from %s to %s\n",
+                this->filename, fn2);
+        sfree(this->filename);
     }
-    pd->filename = strdup(fn2);
+    this->filename = strdup(fn2);
 }
 
-void gmx_poldata_set_vdw_function(gmx_poldata_t pd, const char *func)
+void Poldata::set_vdw_function( const char *func)
 {
     int i;
 
-    if (NULL != pd->gt_vdw_function)
+    if (NULL != this->gt_vdw_function)
     {
-        sfree(pd->gt_vdw_function);
+        sfree(this->gt_vdw_function);
     }
     for (i = 0; (i < F_NRE); i++)
     {
@@ -207,74 +100,74 @@ void gmx_poldata_set_vdw_function(gmx_poldata_t pd, const char *func)
     {
         gmx_fatal(FARGS, "Van der Waals function '%s' does not exist in gromacs", func);
     }
-    pd->gt_vdw_ftype    = i;
-    pd->gt_vdw_function = strdup(func);
+    this->gt_vdw_ftype    = i;
+    this->gt_vdw_function = strdup(func);
 }
 
-char *gmx_poldata_get_vdw_function(gmx_poldata_t pd)
+char *Poldata::get_vdw_function()
 {
-    return pd->gt_vdw_function;
+    return this->gt_vdw_function;
 }
 
-int gmx_poldata_get_vdw_ftype(gmx_poldata_t pd)
+int Poldata::get_vdw_ftype()
 {
-    if (NOTSET == pd->gt_vdw_ftype)
+    if (NOTSET == this->gt_vdw_ftype)
     {
         gmx_fatal(FARGS, "No valid function type for Van der Waals function in %s",
-                  pd->filename);
+                  this->filename);
     }
-    return pd->gt_vdw_ftype;
+    return this->gt_vdw_ftype;
 }
 
-void gmx_poldata_set_nexcl(gmx_poldata_t pd, int nexcl)
+void Poldata::set_nexcl( int nexcl)
 {
-    pd->nexcl = nexcl;
+    this->nexcl = nexcl;
 }
 
-int gmx_poldata_get_nexcl(gmx_poldata_t pd)
+int Poldata::get_nexcl()
 {
-    if (NOTSET == pd->nexcl)
+    if (NOTSET == this->nexcl)
     {
-        gmx_fatal(FARGS, "Nexclusions not set in %s", pd->filename);
+        gmx_fatal(FARGS, "Nexclusions not set in %s", this->filename);
     }
-    return pd->nexcl;
+    return this->nexcl;
 }
 
-void gmx_poldata_set_fudgeQQ(gmx_poldata_t pd, double fudgeQQ)
+void Poldata::set_fudgeQQ( double fudgeQQ)
 {
-    pd->fudgeQQ = fudgeQQ;
+    this->fudgeQQ = fudgeQQ;
 }
 
-double gmx_poldata_get_fudgeQQ(gmx_poldata_t pd)
+double Poldata::get_fudgeQQ()
 {
-    if (NOTSET == pd->fudgeQQ)
+    if (NOTSET == this->fudgeQQ)
     {
-        gmx_fatal(FARGS, "fudgeQQ not set in %s", pd->filename);
+        gmx_fatal(FARGS, "fudgeQQ not set in %s", this->filename);
     }
-    return pd->fudgeQQ;
+    return this->fudgeQQ;
 }
 
-void gmx_poldata_set_fudgeLJ(gmx_poldata_t pd, double fudgeLJ)
+void Poldata::set_fudgeLJ( double fudgeLJ)
 {
-    pd->fudgeLJ = fudgeLJ;
+    this->fudgeLJ = fudgeLJ;
 }
 
-double gmx_poldata_get_fudgeLJ(gmx_poldata_t pd)
+double Poldata::get_fudgeLJ()
 {
-    if (NOTSET == pd->fudgeLJ)
+    if (NOTSET == this->fudgeLJ)
     {
-        gmx_fatal(FARGS, "fudgeLJ not set in %s", pd->filename);
+        gmx_fatal(FARGS, "fudgeLJ not set in %s", this->filename);
     }
-    return pd->fudgeLJ;
+    return this->fudgeLJ;
 }
 
-void gmx_poldata_set_combination_rule(gmx_poldata_t pd, char *func)
+void Poldata::set_combination_rule( char *func)
 {
     int i;
 
-    if (NULL != pd->gt_combination_rule)
+    if (NULL != this->gt_combination_rule)
     {
-        sfree(pd->gt_combination_rule);
+        sfree(this->gt_combination_rule);
     }
     for (i = 0; (i < eCOMB_NR); i++)
     {
@@ -287,30 +180,30 @@ void gmx_poldata_set_combination_rule(gmx_poldata_t pd, char *func)
     {
         gmx_fatal(FARGS, "Combination rule '%s' does not exist in gromacs", func);
     }
-    pd->gt_comb_rule        = i;
-    pd->gt_combination_rule = strdup(func);
+    this->gt_comb_rule        = i;
+    this->gt_combination_rule = strdup(func);
 }
 
-char *gmx_poldata_get_combination_rule(gmx_poldata_t pd)
+char *Poldata::get_combination_rule()
 {
-    if (NOTSET == pd->gt_vdw_ftype)
+    if (NOTSET == this->gt_vdw_ftype)
     {
         gmx_fatal(FARGS, "No valid function type for Van der Waals function in %s",
-                  pd->filename);
+                  this->filename);
     }
-    return pd->gt_combination_rule;
+    return this->gt_combination_rule;
 }
 
-int gmx_poldata_get_comb_rule(gmx_poldata_t pd)
+int Poldata::get_comb_rule()
 {
-    if (NOTSET == pd->gt_comb_rule)
+    if (NOTSET == this->gt_comb_rule)
     {
-        gmx_fatal(FARGS, "No valid combination rule in %s", pd->filename);
+        gmx_fatal(FARGS, "No valid combination rule in %s", this->filename);
     }
-    return pd->gt_comb_rule;
+    return this->gt_comb_rule;
 }
 
-void gmx_poldata_add_ptype(gmx_poldata_t pd,
+void Poldata::add_ptype(
                            const char   *ptype,
                            const char   *miller,
                            const char   *bosque,
@@ -320,19 +213,19 @@ void gmx_poldata_add_ptype(gmx_poldata_t pd,
     t_ptype *sp;
     int      i;
 
-    for (i = 0; (i < pd->nptype); i++)
+    for (i = 0; (i < this->nptype); i++)
     {
-        if (strcmp(pd->ptype[i].type, ptype) == 0)
+        if (strcmp(this->ptype[i].type, ptype) == 0)
         {
             break;
         }
     }
-    if (i == pd->nptype)
+    if (i == this->nptype)
     {
-        pd->nptype++;
-        srenew(pd->ptype, pd->nptype);
+        this->nptype++;
+        srenew(this->ptype, this->nptype);
 
-        sp                 = &(pd->ptype[i]);
+        sp                 = &(this->ptype[i]);
         sp->type           = strdup(ptype);
         sp->bosque         = strdup(bosque);
         sp->miller         = strdup(miller);
@@ -341,30 +234,30 @@ void gmx_poldata_add_ptype(gmx_poldata_t pd,
     }
     else
     {
-        fprintf(stderr, "Polarizability type %s was already added to poldata record\n", ptype);
+        fprintf(stderr, "Polarizability type %s was already added to Poldata record\n", ptype);
     }
 }
 
-static void gmx_poldata_add_btype(gmx_poldata_t pd,
+ void Poldata::add_btype(
                                   const char   *btype)
 {
     int i;
 
-    for (i = 0; (i < pd->nbtype); i++)
+    for (i = 0; (i < this->nbtype); i++)
     {
-        if (strcmp(btype, pd->btype[i]) == 0)
+        if (strcmp(btype, this->btype[i]) == 0)
         {
             break;
         }
     }
-    if (i == pd->nbtype)
+    if (i == this->nbtype)
     {
-        srenew(pd->btype, ++pd->nbtype);
-        pd->btype[i] = strdup(btype);
+        srenew(this->btype, ++this->nbtype);
+        this->btype[i] = strdup(btype);
     }
 }
 
-void gmx_poldata_add_atype(gmx_poldata_t pd,
+void Poldata::add_atype(
                            const char   *elem,
                            const char   *desc,
                            const char   *atype,
@@ -376,19 +269,19 @@ void gmx_poldata_add_atype(gmx_poldata_t pd,
     t_ffatype *sp;
     int        i;
 
-    for (i = 0; (i < pd->nalexandria); i++)
+    for (i = 0; (i < this->nalexandria); i++)
     {
-        if (strcmp(pd->alexandria[i].type, atype) == 0)
+        if (strcmp(this->alexandria[i].type, atype) == 0)
         {
             break;
         }
     }
-    if (i == pd->nalexandria)
+    if (i == this->nalexandria)
     {
-        pd->nalexandria++;
-        srenew(pd->alexandria, pd->nalexandria);
+        this->nalexandria++;
+        srenew(this->alexandria, this->nalexandria);
 
-        sp                 = &(pd->alexandria[i]);
+        sp                 = &(this->alexandria[i]);
         sp->elem           = strdup(elem);
         sp->desc           = strdup(desc);
         sp->type           = strdup(atype);
@@ -396,15 +289,15 @@ void gmx_poldata_add_atype(gmx_poldata_t pd,
         sp->btype          = strdup(btype);
         sp->vdwparams      = strdup(vdwparams);
         sp->ref_enthalpy   = ref_enthalpy;
-        gmx_poldata_add_btype(pd, btype);
+        add_btype(btype);
     }
     else
     {
-        fprintf(stderr, "Atom type %s was already added to poldata record\n", atype);
+        fprintf(stderr, "Atom type %s was already added to Poldata record\n", atype);
     }
 }
 
-void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
+void Poldata::add_bonding_rule(
                                   char *gt_brule, char *atype,
                                   char *geometry, int numbonds,
                                   double valence, int iAromatic,
@@ -413,29 +306,29 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
     t_brule *sp;
     int      i, j;
 
-    for (j = 0; (j < pd->nalexandria); j++)
+    for (j = 0; (j < this->nalexandria); j++)
     {
-        if (strcmp(pd->alexandria[j].type, atype) == 0)
+        if (strcmp(this->alexandria[j].type, atype) == 0)
         {
             break;
         }
     }
-    if (j < pd->nalexandria)
+    if (j < this->nalexandria)
     {
-        for (i = 0; (i < pd->nbrule); i++)
+        for (i = 0; (i < this->nbrule); i++)
         {
-            if (strcmp(pd->brule[i].rule, gt_brule) == 0)
+            if (strcmp(this->brule[i].rule, gt_brule) == 0)
             {
                 break;
             }
         }
-        if (i == pd->nbrule)
+        if (i == this->nbrule)
         {
-            pd->nbrule++;
-            srenew(pd->brule, pd->nbrule);
+            this->nbrule++;
+            srenew(this->brule, this->nbrule);
 
-            sp                 = &(pd->brule[i]);
-            sp->elem           = strdup(pd->alexandria[j].elem);
+            sp                 = &(this->brule[i]);
+            sp->elem           = strdup(this->alexandria[j].elem);
             sp->rule           = strdup(gt_brule);
             sp->type           = strdup(atype);
             sp->neighbors      = strdup(neighbors);
@@ -447,7 +340,7 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
         }
         else
         {
-            fprintf(stderr, "Bonding rule %s was already added to poldata record\n", gt_brule);
+            fprintf(stderr, "Bonding rule %s was already added to Poldata record\n", gt_brule);
         }
     }
     else if (NULL != debug)
@@ -457,61 +350,61 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
     }
 }
 
-int gmx_poldata_get_bonding_rule(gmx_poldata_t pd,
+int Poldata::get_bonding_rule(
                                  char **gt_brule, char **atype,
                                  char **geometry, int *numbonds,
                                  double *valence, int *iAromatic,
                                  char **neighbors)
 {
-    if (pd->nbrule_c < pd->nbrule)
+    if (this->nbrule_c < this->nbrule)
     {
-        assign_str(gt_brule, pd->brule[pd->nbrule_c].rule);
-        assign_str(atype, pd->brule[pd->nbrule_c].type);
-        assign_str(geometry, pd->brule[pd->nbrule_c].geometry);
-        assign_scal(numbonds, pd->brule[pd->nbrule_c].numbonds);
-        assign_scal(valence, pd->brule[pd->nbrule_c].valence);
-        assign_scal(iAromatic, pd->brule[pd->nbrule_c].iAromatic);
-        assign_str(neighbors, pd->brule[pd->nbrule_c].neighbors);
+        assign_str(gt_brule, this->brule[this->nbrule_c].rule);
+        assign_str(atype, this->brule[this->nbrule_c].type);
+        assign_str(geometry, this->brule[this->nbrule_c].geometry);
+        assign_scal(numbonds, this->brule[this->nbrule_c].numbonds);
+        assign_scal(valence, this->brule[this->nbrule_c].valence);
+        assign_scal(iAromatic, this->brule[this->nbrule_c].iAromatic);
+        assign_str(neighbors, this->brule[this->nbrule_c].neighbors);
 
-        pd->nbrule_c++;
+        this->nbrule_c++;
 
         return 1;
     }
     return 0;
 }
 
-int gmx_poldata_get_natypes(gmx_poldata_t pd)
+int Poldata::get_natypes()
 {
-    return pd->nalexandria;
+    return this->nalexandria;
 }
 
-int gmx_poldata_get_nptypes(gmx_poldata_t pd)
+int Poldata::get_nptypes()
 {
-    return pd->nptype;
+    return this->nptype;
 }
 
-int gmx_poldata_get_ngt_bond(gmx_poldata_t pd)
+int Poldata::get_ngt_bond()
 {
-    return pd->ngt_bond;
+    return this->ngt_bond;
 }
 
-int gmx_poldata_get_ngt_angle(gmx_poldata_t pd)
+int Poldata::get_ngt_angle()
 {
-    return pd->ngt_angle;
+    return this->ngt_angle;
 }
 
-int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd, int egd)
+int Poldata::get_ngt_dihedral( int egd)
 {
-    return pd->ngt_dihedral[egd];
+    return this->ngt_dihedral[egd];
 }
 
-void gmx_poldata_set_bond_function(gmx_poldata_t pd, char *fn)
+void Poldata::set_bond_function( char *fn)
 {
     int i;
 
-    if (NULL != pd->gt_bond_function)
+    if (NULL != this->gt_bond_function)
     {
-        sfree(pd->gt_bond_function);
+        sfree(this->gt_bond_function);
     }
     for (i = 0; (i < F_NRE); i++)
     {
@@ -524,22 +417,22 @@ void gmx_poldata_set_bond_function(gmx_poldata_t pd, char *fn)
     {
         gmx_fatal(FARGS, "Bond function '%s' does not exist in gromacs", fn);
     }
-    pd->gt_bond_ftype    = i;
-    pd->gt_bond_function = strdup(fn);
+    this->gt_bond_ftype    = i;
+    this->gt_bond_function = strdup(fn);
 }
 
-char *gmx_poldata_get_bond_function(gmx_poldata_t pd)
+char *Poldata::get_bond_function()
 {
-    return pd->gt_bond_function;
+    return this->gt_bond_function;
 }
 
-void gmx_poldata_set_angle_function(gmx_poldata_t pd, char *fn)
+void Poldata::set_angle_function( char *fn)
 {
     int i;
 
-    if (NULL != pd->gt_angle_function)
+    if (NULL != this->gt_angle_function)
     {
-        sfree(pd->gt_angle_function);
+        sfree(this->gt_angle_function);
     }
     for (i = 0; (i < F_NRE); i++)
     {
@@ -552,37 +445,37 @@ void gmx_poldata_set_angle_function(gmx_poldata_t pd, char *fn)
     {
         gmx_fatal(FARGS, "Angle function '%s' does not exist in gromacs", fn);
     }
-    pd->gt_angle_ftype    = i;
-    pd->gt_angle_function = strdup(fn);
+    this->gt_angle_ftype    = i;
+    this->gt_angle_function = strdup(fn);
 }
 
-char *gmx_poldata_get_angle_function(gmx_poldata_t pd)
+char *Poldata::get_angle_function()
 {
-    return pd->gt_angle_function;
+    return this->gt_angle_function;
 }
 
-int gmx_poldata_get_bond_ftype(gmx_poldata_t pd)
+int Poldata::get_bond_ftype()
 {
-    return pd->gt_bond_ftype;
+    return this->gt_bond_ftype;
 }
 
-int gmx_poldata_get_angle_ftype(gmx_poldata_t pd)
+int Poldata::get_angle_ftype()
 {
-    return pd->gt_angle_ftype;
+    return this->gt_angle_ftype;
 }
 
-int gmx_poldata_get_dihedral_ftype(gmx_poldata_t pd, int egd)
+int Poldata::get_dihedral_ftype( int egd)
 {
-    return pd->gt_dihedral_ftype[egd];
+    return this->gt_dihedral_ftype[egd];
 }
 
-void gmx_poldata_set_dihedral_function(gmx_poldata_t pd, int egd, char *func)
+void Poldata::set_dihedral_function( int egd, char *func)
 {
     int i;
 
-    if (NULL != pd->gt_dihedral_function[egd])
+    if (NULL != this->gt_dihedral_function[egd])
     {
-        sfree(pd->gt_dihedral_function[egd]);
+        sfree(this->gt_dihedral_function[egd]);
     }
     for (i = 0; (i < F_NRE); i++)
     {
@@ -595,94 +488,94 @@ void gmx_poldata_set_dihedral_function(gmx_poldata_t pd, int egd, char *func)
     {
         gmx_fatal(FARGS, "Dihedral function '%s' does not exist in gromacs", func);
     }
-    pd->gt_dihedral_ftype[egd]    = i;
-    pd->gt_dihedral_function[egd] = strdup(func);
+    this->gt_dihedral_ftype[egd]    = i;
+    this->gt_dihedral_function[egd] = strdup(func);
 }
 
-char *gmx_poldata_get_dihedral_function(gmx_poldata_t pd, int egd)
+char *Poldata::get_dihedral_function( int egd)
 {
-    return pd->gt_dihedral_function[egd];
+    return this->gt_dihedral_function[egd];
 }
 
-void gmx_poldata_set_ptype_polarizability(gmx_poldata_t pd, const char *ptype,
+void Poldata::set_ptype_polarizability( const char *ptype,
                                           double polarizability, double sig_pol)
 {
     t_ptype *sp;
     int      i;
 
-    for (i = 0; (i < pd->nptype); i++)
+    for (i = 0; (i < this->nptype); i++)
     {
-        if (strcmp(ptype, pd->ptype[i].type) == 0)
+        if (strcmp(ptype, this->ptype[i].type) == 0)
         {
-            sp                 = &(pd->ptype[i]);
+            sp                 = &(this->ptype[i]);
             sp->polarizability = polarizability;
             sp->sig_pol        = sig_pol;
             break;
         }
     }
-    if (i == pd->nptype)
+    if (i == this->nptype)
     {
         fprintf(stderr, "No such ptype %s when trying to set the polarizability.\n", ptype);
     }
 }
 
-char *gmx_poldata_get_polar_unit(gmx_poldata_t pd)
+char *Poldata::get_polar_unit()
 {
-    return pd->alexandria_polar_unit;
+    return this->alexandria_polar_unit;
 }
 
-char *gmx_poldata_get_polar_ref(gmx_poldata_t pd)
+char *Poldata::get_polar_ref()
 {
-    return pd->alexandria_polar_ref;
+    return this->alexandria_polar_ref;
 }
 
-char *gmx_poldata_get_length_unit(gmx_poldata_t pd)
+char *Poldata::get_length_unit()
 {
-    if (NULL == pd->gt_length_unit)
+    if (NULL == this->gt_length_unit)
     {
         gmx_fatal(FARGS, "No length unit in %s",
-                  (NULL != pd->filename) ? pd->filename : "unknown");
+                  (NULL != this->filename) ? this->filename : "unknown");
     }
 
-    return pd->gt_length_unit;
+    return this->gt_length_unit;
 }
 
-void gmx_poldata_set_polar_unit(gmx_poldata_t pd, const char *polar_unit)
+void Poldata::set_polar_unit( const char *polar_unit)
 {
-    pd->alexandria_polar_unit   = strdup(polar_unit);
+    this->alexandria_polar_unit   = strdup(polar_unit);
 }
 
-void gmx_poldata_set_polar_ref(gmx_poldata_t pd, const char *polar_ref)
+void Poldata::set_polar_ref( const char *polar_ref)
 {
-    pd->alexandria_polar_ref   = strdup(polar_ref);
+    this->alexandria_polar_ref   = strdup(polar_ref);
 }
 
-char *gmx_poldata_get_force_field(gmx_poldata_t pd)
+char *Poldata::get_force_field()
 {
-    return pd->alexandria_forcefield;
+    return this->alexandria_forcefield;
 }
 
-void gmx_poldata_set_force_field(gmx_poldata_t pd, const char *forcefield)
+void Poldata::set_force_field( const char *forcefield)
 {
-    pd->alexandria_forcefield   = strdup(forcefield);
+    this->alexandria_forcefield   = strdup(forcefield);
 }
 
-void gmx_poldata_set_length_unit(gmx_poldata_t pd, const char *length_unit)
+void Poldata::set_length_unit( const char *length_unit)
 {
-    pd->gt_length_unit   = strdup(length_unit);
+    this->gt_length_unit   = strdup(length_unit);
 }
 
-char *gmx_poldata_get_geometry(gmx_poldata_t pd, char *gt_brule)
+char *Poldata::get_geometry( char *gt_brule)
 {
     int i;
 
     if (gt_brule)
     {
-        for (i = 0; (i < pd->nbrule); i++)
+        for (i = 0; (i < this->nbrule); i++)
         {
-            if (strcmp(pd->brule[i].rule, gt_brule) == 0)
+            if (strcmp(this->brule[i].rule, gt_brule) == 0)
             {
-                return pd->brule[i].geometry;
+                return this->brule[i].geometry;
             }
         }
     }
@@ -690,17 +583,17 @@ char *gmx_poldata_get_geometry(gmx_poldata_t pd, char *gt_brule)
     return NULL;
 }
 
-char *gmx_poldata_get_desc(gmx_poldata_t pd, char *atype)
+char *Poldata::get_desc( char *atype)
 {
     int i;
 
     if (atype)
     {
-        for (i = 0; (i < pd->nalexandria); i++)
+        for (i = 0; (i < this->nalexandria); i++)
         {
-            if (strcmp(pd->alexandria[i].type, atype) == 0)
+            if (strcmp(this->alexandria[i].type, atype) == 0)
             {
-                return pd->alexandria[i].desc;
+                return this->alexandria[i].desc;
             }
         }
     }
@@ -708,7 +601,7 @@ char *gmx_poldata_get_desc(gmx_poldata_t pd, char *atype)
     return NULL;
 }
 
-static gmx_bool strcasestr_start(char *needle, char *haystack)
+gmx_bool Poldata::strcasestr_start(char *needle, char *haystack)
 {
     char *ptr;
 
@@ -717,7 +610,7 @@ static gmx_bool strcasestr_start(char *needle, char *haystack)
     return (ptr == haystack);
 }
 
-static int count_neighbors(t_brule *brule, int nbond, char *nbhybrid[], int *score)
+int Poldata::count_neighbors(t_brule *brule, int nbond, char *nbhybrid[], int *score)
 {
     int j, ni = 0, *jj, i_found;
 
@@ -751,7 +644,7 @@ static int count_neighbors(t_brule *brule, int nbond, char *nbhybrid[], int *sco
     return ni;
 }
 
-char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
+char **Poldata::get_bonding_rules( char *elem,
                                      int nbond, char *neighbors[],
                                      const char *geometry,
                                      int iAromatic)
@@ -760,15 +653,15 @@ char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
     int             i, nptr = 0, best = -1, score;
     char          **ptr = NULL;
 
-    for (i = 0; (i < pd->nbrule); i++)
+    for (i = 0; (i < this->nbrule); i++)
     {
-        nnb = count_neighbors(&(pd->brule[i]), nbond, neighbors, &score);
-        if ((strcmp(pd->brule[i].elem, elem) == 0) &&
-            (strcasecmp(pd->brule[i].geometry, geometry) == 0) &&
-            (nbond == pd->brule[i].numbonds) &&
-            ((iAromatic >= 0 && (iAromatic == pd->brule[i].iAromatic)) ||
+        nnb = count_neighbors(&(this->brule[i]), nbond, neighbors, &score);
+        if ((strcmp(this->brule[i].elem, elem) == 0) &&
+            (strcasecmp(this->brule[i].geometry, geometry) == 0) &&
+            (nbond == this->brule[i].numbonds) &&
+            ((iAromatic >= 0 && (iAromatic == this->brule[i].iAromatic)) ||
              (iAromatic < 0)) &&
-            (nnb == pd->brule[i].nb.size()))
+            (nnb == this->brule[i].nb.size()))
         {
             if (score > best)
             {
@@ -782,7 +675,7 @@ char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
             if (score >= best)
             {
                 srenew(ptr, ++nptr);
-                ptr[nptr-1] = pd->brule[i].rule;
+                ptr[nptr-1] = this->brule[i].rule;
                 best        = score;
             }
         }
@@ -793,37 +686,37 @@ char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
     return ptr;
 }
 
-int gmx_poldata_bonding_rule_valence(gmx_poldata_t pd, char *gt_brule, double *valence)
+int Poldata::bonding_rule_valence( char *gt_brule, double *valence)
 {
     int i;
 
-    for (i = 0; (i < pd->nbrule); i++)
+    for (i = 0; (i < this->nbrule); i++)
     {
-        if (strcasecmp(gt_brule, pd->brule[i].rule) == 0)
+        if (strcasecmp(gt_brule, this->brule[i].rule) == 0)
         {
-            *valence = pd->brule[i].valence;
+            *valence = this->brule[i].valence;
             return 1;
         }
     }
     return 0;
 }
 
-int gmx_poldata_get_ptype_pol(gmx_poldata_t pd, const char *ptype,
+int Poldata::get_ptype_pol( const char *ptype,
                               double *polar, double *sig_pol)
 {
     int j;
 
-    for (j = 0; (j < pd->nptype); j++)
+    for (j = 0; (j < this->nptype); j++)
     {
-        if (strcmp(ptype, pd->ptype[j].type) == 0)
+        if (strcmp(ptype, this->ptype[j].type) == 0)
         {
             if (NULL != polar)
             {
-                *polar   = pd->ptype[j].polarizability;
+                *polar   = this->ptype[j].polarizability;
             }
             if (NULL != sig_pol)
             {
-                *sig_pol = pd->ptype[j].sig_pol;
+                *sig_pol = this->ptype[j].sig_pol;
             }
             return 1;
         }
@@ -831,66 +724,67 @@ int gmx_poldata_get_ptype_pol(gmx_poldata_t pd, const char *ptype,
     return 0;
 }
 
-int gmx_poldata_get_atype_pol(gmx_poldata_t pd, const char *atype,
+int Poldata::get_atype_pol( const char *atype,
                               double *polar, double *sig_pol)
 {
     int i;
 
-    for (i = 0; (i < pd->nalexandria); i++)
+    for (i = 0; (i < this->nalexandria); i++)
     {
-        if (strcmp(atype, pd->alexandria[i].type) == 0)
+        if (strcmp(atype, this->alexandria[i].type) == 0)
         {
-            return gmx_poldata_get_ptype_pol(pd, pd->alexandria[i].ptype, polar, sig_pol);
+            return get_ptype_pol( this->alexandria[i].ptype, polar, sig_pol);
         }
     }
     return 0;
 }
 
-int gmx_poldata_get_atype_ref_enthalpy(gmx_poldata_t pd, const char *atype,
+
+int Poldata::get_atype_ref_enthalpy( const char *atype,
                                        double *Href)
 {
     int i;
 
-    for (i = 0; (i < pd->nalexandria); i++)
+    for (i = 0; (i < this->nalexandria); i++)
     {
-        if (strcmp(atype, pd->alexandria[i].type) == 0)
+        if (strcmp(atype, this->alexandria[i].type) == 0)
         {
-            *Href = pd->alexandria[i].ref_enthalpy;
+            *Href = this->alexandria[i].ref_enthalpy;
             return 1;
         }
     }
     return 0;
 }
 
-char *gmx_poldata_ptype_to_miller(gmx_poldata_t pd, const char *ptype)
+char *Poldata::ptype_to_miller( const char *ptype)
 {
     int i;
 
-    for (i = 0; (i < pd->nptype); i++)
+    for (i = 0; (i < this->nptype); i++)
     {
-        if (strcmp(ptype, pd->ptype[i].type) == 0)
+        if (strcmp(ptype, this->ptype[i].type) == 0)
         {
-            return pd->ptype[i].miller;
+            return this->ptype[i].miller;
         }
     }
     return NULL;
 }
 
-char *gmx_poldata_ptype_to_bosque(gmx_poldata_t pd, const char *ptype)
+char *Poldata::ptype_to_bosque( const char *ptype)
 {
     int i;
 
-    for (i = 0; (i < pd->nptype); i++)
+    for (i = 0; (i < this->nptype); i++)
     {
-        if (strcmp(ptype, pd->ptype[i].type) == 0)
+        if (strcmp(ptype, this->ptype[i].type) == 0)
         {
-            return pd->ptype[i].bosque;
+            return this->ptype[i].bosque;
         }
     }
     return NULL;
 }
 
-int gmx_poldata_get_ptype(gmx_poldata_t pd,
+int Poldata::get_ptype(
                           char        **ptype,
                           char        **miller,
                           char        **bosque,
@@ -899,26 +793,26 @@ int gmx_poldata_get_ptype(gmx_poldata_t pd,
 {
     t_ptype *sp;
 
-    if (pd->nptype_c < pd->nptype)
+    if (this->nptype_c < this->nptype)
     {
-        sp = &(pd->ptype[pd->nptype_c]);
+        sp = &(this->ptype[this->nptype_c]);
         assign_scal(polarizability, sp->polarizability);
         assign_scal(sig_pol, sp->sig_pol);
         assign_str(ptype, sp->type);
         assign_str(miller, sp->miller);
         assign_str(bosque, sp->bosque);
-        pd->nptype_c++;
+        this->nptype_c++;
         return 1;
     }
     else
     {
-        pd->nptype_c = 0;
+        this->nptype_c = 0;
     }
 
     return 0;
 }
 
-int gmx_poldata_get_atype(gmx_poldata_t pd,
+int Poldata::get_atype(
                           char        **elem,
                           char        **desc,
                           char        **atype,
@@ -929,9 +823,9 @@ int gmx_poldata_get_atype(gmx_poldata_t pd,
 {
     t_ffatype *sp;
 
-    if (pd->nalexandria_c < pd->nalexandria)
+    if (this->nalexandria_c < this->nalexandria)
     {
-        sp = &(pd->alexandria[pd->nalexandria_c]);
+        sp = &(this->alexandria[this->nalexandria_c]);
         assign_str(elem, sp->elem);
         assign_str(desc, sp->desc);
         assign_str(atype, sp->type);
@@ -939,46 +833,46 @@ int gmx_poldata_get_atype(gmx_poldata_t pd,
         assign_str(btype, sp->btype);
         assign_str(vdwparams, sp->vdwparams);
         *ref_enthalpy = sp->ref_enthalpy;
-        pd->nalexandria_c++;
+        this->nalexandria_c++;
         return 1;
     }
     else
     {
-        pd->nalexandria_c = 0;
+        this->nalexandria_c = 0;
     }
 
     return 0;
 }
 
-const char *gmx_poldata_atype_to_ptype(gmx_poldata_t pd, const char *atype)
+const char *Poldata::atype_to_ptype( const char *atype)
 {
     int i;
 
-    for (i = 0; (i < pd->nalexandria); i++)
+    for (i = 0; (i < this->nalexandria); i++)
     {
-        if (strcmp(pd->alexandria[i].type, atype) == 0)
+        if (strcmp(this->alexandria[i].type, atype) == 0)
         {
-            return pd->alexandria[i].ptype;
+            return this->alexandria[i].ptype;
         }
     }
     return NULL;
 }
 
-const char *gmx_poldata_atype_to_btype(gmx_poldata_t pd, const char *atype)
+const char *Poldata::atype_to_btype( const char *atype)
 {
     int i;
 
-    for (i = 0; (i < pd->nalexandria); i++)
+    for (i = 0; (i < this->nalexandria); i++)
     {
-        if (strcmp(pd->alexandria[i].type, atype) == 0)
+        if (strcmp(this->alexandria[i].type, atype) == 0)
         {
-            return pd->alexandria[i].btype;
+            return this->alexandria[i].btype;
         }
     }
     return NULL;
 }
 
-int gmx_poldata_search_atype(gmx_poldata_t pd,
+int Poldata::search_atype(
                              char         *key,
                              char        **elem,
                              char        **desc,
@@ -990,17 +884,17 @@ int gmx_poldata_search_atype(gmx_poldata_t pd,
     t_ffatype *sp;
     int        i;
 
-    for (i = 0; (i < pd->nalexandria); i++)
+    for (i = 0; (i < this->nalexandria); i++)
     {
-        if (strcmp(key, pd->alexandria[i].type) == 0)
+        if (strcmp(key, this->alexandria[i].type) == 0)
         {
             break;
         }
     }
 
-    if (i < pd->nalexandria)
+    if (i < this->nalexandria)
     {
-        sp = &(pd->alexandria[i]);
+        sp = &(this->alexandria[i]);
         assign_str(elem, sp->elem);
         assign_str(desc, sp->desc);
         assign_str(atype, sp->type);
@@ -1016,23 +910,23 @@ int gmx_poldata_search_atype(gmx_poldata_t pd,
     }
 }
 
-double gmx_poldata_elem_get_max_valence(gmx_poldata_t pd, char *elem)
+double Poldata::elem_get_max_valence( char *elem)
 {
     double mv = 0;
     int    i;
 
-    for (i = 0; (i < pd->nbrule); i++)
+    for (i = 0; (i < this->nbrule); i++)
     {
-        if ((0 == gmx_strcasecmp(pd->brule[i].elem, elem)) &&
-            (mv < pd->brule[i].valence))
+        if ((0 == gmx_strcasecmp(this->brule[i].elem, elem)) &&
+            (mv < this->brule[i].valence))
         {
-            mv = pd->brule[i].valence;
+            mv = this->brule[i].valence;
         }
     }
     return mv;
 }
 
-double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd, char *elem1, char *elem2,
+double *Poldata::elem_get_bondorders( char *elem1, char *elem2,
                                         double distance, double toler)
 {
     double  dev, *bo = NULL;
@@ -1044,39 +938,39 @@ double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd, char *elem1, char *ele
         return 0;
     }
     nbo = 0;
-    for (i = 0; (i < pd->ngt_bond); i++)
+    for (i = 0; (i < this->ngt_bond); i++)
     {
-        if (0 == strlen(pd->gt_bond[i].elem1))
+        if (0 == strlen(this->gt_bond[i].elem1))
         {
-            for (j = 0; (j < pd->nalexandria); j++)
+            for (j = 0; (j < this->nalexandria); j++)
             {
-                if (strcmp(pd->alexandria[j].type, pd->gt_bond[i].atom2) == 0)
+                if (strcmp(this->alexandria[j].type, this->gt_bond[i].atom2) == 0)
                 {
-                    strcpy(pd->gt_bond[i].elem1, pd->alexandria[j].elem);
+                    strcpy(this->gt_bond[i].elem1, this->alexandria[j].elem);
                 }
             }
         }
-        if (0 == strlen(pd->gt_bond[i].elem2))
+        if (0 == strlen(this->gt_bond[i].elem2))
         {
-            for (j = 0; (j < pd->nalexandria); j++)
+            for (j = 0; (j < this->nalexandria); j++)
             {
-                if (strcmp(pd->alexandria[j].type, pd->gt_bond[i].atom2) == 0)
+                if (strcmp(this->alexandria[j].type, this->gt_bond[i].atom2) == 0)
                 {
-                    strcpy(pd->gt_bond[i].elem2, pd->alexandria[j].elem);
+                    strcpy(this->gt_bond[i].elem2, this->alexandria[j].elem);
                 }
             }
         }
-        ba1 = pd->gt_bond[i].elem1;
-        ba2 = pd->gt_bond[i].elem2;
+        ba1 = this->gt_bond[i].elem1;
+        ba2 = this->gt_bond[i].elem2;
         if (((strcmp(ba1, elem1) == 0) && (strcmp(ba2, elem2) == 0)) ||
             ((strcmp(ba1, elem2) == 0) && (strcmp(ba2, elem1) == 0)))
         {
-            dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
+            dev = fabs((this->gt_bond[i].length - distance)/this->gt_bond[i].length);
             if (dev < toler)
             {
                 for (k = 0; (k < nbo); k++)
                 {
-                    if (pd->gt_bond[i].bondorder == bo[k])
+                    if (this->gt_bond[i].bondorder == bo[k])
                     {
                         break;
                     }
@@ -1084,7 +978,7 @@ double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd, char *elem1, char *ele
                 if (k == nbo)
                 {
                     srenew(bo, nbo+2);
-                    bo[nbo]   = pd->gt_bond[i].bondorder;
+                    bo[nbo]   = this->gt_bond[i].bondorder;
                     bo[nbo+1] = 0;
                     nbo++;
                 }
@@ -1094,7 +988,7 @@ double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd, char *elem1, char *ele
     return bo;
 }
 
-int gmx_poldata_elem_is_bond(gmx_poldata_t pd, char *elem1, char *elem2,
+int Poldata::elem_is_bond( char *elem1, char *elem2,
                              double distance, double toler)
 {
     char  *ba1, *ba2;
@@ -1105,34 +999,34 @@ int gmx_poldata_elem_is_bond(gmx_poldata_t pd, char *elem1, char *elem2,
     {
         return 0;
     }
-    for (i = 0; (i < pd->ngt_bond); i++)
+    for (i = 0; (i < this->ngt_bond); i++)
     {
-        if (0 == strlen(pd->gt_bond[i].elem1))
+        if (0 == strlen(this->gt_bond[i].elem1))
         {
-            for (j = 0; (j < pd->nalexandria); j++)
+            for (j = 0; (j < this->nalexandria); j++)
             {
-                if (strcmp(pd->alexandria[j].type, pd->gt_bond[i].atom2) == 0)
+                if (strcmp(this->alexandria[j].type, this->gt_bond[i].atom2) == 0)
                 {
-                    strcpy(pd->gt_bond[i].elem1, pd->alexandria[j].elem);
+                    strcpy(this->gt_bond[i].elem1, this->alexandria[j].elem);
                 }
             }
         }
-        if (0 == strlen(pd->gt_bond[i].elem2))
+        if (0 == strlen(this->gt_bond[i].elem2))
         {
-            for (j = 0; (j < pd->nalexandria); j++)
+            for (j = 0; (j < this->nalexandria); j++)
             {
-                if (strcmp(pd->alexandria[j].type, pd->gt_bond[i].atom2) == 0)
+                if (strcmp(this->alexandria[j].type, this->gt_bond[i].atom2) == 0)
                 {
-                    strcpy(pd->gt_bond[i].elem2, pd->alexandria[j].elem);
+                    strcpy(this->gt_bond[i].elem2, this->alexandria[j].elem);
                 }
             }
         }
-        ba1 = pd->gt_bond[i].elem1;
-        ba2 = pd->gt_bond[i].elem2;
+        ba1 = this->gt_bond[i].elem1;
+        ba2 = this->gt_bond[i].elem2;
         if (((strcmp(ba1, elem1) == 0) && (strcmp(ba2, elem2) == 0)) ||
             ((strcmp(ba1, elem2) == 0) && (strcmp(ba2, elem1) == 0)))
         {
-            dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
+            dev = fabs((this->gt_bond[i].length - distance)/this->gt_bond[i].length);
             if (dev < dev_best)
             {
                 dev_best = dev;
@@ -1142,7 +1036,7 @@ int gmx_poldata_elem_is_bond(gmx_poldata_t pd, char *elem1, char *elem2,
     return (dev_best < toler);
 }
 
-static int lo_gtb_comp(t_gt_bond *ba, t_gt_bond *bb)
+ int lo_gtb_comp(t_gt_bond *ba, t_gt_bond *bb)
 {
     char *a1, *a2, *b1, *b2;
     int   i;
@@ -1176,7 +1070,8 @@ static int lo_gtb_comp(t_gt_bond *ba, t_gt_bond *bb)
     return i;
 }
 
-static int gtb_comp(const void *a, const void *b)
+//TODO add Poldata::?
+ int gtb_comp(const void *a, const void *b)
 {
     t_gt_bond *ba = (t_gt_bond *)a;
     t_gt_bond *bb = (t_gt_bond *)b;
@@ -1197,7 +1092,7 @@ static int gtb_comp(const void *a, const void *b)
     return i;
 }
 
-static t_gt_bond *search_bond(gmx_poldata_t pd, char *atom1, char *atom2,
+ t_gt_bond *Poldata::search_bond( char *atom1, char *atom2,
                               double bondorder)
 {
     t_gt_bond key, *gt_b;
@@ -1207,20 +1102,20 @@ static t_gt_bond *search_bond(gmx_poldata_t pd, char *atom1, char *atom2,
     key.atom2     = atom2;
     key.bondorder = bondorder;
 
-    gt_b = (t_gt_bond *) bsearch(&key, pd->gt_bond, pd->ngt_bond, sizeof(key), gtb_comp);
+    gt_b = (t_gt_bond *) bsearch(&key, this->gt_bond, this->ngt_bond, sizeof(key), gtb_comp);
     if (NULL != gt_b)
     {
-        i = gt_b - pd->gt_bond;
-        while ((i > 0) && (lo_gtb_comp(&(pd->gt_bond[i-1]), &(pd->gt_bond[i])) == 0))
+        i = gt_b - this->gt_bond;
+        while ((i > 0) && (lo_gtb_comp(&(this->gt_bond[i-1]), &(this->gt_bond[i])) == 0))
         {
             i--;
         }
-        gt_b = &(pd->gt_bond[i]);
+        gt_b = &(this->gt_bond[i]);
     }
     return gt_b;
 }
 
-double gmx_poldata_atype_bondorder(gmx_poldata_t pd, char *atype1, char *atype2,
+double Poldata::atype_bondorder( char *atype1, char *atype2,
                                    double distance, double toler)
 {
     double     dev, dev_best = 100000;
@@ -1231,13 +1126,13 @@ double gmx_poldata_atype_bondorder(gmx_poldata_t pd, char *atype1, char *atype2,
     {
         return 0.0;
     }
-    gt_b = search_bond(pd, atype1, atype2, 0);
+    gt_b = search_bond( atype1, atype2, 0);
     if (NULL != gt_b)
     {
-        i = gt_b - pd->gt_bond;
+        i = gt_b - this->gt_bond;
         do
         {
-            dev = fabs(pd->gt_bond[i].length - distance);
+            dev = fabs(this->gt_bond[i].length - distance);
             if (dev < dev_best)
             {
                 dev_best = dev;
@@ -1245,18 +1140,18 @@ double gmx_poldata_atype_bondorder(gmx_poldata_t pd, char *atype1, char *atype2,
             }
             i++;
         }
-        while ((i < pd->ngt_bond) &&
-               (0 == lo_gtb_comp(&(pd->gt_bond[i]), &(pd->gt_bond[i-1]))));
+        while ((i < this->ngt_bond) &&
+               (0 == lo_gtb_comp(&(this->gt_bond[i]), &(this->gt_bond[i-1]))));
     }
     if (dev_best < toler)
     {
-        return pd->gt_bond[i_best].bondorder;
+        return this->gt_bond[i_best].bondorder;
     }
 
     return 0.0;
 }
 
-void gmx_poldata_add_miller(gmx_poldata_t pd,
+void Poldata::add_miller(
                             char         *miller,
                             int           atomnumber,
                             double        tau_ahc,
@@ -1264,29 +1159,29 @@ void gmx_poldata_add_miller(gmx_poldata_t pd,
 {
     t_miller *mil;
 
-    pd->nmiller++;
-    srenew(pd->miller, pd->nmiller);
-    mil             = &(pd->miller[pd->nmiller-1]);
+    this->nmiller++;
+    srenew(this->miller, this->nmiller);
+    mil             = &(this->miller[this->nmiller-1]);
     mil->miller     = strdup(miller);
     mil->atomnumber = atomnumber;
     mil->tau_ahc    = tau_ahc;
     mil->alpha_ahp  = alpha_ahp;
 }
 
-void gmx_poldata_set_miller_units(gmx_poldata_t pd, char *tau_unit, char *ahp_unit)
+void Poldata::set_miller_units( char *tau_unit, char *ahp_unit)
 {
-    pd->miller_tau_unit = strdup(tau_unit);
-    pd->miller_ahp_unit = strdup(ahp_unit);
+    this->miller_tau_unit = strdup(tau_unit);
+    this->miller_ahp_unit = strdup(ahp_unit);
 }
 
-void gmx_poldata_get_miller_units(gmx_poldata_t pd, char **tau_unit,
+void Poldata::get_miller_units( char **tau_unit,
                                   char **ahp_unit)
 {
-    assign_str(tau_unit, pd->miller_tau_unit);
-    assign_str(ahp_unit, pd->miller_ahp_unit);
+    assign_str(tau_unit, this->miller_tau_unit);
+    assign_str(ahp_unit, this->miller_ahp_unit);
 }
 
-int gmx_poldata_get_miller(gmx_poldata_t pd,
+int Poldata::get_miller(
                            char        **miller,
                            int          *atomnumber,
                            double       *tau_ahc,
@@ -1295,28 +1190,28 @@ int gmx_poldata_get_miller(gmx_poldata_t pd,
     t_miller *mil;
     int       i;
 
-    i = pd->nmiller_c;
+    i = this->nmiller_c;
 
-    if (i < pd->nmiller)
+    if (i < this->nmiller)
     {
-        mil = &(pd->miller[i]);
+        mil = &(this->miller[i]);
         assign_str(miller, mil->miller);
         assign_scal(atomnumber, mil->atomnumber);
         assign_scal(tau_ahc, mil->tau_ahc);
         assign_scal(alpha_ahp, mil->alpha_ahp);
-        pd->nmiller_c++;
+        this->nmiller_c++;
 
         return 1;
     }
     else
     {
-        pd->nmiller_c = 0;
+        this->nmiller_c = 0;
     }
 
     return 0;
 }
 
-int gmx_poldata_get_miller_pol(gmx_poldata_t pd,
+int Poldata::get_miller_pol(
                                char         *miller,
                                int          *atomnumber,
                                double       *tau_ahc,
@@ -1325,11 +1220,11 @@ int gmx_poldata_get_miller_pol(gmx_poldata_t pd,
     t_miller *mil;
     int       i;
 
-    for (i = 0; (i < pd->nmiller); i++)
+    for (i = 0; (i < this->nmiller); i++)
     {
-        if (strcmp(miller, pd->miller[i].miller) == 0)
+        if (strcmp(miller, this->miller[i].miller) == 0)
         {
-            mil = &(pd->miller[i]);
+            mil = &(this->miller[i]);
             assign_scal(atomnumber, mil->atomnumber);
             assign_scal(tau_ahc, mil->tau_ahc);
             assign_scal(alpha_ahp, mil->alpha_ahp);
@@ -1341,73 +1236,74 @@ int gmx_poldata_get_miller_pol(gmx_poldata_t pd,
     return 0;
 }
 
-void gmx_poldata_add_bosque(gmx_poldata_t pd,
+void Poldata::add_bosque(
                             char         *bosque,
                             double        polarizability)
 {
     t_bosque *bs;
 
-    pd->nbosque++;
-    srenew(pd->bosque, pd->nbosque);
-    bs                 = &(pd->bosque[pd->nbosque-1]);
+    this->nbosque++;
+    srenew(this->bosque, this->nbosque);
+    bs                 = &(this->bosque[this->nbosque-1]);
     bs->bosque         = strdup(bosque);
     bs->polarizability = polarizability;
 }
 
-int gmx_poldata_get_bosque(gmx_poldata_t pd,
+int Poldata::get_bosque(
                            char        **bosque,
                            double       *polarizability)
 {
-    if (pd->nbosque_c < pd->nbosque)
+    if (this->nbosque_c < this->nbosque)
     {
-        assign_str(bosque, pd->bosque[pd->nbosque_c].bosque);
-        assign_scal(polarizability, pd->bosque[pd->nbosque_c].polarizability);
-        pd->nbosque_c++;
+        assign_str(bosque, this->bosque[this->nbosque_c].bosque);
+        assign_scal(polarizability, this->bosque[this->nbosque_c].polarizability);
+        this->nbosque_c++;
 
         return 1;
     }
     else
     {
-        pd->nbosque_c = 0;
+        this->nbosque_c = 0;
     }
 
     return 0;
 }
 
-int gmx_poldata_get_bosque_pol(gmx_poldata_t pd,
+int Poldata::get_bosque_pol(
                                char         *bosque,
                                double       *polarizability)
 {
     int i;
 
-    for (i = 0; (i < pd->nbosque); i++)
+    for (i = 0; (i < this->nbosque); i++)
     {
-        if (strcasecmp(bosque, pd->bosque[i].bosque) == 0)
+        if (strcasecmp(bosque, this->bosque[i].bosque) == 0)
         {
-            *polarizability = pd->bosque[i].polarizability;
+            *polarizability = this->bosque[i].polarizability;
             return 1;
         }
     }
     return 0;
 }
 
-void gmx_poldata_set_bosque_unit(gmx_poldata_t pd, char *polar_unit)
+void Poldata::set_bosque_unit( char *polar_unit)
 {
-    pd->bosque_polar_unit   = strdup(polar_unit);
+    this->bosque_polar_unit   = strdup(polar_unit);
 }
 
-char *gmx_poldata_get_bosque_unit(gmx_poldata_t pd)
+char *Poldata::get_bosque_unit()
 {
-    return pd->bosque_polar_unit;
+    return this->bosque_polar_unit;
 }
 
-static int search_bondtype(gmx_poldata_t pd, char *atom)
+//TODO can be static
+int Poldata::search_bondtype( char *atom)
 {
     int j;
 
-    for (j = 0; (j < pd->nbtype); j++)
+    for (j = 0; (j < this->nbtype); j++)
     {
-        if (strcmp(pd->btype[j], atom) == 0)
+        if (strcmp(this->btype[j], atom) == 0)
         {
             return j;
         }
@@ -1418,16 +1314,16 @@ static int search_bondtype(gmx_poldata_t pd, char *atom)
 /*
  * gt_bond stuff
  */
-int gmx_poldata_set_bond_params(gmx_poldata_t pd, char *atom1, char *atom2,
+int Poldata::set_bond_params( char *atom1, char *atom2,
                                 double length, double sigma, int ntrain,
                                 double bondorder, char *params)
 {
     t_gt_bond *gt_b;
     int        i;
 
-    for (i = 0; (i < pd->ngt_bond); i++)
+    for (i = 0; (i < this->ngt_bond); i++)
     {
-        gt_b = &(pd->gt_bond[i]);
+        gt_b = &(this->gt_bond[i]);
         if (((((strcmp(gt_b->atom1, atom1) == 0) &&
                (strcmp(gt_b->atom2, atom2) == 0)) ||
               ((strcmp(gt_b->atom1, atom2) == 0) &&
@@ -1437,7 +1333,7 @@ int gmx_poldata_set_bond_params(gmx_poldata_t pd, char *atom1, char *atom2,
             break;
         }
     }
-    if (i < pd->ngt_bond)
+    if (i < this->ngt_bond)
     {
         if (length > 0)
         {
@@ -1461,50 +1357,50 @@ int gmx_poldata_set_bond_params(gmx_poldata_t pd, char *atom1, char *atom2,
     return 0;
 }
 
-int gmx_poldata_add_bond(gmx_poldata_t pd, char *atom1, char *atom2,
+int Poldata::add_bond( char *atom1, char *atom2,
                          double length, double sigma, int ntrain,
                          double bondorder, char *params)
 {
     t_gt_bond *gt_b;
     int        a1, a2;
 
-    if (-1 == (a1 = search_bondtype(pd, atom1)))
+    if (-1 == (a1 = search_bondtype( atom1)))
     {
         return 0;
     }
-    if (-1 == (a2 = search_bondtype(pd, atom2)))
+    if (-1 == (a2 = search_bondtype( atom2)))
     {
         return 0;
     }
-    if (gmx_poldata_set_bond_params(pd, atom1, atom2, length, sigma, ntrain,
+    if (Poldata::set_bond_params( atom1, atom2, length, sigma, ntrain,
                                     bondorder, params) == 0)
     {
-        pd->ngt_bond++;
-        srenew(pd->gt_bond, pd->ngt_bond);
-        gt_b            = &(pd->gt_bond[pd->ngt_bond-1]);
+        this->ngt_bond++;
+        srenew(this->gt_bond, this->ngt_bond);
+        gt_b            = &(this->gt_bond[this->ngt_bond-1]);
         gt_b->atom1     = strdup(atom1);
-        strncpy(gt_b->elem1, pd->alexandria[a1].elem, sizeof(gt_b->elem1)-1);
+        strncpy(gt_b->elem1, this->alexandria[a1].elem, sizeof(gt_b->elem1)-1);
         gt_b->atom2     = strdup(atom2);
-        strncpy(gt_b->elem2, pd->alexandria[a2].elem, sizeof(gt_b->elem2)-1);
+        strncpy(gt_b->elem2, this->alexandria[a2].elem, sizeof(gt_b->elem2)-1);
         gt_b->length    = length;
         gt_b->sigma     = sigma;
         gt_b->ntrain    = ntrain;
         gt_b->bondorder = bondorder;
         gt_b->params    = strdup(params);
-        qsort(pd->gt_bond, pd->ngt_bond, sizeof(pd->gt_bond[0]), gtb_comp);
+        qsort(this->gt_bond, this->ngt_bond, sizeof(this->gt_bond[0]), gtb_comp);
     }
     return 1;
 }
 
-int gmx_poldata_get_bond(gmx_poldata_t pd, char **atom1, char **atom2,
+int Poldata::get_bond( char **atom1, char **atom2,
                          double *length, double *sigma, int *ntrain,
                          double *bondorder, char **params)
 {
     t_gt_bond *gt_b;
 
-    if (pd->ngt_bond_c < pd->ngt_bond)
+    if (this->ngt_bond_c < this->ngt_bond)
     {
-        gt_b = &(pd->gt_bond[pd->ngt_bond_c]);
+        gt_b = &(this->gt_bond[this->ngt_bond_c]);
         assign_str(atom1, gt_b->atom1);
         assign_str(atom2, gt_b->atom2);
         assign_scal(length, gt_b->length);
@@ -1512,16 +1408,16 @@ int gmx_poldata_get_bond(gmx_poldata_t pd, char **atom1, char **atom2,
         assign_scal(ntrain, gt_b->ntrain);
         assign_scal(bondorder, gt_b->bondorder);
         assign_str(params, gt_b->params);
-        pd->ngt_bond_c++;
+        this->ngt_bond_c++;
 
-        return pd->ngt_bond_c;
+        return this->ngt_bond_c;
     }
-    pd->ngt_bond_c = 0;
+    this->ngt_bond_c = 0;
 
     return 0;
 }
 
-int gmx_poldata_search_bond(gmx_poldata_t pd, char *atom1, char *atom2,
+int Poldata::search_bond( char *atom1, char *atom2,
                             double *length, double *sigma, int *ntrain,
                             double *bondorder, char **params)
 {
@@ -1531,7 +1427,7 @@ int gmx_poldata_search_bond(gmx_poldata_t pd, char *atom1, char *atom2,
     {
         return 0;
     }
-    gt_b = search_bond(pd, atom1, atom2, 0);
+    gt_b = search_bond( atom1, atom2, 0);
     if (NULL != gt_b)
     {
         if (((strcmp(gt_b->atom1, atom1) == 0) &&
@@ -1545,7 +1441,7 @@ int gmx_poldata_search_bond(gmx_poldata_t pd, char *atom1, char *atom2,
             assign_scal(bondorder, gt_b->bondorder);
             assign_str(params, gt_b->params);
 
-            return 1+(gt_b - pd->gt_bond);
+            return 1+(gt_b - this->gt_bond);
         }
     }
     return 0;
@@ -1554,16 +1450,16 @@ int gmx_poldata_search_bond(gmx_poldata_t pd, char *atom1, char *atom2,
 /*
  * gt_angle stuff
  */
-int gmx_poldata_set_angle_params(gmx_poldata_t pd, char *atom1, char *atom2,
+int Poldata::set_angle_params( char *atom1, char *atom2,
                                  char *atom3, double angle, double sigma, int ntrain,
                                  char *params)
 {
     t_gt_angle *gt_b;
     int         i;
 
-    for (i = 0; (i < pd->ngt_angle); i++)
+    for (i = 0; (i < this->ngt_angle); i++)
     {
-        gt_b = &(pd->gt_angle[i]);
+        gt_b = &(this->gt_angle[i]);
         if ((strcmp(gt_b->atom2, atom2) == 0) &&
             (((strcmp(gt_b->atom1, atom1) == 0) &&
               (strcmp(gt_b->atom3, atom3) == 0)) ||
@@ -1573,7 +1469,7 @@ int gmx_poldata_set_angle_params(gmx_poldata_t pd, char *atom1, char *atom2,
             break;
         }
     }
-    if (i < pd->ngt_angle)
+    if (i < this->ngt_angle)
     {
         if (angle > 0)
         {
@@ -1597,25 +1493,25 @@ int gmx_poldata_set_angle_params(gmx_poldata_t pd, char *atom1, char *atom2,
     return 0;
 }
 
-int gmx_poldata_add_angle(gmx_poldata_t pd,
+int Poldata::add_angle(
                           char *atom1, char *atom2,
                           char *atom3, double angle, double sigma,
                           int ntrain, char *params)
 {
     t_gt_angle *gt_b;
 
-    if ((-1 == search_bondtype(pd, atom1)) ||
-        (-1 == search_bondtype(pd, atom2)) ||
-        (-1 == search_bondtype(pd, atom3)))
+    if ((-1 == search_bondtype( atom1)) ||
+        (-1 == search_bondtype( atom2)) ||
+        (-1 == search_bondtype( atom3)))
     {
         return 0;
     }
 
-    if (0 == gmx_poldata_set_angle_params(pd, atom1, atom2, atom3, angle, sigma, ntrain, params))
+    if (0 == set_angle_params( atom1, atom2, atom3, angle, sigma, ntrain, params))
     {
-        pd->ngt_angle++;
-        srenew(pd->gt_angle, pd->ngt_angle);
-        gt_b          = &(pd->gt_angle[pd->ngt_angle-1]);
+        this->ngt_angle++;
+        srenew(this->gt_angle, this->ngt_angle);
+        gt_b          = &(this->gt_angle[this->ngt_angle-1]);
         gt_b->atom1   = strdup(atom1);
         gt_b->atom2   = strdup(atom2);
         gt_b->atom3   = strdup(atom3);
@@ -1627,15 +1523,15 @@ int gmx_poldata_add_angle(gmx_poldata_t pd,
     return 1;
 }
 
-int gmx_poldata_get_angle(gmx_poldata_t pd, char **atom1, char **atom2,
+int Poldata::get_angle( char **atom1, char **atom2,
                           char **atom3, double *angle, double *sigma,
                           int *ntrain, char **params)
 {
     t_gt_angle *gt_b;
 
-    if (pd->ngt_angle_c < pd->ngt_angle)
+    if (this->ngt_angle_c < this->ngt_angle)
     {
-        gt_b = &(pd->gt_angle[pd->ngt_angle_c]);
+        gt_b = &(this->gt_angle[this->ngt_angle_c]);
         assign_str(atom1, gt_b->atom1);
         assign_str(atom2, gt_b->atom2);
         assign_str(atom3, gt_b->atom3);
@@ -1643,16 +1539,16 @@ int gmx_poldata_get_angle(gmx_poldata_t pd, char **atom1, char **atom2,
         assign_scal(sigma, gt_b->sigma);
         assign_scal(ntrain, gt_b->ntrain);
         assign_str(params, gt_b->params);
-        pd->ngt_angle_c++;
+        this->ngt_angle_c++;
 
-        return pd->ngt_angle_c;
+        return this->ngt_angle_c;
     }
-    pd->ngt_angle_c = 0;
+    this->ngt_angle_c = 0;
 
     return 0;
 }
 
-int gmx_poldata_search_angle(gmx_poldata_t pd, char *atom1, char *atom2,
+int Poldata::search_angle( char *atom1, char *atom2,
                              char *atom3, double *angle, double *sigma,
                              int *ntrain, char **params)
 {
@@ -1663,9 +1559,9 @@ int gmx_poldata_search_angle(gmx_poldata_t pd, char *atom1, char *atom2,
     {
         return 0;
     }
-    for (i = 0; (i < pd->ngt_angle); i++)
+    for (i = 0; (i < this->ngt_angle); i++)
     {
-        gt_b = &(pd->gt_angle[i]);
+        gt_b = &(this->gt_angle[i]);
         if ((strcmp(gt_b->atom2, atom2) == 0) &&
             (((strcmp(gt_b->atom1, atom1) == 0) &&
               (strcmp(gt_b->atom3, atom3) == 0)) ||
@@ -1683,20 +1579,20 @@ int gmx_poldata_search_angle(gmx_poldata_t pd, char *atom1, char *atom2,
     return 0;
 }
 
-void gmx_poldata_set_angle_unit(gmx_poldata_t pd, char *angle_unit)
+void Poldata::set_angle_unit( char *angle_unit)
 {
-    pd->gt_angle_unit   = strdup(angle_unit);
+    this->gt_angle_unit   = strdup(angle_unit);
 }
 
-char *gmx_poldata_get_angle_unit(gmx_poldata_t pd)
+char *Poldata::get_angle_unit()
 {
-    return pd->gt_angle_unit;
+    return this->gt_angle_unit;
 }
 
 /*
  * gt_dihedral stuff
  */
-static int gtd_comp(const void *a, const void *b)
+int gtd_comp(const void *a, const void *b)
 {
     t_gt_dihedral *gt_a = (t_gt_dihedral *)a;
     t_gt_dihedral *gt_b = (t_gt_dihedral *)b;
@@ -1716,7 +1612,7 @@ static int gtd_comp(const void *a, const void *b)
     return n;
 }
 
-static t_gt_dihedral *search_dihedral(gmx_poldata_t pd, int egd,
+t_gt_dihedral *Poldata::search_dihedral( int egd,
                                       char *atom1, char *atom2,
                                       char *atom3, char *atom4)
 {
@@ -1727,8 +1623,8 @@ static t_gt_dihedral *search_dihedral(gmx_poldata_t pd, int egd,
     {
         return NULL;
     }
-    gt_dptr    = pd->gt_dihedral[egd];
-    nd         = pd->ngt_dihedral[egd];
+    gt_dptr    = this->gt_dihedral[egd];
+    nd         = this->ngt_dihedral[egd];
     gt_a.atom1 = atom1;
     gt_a.atom2 = atom2;
     gt_a.atom3 = atom3;
@@ -1745,7 +1641,7 @@ static t_gt_dihedral *search_dihedral(gmx_poldata_t pd, int egd,
     return gt_res;
 }
 
-int gmx_poldata_set_dihedral_params(gmx_poldata_t pd, int egd,
+int Poldata::set_dihedral_params( int egd,
                                     char *atom1, char *atom2,
                                     char *atom3, char *atom4,
                                     double dihedral, double sigma, int ntrain,
@@ -1754,7 +1650,7 @@ int gmx_poldata_set_dihedral_params(gmx_poldata_t pd, int egd,
     t_gt_dihedral *gt_b;
 
 
-    gt_b = search_dihedral(pd, egd, atom1, atom2, atom3, atom4);
+    gt_b = search_dihedral( egd, atom1, atom2, atom3, atom4);
     if (NULL != gt_b)
     {
         if (dihedral > 0)
@@ -1779,28 +1675,28 @@ int gmx_poldata_set_dihedral_params(gmx_poldata_t pd, int egd,
     return 0;
 }
 
-int gmx_poldata_add_dihedral(gmx_poldata_t pd, int egd,
+int Poldata::add_dihedral( int egd,
                              char *atom1, char *atom2,
                              char *atom3, char *atom4, double dihedral,
                              double sigma, int ntrain, char *params)
 {
     t_gt_dihedral *gt_b;
 
-    if ((-1 == search_bondtype(pd, atom1)) ||
-        (-1 == search_bondtype(pd, atom2)) ||
-        (-1 == search_bondtype(pd, atom3)) ||
-        (-1 == search_bondtype(pd, atom4)))
+    if ((-1 == search_bondtype( atom1)) ||
+        (-1 == search_bondtype( atom2)) ||
+        (-1 == search_bondtype( atom3)) ||
+        (-1 == search_bondtype( atom4)))
     {
         return 0;
     }
 
-    if (0 == gmx_poldata_set_dihedral_params(pd, egd, atom1, atom2,
+    if (0 == Poldata::set_dihedral_params( egd, atom1, atom2,
                                              atom3, atom4, dihedral,
                                              sigma, ntrain, params))
     {
-        pd->ngt_dihedral[egd]++;
-        srenew(pd->gt_dihedral[egd], pd->ngt_dihedral[egd]);
-        gt_b           = &(pd->gt_dihedral[egd][pd->ngt_dihedral[egd]-1]);
+        this->ngt_dihedral[egd]++;
+        srenew(this->gt_dihedral[egd], this->ngt_dihedral[egd]);
+        gt_b           = &(this->gt_dihedral[egd][this->ngt_dihedral[egd]-1]);
         gt_b->atom1    = strdup(atom1);
         gt_b->atom2    = strdup(atom2);
         gt_b->atom3    = strdup(atom3);
@@ -1809,22 +1705,22 @@ int gmx_poldata_add_dihedral(gmx_poldata_t pd, int egd,
         gt_b->sigma    = sigma;
         gt_b->ntrain   = ntrain;
         gt_b->params   = strdup(params);
-        qsort(pd->gt_dihedral[egd], pd->ngt_dihedral[egd], sizeof(pd->gt_dihedral[egd][0]),
+        qsort(this->gt_dihedral[egd], this->ngt_dihedral[egd], sizeof(this->gt_dihedral[egd][0]),
               gtd_comp);
     }
     return 1;
 }
 
-int gmx_poldata_get_dihedral(gmx_poldata_t pd, int egd,
+int Poldata::get_dihedral( int egd,
                              char **atom1, char **atom2,
                              char **atom3, char **atom4, double *dihedral,
                              double *sigma, int *ntrain, char **params)
 {
     t_gt_dihedral *gt_b;
 
-    if (pd->ngt_dihedral_c[egd] < pd->ngt_dihedral[egd])
+    if (this->ngt_dihedral_c[egd] < this->ngt_dihedral[egd])
     {
-        gt_b = &(pd->gt_dihedral[egd][pd->ngt_dihedral_c[egd]]);
+        gt_b = &(this->gt_dihedral[egd][this->ngt_dihedral_c[egd]]);
         assign_str(atom1, gt_b->atom1);
         assign_str(atom2, gt_b->atom2);
         assign_str(atom3, gt_b->atom3);
@@ -1833,16 +1729,16 @@ int gmx_poldata_get_dihedral(gmx_poldata_t pd, int egd,
         assign_scal(sigma, gt_b->sigma);
         assign_scal(ntrain, gt_b->ntrain);
         assign_str(params, gt_b->params);
-        pd->ngt_dihedral_c[egd]++;
+        this->ngt_dihedral_c[egd]++;
 
-        return pd->ngt_dihedral_c[egd];
+        return this->ngt_dihedral_c[egd];
     }
-    pd->ngt_dihedral_c[egd] = 0;
+    this->ngt_dihedral_c[egd] = 0;
 
     return 0;
 }
 
-int gmx_poldata_search_dihedral(gmx_poldata_t pd, int egd,
+int Poldata::search_dihedral( int egd,
                                 char *atom1, char *atom2,
                                 char *atom3, char *atom4,
                                 double *dihedral, double *sigma,
@@ -1850,7 +1746,7 @@ int gmx_poldata_search_dihedral(gmx_poldata_t pd, int egd,
 {
     t_gt_dihedral *gt_res;
 
-    gt_res = search_dihedral(pd, egd, atom1, atom2, atom3, atom4);
+    gt_res = search_dihedral( egd, atom1, atom2, atom3, atom4);
     if (NULL != gt_res)
     {
         assign_scal(dihedral, gt_res->dihedral);
@@ -1858,20 +1754,20 @@ int gmx_poldata_search_dihedral(gmx_poldata_t pd, int egd,
         assign_scal(ntrain, gt_res->ntrain);
         assign_str(params, gt_res->params);
 
-        return 1 + (int) (gt_res - pd->gt_dihedral[egd]);
+        return 1 + (int) (gt_res - this->gt_dihedral[egd]);
     }
     return 0;
 }
 
-void gmx_poldata_add_symcharges(gmx_poldata_t pd, char *central,
+void Poldata::add_symcharges( char *central,
                                 char *attached, int numattach)
 {
     t_symcharges *sc;
     int           i;
 
-    for (i = 0; (i < pd->nsymcharges); i++)
+    for (i = 0; (i < this->nsymcharges); i++)
     {
-        sc = &(pd->symcharges[i]);
+        sc = &(this->symcharges[i]);
         if ((strcasecmp(sc->central, central) == 0) &&
             (strcasecmp(sc->attached, attached) == 0) &&
             (sc->numattach == numattach))
@@ -1879,46 +1775,46 @@ void gmx_poldata_add_symcharges(gmx_poldata_t pd, char *central,
             break;
         }
     }
-    if (i == pd->nsymcharges)
+    if (i == this->nsymcharges)
     {
-        pd->nsymcharges++;
-        srenew(pd->symcharges, pd->nsymcharges);
-        sc              = &(pd->symcharges[i]);
+        this->nsymcharges++;
+        srenew(this->symcharges, this->nsymcharges);
+        sc              = &(this->symcharges[i]);
         sc->central     = strdup(central);
         sc->attached    = strdup(attached);
         sc->numattach   = numattach;
     }
 }
 
-int gmx_poldata_get_symcharges(gmx_poldata_t pd, char **central,
+int Poldata::get_symcharges( char **central,
                                char **attached, int *numattach)
 {
     t_symcharges *sc;
 
-    if (pd->nsymcharges_c < pd->nsymcharges)
+    if (this->nsymcharges_c < this->nsymcharges)
     {
-        sc = &(pd->symcharges[pd->nsymcharges_c]);
+        sc = &(this->symcharges[this->nsymcharges_c]);
         assign_str(central, sc->central);
         assign_str(attached, sc->attached);
         assign_scal(numattach, sc->numattach);
-        pd->nsymcharges_c++;
+        this->nsymcharges_c++;
 
         return 1;
     }
-    pd->nsymcharges_c = 0;
+    this->nsymcharges_c = 0;
 
     return 0;
 }
 
-int gmx_poldata_search_symcharges(gmx_poldata_t pd, char *central,
+int Poldata::search_symcharges( char *central,
                                   char *attached, int numattach)
 {
     t_symcharges *sc;
     int           i;
 
-    for (i = 0; (i < pd->nsymcharges); i++)
+    for (i = 0; (i < this->nsymcharges); i++)
     {
-        sc = &(pd->symcharges[i]);
+        sc = &(this->symcharges[i]);
         if ((strcasecmp(sc->central, central) == 0) &&
             (strcasecmp(sc->attached, attached) == 0) &&
             (sc->numattach == numattach))
@@ -1931,35 +1827,34 @@ int gmx_poldata_search_symcharges(gmx_poldata_t pd, char *central,
 }
 
 /* Electrostatics properties */
-static t_eemprops *get_eep(gmx_poldata *pd, ChargeDistributionModel eqd_model,
+t_eemprops *Poldata::get_eep(ChargeDistributionModel eqd_model,
                            const char *name)
 {
     int i;
 
-    for (i = 0; (i < pd->nep); i++)
+    for (i = 0; (i < this->nep); i++)
     {
-        if ((strcasecmp(pd->eep[i].name, name) == 0) &&
-            (pd->eep[i].eqd_model == eqd_model))
+        if ((strcasecmp(this->eep[i].name, name) == 0) &&
+            (this->eep[i].eqd_model == eqd_model))
         {
-            return &(pd->eep[i]);
+            return &(this->eep[i]);
         }
     }
     return NULL;
 }
 
-void gmx_poldata_set_eemprops(gmx_poldata_t pd,
-                              ChargeDistributionModel eqd_model, char *name,
+void Poldata::set_eemprops(ChargeDistributionModel eqd_model, char *name,
                               double J0, double chi0, char *zeta, char *q, char *row)
 {
-    gmx_poldata             *pold = (gmx_poldata *) pd;
+   
     t_eemprops              *eep;
     std::vector<std::string> sz, sq, sr;
 
-    eep = get_eep(pold, eqd_model, name);
+    eep = get_eep(eqd_model, name);
     if (NULL == eep)
     {
-        srenew(pd->eep, ++pd->nep);
-        eep = &(pd->eep[pd->nep-1]);
+        srenew(this->eep, ++this->nep);
+        eep = &(this->eep[this->nep-1]);
     }
     eep->eqd_model = eqd_model;
     strncpy(eep->name, name, EEMBUFSIZE-1);
@@ -2012,36 +1907,36 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
     eep->chi0  = chi0;
 }
 
-int gmx_poldata_get_eemprops(gmx_poldata_t pd,
+int Poldata::get_eemprops(
                              ChargeDistributionModel *eqd_model, char **name,
                              double *J0, double *chi0, char **zeta, char **q, char **row)
 {
-    if (pd->nep_c < pd->nep)
+    if (this->nep_c < this->nep)
     {
-        assign_scal(eqd_model, pd->eep[pd->nep_c].eqd_model);
-        assign_str(name, pd->eep[pd->nep_c].name);
-        assign_scal(J0, pd->eep[pd->nep_c].J0);
-        assign_str(zeta, pd->eep[pd->nep_c].zetastr);
-        assign_str(q, pd->eep[pd->nep_c].qstr);
-        assign_str(row, pd->eep[pd->nep_c].rowstr);
-        assign_scal(chi0, pd->eep[pd->nep_c].chi0);
-        pd->nep_c++;
+        assign_scal(eqd_model, this->eep[this->nep_c].eqd_model);
+        assign_str(name, this->eep[this->nep_c].name);
+        assign_scal(J0, this->eep[this->nep_c].J0);
+        assign_str(zeta, this->eep[this->nep_c].zetastr);
+        assign_str(q, this->eep[this->nep_c].qstr);
+        assign_str(row, this->eep[this->nep_c].rowstr);
+        assign_scal(chi0, this->eep[this->nep_c].chi0);
+        this->nep_c++;
         return 1;
     }
     else
     {
-        pd->nep_c = 0;
+        this->nep_c = 0;
         return 0;
     }
 }
 
-int gmx_poldata_get_numprops(gmx_poldata_t pd, ChargeDistributionModel eqd_model)
+int Poldata::get_numprops( ChargeDistributionModel eqd_model)
 {
     int i, n = 0;
 
-    for (i = 0; (i < pd->nep); i++)
+    for (i = 0; (i < this->nep); i++)
     {
-        if (pd->eep[i].eqd_model == eqd_model)
+        if (this->eep[i].eqd_model == eqd_model)
         {
             n++;
         }
@@ -2050,13 +1945,13 @@ int gmx_poldata_get_numprops(gmx_poldata_t pd, ChargeDistributionModel eqd_model
     return n;
 }
 
-int gmx_poldata_have_pol_support(gmx_poldata_t pd, const char *atype)
+int Poldata::have_pol_support( const char *atype)
 {
     int i;
 
-    for (i = 0; (i < pd->nalexandria); i++)
+    for (i = 0; (i < this->nalexandria); i++)
     {
-        if (strcmp(atype, pd->alexandria[i].type) == 0)
+        if (strcmp(atype, this->alexandria[i].type) == 0)
         {
             return 1;
         }
@@ -2064,22 +1959,21 @@ int gmx_poldata_have_pol_support(gmx_poldata_t pd, const char *atype)
     return 0;
 }
 
-int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeDistributionModel eqd_model,
+int Poldata::have_eem_support( ChargeDistributionModel eqd_model,
                                  const char *name,
                                  gmx_bool bAllowZeroParameters)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-    t_eemprops  *eep  = get_eep(pold, eqd_model, name);
+   
+  t_eemprops  *eep  = get_eep(eqd_model, name);
 
     return (eep && (bAllowZeroParameters || ((eep->J0 > 0) && (eep->chi0 > 0))));
 }
 
-double gmx_poldata_get_j00(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
+double Poldata::get_j00( ChargeDistributionModel eqd_model, char *name)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_eemprops  *eer;
 
-    if ((eer = get_eep(pold, eqd_model, name)) != NULL)
+    if ((eer = get_eep(eqd_model, name)) != NULL)
     {
         return eer->J0;
     }
@@ -2091,33 +1985,33 @@ double gmx_poldata_get_j00(gmx_poldata_t pd, ChargeDistributionModel eqd_model, 
     return -1;
 }
 
-char *gmx_poldata_get_qstr(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
+char *Poldata::get_qstr( ChargeDistributionModel eqd_model, char *name)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
+    if ((eer = get_eep( eqd_model, name)) != NULL)
     {
         return eer->qstr;
     }
     return NULL;
 }
 
-char *gmx_poldata_get_rowstr(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
+char *Poldata::get_rowstr( ChargeDistributionModel eqd_model, char *name)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
+    if ((eer = get_eep( eqd_model, name)) != NULL)
     {
         return eer->rowstr;
     }
     return NULL;
 }
 
-int gmx_poldata_get_row(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz)
+int Poldata::get_row( ChargeDistributionModel eqd_model, char *name, int zz)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
+    if ((eer = get_eep( eqd_model, name)) != NULL)
     {
         range_check(zz, 0, eer->nzeta);
         return eer->row[zz];
@@ -2125,11 +2019,11 @@ int gmx_poldata_get_row(gmx_poldata_t pd, ChargeDistributionModel eqd_model, cha
     return -1;
 }
 
-double gmx_poldata_get_zeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz)
+double Poldata::get_zeta( ChargeDistributionModel eqd_model, char *name, int zz)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
+    if ((eer = get_eep( eqd_model, name)) != NULL)
     {
         if ((zz < 0) || (zz >= eer->nzeta))
         {
@@ -2141,22 +2035,22 @@ double gmx_poldata_get_zeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model,
     return -1;
 }
 
-int gmx_poldata_get_nzeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
+int Poldata::get_nzeta( ChargeDistributionModel eqd_model, char *name)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
+    if ((eer = get_eep( eqd_model, name)) != NULL)
     {
         return eer->nzeta;
     }
     return 0;
 }
 
-double gmx_poldata_get_q(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz)
+double Poldata::get_q( ChargeDistributionModel eqd_model, char *name, int zz)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
+    if ((eer = get_eep( eqd_model, name)) != NULL)
     {
         range_check(zz, 0, eer->nzeta);
         return eer->q[zz];
@@ -2164,11 +2058,11 @@ double gmx_poldata_get_q(gmx_poldata_t pd, ChargeDistributionModel eqd_model, ch
     return -1;
 }
 
-double gmx_poldata_get_chi0(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name)
+double Poldata::get_chi0( ChargeDistributionModel eqd_model, char *name)
 {
     t_eemprops *eer;
 
-    if ((eer = get_eep(pd, eqd_model, name)) != NULL)
+    if ((eer = get_eep( eqd_model, name)) != NULL)
     {
         return eer->chi0;
     }
@@ -2179,59 +2073,59 @@ double gmx_poldata_get_chi0(gmx_poldata_t pd, ChargeDistributionModel eqd_model,
     return -1;
 }
 
-void gmx_poldata_set_epref(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *epref)
+void Poldata::set_epref( ChargeDistributionModel eqd_model, char *epref)
 {
     int i;
 
-    for (i = 0; (i < pd->ner); i++)
+    for (i = 0; (i < this->ner); i++)
     {
-        if (pd->epr[i].eqd_model == eqd_model)
+        if (this->epr[i].eqd_model == eqd_model)
         {
-            if (pd->epr[i].epref)
+            if (this->epr[i].epref)
             {
-                sfree(pd->epr[i].epref);
+                sfree(this->epr[i].epref);
             }
-            pd->epr[i].epref = strdup(epref);
+            this->epr[i].epref = strdup(epref);
             break;
         }
     }
-    if (i == pd->ner)
+    if (i == this->ner)
     {
-        srenew(pd->epr, ++pd->ner);
-        pd->epr[i].eqd_model = eqd_model;
-        pd->epr[i].epref     = strdup(epref);
+        srenew(this->epr, ++this->ner);
+        this->epr[i].eqd_model = eqd_model;
+        this->epr[i].epref     = strdup(epref);
     }
 }
 
-char *gmx_poldata_get_epref(gmx_poldata_t pd, ChargeDistributionModel eqd_model)
+char *Poldata::get_epref( ChargeDistributionModel eqd_model)
 {
     int i;
 
-    for (i = 0; (i < pd->ner); i++)
+    for (i = 0; (i < this->ner); i++)
     {
-        if (pd->epr[i].eqd_model == eqd_model)
+        if (this->epr[i].eqd_model == eqd_model)
         {
-            return pd->epr[i].epref;
+            return this->epr[i].epref;
         }
     }
     return NULL;
 }
 
-int gmx_poldata_list_epref(gmx_poldata_t pd, ChargeDistributionModel *eqd_model, char **epref)
+int Poldata::list_epref( ChargeDistributionModel *eqd_model, char **epref)
 {
-    if (pd->ner_c < pd->ner)
+    if (this->ner_c < this->ner)
     {
-        assign_scal(eqd_model, pd->epr[pd->ner_c].eqd_model);
-        assign_str(epref, pd->epr[pd->ner_c].epref);
-        pd->ner_c++;
+        assign_scal(eqd_model, this->epr[this->ner_c].eqd_model);
+        assign_str(epref, this->epr[this->ner_c].epref);
+        this->ner_c++;
         return 1;
     }
-    pd->ner_c = 0;
+    this->ner_c = 0;
 
     return 0;
 }
 
-void gmx_poldata_comm_eemprops(gmx_poldata_t pd, t_commrec *cr)
+void Poldata::comm_eemprops( t_commrec *cr)
 {
     int         i, j, nep;
     t_eemprops *ep;
@@ -2244,43 +2138,43 @@ void gmx_poldata_comm_eemprops(gmx_poldata_t pd, t_commrec *cr)
     {
         for (i = 1; (i < cr->nnodes); i++)
         {
-            gmx_send_int(cr, i, pd->nep);
-            gmx_send(cr, i, pd->eep, pd->nep*sizeof(pd->eep[0]));
+            gmx_send_int(cr, i, this->nep);
+            gmx_send(cr, i, this->eep, this->nep*sizeof(this->eep[0]));
         }
     }
     else
     {
         nep = gmx_recv_int(cr, 0);
-        if (nep != pd->nep)
+        if (nep != this->nep)
         {
             gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
         }
-        snew(ep, pd->nep);
-        gmx_recv(cr, 0, ep, pd->nep*sizeof(ep[0]));
-        for (i = 0; (i < pd->nep); i++)
+        snew(ep, this->nep);
+        gmx_recv(cr, 0, ep, this->nep*sizeof(ep[0]));
+        for (i = 0; (i < this->nep); i++)
         {
-            pd->eep[i] = ep[i];
+            this->eep[i] = ep[i];
         }
         sfree(ep);
     }
     if (NULL != debug)
     {
         fprintf(debug, "  EEP  Atom      Chi      J00     Zeta\n");
-        for (i = 0; (i < pd->nep); i++)
+        for (i = 0; (i < this->nep); i++)
         {
             fprintf(debug, "%5s %5s %8.3f %8.3f",
-                    get_eemtype_name(pd->eep[i].eqd_model),
-                    pd->eep[i].name, pd->eep[i].chi0, pd->eep[i].J0);
-            for (j = 0; (j < pd->eep[i].nzeta); j++)
+                    get_eemtype_name(this->eep[i].eqd_model),
+                    this->eep[i].name, this->eep[i].chi0, this->eep[i].J0);
+            for (j = 0; (j < this->eep[i].nzeta); j++)
             {
-                fprintf(debug, " %8.3f", pd->eep[i].zeta[j]);
+                fprintf(debug, " %8.3f", this->eep[i].zeta[j]);
             }
             fprintf(debug, "\n");
         }
     }
 }
 
-void gmx_poldata_comm_force_parameters(gmx_poldata_t pd, t_commrec *cr)
+void Poldata::comm_force_parameters(t_commrec *cr)
 {
     int         i, j, nep;
     t_eemprops *ep;
@@ -2293,36 +2187,36 @@ void gmx_poldata_comm_force_parameters(gmx_poldata_t pd, t_commrec *cr)
     {
         for (i = 1; (i < cr->nnodes); i++)
         {
-            gmx_send_int(cr, i, pd->nep);
-            gmx_send(cr, i, pd->eep, pd->nep*sizeof(pd->eep[0]));
+            gmx_send_int(cr, i, this->nep);
+            gmx_send(cr, i, this->eep, this->nep*sizeof(this->eep[0]));
         }
     }
     else
     {
         nep = gmx_recv_int(cr, 0);
-        if (nep != pd->nep)
+        if (nep != this->nep)
         {
             gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
         }
-        snew(ep, pd->nep);
-        gmx_recv(cr, 0, ep, pd->nep*sizeof(ep[0]));
-        for (i = 0; (i < pd->nep); i++)
+        snew(ep, this->nep);
+        gmx_recv(cr, 0, ep, this->nep*sizeof(ep[0]));
+        for (i = 0; (i < this->nep); i++)
         {
-            pd->eep[i] = ep[i];
+            this->eep[i] = ep[i];
         }
         sfree(ep);
     }
     if (NULL != debug)
     {
         fprintf(debug, "  EEP  Atom      Chi      J00     Zeta\n");
-        for (i = 0; (i < pd->nep); i++)
+        for (i = 0; (i < this->nep); i++)
         {
             fprintf(debug, "%5s %5s %8.3f %8.3f",
-                    get_eemtype_name(pd->eep[i].eqd_model),
-                    pd->eep[i].name, pd->eep[i].chi0, pd->eep[i].J0);
-            for (j = 0; (j < pd->eep[i].nzeta); j++)
+                    get_eemtype_name(this->eep[i].eqd_model),
+                    this->eep[i].name, this->eep[i].chi0, this->eep[i].J0);
+            for (j = 0; (j < this->eep[i].nzeta); j++)
             {
-                fprintf(debug, " %8.3f", pd->eep[i].zeta[j]);
+                fprintf(debug, " %8.3f", this->eep[i].zeta[j]);
             }
             fprintf(debug, "\n");
         }
@@ -2335,7 +2229,7 @@ typedef struct {
     gmx_bool                bWeight;
 } t_eemtype_props;
 
-static t_eemtype_props eemtype_props[eqdNR] = {
+ t_eemtype_props eemtype_props[eqdNR] = {
     { eqdAXp,      "AXp",      "Maaren2014a",   FALSE },
     { eqdAXg,      "AXg",      "Maaren2014a",   TRUE },
     { eqdAXs,      "AXs",      "Maaren2014a",   TRUE },
@@ -2344,7 +2238,7 @@ static t_eemtype_props eemtype_props[eqdNR] = {
     { eqdRappe,    "Rappe",    "Rappe1991a",    TRUE }
 };
 
-ChargeDistributionModel name2eemtype(const char *name)
+ChargeDistributionModel Poldata::name2eemtype(const char *name)
 {
     int i;
 
@@ -2358,7 +2252,7 @@ ChargeDistributionModel name2eemtype(const char *name)
     return eqdNR;
 }
 
-const char *get_eemtype_name(ChargeDistributionModel eem)
+const char *Poldata::get_eemtype_name(ChargeDistributionModel eem)
 {
     int i;
 
@@ -2371,4 +2265,6 @@ const char *get_eemtype_name(ChargeDistributionModel eem)
     }
 
     return NULL;
+}
+
 }

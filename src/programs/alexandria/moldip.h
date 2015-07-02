@@ -61,7 +61,7 @@ class MolDip
         real                           _ener[ermsNR], _fc[ermsNR];
         gmx_bool                       _bOptHfac, _bPol, _bQM;
         char                          *_fixchi;
-        gmx_poldata_t                  _pd;
+        Poldata                       *_pd;
         gmx_atomprop_t                 _atomprop;
         t_commrec                     *_cr;
 

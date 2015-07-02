@@ -30,6 +30,9 @@
 #include "poldata.h"
 #include "molprop.h"
 
+
+
+
 typedef struct
 {
     int  *row, atomnumber, atype;
@@ -69,7 +72,7 @@ extern "C" {
 int atomicnumber2row(int elem);
 
 bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
-                 const char *atomtype, gmx_poldata_t pd,
+                 const char *atomtype, alexandria::Poldata * pd,
                  int iDistributionModel, char **dzatoms);
 
 gmx_resp_t gmx_resp_init(ChargeDistributionModel iDistributionModel,
@@ -87,14 +90,14 @@ void gmx_resp_summary(FILE *gp, gmx_resp_t gr,
 
 void gmx_resp_update_atomtypes(gmx_resp_t gr, t_atoms *atoms);
 
-void gmx_resp_fill_zeta(gmx_resp_t gr, gmx_poldata_t pd);
+void gmx_resp_fill_zeta(gmx_resp_t gr, alexandria::Poldata * pd);
 
 void gmx_resp_fill_q(gmx_resp_t gr, t_atoms *atoms);
 
 void gmx_resp_add_atom_coords(gmx_resp_t gr, rvec *x);
 
 bool gmx_resp_add_atom_info(gmx_resp_t gr, t_atoms *atoms,
-                            gmx_poldata_t pd);
+                            alexandria::Poldata * pd);
 
 void gmx_resp_get_atom_info(gmx_resp_t gr, t_atoms *atoms,
                             t_symtab *symtab, rvec **x);

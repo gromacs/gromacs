@@ -36,48 +36,107 @@ enum ChargeGenerationAlgorithm {
     eqgNONE, eqgEEM, eqgESP, eqgRESP, eqgNR
 };
 
-typedef struct gentop_qgen *gentop_qgen_t;
+namespace alexandria
+{
 
-extern gentop_qgen_t
-gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms,
-                 gmx_atomprop_t aps,
-                 rvec *x,
-                 ChargeDistributionModel   iChargeDistributionModel,
-                 ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-                 real hfac, int qtotal,
-                 real epsr);
+class GentopQgen
+{
+  
+ private:
+  gmx_bool                  bWarned;
+  ChargeDistributionModel   iChargeDistributionModel;
+  ChargeGenerationAlgorithm iChargeGenerationAlgorithm;
+  int                       natom, eQGEN;
+  real                      qtotal, chieq, hfac, epsr;
+  /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
+  char                    **elem;
+  int                      *atomnr;
+  real                     *chi0, *rhs, *j00;
+  rvec                     *x;
+  /* Jab is a matrix over atom pairs */
+  real                    **Jab;
+  /* For each atom i there are nZeta[i] row, q and zeta entries */
+  int                      *nZeta;
+  int                     **row;
+  gmx_bool                  bAllocSave;
+  real                    **q, **zeta, **qsave, **zetasave;
+  
+  
+  real calc_jab(ChargeDistributionModel iChargeDistributionModel,
+		rvec xi, rvec xj,
+		int nZi, int nZj,
+		real *zeta_i, real *zeta_j,
+		int *rowi, int *rowj);
+  void calc_Jab();
+  
+  void solve_q_eem(FILE *fp,  real hardsness_factor);
+  
+  void update_J00();
+  
+  real calc_Sij(int i, int j);
 
-extern void
-gentop_qgen_done(gentop_qgen_t qgen);
+  void update_pd(t_atoms *atoms, Poldata * pd);
+  
+  
+  int generate_charges_bultinck(FILE *fp,
+				Poldata * pd, t_atoms *atoms,
+				gmx_atomprop_t aps);
 
-extern int
-generate_charges_sm(FILE *fp, gentop_qgen_t qgen,
-                    gmx_poldata_t pd, t_atoms *atoms,
-                    real tol, int maxiter, gmx_atomprop_t aps,
+
+
+  void calc_rhs();
+
+
+ 
+ public:
+  
+ ~GentopQgen();
+
+
+  GentopQgen(Poldata * pd, t_atoms *atoms,
+	     gmx_atomprop_t aps,
+	     rvec *x,
+	     ChargeDistributionModel   iChargeDistributionModel,
+	     ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
+	     real hfac, int qtotal,
+	     real epsr);
+  
+  // void done();
+  
+  int generate_charges_sm(FILE *fp,
+			Poldata * pd, t_atoms *atoms,
+			real tol, int maxiter, gmx_atomprop_t aps,
                     real *chieq);
 
-extern int
-generate_charges(FILE *fp,
-                 gentop_qgen_t qgen,
-                 gmx_resp_t gr, const char *molname,
-                 gmx_poldata_t pd,
-                 t_atoms *atoms,
-                 real tol, int maxiter, int maxcycle,
-                 gmx_atomprop_t aps);
+  int generate_charges(FILE *fp,
+		       gmx_resp_t gr, const char *molname,
+		       Poldata * pd,
+		       t_atoms *atoms,
+		       real tol, int maxiter, int maxcycle,
+		       gmx_atomprop_t aps);
+  
+  void message(int len, char buf[], gmx_resp_t gr);
+  gmx_bool SplitQ(ChargeDistributionModel iDistributionModel);
+  
+  /* The routines below return NOTSET if something is out of the ordinary */
+  int get_nzeta(int atom);
+  
+  int get_row(int atom, int z);
+  
+  double get_q(int atom, int z);
 
-extern void
-qgen_message(gentop_qgen_t qgen, int len, char buf[], gmx_resp_t gr);
+  void check_support(Poldata * pd, gmx_atomprop_t aps);
+  
+  void save_params( gmx_resp_t gr);
+  
+  void get_params( gmx_resp_t gr);
+  double get_zeta(int atom, int z);
+  
 
-extern gmx_bool
-bSplitQ(ChargeDistributionModel iDistributionModel);
-
-/* The routines below return NOTSET if something is out of the ordinary */
-extern int gentop_qgen_get_nzeta(gentop_qgen_t qgen, int atom);
-
-extern int gentop_qgen_get_row(gentop_qgen_t qgen, int atom, int z);
-
-extern double gentop_qgen_get_q(gentop_qgen_t qgen, int atom, int z);
-
-extern double gentop_qgen_get_zeta(gentop_qgen_t qgen, int atom, int z);
-
+void print(FILE *fp, t_atoms *atoms);
+  
+  void debugFun(FILE *fp);
+  
+};
+}
 #endif

@@ -53,7 +53,7 @@
 #include "composition.h"
 #include "stringutil.h"
 
-void generate_composition(std::vector<alexandria::MolProp> &mp, gmx_poldata_t pd)
+void generate_composition(std::vector<alexandria::MolProp> &mp, Poldata * pd)
 {
     int nOK = 0;
     alexandria::MolPropIterator  mpi;
@@ -341,7 +341,7 @@ static void dump_mp(std::vector<alexandria::MolProp> mp)
 void merge_xml(int nfile, char **filens,
                std::vector<alexandria::MolProp> &mpout,
                char *outf, char *sorted, char *doubles,
-               gmx_atomprop_t ap, gmx_poldata_t pd,
+               gmx_atomprop_t ap, Poldata * pd,
                bool bForceMerge)
 {
     std::vector<alexandria::MolProp> mp;

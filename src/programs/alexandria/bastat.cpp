@@ -399,7 +399,7 @@ static void round_numbers(real *av, real *sig)
     *sig = ((int)(*sig*100+50))/100.0;
 }
 
-void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
+void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
                real Dm, real beta, real kt, real klin, real kp)
 {
     int    i, N;
@@ -407,7 +407,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
     char   pbuf[256];
     double bondorder;
 
-    gmx_poldata_set_length_unit(pd, unit2string(eg2cPm));
+    pd->set_length_unit( unit2string(eg2cPm));
     for (i = 0; (i < b->nbond); i++)
     {
         gmx_stats_get_average(b->bond[i].lsq, &av);
@@ -417,7 +417,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         bondorder = b->bond[i].order;
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        gmx_poldata_add_bond(pd, b->bond[i].a1, b->bond[i].a2, av, sig, N, bondorder, pbuf);
+        pd->add_bond( b->bond[i].a1, b->bond[i].a2, av, sig, N, bondorder, pbuf);
         fprintf(fp, "bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
                 b->bond[i].a1, b->bond[i].a2, av, sig, N,
                 (sig > 1.5) ? " WARNING" : "");
@@ -438,7 +438,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         {
             sprintf(pbuf, "%g", klin);
         }
-        gmx_poldata_add_angle(pd,
+        pd->add_angle(
                               b->angle[i].a1, b->angle[i].a2,
                               b->angle[i].a3, av, sig, N, pbuf);
         fprintf(fp, "angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
@@ -453,7 +453,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         sprintf(pbuf, "%g  1", kp);
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        gmx_poldata_add_dihedral(pd, egdPDIHS,
+        pd->add_dihedral( egdPDIHS,
                                  b->dih[i].a1, b->dih[i].a2,
                                  b->dih[i].a3, b->dih[i].a4, av, sig, N, pbuf);
         fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
@@ -467,7 +467,7 @@ void update_pd(FILE *fp, t_bonds *b, gmx_poldata_t pd,
         sprintf(pbuf, "%g  1", kp);
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        gmx_poldata_add_dihedral(pd, egdIDIHS,
+        pd->add_dihedral( egdIDIHS,
                                  b->imp[i].a1, b->imp[i].a2,
                                  b->imp[i].a3, b->imp[i].a4, av, sig, N, pbuf);
         fprintf(fp, "improper-%s-%s-%s-%s angle %g sigma %g (deg)\n",
@@ -539,7 +539,7 @@ int alex_bastat(int argc, char *argv[])
     double                           aspacing = 0.5; /* degree */
     double                           dspacing = 1;   /* degree */
     output_env_t                     oenv     = NULL;
-    gmx_poldata_t                    pd;
+    Poldata *                    pd;
     gmx_atomprop_t                   aps;
     int                              nfiles;
     char                           **fns;
@@ -550,7 +550,7 @@ int alex_bastat(int argc, char *argv[])
         return 0;
     }
 
-    iDistributionModel = name2eemtype(cqdist[0]);
+    iDistributionModel = Poldata::name2eemtype(cqdist[0]);
 
     fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
 
@@ -566,7 +566,7 @@ int alex_bastat(int argc, char *argv[])
     aps = gmx_atomprop_init();
 
     /* Read polarization stuff */
-    if ((pd = gmx_poldata_read(opt2fn_null("-d", NFILE, fnm), aps)) == NULL)
+    if ((pd = alexandria::PoldataXml::read(opt2fn_null("-d", NFILE, fnm), aps)) == NULL)
     {
         gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
     }
@@ -603,7 +603,7 @@ int alex_bastat(int argc, char *argv[])
                 }
                 continue;
             }
-#define BTP(ii) gmx_poldata_atype_to_btype(pd, *mmi.topology_->atoms.atomtype[ii])
+#define BTP(ii) pd->atype_to_btype( *mmi.topology_->atoms.atomtype[ii])
             for (i = 0; (i < mmi.topology_->atoms.nr); i++)
             {
                 if (NULL == BTP(i))
@@ -733,7 +733,7 @@ int alex_bastat(int argc, char *argv[])
     }
     update_pd(fp, b, pd, Dm, beta, kt, klin, kp);
 
-    gmx_poldata_write(opt2fn("-o", NFILE, fnm), pd, compress);
+    alexandria::PoldataXml::write(opt2fn("-o", NFILE, fnm), pd, compress);
 
     printf("Extracted %d bondtypes, %d angletypes, %d dihedraltypes and %d impropertypes.\n",
            b->nbond, b->nangle, b->ndih, b->nimp);

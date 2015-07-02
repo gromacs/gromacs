@@ -197,7 +197,7 @@ static gmx_bool const_index_count(t_index_count *ic, char *name)
 }
 
 static void dump_index_count(t_index_count *ic, FILE *fp,
-                             ChargeDistributionModel iDistributionModel, gmx_poldata_t pd,
+                             ChargeDistributionModel iDistributionModel, Poldata * pd,
                              gmx_bool bFitZeta)
 {
     int    i, j, nZeta, nZopt;
@@ -208,11 +208,11 @@ static void dump_index_count(t_index_count *ic, FILE *fp,
         fprintf(fp, "Name  Number  Action   #Zeta\n");
         for (i = 0; (i < ic->n); i++)
         {
-            nZeta = gmx_poldata_get_nzeta(pd, iDistributionModel, ic->name[i]);
+            nZeta = pd->get_nzeta(iDistributionModel, ic->name[i]);
             nZopt = 0;
             for (j = 0; (j < nZeta); j++)
             {
-                zz = gmx_poldata_get_zeta(pd, iDistributionModel, ic->name[i], j);
+                zz = pd->get_zeta(iDistributionModel, ic->name[i], j);
                 if (zz > 0)
                 {
                     nZopt++;
@@ -267,7 +267,7 @@ static int clean_index_count(t_index_count *ic, int minimum_data, FILE *fp)
     return nremove;
 }
 
-static void update_index_count_bool(t_index_count *ic, gmx_poldata_t pd,
+static void update_index_count_bool(t_index_count *ic, Poldata * pd,
                                     const char *string, gmx_bool bSet,
                                     gmx_bool bAllowZero, ChargeDistributionModel iDistributionModel)
 {
@@ -275,7 +275,7 @@ static void update_index_count_bool(t_index_count *ic, gmx_poldata_t pd,
     for (std::vector<std::string>::iterator k = ptr.begin();
          (k < ptr.end()); ++k)
     {
-        if (gmx_poldata_have_eem_support(pd, iDistributionModel, k->c_str(), bAllowZero))
+        if (pd->have_eem_support(iDistributionModel, k->c_str(), bAllowZero))
         {
             add_index_count(ic, k->c_str(), bSet);
         }
@@ -284,7 +284,7 @@ static void update_index_count_bool(t_index_count *ic, gmx_poldata_t pd,
 
 static int check_data_sufficiency(FILE *fp,
                                   std::vector<alexandria::MyMol> mol,
-                                  int minimum_data, gmx_poldata_t pd,
+                                  int minimum_data, Poldata * pd,
                                   t_index_count *ic, ChargeDistributionModel iDistributionModel, char *opt_elem, char *const_elem,
                                   t_commrec *cr, gmx_bool bPol,
                                   gmx_bool bFitZeta)
@@ -309,11 +309,11 @@ static int check_data_sufficiency(FILE *fp,
     }
     else
     {
-        while (gmx_poldata_get_eemprops(pd, &mymodel, &myname, NULL, NULL, NULL, NULL, NULL) != 0)
+        while (pd->get_eemprops(&mymodel, &myname, NULL, NULL, NULL, NULL, NULL) != 0)
         {
             if ((mymodel == iDistributionModel) &&
                 !const_index_count(ic, myname) &&
-                gmx_poldata_have_eem_support(pd, iDistributionModel, myname, FALSE))
+                pd->have_eem_support( iDistributionModel, myname, FALSE))
             {
                 add_index_count(ic, myname, FALSE);
             }
@@ -516,17 +516,17 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
     _atomprop   = gmx_atomprop_init();
 
     /* Force field data */
-    if ((_pd = gmx_poldata_read(pd_fn, _atomprop)) == NULL)
+    if ((_pd = PoldataXml::read(pd_fn, _atomprop)) == NULL)
     {
         gmx_fatal(FARGS, "Can not read the force field information. File %s missing or incorrect.", pd_fn);
     }
 
-    if ((n = gmx_poldata_get_numprops(_pd, _iChargeDistributionModel)) == 0)
+    if ((n = _pd->get_numprops(_iChargeDistributionModel)) == 0)
     {
         gmx_fatal(FARGS, "File %s does not contain the requested parameters for model %d", pd_fn, _iChargeDistributionModel);
     }
 
-    nexcl = gmx_poldata_get_nexcl(_pd);
+    nexcl = _pd->get_nexcl();
 
     if (NULL != fp)
     {
@@ -756,7 +756,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
         }
     }
     int  nnn = nmol_cpu;
-    int *nmolpar;
+    int *nmolpar = NULL;
 
     if (PAR(_cr))
     {
@@ -899,7 +899,7 @@ void MolDip::CalcDeviation()
     }
     if (PAR(_cr))
     {
-        gmx_poldata_comm_eemprops(_pd, _cr);
+    _pd->comm_eemprops(_cr);
     }
     init_nrnb(&my_nrnb);
     snew(epot, 1);
@@ -923,8 +923,8 @@ void MolDip::CalcDeviation()
 
             if (NULL == mymol->qgen_)
             {
-                mymol->qgen_ =
-                    gentop_qgen_init(_pd, &(mymol->topology_->atoms), _atomprop,
+                mymol->qgen_ = new
+                    GentopQgen(_pd, &(mymol->topology_->atoms), _atomprop,
                                      mymol->x_, _iChargeDistributionModel,
                                      _iChargeGenerationAlgorithm,
                                      _hfac,
@@ -932,14 +932,14 @@ void MolDip::CalcDeviation()
             }
             /*if (strcmp(mymol->molname,"1-butene") == 0)
                fprintf(stderr,"Ready for %s\n",mymol->molname);*/
-            eQ = generate_charges_sm(debug, mymol->qgen_,
+            eQ = mymol->qgen_->generate_charges_sm(debug,
                                      _pd, &(mymol->topology_->atoms),
                                      1e-4, 100, _atomprop,
                                      &(mymol->chieq));
             if (eQ != eQGEN_OK)
             {
                 char buf[STRLEN];
-                qgen_message(mymol->qgen_, STRLEN, buf, NULL);
+                mymol->qgen_->message(STRLEN, buf, NULL);
                 fprintf(stderr, "%s\n", buf);
             }
             else

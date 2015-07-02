@@ -101,6 +101,9 @@ set(ALEXANDRIA_SOURCES
         categories.cpp
 	)
 	
+
+
+
 add_library(libalexandria ${ALEXANDRIA_SOURCES})	
 target_link_libraries(libalexandria libgromacs)
 
@@ -124,3 +127,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc
         DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
         RENAME "libalexandria${GMX_LIBS_SUFFIX}.pc"
         COMPONENT development)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+

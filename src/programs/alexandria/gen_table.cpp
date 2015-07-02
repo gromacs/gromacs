@@ -43,6 +43,9 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 
+
+using namespace alexandria;
+
 enum {
     mGuillot2001a, mAB1, mLjc, mMaaren, mSlater, mGuillot_Maple, mHard_Wall, mDEC, mDEC_pair, mDEC_qd_q, mDEC_qd_qd, mDEC_q_q, mNR
 };
@@ -923,7 +926,7 @@ static void do_DEC_q_qd(FILE *fp, int eel, int pts_nm, double xi)
     }
 }
 
-static void gen_alexandria_rho(gmx_poldata_t pd, const char *fn,
+static void gen_alexandria_rho(Poldata * pd, const char *fn,
                                ChargeDistributionModel iDistributionModel,
                                real rcut, real spacing, output_env_t oenv)
 {
@@ -936,11 +939,11 @@ static void gen_alexandria_rho(gmx_poldata_t pd, const char *fn,
     char                    buf[STRLEN];
 
     nmax = 1+(int)(rcut/spacing);
-    while (1 == gmx_poldata_get_eemprops(pd, &eqg_model, &name, &J0, &chi0, NULL, NULL, NULL))
+    while (1 == pd->get_eemprops( &eqg_model, &name, &J0, &chi0, NULL, NULL, NULL))
     {
         if (eqg_model == iDistributionModel)
         {
-            nzeta = gmx_poldata_get_nzeta(pd, iDistributionModel, name);
+            nzeta = pd->get_nzeta( iDistributionModel, name);
             snew(zeta, nzeta);
             snew(q, nzeta);
             snew(row, nzeta);
@@ -948,10 +951,10 @@ static void gen_alexandria_rho(gmx_poldata_t pd, const char *fn,
             qtot = 0;
             for (j = 0; (j < nzeta); j++)
             {
-                zeta[j] = gmx_poldata_get_zeta(pd, iDistributionModel, name, j);
-                q[j]    = gmx_poldata_get_q(pd, iDistributionModel, name, j);
+                zeta[j] = pd->get_zeta( iDistributionModel, name, j);
+                q[j]    = pd->get_q( iDistributionModel, name, j);
                 qtot   += q[j];
-                row[j]  = gmx_poldata_get_row(pd, iDistributionModel, name, j);
+                row[j]  = pd->get_row( iDistributionModel, name, j);
                 switch (iDistributionModel)
                 {
                     case eqdAXg:
@@ -962,7 +965,7 @@ static void gen_alexandria_rho(gmx_poldata_t pd, const char *fn,
                         break;
                     default:
                         gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                  get_eemtype_name(iDistributionModel));
+                                  Poldata::get_eemtype_name(iDistributionModel));
                 }
             }
             if (q[nzeta-1] == 0)
@@ -991,7 +994,7 @@ static void gen_alexandria_rho(gmx_poldata_t pd, const char *fn,
                                 break;
                             default:
                                 gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                          get_eemtype_name(iDistributionModel));
+                                          Poldata::get_eemtype_name(iDistributionModel));
                         }
                     }
                 }
@@ -1006,7 +1009,7 @@ static void gen_alexandria_rho(gmx_poldata_t pd, const char *fn,
     }
 }
 
-static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeDistributionModel iDistributionModel,
+static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributionModel iDistributionModel,
                                   real rcut, real spacing, output_env_t oenv)
 {
     FILE                      *fp;
@@ -1028,7 +1031,7 @@ static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeDistri
     snew(zeta, natypemax);
     snew(q, natypemax);
     snew(row, natypemax);
-    while (1 == gmx_poldata_get_eemprops(pd, &eqg_model, &name[natype],
+    while (1 == pd->get_eemprops( &eqg_model, &name[natype],
                                          &J0[natype], &chi0[natype],
                                          NULL, NULL, NULL))
     {
@@ -1051,15 +1054,15 @@ static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeDistri
     snew(bSplit, natype);
     for (i = 0; (i < natype); i++)
     {
-        nzeta[i] = gmx_poldata_get_nzeta(pd, iDistributionModel, name[i]);
+        nzeta[i] = pd->get_nzeta( iDistributionModel, name[i]);
         snew(zeta[i], nzeta[i]);
         snew(q[i], nzeta[i]);
         snew(row[i], nzeta[i]);
         for (j = 0; (j < nzeta[i]); j++)
         {
-            zeta[i][j] = gmx_poldata_get_zeta(pd, iDistributionModel, name[i], j);
-            q[i][j]    = gmx_poldata_get_q(pd, iDistributionModel, name[i], j);
-            row[i][j]  = gmx_poldata_get_row(pd, iDistributionModel, name[i], j);
+            zeta[i][j] = pd->get_zeta( iDistributionModel, name[i], j);
+            q[i][j]    = pd->get_q( iDistributionModel, name[i], j);
+            row[i][j]  = pd->get_row( iDistributionModel, name[i], j);
         }
         /* The bSplit array determines whether a particle is split in a nucleus
            and a shell, by checking whether there are more than one charges. */
@@ -1132,7 +1135,7 @@ static void gen_alexandria_tables(gmx_poldata_t pd, const char *fn, ChargeDistri
                                         break;
                                     default:
                                         gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                                  get_eemtype_name(iDistributionModel));
+                                                  Poldata::get_eemtype_name(iDistributionModel));
                                 }
                                 /* Note how charges are being handled:
                                    The "shell" charge is taken to be 1, because
@@ -1302,7 +1305,7 @@ int alex_gen_table(int argc, char *argv[])
 #define NFILE asize(fnm)
     FILE                         *fp;
     const char                   *fn;
-    gmx_poldata_t                 pd;
+    Poldata *                 pd;
     gmx_atomprop_t                aps;
     int                           eel = 0, m = 0;
     ChargeDistributionModel       iDistributionModel;
@@ -1383,7 +1386,7 @@ int alex_gen_table(int argc, char *argv[])
         gmx_fatal(FARGS, "Invalid argument %s for option -m", opt[0]);
     }
 
-    if ((iDistributionModel = name2eemtype(cqgen[0])) == eqdNR)
+    if ((iDistributionModel = Poldata::name2eemtype(cqgen[0])) == eqdNR)
     {
         fprintf(stderr, "Running in old mode!\n");
         fn = opt2fn("-o", NFILE, fnm);
@@ -1449,7 +1452,7 @@ int alex_gen_table(int argc, char *argv[])
     else
     {
         aps = gmx_atomprop_init();
-        pd  = gmx_poldata_read(opt2fn_null("-di", NFILE, fnm), aps);
+        pd  = alexandria::PoldataXml::read(opt2fn_null("-di", NFILE, fnm), aps);
         gen_alexandria_tables(pd, opt2fn("-o", NFILE, fnm), iDistributionModel, rc, 1.0/pts_nm, oenv);
     }
 

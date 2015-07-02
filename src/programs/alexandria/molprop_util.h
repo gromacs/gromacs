@@ -31,7 +31,10 @@
 #include "poldata.h"
 #include "molselect.h"
 
-extern void generate_composition(std::vector<alexandria::MolProp> &mp, gmx_poldata_t pd);
+
+using namespace alexandria;
+
+extern void generate_composition(std::vector<alexandria::MolProp> &mp, Poldata * pd);
 extern void generate_formula(std::vector<alexandria::MolProp> &mp, gmx_atomprop_t ap);
 
 alexandria::MolProp atoms_2_molprop(char *molname, int natoms, char **smnames,
@@ -50,7 +53,7 @@ extern void merge_doubles(std::vector<alexandria::MolProp> &mp,
 extern void merge_xml(int nfile, char **infiles,
                       std::vector<alexandria::MolProp> &mp,
                       char *outf, char *sorted, char *doubles,
-                      gmx_atomprop_t ap, gmx_poldata_t pd,
+                      gmx_atomprop_t ap, Poldata * pd,
                       bool bForceMerge);
 
 typedef struct {

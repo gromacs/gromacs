@@ -127,7 +127,7 @@ int alex_gentop(int argc, char *argv[])
     };
     output_env_t                     oenv;
     gmx_atomprop_t                   aps;
-    gmx_poldata_t                    pd;
+    Poldata *                    pd;
     gmx_bool                         bTOP;
     char                             forcefield[STRLEN], ffdir[STRLEN];
     char                             ffname[STRLEN];
@@ -358,7 +358,7 @@ int alex_gentop(int argc, char *argv[])
     ePolar                    epol = (ePolar) get_option(polaropt);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     ChargeDistributionModel   iChargeDistributionModel;
-    if ((iChargeDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
+    if ((iChargeDistributionModel = Poldata::name2eemtype(cqdist[0])) == eqdNR)
     {
         gmx_fatal(FARGS, "Invalid model %s. How could you!\n", cqdist[0]);
     }
@@ -367,14 +367,14 @@ int alex_gentop(int argc, char *argv[])
     aps = gmx_atomprop_init();
 
     /* Read polarization stuff */
-    if ((pd = gmx_poldata_read(opt2fn_null("-d", NFILE, fnm), aps)) == NULL)
+    if ((pd = alexandria::PoldataXml::read(opt2fn_null("-d", NFILE, fnm), aps)) == NULL)
     {
         gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
     }
     if (bVerbose)
     {
         printf("Reading force field information. There are %d atomtypes.\n",
-               gmx_poldata_get_natypes(pd));
+               pd->get_natypes());
     }
 
     if (strlen(dbname) > 0)
@@ -420,7 +420,7 @@ int alex_gentop(int argc, char *argv[])
             molnm = (char *)"XXX";
         }
         ReadGauss(fn, mp, molnm, iupac, conf, basis,
-                  maxpot, nsymm, gmx_poldata_get_force_field(pd));
+                  maxpot, nsymm, pd->get_force_field());
         mps.push_back(mp);
         mpi = mps.begin();
     }

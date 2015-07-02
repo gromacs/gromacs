@@ -135,7 +135,7 @@ extern void gmx_molprop_prop_table(FILE *fp, MolPropObservable eprop,
  * \ingroup module_alexandria
  */
 extern void gmx_molprop_atomtype_table(FILE *fp, bool bPolar,
-                                       gmx_poldata_t pd,
+                                       Poldata * pd,
                                        std::vector<alexandria::MolProp> mp,
                                        char *lot, char *exp_type);
 

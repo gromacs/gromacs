@@ -68,6 +68,9 @@
 #include "plistwrapper.h"
 #include "stringutil.h"
 
+
+using namespace alexandria;
+
 void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
                       matrix box)
 {
@@ -307,7 +310,7 @@ void reset_q(t_atoms *atoms)
 
 void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         std::vector<alexandria::PlistWrapper>::iterator bonds,
-                        gmx_poldata_t pd,
+                        Poldata * pd,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges)
 {
@@ -345,7 +348,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
         }
         else
         {
-            while (gmx_poldata_get_symcharges(pd, &central,
+            while (pd->get_symcharges(&central,
                                               &attached, &nattached) == 1)
             {
                 anr_central  = gmx_atomprop_atomnumber(aps, central);

@@ -45,73 +45,57 @@
 #include "gentop_qgen.h"
 #include "gmx_resp.h"
 
-typedef struct gentop_qgen
+namespace alexandria
 {
-    gmx_bool                  bWarned;
-    ChargeDistributionModel   iChargeDistributionModel;
-    ChargeGenerationAlgorithm iChargeGenerationAlgorithm;
-    int                       natom, eQGEN;
-    real                      qtotal, chieq, hfac, epsr;
-    /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
-    char                    **elem;
-    int                      *atomnr;
-    real                     *chi0, *rhs, *j00;
-    rvec                     *x;
-    /* Jab is a matrix over atom pairs */
-    real                    **Jab;
-    /* For each atom i there are nZeta[i] row, q and zeta entries */
-    int                      *nZeta;
-    int                     **row;
-    gmx_bool                  bAllocSave;
-    real                    **q, **zeta, **qsave, **zetasave;
-} gentop_qgen;
 
-static void gentop_qgen_save_params(gentop_qgen_t qgen, gmx_resp_t gr)
+
+
+ void GentopQgen::save_params( gmx_resp_t gr)
 {
     int i, j;
 
-    if (!qgen->bAllocSave)
+    if (!this->bAllocSave)
     {
-        snew(qgen->qsave, qgen->natom);
-        snew(qgen->zetasave, qgen->natom);
+        snew(this->qsave, this->natom);
+        snew(this->zetasave, this->natom);
     }
-    for (i = 0; (i < qgen->natom); i++)
+    for (i = 0; (i < this->natom); i++)
     {
-        if (!qgen->bAllocSave)
+        if (!this->bAllocSave)
         {
-            snew(qgen->qsave[i], qgen->nZeta[i]);
-            snew(qgen->zetasave[i], qgen->nZeta[i]);
+            snew(this->qsave[i], this->nZeta[i]);
+            snew(this->zetasave[i], this->nZeta[i]);
         }
-        for (j = 0; (j < qgen->nZeta[i]); j++)
+        for (j = 0; (j < this->nZeta[i]); j++)
         {
             if (NULL != gr)
             {
-                qgen->q[i][j]    = gmx_resp_get_q(gr, i, j);
-                qgen->zeta[i][j] = gmx_resp_get_zeta(gr, i, j);
+                this->q[i][j]    = gmx_resp_get_q(gr, i, j);
+                this->zeta[i][j] = gmx_resp_get_zeta(gr, i, j);
             }
-            qgen->qsave[i][j]    = qgen->q[i][j];
-            qgen->zetasave[i][j] = qgen->zeta[i][j];
+            this->qsave[i][j]    = this->q[i][j];
+            this->zetasave[i][j] = this->zeta[i][j];
         }
     }
-    qgen->bAllocSave = TRUE;
+    this->bAllocSave = TRUE;
 }
 
-static void gentop_qgen_get_params(gentop_qgen_t qgen, gmx_resp_t gr)
+ void GentopQgen::get_params( gmx_resp_t gr)
 {
     int i, j;
 
-    if (qgen->bAllocSave)
+    if (this->bAllocSave)
     {
-        for (i = 0; (i < qgen->natom); i++)
+        for (i = 0; (i < this->natom); i++)
         {
-            for (j = 0; (j < qgen->nZeta[i]); j++)
+            for (j = 0; (j < this->nZeta[i]); j++)
             {
-                qgen->q[i][j]    = qgen->qsave[i][j];
-                qgen->zeta[i][j] = qgen->zetasave[i][j];
+                this->q[i][j]    = this->qsave[i][j];
+                this->zeta[i][j] = this->zetasave[i][j];
                 if (NULL != gr)
                 {
-                    gmx_resp_set_q(gr, i, j, qgen->q[i][j]);
-                    gmx_resp_set_zeta(gr, i, j, qgen->zeta[i][j]);
+                    gmx_resp_set_q(gr, i, j, this->q[i][j]);
+                    gmx_resp_set_zeta(gr, i, j, this->zeta[i][j]);
                 }
             }
         }
@@ -122,63 +106,54 @@ static void gentop_qgen_get_params(gentop_qgen_t qgen, gmx_resp_t gr)
     }
 }
 
-int gentop_qgen_get_nzeta(gentop_qgen_t qgen, int atom)
+int GentopQgen::get_nzeta( int atom)
 {
-    if ((0 <= atom) && (atom < qgen->natom))
+    if ((0 <= atom) && (atom < this->natom))
     {
-        return qgen->nZeta[atom];
+        return this->nZeta[atom];
     }
-    else
-    {
         return NOTSET;
-    }
+  
 }
 
-int gentop_qgen_get_row(gentop_qgen_t qgen, int atom, int z)
+int GentopQgen::get_row( int atom, int z)
 {
-    if ((0 <= atom) && (atom < qgen->natom) &&
-        (0 <= z) && (z <= qgen->nZeta[atom]))
+    if ((0 <= atom) && (atom < this->natom) &&
+        (0 <= z) && (z <= this->nZeta[atom]))
     {
-        return qgen->row[atom][z];
+        return this->row[atom][z];
     }
-    else
-    {
         return NOTSET;
+  
+}
+  double GentopQgen::get_q(int atom, int z)
+{
+    if ((0 <= atom) && (atom < this->natom) &&
+        (0 <= z) && (z <= this->nZeta[atom]))
+    {
+        return this->q[atom][z];
     }
+        return NOTSET;
+
 }
 
-double gentop_qgen_get_q(gentop_qgen_t qgen, int atom, int z)
+
+double GentopQgen::get_zeta(int atom, int z)
 {
-    if ((0 <= atom) && (atom < qgen->natom) &&
-        (0 <= z) && (z <= qgen->nZeta[atom]))
+    if ((0 <= atom) && (atom < this->natom) &&
+        (0 <= z) && (z <= this->nZeta[atom]))
     {
-        return qgen->q[atom][z];
+        return this->zeta[atom][z];
     }
-    else
-    {
         return NOTSET;
-    }
 }
 
-double gentop_qgen_get_zeta(gentop_qgen_t qgen, int atom, int z)
-{
-    if ((0 <= atom) && (atom < qgen->natom) &&
-        (0 <= z) && (z <= qgen->nZeta[atom]))
-    {
-        return qgen->zeta[atom][z];
-    }
-    else
-    {
-        return NOTSET;
-    }
-}
-
-static real Coulomb_NN(real r)
+ real Coulomb_NN(real r)
 {
     return 1/r;
 }
 
-static real calc_jab(ChargeDistributionModel iChargeDistributionModel,
+ real GentopQgen::calc_jab(ChargeDistributionModel iChargeDistributionModel,
                      rvec xi, rvec xj,
                      int nZi, int nZj,
                      real *zeta_i, real *zeta_j,
@@ -233,20 +208,20 @@ static real calc_jab(ChargeDistributionModel iChargeDistributionModel,
     return ONE_4PI_EPS0*(eTot)/ELECTRONVOLT;
 }
 
-static void solve_q_eem(FILE *fp, gentop_qgen *qgen, real hardness_factor)
+void GentopQgen::solve_q_eem(FILE *fp,  real hardness_factor)
 {
     double **a, qtot, q;
     int      i, j, n;
 
-    n = qgen->natom+1;
+    n = this->natom+1;
     a = alloc_matrix(n, n);
     for (i = 0; (i < n-1); i++)
     {
         for (j = 0; (j < n-1); j++)
         {
-            a[i][j] = qgen->Jab[i][j];
+            a[i][j] = this->Jab[i][j];
         }
-        a[i][i] = hardness_factor*qgen->Jab[i][i];
+        a[i][i] = hardness_factor*this->Jab[i][i];
     }
     for (j = 0; (j < n-1); j++)
     {
@@ -265,12 +240,12 @@ static void solve_q_eem(FILE *fp, gentop_qgen *qgen, real hardness_factor)
             q = 0;
             for (j = 0; (j < n); j++)
             {
-                q += a[i][j]*qgen->rhs[j];
+                q += a[i][j]*this->rhs[j];
             }
-            qgen->q[i][qgen->nZeta[i]-1] = q;
+            this->q[i][this->nZeta[i]-1] = q;
             if (fp)
             {
-                fprintf(fp, "%2d RHS = %10g Charge= %10g\n", i, qgen->rhs[i], q);
+                fprintf(fp, "%2d RHS = %10g Charge= %10g\n", i, this->rhs[i], q);
             }
         }
     }
@@ -278,93 +253,93 @@ static void solve_q_eem(FILE *fp, gentop_qgen *qgen, real hardness_factor)
     {
         for (i = 0; (i < n); i++)
         {
-            qgen->q[i][qgen->nZeta[i]] = 1;
+            this->q[i][this->nZeta[i]] = 1;
         }
     }
-    qgen->chieq = qgen->q[n-1][qgen->nZeta[n-1]-1];
+    this->chieq = this->q[n-1][this->nZeta[n-1]-1];
     qtot        = 0;
     for (i = 0; (i < n-1); i++)
     {
-        for (j = 0; (j < qgen->nZeta[i]); j++)
+        for (j = 0; (j < this->nZeta[i]); j++)
         {
-            qtot += qgen->q[i][j];
+            qtot += this->q[i][j];
         }
     }
 
-    if (fp && (fabs(qtot - qgen->qtotal) > 1e-2))
+    if (fp && (fabs(qtot - this->qtotal) > 1e-2))
     {
-        fprintf(fp, "qtot = %g, it should be %g\n", qtot, qgen->qtotal);
+        fprintf(fp, "qtot = %g, it should be %g\n", qtot, this->qtotal);
     }
     free_matrix(a);
 }
 
-static void qgen_update_J00(gentop_qgen *qgen)
+void GentopQgen::update_J00()
 {
     int    i;
     double j0, qq;
     double zetaH = 1.0698;
 
-    for (i = 0; (i < qgen->natom); i++)
+    for (i = 0; (i < this->natom); i++)
     {
-        j0 = qgen->j00[i]/qgen->epsr;
-        if (((qgen->iChargeDistributionModel == eqdYang) ||
-             (qgen->iChargeDistributionModel == eqdRappe)) &&
-            (qgen->atomnr[i] == 1))
+        j0 = this->j00[i]/this->epsr;
+        if (((this->iChargeDistributionModel == eqdYang) ||
+             (this->iChargeDistributionModel == eqdRappe)) &&
+            (this->atomnr[i] == 1))
         {
-            qq = qgen->q[i][qgen->nZeta[i]-1];
+            qq = this->q[i][this->nZeta[i]-1];
             j0 = (1+qq/zetaH)*j0;
 
-            if (debug && (j0 < 0) && !qgen->bWarned)
+            if (debug && (j0 < 0) && !this->bWarned)
             {
                 fprintf(debug, "WARNING: J00 = %g for atom %d. The equations will be instable.\n", j0, i+1);
-                qgen->bWarned = TRUE;
+                this->bWarned = TRUE;
             }
         }
-        qgen->Jab[i][i] = (j0 > 0) ? j0 : 0;
+        this->Jab[i][i] = (j0 > 0) ? j0 : 0;
     }
 }
 
-static void qgen_debug(FILE *fp, gentop_qgen *qgen)
+void GentopQgen::debugFun(FILE *fp)
 {
     int i, j;
 
-    for (i = 0; (i < qgen->natom); i++)
+    for (i = 0; (i < this->natom); i++)
     {
-        fprintf(fp, "QGEN: i: %2d chi0: %8g J0: %8g q:",
-                i+1, qgen->chi0[i], qgen->Jab[i][i]);
-        for (j = 0; (j < qgen->nZeta[i]); j++)
+        fprintf(fp, "THIS: i: %2d chi0: %8g J0: %8g q:",
+                i+1, this->chi0[i], this->Jab[i][i]);
+        for (j = 0; (j < this->nZeta[i]); j++)
         {
-            fprintf(fp, " %8g", qgen->q[i][j]);
+            fprintf(fp, " %8g", this->q[i][j]);
         }
         fprintf(fp, "\n");
     }
-    fprintf(fp, "QGEN Jab matrix:\n");
-    for (i = 0; (i < qgen->natom); i++)
+    fprintf(fp, "qgen Jab matrix:\n");
+    for (i = 0; (i < this->natom); i++)
     {
         for (j = 0; (j <= i); j++)
         {
-            fprintf(fp, "  %6.2f", qgen->Jab[i][j]);
+            fprintf(fp, "  %6.2f", this->Jab[i][j]);
         }
         fprintf(fp, "\n");
     }
     fprintf(fp, "\n");
 }
 
-static real qgen_calc_Sij(gentop_qgen *qgen, int i, int j)
+real GentopQgen::calc_Sij(int i, int j)
 {
     real dist, dism, Sij = 1.0;
     rvec dx;
     int  l, m, tag;
 
-    rvec_sub(qgen->x[i], qgen->x[j], dx);
+    rvec_sub(this->x[i], this->x[j], dx);
     dist = norm(dx);
-    if ((dist < 0.118) && (qgen->atomnr[i] != 1) && (qgen->atomnr[j] != 1))
+    if ((dist < 0.118) && (this->atomnr[i] != 1) && (this->atomnr[j] != 1))
     {
         Sij = Sij*1.64;
     }
-    else if ((dist < 0.122) && (qgen->atomnr[i] != 1) && (qgen->atomnr[j] != 1))
+    else if ((dist < 0.122) && (this->atomnr[i] != 1) && (this->atomnr[j] != 1))
     {
-        if ((qgen->atomnr[i] != 8) && (qgen->atomnr[j] != 8))
+        if ((this->atomnr[i] != 8) && (this->atomnr[j] != 8))
         {
             Sij = Sij*2.23;
         }
@@ -376,47 +351,47 @@ static real qgen_calc_Sij(gentop_qgen *qgen, int i, int j)
     else if (dist < 0.125)
     {
         tag = 0;
-        if ((qgen->atomnr[i] == 6) && (qgen->atomnr[j] == 8))
+        if ((this->atomnr[i] == 6) && (this->atomnr[j] == 8))
         {
             tag = i;
         }
-        else if ((qgen->atomnr[i] == 8) && (qgen->atomnr[j] == 6))
+        else if ((this->atomnr[i] == 8) && (this->atomnr[j] == 6))
         {
             tag = j;
         }
         if (tag != 0)
         {
             printf("found CO\n");
-            for (l = 0; (l < qgen->natom); l++)
+            for (l = 0; (l < this->natom); l++)
             {
-                if (qgen->atomnr[l] == 1)
+                if (this->atomnr[l] == 1)
                 {
                     printf("found H\n");
                     dism = 0.0;
                     for (m = 0; (m < DIM); m++)
                     {
-                        dism = dism+sqr(qgen->x[tag][m]-qgen->x[l][m]);
+                        dism = dism+sqr(this->x[tag][m]-this->x[l][m]);
                     }
 
                     printf("dist: %8.3f\n", sqrt(dism));
                     if (sqrt(dism) < 0.105)
                     {
                         printf("dist %5d %5d %5s  %5s %8.3f\n",
-                               i, l, qgen->elem[tag], qgen->elem[l], sqrt(dism));
+                               i, l, this->elem[tag], this->elem[l], sqrt(dism));
                         Sij = Sij*1.605;
                     }
                 }
             }
         }
     }
-    else if ((qgen->atomnr[i] == 6) && (qgen->atomnr[j] == 8))
+    else if ((this->atomnr[i] == 6) && (this->atomnr[j] == 8))
     {
         Sij = Sij*1.03;
     }
-    else if (((qgen->atomnr[j] == 6) && (qgen->atomnr[i] == 7) && (dist < 0.15)) ||
-             ((qgen->atomnr[i] == 6) && (qgen->atomnr[j] == 7) && (dist < 0.15)))
+    else if (((this->atomnr[j] == 6) && (this->atomnr[i] == 7) && (dist < 0.15)) ||
+             ((this->atomnr[i] == 6) && (this->atomnr[j] == 7) && (dist < 0.15)))
     {
-        if (qgen->atomnr[i] == 6)
+        if (this->atomnr[i] == 6)
         {
             tag = i;
         }
@@ -424,15 +399,15 @@ static real qgen_calc_Sij(gentop_qgen *qgen, int i, int j)
         {
             tag = j;
         }
-        for (l = 0; (l < qgen->natom); l++)
+        for (l = 0; (l < this->natom); l++)
         {
-            if (qgen->atomnr[l] == 8)
+            if (this->atomnr[l] == 8)
             {
                 printf("found Oxy\n");
                 dism = 0.0;
                 for (m = 0; (m < DIM); m++)
                 {
-                    dism = dism+sqr(qgen->x[tag][m]-qgen->x[l][m]);
+                    dism = dism+sqr(this->x[tag][m]-this->x[l][m]);
                 }
                 if (sqrt(dism) < 0.130)
                 {
@@ -449,80 +424,80 @@ static real qgen_calc_Sij(gentop_qgen *qgen, int i, int j)
     return Sij;
 }
 
-static void qgen_calc_Jab(gentop_qgen *qgen)
+void GentopQgen::calc_Jab()
 {
     int    i, j;
     double Jab;
 
-    for (i = 0; (i < qgen->natom); i++)
+    for (i = 0; (i < this->natom); i++)
     {
-        for (j = i+1; (j < qgen->natom); j++)
+        for (j = i+1; (j < this->natom); j++)
         {
-            Jab = calc_jab(qgen->iChargeDistributionModel,
-                           qgen->x[i], qgen->x[j],
-                           qgen->nZeta[i], qgen->nZeta[j],
-                           qgen->zeta[i], qgen->zeta[j],
-                           qgen->row[i], qgen->row[j]);
-            if (qgen->iChargeDistributionModel == eqdYang)
+            Jab = calc_jab(this->iChargeDistributionModel,
+                           this->x[i], this->x[j],
+                           this->nZeta[i], this->nZeta[j],
+                           this->zeta[i], this->zeta[j],
+                           this->row[i], this->row[j]);
+            if (this->iChargeDistributionModel == eqdYang)
             {
-                Jab = Jab*qgen_calc_Sij(qgen, i, j);
+                Jab = Jab*calc_Sij(i, j);
             }
-            qgen->Jab[j][i] = qgen->Jab[i][j] = Jab/qgen->epsr;
+            this->Jab[j][i] = this->Jab[i][j] = Jab/this->epsr;
         }
     }
 }
 
-static void qgen_calc_rhs(gentop_qgen *qgen)
+void GentopQgen::calc_rhs()
 {
     int    i, j, k, l;
     rvec   dx;
     real   r, j1, j1q, qcore;
 
     /* This right hand side is for all models */
-    for (i = 0; (i < qgen->natom); i++)
+    for (i = 0; (i < this->natom); i++)
     {
-        qgen->rhs[i] = -qgen->chi0[i];
+        this->rhs[i] = -this->chi0[i];
     }
-    qgen->rhs[qgen->natom] = qgen->qtotal;
+    this->rhs[this->natom] = this->qtotal;
 
     /* In case the charge is split in nuclear charge and electronic charge
      * we need to add some more stuff. See paper for details.
      */
-    for (i = 0; (i < qgen->natom); i++)
+    for (i = 0; (i < this->natom); i++)
     {
         j1q   = 0;
         qcore = 0;
-        for (k = 0; (k < qgen->nZeta[i]-1); k++)
+        for (k = 0; (k < this->nZeta[i]-1); k++)
         {
-            j1q   += qgen->j00[i]*qgen->q[i][k];
-            qcore += qgen->q[i][k];
+            j1q   += this->j00[i]*this->q[i][k];
+            qcore += this->q[i][k];
         }
         j1 = 0;
         /* This assignment for k is superfluous because of the previous loop,
          * but if I take it out it will at some stage break the loop below where
          * exactly this value of k is needed.
          */
-        k  = qgen->nZeta[i]-1;
-        for (j = 0; (j < qgen->natom); j++)
+        k  = this->nZeta[i]-1;
+        for (j = 0; (j < this->natom); j++)
         {
             if (i != j)
             {
-                rvec_sub(qgen->x[i], qgen->x[j], dx);
+                rvec_sub(this->x[i], this->x[j], dx);
                 r = norm(dx);
-                switch (qgen->iChargeDistributionModel)
+                switch (this->iChargeDistributionModel)
                 {
                     case eqdAXs:
                     case eqdRappe:
                     case eqdYang:
-                        for (l = 0; (l < qgen->nZeta[j]-1); l++)
+                        for (l = 0; (l < this->nZeta[j]-1); l++)
                         {
-                            j1 += qgen->q[j][l]*Coulomb_SS(r, k, l, qgen->zeta[i][k], qgen->zeta[j][l]);
+                            j1 += this->q[j][l]*Coulomb_SS(r, k, l, this->zeta[i][k], this->zeta[j][l]);
                         }
                         break;
                     case eqdAXg:
-                        for (l = 0; (l < qgen->nZeta[j]-1); l++)
+                        for (l = 0; (l < this->nZeta[j]-1); l++)
                         {
-                            j1 += qgen->q[j][l]*Coulomb_GG(r, qgen->zeta[i][k], qgen->zeta[j][l]);
+                            j1 += this->q[j][l]*Coulomb_GG(r, this->zeta[i][k], this->zeta[j][l]);
                         }
                         break;
                     default:
@@ -530,8 +505,8 @@ static void qgen_calc_rhs(gentop_qgen *qgen)
                 }
             }
         }
-        qgen->rhs[i]           -= j1q + ONE_4PI_EPS0*j1/ELECTRONVOLT;
-        qgen->rhs[qgen->natom] -= qcore;
+        this->rhs[i]           -= j1q + ONE_4PI_EPS0*j1/ELECTRONVOLT;
+        this->rhs[this->natom] -= qcore;
     }
 }
 
@@ -572,55 +547,54 @@ int atomicnumber2rowXX(int elem)
     return row;
 }
 
-gentop_qgen_t
-gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms, gmx_atomprop_t aps,
+GentopQgen::GentopQgen(Poldata * pd, t_atoms *atoms, gmx_atomprop_t aps,
                  rvec *x,
                  ChargeDistributionModel   iChargeDistributionModel,
                  ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
                  real hfac, int qtotal, real epsr)
 {
-    gentop_qgen *qgen;
+   
     char        *atp;
     gmx_bool     bSup = TRUE;
     int          i, j, k, atm, nz;
 
-    snew(qgen, 1);
-    qgen->iChargeDistributionModel   = iChargeDistributionModel;
-    qgen->iChargeGenerationAlgorithm = iChargeGenerationAlgorithm;
-    qgen->hfac                       = hfac;
-    qgen->qtotal                     = qtotal;
+   
+    this->iChargeDistributionModel   = iChargeDistributionModel;
+    this->iChargeGenerationAlgorithm = iChargeGenerationAlgorithm;
+    this->hfac                       = hfac;
+    this->qtotal                     = qtotal;
     if (epsr <= 1)
     {
         epsr = 1;
     }
-    qgen->epsr   = epsr;
+    this->epsr   = epsr;
     for (i = j = 0; (i < atoms->nr); i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
-            qgen->natom++;
+            this->natom++;
         }
     }
-    snew(qgen->chi0, qgen->natom);
-    snew(qgen->rhs, qgen->natom+1);
-    snew(qgen->elem, qgen->natom);
-    snew(qgen->atomnr, qgen->natom);
-    snew(qgen->row, qgen->natom);
-    snew(qgen->Jab, qgen->natom+1);
-    snew(qgen->zeta, qgen->natom);
-    snew(qgen->j00, qgen->natom);
-    snew(qgen->q, qgen->natom+1);
-    snew(qgen->x, qgen->natom);
-    qgen->bAllocSave = FALSE;
-    snew(qgen->nZeta, qgen->natom+1);
+    snew(this->chi0, this->natom);
+    snew(this->rhs, this->natom+1);
+    snew(this->elem, this->natom);
+    snew(this->atomnr, this->natom);
+    snew(this->row, this->natom);
+    snew(this->Jab, this->natom+1);
+    snew(this->zeta, this->natom);
+    snew(this->j00, this->natom);
+    snew(this->q, this->natom+1);
+    snew(this->x, this->natom);
+    this->bAllocSave = FALSE;
+    snew(this->nZeta, this->natom+1);
     /* Special case for chi_eq */
-    qgen->nZeta[qgen->natom] = 1;
-    snew(qgen->q[qgen->natom], qgen->nZeta[qgen->natom]);
+    this->nZeta[this->natom] = 1;
+    snew(this->q[this->natom], this->nZeta[this->natom]);
     for (i = j = 0; (i < atoms->nr) && bSup; i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
-            snew(qgen->Jab[j], qgen->natom+1);
+            snew(this->Jab[j], this->natom+1);
             atm = atoms->atom[i].atomnumber;
             if (atm == NOTSET)
             {
@@ -629,31 +603,31 @@ gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms, gmx_atomprop_t aps,
                           *(atoms->atomname[j]));
             }
             atp = *atoms->atomtype[j];
-            if (gmx_poldata_have_eem_support(pd, qgen->iChargeDistributionModel, atp, TRUE) == 0)
+            if (pd->have_eem_support(this->iChargeDistributionModel, atp, TRUE) == 0)
             {
                 atp = gmx_atomprop_element(aps, atm);
-                if (gmx_poldata_have_eem_support(pd, qgen->iChargeDistributionModel, atp, TRUE) == 0)
+                if (pd->have_eem_support(this->iChargeDistributionModel, atp, TRUE) == 0)
                 {
                     fprintf(stderr, "No charge distribution support for atom %s (element %s), model %s\n",
-                            *atoms->atomtype[j], atp, get_eemtype_name(qgen->iChargeDistributionModel));
+                            *atoms->atomtype[j], atp, Poldata::get_eemtype_name(this->iChargeDistributionModel));
                     bSup = FALSE;
                 }
             }
             if (bSup)
             {
-                qgen->elem[j]   = strdup(atp);
-                qgen->atomnr[j] = atm;
-                nz              = gmx_poldata_get_nzeta(pd, qgen->iChargeDistributionModel, atp);
-                qgen->nZeta[j]  = nz;
-                snew(qgen->q[j], nz);
-                snew(qgen->zeta[j], nz);
-                snew(qgen->row[j], nz);
+                this->elem[j]   = strdup(atp);
+                this->atomnr[j] = atm;
+                nz              = pd->get_nzeta(this->iChargeDistributionModel, atp);
+                this->nZeta[j]  = nz;
+                snew(this->q[j], nz);
+                snew(this->zeta[j], nz);
+                snew(this->row[j], nz);
                 for (k = 0; (k < nz); k++)
                 {
-                    qgen->q[j][k]    = gmx_poldata_get_q(pd, qgen->iChargeDistributionModel, *atoms->atomtype[j], k);
-                    qgen->zeta[j][k] = gmx_poldata_get_zeta(pd, qgen->iChargeDistributionModel, *atoms->atomtype[j], k);
-                    qgen->row[j][k]  = gmx_poldata_get_row(pd, qgen->iChargeDistributionModel, *atoms->atomtype[j], k);
-                    if (qgen->row[j][k] > SLATER_MAX)
+                    this->q[j][k]    = pd->get_q(this->iChargeDistributionModel, *atoms->atomtype[j], k);
+                    this->zeta[j][k] = pd->get_zeta(this->iChargeDistributionModel, *atoms->atomtype[j], k);
+                    this->row[j][k]  = pd->get_row(this->iChargeDistributionModel, *atoms->atomtype[j], k);
+                    if (this->row[j][k] > SLATER_MAX)
                     {
                         if (debug)
                         {
@@ -662,36 +636,72 @@ gentop_qgen_init(gmx_poldata_t pd, t_atoms *atoms, gmx_atomprop_t aps,
                                     *(atoms->resinfo[i].name),
                                     *(atoms->atomname[j]));
                         }
-                        qgen->row[j][k] = SLATER_MAX;
+                        this->row[j][k] = SLATER_MAX;
                     }
                 }
-                qgen->chi0[j]  = 0;
-                qgen->j00[j]   = 0;
-                copy_rvec(x[i], qgen->x[j]);
+                this->chi0[j]  = 0;
+                this->j00[j]   = 0;
+                copy_rvec(x[i], this->x[j]);
                 j++;
             }
         }
     }
     if (bSup)
     {
-        return (gentop_qgen_t) qgen;
     }
     else
     {
-        gentop_qgen_done(qgen);
-        sfree(qgen);
+      //    done();
+ }
+}
 
-        return NULL;
+
+
+
+  GentopQgen::~GentopQgen()
+{
+    int  i;
+
+    sfree(this->chi0);
+    sfree(this->rhs);
+    sfree(this->atomnr);
+    sfree(this->j00);
+    sfree(this->x);
+    for (i = 0; (i < this->natom); i++)
+    {
+        sfree(this->row[i]);
+        sfree(this->q[i]);
+        sfree(this->zeta[i]);
+        sfree(this->Jab[i]);
+        sfree(this->elem[i]);
+        if (this->bAllocSave)
+        {
+            sfree(this->qsave[i]);
+            sfree(this->zetasave[i]);
+        }
+    }
+    sfree(this->row);
+    sfree(this->zeta);
+    sfree(this->elem);
+    sfree(this->q);
+    sfree(this->Jab);
+    sfree(this->nZeta);
+    if (this->bAllocSave)
+    {
+        sfree(this->qsave);
+        sfree(this->zetasave);
+        this->bAllocSave = FALSE;
     }
 }
 
-static void qgen_print(FILE *fp, t_atoms *atoms, gentop_qgen *qgen)
+
+void GentopQgen::print(FILE *fp, t_atoms *atoms)
 {
     int  i, j, k, m;
     rvec mu = { 0, 0, 0 };
     real qq;
 
-    if (qgen->eQGEN == eQGEN_OK)
+    if (this->eQGEN == eQGEN_OK)
     {
         if (fp)
         {
@@ -702,25 +712,25 @@ static void qgen_print(FILE *fp, t_atoms *atoms, gentop_qgen *qgen)
             if (atoms->atom[i].ptype == eptAtom)
             {
                 qq = 0;
-                for (k = 0; (k < qgen->nZeta[j]); k++)
+                for (k = 0; (k < this->nZeta[j]); k++)
                 {
-                    qq += qgen->q[j][k];
+                    qq += this->q[j][k];
                 }
 
                 atoms->atom[i].q = qq;
                 for (m = 0; (m < DIM); m++)
                 {
-                    mu[m] += qq* qgen->x[i][m] * ENM2DEBYE;
+                    mu[m] += qq* this->x[i][m] * ENM2DEBYE;
                 }
                 if (fp)
                 {
                     fprintf(fp, "%4s %4s%5d %8g %8g",
                             *(atoms->resinfo[atoms->atom[i].resind].name),
-                            *(atoms->atomname[i]), i+1, qgen->j00[j], qgen->chi0[j]);
-                    for (k = 0; (k < qgen->nZeta[j]); k++)
+                            *(atoms->atomname[i]), i+1, this->j00[j], this->chi0[j]);
+                    for (k = 0; (k < this->nZeta[j]); k++)
                     {
-                        fprintf(fp, " %3d %8.5f %8.4f", qgen->row[j][k], qgen->q[j][k],
-                                qgen->zeta[j][k]);
+                        fprintf(fp, " %3d %8.5f %8.4f", this->row[j][k], this->q[j][k],
+                                this->zeta[j][k]);
                     }
                     fprintf(fp, "\n");
                 }
@@ -730,51 +740,14 @@ static void qgen_print(FILE *fp, t_atoms *atoms, gentop_qgen *qgen)
         if (fp)
         {
             fprintf(fp, "<chieq> = %10g\n|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n",
-                    qgen->chieq, norm(mu), mu[XX], mu[YY], mu[ZZ]);
+                    this->chieq, norm(mu), mu[XX], mu[YY], mu[ZZ]);
         }
     }
 }
 
-void
-gentop_qgen_done(gentop_qgen *qgen)
+void GentopQgen::message( int len, char buf[], gmx_resp_t gr)
 {
-    int  i;
-
-    sfree(qgen->chi0);
-    sfree(qgen->rhs);
-    sfree(qgen->atomnr);
-    sfree(qgen->j00);
-    sfree(qgen->x);
-    for (i = 0; (i < qgen->natom); i++)
-    {
-        sfree(qgen->row[i]);
-        sfree(qgen->q[i]);
-        sfree(qgen->zeta[i]);
-        sfree(qgen->Jab[i]);
-        sfree(qgen->elem[i]);
-        if (qgen->bAllocSave)
-        {
-            sfree(qgen->qsave[i]);
-            sfree(qgen->zetasave[i]);
-        }
-    }
-    sfree(qgen->row);
-    sfree(qgen->zeta);
-    sfree(qgen->elem);
-    sfree(qgen->q);
-    sfree(qgen->Jab);
-    sfree(qgen->nZeta);
-    if (qgen->bAllocSave)
-    {
-        sfree(qgen->qsave);
-        sfree(qgen->zetasave);
-        qgen->bAllocSave = FALSE;
-    }
-}
-
-void qgen_message(gentop_qgen_t qgen, int len, char buf[], gmx_resp_t gr)
-{
-    switch (qgen->eQGEN)
+    switch (this->eQGEN)
     {
         case eQGEN_OK:
             if (NULL != gr)
@@ -796,40 +769,40 @@ void qgen_message(gentop_qgen_t qgen, int len, char buf[], gmx_resp_t gr)
             break;
         case eQGEN_ERROR:
         default:
-            sprintf(buf, "Unknown status %d in charge generation.\n", qgen->eQGEN);
+            sprintf(buf, "Unknown status %d in charge generation.\n", this->eQGEN);
     }
 }
 
-static void qgen_check_support(gentop_qgen *qgen, gmx_poldata_t pd, gmx_atomprop_t aps)
+ void GentopQgen::check_support(Poldata * pd, gmx_atomprop_t aps)
 {
     int      i;
     gmx_bool bSup = TRUE;
 
-    for (i = 0; (i < qgen->natom); i++)
+    for (i = 0; (i < this->natom); i++)
     {
-        if (gmx_poldata_have_eem_support(pd, qgen->iChargeDistributionModel, qgen->elem[i], TRUE) == 0)
+        if (pd->have_eem_support(this->iChargeDistributionModel, this->elem[i], TRUE) == 0)
         {
-            /*sfree(qgen->elem[i]);*/
-            qgen->elem[i] = strdup(gmx_atomprop_element(aps, qgen->atomnr[i]));
-            if (gmx_poldata_have_eem_support(pd, qgen->iChargeDistributionModel, qgen->elem[i], TRUE) == 0)
+            /*sfree(this->elem[i]);*/
+            this->elem[i] = strdup(gmx_atomprop_element(aps, this->atomnr[i]));
+            if (pd->have_eem_support(this->iChargeDistributionModel, this->elem[i], TRUE) == 0)
             {
                 fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                        qgen->elem[i], get_eemtype_name(qgen->iChargeDistributionModel));
+                        this->elem[i], Poldata::get_eemtype_name(this->iChargeDistributionModel));
                 bSup = FALSE;
             }
         }
     }
     if (bSup)
     {
-        qgen->eQGEN = eQGEN_OK;
+        this->eQGEN = eQGEN_OK;
     }
     else
     {
-        qgen->eQGEN = eQGEN_NOSUPPORT;
+        this->eQGEN = eQGEN_NOSUPPORT;
     }
 }
 
-static void qgen_update_pd(t_atoms *atoms, gmx_poldata_t pd, gentop_qgen_t qgen)
+ void GentopQgen::update_pd(t_atoms *atoms, Poldata * pd)
 {
     int i, j, n, nz;
 
@@ -837,22 +810,22 @@ static void qgen_update_pd(t_atoms *atoms, gmx_poldata_t pd, gentop_qgen_t qgen)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
-            qgen->chi0[j]  = gmx_poldata_get_chi0(pd, qgen->iChargeDistributionModel, qgen->elem[j]);
-            qgen->j00[j]   = gmx_poldata_get_j00(pd, qgen->iChargeDistributionModel, qgen->elem[j]);
-            nz             = gmx_poldata_get_nzeta(pd, qgen->iChargeDistributionModel, qgen->elem[j]);
+            this->chi0[j]  = pd->get_chi0(this->iChargeDistributionModel, this->elem[j]);
+            this->j00[j]   = pd->get_j00(this->iChargeDistributionModel, this->elem[j]);
+            nz             = pd->get_nzeta(this->iChargeDistributionModel, this->elem[j]);
             for (n = 0; (n < nz); n++)
             {
-                qgen->zeta[j][n] = gmx_poldata_get_zeta(pd, qgen->iChargeDistributionModel, qgen->elem[j], n);
-                qgen->q[j][n]    = gmx_poldata_get_q(pd, qgen->iChargeDistributionModel, qgen->elem[j], n);
-                qgen->row[j][n]  = gmx_poldata_get_row(pd, qgen->iChargeDistributionModel, qgen->elem[j], n);
+                this->zeta[j][n] = pd->get_zeta(this->iChargeDistributionModel,this->elem[j], n);
+                this->q[j][n]    = pd->get_q(this->iChargeDistributionModel,this->elem[j], n);
+                this->row[j][n]  = pd->get_row(this->iChargeDistributionModel,this->elem[j], n);
             }
             j++;
         }
     }
 }
 
-int generate_charges_sm(FILE *fp,
-                        gentop_qgen *qgen, gmx_poldata_t pd,
+  int GentopQgen::generate_charges_sm(FILE *fp,
+                        Poldata * pd,
                         t_atoms *atoms,
                         real tol, int maxiter, gmx_atomprop_t aps,
                         real *chieq)
@@ -861,38 +834,38 @@ int generate_charges_sm(FILE *fp,
     int         i, j, iter;
     real        rms;
 
-    qgen_check_support(qgen, pd, aps);
-    if (eQGEN_OK == qgen->eQGEN)
+    check_support(pd, aps);
+    if (eQGEN_OK == this->eQGEN)
     {
-        qgen_update_pd(atoms, pd, qgen);
+        update_pd(atoms, pd);
 
         snew(qq, atoms->nr+1);
         for (i = j = 0; (i < atoms->nr); i++)
         {
             if (atoms->atom[i].ptype != eptShell)
             {
-                qq[j] = qgen->q[j][qgen->nZeta[j]-1];
+                qq[j] = this->q[j][this->nZeta[j]-1];
                 j++;
             }
         }
         iter = 0;
-        qgen_calc_Jab(qgen);
-        qgen_calc_rhs(qgen);
+        calc_Jab();
+        calc_rhs();
         do
         {
-            qgen_update_J00(qgen);
+            update_J00();
             if (debug)
             {
-                qgen_debug(debug, qgen);
+                debugFun(debug);
             }
-            solve_q_eem(debug, qgen, 1.0);
+            solve_q_eem(debug, 1.0);
             rms = 0;
             for (i = j = 0; (i < atoms->nr); i++)
             {
                 if (atoms->atom[i].ptype != eptShell)
                 {
-                    rms  += sqr(qq[j] - qgen->q[j][qgen->nZeta[j]-1]);
-                    qq[j] = qgen->q[j][qgen->nZeta[j]-1];
+                    rms  += sqr(qq[j] - this->q[j][this->nZeta[j]-1]);
+                    qq[j] = this->q[j][this->nZeta[j]-1];
                     j++;
                 }
             }
@@ -903,16 +876,16 @@ int generate_charges_sm(FILE *fp,
 
         if (iter < maxiter)
         {
-            qgen->eQGEN = eQGEN_OK;
+            this->eQGEN = eQGEN_OK;
         }
         else
         {
-            qgen->eQGEN = eQGEN_NOTCONVERGED;
+            this->eQGEN = eQGEN_NOTCONVERGED;
         }
 
         if (fp)
         {
-            if (qgen->eQGEN == eQGEN_OK)
+            if (this->eQGEN == eQGEN_OK)
             {
                 fprintf(fp, "Converged to tolerance %g after %d iterations\n",
                         tol, iter);
@@ -923,42 +896,41 @@ int generate_charges_sm(FILE *fp,
                         maxiter, rms);
             }
         }
-        *chieq = qgen->chieq;
+        *chieq = this->chieq;
         sfree(qq);
     }
 
-    if (eQGEN_OK == qgen->eQGEN)
+    if (eQGEN_OK == this->eQGEN)
     {
-        qgen_print(fp, atoms, qgen);
+        print(fp, atoms);
     }
 
-    return qgen->eQGEN;
+    return this->eQGEN;
 }
 
-static int generate_charges_bultinck(FILE *fp,
-                                     gentop_qgen_t qgen,
-                                     gmx_poldata_t pd, t_atoms *atoms,
+  int GentopQgen::generate_charges_bultinck(FILE *fp,
+                                     Poldata * pd, t_atoms *atoms,
                                      gmx_atomprop_t aps)
 {
-    qgen_check_support(qgen, pd, aps);
-    if (eQGEN_OK == qgen->eQGEN)
+    check_support(pd, aps);
+    if (eQGEN_OK == this->eQGEN)
     {
-        qgen_update_pd(atoms, pd, qgen);
+        update_pd(atoms, pd);
 
-        qgen_calc_Jab(qgen);
-        qgen_calc_rhs(qgen);
-        qgen_update_J00(qgen);
-        solve_q_eem(debug, qgen, 2.0);
+        calc_Jab();
+        calc_rhs();
+        update_J00();
+        solve_q_eem(debug, 2.0);
 
-        qgen_print(fp, atoms, qgen);
+        print(fp, atoms);
     }
 
-    return qgen->eQGEN;
+    return this->eQGEN;
 }
 
-int generate_charges(FILE *fp,
-                     gentop_qgen_t qgen, gmx_resp_t gr,
-                     const char *molname, gmx_poldata_t pd,
+int GentopQgen::generate_charges(FILE *fp,
+                      gmx_resp_t gr,
+                     const char *molname, Poldata * pd,
                      t_atoms *atoms,
                      real tol, int maxiter, int maxcycle,
                      gmx_atomprop_t aps)
@@ -967,7 +939,7 @@ int generate_charges(FILE *fp,
     real chieq, chi2, chi2min = GMX_REAL_MAX;
 
     /* Generate charges */
-    switch (qgen->iChargeGenerationAlgorithm)
+    switch (this->iChargeGenerationAlgorithm)
     {
         case eqgRESP:
             if (NULL == gr)
@@ -977,7 +949,7 @@ int generate_charges(FILE *fp,
             if (fp)
             {
                 fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
-                        get_eemtype_name(qgen->iChargeDistributionModel), molname);
+                        Poldata::get_eemtype_name(this->iChargeDistributionModel), molname);
             }
             for (cc = 0; (cc < maxcycle); cc++)
             {
@@ -986,13 +958,13 @@ int generate_charges(FILE *fp,
                     fprintf(fp, "Cycle %d/%d\n", cc+1, maxcycle);
                 }
                 /* Fit charges to electrostatic potential */
-                qgen->eQGEN = gmx_resp_optimize_charges(fp, gr, maxiter, tol, &chi2);
-                if (qgen->eQGEN == eQGEN_OK)
+                this->eQGEN = gmx_resp_optimize_charges(fp, gr, maxiter, tol, &chi2);
+                if (this->eQGEN == eQGEN_OK)
                 {
-                    eQGEN_min = qgen->eQGEN;
+                    eQGEN_min = this->eQGEN;
                     if (chi2 <= chi2min)
                     {
-                        gentop_qgen_save_params(qgen, gr);
+                        save_params(gr);
                         chi2min = chi2;
                     }
 
@@ -1000,7 +972,7 @@ int generate_charges(FILE *fp,
                     {
                         fprintf(fp, "chi2 = %g kJ/mol e\n", chi2);
                     }
-                    qgen_print(fp, atoms, qgen);
+                    print(fp, atoms);
                 }
             }
             if (maxcycle > 1)
@@ -1009,27 +981,29 @@ int generate_charges(FILE *fp,
                 {
                     fprintf(fp, "---------------------------------\nchi2 at minimum is %g\n", chi2min);
                 }
-                gentop_qgen_get_params(qgen, gr);
-                qgen_print(fp, atoms, qgen);
+                get_params(gr);
+                print(fp, atoms);
             }
-            qgen->eQGEN = eQGEN_min;
+            this->eQGEN = eQGEN_min;
             break;
         default:
             /* Use empirical algorithms */
             if (fp)
             {
                 fprintf(fp, "Generating charges for %s using %s algorithm\n",
-                        molname, get_eemtype_name(qgen->iChargeDistributionModel));
+                        molname, Poldata::get_eemtype_name(this->iChargeDistributionModel));
             }
-            if (qgen->iChargeDistributionModel == eqdBultinck)
+            if (this->iChargeDistributionModel == eqdBultinck)
             {
-                (void) generate_charges_bultinck(fp, qgen, pd, atoms, aps);
+                (void) generate_charges_bultinck(fp, pd, atoms, aps);
             }
             else
             {
-                (void) generate_charges_sm(fp, qgen, pd, atoms, tol, maxiter, aps, &chieq);
+                (void) generate_charges_sm(fp, pd, atoms, tol, maxiter, aps, &chieq);
             }
-            gentop_qgen_save_params(qgen, gr);
+            save_params(gr);
     }
-    return qgen->eQGEN;
+    return this->eQGEN;
+}
+
 }

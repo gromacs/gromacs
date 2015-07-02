@@ -33,6 +33,9 @@
 #include "plistwrapper.h"
 #include "poldata.h"
 
+
+using namespace alexandria;
+
 void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC, matrix box);
 
 real calc_dip(t_atoms *atoms, rvec x[]);
@@ -47,7 +50,7 @@ void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
 void symmetrize_charges(gmx_bool bQsym,
                         t_atoms *atoms, 
                         alexandria::PlistWrapperIterator bonds,
-                        gmx_poldata_t pd,
+                        Poldata * pd,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges);
 

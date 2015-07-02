@@ -1,3 +1,4 @@
+
 /*
  * This source file is part of the Alexandria project.
  *
@@ -27,9 +28,16 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/network.h"
-
+#include "gmxpre.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/utility/smalloc.h"
+#include "stringutil.h"
 /* This source code file is part of the Alexandria project */
 
+
+
+  //using namespace alexandria;
 /*! \brief
  * Enumerated type holding the charge distribution models used in PolData
  *
@@ -52,38 +60,183 @@ enum DihedralType {
     egdNR
 };
 
-typedef struct gmx_poldata *gmx_poldata_t;
+typedef struct {
+    char   *type, *miller, *bosque;
+    double  polarizability, sig_pol;
+} t_ptype;
 
-extern gmx_poldata_t gmx_poldata_init();
+typedef struct {
+    char   *desc, *type, *ptype, *btype, *elem, *vdwparams;
+    double  ref_enthalpy;
+} t_ffatype;
 
-extern void gmx_poldata_set_filename(gmx_poldata_t pd, char *fn2);
+typedef struct {
+    char                    *elem, *rule, *type, *neighbors, *geometry;
+    int                      numbonds, iAromatic;
+    double                   valence;
+    std::vector<std::string> nb;
+} t_brule;
 
-extern int gmx_poldata_get_natypes(gmx_poldata_t pd);
-extern int gmx_poldata_get_nptypes(gmx_poldata_t pd);
-extern int gmx_poldata_get_ngt_bond(gmx_poldata_t pd);
-extern int gmx_poldata_get_ngt_angle(gmx_poldata_t pd);
-extern int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd, int egd);
+typedef struct {
+    char   *atom1, *atom2, *params;
+    char    elem1[4], elem2[4];
+    double  length, sigma, bondorder;
+    int     ntrain;
+} t_gt_bond;
 
-extern void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
+typedef struct {
+    char   *atom1, *atom2, *atom3, *params;
+    double  angle, sigma;
+    int     ntrain;
+} t_gt_angle;
+
+typedef struct {
+    char   *atom1, *atom2, *atom3, *atom4, *params;
+    double  dihedral, sigma;
+    int     ntrain;
+} t_gt_dihedral;
+
+typedef struct {
+    char   *bosque;
+    double  polarizability;
+} t_bosque;
+
+typedef struct {
+    char   *miller;
+    int     atomnumber;
+    double  tau_ahc, alpha_ahp;
+} t_miller;
+
+typedef struct {
+    char *central;
+    char *attached;
+    int   numattach;
+} t_symcharges;
+
+typedef struct {
+    ChargeDistributionModel eqd_model;
+    char                   *epref;
+} t_epref;
+
+#define EEMBUFSIZE 256
+#define MAXZETA    12
+typedef struct {
+    ChargeDistributionModel eqd_model;
+    int                     nzeta, row[MAXZETA];
+    char                    name[EEMBUFSIZE], zetastr[EEMBUFSIZE], qstr[EEMBUFSIZE], rowstr[EEMBUFSIZE];
+    double                  J0, chi0, q[MAXZETA], zeta[MAXZETA];
+} t_eemprops;
+
+
+namespace alexandria
+{
+class Poldata
+{
+private:
+
+    char          *filename;
+    int            nptype, nptype_c;
+    t_ptype       *ptype;
+    int            nalexandria, nalexandria_c;
+    t_ffatype     *alexandria;
+    int            nbtype;
+    char         **btype;
+    int            nbrule, nbrule_c;
+    t_brule       *brule;
+    char          *alexandria_polar_unit;
+    char          *alexandria_polar_ref;
+    char          *alexandria_forcefield;
+    int            nexcl;
+    double         fudgeQQ, fudgeLJ;
+    char          *gt_vdw_function, *gt_combination_rule;
+    int            gt_vdw_ftype, gt_comb_rule;
+    char          *gt_bond_function;
+    int            ngt_bond, ngt_bond_c, gt_bond_ftype;
+    char          *gt_length_unit;
+    t_gt_bond     *gt_bond;
+    char          *gt_angle_function;
+    int            ngt_angle, ngt_angle_c, gt_angle_ftype;
+    char          *gt_angle_unit;
+    t_gt_angle    *gt_angle;
+    char          *gt_dihedral_function[egdNR];
+    int            ngt_dihedral[egdNR], ngt_dihedral_c[egdNR], gt_dihedral_ftype[egdNR];
+    t_gt_dihedral *gt_dihedral[egdNR];
+    int            nmiller, nmiller_c;
+    t_miller      *miller;
+    char          *miller_tau_unit, *miller_ahp_unit;
+    int            nbosque, nbosque_c;
+    t_bosque      *bosque;
+    char          *bosque_polar_unit;
+    int            nsymcharges, nsymcharges_c;
+    t_symcharges  *symcharges;
+    int            nep, nep_c;
+    t_eemprops    *eep;
+    int            ner, ner_c;
+    t_epref       *epr;
+
+
+
+
+
+
+
+    void add_btype(const char   *btype);
+
+    gmx_bool strcasestr_start(char *needle, char *haystack);
+
+    int count_neighbors(t_brule *brule, int nbond, char *nbhybrid[], int *score);
+
+    //int lo_gtb_comp(t_gt_bond *ba, t_gt_bond *bb);
+
+     
+
+t_gt_bond *search_bond(  char *atom1, char *atom2,
+			 double bondorder);
+
+ int search_bondtype(  char *atom);
+
+
+t_eemprops *get_eep(ChargeDistributionModel eqd_model,
+		    const char *name);
+
+t_gt_dihedral *search_dihedral( int egd, char *atom1, char *atom2,
+					 char *atom3, char *atom4);
+
+public: 
+//typedef struct gmx_poldata *gmx_poldata_t;
+
+//gmx_poldata_t gmx_poldata_init();
+Poldata(); //Constructor
+
+void  set_filename(char *fn2);
+
+
+int  get_natypes( );
+int  get_nptypes( );
+int  get_ngt_bond( );
+int  get_ngt_angle( );
+int  get_ngt_dihedral(  int egd);
+
+void  add_bonding_rule( 
                                          char *gt_brule, char *atype,
                                          char *geometry, int numbonds,
                                          double valence, int iAromatic,
                                          char *neighbors);
 
-extern int gmx_poldata_get_bonding_rule(gmx_poldata_t pd,
+int  get_bonding_rule( 
                                         char **gt_brule, char **atype,
                                         char **geometry, int *numbonds,
                                         double *valence, int *iAromatic,
                                         char **neighbors);
 
-extern void gmx_poldata_add_ptype(gmx_poldata_t pd,
+void  add_ptype( 
                                   const char   *ptype,
                                   const char   *miller,
                                   const char   *bosque,
                                   double        polarizability,
                                   double        sig_pol);
 
-extern void gmx_poldata_add_atype(gmx_poldata_t pd, const char *elem,
+void  add_atype(  const char *elem,
                                   const char *desc,
                                   const char *atype,
                                   const char *ptype,
@@ -91,66 +244,70 @@ extern void gmx_poldata_add_atype(gmx_poldata_t pd, const char *elem,
                                   const char *vdwparams,
                                   double      ref_enthalpy);
 
-extern void gmx_poldata_set_ptype_polarizability(gmx_poldata_t pd, const char *ptype,
+void  set_ptype_polarizability(  const char *ptype,
                                                  double polarizability, double sig_pol);
 
-extern void gmx_poldata_set_force_field(gmx_poldata_t pd, const char *forcefield);
+void  set_force_field(  const char *forcefield);
 
-extern void gmx_poldata_set_polar_unit(gmx_poldata_t pd, const char *polar_unit);
+void  set_polar_unit(  const char *polar_unit);
 
-extern void gmx_poldata_set_polar_ref(gmx_poldata_t pd, const char *polar_ref);
+void  set_polar_ref(  const char *polar_ref);
 
-extern void gmx_poldata_set_length_unit(gmx_poldata_t pd, const char *length_unit);
+void  set_length_unit(  const char *length_unit);
 
-extern void gmx_poldata_set_vdw_function(gmx_poldata_t pd, const char *func);
+void  set_vdw_function(  const char *func);
 
-extern char *gmx_poldata_get_vdw_function(gmx_poldata_t pd);
+char * get_vdw_function( );
 
-extern int gmx_poldata_get_vdw_ftype(gmx_poldata_t pd);
+int  get_vdw_ftype( );
 
-extern void gmx_poldata_set_nexcl(gmx_poldata_t pd, int nexcl);
+void  set_nexcl(  int nexcl);
 
-extern int gmx_poldata_get_nexcl(gmx_poldata_t pd);
+int  get_nexcl( );
 
-extern void gmx_poldata_set_fudgeQQ(gmx_poldata_t pd, double fudgeQQ);
+void  set_fudgeQQ(  double fudgeQQ);
 
-extern double gmx_poldata_get_fudgeQQ(gmx_poldata_t pd);
+double  get_fudgeQQ( );
 
-extern void gmx_poldata_set_fudgeLJ(gmx_poldata_t pd, double fudgeLJ);
+void  set_fudgeLJ(  double fudgeLJ);
 
-extern double gmx_poldata_get_fudgeLJ(gmx_poldata_t pd);
+double  get_fudgeLJ( );
 
-extern void gmx_poldata_set_combination_rule(gmx_poldata_t pd, char *func);
+int get_atype_ref_enthalpy( const char *atype,
+			    double *Href);
 
-extern char *gmx_poldata_get_combination_rule(gmx_poldata_t pd);
+void  set_combination_rule(  char *func);
 
-extern int gmx_poldata_get_comb_rule(gmx_poldata_t pd);
+char * get_combination_rule( );
 
-extern char *gmx_poldata_get_polar_unit(gmx_poldata_t pd);
+int  get_comb_rule( );
 
-extern char *gmx_poldata_get_polar_ref(gmx_poldata_t pd);
+char * get_polar_unit( );
 
-extern char *gmx_poldata_get_force_field(gmx_poldata_t pd);
+char * get_polar_ref( );
 
-extern char *gmx_poldata_get_length_unit(gmx_poldata_t pd);
+char * get_force_field( );
+
+char * get_length_unit( );
+
 
 /* Return array of atomtypes compatible with the bonded neighbors.
    The array should be freed, but not the contents of the elements.
  */
-extern char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd, char *elem,
+char ** get_bonding_rules(  char *elem,
                                             int nbond, char *neighbors[],
                                             const char *geometry,
                                             int iAromatic);
 
-extern char *gmx_poldata_get_geometry(gmx_poldata_t pd, char *gt_brule);
+char * get_geometry(  char *gt_brule);
 
-extern char *gmx_poldata_get_desc(gmx_poldata_t pd, char *atype);
+char * get_desc(  char *atype);
 
 /* Get the charge from the gentop.dat file */
-extern char *gmx_poldata_get_charge(gmx_poldata_t pd, char *atype);
+char * get_charge(  char *atype);
 
 /* Returns 1 if OK, 0 if last */
-extern int gmx_poldata_get_atype(gmx_poldata_t pd,
+int  get_atype( 
                                  char        **elem,
                                  char        **desc,
                                  char        **atype,
@@ -159,19 +316,19 @@ extern int gmx_poldata_get_atype(gmx_poldata_t pd,
                                  char        **vdwparams,
                                  double       *ref_enthalpy);
 
-extern int gmx_poldata_get_ptype(gmx_poldata_t pd,
+int  get_ptype( 
                                  char        **ptype,
                                  char        **miller,
                                  char        **bosque,
                                  double       *polarizability,
                                  double       *sig_pol);
 
-extern const char *gmx_poldata_atype_to_ptype(gmx_poldata_t pd, const char *atype);
+const char * atype_to_ptype(  const char *atype);
 
-extern const char *gmx_poldata_atype_to_btype(gmx_poldata_t pd, const char *atype);
+const char * atype_to_btype(  const char *atype);
 
 /* Return 1 if OK, 0 if not found */
-extern int gmx_poldata_search_atype(gmx_poldata_t pd,
+int  search_atype( 
                                     char         *key,
                                     char        **elem,
                                     char        **desc,
@@ -181,221 +338,222 @@ extern int gmx_poldata_search_atype(gmx_poldata_t pd,
                                     char        **vdwparams);
 
 /* Return 1 if OK, 0 if not found */
-extern int gmx_poldata_get_ptype_pol(gmx_poldata_t pd, const char *ptype,
+int  get_ptype_pol(  const char *ptype,
                                      double *polarizability, double *sig_pol);
-extern int gmx_poldata_get_atype_pol(gmx_poldata_t pd, const char *atype,
+int  get_atype_pol(  const char *atype,
                                      double *polarizability, double *sig_pol);
 
-extern int gmx_poldata_get_atype_ref_enthalpy(gmx_poldata_t pd, const char *atype,
+int get_atype_ref_enthalpy(Poldata * pd, const char *atype,
                                               double *Href);
 
 /* Return 1 if OK, 0 if not found */
-extern int gmx_poldata_bonding_rule_valence(gmx_poldata_t pd, char *gt_brule, double *valence);
+int  bonding_rule_valence(  char *gt_brule, double *valence);
 
-extern void gmx_poldata_add_miller(gmx_poldata_t pd,
+void  add_miller( 
                                    char         *miller,
                                    int           atomnumber,
                                    double        tau_ahc,
                                    double        alpha_ahp);
 
 /* Return 1 if "miller" was found */
-extern int gmx_poldata_get_miller_pol(gmx_poldata_t pd,
+int  get_miller_pol( 
                                       char         *miller,
                                       int          *atomnumber,
                                       double       *tau_ahc,
                                       double       *alpha_ahp);
 
-extern int gmx_poldata_get_miller(gmx_poldata_t pd,
+int  get_miller( 
                                   char        **miller,
                                   int          *atomnumber,
                                   double       *tau_ahc,
                                   double       *alpha_ahp);
 
-extern void gmx_poldata_set_miller_units(gmx_poldata_t pd, char *tau_unit,
+void  set_miller_units(  char *tau_unit,
                                          char *ahp_unit);
 
-extern void gmx_poldata_get_miller_units(gmx_poldata_t pd, char **tau_unit,
+void  get_miller_units(  char **tau_unit,
                                          char **ahp_unit);
 
 /* Returns miller name or NULL if not found */
-extern char *gmx_poldata_ptype_to_miller(gmx_poldata_t pd, const char *ptype);
+char * ptype_to_miller(  const char *ptype);
 
-extern void gmx_poldata_add_bosque(gmx_poldata_t pd,
+void  add_bosque( 
                                    char         *bosque,
                                    double        polarizability);
 
-extern int gmx_poldata_get_bosque(gmx_poldata_t pd,
+int  get_bosque( 
                                   char        **bosque,
                                   double       *polarizability);
 
-extern void gmx_poldata_set_bosque_unit(gmx_poldata_t pd, char *polar_unit);
+void  set_bosque_unit(  char *polar_unit);
 
-extern char *gmx_poldata_get_bosque_unit(gmx_poldata_t pd);
+char * get_bosque_unit( );
 
 /* Returns bosque name or NULL if not found */
-extern char *gmx_poldata_ptype_to_bosque(gmx_poldata_t pd, const char *ptype);
+char * ptype_to_bosque(  const char *ptype);
 
-extern int gmx_poldata_get_bosque_pol(gmx_poldata_t pd, char *bosque, double *polarizability);
+int  get_bosque_pol(  char *bosque, double *polarizability);
 
 /* Return 1 on success or 0 otherwise */
-extern int gmx_poldata_add_bond(gmx_poldata_t pd, char *atom1, char *atom2,
+int  add_bond(  char *atom1, char *atom2,
                                 double length, double sigma, int ntrain,
                                 double bondorder, char *params);
 
-extern int gmx_poldata_set_bond_params(gmx_poldata_t pd, char *atom1, char *atom2,
+int  set_bond_params(  char *atom1, char *atom2,
                                        double length, double sigma, int ntrain,
                                        double bondorder, char *params);
 
 /* Return bond-index 1-N or 0 if not found */
-extern int gmx_poldata_get_bond(gmx_poldata_t pd, char **atom1, char **atom2,
+int  get_bond(  char **atom1, char **atom2,
                                 double *length, double *sigma, int *ntrain,
                                 double *bondorder, char **params);
 
-extern void gmx_poldata_set_bond_function(gmx_poldata_t pd, char *fn);
-extern char *gmx_poldata_get_bond_function(gmx_poldata_t pd);
-extern int gmx_poldata_get_bond_ftype(gmx_poldata_t pd);
+void  set_bond_function(  char *fn);
+char * get_bond_function( );
+int  get_bond_ftype( );
 
 /* Return bond-index 1-N or 0 if not found */
-extern int gmx_poldata_search_bond(gmx_poldata_t pd, char *atom1, char *atom2,
+int  search_bond(  char *atom1, char *atom2,
                                    double *length, double *sigma, int *ntrain,
                                    double *bondorder, char **params);
 
 /* Returns 1 if there is a bond, 0 if not. Toler is absolute in length-units. */
-extern int gmx_poldata_elem_is_bond(gmx_poldata_t pd, char *elem1, char *elem2,
+int  elem_is_bond(  char *elem1, char *elem2,
                                     double distance, double toler);
 
 /* Return maximal valence for a give element */
-double gmx_poldata_elem_get_max_valence(gmx_poldata_t pd, char *elem);
+double  elem_get_max_valence(  char *elem);
 
 /* Return NULL-terminated array of potential bondorders */
-extern double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd, char *elem1, char *elem2,
+double * elem_get_bondorders(  char *elem1, char *elem2,
                                                double distance, double toler);
 /* Returns the bondorder. Toler is absolute in length-units. */
-extern double gmx_poldata_atype_bondorder(gmx_poldata_t pd, char *atype1, char *atype2,
+double  atype_bondorder(  char *atype1, char *atype2,
                                           double distance, double toler);
 
-extern void gmx_poldata_set_angle_function(gmx_poldata_t pd, char *fn);
-extern char *gmx_poldata_get_angle_function(gmx_poldata_t pd);
-extern int gmx_poldata_get_angle_ftype(gmx_poldata_t pd);
+void  set_angle_function(  char *fn);
+char * get_angle_function( );
+int  get_angle_ftype( );
 
 /* Return 1 on success, 0 otherwise */
-extern int gmx_poldata_add_angle(gmx_poldata_t pd,
+int  add_angle( 
                                  char *atom1, char *atom2,
                                  char *atom3, double angle, double sigma,
                                  int ntrain, char *params);
 
-extern int gmx_poldata_set_angle_params(gmx_poldata_t pd, char *atom1, char *atom2,
+int  set_angle_params(  char *atom1, char *atom2,
                                         char *atom3,
                                         double angle, double sigma, int ntrain, char *params);
 
 /* Return angle-index 1-N or 0 if not found */
-extern int gmx_poldata_get_angle(gmx_poldata_t pd, char **atom1, char **atom2,
+int  get_angle(  char **atom1, char **atom2,
                                  char **atom3, double *angle, double *sigma,
                                  int *ntrain, char **params);
 
 /* Return angle-index 1-N or 0 if not found */
-extern int gmx_poldata_search_angle(gmx_poldata_t pd, char *atom1, char *atom2,
+int  search_angle(  char *atom1, char *atom2,
                                     char *atom3, double *angle, double *sigma,
                                     int *ntrain, char **params);
 
-extern void gmx_poldata_set_angle_unit(gmx_poldata_t pd, char *angle_unit);
+void  set_angle_unit(  char *angle_unit);
 
-extern char *gmx_poldata_get_angle_unit(gmx_poldata_t pd);
+char * get_angle_unit();
 
-extern void gmx_poldata_set_dihedral_function(gmx_poldata_t pd, int egd, char *fn);
-extern char *gmx_poldata_get_dihedral_function(gmx_poldata_t pd, int egd);
-extern int gmx_poldata_get_dihedral_ftype(gmx_poldata_t pd, int egd);
+void  set_dihedral_function(  int egd, char *fn);
+char * get_dihedral_function(  int egd);
+int  get_dihedral_ftype(  int egd);
 
 /* Return 1 on success or 0 otherwise */
-extern int gmx_poldata_add_dihedral(gmx_poldata_t pd, int egd, char *atom1, char *atom2,
+int  add_dihedral(  int egd, char *atom1, char *atom2,
                                     char *atom3, char *atom4,
                                     double dihedral, double sigma,
                                     int ntrain, char *params);
 
-extern int gmx_poldata_set_dihedral_params(gmx_poldata_t pd, int egd,
+int  set_dihedral_params(  int egd,
                                            char *atom1, char *atom2,
                                            char *atom3, char *atom4,
                                            double angle, double sigma,
                                            int ntrain, char *params);
 
 /* Return dihedral-index 1-N or 0 if not found */
-extern int gmx_poldata_get_dihedral(gmx_poldata_t pd, int egd,
+int  get_dihedral(  int egd,
                                     char **atom1, char **atom2,
                                     char **atom3, char **atom4,
                                     double *dihedral, double *sigma,
                                     int *ntrain, char **params);
 
 /* Return dihedral-index 1-N or 0 if not found */
-extern int gmx_poldata_search_dihedral(gmx_poldata_t pd, int egd,
+int  search_dihedral(  int egd,
                                        char *atom1, char *atom2,
                                        char *atom3, char *atom4,
                                        double *dihedral, double *sigma,
                                        int *ntrain, char **params);
 
-extern void gmx_poldata_set_dihedral_unit(gmx_poldata_t pd, int egd,
+void  set_dihedral_unit(  int egd,
                                           char *dihedral_unit);
 
-extern char *gmx_poldata_get_dihedral_unit(gmx_poldata_t pd, int egd);
+char * get_dihedral_unit(  int egd);
 
-extern void gmx_poldata_add_symcharges(gmx_poldata_t pd, char *central,
+void  add_symcharges(  char *central,
                                        char *attached, int numattach);
 
-extern int gmx_poldata_get_symcharges(gmx_poldata_t pd, char **central,
+int  get_symcharges(  char **central,
                                       char **attached, int *numattach);
 
-extern int gmx_poldata_search_symcharges(gmx_poldata_t pd, char *central,
+int  search_symcharges(  char *central,
                                          char *attached, int numattach);
 
-extern ChargeDistributionModel name2eemtype(const char *name);
+static ChargeDistributionModel name2eemtype(const char *name);
 
-extern const char *get_eemtype_name(ChargeDistributionModel eem);
+static const char *get_eemtype_name(ChargeDistributionModel eem);
 
-extern char *gmx_poldata_get_eemref(gmx_poldata_t pd, ChargeDistributionModel eqd_model);
+char * get_eemref(  ChargeDistributionModel eqd_model);
 
-extern int gmx_poldata_get_numprops(gmx_poldata_t pd, ChargeDistributionModel eqd_model);
+int  get_numprops(  ChargeDistributionModel eqd_model);
 
-extern int gmx_poldata_have_pol_support(gmx_poldata_t pd, const char *atype);
+int  have_pol_support(  const char *atype);
 
-extern int gmx_poldata_have_eem_support(gmx_poldata_t pd, ChargeDistributionModel eqd_model,
+int  have_eem_support(  ChargeDistributionModel eqd_model,
                                         const char *name,
                                         gmx_bool bAllowZeroParameters);
 
-extern double gmx_poldata_get_j00(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
+double  get_j00(  ChargeDistributionModel eqd_model, char *name);
 
-extern int gmx_poldata_get_nzeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
+int  get_nzeta(  ChargeDistributionModel eqd_model, char *name);
 
-extern double gmx_poldata_get_zeta(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz);
+double  get_zeta(  ChargeDistributionModel eqd_model, char *name, int zz);
 
-extern char *gmx_poldata_get_qstr(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
+char * get_qstr(  ChargeDistributionModel eqd_model, char *name);
 
-extern char *gmx_poldata_get_rowstr(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
+char * get_rowstr(  ChargeDistributionModel eqd_model, char *name);
 
-extern double gmx_poldata_get_q(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz);
+double  get_q(  ChargeDistributionModel eqd_model, char *name, int zz);
 
-extern int gmx_poldata_get_row(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name, int zz);
+int  get_row(  ChargeDistributionModel eqd_model, char *name, int zz);
 
-extern double gmx_poldata_get_chi0(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
+double  get_chi0(  ChargeDistributionModel eqd_model, char *name);
 
-extern char *gmx_poldata_get_opts(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *name);
+char * get_opts(  ChargeDistributionModel eqd_model, char *name);
 
-extern void gmx_poldata_set_eemprops(gmx_poldata_t pd,
+void  set_eemprops( 
                                      ChargeDistributionModel eqd_model, char *name,
                                      double J0, double chi0,
                                      char *zeta, char *q, char *row);
 
-extern int gmx_poldata_get_eemprops(gmx_poldata_t pd,
+int  get_eemprops( 
                                     ChargeDistributionModel *eqd_model, char **name,
                                     double *J0, double *chi0,
                                     char **zeta, char **q, char **row);
 
-extern void gmx_poldata_set_epref(gmx_poldata_t pd, ChargeDistributionModel eqd_model, char *epref);
+void  set_epref(  ChargeDistributionModel eqd_model, char *epref);
 
-extern char *gmx_poldata_get_epref(gmx_poldata_t pd, ChargeDistributionModel eqd_model);
+char * get_epref(ChargeDistributionModel eqd_model);
 
-extern int gmx_poldata_list_epref(gmx_poldata_t pd, ChargeDistributionModel *eqd_model, char **epref);
+int list_epref(  ChargeDistributionModel *eqd_model, char **epref);
 
-extern void gmx_poldata_comm_eemprops(gmx_poldata_t pd, t_commrec *cr);
+void  comm_eemprops(  t_commrec *cr);
 
-extern void gmx_poldata_comm_force_parameters(gmx_poldata_t pd, t_commrec *cr);
-
+void  comm_force_parameters( t_commrec *cr);
+};
+}
 #endif

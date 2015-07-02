@@ -90,7 +90,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     };
     output_env_t                     oenv;
     gmx_atomprop_t                   aps;
-    gmx_poldata_t                    pd;
+    Poldata *                    pd;
     std::vector<alexandria::MolProp> mp;
     alexandria::GaussAtomProp        gap;
     char **fns = NULL;
@@ -106,7 +106,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     aps = gmx_atomprop_init();
 
     /* Read polarization stuff */
-    if ((pd = gmx_poldata_read(NULL, aps)) == NULL)
+    if ((pd = alexandria::PoldataXml::read(NULL, aps)) == NULL)
     {
         gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
     }
@@ -117,7 +117,7 @@ int alex_gauss2molprop(int argc, char *argv[])
         alexandria::MolProp mmm;
 
         ReadGauss(fns[i], mmm, molnm, iupac, conf, basis,
-                  maxpot, nsymm, gmx_poldata_get_force_field(pd));
+                  maxpot, nsymm, pd->get_force_field());
         mp.push_back(mmm);
     }
 

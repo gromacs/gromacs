@@ -56,7 +56,7 @@
 #include "stringutil.h"
 
 bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
-                 const char *atomtype, gmx_poldata_t pd,
+                 const char *atomtype, alexandria::Poldata * pd,
                  ChargeDistributionModel iDistributionModel, char **dzatoms)
 {
     int  k, zz;
@@ -75,7 +75,7 @@ bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
     ra->atomnumber  = atomnumber;
     ra->atype       = atype;
     ra->atomtype    = strdup(atomtype);
-    ra->nZeta       = gmx_poldata_get_nzeta(pd, iDistributionModel, ra->atomtype);
+    ra->nZeta       = pd->get_nzeta(iDistributionModel, ra->atomtype);
     if (ra->nZeta <= 0)
     {
         return false;
@@ -93,11 +93,11 @@ bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
     for (zz = 0; (zz < ra->nZeta); zz++)
     {
         ra->iq[zz]       = -1;
-        ra->q[zz]        = gmx_poldata_get_q(pd, iDistributionModel, ra->atomtype, zz);
+        ra->q[zz]        = pd->get_q( iDistributionModel, ra->atomtype, zz);
         ra->iz[zz]       = -1;
         ra->zeta_ref[zz] =
-            ra->zeta[zz] = gmx_poldata_get_zeta(pd, iDistributionModel, ra->atomtype, zz);
-        ra->row[zz]      = gmx_poldata_get_row(pd, iDistributionModel, ra->atomtype, zz);
+            ra->zeta[zz] = pd->get_zeta( iDistributionModel, ra->atomtype, zz);
+        ra->row[zz]      = pd->get_row( iDistributionModel, ra->atomtype, zz);
     }
     return true;
 }
@@ -237,7 +237,7 @@ void gmx_resp_add_atom_coords(gmx_resp_t gr, rvec *x)
     }
 }
 
-void gmx_resp_fill_zeta(gmx_resp_t gr, gmx_poldata_t pd)
+void gmx_resp_fill_zeta(gmx_resp_t gr, alexandria::Poldata * pd)
 {
     int i, zz;
 
@@ -245,7 +245,7 @@ void gmx_resp_fill_zeta(gmx_resp_t gr, gmx_poldata_t pd)
     {
         for (zz = 0; (zz < gr->ra[i].nZeta); zz++)
         {
-            gmx_resp_set_zeta(gr, i, zz, gmx_poldata_get_zeta(pd, gr->iDistributionModel,
+            gmx_resp_set_zeta(gr, i, zz, pd->get_zeta( gr->iDistributionModel,
                                                               gr->ra[i].atomtype, zz));
         }
     }
@@ -268,7 +268,7 @@ void gmx_resp_fill_q(gmx_resp_t gr, t_atoms *atoms)
     }
 }
 
-bool gmx_resp_add_atom_info(gmx_resp_t gr, t_atoms *atoms, gmx_poldata_t pd)
+bool gmx_resp_add_atom_info(gmx_resp_t gr, t_atoms *atoms, alexandria::Poldata * pd)
 {
     int  i;
 
@@ -943,7 +943,7 @@ void gmx_resp_calc_pot(gmx_resp_t gr)
                     break;
                 default:
                     gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
-                              get_eemtype_name(gr->iDistributionModel));
+                              alexandria::Poldata::get_eemtype_name(gr->iDistributionModel));
             }
             V  += vv;
         }

@@ -201,7 +201,7 @@ int alex_merge_mp(int argc, char *argv[])
     int                              nfiles;
     std::vector<alexandria::MolProp> mp;
     gmx_atomprop_t                   ap;
-    gmx_poldata_t                    pd;
+    Poldata *                    pd;
     output_env_t                     oenv;
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS, NFILE, fnm,
@@ -213,7 +213,7 @@ int alex_merge_mp(int argc, char *argv[])
     }
 
     ap = gmx_atomprop_init();
-    if ((pd = gmx_poldata_read(opt2fn_null("-di", NFILE, fnm), ap)) == NULL)
+    if ((pd = alexandria::PoldataXml::read(opt2fn_null("-di", NFILE, fnm), ap)) == NULL)
     {
         gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
     }
