@@ -206,7 +206,7 @@ static void list_top(const char *fn)
 
 static void list_trn(const char *fn)
 {
-    t_fileio       *fpread, *fpwrite;
+    t_fileio       *fpread;
     int             nframe, indent;
     char            buf[256];
     rvec           *x, *v, *f;
@@ -215,8 +215,6 @@ static void list_trn(const char *fn)
     gmx_bool        bOK;
 
     fpread  = open_trn(fn, "r");
-    fpwrite = open_tpx(NULL, "w");
-    gmx_fio_setdebug(fpwrite, TRUE);
 
     nframe = 0;
     while (fread_trnheader(fpread, &trn, &bOK))
@@ -269,7 +267,6 @@ static void list_trn(const char *fn)
         fprintf(stderr, "\nWARNING: Incomplete frame header: nr %d, t=%g\n",
                 nframe, trn.t);
     }
-    close_tpx(fpwrite);
     close_trn(fpread);
 }
 

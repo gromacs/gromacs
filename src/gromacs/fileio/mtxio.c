@@ -44,7 +44,7 @@
  */
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/xdrf.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
@@ -86,7 +86,6 @@ void gmx_mtxio_write(const char *             filename,
                      gmx_sparsematrix_t *     sparse_matrix)
 {
     t_fileio   *fio;
-    XDR     *   xd;
     int         i, j, prec;
     gmx_bool    bDum  = TRUE;
     gmx_bool    bRead = FALSE;
@@ -98,8 +97,6 @@ void gmx_mtxio_write(const char *             filename,
     }
 
     fio = gmx_fio_open(filename, "w");
-    gmx_fio_checktype(fio);
-    xd = gmx_fio_getxdr(fio);
 
     /* Write magic number */
     i = GMX_MTXIO_MAGIC_NUMBER;
@@ -164,7 +161,6 @@ gmx_mtxio_read (const char *            filename,
                 gmx_sparsematrix_t **   sparse_matrix)
 {
     t_fileio   *fio;
-    XDR     *   xd;
     int         i, j, prec;
     gmx_bool    bDum  = TRUE;
     gmx_bool    bRead = TRUE;
@@ -172,8 +168,6 @@ gmx_mtxio_read (const char *            filename,
     size_t      sz;
 
     fio = gmx_fio_open(filename, "r");
-    gmx_fio_checktype(fio);
-    xd = gmx_fio_getxdr(fio);
 
     /* Read and check magic number */
     i = GMX_MTXIO_MAGIC_NUMBER;

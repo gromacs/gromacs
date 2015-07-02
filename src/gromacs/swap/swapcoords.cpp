@@ -49,6 +49,7 @@
 #include <time.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,11 +43,8 @@
  *
  * The routines in the corresponding c-file tpxio.c
  * are based on the lower level routines in gmxfio.c
- * The integer file pointer returned from open_tpx
- * can also be used with the routines in gmxfio.h
  *
  **************************************************************/
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/state.h"
 
@@ -85,17 +82,10 @@ typedef struct
  * These routines handle reading and writing of preprocessed
  * topology files in any of the following formats:
  * TPR : topology in XDR format, portable accross platforms
- * TRR : trajectory in XDR format (non compressed)
  *
  * Files are written in the precision with which the source are compiled,
  * but double and single precision can be read by either.
  */
-
-t_fileio *open_tpx(const char *fn, const char *mode);
-/* Return an file pointer corresponding to the file you have just opened */
-
-void close_tpx(t_fileio *fio);
-/*  Close the file corresponding to fio */
 
 void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
                     int *version, int *generation);

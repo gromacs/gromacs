@@ -45,6 +45,7 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tngio.h"

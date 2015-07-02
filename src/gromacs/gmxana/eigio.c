@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,12 +50,12 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
                        int *nvec, int **eignr,
                        rvec ***eigvec, real **eigval)
 {
-    t_trnheader head;
-    int         i, snew_size;
-    t_fileio   *status;
-    rvec       *x;
-    matrix      box;
-    gmx_bool    bOK;
+    t_trnheader        head;
+    int                i, snew_size;
+    struct t_fileio   *status;
+    rvec              *x;
+    matrix             box;
+    gmx_bool           bOK;
 
     *bDMR = FALSE;
 
@@ -145,10 +145,10 @@ void write_eigenvectors(const char *trnname, int natoms, real mat[],
                         int WriteXref, rvec *xref, gmx_bool bDMR,
                         rvec xav[], gmx_bool bDMA, real eigval[])
 {
-    t_fileio *trnout;
-    int       ndim, i, j, d, vec;
-    matrix    zerobox;
-    rvec     *x;
+    struct t_fileio *trnout;
+    int              ndim, i, j, d, vec;
+    matrix           zerobox;
+    rvec            *x;
 
     ndim = natoms*DIM;
     clear_mat(zerobox);
@@ -159,7 +159,7 @@ void write_eigenvectors(const char *trnname, int natoms, real mat[],
              (WriteXref == eWXR_YES) ? "reference, " : "",
              begin, end, trnname);
 
-    trnout = open_tpx(trnname, "w");
+    trnout = open_trn(trnname, "w");
     if (WriteXref == eWXR_YES)
     {
         /* misuse lambda: 0/1 mass weighted fit no/yes */

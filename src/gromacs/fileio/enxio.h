@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,6 @@
 #ifndef GMX_FILEIO_ENXIO_H
 #define GMX_FILEIO_ENXIO_H
 
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/legacyheaders/types/energy.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
@@ -48,6 +47,7 @@ extern "C" {
 #endif
 
 struct gmx_groups_t;
+struct t_fileio;
 
 /**************************************************************
  * These are the base datatypes + functions for reading and
@@ -175,7 +175,7 @@ void free_enxframe(t_enxframe *ef);
 
 ener_file_t open_enx(const char *fn, const char *mode);
 
-t_fileio *enx_file_pointer(const ener_file_t ef);
+struct t_fileio *enx_file_pointer(const ener_file_t ef);
 
 void close_enx(ener_file_t ef);
 

@@ -54,6 +54,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 static int strip_dssp(char *dsspfile, int nres,

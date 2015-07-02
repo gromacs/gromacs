@@ -54,6 +54,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -349,7 +350,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     };
 
     const char       *top_fn, *frame_fn;
-    t_fileio         *fp;
+    struct t_fileio  *fp;
     ener_file_t       fp_ener = NULL;
     t_trnheader       head;
     int               i;

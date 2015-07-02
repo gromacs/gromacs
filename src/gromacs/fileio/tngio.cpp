@@ -42,7 +42,6 @@
 #include "tng/tng_io.h"
 #endif
 
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
@@ -50,6 +49,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/sysinfo.h"

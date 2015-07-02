@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #include <string.h>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
@@ -386,8 +387,6 @@ void do_enxnms(ener_file_t ef, int *nre, gmx_enxnm_t **nms)
     gmx_bool bRead = gmx_fio_getread(ef->fio);
     int      file_version;
     int      i;
-
-    gmx_fio_checktype(ef->fio);
 
     xdr = gmx_fio_getxdr(ef->fio);
 
@@ -777,7 +776,6 @@ ener_file_t open_enx(const char *fn, const char *mode)
     if (mode[0] == 'r')
     {
         ef->fio = gmx_fio_open(fn, mode);
-        gmx_fio_checktype(ef->fio);
         gmx_fio_setprecision(ef->fio, FALSE);
         do_enxnms(ef, &nre, &nms);
         snew(fr, 1);
@@ -798,7 +796,6 @@ ener_file_t open_enx(const char *fn, const char *mode)
         else
         {
             gmx_fio_rewind(ef->fio);
-            gmx_fio_checktype(ef->fio);
             gmx_fio_setprecision(ef->fio, TRUE);
             do_enxnms(ef, &nre, &nms);
             do_eheader(ef, &file_version, fr, nre, &bWrongPrecision, &bOK);
@@ -931,7 +928,6 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
         fr->e_size = fr->nre*sizeof(fr->ener[0].e)*4;
         /*d_size = fr->ndisre*(sizeof(real)*2);*/
     }
-    gmx_fio_checktype(ef->fio);
 
     if (!do_eheader(ef, &file_version, fr, -1, NULL, &bOK))
     {

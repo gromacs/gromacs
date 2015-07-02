@@ -685,17 +685,6 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
 }
 
 
-void gmx_fio_checktype(t_fileio *fio)
-{
-    if (!ftp_is_xdr(fio->iFTP))
-    {
-        gmx_fatal(FARGS, "Can not read/write topologies to file type %s",
-                  ftp2ext(fio->iFTP));
-    }
-
-}
-
-
 void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble)
 {
     gmx_fio_lock(fio);
@@ -871,20 +860,6 @@ FILE *gmx_fio_getfp(t_fileio *fio)
         ret = fio->fp;
     }
     gmx_fio_unlock(fio);
-    return ret;
-}
-
-XDR *gmx_fio_getxdr(t_fileio* fio)
-{
-    XDR *ret = NULL;
-
-    gmx_fio_lock(fio);
-    if (fio->xdr)
-    {
-        ret = fio->xdr;
-    }
-    gmx_fio_unlock(fio);
-
     return ret;
 }
 

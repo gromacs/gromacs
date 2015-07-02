@@ -46,7 +46,6 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
@@ -63,6 +62,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/bitmask.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
