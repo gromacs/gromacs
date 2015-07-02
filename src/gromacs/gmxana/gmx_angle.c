@@ -59,10 +59,10 @@
 static void dump_dih_trn(int nframes, int nangles, real **dih, const char *fn,
                          real *time)
 {
-    int       i, j, k, l, m, na;
-    t_fileio *trn;
-    rvec     *x;
-    matrix    box = {{2, 0, 0}, {0, 2, 0}, {0, 0, 2}};
+    int              i, j, k, l, m, na;
+    struct t_fileio *trn;
+    rvec            *x;
+    matrix           box = {{2, 0, 0}, {0, 2, 0}, {0, 0, 2}};
 
     na = (nangles*2);
     if ((na % 3) != 0)

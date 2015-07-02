@@ -38,14 +38,15 @@
 #ifndef _checkpoint_h
 #define _checkpoint_h
 
-
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct gmx_file_position_t;
+struct t_fileio;
 
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"
@@ -86,7 +87,7 @@ void read_checkpoint_state(const char *fn, int *simulation_part,
                            gmx_int64_t *step, double *t, t_state *state);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
-void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr);
+void read_checkpoint_trxframe(struct t_fileio *fp, t_trxframe *fr);
 
 /* Print the complete contents of checkpoint file fn to out */
 void list_checkpoint(const char *fn, FILE *out);
@@ -115,10 +116,10 @@ void read_checkpoint_part_and_step(const char  *filename,
  * \param[out] outputfiles      Pointer to array of output file names from the previous run. Pointer is allocated in this function.
  */
 void
-read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
-                                              int                  *simulation_part,
-                                              int                  *nfiles,
-                                              gmx_file_position_t **outputfiles);
+read_checkpoint_simulation_part_and_filenames(struct t_fileio             *fp,
+                                              int                         *simulation_part,
+                                              int                         *nfiles,
+                                              struct gmx_file_position_t **outputfiles);
 
 #ifdef __cplusplus
 }

@@ -61,6 +61,7 @@
 #endif
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/imd/imdsocket.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"

@@ -47,6 +47,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 static const double bohr = 0.529177249;  /* conversion factor to compensate for VMD plugin conversion... */

@@ -54,7 +54,6 @@
 #include "gbutil.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/gmxfio.h"
 
 typedef struct {
     int resnr; 

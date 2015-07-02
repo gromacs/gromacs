@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,6 @@
 #define GMX_FILEIO_TRXIO_H
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/readinp.h"
@@ -53,6 +52,7 @@ extern "C" {
 
 struct gmx_mtop_t;
 struct t_atoms;
+struct t_fileio;
 struct t_topology;
 struct t_trxframe;
 
@@ -144,7 +144,7 @@ void close_trx(t_trxstatus *status);
 t_trxstatus *open_trx(const char *outfile, const char *filemode);
 /* Open a TRX file and return an allocated status pointer */
 
-t_fileio *trx_get_fileio(t_trxstatus *status);
+struct t_fileio *trx_get_fileio(t_trxstatus *status);
 /* get a fileio from a trxstatus */
 
 float trx_get_time_of_final_frame(t_trxstatus *status);

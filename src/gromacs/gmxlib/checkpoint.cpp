@@ -54,6 +54,7 @@
 #include "buildinfo.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/legacyheaders/copyrite.h"

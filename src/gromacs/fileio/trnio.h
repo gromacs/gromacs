@@ -38,6 +38,10 @@
 #ifndef GMX_FILEIO_TRNIO_H
 #define GMX_FILEIO_TRNIO_H
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
 /**************************************************************
  *
  * These routines handle trr (trajectory) I/O, they read and
@@ -53,11 +57,11 @@
  *
  **************************************************************/
 
-#include "gromacs/fileio/gmxfio.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct t_fileio;
 
 typedef struct           /* This struct describes the order and the	*/
                          /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
@@ -82,13 +86,13 @@ typedef struct           /* This struct describes the order and the	*/
     int       fep_state; /* Current value of alchemical state */
 } t_trnheader;
 
-t_fileio *open_trn(const char *fn, const char *mode);
+struct t_fileio *open_trn(const char *fn, const char *mode);
 /* Open a trr / trr file */
 
-void close_trn(t_fileio *fio);
+void close_trn(struct t_fileio *fio);
 /* Close it */
 
-gmx_bool fread_trnheader(t_fileio *fio, t_trnheader *trn, gmx_bool *bOK);
+gmx_bool fread_trnheader(struct t_fileio *fio, t_trnheader *trn, gmx_bool *bOK);
 /* Read the header of a trn file. Return FALSE if there is no frame.
  * bOK will be FALSE when the header is incomplete.
  */
@@ -97,18 +101,18 @@ void read_trnheader(const char *fn, t_trnheader *header);
 /* Read the header of a trn file from fn, and close the file afterwards.
  */
 
-void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
+void fwrite_trn(struct t_fileio *fio, int step, real t, real lambda,
                 rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
-gmx_bool fread_htrn(t_fileio *fio, t_trnheader *sh,
+gmx_bool fread_htrn(struct t_fileio *fio, t_trnheader *sh,
                     rvec *box, rvec *x, rvec *v, rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
  * using routine read_trnheader, see above) from a trn file.
  * Return FALSE on error
  */
 
-gmx_bool fread_trn(t_fileio *fio, int *step, real *t, real *lambda,
+gmx_bool fread_trn(struct t_fileio *fio, int *step, real *t, real *lambda,
                    rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
 /* Read a trn frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.

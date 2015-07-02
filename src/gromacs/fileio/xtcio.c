@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 #include <string.h>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
@@ -92,7 +93,7 @@ static void check_xtc_magic(int magic)
     }
 }
 
-int xtc_check(const char *str, gmx_bool bResult, const char *file, int line)
+static int xtc_check(const char *str, gmx_bool bResult, const char *file, int line)
 {
     if (!bResult)
     {
@@ -106,14 +107,7 @@ int xtc_check(const char *str, gmx_bool bResult, const char *file, int line)
     return 1;
 }
 
-void xtc_check_fat_err(const char *str, gmx_bool bResult, const char *file, int line)
-{
-    if (!bResult)
-    {
-        gmx_fatal(FARGS, "XTC read/write of %s failed, "
-                  "source file %s, line %d\n", str, file, line);
-    }
-}
+#define XTC_CHECK(s, b) xtc_check(s, b, __FILE__, __LINE__)
 
 static int xtc_header(XDR *xd, int *magic, int *natoms, int *step, real *time,
                       gmx_bool bRead, gmx_bool *bOK)

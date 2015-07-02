@@ -36,6 +36,9 @@
  */
 #include "gmxpre.h"
 
+#include "gmxfio-xdr.h"
+
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -46,11 +49,28 @@
 
 #include "gmxfio-impl.h"
 
+/* Enumerated for data types in files */
+enum {
+    eioREAL, eioFLOAT, eioDOUBLE, eioINT, eioINT64,
+    eioUCHAR, eioNUCHAR, eioUSHORT,
+    eioRVEC, eioNRVEC, eioIVEC, eioSTRING, eioNR
+};
+
 static const char *eioNames[eioNR] =
 {
     "REAL", "INT", "GMX_STE_T", "UCHAR", "NUCHAR", "USHORT", "RVEC", "NRVEC",
     "IVEC", "STRING"
 };
+
+XDR *gmx_fio_getxdr(t_fileio *fio)
+{
+    XDR *ret = NULL;
+    gmx_fio_lock(fio);
+    assert(fio->xdr != NULL);
+    ret = fio->xdr;
+    gmx_fio_unlock(fio);
+    return ret;
+}
 
 /* check the number of items given against the type */
 static void gmx_fio_check_nitem(int eio, int nitem, const char *file, int line)
@@ -63,7 +83,6 @@ static void gmx_fio_check_nitem(int eio, int nitem, const char *file, int line)
                   eioNames[eio], file, line);
     }
 }
-
 
 /* output a data type error. */
 static void gmx_fio_fe(t_fileio *fio, int eio, const char *desc,
@@ -92,6 +111,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     double          d = 0;
     float           f = 0;
 
+    assert(fio->xdr != NULL);
     gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {

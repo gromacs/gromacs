@@ -45,6 +45,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 int gmx_dyecoupl(int argc, char *argv[])
@@ -227,7 +228,7 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             if (bDatout)
             {
-                datfp = fopen(out_datfile, "w");
+                datfp = gmx_ffopen(out_datfile, "w");
             }
 
             if (bRKout)

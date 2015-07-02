@@ -46,6 +46,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
@@ -3221,7 +3222,6 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     int       idum = 0;
     real      rdum = 0;
 
-    gmx_fio_checktype(fio);
     gmx_fio_setdebug(fio, bDebugMode());
 
     /* XDR binary topology file */
@@ -3640,21 +3640,21 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     return ePBC;
 }
 
+static t_fileio *open_tpx(const char *fn, const char *mode)
+{
+    return gmx_fio_open(fn, mode);
+}
+
+static void close_tpx(t_fileio *fio)
+{
+    gmx_fio_close(fio);
+}
+
 /************************************************************
  *
  *  The following routines are the exported ones
  *
  ************************************************************/
-
-t_fileio *open_tpx(const char *fn, const char *mode)
-{
-    return gmx_fio_open(fn, mode);
-}
-
-void close_tpx(t_fileio *fio)
-{
-    gmx_fio_close(fio);
-}
 
 void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
                     int *file_version, int *file_generation)

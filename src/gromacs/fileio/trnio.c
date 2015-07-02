@@ -41,6 +41,7 @@
 #include <string.h>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/utility/fatalerror.h"
@@ -90,8 +91,6 @@ static gmx_bool do_trnheader(t_fileio *fio, gmx_bool bRead, t_trnheader *sh, gmx
     char            buf[256];
 
     *bOK = TRUE;
-
-    gmx_fio_checktype(fio);
 
     if (!gmx_fio_do_int(fio, magic) || magic != GROMACS_MAGIC)
     {

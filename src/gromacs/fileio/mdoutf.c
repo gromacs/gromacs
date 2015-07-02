@@ -37,6 +37,7 @@
 #include "mdoutf.h"
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trajectory_writing.h"
 #include "gromacs/fileio/trnio.h"
