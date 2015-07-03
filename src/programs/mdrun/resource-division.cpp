@@ -444,6 +444,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 {
 #if defined GMX_OPENMP && defined GMX_MPI
     int         nth_omp_min, nth_omp_max, ngpu;
+    gmx_bool    bWarnOnly;
     char        buf[1000];
 #ifdef GMX_THREAD_MPI
     const char *mpi_option = " (option -ntmpi)";
@@ -459,6 +460,15 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     assert(hw_opt->nthreads_tmpi >= 1);
 #endif
     assert(gmx_omp_nthreads_get(emntDefault) >= 1);
+
+    if (getenv("GMX_BYPASS_EFFICIENCY_CHECK") != NULL)
+    {
+        bWarnOnly = TRUE;
+    }
+    else
+    {
+        bWarnOnly = bNtOmpOptionSet;
+    }
 
     nth_omp_min = gmx_omp_nthreads_get(emntDefault);
     nth_omp_max = gmx_omp_nthreads_get(emntDefault);
@@ -507,7 +517,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                     nthreads_omp_mpi_ok_min,
                     nthreads_omp_mpi_target_max);
 
-            if (bNtOmpOptionSet)
+            if (bWarnOnly)
             {
                 md_print_warn(cr, fplog, "NOTE: %s\n", buf);
             }
@@ -533,7 +543,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
             bEnvSet = (getenv("OMP_NUM_THREADS") != NULL);
 
-            if (bNtOmpOptionSet || bEnvSet)
+            if (bWarnOnly || bEnvSet)
             {
                 sprintf(buf2, "You requested %d OpenMP threads", nth_omp_max);
             }
@@ -553,7 +563,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
              * with different values per rank or node, since in that case
              * the user can not set -ntomp to override the error.
              */
-            if (bNtOmpOptionSet || (bEnvSet && nth_omp_min != nth_omp_max))
+            if (bWarnOnly || (bEnvSet && nth_omp_min != nth_omp_max))
             {
                 md_print_warn(cr, fplog, "NOTE: %s\n", buf);
             }
