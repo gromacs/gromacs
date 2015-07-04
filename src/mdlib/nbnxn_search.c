@@ -3545,7 +3545,8 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
 
-            if (nsp_cj4 > 0 && nsp + nsp_cj4 > nsp_max)
+            /* Check if we should split at this cj4 to get a list of size nsp */
+            if (nsp > 0 && nsp + nsp_cj4 > nsp_max)
             {
                 /* Split the list at cj4 */
                 nbl->sci[sci].cj4_ind_end = cj4;
