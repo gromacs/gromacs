@@ -62,8 +62,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "thread_mpi/mutex.h"
-
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -72,6 +70,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -309,7 +308,7 @@ class AnalysisNeighborhoodSearchImpl
         //! Data structure to hold the grid cell contents.
         CellList                cells_;
 
-        tMPI::mutex             createPairSearchMutex_;
+        Mutex                   createPairSearchMutex_;
         PairSearchList          pairSearchList_;
 
         friend class AnalysisNeighborhoodPairSearchImpl;
@@ -439,7 +438,7 @@ AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
 AnalysisNeighborhoodSearchImpl::PairSearchImplPointer
 AnalysisNeighborhoodSearchImpl::getPairSearch()
 {
-    tMPI::lock_guard<tMPI::mutex> lock(createPairSearchMutex_);
+    lock_guard<Mutex> lock(createPairSearchMutex_);
     // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
     // separate pool of unused search objects.
     PairSearchList::const_iterator i;
@@ -1252,7 +1251,7 @@ class AnalysisNeighborhood::Impl
 
         SearchImplPointer getSearch();
 
-        tMPI::mutex             createSearchMutex_;
+        Mutex                   createSearchMutex_;
         SearchList              searchList_;
         real                    cutoff_;
         const t_blocka         *excls_;
@@ -1263,7 +1262,7 @@ class AnalysisNeighborhood::Impl
 AnalysisNeighborhood::Impl::SearchImplPointer
 AnalysisNeighborhood::Impl::getSearch()
 {
-    tMPI::lock_guard<tMPI::mutex> lock(createSearchMutex_);
+    lock_guard<Mutex> lock(createSearchMutex_);
     // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
     // separate pool of unused search objects.
     SearchList::const_iterator i;
