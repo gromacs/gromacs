@@ -42,33 +42,29 @@
 
 #include <emmintrin.h>
 
-/* Set capabilities that can be inherited */
-#define GMX_SIMD_X86_SSE2_OR_HIGHER
-
 /* x86 SSE2 SIMD instruction wrappers
  *
  * Please see documentation in gromacs/simd/simd.h for defines.
  */
 
 /* Capability definitions for SSE2 */
-#define GMX_SIMD_HAVE_FLOAT
-#define GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_HARDWARE
-#define GMX_SIMD_HAVE_LOADU
-#define GMX_SIMD_HAVE_STOREU
-#define GMX_SIMD_HAVE_LOGICAL
-#undef  GMX_SIMD_HAVE_FMA
-#undef  GMX_SIMD_HAVE_FRACTION
-#define GMX_SIMD_HAVE_FINT32
-#define GMX_SIMD_HAVE_FINT32_EXTRACT   /* No SSE2 instruction, but use shifts */
-#define GMX_SIMD_HAVE_FINT32_LOGICAL
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_DINT32
-#define GMX_SIMD_HAVE_DINT32_EXTRACT   /* No SSE2 instruction, but use shifts */
-#define GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD4_HAVE_FLOAT
-#undef  GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD_HAVE_FLOAT                 1
+#define GMX_SIMD_HAVE_DOUBLE                1
+#define GMX_SIMD_HAVE_LOADU                 1
+#define GMX_SIMD_HAVE_STOREU                1
+#define GMX_SIMD_HAVE_LOGICAL               1
+#define GMX_SIMD_HAVE_FMA                   0
+#define GMX_SIMD_HAVE_FRACTION              0
+#define GMX_SIMD_HAVE_FINT32                1
+#define GMX_SIMD_HAVE_FINT32_EXTRACT        1  /* No SSE2 instruction, but use shifts */
+#define GMX_SIMD_HAVE_FINT32_LOGICAL        1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS    1
+#define GMX_SIMD_HAVE_DINT32                1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT        1  /* No SSE2 instruction, but use shifts */
+#define GMX_SIMD_HAVE_DINT32_LOGICAL        1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS    1
+#define GMX_SIMD4_HAVE_FLOAT                1
+#define GMX_SIMD4_HAVE_DOUBLE               0
 
 /* Implementation details */
 #define GMX_SIMD_FLOAT_WIDTH         4

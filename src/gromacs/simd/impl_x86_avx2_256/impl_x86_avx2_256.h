@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,13 +49,14 @@
 
 /* Inherit parts of AVX2_256 from AVX_256 */
 #include "gromacs/simd/impl_x86_avx_256/impl_x86_avx_256.h"
-/* Increment over AVX_256 capabilities */
-#define GMX_SIMD_X86_AVX2_256_OR_HIGHER
 
 /* Override some capability definitions for things added in AVX2 */
-#define GMX_SIMD_HAVE_FMA
-#define GMX_SIMD_HAVE_FINT32_LOGICAL     /* AVX2 adds 256-bit integer shifts */
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS /* AVX2 adds 256-bit integer +,-,*  */
+#undef  GMX_SIMD_HAVE_FMA
+#define GMX_SIMD_HAVE_FMA                     1
+#undef  GMX_SIMD_HAVE_FINT32_LOGICAL
+#define GMX_SIMD_HAVE_FINT32_LOGICAL          1  /* AVX2 adds 256-bit integer shifts */
+#undef  GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS      1  /* AVX2 adds 256-bit integer +,-,*  */
 
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *

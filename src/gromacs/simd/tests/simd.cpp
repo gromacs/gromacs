@@ -38,6 +38,8 @@
 
 #include "gromacs/simd/simd.h"
 
+#if GMX_SIMD
+
 namespace gmx
 {
 namespace test
@@ -60,7 +62,7 @@ namespace test
  * occasionally have many digits that need to be exactly right, and keeping
  * them in a single place makes sure they are consistent.
  */
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 const gmx_simd_real_t rSimd_1_2_3    = setSimdRealFrom3R(1, 2, 3);
 const gmx_simd_real_t rSimd_4_5_6    = setSimdRealFrom3R(4, 5, 6);
 const gmx_simd_real_t rSimd_7_8_9    = setSimdRealFrom3R(7, 8, 9);
@@ -75,14 +77,14 @@ const gmx_simd_real_t rSimd_m3p75    = setSimdRealFrom1R(-3.75);
 const gmx_simd_real_t rSimd_Exp      = setSimdRealFrom3R( 1.4055235171027452623914516e+18,
                                                           5.3057102734253445623914516e-13,
                                                           -2.1057102745623934534514516e+16);
-#    if (defined GMX_SIMD_HAVE_DOUBLE) && (defined GMX_DOUBLE)
+#    if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 const gmx_simd_real_t rSimd_ExpDouble = setSimdRealFrom3R( 6.287393598732017379054414e+176,
                                                            8.794495252903116023030553e-140,
                                                            -3.637060701570496477655022e+202);
 #    endif
 #endif  // GMX_SIMD_HAVE_REAL
-#ifdef GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32
 const gmx_simd_int32_t iSimd_1_2_3      = setSimdIntFrom3I(1, 2, 3);
 const gmx_simd_int32_t iSimd_4_5_6      = setSimdIntFrom3I(4, 5, 6);
 const gmx_simd_int32_t iSimd_7_8_9      = setSimdIntFrom3I(7, 8, 9);
@@ -94,7 +96,7 @@ const gmx_simd_int32_t iSimd_0xF0F0F0F0 = setSimdIntFrom1I(0xF0F0F0F0);
 const gmx_simd_int32_t iSimd_0xCCCCCCCC = setSimdIntFrom1I(0xCCCCCCCC);
 #endif  // GMX_SIMD_HAVE_INT32
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 ::std::vector<real>
 simdReal2Vector(const gmx_simd_real_t simd)
 {
@@ -157,7 +159,7 @@ SimdTest::compareSimdRealEq(const char * refExpr, const char * tstExpr,
 
 #endif  // GMX_SIMD_HAVE_REAL
 
-#ifdef GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32
 std::vector<int>
 simdInt2Vector(const gmx_simd_int32_t simd)
 {
@@ -218,3 +220,5 @@ SimdTest::compareSimdInt32(const char *  refExpr,      const char *  tstExpr,
 
 }      // namespace
 }      // namespace
+
+#endif // GMX_SIMD

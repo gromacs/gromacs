@@ -256,33 +256,33 @@ gmx_cpuid_is_intel_nehalem  (const gmx_cpuid_t          cpuid)
 
 
 /* What type of SIMD was compiled in, if any? */
-#ifdef GMX_SIMD_X86_AVX_512ER
+#if GMX_SIMD_X86_AVX_512ER
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_512ER;
-#elif defined GMX_SIMD_X86_AVX_512F
+#elif GMX_SIMD_X86_AVX_512F
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_512F;
-#elif defined GMX_SIMD_X86_AVX2_256
+#elif GMX_SIMD_X86_AVX2_256
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX2_256;
-#elif defined GMX_SIMD_X86_AVX_256
+#elif GMX_SIMD_X86_AVX_256
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_256;
-#elif defined GMX_SIMD_X86_AVX_128_FMA
+#elif GMX_SIMD_X86_AVX_128_FMA
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_AVX_128_FMA;
-#elif defined GMX_SIMD_X86_SSE4_1
+#elif GMX_SIMD_X86_SSE4_1
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE4_1;
-#elif defined GMX_SIMD_X86_SSE2
+#elif GMX_SIMD_X86_SSE2
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_X86_SSE2;
-#elif defined GMX_SIMD_ARM_NEON
+#elif GMX_SIMD_ARM_NEON
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_ARM_NEON;
-#elif defined GMX_SIMD_ARM_NEON_ASIMD
+#elif GMX_SIMD_ARM_NEON_ASIMD
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_ARM_NEON_ASIMD;
-#elif defined GMX_SIMD_SPARC64_HPC_ACE
+#elif GMX_SIMD_SPARC64_HPC_ACE
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_SPARC64_HPC_ACE;
-#elif defined GMX_SIMD_IBM_QPX
+#elif GMX_SIMD_IBM_QPX
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_QPX;
-#elif defined GMX_SIMD_IBM_VMX
+#elif GMX_SIMD_IBM_VMX
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_VMX;
-#elif defined GMX_SIMD_IBM_VSX
+#elif GMX_SIMD_IBM_VSX
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_IBM_VSX;
-#elif defined GMX_SIMD_REFERENCE
+#elif GMX_SIMD_REFERENCE
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_REFERENCE;
 #else
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_NONE;
