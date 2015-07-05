@@ -63,7 +63,6 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-
 typedef struct {
     int  shift;
     int  naj;
