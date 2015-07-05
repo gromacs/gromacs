@@ -55,7 +55,7 @@ namespace test
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 
 class SimdMathTest : public SimdTest
 {

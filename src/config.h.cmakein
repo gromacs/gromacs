@@ -83,52 +83,52 @@
 #cmakedefine GMX_CXX11
 
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
-#cmakedefine GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#cmakedefine01 GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 
 /* SSE2 was selected for SIMD instruction set level */
-#cmakedefine GMX_SIMD_X86_SSE2
+#cmakedefine01 GMX_SIMD_X86_SSE2
 
 /* SSE4.1 was selected as SIMD instructions */
-#cmakedefine GMX_SIMD_X86_SSE4_1
+#cmakedefine01 GMX_SIMD_X86_SSE4_1
 
 /* AVX 128-bit FMA was selected as SIMD instructions */
-#cmakedefine GMX_SIMD_X86_AVX_128_FMA
+#cmakedefine01 GMX_SIMD_X86_AVX_128_FMA
 
 /* AVX 256-bit was selected as SIMD instructions */
-#cmakedefine GMX_SIMD_X86_AVX_256
+#cmakedefine01 GMX_SIMD_X86_AVX_256
 
 /* AVX2 256-bit SIMD instruction set level was selected */
-#cmakedefine GMX_SIMD_X86_AVX2_256
+#cmakedefine01 GMX_SIMD_X86_AVX2_256
 
 /* MIC (Xeon Phi) SIMD instruction set level was selected */
-#cmakedefine GMX_SIMD_X86_MIC
+#cmakedefine01 GMX_SIMD_X86_MIC
 
 /* AVX-512F foundation level instruction SIMD */
-#cmakedefine GMX_SIMD_X86_AVX_512F
+#cmakedefine01 GMX_SIMD_X86_AVX_512F
 
 /* AVX-512ER foundation level instruction SIMD */
-#cmakedefine GMX_SIMD_X86_AVX_512ER
+#cmakedefine01 GMX_SIMD_X86_AVX_512ER
 
 /* 32-bit ARM NEON SIMD instruction set level was selected */
-#cmakedefine GMX_SIMD_ARM_NEON
+#cmakedefine01 GMX_SIMD_ARM_NEON
 
 /* ARM (AArch64) NEON Advanced SIMD instruction set level was selected */
-#cmakedefine GMX_SIMD_ARM_NEON_ASIMD
+#cmakedefine01 GMX_SIMD_ARM_NEON_ASIMD
 
 /* IBM QPX was selected as SIMD instructions (e.g. BlueGene/Q) */
-#cmakedefine GMX_SIMD_IBM_QPX
+#cmakedefine01 GMX_SIMD_IBM_QPX
 
 /* IBM VMX was selected as SIMD instructions (Power 6 and later) */
-#cmakedefine GMX_SIMD_IBM_VMX
+#cmakedefine01 GMX_SIMD_IBM_VMX
 
 /* IBM VSX was selected as SIMD instructions (Power 7 and later) */
-#cmakedefine GMX_SIMD_IBM_VSX
+#cmakedefine01 GMX_SIMD_IBM_VSX
  
 /* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
-#cmakedefine GMX_SIMD_SPARC64_HPC_ACE
+#cmakedefine01 GMX_SIMD_SPARC64_HPC_ACE
 
 /* Reference SIMD implementation for testing */
-#cmakedefine GMX_SIMD_REFERENCE
+#cmakedefine01 GMX_SIMD_REFERENCE
 
 /* String for SIMD instruction choice (for writing to log files and stdout) */
 #define GMX_SIMD_STRING "@GMX_SIMD@"
