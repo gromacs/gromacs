@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,12 +54,13 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
+#if GMX_SIMD_X86_SSE2_OR_HIGHER
 #  ifdef GMX_DOUBLE
 #    include "gromacs/mdlib/genborn_allvsall_sse2_double.h"
 #    include "gromacs/mdlib/genborn_sse2_double.h"
@@ -978,7 +979,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 
         if (ir->gb_algorithm == egbSTILL)
         {
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
+#if 0 && GMX_SIMD_X86_SSE2_OR_HIGHER
             if (fr->use_simd_kernels)
             {
 #  ifdef GMX_DOUBLE
@@ -999,7 +1000,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
         }
         else if (ir->gb_algorithm == egbHCT || ir->gb_algorithm == egbOBC)
         {
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
+#if 0 && GMX_SIMD_X86_SSE2_OR_HIGHER
             if (fr->use_simd_kernels)
             {
 #  ifdef GMX_DOUBLE
@@ -1028,7 +1029,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
     /* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
 
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
+#if 0 && GMX_SIMD_X86_SSE2_OR_HIGHER
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     switch (ir->gb_algorithm)
     {
@@ -1087,7 +1088,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 
 #else
 
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
+#if 0 && GMX_SIMD_X86_SSE2_OR_HIGHER
     /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
     switch (ir->gb_algorithm)
     {
@@ -1530,7 +1531,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 
     if (fr->bAllvsAll)
     {
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
+#if 0 && GMX_SIMD_X86_SSE2_OR_HIGHER
         if (fr->use_simd_kernels)
         {
 #  ifdef GMX_DOUBLE
@@ -1552,7 +1553,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
         return;
     }
 
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
+#if 0 && GMX_SIMD_X86_SSE2_OR_HIGHER
     if (fr->use_simd_kernels)
     {
 #  ifdef GMX_DOUBLE
