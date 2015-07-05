@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,11 +49,16 @@
 #include "gromacs/simd/impl_arm_neon/impl_arm_neon.h"
 
 /* Override some capability definitions from ARM 32-bit NEON - we now have double */
-#define GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_DINT32
-#define GMX_SIMD_HAVE_DINT32_EXTRACT
-#define GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#undef  GMX_SIMD_HAVE_DOUBLE
+#define GMX_SIMD_HAVE_DOUBLE                  1
+#undef  GMX_SIMD_HAVE_DINT32
+#define GMX_SIMD_HAVE_DINT32                  1
+#undef  GMX_SIMD_HAVE_DINT32_EXTRACT
+#define GMX_SIMD_HAVE_DINT32_EXTRACT          1
+#undef  GMX_SIMD_HAVE_DINT32_LOGICAL
+#define GMX_SIMD_HAVE_DINT32_LOGICAL          1
+#undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS      1
 
 /* Implementation details */
 #define GMX_SIMD_DOUBLE_WIDTH        2
