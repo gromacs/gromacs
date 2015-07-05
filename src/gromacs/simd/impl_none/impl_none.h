@@ -32,60 +32,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- *
- * \brief This file defines a low-level function for SIMD PBC calculation.
- *
- * \author Berk Hess <hess@kth.se>
- *
- * \ingroup module_pbcutil
- */
-#include "gmxpre.h"
 
-#include "pbc-simd.h"
+#ifndef GMX_SIMD_IMPL_NONE_H
+#define GMX_SIMD_IMPL_NONE_H
 
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/simd/simd.h"
+/* No SIMD implementation - assign 0 to all defines */
+#define GMX_SIMD                            0
+#define GMX_SIMD_HAVE_FLOAT                 0
+#define GMX_SIMD_HAVE_DOUBLE                0
+#define GMX_SIMD_HAVE_LOADU                 0
+#define GMX_SIMD_HAVE_STOREU                0
+#define GMX_SIMD_HAVE_LOGICAL               0
+#define GMX_SIMD_HAVE_FMA                   0
+#define GMX_SIMD_HAVE_FRACTION              0
+#define GMX_SIMD_HAVE_FINT32                0
+#define GMX_SIMD_HAVE_FINT32_EXTRACT        0
+#define GMX_SIMD_HAVE_FINT32_LOGICAL        0
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS    0
+#define GMX_SIMD_HAVE_DINT32                0
+#define GMX_SIMD_HAVE_DINT32_EXTRACT        0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL        0
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS    0
+#define GMX_SIMD4_HAVE_FLOAT                0
+#define GMX_SIMD4_HAVE_DOUBLE               0
 
-void set_pbc_simd(const t_pbc gmx_unused *pbc,
-                  pbc_simd_t gmx_unused  *pbc_simd)
-{
-#if GMX_SIMD_HAVE_REAL
-    rvec inv_box_diag;
-    int  d;
+#undef GMX_SIMD_FLOAT_WIDTH
+#undef GMX_SIMD_DOUBLE_WIDTH
+#undef GMX_SIMD_FINT32_WIDTH
+#undef GMX_SIMD_DINT32_WIDTH
+#undef GMX_SIMD4_WIDTH
+#undef GMX_SIMD_RSQRT_BITS
+#undef GMX_SIMD_RCP_BITS
 
-    /* Setting inv_bdiag to 0 effectively turns off PBC */
-    clear_rvec(inv_box_diag);
-    if (pbc != NULL)
-    {
-        for (d = 0; d < pbc->ndim_ePBC; d++)
-        {
-            inv_box_diag[d] = 1.0/pbc->box[d][d];
-        }
-    }
-
-    pbc_simd->inv_bzz = gmx_simd_set1_r(inv_box_diag[ZZ]);
-    pbc_simd->inv_byy = gmx_simd_set1_r(inv_box_diag[YY]);
-    pbc_simd->inv_bxx = gmx_simd_set1_r(inv_box_diag[XX]);
-
-    if (pbc != NULL)
-    {
-        pbc_simd->bzx = gmx_simd_set1_r(pbc->box[ZZ][XX]);
-        pbc_simd->bzy = gmx_simd_set1_r(pbc->box[ZZ][YY]);
-        pbc_simd->bzz = gmx_simd_set1_r(pbc->box[ZZ][ZZ]);
-        pbc_simd->byx = gmx_simd_set1_r(pbc->box[YY][XX]);
-        pbc_simd->byy = gmx_simd_set1_r(pbc->box[YY][YY]);
-        pbc_simd->bxx = gmx_simd_set1_r(pbc->box[XX][XX]);
-    }
-    else
-    {
-        pbc_simd->bzx = gmx_simd_setzero_r();
-        pbc_simd->bzy = gmx_simd_setzero_r();
-        pbc_simd->bzz = gmx_simd_setzero_r();
-        pbc_simd->byx = gmx_simd_setzero_r();
-        pbc_simd->byy = gmx_simd_setzero_r();
-        pbc_simd->bxx = gmx_simd_setzero_r();
-    }
-#endif
-}
+#endif /* GMX_SIMD_IMPL_NONE_H */

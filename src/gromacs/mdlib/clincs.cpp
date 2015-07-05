@@ -69,12 +69,13 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-#if defined GMX_SIMD_HAVE_REAL
-#define LINCS_SIMD
+/* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
+#if GMX_SIMD_HAVE_REAL && !(defined _MSC_VER && _MSC_VER < 1700) && !defined(__ICL)
+#    define LINCS_SIMD
 #endif
 
 
-#if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
+#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
 
 // This was originally work-in-progress for augmenting the SIMD module with
 // masked load/store operations. Instead, that turned into and extended SIMD
@@ -135,7 +136,7 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_double_t   row0,
 }
 
 
-#    ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#    if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 #        define gmx_hack_simd4_load3_r(mem)      _mm256_maskload_pd((mem), _mm_castsi128_ps(_mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1)))
 #        define gmx_hack_simd4_store3_r(mem, x)   _mm256_maskstore_pd((mem), _mm_castsi128_ps(_mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1)), (x))
 #    else
@@ -195,7 +196,7 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_float_t   row0,
     a[6] = _mm256_extractf128_ps(row2, 1);
     a[7] = _mm256_extractf128_ps(row3, 1);
 }
-#ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 #        define gmx_hack_simd4_load3_r(mem)      _mm_maskload_ps((mem), _mm_castsi256_pd(_mm_set_epi32(0, -1, -1, -1)))
 #        define gmx_hack_simd4_store3_r(mem, x)   _mm_maskstore_ps((mem), _mm_castsi256_pd(_mm_set_epi32(0, -1, -1, -1)), (x))
 #else
@@ -207,7 +208,7 @@ gmx_hack_simd_transpose_to_simd4_r(gmx_simd_float_t   row0,
 
 #endif /* AVX */
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 /*! \brief Store differences between indexed rvecs in SIMD registers.
  *
  * Returns SIMD register with the difference vectors:
@@ -228,7 +229,7 @@ gmx_hack_simd_gather_rvec_dist_pair_index(const rvec      *v,
                                           gmx_simd_real_t *dy,
                                           gmx_simd_real_t *dz)
 {
-#if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
+#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
     int              i;
     gmx_simd4_real_t d[GMX_SIMD_REAL_WIDTH];
     gmx_simd_real_t  tmp;
@@ -280,7 +281,7 @@ gmx_simd_store_vec_to_rvec(gmx_simd_real_t  x,
                            real gmx_unused *buf,
                            rvec            *v)
 {
-#if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
+#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
     int              i;
     gmx_simd4_real_t s4[GMX_SIMD_REAL_WIDTH];
     gmx_simd_real_t  zero = gmx_simd_setzero_r();
