@@ -50,13 +50,14 @@
 
 /* Inherit parts of AVX_128_FMA from SSE4.1 */
 #include "gromacs/simd/impl_x86_sse4_1/impl_x86_sse4_1.h"
-/* Increment over SSE4.1 capabilities */
-#define GMX_SIMD_X86_AVX_128_FMA_OR_HIGHER
 
 /* Override some capability definitions for things added in AVX over SSE4.1 */
-#define GMX_SIMD_HAVE_FMA
-#define GMX_SIMD_HAVE_FRACTION
-#define GMX_SIMD4_HAVE_DOUBLE  /* We can use 256-bit operations for this */
+#undef  GMX_SIMD_HAVE_FMA
+#define GMX_SIMD_HAVE_FMA          1
+#undef  GMX_SIMD_HAVE_FRACTION
+#define GMX_SIMD_HAVE_FRACTION     1
+#undef  GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD4_HAVE_DOUBLE      1 /* We can use 256-bit operations for this */
 
 /* SINGLE */
 #undef  gmx_simd_fmadd_f

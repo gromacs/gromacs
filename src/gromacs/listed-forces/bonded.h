@@ -128,7 +128,7 @@ void
                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                  int gmx_unused *global_atom_index);
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 
 /* As angles(), but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
