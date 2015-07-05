@@ -103,11 +103,9 @@
     gmx_simd_real_t  tx_S2, ty_S2, tz_S2;
     gmx_simd_real_t  rsq_S0, rinv_S0, rinvsq_S0;
     gmx_simd_real_t  rsq_S2, rinv_S2, rinvsq_S2;
-#ifndef NBNXN_CUTOFF_USE_BLENDV
     /* wco: within cut-off, mask of all 1's or 0's */
     gmx_simd_bool_t  wco_S0;
     gmx_simd_bool_t  wco_S2;
-#endif
 #ifdef VDW_CUTOFF_CHECK
     gmx_simd_bool_t  wco_vdw_S0;
 #ifndef HALF_LJ
@@ -264,10 +262,8 @@
     rsq_S0      = gmx_simd_calc_rsq_r(dx_S0, dy_S0, dz_S0);
     rsq_S2      = gmx_simd_calc_rsq_r(dx_S2, dy_S2, dz_S2);
 
-#ifndef NBNXN_CUTOFF_USE_BLENDV
     wco_S0      = gmx_simd_cmplt_r(rsq_S0, rc2_S);
     wco_S2      = gmx_simd_cmplt_r(rsq_S2, rc2_S);
-#endif
 
 #ifdef CHECK_EXCLS
 #ifdef EXCL_FORCES
@@ -375,19 +371,8 @@
 
 #endif /* CALC_LJ */
 
-#ifndef NBNXN_CUTOFF_USE_BLENDV
     rinv_S0     = gmx_simd_blendzero_r(rinv_S0, wco_S0);
     rinv_S2     = gmx_simd_blendzero_r(rinv_S2, wco_S2);
-#else
-    /* This needs to be modified: It makes assumptions about the internal storage
-     * of the SIMD representation, in particular that the blendv instruction always
-     * selects based on the sign bit. If the performance is really critical, it
-     * should be turned into a function that is platform-specific.
-     */
-    /* We only need to mask for the cut-off: blendv is faster */
-    rinv_S0     = gmx_simd_blendv_r(rinv_S0, zero_S, gmx_simd_sub_r(rc2_S, rsq_S0));
-    rinv_S2     = gmx_simd_blendv_r(rinv_S2, zero_S, gmx_simd_sub_r(rc2_S, rsq_S2));
-#endif
 
     rinvsq_S0   = gmx_simd_mul_r(rinv_S0, rinv_S0);
     rinvsq_S2   = gmx_simd_mul_r(rinv_S2, rinv_S2);
@@ -424,14 +409,9 @@
     /* We need to mask (or limit) rsq for the cut-off,
      * as large distances can cause an overflow in gmx_pmecorrF/V.
      */
-#ifndef NBNXN_CUTOFF_USE_BLENDV
     brsq_S0     = gmx_simd_mul_r(beta2_S, gmx_simd_blendzero_r(rsq_S0, wco_S0));
     brsq_S2     = gmx_simd_mul_r(beta2_S, gmx_simd_blendzero_r(rsq_S2, wco_S2));
-#else
-    /* Strangely, putting mul on a separate line is slower (icc 13) */
-    brsq_S0     = gmx_simd_mul_r(beta2_S, gmx_simd_blendv_r(rsq_S0, zero_S, gmx_simd_sub_r(rc2_S, rsq_S0)));
-    brsq_S2     = gmx_simd_mul_r(beta2_S, gmx_simd_blendv_r(rsq_S2, zero_S, gmx_simd_sub_r(rc2_S, rsq_S2)));
-#endif
+
     ewcorr_S0   = gmx_simd_mul_r(gmx_simd_pmecorrF_r(brsq_S0), beta_S);
     ewcorr_S2   = gmx_simd_mul_r(gmx_simd_pmecorrF_r(brsq_S2), beta_S);
     frcoul_S0   = gmx_simd_mul_r(qq_S0, gmx_simd_fmadd_r(ewcorr_S0, brsq_S0, rinv_ex_S0));
@@ -454,13 +434,8 @@
     /* Truncate scaled r to an int */
     ti_S0       = gmx_simd_cvtt_r2i(rs_S0);
     ti_S2       = gmx_simd_cvtt_r2i(rs_S2);
-#ifdef GMX_SIMD_HAVE_TRUNC
     rf_S0       = gmx_simd_trunc_r(rs_S0);
     rf_S2       = gmx_simd_trunc_r(rs_S2);
-#else
-    rf_S0       = gmx_simd_cvt_i2r(ti_S0);
-    rf_S2       = gmx_simd_cvt_i2r(ti_S2);
-#endif
     frac_S0     = gmx_simd_sub_r(rs_S0, rf_S0);
     frac_S2     = gmx_simd_sub_r(rs_S2, rf_S2);
 
@@ -930,7 +905,5 @@
 
 #undef  wco_vdw_S0
 #undef  wco_vdw_S2
-
-#undef  NBNXN_CUTOFF_USE_BLENDV
 
 #undef  EXCL_FORCES

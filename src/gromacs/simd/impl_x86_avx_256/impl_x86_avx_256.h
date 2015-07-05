@@ -40,45 +40,37 @@
 
 #include <immintrin.h>
 
-/* It is cleaner to start the AVX implementation from scratch rather than
- * first inheriting from SSE4.1, which in turn inherits from SSE2. However,
- * the capabilities still form a superset.
- */
-#define GMX_SIMD_X86_SSE2_OR_HIGHER
-#define GMX_SIMD_X86_SSE4_1_OR_HIGHER
-#define GMX_SIMD_X86_AVX_256_OR_HIGHER
-
-
 /* x86 256-bit AVX SIMD instruction wrappers
  *
  * Please see documentation in gromacs/simd/simd.h for defines.
  */
 
 /* Capability definitions for 256-bit AVX - no inheritance from SSE */
-#define GMX_SIMD_HAVE_FLOAT
-#define GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_SIMD_HARDWARE
-#define GMX_SIMD_HAVE_LOADU
-#define GMX_SIMD_HAVE_STOREU
-#define GMX_SIMD_HAVE_LOGICAL
-#undef  GMX_SIMD_HAVE_FMA
-#undef  GMX_SIMD_HAVE_FRACTION
-#define GMX_SIMD_HAVE_FINT32
-#define GMX_SIMD_HAVE_FINT32_EXTRACT     /* Emulated */
-#undef  GMX_SIMD_HAVE_FINT32_LOGICAL     /* AVX1 cannot do 256-bit int shifts */
-#undef  GMX_SIMD_HAVE_FINT32_ARITHMETICS /* AVX1 cannot do 256-bit int +,-,*  */
-#define GMX_SIMD_HAVE_DINT32
-#define GMX_SIMD_HAVE_DINT32_EXTRACT     /* Native, dint uses 128-bit SIMD    */
-#define GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD4_HAVE_FLOAT
-#define GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD                          1
+#define GMX_SIMD_HAVE_FLOAT               1
+#define GMX_SIMD_HAVE_DOUBLE              1
+#define GMX_SIMD_HAVE_LOADU               1
+#define GMX_SIMD_HAVE_STOREU              1
+#define GMX_SIMD_HAVE_LOGICAL             1
+#define GMX_SIMD_HAVE_FMA                 0
+#define GMX_SIMD_HAVE_FRACTION            0
+#define GMX_SIMD_HAVE_FINT32              1
+#define GMX_SIMD_HAVE_FINT32_EXTRACT      1  /* Emulated */
+#define GMX_SIMD_HAVE_FINT32_LOGICAL      0  /* AVX1 cannot do 256-bit int shifts */
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS  0  /* AVX1 cannot do 256-bit int +,-,*  */
+#define GMX_SIMD_HAVE_DINT32              1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT      1  /* Native, dint uses 128-bit SIMD    */
+#define GMX_SIMD_HAVE_DINT32_LOGICAL      1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS  1
+#define GMX_SIMD4_HAVE_FLOAT              1
+#define GMX_SIMD4_HAVE_DOUBLE             1
 
 /* Implementation details */
 #define GMX_SIMD_FLOAT_WIDTH         8
 #define GMX_SIMD_DOUBLE_WIDTH        4
 #define GMX_SIMD_FINT32_WIDTH        8
 #define GMX_SIMD_DINT32_WIDTH        4
+#define GMX_SIMD4_WIDTH              4
 #define GMX_SIMD_RSQRT_BITS         11
 #define GMX_SIMD_RCP_BITS           11
 

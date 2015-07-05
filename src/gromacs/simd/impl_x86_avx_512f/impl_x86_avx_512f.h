@@ -65,34 +65,35 @@
  */
 
 /* Capability definitions for AVX-512 SIMD. */
-#define GMX_SIMD_HAVE_FLOAT
-#define GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_SIMD_HARDWARE
-#define GMX_SIMD_HAVE_LOADU
-#define GMX_SIMD_HAVE_STOREU
-#define GMX_SIMD_HAVE_LOGICAL
-#define GMX_SIMD_HAVE_FMA
-#undef  GMX_SIMD_HAVE_FRACTION
-#define GMX_SIMD_HAVE_FINT32
+#define GMX_SIMD                             1
+#define GMX_SIMD_HAVE_FLOAT                  1
+#define GMX_SIMD_HAVE_DOUBLE                 1
+#define GMX_SIMD_HAVE_LOADU                  1
+#define GMX_SIMD_HAVE_STOREU                 1
+#define GMX_SIMD_HAVE_LOGICAL                1
+#define GMX_SIMD_HAVE_FMA                    1
+#define GMX_SIMD_HAVE_FRACTION               0
+#define GMX_SIMD_HAVE_FINT32                 1
 /* Technically it is straightforward to emulate extract on AVX-512F through
  * memory operations, but when applied to 16 elements as part of a table lookup
  * it will be faster to just store the entire vector once, so we avoid setting it.
  */
-#undef  GMX_SIMD_HAVE_FINT32_EXTRACT
-#define GMX_SIMD_HAVE_FINT32_LOGICAL
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_DINT32
-#undef  GMX_SIMD_HAVE_DINT32_EXTRACT
-#define GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD4_HAVE_FLOAT
-#define GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD_HAVE_FINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_FINT32_LOGICAL         1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS     1
+#define GMX_SIMD_HAVE_DINT32                 1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL         1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS     1
+#define GMX_SIMD4_HAVE_FLOAT                 1
+#define GMX_SIMD4_HAVE_DOUBLE                1
 
 /* Implementation details */
 #define GMX_SIMD_FLOAT_WIDTH        16
 #define GMX_SIMD_DOUBLE_WIDTH        8
 #define GMX_SIMD_FINT32_WIDTH       16
 #define GMX_SIMD_DINT32_WIDTH        8
+#define GMX_SIMD4_WIDTH              4
 #define GMX_SIMD_RSQRT_BITS         14
 #define GMX_SIMD_RCP_BITS           14
 
