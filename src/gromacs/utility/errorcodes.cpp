@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 
 #include <cstdlib>
 
-#include "thread_mpi/mutex.h"
+#include "gromacs/utility/mutex.h"
 
 #include "errorformat.h"
 
@@ -100,7 +100,7 @@ void standardErrorHandler(int retcode, const char *msg,
 //! Global error handler set with setFatalErrorHandler().
 ErrorHandlerFunc g_errorHandler = standardErrorHandler;
 //! Mutex for protecting access to ::g_errorHandler.
-tMPI::mutex      handler_mutex;
+Mutex            handler_mutex;
 
 //! \}
 
@@ -117,8 +117,8 @@ const char *getErrorCodeString(int errorcode)
 
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
 {
-    tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
-    ErrorHandlerFunc              oldHandler = g_errorHandler;
+    lock_guard<Mutex> lock(handler_mutex);
+    ErrorHandlerFunc  oldHandler = g_errorHandler;
     g_errorHandler = handler;
     return oldHandler;
 }
@@ -131,7 +131,7 @@ void fatalError(int retcode, const char *msg, const char *file, int line)
 {
     ErrorHandlerFunc handler = NULL;
     {
-        tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
+        lock_guard<Mutex> lock(handler_mutex);
         handler = g_errorHandler;
     }
     if (handler != NULL)
