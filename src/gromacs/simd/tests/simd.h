@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,6 +82,8 @@
 
 #include "base.h"
 
+#if GMX_SIMD
+
 namespace gmx
 {
 namespace test
@@ -104,7 +106,7 @@ namespace test
  * occasionally have many digits that need to be exactly right, and keeping
  * them in a single place makes sure they are consistent.
  */
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 extern const gmx_simd_real_t rSimd_1_2_3;     //!< Generic (different) fp values.
 extern const gmx_simd_real_t rSimd_4_5_6;     //!< Generic (different) fp values.
 extern const gmx_simd_real_t rSimd_7_8_9;     //!< Generic (different) fp values.
@@ -118,7 +120,7 @@ extern const gmx_simd_real_t rSimd_m2p25;     //!< Negative value that rounds up
 extern const gmx_simd_real_t rSimd_m3p75;     //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const gmx_simd_real_t rSimd_Exp;
-#    if (defined GMX_SIMD_HAVE_DOUBLE) && (defined GMX_DOUBLE)
+#    if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 extern const gmx_simd_real_t rSimd_ExpDouble;
 #    endif
@@ -130,7 +132,7 @@ extern const gmx_simd_real_t rSimd_Bits4;       //!< Pattern 0C repeated to fill
 extern const gmx_simd_real_t rSimd_Bits5;       //!< Pattern FC repeated to fill single/double.
 extern const gmx_simd_real_t rSimd_Bits6;       //!< Pattern 3C repeated to fill single/double.
 #endif                                          // GMX_SIMD_HAVE_REAL
-#ifdef GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32
 extern const gmx_simd_int32_t iSimd_1_2_3;      //!< Three generic ints.
 extern const gmx_simd_int32_t iSimd_4_5_6;      //!< Three generic ints.
 extern const gmx_simd_int32_t iSimd_7_8_9;      //!< Three generic ints.
@@ -154,7 +156,7 @@ extern const gmx_simd_int32_t iSimd_0xCCCCCCCC; //!< Bitpattern to test integer 
 class SimdTest : public SimdBaseTest
 {
     public:
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
         /*! \brief Compare two real SIMD variables for approximate equality.
          *
          * This is an internal implementation routine. YOu should always use
@@ -189,7 +191,7 @@ class SimdTest : public SimdBaseTest
 
 #endif
 
-#ifdef GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32
         /*! \brief Compare two 32-bit integer SIMD variables.
          *
          * This is an internal implementation routine. YOu should always use
@@ -208,7 +210,7 @@ class SimdTest : public SimdBaseTest
 #endif
 };
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 /*! \brief Convert SIMD real to std::vector<real>.
  *
  * The returned vector will have the same length as the SIMD width.
@@ -246,7 +248,7 @@ gmx_simd_real_t   setSimdRealFrom1R(real value);
 
 #endif  // GMX_SIMD_HAVE_REAL
 
-#ifdef GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32
 /*! \brief Convert SIMD integer to std::vector<int>.
  *
  * The returned vector will have the same length as the SIMD width.
@@ -290,5 +292,7 @@ gmx_simd_int32_t   setSimdIntFrom1I(int value);
 
 }      // namespace
 }      // namespace
+
+#endif // GMX_SIMD
 
 #endif // GMX_SIMD_TESTS_SIMD_H

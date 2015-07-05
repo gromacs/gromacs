@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,14 +71,14 @@ gmx_load_simd_4xn_interactions(int                        excl,
                                gmx_simd_bool_t           *interact_S2,
                                gmx_simd_bool_t           *interact_S3)
 {
-#if defined GMX_SIMD_X86_SSE2_OR_HIGHER || defined GMX_SIMD_REFERENCE
+#if GMX_SIMD_X86_SSE2_OR_HIGHER || GMX_SIMD_REFERENCE
     /* Load integer interaction mask */
     gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
     *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
     *interact_S1  = gmx_checkbitmask_pb(mask_pr_S, filter_S1);
     *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
     *interact_S3  = gmx_checkbitmask_pb(mask_pr_S, filter_S3);
-#elif defined GMX_SIMD_IBM_QPX
+#elif GMX_SIMD_IBM_QPX
     const int size = GMX_SIMD_REAL_WIDTH * sizeof(real);
     *interact_S0  = gmx_load_interaction_mask_pb(size*((excl >> (0 * UNROLLJ)) & 0xF), simd_interaction_array);
     *interact_S1  = gmx_load_interaction_mask_pb(size*((excl >> (1 * UNROLLJ)) & 0xF), simd_interaction_array);
