@@ -454,13 +454,8 @@
     /* Truncate scaled r to an int */
     ti_S0       = gmx_simd_cvtt_r2i(rs_S0);
     ti_S2       = gmx_simd_cvtt_r2i(rs_S2);
-#ifdef GMX_SIMD_HAVE_TRUNC
     rf_S0       = gmx_simd_trunc_r(rs_S0);
     rf_S2       = gmx_simd_trunc_r(rs_S2);
-#else
-    rf_S0       = gmx_simd_cvt_i2r(ti_S0);
-    rf_S2       = gmx_simd_cvt_i2r(ti_S2);
-#endif
     frac_S0     = gmx_simd_sub_r(rs_S0, rf_S0);
     frac_S2     = gmx_simd_sub_r(rs_S2, rf_S2);
 

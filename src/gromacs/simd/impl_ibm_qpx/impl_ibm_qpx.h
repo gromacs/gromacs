@@ -49,30 +49,31 @@
  * defines.
  */
 /* Capability definitions for IBM QPX */
-#define GMX_SIMD_HAVE_FLOAT
-#define GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_HARDWARE
-#undef  GMX_SIMD_HAVE_STOREU
-#undef  GMX_SIMD_HAVE_STOREU
-#undef  GMX_SIMD_HAVE_LOGICAL
-#define GMX_SIMD_HAVE_FMA
-#undef  GMX_SIMD_HAVE_FRACTION
-#define GMX_SIMD_HAVE_FINT32
-#undef  GMX_SIMD_HAVE_FINT32_EXTRACT
-#undef  GMX_SIMD_HAVE_FINT32_LOGICAL
-#undef  GMX_SIMD_HAVE_FINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_DINT32
-#undef  GMX_SIMD_HAVE_DINT32_EXTRACT
-#undef  GMX_SIMD_HAVE_DINT32_LOGICAL
-#undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD4_HAVE_FLOAT
-#define GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD                             1
+#define GMX_SIMD_HAVE_FLOAT                  1
+#define GMX_SIMD_HAVE_DOUBLE                 1
+#define GMX_SIMD_HAVE_STOREU                 0
+#define GMX_SIMD_HAVE_STOREU                 0
+#define GMX_SIMD_HAVE_LOGICAL                0
+#define GMX_SIMD_HAVE_FMA                    1
+#define GMX_SIMD_HAVE_FRACTION               0
+#define GMX_SIMD_HAVE_FINT32                 1
+#define GMX_SIMD_HAVE_FINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_FINT32_LOGICAL         0
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS     0
+#define GMX_SIMD_HAVE_DINT32                 1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL         0
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS     0
+#define GMX_SIMD4_HAVE_FLOAT                 1
+#define GMX_SIMD4_HAVE_DOUBLE                1
 
 /* Implementation details */
 #define GMX_SIMD_FLOAT_WIDTH         4
 #define GMX_SIMD_DOUBLE_WIDTH        4
 #define GMX_SIMD_FINT32_WIDTH        4
 #define GMX_SIMD_DINT32_WIDTH        4
+#define GMX_SIMD4_WIDTH              4
 #define GMX_SIMD_RSQRT_BITS         14
 #define GMX_SIMD_RCP_BITS           14
 

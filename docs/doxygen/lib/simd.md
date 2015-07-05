@@ -327,17 +327,20 @@ Predefined SIMD preprocessor macros
 
 Functionality-wise, we have a small set of core set of features that we
 require to be present on all platforms, while more avanced features can be
-used in the code when defines like e.g. `GMX_SIMD_HAVE_LOADU` are set.
+used in the code when defines like e.g. `GMX_SIMD_HAVE_LOADU` are set to 1.
+To avoid bugs when we forget to include the SIMD header, we always define
+these macros to either 1 or 0. Thus, it is important that you always
+check the value rather than whether it is defined.
 
 This is a summary of the currently available preprocessor defines that
 you should use to check for support when using the corresponding features.
 We first list the float/double/int defines set by the _implementation_; in
-most cases you do not want to check directly for float/double defines, but
-you should instead use the derived "real" defines set in this file - we list
+most cases you do not want to check directly for float/double define values,
+but you should instead use the derived "real" defines set in this file - we list
 those at the end below.
 
 Preprocessor predefined macro defines set by the low-level implementation.
-These are only set if they work for all datatypes; `GMX_SIMD_HAVE_LOADU`
+These are only set to 1 if they work for all datatypes; `GMX_SIMD_HAVE_LOADU`
 thus means we can load both float, double, and integers from unaligned memory,
 and that the unaligned loads are available for SIMD4 too.
 
@@ -349,10 +352,6 @@ Single-precision instructions available.
 <dt>`GMX_SIMD_HAVE_DOUBLE `</dt>
 <dd>
 Double-precision instructions available.
-</dd>
-<dt>`GMX_SIMD_HAVE_HARDWARE`</dt>
-<dd>
-Set when we are NOT emulating SIMD.
 </dd>
 <dt>`GMX_SIMD_HAVE_LOADU`</dt>
 <dd>
@@ -412,7 +411,7 @@ Arithmetic ops for `gmx_simd_dint32_t`.
 </dl>
 
 There are also two macros specific to SIMD4: `GMX_SIMD4_HAVE_FLOAT` is set
-if we can use SIMD4 in single precision, and `GMX_SIMD4_HAVE_DOUBLE`
+to 1 if we can use SIMD4 in single precision, and `GMX_SIMD4_HAVE_DOUBLE`
 similarly denotes support for a double-precision SIMD4 implementation. For
 generic properties (e.g. whether SIMD4 FMA is supported), you should check
 the normal SIMD macros above.
