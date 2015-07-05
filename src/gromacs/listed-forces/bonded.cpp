@@ -72,7 +72,7 @@
 #include "restcbt.h"
 
 
-#if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
+#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
 
 // This was originally work-in-progress for augmenting the SIMD module with
 // masked load/store operations. Instead, that turned into and extended SIMD
@@ -117,7 +117,7 @@ gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_double_t *a,
     gmx_hack_simd_transpose4_r(row0, row1, row2, row3);
 }
 
-#    ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#    if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 #        define gmx_hack_simd4_load3_r(mem)    _mm256_maskload_pd((mem), _mm_castsi128_ps(_mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1)))
 #    else
 #        define gmx_hack_simd4_load3_r(mem)    _mm256_maskload_pd((mem), _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1))
@@ -156,7 +156,7 @@ gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_float_t *a,
 
     gmx_hack_simd_transpose4_r(row0, row1, row2, row3);
 }
-#ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 #        define gmx_hack_simd4_load3_r(mem)    _mm_maskload_ps((mem), _mm_castsi256_pd(_mm_set_epi32(0, -1, -1, -1)))
 #else
 #        define gmx_hack_simd4_load3_r(mem)    _mm_maskload_ps((mem), _mm_set_epi32(0, -1, -1, -1))
@@ -168,7 +168,7 @@ gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_float_t *a,
 
 
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 /*! \brief Store differences between indexed rvecs in SIMD registers.
  *
  * Returns SIMD register with the difference vectors:
@@ -191,7 +191,7 @@ gmx_hack_simd_gather_rvec_dist_two_index(const rvec      *v,
                                          gmx_simd_real_t *dy,
                                          gmx_simd_real_t *dz)
 {
-#if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
+#if GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
     int              i;
     gmx_simd4_real_t d[GMX_SIMD_REAL_WIDTH];
     gmx_simd_real_t  tmp;
@@ -1119,7 +1119,7 @@ real angles(int nbonds,
     return vtot;
 }
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 
 /* As angles, but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
@@ -1573,7 +1573,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 }
 
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 
 /* As dih_angle above, but calculates 4 dihedral angles at once using SIMD,
  * also calculates the pre-factor required for the dihedral force update.
@@ -2020,7 +2020,7 @@ pdihs_noener(int nbonds,
 }
 
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 
 /* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
 void

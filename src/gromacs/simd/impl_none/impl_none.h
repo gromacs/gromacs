@@ -32,51 +32,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#include "gmxpre.h"
 
-#include <math.h>
+#ifndef GMX_SIMD_IMPL_NONE_H
+#define GMX_SIMD_IMPL_NONE_H
 
-#include "gromacs/simd/simd.h"
-#include "gromacs/simd/vector_operations.h"
+/* Do not put ANY code in this file. Its only role is to set a bunch of
+ * preprocessor defines to zero.
+ */
 
-#include "simd4.h"
+#define GMX_SIMD                             0
+#define GMX_SIMD_HAVE_HARDWARE               0
+#define GMX_SIMD_HAVE_FLOAT                  0
+#define GMX_SIMD_HAVE_DOUBLE                 0
+#define GMX_SIMD_HAVE_LOADU                  0
+#define GMX_SIMD_HAVE_STOREU                 0
+#define GMX_SIMD_HAVE_LOGICAL                0
+#define GMX_SIMD_HAVE_FMA                    0
+#define GMX_SIMD_HAVE_FRACTION               0
+#define GMX_SIMD_HAVE_FINT32                 0
+#define GMX_SIMD_HAVE_FINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_FINT32_LOGICAL         0
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS     0
+#define GMX_SIMD_HAVE_DINT32                 0
+#define GMX_SIMD_HAVE_DINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL         0
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS     0
+#define GMX_SIMD4_HAVE_FLOAT                 0
+#define GMX_SIMD4_HAVE_DOUBLE                0
+#define GMX_SIMD_FLOAT_WIDTH                 0
+#define GMX_SIMD_DOUBLE_WIDTH               -1
+#define GMX_SIMD_FINT32_WIDTH               -1
+#define GMX_SIMD_DINT32_WIDTH               -1
+#define GMX_SIMD_RSQRT_BITS                 -1
+#define GMX_SIMD_RCP_BITS                   -1
 
-#if GMX_SIMD
-
-namespace gmx
-{
-namespace test
-{
-namespace
-{
-
-/*! \cond internal */
-/*! \addtogroup module_simd */
-/*! \{ */
-
-#if GMX_SIMD4_HAVE_REAL
-
-/*! \brief Test fixture for SIMD4 vector operations (identical to the SIMD4 \ref Simd4Test) */
-typedef Simd4Test Simd4VectorOperationsTest;
-
-TEST_F(Simd4VectorOperationsTest, gmxSimd4CalcRsqR)
-{
-    gmx_simd4_real_t simdX  = setSimd4RealFrom3R(1, 2, 3);
-    gmx_simd4_real_t simdY  = setSimd4RealFrom3R(3, 0, 5);
-    gmx_simd4_real_t simdZ  = setSimd4RealFrom3R(4, 1, 8);
-    gmx_simd4_real_t simdR2 = setSimd4RealFrom3R(26, 5, 98);
-
-    setUlpTol(2);
-    GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, gmx_simd4_calc_rsq_r(simdX, simdY, simdZ));
-}
-
-#endif      // GMX_SIMD4_HAVE_REAL
-
-/*! \} */
-/*! \endcond */
-
-}      // namespace
-}      // namespace
-}      // namespace
-
-#endif // GMX_SIMD
+#endif /* GMX_SIMD_IMPL_NONE_H */

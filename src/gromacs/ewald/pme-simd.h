@@ -39,13 +39,13 @@
 #include "gromacs/simd/simd.h"
 
 /* Check if we have 4-wide SIMD macro support */
-#if (defined GMX_SIMD4_HAVE_REAL)
+#if GMX_SIMD4_HAVE_REAL
 /* Do PME spread and gather with 4-wide SIMD.
  * NOTE: SIMD is only used with PME order 4 and 5 (which are the most common).
  */
 #    define PME_SIMD4_SPREAD_GATHER
 
-#    if (defined GMX_SIMD_HAVE_LOADU) && (defined GMX_SIMD_HAVE_STOREU)
+#    if GMX_SIMD_HAVE_LOADU && GMX_SIMD_HAVE_STOREU
 /* With PME-order=4 on x86, unaligned load+store is slightly faster
  * than doubling all SIMD operations when using aligned load+store.
  */

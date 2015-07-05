@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,10 +44,11 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/genborn_allvsall.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/smalloc.h"
 
 
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
+#if 0 && GMX_SIMD_X86_SSE2_OR_HIGHER
 
 #include <gmx_sse2_double.h>
 
