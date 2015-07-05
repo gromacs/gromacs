@@ -33,12 +33,38 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
+#ifndef GMX_SIMD_IMPLEMENTATION_IBM_VMX_COMMON_H
+#define GMX_SIMD_IMPLEMENTATION_IBM_VMX_COMMON_H
 
-#include "impl_x86_avx_128_fma_simd4_double.h"
-#include "impl_x86_avx_128_fma_simd_double.h"
-#include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+/* Capability definitions for IBM VMX */
+#define GMX_SIMD_HAVE_FLOAT                     1
+#define GMX_SIMD_HAVE_DOUBLE                    0
+#define GMX_SIMD_HAVE_HARDWARE                  1
+#define GMX_SIMD_HAVE_LOADU                     0
+#define GMX_SIMD_HAVE_STOREU                    0
+#define GMX_SIMD_HAVE_LOGICAL                   1
+/* VMX only provides fmadd/fnmadd (our definitions), but not fmsub/fnmsub.
+ * However, fnmadd is what we need for 1/sqrt(x).
+ */
+#define GMX_SIMD_HAVE_FMA                       1
+#define GMX_SIMD_HAVE_FRACTION                  0
+#define GMX_SIMD_HAVE_FINT32                    1
+#define GMX_SIMD_HAVE_FINT32_EXTRACT            0
+#define GMX_SIMD_HAVE_FINT32_LOGICAL            1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS        1
+#define GMX_SIMD_HAVE_DINT32                    0
+#define GMX_SIMD_HAVE_DINT32_EXTRACT            0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL            0
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS        0
+#define GMX_SIMD4_HAVE_FLOAT                    1
+#define GMX_SIMD4_HAVE_DOUBLE                   0
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */
+/* Implementation details */
+#define GMX_SIMD_FLOAT_WIDTH                    4
+#undef  GMX_SIMD_DOUBLE_WIDTH
+#define GMX_SIMD_FINT32_WIDTH                   4
+#undef  GMX_SIMD_DINT32_WIDTH
+#define GMX_SIMD_RSQRT_BITS                    14
+#define GMX_SIMD_RCP_BITS                      14
+
+#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VMX_COMMON_H */

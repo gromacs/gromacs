@@ -33,12 +33,48 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H
+#define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H
 
-#include "impl_x86_avx_128_fma_simd4_double.h"
-#include "impl_x86_avx_128_fma_simd_double.h"
-#include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+#include "config.h"
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */
+#include <immintrin.h>
+
+#include "impl_x86_avx_512er_common.h"
+
+#undef  gmx_simd_rsqrt_f
+#define gmx_simd_rsqrt_f           _mm512_rsqrt28_ps
+
+#undef  gmx_simd_rcp_f
+#define gmx_simd_rcp_f             _mm512_rcp28_ps
+
+#undef  gmx_simd_exp_f
+#define gmx_simd_exp_f(x)          gmx_simd_exp_f_x86_avx_512er(x)
+
+/* Implementation helper */
+
+static gmx_inline __m512 gmx_simdcall
+gmx_simd_exp_f_x86_avx_512er(__m512 x)
+{
+    const gmx_simd_float_t  argscale    = gmx_simd_set1_f(1.44269504088896341f);
+    const gmx_simd_float_t  invargscale = gmx_simd_set1_f(-0.69314718055994528623f);
+
+    __m512                  xscaled = _mm512_mul_ps(x, argscale);
+    __m512                  r       = _mm512_exp2a23_ps(xscaled);
+
+    /* exp2a23_ps provides 23 bits of accuracy, but we ruin some of that with our argument
+     * scaling. To correct this, we find the difference between the scaled argument and
+     * the true one (extended precision arithmetics does not appear to be necessary to
+     * fulfill our accuracy requirements) and then multiply by the exponent of this
+     * correction since exp(a+b)=exp(a)*exp(b).
+     * Note that this only adds two instructions (and maybe some constant loads).
+     */
+    x         = gmx_simd_fmadd_f(invargscale, xscaled, x);
+    /* x will now be a _very_ small number, so approximate exp(x)=1+x.
+     * We should thus apply the correction as r'=r*(1+x)=r+r*x
+     */
+    r         = gmx_simd_fmadd_f(r, x, r);
+    return r;
+}
+
+#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H */
