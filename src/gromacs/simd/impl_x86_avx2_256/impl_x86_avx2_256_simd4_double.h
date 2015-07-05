@@ -33,12 +33,24 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
+#ifndef GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H
 
-#include "impl_x86_avx_128_fma_simd4_double.h"
-#include "impl_x86_avx_128_fma_simd_double.h"
-#include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+#include <immintrin.h>
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */
+#include "impl_x86_avx2_256_common.h"
+#include "impl_x86_avx2_256_simd_double.h"
+
+/****************************************************
+ *      SIMD4 DOUBLE PRECISION IMPLEMENTATION       *
+ ****************************************************/
+#undef  gmx_simd4_fmadd_d
+#define gmx_simd4_fmadd_d          _mm256_fmadd_pd
+#undef  gmx_simd4_fmsub_d
+#define gmx_simd4_fmsub_d          _mm256_fmsub_pd
+#undef  gmx_simd4_fnmadd_d
+#define gmx_simd4_fnmadd_d         _mm256_fnmadd_pd
+#undef  gmx_simd4_fnmsub_d
+#define gmx_simd4_fnmsub_d         _mm256_fnmsub_pd
+
+#endif /* GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H */

@@ -33,12 +33,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H
 
-#include "impl_x86_avx_128_fma_simd4_double.h"
-#include "impl_x86_avx_128_fma_simd_double.h"
-#include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+#include <immintrin.h>
+#include <x86intrin.h>
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */
+#include "impl_x86_avx_128_fma_common.h"
+
+#undef  gmx_simd_fmadd_d
+#define gmx_simd_fmadd_d                 _mm_macc_pd
+#undef  gmx_simd_fmsub_d
+#define gmx_simd_fmsub_d                 _mm_msub_pd
+#undef  gmx_simd_fnmadd_d
+#define gmx_simd_fnmadd_d                _mm_nmacc_pd
+#undef  gmx_simd_fnmsub_d
+#define gmx_simd_fnmsub_d                _mm_nmsub_pd
+#undef  gmx_simd_fraction_d
+#define gmx_simd_fraction_d              _mm_frcz_pd
+
+#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H */
