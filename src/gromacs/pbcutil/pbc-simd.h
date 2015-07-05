@@ -63,7 +63,7 @@ extern "C" {
  * This can avoid some ifdef'ing.
  */
 typedef struct {
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
     gmx_simd_real_t inv_bzz; /**< 1/box[ZZ][ZZ] */
     gmx_simd_real_t inv_byy; /**< 1/box[YY][YY] */
     gmx_simd_real_t inv_bxx; /**< 1/box[XX][XX] */
@@ -87,7 +87,7 @@ typedef struct {
 void set_pbc_simd(const t_pbc *pbc,
                   pbc_simd_t  *pbc_simd);
 
-#if defined GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 
 /*! \brief Correct SIMD distance vector *dx,*dy,*dz for PBC using SIMD.
  *

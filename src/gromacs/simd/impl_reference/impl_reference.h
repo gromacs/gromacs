@@ -58,52 +58,52 @@
  *  \{
  */
 
+/*! \brief 1 when some sort of SIMD software layer is available (maybe reference) */
+#define GMX_SIMD                             1
+
+/*! \brief 1 if SIMD is implemented with real hardware instructions, otherwise 0 */
+#define GMX_SIMD_HAVE_HARDWARE               0
+
 /*! \brief
- * Defined when SIMD float support is present.
+ * 1 when SIMD float support is present, otherwise 0
  *
  * You should only use this to specifically check for single precision SIMD,
  * support, even when the rest of Gromacs uses double precision.
  * \sa GMX_SIMD_HAVE_REAL, GMX_SIMD_HAVE_DOUBLE
  */
-#define GMX_SIMD_HAVE_FLOAT
+#define GMX_SIMD_HAVE_FLOAT                  1
 
-/*! \brief Defined if SIMD double support is present. */
-#define GMX_SIMD_HAVE_DOUBLE
+/*! \brief 1 if SIMD double support is present, otherwise 0 */
+#define GMX_SIMD_HAVE_DOUBLE                 1
 
-/*! \brief Defined if SIMD is implemented with real hardware instructions. */
-#define GMX_SIMD_HAVE_HARDWARE /* For Doxygen */
-#undef  GMX_SIMD_HAVE_HARDWARE /* Reference implementation setting */
+/*! \brief 1 if the SIMD implementation supports unaligned loads, otherwise 0 */
+#define GMX_SIMD_HAVE_LOADU                  1
 
-/*! \brief Defined if the SIMD implementation supports unaligned loads. */
-#define GMX_SIMD_HAVE_LOADU
+/*! \brief 1 if the SIMD implementation supports unaligned stores, otherwise 0 */
+#define GMX_SIMD_HAVE_STOREU                 1
 
-/*! \brief Defined if the SIMD implementation supports unaligned stores. */
-#define GMX_SIMD_HAVE_STOREU
+/*! \brief 1 if SIMD impl has logical operations on floating-point data, otherwise 0 */
+#define GMX_SIMD_HAVE_LOGICAL                1
 
-/*! \brief Defined if SIMD implementation has logical operations on floating-point data. */
-#define GMX_SIMD_HAVE_LOGICAL
+/*! \brief 1 if SIMD fused multiply-add uses hardware instructions, otherwise 0 */
+#define GMX_SIMD_HAVE_FMA                    0
 
-/*! \brief Defined if SIMD fused multiply-add uses hardware instructions */
-#define GMX_SIMD_HAVE_FMA  /* For Doxygen */
-#undef  GMX_SIMD_HAVE_FMA  /* Reference implementation setting */
+/*! \brief 1 if the SIMD fraction has a direct hardware instruction, otherwise 0 */
+#define GMX_SIMD_HAVE_FRACTION               0
 
-/*! \brief Defined if the SIMD fraction has a direct hardware instruction. */
-#define GMX_SIMD_HAVE_FRACTION /* For Doxygen */
-#undef  GMX_SIMD_HAVE_FRACTION /* Reference implementation setting */
+/*! \brief 1 if the SIMD implementation has \ref gmx_simd_fint32_t, otherwise 0 */
+#define GMX_SIMD_HAVE_FINT32                 1
 
-/*! \brief Defined if the SIMD implementation has \ref gmx_simd_fint32_t. */
-#define GMX_SIMD_HAVE_FINT32
+/*! \brief Support for extracting integers from \ref gmx_simd_fint32_t (1/0 for present/absent) */
+#define GMX_SIMD_HAVE_FINT32_EXTRACT         1
 
-/*! \brief Support for extracting integers from \ref gmx_simd_fint32_t. */
-#define GMX_SIMD_HAVE_FINT32_EXTRACT
+/*! \brief 1 if SIMD logical ops are supported for \ref gmx_simd_fint32_t, otherwise 0 */
+#define GMX_SIMD_HAVE_FINT32_LOGICAL         1
 
-/*! \brief Defined if SIMD logical operations are supported for \ref gmx_simd_fint32_t */
-#define GMX_SIMD_HAVE_FINT32_LOGICAL
+/*! \brief 1 if SIMD arithmetic ops are supported for \ref gmx_simd_fint32_t, otherwise 0 */
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS     1
 
-/*! \brief Defined if SIMD arithmetic operations are supported for \ref gmx_simd_fint32_t */
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS
-
-/*! \brief Defined if the SIMD implementation has \ref gmx_simd_dint32_t.
+/*! \brief 1 if the SIMD implementation has \ref gmx_simd_dint32_t, otherwise 0.
  *
  * \note The Gromacs SIMD module works entirely with 32 bit integers, both
  * in single and double precision, since some platforms do not support 64 bit
@@ -124,22 +124,22 @@
  * provide separate defines for the width of SIMD integer variables that you
  * should use.
  */
-#define GMX_SIMD_HAVE_DINT32
+#define GMX_SIMD_HAVE_DINT32                 1
 
-/*! \brief Support for extracting integer from \ref gmx_simd_dint32_t */
-#define GMX_SIMD_HAVE_DINT32_EXTRACT
+/*! \brief Support for extracting integer from \ref gmx_simd_dint32_t (1/0 for present/absent) */
+#define GMX_SIMD_HAVE_DINT32_EXTRACT         1
 
-/*! \brief Defined if logical operations are supported for \ref gmx_simd_dint32_t */
-#define GMX_SIMD_HAVE_DINT32_LOGICAL
+/*! \brief 1 if logical operations are supported for \ref gmx_simd_dint32_t, otherwise 0 */
+#define GMX_SIMD_HAVE_DINT32_LOGICAL         1
 
-/*! \brief Defined if SIMD arithmetic operations are supported for \ref gmx_simd_dint32_t */
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS
+/*! \brief 1 if SIMD arithmetic ops are supported for \ref gmx_simd_dint32_t, otherwise 0 */
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS     1
 
-/*! \brief Defined if the implementation provides \ref gmx_simd4_float_t. */
-#define GMX_SIMD4_HAVE_FLOAT
+/*! \brief 1 if implementation provides \ref gmx_simd4_float_t, otherwise 0 */
+#define GMX_SIMD4_HAVE_FLOAT                 1
 
-/*! \brief Defined if the implementation provides \ref gmx_simd4_double_t. */
-#define GMX_SIMD4_HAVE_DOUBLE
+/*! \brief 1 if the implementation provides \ref gmx_simd4_double_t, otherwise 0 */
+#define GMX_SIMD4_HAVE_DOUBLE                1
 
 #ifdef GMX_SIMD_REF_FLOAT_WIDTH
 #    define GMX_SIMD_FLOAT_WIDTH             GMX_SIMD_REF_FLOAT_WIDTH
@@ -877,7 +877,7 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  *
  * You should typically call the real-precision \ref gmx_simd_fmadd_r.
  *
- *  If \ref GMX_SIMD_HAVE_FMA is defined this is a single hardware instruction.
+ *  If \ref GMX_SIMD_HAVE_FMA is 1 this is a single hardware instruction.
  *
  * \param a value
  * \param b value
@@ -894,7 +894,7 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  *
  * You should typically call the real-precision \ref gmx_simd_fmsub_r.
  *
- *  If \ref GMX_SIMD_HAVE_FMA is defined this is a single hardware instruction.
+ *  If \ref GMX_SIMD_HAVE_FMA is 1 this is a single hardware instruction.
  *
  * \param a value
  * \param b value
@@ -911,7 +911,7 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  *
  * You should typically call the real-precision \ref gmx_simd_fnmadd_r.
  *
- *  If \ref GMX_SIMD_HAVE_FMA is defined this is a single hardware instruction.
+ *  If \ref GMX_SIMD_HAVE_FMA is 1 this is a single hardware instruction.
  *
  * \param a value
  * \param b value
@@ -928,7 +928,7 @@ gmx_simd_mul_f(gmx_simd_float_t a, gmx_simd_float_t b)
  *
  * You should typically call the real-precision \ref gmx_simd_fnmsub_r.
  *
- *  If \ref GMX_SIMD_HAVE_FMA is defined this is a single hardware instruction.
+ *  If \ref GMX_SIMD_HAVE_FMA is 1 this is a single hardware instruction.
  *
  * \param a value
  * \param b value
@@ -2113,7 +2113,7 @@ gmx_simd_reduce_d(gmx_simd_double_t a)
  *  Logical shift. Each element is shifted (independently) up to 32 positions
  *  left, while zeros are shifted in from the right. Only available if
  * \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single) or \ref GMX_SIMD_HAVE_DINT32_LOGICAL
- *  (double) is defined.
+ *  (double) is 1.
  *
  * \param a integer data to shift
  * \param n number of positions to shift left. n<=32.
@@ -2139,7 +2139,7 @@ gmx_simd_slli_fi(gmx_simd_fint32_t a, int n)
  *  Logical shift. Each element is shifted (independently) up to 32 positions
  *  right, while zeros are shifted in from the left. Only available if
  * \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single) or \ref GMX_SIMD_HAVE_DINT32_LOGICAL
- *  (double) is defined.
+ *  (double) is 1.
  *
  * \param a integer data to shift
  * \param n number of positions to shift right. n<=32.
@@ -2163,7 +2163,7 @@ gmx_simd_srli_fi(gmx_simd_fint32_t a, int n)
  * You should typically call the real-precision \ref gmx_simd_and_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is 1.
  *
  * \note You can \a not use this operation directly to select based on a boolean
  * SIMD variable, since booleans are separate from integer SIMD. If that
@@ -2191,7 +2191,7 @@ gmx_simd_and_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_andnot_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is 1.
  *
  * Note that you can NOT use this operation directly to select based on a boolean
  * SIMD variable, since booleans are separate from integer SIMD. If that
@@ -2219,7 +2219,7 @@ gmx_simd_andnot_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_or_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is 1.
  *
  * \param a first integer SIMD
  * \param b second integer SIMD
@@ -2243,7 +2243,7 @@ gmx_simd_or_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_xor_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_LOGICAL (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_LOGICAL (double) is 1.
  *
  * \param a first integer SIMD
  * \param b second integer SIMD
@@ -2272,7 +2272,7 @@ gmx_simd_xor_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_xor_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a term1
  * \param b term2
@@ -2296,7 +2296,7 @@ gmx_simd_add_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_xor_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a term1
  * \param b term2
@@ -2320,7 +2320,7 @@ gmx_simd_sub_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_xor_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a factor1
  * \param b factor2
@@ -2352,7 +2352,7 @@ gmx_simd_mul_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_cmpeq_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a SIMD integer1
  * \param b SIMD integer2
@@ -2376,7 +2376,7 @@ gmx_simd_cmpeq_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_cmplt_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a SIMD integer1
  * \param b SIMD integer2
@@ -2400,7 +2400,7 @@ gmx_simd_cmplt_fi(gmx_simd_fint32_t a, gmx_simd_fint32_t b)
  * You should typically call the real-precision \ref gmx_simd_and_ib.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a SIMD boolean 1
  * \param b SIMD boolean 2
@@ -2424,7 +2424,7 @@ gmx_simd_and_fib(gmx_simd_fibool_t a, gmx_simd_fibool_t b)
  * You should typically call the real-precision \ref gmx_simd_or_ib.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a SIMD boolean 1
  * \param b SIMD boolean 2
@@ -2448,7 +2448,7 @@ gmx_simd_or_fib(gmx_simd_fibool_t a, gmx_simd_fibool_t b)
  * You should typically call the real-precision \ref gmx_simd_anytrue_ib.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * The actual return value for "any true" will depend on the architecture.
  * Any non-zero value should be considered truth.
@@ -2475,7 +2475,7 @@ gmx_simd_anytrue_fib(gmx_simd_fibool_t a)
  * You should typically call the real-precision \ref gmx_simd_blendzero_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a SIMD integer to select from
  * \param sel Boolean selector
@@ -2499,7 +2499,7 @@ gmx_simd_blendzero_fi(gmx_simd_fint32_t a, gmx_simd_fibool_t sel)
  * You should typically call the real-precision \ref gmx_simd_blendnotzero_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a SIMD integer to select from
  * \param sel Boolean selector
@@ -2523,7 +2523,7 @@ gmx_simd_blendnotzero_fi(gmx_simd_fint32_t a, gmx_simd_fibool_t sel)
  * You should typically call the real-precision \ref gmx_simd_blendv_i.
  *
  * This routine is only available if \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS (single)
- *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is defined.
+ *  or \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS (double) is 1.
  *
  * \param a First source
  * \param b Second source
@@ -3392,7 +3392,7 @@ gmx_simd4_dotproduct3_f(gmx_simd_float_t a, gmx_simd_float_t b)
 #    define gmx_simd4_reduce_f  gmx_simd_reduce_f
 
 #else /* GMX_SIMD_FLOAT_WIDTH!=4 */
-#    undef GMX_SIMD4_HAVE_FLOAT
+#    define GMX_SIMD4_HAVE_FLOAT    0
 #endif
 
 
@@ -3599,7 +3599,7 @@ gmx_simd4_dotproduct3_d(gmx_simd_double_t a, gmx_simd_double_t b)
 #    define gmx_simd4_reduce_d  gmx_simd_reduce_d
 
 #else /* GMX_SIMD4_DOUBLE_WIDTH!=4 */
-#    undef GMX_SIMD4_HAVE_DOUBLE
+#    define GMX_SIMD4_HAVE_DOUBLE      0
 #endif
 
 /*! \} */

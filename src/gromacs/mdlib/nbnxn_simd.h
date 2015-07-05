@@ -39,27 +39,24 @@
 #include "config.h"
 
 #include "gromacs/legacyheaders/typedefs.h"
-
-/* Include SIMD, below we select kernels based on the SIMD width */
 #include "gromacs/simd/simd.h"
 
-#ifdef GMX_SIMD_REFERENCE
+#if GMX_SIMD_REFERENCE
 #define GMX_NBNXN_SIMD
 #endif
 
 /* As we modularize the verlet kernels, we should remove stuff like this
  * that checks internal SIMD implementation details.
  */
-#if (defined GMX_SIMD_X86_SSE2) || (defined GMX_SIMD_X86_SSE4_1) || \
-    (defined GMX_SIMD_X86_AVX_128_FMA) || (defined GMX_SIMD_X86_AVX_256) || \
-    (defined GMX_SIMD_X86_AVX2_256) || (defined GMX_SIMD_IBM_QPX)
+#if GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1 || GMX_SIMD_X86_AVX_128_FMA || \
+    GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256 || GMX_SIMD_IBM_QPX
 /* Use SIMD accelerated nbnxn search and kernels */
 #define GMX_NBNXN_SIMD
 #endif
 
 /* MIC for double is implemented in the SIMD module but so far missing in
    mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_mic.h */
-#if defined GMX_SIMD_X86_MIC && !defined GMX_DOUBLE
+#if GMX_SIMD_X86_MIC && !defined GMX_DOUBLE
 #define GMX_NBNXN_SIMD
 #endif
 

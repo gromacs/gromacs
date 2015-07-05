@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,24 +46,25 @@
  */
 
 /* Capability definitions for ARM 32-bit NEON */
-#define GMX_SIMD_HAVE_FLOAT
-#undef  GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_HARDWARE
-#define GMX_SIMD_HAVE_LOADU
-#define GMX_SIMD_HAVE_STOREU
-#define GMX_SIMD_HAVE_LOGICAL
-#define GMX_SIMD_HAVE_FMA
-#undef  GMX_SIMD_HAVE_FRACTION
-#define GMX_SIMD_HAVE_FINT32
-#define GMX_SIMD_HAVE_FINT32_EXTRACT
-#define GMX_SIMD_HAVE_FINT32_LOGICAL
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS
-#undef  GMX_SIMD_HAVE_DINT32
-#undef  GMX_SIMD_HAVE_DINT32_EXTRACT
-#undef  GMX_SIMD_HAVE_DINT32_LOGICAL
-#undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD4_HAVE_FLOAT
-#undef  GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD                             1
+#define GMX_SIMD_HAVE_HARDWARE               1
+#define GMX_SIMD_HAVE_FLOAT                  1
+#define GMX_SIMD_HAVE_DOUBLE                 0
+#define GMX_SIMD_HAVE_LOADU                  1
+#define GMX_SIMD_HAVE_STOREU                 1
+#define GMX_SIMD_HAVE_LOGICAL                1
+#define GMX_SIMD_HAVE_FMA                    1
+#define GMX_SIMD_HAVE_FRACTION               0
+#define GMX_SIMD_HAVE_FINT32                 1
+#define GMX_SIMD_HAVE_FINT32_EXTRACT         1
+#define GMX_SIMD_HAVE_FINT32_LOGICAL         1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS     1
+#define GMX_SIMD_HAVE_DINT32                 0
+#define GMX_SIMD_HAVE_DINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL         0
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS     0
+#define GMX_SIMD4_HAVE_FLOAT                 1
+#define GMX_SIMD4_HAVE_DOUBLE                0
 
 /* Implementation details */
 #define GMX_SIMD_FLOAT_WIDTH         4
