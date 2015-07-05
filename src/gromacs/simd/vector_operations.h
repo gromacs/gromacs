@@ -59,9 +59,9 @@
  * check-source to know that this file depends on simd.h (though
  * symbols like GMX_SIMD_HAVE_FLOAT are actually defined in its
  * implementation headers). */
-#if (defined GMX_SIMD_HAVE_REAL) || (defined DOXYGEN)
+#if GMX_SIMD_HAVE_REAL || defined DOXYGEN
 
-#if (defined GMX_SIMD_HAVE_FLOAT) || (defined DOXYGEN)
+#if GMX_SIMD_HAVE_FLOAT || defined DOXYGEN
 /*! \brief SIMD float inner product of multiple float vectors.
  *
  * For normal usage you should always call the real-precision \ref gmx_simd_iprod_r.
@@ -157,7 +157,7 @@ gmx_simd_cprod_f(gmx_simd_float_t ax, gmx_simd_float_t ay, gmx_simd_float_t az,
 }
 #endif /* GMX_SIMD_HAVE_FLOAT */
 
-#if (defined GMX_SIMD_HAVE_DOUBLE) || (defined DOXYGEN)
+#if GMX_SIMD_HAVE_DOUBLE || defined DOXYGEN
 /*! \brief SIMD double inner product of multiple double vectors.
  *
  * \copydetails gmx_simd_iprod_f
@@ -218,7 +218,7 @@ gmx_simd_cprod_d(gmx_simd_double_t ax, gmx_simd_double_t ay, gmx_simd_double_t a
 #endif /* GMX_SIMD_HAVE_DOUBLE */
 
 
-#if (defined GMX_SIMD4_HAVE_FLOAT) || (defined DOXYGEN)
+#if GMX_SIMD4_HAVE_FLOAT || defined DOXYGEN
 /*! \brief SIMD4 float inner product of four float vectors.
  *
  * \copydetails gmx_simd_norm2_f
@@ -243,7 +243,7 @@ gmx_simd4_norm2_f(gmx_simd4_float_t ax, gmx_simd4_float_t ay, gmx_simd4_float_t 
 
 #endif /* GMX_SIMD4_HAVE_FLOAT */
 
-#if (defined GMX_SIMD4_HAVE_DOUBLE)  || (defined DOXYGEN)
+#if GMX_SIMD4_HAVE_DOUBLE || defined DOXYGEN
 /*! \brief SIMD4 double norm squared of multiple vectors.
  *
  * \copydetails gmx_simd_norm2_f
@@ -335,7 +335,7 @@ gmx_simd4_norm2_d(gmx_simd4_double_t ax, gmx_simd4_double_t ay, gmx_simd4_double
 
 #endif /* GMX_DOUBLE */
 
-#endif /* (defined GMX_SIMD_HAVE REAL) || (defined DOXYGEN) */
+#endif /* GMX_SIMD_HAVE REAL || defined DOXYGEN */
 
 /*! \} */
 /*! \endcond */

@@ -49,7 +49,7 @@
 
 #include "pme-internal.h"
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
 #    define PME_SIMD_SOLVE
 #endif
