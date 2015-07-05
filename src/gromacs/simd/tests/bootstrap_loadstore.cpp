@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,8 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/real.h"
 
+#if GMX_SIMD
+
 namespace
 {
 
@@ -66,14 +68,14 @@ namespace
 
 TEST(SimdBootstrapTest, gmxSimdAlign)
 {
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
     real rdata[GMX_SIMD_REAL_WIDTH*2];
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
         EXPECT_EQ(((size_t)gmx_simd_align_r(&rdata[i]) & (GMX_SIMD_REAL_WIDTH*sizeof(real)-1)), (size_t)0);
     }
 #endif
-#ifdef GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32
     int idata[GMX_SIMD_INT32_WIDTH*2];
     for (int i = 0; i < GMX_SIMD_INT32_WIDTH; i++)
     {
@@ -131,7 +133,7 @@ simdLoadStoreTester(TSimd simdLoadFn(T* mem), void simdStoreFn(T* mem, TSimd),
     }
 }
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 //! Wrapper for SIMD macro to load aligned floating-point data.
 gmx_simd_real_t wrapperSimdLoadR(real *m)
 {
@@ -148,7 +150,7 @@ TEST(SimdBootstrapTest, gmxSimdLoadStoreR)
     simdLoadStoreTester(wrapperSimdLoadR, wrapperSimdStoreR, gmx_simd_align_r, 0, 0, GMX_SIMD_REAL_WIDTH);
 }
 
-#    ifdef GMX_SIMD_HAVE_LOADU
+#    if GMX_SIMD_HAVE_LOADU
 //! Wrapper for SIMD macro to load unaligned floating-point data.
 gmx_simd_real_t WrapperSimdLoadUR(real *m)
 {
@@ -164,7 +166,7 @@ TEST(SimdBootstrapTest, gmxSimdLoadUR)
 }
 #    endif
 
-#    ifdef GMX_SIMD_HAVE_STOREU
+#    if GMX_SIMD_HAVE_STOREU
 //! Wrapper for SIMD macro to store to unaligned floating-point data.
 void WrapperSimdStoreUR(real *m, gmx_simd_real_t s)
 {
@@ -181,7 +183,7 @@ TEST(SimdBootstrapTest, gmxSimdStoreUR)
 #    endif
 #endif
 
-#ifdef GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32
 // Tests for gmx_simd_int32_t load & store operations
 
 //! Wrapper for SIMD macro to load aligned integer data.
@@ -200,7 +202,7 @@ TEST(SimdBootstrapTest, gmxSimdLoadStoreI)
     simdLoadStoreTester(wrapperSimdLoadI, wrapperSimdStoreI, gmx_simd_align_i, 0, 0, GMX_SIMD_INT32_WIDTH);
 }
 
-#    ifdef GMX_SIMD_HAVE_LOADU
+#    if GMX_SIMD_HAVE_LOADU
 //! Wrapper for SIMD macro to load unaligned integer data.
 gmx_simd_int32_t wrapperSimdLoadUI(int *m)
 {
@@ -216,7 +218,7 @@ TEST(SimdBootstrapTest, gmxSimdLoadUI)
 }
 #    endif
 
-#    ifdef GMX_SIMD_HAVE_STOREU
+#    if GMX_SIMD_HAVE_STOREU
 //! Wrapper for SIMD macro to store to unaligned integer data.
 void wrapperSimdStoreUI(int *m, gmx_simd_int32_t s)
 {
@@ -233,7 +235,7 @@ TEST(SimdBootstrapTest, gmxSimdStoreUI)
 #    endif
 #endif
 
-#ifdef GMX_SIMD4_HAVE_REAL
+#if GMX_SIMD4_HAVE_REAL
 /* Tests for gmx_simd4_real_t load & store operations. Define wrapper functions
  * for the SIMD instructions that are typically implemented as macros.
  */
@@ -303,7 +305,7 @@ TEST(SimdBootstrapTest, gmxSimd4LoadStoreR)
     simd4LoadStoreTester(wrapperSimd4LoadR, wrapperSimd4StoreR, gmx_simd4_align_r, 0, 0);
 }
 
-#    ifdef GMX_SIMD_HAVE_LOADU
+#    if GMX_SIMD_HAVE_LOADU
 //! Wrapper for SIMD4 macro to load unaligned floating-point data.
 gmx_simd4_real_t WrapperSimd4LoadUR(real *m)
 {
@@ -319,7 +321,7 @@ TEST(SimdBootstrapTest, gmxSimd4LoadUR)
 }
 #    endif
 
-#    ifdef GMX_SIMD_HAVE_STOREU
+#    if GMX_SIMD_HAVE_STOREU
 //! Wrapper for SIMD4 macro to store to unaligned floating-point data.
 void WrapperSimd4StoreUR(real *m, gmx_simd4_real_t s)
 {
@@ -339,4 +341,6 @@ TEST(SimdBootstrapTest, gmxSimd4StoreUR)
 /*! \} */
 /*! \endcond */
 
-} // namespace
+}      // namespace
+
+#endif // GMX_SIMD

@@ -463,7 +463,6 @@
 #endif
     frac_S0     = gmx_simd_sub_r(rs_S0, rf_S0);
     frac_S2     = gmx_simd_sub_r(rs_S2, rf_S2);
-
     /* Load and interpolate table forces and possibly energies.
      * Force and energy can be combined in one table, stride 4: FDV0
      * or in two separate tables with stride 1: F and V

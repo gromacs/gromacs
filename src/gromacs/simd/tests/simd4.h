@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,8 @@
 
 #include "base.h"
 
+#if GMX_SIMD
+
 namespace gmx
 {
 namespace test
@@ -64,7 +66,7 @@ namespace test
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#ifdef GMX_SIMD4_HAVE_REAL
+#if GMX_SIMD4_HAVE_REAL
 extern const gmx_simd4_real_t rSimd4_1_2_3;     //!< Generic (different) fp values.
 extern const gmx_simd4_real_t rSimd4_4_5_6;     //!< Generic (different) fp values.
 extern const gmx_simd4_real_t rSimd4_7_8_9;     //!< Generic (different) fp values.
@@ -78,7 +80,7 @@ extern const gmx_simd4_real_t rSimd4_m2p25;     //!< Negative value that rounds 
 extern const gmx_simd4_real_t rSimd4_m3p75;     //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const gmx_simd4_real_t rSimd4_Exp;
-#    if (defined GMX_SIMD_HAVE_DOUBLE) && (defined GMX_DOUBLE)
+#    if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 extern const gmx_simd4_real_t rSimd4_ExpDouble;
 #    endif
@@ -175,5 +177,7 @@ gmx_simd4_real_t   setSimd4RealFrom1R(real value);
 
 }      // namespace
 }      // namespace
+
+#endif // GMX_SIMD
 
 #endif // GMX_SIMD_TESTS_SIMD4_H

@@ -63,6 +63,8 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/real.h"
 
+#if GMX_SIMD
+
 /*! \cond libapi */
 /*! \addtogroup module_simd */
 /*! \{ */
@@ -73,7 +75,7 @@
 
 /*! \} */
 
-#ifdef GMX_SIMD_HAVE_FLOAT
+#if GMX_SIMD_HAVE_FLOAT
 
 /*! \name Single precision SIMD math functions
  *
@@ -117,7 +119,7 @@ gmx_simd_sum4_f(gmx_simd_float_t a, gmx_simd_float_t b,
 static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_xor_sign_f(gmx_simd_float_t a, gmx_simd_float_t b)
 {
-#ifdef GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     return gmx_simd_xor_f(a, gmx_simd_and_f(gmx_simd_set1_f(GMX_FLOAT_NEGZERO), b));
 #else
     return gmx_simd_blendv_f(a, gmx_simd_fneg_f(a), gmx_simd_cmplt_f(b, gmx_simd_setzero_f()));
@@ -137,7 +139,7 @@ gmx_simd_xor_sign_f(gmx_simd_float_t a, gmx_simd_float_t b)
 static gmx_inline gmx_simd_float_t gmx_simdcall
 gmx_simd_rsqrt_iter_f(gmx_simd_float_t lu, gmx_simd_float_t x)
 {
-#    ifdef GMX_SIMD_HAVE_FMA
+#    if GMX_SIMD_HAVE_FMA
     return gmx_simd_fmadd_f(gmx_simd_fnmadd_f(x, gmx_simd_mul_f(lu, lu), gmx_simd_set1_f(1.0f)), gmx_simd_mul_f(lu, gmx_simd_set1_f(0.5f)), lu);
 #    else
     return gmx_simd_mul_f(gmx_simd_set1_f(0.5f), gmx_simd_mul_f(gmx_simd_sub_f(gmx_simd_set1_f(3.0f), gmx_simd_mul_f(gmx_simd_mul_f(lu, lu), x)), lu));
@@ -649,7 +651,7 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
      * fp numbers, and perform a logical or. Since the expression is constant,
      * we can at least hope it is evaluated at compile-time.
      */
-#ifdef GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     const gmx_simd_float_t  sieve    = gmx_simd_or_f(gmx_simd_set1_f(-5.965323564e+29f), gmx_simd_set1_f(7.05044434e-30f));
 #else
     const int               isieve   = 0xFFFFF000;
@@ -707,7 +709,7 @@ gmx_simd_erfc_f(gmx_simd_float_t x)
      * in double, but we still need memory as a backup when that is not available,
      * and this case is rare enough that we go directly there...
      */
-#ifdef GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     z       = gmx_simd_and_f(y, sieve);
 #else
     gmx_simd_store_f(pmem, y);
@@ -798,7 +800,7 @@ gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t
     gmx_simd_float_t        ssign, csign;
     gmx_simd_float_t        x2, y, z, psin, pcos, sss, ccc;
     gmx_simd_fbool_t        mask;
-#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if GMX_SIMD_HAVE_FINT32 && GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     const gmx_simd_fint32_t ione            = gmx_simd_set1_fi(1);
     const gmx_simd_fint32_t itwo            = gmx_simd_set1_fi(2);
     gmx_simd_fint32_t       iy;
@@ -844,7 +846,7 @@ gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t
      * two GMX_SIMD_HAVE_LOGICAL sections in this routine must either both be
      * active or inactive - you will get errors if only one is used.
      */
-#    ifdef GMX_SIMD_HAVE_LOGICAL
+#    if GMX_SIMD_HAVE_LOGICAL
     ssign   = gmx_simd_and_f(ssign, gmx_simd_set1_f(GMX_FLOAT_NEGZERO));
     csign   = gmx_simd_andnot_f(q, gmx_simd_set1_f(GMX_FLOAT_NEGZERO));
     ssign   = gmx_simd_xor_f(ssign, csign);
@@ -880,7 +882,7 @@ gmx_simd_sincos_f(gmx_simd_float_t x, gmx_simd_float_t *sinval, gmx_simd_float_t
     sss     = gmx_simd_blendv_f(pcos, psin, mask);
     ccc     = gmx_simd_blendv_f(psin, pcos, mask);
     /* See comment for GMX_SIMD_HAVE_LOGICAL section above. */
-#ifdef GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     *sinval = gmx_simd_xor_f(sss, ssign);
     *cosval = gmx_simd_xor_f(ccc, csign);
 #else
@@ -950,7 +952,7 @@ gmx_simd_tan_f(gmx_simd_float_t x)
     gmx_simd_float_t        x2, p, y, z;
     gmx_simd_fbool_t        mask;
 
-#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if GMX_SIMD_HAVE_FINT32 && GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     gmx_simd_fint32_t  iy;
     gmx_simd_fint32_t  ione = gmx_simd_set1_fi(1);
 
@@ -1381,7 +1383,7 @@ gmx_simd_pmecorrV_f(gmx_simd_float_t z2)
 
 /*! \} */
 
-#ifdef GMX_SIMD_HAVE_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE
 
 /*! \name Double precision SIMD math functions
  *
@@ -1419,7 +1421,7 @@ gmx_simd_sum4_d(gmx_simd_double_t a, gmx_simd_double_t b,
 static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_xor_sign_d(gmx_simd_double_t a, gmx_simd_double_t b)
 {
-#ifdef GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     return gmx_simd_xor_d(a, gmx_simd_and_d(gmx_simd_set1_d(GMX_DOUBLE_NEGZERO), b));
 #else
     return gmx_simd_blendv_d(a, gmx_simd_fneg_d(a), gmx_simd_cmplt_d(b, gmx_simd_setzero_d()));
@@ -1434,7 +1436,7 @@ gmx_simd_xor_sign_d(gmx_simd_double_t a, gmx_simd_double_t b)
 static gmx_inline gmx_simd_double_t gmx_simdcall
 gmx_simd_rsqrt_iter_d(gmx_simd_double_t lu, gmx_simd_double_t x)
 {
-#ifdef GMX_SIMD_HAVE_FMA
+#if GMX_SIMD_HAVE_FMA
     return gmx_simd_fmadd_d(gmx_simd_fnmadd_d(x, gmx_simd_mul_d(lu, lu), gmx_simd_set1_d(1.0)), gmx_simd_mul_d(lu, gmx_simd_set1_d(0.5)), lu);
 #else
     return gmx_simd_mul_d(gmx_simd_set1_d(0.5), gmx_simd_mul_d(gmx_simd_sub_d(gmx_simd_set1_d(3.0), gmx_simd_mul_d(gmx_simd_mul_d(lu, lu), x)), lu));
@@ -1501,7 +1503,7 @@ static gmx_inline void gmx_simdcall
 gmx_simd_invsqrt_pair_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
                         gmx_simd_double_t *out0, gmx_simd_double_t *out1)
 {
-#if (defined GMX_SIMD_HAVE_FLOAT) && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
+#if GMX_SIMD_HAVE_FLOAT && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
     gmx_simd_float_t  xf  = gmx_simd_cvt_dd2f(x0, x1);
     gmx_simd_float_t  luf = gmx_simd_rsqrt_f(xf);
     gmx_simd_double_t lu0, lu1;
@@ -2156,7 +2158,7 @@ gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_doubl
     gmx_simd_double_t        ssign, csign;
     gmx_simd_double_t        x2, y, z, psin, pcos, sss, ccc;
     gmx_simd_dbool_t         mask;
-#if (defined GMX_SIMD_HAVE_DINT32) && (defined GMX_SIMD_HAVE_DINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if GMX_SIMD_HAVE_DINT32 && GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     const gmx_simd_dint32_t  ione            = gmx_simd_set1_di(1);
     const gmx_simd_dint32_t  itwo            = gmx_simd_set1_di(2);
     gmx_simd_dint32_t        iy;
@@ -2202,7 +2204,7 @@ gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_doubl
      * two GMX_SIMD_HAVE_LOGICAL sections in this routine must either both be
      * active or inactive - you will get errors if only one is used.
      */
-#    ifdef GMX_SIMD_HAVE_LOGICAL
+#    if GMX_SIMD_HAVE_LOGICAL
     ssign   = gmx_simd_and_d(ssign, gmx_simd_set1_d(GMX_DOUBLE_NEGZERO));
     csign   = gmx_simd_andnot_d(q, gmx_simd_set1_d(GMX_DOUBLE_NEGZERO));
     ssign   = gmx_simd_xor_d(ssign, csign);
@@ -2243,7 +2245,7 @@ gmx_simd_sincos_d(gmx_simd_double_t x, gmx_simd_double_t *sinval, gmx_simd_doubl
     sss     = gmx_simd_blendv_d(pcos, psin, mask);
     ccc     = gmx_simd_blendv_d(psin, pcos, mask);
     /* See comment for GMX_SIMD_HAVE_LOGICAL section above. */
-#ifdef GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     *sinval = gmx_simd_xor_d(sss, ssign);
     *cosval = gmx_simd_xor_d(ccc, csign);
 #else
@@ -2307,7 +2309,7 @@ gmx_simd_tan_d(gmx_simd_double_t x)
     gmx_simd_double_t        x2, p, y, z;
     gmx_simd_dbool_t         mask;
 
-#if (defined GMX_SIMD_HAVE_DINT32) && (defined GMX_SIMD_HAVE_DINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if GMX_SIMD_HAVE_DINT32 && GMX_SIMD_HAVE_DINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     gmx_simd_dint32_t  iy;
     gmx_simd_dint32_t  ione = gmx_simd_set1_di(1);
 
@@ -2848,7 +2850,7 @@ static gmx_inline void gmx_simdcall
 gmx_simd_invsqrt_pair_singleaccuracy_d(gmx_simd_double_t x0,    gmx_simd_double_t x1,
                                        gmx_simd_double_t *out0, gmx_simd_double_t *out1)
 {
-#if (defined GMX_SIMD_HAVE_FLOAT) && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
+#if GMX_SIMD_HAVE_FLOAT && (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
     gmx_simd_float_t  xf  = gmx_simd_cvt_dd2f(x0, x1);
     gmx_simd_float_t  luf = gmx_simd_rsqrt_f(xf);
     gmx_simd_double_t lu0, lu1;
@@ -3353,7 +3355,7 @@ gmx_simd_sincos_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_double_t *sinval,
     gmx_simd_double_t        ssign, csign;
     gmx_simd_double_t        x2, y, z, psin, pcos, sss, ccc;
     gmx_simd_dbool_t         mask;
-#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if GMX_SIMD_HAVE_FINT32 && GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     const gmx_simd_dint32_t  ione            = gmx_simd_set1_di(1);
     const gmx_simd_dint32_t  itwo            = gmx_simd_set1_di(2);
     gmx_simd_dint32_t        iy;
@@ -3399,7 +3401,7 @@ gmx_simd_sincos_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_double_t *sinval,
      * two GMX_SIMD_HAVE_LOGICAL sections in this routine must either both be
      * active or inactive - you will get errors if only one is used.
      */
-#    ifdef GMX_SIMD_HAVE_LOGICAL
+#    if GMX_SIMD_HAVE_LOGICAL
     ssign   = gmx_simd_and_d(ssign, gmx_simd_set1_d(-0.0));
     csign   = gmx_simd_andnot_d(q, gmx_simd_set1_d(-0.0));
     ssign   = gmx_simd_xor_d(ssign, csign);
@@ -3433,7 +3435,7 @@ gmx_simd_sincos_singleaccuracy_d(gmx_simd_double_t x, gmx_simd_double_t *sinval,
     sss     = gmx_simd_blendv_d(pcos, psin, mask);
     ccc     = gmx_simd_blendv_d(psin, pcos, mask);
     /* See comment for GMX_SIMD_HAVE_LOGICAL section above. */
-#ifdef GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     *sinval = gmx_simd_xor_d(sss, ssign);
     *cosval = gmx_simd_xor_d(ccc, csign);
 #else
@@ -3505,7 +3507,7 @@ gmx_simd_tan_singleaccuracy_d(gmx_simd_double_t x)
     gmx_simd_double_t        x2, p, y, z;
     gmx_simd_dbool_t         mask;
 
-#if (defined GMX_SIMD_HAVE_FINT32) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS) && (defined GMX_SIMD_HAVE_LOGICAL)
+#if GMX_SIMD_HAVE_FINT32 && GMX_SIMD_HAVE_FINT32_ARITHMETICS && GMX_SIMD_HAVE_LOGICAL
     gmx_simd_dint32_t  iy;
     gmx_simd_dint32_t  ione = gmx_simd_set1_di(1);
 
@@ -3939,7 +3941,7 @@ gmx_simd_pmecorrV_singleaccuracy_d(gmx_simd_double_t z2)
  */
 
 
-#ifdef GMX_SIMD4_HAVE_FLOAT
+#if GMX_SIMD4_HAVE_FLOAT
 
 /*************************************************************************
  * SINGLE PRECISION SIMD4 MATH FUNCTIONS - JUST A SMALL SUBSET SUPPORTED *
@@ -3963,7 +3965,7 @@ gmx_simd4_sum4_f(gmx_simd4_float_t a, gmx_simd4_float_t b,
 static gmx_inline gmx_simd4_float_t gmx_simdcall
 gmx_simd4_rsqrt_iter_f(gmx_simd4_float_t lu, gmx_simd4_float_t x)
 {
-#    ifdef GMX_SIMD_HAVE_FMA
+#    if GMX_SIMD_HAVE_FMA
     return gmx_simd4_fmadd_f(gmx_simd4_fnmadd_f(x, gmx_simd4_mul_f(lu, lu), gmx_simd4_set1_f(1.0f)), gmx_simd4_mul_f(lu, gmx_simd4_set1_f(0.5f)), lu);
 #    else
     return gmx_simd4_mul_f(gmx_simd4_set1_f(0.5f), gmx_simd4_mul_f(gmx_simd4_sub_f(gmx_simd4_set1_f(3.0f), gmx_simd4_mul_f(gmx_simd4_mul_f(lu, lu), x)), lu));
@@ -3994,7 +3996,7 @@ gmx_simd4_invsqrt_f(gmx_simd4_float_t x)
 
 
 
-#ifdef GMX_SIMD4_HAVE_DOUBLE
+#if GMX_SIMD4_HAVE_DOUBLE
 /*************************************************************************
  * DOUBLE PRECISION SIMD4 MATH FUNCTIONS - JUST A SMALL SUBSET SUPPORTED *
  *************************************************************************/
@@ -4018,7 +4020,7 @@ gmx_simd4_sum4_d(gmx_simd4_double_t a, gmx_simd4_double_t b,
 static gmx_inline gmx_simd4_double_t gmx_simdcall
 gmx_simd4_rsqrt_iter_d(gmx_simd4_double_t lu, gmx_simd4_double_t x)
 {
-#ifdef GMX_SIMD_HAVE_FMA
+#if GMX_SIMD_HAVE_FMA
     return gmx_simd4_fmadd_d(gmx_simd4_fnmadd_d(x, gmx_simd4_mul_d(lu, lu), gmx_simd4_set1_d(1.0)), gmx_simd4_mul_d(lu, gmx_simd4_set1_d(0.5)), lu);
 #else
     return gmx_simd4_mul_d(gmx_simd4_set1_d(0.5), gmx_simd4_mul_d(gmx_simd4_sub_d(gmx_simd4_set1_d(3.0), gmx_simd4_mul_d(gmx_simd4_mul_d(lu, lu), x)), lu));
@@ -4497,5 +4499,7 @@ gmx_simd4_invsqrt_singleaccuracy_d(gmx_simd4_double_t x)
 
 /*! \} */
 /*! \endcond */
+
+#endif /* GMX_SIMD */
 
 #endif /* GMX_SIMD_SIMD_MATH_H_ */

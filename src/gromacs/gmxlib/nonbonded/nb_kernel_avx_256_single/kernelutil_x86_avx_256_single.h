@@ -60,7 +60,7 @@ gmx_mm256_set_m128(__m128 hi, __m128 lo)
 }
 
 /* Work around gcc bug with wrong type for mask formal parameter to maskload/maskstore */
-#ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
 #    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), _mm_castsi128_ps(mask))
 #    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), _mm_castsi128_ps(mask), (x))
 #    define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), _mm256_castsi256_ps(mask))
