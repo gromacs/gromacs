@@ -33,40 +33,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_H
-#define GMX_SIMD_IMPL_ARM_NEON_ASIMD_H
+#ifndef GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
+#define GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
 
-#include <math.h>
+#include "config.h"
 
-#include <arm_neon.h>
+#include <smmintrin.h>
 
-/* ARM (AArch64) NEON Advanced SIMD instruction wrappers
- *
- * Please see documentation in gromacs/simd/simd.h for defines.
- */
+#undef  gmx_simd4_dotproduct3_f
+#define gmx_simd4_dotproduct3_f   gmx_simd4_dotproduct3_f_sse4_1
 
-/* Inherit single-precision and integer part from 32-bit arm */
-#include "gromacs/simd/impl_arm_neon/impl_arm_neon.h"
+/* SIMD4 Dotproduct helper function */
+static gmx_inline float gmx_simdcall
+gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
+{
+    float f;
+    _MM_EXTRACT_FLOAT(f, _mm_dp_ps(a, b, 0x71), 0);
+    return f;
+}
 
-/* Override some capability definitions from ARM 32-bit NEON - we now have double */
-#undef  GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_DOUBLE                  1
-#undef  GMX_SIMD_HAVE_DINT32
-#define GMX_SIMD_HAVE_DINT32                  1
-#undef  GMX_SIMD_HAVE_DINT32_EXTRACT
-#define GMX_SIMD_HAVE_DINT32_EXTRACT          1
-#undef  GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_LOGICAL          1
-#undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS      1
-
-/* Implementation details */
-#define GMX_SIMD_DOUBLE_WIDTH        2
-#define GMX_SIMD_DINT32_WIDTH        2
-
-#include "impl_arm_neon_asimd_simd_float.h"
-#include "impl_arm_neon_asimd_simd_double.h"
-/* There are no improvements in the SIMD4 implementation compared to 32-bit arm */
-/* No double precision SIMD4, since width is only 2 */
-
-#endif /* GMX_SIMD_IMPL_ARM_NEON_ASIMD_H */
+#endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H */

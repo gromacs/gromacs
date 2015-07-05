@@ -38,8 +38,6 @@
 
 #include "config.h"
 
-#include <math.h>
-
 #include <smmintrin.h>
 
 /* x86 SSE4.1 SIMD instruction wrappers
@@ -51,75 +49,9 @@
 /* Inherit most of SSE4.1 from SSE2 */
 #include "gromacs/simd/impl_x86_sse2/impl_x86_sse2.h"
 
-/* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
- * can be implemented more efficiently in SSE4.1.
- */
-#undef  gmx_simd_round_f
-#define gmx_simd_round_f(x)       _mm_round_ps(x, _MM_FROUND_NINT)
-#undef  gmx_simd_trunc_f
-#define gmx_simd_trunc_f(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
-#undef  gmx_simd_round_d
-#define gmx_simd_round_d(x)       _mm_round_pd(x, _MM_FROUND_NINT)
-#undef  gmx_simd_trunc_d
-#define gmx_simd_trunc_d(x)       _mm_round_pd(x, _MM_FROUND_TRUNC)
-
-#undef  gmx_simd_extract_fi
-#define gmx_simd_extract_fi       _mm_extract_epi32
-#undef  gmx_simd_mul_fi
-#define gmx_simd_mul_fi           _mm_mullo_epi32
-
-#undef  gmx_simd_extract_di
-#define gmx_simd_extract_di       _mm_extract_epi32
-#undef  gmx_simd_mul_di
-#define gmx_simd_mul_di           _mm_mullo_epi32
-
-#undef  gmx_simd_blendv_f
-#define gmx_simd_blendv_f         _mm_blendv_ps
-#undef  gmx_simd_blendv_d
-#define gmx_simd_blendv_d         _mm_blendv_pd
-
-#undef  gmx_simd_reduce_f
-#define gmx_simd_reduce_f(a)      gmx_simd_reduce_f_sse4_1(a)
-#undef  gmx_simd_reduce_d
-#define gmx_simd_reduce_d(a)      gmx_simd_reduce_d_sse4_1(a)
-
-#undef  gmx_simd_blendv_fi
-#define gmx_simd_blendv_fi        _mm_blendv_epi8
-#undef  gmx_simd_blendv_di
-#define gmx_simd_blendv_di        _mm_blendv_epi8
-
-#undef  gmx_simd4_dotproduct3_f
-#define gmx_simd4_dotproduct3_f   gmx_simd4_dotproduct3_f_sse4_1
-
-/* SIMD reduction function */
-static gmx_inline float gmx_simdcall
-gmx_simd_reduce_f_sse4_1(__m128 a)
-{
-    float  f;
-
-    a = _mm_hadd_ps(a, a);
-    a = _mm_hadd_ps(a, a);
-    _mm_store_ss(&f, a);
-    return f;
-}
-
-/* SIMD4 Dotproduct helper function */
-static gmx_inline float gmx_simdcall
-gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
-{
-    float f;
-    _MM_EXTRACT_FLOAT(f, _mm_dp_ps(a, b, 0x71), 0);
-    return f;
-}
-
-static gmx_inline double gmx_simdcall
-gmx_simd_reduce_d_sse4_1(__m128d a)
-{
-    double  f;
-
-    a = _mm_hadd_pd(a, a);
-    _mm_store_sd(&f, a);
-    return f;
-}
+#include "impl_x86_sse4_1_simd_float.h"
+#include "impl_x86_sse4_1_simd_double.h"
+#include "impl_x86_sse4_1_simd4_float.h"
+/* SSE4.1 cannot do double precision SIMD4 */
 
 #endif /* GMX_SIMD_IMPL_X86_SSE4_1_H */

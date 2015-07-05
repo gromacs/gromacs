@@ -33,40 +33,46 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_H
-#define GMX_SIMD_IMPL_ARM_NEON_ASIMD_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H
+#define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H
 
 #include <math.h>
 
-#include <arm_neon.h>
+#include <immintrin.h>
 
-/* ARM (AArch64) NEON Advanced SIMD instruction wrappers
- *
- * Please see documentation in gromacs/simd/simd.h for defines.
- */
+#undef  gmx_simd_rsqrt_f
+#define gmx_simd_rsqrt_f           _mm512_rsqrt28_ps
 
-/* Inherit single-precision and integer part from 32-bit arm */
-#include "gromacs/simd/impl_arm_neon/impl_arm_neon.h"
+#undef  gmx_simd_rcp_f
+#define gmx_simd_rcp_f             _mm512_rcp28_ps
 
-/* Override some capability definitions from ARM 32-bit NEON - we now have double */
-#undef  GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_DOUBLE                  1
-#undef  GMX_SIMD_HAVE_DINT32
-#define GMX_SIMD_HAVE_DINT32                  1
-#undef  GMX_SIMD_HAVE_DINT32_EXTRACT
-#define GMX_SIMD_HAVE_DINT32_EXTRACT          1
-#undef  GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_LOGICAL          1
-#undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS      1
+#undef  gmx_simd_exp_f
+#define gmx_simd_exp_f(x)          gmx_simd_exp_f_x86_avx_512er(x)
 
-/* Implementation details */
-#define GMX_SIMD_DOUBLE_WIDTH        2
-#define GMX_SIMD_DINT32_WIDTH        2
+/* Implementation helper */
 
-#include "impl_arm_neon_asimd_simd_float.h"
-#include "impl_arm_neon_asimd_simd_double.h"
-/* There are no improvements in the SIMD4 implementation compared to 32-bit arm */
-/* No double precision SIMD4, since width is only 2 */
+static gmx_inline __m512 gmx_simdcall
+gmx_simd_exp_f_x86_avx_512er(__m512 x)
+{
+    const gmx_simd_float_t  argscale    = gmx_simd_set1_f(1.44269504088896341f);
+    const gmx_simd_float_t  invargscale = gmx_simd_set1_f(-0.69314718055994528623f);
 
-#endif /* GMX_SIMD_IMPL_ARM_NEON_ASIMD_H */
+    __m512                  xscaled = _mm512_mul_ps(x, argscale);
+    __m512                  r       = _mm512_exp2a23_ps(xscaled);
+
+    /* exp2a23_ps provides 23 bits of accuracy, but we ruin some of that with our argument
+     * scaling. To correct this, we find the difference between the scaled argument and
+     * the true one (extended precision arithmetics does not appear to be necessary to
+     * fulfill our accuracy requirements) and then multiply by the exponent of this
+     * correction since exp(a+b)=exp(a)*exp(b).
+     * Note that this only adds two instructions (and maybe some constant loads).
+     */
+    x         = gmx_simd_fmadd_f(invargscale, xscaled, x);
+    /* x will now be a _very_ small number, so approximate exp(x)=1+x.
+     * We should thus apply the correction as r'=r*(1+x)=r+r*x
+     */
+    r         = gmx_simd_fmadd_f(r, x, r);
+    return r;
+}
+
+#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H */

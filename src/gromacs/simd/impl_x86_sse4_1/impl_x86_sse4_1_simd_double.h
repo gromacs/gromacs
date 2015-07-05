@@ -33,40 +33,45 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_H
-#define GMX_SIMD_IMPL_ARM_NEON_ASIMD_H
+#ifndef GMX_SIMD_IMPL_X86_SSE4_1_SIMD_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_SSE4_1_SIMD_DOUBLE_H
 
-#include <math.h>
+#include "config.h"
 
-#include <arm_neon.h>
+#include <smmintrin.h>
 
-/* ARM (AArch64) NEON Advanced SIMD instruction wrappers
- *
- * Please see documentation in gromacs/simd/simd.h for defines.
+/* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
+ * can be implemented more efficiently in SSE4.1.
  */
+#undef  gmx_simd_round_d
+#define gmx_simd_round_d(x)       _mm_round_pd(x, _MM_FROUND_NINT)
 
-/* Inherit single-precision and integer part from 32-bit arm */
-#include "gromacs/simd/impl_arm_neon/impl_arm_neon.h"
+#undef  gmx_simd_trunc_d
+#define gmx_simd_trunc_d(x)       _mm_round_pd(x, _MM_FROUND_TRUNC)
 
-/* Override some capability definitions from ARM 32-bit NEON - we now have double */
-#undef  GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_DOUBLE                  1
-#undef  GMX_SIMD_HAVE_DINT32
-#define GMX_SIMD_HAVE_DINT32                  1
-#undef  GMX_SIMD_HAVE_DINT32_EXTRACT
-#define GMX_SIMD_HAVE_DINT32_EXTRACT          1
-#undef  GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_LOGICAL          1
-#undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS      1
+#undef  gmx_simd_extract_di
+#define gmx_simd_extract_di       _mm_extract_epi32
 
-/* Implementation details */
-#define GMX_SIMD_DOUBLE_WIDTH        2
-#define GMX_SIMD_DINT32_WIDTH        2
+#undef  gmx_simd_mul_di
+#define gmx_simd_mul_di           _mm_mullo_epi32
 
-#include "impl_arm_neon_asimd_simd_float.h"
-#include "impl_arm_neon_asimd_simd_double.h"
-/* There are no improvements in the SIMD4 implementation compared to 32-bit arm */
-/* No double precision SIMD4, since width is only 2 */
+#undef  gmx_simd_blendv_d
+#define gmx_simd_blendv_d         _mm_blendv_pd
 
-#endif /* GMX_SIMD_IMPL_ARM_NEON_ASIMD_H */
+#undef  gmx_simd_reduce_d
+#define gmx_simd_reduce_d(a)      gmx_simd_reduce_d_sse4_1(a)
+
+#undef  gmx_simd_blendv_di
+#define gmx_simd_blendv_di        _mm_blendv_epi8
+
+static gmx_inline double gmx_simdcall
+gmx_simd_reduce_d_sse4_1(__m128d a)
+{
+    double  f;
+
+    a = _mm_hadd_pd(a, a);
+    _mm_store_sd(&f, a);
+    return f;
+}
+
+#endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD_DOUBLE_H */
