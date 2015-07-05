@@ -48,6 +48,8 @@
  * that all have gmx_simd_ prefixes.
  */
 
+#if GMX_SIMD
+
 namespace gmx
 {
 namespace test
@@ -59,7 +61,7 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#ifdef GMX_SIMD_HAVE_INT32
+#if GMX_SIMD_HAVE_INT32
 
 /*! \brief Test fixture for integer tests (identical to the generic \ref SimdTest) */
 typedef SimdTest SimdIntegerTest;
@@ -74,7 +76,7 @@ TEST_F(SimdIntegerTest, gmxSimdSet1I)
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(1), gmx_simd_set1_i(1));
 }
 
-#ifdef GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#if GMX_SIMD_HAVE_FINT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdAddI)
 {
     GMX_EXPECT_SIMD_INT_EQ(iSimd_5_7_9,   gmx_simd_add_i(iSimd_1_2_3, iSimd_4_5_6)    );    // short add
@@ -94,7 +96,7 @@ TEST_F(SimdIntegerTest, gmxSimdMulI)
 }
 #endif
 
-#ifdef GMX_SIMD_HAVE_FINT32_LOGICAL
+#if GMX_SIMD_HAVE_FINT32_LOGICAL
 TEST_F(SimdIntegerTest, gmxSimdSlliI)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4194304), gmx_simd_slli_i(gmx_simd_set1_i(2), 21)); // 2 << 21 = 4194304
@@ -126,7 +128,7 @@ TEST_F(SimdIntegerTest, gmxSimdXorI)
 }
 #endif
 
-#ifdef GMX_SIMD_HAVE_INT32_EXTRACT
+#if GMX_SIMD_HAVE_INT32_EXTRACT
 TEST_F(SimdIntegerTest, gmxSimdExtractI)
 {
     int              idata[GMX_SIMD_INT32_WIDTH*2];
@@ -168,7 +170,7 @@ TEST_F(SimdIntegerTest, gmxSimdExtractI)
 }
 #endif
 
-#ifdef GMX_SIMD_HAVE_REAL
+#if GMX_SIMD_HAVE_REAL
 TEST_F(SimdIntegerTest, gmxSimdCvtR2I)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), gmx_simd_cvt_r2i(rSimd_3p75));
@@ -188,7 +190,7 @@ TEST_F(SimdIntegerTest, gmxSimdCvtI2R)
 }
 #endif
 
-#ifdef GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#if GMX_SIMD_HAVE_FINT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdBoolCmpEqAndBlendZeroI)
 {
     gmx_simd_ibool_t eq   = gmx_simd_cmpeq_i(iSimd_5_7_9, iSimd_7_8_9);
@@ -242,7 +244,7 @@ TEST_F(SimdIntegerTest, gmxSimdBlendvI)
 }
 #endif
 
-#if (defined GMX_SIMD_HAVE_REAL) && (defined GMX_SIMD_HAVE_FINT32_ARITHMETICS)
+#if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_FINT32_ARITHMETICS
 TEST_F(SimdIntegerTest, gmxSimdCvtB2IB)
 {
     gmx_simd_bool_t  eq   = gmx_simd_cmpeq_r(rSimd_5_7_9, setSimdRealFrom3R(5, 0, 0));  // eq should be T,F,F
@@ -267,3 +269,5 @@ TEST_F(SimdIntegerTest, gmxSimdCvtIB2B)
 }      // namespace
 }      // namespace
 }      // namespace
+
+#endif // GMX_SIMD
