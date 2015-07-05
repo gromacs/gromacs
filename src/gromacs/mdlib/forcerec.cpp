@@ -1593,7 +1593,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          */
         *kernel_type = nbnxnk4xN_SIMD_4xN;
 
-#ifndef GMX_SIMD_HAVE_FMA
+#if !GMX_SIMD_HAVE_FMA
         if (EEL_PME_EWALD(ir->coulombtype) ||
             EVDW_PME(ir->vdwtype))
         {
@@ -1632,8 +1632,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * In single precision, this is faster on Bulldozer.
          */
 #if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && defined GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || \
-        defined GMX_SIMD_IBM_QPX
+        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1664,15 +1663,15 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
 #ifdef GMX_NBNXN_SIMD
-#if defined GMX_SIMD_X86_SSE2
+#if GMX_SIMD_X86_SSE2
             returnvalue = "SSE2";
-#elif defined GMX_SIMD_X86_SSE4_1
+#elif GMX_SIMD_X86_SSE4_1
             returnvalue = "SSE4.1";
-#elif defined GMX_SIMD_X86_AVX_128_FMA
+#elif GMX_SIMD_X86_AVX_128_FMA
             returnvalue = "AVX_128_FMA";
-#elif defined GMX_SIMD_X86_AVX_256
+#elif GMX_SIMD_X86_AVX_256
             returnvalue = "AVX_256";
-#elif defined GMX_SIMD_X86_AVX2_256
+#elif GMX_SIMD_X86_AVX2_256
             returnvalue = "AVX2_256";
 #else
             returnvalue = "SIMD";
