@@ -498,7 +498,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
         nbat->simd_exclusion_filter2[j*2 + 1] = (1U << j);
     }
 
-#if (defined GMX_SIMD_IBM_QPX)
+#if GMX_SIMD_IBM_QPX
     /* The QPX kernels shouldn't do the bit masking that is done on
      * x86, because the SIMD units lack bit-wise operations. Instead,
      * we generate a vector of all 2^4 possible ways an i atom
