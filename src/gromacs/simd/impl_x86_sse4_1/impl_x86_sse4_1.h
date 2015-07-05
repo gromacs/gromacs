@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,12 +50,6 @@
 
 /* Inherit most of SSE4.1 from SSE2 */
 #include "gromacs/simd/impl_x86_sse2/impl_x86_sse2.h"
-/* Increment over SSE2 capabilities */
-#define GMX_SIMD_X86_SSE4_1_OR_HIGHER
-
-
-/* Override capability definitions from SSE2 */
-#define  GMX_SIMD4_HAVE_FLOAT_DOTPRODUCT3
 
 /* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
  * can be implemented more efficiently in SSE4.1.

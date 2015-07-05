@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,19 +53,19 @@
  * this can be faster when we have defined gmx_simd_blendv_r, i.e. an instruction
  * that selects from two SIMD registers based on the contents of a third.
  */
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES || defined LJ_EWALD_GEOM) && defined GMX_SIMD_HAVE_BLENDV
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES || defined LJ_EWALD_GEOM) && GMX_SIMD_HAVE_BLENDV
 /* With RF and tabulated Coulomb we replace cmp+and with sub+blendv.
  * With gcc this is slower, except for RF on Sandy Bridge.
  * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
  */
-#if (defined CALC_COUL_RF || defined CALC_COUL_TAB) && (!defined __GNUC__ || (defined CALC_COUL_RF && defined GMX_SIMD_X86_AVX_256_OR_HIGHER))
+#if (defined CALC_COUL_RF || defined CALC_COUL_TAB) && (!defined __GNUC__ || (defined CALC_COUL_RF && GMX_SIMD_X86_AVX_256_OR_HIGHER))
 #define NBNXN_CUTOFF_USE_BLENDV
 #endif
 /* With analytical Ewald we replace cmp+and+and with sub+blendv+blendv.
  * This is only faster with icc on Sandy Bridge (PS kernel slower than gcc 4.7).
  * Tested with icc 13.
  */
-#if defined CALC_COUL_EWALD && defined __INTEL_COMPILER && defined GMX_SIMD_X86_AVX_256_OR_HIGHER
+#if defined CALC_COUL_EWALD && defined __INTEL_COMPILER && GMX_SIMD_X86_AVX_256_OR_HIGHER
 #define NBNXN_CUTOFF_USE_BLENDV
 #endif
 #endif
@@ -588,7 +588,7 @@
     ti_S1       = gmx_simd_cvtt_r2i(rs_S1);
     ti_S2       = gmx_simd_cvtt_r2i(rs_S2);
     ti_S3       = gmx_simd_cvtt_r2i(rs_S3);
-#ifdef GMX_SIMD_HAVE_TRUNC
+#if GMX_SIMD_HAVE_TRUNC
     /* SSE4.1 trunc is faster than gmx_cvtepi32_ps int->float cast */
     rf_S0       = gmx_simd_trunc_r(rs_S0);
     rf_S1       = gmx_simd_trunc_r(rs_S1);

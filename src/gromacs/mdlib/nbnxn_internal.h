@@ -48,8 +48,8 @@
  * we only need to check for single precision support here.
  * This uses less (cache-)memory and SIMD is faster, at least on x86.
  */
-#ifdef GMX_SIMD4_HAVE_FLOAT
-#define NBNXN_SEARCH_BB_SIMD4
+#if GMX_SIMD && GMX_SIMD4_HAVE_FLOAT
+#    define NBNXN_SEARCH_BB_SIMD4
 #endif
 
 

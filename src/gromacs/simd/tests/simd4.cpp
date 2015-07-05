@@ -47,7 +47,7 @@ namespace test
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#ifdef GMX_SIMD4_HAVE_REAL
+#if GMX_SIMD4_HAVE_REAL
 
 const gmx_simd4_real_t rSimd4_1_2_3    = setSimd4RealFrom3R(1, 2, 3);
 const gmx_simd4_real_t rSimd4_4_5_6    = setSimd4RealFrom3R(4, 5, 6);
@@ -63,7 +63,7 @@ const gmx_simd4_real_t rSimd4_m3p75    = setSimd4RealFrom1R(-3.75);
 const gmx_simd4_real_t rSimd4_Exp      = setSimd4RealFrom3R( 1.4055235171027452623914516e+18,
                                                              5.3057102734253445623914516e-13,
                                                              -2.1057102745623934534514516e+16);
-#    if (defined GMX_SIMD_HAVE_DOUBLE) && (defined GMX_DOUBLE)
+#    if GMX_SIMD_HAVE_DOUBLE && defined GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 const gmx_simd4_real_t  rSimd_ExpDouble = setSimd4RealFrom3R( 6.287393598732017379054414e+176,
                                                               8.794495252903116023030553e-140,
