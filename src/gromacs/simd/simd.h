@@ -131,11 +131,7 @@ static gmx_inline double * gmx_simd4_align_d(double *p);
 #elif GMX_SIMD_SPARC64_HPC_ACE
 #    include "impl_sparc64_hpc_ace/impl_sparc64_hpc_ace.h"
 #elif (GMX_SIMD_REFERENCE || defined DOXYGEN)
-/* Plain C SIMD reference implementation, also serves as documentation.
- * For now this code path will also be taken for Sparc64_HPC_ACE since we have
- * not yet added the verlet kernel extensions there. The group kernels do not
- * depend on this file, so they will still be accelerated with SIMD.
- */
+/* Plain C SIMD reference implementation, also serves as documentation. */
 #    include "impl_reference/impl_reference.h"
 #else
 #    include "impl_none/impl_none.h"
