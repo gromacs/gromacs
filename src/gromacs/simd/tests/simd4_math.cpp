@@ -45,6 +45,8 @@
 
 #include "simd4.h"
 
+#if GMX_SIMD
+
 namespace gmx
 {
 namespace test
@@ -54,7 +56,7 @@ namespace test
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#ifdef GMX_SIMD4_HAVE_REAL
+#if GMX_SIMD4_HAVE_REAL
 
 class Simd4MathTest : public Simd4Test
 {
@@ -221,3 +223,5 @@ TEST_F(Simd4MathTest, gmxSimd4InvsqrtSingleaccuracyR)
 
 }      // namespace
 }      // namespace
+
+#endif // GMX_SIMD

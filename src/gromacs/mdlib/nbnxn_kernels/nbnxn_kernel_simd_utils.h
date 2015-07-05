@@ -58,7 +58,7 @@
 #error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
 #endif
 
-#ifdef GMX_SIMD_REFERENCE
+#if GMX_SIMD_REFERENCE
 
 /* Align a stack-based thread-local working array. */
 static gmx_inline int *
@@ -71,7 +71,7 @@ prepare_table_load_buffer(const int gmx_unused *array)
 
 #else /* GMX_SIMD_REFERENCE */
 
-#if defined  GMX_TARGET_X86 && !defined GMX_SIMD_X86_MIC
+#if defined GMX_TARGET_X86 && !GMX_SIMD_X86_MIC
 /* Include x86 SSE2 compatible SIMD functions */
 
 /* Set the stride for the lookup of the two LJ parameters from their
@@ -126,11 +126,11 @@ static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
 #define TAB_FDV0
 #endif
 
-#ifdef GMX_SIMD_IBM_QPX
+#if GMX_SIMD_IBM_QPX
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_ibm_qpx.h"
 #endif /* GMX_SIMD_IBM_QPX */
 
-#ifdef GMX_SIMD_X86_MIC
+#if GMX_SIMD_X86_MIC
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_x86_mic.h"
 #endif
 
@@ -142,8 +142,8 @@ static const int nbfp_stride = GMX_SIMD_REAL_WIDTH;
  * reuse the simd real type and the four instructions we need.
  */
 #if GMX_SIMD_REAL_WIDTH == 4 && \
-    !((!defined GMX_DOUBLE && defined GMX_SIMD4_HAVE_FLOAT) || \
-    (defined GMX_DOUBLE && defined GMX_SIMD4_HAVE_DOUBLE))
+    !((!defined GMX_DOUBLE && GMX_SIMD4_HAVE_FLOAT) || \
+    (defined GMX_DOUBLE && GMX_SIMD4_HAVE_DOUBLE))
 #define gmx_simd4_real_t    gmx_simd_real_t
 #define gmx_simd4_load_r    gmx_simd_load_r
 #define gmx_simd4_store_r   gmx_simd_store_r

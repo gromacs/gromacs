@@ -275,7 +275,7 @@ load_table_f_v(const real *tab_coul_FDV0, gmx_simd_int32_t ti_S, int *ti,
     *ctabv_S = gmx_2_mm_to_m256(ctabvt_S[0], ctabvt_S[1]);
 }
 
-#ifdef GMX_SIMD_HAVE_FINT32_LOGICAL
+#if GMX_SIMD_HAVE_FINT32_LOGICAL
 
 typedef gmx_simd_int32_t gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_INT32_WIDTH/GMX_SIMD_REAL_WIDTH;

@@ -215,7 +215,7 @@ class File(object):
         """Scan the file contents and initialize information based on it."""
         # TODO: Consider a more robust regex.
         include_re = r'^\s*#\s*include\s+(?P<quote>["<])(?P<path>[^">]*)[">]'
-        define_re = r'^\s*#.*define\s+(\w*)'
+        define_re = r'^\s*#.*define(?:01)?\s+(\w*)'
         current_block = None
         with open(self._abspath, 'r') as scanfile:
             contents = scanfile.read()

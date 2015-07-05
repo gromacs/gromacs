@@ -32,32 +32,42 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_EWALD_PME_SIMD_H
-#define GMX_EWALD_PME_SIMD_H
 
-/* Include the SIMD macro file and then check for support */
-#include "gromacs/simd/simd.h"
+#ifndef GMX_SIMD_IMPL_NONE_H
+#define GMX_SIMD_IMPL_NONE_H
 
-/* Check if we have 4-wide SIMD macro support */
-#if GMX_SIMD && GMX_SIMD4_HAVE_REAL
-/* Do PME spread and gather with 4-wide SIMD.
- * NOTE: SIMD is only used with PME order 4 and 5 (which are the most common).
+/* This is a dummy implementation that sets all defines to zero when no
+ * SIMD support is present, and we also set the widths to negative numbers
+ * to make sure no other code relies on them.
  */
-#    define PME_SIMD4_SPREAD_GATHER
 
-#    if GMX_SIMD_HAVE_LOADU && GMX_SIMD_HAVE_STOREU
-/* With PME-order=4 on x86, unaligned load+store is slightly faster
- * than doubling all SIMD operations when using aligned load+store.
- */
-#        define PME_SIMD4_UNALIGNED
-#    endif
-#endif
+/* Capability definitions for ARM 32-bit NEON */
+#define GMX_SIMD                             0
+#define GMX_SIMD_HAVE_HARDWARE               0
+#define GMX_SIMD_HAVE_FLOAT                  0
+#define GMX_SIMD_HAVE_DOUBLE                 0
+#define GMX_SIMD_HAVE_LOADU                  0
+#define GMX_SIMD_HAVE_STOREU                 0
+#define GMX_SIMD_HAVE_LOGICAL                0
+#define GMX_SIMD_HAVE_FMA                    0
+#define GMX_SIMD_HAVE_FRACTION               0
+#define GMX_SIMD_HAVE_FINT32                 0
+#define GMX_SIMD_HAVE_FINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_FINT32_LOGICAL         0
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS     0
+#define GMX_SIMD_HAVE_DINT32                 0
+#define GMX_SIMD_HAVE_DINT32_EXTRACT         0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL         0
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS     0
+#define GMX_SIMD4_HAVE_FLOAT                 0
+#define GMX_SIMD4_HAVE_DOUBLE                0
 
-#ifdef PME_SIMD4_SPREAD_GATHER
-#    define SIMD4_ALIGNMENT  (GMX_SIMD4_WIDTH*sizeof(real))
-#else
-/* We can use any alignment, apart from 0, so we use 4 reals */
-#    define SIMD4_ALIGNMENT  (4*sizeof(real))
-#endif
+/* Implementation details */
+#define GMX_SIMD_FLOAT_WIDTH                -1
+#define GMX_SIMD_DOUBLE_WIDTH               -1
+#define GMX_SIMD_FINT32_WIDTH               -1
+#define GMX_SIMD_DINT32_WIDTH               -1
+#define GMX_SIMD_RSQRT_BITS                 -1
+#define GMX_SIMD_RCP_BITS                   -1
 
-#endif
+#endif /* GMX_SIMD_IMPL_NONE_H */
