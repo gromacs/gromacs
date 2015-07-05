@@ -45,6 +45,14 @@
 
 struct gmx_domdec_zones_t;
 
+/* Bounding box calculations are (currently) always in single precision, so
+ * we only need to check for single precision support here.
+ * This uses less (cache-)memory and SIMD is faster, at least on x86.
+ */
+#if GMX_SIMD4_HAVE_FLOAT
+#    define NBNXN_SEARCH_BB_SIMD4
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -63,7 +71,7 @@ extern "C" {
  * we only need to check for single precision support here.
  * This uses less (cache-)memory and SIMD is faster, at least on x86.
  */
-#ifdef GMX_SIMD4_HAVE_FLOAT
+#if GMX_SIMD4_HAVE_FLOAT
 #define NBNXN_SEARCH_BB_SIMD4
 /* Memory alignment in bytes as required by SIMD aligned loads/stores */
 #define NBNXN_SEARCH_BB_MEM_ALIGN  (GMX_SIMD4_WIDTH*sizeof(float))
