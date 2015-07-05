@@ -33,12 +33,28 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H
+#define GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H
 
-#include "impl_x86_avx_128_fma_simd4_double.h"
-#include "impl_x86_avx_128_fma_simd_double.h"
-#include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+#include <math.h>
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */
+#include <immintrin.h>
+
+/* Intel AVX-512ER */
+
+/* This implementation inherits 99% from AVX-512F, but adds extended-precision
+ * lookups for 1/sqrt(x) and 1x, as well as single-precision versions of
+ * exp(x) and log(x).
+ */
+
+/* Inherit most stuff from AVX-512F */
+#include "gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f.h"
+
+/* Override some AVX-512F settings */
+/* Implementation details */
+#undef  GMX_SIMD_RSQRT_BITS
+#define GMX_SIMD_RSQRT_BITS         28
+#undef  GMX_SIMD_RCP_BITS
+#define GMX_SIMD_RCP_BITS           28
+
+#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H */
