@@ -33,12 +33,49 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
+#ifndef GMX_SIMD_IMPL_X86_SSE4_1_SIMD_FLOAT_H
+#define GMX_SIMD_IMPL_X86_SSE4_1_SIMD_FLOAT_H
 
-#include "impl_x86_avx_128_fma_simd4_double.h"
-#include "impl_x86_avx_128_fma_simd_double.h"
-#include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+#include "config.h"
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */
+#include <smmintrin.h>
+
+#include "impl_x86_sse4_1_common.h"
+
+/* Almost all SSE4.1 instructions already exist in SSE2, but a few of them
+ * can be implemented more efficiently in SSE4.1.
+ */
+#undef  gmx_simd_round_f
+#define gmx_simd_round_f(x)       _mm_round_ps(x, _MM_FROUND_NINT)
+
+#undef  gmx_simd_trunc_f
+#define gmx_simd_trunc_f(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
+
+#undef  gmx_simd_extract_fi
+#define gmx_simd_extract_fi       _mm_extract_epi32
+
+#undef  gmx_simd_mul_fi
+#define gmx_simd_mul_fi           _mm_mullo_epi32
+
+#undef  gmx_simd_blendv_f
+#define gmx_simd_blendv_f         _mm_blendv_ps
+
+#undef  gmx_simd_reduce_f
+#define gmx_simd_reduce_f(a)      gmx_simd_reduce_f_sse4_1(a)
+
+#undef  gmx_simd_blendv_fi
+#define gmx_simd_blendv_fi        _mm_blendv_epi8
+
+/* SIMD reduction function */
+static gmx_inline float gmx_simdcall
+gmx_simd_reduce_f_sse4_1(__m128 a)
+{
+    float  f;
+
+    a = _mm_hadd_ps(a, a);
+    a = _mm_hadd_ps(a, a);
+    _mm_store_ss(&f, a);
+    return f;
+}
+
+#endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD_FLOAT_H */

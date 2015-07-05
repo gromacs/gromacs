@@ -36,67 +36,9 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_512ER_H
 #define GMX_SIMD_IMPL_X86_AVX_512ER_H
 
-#include <math.h>
-
-#include <immintrin.h>
-
-/* Intel AVX-512ER */
-
-/* This implementation inherits 99% from AVX-512F, but adds extended-precision
- * lookups for 1/sqrt(x) and 1x, as well as single-precision versions of
- * exp(x) and log(x).
- */
-
-/* Inherit most stuff from AVX-512F */
-#include "gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f.h"
-
-/* Override some AVX-512F settings */
-/* Implementation details */
-#undef  GMX_SIMD_RSQRT_BITS
-#define GMX_SIMD_RSQRT_BITS         28
-#undef  GMX_SIMD_RCP_BITS
-#define GMX_SIMD_RCP_BITS           28
-
-#undef  gmx_simd_rsqrt_f
-#define gmx_simd_rsqrt_f           _mm512_rsqrt28_ps
-#undef  gmx_simd_rcp_f
-#define gmx_simd_rcp_f             _mm512_rcp28_ps
-
-
-#undef  gmx_simd_rsqrt_d
-#define gmx_simd_rsqrt_d           _mm512_rsqrt28_pd
-#undef  gmx_simd_rcp_d
-#define gmx_simd_rcp_d             _mm512_rcp28_pd
-
-
-#undef  gmx_simd4_rsqrt_f
-#define gmx_simd4_rsqrt_f(x)       _mm512_castps512_ps128(_mm512_rsqrt28_ps(_mm512_castps128_ps512(x)))
-
-#undef  gmx_simd4_rsqrt_d
-#define gmx_simd4_rsqrt_d(x)       _mm512_castpd512_pd256(_mm512_rsqrt28_pd(_mm512_castpd256_pd512(x)))
-
-static gmx_inline __m512
-gmx_simd_exp_f_x86_avx_512er(__m512 x)
-{
-    const gmx_simd_float_t  argscale    = gmx_simd_set1_f(1.44269504088896341f);
-    const gmx_simd_float_t  invargscale = gmx_simd_set1_f(-0.69314718055994528623f);
-
-    __m512                  xscaled = _mm512_mul_ps(x, argscale);
-    __m512                  r       = _mm512_exp2a23_ps(xscaled);
-
-    /* exp2a23_ps provides 23 bits of accuracy, but we ruin some of that with our argument
-     * scaling. To correct this, we find the difference between the scaled argument and
-     * the true one (extended precision arithmetics does not appear to be necessary to
-     * fulfill our accuracy requirements) and then multiply by the exponent of this
-     * correction since exp(a+b)=exp(a)*exp(b).
-     * Note that this only adds two instructions (and maybe some constant loads).
-     */
-    x         = gmx_simd_fmadd_f(invargscale, xscaled, x);
-    /* x will now be a _very_ small number, so approximate exp(x)=1+x.
-     * We should thus apply the correction as r'=r*(1+x)=r+r*x
-     */
-    r         = gmx_simd_fmadd_f(r, x, r);
-    return r;
-}
+#include "impl_x86_avx_512er_simd4_double.h"
+#include "impl_x86_avx_512er_simd4_float.h"
+#include "impl_x86_avx_512er_simd_double.h"
+#include "impl_x86_avx_512er_simd_float.h"
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_512ER_H */

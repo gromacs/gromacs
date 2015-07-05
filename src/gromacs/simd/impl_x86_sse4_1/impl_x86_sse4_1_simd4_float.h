@@ -33,12 +33,25 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_128_FMA_H
-#define GMX_SIMD_IMPL_X86_AVX_128_FMA_H
+#ifndef GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
+#define GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H
 
-#include "impl_x86_avx_128_fma_simd4_double.h"
-#include "impl_x86_avx_128_fma_simd_double.h"
-#include "impl_x86_avx_128_fma_simd_float.h"
-/* There are no improvements to SIMD4 float over SSE4.1 */
+#include "config.h"
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_H */
+#include <smmintrin.h>
+
+#include "impl_x86_sse4_1_common.h"
+
+#undef  gmx_simd4_dotproduct3_f
+#define gmx_simd4_dotproduct3_f   gmx_simd4_dotproduct3_f_sse4_1
+
+/* SIMD4 Dotproduct helper function */
+static gmx_inline float gmx_simdcall
+gmx_simd4_dotproduct3_f_sse4_1(__m128 a, __m128 b)
+{
+    float f;
+    _MM_EXTRACT_FLOAT(f, _mm_dp_ps(a, b, 0x71), 0);
+    return f;
+}
+
+#endif /* GMX_SIMD_IMPL_X86_SSE4_1_SIMD4_FLOAT_H */
