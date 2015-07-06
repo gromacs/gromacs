@@ -75,6 +75,16 @@
 #define gmx_simd_rsqrt_iter_f(lu, x) vmulq_f32(lu, vrsqrtsq_f32(vmulq_f32(lu, lu), x))
 #define gmx_simd_rcp_f              vrecpeq_f32
 #define gmx_simd_rcp_iter_f(lu, x)   vmulq_f32(lu, vrecpsq_f32(lu, x))
+#define gmx_simd_mul_mask_f(a, b, m)       gmx_simd_blendzero_f(gmx_simd_mul_f(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  gmx_simd_blendzero_f(gmx_simd_fmadd_f(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_blendzero_f(gmx_simd_rcp_f(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_blendzero_f(gmx_simd_rsqrt_f(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_blendzero_f(gmx_simd_rcp_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_blendzero_f(gmx_simd_rsqrt_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(x)         vabsq_f32(x)
 #define gmx_simd_fneg_f(x)         vnegq_f32(x)
 #define gmx_simd_max_f             vmaxq_f32
@@ -111,6 +121,7 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t           uint32x4_t
 #define gmx_simd_cmpeq_f           vceqq_f32
+#define gmx_simd_cmpnz_f(a)        vtstq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(a))
 #define gmx_simd_cmplt_f           vcltq_f32
 #define gmx_simd_cmple_f           vcleq_f32
 #define gmx_simd_and_fb            vandq_u32
