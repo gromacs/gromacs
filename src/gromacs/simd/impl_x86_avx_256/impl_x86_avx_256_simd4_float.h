@@ -75,6 +75,7 @@
 #define gmx_simd4_round_f(x)       _mm_round_ps(x, _MM_FROUND_NINT)
 #define gmx_simd4_trunc_f(x)       _mm_round_ps(x, _MM_FROUND_TRUNC)
 #define gmx_simd4_dotproduct3_f    gmx_simd4_dotproduct3_f_avx_256
+#define gmx_simd4_transpose_f      gmx_simd4_transpose_f_avx_256
 #define gmx_simd4_fbool_t          __m128
 #define gmx_simd4_cmpeq_f          _mm_cmpeq_ps
 #define gmx_simd4_cmplt_f          _mm_cmplt_ps
@@ -93,9 +94,9 @@ static gmx_inline float gmx_simdcall
 gmx_simd4_reduce_f_avx_256(__m128 a)
 {
     float f;
-    a = _mm_hadd_ps(a, a);
-    a = _mm_hadd_ps(a, a);
-    _mm_store_ss(&f, a);
+    a = _mm_add_ps(a, _mm_shuffle_ps(a, a, _MM_SHUFFLE(1, 0, 3, 2)));
+    a = _mm_add_ss(a, _mm_shuffle_ps(a, a, _MM_SHUFFLE(0, 3, 2, 1)));
+    _MM_EXTRACT_FLOAT(f, a, 0);
     return f;
 }
 
@@ -111,5 +112,15 @@ gmx_simd4_dotproduct3_f_avx_256(__m128 a, __m128 b)
     _mm_store_ss(&f, c);
     return f;
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_f_avx_256(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                              gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    _MM_TRANSPOSE4_PS(v0, v1, v2, v3);
+}
+#endif
+
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_256_SIMD4_FLOAT_H */

@@ -73,6 +73,7 @@
 #define gmx_simd4_round_d           gmx_simd_round_d
 #define gmx_simd4_trunc_d           gmx_simd_trunc_d
 #define gmx_simd4_dotproduct3_d     gmx_simd4_dotproduct3_d_avx_256
+#define gmx_simd4_transpose_d       gmx_simd4_transpose_d_avx_256
 #define gmx_simd4_dbool_t           gmx_simd_dbool_t
 #define gmx_simd4_cmpeq_d           gmx_simd_cmpeq_d
 #define gmx_simd4_cmplt_d           gmx_simd_cmplt_d
@@ -103,6 +104,15 @@ gmx_simd4_dotproduct3_d_avx_256(__m256d a, __m256d b)
     _mm_store_sd(&d, tmp1);
     return d;
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_d_avx_256(gmx_simd4_double_t &v0, gmx_simd4_double_t &v1,
+                              gmx_simd4_double_t &v2, gmx_simd4_double_t &v3)
+{
+    gmx_simd_transpose4_d_avx_256(v0, v1, v2, v3);
+}
+#endif
 
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_256_SIMD4_DOUBLE_H */
