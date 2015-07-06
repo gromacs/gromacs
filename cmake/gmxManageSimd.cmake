@@ -486,7 +486,9 @@ endif()
 # when using the reference build.
 # 
 if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD STREQUAL "REFERENCE")
+    if(GMX_TARGET_BGQ)
+        set(CALLCONV_LIST " ")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND GMX_SIMD STREQUAL "REFERENCE")
         set(CALLCONV_LIST __regcall " ")
     else()
         set(CALLCONV_LIST __vectorcall __regcall " ")
