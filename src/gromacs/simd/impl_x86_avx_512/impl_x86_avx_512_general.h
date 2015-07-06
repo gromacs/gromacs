@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,15 +33,44 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_FLOAT_H
-#define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_FLOAT_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
+#define GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
 
 #include <immintrin.h>
 
-#include "impl_x86_avx_512er_common.h"
-#include "impl_x86_avx_512er_simd_float.h"
+namespace gmx
+{
 
-#undef  simd4RsqrtF
-#define simd4RsqrtF(x)       _mm512_castps512_ps128(_mm512_rsqrt28_ps(_mm512_castps128_ps512(x)))
+static inline void
+simdPrefetch(const void * m)
+{
+    _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
+}
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_FLOAT_H */
+/*! \brief Return integer from AVX-512 mask
+ *
+ *  \param m  Mask suitable for use with AVX-512 instructions
+ *
+ *  \return Short integer representation of mask
+ */
+static inline short
+avx512Mask2Int(__mmask16 m)
+{
+    return static_cast<short>(m);
+}
+
+/*! \brief Return AVX-512 mask from integer
+ *
+ *  \param m  Short integer
+ *
+ *  \return Mask suitable for use with AVX-512 instructions.
+ */
+static inline __mmask16
+avx512Int2Mask(short i)
+{
+    return static_cast<__mmask16>(i);
+}
+
+}
+
+#endif // GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
