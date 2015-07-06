@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 Erik Lindahl, David van der Spoel, University of Groningen.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
  * files like fft_fftw3.c or fft_mkl.c for that.
  */
 
-#ifndef GMX_FFT_FFTW3
+#if !GMX_FFT_FFTW3
 
 struct gmx_many_fft {
     int       howmany;
