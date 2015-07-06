@@ -84,6 +84,18 @@ if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
         list(APPEND CUDA_NVCC_FLAGS "-O3")
     endif()
 
+    # The IBM xlc compiler chokes if we use both altivec and Cuda. Solve
+    # this by not propagating the flags in this case, but add -O3
+    # to make sure we don't turn off optimization.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "XL")
+        set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+        list(APPEND CUDA_NVCC_FLAGS "-O3")
+    endif()
+
+    # TODO: If there are more compilers that choke on specific flag
+    # combinations, we might at some point have to assemble all our own
+    # flags passed to nvcc, but for not is is not worth it.
+
     # Cmake 2.8.12 (and CMake 3.0) introduced a new bug where the cuda
     # library dir is added twice as an rpath on APPLE, which in turn causes
     # the install_name_tool to wreck the binaries when it tries to remove this

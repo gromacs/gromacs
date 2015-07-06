@@ -36,6 +36,8 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_VSX_SIMD4_FLOAT_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_VSX_SIMD4_FLOAT_H
 
+#include "config.h"
+
 #include <math.h>
 
 #include <altivec.h>
@@ -59,14 +61,15 @@
 /* g++ is also unhappy with the clash of vector bool and the C++ reserved 'bool',
  * which is solved by undefining bool and reyling on __bool. However, that does
  * not work with xlc, which requires us to use bool. Solve the conflict by
- * defining a new vsx_bool.
+ * defining a new gmx_vsx_bool.
  */
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-#    define vsx_bool __bool
+#    define gmx_vsx_bool __bool
 #    undef  bool
 #else
-#    define vsx_bool bool
+#    define gmx_vsx_bool bool
 #endif
+
 
 
 /* Single precision VSX is 4 elements wide, use for SIMD4 */
@@ -102,6 +105,7 @@
 #define gmx_simd4_get_mantissa_f         gmx_simd_get_mantissa_f
 #define gmx_simd4_set_exponent_f         gmx_simd_set_exponent_f
 #define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_ibm_vsx
+#define gmx_simd4_transpose_f            gmx_simd4_transpose_f_ibm_vsx
 #define gmx_simd4_fint32_t               gmx_simd_fint32_t
 #define gmx_simd4_load_fi                gmx_simd_load_fi
 #define gmx_simd4_load1_fi               gmx_simd_load1_fi
@@ -125,6 +129,19 @@
 #define gmx_simd4_blendv_f               gmx_simd_blendv_f
 #define gmx_simd4_reduce_f               gmx_simd_reduce_f
 
+/* Internal macro for transposes */
+#define GMX_VSX_TRANSPOSE4(v0, v1, v2, v3)           \
+    {                                                    \
+        __vector float gmx_vsx_t0 = vec_mergeh(v0, v2);  \
+        __vector float gmx_vsx_t1 = vec_mergel(v0, v2);  \
+        __vector float gmx_vsx_t2 = vec_mergeh(v1, v3);  \
+        __vector float gmx_vsx_t3 = vec_mergel(v1, v3);  \
+        v0 = vec_mergeh(gmx_vsx_t0, gmx_vsx_t2);         \
+        v1 = vec_mergel(gmx_vsx_t0, gmx_vsx_t2);         \
+        v2 = vec_mergeh(gmx_vsx_t1, gmx_vsx_t3);         \
+        v3 = vec_mergel(gmx_vsx_t1, gmx_vsx_t3);         \
+    }
+
 static gmx_inline float
 gmx_simd4_dotproduct3_f_ibm_vsx(gmx_simd4_float_t a, gmx_simd4_float_t b)
 {
@@ -136,5 +153,14 @@ gmx_simd4_dotproduct3_f_ibm_vsx(gmx_simd4_float_t a, gmx_simd4_float_t b)
     sum = vec_add(sum, vec_perm(c, c, (__vector unsigned char)perm2));
     return vec_extract(sum, 0);
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_f_ibm_vsx(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                              gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    GMX_VSX_TRANSPOSE4(v0, v1, v2, v3);
+}
+#endif
 
 #endif /* GMX_SIMD_IMPLEMENTATION_IBM_VSX_SIMD4_FLOAT_H */

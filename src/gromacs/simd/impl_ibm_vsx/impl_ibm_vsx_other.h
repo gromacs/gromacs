@@ -33,20 +33,50 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPLEMENTATION_IBM_VSX_H
-#define GMX_SIMD_IMPLEMENTATION_IBM_VSX_H
+#ifndef GMX_SIMD_IMPLEMENTATION_IBM_VSX_OTHER_H
+#define GMX_SIMD_IMPLEMENTATION_IBM_VSX_OTHER_H
 
-/*
- * While we do our best to also test VSX with Power7, that depends on having
- * access to big-endian hardware, so for the long term our focus will be
- * little-endian Power8.
+#include <math.h>
+
+#include <altivec.h>
+
+#include "impl_ibm_vsx_common.h"
+#include "impl_ibm_vsx_simd_float.h"
+
+/* IBM VSX SIMD instruction wrappers. Power7 and later.
+ *
+ * While this instruction set is similar to VMX, there are quite a few differences
+ * that make it easier to understand if we start from scratch rather than by
+ * including the VMX implementation and changing lots of things.
  */
 
-#include "impl_ibm_vsx_other.h"
-#include "impl_ibm_vsx_simd4_float.h"
-#include "impl_ibm_vsx_simd_double.h"
-#include "impl_ibm_vsx_simd_float.h"
-#include "impl_ibm_vsx_util_double.h"
-#include "impl_ibm_vsx_util_float.h"
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VSX_H */
+/* Make sure we do not screw up c++ - undefine vector/bool, and rely on __vector,
+ * which is present both on gcc and xlc.
+ */
+#undef vector
+
+/* g++ is also unhappy with the clash of vector bool and the C++ reserved 'bool',
+ * which is solved by undefining bool and reyling on __bool. However, that does
+ * not work with xlc, which requires us to use bool. Solve the conflict by
+ * defining a new vsx_bool.
+ */
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+#    define vsx_bool __bool
+#    undef  bool
+#else
+#    define vsx_bool bool
+#endif
+
+static void
+
+gmx_simd_prefetch(const void * m)
+{
+#if defined(__ibmxl__) || defined(__xlC__)
+    __dcbt(m);
+#elif defined __GNUC__
+    __builtin_prefetch(m);
+#endif
+}
+
+#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VSX_OTHER_H */

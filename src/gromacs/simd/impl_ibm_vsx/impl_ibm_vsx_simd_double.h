@@ -58,14 +58,15 @@
 /* g++ is also unhappy with the clash of vector bool and the C++ reserved 'bool',
  * which is solved by undefining bool and reyling on __bool. However, that does
  * not work with xlc, which requires us to use bool. Solve the conflict by
- * defining a new vsx_bool.
+ * defining a new gmx_vsx_bool.
  */
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-#    define vsx_bool __bool
+#    define gmx_vsx_bool __bool
 #    undef  bool
 #else
-#    define vsx_bool bool
+#    define gmx_vsx_bool bool
 #endif
+
 
 
 /****************************************************
@@ -100,6 +101,16 @@
 #define gmx_simd_xor_d(a, b)       vec_xor(a, b)
 #define gmx_simd_rsqrt_d(a)        vec_rsqrte(a)
 #define gmx_simd_rcp_d(a)          vec_re(a)
+#define gmx_simd_mul_mask_d(a, b, m)       vec_and(vec_mul(a, b), m)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  vec_and(vec_madd(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_d(a, m)      vec_and(vec_re(a), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    vec_and(vec_rsqrte(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_d(a, m)      vec_and(vec_re(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    vec_and(vec_rsqrte(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_d(a)         vec_abs(a)
 #define gmx_simd_fneg_d(a)         (-(a))
 #define gmx_simd_max_d(a, b)       vec_max(a, b)
@@ -147,33 +158,38 @@
 /* Integer arithmetic ops on gmx_simd_dint32_t */
 #define gmx_simd_add_di(a, b)       vec_add(a, b)
 #define gmx_simd_sub_di(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_di(a, b)       ((a)*(b))
+#define gmx_simd_mul_di(a, b)      ((a)*(b))
 /* Boolean & comparison operations on gmx_simd_double_t */
-#define gmx_simd_dbool_t           __vector vsx_bool long long
+#define gmx_simd_dbool_t           __vector gmx_vsx_bool long long
 #define gmx_simd_cmpeq_d(a, b)     vec_cmpeq(a, b)
+#ifdef __POWER8_VECTOR__
+#    define gmx_simd_cmpnz_d(a)    (gmx_simd_dbool_t)vec_cmpgt((__vector unsigned long long)a, vec_splats(0ULL))
+#else
+#    define gmx_simd_cmpnz_d(a)    (gmx_simd_dbool_t)vec_nor((__vector signed int)vec_cmpeq((a), vec_splats(0.0)), (__vector signed int)vec_splats(0))
+#endif
 #define gmx_simd_cmplt_d(a, b)     vec_cmplt(a, b)
 #define gmx_simd_cmple_d(a, b)     vec_cmple(a, b)
-#define gmx_simd_and_db(a, b)      (__vector vsx_bool long long)vec_and((__vector signed int)a, (__vector signed int)b)
-#define gmx_simd_or_db(a, b)       (__vector vsx_bool long long)vec_or((__vector signed int)a, (__vector signed int)b)
-#define gmx_simd_anytrue_db(a)     vec_any_ne((__vector vsx_bool int)a, (__vector vsx_bool int)vec_splats(0))
+#define gmx_simd_and_db(a, b)      (gmx_simd_dbool_t)vec_and((__vector signed int)a, (__vector signed int)b)
+#define gmx_simd_or_db(a, b)       (gmx_simd_dbool_t)vec_or((__vector signed int)a, (__vector signed int)b)
+#define gmx_simd_anytrue_db(a)     vec_any_ne((__vector gmx_vsx_bool int)a, (__vector gmx_vsx_bool int)vec_splats(0))
 #define gmx_simd_blendzero_d(a, sel)    vec_and(a, (__vector double)sel)
 #define gmx_simd_blendnotzero_d(a, sel) vec_andc(a, (__vector double)sel)
 #define gmx_simd_blendv_d(a, b, sel)    vec_sel(a, b, sel)
 #define gmx_simd_reduce_d(a)       gmx_simd_reduce_d_ibm_vsx(a)
 /* Boolean & comparison operations on gmx_simd_fint32_t */
-#define gmx_simd_dibool_t          __vector vsx_bool int
+#define gmx_simd_dibool_t          __vector gmx_vsx_bool int
 #define gmx_simd_cmpeq_di(a, b)    vec_cmpeq(a, b)
 #define gmx_simd_cmplt_di(a, b)    vec_cmplt(a, b)
 #define gmx_simd_and_dib(a, b)     vec_and(a, b)
 #define gmx_simd_or_dib(a, b)      vec_or(a, b)
 /* Since we have applied all operations to pairs of elements we can work on all elements here */
-#define gmx_simd_anytrue_dib(a)          vec_any_ne(a, (__vector vsx_bool int)vec_splats(0))
+#define gmx_simd_anytrue_dib(a)          vec_any_ne(a, (__vector gmx_vsx_bool int)vec_splats(0))
 #define gmx_simd_blendzero_di(a, sel)    vec_and(a, (__vector signed int)sel)
 #define gmx_simd_blendnotzero_di(a, sel) vec_andc(a, (__vector signed int)sel)
 #define gmx_simd_blendv_di(a, b, sel)    vec_sel(a, b, sel)
 /* Conversions between different booleans */
-#define gmx_simd_cvt_db2dib(x)     (__vector vsx_bool int)(x)
-#define gmx_simd_cvt_dib2db(x)     (__vector vsx_bool long long)(x)
+#define gmx_simd_cvt_db2dib(x)     (gmx_simd_fbool_t)(x)
+#define gmx_simd_cvt_dib2db(x)     (gmx_simd_dbool_t)(x)
 /* Float/double conversion */
 #define gmx_simd_cvt_f2dd(f, d0, d1)  gmx_simd_cvt_f2dd_ibm_vsx(f, d0, d1)
 #define gmx_simd_cvt_dd2f(d0, d1)     gmx_simd_cvt_dd2f_ibm_vsx(d0, d1)
@@ -326,8 +342,8 @@ gmx_simd_cvt_f2dd_ibm_vsx(gmx_simd_float_t f0,
                           gmx_simd_double_t * d0, gmx_simd_double_t * d1)
 {
     __vector float fA, fB;
-    fA  = vec_mergel(f0, f0); /* 0011 */
-    fB  = vec_mergeh(f0, f0); /* 2233 */
+    fA  = vec_mergeh(f0, f0); /* 0011 */
+    fB  = vec_mergel(f0, f0); /* 2233 */
     *d0 = gmx_vsx_f2d(fA);    /* 01 */
     *d1 = gmx_vsx_f2d(fB);    /* 23 */
 }
@@ -339,9 +355,9 @@ gmx_simd_cvt_dd2f_ibm_vsx(gmx_simd_double_t d0, gmx_simd_double_t d1)
     __vector float fA, fB, fC, fD, fE;
     fA = gmx_vsx_d2f(d0);    /* 0x1x */
     fB = gmx_vsx_d2f(d1);    /* 2x3x */
-    fC = vec_mergel(fA, fB); /* 02xx */
-    fD = vec_mergeh(fA, fB); /* 13xx */
-    fE = vec_mergel(fD, fC); /* 0123 */
+    fC = vec_mergeh(fA, fB); /* 02xx */
+    fD = vec_mergel(fA, fB); /* 13xx */
+    fE = vec_mergeh(fC, fD); /* 0123 */
     return fE;
 }
 
