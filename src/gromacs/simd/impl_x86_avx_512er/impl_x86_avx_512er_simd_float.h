@@ -48,8 +48,14 @@
 #undef  gmx_simd_rcp_f
 #define gmx_simd_rcp_f             _mm512_rcp28_ps
 
+#undef  gmx_simd_rsqrt_mask_f
+#define gmx_simd_rsqrt_mask_f(a, m) _mm512_maskz_rsqrt28_ps(m, a)
+
+#undef  gmx_simd_rcp_mask_f
+#define gmx_simd_rcp_mask_f(a, m)   _mm512_maskz_rcp28_ps(m, a)
+
 #undef  gmx_simd_exp_f
-#define gmx_simd_exp_f(x)          gmx_simd_exp_f_x86_avx_512er(x)
+#define gmx_simd_exp_f             gmx_simd_exp_f_x86_avx_512er
 
 /* Implementation helper */
 
