@@ -33,19 +33,22 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPLEMENTATION_IBM_VSX_H
-#define GMX_SIMD_IMPLEMENTATION_IBM_VSX_H
+#ifndef GMX_SIMD_IMPLEMENTATION_IBM_VSX_GENERAL_H
+#define GMX_SIMD_IMPLEMENTATION_IBM_VSX_GENERAL_H
 
-// While we do our best to also test VSX with Power7, that depends on having
-// access to big-endian hardware, so for the long term our focus will be
-// little-endian Power8.
+namespace gmx
+{
 
-#include "impl_ibm_vsx_definitions.h"
-#include "impl_ibm_vsx_general.h"
-#include "impl_ibm_vsx_simd4_float.h"
-#include "impl_ibm_vsx_simd_double.h"
-#include "impl_ibm_vsx_simd_float.h"
-#include "impl_ibm_vsx_util_double.h"
-#include "impl_ibm_vsx_util_float.h"
+static inline void
+simdPrefetch(const void * m)
+{
+#if defined(__ibmxl__) || defined(__xlC__)
+    __dcbt(m);
+#elif defined __GNUC__
+    __builtin_prefetch(m);
+#endif
+}
 
-#endif // GMX_SIMD_IMPLEMENTATION_IBM_VSX_H
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_VSX_GENERAL_H
