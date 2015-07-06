@@ -50,7 +50,7 @@
 #define gmx_simd_double_t          __m512d
 #define gmx_simd_load_d            _mm512_load_pd
 /* Avoid using _mm512_extload_pd() since it is not available on gcc-4.9 */
-#define gmx_simd_load1_d(m)        _mm512_broadcastsd_pd(_mm_load1_pd(m))
+#define gmx_simd_load1_d(m)        _mm512_set1_pd(*m)
 #define gmx_simd_set1_d            _mm512_set1_pd
 #define gmx_simd_store_d           _mm512_store_pd
 #define gmx_simd_loadu_d           _mm512_loadu_pd
@@ -69,6 +69,10 @@
 #define gmx_simd_xor_d(a, b)       _mm512_castsi512_pd(_mm512_xor_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
 #define gmx_simd_rsqrt_d           _mm512_rsqrt14_pd
 #define gmx_simd_rcp_d             _mm512_rcp14_pd
+#define gmx_simd_mul_mask_d(a, b, m)       _mm512_maskz_mul_pd(m, a, b)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  _mm512_maskz_fmadd_pd(m, a, b, c)
+#define gmx_simd_rcp_mask_d(a, m)          _mm512_maskz_rcp14_pd(m, a)
+#define gmx_simd_rsqrt_mask_d(a, m)        _mm512_maskz_rsqrt14_pd(m, a)
 #define gmx_simd_fabs_d(x)         _mm512_abs_pd(x)
 #define gmx_simd_fneg_d(x)         gmx_simd_xor_d(x, _mm512_set1_pd(GMX_DOUBLE_NEGZERO))
 #define gmx_simd_max_d             _mm512_max_pd
@@ -107,6 +111,7 @@
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t           __mmask8
 #define gmx_simd_cmpeq_d(a, b)     _mm512_cmp_pd_mask(a, b, _CMP_EQ_OQ)
+#define gmx_simd_cmpnz_d(a)        _mm512_test_epi64_mask(_mm512_castpd_si512(a), _mm512_castpd_si512(a))
 #define gmx_simd_cmplt_d(a, b)     _mm512_cmp_pd_mask(a, b, _CMP_LT_OS)
 #define gmx_simd_cmple_d(a, b)     _mm512_cmp_pd_mask(a, b, _CMP_LE_OS)
 #define gmx_simd_and_db            _mm512_kand
@@ -151,19 +156,19 @@ gmx_simd_set_exponent_d_x86_avx_512f(__m512d a)
 static gmx_inline double
 gmx_simd_reduce_d_x86_avx_512f(__m512d a)
 {
-    __m128d b;
-    a = _mm512_add_pd(a, _mm512_shuffle_f64x2(a, a, _MM_PERM_DCDC));
-    a = _mm512_add_pd(a, _mm512_shuffle_f64x2(a, a, _MM_PERM_ABAB));
-    b = _mm512_castpd512_pd128(a);
-    b = _mm_hadd_pd(b, b);
-    return _mm_cvtsd_f64(b);
+    double d;
+    a = _mm512_add_pd(a, _mm512_shuffle_f64x2(a, a, 0xEE));
+    a = _mm512_add_pd(a, _mm512_shuffle_f64x2(a, a, 0x11));
+    a = _mm512_add_pd(a, _mm512_permute_pd(a, 0x01));
+    _mm512_mask_storeu_pd(&d, _mm512_int2mask(0x0001), a);
+    return d;
 }
 
 static gmx_inline void
 gmx_simd_cvt_f2dd_x86_avx_512f(__m512 f, __m512d * d0, __m512d * d1)
 {
     *d0 = _mm512_cvtpslo_pd(f);
-    *d1 = _mm512_cvtpslo_pd(_mm512_shuffle_f32x4(f, f, _MM_PERM_DCDC));
+    *d1 = _mm512_cvtpslo_pd(_mm512_shuffle_f32x4(f, f, 0xEE));
 }
 
 static gmx_inline __m512
@@ -171,7 +176,7 @@ gmx_simd_cvt_dd2f_x86_avx_512f(__m512d d0, __m512d d1)
 {
     __m512 f0 = _mm512_cvtpd_pslo(d0);
     __m512 f1 = _mm512_cvtpd_pslo(d1);
-    return _mm512_shuffle_f32x4(f0, f1, _MM_PERM_BABA);
+    return _mm512_shuffle_f32x4(f0, f1, 0x44);
 }
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_512F_SIMD_DOUBLE_H */

@@ -36,6 +36,8 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_512F_SIMD4_DOUBLE_H
 #define GMX_SIMD_IMPL_X86_AVX_512F_SIMD4_DOUBLE_H
 
+#include "config.h"
+
 #include <math.h>
 
 #include <immintrin.h>
@@ -83,6 +85,7 @@
 #define gmx_simd4_round_d(a)        _mm256_round_pd(a, _MM_FROUND_NINT)
 #define gmx_simd4_trunc_d(a)        _mm256_round_pd(a, _MM_FROUND_TRUNC)
 #define gmx_simd4_dotproduct3_d(a, b) gmx_simd4_dotproduct3_d_x86_avx_512f(a, b)
+#define gmx_simd4_transpose_d       gmx_simd4_transpose_d_x86_avx_512f
 #define gmx_simd4_dbool_t           __mmask16
 #define gmx_simd4_cmpeq_d(a, b)     _mm512_mask_cmp_pd_mask(_mm512_int2mask(0xF), _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b), _CMP_EQ_OQ)
 #define gmx_simd4_cmplt_d(a, b)     _mm512_mask_cmp_pd_mask(_mm512_int2mask(0xF), _mm512_castpd256_pd512(a), _mm512_castpd256_pd512(b), _CMP_LT_OS)
@@ -124,5 +127,24 @@ gmx_simd4_dotproduct3_d_x86_avx_512f(__m256d a, __m256d b)
     _mm_store_sd(&d, tmp1);
     return d;
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_d_x86_avx_512f(gmx_simd4_double_t &v0, gmx_simd4_double_t &v1,
+                                   gmx_simd4_double_t &v2, gmx_simd4_double_t &v3)
+{
+    __m512d t0, t1, t2, t3;
+
+    t0 = _mm512_unpacklo_pd(_mm512_castpd256_pd512(v0), _mm512_castpd256_pd512(v1));
+    t1 = _mm512_unpackhi_pd(_mm512_castpd256_pd512(v0), _mm512_castpd256_pd512(v1));
+    t2 = _mm512_unpacklo_pd(_mm512_castpd256_pd512(v2), _mm512_castpd256_pd512(v3));
+    t3 = _mm512_unpackhi_pd(_mm512_castpd256_pd512(v2), _mm512_castpd256_pd512(v3));
+
+    v0 = _mm512_castpd512_pd256(_mm512_mask_permutex_pd(t0, _mm512_int2mask(0x0C), t2, 0x44));
+    v1 = _mm512_castpd512_pd256(_mm512_mask_permutex_pd(t1, _mm512_int2mask(0x0C), t3, 0x44));
+    v2 = _mm512_castpd512_pd256(_mm512_mask_permutex_pd(t2, _mm512_int2mask(0x03), t0, 0xEE));
+    v3 = _mm512_castpd512_pd256(_mm512_mask_permutex_pd(t3, _mm512_int2mask(0x03), t1, 0xEE));
+}
+#endif
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_512F_SIMD4_DOUBLE_H */

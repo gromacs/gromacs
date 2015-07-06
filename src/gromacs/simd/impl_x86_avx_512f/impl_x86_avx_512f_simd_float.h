@@ -50,7 +50,7 @@
 #define gmx_simd_float_t           __m512
 #define gmx_simd_load_f            _mm512_load_ps
 /* Avoid using _mm512_extload_ps() since it is not available on gcc-4.9 */
-#define gmx_simd_load1_f(m)        _mm512_broadcastss_ps(_mm_broadcast_ss(m))
+#define gmx_simd_load1_f(m)        _mm512_set1_ps(*m)
 #define gmx_simd_set1_f            _mm512_set1_ps
 #define gmx_simd_store_f           _mm512_store_ps
 #define gmx_simd_loadu_f           _mm512_loadu_ps
@@ -69,6 +69,10 @@
 #define gmx_simd_xor_f(a, b)        _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a), _mm512_castps_si512(b)))
 #define gmx_simd_rsqrt_f           _mm512_rsqrt14_ps
 #define gmx_simd_rcp_f             _mm512_rcp14_ps
+#define gmx_simd_mul_mask_f(a, b, m)       _mm512_maskz_mul_ps(m, a, b)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  _mm512_maskz_fmadd_ps(m, a, b, c)
+#define gmx_simd_rcp_mask_f(a, m)          _mm512_maskz_rcp14_ps(m, a)
+#define gmx_simd_rsqrt_mask_f(a, m)        _mm512_maskz_rsqrt14_ps(m, a)
 #define gmx_simd_fabs_f(x)         _mm512_abs_ps(x)
 #define gmx_simd_fneg_f(x)         gmx_simd_xor_f(x, _mm512_set1_ps(GMX_FLOAT_NEGZERO))
 #define gmx_simd_max_f             _mm512_max_ps
@@ -105,13 +109,14 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t           __mmask16
 #define gmx_simd_cmpeq_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_EQ_OQ)
+#define gmx_simd_cmpnz_f(a)        _mm512_test_epi32_mask(_mm512_castps_si512(a), _mm512_castps_si512(a))
 #define gmx_simd_cmplt_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_LT_OS)
 #define gmx_simd_cmple_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_LE_OS)
 #define gmx_simd_and_fb            _mm512_kand
 #define gmx_simd_andnot_fb(a, b)   _mm512_kandn(a, b)
 #define gmx_simd_or_fb             _mm512_kor
 #define gmx_simd_anytrue_fb        _mm512_mask2int
-#define gmx_simd_blendzero_f(a, sel)    _mm512_mask_mov_ps(_mm512_setzero_ps(), sel, a)
+#define gmx_simd_blendzero_f(a, sel)    _mm512_maskz_mov_ps(sel, a)
 #define gmx_simd_blendnotzero_f(a, sel) _mm512_mask_mov_ps(a, sel, _mm512_setzero_ps())
 #define gmx_simd_blendv_f(a, b, sel)    _mm512_mask_blend_ps(sel, a, b)
 #define gmx_simd_reduce_f(a)       gmx_simd_reduce_f_x86_avx_512f(a)
@@ -122,7 +127,7 @@
 #define gmx_simd_and_fib           _mm512_kand
 #define gmx_simd_or_fib            _mm512_kor
 #define gmx_simd_anytrue_fib       _mm512_mask2int
-#define gmx_simd_blendzero_fi(a, sel)    _mm512_mask_mov_epi32(_mm512_setzero_epi32(), sel, a)
+#define gmx_simd_blendzero_fi(a, sel)    _mm512_maskz_mov_epi32(sel, a)
 #define gmx_simd_blendnotzero_fi(a, sel) _mm512_mask_mov_epi32(a, sel, _mm512_setzero_epi32())
 #define gmx_simd_blendv_fi(a, b, sel)    _mm512_mask_blend_epi32(sel, a, b)
 /* Conversions between different booleans */
@@ -142,6 +147,10 @@ gmx_simd_set_exponent_f_x86_avx_512f(__m512 a)
     const __m512i expbias      = _mm512_set1_epi32(127);
     __m512i       iexp         = gmx_simd_cvt_f2i(a);
 
+    /* This is likely faster than the built in scale operation (lat 8, t-put 3)
+     * since we only work on the integer part and use shifts, meaning it will run
+     * on the integer ports that are typically less utilized in our kernels.
+     */
     iexp = _mm512_slli_epi32(_mm512_add_epi32(iexp, expbias), 23);
     return _mm512_castsi512_ps(iexp);
 }
@@ -149,13 +158,13 @@ gmx_simd_set_exponent_f_x86_avx_512f(__m512 a)
 static gmx_inline float
 gmx_simd_reduce_f_x86_avx_512f(__m512 a)
 {
-    __m128 b;
-    a = _mm512_add_ps(a, _mm512_shuffle_f32x4(a, a, _MM_PERM_DCDC));
-    a = _mm512_add_ps(a, _mm512_shuffle_f32x4(a, a, _MM_PERM_ABAB));
-    b = _mm512_castps512_ps128(a);
-    b = _mm_hadd_ps(b, b);
-    b = _mm_hadd_ps(b, b);
-    return _mm_cvtss_f32(b);
+    float f;
+    a = _mm512_add_ps(a, _mm512_shuffle_f32x4(a, a, 0xEE));
+    a = _mm512_add_ps(a, _mm512_shuffle_f32x4(a, a, 0x11));
+    a = _mm512_add_ps(a, _mm512_permute_ps(a, 0xEE));
+    a = _mm512_add_ps(a, _mm512_permute_ps(a, 0x11));
+    _mm512_mask_storeu_ps(&f, _mm512_int2mask(0x0001), a);
+    return f;
 }
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_512F_SIMD_FLOAT_H */

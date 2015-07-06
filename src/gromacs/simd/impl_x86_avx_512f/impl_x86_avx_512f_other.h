@@ -33,23 +33,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_DOUBLE_H
-#define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_DOUBLE_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512F_OTHER_H
+#define GMX_SIMD_IMPL_X86_AVX_512F_OTHER_H
 
 #include <immintrin.h>
 
-#include "impl_x86_avx_512er_common.h"
+#include "impl_x86_avx_512f_common.h"
 
-#undef  gmx_simd_rsqrt_d
-#define gmx_simd_rsqrt_d           _mm512_rsqrt28_pd
+static void
+gmx_simd_prefetch(const void * m)
+{
+    _mm_prefetch((const char *)m, _MM_HINT_T0);
+}
 
-#undef  gmx_simd_rcp_d
-#define gmx_simd_rcp_d             _mm512_rcp28_pd
 
-#undef  gmx_simd_rsqrt_mask_d
-#define gmx_simd_rsqrt_mask_d(a, m) _mm512_maskz_rsqrt28_pd(m, a)
-
-#undef  gmx_simd_rcp_mask_d
-#define gmx_simd_rcp_mask_d(a, m)   _mm512_maskz_rcp28_pd(m, a)
-
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_DOUBLE_H */
+#endif /* GMX_SIMD_IMPL_X86_AVX_512F_OTHER_H */

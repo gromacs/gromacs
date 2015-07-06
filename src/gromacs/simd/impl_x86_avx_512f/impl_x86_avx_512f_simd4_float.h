@@ -36,6 +36,8 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_512F_SIMD4_FLOAT_H
 #define GMX_SIMD_IMPL_X86_AVX_512F_SIMD4_FLOAT_H
 
+#include "config.h"
+
 #include <math.h>
 
 #include <immintrin.h>
@@ -83,6 +85,7 @@
 #define gmx_simd4_round_f(x)        _mm_round_ps(x, _MM_FROUND_NINT)
 #define gmx_simd4_trunc_f(x)        _mm_round_ps(x, _MM_FROUND_TRUNC)
 #define gmx_simd4_dotproduct3_f(a, b) gmx_simd4_dotproduct3_f_x86_avx_512f(a, b)
+#define gmx_simd4_transpose_f       gmx_simd4_transpose_f_x86_avx_512f
 #define gmx_simd4_fbool_t           __mmask16
 #define gmx_simd4_cmpeq_f(a, b)     _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), _mm512_castps128_ps512(a), _mm512_castps128_ps512(b), _CMP_EQ_OQ)
 #define gmx_simd4_cmplt_f(a, b)     _mm512_mask_cmp_ps_mask(_mm512_int2mask(0xF), _mm512_castps128_ps512(a), _mm512_castps128_ps512(b), _CMP_LT_OS)
@@ -118,5 +121,25 @@ gmx_simd4_dotproduct3_f_x86_avx_512f(__m128 a, __m128 b)
     _mm_store_ss(&f, c);
     return f;
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_f_x86_avx_512f(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                                   gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    __m128 t0, t1, t2, t3;
+
+    t0 = _mm_unpacklo_ps(v0, v2);
+    t1 = _mm_unpackhi_ps(v0, v2);
+    t2 = _mm_unpacklo_ps(v1, v3);
+    t3 = _mm_unpackhi_ps(v1, v3);
+    v0 = _mm_unpacklo_ps(t0, t2);
+    v1 = _mm_unpackhi_ps(t0, t2);
+    v2 = _mm_unpacklo_ps(t1, t3);
+    v3 = _mm_unpackhi_ps(t1, t3);
+}
+#endif
+
+
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_512F_SIMD4_FLOAT_H */
