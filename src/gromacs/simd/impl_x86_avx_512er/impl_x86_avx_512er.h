@@ -36,9 +36,13 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_512ER_H
 #define GMX_SIMD_IMPL_X86_AVX_512ER_H
 
+#include "impl_x86_avx_512er_definitions.h"
+#include "impl_x86_avx_512er_general.h"
 #include "impl_x86_avx_512er_simd4_double.h"
 #include "impl_x86_avx_512er_simd4_float.h"
 #include "impl_x86_avx_512er_simd_double.h"
 #include "impl_x86_avx_512er_simd_float.h"
+#include "impl_x86_avx_512er_util_double.h"
+#include "impl_x86_avx_512er_util_float.h"
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_H */
+#endif // GMX_SIMD_IMPL_X86_AVX_512ER_H
