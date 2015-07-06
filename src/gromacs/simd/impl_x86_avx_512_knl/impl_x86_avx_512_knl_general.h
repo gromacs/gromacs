@@ -33,48 +33,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H
-#define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512_KNL_GENERAL_H
+#define GMX_SIMD_IMPL_X86_AVX_512_KNL_GENERAL_H
 
-#include "config.h"
+#include "gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_general.h"
 
-#include <immintrin.h>
-
-#include "impl_x86_avx_512er_common.h"
-
-#undef  simdRsqrtF
-#define simdRsqrtF           _mm512_rsqrt28_ps
-
-#undef  simdRcpF
-#define simdRcpF             _mm512_rcp28_ps
-
-#undef  simdExpF
-#define simdExpF(x)          simdExpF_x86_avx_512er(x)
-
-/* Implementation helper */
-
-static inline __m512 gmx_simdcall
-simdExpF_x86_avx_512er(__m512 x)
-{
-    const SimdFloat         argscale    = simdSet1F(1.44269504088896341f);
-    const SimdFloat         invargscale = simdSet1F(-0.69314718055994528623f);
-
-    __m512                  xscaled = _mm512_mul_ps(x, argscale);
-    __m512                  r       = _mm512_exp2a23_ps(xscaled);
-
-    /* exp2a23_ps provides 23 bits of accuracy, but we ruin some of that with our argument
-     * scaling. To correct this, we find the difference between the scaled argument and
-     * the true one (extended precision arithmetics does not appear to be necessary to
-     * fulfill our accuracy requirements) and then multiply by the exponent of this
-     * correction since exp(a+b)=exp(a)*exp(b).
-     * Note that this only adds two instructions (and maybe some constant loads).
-     */
-    x         = simdFmaddF(invargscale, xscaled, x);
-    /* x will now be a _very_ small number, so approximate exp(x)=1+x.
-     * We should thus apply the correction as r'=r*(1+x)=r+r*x
-     */
-    r         = simdFmaddF(r, x, r);
-    return r;
-}
-
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H */
+#endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_GENERAL_H

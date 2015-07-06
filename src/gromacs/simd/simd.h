@@ -96,20 +96,24 @@
  */
 
 // Many SIMD architectures other than reference are temporarily disabled in this commit
-#if GMX_SIMD_X86_AVX2_256
-#    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
-#elif GMX_SIMD_X86_AVX_256
-#    include "impl_x86_avx_256/impl_x86_avx_256.h"
+#if GMX_SIMD_X86_SSE2
+#    include "impl_x86_sse2/impl_x86_sse2.h"
 #elif GMX_SIMD_X86_AVX_128_FMA
 #    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
 #elif GMX_SIMD_X86_SSE4_1
 #    include "impl_x86_sse4_1/impl_x86_sse4_1.h"
-#elif GMX_SIMD_X86_SSE2
-#    include "impl_x86_sse2/impl_x86_sse2.h"
-#elif GMX_SIMD_ARM_NEON_ASIMD
-#    include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
+#elif GMX_SIMD_X86_AVX_256
+#    include "impl_x86_avx_256/impl_x86_avx_256.h"
+#elif GMX_SIMD_X86_AVX2_256
+#    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
+#elif GMX_SIMD_X86_AVX_512
+#    include "impl_x86_avx_512/impl_x86_avx_512.h"
+#elif GMX_SIMD_X86_AVX_512_KNL
+#    include "impl_x86_avx_512_knl/impl_x86_avx_512_knl.h"
 #elif GMX_SIMD_ARM_NEON
 #    include "impl_arm_neon/impl_arm_neon.h"
+#elif GMX_SIMD_ARM_NEON_ASIMD
+#    include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
 #elif GMX_SIMD_IBM_QPX
 #    include "impl_ibm_qpx/impl_ibm_qpx.h"
 #elif GMX_SIMD_IBM_VMX
