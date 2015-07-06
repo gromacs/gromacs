@@ -33,17 +33,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_INTEL_MIC_COMMON_H
-#define GMX_SIMD_IMPL_INTEL_MIC_COMMON_H
+#ifndef GMX_SIMD_IMPL_X86_MIC_DEFINITIONS_H
+#define GMX_SIMD_IMPL_X86_MIC_DEFINITIONS_H
 
-/* Intel Xeon Phi, or
- * the-artist-formerly-known-as-Knight's-corner, or
- * the-artist-formerly-formerly-known-as-MIC, or
- * the artist formerly-formerly-formerly-known-as-Larrabee
- * 512-bit SIMD instruction wrappers.
- */
-
-/* Capability definitions for Xeon Phi SIMD */
 #define GMX_SIMD                                   1
 #define GMX_SIMD_HAVE_FLOAT                        1
 #define GMX_SIMD_HAVE_DOUBLE                       1
@@ -60,10 +52,27 @@
 #define GMX_SIMD_HAVE_DINT32_EXTRACT               1
 #define GMX_SIMD_HAVE_DINT32_LOGICAL               1
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS           1
+#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_FLOAT        0
+#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT      0
+#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_FLOAT        0
+#define GMX_SIMD_HAVE_NATIVE_LOG_FLOAT             1
+#define GMX_SIMD_HAVE_NATIVE_EXP2_FLOAT            1
+#define GMX_SIMD_HAVE_NATIVE_EXP_FLOAT             1
+#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_DOUBLE       0
+#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_DOUBLE     0
+#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_DOUBLE       0
+#define GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE            0
+#define GMX_SIMD_HAVE_NATIVE_EXP2_DOUBLE           0
+#define GMX_SIMD_HAVE_NATIVE_EXP_DOUBLE            0
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT    1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE   1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT             1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE            1
+
 #define GMX_SIMD4_HAVE_FLOAT                       1
 #define GMX_SIMD4_HAVE_DOUBLE                      1
 
-/* Implementation details */
+// Implementation details
 #define GMX_SIMD_FLOAT_WIDTH                      16
 #define GMX_SIMD_DOUBLE_WIDTH                      8
 #define GMX_SIMD_FINT32_WIDTH                     16
@@ -72,4 +81,4 @@
 #define GMX_SIMD_RSQRT_BITS                       23
 #define GMX_SIMD_RCP_BITS                         23
 
-#endif /* GMX_SIMD_IMPL_INTEL_MIC_COMMON_H */
+#endif // GMX_SIMD_IMPL_X86_MIC_DEFINITIONS_H
