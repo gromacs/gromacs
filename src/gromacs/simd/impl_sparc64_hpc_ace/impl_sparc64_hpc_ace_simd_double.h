@@ -84,6 +84,16 @@
 #define gmx_simd_xor_d             _fjsp_xor_v2r8
 #define gmx_simd_rsqrt_d(x)        _fjsp_rsqrta_v2r8(x)
 #define gmx_simd_rcp_d(x)          _fjsp_rcpa_v2r8(x)
+#define gmx_simd_mul_mask_d(a, b, m)       gmx_simd_and_d(gmx_simd_mul_d(a, b), m)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  gmx_simd_and_d(gmx_simd_fmadd_d(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_d(a, m)      gmx_simd_and_d(gmx_simd_rcp_d(a), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    gmx_simd_and_d(gmx_simd_rsqrt_d(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_d(a, m)      gmx_simd_and_d(gmx_simd_rcp_d(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    gmx_simd_and_d(gmx_simd_rsqrt_d(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_d(x)         _fjsp_abs_v2r8(x)
 #define gmx_simd_fneg_d(x)         _fjsp_neg_v2r8(x)
 #define gmx_simd_max_d             _fjsp_max_v2r8
@@ -117,6 +127,7 @@
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t           _fjsp_v2r8
 #define gmx_simd_cmpeq_d           _fjsp_cmpeq_v2r8
+#define gmx_simd_cmpnz_d(a)       _fjsp_cmpneq_v2r8(a, _fjsp_setzero_v2r8())
 #define gmx_simd_cmplt_d           _fjsp_cmplt_v2r8
 #define gmx_simd_cmple_d           _fjsp_cmple_v2r8
 #define gmx_simd_and_db            _fjsp_and_v2r8
@@ -139,49 +150,34 @@
 static gmx_inline gmx_simd_dint32_t
 gmx_simd_load_di_sparc64_hpc_ace(const int *m)
 {
-    union
-    {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
-    }
-    conv;
+    long long int __attribute__ ((aligned (16))) itmp[2];
 
-    conv.i[0] = m[0];
-    conv.i[1] = m[1];
+    itmp[0] = m[0];
+    itmp[1] = m[1];
 
-    return _fjsp_load_v2r8( (double *) &(conv.simd) );
+    return _fjsp_load_v2r8( (double *) itmp );
 }
 
 static gmx_inline void
 gmx_simd_store_di_sparc64_hpc_ace(int *m, gmx_simd_dint32_t x)
 {
-    union
-    {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
-    }
-    conv;
+    long long int __attribute__ ((aligned (16))) itmp[2];
 
-    _fjsp_store_v2r8( (double *) &(conv.simd), x );
+    _fjsp_store_v2r8( (double *) itmp, x );
 
-    m[0] = conv.i[0];
-    m[1] = conv.i[1];
+    m[0] = itmp[0];
+    m[1] = itmp[1];
 }
 
 static gmx_inline gmx_simd_dint32_t
 gmx_simd_set1_di_sparc64_hpc_ace(int i)
 {
-    union
-    {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
-    }
-    conv;
+    long long int __attribute__ ((aligned (16))) itmp[2];
 
-    conv.i[0] = i;
-    conv.i[1] = i;
+    itmp[0] = i;
+    itmp[1] = i;
 
-    return _fjsp_load_v2r8( (double *) &(conv.simd) );
+    return _fjsp_load_v2r8( (double *) itmp );
 }
 
 static gmx_inline int
@@ -258,17 +254,12 @@ gmx_simd_get_exponent_d_sparc64_hpc_ace(gmx_simd_double_t x)
     const gmx_int64_t    expmask   = 0x7ff0000000000000LL;
     const gmx_int64_t    expbias   = 1023LL;
 
-    union
-    {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
-    }
-    conv;
+    long long int __attribute__ ((aligned (16))) itmp[2];
 
-    _fjsp_store_v2r8( (double *) &conv.simd, x);
-    conv.i[0] = ((conv.i[0] & expmask) >> 52) - expbias;
-    conv.i[1] = ((conv.i[1] & expmask) >> 52) - expbias;
-    x         = _fjsp_load_v2r8( (double *) &conv.simd);
+    _fjsp_store_v2r8( (double *) itmp, x);
+    itmp[0]   = ((itmp[0] & expmask) >> 52) - expbias;
+    itmp[1]   = ((itmp[1] & expmask) >> 52) - expbias;
+    x         = _fjsp_load_v2r8( (double *) itmp);
     return _fjsp_xtod_v2r8(x);
 }
 
@@ -286,19 +277,13 @@ static gmx_inline gmx_simd_double_t
 gmx_simd_set_exponent_d_sparc64_hpc_ace(gmx_simd_double_t x)
 {
     const gmx_int64_t    expbias   = 1023;
-    union
-    {
-        _fjsp_v2r8       simd;
-        long long int    i[2];
-    }
-    conv;
+    long long int __attribute__ ((aligned (16))) itmp[2];
 
+    _fjsp_store_v2r8( (double *) itmp, gmx_simd_cvt_d2i_sparc64_hpc_ace(x));
+    itmp[0] = (itmp[0] + expbias) << 52;
+    itmp[1] = (itmp[1] + expbias) << 52;
 
-    _fjsp_store_v2r8( (double *) &conv.simd, gmx_simd_cvt_d2i_sparc64_hpc_ace(x));
-    conv.i[0] = (conv.i[0] + expbias) << 52;
-    conv.i[1] = (conv.i[1] + expbias) << 52;
-
-    return _fjsp_load_v2r8( (double *) &conv.simd);
+    return _fjsp_load_v2r8( (double *) itmp);
 }
 
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_SIMD_DOUBLE_H */

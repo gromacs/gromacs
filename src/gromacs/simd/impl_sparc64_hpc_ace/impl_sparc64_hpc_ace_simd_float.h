@@ -98,6 +98,16 @@
 #define gmx_simd_xor_f            _fjsp_xor_v2r8
 #define gmx_simd_rsqrt_f          _fjsp_rsqrta_v2r8
 #define gmx_simd_rcp_f            _fjsp_rcpa_v2r8
+#define gmx_simd_mul_mask_f(a, b, m)       gmx_simd_and_f(gmx_simd_mul_f(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  gmx_simd_and_f(gmx_simd_fmadd_f(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_and_f(gmx_simd_rcp_f(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_and_f(gmx_simd_rsqrt_f(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_and_f(gmx_simd_rcp_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_and_f(gmx_simd_rsqrt_f(gmx_simd_blendv_f(gmx_simd_set1_f(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(x)        _fjsp_abs_v2r8(x)
 #define gmx_simd_fneg_f(x)        _fjsp_neg_v2r8(x)
 #define gmx_simd_max_f            _fjsp_max_v2r8
@@ -132,6 +142,7 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t          _fjsp_v2r8
 #define gmx_simd_cmpeq_f          _fjsp_cmpeq_v2r8
+#define gmx_simd_cmpnz_f(a)       _fjsp_cmpneq_v2r8(a, _fjsp_setzero_v2r8())
 #define gmx_simd_cmplt_f          _fjsp_cmplt_v2r8
 #define gmx_simd_cmple_f          _fjsp_cmple_v2r8
 #define gmx_simd_and_fb           _fjsp_and_v2r8

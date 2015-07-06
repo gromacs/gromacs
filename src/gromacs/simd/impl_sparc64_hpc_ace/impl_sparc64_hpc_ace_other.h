@@ -33,14 +33,38 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_SPARC64_HPC_ACE_H
-#define GMX_SIMD_IMPL_SPARC64_HPC_ACE_H
+#ifndef GMX_SIMD_IMPL_SPARC64_HPC_ACE_OTHER_H
+#define GMX_SIMD_IMPL_SPARC64_HPC_ACE_OTHER_H
 
-#include "impl_sparc64_hpc_ace_other.h"
-#include "impl_sparc64_hpc_ace_simd_double.h"
-#include "impl_sparc64_hpc_ace_simd_float.h"
-#include "impl_sparc64_hpc_ace_util_double.h"
-#include "impl_sparc64_hpc_ace_util_float.h"
-/* No SIMD4 support, since both single & double are only 2-wide */
+/* Fujitsu header borrows the name from SSE2, since some instructions have aliases.
+ * Environment/compiler version GM-1.2.0-17 seems to be buggy; when -Xg is
+ * defined to enable GNUC extensions, this sets _ISOC99_SOURCE, which in
+ * turn causes all intrinsics to be declared inline _instead_ of static. This
+ * leads to duplicate symbol errors at link time.
+ * To work around this we unset this before including the HPC-ACE header, and
+ * reset the value afterwards.
+ */
+#ifdef _ISOC99_SOURCE
+#    undef _ISOC99_SOURCE
+#    define SAVE_ISOC99_SOURCE
+#endif
 
-#endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_H */
+#include <emmintrin.h>
+
+#ifdef SAVE_ISOC99_SOURCE
+#    define _ISOC99_SOURCE
+#    undef SAVE_ISOC99_SOURCE
+#endif
+
+#include <math.h>
+
+#include "impl_sparc64_hpc_ace_common.h"
+
+gmx_simd_prefetch(const void * m)
+{
+#ifdef __GNUC__
+    __builtin_prefetch(m);
+#endif
+}
+
+#endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_OTHER_H */
