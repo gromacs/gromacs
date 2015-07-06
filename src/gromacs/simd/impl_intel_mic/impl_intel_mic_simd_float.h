@@ -42,6 +42,8 @@
 
 #include <immintrin.h>
 
+#include "gromacs/utility/real.h"
+
 #include "impl_intel_mic_common.h"
 
 /****************************************************
@@ -68,6 +70,10 @@
 #define gmx_simd_xor_f(a, b)        _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a), _mm512_castps_si512(b)))
 #define gmx_simd_rsqrt_f           _mm512_rsqrt23_ps
 #define gmx_simd_rcp_f             _mm512_rcp23_ps
+#define gmx_simd_mul_mask_f(a, b, m)       _mm512_mask_mul_ps(_mm512_setzero_ps(), m, a, b)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  _mm512_mask_mov_ps(_mm512_setzero_ps(), m, _mm512_fmadd_ps(a, b, c))
+#define gmx_simd_rsqrt_mask_f(a, m)        _mm512_mask_rsqrt23_ps(_mm512_setzero_ps(), m, a)
+#define gmx_simd_rcp_mask_f(a, m)          _mm512_mask_rcp23_ps(_mm512_setzero_ps(), m, a)
 #define gmx_simd_fabs_f(x)         gmx_simd_andnot_f(_mm512_set1_ps(GMX_FLOAT_NEGZERO), x)
 #define gmx_simd_fneg_f(x)         _mm512_addn_ps(x, _mm512_setzero_ps())
 #define gmx_simd_max_f             _mm512_gmax_ps
@@ -104,6 +110,8 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t           __mmask16
 #define gmx_simd_cmpeq_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_EQ_OQ)
+#define gmx_simd_cmpnz_f(a)        _mm512_test_epi32_mask( _mm512_castps_si512(a), _mm512_castps_si512(a) )
+
 #define gmx_simd_cmplt_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_LT_OS)
 #define gmx_simd_cmple_f(a, b)     _mm512_cmp_ps_mask(a, b, _CMP_LE_OS)
 #define gmx_simd_and_fb            _mm512_kand
@@ -148,46 +156,6 @@ gmx_simd_storeu_f_mic(float * m, __m512 s)
     _mm512_packstorehi_ps(m+16, s);
 }
 
-/* load store fint32 */
-static gmx_inline __m512i gmx_simdcall
-gmx_simd_loadu_fi_mic(const gmx_int32_t * m)
-{
-    return _mm512_loadunpackhi_epi32(_mm512_loadunpacklo_epi32(_mm512_undefined_epi32(), m), m+16);
-}
-
-static gmx_inline void gmx_simdcall
-gmx_simd_storeu_fi_mic(gmx_int32_t * m, __m512i s)
-{
-    _mm512_packstorelo_epi32(m, s);
-    _mm512_packstorehi_epi32(m+16, s);
-}
-
-/* extract */
-static gmx_inline gmx_int32_t gmx_simdcall
-gmx_simd_extract_fi_mic(gmx_simd_fint32_t a, int index)
-{
-    int r;
-    _mm512_mask_packstorelo_epi32(&r, _mm512_mask2int(1<<index), a);
-    return r;
-}
-
-/* This is likely faster than the built in scale operation (lat 8, t-put 3)
- * since we only work on the integer part and use shifts. TODO: check. given that scale also only does integer
- */
-static gmx_inline __m512 gmx_simdcall
-gmx_simd_set_exponent_f_mic(__m512 a)
-{
-    __m512i       iexp         = gmx_simd_cvt_f2i(a);
-
-    const __m512i expbias      = _mm512_set1_epi32(127);
-    iexp = _mm512_slli_epi32(_mm512_add_epi32(iexp, expbias), 23);
-    return _mm512_castsi512_ps(iexp);
-
-    /* scale alternative:
-       return _mm512_scale_ps(_mm512_set1_ps(1), iexp);
-     */
-}
-
 static gmx_inline __m512 gmx_simdcall
 gmx_simd_exp2_f_mic(__m512 x)
 {
@@ -223,5 +191,46 @@ gmx_simd_log_f_mic(__m512 x)
 {
     return _mm512_mul_ps(_mm512_set1_ps(0.693147180559945286226764), _mm512_log2ae23_ps(x));
 }
+
+/* This is likely faster than the built in scale operation (lat 8, t-put 3)
+ * since we only work on the integer part and use shifts. TODO: check. given that scale also only does integer
+ */
+static gmx_inline __m512 gmx_simdcall
+gmx_simd_set_exponent_f_mic(__m512 a)
+{
+    __m512i       iexp         = gmx_simd_cvt_f2i(a);
+
+    const __m512i expbias      = _mm512_set1_epi32(127);
+    iexp = _mm512_slli_epi32(_mm512_add_epi32(iexp, expbias), 23);
+    return _mm512_castsi512_ps(iexp);
+
+    /* scale alternative:
+       return _mm512_scale_ps(_mm512_set1_ps(1), iexp);
+     */
+}
+
+/* load store fint32 */
+static gmx_inline __m512i gmx_simdcall
+gmx_simd_loadu_fi_mic(const gmx_int32_t * m)
+{
+    return _mm512_loadunpackhi_epi32(_mm512_loadunpacklo_epi32(_mm512_undefined_epi32(), m), m+16);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd_storeu_fi_mic(gmx_int32_t * m, __m512i s)
+{
+    _mm512_packstorelo_epi32(m, s);
+    _mm512_packstorehi_epi32(m+16, s);
+}
+
+/* extract */
+static gmx_inline gmx_int32_t gmx_simdcall
+gmx_simd_extract_fi_mic(gmx_simd_fint32_t a, int index)
+{
+    int r;
+    _mm512_mask_packstorelo_epi32(&r, _mm512_mask2int(1<<index), a);
+    return r;
+}
+
 
 #endif /* GMX_SIMD_IMPL_INTEL_MIC_SIMD_FLOAT_H */
