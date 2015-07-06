@@ -406,10 +406,23 @@ elseif(GMX_SIMD STREQUAL "IBM_VMX")
 
 elseif(GMX_SIMD STREQUAL "IBM_VSX")
 
-    # Altivec was originally single-only, and it took a while for compilers
-    # to support the double-precision features in VSX. 
-    if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
-        message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+        # VSX uses the same function API as Altivec/VMX, so make sure we tune for the current CPU and not VMX.
+        # By putting these flags here rather than in the general compiler flags file we can safely assume
+        # that we are at least on Power7 since that is when VSX appeared.
+        if(BUILD_CPU_BRAND MATCHES "POWER7")
+            gmx_test_cflag(GNU_C_VSX_POWER7   "-mcpu=power7 -mtune=power7" SIMD_C_FLAGS)
+            gmx_test_cflag(GNU_CXX_VSX_POWER7 "-mcpu=power7 -mtune=power7" SIMD_CXX_FLAGS)
+        else()
+            # Enable power8 vector extensions on all platforms except old Power7.
+            gmx_test_cflag(GNU_C_VSX_POWER8   "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" SIMD_C_FLAGS)
+            gmx_test_cflag(GNU_CXX_VSX_POWER8 "-mcpu=power8 -mpower8-vector -mpower8-fusion -mdirect-move" SIMD_CXX_FLAGS)
+        endif()
+        # Altivec was originally single-only, and it took a while for compilers
+        # to support the double-precision features in VSX.
+        if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+            message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+        endif()
     endif()
 
     gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
