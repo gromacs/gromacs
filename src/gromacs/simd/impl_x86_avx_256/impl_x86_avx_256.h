@@ -36,9 +36,12 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_256_H
 #define GMX_SIMD_IMPL_X86_AVX_256_H
 
+#include "impl_x86_avx_256_other.h"
 #include "impl_x86_avx_256_simd4_double.h"
 #include "impl_x86_avx_256_simd4_float.h"
 #include "impl_x86_avx_256_simd_double.h"
 #include "impl_x86_avx_256_simd_float.h"
+#include "impl_x86_avx_256_util_double.h"
+#include "impl_x86_avx_256_util_float.h"
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_256_H */

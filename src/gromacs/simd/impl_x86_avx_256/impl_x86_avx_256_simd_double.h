@@ -68,6 +68,16 @@
 #define gmx_simd_xor_d             _mm256_xor_pd
 #define gmx_simd_rsqrt_d(x)        _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)))
 #define gmx_simd_rcp_d(x)          _mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(x)))
+#define gmx_simd_mul_mask_d(a, b, m)       _mm256_and_pd(_mm256_mul_pd(a, b), m)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  _mm256_and_pd(gmx_simd_fmadd_d(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_d(a, m)        _mm256_and_pd(gmx_simd_rcp_d(a), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)      _mm256_and_pd(gmx_simd_rsqrt_d(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_d(a, m)        _mm256_and_pd(gmx_simd_rcp_d(_mm256_blendv_pd(_mm256_set1_pd(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)      _mm256_and_pd(gmx_simd_rsqrt_d(_mm256_blendv_pd(_mm256_set1_pd(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_d(x)         _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x)
 #define gmx_simd_fneg_d(x)         _mm256_xor_pd(x, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
 #define gmx_simd_max_d             _mm256_max_pd
@@ -82,9 +92,9 @@
 #define gmx_simd_dint32_t          __m128i
 #define gmx_simd_load_di(m)        _mm_load_si128((const __m128i *)(m))
 #define gmx_simd_set1_di           _mm_set1_epi32
-#define gmx_simd_store_di(m, x)     _mm_store_si128((__m128i *)(m), x)
+#define gmx_simd_store_di(m, x)    _mm_store_si128((__m128i *)(m), x)
 #define gmx_simd_loadu_di(m)       _mm_loadu_si128((const __m128i *)(m))
-#define gmx_simd_storeu_di(m, x)    _mm_storeu_si128((__m128i *)(m), x)
+#define gmx_simd_storeu_di(m, x)   _mm_storeu_si128((__m128i *)(m), x)
 #define gmx_simd_setzero_di        _mm_setzero_si128
 #define gmx_simd_cvt_d2i           _mm256_cvtpd_epi32
 #define gmx_simd_cvtt_d2i          _mm256_cvttpd_epi32
@@ -103,9 +113,10 @@
 #define gmx_simd_mul_di            _mm_mullo_epi32
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t           __m256d
-#define gmx_simd_cmpeq_d(a, b)      _mm256_cmp_pd(a, b, _CMP_EQ_OQ)
-#define gmx_simd_cmplt_d(a, b)      _mm256_cmp_pd(a, b, _CMP_LT_OQ)
-#define gmx_simd_cmple_d(a, b)      _mm256_cmp_pd(a, b, _CMP_LE_OQ)
+#define gmx_simd_cmpeq_d(a, b)     _mm256_cmp_pd(a, b, _CMP_EQ_OQ)
+#define gmx_simd_cmpnz_d(a)        _mm256_cmp_pd(a, _mm256_setzero_pd(), _CMP_NEQ_OQ)
+#define gmx_simd_cmplt_d(a, b)     _mm256_cmp_pd(a, b, _CMP_LT_OQ)
+#define gmx_simd_cmple_d(a, b)     _mm256_cmp_pd(a, b, _CMP_LE_OQ)
 #define gmx_simd_and_db            _mm256_and_pd
 #define gmx_simd_or_db             _mm256_or_pd
 #define gmx_simd_anytrue_db        _mm256_movemask_pd
@@ -183,7 +194,7 @@ gmx_simd_reduce_d_avx_256(__m256d a)
 {
     double  f;
     __m128d a0, a1;
-    a  = _mm256_hadd_pd(a, a);
+    a  = _mm256_add_pd(a, _mm256_permute_pd(a, 0b0101 ));
     a0 = _mm256_castpd256_pd128(a);
     a1 = _mm256_extractf128_pd(a, 0x1);
     a0 = _mm_add_sd(a0, a1);
@@ -223,5 +234,19 @@ gmx_simd_cvt_dd2f_avx_256(__m256d d0, __m256d d1)
     __m128 f1 = _mm256_cvtpd_ps(d1);
     return _mm256_insertf128_ps(_mm256_castps128_ps256(f0), f1, 0x1);
 }
+
+/* Internal macro: Full 4x4 transpose of __m256d */
+#define GMX_MM_TRANSPOSE4_DOUBLE(v0, v1, v2, v3)             \
+    {                                                            \
+        __m256d gmx_mm_t1, gmx_mm_t2, gmx_mm_t3, gmx_mm_t4;      \
+        gmx_mm_t1 = _mm256_unpacklo_pd(v0, v1);                  \
+        gmx_mm_t2 = _mm256_unpackhi_pd(v0, v1);                  \
+        gmx_mm_t3 = _mm256_unpacklo_pd(v2, v3);                  \
+        gmx_mm_t4 = _mm256_unpackhi_pd(v2, v3);                  \
+        v0        = _mm256_permute2f128_pd(gmx_mm_t1, gmx_mm_t3, 0x20); \
+        v1        = _mm256_permute2f128_pd(gmx_mm_t2, gmx_mm_t4, 0x20); \
+        v2        = _mm256_permute2f128_pd(gmx_mm_t1, gmx_mm_t3, 0x31); \
+        v3        = _mm256_permute2f128_pd(gmx_mm_t2, gmx_mm_t4, 0x31); \
+    }
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_256_SIMD_DOUBLE_H */

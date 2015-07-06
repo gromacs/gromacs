@@ -33,15 +33,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX2_256_H
-#define GMX_SIMD_IMPL_X86_AVX2_256_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_256_OTHER_H
+#define GMX_SIMD_IMPL_X86_AVX_256_OTHER_H
 
-/* No need to override anything in AVX-256 for prefetching */
-#include "impl_x86_avx2_256_simd4_double.h"
-#include "impl_x86_avx2_256_simd4_float.h"
-#include "impl_x86_avx2_256_simd_double.h"
-#include "impl_x86_avx2_256_simd_float.h"
-/* No need to override anything in AVX-256 for double-precision utilities */
-#include "impl_x86_avx2_256_util_float.h"
+#include <immintrin.h>
 
-#endif /* GMX_SIMD_IMPL_X86_AVX2_256_H */
+#include "impl_x86_avx_256_common.h"
+
+static void
+gmx_simd_prefetch(void *m)
+{
+    _mm_prefetch((const char *)m, _MM_HINT_T0);
+}
+
+#endif /* GMX_SIMD_IMPL_X86_AVX_256_UTIL_FLOAT_H */

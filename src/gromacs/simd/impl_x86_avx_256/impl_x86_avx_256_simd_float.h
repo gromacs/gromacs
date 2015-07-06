@@ -68,6 +68,16 @@
 #define gmx_simd_xor_f             _mm256_xor_ps
 #define gmx_simd_rsqrt_f           _mm256_rsqrt_ps
 #define gmx_simd_rcp_f             _mm256_rcp_ps
+#define gmx_simd_mul_mask_f(a, b, m)         _mm256_and_ps(_mm256_mul_ps(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)    _mm256_and_ps(gmx_simd_fmadd_f(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)        _mm256_and_ps(_mm256_rcp_ps(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)      _mm256_and_ps(_mm256_rsqrt_ps(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)        _mm256_and_ps(_mm256_rcp_ps(_mm256_blendv_ps(_mm256_set1_ps(1.0f), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)      _mm256_and_ps(_mm256_rsqrt_ps(_mm256_blendv_ps(_mm256_set1_ps(1.0f), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(x)         _mm256_andnot_ps(_mm256_set1_ps(GMX_FLOAT_NEGZERO), x)
 #define gmx_simd_fneg_f(x)         _mm256_xor_ps(x, _mm256_set1_ps(GMX_FLOAT_NEGZERO))
 #define gmx_simd_max_f             _mm256_max_ps
@@ -106,9 +116,10 @@
 /* gmx_simd_mul_fi not supported     */
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t           __m256
-#define gmx_simd_cmpeq_f(a, b)      _mm256_cmp_ps(a, b, _CMP_EQ_OQ)
-#define gmx_simd_cmplt_f(a, b)      _mm256_cmp_ps(a, b, _CMP_LT_OQ)
-#define gmx_simd_cmple_f(a, b)      _mm256_cmp_ps(a, b, _CMP_LE_OQ)
+#define gmx_simd_cmpeq_f(a, b)     _mm256_cmp_ps(a, b, _CMP_EQ_OQ)
+#define gmx_simd_cmpnz_f(a)        _mm256_cmp_ps(a, _mm256_setzero_ps(), _CMP_NEQ_OQ)
+#define gmx_simd_cmplt_f(a, b)     _mm256_cmp_ps(a, b, _CMP_LT_OQ)
+#define gmx_simd_cmple_f(a, b)     _mm256_cmp_ps(a, b, _CMP_LE_OQ)
 #define gmx_simd_and_fb            _mm256_and_ps
 #define gmx_simd_or_fb             _mm256_or_ps
 #define gmx_simd_anytrue_fb        _mm256_movemask_ps
@@ -124,7 +135,7 @@
 /* gmx_simd_or_fib not supported          */
 /* gmx_simd_anytrue_fib not supported     */
 /* gmx_simd_blendzero_fi not supported    */
-/* gmx_simd_blendnotzero_fi not supported    */
+/* gmx_simd_blendnotzero_fi not supported */
 /* gmx_simd_blendv_fi not supported       */
 /* Conversions between different booleans */
 #define gmx_simd_cvt_fb2fib        _mm256_castps_si256
@@ -185,13 +196,11 @@ gmx_simd_reduce_f_avx_256(__m256 a)
 {
     float  f;
 
-    __m128 a0, a1;
-    a  = _mm256_hadd_ps(a, a);
-    a  = _mm256_hadd_ps(a, a);
-    a0 = _mm256_castps256_ps128(a);
-    a1 = _mm256_extractf128_ps(a, 0x1);
-    a0 = _mm_add_ss(a0, a1);
-    _mm_store_ss(&f, a0);
+    __m128 t0;
+    t0 = _mm_add_ps(_mm256_castps256_ps128(a), _mm256_extractf128_ps(a, 0x1));
+    t0 = _mm_add_ps(t0, _mm_permute_ps(t0, _MM_SHUFFLE(1, 0, 3, 2)));
+    t0 = _mm_add_ss(t0, _mm_permute_ps(t0, _MM_SHUFFLE(0, 3, 2, 1)));
+    _MM_EXTRACT_FLOAT(f, t0, 0);
     return f;
 }
 
