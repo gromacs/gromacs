@@ -33,15 +33,44 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H
-#define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
+#define GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
 
 #include <immintrin.h>
 
-#include "impl_x86_avx_512er_common.h"
-#include "impl_x86_avx_512er_simd_double.h"
+namespace gmx
+{
 
-#undef  simd4RsqrtD
-#define simd4RsqrtD(x)       _mm512_castpd512_pd256(_mm512_rsqrt28_pd(_mm512_castpd256_pd512(x)))
+static inline void
+simdPrefetch(const void * m)
+{
+    _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
+}
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H */
+/*! \brief Return integer from AVX-512 mask
+ *
+ *  \param m  Mask suitable for use with AVX-512 instructions
+ *
+ *  \return Short integer representation of mask
+ */
+static inline short
+avx512Mask2Int(__mmask16 m)
+{
+    return static_cast<short>(m);
+}
+
+/*! \brief Return AVX-512 mask from integer
+ *
+ *  \param m  Short integer
+ *
+ *  \return Mask suitable for use with AVX-512 instructions.
+ */
+static inline __mmask16
+avx512Int2Mask(short i)
+{
+    return static_cast<__mmask16>(i);
+}
+
+}
+
+#endif // GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H
