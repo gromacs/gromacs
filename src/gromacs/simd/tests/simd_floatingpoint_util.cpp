@@ -756,6 +756,49 @@ TEST_F(SimdFloatingpointUtilTest, storeDualHsimd)
     }
 }
 
+TEST_F(SimdFloatingpointUtilTest, incrDualHsimd)
+{
+    real            reference[GMX_SIMD_REAL_WIDTH];
+    SimdReal        v0;
+
+    // Create reference values
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        reference[i] = val0_[i] + val2_[i];
+    }
+
+    // Point p to the upper half of val0_
+    real * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
+
+    v0 = load(val2_);
+    incrDualHsimd(val0_, p, v0);
+
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        EXPECT_EQ(reference[i], val0_[i]);
+    }
+}
+
+TEST_F(SimdFloatingpointUtilTest, incrDualHsimdOverlapping)
+{
+    real            reference[GMX_SIMD_REAL_WIDTH/2];
+    SimdReal        v0;
+
+    // Create reference values
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
+    {
+        reference[i] = val0_[i] + val2_[i] + val2_[GMX_SIMD_REAL_WIDTH/2+i];
+    }
+
+    v0 = load(val2_);
+    incrDualHsimd(val0_, val0_, v0);
+
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
+    {
+        EXPECT_EQ(reference[i], val0_[i]);
+    }
+}
+
 TEST_F(SimdFloatingpointUtilTest, decrHsimd)
 {
     SimdReal                          v0;
