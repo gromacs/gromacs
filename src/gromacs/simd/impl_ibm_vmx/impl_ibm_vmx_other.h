@@ -33,12 +33,21 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPLEMENTATION_IBM_VMX_H
-#define GMX_SIMD_IMPLEMENTATION_IBM_VMX_H
+#ifndef GMX_SIMD_IMPLEMENTATION_IBM_VMX_UTIL_FLOAT_H
+#define GMX_SIMD_IMPLEMENTATION_IBM_VMX_UTIL_FLOAT_H
 
-#include "impl_ibm_vmx_other.h"
-#include "impl_ibm_vmx_simd4_float.h"
-#include "impl_ibm_vmx_simd_float.h"
-#include "impl_ibm_vmx_util_float.h"
+#include <altivec.h>
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VMX_H */
+#include "impl_ibm_vmx_common.h"
+
+static void
+gmx_simd_prefetch(const void * m)
+{
+#if defined(__ibmxl__) || defined(__xlC__)
+    __dcbt(m);
+#elif defined __GNUC__
+    __builtin_prefetch(m);
+#endif
+}
+
+#endif /* GMX_SIMD_IMPLEMENTATION_IBM_VMX_UTIL_FLOAT_H */

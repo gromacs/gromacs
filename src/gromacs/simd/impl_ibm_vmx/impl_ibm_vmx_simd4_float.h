@@ -36,6 +36,8 @@
 #ifndef GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD4_FLOAT_H
 #define GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD4_FLOAT_H
 
+#include "config.h"
+
 #include <math.h>
 
 #include <altivec.h>
@@ -43,9 +45,13 @@
 #include "impl_ibm_vmx_common.h"
 #include "impl_ibm_vmx_simd_float.h"
 
-/* Make sure we do not screw up c++ - undefine vector/bool, and rely on __vector and __bool */
-#undef vector
-#undef bool
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+#    define gmx_vmx_bool __bool
+#    undef  bool
+#else
+#    define gmx_vmx_bool bool
+#endif
+
 
 #define gmx_simd4_float_t                gmx_simd_float_t
 #define gmx_simd4_load_f                 gmx_simd_load_f
@@ -79,6 +85,7 @@
 #define gmx_simd4_get_mantissa_f         gmx_simd_get_mantissa_f
 #define gmx_simd4_set_exponent_f         gmx_simd_set_exponent_f
 #define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_ibm_vmx
+#define gmx_simd4_transpose_f            gmx_simd4_transpose_f_ibm_vmx
 #define gmx_simd4_fint32_t               gmx_simd_fint32_t
 #define gmx_simd4_load_fi                gmx_simd_load_fi
 #define gmx_simd4_load1_fi               gmx_simd_load1_fi
@@ -105,11 +112,20 @@
 static gmx_inline float
 gmx_simd4_dotproduct3_f_ibm_vmx(gmx_simd4_float_t a, gmx_simd4_float_t b)
 {
-    gmx_simd4_float_t c = vec_mul(a, b);
+    gmx_simd4_float_t c = gmx_simd_mul_f(a, b);
     /* Keep only elements 0,1,2 by shifting in zero from right */
     c = vec_sld(c, gmx_simd_setzero_f(), 4);
     /* calculate sum */
     return gmx_simd_reduce_f_ibm_vmx(c);
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_f_ibm_vmx(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                              gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    GMX_VMX_TRANSPOSE4(v0, v1, v2, v3);
+}
+#endif
 
 #endif /* GMX_SIMD_IMPLEMENTATION_IBM_VMX_SIMD4_FLOAT_H */

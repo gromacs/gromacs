@@ -42,15 +42,19 @@
 
 #include "impl_ibm_vmx_common.h"
 
-/* Make sure we do not screw up c++ - undefine vector/bool, and rely on __vector and __bool */
-#undef vector
-#undef bool
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+#    define gmx_vmx_bool __bool
+#    undef  bool
+#else
+#    define gmx_vmx_bool bool
+#endif
+
 
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
 #define gmx_simd_float_t           __vector float
-#define gmx_simd_load_f(m)         vec_ld(0, (const __vector float *)(m))
+#define gmx_simd_load_f(m)         vec_ld(0, (float *)(m))
 #define gmx_simd_load1_f(m)        gmx_simd_load1_f_ibm_vmx(m)
 #define gmx_simd_set1_f(x)         gmx_simd_set1_f_ibm_vmx(x)
 #define gmx_simd_store_f(m, x)     vec_st(x, 0, (__vector float *)(m))
@@ -59,9 +63,9 @@
 #define gmx_simd_setzero_f()       ((__vector float)vec_splat_u32(0))
 #define gmx_simd_add_f(a, b)       vec_add(a, b)
 #define gmx_simd_sub_f(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_f(a, b)       vec_mul(a, b)
+#define gmx_simd_mul_f(a, b)       vec_madd(a, b, (__vector float)vec_splat_u32(0))
 #define gmx_simd_fmadd_f(a, b, c)  vec_madd(a, b, c)
-#define gmx_simd_fmsub_f(a, b, c)  vec_sub(vec_mul(a, b), c)
+#define gmx_simd_fmsub_f(a, b, c)  vec_madd(a, b, -c)
 /* IBM uses an alternative FMA definition, so -a*b+c=-(a*b-c) is "nmsub" */
 #define gmx_simd_fnmadd_f(a, b, c) vec_nmsub(a, b, c)
 /* IBM uses an alternative FMA definition, so -a*b-c=-(a*b+c) is "nmadd" */
@@ -72,6 +76,16 @@
 #define gmx_simd_xor_f(a, b)       vec_xor(a, b)
 #define gmx_simd_rsqrt_f(a)        vec_rsqrte(a)
 #define gmx_simd_rcp_f(a)          vec_re(a)
+#define gmx_simd_mul_mask_f(a, b, m)       vec_and(gmx_simd_mul_f(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  vec_and(vec_madd(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)      vec_and(vec_re(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    vec_and(vec_rsqrte(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)      vec_and(vec_re(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    vec_and(vec_rsqrte(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(a)         vec_abs(a)
 #define gmx_simd_fneg_f(a)         vec_xor(a, (__vector float)vec_sl(vec_splat_u32(-1), vec_splat_u32(-1)))
 #define gmx_simd_max_f(a, b)       vec_max(a, b)
@@ -83,10 +97,10 @@
 #define gmx_simd_get_mantissa_f(a) gmx_simd_get_mantissa_f_ibm_vmx(a)
 #define gmx_simd_set_exponent_f(a) gmx_simd_set_exponent_f_ibm_vmx(a)
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
-#define gmx_simd_fint32_t          __vector int
-#define gmx_simd_load_fi(m)        vec_ld(0, (const __vector int *)(m))
+#define gmx_simd_fint32_t          __vector signed int
+#define gmx_simd_load_fi(m)        vec_ld(0, (const __vector signed int *)(m))
 #define gmx_simd_set1_fi(i)        gmx_simd_set1_fi_ibm_vmx((int)(i))
-#define gmx_simd_store_fi(m, x)    vec_st(x, 0, (__vector int *)(m))
+#define gmx_simd_store_fi(m, x)    vec_st(x, 0, (__vector signed int *)(m))
 #undef  gmx_simd_loadu_fi
 #undef  gmx_simd_storeu_fi
 #define gmx_simd_setzero_fi()      vec_splat_s32(0)
@@ -112,28 +126,29 @@
 /* Integer arithmetic ops on gmx_simd_fint32_t */
 #define gmx_simd_add_fi(a, b)       vec_add(a, b)
 #define gmx_simd_sub_fi(a, b)       vec_sub(a, b)
-#define gmx_simd_mul_fi(a, b)       vec_mule((__vector short)a, (__vector short)b)
+#define gmx_simd_mul_fi(a, b)       ((a)*(b))
 /* Boolean & comparison operations on gmx_simd_float_t */
-#define gmx_simd_fbool_t           __vector __bool int
+#define gmx_simd_fbool_t           __vector gmx_vmx_bool int
 #define gmx_simd_cmpeq_f(a, b)     vec_cmpeq(a, b)
+#define gmx_simd_cmpnz_f(a)        (gmx_simd_fbool_t)vec_cmpgt( (__vector unsigned int)a, vec_splat_u32(0))
 #define gmx_simd_cmplt_f(a, b)     vec_cmplt(a, b)
 #define gmx_simd_cmple_f(a, b)     vec_cmple(a, b)
 #define gmx_simd_and_fb(a, b)      vec_and(a, b)
 #define gmx_simd_or_fb(a, b)       vec_or(a, b)
-#define gmx_simd_anytrue_fb(a)     vec_any_ne(a, (__vector __bool int)vec_splat_u32(0))
+#define gmx_simd_anytrue_fb(a)     vec_any_ne(a, (__vector gmx_vmx_bool int)vec_splat_u32(0))
 #define gmx_simd_blendzero_f(a, sel)    vec_and(a, (__vector float)sel)
 #define gmx_simd_blendnotzero_f(a, sel) vec_andc(a, (__vector float)sel)
 #define gmx_simd_blendv_f(a, b, sel)    vec_sel(a, b, sel)
 #define gmx_simd_reduce_f(a)       gmx_simd_reduce_f_ibm_vmx(a)
 /* Boolean & comparison operations on gmx_simd_fint32_t */
-#define gmx_simd_fibool_t          __vector __bool int
+#define gmx_simd_fibool_t          __vector gmx_vmx_bool int
 #define gmx_simd_cmpeq_fi(a, b)     vec_cmpeq(a, b)
 #define gmx_simd_cmplt_fi(a, b)     vec_cmplt(a, b)
 #define gmx_simd_and_fib(a, b)      vec_and(a, b)
 #define gmx_simd_or_fib(a, b)       vec_or(a, b)
-#define gmx_simd_anytrue_fib(a)          vec_any_ne(a, (__vector __bool int)vec_splat_u32(0))
-#define gmx_simd_blendzero_fi(a, sel)    vec_and(a, (__vector int)sel)
-#define gmx_simd_blendnotzero_fi(a, sel) vec_andc(a, (__vector int)sel)
+#define gmx_simd_anytrue_fib(a)          vec_any_ne(a, (__vector gmx_vmx_bool int)vec_splat_u32(0))
+#define gmx_simd_blendzero_fi(a, sel)    vec_and(a, (__vector signed int)sel)
+#define gmx_simd_blendnotzero_fi(a, sel) vec_andc(a, (__vector signed int)sel)
 #define gmx_simd_blendv_fi(a, b, sel)    vec_sel(a, b, sel)
 /* Conversions between different booleans */
 #define gmx_simd_cvt_fb2fib(x)     (x)
@@ -147,54 +162,35 @@
 static gmx_inline gmx_simd_float_t
 gmx_simd_set1_f_ibm_vmx(const float x)
 {
-    /* In the old days when PPC was all big endian we could
-     * use the vec_lvsl() instruction to permute bytes based on
-     * a load adress. However, at least with gcc-4.8.2 the bytes
-     * end up reversed on Power8 running little endian (Linux).
-     * Since this is not a critical instruction we work around
-     * it by first putting the data in an aligned position before
-     * loading, so we can avoid vec_lvsl() entirely. We can
-     * do this slightly faster on GCC with alignment attributes.
-     */
-    __vector float vx;
-#ifdef __GNUC__
-    float alignedx __attribute ((aligned (16)));
-    alignedx = x;
-    vx       = vec_lde(0, &alignedx);
-#else
-    struct {
-        vector float vx; float x[4];
-    } conv;
-    conv.x[0] = x;
-    vx        = vec_lde(0, conv.x);
-#endif
-    return vec_splat(vx, 0);
+    __vector float         vx;
+    __vector unsigned char perm;
+
+    vx   = vec_lde(0, (float *)&x);
+    perm = vec_lvsl(0, (float *)&x);
+    vx   = vec_perm(vx, vx, perm);
 }
 
 static gmx_inline gmx_simd_float_t
 gmx_simd_load1_f_ibm_vmx(const float * m)
 {
-    return gmx_simd_set1_f_ibm_vmx(*m);
+    __vector float         vx;
+    __vector unsigned char perm;
+
+    vx   = vec_lde(0, (float *)m);
+    perm = vec_lvsl(0, (float *)m);
+    vx   = vec_perm(vx, vx, perm);
+    return vec_splat(vx, 0);
 }
 
 static gmx_inline gmx_simd_fint32_t
 gmx_simd_set1_fi_ibm_vmx(const int x)
 {
-    /* See comment in gmx_simd_set1_f_ibm_vmx why we
-     * cannot use vec_lvsl().
-     */
-    __vector int vx;
-#ifdef __GNUC__
-    int alignedx __attribute ((aligned (16)));
-    alignedx = x;
-    vx       = vec_lde(0, &alignedx);
-#else
-    struct {
-        vector int vx; int x[4];
-    } conv;
-    conv.x[0] = x;
-    vx        = vec_lde(0, conv.x);
-#endif
+    __vector signed int    vx;
+    __vector unsigned char perm;
+
+    vx   = vec_lde(0, (int *)&x);
+    perm = vec_lvsl(0, (int *)&x);
+    vx   = vec_perm(vx, vx, perm);
     return vec_splat(vx, 0);
 }
 
@@ -207,7 +203,7 @@ gmx_simd_get_exponent_f_ibm_vmx(gmx_simd_float_t x)
     gmx_simd_fint32_t    i127    = vec_sub(vec_sl(vec_splat_s32(1), vec_splat_u32(7)), vec_splat_s32(1));
     gmx_simd_fint32_t    iexp;
 
-    iexp = (__vector int)gmx_simd_and_f(x, expmask);
+    iexp = (__vector signed int)gmx_simd_and_f(x, expmask);
     iexp = vec_sub(gmx_simd_srli_fi(iexp, 23), i127);
     return vec_ctf(iexp, 0);
 }
