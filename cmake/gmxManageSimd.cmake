@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -282,7 +282,7 @@ elseif(GMX_SIMD STREQUAL "MIC")
     set(GMX_SIMD_X86_MIC 1)
     set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "AVX_512F")
+elseif(GMX_SIMD STREQUAL "AVX_512")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -290,21 +290,21 @@ elseif(GMX_SIMD STREQUAL "AVX_512F")
                               "#include<immintrin.h>
                               int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_fmadd_ps(x,x,x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                               SIMD_C_FLAGS
-                              "-xMIC-AVX512" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
+                              "-xMIC-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512F "C++ compiler AVX-512F flag"
                                 "#include<immintrin.h>
                                 int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_fmadd_ps(x,x,x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                                 SIMD_CXX_FLAGS
-                                "-xMIC-AVX512" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
+                                "-xMIC-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
 
     if(NOT CFLAGS_AVX_512F OR NOT CXXFLAGS_AVX_512F)
         message(FATAL_ERROR "Cannot find AVX 512F compiler flag. Use a newer compiler, or choose a lower level of SIMD")
     endif()
 
-    set(GMX_SIMD_X86_AVX_512F 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512F SIMD instructions")
+    set(GMX_SIMD_X86_AVX_512 1)
+    set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512 SIMD instructions")
 
-elseif(GMX_SIMD STREQUAL "AVX_512ER")
+elseif(GMX_SIMD STREQUAL "AVX_512_KNL")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -312,19 +312,19 @@ elseif(GMX_SIMD STREQUAL "AVX_512ER")
                               "#include<immintrin.h>
                               int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                               SIMD_C_FLAGS
-                              "-xMIC-AVX512" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
+                              "-xMIC-AVX512" "-mavx512er -mfma" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512ER "C++ compiler AVX-512ER flag"
                                 "#include<immintrin.h>
                                 int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                                 SIMD_CXX_FLAGS
-                                "-xMIC-AVX512" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
+                                "-xMIC-AVX512" "-mavx512er -mfma" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
 
     if(NOT CFLAGS_AVX_512ER OR NOT CXXFLAGS_AVX_512ER)
         message(FATAL_ERROR "Cannot find AVX 512ER compiler flag. Use a newer compiler, or choose a lower level of SIMD")
     endif()
 
-    set(GMX_SIMD_X86_AVX_512ER 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512ER SIMD instructions")
+    set(GMX_SIMD_X86_AVX_512_KNL 1)
+    set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512-KNL SIMD instructions")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON")
 
