@@ -36,6 +36,8 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_SIMD4_FLOAT_H
 #define GMX_SIMD_IMPL_ARM_NEON_SIMD4_FLOAT_H
 
+#include "config.h"
+
 #include <math.h>
 
 #include <arm_neon.h>
@@ -71,6 +73,7 @@
 #define gmx_simd4_round_f                gmx_simd_round_f
 #define gmx_simd4_trunc_f                gmx_simd_trunc_f
 #define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_arm_neon
+#define gmx_simd4_transpose_f            gmx_simd4_transpose_f_arm_neon
 #define gmx_simd4_fbool_t                gmx_simd_fbool_t
 #define gmx_simd4_cmpeq_f                gmx_simd_cmpeq_f
 #define gmx_simd4_cmplt_f                gmx_simd_cmplt_f
@@ -84,7 +87,7 @@
 #define gmx_simd4_reduce_f               gmx_simd_reduce_f
 
 /* SIMD4 Dotproduct helper function */
-static gmx_inline float
+static gmx_inline float gmx_simdcall
 gmx_simd4_dotproduct3_f_arm_neon(gmx_simd_float_t a, gmx_simd_float_t b)
 {
     gmx_simd_float_t  c;
@@ -93,5 +96,14 @@ gmx_simd4_dotproduct3_f_arm_neon(gmx_simd_float_t a, gmx_simd_float_t b)
     c = vsetq_lane_f32(0.0f, c, 3);
     return gmx_simd_reduce_f_arm_neon(c);
 }
+
+#ifdef __cplusplus
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_f_arm_neon(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                               gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    GMX_NEON_TRANSPOSE4(v0, v1, v2, v3);
+}
+#endif
 
 #endif /* GMX_SIMD_IMPL_ARM_NEON_SIMD4_FLOAT_H */

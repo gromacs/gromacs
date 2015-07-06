@@ -33,40 +33,19 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_ARM_NEON_COMMON_H
-#define GMX_SIMD_IMPL_ARM_NEON_COMMON_H
+#ifndef GMX_SIMD_IMPL_ARM_NEON_OTHER_H
+#define GMX_SIMD_IMPL_ARM_NEON_OTHER_H
 
-/* Capability definitions for ARM 32-bit NEON */
-#define GMX_SIMD_V2                          1
-#define GMX_SIMD_HAVE_FLOAT                  1
-#define GMX_SIMD_HAVE_DOUBLE                 0
-#define GMX_SIMD_HAVE_HARDWARE               1
-#define GMX_SIMD_HAVE_LOADU                  1
-#define GMX_SIMD_HAVE_STOREU                 1
-#define GMX_SIMD_HAVE_LOGICAL                1
-#define GMX_SIMD_HAVE_FMA                    1
-#define GMX_SIMD_HAVE_FRACTION               0
-#define GMX_SIMD_HAVE_FINT32                 1
-#define GMX_SIMD_HAVE_FINT32_EXTRACT         1
-#define GMX_SIMD_HAVE_FINT32_LOGICAL         1
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS     1
-#define GMX_SIMD_HAVE_DINT32                 0
-#define GMX_SIMD_HAVE_DINT32_EXTRACT         0
-#define GMX_SIMD_HAVE_DINT32_LOGICAL         0
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS     0
-#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT   1
-#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE  0
-#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT       0 /* No need for half-simd, width is 4 */
-#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE      0
-#define GMX_SIMD4_HAVE_FLOAT                 1
-#define GMX_SIMD4_HAVE_DOUBLE                0
+#include <arm_neon.h>
 
-/* Implementation details */
-#define GMX_SIMD_FLOAT_WIDTH                 4
-#undef  GMX_SIMD_DOUBLE_WIDTH
-#define GMX_SIMD_FINT32_WIDTH                4
-#undef  GMX_SIMD_DINT32_WIDTH
-#define GMX_SIMD_RSQRT_BITS                  8
-#define GMX_SIMD_RCP_BITS                    8
+#include "impl_arm_neon_common.h"
 
-#endif /* GMX_SIMD_IMPL_ARM_NEON_COMMON_H */
+static void
+gmx_simd_prefetch(const void *m)
+{
+#ifdef __GNUC__
+    __builtin_prefetch(m);
+#endif
+}
+
+#endif /* GMX_SIMD_IMPL_ARM_NEON_OTHER_H */

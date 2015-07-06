@@ -36,7 +36,9 @@
 #ifndef GMX_SIMD_IMPL_ARM_NEON_H
 #define GMX_SIMD_IMPL_ARM_NEON_H
 
+#include "impl_arm_neon_other.h"
 #include "impl_arm_neon_simd4_float.h"
 #include "impl_arm_neon_simd_float.h"
+#include "impl_arm_neon_util_float.h"
 
 #endif /* GMX_SIMD_IMPL_ARM_NEON_H */
