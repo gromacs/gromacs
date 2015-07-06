@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#ifdef GMX_INTERNAL_XDR
+#if GMX_INTERNAL_XDR
 
 
 #include "gmx_system_xdr.h"

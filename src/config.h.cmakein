@@ -50,7 +50,7 @@
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
-#cmakedefine GMX_FLOAT_FORMAT_IEEE754
+#cmakedefine01 GMX_FLOAT_FORMAT_IEEE754
 
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
@@ -143,10 +143,10 @@
 #define GMX_SIMD_ACCURACY_BITS_DOUBLE @GMX_SIMD_ACCURACY_BITS_DOUBLE@
 
 /* Integer byte order is big endian. */
-#cmakedefine GMX_INTEGER_BIG_ENDIAN
+#cmakedefine01 GMX_INTEGER_BIG_ENDIAN
 
 /* Use our own instead of system XDR libraries */
-#cmakedefine GMX_INTERNAL_XDR
+#cmakedefine01 GMX_INTERNAL_XDR
 
 /* Compile to use TNG library */
 #cmakedefine GMX_USE_TNG
@@ -351,12 +351,12 @@
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
-#cmakedefine GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER
+#cmakedefine01 GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER
 
 /* The two words in a double precision variable are in b ig-endian order if
    set, little-endian if not. Do NOT assume this is the same as the byte
    order! Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
-#cmakedefine GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
+#cmakedefine01 GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
 
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
