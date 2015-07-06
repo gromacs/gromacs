@@ -74,8 +74,8 @@ simdString(SimdType s)
         { SimdType::X86_Avx128Fma,  "AVX_128_FMA"     },
         { SimdType::X86_Avx,        "AVX_256"         },
         { SimdType::X86_Avx2,       "AVX2_256"        },
-        { SimdType::X86_Avx512F,    "AVX_512F"        },
-        { SimdType::X86_Avx512ER,   "AVX_512ER"       },
+        { SimdType::X86_Avx512,     "AVX_512"         },
+        { SimdType::X86_Avx512Knl,  "AVX_512_KNL"     },
         { SimdType::X86_Mic,        "X86_MIC"         },
         { SimdType::Arm_Neon,       "ARM_NEON"        },
         { SimdType::Arm_NeonAsimd,  "ARM_NEON_ASIMD"  },
@@ -176,10 +176,10 @@ simdSuggested(const CpuInfo &c)
 SimdType
 simdCompiled()
 {
-#if GMX_SIMD_X86_AVX_512ER
-    return SimdType::X86_Avx512ER;
-#elif GMX_SIMD_X86_AVX_512F
-    return SimdType::X86_Avx512F;
+#if GMX_SIMD_X86_AVX_512_KNL
+    return SimdType::X86_Avx512Knl;
+#elif GMX_SIMD_X86_AVX_512
+    return SimdType::X86_Avx512;
 #elif GMX_SIMD_X86_MIC
     return SimdType::X86_Mic;
 #elif GMX_SIMD_X86_AVX2_256

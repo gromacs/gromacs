@@ -107,6 +107,10 @@
 #    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
 #elif GMX_SIMD_X86_MIC
 #    include "impl_x86_mic/impl_x86_mic.h"
+#elif GMX_SIMD_X86_AVX_512
+#    include "impl_x86_avx_512/impl_x86_avx_512.h"
+#elif GMX_SIMD_X86_AVX_512_KNL
+#    include "impl_x86_avx_512_knl/impl_x86_avx_512_knl.h"
 #elif GMX_SIMD_ARM_NEON
 #    include "impl_arm_neon/impl_arm_neon.h"
 #elif GMX_SIMD_ARM_NEON_ASIMD

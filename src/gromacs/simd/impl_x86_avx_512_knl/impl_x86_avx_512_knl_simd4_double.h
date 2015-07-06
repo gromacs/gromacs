@@ -33,28 +33,26 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H
-#define GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD4_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD4_DOUBLE_H
 
-#include <math.h>
+#include "config.h"
 
 #include <immintrin.h>
 
-/* Intel AVX-512ER */
+#include "gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_simd4_double.h"
 
-/* This implementation inherits 99% from AVX-512F, but adds extended-precision
- * lookups for 1/sqrt(x) and 1x, as well as single-precision versions of
- * exp(x) and log(x).
- */
+namespace gmx
+{
 
-/* Inherit most stuff from AVX-512F */
-#include "gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f.h"
+static inline Simd4Double gmx_simdcall
+rsqrt(Simd4Double x)
+{
+    return {
+               _mm512_castpd512_pd256(_mm512_rsqrt28_pd(_mm512_castpd256_pd512(x.simdInternal_)))
+    };
+}
 
-/* Override some AVX-512F settings */
-/* Implementation details */
-#undef  GMX_SIMD_RSQRT_BITS
-#define GMX_SIMD_RSQRT_BITS         28
-#undef  GMX_SIMD_RCP_BITS
-#define GMX_SIMD_RCP_BITS           28
+}      // namespace gmx
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H */
+#endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD4_DOUBLE_H
