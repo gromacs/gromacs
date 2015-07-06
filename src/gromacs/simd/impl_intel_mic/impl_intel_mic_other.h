@@ -33,15 +33,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_INTEL_MIC_H
-#define GMX_SIMD_IMPL_INTEL_MIC_H
+#ifndef GMX_SIMD_IMPL_INTEL_MIC_OTHER_H
+#define GMX_SIMD_IMPL_INTEL_MIC_OTHER_H
 
-#include "impl_intel_mic_other.h"
-#include "impl_intel_mic_simd4_double.h"
-#include "impl_intel_mic_simd4_float.h"
-#include "impl_intel_mic_simd_double.h"
-#include "impl_intel_mic_simd_float.h"
-#include "impl_intel_mic_util_double.h"
-#include "impl_intel_mic_util_float.h"
+#include <immintrin.h>
 
-#endif /* GMX_SIMD_IMPL_INTEL_MIC_H */
+#include "impl_intel_mic_common.h"
+
+static void
+gmx_simd_prefetch(const void * m)
+{
+    _mm_prefetch((const char *)m, _MM_HINT_T0);
+}
+
+#endif /* GMX_SIMD_IMPL_INTEL_MIC_OTHER_H */

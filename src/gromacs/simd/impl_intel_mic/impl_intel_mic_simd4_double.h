@@ -65,10 +65,10 @@
 #define gmx_simd4_fmsub_d(a, b, c)  _mm512_mask_fmsub_pd(a, gmx_simd4_mask, b, c)
 #define gmx_simd4_fnmadd_d(a, b, c) _mm512_mask_fnmadd_pd(a, gmx_simd4_mask, b, c)
 #define gmx_simd4_fnmsub_d(a, b, c) _mm512_mask_fnmsub_pd(a, gmx_simd4_mask, b, c)
-#define gmx_simd4_and_d(a, b)       _mm512_castsi512_pd(_mm512_mask_and_epi32(_mm512_undefined_epi32(), mask_loh, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd4_andnot_d(a, b)    _mm512_castsi512_pd(_mm512_mask_andnot_epi32(_mm512_undefined_epi32(), mask_loh, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd4_or_d(a, b)        _mm512_castsi512_pd(_mm512_mask_or_epi32(_mm512_undefined_epi32(), mask_loh, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
-#define gmx_simd4_xor_d(a, b)       _mm512_castsi512_pd(_mm512_mask_xor_epi32(_mm512_undefined_epi32(), mask_loh, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd4_and_d(a, b)       _mm512_castsi512_pd(_mm512_mask_and_epi32(_mm512_undefined_epi32(), mask_lo, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd4_andnot_d(a, b)    _mm512_castsi512_pd(_mm512_mask_andnot_epi32(_mm512_undefined_epi32(), mask_lo, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd4_or_d(a, b)        _mm512_castsi512_pd(_mm512_mask_or_epi32(_mm512_undefined_epi32(), mask_lo, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
+#define gmx_simd4_xor_d(a, b)       _mm512_castsi512_pd(_mm512_mask_xor_epi32(_mm512_undefined_epi32(), mask_lo, _mm512_castpd_si512(a), _mm512_castpd_si512(b)))
 #define gmx_simd4_rsqrt_d(a)        _mm512_mask_cvtpslo_pd(_mm512_undefined_pd(), gmx_simd4_mask, _mm512_mask_rsqrt23_ps(_mm512_undefined_ps(), gmx_simd4_mask, _mm512_mask_cvtpd_pslo(_mm512_undefined_ps(), gmx_simd4_mask, x)))
 #define gmx_simd4_fabs_d(x)         gmx_simd4_andnot_d(_mm512_set1_pd(GMX_DOUBLE_NEGZERO), x)
 #define gmx_simd4_fneg_d(x)         _mm512_mask_addn_pd(_mm512_undefined_pd(), gmx_simd4_mask, x, _mm512_setzero_pd())
@@ -88,6 +88,11 @@
 #define gmx_simd4_blendnotzero_d(a, sel) _mm512_mask_mov_pd(_mm512_setzero_pd(), _mm512_knot(sel), a)
 #define gmx_simd4_blendv_d(a, b, sel)    _mm512_mask_blend_pd(sel, a, b)
 #define gmx_simd4_reduce_d(x)       _mm512_mask_reduce_add_pd(_mm512_int2mask(0xF), x)
+
+/* Declare the simd4 store routines implmented further down so they can be used */
+static gmx_inline void gmx_simdcall
+gmx_simd4_store_d_mic(double * m, __m512d s);
+
 
 /* Implementation helpers */
 static gmx_inline void gmx_simdcall
@@ -109,5 +114,50 @@ gmx_simd4_storeu_d_mic(double * m, __m512d s)
     _mm512_mask_packstorelo_pd(m, gmx_simd4_mask, s);
     _mm512_mask_packstorehi_pd(m+8, gmx_simd4_mask, s);
 }
+
+static gmx_inline double gmx_simdcall
+gmx_simd4_reduce_d_mic(__m512d a)
+{
+    double f;
+    a = _mm512_add_pd(a, _mm512_swizzle_pd(a, _MM_SWIZ_REG_BADC));
+    a = _mm512_add_pd(a, _mm512_swizzle_pd(a, _MM_SWIZ_REG_CDAB));
+    _mm512_mask_packstorelo_pd(&f, _mm512_mask2int(0x1), a);
+    return f;
+}
+
+static gmx_inline double gmx_simdcall
+gmx_simd4_dotproduct3_d_mic(__m512d a, __m512d b)
+{
+    a = _mm512_mask_mul_pd(_mm512_setzero_pd(), _mm512_int2mask(0x7), a, b);
+    return gmx_simd4_reduce_d(a);
+}
+
+
+#ifdef __cplusplus
+
+
+static gmx_inline void gmx_simdcall
+gmx_simd4_transpose_d_mic(gmx_simd4_double_t &v0, gmx_simd4_double_t &v1,
+                          gmx_simd4_double_t &v2, gmx_simd4_double_t &v3)
+{
+    __m512i t0, t1;
+
+    t0 = _mm512_mask_permute4f128_epi32(_mm512_castpd_si512(v0), 0xFF00,
+                                        _mm512_castpd_si512(v1), _MM_PERM_BABA);
+    t1 = _mm512_mask_permute4f128_epi32(_mm512_castpd_si512(v2), 0xFF00,
+                                        _mm512_castpd_si512(v3), _MM_PERM_BABA);
+
+    t0 = _mm512_permutevar_epi32(_mm512_set_epi32(15, 14, 7, 6, 13, 12, 5, 4, 11, 10, 3, 2, 9, 8, 1, 0), t0);
+    t1 = _mm512_permutevar_epi32(_mm512_set_epi32(15, 14, 7, 6, 13, 12, 5, 4, 11, 10, 3, 2, 9, 8, 1, 0), t1);
+
+    v0 = _mm512_mask_swizzle_pd(_mm512_castsi512_pd(t0), _mm512_int2mask(0xCC),
+                                _mm512_castsi512_pd(t1), _MM_SWIZ_REG_BADC);
+    v1 = _mm512_mask_swizzle_pd(_mm512_castsi512_pd(t1), _mm512_int2mask(0x33),
+                                _mm512_castsi512_pd(t0), _MM_SWIZ_REG_BADC);
+
+    v2 = _mm512_castps_pd(_mm512_permute4f128_ps(_mm512_castpd_ps(v0), _MM_PERM_DCDC));
+    v3 = _mm512_castps_pd(_mm512_permute4f128_ps(_mm512_castpd_ps(v1), _MM_PERM_DCDC));
+}
+#endif
 
 #endif /* GMX_SIMD_IMPL_INTEL_MIC_SIMD4_DOUBLE_H */

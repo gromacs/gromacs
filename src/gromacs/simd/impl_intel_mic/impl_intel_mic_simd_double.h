@@ -69,6 +69,10 @@
 #define gmx_simd_xor_d(a, b)       _mm512_castsi512_pd(_mm512_xor_epi32(_mm512_castpd_si512(a), _mm512_castpd_si512(b)))
 #define gmx_simd_rsqrt_d(x)        _mm512_cvtpslo_pd(_mm512_rsqrt23_ps(_mm512_cvtpd_pslo(x)))
 #define gmx_simd_rcp_d(x)          _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(x)))
+#define gmx_simd_mul_mask_d(a, b, m)       _mm512_mask_mul_pd(_mm512_setzero_pd(), m, a, b)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  _mm512_mask_mov_pd(_mm512_setzero_pd(), m, _mm512_fmadd_pd(a, b, c))
+#define gmx_simd_rsqrt_mask_d(a, m)        _mm512_cvtpslo_pd(_mm512_mask_rsqrt23_ps(_mm512_setzero_ps(), m, _mm512_cvtpd_pslo(a)))
+#define gmx_simd_rcp_mask_d(a, m)          _mm512_cvtpslo_pd(_mm512_mask_rcp23_ps(_mm512_setzero_ps(), m, _mm512_cvtpd_pslo(a)))
 #define gmx_simd_fabs_d(x)         gmx_simd_andnot_d(_mm512_set1_pd(GMX_DOUBLE_NEGZERO), x)
 #define gmx_simd_fneg_d(x)         _mm512_addn_pd(x, _mm512_setzero_pd())
 #define gmx_simd_max_d             _mm512_gmax_pd
@@ -107,6 +111,7 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_dbool_t           __mmask8
 #define gmx_simd_cmpeq_d(a, b)     _mm512_cmp_pd_mask(a, b, _CMP_EQ_OQ)
+#define gmx_simd_cmpnz_d(a)        _mm512_cmp_pd_mask(a, _mm512_setzero_pd(), _CMP_NEQ_UQ)
 #define gmx_simd_cmplt_d(a, b)     _mm512_cmp_pd_mask(a, b, _CMP_LT_OS)
 #define gmx_simd_cmple_d(a, b)     _mm512_cmp_pd_mask(a, b, _CMP_LE_OS)
 #define gmx_simd_and_db            _mm512_kand
@@ -138,8 +143,8 @@
 #define PERM_LOW2HIGH _MM_PERM_BABA
 #define PERM_HIGH2LOW _MM_PERM_DCDC
 
-#define mask_loh _mm512_int2mask(0x00FF) /* would be better a constant - but can't initialize with a function call. */
-#define mask_hih _mm512_int2mask(0xFF00)
+#define mask_lo _mm512_int2mask(0x00FF) /* would be better a constant - but can't initialize with a function call. */
+#define mask_hi _mm512_int2mask(0xFF00)
 
 /* load store double */
 static gmx_inline __m512d gmx_simdcall
@@ -155,38 +160,6 @@ gmx_simd_storeu_d_mic(double * m, __m512d s)
     _mm512_packstorehi_pd(m+8, s);
 }
 
-/* load store dint32 */
-static gmx_inline void gmx_simdcall
-gmx_simd_store_di_mic(gmx_int32_t * m, __m512i s)
-{
-    assert((size_t)m%32 == 0);
-    _mm512_mask_packstorelo_epi32(m, mask_loh, s);
-}
-
-static gmx_inline __m512i gmx_simdcall
-gmx_simd_loadu_di_mic(const gmx_int32_t * m)
-{
-    return _mm512_mask_loadunpackhi_epi32(_mm512_mask_loadunpacklo_epi32(_mm512_undefined_epi32(), mask_loh, m), mask_loh, m+16);
-}
-
-static gmx_inline void gmx_simdcall
-gmx_simd_storeu_di_mic(gmx_int32_t * m, __m512i s)
-{
-    _mm512_mask_packstorelo_epi32(m, mask_loh, s);
-    _mm512_mask_packstorehi_epi32(m+16, mask_loh, s);
-}
-
-static gmx_inline gmx_int32_t gmx_simdcall
-gmx_simd_extract_di_mic(gmx_simd_dint32_t a, int index)
-{
-    int r;
-    _mm512_mask_packstorelo_epi32(&r, _mm512_mask2int(1<<index), a);
-    return r;
-}
-
-/* This is likely faster than the built in scale operation (lat 8, t-put 3)
- * since we only work on the integer part and use shifts. TODO: check. given that scale also only does integer
- */
 static gmx_inline __m512d gmx_simdcall
 gmx_simd_set_exponent_d_mic(__m512d a)
 {
@@ -195,6 +168,35 @@ gmx_simd_set_exponent_d_mic(__m512d a)
     iexp = _mm512_permutevar_epi32(_mm512_set_epi32(7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1, 0, 0), iexp);
     iexp = _mm512_mask_slli_epi32(_mm512_setzero_epi32(), _mm512_int2mask(0xAAAA), _mm512_add_epi32(iexp, expbias), 20);
     return _mm512_castsi512_pd(iexp);
+}
+
+/* load store dint32 */
+static gmx_inline void gmx_simdcall
+gmx_simd_store_di_mic(gmx_int32_t * m, __m512i s)
+{
+    assert((size_t)m%32 == 0);
+    _mm512_mask_packstorelo_epi32(m, mask_lo, s);
+}
+
+static gmx_inline __m512i gmx_simdcall
+gmx_simd_loadu_di_mic(const gmx_int32_t * m)
+{
+    return _mm512_mask_loadunpackhi_epi32(_mm512_mask_loadunpacklo_epi32(_mm512_undefined_epi32(), mask_lo, m), mask_lo, m+16);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_simd_storeu_di_mic(gmx_int32_t * m, __m512i s)
+{
+    _mm512_mask_packstorelo_epi32(m, mask_lo, s);
+    _mm512_mask_packstorehi_epi32(m+16, mask_lo, s);
+}
+
+static gmx_inline gmx_int32_t gmx_simdcall
+gmx_simd_extract_di_mic(gmx_simd_dint32_t a, int index)
+{
+    int r;
+    _mm512_mask_packstorelo_epi32(&r, _mm512_mask2int(1<<index), a);
+    return r;
 }
 
 static gmx_inline void gmx_simdcall
@@ -211,7 +213,7 @@ gmx_simd_cvt_dd2f_mic(__m512d d0, __m512d d1)
 {
     __m512 f0 = _mm512_cvtpd_pslo(d0);
     __m512 f1 = _mm512_cvtpd_pslo(d1);
-    return _mm512_mask_permute4f128_ps(f0, mask_hih, f1, PERM_LOW2HIGH);
+    return _mm512_mask_permute4f128_ps(f0, mask_hi, f1, PERM_LOW2HIGH);
 }
 
 #endif /* GMX_SIMD_IMPL_INTEL_MIC_SIMD_DOUBLE_H */
