@@ -42,6 +42,7 @@
 #endif
 
 #include "impl_ibm_qpx_common.h"
+#include "impl_ibm_qpx_simd_double.h"
 
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
@@ -57,7 +58,7 @@
 #    define gmx_simd_load1_f(m)   vec_lds(0, (float *)(m))
 #define gmx_simd_set1_f(x)        vec_splats(x)
 /* No support for unaligned load/store */
-#define gmx_simd_setzero_f        gmx_simd_setzero_ibm_qpx
+#define gmx_simd_setzero_f()       vec_splats(0.0)
 #define gmx_simd_add_f(a, b)       vec_add(a, b)
 #define gmx_simd_sub_f(a, b)       vec_sub(a, b)
 #define gmx_simd_mul_f(a, b)       vec_mul(a, b)
@@ -73,6 +74,16 @@
 /* gmx_simd_xor_f not supported - no bitwise logical ops */
 #define gmx_simd_rsqrt_f(a)       vec_rsqrte(a)
 #define gmx_simd_rcp_f(a)         vec_re(a)
+#define gmx_simd_mul_mask_f(a, b, m)       gmx_simd_blendzero_f(vec_mul(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  gmx_simd_blendzero_f(vec_madd(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_blendzero_f(vec_re(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_blendzero_f(vec_rsqrte(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)      gmx_simd_blendzero_f(vec_re(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    gmx_simd_blendzero_f(vec_rsqrte(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(a)        vec_abs(a)
 #define gmx_simd_fneg_f           gmx_simd_fneg_ibm_qpx
 #define gmx_simd_max_f(a, b)       vec_sel(b, a, vec_sub(a, b))
@@ -97,7 +108,7 @@
 #endif
 #define gmx_simd_set1_fi(i)       gmx_simd_set1_int_ibm_qpx(i)
 #define gmx_simd_store_fi(m, x)    vec_st(x, 0, (int *)(m))
-#define gmx_simd_setzero_fi       gmx_simd_setzero_ibm_qpx
+#define gmx_simd_setzero_fi()     vec_splats(0.0)
 #define gmx_simd_cvt_f2i(a)       vec_ctiw(a)
 #define gmx_simd_cvtt_f2i(a)      vec_ctiwz(a)
 #define gmx_simd_cvt_i2f(a)       vec_cfid(a)
@@ -107,6 +118,7 @@
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t          vector4double
 #define gmx_simd_cmpeq_f(a, b)     vec_cmpeq(a, b)
+#define gmx_simd_cmpnz_f(a)        vec_not(vec_cmpeq(a, vec_splats(0.0)))
 #define gmx_simd_cmplt_f(a, b)     vec_cmplt((a), (b))
 #define gmx_simd_cmple_f(a, b)     gmx_simd_or_fb(vec_cmpeq(a, b), vec_cmplt(a, b))
 #define gmx_simd_and_fb(a, b)      vec_and(a, b)

@@ -81,6 +81,7 @@
 #define gmx_simd4_get_mantissa_d         gmx_simd_get_mantissa_d
 #define gmx_simd4_set_exponent_d         gmx_simd_set_exponent_d
 #define gmx_simd4_dotproduct3_d          gmx_simd4_dotproduct3_d_ibm_qpx
+#define gmx_simd4_transpose_d            gmx_simd4_transpose_ibm_qpx
 #define gmx_simd4_dint32_t               gmx_simd_dint32_t
 #define gmx_simd4_load_di                gmx_simd_load_di
 #define gmx_simd4_load1_di               gmx_simd_load1_di
@@ -114,5 +115,14 @@ gmx_simd4_dotproduct3_d_ibm_qpx(vector4double a, vector4double b)
 
     return vec_extract(dp, 0);
 }
+
+#ifdef __cplusplus
+static __attribute__((always_inline)) void gmx_simdcall
+gmx_simd4_transpose_ibm_qpx(gmx_simd4_float_t &v0, gmx_simd4_float_t &v1,
+                            gmx_simd4_float_t &v2, gmx_simd4_float_t &v3)
+{
+    GMX_QPX_TRANSPOSE4(v0, v1, v2, v3);
+}
+#endif
 
 #endif /* GMX_SIMD_IMPLEMENTATION_IBM_QPX_SIMD4_DOUBLE_H */

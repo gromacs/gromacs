@@ -44,6 +44,7 @@
 #endif
 
 #include "impl_ibm_qpx_common.h"
+#include "impl_ibm_qpx_simd4_double.h"
 #include "impl_ibm_qpx_simd_float.h"
 
 /* QPX is already 4-wide both in single and double, so just reuse for SIMD4 */
@@ -81,6 +82,7 @@
 #define gmx_simd4_get_mantissa_f         gmx_simd_get_mantissa_f
 #define gmx_simd4_set_exponent_f         gmx_simd_set_exponent_f
 #define gmx_simd4_dotproduct3_f          gmx_simd4_dotproduct3_f_ibm_qpx
+#define gmx_simd4_transpose_f            gmx_simd4_transpose_ibm_qpx
 #define gmx_simd4_fint32_t               gmx_simd_fint32_t
 #define gmx_simd4_load_fi                gmx_simd_load_fi
 #define gmx_simd4_load1_fi               gmx_simd_load1_fi

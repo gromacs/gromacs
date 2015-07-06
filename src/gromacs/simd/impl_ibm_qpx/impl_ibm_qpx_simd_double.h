@@ -59,7 +59,7 @@
 #    define gmx_simd_load1_d(m)   vec_lds(0, (double *)(m))
 #define gmx_simd_set1_d(x)        vec_splats(x)
 /* No support for unaligned load/store */
-#define gmx_simd_setzero_d        gmx_simd_setzero_ibm_qpx
+#define gmx_simd_setzero_d()       vec_splats(0.0)
 #define gmx_simd_add_d(a, b)       vec_add(a, b)
 #define gmx_simd_sub_d(a, b)       vec_sub(a, b)
 #define gmx_simd_mul_d(a, b)       vec_mul(a, b)
@@ -75,6 +75,16 @@
 /* gmx_simd_xor_d not supported - no bitwise logical ops */
 #define gmx_simd_rsqrt_d(a)       vec_rsqrte(a)
 #define gmx_simd_rcp_d(a)         vec_re(a)
+#define gmx_simd_mul_mask_d(a, b, m)       gmx_simd_blendzero_d(vec_mul(a, b), m)
+#define gmx_simd_fmadd_mask_d(a, b, c, m)  gmx_simd_blendzero_d(vec_madd(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_d(a, m)      gmx_simd_blendzero_d(vec_re(a), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    gmx_simd_blendzero_d(vec_rsqrte(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_d(a, m)      gmx_simd_blendzero_d(vec_re(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#    define gmx_simd_rsqrt_mask_d(a, m)    gmx_simd_blendzero_d(vec_rsqrte(gmx_simd_blendv_d(gmx_simd_set1_d(1.0), a, m)), m)
+#endif
 #define gmx_simd_fabs_d(a)        vec_abs(a)
 #define gmx_simd_fneg_d           gmx_simd_fneg_ibm_qpx
 #define gmx_simd_max_d(a, b)       vec_sel(b, a, vec_sub(a, b))
@@ -99,7 +109,7 @@
 #endif
 #define gmx_simd_set1_di(i)       gmx_simd_set1_int_ibm_qpx(i)
 #define gmx_simd_store_di(m, x)   vec_st(x, 0, (int *)(m))
-#define gmx_simd_setzero_di       gmx_simd_setzero_ibm_qpx
+#define gmx_simd_setzero_di()     vec_splats(0.0)
 #define gmx_simd_cvt_d2i(a)       vec_ctiw(a)
 #define gmx_simd_cvtt_d2i(a)      vec_ctiwz(a)
 #define gmx_simd_cvt_i2d(a)       vec_cfid(a)
@@ -109,6 +119,7 @@
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t          vector4double
 #define gmx_simd_cmpeq_d(a, b)     vec_cmpeq(a, b)
+#define gmx_simd_cmpnz_d(a)        vec_not(vec_cmpeq(a, vec_splats(0.0)))
 #define gmx_simd_cmplt_d(a, b)     vec_cmplt((a), (b))
 #define gmx_simd_cmple_d(a, b)     gmx_simd_or_fb(vec_cmpeq(a, b), vec_cmplt(a, b))
 #define gmx_simd_and_db(a, b)      vec_and(a, b)
@@ -122,6 +133,11 @@
 /* Boolean & comparison operations on gmx_simd_dint32_t not supported */
 /* Conversions between different booleans not supported */
 
+/* Float-double conversions */
+/* Conversions between different booleans */
+#define gmx_simd_cvt_f2d(x)       (x)
+#define gmx_simd_cvt_d2f(x)       (x)
+
 
 /****************************************************
  * IMPLEMENTATION HELPER FUNCTIONS                  *
@@ -130,12 +146,6 @@ static __attribute__((always_inline)) vector4double
 gmx_simd_fneg_ibm_qpx(vector4double a)
 {
     return vec_neg(a);
-}
-
-static __attribute__((always_inline)) vector4double gmx_simdcall
-gmx_simd_setzero_ibm_qpx(void)
-{
-    return vec_splats(0.0);
 }
 
 static __attribute__((always_inline)) vector4double gmx_simdcall
@@ -210,7 +220,7 @@ gmx_simd_reduce_ibm_qpx(vector4double x)
 static __attribute__((always_inline)) vector4double gmx_simdcall
 gmx_simd_set1_int_ibm_qpx(int i)
 {
-    int idata[4] __attribute__((aligned(32)));
+    int idata[4] __attribute__((aligned(16)));
 
     idata[0] = i;
 

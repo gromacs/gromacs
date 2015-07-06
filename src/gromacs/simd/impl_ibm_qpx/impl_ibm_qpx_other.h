@@ -33,15 +33,24 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPLEMENTATION_IBM_QPX_H
-#define GMX_SIMD_IMPLEMENTATION_IBM_QPX_H
+#ifndef GMX_SIMD_IMPLEMENTATION_IBM_QPX_OTHER_H
+#define GMX_SIMD_IMPLEMENTATION_IBM_QPX_OTHER_H
 
-#include "impl_ibm_qpx_other.h"
-#include "impl_ibm_qpx_simd4_double.h"
-#include "impl_ibm_qpx_simd4_float.h"
-#include "impl_ibm_qpx_simd_double.h"
-#include "impl_ibm_qpx_simd_float.h"
-#include "impl_ibm_qpx_util_double.h"
-#include "impl_ibm_qpx_util_float.h"
+#ifdef __clang__
+#    include <qpxmath.h>
+#endif
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_QPX_H */
+#include "impl_ibm_qpx_common.h"
+
+static void
+
+gmx_simd_prefetch(const void * m)
+{
+#if defined(__ibmxl__) || defined(__xlC__)
+    __dcbt(m);
+#elif defined __GNUC__
+    __builtin_prefetch(m);
+#endif
+}
+
+#endif /* GMX_SIMD_IMPLEMENTATION_IBM_QPX_OTHER_H */
