@@ -108,6 +108,10 @@
 #    include "impl_x86_sse2/impl_x86_sse2.h"
 #elif GMX_SIMD_IBM_QPX
 #    include "impl_ibm_qpx/impl_ibm_qpx.h"
+#elif GMX_SIMD_ARM_NEON_ASIMD
+#    include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
+#elif GMX_SIMD_ARM_NEON
+#    include "impl_arm_neon/impl_arm_neon.h"
 #elif (GMX_SIMD_REFERENCE || defined DOXYGEN)
 #    include "impl_reference/impl_reference.h" // Includes doxygen documentation
 #else
