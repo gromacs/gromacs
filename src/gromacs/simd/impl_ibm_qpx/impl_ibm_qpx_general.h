@@ -33,36 +33,21 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPLEMENTATION_IBM_QPX_COMMON_H
-#define GMX_SIMD_IMPLEMENTATION_IBM_QPX_COMMON_H
+#ifndef GMX_SIMD_IMPLEMENTATION_IBM_QPX_GENERAL_H
+#define GMX_SIMD_IMPLEMENTATION_IBM_QPX_GENERAL_H
 
-/* Capability definitions for IBM QPX */
-#define GMX_SIMD                             1
-#define GMX_SIMD_HAVE_FLOAT                  1
-#define GMX_SIMD_HAVE_DOUBLE                 1
-#define GMX_SIMD_HAVE_STOREU                 0
-#define GMX_SIMD_HAVE_STOREU                 0
-#define GMX_SIMD_HAVE_LOGICAL                0
-#define GMX_SIMD_HAVE_FMA                    1
-#define GMX_SIMD_HAVE_FRACTION               0
-#define GMX_SIMD_HAVE_FINT32                 1
-#define GMX_SIMD_HAVE_FINT32_EXTRACT         0
-#define GMX_SIMD_HAVE_FINT32_LOGICAL         0
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS     0
-#define GMX_SIMD_HAVE_DINT32                 1
-#define GMX_SIMD_HAVE_DINT32_EXTRACT         0
-#define GMX_SIMD_HAVE_DINT32_LOGICAL         0
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS     0
-#define GMX_SIMD4_HAVE_FLOAT                 1
-#define GMX_SIMD4_HAVE_DOUBLE                1
+#ifdef __clang__
+#    include <qpxmath.h>
+#endif
 
-/* Implementation details */
-#define GMX_SIMD_FLOAT_WIDTH                 4
-#define GMX_SIMD_DOUBLE_WIDTH                4
-#define GMX_SIMD_FINT32_WIDTH                4
-#define GMX_SIMD_DINT32_WIDTH                4
-#define GMX_SIMD4_WIDTH                      4
-#define GMX_SIMD_RSQRT_BITS                 14
-#define GMX_SIMD_RCP_BITS                   14
+static void
+simdPrefetch(const void * m)
+{
+#if defined(__ibmxl__) || defined(__xlC__)
+    __dcbt(m);
+#elif defined __GNUC__
+    __builtin_prefetch(m);
+#endif
+}
 
-#endif /* GMX_SIMD_IMPLEMENTATION_IBM_QPX_COMMON_H */
+#endif // GMX_SIMD_IMPLEMENTATION_IBM_QPX_GENERAL_H

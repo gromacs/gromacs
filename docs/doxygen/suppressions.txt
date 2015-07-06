@@ -48,7 +48,6 @@ src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h: warning
 # Temporary while we change the SIMD implementation
 src/gromacs/simd/impl_arm_neon/impl_arm_neon_common.h: warning: should include "simd.h"
 src/gromacs/simd/impl_arm_neon_asimd/impl_arm_neon_asimd_common.h: warning: should include "simd.h"
-src/gromacs/simd/impl_ibm_qpx/impl_ibm_qpx_common.h: warning: should include "simd.h"
 src/gromacs/simd/impl_ibm_vmx/impl_ibm_vmx_common.h: warning: should include "simd.h"
 src/gromacs/simd/impl_ibm_vsx/impl_ibm_vsx_common.h: warning: should include "simd.h"
 src/gromacs/simd/impl_intel_mic/impl_intel_mic_common.h: warning: should include "simd.h"
