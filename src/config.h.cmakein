@@ -56,16 +56,16 @@
 #cmakedefine GMX_BROKEN_CALLOC
 
 /* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
-#cmakedefine GMX_DISABLE_FFTW_MEASURE
+#cmakedefine01 GMX_DISABLE_FFTW_MEASURE
 
 /* Use Built-in FFTPACK FFT library */
-#cmakedefine GMX_FFT_FFTPACK
+#cmakedefine01 GMX_FFT_FFTPACK
 
 /* Use FFTW3 FFT library */
-#cmakedefine GMX_FFT_FFTW3
+#cmakedefine01 GMX_FFT_FFTW3
 
 /* Use Intel MKL FFT library */
-#cmakedefine GMX_FFT_MKL
+#cmakedefine01 GMX_FFT_MKL
 
 /* Target platform is x86 or x86_64 */
 #cmakedefine GMX_TARGET_X86

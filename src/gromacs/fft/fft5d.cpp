@@ -77,7 +77,7 @@
 FILE* debug = 0;
 #endif
 
-#ifdef GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3
 #include "thread_mpi/mutex.h"
 
 #include "gromacs/utility/exceptions.h"
@@ -452,7 +452,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         fprintf(debug, "Running on %d threads\n", nthreads);
     }
 
-#ifdef GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3
     /* Don't add more stuff here! We have already had at least one bug because we are reimplementing
      * the low-level FFT interface instead of using the Gromacs FFT module. If we need more
      * generic functionality it is far better to extend the interface so we can use it for
@@ -614,7 +614,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         }
     }
 
-#ifdef GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3
 }
 #endif
     if ((flags&FFT5D_ORDER_YZ))   /*plan->cart is in the order of transposes */
@@ -985,7 +985,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
     int    s = 0, tstart, tend, bParallelDim;
 
 
-#ifdef GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3
     if (plan->p3d)
     {
         if (thread == 0)
@@ -1277,7 +1277,7 @@ void fft5d_destroy(fft5d_plan plan)
             plan->oNout[s] = 0;
         }
     }
-#ifdef GMX_FFT_FFTW3
+#if GMX_FFT_FFTW3
     FFTW_LOCK;
 #ifdef FFT5D_MPI_TRANSPOS
     for (s = 0; s < 2; s++)
