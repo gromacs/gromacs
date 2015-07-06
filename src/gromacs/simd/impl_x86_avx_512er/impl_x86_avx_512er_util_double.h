@@ -33,26 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H
-#define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_UTIL_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX_512ER_UTIL_DOUBLE_H
 
-#include "config.h"
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #include <immintrin.h>
 
-#include "gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f_simd4_double.h"
+#include "gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f_util_double.h"
 
-namespace gmx
-{
-
-static inline Simd4Double gmx_simdcall
-rsqrt(Simd4Double x)
-{
-    return {
-               _mm512_castpd512_pd256(_mm512_rsqrt28_pd(_mm512_castpd256_pd512(x.simdInternal_)))
-    };
-}
-
-}      // namespace gmx
-
-#endif // GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H
+#endif // GMX_SIMD_IMPL_X86_AVX_512ER_UTIL_DOUBLE_H

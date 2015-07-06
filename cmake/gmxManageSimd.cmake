@@ -290,12 +290,12 @@ elseif(GMX_SIMD STREQUAL "AVX_512F")
                               "#include<immintrin.h>
                               int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_fmadd_ps(x,x,x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                               SIMD_C_FLAGS
-                              "-xMIC-AVX512" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
+                              "-xMIC-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512F "C++ compiler AVX-512F flag"
                                 "#include<immintrin.h>
                                 int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_fmadd_ps(x,x,x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                                 SIMD_CXX_FLAGS
-                                "-xMIC-AVX512" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
+                                "-xMIC-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX" "-hgnu") # no AVX_512F flags known for MSVC yet
 
     if(NOT CFLAGS_AVX_512F OR NOT CXXFLAGS_AVX_512F)
         message(FATAL_ERROR "Cannot find AVX 512F compiler flag. Use a newer compiler, or choose a lower level of SIMD")
@@ -312,12 +312,12 @@ elseif(GMX_SIMD STREQUAL "AVX_512ER")
                               "#include<immintrin.h>
                               int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                               SIMD_C_FLAGS
-                              "-xMIC-AVX512" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
+                              "-xMIC-AVX512" "-mavx512er -mfma" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
     gmx_find_cxxflag_for_source(CXXFLAGS_AVX_512ER "C++ compiler AVX-512ER flag"
                                 "#include<immintrin.h>
                                 int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
                                 SIMD_CXX_FLAGS
-                                "-xMIC-AVX512" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
+                                "-xMIC-AVX512" "-mavx512er -mfma" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
 
     if(NOT CFLAGS_AVX_512ER OR NOT CXXFLAGS_AVX_512ER)
         message(FATAL_ERROR "Cannot find AVX 512ER compiler flag. Use a newer compiler, or choose a lower level of SIMD")

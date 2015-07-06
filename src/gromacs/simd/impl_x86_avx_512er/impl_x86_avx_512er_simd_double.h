@@ -36,14 +36,47 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_DOUBLE_H
 #define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_DOUBLE_H
 
+#include "config.h"
+
 #include <immintrin.h>
 
-#include "impl_x86_avx_512er_common.h"
+#include "gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f_simd_double.h"
 
-#undef  simdRsqrtD
-#define simdRsqrtD           _mm512_rsqrt28_pd
+namespace gmx
+{
 
-#undef  simdRcpD
-#define simdRcpD             _mm512_rcp28_pd
+static inline SimdDouble gmx_simdcall
+rsqrt(SimdDouble x)
+{
+    return {
+               _mm512_rsqrt28_pd(x.simdInternal_)
+    };
+}
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_DOUBLE_H */
+static inline SimdDouble gmx_simdcall
+rcp(SimdDouble x)
+{
+    return {
+               _mm512_rcp28_pd(x.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskzRsqrt(SimdDouble x, SimdDBool m)
+{
+    return {
+               _mm512_maskz_rsqrt28_pd(m.simdInternal_, x.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskzRcp(SimdDouble x, SimdDBool m)
+{
+    return {
+               _mm512_maskz_rcp28_pd(m.simdInternal_, x.simdInternal_)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_DOUBLE_H
