@@ -33,86 +33,72 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H
-#define GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H
+#ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD4_FLOAT_H
+#define GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD4_FLOAT_H
 
 #include <arm_neon.h>
 
-#include "gromacs/simd/impl_arm_neon/impl_arm_neon_simd_float.h"
+#include "gromacs/simd/impl_arm_neon/impl_arm_neon_simd4_float.h"
 
 namespace gmx
 {
 
-static inline SimdFloat gmx_simdcall
-fma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline Simd4Float gmx_simdcall
+fma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline Simd4Float gmx_simdcall
+fms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline Simd4Float gmx_simdcall
+fnma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline Simd4Float gmx_simdcall
+fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
                vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
     };
 }
 
-static inline SimdFloat gmx_simdcall
-round(SimdFloat x)
+static inline Simd4Float gmx_simdcall
+round(Simd4Float x)
 {
     return {
                vrndnq_f32(x.simdInternal_)
     };
 }
 
-static inline SimdFloat gmx_simdcall
-trunc(SimdFloat x)
+static inline Simd4Float gmx_simdcall
+trunc(Simd4Float x)
 {
     return {
                vrndq_f32(x.simdInternal_)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall
-cvtR2I(SimdFloat a)
-{
-    return {
-               vcvtnq_s32_f32(a.simdInternal_)
-    };
-}
-
 static inline bool gmx_simdcall
-anyTrue(SimdFBool a)
-{
-    return (vmaxvq_u32(a.simdInternal_) != 0);
-}
-
-static inline bool gmx_simdcall
-anyTrue(SimdFIBool a)
+anyTrue(Simd4FBool a)
 {
     return (vmaxvq_u32(a.simdInternal_) != 0);
 }
 
 static inline float gmx_simdcall
-reduce(SimdFloat a)
+reduce(Simd4Float a)
 {
     float32x4_t b = a.simdInternal_;
     b = vpaddq_f32(b, b);
@@ -120,6 +106,17 @@ reduce(SimdFloat a)
     return vgetq_lane_f32(b, 0);
 }
 
+static inline float gmx_simdcall
+dotProduct(Simd4Float a, Simd4Float b)
+{
+    Simd4Float c;
+
+    c = a * b;
+    /* set 4th element to 0, then add all of them */
+    c.simdInternal_ = vsetq_lane_f32(0.0f, c.simdInternal_, 3);
+    return reduce(c);
+}
+
 }      // namespace gmx
 
-#endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H
+#endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD4_FLOAT_H

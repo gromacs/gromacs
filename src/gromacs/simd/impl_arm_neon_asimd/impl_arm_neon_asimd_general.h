@@ -33,28 +33,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_COMMON_H
-#define GMX_SIMD_IMPL_ARM_NEON_ASIMD_COMMON_H
+#ifndef GMX_SIMD_IMPL_ARM_NEON_ASIMD_GENERAL_H
+#define GMX_SIMD_IMPL_ARM_NEON_ASIMD_GENERAL_H
 
-/* ARM (AArch64) NEON Advanced SIMD */
+#include "gromacs/simd/impl_arm_neon/impl_arm_neon_general.h"
 
-/* Inherit single-precision and integer part from 32-bit arm */
-#include "gromacs/simd/impl_arm_neon/impl_arm_neon.h"
-
-/* Override some capability definitions from ARM 32-bit NEON - we now have double */
-#undef  GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_DOUBLE                  1
-#undef  GMX_SIMD_HAVE_DINT32
-#define GMX_SIMD_HAVE_DINT32                  1
-#undef  GMX_SIMD_HAVE_DINT32_EXTRACT
-#define GMX_SIMD_HAVE_DINT32_EXTRACT          1
-#undef  GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_LOGICAL          1
-#undef  GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS      1
-
-/* Implementation details */
-#define GMX_SIMD_DOUBLE_WIDTH                 2
-#define GMX_SIMD_DINT32_WIDTH                 2
-
-#endif /* GMX_SIMD_IMPL_ARM_NEON_ASIMD_COMMON_H */
+#endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_GENERAL_H

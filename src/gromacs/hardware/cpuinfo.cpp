@@ -789,7 +789,13 @@ detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
         }
         if (s.find("asimd") != std::string::npos)
         {
-            features->insert(CpuInfo::Feature::Arm_NeonAsimd);
+            // At least Jetson TX1 runs a 32-bit environment by default, although
+            // the kernel is 64-bits, and reports asimd feature flags. We cannot
+            // use Neon-asimd in this case, so make sure we are on a 64-bit platform.
+            if (sizeof(void *) == 8)
+            {
+                features->insert(CpuInfo::Feature::Arm_NeonAsimd);
+            }
         }
     }
 }
