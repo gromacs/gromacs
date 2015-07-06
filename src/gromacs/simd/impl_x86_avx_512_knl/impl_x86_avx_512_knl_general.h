@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,28 +33,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H
-#define GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512_KNL_GENERAL_H
+#define GMX_SIMD_IMPL_X86_AVX_512_KNL_GENERAL_H
 
-#include <math.h>
+#include "gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_general.h"
 
-#include <immintrin.h>
-
-/* Intel AVX-512ER */
-
-/* This implementation inherits 99% from AVX-512F, but adds extended-precision
- * lookups for 1/sqrt(x) and 1x, as well as single-precision versions of
- * exp(x) and log(x).
- */
-
-/* Inherit most stuff from AVX-512F */
-#include "gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f.h"
-
-/* Override some AVX-512F settings */
-/* Implementation details */
-#undef  GMX_SIMD_RSQRT_BITS
-#define GMX_SIMD_RSQRT_BITS         28
-#undef  GMX_SIMD_RCP_BITS
-#define GMX_SIMD_RCP_BITS           28
-
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_COMMON_H */
+#endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_GENERAL_H
