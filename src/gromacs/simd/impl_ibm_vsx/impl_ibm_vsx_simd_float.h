@@ -58,21 +58,36 @@
 /* g++ is also unhappy with the clash of vector bool and the C++ reserved 'bool',
  * which is solved by undefining bool and reyling on __bool. However, that does
  * not work with xlc, which requires us to use bool. Solve the conflict by
- * defining a new vsx_bool.
+ * defining a new gmx_vsx_bool.
  */
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
-#    define vsx_bool __bool
+#    define gmx_vsx_bool __bool
 #    undef  bool
 #else
-#    define vsx_bool bool
+#    define gmx_vsx_bool bool
 #endif
+
+/* The VSX load & store operations are a bit of a mess. The interface is different
+ * for xlc version 12, xlc version 13, and gcc. Long-term IBM recommends
+ * simply using pointer dereferencing both for aligned and unaligned loads.
+ * That's nice, but unfortunately xlc still bugs out when the pointer is
+ * not aligned. Sticking to vec_xl/vec_xst isn't a solution either, since
+ * that appears to be buggy for some _aligned_ loads :-)
+ *
+ * For now, we use pointer dereferencing for all aligned load/stores, and
+ * for unaligned ones with gcc. On xlc we use vec_xlw4/vec_xstw4 for
+ * unaligned memory operations. The latest docs recommend using the overloaded
+ * vec_xl/vec_xst, but that is not supported on xlc version 12. We'll
+ * revisit things once xlc is a bit more stable - for now you probably want
+ * to stick to gcc...
+ */
 
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
 #define gmx_simd_float_t           __vector float
 #define gmx_simd_load_f(m)         (*(const gmx_simd_float_t *)(m))
-#define gmx_simd_store_f(m, x)      { *(gmx_simd_float_t *)(m) = (x); }
+#define gmx_simd_store_f(m, x)     { *(gmx_simd_float_t *)(m) = (x); }
 #define gmx_simd_load1_f(m)        vec_splats((float)(*m))
 #define gmx_simd_set1_f(x)         vec_splats((float)(x))
 #if defined(__ibmxl__) || defined(__xlC__)
@@ -99,6 +114,16 @@
 #define gmx_simd_xor_f(a, b)       vec_xor(a, b)
 #define gmx_simd_rsqrt_f(a)        vec_rsqrte(a)
 #define gmx_simd_rcp_f(a)          vec_re(a)
+#define gmx_simd_mul_mask_f(a, b, m)       vec_and(vec_mul(a, b), m)
+#define gmx_simd_fmadd_mask_f(a, b, c, m)  vec_and(vec_madd(a, b, c), m)
+#ifdef NDEBUG
+#    define gmx_simd_rcp_mask_f(a, m)      vec_and(vec_re(a), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    vec_and(vec_rsqrte(a), m)
+#else
+/* For masked rcp/rsqrt we need to make sure we do not use the masked-out arguments if FP exceptions are enabled */
+#    define gmx_simd_rcp_mask_f(a, m)      vec_and(vec_re(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#    define gmx_simd_rsqrt_mask_f(a, m)    vec_and(vec_rsqrte(gmx_simd_blendv_f(gmx_simd_set1_f(1.0f), a, m)), m)
+#endif
 #define gmx_simd_fabs_f(a)         vec_abs(a)
 #define gmx_simd_fneg_f(a)         (-(a))
 #define gmx_simd_max_f(a, b)       vec_max(a, b)
@@ -112,7 +137,7 @@
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_fint32_t          __vector signed int
 #define gmx_simd_load_fi(m)        (*(const gmx_simd_fint32_t *)(m))
-#define gmx_simd_store_fi(m, x)     { *(gmx_simd_fint32_t *)(m) = (x); }
+#define gmx_simd_store_fi(m, x)    { *(gmx_simd_fint32_t *)(m) = (x); }
 #define gmx_simd_set1_fi(i)        vec_splats((int)(i))
 #if defined(__ibmxl__) || defined(__xlC__)
 #    define gmx_simd_loadu_fi(m)    vec_xlw4(0, (int *)(m))
@@ -139,24 +164,25 @@
 #define gmx_simd_sub_fi(a, b)       vec_sub(a, b)
 #define gmx_simd_mul_fi(a, b)      ((a)*(b))
 /* Boolean & comparison operations on gmx_simd_float_t */
-#define gmx_simd_fbool_t           __vector vsx_bool int
+#define gmx_simd_fbool_t           __vector gmx_vsx_bool int
 #define gmx_simd_cmpeq_f(a, b)     vec_cmpeq(a, b)
+#define gmx_simd_cmpnz_f(a)        (gmx_simd_fbool_t)vec_cmpgt( (__vector unsigned int)a, vec_splats(0U))
 #define gmx_simd_cmplt_f(a, b)     vec_cmplt(a, b)
 #define gmx_simd_cmple_f(a, b)     vec_cmple(a, b)
 #define gmx_simd_and_fb(a, b)      vec_and(a, b)
 #define gmx_simd_or_fb(a, b)       vec_or(a, b)
-#define gmx_simd_anytrue_fb(a)     vec_any_ne(a, (__vector vsx_bool int)vec_splats(0))
+#define gmx_simd_anytrue_fb(a)     vec_any_ne(a, (__vector gmx_vsx_bool int)vec_splats(0))
 #define gmx_simd_blendzero_f(a, sel)    vec_and(a, (__vector float)sel)
 #define gmx_simd_blendnotzero_f(a, sel) vec_andc(a, (__vector float)sel)
 #define gmx_simd_blendv_f(a, b, sel)    vec_sel(a, b, sel)
 #define gmx_simd_reduce_f(a)       gmx_simd_reduce_f_ibm_vsx(a)
 /* Boolean & comparison operations on gmx_simd_fint32_t */
-#define gmx_simd_fibool_t          __vector vsx_bool int
+#define gmx_simd_fibool_t          __vector gmx_vsx_bool int
 #define gmx_simd_cmpeq_fi(a, b)    vec_cmpeq(a, b)
 #define gmx_simd_cmplt_fi(a, b)    vec_cmplt(a, b)
 #define gmx_simd_and_fib(a, b)     vec_and(a, b)
 #define gmx_simd_or_fib(a, b)      vec_or(a, b)
-#define gmx_simd_anytrue_fib(a)          vec_any_ne(a, (__vector vsx_bool int)vec_splats(0))
+#define gmx_simd_anytrue_fib(a)          vec_any_ne(a, (__vector gmx_vsx_bool int)vec_splats(0))
 #define gmx_simd_blendzero_fi(a, sel)    vec_and(a, (__vector signed int)sel)
 #define gmx_simd_blendnotzero_fi(a, sel) vec_andc(a, (__vector signed int)sel)
 #define gmx_simd_blendv_fi(a, b, sel)    vec_sel(a, b, sel)

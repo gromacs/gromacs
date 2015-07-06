@@ -295,7 +295,7 @@ gmx_simd_sqrt_f(gmx_simd_float_t x)
 {
     gmx_simd_float_t  res;
 
-    res  = gmx_simd_invsqrt_mask_f(x, gmx_simd_cmpnz_f(x));
+    res  = gmx_simd_invsqrt_mask_f(x, gmx_simd_cmplt_f(gmx_simd_setzero_f(), x));
     return gmx_simd_mul_f(res, x);
 }
 
@@ -1578,7 +1578,7 @@ gmx_simd_sqrt_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t  res;
 
-    res  = gmx_simd_invsqrt_mask_d(x, gmx_simd_cmpnz_d(x));
+    res  = gmx_simd_invsqrt_mask_d(x, gmx_simd_cmplt_d(gmx_simd_setzero_d(), x));
     return gmx_simd_mul_d(res, x);
 }
 
@@ -2900,7 +2900,7 @@ gmx_simd_sqrt_singleaccuracy_d(gmx_simd_double_t x)
 {
     gmx_simd_double_t  res;
 
-    res  = gmx_simd_invsqrt_mask_singleaccuracy_d(x, gmx_simd_cmpnz_d(x));
+    res  = gmx_simd_invsqrt_mask_singleaccuracy_d(x, gmx_simd_cmplt_d(gmx_simd_setzero_d(), x));
     return gmx_simd_mul_d(res, x);
 }
 
