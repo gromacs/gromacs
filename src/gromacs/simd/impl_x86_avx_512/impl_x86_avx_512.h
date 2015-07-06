@@ -33,12 +33,18 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512F_H
-#define GMX_SIMD_IMPL_X86_AVX_512F_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512_H
+#define GMX_SIMD_IMPL_X86_AVX_512_H
 
-#include "impl_x86_avx_512f_simd4_double.h"
-#include "impl_x86_avx_512f_simd4_float.h"
-#include "impl_x86_avx_512f_simd_double.h"
-#include "impl_x86_avx_512f_simd_float.h"
+#include "impl_x86_avx_512_definitions.h"
+#include "impl_x86_avx_512_general.h"
+#include "impl_x86_avx_512_simd4_double.h"
+#include "impl_x86_avx_512_simd4_float.h"
+#include "impl_x86_avx_512_simd_double.h"
+#include "impl_x86_avx_512_simd_float.h"
+#include "impl_x86_avx_512_util_double.h"
+#include "impl_x86_avx_512_util_float.h"
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512F_H */
+
+
+#endif // GMX_SIMD_IMPL_X86_AVX_512_H
