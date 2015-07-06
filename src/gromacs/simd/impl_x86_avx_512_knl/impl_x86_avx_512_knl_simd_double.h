@@ -33,15 +33,50 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H
-#define GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD_DOUBLE_H
+
+#include "config.h"
 
 #include <immintrin.h>
 
-#include "impl_x86_avx_512er_common.h"
-#include "impl_x86_avx_512er_simd_double.h"
+#include "gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_simd_double.h"
 
-#undef  simd4RsqrtD
-#define simd4RsqrtD(x)       _mm512_castpd512_pd256(_mm512_rsqrt28_pd(_mm512_castpd256_pd512(x)))
+namespace gmx
+{
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD4_DOUBLE_H */
+static inline SimdDouble gmx_simdcall
+rsqrt(SimdDouble x)
+{
+    return {
+               _mm512_rsqrt28_pd(x.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+rcp(SimdDouble x)
+{
+    return {
+               _mm512_rcp28_pd(x.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskzRsqrt(SimdDouble x, SimdDBool m)
+{
+    return {
+               _mm512_maskz_rsqrt28_pd(m.simdInternal_, x.simdInternal_)
+    };
+}
+
+static inline SimdDouble gmx_simdcall
+maskzRcp(SimdDouble x, SimdDBool m)
+{
+    return {
+               _mm512_maskz_rcp28_pd(m.simdInternal_, x.simdInternal_)
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD_DOUBLE_H
