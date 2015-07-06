@@ -48,7 +48,7 @@
 
 #include "config.h"
 
-#ifdef GMX_INTERNAL_XDR
+#if GMX_INTERNAL_XDR
 #include "gromacs/fileio/gmx_system_xdr.h"
 #else
 #include <rpc/rpc.h>
