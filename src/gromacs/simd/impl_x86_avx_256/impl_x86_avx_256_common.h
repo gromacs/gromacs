@@ -36,7 +36,10 @@
 #ifndef GMX_SIMD_IMPL_X86_AVX_256_COMMON_H
 #define GMX_SIMD_IMPL_X86_AVX_256_COMMON_H
 
+#include "config.h"
+
 /* Capability definitions for 256-bit AVX - no inheritance from SSE */
+#define GMX_SIMD_V2                       1
 #define GMX_SIMD_HAVE_FLOAT               1
 #define GMX_SIMD_HAVE_DOUBLE              1
 #define GMX_SIMD_HAVE_SIMD_HARDWARE       1
@@ -53,6 +56,11 @@
 #define GMX_SIMD_HAVE_DINT32_EXTRACT      1  /* Native, dint uses 128-bit SIMD    */
 #define GMX_SIMD_HAVE_DINT32_LOGICAL      1
 #define GMX_SIMD_HAVE_DINT32_ARITHMETICS  1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT    1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE   1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT    1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE   0 /* No need for half-simd, width is 4 */
+
 #define GMX_SIMD4_HAVE_FLOAT              1
 #define GMX_SIMD4_HAVE_DOUBLE             1
 
@@ -63,5 +71,13 @@
 #define GMX_SIMD_DINT32_WIDTH             4
 #define GMX_SIMD_RSQRT_BITS              11
 #define GMX_SIMD_RCP_BITS                11
+
+#if GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#    define gmx_mm_maskload_ps(mem, mask)        _mm_maskload_ps((mem), _mm_castsi128_ps(mask))
+#    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), _mm_castsi128_ps(mask), (x))
+#else
+#    define gmx_mm_maskload_ps(mem, mask)        _mm_maskload_ps((mem), (mask))
+#    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), (mask), (x))
+#endif
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_256_COMMON_H */
