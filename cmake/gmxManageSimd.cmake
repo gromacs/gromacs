@@ -328,45 +328,39 @@ elseif(GMX_SIMD STREQUAL "AVX_512ER")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON")
 
-    gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler 32-bit ARM NEON flag"
+    gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler ARM NEON flag"
                               "#include<arm_neon.h>
                               int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
                               SIMD_C_FLAGS
-                              "-mfpu=neon" "")
-    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON "C++ compiler 32-bit ARM NEON flag"
+                              "-mfpu=neon-vfpv4" "-mfpu=neon" "")
+    gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON "C++ compiler ARM NEON flag"
                                 "#include<arm_neon.h>
                                 int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
                                 SIMD_CXX_FLAGS
-                                "-mfpu=neon" "-D__STDC_CONSTANT_MACROS" "")
+                                "-mfpu=neon-vfpv4" "-mfpu=neon" "-D__STDC_CONSTANT_MACROS" "")
 
     if(NOT CFLAGS_ARM_NEON OR NOT CXXFLAGS_ARM_NEON)
-        message(FATAL_ERROR "Cannot find ARM 32-bit NEON compiler flag. Use a newer compiler, or disable NEON SIMD.")
+        message(FATAL_ERROR "Cannot find ARM NEON compiler flag. Use a newer compiler, or disable NEON SIMD.")
     endif()
 
     set(GMX_SIMD_ARM_NEON 1)
     set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions")
 
 elseif(GMX_SIMD STREQUAL "ARM_NEON_ASIMD")
-    # Gcc-4.8.1 appears to have a bug where the c++ compiler requires
-    # -D__STDC_CONSTANT_MACROS if we include arm_neon.h
 
     gmx_find_cflag_for_source(CFLAGS_ARM_NEON_ASIMD "C compiler ARM NEON Advanced SIMD flag"
                               "#include<arm_neon.h>
-                              int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                               int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
                               SIMD_C_FLAGS
                               "")
     gmx_find_cxxflag_for_source(CXXFLAGS_ARM_NEON_ASIMD "C++ compiler ARM NEON Advanced SIMD flag"
                                 "#include<arm_neon.h>
-                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);return vgetq_lane_f64(x,0)>0;}"
+                                int main(){float64x2_t x=vdupq_n_f64(0.5);x=vfmaq_f64(x,x,x);x=vrndnq_f64(x);return vgetq_lane_f64(x,0)>0;}"
                                 SIMD_CXX_FLAGS
-                                "-D__STDC_CONSTANT_MACROS" "")
+                                "")
 
     if(NOT CFLAGS_ARM_NEON_ASIMD OR NOT CXXFLAGS_ARM_NEON_ASIMD)
-        message(FATAL_ERROR "Cannot find ARM (AArch64) NEON Advanced SIMD compiler flag. Use a newer compiler, or disable SIMD.")
-    endif()
-
-    if(CMAKE_C_COMPILER_ID MATCHES "GNU" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "4.9")
-        message(WARNING "At least gcc-4.8.1 has many bugs for ARM (AArch64) NEON Advanced SIMD compilation. You might need gcc version 4.9 or later.")
+        message(FATAL_ERROR "Compiler does not fully support ARM (AArch64) NEON Advanced SIMD. Use a newer compiler (gcc version 4.9 or later), or disable SIMD.")
     endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "3.4")

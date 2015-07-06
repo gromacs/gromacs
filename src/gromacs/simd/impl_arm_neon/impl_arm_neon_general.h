@@ -32,17 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_SIMD_IMPL_ARM_NEON_GENERAL_H
+#define GMX_SIMD_IMPL_ARM_NEON_GENERAL_H
 
-#ifndef GMX_SIMD_IMPL_ARM_NEON_H
-#define GMX_SIMD_IMPL_ARM_NEON_H
+namespace gmx
+{
 
-#include "impl_arm_neon_definitions.h"
-#include "impl_arm_neon_general.h"
-// Arm/Neon cannot do double precision SIMD4
-#include "impl_arm_neon_simd4_float.h"
-// Arm/Neon cannot do double precision SIMD
-#include "impl_arm_neon_simd_float.h"
-// Arm/Neon cannot do double precision SIMD utilities
-#include "impl_arm_neon_util_float.h"
+static inline void
+simdPrefetch(void * m)
+{
+#ifdef __GNUC__
+    __builtin_prefetch(m);
+#endif
+}
 
-#endif // GMX_SIMD_IMPL_ARM_NEON_H
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_ARM_NEON_GENERAL_H
