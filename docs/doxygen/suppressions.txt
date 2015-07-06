@@ -48,7 +48,6 @@ src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn_common.h: warning
 
 # Temporary while we change the SIMD implementation
 src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"
-src/gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f_common.h: warning: should include "simd.h"
 
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"

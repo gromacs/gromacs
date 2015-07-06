@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,12 +33,26 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_SIMD_IMPL_X86_AVX_512F_H
-#define GMX_SIMD_IMPL_X86_AVX_512F_H
+#ifndef GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD4_DOUBLE_H
+#define GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD4_DOUBLE_H
 
-#include "impl_x86_avx_512f_simd4_double.h"
-#include "impl_x86_avx_512f_simd4_float.h"
-#include "impl_x86_avx_512f_simd_double.h"
-#include "impl_x86_avx_512f_simd_float.h"
+#include "config.h"
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512F_H */
+#include <immintrin.h>
+
+#include "gromacs/simd/impl_x86_avx_512/impl_x86_avx_512_simd4_double.h"
+
+namespace gmx
+{
+
+static inline Simd4Double gmx_simdcall
+rsqrt(Simd4Double x)
+{
+    return {
+               _mm512_castpd512_pd256(_mm512_rsqrt28_pd(_mm512_castpd256_pd512(x.simdInternal_)))
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD4_DOUBLE_H
