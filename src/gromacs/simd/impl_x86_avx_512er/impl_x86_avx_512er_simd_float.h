@@ -40,41 +40,77 @@
 
 #include <immintrin.h>
 
-#include "impl_x86_avx_512er_common.h"
+#include "gromacs/simd/impl_x86_avx_512f/impl_x86_avx_512f_simd_float.h"
 
-#undef  simdRsqrtF
-#define simdRsqrtF           _mm512_rsqrt28_ps
-
-#undef  simdRcpF
-#define simdRcpF             _mm512_rcp28_ps
-
-#undef  simdExpF
-#define simdExpF(x)          simdExpF_x86_avx_512er(x)
-
-/* Implementation helper */
-
-static inline __m512 gmx_simdcall
-simdExpF_x86_avx_512er(__m512 x)
+namespace gmx
 {
-    const SimdFloat         argscale    = simdSet1F(1.44269504088896341f);
-    const SimdFloat         invargscale = simdSet1F(-0.69314718055994528623f);
 
-    __m512                  xscaled = _mm512_mul_ps(x, argscale);
-    __m512                  r       = _mm512_exp2a23_ps(xscaled);
-
-    /* exp2a23_ps provides 23 bits of accuracy, but we ruin some of that with our argument
-     * scaling. To correct this, we find the difference between the scaled argument and
-     * the true one (extended precision arithmetics does not appear to be necessary to
-     * fulfill our accuracy requirements) and then multiply by the exponent of this
-     * correction since exp(a+b)=exp(a)*exp(b).
-     * Note that this only adds two instructions (and maybe some constant loads).
-     */
-    x         = simdFmaddF(invargscale, xscaled, x);
-    /* x will now be a _very_ small number, so approximate exp(x)=1+x.
-     * We should thus apply the correction as r'=r*(1+x)=r+r*x
-     */
-    r         = simdFmaddF(r, x, r);
-    return r;
+static inline SimdFloat gmx_simdcall
+rsqrt(SimdFloat x)
+{
+    return {
+               _mm512_rsqrt28_ps(x.simdInternal_)
+    };
 }
 
-#endif /* GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H */
+static inline SimdFloat gmx_simdcall
+rcp(SimdFloat x)
+{
+    return {
+               _mm512_rcp28_ps(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzRsqrt(SimdFloat x, SimdFBool m)
+{
+    return {
+               _mm512_maskz_rsqrt28_ps(m.simdInternal_, x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+maskzRcp(SimdFloat x, SimdFBool m)
+{
+    return {
+               _mm512_maskz_rcp28_ps(m.simdInternal_, x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+exp2(SimdFloat x)
+{
+    return {
+               _mm512_exp2a23_ps(x.simdInternal_)
+    };
+}
+
+static inline SimdFloat gmx_simdcall
+exp(SimdFloat x)
+{
+    const __m512     argscale    = _mm512_set1_ps(1.44269504088896341f);
+    const __m512     invargscale = _mm512_set1_ps(-0.69314718055994528623f);
+
+    __m512           xscaled     = _mm512_mul_ps(x.simdInternal_, argscale);
+    __m512           r           = _mm512_exp2a23_ps(xscaled);
+
+    // exp2a23_ps provides 23 bits of accuracy, but we ruin some of that with our argument
+    // scaling. To correct this, we find the difference between the scaled argument and
+    // the true one (extended precision arithmetics does not appear to be necessary to
+    // fulfill our accuracy requirements) and then multiply by the exponent of this
+    // correction since exp(a+b)=exp(a)*exp(b).
+    // Note that this only adds two instructions (and maybe some constant loads).
+
+    // find the difference
+    x         = _mm512_fmadd_ps(invargscale, xscaled, x.simdInternal_);
+    // x will now be a _very_ small number, so approximate exp(x)=1+x.
+    // We should thus apply the correction as r'=r*(1+x)=r+r*x
+    r         = _mm512_fmadd_ps(r, x.simdInternal_, r);
+    return {
+               r
+    };
+}
+
+}      // namespace gmx
+
+#endif // GMX_SIMD_IMPL_X86_AVX_512ER_SIMD_FLOAT_H
