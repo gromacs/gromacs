@@ -45,14 +45,14 @@
 
 #include "config.h"
 
-#if defined(HAVE_POSIX_REGEX)
-#include <sys/types.h>
+#if HAVE_POSIX_REGEX
+#    include <sys/types.h>
 // old Mac needs sys/types.h before regex.h
-#include <regex.h>
-#define USE_POSIX_REGEX
-#elif defined(HAVE_CXX11_REGEX)
-#include <regex>
-#define USE_CXX11_REGEX
+#    include <regex.h>
+#    define USE_POSIX_REGEX   1
+#elif HAVE_CXX11_REGEX
+#    include <regex>
+#    define USE_CXX11_REGEX   1
 #endif
 
 #include "gromacs/utility/exceptions.h"
@@ -64,14 +64,14 @@ namespace gmx
 // static
 bool Regex::isSupported()
 {
-#if defined(USE_POSIX_REGEX) || defined(USE_CXX11_REGEX)
+#if USE_POSIX_REGEX || USE_CXX11_REGEX
     return true;
 #else
     return false;
 #endif
 }
 
-#if defined(USE_POSIX_REGEX)
+#if USE_POSIX_REGEX
 class Regex::Impl
 {
     public:
@@ -113,7 +113,7 @@ class Regex::Impl
 
         regex_t                 regex_;
 };
-#elif defined(USE_CXX11_REGEX)
+#elif USE_CXX11_REGEX
 class Regex::Impl
 {
     public:

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,7 @@ class scoped_cptr
         //! Returns the stored pointer.
         T *get() const { return ptr_; }
         //! Check for non-null pointer in boolean context.
-#ifdef GMX_CXX11
+#if GMX_CXX11
         explicit
 #endif
         operator bool () const { return ptr_ != 0; }
