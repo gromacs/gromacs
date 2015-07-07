@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
 
 static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
 {
-    int i, j;
+    int i;
 
     for (i = 0; (i < ngtc); i++)
     {
@@ -237,7 +237,7 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
               gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
-    real          T, ek;
+    real          T;
     t_grp_tcstat *tcstat;
     real          nrdf, nd, *ndf;
 
