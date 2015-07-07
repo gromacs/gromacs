@@ -180,6 +180,7 @@ static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
     nq                = 0;
     nlj               = 0;
     *bChargePerturbed = FALSE;
+    *bTypePerturbed   = FALSE;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
@@ -294,6 +295,7 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
     nqlj              = 0;
     nq                = 0;
     *bChargePerturbed = FALSE;
+    *bTypePerturbed   = FALSE;
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
