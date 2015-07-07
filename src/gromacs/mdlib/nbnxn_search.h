@@ -39,9 +39,6 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Tells if the pair-list corresponding to nb_kernel_type is simple.
  * Returns FALSE for super-sub type pair-list.
@@ -83,8 +80,5 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          int                   nb_kernel_type,
                          t_nrnb               *nrnb);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif
