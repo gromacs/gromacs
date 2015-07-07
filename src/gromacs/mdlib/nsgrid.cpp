@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/pdbio.h"
@@ -90,7 +94,7 @@ static void calc_x_av_stddev(int n, rvec *x, rvec av, rvec stddev)
     for (d = 0; d < DIM; d++)
     {
         av[d]     = s1[d];
-        stddev[d] = sqrt(s2[d] - s1[d]*s1[d]);
+        stddev[d] = std::sqrt(s2[d] - s1[d]*s1[d]);
     }
 }
 
@@ -202,7 +206,6 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
 {
     int      i, j;
     gmx_bool bDD, bDDRect;
-    rvec     av, stddev;
     rvec     izones_size;
     real     inv_r_ideal, size, add_tric, radd;
 
@@ -218,7 +221,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
     }
 
     /* Use the ideal number of cg's per cell to set the ideal cell size */
-    inv_r_ideal = pow(grid_density/grid->ncg_ideal, 1.0/3.0);
+    inv_r_ideal = std::pow(grid_density/grid->ncg_ideal, (real)1.0/3.0);
     if (rlist > 0 && inv_r_ideal*rlist < 1)
     {
         inv_r_ideal = 1/rlist;
@@ -273,8 +276,11 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
 
             /* Check if the cell boundary in this direction is
              * perpendicular to the Cartesian axis.
+             * Since grid->npbcdim isan integer that in principle can take
+             * any value, we help the compiler avoid warnings and potentially
+             * optimize by ensuring that j < DIM here.
              */
-            for (j = i+1; j < grid->npbcdim; j++)
+            for (j = i+1; j < grid->npbcdim && j < DIM; j++)
             {
                 if (box[j][i] != 0)
                 {
@@ -357,7 +363,6 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
 
 t_grid *init_grid(FILE *fplog, t_forcerec *fr)
 {
-    int     d, m;
     char   *ptr;
     t_grid *grid;
 
@@ -475,7 +480,6 @@ void grid_first(FILE *fplog, t_grid *grid,
                 real rlistlong, real grid_density)
 {
     int    i, m;
-    ivec   cx;
 
     set_grid_sizes(box, izones_x0, izones_x1, rlistlong, dd, ddbox, grid, grid_density);
 
@@ -495,7 +499,7 @@ void grid_first(FILE *fplog, t_grid *grid,
         }
     }
 
-    m = max(grid->n[XX], max(grid->n[YY], grid->n[ZZ]));
+    m = std::max(grid->n[XX], std::max(grid->n[YY], grid->n[ZZ]));
     if (m > grid->dc_nalloc)
     {
         /* Allocate with double the initial size for box scaling */
@@ -642,7 +646,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
                int cg0, int cg1, rvec cg_cm[])
 {
     int       *cell_index;
-    int        nrx, nry, nrz;
+    int        nry, nrz;
     rvec       n_box, offset;
     int        zone, ccg0, ccg1, cg, d, not_used;
     ivec       shift0, useall, b0, b1, ind;
@@ -661,7 +665,6 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
     cell_index = grid->cell_index;
 
     /* Initiate cell borders */
-    nrx = grid->n[XX];
     nry = grid->n[YY];
     nrz = grid->n[ZZ];
     for (d = 0; d < DIM; d++)
@@ -689,7 +692,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
         {
             for (d = 0; d < DIM; d++)
             {
-                ind[d] = (cg_cm[cg][d] - offset[d])*n_box[d];
+                ind[d] = static_cast<int>((cg_cm[cg][d] - offset[d])*n_box[d]);
                 /* With pbc we should be done here.
                  * Without pbc cg's outside the grid
                  * should be assigned to the closest grid cell.
@@ -764,7 +767,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
                 bUse = TRUE;
                 for (d = 0; d < DIM; d++)
                 {
-                    ind[d] = (cg_cm[cg][d] - offset[d])*n_box[d];
+                    ind[d] = static_cast<int>((cg_cm[cg][d] - offset[d])*n_box[d]);
                     /* Here we have to correct for rounding problems,
                      * as this cg_cm to cell index operation is not necessarily
                      * binary identical to the operation for the DD zone assignment
