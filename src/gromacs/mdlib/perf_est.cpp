@@ -38,7 +38,7 @@
 
 #include "gromacs/legacyheaders/perf_est.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
@@ -149,7 +149,7 @@ static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
     int            mb, nmol, atnr, cg, a, a0, ncqlj, ncq, nclj;
     gmx_bool       bBHAM, bLJcut, bWater, bQ, bLJ;
     int            nw, nqlj, nq, nlj;
-    float          fq, fqlj, flj, fljtab, fqljw, fqw;
+    float          fq, fqlj, flj, fqljw, fqw;
     t_iparams     *iparams;
     gmx_moltype_t *molt;
 
@@ -270,7 +270,7 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                            gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
 {
     t_atom        *atom;
-    int            mb, nmol, atnr, cg, a, a0, nqlj, nq, nlj;
+    int            mb, nmol, atnr, a, nqlj, nq, nlj;
     gmx_bool       bQRF;
     t_iparams     *iparams;
     gmx_moltype_t *molt;
@@ -299,7 +299,6 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
         molt = &mtop->moltype[mtop->molblock[mb].type];
         atom = molt->atoms.atom;
         nmol = mtop->molblock[mb].nmol;
-        a    = 0;
         for (a = 0; a < molt->atoms.nr; a++)
         {
             if (atom[a].q != 0 || atom[a].qB != 0)
@@ -367,14 +366,10 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
 
 float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
 {
-    t_atom        *atom;
-    int            mb, nmol, atnr, cg, a, a0, nq_tot, nlj_tot, f;
-    gmx_bool       bBHAM, bLJcut, bChargePerturbed, bTypePerturbed;
-    gmx_bool       bWater, bQ, bLJ;
+    int            nq_tot, nlj_tot, f;
+    gmx_bool       bChargePerturbed, bTypePerturbed;
     double         cost_bond, cost_pp, cost_redist, cost_spread, cost_fft, cost_solve, cost_pme;
     float          ratio;
-    t_iparams     *iparams;
-    gmx_moltype_t *molt;
 
     /* Computational cost of bonded, non-bonded and PME calculations.
      * This will be machine dependent.
@@ -382,9 +377,6 @@ float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
      * in single precision. In double precision PME mesh is slightly cheaper,
      * although not so much that the numbers need to be adjusted.
      */
-
-    iparams = mtop->ffparams.iparams;
-    atnr    = mtop->ffparams.atnr;
 
     cost_bond = C_BOND*n_bonded_dx(mtop, TRUE);
 
@@ -410,8 +402,8 @@ float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
     {
         f            = ((ir->efep != efepNO && bChargePerturbed) ? 2 : 1);
         cost_redist +=   C_PME_REDIST*nq_tot;
-        cost_spread += f*C_PME_SPREAD*nq_tot*pow(ir->pme_order, 3);
-        cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
+        cost_spread += f*C_PME_SPREAD*nq_tot*std::pow(static_cast<real>(ir->pme_order), static_cast<real>(3.0));
+        cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*std::log(static_cast<real>(ir->nkx*ir->nky*ir->nkz));
         cost_solve  += f*C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
     }
 
@@ -424,8 +416,8 @@ float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
             f       *= 7;
         }
         cost_redist +=   C_PME_REDIST*nlj_tot;
-        cost_spread += f*C_PME_SPREAD*nlj_tot*pow(ir->pme_order, 3);
-        cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
+        cost_spread += f*C_PME_SPREAD*nlj_tot*std::pow(static_cast<real>(ir->pme_order), static_cast<real>(3.0));
+        cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*std::log(static_cast<real>(ir->nkx*ir->nky*ir->nkz));
         cost_solve  += f*C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
     }
 

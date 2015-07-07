@@ -61,7 +61,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
 
     int    nsteps = ir->nsteps;
     int    i, nxtcatoms = 0;
-    int    nstx, nstv, nstf, nste, nstlog, nstxtc, nfep = 0;
+    int    nstx, nstv, nstf, nste, nstlog, nstxtc;
     double cio;
 
     nstx   = div_nsteps(nsteps, ir->nstxout);
