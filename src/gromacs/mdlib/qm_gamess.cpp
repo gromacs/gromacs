@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#ifdef GMX_QMMM_GAMESS
+#if GMX_QMMM_GAMESS
 
 #include <math.h>
 #include <stdio.h>
