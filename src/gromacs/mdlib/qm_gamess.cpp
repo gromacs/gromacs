@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
@@ -66,14 +67,14 @@
 
 
 void
-F77_FUNC(inigms, IMIGMS) (void);
+    F77_FUNC(inigms, IMIGMS) (void);
 
 void
-F77_FUNC(endgms, ENDGMS) (void);
+    F77_FUNC(endgms, ENDGMS) (void);
 
 void
-F77_FUNC(grads, GRADS) (int *nrqmat, real *qmcrd, int *nrmmat, real *mmchrg,
-                        real *mmcrd, real *qmgrad, real *mmgrad, real *energy);
+    F77_FUNC(grads, GRADS) (int *nrqmat, real *qmcrd, int *nrmmat, real *mmchrg,
+                            real *mmcrd, real *qmgrad, real *mmgrad, real *energy);
 
 
 
@@ -88,7 +89,7 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
      * dynamics simulations. 7-6-2002 (London)
      */
     int
-        i, j, rank;
+        i, j;
     FILE
        *out;
     char
@@ -228,7 +229,7 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
     }
 }
 
-real call_gamess(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
+real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
                  rvec f[], rvec fshift[])
 {
     /* do the actual QMMM calculation using GAMESS-UK. In this
@@ -237,7 +238,7 @@ real call_gamess(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
      * gradient routines linked directly
      */
     int
-        i, j, rank;
+        i, j;
     real
         QMener = 0.0, *qmgrad, *mmgrad, *mmcrd, *qmcrd, energy;
     t_QMMMrec

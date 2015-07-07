@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,20 +57,19 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-
 
 /* TODO: this should be made thread-safe */
 
 /* Gaussian interface routines */
 
-void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
+void init_gaussian(t_QMrec *qm)
 {
-    FILE
-       *rffile = NULL, *out = NULL;
+    FILE *out = NULL;
     ivec
-        basissets[eQMbasisNR] = {{0, 3, 0},
+          basissets[eQMbasisNR] = {{0, 3, 0},
                                  {0, 3, 0}, /*added for double sto-3g entry in names.c*/
                                  {5, 0, 0},
                                  {5, 0, 1},
@@ -81,9 +80,9 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
                                  {1, 6, 11},
                                  {4, 6, 0}};
     char
-       *buf = NULL;
+         *buf = NULL;
     int
-        i;
+          i;
 
     /* using the ivec above to convert the basis read form the mdp file
      * in a human readable format into some numbers for the gaussian
@@ -695,8 +694,7 @@ void write_gaussian_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 
 }  /* write_gaussian_input */
 
-real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], int step,
-                          t_QMrec *qm, t_MMrec *mm)
+real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], t_QMrec *qm, t_MMrec *mm)
 {
     int
         i, j, atnum;
@@ -801,8 +799,7 @@ real read_gaussian_output(rvec QMgrad[], rvec MMgrad[], int step,
     return(QMener);
 }
 
-real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step,
-                             gmx_bool swapped, t_QMrec *qm, t_MMrec *mm)
+real read_gaussian_SH_output(rvec QMgrad[], rvec MMgrad[], int step, t_QMrec *qm, t_MMrec *mm)
 {
     int
         i;
@@ -1023,8 +1020,7 @@ void do_gaussian(int step, char *exe)
     }
 }
 
-real call_gaussian(t_commrec *cr,  t_forcerec *fr,
-                   t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
+real call_gaussian(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
     /* normal gaussian jobs */
     static int
@@ -1045,7 +1041,7 @@ real call_gaussian(t_commrec *cr,  t_forcerec *fr,
 
     write_gaussian_input(step, fr, qm, mm);
     do_gaussian(step, exe);
-    QMener = read_gaussian_output(QMgrad, MMgrad, step, qm, mm);
+    QMener = read_gaussian_output(QMgrad, MMgrad, qm, mm);
     /* put the QMMM forces in the force array and to the fshift
      */
     for (i = 0; i < qm->nrQMatoms; i++)
@@ -1071,8 +1067,7 @@ real call_gaussian(t_commrec *cr,  t_forcerec *fr,
 
 } /* call_gaussian */
 
-real call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
-                      rvec f[], rvec fshift[])
+real call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
     /* a gaussian call routine intended for doing diabatic surface
      * "sliding". See the manual for the theoretical background of this
@@ -1128,7 +1123,7 @@ real call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     write_gaussian_SH_input(step, swapped, fr, qm, mm);
 
     do_gaussian(step, exe);
-    QMener = read_gaussian_SH_output(QMgrad, MMgrad, step, swapped, qm, mm);
+    QMener = read_gaussian_SH_output(QMgrad, MMgrad, step, qm, mm);
 
     /* check for a surface hop. Only possible if we were already state
      * averaging.
@@ -1149,7 +1144,7 @@ real call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
         {
             write_gaussian_SH_input(step, swapped, fr, qm, mm);
             do_gaussian(step, exe);
-            QMener = read_gaussian_SH_output(QMgrad, MMgrad, step, swapped, qm, mm);
+            QMener = read_gaussian_SH_output(QMgrad, MMgrad, step, qm, mm);
         }
     }
     /* add the QMMM forces to the gmx force array and fshift

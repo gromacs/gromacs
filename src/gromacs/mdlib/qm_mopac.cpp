@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,16 +63,16 @@
 
 /* mopac interface routines */
 void
-F77_FUNC(domldt, DOMLDT) (int *nrqmat, int labels[], char keywords[]);
+    F77_FUNC(domldt, DOMLDT) (int *nrqmat, int labels[], char keywords[]);
 
 void
-F77_FUNC(domop, DOMOP) (int *nrqmat, double qmcrd[], int *nrmmat,
-                        double mmchrg[], double mmcrd[], double qmgrad[],
-                        double mmgrad[], double *energy, double qmcharges[]);
+    F77_FUNC(domop, DOMOP) (int *nrqmat, double qmcrd[], int *nrmmat,
+                            double mmchrg[], double mmcrd[], double qmgrad[],
+                            double mmgrad[], double *energy, double qmcharges[]);
 
 
 
-void init_mopac(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
+void init_mopac(t_QMrec *qm)
 {
     /* initializes the mopac routines ans sets up the semiempirical
      * computation by calling moldat(). The inline mopac routines can
@@ -104,8 +104,7 @@ void init_mopac(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 
 } /* init_mopac */
 
-real call_mopac(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
-                rvec f[], rvec fshift[])
+real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
     /* do the actual QMMM calculation using directly linked mopac subroutines
      */
@@ -167,8 +166,7 @@ real call_mopac(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     return (QMener);
 }
 
-real call_mopac_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
-                   rvec f[], rvec fshift[])
+real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
     /* do the actual SH QMMM calculation using directly linked mopac
        subroutines */

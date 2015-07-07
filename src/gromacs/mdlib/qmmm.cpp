@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cmath>
+
+#include <algorithm>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -73,36 +77,32 @@ void
 init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
 
 real
-call_gamess(t_commrec *cr, t_forcerec *fr,
+call_gamess(t_forcerec *fr,
             t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
 #elif defined GMX_QMMM_MOPAC
 /* MOPAC interface */
 
 void
-init_mopac(t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
+init_mopac(t_QMrec *qm);
 
 real
-call_mopac(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
-           t_MMrec *mm, rvec f[], rvec fshift[]);
+call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
 real
-call_mopac_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
-              t_MMrec *mm, rvec f[], rvec fshift[]);
+call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
 #elif defined GMX_QMMM_GAUSSIAN
 /* GAUSSIAN interface */
 
 void
-init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
+init_gaussian(t_QMrec *qm);
 
 real
-call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
-                 t_MMrec *mm, rvec f[], rvec fshift[]);
+call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
 real
-call_gaussian(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
-              t_MMrec *mm, rvec f[], rvec fshift[]);
+call_gaussian(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
 #elif defined GMX_QMMM_ORCA
 /* ORCA interface */
@@ -165,11 +165,11 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
 #ifdef GMX_QMMM_MOPAC
         if (qm->bSH)
         {
-            QMener = call_mopac_SH(cr, fr, qm, mm, f, fshift);
+            QMener = call_mopac_SH(qm, mm, f, fshift);
         }
         else
         {
-            QMener = call_mopac(cr, fr, qm, mm, f, fshift);
+            QMener = call_mopac(qm, mm, f, fshift);
         }
 #else
         gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
@@ -181,7 +181,7 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
         if (qm->bSH && qm->QMmethod == eQMmethodCASSCF)
         {
 #ifdef GMX_QMMM_GAUSSIAN
-            QMener = call_gaussian_SH(cr, fr, qm, mm, f, fshift);
+            QMener = call_gaussian_SH(fr, qm, mm, f, fshift);
 #else
             gmx_fatal(FARGS, "Ab-initio Surface-hopping only supported with Gaussian.");
 #endif
@@ -189,9 +189,9 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
         else
         {
 #ifdef GMX_QMMM_GAMESS
-            QMener = call_gamess(cr, fr, qm, mm, f, fshift);
+            QMener = call_gamess(fr, qm, mm, f, fshift);
 #elif defined GMX_QMMM_GAUSSIAN
-            QMener = call_gaussian(cr, fr, qm, mm, f, fshift);
+            QMener = call_gaussian(fr, qm, mm, f, fshift);
 #elif defined GMX_QMMM_ORCA
             QMener = call_orca(fr, qm, mm, f, fshift);
 #else
@@ -210,7 +210,7 @@ void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gm
     {
 #ifdef GMX_QMMM_MOPAC
         /* do a semi-empiprical calculation */
-        init_mopac(cr, qm, mm);
+        init_mopac(qm);
 #else
         gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
 #endif
@@ -221,7 +221,7 @@ void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gm
 #ifdef GMX_QMMM_GAMESS
         init_gamess(cr, qm, mm);
 #elif defined GMX_QMMM_GAUSSIAN
-        init_gaussian(cr, qm, mm);
+        init_gaussian(qm);
 #elif defined GMX_QMMM_ORCA
         init_orca(qm);
 #else
@@ -262,7 +262,7 @@ static void punch_QMMM_excl(t_QMrec *qm, t_MMrec *mm, t_blocka *excls)
     FILE
        *out = NULL;
     int
-        i, j, k, nrexcl = 0, *excluded = NULL, max = 0;
+        i, j, k, nrexcl = 0, *excluded = NULL, max_excl = 0;
 
 
     out = fopen("QMMMexcl.dat", "w");
@@ -280,10 +280,10 @@ static void punch_QMMM_excl(t_QMrec *qm, t_MMrec *mm, t_blocka *excls)
             {
                 if (mm->indexMM[k] == excls->a[j]) /* the excluded MM atom */
                 {
-                    if (nrexcl >= max)
+                    if (nrexcl >= max_excl)
                     {
-                        max += 1000;
-                        srenew(excluded, max);
+                        max_excl += 1000;
+                        srenew(excluded, max_excl);
                     }
                     excluded[nrexcl++] = k;
                     continue;
@@ -485,8 +485,8 @@ void init_QMMMrec(t_commrec  *cr,
     t_ilist                 *ilist_mol;
     gmx_mtop_atomlookup_t    alook;
 
-    c6au  = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM, 6));
-    c12au = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM, 12));
+    c6au  = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 6));
+    c12au = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 12));
     /* issue a fatal if the user wants to run with more than one node */
     if (PAR(cr))
     {
@@ -753,7 +753,7 @@ void init_QMMMrec(t_commrec  *cr,
         {
 #ifdef GMX_QMMM_MOPAC
             /* semi-empiprical 1-layer ONIOM calculation requested (mopac93) */
-            init_mopac(cr, qr->qm[0], qr->mm);
+            init_mopac(qr->qm[0]);
 #else
             gmx_fatal(FARGS, "Semi-empirical QM only supported with Mopac.");
 #endif
@@ -764,7 +764,7 @@ void init_QMMMrec(t_commrec  *cr,
 #ifdef GMX_QMMM_GAMESS
             init_gamess(cr, qr->qm[0], qr->mm);
 #elif defined GMX_QMMM_GAUSSIAN
-            init_gaussian(cr, qr->qm[0], qr->mm);
+            init_gaussian(qr->qm[0]);
 #elif defined GMX_QMMM_ORCA
             init_orca(qr->qm[0]);
 #else
@@ -797,8 +797,6 @@ void update_QMMMrec(t_commrec      *cr,
         QMMMlist;
     rvec
         dx, crd;
-    int
-       *MMatoms;
     t_QMrec
        *qm;
     t_MMrec
@@ -810,8 +808,8 @@ void update_QMMMrec(t_commrec      *cr,
     real
         c12au, c6au;
 
-    c6au  = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM, 6));
-    c12au = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM, 12));
+    c6au  = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 6));
+    c12au = (HARTREE2KJ*AVOGADRO*std::pow(BOHR2NM, 12));
 
     /* every cpu has this array. On every processor we fill this array
      * with 1's and 0's. 1's indicate the atoms is a QM atom on the
