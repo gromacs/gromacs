@@ -362,7 +362,6 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
 {
     int       i, j, n;
-    double    lambda;
     double   *lambda_vec;
     int       ndhmax = ir->nstenergy/ir->nstcalcenergy;
     t_lambda *fep    = ir->fepvals;
@@ -722,9 +721,13 @@ void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
     int          i;
     unsigned int j;
 
-    if (dhc && !enerhist->dht)
+    if (!dhc)
     {
-        gmx_incons("No delta_h histograms in energy history");
+        gmx_incons("No delta_h histograms found");
+    }
+    if (!enerhist->dht)
+    {
+        gmx_incons("No delta_h histograms found in energy history");
     }
     if (enerhist->dht->nndh != dhc->ndh)
     {

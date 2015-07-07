@@ -118,7 +118,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
 void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
 {
     int       i, m;
-    double    e, sum, sigma, invmm, diff;
+    double    e, invmm, diff;
     t_energy *eg, *egs;
 
     if ((index+nener > eb->nener) || (index < 0))
