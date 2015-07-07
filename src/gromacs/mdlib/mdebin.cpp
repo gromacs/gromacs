@@ -134,8 +134,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     char                buf[256];
     const char         *bufi;
     t_mdebin           *md;
-    int                 i, j, ni, nj, n, nh, k, kk, ncon, nset;
-    gmx_bool            bBHAM, bNoseHoover, b14;
+    int                 ni, nj, n, kk, ncon, nset;
+    gmx_bool            bBHAM, b14;
 
     snew(md, 1);
 
@@ -184,12 +184,12 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
 
     /* Energy monitoring */
-    for (i = 0; i < egNR; i++)
+    for (int i = 0; i < egNR; i++)
     {
         md->bEInd[i] = FALSE;
     }
 
-    for (i = 0; i < F_NRE; i++)
+    for (int i = 0; i < F_NRE; i++)
     {
         md->bEner[i] = FALSE;
         if (i == F_LJ)
@@ -308,7 +308,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
     if (ir->bAdress && !debug)
     {
-        for (i = 0; i < F_NRE; i++)
+        for (int i = 0; i < F_NRE; i++)
         {
             md->bEner[i] = FALSE;
             if (i == F_EKIN)
@@ -327,7 +327,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
 
     md->f_nre = 0;
-    for (i = 0; i < F_NRE; i++)
+    for (int i = 0; i < F_NRE; i++)
     {
         if (md->bEner[i])
         {
@@ -408,7 +408,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
 
     /* Energy monitoring */
-    for (i = 0; i < egNR; i++)
+    for (int i = 0; i < egNR; i++)
     {
         md->bEInd[i] = FALSE;
     }
@@ -441,7 +441,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         md->bEInd[egCOUL14] = TRUE;
     }
     md->nEc = 0;
-    for (i = 0; (i < egNR); i++)
+    for (int i = 0; (i < egNR); i++)
     {
         if (md->bEInd[i])
         {
@@ -471,17 +471,17 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     {
         n = 0;
         snew(gnm, md->nEc);
-        for (k = 0; (k < md->nEc); k++)
+        for (int k = 0; (k < md->nEc); k++)
         {
             snew(gnm[k], STRLEN);
         }
-        for (i = 0; (i < groups->grps[egcENER].nr); i++)
+        for (int i = 0; (i < groups->grps[egcENER].nr); i++)
         {
             ni = groups->grps[egcENER].nm_ind[i];
-            for (j = i; (j < groups->grps[egcENER].nr); j++)
+            for (int j = i; (j < groups->grps[egcENER].nr); j++)
             {
                 nj = groups->grps[egcENER].nm_ind[j];
-                for (k = kk = 0; (k < egNR); k++)
+                for (int k = kk = 0; (k < egNR); k++)
                 {
                     if (md->bEInd[k])
                     {
@@ -495,7 +495,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                 n++;
             }
         }
-        for (k = 0; (k < md->nEc); k++)
+        for (int k = 0; (k < md->nEc); k++)
         {
             sfree(gnm[k]);
         }
@@ -544,7 +544,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     snew(md->grpnms, md->mde_n);
     grpnms = md->grpnms;
 
-    for (i = 0; (i < md->nTC); i++)
+    for (int i = 0; (i < md->nTC); i++)
     {
         ni = groups->grps[egcTC].nm_ind[i];
         sprintf(buf, "T-%s", *(groups->grpname[ni]));
@@ -559,11 +559,11 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             if (md->bNHC_trotter)
             {
-                for (i = 0; (i < md->nTC); i++)
+                for (int i = 0; (i < md->nTC); i++)
                 {
                     ni   = groups->grps[egcTC].nm_ind[i];
                     bufi = *(groups->grpname[ni]);
-                    for (j = 0; (j < md->nNHC); j++)
+                    for (int j = 0; (j < md->nNHC); j++)
                     {
                         sprintf(buf, "Xi-%d-%s", j, bufi);
                         grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
@@ -575,10 +575,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                                          (const char **)grpnms, unit_invtime);
                 if (md->bMTTK)
                 {
-                    for (i = 0; (i < md->nTCP); i++)
+                    for (int i = 0; (i < md->nTCP); i++)
                     {
                         bufi = baro_nm[0];  /* All barostat DOF's together for now. */
-                        for (j = 0; (j < md->nNHC); j++)
+                        for (int j = 0; (j < md->nNHC); j++)
                         {
                             sprintf(buf, "Xi-%d-%s", j, bufi);
                             grpnms[2*(i*md->nNHC+j)] = gmx_strdup(buf);
@@ -592,7 +592,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             }
             else
             {
-                for (i = 0; (i < md->nTC); i++)
+                for (int i = 0; (i < md->nTC); i++)
                 {
                     ni   = groups->grps[egcTC].nm_ind[i];
                     bufi = *(groups->grpname[ni]);
@@ -609,7 +609,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     else if (md->etc == etcBERENDSEN || md->etc == etcYES ||
              md->etc == etcVRESCALE)
     {
-        for (i = 0; (i < md->nTC); i++)
+        for (int i = 0; (i < md->nTC); i++)
         {
             ni = groups->grps[egcTC].nm_ind[i];
             sprintf(buf, "Lamb-%s", *(groups->grpname[ni]));
@@ -625,7 +625,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     if (md->nU > 1)
     {
         snew(grpnms, 3*md->nU);
-        for (i = 0; (i < md->nU); i++)
+        for (int i = 0; (i < md->nU); i++)
         {
             ni = groups->grps[egcACC].nm_ind[i];
             sprintf(buf, "Ux-%s", *(groups->grpname[ni]));
@@ -667,9 +667,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     }
     if (ir->bSimTemp)
     {
-        int i;
         snew(md->temperatures, ir->fepvals->n_lambda);
-        for (i = 0; i < ir->fepvals->n_lambda; i++)
+        for (int i = 0; i < ir->fepvals->n_lambda; i++)
         {
             md->temperatures[i] = ir->simtempvals->temperatures[i];
         }
@@ -687,11 +686,10 @@ static void print_lambda_vector(t_lambda *fep, int i,
                                 gmx_bool get_native_lambda, gmx_bool get_names,
                                 char *str)
 {
-    size_t nps = 0, np;
-    int    j, k = 0;
+    int    k    = 0;
     int    Nsep = 0;
 
-    for (j = 0; j < efptNR; j++)
+    for (int j = 0; j < efptNR; j++)
     {
         if (fep->separate_dvdl[j])
         {
@@ -703,11 +701,10 @@ static void print_lambda_vector(t_lambda *fep, int i,
     {
         str += sprintf(str, "("); /* set the opening parenthesis*/
     }
-    for (j = 0; j < efptNR; j++)
+    for (int j = 0; j < efptNR; j++)
     {
         if (fep->separate_dvdl[j])
         {
-            double lam;
             if (!get_names)
             {
                 if (get_native_lambda && fep->init_lambda >= 0)
@@ -744,23 +741,22 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 {
     FILE       *fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
-    *lambdastate     = "\\lambda state", *remain = "remaining";
+    *lambdastate     = "\\lambda state";
     char        title[STRLEN], label_x[STRLEN], label_y[STRLEN];
-    int         i, np, nps, nsets, nsets_de, nsetsbegin;
+    int         np, nps, nsets, nsets_de, nsetsbegin;
     int         n_lambda_terms = 0;
     t_lambda   *fep            = ir->fepvals; /* for simplicity */
     t_expanded *expand         = ir->expandedvals;
     char      **setname;
     char        buf[STRLEN], lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
-    int         bufplace = 0;
-
+    int         bufplace   = 0;
     int         nsets_dhdl = 0;
     int         s          = 0;
     int         nsetsextend;
     gmx_bool    write_pV = FALSE;
 
     /* count the number of different lambda terms */
-    for (i = 0; i < efptNR; i++)
+    for (int i = 0; i < efptNR; i++)
     {
         if (fep->separate_dvdl[i])
         {
@@ -869,7 +865,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 
     if (fep->dhdl_derivatives == edhdlderivativesYES)
     {
-        for (i = 0; i < efptNR; i++)
+        for (int i = 0; i < efptNR; i++)
         {
             if (fep->separate_dvdl[i])
             {
@@ -916,7 +912,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         }
         nsetsbegin += nsets_dhdl;
 
-        for (i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
+        for (int i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
         {
             print_lambda_vector(fep, i, FALSE, FALSE, lambda_vec_str);
             if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
@@ -993,7 +989,7 @@ void upd_mdebin(t_mdebin       *md,
                 rvec            mu_tot,
                 gmx_constr_t    constr)
 {
-    int    i, j, k, kk, m, n, gid;
+    int    kk, n, gid;
     real   crmsd[2], tmp6[6];
     real   bs[NTRICLBOXS], vol, dens, pv, enthalpy;
     real   eee[egNR];
@@ -1099,12 +1095,12 @@ void upd_mdebin(t_mdebin       *md,
     if (md->nE > 1)
     {
         n = 0;
-        for (i = 0; (i < md->nEg); i++)
+        for (int i = 0; (i < md->nEg); i++)
         {
-            for (j = i; (j < md->nEg); j++)
+            for (int j = i; (j < md->nEg); j++)
             {
                 gid = GID(i, j, md->nEg);
-                for (k = kk = 0; (k < egNR); k++)
+                for (int k = kk = 0; (k < egNR); k++)
                 {
                     if (md->bEInd[k])
                     {
@@ -1119,7 +1115,7 @@ void upd_mdebin(t_mdebin       *md,
 
     if (ekind)
     {
-        for (i = 0; (i < md->nTC); i++)
+        for (int i = 0; (i < md->nTC); i++)
         {
             md->tmp_r[i] = ekind->tcstat[i].T;
         }
@@ -1132,11 +1128,11 @@ void upd_mdebin(t_mdebin       *md,
             {
                 if (md->bNHC_trotter)
                 {
-                    for (i = 0; (i < md->nTC); i++)
+                    for (int i = 0; (i < md->nTC); i++)
                     {
-                        for (j = 0; j < md->nNHC; j++)
+                        for (int j = 0; j < md->nNHC; j++)
                         {
-                            k                = i*md->nNHC+j;
+                            int k            = i*md->nNHC+j;
                             md->tmp_r[2*k]   = state->nosehoover_xi[k];
                             md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
                         }
@@ -1145,11 +1141,11 @@ void upd_mdebin(t_mdebin       *md,
 
                     if (md->bMTTK)
                     {
-                        for (i = 0; (i < md->nTCP); i++)
+                        for (int i = 0; (i < md->nTCP); i++)
                         {
-                            for (j = 0; j < md->nNHC; j++)
+                            for (int j = 0; j < md->nNHC; j++)
                             {
-                                k                = i*md->nNHC+j;
+                                int k            = i*md->nNHC+j;
                                 md->tmp_r[2*k]   = state->nhpres_xi[k];
                                 md->tmp_r[2*k+1] = state->nhpres_vxi[k];
                             }
@@ -1159,7 +1155,7 @@ void upd_mdebin(t_mdebin       *md,
                 }
                 else
                 {
-                    for (i = 0; (i < md->nTC); i++)
+                    for (int i = 0; (i < md->nTC); i++)
                     {
                         md->tmp_r[2*i]   = state->nosehoover_xi[i];
                         md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
@@ -1171,7 +1167,7 @@ void upd_mdebin(t_mdebin       *md,
         else if (md->etc == etcBERENDSEN || md->etc == etcYES ||
                  md->etc == etcVRESCALE)
         {
-            for (i = 0; (i < md->nTC); i++)
+            for (int i = 0; (i < md->nTC); i++)
             {
                 md->tmp_r[i] = ekind->tcstat[i].lambda;
             }
@@ -1181,7 +1177,7 @@ void upd_mdebin(t_mdebin       *md,
 
     if (ekind && md->nU > 1)
     {
-        for (i = 0; (i < md->nU); i++)
+        for (int i = 0; (i < md->nU); i++)
         {
             copy_rvec(ekind->grpstat[i].u, md->tmp_v[i]);
         }
@@ -1193,7 +1189,7 @@ void upd_mdebin(t_mdebin       *md,
     /* BAR + thermodynamic integration values */
     if ((md->fp_dhdl || md->dhc) && bDoDHDL)
     {
-        for (i = 0; i < enerd->n_lambda-1; i++)
+        for (int i = 0; i < enerd->n_lambda-1; i++)
         {
             /* zero for simulated tempering */
             md->dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];
@@ -1236,7 +1232,7 @@ void upd_mdebin(t_mdebin       *md,
 
             if (fep->dhdl_derivatives == edhdlderivativesYES)
             {
-                for (i = 0; i < efptNR; i++)
+                for (int i = 0; i < efptNR; i++)
                 {
                     if (fep->separate_dvdl[i])
                     {
@@ -1245,7 +1241,7 @@ void upd_mdebin(t_mdebin       *md,
                     }
                 }
             }
-            for (i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
+            for (int i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
             {
                 fprintf(md->fp_dhdl, " %#.8g", md->dE[i]);
             }
@@ -1264,7 +1260,7 @@ void upd_mdebin(t_mdebin       *md,
         if (md->dhc && bDoDHDL)
         {
             int idhdl = 0;
-            for (i = 0; i < efptNR; i++)
+            for (int i = 0; i < efptNR; i++)
             {
                 if (fep->separate_dvdl[i])
                 {
@@ -1339,7 +1335,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 {
     /*static char **grpnms=NULL;*/
     char         buf[246];
-    int          i, j, n, ni, nj, ndr, nor, b;
+    int          n, ni, nj;
     int          ndisre = 0;
     real        *disre_rm3tav, *disre_rt;
 
@@ -1349,10 +1345,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
     int          id[enxNR];
     real        *block[enxNR];
 
-    /* temporary arrays for the lambda values to write out */
-    double      enxlambda_data[2];
-
-    t_enxframe  fr;
+    t_enxframe   fr;
 
     switch (mode)
     {
@@ -1369,7 +1362,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
             disre_rm3tav    = fcd->disres.rm3tav;
             disre_rt        = fcd->disres.rt;
             /* Optional additional old-style (real-only) blocks. */
-            for (i = 0; i < enxNR; i++)
+            for (int i = 0; i < enxNR; i++)
             {
                 nr[i] = 0;
             }
@@ -1394,7 +1387,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
                 /* the old-style blocks go first */
                 fr.nblock = 0;
-                for (i = 0; i < enxNR; i++)
+                for (int i = 0; i < enxNR; i++)
                 {
                     if (nr[i] > 0)
                     {
@@ -1402,7 +1395,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     }
                 }
                 add_blocks_enxframe(&fr, fr.nblock);
-                for (b = 0; b < fr.nblock; b++)
+                for (int b = 0; b < fr.nblock; b++)
                 {
                     add_subblocks_enxblock(&(fr.block[b]), 1);
                     fr.block[b].id        = id[b];
@@ -1481,7 +1474,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
     if (log)
     {
-        for (i = 0; i < opts->ngtc; i++)
+        for (int i = 0; i < opts->ngtc; i++)
         {
             if (opts->annealing[i] != eannNO)
             {
@@ -1540,10 +1533,10 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 {
                     snew(md->print_grpnms, md->nE);
                     n = 0;
-                    for (i = 0; (i < md->nEg); i++)
+                    for (int i = 0; (i < md->nEg); i++)
                     {
                         ni = groups->grps[egcENER].nm_ind[i];
-                        for (j = i; (j < md->nEg); j++)
+                        for (int j = i; (j < md->nEg); j++)
                         {
                             nj = groups->grps[egcENER].nm_ind[j];
                             sprintf(buf, "%s-%s", *(groups->grpname[ni]),
@@ -1554,7 +1547,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 }
                 sprintf(buf, "Epot (%s)", unit_energy);
                 fprintf(log, "%15s   ", buf);
-                for (i = 0; (i < egNR); i++)
+                for (int i = 0; (i < egNR); i++)
                 {
                     if (md->bEInd[i])
                     {
@@ -1562,7 +1555,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                     }
                 }
                 fprintf(log, "\n");
-                for (i = 0; (i < md->nE); i++)
+                for (int i = 0; (i < md->nE); i++)
                 {
                     fprintf(log, "%15s", md->print_grpnms[i]);
                     pr_ebin(log, md->ebin, md->igrp[i], md->nEc, md->nEc, mode,
@@ -1579,7 +1572,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
             {
                 fprintf(log, "%15s   %12s   %12s   %12s\n",
                         "Group", "Ux", "Uy", "Uz");
-                for (i = 0; (i < md->nU); i++)
+                for (int i = 0; (i < md->nU); i++)
                 {
                     ni = groups->grps[egcACC].nm_ind[i];
                     fprintf(log, "%15s", *groups->grpname[ni]);
@@ -1594,8 +1587,6 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
 void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
 {
-    int i;
-
     enerhist->nsteps     = mdebin->ebin->nsteps;
     enerhist->nsum       = mdebin->ebin->nsum;
     enerhist->nsteps_sim = mdebin->ebin->nsteps_sim;
@@ -1611,7 +1602,7 @@ void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
             snew(enerhist->ener_sum, enerhist->nener);
         }
 
-        for (i = 0; i < enerhist->nener; i++)
+        for (int i = 0; i < enerhist->nener; i++)
         {
             enerhist->ener_ave[i] = mdebin->ebin->e[i].eav;
             enerhist->ener_sum[i] = mdebin->ebin->e[i].esum;
@@ -1626,7 +1617,7 @@ void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
             snew(enerhist->ener_sum_sim, enerhist->nener);
         }
 
-        for (i = 0; i < enerhist->nener; i++)
+        for (int i = 0; i < enerhist->nener; i++)
         {
             enerhist->ener_sum_sim[i] = mdebin->ebin->e_sim[i].esum;
         }
@@ -1640,8 +1631,6 @@ void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
 void restore_energyhistory_from_state(t_mdebin        * mdebin,
                                       energyhistory_t * enerhist)
 {
-    int i;
-
     if ((enerhist->nsum > 0 || enerhist->nsum_sim > 0) &&
         mdebin->ebin->nener != enerhist->nener)
     {
@@ -1654,7 +1643,7 @@ void restore_energyhistory_from_state(t_mdebin        * mdebin,
     mdebin->ebin->nsteps_sim = enerhist->nsteps_sim;
     mdebin->ebin->nsum_sim   = enerhist->nsum_sim;
 
-    for (i = 0; i < mdebin->ebin->nener; i++)
+    for (int i = 0; i < mdebin->ebin->nener; i++)
     {
         mdebin->ebin->e[i].eav  =
             (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
