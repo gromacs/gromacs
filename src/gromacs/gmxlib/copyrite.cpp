@@ -50,7 +50,7 @@
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
-#ifdef HAVE_EXTRAE
+#if HAVE_EXTRAE
 #include <extrae_user_events.h>
 #endif
 #include <boost/version.hpp>
@@ -78,7 +78,7 @@ static gmx_bool be_cool(void)
      * but we dont call this routine often, and it avoids using
      * a mutex for locking the variable...
      */
-#ifdef GMX_COOL_QUOTES
+#if GMX_COOL_QUOTES
     return (getenv("GMX_NO_QUOTES") == NULL);
 #else
     /*be uncool*/
@@ -738,7 +738,7 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "RDTSCP usage:       disabled\n");
 #endif
-#ifdef GMX_CXX11
+#if GMX_CXX11
     fprintf(fp, "C++11 compilation:  enabled\n");
 #else
     fprintf(fp, "C++11 compilation:  disabled\n");
@@ -748,7 +748,7 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "TNG support:        disabled\n");
 #endif
-#ifdef HAVE_EXTRAE
+#if HAVE_EXTRAE
     unsigned major, minor, revision;
     Extrae_get_version(&major, &minor, &revision);
     fprintf(fp, "Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision);

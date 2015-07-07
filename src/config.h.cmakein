@@ -80,7 +80,7 @@
 #cmakedefine GMX_CYGWIN
 
 /** Define if we have sufficient C++11 support */
-#cmakedefine GMX_CXX11
+#cmakedefine01 GMX_CXX11
 
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
 #cmakedefine01 GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
@@ -152,7 +152,7 @@
 #cmakedefine GMX_USE_TNG
 
 /* Add support for tracing using Extrae */
-#cmakedefine HAVE_EXTRAE
+#cmakedefine01 HAVE_EXTRAE
 
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
@@ -178,23 +178,23 @@
 /* Maximum number of OpenMP threads supported */
 #define GMX_OPENMP_MAX_THREADS @GMX_OPENMP_MAX_THREADS@
 
-/* Use if can't rename checkpoints */
-#cmakedefine GMX_NO_RENAME
+/* Use if we cannot rename checkpoints */
+#cmakedefine01 GMX_NO_RENAME
 
 /* Use (modified) Gamess-UK for QM-MM calculations */
-#cmakedefine GMX_QMMM_GAMESS
+#cmakedefine01 GMX_QMMM_GAMESS
 
 /* Use (modified) Gaussian0x for QM-MM calculations */
-#cmakedefine GMX_QMMM_GAUSSIAN
+#cmakedefine01 GMX_QMMM_GAUSSIAN
 
 /* Use (modified) Mopac 7 for QM-MM calculations */
-#cmakedefine GMX_QMMM_MOPAC
+#cmakedefine01 GMX_QMMM_MOPAC
 
 /* Use ORCA for QM-MM calculations */
-#cmakedefine GMX_QMMM_ORCA
+#cmakedefine01 GMX_QMMM_ORCA
 
 /* Use the GROMACS software 1/sqrt(x) */
-#cmakedefine GMX_SOFTWARE_INVSQRT
+#cmakedefine01 GMX_SOFTWARE_INVSQRT
 
 /* Use sub-counters */
 #cmakedefine GMX_CYCLE_SUBCOUNTERS
@@ -233,7 +233,7 @@
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
 /* Define for X-Windows */
-#cmakedefine GMX_X11
+#cmakedefine01 GMX_X11
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
@@ -338,10 +338,10 @@
 #cmakedefine HAVE_SCHED_H
 
 /* Define to 1 if you have the POSIX <regex.h> header file. */
-#cmakedefine HAVE_POSIX_REGEX
+#cmakedefine01 HAVE_POSIX_REGEX
 
 /* Define to 1 if you have the C++11 <regex> header file. */
-#cmakedefine HAVE_CXX11_REGEX
+#cmakedefine01 HAVE_CXX11_REGEX
 
 /* Define to 1 if you have the sysconf() function */
 #cmakedefine HAVE_SYSCONF
@@ -359,22 +359,22 @@
 #cmakedefine GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
 
 /* Define if SIGUSR1 is present */
-#cmakedefine HAVE_SIGUSR1
+#cmakedefine01 HAVE_SIGUSR1
 
 /* Enable gromacs quotes */
-#cmakedefine GMX_COOL_QUOTES
+#cmakedefine01 GMX_COOL_QUOTES
 
 /* default name mangling maybe wrong on exotic plattforms */
 #define F77_FUNC(name,NAME) name ## _
 
 /* Define if we have pipes */
-#cmakedefine HAVE_PIPES
+#cmakedefine01 HAVE_PIPES
 
 /* Define if we have feenableexcept */
-#cmakedefine HAVE_FEENABLEEXCEPT
+#cmakedefine01 HAVE_FEENABLEEXCEPT
 
 /* Define if we have zlib */
-#cmakedefine HAVE_ZLIB
+#cmakedefine01 HAVE_ZLIB
 
 /*! \endcond */
 
