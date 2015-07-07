@@ -70,7 +70,7 @@
 /* declarations of the interfaces to the QM packages. The _SH indicate
  * the QM interfaces can be used for Surface Hopping simulations
  */
-#ifdef GMX_QMMM_GAMESS
+#if GMX_QMMM_GAMESS
 /* GAMESS interface */
 
 void
@@ -80,7 +80,7 @@ real
 call_gamess(t_forcerec *fr,
             t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
-#elif defined GMX_QMMM_MOPAC
+#elif GMX_QMMM_MOPAC
 /* MOPAC interface */
 
 void
@@ -92,7 +92,7 @@ call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 real
 call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
-#elif defined GMX_QMMM_GAUSSIAN
+#elif GMX_QMMM_GAUSSIAN
 /* GAUSSIAN interface */
 
 void
@@ -104,7 +104,7 @@ call_gaussian_SH(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift
 real
 call_gaussian(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
 
-#elif defined GMX_QMMM_ORCA
+#elif GMX_QMMM_ORCA
 /* ORCA interface */
 
 void
@@ -162,7 +162,7 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
 
     if (qm->QMmethod < eQMmethodRHF && !(mm->nrMMatoms))
     {
-#ifdef GMX_QMMM_MOPAC
+#if GMX_QMMM_MOPAC
         if (qm->bSH)
         {
             QMener = call_mopac_SH(qm, mm, f, fshift);
@@ -180,7 +180,7 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
         /* do an ab-initio calculation */
         if (qm->bSH && qm->QMmethod == eQMmethodCASSCF)
         {
-#ifdef GMX_QMMM_GAUSSIAN
+#if GMX_QMMM_GAUSSIAN
             QMener = call_gaussian_SH(fr, qm, mm, f, fshift);
 #else
             gmx_fatal(FARGS, "Ab-initio Surface-hopping only supported with Gaussian.");
@@ -188,11 +188,11 @@ real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec
         }
         else
         {
-#ifdef GMX_QMMM_GAMESS
+#if GMX_QMMM_GAMESS
             QMener = call_gamess(fr, qm, mm, f, fshift);
-#elif defined GMX_QMMM_GAUSSIAN
+#elif GMX_QMMM_GAUSSIAN
             QMener = call_gaussian(fr, qm, mm, f, fshift);
-#elif defined GMX_QMMM_ORCA
+#elif GMX_QMMM_ORCA
             QMener = call_orca(fr, qm, mm, f, fshift);
 #else
             gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
@@ -208,7 +208,7 @@ void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gm
      */
     if (qm->QMmethod < eQMmethodRHF)
     {
-#ifdef GMX_QMMM_MOPAC
+#if GMX_QMMM_MOPAC
         /* do a semi-empiprical calculation */
         init_mopac(qm);
 #else
@@ -218,11 +218,11 @@ void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gm
     else
     {
         /* do an ab-initio calculation */
-#ifdef GMX_QMMM_GAMESS
+#if GMX_QMMM_GAMESS
         init_gamess(cr, qm, mm);
-#elif defined GMX_QMMM_GAUSSIAN
+#elif GMX_QMMM_GAUSSIAN
         init_gaussian(qm);
-#elif defined GMX_QMMM_ORCA
+#elif GMX_QMMM_ORCA
         init_orca(qm);
 #else
         gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
@@ -751,7 +751,7 @@ void init_QMMMrec(t_commrec  *cr,
          */
         if (qr->qm[0]->QMmethod < eQMmethodRHF)
         {
-#ifdef GMX_QMMM_MOPAC
+#if GMX_QMMM_MOPAC
             /* semi-empiprical 1-layer ONIOM calculation requested (mopac93) */
             init_mopac(qr->qm[0]);
 #else
@@ -761,11 +761,11 @@ void init_QMMMrec(t_commrec  *cr,
         else
         {
             /* ab initio calculation requested (gamess/gaussian/ORCA) */
-#ifdef GMX_QMMM_GAMESS
+#if GMX_QMMM_GAMESS
             init_gamess(cr, qr->qm[0], qr->mm);
-#elif defined GMX_QMMM_GAUSSIAN
+#elif GMX_QMMM_GAUSSIAN
             init_gaussian(qr->qm[0]);
-#elif defined GMX_QMMM_ORCA
+#elif GMX_QMMM_ORCA
             init_orca(qr->qm[0]);
 #else
             gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
