@@ -182,16 +182,16 @@
 #cmakedefine GMX_NO_RENAME
 
 /* Use (modified) Gamess-UK for QM-MM calculations */
-#cmakedefine GMX_QMMM_GAMESS
+#cmakedefine01 GMX_QMMM_GAMESS
 
 /* Use (modified) Gaussian0x for QM-MM calculations */
-#cmakedefine GMX_QMMM_GAUSSIAN
+#cmakedefine01 GMX_QMMM_GAUSSIAN
 
 /* Use (modified) Mopac 7 for QM-MM calculations */
-#cmakedefine GMX_QMMM_MOPAC
+#cmakedefine01 GMX_QMMM_MOPAC
 
 /* Use ORCA for QM-MM calculations */
-#cmakedefine GMX_QMMM_ORCA
+#cmakedefine01 GMX_QMMM_ORCA
 
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
