@@ -42,6 +42,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cmath>
+
+#include <algorithm>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -93,7 +97,7 @@ static gmx_bool NOTEXCL_(t_excl e[], atom_id i, atom_id j)
 static int
 round_up_to_simd_width(int length, int simd_width)
 {
-    int offset, newlength;
+    int offset;
 
     offset = (simd_width > 0) ? length % simd_width : 0;
 
@@ -132,7 +136,7 @@ static void init_nblist(FILE *log, t_nblist *nl_sr, t_nblist *nl_lr,
 {
     t_nblist *nl;
     int       homenr;
-    int       i, nn;
+    int       i;
 
     for (i = 0; (i < 2); i++)
     {
@@ -199,7 +203,6 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
      */
     int        maxsr, maxsr_wat, maxlr, maxlr_wat;
     int        ielec, ivdw, ielecmod, ivdwmod, type;
-    int        solvent;
     int        igeometry_def, igeometry_w, igeometry_ww;
     int        i;
     gmx_bool   bElecAndVdwSwitchDiffers;
@@ -217,11 +220,11 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
      * all the nlist arrays many times in a row.
      * The numbers seem very accurate, but they are uncritical.
      */
-    maxsr_wat = min(fr->nWatMol, (homenr+2)/3);
+    maxsr_wat = std::min(fr->nWatMol, (homenr+2)/3);
     if (fr->bTwinRange)
     {
         maxlr     = 50;
-        maxlr_wat = min(maxsr_wat, maxlr);
+        maxlr_wat = std::min(maxsr_wat, maxlr);
     }
     else
     {
@@ -363,9 +366,7 @@ static void reset_neighbor_lists(t_forcerec *fr, gmx_bool bResetSR, gmx_bool bRe
 
 static gmx_inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int gid)
 {
-    int    i, k, nri, nshift;
-
-    nri = nlist->nri;
+    int    nri = nlist->nri;
 
     /* Check whether we have to increase the i counter */
     if ((nri == -1) ||
@@ -594,14 +595,14 @@ put_in_list_at(gmx_bool              bHaveVdW[],
     t_nblist  *   vdwc_ww    = NULL;
     t_nblist  *   coul_ww    = NULL;
 
-    int           i, j, jcg, igid, gid, nbl_ind, ind_ij;
+    int           i, j, jcg, igid, gid, nbl_ind;
     atom_id       jj, jj0, jj1, i_atom;
-    int           i0, nicg, len;
+    int           i0, nicg;
 
     int          *cginfo;
     int          *type, *typeB;
     real         *charge, *chargeB;
-    real          qi, qiB, qq, rlj;
+    real          qi, qiB;
     gmx_bool      bFreeEnergy, bFree, bFreeJ, bNotEx, *bPert;
     gmx_bool      bDoVdW_i, bDoCoul_i, bDoCoul_i_sol;
     int           iwater, jwater;
@@ -1105,23 +1106,20 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
     t_nblist  *   vdwc_adress  = NULL;
     t_nblist  *   vdw_adress   = NULL;
     t_nblist  *   coul_adress  = NULL;
-    t_nblist  *   vdwc_ww      = NULL;
-    t_nblist  *   coul_ww      = NULL;
 
     int           i, j, jcg, igid, gid, nbl_ind, nbl_ind_adress;
     atom_id       jj, jj0, jj1, i_atom;
-    int           i0, nicg, len;
+    int           i0, nicg;
 
     int          *cginfo;
     int          *type, *typeB;
     real         *charge, *chargeB;
     real         *wf;
-    real          qi, qiB, qq, rlj;
-    gmx_bool      bFreeEnergy, bFree, bFreeJ, bNotEx, *bPert;
-    gmx_bool      bDoVdW_i, bDoCoul_i, bDoCoul_i_sol;
+    real          qi;
+    gmx_bool      bNotEx, *bPert;
+    gmx_bool      bDoVdW_i, bDoCoul_i;
     gmx_bool      b_hybrid;
-    gmx_bool      j_all_atom;
-    int           iwater, jwater;
+    int           iwater;
     t_nblist     *nlist, *nlist_adress;
     gmx_bool      bEnergyGroupCG;
 
@@ -1645,7 +1643,7 @@ static real calc_image_rect(rvec xi, rvec xj, rvec box_size,
     return r2;
 }
 
-static void add_simple(t_ns_buf *nsbuf, int nrj, atom_id cg_j,
+static void add_simple(t_ns_buf * nsbuf, int nrj, atom_id cg_j,
                        gmx_bool bHaveVdW[], int ngid, t_mdatoms *md,
                        int icg, int jgid, t_block *cgs, t_excl bexcl[],
                        int shift, t_forcerec *fr, put_in_list_t *put_in_list)
@@ -1673,7 +1671,6 @@ static void ns_inner_tric(rvec x[], int icg, int *i_egp_flags,
     int       j, nrj, jgid;
     int      *cginfo = fr->cginfo;
     atom_id   cg_j, *cgindex;
-    t_ns_buf *nsbuf;
 
     cgindex = cgs->index;
     shift   = CENTRAL;
@@ -1706,7 +1703,6 @@ static void ns_inner_rect(rvec x[], int icg, int *i_egp_flags,
     int       j, nrj, jgid;
     int      *cginfo = fr->cginfo;
     atom_id   cg_j, *cgindex;
-    t_ns_buf *nsbuf;
 
     cgindex = cgs->index;
     if (bBox)
@@ -1760,7 +1756,7 @@ static int ns_simple_core(t_forcerec *fr,
 {
     int          naaj, k;
     real         rlist2;
-    int          nsearch, icg, jcg, igid, i0, nri, nn;
+    int          nsearch, icg, igid, nn;
     int         *cginfo;
     t_ns_buf    *nsbuf;
     /* atom_id  *i_atoms; */
@@ -2044,8 +2040,8 @@ static void get_cutoff2(t_forcerec *fr, gmx_bool bDoLongRange,
         *rvdw2  = *rs2;
         *rcoul2 = *rs2;
     }
-    *rm2 = min(*rvdw2, *rcoul2);
-    *rl2 = max(*rvdw2, *rcoul2);
+    *rm2 = std::min(*rvdw2, *rcoul2);
+    *rl2 = std::max(*rvdw2, *rcoul2);
 }
 
 static void init_nsgrid_lists(t_forcerec *fr, int ngid, gmx_ns_t *ns)
@@ -2110,12 +2106,12 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
     real          gridx, gridy, gridz, grid_x, grid_y, grid_z;
     real         *dcx2, *dcy2, *dcz2;
     int           zgi, ygi, xgi;
-    int           cg0, cg1, icg = -1, cgsnr, i0, igid, nri, naaj, max_jcg;
+    int           cg0, cg1, icg = -1, cgsnr, i0, igid, naaj, max_jcg;
     int           jcg0, jcg1, jjcg, cgj0, jgid;
     int          *grida, *gridnra, *gridind;
     gmx_bool      rvdw_lt_rcoul, rcoul_lt_rvdw;
-    rvec          xi, *cgcm, grid_offset;
-    real          r2, rs2, rvdw2, rcoul2, rm2, rl2, XI, YI, ZI, dcx, dcy, dcz, tmp1, tmp2;
+    rvec         *cgcm, grid_offset;
+    real          r2, rs2, rvdw2, rcoul2, rm2, rl2, XI, YI, ZI, tmp1, tmp2;
     int          *i_egp_flags;
     gmx_bool      bDomDec, bTriclinicX, bTriclinicY;
     ivec          ncpddc;
@@ -2213,7 +2209,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
         else
         {
             if (d == XX &&
-                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < sqrt(rl2))
+                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < std::sqrt(rl2))
             {
                 shp[d] = 2;
             }
@@ -2512,7 +2508,6 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                 }
             }
         }
-        /* setexcl(nri,i_atoms,&top->atoms.excl,FALSE,bexcl); */
         setexcl(cgs->index[icg], cgs->index[icg+1], &top->excls, FALSE, bexcl);
     }
     /* No need to perform any left-over force calculations anymore (as we used to do here)
@@ -2548,7 +2543,6 @@ void init_ns(FILE *fplog, const t_commrec *cr,
 {
     int  mt, icg, nr_in_cg, maxcg, i, j, jcg, ngid, ncg;
     t_block *cgs;
-    char *ptr;
 
     /* Compute largest charge groups size (# atoms) */
     nr_in_cg = 1;
@@ -2557,7 +2551,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
         cgs = &mtop->moltype[mt].cgs;
         for (icg = 0; (icg < cgs->nr); icg++)
         {
-            nr_in_cg = max(nr_in_cg, (int)(cgs->index[icg+1]-cgs->index[icg]));
+            nr_in_cg = std::max(nr_in_cg, (int)(cgs->index[icg+1]-cgs->index[icg]));
         }
     }
 
@@ -2669,13 +2663,11 @@ int search_neighbours(FILE *log, t_forcerec *fr,
 {
     t_block  *cgs = &(top->cgs);
     rvec     box_size, grid_x0, grid_x1;
-    int      i, j, m, ngid;
+    int      m, ngid;
     real     min_size, grid_dens;
     int      nsearch;
     gmx_bool     bGrid;
-    char     *ptr;
-    gmx_bool     *i_egp_flags;
-    int      cg_start, cg_end, start, end;
+    int      start, end;
     gmx_ns_t *ns;
     t_grid   *grid;
     gmx_domdec_zones_t *dd_zones;
@@ -2700,7 +2692,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         }
         if (!bGrid)
         {
-            min_size = min(box_size[XX], min(box_size[YY], box_size[ZZ]));
+            min_size = std::min(box_size[XX], std::min(box_size[YY], box_size[ZZ]));
             if (2*fr->rlistlong >= min_size)
             {
                 gmx_fatal(FARGS, "One of the box diagonal elements has become smaller than twice the cut-off length.");

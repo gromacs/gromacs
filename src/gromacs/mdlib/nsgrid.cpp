@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/pdbio.h"
@@ -90,7 +94,7 @@ static void calc_x_av_stddev(int n, rvec *x, rvec av, rvec stddev)
     for (d = 0; d < DIM; d++)
     {
         av[d]     = s1[d];
-        stddev[d] = sqrt(s2[d] - s1[d]*s1[d]);
+        stddev[d] = std::sqrt(s2[d] - s1[d]*s1[d]);
     }
 }
 
@@ -218,7 +222,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
     }
 
     /* Use the ideal number of cg's per cell to set the ideal cell size */
-    inv_r_ideal = pow(grid_density/grid->ncg_ideal, 1.0/3.0);
+    inv_r_ideal = std::pow(grid_density/grid->ncg_ideal, 1.0/3.0);
     if (rlist > 0 && inv_r_ideal*rlist < 1)
     {
         inv_r_ideal = 1/rlist;
@@ -495,7 +499,7 @@ void grid_first(FILE *fplog, t_grid *grid,
         }
     }
 
-    m = max(grid->n[XX], max(grid->n[YY], grid->n[ZZ]));
+    m = std::max(grid->n[XX], std::max(grid->n[YY], grid->n[ZZ]));
     if (m > grid->dc_nalloc)
     {
         /* Allocate with double the initial size for box scaling */
