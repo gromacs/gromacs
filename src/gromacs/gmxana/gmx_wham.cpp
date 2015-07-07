@@ -1896,7 +1896,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
         {
             printf("Executing command '%s'\n", Buffer);
         }
-#ifdef HAVE_PIPES
+#if HAVE_PIPES
         if ((pipe = popen(Buffer, "r")) == NULL)
         {
             gmx_fatal(FARGS, "Unable to open pipe to `%s'\n", Buffer);
@@ -1918,7 +1918,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
 //! Close file or pipe
 void pdo_close_file(FILE *fp)
 {
-#ifdef HAVE_PIPES
+#if HAVE_PIPES
     pclose(fp);
 #else
     gmx_ffclose(fp);
