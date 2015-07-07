@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 
 #include "config.h"
 
-#ifdef GMX_CXX11   // C++11 Compiler
+#if GMX_CXX11      // C++11 Compiler
 #include <memory>  // IWYU pragma: export
 #include <utility> // IWYU pragma: export
 #else              // C++03 Compiler
@@ -78,7 +78,7 @@ namespace gmx
  * \brief The smart pointer type.
  * Work-around for the non-existence of template typedefs in C++03.
  */
-#ifdef GMX_CXX11 // C++11 Compiler
+#if GMX_CXX11 // C++11 Compiler
 using std::move;
 template<typename T>
 struct gmx_unique_ptr

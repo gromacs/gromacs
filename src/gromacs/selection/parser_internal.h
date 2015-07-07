@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,7 +151,7 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
     }
 //!\}
 
-#ifndef GMX_CXX11
+#if !GMX_CXX11
 //! No-op to enable use of same get()/set() implementation as with C++11.
 static gmx::SelectionParserValue &move(gmx::SelectionParserValue &src)
 {
@@ -170,7 +170,7 @@ static gmx::SelectionParserParameter &move(gmx::SelectionParserParameter &src)
  * \param[in] src  Semantic value to get the value from.
  * \returns   Retrieved value.
  * \throws    unspecified  Any exception thrown by the move constructor of
- *      ValueType (copy constructor if GMX_CXX11 is not set).
+ *      ValueType (copy constructor if GMX_CXX11 is 0).
  *
  * There should be no statements that may throw exceptions in actions before
  * this function has been called for all semantic values that have a C++ object
@@ -196,7 +196,7 @@ ValueType get(ValueType *src)
  * \param[in]  value Value to put into the semantic value.
  * \throws     std::bad_alloc if out of memory.
  * \throws     unspecified  Any exception thrown by the move constructor of
- *      ValueType (copy constructor if GMX_CXX11 is not set).
+ *      ValueType (copy constructor if GMX_CXX11 is 0).
  *
  * This should be the last statement before ::END_ACTION, except for a
  * possible ::CHECK_SEL.
