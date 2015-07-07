@@ -37,12 +37,16 @@
 
 #include "nbnxn_search.h"
 
+#include "config.h"
+
 #include <assert.h>
-#include <math.h>
 #include <string.h>
 
+#include <cmath>
+
+#include <algorithm>
+
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -131,9 +135,7 @@
 
 static void nbs_cycle_clear(nbnxn_cycle_t *cc)
 {
-    int i;
-
-    for (i = 0; i < enbsCCnr; i++)
+    for (int i = 0; i < enbsCCnr; i++)
     {
         cc[i].count = 0;
         cc[i].c     = 0;
@@ -147,9 +149,6 @@ static double Mcyc_av(const nbnxn_cycle_t *cc)
 
 static void nbs_cycle_print(FILE *fp, const nbnxn_search_t nbs)
 {
-    int n;
-    int t;
-
     fprintf(fp, "\n");
     fprintf(fp, "ns %4d grid %4.1f search %4.1f red.f %5.3f",
             nbs->cc[enbsCCgrid].count,
@@ -165,7 +164,7 @@ static void nbs_cycle_print(FILE *fp, const nbnxn_search_t nbs)
                     Mcyc_av(&nbs->cc[enbsCCcombine]));
         }
         fprintf(fp, " s. th");
-        for (t = 0; t < nbs->nthread_max; t++)
+        for (int t = 0; t < nbs->nthread_max; t++)
         {
             fprintf(fp, " %4.1f",
                     Mcyc_av(&nbs->work[t].cc[enbsCCsearch]));
@@ -241,7 +240,7 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
                        int                 nthread_max)
 {
     nbnxn_search_t nbs;
-    int            ngrid, d, t;
+    int            ngrid;
 
     snew(nbs, 1);
     *nbs_ptr = nbs;
@@ -256,7 +255,7 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
     {
         nbs->zones = zones;
 
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
             if ((*n_dd_cells)[d] > 1)
             {
@@ -278,7 +277,7 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
 
     /* Initialize the work data structures for each thread */
     snew(nbs->work, nbs->nthread_max);
-    for (t = 0; t < nbs->nthread_max; t++)
+    for (int t = 0; t < nbs->nthread_max; t++)
     {
         nbs->work[t].cxy_na           = NULL;
         nbs->work[t].cxy_na_nalloc    = 0;
@@ -293,7 +292,7 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
     nbs->print_cycles = (getenv("GMX_NBNXN_CYCLE") != 0);
     nbs->search_count = 0;
     nbs_cycle_clear(nbs->cc);
-    for (t = 0; t < nbs->nthread_max; t++)
+    for (int t = 0; t < nbs->nthread_max; t++)
     {
         nbs_cycle_clear(nbs->work[t].cc);
     }
@@ -302,15 +301,13 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
 static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
                               int                   natoms)
 {
-    int b;
-
     flags->nflag = (natoms + NBNXN_BUFFERFLAG_SIZE - 1)/NBNXN_BUFFERFLAG_SIZE;
     if (flags->nflag > flags->flag_nalloc)
     {
         flags->flag_nalloc = over_alloc_large(flags->nflag);
         srenew(flags->flag, flags->flag_nalloc);
     }
-    for (b = 0; b < flags->nflag; b++)
+    for (int b = 0; b < flags->nflag; b++)
     {
         bitmask_clear(&(flags->flag[b]));
     }
@@ -323,14 +320,14 @@ static void get_cell_range(real b0, real b1,
                            int nc, real c0, real s, real invs,
                            real d2, real r2, int *cf, int *cl)
 {
-    *cf = max((int)((b0 - c0)*invs), 0);
+    *cf = std::max(static_cast<int>((b0 - c0)*invs), 0);
 
     while (*cf > 0 && d2 + sqr((b0 - c0) - (*cf-1+1)*s) < r2)
     {
         (*cf)--;
     }
 
-    *cl = min((int)((b1 - c0)*invs), nc-1);
+    *cl = std::min(static_cast<int>((b1 - c0)*invs), nc-1);
     while (*cl < nc-1 && d2 + sqr((*cl+1)*s - (b1 - c0)) < r2)
     {
         (*cl)++;
@@ -349,20 +346,20 @@ static float box_dist2(float bx0, float bx1, float by0,
 
     dl  = bx0 - bb->upper[BB_X];
     dh  = bb->lower[BB_X] - bx1;
-    dm  = max(dl, dh);
-    dm0 = max(dm, 0);
+    dm  = std::max(dl, dh);
+    dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
     dl  = by0 - bb->upper[BB_Y];
     dh  = bb->lower[BB_Y] - by1;
-    dm  = max(dl, dh);
-    dm0 = max(dm, 0);
+    dm  = std::max(dl, dh);
+    dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
     dl  = bz0 - bb->upper[BB_Z];
     dh  = bb->lower[BB_Z] - bz1;
-    dm  = max(dl, dh);
-    dm0 = max(dm, 0);
+    dm  = std::max(dl, dh);
+    dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
     return d2;
@@ -383,20 +380,20 @@ static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
 
     dl  = bb_i->lower[BB_X] - bb_j->upper[BB_X];
     dh  = bb_j->lower[BB_X] - bb_i->upper[BB_X];
-    dm  = max(dl, dh);
-    dm0 = max(dm, 0);
+    dm  = std::max(dl, dh);
+    dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
     dl  = bb_i->lower[BB_Y] - bb_j->upper[BB_Y];
     dh  = bb_j->lower[BB_Y] - bb_i->upper[BB_Y];
-    dm  = max(dl, dh);
-    dm0 = max(dm, 0);
+    dm  = std::max(dl, dh);
+    dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
     dl  = bb_i->lower[BB_Z] - bb_j->upper[BB_Z];
     dh  = bb_j->lower[BB_Z] - bb_i->upper[BB_Z];
-    dm  = max(dl, dh);
-    dm0 = max(dm, 0);
+    dm  = std::max(dl, dh);
+    dm0 = std::max(dm, 0.0f);
     d2 += dm0*dm0;
 
     return d2;
@@ -519,19 +516,14 @@ static gmx_bool subc_in_range_x(int na_c,
                                 int csj, int stride, const real *x_j,
                                 real rl2)
 {
-    int  i, j, i0, j0;
-    real d2;
-
-    for (i = 0; i < na_c; i++)
+    for (int i = 0; i < na_c; i++)
     {
-        i0 = (si*na_c + i)*DIM;
-        for (j = 0; j < na_c; j++)
+        int i0 = (si*na_c + i)*DIM;
+        for (int j = 0; j < na_c; j++)
         {
-            j0 = (csj*na_c + j)*stride;
+            int  j0 = (csj*na_c + j)*stride;
 
-            d2 = sqr(x_i[i0  ] - x_j[j0  ]) +
-                sqr(x_i[i0+1] - x_j[j0+1]) +
-                sqr(x_i[i0+2] - x_j[j0+2]);
+            real d2 = sqr(x_i[i0  ] - x_j[j0  ]) + sqr(x_i[i0+1] - x_j[j0+1]) + sqr(x_i[i0+2] - x_j[j0+2]);
 
             if (d2 < rl2)
             {
@@ -696,7 +688,7 @@ static void check_subcell_list_space_simple(nbnxn_pairlist_t *nbl,
 static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
                                               int               nsupercell)
 {
-    int ncj4_max, j4, j, w, t;
+    int ncj4_max, w;
 
 #define NWARP       2
 #define WARP_SIZE  32
@@ -718,7 +710,7 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
 
     if (ncj4_max > nbl->work->cj4_init)
     {
-        for (j4 = nbl->work->cj4_init; j4 < ncj4_max; j4++)
+        for (int j4 = nbl->work->cj4_init; j4 < ncj4_max; j4++)
         {
             /* No i-subcells and no excl's in the list initially */
             for (w = 0; w < NWARP; w++)
@@ -735,9 +727,7 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
 /* Set all excl masks for one GPU warp no exclusions */
 static void set_no_excls(nbnxn_excl_t *excl)
 {
-    int t;
-
-    for (t = 0; t < WARP_SIZE; t++)
+    for (int t = 0; t < WARP_SIZE; t++)
     {
         /* Turn all interaction bits on */
         excl->pair[t] = NBNXN_INTERACTION_MASK_ALL;
@@ -824,8 +814,6 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              nbnxn_alloc_t *alloc,
                              nbnxn_free_t  *free)
 {
-    int i;
-
     nbl_list->bSimple   = bSimple;
     nbl_list->bCombined = bCombined;
 
@@ -842,7 +830,7 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
     snew(nbl_list->nbl_fep, nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
 #pragma omp parallel for num_threads(nbl_list->nnbl) schedule(static)
-    for (i = 0; i < nbl_list->nnbl; i++)
+    for (int i = 0; i < nbl_list->nnbl; i++)
     {
         /* Allocate the nblist data structure locally on each thread
          * to optimize memory access for NUMA architectures.
@@ -870,7 +858,6 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
 {
     const nbnxn_grid_t *grid;
     int                 cs[SHIFTS];
-    int                 s, i, j;
     int                 npexcl;
 
     /* This code only produces correct statistics with domain decomposition */
@@ -884,19 +871,19 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
             nbl->ncj/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j cell list length %.1f\n",
-            0.25*nbl->ncj/(double)max(nbl->nci, 1));
+            0.25*nbl->ncj/(double)std::max(nbl->nci, 1));
 
-    for (s = 0; s < SHIFTS; s++)
+    for (int s = 0; s < SHIFTS; s++)
     {
         cs[s] = 0;
     }
     npexcl = 0;
-    for (i = 0; i < nbl->nci; i++)
+    for (int i = 0; i < nbl->nci; i++)
     {
         cs[nbl->ci[i].shift & NBNXN_CI_SHIFT] +=
             nbl->ci[i].cj_ind_end - nbl->ci[i].cj_ind_start;
 
-        j = nbl->ci[i].cj_ind_start;
+        int j = nbl->ci[i].cj_ind_start;
         while (j < nbl->ci[i].cj_ind_end &&
                nbl->cj[j].excl != NBNXN_INTERACTION_MASK_ALL)
         {
@@ -905,8 +892,8 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
         }
     }
     fprintf(fp, "nbl cell pairs, total: %d excl: %d %.1f%%\n",
-            nbl->ncj, npexcl, 100*npexcl/(double)max(nbl->ncj, 1));
-    for (s = 0; s < SHIFTS; s++)
+            nbl->ncj, npexcl, 100*npexcl/(double)std::max(nbl->ncj, 1));
+    for (int s = 0; s < SHIFTS; s++)
     {
         if (cs[s] > 0)
         {
@@ -920,7 +907,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
                                              const nbnxn_search_t nbs, real rl)
 {
     const nbnxn_grid_t *grid;
-    int                 i, j4, j, si, b;
+    int                 b;
     int                 c[GPU_NSUBCELL+1];
     double              sum_nsp, sum_nsp2;
     int                 nsp_max;
@@ -938,21 +925,21 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     sum_nsp  = 0;
     sum_nsp2 = 0;
     nsp_max  = 0;
-    for (si = 0; si <= GPU_NSUBCELL; si++)
+    for (int si = 0; si <= GPU_NSUBCELL; si++)
     {
         c[si] = 0;
     }
-    for (i = 0; i < nbl->nsci; i++)
+    for (int i = 0; i < nbl->nsci; i++)
     {
         int nsp;
 
         nsp = 0;
-        for (j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
+        for (int j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
         {
-            for (j = 0; j < NBNXN_GPU_JGROUP_SIZE; j++)
+            for (int j = 0; j < NBNXN_GPU_JGROUP_SIZE; j++)
             {
                 b = 0;
-                for (si = 0; si < GPU_NSUBCELL; si++)
+                for (int si = 0; si < GPU_NSUBCELL; si++)
                 {
                     if (nbl->cj4[j4].imei[0].imask & (1U << (j*GPU_NSUBCELL + si)))
                     {
@@ -965,7 +952,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
         }
         sum_nsp  += nsp;
         sum_nsp2 += nsp*nsp;
-        nsp_max   = max(nsp_max, nsp);
+        nsp_max   = std::max(nsp_max, nsp);
     }
     if (nbl->nsci > 0)
     {
@@ -973,7 +960,7 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
         sum_nsp2 /= nbl->nsci;
     }
     fprintf(fp, "nbl #cluster-pairs: av %.1f stddev %.1f max %d\n",
-            sum_nsp, sqrt(sum_nsp2 - sum_nsp*sum_nsp), nsp_max);
+            sum_nsp, std::sqrt(sum_nsp2 - sum_nsp*sum_nsp), nsp_max);
 
     if (nbl->ncj4 > 0)
     {
@@ -1039,17 +1026,16 @@ static void set_self_and_newton_excls_supersub(nbnxn_pairlist_t *nbl,
                                                int si)
 {
     nbnxn_excl_t *excl[2];
-    int           ei, ej, w;
 
     /* Here we only set the set self and double pair exclusions */
 
     get_nbl_exclusions_2(nbl, cj4_ind, &excl[0], &excl[1]);
 
     /* Only minor < major bits set */
-    for (ej = 0; ej < nbl->na_ci; ej++)
+    for (int ej = 0; ej < nbl->na_ci; ej++)
     {
-        w = (ej>>2);
-        for (ei = ej; ei < nbl->na_ci; ei++)
+        int w = (ej>>2);
+        for (int ei = ej; ei < nbl->na_ci; ei++)
         {
             excl[w]->pair[(ej & (NBNXN_GPU_JGROUP_SIZE-1))*nbl->na_ci + ei] &=
                 ~(1U << (sj_offset*GPU_NSUBCELL + si));
@@ -1112,16 +1098,12 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                                      real rl2, float rbb2,
                                      int *ndistc)
 {
-    const nbnxn_list_work_t *work;
-
     const nbnxn_bb_t        *bb_ci;
     const real              *x_ci;
 
     gmx_bool                 InRange;
     real                     d2;
-    int                      cjf_gl, cjl_gl, cj;
-
-    work = nbl->work;
+    int                      cjf_gl, cjl_gl;
 
     bb_ci = nbl->work->bb_ci;
     x_ci  = nbl->work->x_ci;
@@ -1143,12 +1125,10 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
         }
         else if (d2 < rl2)
         {
-            int i, j;
-
             cjf_gl = gridj->cell0 + cjf;
-            for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
+            for (int i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
             {
-                for (j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (int j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
                         (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
@@ -1185,12 +1165,10 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
         }
         else if (d2 < rl2)
         {
-            int i, j;
-
             cjl_gl = gridj->cell0 + cjl;
-            for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
+            for (int i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
             {
-                for (j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (int j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
                         (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
@@ -1208,7 +1186,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 
     if (cjf <= cjl)
     {
-        for (cj = cjf; cj <= cjl; cj++)
+        for (int cj = cjf; cj <= cjl; cj++)
         {
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = gridj->cell0 + cj;
@@ -1241,7 +1219,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 {
     int               na_c;
     int               npair;
-    int               cjo, ci1, ci, cj, cj_gl;
+    int               ci1, cj, cj_gl;
     int               cj4_ind, cj_offset;
     unsigned int      imask;
     nbnxn_cj4_t      *cj4;
@@ -1269,7 +1247,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 
     na_c = gridj->na_c;
 
-    for (cjo = 0; cjo < gridj->nsubc[scj]; cjo++)
+    for (int cjo = 0; cjo < gridj->nsubc[scj]; cjo++)
     {
         cj4_ind   = (nbl->work->cj_ind >> NBNXN_GPU_JGROUP_SIZE_2LOG);
         cj_offset = nbl->work->cj_ind - cj4_ind*NBNXN_GPU_JGROUP_SIZE;
@@ -1301,7 +1279,7 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
 
         npair = 0;
         /* We use a fixed upper-bound instead of ci1 to help optimization */
-        for (ci = 0; ci < GPU_NSUBCELL; ci++)
+        for (int ci = 0; ci < GPU_NSUBCELL; ci++)
         {
             if (ci == ci1)
             {
@@ -1416,12 +1394,9 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
     int           cj_ind_first, cj_ind_last;
     int           cj_first, cj_last;
     int           ndirect;
-    int           i, ai, aj, si, eind, ge, se;
+    int           ai, aj, si, ge, se;
     int           found, cj_ind_0, cj_ind_1, cj_ind_m;
     int           cj_m;
-    gmx_bool      Found_si;
-    int           si_ind;
-    nbnxn_excl_t *nbl_excl;
     int           inner_i, inner_e;
 
     cell = nbs->cell;
@@ -1465,7 +1440,7 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
 #endif
 
     /* Loop over the atoms in the i super-cell */
-    for (i = 0; i < nbl->na_sc; i++)
+    for (int i = 0; i < nbl->na_sc; i++)
     {
         ai = nbs->a[ci*nbl->na_sc+i];
         if (ai >= 0)
@@ -1473,7 +1448,7 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
             si  = (i>>na_ci_2log);
 
             /* Loop over the topology-based exclusions for this i-atom */
-            for (eind = excl->index[ai]; eind < excl->index[ai+1]; eind++)
+            for (int eind = excl->index[ai]; eind < excl->index[ai+1]; eind++)
             {
                 aj = excl->a[eind];
 
@@ -1581,12 +1556,12 @@ static void make_fep_list(const nbnxn_search_t    nbs,
                           const nbnxn_grid_t     *gridj,
                           t_nblist               *nlist)
 {
-    int      ci, cj_ind_start, cj_ind_end, cj_ind, cja, cjr;
+    int      ci, cj_ind_start, cj_ind_end, cja, cjr;
     int      nri_max;
     int      ngid, gid_i = 0, gid_j, gid;
     int      egp_shift, egp_mask;
     int      gid_cj = 0;
-    int      i, j, ind_i, ind_j, ai, aj;
+    int      ind_i, ind_j, ai, aj;
     int      nri;
     gmx_bool bFEP_i, bFEP_i_all;
 
@@ -1614,7 +1589,7 @@ static void make_fep_list(const nbnxn_search_t    nbs,
 
     ngid = nbat->nenergrp;
 
-    if (ngid*gridj->na_cj > sizeof(gid_cj)*8)
+    if (static_cast<std::size_t>(ngid*gridj->na_cj) > sizeof(gid_cj)*8)
     {
         gmx_fatal(FARGS, "The Verlet scheme with %dx%d kernels and free-energy only supports up to %d energy groups",
                   gridi->na_c, gridj->na_cj, (sizeof(gid_cj)*8)/gridj->na_cj);
@@ -1625,7 +1600,7 @@ static void make_fep_list(const nbnxn_search_t    nbs,
 
     /* Loop over the atoms in the i sub-cell */
     bFEP_i_all = TRUE;
-    for (i = 0; i < nbl->na_ci; i++)
+    for (int i = 0; i < nbl->na_ci; i++)
     {
         ind_i = ci*nbl->na_ci + i;
         ai    = nbs->a[ind_i];
@@ -1654,7 +1629,7 @@ static void make_fep_list(const nbnxn_search_t    nbs,
                 gid_i = (nbat->energrp[ci] >> (egp_shift*i)) & egp_mask;
             }
 
-            for (cj_ind = cj_ind_start; cj_ind < cj_ind_end; cj_ind++)
+            for (int cj_ind = cj_ind_start; cj_ind < cj_ind_end; cj_ind++)
             {
                 unsigned int fep_cj;
 
@@ -1692,7 +1667,7 @@ static void make_fep_list(const nbnxn_search_t    nbs,
 
                 if (bFEP_i || fep_cj != 0)
                 {
-                    for (j = 0; j < nbl->na_cj; j++)
+                    for (int j = 0; j < nbl->na_cj; j++)
                     {
                         /* Is this interaction perturbed and not excluded? */
                         ind_j = cja*nbl->na_cj + j;
@@ -1786,10 +1761,10 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                                    const nbnxn_grid_t     *gridj,
                                    t_nblist               *nlist)
 {
-    int                sci, cj4_ind_start, cj4_ind_end, cj4_ind, gcj, cjr;
+    int                sci, cj4_ind_start, cj4_ind_end, cjr;
     int                nri_max;
-    int                c, c_abs;
-    int                i, j, ind_i, ind_j, ai, aj;
+    int                c_abs;
+    int                ind_i, ind_j, ai, aj;
     int                nri;
     gmx_bool           bFEP_i;
     real               xi, yi, zi;
@@ -1821,11 +1796,11 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
     }
 
     /* Loop over the atoms in the i super-cluster */
-    for (c = 0; c < GPU_NSUBCELL; c++)
+    for (int c = 0; c < GPU_NSUBCELL; c++)
     {
         c_abs = sci*GPU_NSUBCELL + c;
 
-        for (i = 0; i < nbl->na_ci; i++)
+        for (int i = 0; i < nbl->na_ci; i++)
         {
             ind_i = c_abs*nbl->na_ci + i;
             ai    = nbs->a[ind_i];
@@ -1851,11 +1826,11 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
                     srenew(nlist->excl_fep, nlist->maxnrj);
                 }
 
-                for (cj4_ind = cj4_ind_start; cj4_ind < cj4_ind_end; cj4_ind++)
+                for (int cj4_ind = cj4_ind_start; cj4_ind < cj4_ind_end; cj4_ind++)
                 {
                     cj4 = &nbl->cj4[cj4_ind];
 
-                    for (gcj = 0; gcj < NBNXN_GPU_JGROUP_SIZE; gcj++)
+                    for (int gcj = 0; gcj < NBNXN_GPU_JGROUP_SIZE; gcj++)
                     {
                         unsigned int fep_cj;
 
@@ -1871,7 +1846,7 @@ static void make_fep_list_supersub(const nbnxn_search_t    nbs,
 
                         if (bFEP_i || fep_cj != 0)
                         {
-                            for (j = 0; j < nbl->na_cj; j++)
+                            for (int j = 0; j < nbl->na_cj; j++)
                             {
                                 /* Is this interaction perturbed and not excluded? */
                                 ind_j = (gridj->cell0*GPU_NSUBCELL + cjr)*nbl->na_cj + j;
@@ -1961,11 +1936,9 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
     int           cj_ind_first, cj_ind_last;
     int           cj_first, cj_last;
     int           ndirect;
-    int           i, ai, aj, si, eind, ge, se;
+    int           ai, aj, si, ge, se;
     int           found, cj_ind_0, cj_ind_1, cj_ind_m;
     int           cj_m;
-    gmx_bool      Found_si;
-    int           si_ind;
     nbnxn_excl_t *nbl_excl;
     int           inner_i, inner_e, w;
 
@@ -1999,7 +1972,7 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
     }
 
     /* Loop over the atoms in the i super-cell */
-    for (i = 0; i < nbl->na_sc; i++)
+    for (int i = 0; i < nbl->na_sc; i++)
     {
         ai = nbs->a[sci*nbl->na_sc+i];
         if (ai >= 0)
@@ -2007,7 +1980,7 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
             si  = (i>>na_c_2log);
 
             /* Loop over the topology-based exclusions for this i-atom */
-            for (eind = excl->index[ai]; eind < excl->index[ai+1]; eind++)
+            for (int eind = excl->index[ai]; eind < excl->index[ai+1]; eind++)
             {
                 aj = excl->a[eind];
 
@@ -2138,7 +2111,7 @@ static void new_sci_entry(nbnxn_pairlist_t *nbl, int sci, int shift)
 static void sort_cj_excl(nbnxn_cj_t *cj, int ncj,
                          nbnxn_list_work_t *work)
 {
-    int jnew, j;
+    int jnew;
 
     if (ncj > work->cj_nalloc)
     {
@@ -2148,7 +2121,7 @@ static void sort_cj_excl(nbnxn_cj_t *cj, int ncj,
 
     /* Make a list of the j-cells involving exclusions */
     jnew = 0;
-    for (j = 0; j < ncj; j++)
+    for (int j = 0; j < ncj; j++)
     {
         if (cj[j].excl != NBNXN_INTERACTION_MASK_ALL)
         {
@@ -2159,14 +2132,14 @@ static void sort_cj_excl(nbnxn_cj_t *cj, int ncj,
     if (!((jnew == 0) ||
           (jnew == 1 && cj[0].excl != NBNXN_INTERACTION_MASK_ALL)))
     {
-        for (j = 0; j < ncj; j++)
+        for (int j = 0; j < ncj; j++)
         {
             if (cj[j].excl == NBNXN_INTERACTION_MASK_ALL)
             {
                 work->cj[jnew++] = cj[j];
             }
         }
-        for (j = 0; j < ncj; j++)
+        for (int j = 0; j < ncj; j++)
         {
             cj[j] = work->cj[j];
         }
@@ -2218,10 +2191,9 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
 {
     int nsp_est;
     int nsp_max;
-    int cj4_start, cj4_end, j4len, cj4;
+    int cj4_start, cj4_end, j4len;
     int sci;
     int nsp, nsp_sci, nsp_cj4, nsp_cj4_e, nsp_cj4_p;
-    int p;
 
     if (progBal)
     {
@@ -2263,12 +2235,12 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
         nsp_sci    = 0;
         nsp_cj4_e  = 0;
         nsp_cj4    = 0;
-        for (cj4 = cj4_start; cj4 < cj4_end; cj4++)
+        for (int cj4 = cj4_start; cj4 < cj4_end; cj4++)
         {
             nsp_cj4_p = nsp_cj4;
             /* Count the number of cluster pairs in this cj4 group */
             nsp_cj4   = 0;
-            for (p = 0; p < GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE; p++)
+            for (int p = 0; p < GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE; p++)
             {
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
@@ -2317,13 +2289,10 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
                                     gmx_bool progBal, int nsp_tot_est,
                                     int thread, int nthread)
 {
-    int j4len, tlen;
-    int nb, b;
-
     /* All content of the new ci entry have already been filled correctly,
      * we only need to increase the count here (for non empty lists).
      */
-    j4len = nbl->sci[nbl->nsci].cj4_ind_end - nbl->sci[nbl->nsci].cj4_ind_start;
+    int j4len = nbl->sci[nbl->nsci].cj4_ind_end - nbl->sci[nbl->nsci].cj4_ind_start;
     if (j4len > 0)
     {
         /* We can only have complete blocks of 4 j-entries in a list,
@@ -2398,12 +2367,10 @@ static void set_icell_bbxxxx_supersub(const float *bb, int ci,
                                       real shx, real shy, real shz,
                                       float *bb_ci)
 {
-    int ia, m, i;
-
-    ia = ci*(GPU_NSUBCELL>>STRIDE_PBB_2LOG)*NNBSBB_XXXX;
-    for (m = 0; m < (GPU_NSUBCELL>>STRIDE_PBB_2LOG)*NNBSBB_XXXX; m += NNBSBB_XXXX)
+    int ia = ci*(GPU_NSUBCELL>>STRIDE_PBB_2LOG)*NNBSBB_XXXX;
+    for (int m = 0; m < (GPU_NSUBCELL>>STRIDE_PBB_2LOG)*NNBSBB_XXXX; m += NNBSBB_XXXX)
     {
-        for (i = 0; i < STRIDE_PBB; i++)
+        for (int i = 0; i < STRIDE_PBB; i++)
         {
             bb_ci[m+0*STRIDE_PBB+i] = bb[ia+m+0*STRIDE_PBB+i] + shx;
             bb_ci[m+1*STRIDE_PBB+i] = bb[ia+m+1*STRIDE_PBB+i] + shy;
@@ -2421,9 +2388,7 @@ static void set_icell_bb_supersub(const nbnxn_bb_t *bb, int ci,
                                   real shx, real shy, real shz,
                                   nbnxn_bb_t *bb_ci)
 {
-    int i;
-
-    for (i = 0; i < GPU_NSUBCELL; i++)
+    for (int i = 0; i < GPU_NSUBCELL; i++)
     {
         set_icell_bb_simple(bb, ci*GPU_NSUBCELL+i,
                             shx, shy, shz,
@@ -2438,11 +2403,9 @@ static void icell_set_x_simple(int ci,
                                int stride, const real *x,
                                nbnxn_list_work_t *work)
 {
-    int  ia, i;
+    int ia = ci*NBNXN_CPU_CLUSTER_I_SIZE;
 
-    ia = ci*NBNXN_CPU_CLUSTER_I_SIZE;
-
-    for (i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE; i++)
+    for (int i = 0; i < NBNXN_CPU_CLUSTER_I_SIZE; i++)
     {
         work->x_ci[i*STRIDE_XYZ+XX] = x[(ia+i)*stride+XX] + shx;
         work->x_ci[i*STRIDE_XYZ+YY] = x[(ia+i)*stride+YY] + shy;
@@ -2457,13 +2420,10 @@ static void icell_set_x_supersub(int ci,
                                  int stride, const real *x,
                                  nbnxn_list_work_t *work)
 {
-    int   ia, i;
-    real *x_ci;
+    real * x_ci = work->x_ci;
 
-    x_ci = work->x_ci;
-
-    ia = ci*GPU_NSUBCELL*na_c;
-    for (i = 0; i < GPU_NSUBCELL*na_c; i++)
+    int    ia = ci*GPU_NSUBCELL*na_c;
+    for (int i = 0; i < GPU_NSUBCELL*na_c; i++)
     {
         x_ci[i*DIM + XX] = x[(ia+i)*stride + XX] + shx;
         x_ci[i*DIM + YY] = x[(ia+i)*stride + YY] + shy;
@@ -2479,18 +2439,15 @@ static void icell_set_x_supersub_simd4(int ci,
                                        int stride, const real *x,
                                        nbnxn_list_work_t *work)
 {
-    int   si, io, ia, i, j;
-    real *x_ci;
+    real * x_ci = work->x_ci;
 
-    x_ci = work->x_ci;
-
-    for (si = 0; si < GPU_NSUBCELL; si++)
+    for (int si = 0; si < GPU_NSUBCELL; si++)
     {
-        for (i = 0; i < na_c; i += STRIDE_PBB)
+        for (int i = 0; i < na_c; i += STRIDE_PBB)
         {
-            io = si*na_c + i;
-            ia = ci*GPU_NSUBCELL*na_c + io;
-            for (j = 0; j < STRIDE_PBB; j++)
+            int io = si*na_c + i;
+            int ia = ci*GPU_NSUBCELL*na_c + io;
+            for (int j = 0; j < STRIDE_PBB; j++)
             {
                 x_ci[io*DIM + j + XX*STRIDE_PBB] = x[(ia+j)*stride+XX] + shx;
                 x_ci[io*DIM + j + YY*STRIDE_PBB] = x[(ia+j)*stride+YY] + shy;
@@ -2505,11 +2462,11 @@ static real minimum_subgrid_size_xy(const nbnxn_grid_t *grid)
 {
     if (grid->bSimple)
     {
-        return min(grid->sx, grid->sy);
+        return std::min(grid->sx, grid->sy);
     }
     else
     {
-        return min(grid->sx/GPU_NSUBCELL_X, grid->sy/GPU_NSUBCELL_Y);
+        return std::min(grid->sx/GPU_NSUBCELL_X, grid->sy/GPU_NSUBCELL_Y);
     }
 }
 
@@ -2558,13 +2515,12 @@ real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
     vol_inc_i = (cluster_size_i - 1)/atom_density;
     vol_inc_j = (cluster_size_j - 1)/atom_density;
 
-    return nbnxn_rlist_inc_outside_fac*pow(vol_inc_i + vol_inc_j, 1.0/3.0);
+    return nbnxn_rlist_inc_outside_fac*std::pow(static_cast<real>(vol_inc_i + vol_inc_j), static_cast<real>(1.0/3.0));
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
 static real nonlocal_vol2(const gmx_domdec_zones_t *zones, rvec ls, real r)
 {
-    int  z, d;
     real cl, ca, za;
     real vold_est;
     real vol2_est_tot;
@@ -2578,14 +2534,14 @@ static real nonlocal_vol2(const gmx_domdec_zones_t *zones, rvec ls, real r)
      * as small parts as possible.
      */
 
-    for (z = 0; z < zones->n; z++)
+    for (int z = 0; z < zones->n; z++)
     {
         if (zones->shift[z][XX] + zones->shift[z][YY] + zones->shift[z][ZZ] == 1)
         {
             cl = 0;
             ca = 1;
             za = 1;
-            for (d = 0; d < DIM; d++)
+            for (int d = 0; d < DIM; d++)
             {
                 if (zones->shift[z][d] == 0)
                 {
@@ -2624,7 +2580,6 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     const nbnxn_grid_t *grid;
     rvec                ls;
     real                xy_diag2, r_eff_sup, vol_est, nsp_est, nsp_est_nl;
-    int                 nsubpair_max;
 
     grid = &nbs->grid[0];
 
@@ -2645,7 +2600,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*sqr((grid->na_c - 1.0)/grid->na_c)*sqrt(xy_diag2/3);
+    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*sqr((grid->na_c - 1.0)/grid->na_c)*std::sqrt(xy_diag2/3);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
@@ -2667,7 +2622,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         /* 12/2 quarter pie slices on the edges */
         vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*sqr(r_eff_sup);
         /* 4 octants of a sphere */
-        vol_est += 0.5*4.0/3.0*M_PI*pow(r_eff_sup, 3);
+        vol_est += 0.5*4.0/3.0*M_PI*std::pow(r_eff_sup, static_cast<real>(3));
 
         /* Estimate the number of cluster pairs as the local number of
          * clusters times the volume they interact with times the density.
@@ -2686,7 +2641,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
          * groups of atoms we'll anyhow be limited by nsubpair_target_min,
          * so this overestimation will not matter.
          */
-        nsp_est = max(nsp_est, grid->nsubc_tot*14.0);
+        nsp_est = std::max(nsp_est, grid->nsubc_tot*static_cast<real>(14));
 
         if (debug)
         {
@@ -2703,9 +2658,9 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
      * Since there is overhead, we shouldn't make the lists too small
      * (and we can't chop up j-groups) so we use a minimum target size of 36.
      */
-    *nsubpair_target  = max(nsubpair_target_min,
-                            (int)(nsp_est/min_ci_balanced + 0.5));
-    *nsubpair_tot_est = (int)nsp_est;
+    *nsubpair_target  = std::max(nsubpair_target_min,
+                                 static_cast<int>(nsp_est/min_ci_balanced + 0.5));
+    *nsubpair_tot_est = static_cast<int>(nsp_est);
 
     if (debug)
     {
@@ -2717,15 +2672,13 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
 /* Debug list print function */
 static void print_nblist_ci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
 {
-    int i, j;
-
-    for (i = 0; i < nbl->nci; i++)
+    for (int i = 0; i < nbl->nci; i++)
     {
         fprintf(fp, "ci %4d  shift %2d  ncj %3d\n",
                 nbl->ci[i].ci, nbl->ci[i].shift,
                 nbl->ci[i].cj_ind_end - nbl->ci[i].cj_ind_start);
 
-        for (j = nbl->ci[i].cj_ind_start; j < nbl->ci[i].cj_ind_end; j++)
+        for (int j = nbl->ci[i].cj_ind_start; j < nbl->ci[i].cj_ind_end; j++)
         {
             fprintf(fp, "  cj %5d  imask %x\n",
                     nbl->cj[j].cj,
@@ -2737,23 +2690,21 @@ static void print_nblist_ci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
 /* Debug list print function */
 static void print_nblist_sci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
 {
-    int i, j4, j, ncp, si;
-
-    for (i = 0; i < nbl->nsci; i++)
+    for (int i = 0; i < nbl->nsci; i++)
     {
         fprintf(fp, "ci %4d  shift %2d  ncj4 %2d\n",
                 nbl->sci[i].sci, nbl->sci[i].shift,
                 nbl->sci[i].cj4_ind_end - nbl->sci[i].cj4_ind_start);
 
-        ncp = 0;
-        for (j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
+        int ncp = 0;
+        for (int j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
         {
-            for (j = 0; j < NBNXN_GPU_JGROUP_SIZE; j++)
+            for (int j = 0; j < NBNXN_GPU_JGROUP_SIZE; j++)
             {
                 fprintf(fp, "  sj %5d  imask %x\n",
                         nbl->cj4[j4].cj[j],
                         nbl->cj4[j4].imei[0].imask);
-                for (si = 0; si < GPU_NSUBCELL; si++)
+                for (int si = 0; si < GPU_NSUBCELL; si++)
                 {
                     if (nbl->cj4[j4].imei[0].imask & (1U << (j*GPU_NSUBCELL + si)))
                     {
@@ -2774,8 +2725,6 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
                             nbnxn_pairlist_t *nblc)
 {
     int nsci, ncj4, nexcl;
-    int n, i;
-    int nthreads gmx_unused;
 
     if (nblc->bSimple)
     {
@@ -2785,7 +2734,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     nsci  = nblc->nsci;
     ncj4  = nblc->ncj4;
     nexcl = nblc->nexcl;
-    for (i = 0; i < nnbl; i++)
+    for (int i = 0; i < nnbl; i++)
     {
         nsci  += nbl[i]->nsci;
         ncj4  += nbl[i]->ncj4;
@@ -2816,54 +2765,54 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-    nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#if (defined GMX_OPENMP) && !(defined __clang_analyzer__)
+    // cppcheck-suppress unreadVariable
+    int nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#endif
+
 #pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (n = 0; n < nnbl; n++)
+    for (int n = 0; n < nnbl; n++)
     {
         int                     sci_offset;
         int                     cj4_offset;
-        int                     ci_offset;
         int                     excl_offset;
-        int                     i, j4;
         const nbnxn_pairlist_t *nbli;
 
         /* Determine the offset in the combined data for our thread */
         sci_offset  = nblc->nsci;
         cj4_offset  = nblc->ncj4;
-        ci_offset   = nblc->nci_tot;
         excl_offset = nblc->nexcl;
 
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             sci_offset  += nbl[i]->nsci;
             cj4_offset  += nbl[i]->ncj4;
-            ci_offset   += nbl[i]->nci_tot;
             excl_offset += nbl[i]->nexcl;
         }
 
         nbli = nbl[n];
 
-        for (i = 0; i < nbli->nsci; i++)
+        for (int i = 0; i < nbli->nsci; i++)
         {
             nblc->sci[sci_offset+i]                = nbli->sci[i];
             nblc->sci[sci_offset+i].cj4_ind_start += cj4_offset;
             nblc->sci[sci_offset+i].cj4_ind_end   += cj4_offset;
         }
 
-        for (j4 = 0; j4 < nbli->ncj4; j4++)
+        for (int j4 = 0; j4 < nbli->ncj4; j4++)
         {
             nblc->cj4[cj4_offset+j4]                   = nbli->cj4[j4];
             nblc->cj4[cj4_offset+j4].imei[0].excl_ind += excl_offset;
             nblc->cj4[cj4_offset+j4].imei[1].excl_ind += excl_offset;
         }
 
-        for (j4 = 0; j4 < nbli->nexcl; j4++)
+        for (int j4 = 0; j4 < nbli->nexcl; j4++)
         {
             nblc->excl[excl_offset+j4] = nbli->excl[j4];
         }
     }
 
-    for (n = 0; n < nnbl; n++)
+    for (int n = 0; n < nnbl; n++)
     {
         nblc->nsci    += nbl[n]->nsci;
         nblc->ncj4    += nbl[n]->ncj4;
@@ -2875,7 +2824,7 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
 static void balance_fep_lists(const nbnxn_search_t  nbs,
                               nbnxn_pairlist_set_t *nbl_lists)
 {
-    int       nnbl, th;
+    int       nnbl;
     int       nri_tot, nrj_tot, nrj_target;
     int       th_dest;
     t_nblist *nbld;
@@ -2891,7 +2840,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
     /* Count the total i-lists and pairs */
     nri_tot = 0;
     nrj_tot = 0;
-    for (th = 0; th < nnbl; th++)
+    for (int th = 0; th < nnbl; th++)
     {
         nri_tot += nbl_lists->nbl_fep[th]->nri;
         nrj_tot += nbl_lists->nbl_fep[th]->nrj;
@@ -2902,7 +2851,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
     assert(gmx_omp_nthreads_get(emntNonbonded) == nnbl);
 
 #pragma omp parallel for schedule(static) num_threads(nnbl)
-    for (th = 0; th < nnbl; th++)
+    for (int th = 0; th < nnbl; th++)
     {
         t_nblist *nbl;
 
@@ -2929,14 +2878,13 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
     /* Loop over the source lists and assign and copy i-entries */
     th_dest = 0;
     nbld    = nbs->work[th_dest].nbl_fep;
-    for (th = 0; th < nnbl; th++)
+    for (int th = 0; th < nnbl; th++)
     {
         t_nblist *nbls;
-        int       i, j;
 
         nbls = nbl_lists->nbl_fep[th];
 
-        for (i = 0; i < nbls->nri; i++)
+        for (int i = 0; i < nbls->nri; i++)
         {
             int nrj;
 
@@ -2957,7 +2905,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
             nbld->gid[nbld->nri]   = nbls->gid[i];
             nbld->shift[nbld->nri] = nbls->shift[i];
 
-            for (j = nbls->jindex[i]; j < nbls->jindex[i+1]; j++)
+            for (int j = nbls->jindex[i]; j < nbls->jindex[i+1]; j++)
             {
                 nbld->jjnr[nbld->nrj]     = nbls->jjnr[j];
                 nbld->excl_fep[nbld->nrj] = nbls->excl_fep[j];
@@ -2969,7 +2917,7 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
     }
 
     /* Swap the list pointers */
-    for (th = 0; th < nnbl; th++)
+    for (int th = 0; th < nnbl; th++)
     {
         t_nblist *nbl_tmp;
 
@@ -3054,7 +3002,8 @@ static float boundingbox_only_distance2(const nbnxn_grid_t *gridi,
         bby /= GPU_NSUBCELL_Y;
     }
 
-    rbb2 = sqr(max(0, rlist - 0.5*sqrt(bbx*bbx + bby*bby)));
+    rbb2 = std::max(0.0, rlist - 0.5*std::sqrt(bbx*bbx + bby*bby));
+    rbb2 = rbb2 * rbb2;
 
 #ifndef GMX_DOUBLE
     return rbb2;
@@ -3136,12 +3085,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     matrix            box;
     real              rl2, rl_fep2 = 0;
     float             rbb2;
-    int               d;
     int               ci_b, ci, ci_x, ci_y, ci_xy, cj;
     ivec              shp;
-    int               tx, ty, tz;
     int               shift;
-    gmx_bool          bMakeList;
     real              shx, shy, shz;
     int               conv_i, cell0_i;
     const nbnxn_bb_t *bb_i = NULL;
@@ -3154,7 +3100,6 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     real              bz1_frac;
     real              d2cx, d2z, d2z_cx, d2z_cy, d2zx, d2zxy, d2xy;
     int               cxf, cxl, cyf, cyf_x, cyl;
-    int               cx, cy;
     int               c0, c1, cs, cf, cl;
     int               ndistc;
     int               ncpcheck;
@@ -3219,11 +3164,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
     if (debug)
     {
-        fprintf(debug, "nbl bounding box only distance %f\n", sqrt(rbb2));
+        fprintf(debug, "nbl bounding box only distance %f\n", std::sqrt(rbb2));
     }
 
     /* Set the shift range */
-    for (d = 0; d < DIM; d++)
+    for (int d = 0; d < DIM; d++)
     {
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
@@ -3235,7 +3180,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         else
         {
             if (d == XX &&
-                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < sqrt(rl2))
+                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < std::sqrt(rl2))
             {
                 shp[d] = 2;
             }
@@ -3334,7 +3279,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
         ci_xy = ci_x*gridi->ncy + ci_y;
 
         /* Loop over shift vectors in three dimensions */
-        for (tz = -shp[ZZ]; tz <= shp[ZZ]; tz++)
+        for (int tz = -shp[ZZ]; tz <= shp[ZZ]; tz++)
         {
             shz = tz*box[ZZ][ZZ];
 
@@ -3361,15 +3306,14 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                 continue;
             }
 
-            bz1_frac =
-                bz1/((real)(gridi->cxy_ind[ci_xy+1] - gridi->cxy_ind[ci_xy]));
+            bz1_frac = bz1/(gridi->cxy_ind[ci_xy+1] - gridi->cxy_ind[ci_xy]);
             if (bz1_frac < 0)
             {
                 bz1_frac = 0;
             }
             /* The check with bz1_frac close to or larger than 1 comes later */
 
-            for (ty = -shp[YY]; ty <= shp[YY]; ty++)
+            for (int ty = -shp[YY]; ty <= shp[YY]; ty++)
             {
                 shy = ty*box[YY][YY] + tz*box[ZZ][YY];
 
@@ -3404,7 +3348,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     d2z_cy += sqr(by0 - gridj->c1[YY]);
                 }
 
-                for (tx = -shp[XX]; tx <= shp[XX]; tx++)
+                for (int tx = -shp[XX]; tx <= shp[XX]; tx++)
                 {
                     shift = XYZ2IS(tx, ty, tz);
 
@@ -3480,7 +3424,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      gridi->na_c, nbat->xstride, nbat->x,
                                      nbl->work);
 
-                    for (cx = cxf; cx <= cxl; cx++)
+                    for (int cx = cxf; cx <= cxl; cx++)
                     {
                         d2zx = d2z;
                         if (gridj->c0[XX] + cx*gridj->sx > bx1)
@@ -3510,7 +3454,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                             cyf_x = cyf;
                         }
 
-                        for (cy = cyf_x; cy <= cyl; cy++)
+                        for (int cy = cyf_x; cy <= cyl; cy++)
                         {
                             c0 = gridj->cxy_ind[cx*gridj->ncy+cy];
                             c1 = gridj->cxy_ind[cx*gridj->ncy+cy+1];
@@ -3533,7 +3477,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                             }
                             if (c1 > c0 && d2zxy < rl2)
                             {
-                                cs = c0 + (int)(bz1_frac*(c1 - c0));
+                                cs = c0 + static_cast<int>(bz1_frac*(c1 - c0));
                                 if (cs >= c1)
                                 {
                                     cs = c1 - 1;
@@ -3568,10 +3512,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                     /* Simple reference code, for debugging,
                                      * overrides the more complex code above.
                                      */
-                                    int k;
                                     cf = c1;
                                     cl = -1;
-                                    for (k = c0; k < c1; k++)
+                                    for (int k = c0; k < c1; k++)
                                     {
                                         if (box_dist2(bx0, bx1, by0, by1, bz0, bz1, bb+k) < rl2 &&
                                             k < cf)
@@ -3593,11 +3536,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      * only use cj >= ci.
                                      */
 #ifndef NBNXN_SHIFT_BACKWARD
-                                    cf = max(cf, ci);
+                                    cf = std::max(cf, ci);
 #else
                                     if (shift == CENTRAL)
                                     {
-                                        cf = max(cf, ci);
+                                        cf = std::max(cf, ci);
                                     }
 #endif
                                 }
@@ -3659,11 +3602,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
                                     if (bFBufferFlag && nbl->ncj > ncj_old_j)
                                     {
-                                        int cbf, cbl, cb;
-
-                                        cbf = nbl->cj[ncj_old_j].cj >> gridj_flag_shift;
-                                        cbl = nbl->cj[nbl->ncj-1].cj >> gridj_flag_shift;
-                                        for (cb = cbf; cb <= cbl; cb++)
+                                        int cbf = nbl->cj[ncj_old_j].cj >> gridj_flag_shift;
+                                        int cbl = nbl->cj[nbl->ncj-1].cj >> gridj_flag_shift;
+                                        for (int cb = cbf; cb <= cbl; cb++)
                                         {
                                             bitmask_init_bit(&gridj_flag[cb], th);
                                         }
@@ -3764,14 +3705,11 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
                                 int                         nsrc,
                                 const nbnxn_buffer_flags_t *dest)
 {
-    int            s, b;
-    gmx_bitmask_t *flag;
-
-    for (s = 0; s < nsrc; s++)
+    for (int s = 0; s < nsrc; s++)
     {
-        flag = nbs->work[s].buffer_flags.flag;
+        gmx_bitmask_t * flag = nbs->work[s].buffer_flags.flag;
 
-        for (b = 0; b < dest->nflag; b++)
+        for (int b = 0; b < dest->nflag; b++)
         {
             bitmask_union(&(dest->flag[b]), flag[b]);
         }
@@ -3780,7 +3718,7 @@ static void reduce_buffer_flags(const nbnxn_search_t        nbs,
 
 static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
 {
-    int           nelem, nkeep, ncopy, nred, b, c, out;
+    int           nelem, nkeep, ncopy, nred, out;
     gmx_bitmask_t mask_0;
 
     nelem = 0;
@@ -3788,7 +3726,7 @@ static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
     ncopy = 0;
     nred  = 0;
     bitmask_init_bit(&mask_0, 0);
-    for (b = 0; b < flags->nflag; b++)
+    for (int b = 0; b < flags->nflag; b++)
     {
         if (bitmask_is_equal(flags->flag[b], mask_0))
         {
@@ -3798,7 +3736,7 @@ static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
         }
         else if (!bitmask_is_zero(flags->flag[b]))
         {
-            c = 0;
+            int c = 0;
             for (out = 0; out < nout; out++)
             {
                 if (bitmask_is_set(flags->flag[b], out))
@@ -3839,7 +3777,7 @@ static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
 static void sort_sci(nbnxn_pairlist_t *nbl)
 {
     nbnxn_list_work_t *work;
-    int                m, i, s, s0, s1;
+    int                m, s0, s1;
     nbnxn_sci_t       *sci_sort;
 
     if (nbl->ncj4 <= nbl->nsci)
@@ -3869,19 +3807,19 @@ static void sort_sci(nbnxn_pairlist_t *nbl)
     }
 
     /* Count the entries of each size */
-    for (i = 0; i <= m; i++)
+    for (int i = 0; i <= m; i++)
     {
         work->sort[i] = 0;
     }
-    for (s = 0; s < nbl->nsci; s++)
+    for (int s = 0; s < nbl->nsci; s++)
     {
-        i = min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
+        int i = std::min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
         work->sort[i]++;
     }
     /* Calculate the offset for each count */
     s0            = work->sort[m];
     work->sort[m] = 0;
-    for (i = m - 1; i >= 0; i--)
+    for (int i = m - 1; i >= 0; i--)
     {
         s1            = work->sort[i];
         work->sort[i] = work->sort[i + 1] + s0;
@@ -3890,9 +3828,9 @@ static void sort_sci(nbnxn_pairlist_t *nbl)
 
     /* Sort entries directly into place */
     sci_sort = work->sci_sort;
-    for (s = 0; s < nbl->nsci; s++)
+    for (int s = 0; s < nbl->nsci; s++)
     {
-        i = min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
+        int i = std::min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
         sci_sort[work->sort[i]++] = nbl->sci[s];
     }
 
@@ -3914,9 +3852,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
 {
     nbnxn_grid_t      *gridi, *gridj;
     gmx_bool           bGPUCPU;
-    int                nzi, zi, zj0, zj1, zj;
+    int                nzi, zj0, zj1;
     int                nsubpair_target, nsubpair_tot_est;
-    int                th;
     int                nnbl;
     nbnxn_pairlist_t **nbl;
     int                ci_block;
@@ -3945,6 +3882,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
 
     if (nbl_list->bSimple)
     {
+#ifdef GMX_NBNXN_SIMD
         switch (nb_kernel_type)
         {
 #ifdef GMX_NBNXN_SIMD_4XN
@@ -3961,6 +3899,10 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                 nbs->icell_set_x = icell_set_x_simple;
                 break;
         }
+#else   /* GMX_NBNXN_SIMD */
+        /* MSVC 2013 complains about switch statements without case */
+        nbs->icell_set_x = icell_set_x_simple;
+#endif  /* GMX_NBNXN_SIMD */
     }
     else
     {
@@ -3995,7 +3937,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     }
 
     /* Clear all pair-lists */
-    for (th = 0; th < nnbl; th++)
+    for (int th = 0; th < nnbl; th++)
     {
         clear_pairlist(nbl[th]);
 
@@ -4005,7 +3947,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         }
     }
 
-    for (zi = 0; zi < nzi; zi++)
+    for (int zi = 0; zi < nzi; zi++)
     {
         gridi = &nbs->grid[zi];
 
@@ -4018,7 +3960,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                 zj0++;
             }
         }
-        for (zj = zj0; zj < zj1; zj++)
+        for (int zj = zj0; zj < zj1; zj++)
         {
             gridj = &nbs->grid[zj];
 
@@ -4045,7 +3987,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
             progBal = (LOCAL_I(iloc) || nbs->zones->n <= 2);
 
 #pragma omp parallel for num_threads(nnbl) schedule(static)
-            for (th = 0; th < nnbl; th++)
+            for (int th = 0; th < nnbl; th++)
             {
                 /* Re-init the thread-local work flag data before making
                  * the first list (not an elegant conditional).
@@ -4079,7 +4021,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
             np_tot = 0;
             np_noq = 0;
             np_hlj = 0;
-            for (th = 0; th < nnbl; th++)
+            for (int th = 0; th < nnbl; th++)
             {
                 inc_nrnb(nrnb, eNR_NBNXN_DIST2, nbs->work[th].ndistc);
 
@@ -4121,7 +4063,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         else
         {
 #pragma omp parallel for num_threads(nnbl) schedule(static)
-            for (th = 0; th < nnbl; th++)
+            for (int th = 0; th < nnbl; th++)
             {
                 sort_sci(nbl[th]);
             }
