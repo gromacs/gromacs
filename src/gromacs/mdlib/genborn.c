@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/genborn_allvsall.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -59,19 +60,6 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-#  ifdef GMX_DOUBLE
-#    include "gromacs/mdlib/genborn_allvsall_sse2_double.h"
-#    include "gromacs/mdlib/genborn_sse2_double.h"
-#  else
-#    include "gromacs/mdlib/genborn_allvsall_sse2_single.h"
-#    include "gromacs/mdlib/genborn_sse2_single.h"
-#  endif /* GMX_DOUBLE */
-#endif   /* SSE or AVX present */
-
-#include "gromacs/mdlib/genborn_allvsall.h"
-
-/*#define DISABLE_SSE*/
 
 typedef struct {
     int  shift;
@@ -978,43 +966,13 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 
         if (ir->gb_algorithm == egbSTILL)
         {
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
-            if (fr->use_simd_kernels)
-            {
-#  ifdef GMX_DOUBLE
-                genborn_allvsall_calc_still_radii_sse2_double(fr, md, born, top, x[0], cr, &fr->AllvsAll_workgb);
-#  else
-                genborn_allvsall_calc_still_radii_sse2_single(fr, md, born, top, x[0], cr, &fr->AllvsAll_workgb);
-#  endif
-            }
-            else
-            {
-                genborn_allvsall_calc_still_radii(fr, md, born, top, x[0], cr, &fr->AllvsAll_workgb);
-            }
-#else
             genborn_allvsall_calc_still_radii(fr, md, born, top, x[0], &fr->AllvsAll_workgb);
-#endif
             /* 13 flops in outer loop, 47 flops in inner loop */
             inc_nrnb(nrnb, eNR_BORN_AVA_RADII_STILL, md->homenr*13+cnt*47);
         }
         else if (ir->gb_algorithm == egbHCT || ir->gb_algorithm == egbOBC)
         {
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
-            if (fr->use_simd_kernels)
-            {
-#  ifdef GMX_DOUBLE
-                genborn_allvsall_calc_hct_obc_radii_sse2_double(fr, md, born, ir->gb_algorithm, top, x[0], cr, &fr->AllvsAll_workgb);
-#  else
-                genborn_allvsall_calc_hct_obc_radii_sse2_single(fr, md, born, ir->gb_algorithm, top, x[0], cr, &fr->AllvsAll_workgb);
-#  endif
-            }
-            else
-            {
-                genborn_allvsall_calc_hct_obc_radii(fr, md, born, ir->gb_algorithm, top, x[0], cr, &fr->AllvsAll_workgb);
-            }
-#else
             genborn_allvsall_calc_hct_obc_radii(fr, md, born, ir->gb_algorithm, top, x[0], &fr->AllvsAll_workgb);
-#endif
             /* 24 flops in outer loop, 183 in inner */
             inc_nrnb(nrnb, eNR_BORN_AVA_RADII_HCT_OBC, md->homenr*24+cnt*183);
         }
@@ -1028,45 +986,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
     /* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
 
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
-    /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
-    switch (ir->gb_algorithm)
-    {
-        case egbSTILL:
-            if (fr->use_simd_kernels)
-            {
-                calc_gb_rad_still_sse2_double(cr, fr, born->nr, top, atype, x[0], nl, born);
-            }
-            else
-            {
-                calc_gb_rad_still(cr, fr, top, x, nl, born, md);
-            }
-            break;
-        case egbHCT:
-            if (fr->use_simd_kernels)
-            {
-                calc_gb_rad_hct_obc_sse2_double(cr, fr, born->nr, top, atype, x[0], nl, born, md, ir->gb_algorithm);
-            }
-            else
-            {
-                calc_gb_rad_hct(cr, fr, top, x, nl, born, md);
-            }
-            break;
-        case egbOBC:
-            if (fr->use_simd_kernels)
-            {
-                calc_gb_rad_hct_obc_sse2_double(cr, fr, born->nr, top, atype, x[0], nl, born, md, ir->gb_algorithm);
-            }
-            else
-            {
-                calc_gb_rad_obc(cr, fr, born->nr, top, x, nl, born, md);
-            }
-            break;
-
-        default:
-            gmx_fatal(FARGS, "Unknown double precision sse-enabled algorithm for Born radii calculation: %d", ir->gb_algorithm);
-    }
-#else
     switch (ir->gb_algorithm)
     {
         case egbSTILL:
@@ -1083,51 +1002,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
             gmx_fatal(FARGS, "Unknown double precision algorithm for Born radii calculation: %d", ir->gb_algorithm);
     }
 
-#endif
-
 #else
 
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
-    /* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
-    switch (ir->gb_algorithm)
-    {
-        case egbSTILL:
-            if (fr->use_simd_kernels)
-            {
-                calc_gb_rad_still_sse2_single(cr, fr, born->nr, top, x[0], nl, born);
-            }
-            else
-            {
-                calc_gb_rad_still(cr, fr, top, x, nl, born, md);
-            }
-            break;
-        case egbHCT:
-            if (fr->use_simd_kernels)
-            {
-                calc_gb_rad_hct_obc_sse2_single(cr, fr, born->nr, top, x[0], nl, born, md, ir->gb_algorithm);
-            }
-            else
-            {
-                calc_gb_rad_hct(cr, fr, top, x, nl, born, md);
-            }
-            break;
-
-        case egbOBC:
-            if (fr->use_simd_kernels)
-            {
-                calc_gb_rad_hct_obc_sse2_single(cr, fr, born->nr, top, x[0], nl, born, md, ir->gb_algorithm);
-            }
-            else
-            {
-                calc_gb_rad_obc(cr, fr, born->nr, top, x, nl, born, md);
-            }
-            break;
-
-        default:
-            gmx_fatal(FARGS, "Unknown sse-enabled algorithm for Born radii calculation: %d", ir->gb_algorithm);
-    }
-
-#else
     switch (ir->gb_algorithm)
     {
         case egbSTILL:
@@ -1143,8 +1019,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
         default:
             gmx_fatal(FARGS, "Unknown algorithm for Born radii calculation: %d", ir->gb_algorithm);
     }
-
-#endif /* Single precision sse */
 
 #endif /* Double or single precision */
 
@@ -1530,48 +1404,15 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
 
     if (fr->bAllvsAll)
     {
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
-        if (fr->use_simd_kernels)
-        {
-#  ifdef GMX_DOUBLE
-            genborn_allvsall_calc_chainrule_sse2_double(fr, md, born, x[0], f[0], gb_algorithm, fr->AllvsAll_workgb);
-#  else
-            genborn_allvsall_calc_chainrule_sse2_single(fr, md, born, x[0], f[0], gb_algorithm, fr->AllvsAll_workgb);
-#  endif
-        }
-        else
-        {
-            genborn_allvsall_calc_chainrule(fr, md, born, x[0], f[0], gb_algorithm, fr->AllvsAll_workgb);
-        }
-#else
         genborn_allvsall_calc_chainrule(fr, md, born, x[0], f[0], gb_algorithm, fr->AllvsAll_workgb);
-#endif
         cnt = md->homenr*(md->nr/2+1);
         /* 9 flops for outer loop, 15 for inner */
         inc_nrnb(nrnb, eNR_BORN_AVA_CHAINRULE, md->homenr*9+cnt*15);
         return;
     }
 
-#if 0 && defined (GMX_SIMD_X86_SSE2_OR_HIGHER)
-    if (fr->use_simd_kernels)
-    {
-#  ifdef GMX_DOUBLE
-        calc_gb_chainrule_sse2_double(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, x[0],
-                                      f[0], fr->fshift[0], fr->shift_vec[0], gb_algorithm, born, md);
-#  else
-        calc_gb_chainrule_sse2_single(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda, x[0],
-                                      f[0], fr->fshift[0], fr->shift_vec[0], gb_algorithm, born, md);
-#  endif
-    }
-    else
-    {
-        calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda,
-                          x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);
-    }
-#else
     calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda,
                       x, f, fr->fshift, fr->shift_vec, gb_algorithm, born);
-#endif
 
     if (!fr->bAllvsAll)
     {
