@@ -41,6 +41,8 @@
 
 #include <string.h>
 
+#include <algorithm>
+
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -60,7 +62,7 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn)
     {
         fprintf(stderr, "\nWARNING during %s:\n", warn);
         fprintf(stderr, "step value ");
-        fprintf(stderr, "%"GMX_PRId64, step);
+        fprintf(stderr, "%" GMX_PRId64, step);
         fprintf(stderr, " does not fit in int, converted to %d\n\n", i);
     }
 
@@ -461,7 +463,7 @@ real max_cutoff(real cutoff1, real cutoff2)
     }
     else
     {
-        return max(cutoff1, cutoff2);
+        return std::max(cutoff1, cutoff2);
     }
 }
 

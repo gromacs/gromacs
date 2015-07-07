@@ -37,8 +37,11 @@
 #include "calc_verletbuf.h"
 
 #include <assert.h>
-#include <math.h>
 #include <stdlib.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include <sys/types.h>
 
@@ -279,7 +282,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                             vsite_m[a1] = cam[1];
                             for (j = 2; j < maxj; j++)
                             {
-                                vsite_m[a1] = min(vsite_m[a1], cam[j]);
+                                vsite_m[a1] = std::min(vsite_m[a1], cam[j]);
                             }
                             (*n_nonlin_vsite)++;
                             break;
@@ -561,12 +564,11 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
      * This is a tight overestimate for all r>=0 at any s and x.
      */
     real ex, er;
+    ex = std::exp(-x*x/(2*s2));
+    er = gmx_erfc(x/std::sqrt(2*s2));
 
-    ex = exp(-x*x/(2*s2));
-    er = gmx_erfc(x/sqrt(2*s2));
-
-    *shift = -x + sqrt(2*s2/M_PI)*ex/er;
-    *scale = 0.5*M_PI*exp(ex*ex/(M_PI*er*er))*er;
+    *shift = -x + std::sqrt(2*s2/M_PI)*ex/er;
+    *scale = 0.5*M_PI*std::exp(ex*ex/(M_PI*er*er))*er;
 }
 
 static real ener_drift(const verletbuf_atomtype_t *att, int natt,
@@ -676,10 +678,10 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                  * Note that pot has unit energy*length, as the linear
                  * atom density still needs to be put in.
                  */
-                c_exp  = exp(-rsh*rsh/(2*s2))/sqrt(2*M_PI);
-                c_erfc = 0.5*gmx_erfc(rsh/(sqrt(2*s2)));
+                c_exp  = std::exp(-rsh*rsh/(2*s2))/std::sqrt(2.0*M_PI);
+                c_erfc = 0.5*gmx_erfc(rsh/(std::sqrt(2*s2)));
             }
-            s      = sqrt(s2);
+            s      = std::sqrt(s2);
             rsh2   = rsh*rsh;
 
             pot1 = sc_fac*
@@ -694,8 +696,8 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             {
                 fprintf(debug, "n %d %d d s %.3f %.3f %.3f %.3f con %d -d1 %8.1e d2 %8.1e -d3 %8.1e pot1 %8.1e pot2 %8.1e pot3 %8.1e pot %8.1e\n",
                         att[i].n, att[j].n,
-                        sqrt(s2i_2d), sqrt(s2i_3d),
-                        sqrt(s2j_2d), sqrt(s2j_3d),
+                        std::sqrt(s2i_2d), std::sqrt(s2i_3d),
+                        std::sqrt(s2j_2d), std::sqrt(s2j_3d),
                         att[i].prop.bConstr+att[j].prop.bConstr,
                         md1, d2, md3,
                         pot1, pot2, pot3, pot);
@@ -760,8 +762,8 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
              * The surface around a tetrahedron is too complex for a full
              * analytical solution, so we use a Taylor expansion.
              */
-            area_rel = (1.0 + 1/M_PI*(6*acos(1/sqrt(3))*d +
-                                      sqrt(3)*d*d*(1.0 +
+            area_rel = (1.0 + 1/M_PI*(6*acos(1/std::sqrt(3.0))*d +
+                                      std::sqrt(3.0)*d*d*(1.0 +
                                                    5.0/18.0*d*d +
                                                    7.0/45.0*d*d*d*d +
                                                    83.0/756.0*d*d*d*d*d*d)));
@@ -785,10 +787,10 @@ static real md3_force_switch(real p, real rswitch, real rc)
     real a, b;
     real md3_pot, md3_sw;
 
-    a = -((p + 4)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*pow(rc-rswitch, 2));
-    b =  ((p + 3)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*pow(rc-rswitch, 3));
+    a = -((p + 4)*rc - (p + 1)*rswitch)/(std::pow(rc, p+2)*std::pow(rc-rswitch, 2));
+    b =  ((p + 3)*rc - (p + 1)*rswitch)/(std::pow(rc, p+2)*std::pow(rc-rswitch, 3));
 
-    md3_pot = (p + 2)*(p + 1)*p*pow(rc, p+3);
+    md3_pot = (p + 2)*(p + 1)*p*std::pow(rc, p+3);
     md3_sw  = 2*a + 6*b*(rc - rswitch);
 
     return md3_pot + md3_sw;
@@ -836,8 +838,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         {
             if (ir->opts.tau_t[i] >= 0)
             {
-                reference_temperature = max(reference_temperature,
-                                            ir->opts.ref_t[i]);
+                reference_temperature = std::max(reference_temperature,
+                                                 ir->opts.ref_t[i]);
             }
         }
     }
@@ -876,7 +878,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
      */
 
     /* Worst case assumption: HCP packing of particles gives largest distance */
-    particle_distance = pow(boxvol*sqrt(2)/mtop->natoms, 1.0/3.0);
+    particle_distance = std::pow(boxvol*std::sqrt(2.0)/mtop->natoms, 1.0/3.0);
 
     get_verlet_buffer_atomtypes(mtop, &att, &natt, n_nonlin_vsite);
     assert(att != NULL && natt >= 0);
@@ -904,8 +906,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             case eintmodNONE:
             case eintmodPOTSHIFT:
                 /* -dV/dr of -r^-6 and r^-reppow */
-                md1_ljd =     -6*pow(ir->rvdw, -7.0);
-                md1_ljr = reppow*pow(ir->rvdw, -(reppow+1));
+                md1_ljd =     -6*std::pow<double,double>(ir->rvdw, -7.0);
+                md1_ljr = reppow*std::pow<double,double>(ir->rvdw, -(reppow+1.0));
                 /* The contribution of the higher derivatives is negligible */
                 break;
             case eintmodFORCESWITCH:
@@ -919,10 +921,10 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                  * the third derivative of the switch function.
                  */
                 sw_range  = ir->rvdw - ir->rvdw_switch;
-                md3_pswf  = 60.0*pow(sw_range, -3.0);
+                md3_pswf  = 60.0*std::pow<double,double>(sw_range, -3.0);
 
-                md3_ljd   = -pow(ir->rvdw, -6.0   )*md3_pswf;
-                md3_ljr   =  pow(ir->rvdw, -reppow)*md3_pswf;
+                md3_ljd   = -std::pow<double,double>(ir->rvdw, -6.0   )*md3_pswf;
+                md3_ljr   =  std::pow<double,double>(ir->rvdw, -reppow)*md3_pswf;
                 break;
             default:
                 gmx_incons("Unimplemented VdW modifier");
@@ -938,8 +940,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         br4      = br2*br2;
         br6      = br4*br2;
         /* -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2), see LJ-PME equations in manual] and r^-reppow */
-        md1_ljd  = -exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*pow(r, -7.0);
-        md1_ljr  = reppow*pow(r, -(reppow+1));
+        md1_ljd  = -std::exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*std::pow<double,double>(r, -7.0);
+        md1_ljr  = reppow*std::pow<double,double>(r, -(reppow+1.0));
         /* The contribution of the higher derivatives is negligible */
     }
     else
@@ -951,7 +953,6 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     /* Determine md=-dV/dr and dd=d^2V/dr^2 */
     md1_el = 0;
-    d2_el  = 0;
     if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype))
     {
         real eps_rf, k_rf;
@@ -966,20 +967,20 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             eps_rf = ir->epsilon_rf/ir->epsilon_r;
             if (eps_rf != 0)
             {
-                k_rf = pow(ir->rcoulomb, -3.0)*(eps_rf - ir->epsilon_r)/(2*eps_rf + ir->epsilon_r);
+                k_rf = std::pow<double,double>(ir->rcoulomb, -3.0)*(eps_rf - ir->epsilon_r)/(2*eps_rf + ir->epsilon_r);
             }
             else
             {
                 /* epsilon_rf = infinity */
-                k_rf = 0.5*pow(ir->rcoulomb, -3.0);
+                k_rf = 0.5*std::pow(ir->rcoulomb, -3.0);
             }
         }
 
         if (eps_rf > 0)
         {
-            md1_el = elfac*(pow(ir->rcoulomb, -2.0) - 2*k_rf*ir->rcoulomb);
+            md1_el = elfac*(std::pow(ir->rcoulomb, -2.0) - 2*k_rf*ir->rcoulomb);
         }
-        d2_el      = elfac*(2*pow(ir->rcoulomb, -3.0) + 2*k_rf);
+        d2_el      = elfac*(2*std::pow(ir->rcoulomb, -3.0) + 2*k_rf);
     }
     else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
     {
@@ -988,8 +989,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         b      = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
         rc     = ir->rcoulomb;
         br     = b*rc;
-        md1_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
-        d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
+        md1_el = elfac*(b*std::exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
+        d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*std::exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
     }
     else
     {
@@ -1030,7 +1031,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             tau_t = ir->opts.tau_t[0];
             for (i = 1; i < ir->opts.ngtc; i++)
             {
-                tau_t = max(tau_t, ir->opts.tau_t[i]);
+                tau_t = std::max(tau_t, ir->opts.tau_t[i]);
             }
 
             kT_fac *= tau_t;
@@ -1045,7 +1046,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     mass_min = att[0].prop.mass;
     for (i = 1; i < natt; i++)
     {
-        mass_min = min(mass_min, att[i].prop.mass);
+        mass_min = std::min(mass_min, att[i].prop.mass);
     }
 
     if (debug)
@@ -1053,19 +1054,19 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         fprintf(debug, "md1_ljd %9.2e d2_ljd %9.2e md3_ljd %9.2e\n", md1_ljd, d2_ljd, md3_ljd);
         fprintf(debug, "md1_ljr %9.2e d2_ljr %9.2e md3_ljr %9.2e\n", md1_ljr, d2_ljr, md3_ljr);
         fprintf(debug, "md1_el  %9.2e d2_el  %9.2e\n", md1_el, d2_el);
-        fprintf(debug, "sqrt(kT_fac) %f\n", sqrt(kT_fac));
+        fprintf(debug, "sqrt(kT_fac) %f\n", std::sqrt(kT_fac));
         fprintf(debug, "mass_min %f\n", mass_min);
     }
 
     /* Search using bisection */
     ib0 = -1;
     /* The drift will be neglible at 5 times the max sigma */
-    ib1 = (int)(5*2*sqrt(kT_fac/mass_min)/resolution) + 1;
+    ib1 = (int)(5*2*std::sqrt(kT_fac/mass_min)/resolution) + 1;
     while (ib1 - ib0 > 1)
     {
         ib = (ib0 + ib1)/2;
         rb = ib*resolution;
-        rl = max(ir->rvdw, ir->rcoulomb) + rb;
+        rl = std::max(ir->rvdw, ir->rcoulomb) + rb;
 
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
@@ -1083,9 +1084,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          */
         /* We don't have a formula for 8 (yet), use 4 which is conservative */
         nb_clust_frac_pairs_not_in_list_at_cutoff =
-            surface_frac(min(list_setup->cluster_size_i, 4),
+            surface_frac(std::min(list_setup->cluster_size_i, 4),
                          particle_distance, rl)*
-            surface_frac(min(list_setup->cluster_size_j, 4),
+            surface_frac(std::min(list_setup->cluster_size_j, 4),
                          particle_distance, rl);
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
@@ -1113,5 +1114,5 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     sfree(att);
 
-    *rlist = max(ir->rvdw, ir->rcoulomb) + ib1*resolution;
+    *rlist = std::max(ir->rvdw, ir->rcoulomb) + ib1*resolution;
 }

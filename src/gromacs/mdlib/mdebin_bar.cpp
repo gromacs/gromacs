@@ -46,6 +46,7 @@
 #include "gromacs/legacyheaders/mdebin.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* reset the delta_h list to prepare it for new values */
@@ -362,7 +363,6 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
 {
     int       i, j, n;
-    double    lambda;
     double   *lambda_vec;
     int       ndhmax = ir->nstenergy/ir->nstcalcenergy;
     t_lambda *fep    = ir->fepvals;
@@ -722,14 +722,9 @@ void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
     int          i;
     unsigned int j;
 
-    if (dhc && !enerhist->dht)
-    {
-        gmx_incons("No delta_h histograms in energy history");
-    }
-    if (enerhist->dht->nndh != dhc->ndh)
-    {
-        gmx_incons("energy history number of delta_h histograms != inputrec's number");
-    }
+    GMX_RELEASE_ASSERT(dhc, "Requires valid pointer to delta_h histogram");
+    GMX_RELEASE_ASSERT(!enerhist->dht, "No delta_h histograms in energy history");
+    GMX_RELEASE_ASSERT(enerhist->dht->nndh != dhc->ndh, "energy history number of delta_h histograms != inputrec's number");
 
     for (i = 0; i < enerhist->dht->nndh; i++)
     {
