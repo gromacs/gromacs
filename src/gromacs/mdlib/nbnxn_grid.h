@@ -40,9 +40,6 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Allocate and initialize ngrid pair search grids in nbs */
 void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
@@ -92,8 +89,5 @@ void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n);
 /* Renumber the atom indices on the grid to consecutive order */
 void nbnxn_set_atomorder(nbnxn_search_t nbs);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif
