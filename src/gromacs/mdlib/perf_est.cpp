@@ -149,7 +149,7 @@ static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
     int            mb, nmol, atnr, cg, a, a0, ncqlj, ncq, nclj;
     gmx_bool       bBHAM, bLJcut, bWater, bQ, bLJ;
     int            nw, nqlj, nq, nlj;
-    float          fq, fqlj, flj, fljtab, fqljw, fqw;
+    float          fq, fqlj, flj, fqljw, fqw;
     t_iparams     *iparams;
     gmx_moltype_t *molt;
 
@@ -269,7 +269,7 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                            gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
 {
     t_atom        *atom;
-    int            mb, nmol, atnr, cg, a, a0, nqlj, nq, nlj;
+    int            mb, nmol, atnr, a, nqlj, nq, nlj;
     gmx_bool       bQRF;
     t_iparams     *iparams;
     gmx_moltype_t *molt;
@@ -365,14 +365,10 @@ static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
 
 float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
 {
-    t_atom        *atom;
-    int            mb, nmol, atnr, cg, a, a0, nq_tot, nlj_tot, f;
-    gmx_bool       bBHAM, bLJcut, bChargePerturbed, bTypePerturbed;
-    gmx_bool       bWater, bQ, bLJ;
+    int            nq_tot, nlj_tot, f;
+    gmx_bool       bChargePerturbed, bTypePerturbed;
     double         cost_bond, cost_pp, cost_redist, cost_spread, cost_fft, cost_solve, cost_pme;
     float          ratio;
-    t_iparams     *iparams;
-    gmx_moltype_t *molt;
 
     /* Computational cost of bonded, non-bonded and PME calculations.
      * This will be machine dependent.
@@ -380,9 +376,6 @@ float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
      * in single precision. In double precision PME mesh is slightly cheaper,
      * although not so much that the numbers need to be adjusted.
      */
-
-    iparams = mtop->ffparams.iparams;
-    atnr    = mtop->ffparams.atnr;
 
     cost_bond = C_BOND*n_bonded_dx(mtop, TRUE);
 

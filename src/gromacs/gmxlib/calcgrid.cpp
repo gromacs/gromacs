@@ -65,7 +65,7 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
     int  d, n[DIM];
     int  i;
     rvec box_size;
-    int  nmin, fac2, try;
+    int  nmin, fac2, attempt;
     rvec spacing;
     real max_spacing;
 
@@ -143,12 +143,12 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
                 /* Find the smallest grid that is >= nmin */
                 do
                 {
-                    try = fac2*grid_base[i];
+                    attempt = fac2*grid_base[i];
                     /* We demand a factor of 4, avoid 140, allow 90 */
-                    if (((try % 4 == 0 && try != 140) || try == 90) &&
-                        try >= nmin)
+                    if (((attempt % 4 == 0 && attempt != 140) || attempt == 90) &&
+                        attempt >= nmin)
                     {
-                        n[d] = try;
+                        n[d] = attempt;
                     }
                     i--;
                 }

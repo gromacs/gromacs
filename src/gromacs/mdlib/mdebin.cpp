@@ -134,8 +134,8 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     char                buf[256];
     const char         *bufi;
     t_mdebin           *md;
-    int                 i, j, ni, nj, n, nh, k, kk, ncon, nset;
-    gmx_bool            bBHAM, bNoseHoover, b14;
+    int                 i, j, ni, nj, n, k, kk, ncon, nset;
+    gmx_bool            bBHAM, b14;
 
     snew(md, 1);
 
@@ -687,7 +687,6 @@ static void print_lambda_vector(t_lambda *fep, int i,
                                 gmx_bool get_native_lambda, gmx_bool get_names,
                                 char *str)
 {
-    size_t nps = 0, np;
     int    j, k = 0;
     int    Nsep = 0;
 
@@ -707,7 +706,6 @@ static void print_lambda_vector(t_lambda *fep, int i,
     {
         if (fep->separate_dvdl[j])
         {
-            double lam;
             if (!get_names)
             {
                 if (get_native_lambda && fep->init_lambda >= 0)
@@ -744,9 +742,9 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 {
     FILE       *fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
-    *lambdastate     = "\\lambda state", *remain = "remaining";
+        *lambdastate     = "\\lambda state";
     char        title[STRLEN], label_x[STRLEN], label_y[STRLEN];
-    int         i, np, nps, nsets, nsets_de, nsetsbegin;
+    int         i, nps, nsets, nsets_de, nsetsbegin;
     int         n_lambda_terms = 0;
     t_lambda   *fep            = ir->fepvals; /* for simplicity */
     t_expanded *expand         = ir->expandedvals;
@@ -941,7 +939,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         }
         if (write_pV)
         {
-            np                     = sprintf(buf, "pV (%s)", unit_energy);
+            sprintf(buf, "pV (%s)", unit_energy);
             setname[nsetsextend-1] = gmx_strdup(buf);  /* the first entry after
                                                           nsets */
         }
@@ -993,7 +991,7 @@ void upd_mdebin(t_mdebin       *md,
                 rvec            mu_tot,
                 gmx_constr_t    constr)
 {
-    int    i, j, k, kk, m, n, gid;
+    int    i, j, k, kk, n, gid;
     real   crmsd[2], tmp6[6];
     real   bs[NTRICLBOXS], vol, dens, pv, enthalpy;
     real   eee[egNR];
@@ -1339,7 +1337,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 {
     /*static char **grpnms=NULL;*/
     char         buf[246];
-    int          i, j, n, ni, nj, ndr, nor, b;
+    int          i, j, n, ni, nj, b;
     int          ndisre = 0;
     real        *disre_rm3tav, *disre_rt;
 
@@ -1348,9 +1346,6 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
     int          nr[enxNR];
     int          id[enxNR];
     real        *block[enxNR];
-
-    /* temporary arrays for the lambda values to write out */
-    double      enxlambda_data[2];
 
     t_enxframe  fr;
 

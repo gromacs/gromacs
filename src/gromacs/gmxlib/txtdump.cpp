@@ -43,6 +43,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <algorithm>
+
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -438,8 +440,6 @@ static void pr_str(FILE *fp, int indent, const char *title, const char *s)
 
 void pr_qm_opts(FILE *fp, int indent, const char *title, t_grpopts *opts)
 {
-    int i, m, j;
-
     fprintf(fp, "%s:\n", title);
 
     pr_int(fp, indent, "ngQM", opts->ngQM);
@@ -822,7 +822,7 @@ static void pr_rot(FILE *fp, int indent, t_rot *rot)
 
 static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
 {
-    int  i, j;
+    int  j;
     char str[STRLEN];
 
 
@@ -865,7 +865,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
                  gmx_bool bMDPformat)
 {
     const char *infbuf = "inf";
-    int         i;
 
     if (available(fp, ir, indent, title))
     {
@@ -1477,7 +1476,7 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
                  gmx_ffparams_t *ffparams,
                  gmx_bool bShowNumbers)
 {
-    int i, j;
+    int i;
 
     indent = pr_title(fp, indent, title);
     (void) pr_indent(fp, indent);
@@ -1528,8 +1527,6 @@ void pr_idef(FILE *fp, int indent, const char *title, t_idef *idef, gmx_bool bSh
 
 static int pr_block_title(FILE *fp, int indent, const char *title, t_block *block)
 {
-    int i;
-
     if (available(fp, block, indent, title))
     {
         indent = pr_title(fp, indent, title);
@@ -1541,8 +1538,6 @@ static int pr_block_title(FILE *fp, int indent, const char *title, t_block *bloc
 
 static int pr_blocka_title(FILE *fp, int indent, const char *title, t_blocka *block)
 {
-    int i;
-
     if (available(fp, block, indent, title))
     {
         indent = pr_title(fp, indent, title);
@@ -1578,7 +1573,7 @@ static void low_pr_blocka(FILE *fp, int indent, const char *title, t_blocka *blo
 
 void pr_block(FILE *fp, int indent, const char *title, t_block *block, gmx_bool bShowNumbers)
 {
-    int i, j, ok, size, start, end;
+    int i, ok, size, start, end;
 
     if (available(fp, block, indent, title))
     {
@@ -1719,7 +1714,7 @@ static void pr_resinfo(FILE *fp, int indent, const char *title, t_resinfo *resin
 
 static void pr_atom(FILE *fp, int indent, const char *title, t_atom *atom, int n)
 {
-    int i, j;
+    int i;
 
     if (available(fp, atom, indent, title))
     {
@@ -1755,7 +1750,6 @@ static void pr_groups(FILE *fp, int indent,
                       gmx_groups_t *groups,
                       gmx_bool bShowNumbers)
 {
-    int grpnr[egcNR];
     int nat_max, i, g;
 
     pr_grps(fp, "grp", groups->grps, groups->grpname);
@@ -1775,7 +1769,7 @@ static void pr_groups(FILE *fp, int indent,
     for (g = 0; g < egcNR; g++)
     {
         printf(" %5d", groups->ngrpnr[g]);
-        nat_max = max(nat_max, groups->ngrpnr[g]);
+        nat_max = std::max(nat_max, groups->ngrpnr[g]);
     }
     printf("\n");
 
@@ -1936,8 +1930,6 @@ void pr_top(FILE *fp, int indent, const char *title, t_topology *top, gmx_bool b
 
 void pr_header(FILE *fp, int indent, const char *title, t_tpxheader *sh)
 {
-    char buf[22];
-
     if (available(fp, sh, indent, title))
     {
         indent = pr_title(fp, indent, title);

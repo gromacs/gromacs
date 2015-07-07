@@ -362,7 +362,6 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
 void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
 {
     int       i, j, n;
-    double    lambda;
     double   *lambda_vec;
     int       ndhmax = ir->nstenergy/ir->nstcalcenergy;
     t_lambda *fep    = ir->fepvals;

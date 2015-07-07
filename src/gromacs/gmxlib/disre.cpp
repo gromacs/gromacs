@@ -44,6 +44,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include <algorithm>
+
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
@@ -63,7 +65,6 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_fcdata *fcd, t_state *state, gmx_bool bIsREMD)
 {
     int                  fa, nmol, i, npair, np;
-    t_iparams           *ip;
     t_disresdata        *dd;
     history_t           *hist;
     gmx_mtop_ilistloop_t iloop;
@@ -111,8 +112,6 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
         dd->ETerm     = exp(-(ir->delta_t/ir->dr_tau));
     }
     dd->ETerm1        = 1.0 - dd->ETerm;
-
-    ip = mtop->ffparams.iparams;
 
     dd->nres  = 0;
     dd->npair = 0;
@@ -266,12 +265,11 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                      t_fcdata *fcd, history_t *hist)
 {
     atom_id         ai, aj;
-    int             fa, res, i, pair, ki, kj, m;
+    int             fa, res, pair;
     int             type, npair, np;
     rvec            dx;
     real           *rt, *rm3tav, *Rtl_6, *Rt_6, *Rtav_6;
     real            rt_1, rt_3, rt2;
-    ivec            it, jt, dt;
     t_disresdata   *dd;
     real            ETerm, ETerm1, cf1 = 0, cf2 = 0, invn = 0;
     gmx_bool        bTav;
@@ -387,7 +385,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
     real            tav_viol_Rtav7, instant_viol_Rtav7;
     real            up1, up2, low;
     gmx_bool        bConservative, bMixed, bViolation;
-    ivec            it, jt, dt;
+    ivec            dt;
     t_disresdata   *dd;
     int             dr_weighting;
     gmx_bool        dr_bMixed;
@@ -516,7 +514,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             /* Correct the force for the number of restraints */
             if (bConservative)
             {
-                f_scal  = max(f_scal, fmax_scal);
+                f_scal  = std::max(f_scal, fmax_scal);
                 if (!bMixed)
                 {
                     f_scal *= Rtav/Rtav_6[res];
@@ -531,7 +529,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             else
             {
                 f_scal /= (real)npair;
-                f_scal  = max(f_scal, fmax_scal);
+                f_scal  = std::max(f_scal, fmax_scal);
             }
 
             /* Exert the force ... */

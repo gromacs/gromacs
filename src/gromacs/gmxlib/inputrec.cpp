@@ -38,6 +38,8 @@
 
 #include "gromacs/legacyheaders/inputrec.h"
 
+#include <algorithm>
+
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
@@ -116,7 +118,7 @@ int ir_optimal_nsttcouple(const t_inputrec *ir)
         {
             if (ir->opts.tau_t[g] > 0)
             {
-                tau_min = min(tau_min, ir->opts.tau_t[g]);
+                tau_min = std::min(tau_min, ir->opts.tau_t[g]);
             }
         }
     }

@@ -138,7 +138,6 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 {
     gmx_nodecomm_t *nc;
-    int             n, rank, nodehash, ng, ni;
 
     /* Many MPI implementations do not optimize MPI_Allreduce
      * (and probably also other global communication calls)
@@ -156,6 +155,8 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     nc->bUse = FALSE;
 #ifndef GMX_THREAD_MPI
 #ifdef GMX_MPI
+    int n, rank, nodehash, ng, ni;
+
     MPI_Comm_size(cr->mpi_comm_mygroup, &n);
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
 

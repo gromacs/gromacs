@@ -53,7 +53,7 @@
 
 static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
 {
-    int i, j;
+    int i;
 
     for (i = 0; (i < ngtc); i++)
     {
@@ -237,7 +237,7 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
               gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
-    real          T, ek;
+    real          T;
     t_grp_tcstat *tcstat;
     real          nrdf, nd, *ndf;
 
