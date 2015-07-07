@@ -338,10 +338,10 @@
 #cmakedefine HAVE_SCHED_H
 
 /* Define to 1 if you have the POSIX <regex.h> header file. */
-#cmakedefine HAVE_POSIX_REGEX
+#cmakedefine01 HAVE_POSIX_REGEX
 
 /* Define to 1 if you have the C++11 <regex> header file. */
-#cmakedefine HAVE_CXX11_REGEX
+#cmakedefine01 HAVE_CXX11_REGEX
 
 /* Define to 1 if you have the sysconf() function */
 #cmakedefine HAVE_SYSCONF
