@@ -1487,7 +1487,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         npmenodes = 0;
     }
 
-#ifndef GMX_NO_RENAME
+#if !GMX_NO_RENAME
     /* make the new temporary filename */
     snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
     strcpy(fntemp, fn);
@@ -1642,7 +1642,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     /* we don't move the checkpoint if the user specified they didn't want it,
        or if the fsyncs failed */
-#ifndef GMX_NO_RENAME
+#if !GMX_NO_RENAME
     if (!bNumberAndKeep && !ret)
     {
         if (gmx_fexist(fn))
