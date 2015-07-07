@@ -165,8 +165,12 @@ if(REGRESSIONTEST_PATH)
         message(FATAL_ERROR "Perl not found. Install perl, set PERL_EXECUTABLE to the perl location, or unset REGRESSIONTEST_PATH to disable testing.")
     endif()
 
-    #currently not testing tools because they don't contain any useful tests
-    foreach(subtest simple complex kernel freeenergy pdb2gmx rotation)
+    # Currently not testing kernel because we plan to remove them
+    # before next release and they take lots of time on Jenkins.
+    #
+    # Currently not testing tools because they don't contain any
+    # useful tests.
+    foreach(subtest simple complex freeenergy pdb2gmx rotation)
         add_test(NAME regressiontests/${subtest}
             #windows requires the command to be perl and not the script
             COMMAND perl "${REGRESSIONTEST_PATH}/gmxtest.pl" ${subtest} ${ARGS})
