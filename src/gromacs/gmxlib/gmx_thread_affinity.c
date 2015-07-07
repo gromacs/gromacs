@@ -417,7 +417,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
 #endif
     }
 
-#ifdef HAVE_SCHED_GETAFFINITY
+#ifdef HAVE_SCHED_AFFINITY
     if (hw_opt->thread_affinity == threadaffOFF)
     {
         /* internal affinity setting is off, don't bother checking process affinity */
