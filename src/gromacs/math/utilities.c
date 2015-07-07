@@ -857,7 +857,7 @@ int gmx_greatest_common_divisor(int p, int q)
 
 int gmx_feenableexcept()
 {
-#ifdef HAVE_FEENABLEEXCEPT
+#if HAVE_FEENABLEEXCEPT
     return feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
     /* Author:  David N. Williams

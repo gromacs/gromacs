@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#ifdef GMX_QMMM_MOPAC
+#if GMX_QMMM_MOPAC
 
 #include <math.h>
 #include <stdio.h>

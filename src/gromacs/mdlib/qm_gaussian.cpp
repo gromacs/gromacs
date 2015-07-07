@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#ifdef GMX_QMMM_GAUSSIAN
+#if GMX_QMMM_GAUSSIAN
 
 #include <math.h>
 #include <stdio.h>

@@ -50,7 +50,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_X11
+#if GMX_X11
 
 #include "gromacs/fileio/writeps.h"
 
@@ -405,7 +405,7 @@ int gmx_view(int argc, char *argv[])
     if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
                           0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
-#ifndef GMX_X11
+#if !GMX_X11
         fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
 #else
         t_x11 *x11;

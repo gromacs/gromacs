@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ static void signal_handler(int n)
                 abort();
             }
             break;
-#ifdef HAVE_SIGUSR1
+#if HAVE_SIGUSR1
         case SIGUSR1:
             usr_condition = 1;
             break;
@@ -141,7 +141,7 @@ void signal_handler_install(void)
         }
         gmx_signal(SIGINT);
     }
-#ifdef HAVE_SIGUSR1
+#if HAVE_SIGUSR1
     if (getenv("GMX_NO_USR1") == NULL)
     {
         if (debug)
@@ -181,7 +181,7 @@ const char *gmx_get_signal_name(void)
 
 gmx_bool gmx_got_usr_signal(void)
 {
-#ifdef HAVE_SIGUSR1
+#if HAVE_SIGUSR1
     gmx_bool ret = (gmx_bool)usr_condition;
     usr_condition = 0;
     return ret;
