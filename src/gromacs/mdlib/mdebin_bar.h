@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,8 +53,8 @@ typedef struct
 {
     real        *dh;                    /* the raw energy data. */
     float       *dhf;                   /* raw difference data -- in floats, for storage. */
-    unsigned int ndh;                   /* number of data points */
-    unsigned int ndhmax;                /* the maximum number of points */
+    int          ndh;                   /* number of data points */
+    int          ndhmax;                /* the maximum number of points */
 
     int          nhist;                 /* the number of histograms. There can either be
                                            0 (for no histograms)
@@ -66,10 +66,10 @@ typedef struct
     int            *bin[2];             /* the histogram(s) */
     double          dx;                 /* the histogram spacing in kJ/mol. This is the
                                            same for the two histograms? */
-    unsigned int    nbins;              /* the number of bins in the histograms*/
+    int             nbins;              /* the number of bins in the histograms*/
     gmx_int64_t     x0[2];              /* the starting point in units of spacing
                                                of the histogram */
-    unsigned int    maxbin[2];          /* highest bin number with data */
+    int             maxbin[2];          /* highest bin number with data */
 
     int             type;               /* the block type according to dhbtDH, etc. */
     int             derivative;         /* The derivative direction (as an index in the lambda

@@ -62,7 +62,6 @@ t_ebin *mk_ebin(void)
 int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
 {
     int         index;
-    int         i, f;
     const char *u;
 
     index      = eb->nener;
@@ -70,7 +69,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
     srenew(eb->e, eb->nener);
     srenew(eb->e_sim, eb->nener);
     srenew(eb->enm, eb->nener);
-    for (i = index; (i < eb->nener); i++)
+    for (int i = index; (i < eb->nener); i++)
     {
         eb->e[i].e        = 0;
         eb->e[i].eav      = 0;
@@ -92,7 +91,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
              * entries would be removed from the ifunc array.
              */
             u = unit_energy;
-            for (f = 0; f < F_NRE; f++)
+            for (int f = 0; f < F_NRE; f++)
             {
                 if (strcmp(eb->enm[i].name,
                            interaction_function[f].longname) == 0)
@@ -117,8 +116,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
 
 void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
 {
-    int       i, m;
-    double    e, sum, sigma, invmm, diff;
+    double    e, invmm, diff;
     t_energy *eg, *egs;
 
     if ((index+nener > eb->nener) || (index < 0))
@@ -129,7 +127,7 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
 
     eg = &(eb->e[index]);
 
-    for (i = 0; (i < nener); i++)
+    for (int i = 0; (i < nener); i++)
     {
         eg[i].e      = ener[i];
     }
@@ -138,11 +136,11 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
     {
         egs = &(eb->e_sim[index]);
 
-        m = eb->nsum;
+        int m = eb->nsum;
 
         if (m == 0)
         {
-            for (i = 0; (i < nener); i++)
+            for (int i = 0; (i < nener); i++)
             {
                 eg[i].eav    = 0;
                 eg[i].esum   = ener[i];
@@ -153,7 +151,7 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
         {
             invmm = (1.0/(double)m)/((double)m+1.0);
 
-            for (i = 0; (i < nener); i++)
+            for (int i = 0; (i < nener); i++)
             {
                 /* Value for this component */
                 e = ener[i];
@@ -190,7 +188,7 @@ void reset_ebin_sums(t_ebin *eb)
 void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
              int prmode, gmx_bool bPrHead)
 {
-    int  i, j, i0;
+    int  i0;
     real ee = 0;
     int  rc;
     char buf[30];
@@ -209,12 +207,12 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
     {
         nener = index + nener;
     }
-    for (i = index; (i < nener) && rc >= 0; )
+    for (int i = index; (i < nener) && rc >= 0; )
     {
         if (bPrHead)
         {
             i0 = i;
-            for (j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
+            for (int j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
             {
                 if (strncmp(eb->enm[i].name, "Pres", 4) == 0)
                 {
@@ -235,7 +233,7 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
 
             i = i0;
         }
-        for (j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
+        for (int j = 0; (j < nperline) && (i < nener) && rc >= 0; j++, i++)
         {
             switch (prmode)
             {
@@ -266,14 +264,13 @@ int main(int argc, char *argv[])
 #define NS 5
 
     t_ebin *eb;
-    int     i;
     char    buf[25];
     char   *ce[NE], *ct[NT], *cs[NS];
     real    e[NE], t[NT], s[NS];
     int     ie, it, is;
 
     eb = mk_ebin();
-    for (i = 0; (i < NE); i++)
+    for (int i = 0; (i < NE); i++)
     {
         e[i] = i;
         sprintf(buf, "e%d", i);
@@ -281,7 +278,7 @@ int main(int argc, char *argv[])
     }
     ie = get_ebin_space(eb, NE, ce);
     add_ebin(eb, ie, NE, e, 0);
-    for (i = 0; (i < NS); i++)
+    for (int i = 0; (i < NS); i++)
     {
         s[i] = i;
         sprintf(buf, "s%d", i);
@@ -289,7 +286,7 @@ int main(int argc, char *argv[])
     }
     is = get_ebin_space(eb, NS, cs);
     add_ebin(eb, is, NS, s, 0);
-    for (i = 0; (i < NT); i++)
+    for (int i = 0; (i < NT); i++)
     {
         t[i] = i;
         sprintf(buf, "t%d", i);
