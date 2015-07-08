@@ -39,11 +39,12 @@
 
 #include "cstringutil.h"
 
-#include <assert.h>
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+
+#include <cassert>
+#include <cctype>
+#include <cstring>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -129,7 +130,6 @@ void upstring (char *str)
 
 void ltrim (char *str)
 {
-    char *tr;
     int   i, c;
 
     if (NULL == str)
@@ -533,7 +533,7 @@ str_to_int64_t(const char *str, char **endptr)
 
 char *gmx_step_str(gmx_int64_t i, char *buf)
 {
-    sprintf(buf, "%"GMX_PRId64, i);
+    sprintf(buf, "%" GMX_PRId64, i);
     return buf;
 }
 
