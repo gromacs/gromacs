@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3986,7 +3986,8 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
 
-            if (nsp_cj4 > 0 && nsp + nsp_cj4 > nsp_max)
+            /* Check if we should split at this cj4 to get a list of size nsp */
+            if (nsp > 0 && nsp + nsp_cj4 > nsp_max)
             {
                 /* Split the list at cj4 */
                 nbl->sci[sci].cj4_ind_end = cj4;
