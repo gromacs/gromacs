@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
@@ -360,8 +360,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     gmx_bool          bFrame, bUse, bSel, bNeedEner, bReadEner, bScanEner, bFepState;
     gmx_mtop_t        mtop;
     t_atoms           atoms;
-    t_inputrec       *ir, *irnew = NULL;
-    t_gromppopts     *gopts;
+    t_inputrec       *ir;
     t_state           state;
     rvec             *newx = NULL, *newv = NULL, *tmpx, *tmpv;
     matrix            newbox;
@@ -405,7 +404,6 @@ int gmx_convert_tpr(int argc, char *argv[])
         { "-init_fep_state", FALSE, etINT, {&init_fep_state},
           "fep state to initialize from" },
     };
-    int             nerror = 0;
 
     /* Parse the command line */
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -467,9 +465,9 @@ int gmx_convert_tpr(int argc, char *argv[])
 
         if (EI_SD(ir->eI) || ir->eI == eiBD)
         {
-            fprintf(stderr, "\nChanging ld-seed from %"GMX_PRId64 " ", ir->ld_seed);
+            fprintf(stderr, "\nChanging ld-seed from %" GMX_PRId64 " ", ir->ld_seed);
             ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
-            fprintf(stderr, "to %"GMX_PRId64 "\n\n", ir->ld_seed);
+            fprintf(stderr, "to %" GMX_PRId64 "\n\n", ir->ld_seed);
         }
 
         frame_fn = ftp2fn(efTRN, NFILE, fnm);
