@@ -944,11 +944,11 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 break;
             case etabEwald:
             case etabEwaldSwitch:
-                Vcut  = gmx_erfc(ewc*rc)/rc;
+                Vtab  = gmx_erfc(ewc*rc)/rc;
                 break;
             case etabEwaldUser:
                 /* Only calculate minus the reciprocal space contribution */
-                Vcut  = -gmx_erf(ewc*rc)/rc;
+                Vtab  = -gmx_erf(ewc*rc)/rc;
                 break;
             case etabRF:
             case etabRF_ZERO:
