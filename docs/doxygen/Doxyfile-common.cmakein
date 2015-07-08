@@ -12,6 +12,8 @@ EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@
 RECURSIVE              = YES
 EXCLUDE                = @CMAKE_SOURCE_DIR@/src/contrib \
                          @CMAKE_SOURCE_DIR@/src/external \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_blas \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/linearalgebra/gmx_lapack \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.cpp \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/parser.h \
                          @CMAKE_SOURCE_DIR@/src/gromacs/selection/scanner.cpp @NB_KERNEL_DIRS_TO_IGNORE_IN_DOXYGEN@
