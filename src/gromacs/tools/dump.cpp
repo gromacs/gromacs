@@ -38,10 +38,10 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
@@ -67,7 +67,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                      gmx_bool bSysTop)
 {
     FILE         *gp;
-    int           fp, indent, i, j, **gcount, atot;
+    int           indent, i, j, **gcount, atot;
     t_state       state;
     rvec         *f = NULL;
     t_inputrec    ir;
@@ -100,10 +100,9 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
         if (available(stdout, &tpx, 0, fn))
         {
             indent = 0;
-            indent = pr_title(stdout, indent, fn);
+            pr_title(stdout, indent, fn);
             pr_inputrec(stdout, 0, "inputrec", tpx.bIr ? &(ir) : NULL, FALSE);
 
-            indent = 0;
             pr_header(stdout, indent, "header", &(tpx));
 
             if (!bSysTop)
@@ -419,13 +418,11 @@ void list_trx(const char *fn)
 
 void list_ene(const char *fn)
 {
-    int            ndr;
     ener_file_t    in;
     gmx_bool       bCont;
     gmx_enxnm_t   *enm = NULL;
     t_enxframe    *fr;
     int            i, j, nre, b;
-    real           rav, minthird;
     char           buf[22];
 
     printf("gmx dump: %s\n", fn);
@@ -439,7 +436,6 @@ void list_ene(const char *fn)
         printf("%5d  %-24s (%s)\n", i, enm[i].name, enm[i].unit);
     }
 
-    minthird = -1.0/3.0;
     snew(fr, 1);
     do
     {

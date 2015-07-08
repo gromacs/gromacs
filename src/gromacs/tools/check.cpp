@@ -36,9 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -85,7 +85,7 @@ typedef struct {
 
 static void tpx2system(FILE *fp, gmx_mtop_t *mtop)
 {
-    int                       i, nmol, nvsite = 0;
+    int                       nmol, nvsite = 0;
     gmx_mtop_atomloop_block_t aloop;
     t_atom                   *atom;
 
@@ -144,7 +144,6 @@ static void tpx2params(FILE *fp, t_inputrec *ir)
 static void tpx2methods(const char *tpx, const char *tex)
 {
     FILE         *fp;
-    t_tpxheader   sh;
     t_inputrec    ir;
     t_state       state;
     gmx_mtop_t    mtop;
@@ -223,12 +222,11 @@ static void chk_forces(int frame, int natoms, rvec *f)
 
 static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
 {
-    int   ftype, i, k, ai, aj, type;
-    real  b0, blen, deviation, devtot;
+    int   ftype, k, ai, aj, type;
+    real  b0, blen, deviation;
     t_pbc pbc;
     rvec  dx;
 
-    devtot = 0;
     set_pbc(&pbc, ePBC, box);
     for (ftype = 0; (ftype < F_NRE); ftype++)
     {
@@ -246,7 +244,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
                         b0 = idef->iparams[type].harmonic.rA;
                         break;
                     case F_G96BONDS:
-                        b0 = sqrt(idef->iparams[type].harmonic.rA);
+                        b0 = std::sqrt(idef->iparams[type].harmonic.rA);
                         break;
                     case F_MORSE:
                         b0 = idef->iparams[type].morse.b0A;
@@ -265,7 +263,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
                     pbc_dx(&pbc, x[ai], x[aj], dx);
                     blen      = norm(dx);
                     deviation = sqr(blen-b0);
-                    if (sqrt(deviation/sqr(b0) > tol))
+                    if (std::sqrt(deviation/sqr(b0)) > tol)
                     {
                         fprintf(stderr, "Distance between atoms %d and %d is %.3f, should be %.3f\n", ai+1, aj+1, blen, b0);
                     }
@@ -281,8 +279,8 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
     t_count          count;
     t_fr_time        first, last;
     int              j = -1, new_natoms, natoms;
-    real             rdum, tt, old_t1, old_t2, prec;
-    gmx_bool         bShowTimestep = TRUE, bOK, newline = FALSE;
+    real             old_t1, old_t2;
+    gmx_bool         bShowTimestep = TRUE, newline = FALSE;
     t_trxstatus     *status;
     gmx_mtop_t       mtop;
     gmx_localtop_t  *top = NULL;
@@ -549,7 +547,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                             *(atoms->resinfo[atoms->atom[j].resind].name),
                             atoms->resinfo[atoms->atom[j].resind].nr,
                             atom_vdw[j],
-                            sqrt(r2) );
+                            std::sqrt(r2) );
                 }
             }
         }
@@ -616,7 +614,7 @@ void chk_ndx(const char *fn)
 {
     t_blocka *grps;
     char    **grpname;
-    int       i, j;
+    int       i;
 
     grps = init_index(fn, &grpname);
     if (debug)
@@ -646,7 +644,7 @@ void chk_ndx(const char *fn)
 
 void chk_enx(const char *fn)
 {
-    int            nre, fnr, ndr;
+    int            nre, fnr;
     ener_file_t    in;
     gmx_enxnm_t   *enm = NULL;
     t_enxframe    *fr;
