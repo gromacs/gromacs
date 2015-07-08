@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 #include "gmxpre.h"
 
 #include "adress.h"
+
+#include <cmath>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/simple.h"
@@ -95,7 +97,7 @@ adress_weight(rvec                 x,
             return 1;
     }
 
-    dl = sqrt(sqr_dl);
+    dl = std::sqrt(sqr_dl);
 
     /* molecule is coarse grained */
     if (dl > l2)
@@ -110,7 +112,7 @@ adress_weight(rvec                 x,
     /* hybrid region */
     else
     {
-        tmp = cos((dl-adressr)*M_PI/2/adressw);
+        tmp = std::cos((dl-adressr)*M_PI/2/adressw);
         return tmp*tmp;
     }
 }
@@ -261,10 +263,9 @@ void update_adress_weights_atom_per_atom(
         t_mdatoms *          mdatoms,
         t_pbc *              pbc)
 {
-    int            icg, k, k0, k1, d;
-    real           nrcg, inv_ncg, mtot, inv_mtot;
+    int            icg, k, k0, k1;
+    real           nrcg;
     atom_id *      cgindex;
-    rvec           ix;
     int            adresstype;
     real           adressr, adressw;
     rvec *         ref;
@@ -326,7 +327,7 @@ update_adress_weights_cog(t_iparams            ip[],
                           t_mdatoms *          mdatoms,
                           t_pbc *              pbc)
 {
-    int            i, j, k, nr, nra, inc;
+    int            i, j, nr, nra, inc;
     int            ftype, adresstype;
     t_iatom        avsite, ai, aj, ak, al;
     t_iatom *      ia;
@@ -504,7 +505,7 @@ adress_thermo_force(int                  start,
                     t_mdatoms *          mdatoms,
                     t_pbc *              pbc)
 {
-    int              iatom, n0, nnn, nrcg, i;
+    int              iatom, n0, nnn, i;
     int              adresstype;
     real             adressw, adressr;
     atom_id *        cgindex;
@@ -514,8 +515,8 @@ adress_thermo_force(int                  start,
     real             tabscale;
     real *           ATFtab;
     rvec             dr;
-    real             w, wsq, wmin1, wmin1sq, wp, wt, rinv, sqr_dl, dl;
-    real             eps, eps2, F, Geps, Heps2, Fp, dmu_dwp, dwp_dr, fscal;
+    real             w, wt, rinv, sqr_dl, dl;
+    real             eps, eps2, F, Geps, Heps2, Fp, fscal;
 
     adresstype        = fr->adress_type;
     adressw           = fr->adress_hy_width;
@@ -583,7 +584,7 @@ adress_thermo_force(int                  start,
                             rinv = 0.0;
                     }
 
-                    dl = sqrt(sqr_dl);
+                    dl = std::sqrt(sqr_dl);
                     /* table origin is adress center */
                     wt               = dl*tabscale;
                     n0               = wt;
