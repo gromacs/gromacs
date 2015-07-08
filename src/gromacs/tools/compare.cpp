@@ -35,11 +35,14 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /* This file is completely threadsafe - keep it that way! */
+
 #include "gmxpre.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
@@ -73,9 +76,9 @@ static void cmp_int64(FILE *fp, const char *s, gmx_int64_t i1, gmx_int64_t i2)
     if (i1 != i2)
     {
         fprintf(fp, "%s (", s);
-        fprintf(fp, "%"GMX_PRId64, i1);
+        fprintf(fp, "%" GMX_PRId64, i1);
         fprintf(fp, " - ");
-        fprintf(fp, "%"GMX_PRId64, i2);
+        fprintf(fp, "%" GMX_PRId64, i2);
         fprintf(fp, ")\n");
     }
 }
@@ -147,7 +150,7 @@ static gmx_bool cmp_bool(FILE *fp, const char *s, int index, gmx_bool b1, gmx_bo
 static void cmp_str(FILE *fp, const char *s, int index,
                     const char *s1, const char *s2)
 {
-    if (strcmp(s1, s2) != 0)
+    if (std::strcmp(s1, s2) != 0)
     {
         if (index != -1)
         {
@@ -347,7 +350,7 @@ static void cmp_idef(FILE *fp, t_idef *id1, t_idef *id2, real ftol, real abstol)
     {
         cmp_int(fp, "idef->ntypes", -1, id1->ntypes, id2->ntypes);
         cmp_int(fp, "idef->atnr",  -1, id1->atnr, id2->atnr);
-        for (i = 0; (i < min(id1->ntypes, id2->ntypes)); i++)
+        for (i = 0; (i < std::min(id1->ntypes, id2->ntypes)); i++)
         {
             sprintf(buf1, "idef->functype[%d]", i);
             sprintf(buf2, "idef->iparam[%d]", i);
@@ -372,7 +375,6 @@ static void cmp_idef(FILE *fp, t_idef *id1, t_idef *id2, real ftol, real abstol)
 
 static void cmp_block(FILE *fp, t_block *b1, t_block *b2, const char *s)
 {
-    int  i, j, k;
     char buf[32];
 
     fprintf(fp, "comparing block %s\n", s);
@@ -382,7 +384,6 @@ static void cmp_block(FILE *fp, t_block *b1, t_block *b2, const char *s)
 
 static void cmp_blocka(FILE *fp, t_blocka *b1, t_blocka *b2, const char *s)
 {
-    int  i, j, k;
     char buf[32];
 
     fprintf(fp, "comparing blocka %s\n", s);
@@ -394,9 +395,6 @@ static void cmp_blocka(FILE *fp, t_blocka *b1, t_blocka *b2, const char *s)
 
 static void cmp_atom(FILE *fp, int index, t_atom *a1, t_atom *a2, real ftol, real abstol)
 {
-    int  i;
-    char buf[256];
-
     if (a2)
     {
         cmp_us(fp, "atom.type", index, a1->type, a2->type);
@@ -442,8 +440,6 @@ static void cmp_atoms(FILE *fp, t_atoms *a1, t_atoms *a2, real ftol, real abstol
 
 static void cmp_top(FILE *fp, t_topology *t1, t_topology *t2, real ftol, real abstol)
 {
-    int i;
-
     fprintf(fp, "comparing top\n");
     if (t2)
     {
@@ -464,7 +460,7 @@ static void cmp_top(FILE *fp, t_topology *t1, t_topology *t2, real ftol, real ab
 static void cmp_groups(FILE *fp, gmx_groups_t *g0, gmx_groups_t *g1,
                        int natoms0, int natoms1)
 {
-    int  i, j, ndiff;
+    int  i, j;
     char buf[32];
 
     fprintf(fp, "comparing groups\n");
@@ -515,7 +511,7 @@ static void cmp_rvecs(FILE *fp, const char *title, int n, rvec x1[], rvec x2[],
                 ssd += d*d;
             }
         }
-        fprintf(fp, "%s RMSD %g\n", title, sqrt(ssd/n));
+        fprintf(fp, "%s RMSD %g\n", title, std::sqrt(ssd/n));
     }
     else
     {
@@ -562,7 +558,7 @@ static void cmp_rvecs_rmstol(FILE *fp, const char *title, int n, rvec x1[], rvec
             rms_x1 += d*d;
         }
     }
-    rms_x1 = sqrt(rms_x1/(DIM*n));
+    rms_x1 = std::sqrt(rms_x1/(DIM*n));
     /* And now do the actual comparision with a hopefully realistic abstol. */
     for (i = 0; (i < n); i++)
     {
@@ -579,7 +575,7 @@ static void cmp_grpopts(FILE *fp, t_grpopts *opt1, t_grpopts *opt2, real ftol, r
     cmp_int(fp, "inputrec->grpopts.ngacc", -1, opt1->ngacc, opt2->ngacc);
     cmp_int(fp, "inputrec->grpopts.ngfrz", -1, opt1->ngfrz, opt2->ngfrz);
     cmp_int(fp, "inputrec->grpopts.ngener", -1, opt1->ngener, opt2->ngener);
-    for (i = 0; (i < min(opt1->ngtc, opt2->ngtc)); i++)
+    for (i = 0; (i < std::min(opt1->ngtc, opt2->ngtc)); i++)
     {
         cmp_real(fp, "inputrec->grpopts.nrdf", i, opt1->nrdf[i], opt2->nrdf[i], ftol, abstol);
         cmp_real(fp, "inputrec->grpopts.ref_t", i, opt1->ref_t[i], opt2->ref_t[i], ftol, abstol);
@@ -611,11 +607,11 @@ static void cmp_grpopts(FILE *fp, t_grpopts *opt1, t_grpopts *opt2, real ftol, r
             }
         }
     }
-    for (i = 0; (i < min(opt1->ngacc, opt2->ngacc)); i++)
+    for (i = 0; (i < std::min(opt1->ngacc, opt2->ngacc)); i++)
     {
         cmp_rvec(fp, "inputrec->grpopts.acc", i, opt1->acc[i], opt2->acc[i], ftol, abstol);
     }
-    for (i = 0; (i < min(opt1->ngfrz, opt2->ngfrz)); i++)
+    for (i = 0; (i < std::min(opt1->ngfrz, opt2->ngfrz)); i++)
     {
         cmp_ivec(fp, "inputrec->grpopts.nFreeze", i, opt1->nFreeze[i], opt2->nFreeze[i]);
     }
@@ -630,7 +626,7 @@ static void cmp_cosines(FILE *fp, const char *s, t_cosines c1[DIM], t_cosines c2
     {
         sprintf(buf, "inputrec->%s[%d]", s, m);
         cmp_int(fp, buf, 0, c1->n, c2->n);
-        for (i = 0; (i < min(c1->n, c2->n)); i++)
+        for (i = 0; (i < std::min(c1->n, c2->n)); i++)
         {
             cmp_real(fp, buf, i, c1->a[i], c2->a[i], ftol, abstol);
             cmp_real(fp, buf, i, c1->phi[i], c2->phi[i], ftol, abstol);
@@ -712,7 +708,7 @@ static void cmp_fepvals(FILE *fp, t_lambda *fep1, t_lambda *fep2, real ftol, rea
     cmp_int(fp, "inputrec->fepvals->n_lambda", -1, fep1->n_lambda, fep2->n_lambda);
     for (i = 0; i < efptNR; i++)
     {
-        for (j = 0; j < min(fep1->n_lambda, fep2->n_lambda); j++)
+        for (j = 0; j < std::min(fep1->n_lambda, fep2->n_lambda); j++)
         {
             cmp_double(fp, "inputrec->fepvals->all_lambda", -1, fep1->all_lambda[i][j], fep2->all_lambda[i][j], ftol, abstol);
         }
@@ -822,12 +818,12 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_int(fp, "inputrec->bSimTemp", -1, ir1->bSimTemp, ir2->bSimTemp);
     if ((ir1->bSimTemp == ir2->bSimTemp) && (ir1->bSimTemp))
     {
-        cmp_simtempvals(fp, ir1->simtempvals, ir2->simtempvals, min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
+        cmp_simtempvals(fp, ir1->simtempvals, ir2->simtempvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
     cmp_int(fp, "inputrec->bExpanded", -1, ir1->bExpanded, ir2->bExpanded);
     if ((ir1->bExpanded == ir2->bExpanded) && (ir1->bExpanded))
     {
-        cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals, min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
+        cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
     cmp_int(fp, "inputrec->nwall", -1, ir1->nwall, ir2->nwall);
     cmp_int(fp, "inputrec->wall_type", -1, ir1->wall_type, ir2->wall_type);
@@ -976,7 +972,6 @@ void comp_tpx(const char *fn1, const char *fn2,
               gmx_bool bRMSD, real ftol, real abstol)
 {
     const char  *ff[2];
-    t_tpxheader  sh[2];
     t_inputrec   ir[2];
     t_state      state[2];
     gmx_mtop_t   mtop[2];
@@ -1060,21 +1055,21 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
     }
     if (cmp_bool(fp, "bX", -1, fr1->bX, fr2->bX))
     {
-        cmp_rvecs(fp, "x", min(fr1->natoms, fr2->natoms), fr1->x, fr2->x, bRMSD, ftol, abstol);
+        cmp_rvecs(fp, "x", std::min(fr1->natoms, fr2->natoms), fr1->x, fr2->x, bRMSD, ftol, abstol);
     }
     if (cmp_bool(fp, "bV", -1, fr1->bV, fr2->bV))
     {
-        cmp_rvecs(fp, "v", min(fr1->natoms, fr2->natoms), fr1->v, fr2->v, bRMSD, ftol, abstol);
+        cmp_rvecs(fp, "v", std::min(fr1->natoms, fr2->natoms), fr1->v, fr2->v, bRMSD, ftol, abstol);
     }
     if (cmp_bool(fp, "bF", -1, fr1->bF, fr2->bF))
     {
         if (bRMSD)
         {
-            cmp_rvecs(fp, "f", min(fr1->natoms, fr2->natoms), fr1->f, fr2->f, bRMSD, ftol, abstol);
+            cmp_rvecs(fp, "f", std::min(fr1->natoms, fr2->natoms), fr1->f, fr2->f, bRMSD, ftol, abstol);
         }
         else
         {
-            cmp_rvecs_rmstol(fp, "f", min(fr1->natoms, fr2->natoms), fr1->f, fr2->f, ftol, abstol);
+            cmp_rvecs_rmstol(fp, "f", std::min(fr1->natoms, fr2->natoms), fr1->f, fr2->f, ftol, abstol);
         }
     }
     if (cmp_bool(fp, "bBox", -1, fr1->bBox, fr2->bBox))
@@ -1133,25 +1128,25 @@ static real ener_tensor_diag(int n, int *ind1, int *ind2,
                              int *tensi, int i,
                              t_energy e1[], t_energy e2[])
 {
-    int  d1, d2;
-    int  len;
-    int  j;
-    real prod1, prod2;
-    int  nfound;
+    int    d1, d2;
+    int    j;
+    real   prod1, prod2;
+    int    nfound;
+    size_t len;
 
     d1 = tensi[i]/DIM;
     d2 = tensi[i] - d1*DIM;
 
     /* Find the diagonal elements d1 and d2 */
-    len    = strlen(enm1[ind1[i]].name);
+    len    = std::strlen(enm1[ind1[i]].name);
     prod1  = 1;
     prod2  = 1;
     nfound = 0;
     for (j = 0; j < n; j++)
     {
         if (tensi[j] >= 0 &&
-            strlen(enm1[ind1[j]].name) == len &&
-            strncmp(enm1[ind1[i]].name, enm1[ind1[j]].name, len-2) == 0 &&
+            std::strlen(enm1[ind1[j]].name) == len &&
+            std::strncmp(enm1[ind1[i]].name, enm1[ind1[j]].name, len-2) == 0 &&
             (tensi[j] == d1*DIM+d1 || tensi[j] == d2*DIM+d2))
         {
             prod1 *= fabs(e1[ind1[j]].e);
@@ -1162,7 +1157,7 @@ static real ener_tensor_diag(int n, int *ind1, int *ind2,
 
     if (nfound == 2)
     {
-        return 0.5*(sqrt(prod1) + sqrt(prod2));
+        return 0.5*(std::sqrt(prod1) + std::sqrt(prod2));
     }
     else
     {
@@ -1174,15 +1169,15 @@ static gmx_bool enernm_equal(const char *nm1, const char *nm2)
 {
     int len1, len2;
 
-    len1 = strlen(nm1);
-    len2 = strlen(nm2);
+    len1 = std::strlen(nm1);
+    len2 = std::strlen(nm2);
 
     /* Remove " (bar)" at the end of a name */
-    if (len1 > 6 && strcmp(nm1+len1-6, " (bar)") == 0)
+    if (len1 > 6 && std::strcmp(nm1+len1-6, " (bar)") == 0)
     {
         len1 -= 6;
     }
-    if (len2 > 6 && strcmp(nm2+len2-6, " (bar)") == 0)
+    if (len2 > 6 && std::strcmp(nm2+len2-6, " (bar)") == 0)
     {
         len2 -= 6;
     }
@@ -1206,7 +1201,7 @@ static void cmp_energies(FILE *fp, int step1, int step2,
     {
         ii       = ind1[i];
         tensi[i] = -1;
-        len      = strlen(enm1[ii].name);
+        len      = std::strlen(enm1[ii].name);
         if (len > 3 && enm1[ii].name[len-3] == '-')
         {
             d1 = enm1[ii].name[len-2] - 'X';
@@ -1238,7 +1233,7 @@ static void cmp_energies(FILE *fp, int step1, int step2,
             if (abstol_i > 0)
             {
                 /* We found a diagonal, we need to check with the minimum tolerance */
-                abstol_i = min(abstol_i, abstol);
+                abstol_i = std::min(abstol_i, abstol);
             }
             else
             {
@@ -1374,10 +1369,9 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
 
 void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const char *lastener)
 {
-    int            nre, nre1, nre2, block;
+    int            nre, nre1, nre2;
     ener_file_t    in1, in2;
     int            i, j, maxener, *ind1, *ind2, *have;
-    char           buf[256];
     gmx_enxnm_t   *enm1 = NULL, *enm2 = NULL;
     t_enxframe    *fr1, *fr2;
     gmx_bool       b1, b2;
@@ -1431,7 +1425,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
     maxener = nre;
     for (i = 0; i < nre; i++)
     {
-        if ((lastener != NULL) && (strstr(enm1[i].name, lastener) != NULL))
+        if ((lastener != NULL) && (std::strstr(enm1[i].name, lastener) != NULL))
         {
             maxener = i+1;
             break;

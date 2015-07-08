@@ -38,10 +38,10 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
@@ -67,7 +67,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                      gmx_bool bSysTop)
 {
     FILE         *gp;
-    int           fp, indent, i, j, **gcount, atot;
+    int           indent, i, j, **gcount, atot;
     t_state       state;
     rvec         *f = NULL;
     t_inputrec    ir;
@@ -419,13 +419,12 @@ void list_trx(const char *fn)
 
 void list_ene(const char *fn)
 {
-    int            ndr;
     ener_file_t    in;
     gmx_bool       bCont;
     gmx_enxnm_t   *enm = NULL;
     t_enxframe    *fr;
     int            i, j, nre, b;
-    real           rav, minthird;
+    real           minthird;
     char           buf[22];
 
     printf("gmx dump: %s\n", fn);
