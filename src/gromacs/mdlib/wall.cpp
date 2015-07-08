@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,6 @@
 
 #include "gmxpre.h"
 
-#include <math.h>
 #include <string.h>
 
 #include "gromacs/fileio/filenm.h"
@@ -55,7 +54,7 @@ void make_wall_tables(FILE *fplog, const output_env_t oenv,
                       const gmx_groups_t *groups,
                       t_forcerec *fr)
 {
-    int           w, negp_pp, egp, i, j;
+    int           negp_pp;
     int          *nm_ind;
     char          buf[STRLEN];
     t_forcetable *tab;
@@ -70,10 +69,10 @@ void make_wall_tables(FILE *fplog, const output_env_t oenv,
     }
 
     snew(fr->wall_tab, ir->nwall);
-    for (w = 0; w < ir->nwall; w++)
+    for (int w = 0; w < ir->nwall; w++)
     {
         snew(fr->wall_tab[w], negp_pp);
-        for (egp = 0; egp < negp_pp; egp++)
+        for (int egp = 0; egp < negp_pp; egp++)
         {
             /* If the energy group pair is excluded, we don't need a table */
             if (!(fr->egp_flags[egp*ir->opts.ngener+negp_pp+w] & EGP_EXCL))
@@ -86,9 +85,9 @@ void make_wall_tables(FILE *fplog, const output_env_t oenv,
                         ftp2ext(efXVG));
                 *tab = make_tables(fplog, oenv, fr, FALSE, buf, 0, GMX_MAKETABLES_FORCEUSER);
                 /* Since wall have no charge, we can compress the table */
-                for (i = 0; i <= tab->n; i++)
+                for (int i = 0; i <= tab->n; i++)
                 {
-                    for (j = 0; j < 8; j++)
+                    for (int j = 0; j < 8; j++)
                     {
                         tab->data[8*i+j] = tab->data[12*i+4+j];
                     }
@@ -109,13 +108,13 @@ static void wall_error(int a, rvec *x, real r)
 real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
               rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb)
 {
-    int             nwall, w, lam, i;
+    int             nwall;
     int             ntw[2], at, ntype, ngid, ggid, *egp_flags, *type;
     real           *nbfp, lamfac, fac_d[2], fac_r[2], Cd, Cr, Vtot, Fwall[2];
     real            wall_z[2], r, mr, r1, r2, r4, Vd, Vr, V = 0, Fd, Fr, F = 0, dvdlambda;
     dvec            xf_z;
     int             n0, nnn;
-    real            tabscale, *VFtab, rt, eps, eps2, Yt, Ft, Geps, Heps, Heps2, Fp, VV, FF;
+    real            tabscale, *VFtab, rt, eps, eps2, Yt, Ft, Geps, Heps2, Fp, VV, FF;
     unsigned short *gid = md->cENER;
     t_forcetable   *tab;
 
@@ -125,7 +124,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
     nbfp      = fr->nbfp;
     egp_flags = fr->egp_flags;
 
-    for (w = 0; w < nwall; w++)
+    for (int w = 0; w < nwall; w++)
     {
         ntw[w] = 2*ntype*ir->wall_atomtype[w];
         switch (ir->wall_type)
@@ -149,7 +148,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
     Vtot      = 0;
     dvdlambda = 0;
     clear_dvec(xf_z);
-    for (lam = 0; lam < (md->nPerturbed ? 2 : 1); lam++)
+    for (int lam = 0; lam < (md->nPerturbed ? 2 : 1); lam++)
     {
         if (md->nPerturbed)
         {
@@ -169,9 +168,9 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
             lamfac = 1;
             type   = md->typeA;
         }
-        for (i = 0; i < md->homenr; i++)
+        for (int i = 0; i < md->homenr; i++)
         {
-            for (w = 0; w < nwall; w++)
+            for (int w = 0; w < std::min(nwall, 2); w++)
             {
                 /* The wall energy groups are always at the end of the list */
                 ggid = gid[i]*ngid + ngid - nwall + w;
@@ -210,7 +209,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                             VFtab    = tab->data;
 
                             rt    = r*tabscale;
-                            n0    = rt;
+                            n0    = static_cast<int>(rt);
                             if (n0 >= tab->n)
                             {
                                 /* Beyond the table range, set V and F to zero */
@@ -323,7 +322,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
         inc_nrnb(nrnb, eNR_WALLS, md->homenr);
     }
 
-    for (i = 0; i < DIM; i++)
+    for (int i = 0; i < DIM; i++)
     {
         fr->vir_wall_z[i] = -0.5*xf_z[i];
     }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,7 +75,7 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
                 ca1[zi] = dd->cgindex[dd_zones->cg_range[zi+1]];
             }
             i = 0;
-            for (zi = 0; zi < dd_zones->nizone; zi++)
+            for (zi = 0; zi < std::min(dd_zones->nizone, dd_zones->n); zi++)
             {
                 zj0 = dd_zones->izone[zi].j0;
                 zj1 = dd_zones->izone[zi].j1;
@@ -160,34 +160,6 @@ static void set_mat(FILE *fp, int **mat, int i0, int ni, int j0, int nj,
 
 void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL)
 {
-#if 0
-    static FILE *fp = NULL;
-    char         buf[STRLEN];
-    int          n, i;
-
-    if (fp == NULL)
-    {
-        if (PAR(cr))
-        {
-            sprintf(buf, "nlist_n%d.txt", cr->nodeid);
-        }
-        else
-        {
-            sprintf(buf, "nlist.txt");
-        }
-        fp = gmx_fio_fopen(buf, "w");
-    }
-    fprintf(fp, "%s\n", header);
-
-    for (n = 0; (n < fr->nnblists); n++)
-    {
-        for (i = 0; (i < eNL_NR); i++)
-        {
-            write_nblist(fp, cr->dd, &fr->nblists[n].nlist_sr[i], nDNL);
-        }
-    }
-#endif
-    char buf[STRLEN];
     int  n, i;
 
     fprintf(out, "%s\n", header);
