@@ -43,7 +43,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
@@ -51,6 +50,8 @@
 #ifdef HAVE__ALIGNED_MALLOC
 #include <malloc.h>
 #endif
+
+#include <cstring>
 
 #include "thread_mpi/threads.h"
 
@@ -131,7 +132,7 @@ void *save_malloc(const char *name, const char *file, int line, size_t size)
         if ((p = malloc(size)) == NULL)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to malloc %"GMX_PRId64 " bytes for %s\n"
+                      "Not enough memory. Failed to malloc %" GMX_PRId64 " bytes for %s\n"
                       "(called from file %s, line %d)",
                       (gmx_int64_t)size, name, file, line);
         }
@@ -169,8 +170,8 @@ void *save_calloc(const char *name, const char *file, int line,
         if ((p = malloc((size_t)nelem*(size_t)elsize)) == NULL)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to calloc %"GMX_PRId64
-                      " elements of size %"GMX_PRId64
+                      "Not enough memory. Failed to calloc %" GMX_PRId64
+                      " elements of size %" GMX_PRId64
                       " for %s\n(called from file %s, line %d)",
                       (gmx_int64_t)nelem, (gmx_int64_t)elsize,
                       name, file, line);
@@ -180,8 +181,8 @@ void *save_calloc(const char *name, const char *file, int line,
         if ((p = calloc((size_t)nelem, (size_t)elsize)) == NULL)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to calloc %"GMX_PRId64
-                      " elements of size %"GMX_PRId64
+                      "Not enough memory. Failed to calloc %" GMX_PRId64
+                      " elements of size %" GMX_PRId64
                       " for %s\n(called from file %s, line %d)",
                       (gmx_int64_t)nelem, (gmx_int64_t)elsize, name, file, line);
         }
@@ -225,7 +226,7 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
         if (p == NULL)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to realloc %"GMX_PRId64 " bytes for %s, %s=%x\n"
+                      "Not enough memory. Failed to realloc %" GMX_PRId64 " bytes for %s, %s=%x\n"
                       "(called from file %s, line %d)",
                       (gmx_int64_t)size, name, name, ptr, file, line);
         }
@@ -343,7 +344,6 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
 /* This routine can NOT be called with any pointer */
 void save_free_aligned(const char gmx_unused *name, const char gmx_unused *file, int gmx_unused line, void *ptr)
 {
-    int   i, j;
     void *free = ptr;
 
     if (NULL != ptr)
@@ -375,7 +375,7 @@ int over_alloc_dd(int n)
 {
     if (g_bOverAllocDD)
     {
-        return OVER_ALLOC_FAC*n + 100;
+        return static_cast<int>(OVER_ALLOC_FAC*n + 100);
     }
     else
     {
