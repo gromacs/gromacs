@@ -45,6 +45,18 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+/*! \brief Return whether mdrun can use more than one GPU per node
+ *
+ * The OpenCL implementation cannot use more than one GPU per node,
+ * for example. */
+gmx_bool gmx_multiple_gpu_per_node_supported();
+
+/*! \brief Return whether PP ranks can share a GPU
+ *
+ * The OpenCL implementation cannot share a GPU between ranks, for
+ * example. */
+gmx_bool gmx_gpu_sharing_supported();
+
 /* the init and consistency functions depend on commrec that may not be
    consistent in cuda because MPI types don't exist there.  */
 #ifndef __CUDACC__
