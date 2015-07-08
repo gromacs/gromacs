@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
- * Copyright (c) 2011,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -158,7 +158,6 @@ update_adress_weights_atom_per_atom(int                  cg0,
  *
  * \param[in] cg0 first charge group to update
  * \param[in] cg1 last+1 charge group to update
- * \param[in] cgs block containing the cg index
  * \param[in] x array with all the particle positions
  * \param[in,out] f the force array pointing at f_novirsum from sim_util.c
  * \param[in] fr the forcerec containing all the parameters
@@ -168,7 +167,6 @@ update_adress_weights_atom_per_atom(int                  cg0,
 void
 adress_thermo_force(int                  cg0,
                     int                  cg1,
-                    t_block *            cgs,
                     rvec                 x[],
                     rvec                 f[],
                     t_forcerec *         fr,
