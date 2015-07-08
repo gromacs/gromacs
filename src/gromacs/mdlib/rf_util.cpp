@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include <cmath>
+
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/names.h"
@@ -55,7 +57,7 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
      * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
      * and force correction for all excluded pairs, including self pairs.
      */
-    int         top, i, j, j1, j2, k, ki;
+    int         i, j, j1, j2, k, ki;
     double      q2sumA, q2sumB, ener;
     const real *chargeA, *chargeB;
     real        ek, ec, L1, qiA, qiB, qqA, qqB, qqL, v;
@@ -221,7 +223,7 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
             }
             /* Ionic strength (only needed for eelGRF */
             I       = 0.5*zsq/vol;
-            *kappa  = sqrt(2*I/(EPSILON0*eps_rf*BOLTZ*Temp));
+            *kappa  = std::sqrt(2*I/(EPSILON0*eps_rf*BOLTZ*Temp));
         }
         else
         {
@@ -242,7 +244,8 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
             *krf = ((eps_rf - eps_r)*k1 + 0.5*k2)/((2*eps_rf + eps_r)*k1 + k2)/(Rc*Rc*Rc);
         }
         *crf   = 1/Rc + *krf*Rc*Rc;
-        rmin   = pow(*krf*2.0, -1.0/3.0);
+        // Make sure we don't lose resolution in pow() by casting real arg to double
+        rmin   = std::pow(static_cast<double>(*krf*2.0), -1.0/3.0);
 
         if (fplog)
         {

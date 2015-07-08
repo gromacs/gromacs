@@ -1871,7 +1871,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (bDoAdressWF && fr->adress_icor == eAdressICThermoForce)
         {
             /* Compute thermodynamic force in hybrid AdResS region */
-            adress_thermo_force(start, homenr, &(top->cgs), x, fr->f_novirsum, fr, mdatoms,
+            adress_thermo_force(start, homenr, x, fr->f_novirsum, fr, mdatoms,
                                 inputrec->ePBC == epbcNONE ? NULL : &pbc);
         }
 
