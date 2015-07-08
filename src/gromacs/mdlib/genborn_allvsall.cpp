@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,9 @@
 
 #include "genborn_allvsall.h"
 
-#include <math.h>
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/network.h"
@@ -115,12 +117,10 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
                                 gmx_bool                       bInclude13,
                                 gmx_bool                       bInclude14)
 {
-    int i, j, k, tp;
+    int i, j, k;
     int a1, a2;
-    int nj0, nj1;
     int max_offset;
     int max_excl_offset;
-    int nj;
 
     /* This routine can appear to be a bit complex, but it is mostly book-keeping.
      * To enable the fast all-vs-all kernel we need to be able to stream through all coordinates
@@ -168,7 +168,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
                 }
                 if (k > 0 && k <= max_offset)
                 {
-                    max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
+                    max_excl_offset = std::max(k, max_excl_offset);
                 }
             }
         }
@@ -194,7 +194,7 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
                 }
                 if (k > 0 && k <= max_offset)
                 {
-                    max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
+                    max_excl_offset = std::max(k, max_excl_offset);
                 }
             }
         }
@@ -220,11 +220,11 @@ setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t     *   aadata,
                 }
                 if (k > 0 && k <= max_offset)
                 {
-                    max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
+                    max_excl_offset = std::max(k, max_excl_offset);
                 }
             }
         }
-        max_excl_offset = (max_offset < max_excl_offset) ? max_offset : max_excl_offset;
+        max_excl_offset = std::min(max_offset, max_excl_offset);
 
         aadata->jindex_gb[3*i+1] = i+1+max_excl_offset;
 
@@ -329,9 +329,7 @@ genborn_allvsall_setup(gmx_allvsallgb2_data_t     **  p_aadata,
                        gmx_bool                       bInclude13,
                        gmx_bool                       bInclude14)
 {
-    int                     i, j, idx;
     gmx_allvsallgb2_data_t *aadata;
-    real                   *p;
 
     snew(aadata, 1);
     *p_aadata = aadata;
@@ -679,7 +677,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                     sk2_rinv = sk2*rinv;
                     prod     = 0.25*sk2_rinv;
 
-                    log_term = log(uij*lij_inv);
+                    log_term = std::log(uij*lij_inv);
                     /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
                     tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
 
@@ -730,7 +728,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                     prod     = 0.25 * sk2_rinv;
 
                     /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
-                    log_term = log(uij*lij_inv);
+                    log_term = std::log(uij*lij_inv);
 
                     tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
 
@@ -806,7 +804,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25*sk2_rinv;
 
-                log_term = log(uij*lij_inv);
+                log_term = std::log(uij*lij_inv);
                 /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
                 tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
 
@@ -857,7 +855,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                 prod     = 0.25 * sk2_rinv;
 
                 /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
-                log_term = log(uij*lij_inv);
+                log_term = std::log(uij*lij_inv);
 
                 tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
 
@@ -898,7 +896,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
                 min_rad = rai + born->gb_doffset;
                 rad     = 1.0/sum_ai;
 
-                born->bRad[i]   = rad > min_rad ? rad : min_rad;
+                born->bRad[i]   = std::max(rad, min_rad);
                 fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
             }
         }

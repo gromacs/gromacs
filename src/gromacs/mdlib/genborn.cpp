@@ -39,8 +39,11 @@
 
 #include "gromacs/legacyheaders/genborn.h"
 
-#include <math.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/pdbio.h"
@@ -119,12 +122,9 @@ static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
                          gmx_genborn_t *born, int natoms)
 {
 
-    int   i, j, i1, i2, k, m, nbond, nang, ia, ib, ic, id, nb, idx, idx2, at;
-    int   iam, ibm;
+    int   i, j, m, ia, ib;
     int   at0, at1;
-    real  length, angle;
-    real  r, ri, rj, ri2, ri3, rj2, r2, r3, r4, rk, ratio, term, h, doffset;
-    real  p1, p2, p3, factor, cosine, rab, rbc;
+    real  r, ri, rj, ri2, ri3, rj2, r3, r4, ratio, term, h, doffset;
 
     real *vsol;
     real *gp;
@@ -237,8 +237,8 @@ int init_gb(gmx_genborn_t **p_born,
             t_forcerec *fr, const t_inputrec *ir,
             const gmx_mtop_t *mtop, int gb_algorithm)
 {
-    int             i, j, m, ai, aj, jj, natoms, nalloc;
-    real            rai, sk, p, doffset;
+    int             i, jj, natoms;
+    real            rai, sk, doffset;
 
     t_atoms         atoms;
     gmx_genborn_t  *born;
@@ -363,10 +363,10 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                   rvec x[], t_nblist *nl,
                   gmx_genborn_t *born, t_mdatoms *md)
 {
-    int  i, k, n, nj0, nj1, ai, aj, type;
+    int  i, k, n, nj0, nj1, ai, aj;
     int  shift;
     real shX, shY, shZ;
-    real gpi, dr, dr2, dr4, idr4, rvdw, ratio, ccf, theta, term, rai, raj;
+    real gpi, dr2, idr4, rvdw, ratio, ccf, theta, term, rai, raj;
     real ix1, iy1, iz1, jx1, jy1, jz1, dx11, dy11, dz11;
     real rinv, idr2, idr6, vaj, dccf, cosq, sinq, prod, gpi2;
     real factor;
@@ -491,14 +491,14 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 rvec x[], t_nblist *nl,
                 gmx_genborn_t *born, t_mdatoms *md)
 {
-    int   i, k, n, ai, aj, nj0, nj1, at0, at1;
+    int   i, k, n, ai, aj, nj0, nj1;
     int   shift;
     real  shX, shY, shZ;
-    real  rai, raj, gpi, dr2, dr, sk, sk_ai, sk2, sk2_ai, lij, uij, diff2, tmp, sum_ai;
+    real  rai, raj, dr2, dr, sk, sk_ai, sk2, sk2_ai, lij, uij, diff2, tmp, sum_ai;
     real  rad, min_rad, rinv, rai_inv;
     real  ix1, iy1, iz1, jx1, jy1, jz1, dx11, dy11, dz11;
     real  lij2, uij2, lij3, uij3, t1, t2, t3;
-    real  lij_inv, dlij, duij, sk2_rinv, prod, log_term;
+    real  lij_inv, dlij, sk2_rinv, prod, log_term;
     real  doffset, raj_inv, dadx_val;
     real *gb_radius;
 
@@ -585,7 +585,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25*sk2_rinv;
 
-                log_term = log(uij*lij_inv);
+                log_term = std::log(uij*lij_inv);
 
                 tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term +
                     prod*(-diff2);
@@ -641,7 +641,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 
                 /* log_term = table_log(uij*lij_inv,born->log_table,
                    LOG_TABLE_ACCURACY); */
-                log_term = log(uij*lij_inv);
+                log_term = std::log(uij*lij_inv);
 
                 tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term +
                     prod*(-diff2);
@@ -686,7 +686,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             min_rad = rai + doffset;
             rad     = 1.0/sum_ai;
 
-            born->bRad[i]   = rad > min_rad ? rad : min_rad;
+            born->bRad[i]   = std::max(rad, min_rad);
             fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
         }
     }
@@ -706,14 +706,14 @@ static int
 calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
-    int   i, k, ai, aj, nj0, nj1, n, at0, at1;
+    int   i, k, ai, aj, nj0, nj1, n;
     int   shift;
     real  shX, shY, shZ;
-    real  rai, raj, gpi, dr2, dr, sk, sk2, lij, uij, diff2, tmp, sum_ai;
-    real  rad, min_rad, sum_ai2, sum_ai3, tsum, tchain, rinv, rai_inv, lij_inv, rai_inv2;
+    real  rai, raj, dr2, dr, sk, sk2, lij, uij, diff2, tmp, sum_ai;
+    real  sum_ai2, sum_ai3, tsum, tchain, rinv, rai_inv, lij_inv, rai_inv2;
     real  log_term, prod, sk2_rinv, sk_ai, sk2_ai;
     real  ix1, iy1, iz1, jx1, jy1, jz1, dx11, dy11, dz11;
-    real  lij2, uij2, lij3, uij3, dlij, duij, t1, t2, t3;
+    real  lij2, uij2, lij3, uij3, dlij, t1, t2, t3;
     real  doffset, raj_inv, dadx_val;
     real *gb_radius;
 
@@ -801,7 +801,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 sk2_rinv = sk2*rinv;
                 prod     = 0.25*sk2_rinv;
 
-                log_term = log(uij*lij_inv);
+                log_term = std::log(uij*lij_inv);
 
                 tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
 
@@ -853,7 +853,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 prod     = 0.25 * sk2_rinv;
 
                 /* log_term = table_log(uij*lij_inv,born->log_table,LOG_TABLE_ACCURACY); */
-                log_term = log(uij*lij_inv);
+                log_term = std::log(uij*lij_inv);
 
                 tmp      = lij-uij + 0.25*dr*diff2 + (0.5*rinv)*log_term + prod*(-diff2);
 
@@ -928,7 +928,6 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
 int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top,
                 rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb)
 {
-    real *p;
     int   cnt;
     int   ndadx;
 
@@ -1050,14 +1049,14 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
                   real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
                   real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph)
 {
-    int      i, j, n0, m, nnn, type, ai, aj;
+    int      i, j, n0, m, nnn, ai, aj;
     int      ki;
 
     real     isai, isaj;
     real     r, rsq11;
     real     rinv11, iq;
     real     isaprod, qq, gbscale, gbtabscale, Y, F, Geps, Heps2, Fp, VV, FF, rt, eps, eps2;
-    real     vgb, fgb, vcoul, fijC, dvdatmp, fscal, dvdaj;
+    real     vgb, fgb, fijC, dvdatmp, fscal;
     real     vctot;
 
     rvec     dx;
@@ -1186,7 +1185,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *
                       real *dvda, t_mdatoms *md)
 {
     int  ai, i, at0, at1;
-    real e, es, rai, rbi, term, probe, tmp, factor;
+    real e, es, rai, term, probe, tmp, factor;
     real rbi_inv, rbi_inv2;
 
     /* To keep the compiler happy */
@@ -1251,11 +1250,10 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
     int          i, k, n, ai, aj, nj0, nj1, n0, n1;
     int          shift;
     real         shX, shY, shZ;
-    real         fgb, fij, rb2, rbi, fix1, fiy1, fiz1;
-    real         ix1, iy1, iz1, jx1, jy1, jz1, dx11, dy11, dz11, rsq11;
-    real         rinv11, tx, ty, tz, rbai, rbaj, fgb_ai;
+    real         fgb, rbi, fix1, fiy1, fiz1;
+    real         ix1, iy1, iz1, jx1, jy1, jz1, dx11, dy11, dz11;
+    real         tx, ty, tz, rbai, rbaj, fgb_ai;
     real        *rb;
-    volatile int idx;
 
     n  = 0;
     rb = born->work;
@@ -1366,9 +1364,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
                rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
                const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd)
 {
-    real v = 0;
     int  cnt;
-    int  i;
 
     /* PBC or not? */
     const t_pbc *pbc_null;
@@ -1531,8 +1527,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
                    rvec x[], matrix box,
                    t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born)
 {
-    int               i, l, ii, j, k, n, nj0, nj1, ai, aj, at0, at1, found, shift, s;
-    int               apa;
+    int               i, j, k, n, nj0, nj1, ai, shift, s;
     t_nblist         *nblist;
     t_pbc             pbc;
 
