@@ -38,8 +38,7 @@
 
 #include "nrama.h"
 
-#include <math.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -283,7 +282,6 @@ t_topology *init_rama(const output_env_t oenv, const char *infile,
                       const char *topfile, t_xrama *xr, int mult)
 {
     t_topology *top;
-    int         ePBC;
     real        t;
 
     top = read_top(topfile, &xr->ePBC);
