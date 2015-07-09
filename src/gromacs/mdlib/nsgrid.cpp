@@ -250,7 +250,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
              * direction has uniform DD cell boundaries.
              */
             bDDRect = !(ddbox->tric_dir[i] ||
-                        (dd->bGridJump && i != dd->dim[0]));
+                        (dd_dlb_is_on(dd) && i != dd->dim[0]));
 
             radd = rlist;
             if (i >= ddbox->npbcdim &&

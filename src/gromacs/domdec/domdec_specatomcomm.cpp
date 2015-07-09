@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -603,7 +603,7 @@ int setup_specat_communication(gmx_domdec_t             *dd,
                   dd->ci[XX], dd->ci[YY], dd->ci[ZZ],
                   nrecv_local, ireq->n, specat_type,
                   specat_type, add_err,
-                  dd->bGridJump ? " or use the -rcon option of mdrun" : "");
+                  dd_dlb_is_on(dd) ? " or use the -rcon option of mdrun" : "");
     }
 
     spac->at_start = at_start;

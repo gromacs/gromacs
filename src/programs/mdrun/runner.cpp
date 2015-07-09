@@ -781,10 +781,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                                  hw_opt,
                                                  inputrec, mtop,
                                                  cr, fplog);
-        if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp <= 0)
-        {
-            hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
-        }
 
         if (hw_opt->nthreads_tmpi > 1)
         {
