@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 #include "gmxpre.h"
 
 #include "fitahx.h"
+
+#include <cmath>
 
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
@@ -97,8 +99,8 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, atom_id allindex[],
     for (i = 0; (i < nca); i++)
     {
         ai           = caindex[i];
-        xref[ai][XX] = rad*cos(phi0);
-        xref[ai][YY] = rad*sin(phi0);
+        xref[ai][XX] = rad*std::cos(phi0);
+        xref[ai][YY] = rad*std::sin(phi0);
         xref[ai][ZZ] = d*i;
 
         /* Set the mass to select that this Calpha contributes to fitting */
@@ -155,11 +157,11 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, atom_id allindex[],
         {
             rvec_sub(x[ai], xref[ai], dx);
             rms         = iprod(dx, dx);
-            bb[i].rmsa += sqrt(rms);
+            bb[i].rmsa += std::sqrt(rms);
             bb[i].nrms++;
             trms    += rms;
             mass[ai] = 0.0;
         }
     }
-    return sqrt(trms/nca);
+    return std::sqrt(trms/nca);
 }
