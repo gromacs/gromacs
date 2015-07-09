@@ -36,9 +36,11 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
@@ -167,7 +169,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     char  title[256];
     int   i, j, k, Dih, ntrans;
     int   cur_bin, new_bin;
-    real  ttime, tt;
+    real  ttime;
     real *rot_occ[NROT];
     int   (*calc_bin)(real, int, real);
     real  dt;
@@ -243,8 +245,8 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 
             prev = dih[i][j];
 
-            mind = min(mind, dih[i][j]);
-            maxd = max(maxd, dih[i][j]);
+            mind = std::min(mind, dih[i][j]);
+            maxd = std::max(maxd, dih[i][j]);
             if ( (maxd - mind) > 2*M_PI/3) /* or 120 degrees, assuming       */
             {                              /* multiplicity 3. Not so general.*/
                 tr_f[j]++;
@@ -357,7 +359,7 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
     {
         for (i = 0; (i < nlist); i++)
         {
-            strncpy(name, dlist[i].name, 3);
+            std::strncpy(name, dlist[i].name, 3);
             name[3] = '\0';
             if (((Dih  < edOmega) ) ||
                 ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i])))) ||
@@ -375,16 +377,16 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
                 /* dihedrals to aromatic rings, COO, CONH2 or guanidinium are 2fold*/
                 if (Dih > edOmega && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))
                 {
-                    if ( ((strstr(name, "PHE") != NULL) && (Dih == edChi2))  ||
-                         ((strstr(name, "TYR") != NULL) && (Dih == edChi2))  ||
-                         ((strstr(name, "PTR") != NULL) && (Dih == edChi2))  ||
-                         ((strstr(name, "TRP") != NULL) && (Dih == edChi2))  ||
-                         ((strstr(name, "HIS") != NULL) && (Dih == edChi2))  ||
-                         ((strstr(name, "GLU") != NULL) && (Dih == edChi3))  ||
-                         ((strstr(name, "ASP") != NULL) && (Dih == edChi2))  ||
-                         ((strstr(name, "GLN") != NULL) && (Dih == edChi3))  ||
-                         ((strstr(name, "ASN") != NULL) && (Dih == edChi2))  ||
-                         ((strstr(name, "ARG") != NULL) && (Dih == edChi4))  )
+                    if ( ((std::strstr(name, "PHE") != NULL) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "TYR") != NULL) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "PTR") != NULL) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "TRP") != NULL) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "HIS") != NULL) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "GLU") != NULL) && (Dih == edChi3))  ||
+                         ((std::strstr(name, "ASP") != NULL) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "GLN") != NULL) && (Dih == edChi3))  ||
+                         ((std::strstr(name, "ASN") != NULL) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "ARG") != NULL) && (Dih == edChi4))  )
                     {
                         multiplicity[j] = 2;
                     }
@@ -652,15 +654,15 @@ void calc_distribution_props(int nh, int histo[], real start,
     {
         d    = invth*histo[j];
         ang  = j*fac-start;
-        c1   = cos(ang);
+        c1   = std::cos(ang);
         c2   = c1*c1;
         dc   = d*c1;
-        ds   = d*sin(ang);
+        ds   = d*std::sin(ang);
         tdc += dc;
         tds += ds;
         for (i = 0; (i < nkkk); i++)
         {
-            c1            = cos(ang+kkk[i].offset);
+            c1            = std::cos(ang+kkk[i].offset);
             c2            = c1*c1;
             Jc            = (kkk[i].A*c2 + kkk[i].B*c1 + kkk[i].C);
             kkk[i].Jc    += histo[j]*Jc;
@@ -670,7 +672,7 @@ void calc_distribution_props(int nh, int histo[], real start,
     for (i = 0; (i < nkkk); i++)
     {
         kkk[i].Jc    /= th;
-        kkk[i].Jcsig  = sqrt(kkk[i].Jcsig/th-sqr(kkk[i].Jc));
+        kkk[i].Jcsig  = std::sqrt(kkk[i].Jcsig/th-sqr(kkk[i].Jc));
     }
     *S2 = tdc*tdc+tds*tds;
 }
@@ -759,8 +761,8 @@ void make_histo(FILE *log,
         minx = maxx = data[0];
         for (i = 1; (i < ndata); i++)
         {
-            minx = min(minx, data[i]);
-            maxx = max(maxx, data[i]);
+            minx = std::min(minx, data[i]);
+            maxx = std::max(maxx, data[i]);
         }
         fprintf(log, "Min data: %10g  Max data: %10g\n", minx, maxx);
     }
@@ -911,7 +913,7 @@ void read_ang_dih(const char *trj_fn,
                 for (i = 0; (i < nangles); i++)
                 {
                     real dd = angles[cur][i];
-                    angles[cur][i] = atan2(sin(dd), cos(dd));
+                    angles[cur][i] = std::atan2(sin(dd), cos(dd));
                 }
             }
             else
@@ -961,7 +963,7 @@ void read_ang_dih(const char *trj_fn,
             }
 
             /* Update the distribution histogram */
-            angind = (int) ((angle*maxangstat)/pifac + 0.5);
+            angind = static_cast<int>((angle*maxangstat)/pifac + 0.5);
             if (angind == maxangstat)
             {
                 angind = 0;

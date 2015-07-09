@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,8 @@
 
 #include "geminate.h"
 
-#include <math.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdlib>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
@@ -86,7 +86,7 @@ static gem_complex gem_c(double x)
 /* Magnitude of a complex number z                                           */
 static double gem_cx_abs(gem_complex z)
 {
-    return (sqrt(z.r*z.r+z.i*z.i));
+    return (std::sqrt(z.r*z.r+z.i*z.i));
 }
 
 /* Addition of two complex numbers z1 and z2                                 */
@@ -182,9 +182,9 @@ static gem_complex gem_cxdexp(gem_complex z)
 {
     gem_complex value;
     double      exp_z_r;
-    exp_z_r = exp(z.r);
-    value.r = exp_z_r*cos(z.i);
-    value.i = exp_z_r*sin(z.i);
+    exp_z_r = std::exp(z.r);
+    value.r = exp_z_r*std::cos(z.i);
+    value.i = exp_z_r*std::sin(z.i);
     return value;
 }
 
@@ -199,7 +199,7 @@ static gem_complex gem_cxlog(gem_complex z)
     {
         fprintf(stderr, "ERROR in gem_cxlog func\n");
     }
-    value.r = log(sqrt(mag2));
+    value.r = std::log(std::sqrt(mag2));
     if (z.r == 0.)
     {
         value.i = PI/2.;
@@ -210,7 +210,7 @@ static gem_complex gem_cxlog(gem_complex z)
     }
     else
     {
-        value.i = atan2(z.i, z.r);
+        value.i = std::atan2(z.i, z.r);
     }
     return value;
 }
@@ -223,8 +223,8 @@ static gem_complex gem_cxdsqrt(gem_complex z)
     gem_complex value;
     double      sq;
     sq      = gem_cx_abs(z);
-    value.r = sqrt(fabs((sq+z.r)*0.5)); /* z'.r={|z|*[1+cos(the)]/2}^(1/2) */
-    value.i = sqrt(fabs((sq-z.r)*0.5)); /* z'.i={|z|*[1-cos(the)]/2}^(1/2) */
+    value.r = std::sqrt(std::abs((sq+z.r)*0.5)); /* z'.r={|z|*[1+cos(the)]/2}^(1/2) */
+    value.i = std::sqrt(std::abs((sq-z.r)*0.5)); /* z'.i={|z|*[1-cos(the)]/2}^(1/2) */
     if (z.i < 0.)
     {
         value.r = -value.r;
@@ -252,7 +252,7 @@ static void gem_solve(gem_complex *al, gem_complex *be, gem_complex *gam,
     double      t1, t2, two_3, temp;
     gem_complex ctemp, ct3;
 
-    two_3 = pow(2., 1./3.); t1 = -a*a+3.*b; t2 = 2.*a*a*a-9.*a*b+27.*c;
+    two_3 = std::pow(2., 1./3.); t1 = -a*a+3.*b; t2 = 2.*a*a*a-9.*a*b+27.*c;
     temp  = 4.*t1*t1*t1+t2*t2;
 
     ctemp = gem_cmplx(temp, 0.);   ctemp = gem_cxadd(gem_cmplx(t2, 0.), gem_cxdsqrt(ctemp));
@@ -304,14 +304,14 @@ static double gem_erf(double x)
     x8   = x6*x2;
     x10  = x8*x2;
     x12  = x10*x2;
-    exp2 = exp(-x2);
+    exp2 = std::exp(-x2);
     if (x <= xm)
     {
         for (n = 1.; n <= 2000.; n += 1.)
         {
             temp *= 2.*x2/(2.*n+1.);
             sum  += temp;
-            if (fabs(temp/sum) < 1.E-16)
+            if (std::abs(temp/sum) < 1.E-16)
             {
                 break;
             }
@@ -341,19 +341,19 @@ static double gem_erf(double x)
 static double gem_erfc(double x)
 {
     double t, z, ans;
-    z = fabs(x);
+    z = std::abs(x);
     t = 1.0/(1.0+0.5*z);
 
-    ans = t * exp(-z*z - 1.26551223 +
-                  t*(1.00002368 +
-                     t*(0.37409196 +
-                        t*(0.09678418 +
-                           t*(-0.18628806 +
-                              t*(0.27886807 +
-                                 t*(-1.13520398 +
-                                    t*(1.48851587 +
-                                       t*(-0.82215223 +
-                                          t*0.17087277)))))))));
+    ans = t * std::exp(-z*z - 1.26551223 +
+                       t*(1.00002368 +
+                          t*(0.37409196 +
+                             t*(0.09678418 +
+                                t*(-0.18628806 +
+                                   t*(0.27886807 +
+                                      t*(-1.13520398 +
+                                         t*(1.48851587 +
+                                            t*(-0.82215223 +
+                                               t*0.17087277)))))))));
 
     return x >= 0.0 ? ans : 2.0-ans;
 }
@@ -372,7 +372,7 @@ static double gem_omega(double x)
 
     if (x <= xm)
     {
-        ans = exp(xx)*gem_erfc(x);
+        ans = std::exp(xx)*gem_erfc(x);
     }
     else
     {
@@ -401,23 +401,23 @@ static gem_complex gem_comega(gem_complex z)
     y2       = y*y;
     sumr     = 0.;
     sumi     = 0.;
-    cos_2xy  = cos(2.*x*y);
-    sin_2xy  = sin(2.*x*y);
-    cosh_2xy = cosh(2.*x*y);
-    sinh_2xy = sinh(2.*x*y);
-    exp_y2   = exp(-y2);
+    cos_2xy  = std::cos(2.*x*y);
+    sin_2xy  = std::sin(2.*x*y);
+    cosh_2xy = std::cosh(2.*x*y);
+    sinh_2xy = std::sinh(2.*x*y);
+    exp_y2   = std::exp(-y2);
 
     for (n = 1.0, temp = 0.; n <= 2000.; n += 1.0)
     {
         n2      = n*n;
-        cosh_ny = cosh(n*y);
-        sinh_ny = sinh(n*y);
-        f       = exp(-n2/4.)/(n2+4.*x2);
+        cosh_ny = std::cosh(n*y);
+        sinh_ny = std::sinh(n*y);
+        f       = std::exp(-n2/4.)/(n2+4.*x2);
         /* if(f<1.E-200) break; */
         sumr += (2.*x - 2.*x*cosh_ny*cos_2xy + n*sinh_ny*sin_2xy)*f;
         sumi += (2.*x*cosh_ny*sin_2xy + n*sinh_ny*cos_2xy)*f;
-        temp1 = sqrt(sumr*sumr+sumi*sumi);
-        if (fabs((temp1-temp)/temp1) < 1.E-16)
+        temp1 = std::sqrt(sumr*sumr+sumi*sumi);
+        if (std::abs((temp1-temp)/temp1) < 1.E-16)
         {
             break;
         }
@@ -456,7 +456,7 @@ static gem_complex gem_comega(gem_complex z)
 static double sqcm_per_s_to_sqA_per_ps (real D)
 {
     fprintf(stdout, "Diffusion coefficient is %f A^2/ps\n", D*1e4);
-    return (double)(D*1e4);
+    return D*1e4;
 }
 
 
@@ -515,7 +515,7 @@ static double eq10v2(double theoryCt[], double time[], int manytimes,
 /* This returns the real-valued index(!) to an ACF, equidistant on a log scale. */
 static double getLogIndex(const int i, const t_gemParams *params)
 {
-    return gmx_expm1(((double)(i)) * params->logQuota);
+    return gmx_expm1(i * params->logQuota);
 }
 
 extern t_gemParams *init_gemParams(const double sigma, const double D,
@@ -542,7 +542,7 @@ extern t_gemParams *init_gemParams(const double sigma, const double D,
     p->sigma    = sigma*10; /* Omer uses Å, not nm */
 /*   p->lsq_old  = 99999; */
     p->D        = sqcm_per_s_to_sqA_per_ps(D);
-    p->kD       = 4*acos(-1.0)*sigma*p->D;
+    p->kD       = 4*std::acos(-1.0)*sigma*p->D;
 
 
     /* Parameters used by calcsquare(). Better to calculate them
@@ -564,7 +564,7 @@ extern t_gemParams *init_gemParams(const double sigma, const double D,
     p->nFitPoints   = nFitPoints;
     p->begFit       = begFit;
     p->endFit       = endFit;
-    p->logQuota     = (double)(log(p->len))/(p->nFitPoints-1);
+    p->logQuota     = std::log(static_cast<double>(p->len))/(p->nFitPoints-1);
 /*   if (p->nLin <= 0) { */
 /*     fprintf(stderr, "Number of data points in the linear regime is non-positive!\n"); */
 /*     sfree(p); */
@@ -594,50 +594,10 @@ extern real fitGemRecomb(double gmx_unused      *ct,
                          const int gmx_unused    nData,
                          t_gemParams gmx_unused *params)
 {
-
-    int         nThreads, i, iter, status, maxiter;
-    real        size, d2, tol, *dumpdata;
-    size_t      p, n;
-    gemFitData *GD;
-    char       *dumpstr, dumpname[128];
-
     missing_code_message();
     return -1;
-
 }
 
-
-/* Removes the ballistic term from the beginning of the ACF,
- * just like in Omer's paper.
- */
-extern void takeAwayBallistic(double gmx_unused *ct, double *t, int len, real tMax, int nexp, gmx_bool gmx_unused bDerivative)
-{
-
-    /* Fit with 4 exponentials and one constant term,
-     * subtract the fatest exponential. */
-
-    int      nData, i, status, iter;
-    balData *BD;
-    double  *guess,           /* Initial guess. */
-    *A,                       /* The fitted parameters. (A1, B1, A2, B2,... C) */
-             a[2],
-             ddt[2];
-    gmx_bool sorted;
-    size_t   n;
-    size_t   p;
-
-    nData = 0;
-    do
-    {
-        nData++;
-    }
-    while (t[nData] < tMax+t[0] && nData < len);
-
-    p = nexp*2+1;            /* Number of parameters. */
-
-    missing_code_message();
-    return;
-}
 
 extern void dumpN(const real *e, const int nn, char *fn)
 {
@@ -673,7 +633,7 @@ static real* d2r(const double *d, const int nn)
     snew(r, nn);
     for (i = 0; i < nn; i++)
     {
-        r[i] = (real)d[i];
+        r[i] = d[i];
     }
 
     return r;
@@ -703,7 +663,7 @@ static void patchBadTail(double *ct, int n)
 
 extern void fixGemACF(double *ct, int len)
 {
-    int      i, j, b, e;
+    int      i, b, e;
     gmx_bool bBad;
 
     /* Let's separate two things:

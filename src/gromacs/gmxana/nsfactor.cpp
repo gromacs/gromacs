@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,8 @@
 
 #include "config.h"
 
-#include <string.h>
+#include <cmath>
+#include <cstring>
 
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
@@ -208,7 +209,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     int               nthreads;
     gmx_rng_t        *trng = NULL;
 #endif
-    gmx_int64_t       mc  = 0, max;
+    gmx_int64_t       mc  = 0, mc_max;
     gmx_rng_t         rng = NULL;
 
     /* allocate memory for pr */
@@ -225,7 +226,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
 
     rmax = norm(dist);
 
-    pr->grn = (int)floor(rmax/pr->binwidth)+1;
+    pr->grn = static_cast<int>(std::floor(rmax/pr->binwidth)+1);
     rmax    = pr->grn*pr->binwidth;
 
     snew(pr->gr, pr->grn);
@@ -235,11 +236,11 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         /* Special case for setting automaticaly number of mc iterations to 1% of total number of direct iterations */
         if (mcover == -1)
         {
-            max = (gmx_int64_t)floor(0.5*0.01*isize*(isize-1));
+            mc_max = static_cast<gmx_int64_t>(std::floor(0.5*0.01*isize*(isize-1)));
         }
         else
         {
-            max = (gmx_int64_t)floor(0.5*mcover*isize*(isize-1));
+            mc_max = static_cast<gmx_int64_t>(std::floor(0.5*mcover*isize*(isize-1)));
         }
         rng = gmx_rng_init(seed);
 #ifdef GMX_OPENMP
@@ -256,13 +257,13 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
             tid = gmx_omp_get_thread_num();
             /* now starting parallel threads */
             #pragma omp for
-            for (mc = 0; mc < max; mc++)
+            for (mc = 0; mc < mc_max; mc++)
             {
-                i = (int)floor(gmx_rng_uniform_real(trng[tid])*isize);
-                j = (int)floor(gmx_rng_uniform_real(trng[tid])*isize);
+                i = static_cast<int>(std::floor(gmx_rng_uniform_real(trng[tid])*isize));
+                j = static_cast<int>(std::floor(gmx_rng_uniform_real(trng[tid])*isize));
                 if (i != j)
                 {
-                    tgr[tid][(int)floor(sqrt(distance2(x[index[i]], x[index[j]]))/binwidth)] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                    tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
                 }
             }
         }
@@ -283,13 +284,13 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         sfree(tgr);
         sfree(trng);
 #else
-        for (mc = 0; mc < max; mc++)
+        for (mc = 0; mc < mc_max; mc++)
         {
-            i = (int)floor(gmx_rng_uniform_real(rng)*isize);
-            j = (int)floor(gmx_rng_uniform_real(rng)*isize);
+            i = static_cast<int>(std::floor(gmx_rng_uniform_real(rng)*isize));
+            j = static_cast<int>(std::floor(gmx_rng_uniform_real(rng)*isize));
             if (i != j)
             {
-                pr->gr[(int)floor(sqrt(distance2(x[index[i]], x[index[j]]))/binwidth)] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                pr->gr[static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
             }
         }
 #endif
@@ -314,7 +315,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
             {
                 for (j = 0; j < i; j++)
                 {
-                    tgr[tid][(int)floor(sqrt(distance2(x[index[i]], x[index[j]]))/binwidth)] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                    tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
                 }
             }
         }
@@ -337,7 +338,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         {
             for (j = 0; j < i; j++)
             {
-                pr->gr[(int)floor(sqrt(distance2(x[index[i]], x[index[j]]))/binwidth)] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                pr->gr[static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
             }
         }
 #endif
@@ -364,7 +365,7 @@ gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_d
     int         i, j;
     /* init data */
     snew(sq, 1);
-    sq->qn = (int)floor((end_q-start_q)/q_step);
+    sq->qn = static_cast<int>(std::floor((end_q-start_q)/q_step));
     snew(sq->q, sq->qn);
     snew(sq->s, sq->qn);
     for (i = 0; i < sq->qn; i++)

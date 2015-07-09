@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,11 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 enum {
     gemNULL, gemNONE, gemDD, gemAD, gemAA, gemA4, gemNR
@@ -161,24 +166,23 @@ typedef struct {
     t_gemParams *params;
 } gemFitData;
 
-extern void takeAwayBallistic(double *ct, double *t,
-                              int len, real tMax,
-                              int nexp, gmx_bool bDerivative);
-
-
-extern t_gemParams *init_gemParams(const double sigma, const double D,
-                                   const real *t, const int len, const int nFitPoints,
-                                   const real begFit, const real endFit,
-                                   const real ballistic, const int nBalExp);
+t_gemParams *init_gemParams(const double sigma, const double D,
+                            const real *t, const int len, const int nFitPoints,
+                            const real begFit, const real endFit,
+                            const real ballistic, const int nBalExp);
 
 /* Fit to geminate recombination model.
    Returns root mean square error of fit. */
-extern real fitGemRecomb(double *ct, double *time, double **ctFit,
-                         const int nData, t_gemParams *params);
+real fitGemRecomb(double *ct, double *time, double **ctFit,
+                  const int nData, t_gemParams *params);
 
-extern void dumpN(const real *e, const int nn, char *fn);
+void dumpN(const real *e, const int nn, char *fn);
 
 /* Fix NaN that might appear in the theoretical acf. */
-extern void fixGemACF(double *ct, int len);
+void fixGemACF(double *ct, int len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -2780,23 +2780,6 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                 ctdouble[j]   = (double)(ct[j]);
             }
 
-            /* Remove ballistic term */
-            /* Ballistic component removal and fitting to the reversible geminate recombination model
-             * will be taken out for the time being. First of all, one can remove the ballistic
-             * component with g_analyze afterwards. Secondly, and more importantly, there are still
-             * problems with the robustness of the fitting to the model. More work is needed.
-             * A third reason is that we're currently using gsl for this and wish to reduce dependence
-             * on external libraries. There are Levenberg-Marquardt and nsimplex solvers that come with
-             * a BSD-licence that can do the job.
-             *
-             * - Erik Marklund, June 18 2010.
-             */
-/*         if (params->ballistic/params->tDelta >= params->nExpFit*2+1) */
-/*             takeAwayBallistic(ctdouble, timedouble, nn, params->ballistic, params->nExpFit, params->bDt); */
-/*         else */
-/*             printf("\nNumber of data points is less than the number of parameters to fit\n." */
-/*                    "The system is underdetermined, hence no ballistic term can be found.\n\n"); */
-
             fp = xvgropen(fn, "Hydrogen Bond Autocorrelation", output_env_get_xvgr_tlabel(oenv), "C(t)");
             xvgr_legend(fp, asize(legNN), legNN);
 
@@ -3039,28 +3022,6 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                 timedouble[j] = (double)(hb->time[j]);
                 ctdouble[j]   = (double)(ct[j]);
             }
-
-            /* Remove ballistic term */
-            /* Ballistic component removal and fitting to the reversible geminate recombination model
-             * will be taken out for the time being. First of all, one can remove the ballistic
-             * component with g_analyze afterwards. Secondly, and more importantly, there are still
-             * problems with the robustness of the fitting to the model. More work is needed.
-             * A third reason is that we're currently using gsl for this and wish to reduce dependence
-             * on external libraries. There are Levenberg-Marquardt and nsimplex solvers that come with
-             * a BSD-licence that can do the job.
-             *
-             * - Erik Marklund, June 18 2010.
-             */
-/*         if (bBallistic) { */
-/*             if (params->ballistic/params->tDelta >= params->nExpFit*2+1) */
-/*                 takeAwayBallistic(ctdouble, timedouble, nn, params->ballistic, params->nExpFit, params->bDt); */
-/*             else */
-/*                 printf("\nNumber of data points is less than the number of parameters to fit\n." */
-/*                        "The system is underdetermined, hence no ballistic term can be found.\n\n"); */
-/*         } */
-/*         if (bGemFit) */
-/*             fitGemRecomb(ctdouble, timedouble, &fittedct, nn, params); */
-
 
             if (bContact)
             {

@@ -38,6 +38,10 @@
 
 #include "sfactor.h"
 
+#include <cmath>
+
+#include <algorithm>
+
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -170,9 +174,9 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
     k_factor[YY] = 2 * M_PI / box[YY][YY];
     k_factor[ZZ] = 2 * M_PI / box[ZZ][ZZ];
 
-    maxkx = (int) (end_q / k_factor[XX] + 0.5);
-    maxky = (int) (end_q / k_factor[YY] + 0.5);
-    maxkz = (int) (end_q / k_factor[ZZ] + 0.5);
+    maxkx = static_cast<int>(end_q / k_factor[XX] + 0.5);
+    maxky = static_cast<int>(end_q / k_factor[YY] + 0.5);
+    maxkz = static_cast<int>(end_q / k_factor[ZZ] + 0.5);
 
     snew (counter, sf->n_angles);
 
@@ -185,7 +189,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
     fprintf(stderr, "\n");
     for (i = 0; i < maxkx; i++)
     {
-        fprintf (stderr, "\rdone %3.1f%%     ", (double)(100.0*(i+1))/maxkx);
+        fprintf (stderr, "\rdone %3.1f%%     ", (100.0*(i+1))/maxkx);
         kx = i * k_factor[XX];
         for (j = 0; j < maxky; j++)
         {
@@ -195,10 +199,10 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                 if (i != 0 || j != 0 || k != 0)
                 {
                     kz  = k * k_factor[ZZ];
-                    krr = sqrt (sqr (kx) + sqr (ky) + sqr (kz));
+                    krr = std::sqrt (sqr (kx) + sqr (ky) + sqr (kz));
                     if (krr >= start_q && krr <= end_q)
                     {
-                        kr = (int) (krr/sf->ref_k + 0.5);
+                        kr = static_cast<int>(krr/sf->ref_k + 0.5);
                         if (kr < sf->n_angles)
                         {
                             counter[kr]++; /* will be used for the copmutation
@@ -210,8 +214,8 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                                 kdotx = kx * redt[p].x[XX] +
                                     ky * redt[p].x[YY] + kz * redt[p].x[ZZ];
 
-                                tmpSF[i][j][k].re += cos (kdotx) * asf;
-                                tmpSF[i][j][k].im += sin (kdotx) * asf;
+                                tmpSF[i][j][k].re += std::cos(kdotx) * asf;
+                                tmpSF[i][j][k].im += std::sin(kdotx) * asf;
                             }
                         }
                     }
@@ -231,10 +235,10 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
         {
             ky = j * k_factor[YY]; for (k = 0; k < maxkz; k++)
             {
-                kz = k * k_factor[ZZ]; krr = sqrt (sqr (kx) + sqr (ky)
-                                                   + sqr (kz)); if (krr >= start_q && krr <= end_q)
+                kz = k * k_factor[ZZ]; krr = std::sqrt (sqr (kx) + sqr (ky)
+                                                        + sqr (kz)); if (krr >= start_q && krr <= end_q)
                 {
-                    kr = (int) (krr / sf->ref_k + 0.5);
+                    kr = static_cast<int>(krr / sf->ref_k + 0.5);
                     if (kr < sf->n_angles && counter[kr] != 0)
                     {
                         sf->F[group][kr] +=
@@ -450,9 +454,8 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     structure_factor       *sf;
     rvec                   *xtop;
     real                  **sf_table;
-    int                     nsftable;
     matrix                  box;
-    double                  r_tmp;
+    real                    r_tmp;
 
     gmx_structurefactors_t *gmx_sf;
     real                   *a, *b, c;
@@ -497,12 +500,12 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     snew (red, ng);
     snew (index_atp, ng);
 
-    r_tmp = max (box[XX][XX], box[YY][YY]);
-    r_tmp = (double) max (box[ZZ][ZZ], r_tmp);
+    r_tmp = std::max(box[XX][XX], box[YY][YY]);
+    r_tmp = std::max(box[ZZ][ZZ], r_tmp);
 
     sf->ref_k = (2.0 * M_PI) / (r_tmp);
     /* ref_k will be the reference momentum unit */
-    sf->n_angles = (int) (end_q / sf->ref_k + 0.5);
+    sf->n_angles = static_cast<int>(end_q / sf->ref_k + 0.5);
 
     snew (sf->F, ng);
     for (i = 0; i < ng; i++)
@@ -575,7 +578,7 @@ extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
  *          sin(theta) = q/(2k) := A  ->  sin^2(theta) = 4*A^2 (1-A^2) ->
  *          -> 0.5*(1+cos^2(2*theta)) = 1 - 2 A^2 (1-A^2)
  */
-            A                   = (double) (i * sf->ref_k) / (2.0 * sf->momentum);
+            A                   = static_cast<double>(i * sf->ref_k) / (2.0 * sf->momentum);
             polarization_factor = 1 - 2.0 * sqr (A) * (1 - sqr (A));
             sf->F[g][i]        *= polarization_factor;
         }
@@ -663,7 +666,7 @@ extern real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momen
         snew (sf_table[i], n_angles);
         for (j = 0; j < n_angles; j++)
         {
-            q = ((double) j * ref_k);
+            q = static_cast<double>(j * ref_k);
             /* theta is half the angle between incoming
                and scattered wavevectors. */
             sin_theta = q / (2.0 * momentum);
@@ -718,7 +721,7 @@ extern real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, stru
 
 
     /* \hbar \omega \lambda = hc = 1239.842 eV * nm */
-    sf->momentum = ((double) (2. * 1000.0 * M_PI * sf->energy) / hc);
+    sf->momentum = (static_cast<double>(2. * 1000.0 * M_PI * sf->energy) / hc);
     sf->lambda   = hc / (1000.0 * sf->energy);
     fprintf (stderr, "\nwavelenght = %f nm\n", sf->lambda);
 
