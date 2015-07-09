@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,28 +41,11 @@
 
 #include "dens_filter.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
-
-#ifdef GMX_DOUBLE
-#define EXP(x) (exp(x))
-#else
-#define EXP(x) (expf(x))
-#endif
-
-/* Modulo function assuming y>0 but with arbitrary INTEGER x */
-static int MOD(int x, int y)
-{
-    if (x < 0)
-    {
-        x = x+y;
-    }
-    return (mod(x, y));
-}
-
 
 gmx_bool convolution(int dataSize, real *x, int kernelSize, real* kernel)
 {
@@ -110,7 +93,7 @@ gmx_bool convolution(int dataSize, real *x, int kernelSize, real* kernel)
 gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
                               real *kernel)
 {
-    int   i, j, k, nj;
+    int   i, j, idx;
     real *filtered;
 
     if (!x || !kernel)
@@ -128,7 +111,8 @@ gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
     {
         for (j = 0; (j < kernelsize); j++)
         {
-            filtered[i] += kernel[j]*x[MOD((i-j), datasize)];
+            idx          = (i-j >= 0) ? i-j : i-j + datasize;
+            filtered[i] += kernel[j]*x[idx % datasize];
         }
     }
     for (i = 0; i < datasize; i++)
@@ -153,7 +137,7 @@ void gausskernel(real *out, int n, real var)
     for (i = -k; i <= k; i++)
     {
         arg  = (i*i)/(2*var);
-        tot += out[j++] = EXP(-arg);
+        tot += out[j++] = std::exp(-arg);
     }
     for (i = 0; i < j; i++)
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,9 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
+#include "binsearch.h"
+
+#include <cstdio>
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
@@ -109,44 +111,44 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
 
 int BinarySearch (real *array, int low, int high, real key, int direction)
 {
-    int mid, max, min;
-    max = high+2;
-    min = low+1;
+    int iMid, iMax, iMin;
+    iMax = high+2;
+    iMin = low+1;
 
 /*Iterative implementation*/
 
     if (direction >= 0)
     {
-        while (max-min > 1)
+        while (iMax-iMin > 1)
         {
-            mid = (min+max)>>1;
-            if (key < array[mid-1])
+            iMid = (iMin+iMax)>>1;
+            if (key < array[iMid-1])
             {
-                max = mid;
+                iMax = iMid;
             }
             else
             {
-                min = mid;
+                iMin = iMid;
             }
         }
-        return min;
+        return iMin;
     }
 
     else if (direction < 0)
     {
-        while (max-min > 1)
+        while (iMax-iMin > 1)
         {
-            mid = (min+max)>>1;
-            if (key > array[mid-1])
+            iMid = (iMin+iMax)>>1;
+            if (key > array[iMid-1])
             {
-                max = mid;
+                iMax = iMid;
             }
             else
             {
-                min = mid;
+                iMin = iMid;
             }
         }
-        return min-1;
+        return iMin-1;
 
     } /*end -ifelse direction*/
     return -1;
@@ -169,7 +171,6 @@ int LinearSearch (double *array, int startindx, int stopindx,
 
     if (direction >= 0)
     {
-        keyindex = startindx;
         for (i = startindx; i <= stopindx; i++)
         {
             (*count)++;
@@ -182,7 +183,6 @@ int LinearSearch (double *array, int startindx, int stopindx,
     }
     else if (direction < 0)
     {
-        keyindex = stopindx;
         for (i = stopindx; i >= startindx; i--)
         {
             (*count)++;
