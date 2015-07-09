@@ -70,7 +70,6 @@ static void list_trn(char *fn)
   printf("Going to open %s\n",fn);
   fpread  = open_trn(fn,"r"); 
   fpwrite = open_tpx(NULL,"w");
-  gmx_fio_setdebug(fpwrite,TRUE);
   
   mmm=mass[0]+2*mass[1];
   for(i=0; (i<5); i++) 

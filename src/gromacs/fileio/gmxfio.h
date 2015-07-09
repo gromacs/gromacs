@@ -97,9 +97,6 @@ int gmx_fio_fclose(FILE *fp);
  * Change properties of the open file
  ********************************************************/
 
-void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble);
-/* Select the floating point precision for reading and writing files */
-
 char *gmx_fio_getname(t_fileio *fio);
 /* Return the filename corresponding to the fio index */
 
@@ -108,9 +105,6 @@ int gmx_fio_getftp(t_fileio *fio);
     There is as of now no corresponding setftp function because the file
     was opened as a specific file type and changing that midway is most
     likely an evil hack. */
-
-void gmx_fio_setdebug(t_fileio *fio, gmx_bool bDebug);
-/* Set the debug mode */
 
 gmx_bool gmx_fio_getread(t_fileio *fio);
 /* Return  whether read mode is on in fio  */
