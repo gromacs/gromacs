@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,10 @@
 
 #include "hxprops.h"
 
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -73,7 +75,6 @@ real ellipticity(int nres, t_bb bb[])
 #define NPPW asize(ppw)
 
     int        i, j;
-    const real Xi = 1.0;
     real       ell, pp2, phi, psi;
 
     ell = 0;
@@ -129,7 +130,7 @@ real radius(FILE *fp, int nca, atom_id ca_index[], rvec x[])
         fprintf(fp, "\n");
     }
 
-    return sqrt(dlt/nca);
+    return std::sqrt(dlt/nca);
 }
 
 static real rot(rvec x1, rvec x2)
@@ -137,13 +138,13 @@ static real rot(rvec x1, rvec x2)
     real phi1, dphi, cp, sp;
     real xx, yy;
 
-    phi1 = atan2(x1[YY], x1[XX]);
-    cp   = cos(phi1);
-    sp   = sin(phi1);
+    phi1 = std::atan2(x1[YY], x1[XX]);
+    cp   = std::cos(phi1);
+    sp   = std::sin(phi1);
     xx   = cp*x2[XX]+sp*x2[YY];
     yy   = -sp*x2[XX]+cp*x2[YY];
 
-    dphi = RAD2DEG*atan2(yy, xx);
+    dphi = RAD2DEG*std::atan2(yy, xx);
 
     return dphi;
 }
@@ -341,8 +342,8 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     r0 = r1 = atom[(*index)[0]].resind;
     for (i = 1; (i < gnx); i++)
     {
-        r0 = min(r0, atom[(*index)[i]].resind);
-        r1 = max(r1, atom[(*index)[i]].resind);
+        r0 = std::min(r0, atom[(*index)[i]].resind);
+        r1 = std::max(r1, atom[(*index)[i]].resind);
     }
     rnr = r1-r0+1;
     fprintf(stderr, "There are %d residues\n", rnr);
@@ -356,16 +357,16 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     {
         ai = (*index)[i];
         ri = atom[ai].resind-r0;
-        if (strcmp(*(resinfo[ri].name), "PRO") == 0)
+        if (std::strcmp(*(resinfo[ri].name), "PRO") == 0)
         {
-            if (strcmp(*(atomname[ai]), "CD") == 0)
+            if (std::strcmp(*(atomname[ai]), "CD") == 0)
             {
                 bb[ri].H = ai;
             }
         }
         for (k = 0; (k < NBB); k++)
         {
-            if (strcmp(bb_nm[k], *(atomname[ai])) == 0)
+            if (std::strcmp(bb_nm[k], *(atomname[ai])) == 0)
             {
                 j++;
                 break;
@@ -427,7 +428,7 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
         bb[i].Cprev = bb[i-1].C;
         bb[i].Nnext = bb[i+1].N;
     }
-    rnr = max(0, i1-i0+1);
+    rnr = std::max(0, i1-i0+1);
     fprintf(stderr, "There are %d complete backbone residues (from %d to %d)\n",
             rnr, bb[i0].resno, bb[i1].resno);
     if (rnr == 0)
@@ -462,7 +463,7 @@ real pprms(FILE *fp, int nbb, t_bb bb[])
     {
         if (bb[i].bHelix)
         {
-            rms   = sqrt(bb[i].pprms2);
+            rms   = std::sqrt(bb[i].pprms2);
             rmst += rms;
             rms2 += bb[i].pprms2;
             fprintf(fp, "%10g  ", rms);
@@ -470,7 +471,7 @@ real pprms(FILE *fp, int nbb, t_bb bb[])
         }
     }
     fprintf(fp, "\n");
-    rms = sqrt(rms2/n-sqr(rmst/n));
+    rms = std::sqrt(rms2/n-sqr(rmst/n));
 
     return rms;
 }
@@ -515,9 +516,9 @@ void calc_hxprops(int nres, t_bb bb[], rvec x[])
         bb[i].pprms2 = sqr(bb[i].phi-PHI_AHX)+sqr(bb[i].psi-PSI_AHX);
 
         bb[i].jcaha +=
-            1.4*sin((bb[i].psi+138.0)*DEG2RAD) -
-            4.1*cos(2.0*DEG2RAD*(bb[i].psi+138.0)) +
-            2.0*cos(2.0*DEG2RAD*(bb[i].phi+30.0));
+            1.4*std::sin((bb[i].psi+138.0)*DEG2RAD) -
+            4.1*std::cos(2.0*DEG2RAD*(bb[i].psi+138.0)) +
+            2.0*std::cos(2.0*DEG2RAD*(bb[i].phi+30.0));
     }
 }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,7 +117,7 @@ static void delete_from_interactions(t_idef *idef, int inr)
 static void delete_from_block(t_block *block, int inr)
 {
     /* Update block data structure */
-    int i, i1, j1, j, k;
+    int i, i1, j;
 
     for (i = 0; (i < block->nr); i++)
     {
@@ -193,8 +193,6 @@ static void delete_from_atoms(t_atoms *atoms, int inr)
 
 void delete_atom(t_topology *top, int inr)
 {
-    int k;
-
     if ((inr < 0) || (inr >= top->atoms.nr))
     {
         gmx_fatal(FARGS, "Delete_atom: inr (%d) not in %d .. %d", inr, 0,
