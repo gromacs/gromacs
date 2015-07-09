@@ -61,10 +61,8 @@
 struct t_fileio
 {
     FILE           *fp;                /* the file pointer */
-    gmx_bool        bOpen,             /* the file is open */
-                    bRead,             /* the file is open for reading */
+    gmx_bool        bRead,             /* the file is open for reading */
                     bDouble,           /* write doubles instead of floats */
-                    bDebug,            /* the file ops should come with debug info */
                     bReadWrite;        /* the file is open for reading and writing */
     char        *fn;                   /* the file name */
     XDR         *xdr;                  /* the xdr data pointer */

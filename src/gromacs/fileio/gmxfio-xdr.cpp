@@ -62,6 +62,13 @@ static const char *eioNames[eioNR] =
     "IVEC", "STRING"
 };
 
+void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble)
+{
+    gmx_fio_lock(fio);
+    fio->bDouble = bDouble;
+    gmx_fio_unlock(fio);
+}
+
 XDR *gmx_fio_getxdr(t_fileio *fio)
 {
     XDR *ret = NULL;
@@ -335,11 +342,6 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
         }
         default:
             gmx_fio_fe(fio, eio, desc, srcfile, line);
-    }
-    if ((res == 0) && (fio->bDebug))
-    {
-        fprintf(stderr, "Error in xdr I/O %s %s to file %s (source %s, line %d)\n",
-                eioNames[eio], desc, fio->fn, srcfile, line);
     }
 
     return (res != 0);

@@ -3222,8 +3222,6 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     int       idum = 0;
     real      rdum = 0;
 
-    gmx_fio_setdebug(fio, bDebugMode());
-
     /* XDR binary topology file */
     precision = sizeof(real);
     if (bRead)

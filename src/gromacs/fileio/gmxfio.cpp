@@ -95,10 +95,6 @@ static int gmx_fio_int_flush(t_fileio* fio)
     {
         rc = fflush(fio->fp);
     }
-    else if (fio->xdr)
-    {
-        rc = fflush((FILE *) fio->xdr->x_private);
-    }
 
     return rc;
 }
@@ -309,11 +305,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     /* Check if it should be opened as a binary file */
     if (!ftp_is_text(fn2ftp(fn)))
     {
-        /* Not ascii, add b to file mode */
-        if ((strchr(newmode, 'b') == NULL) && (strchr(newmode, 'B') == NULL))
-        {
-            strcat(newmode, "b");
-        }
+        strcat(newmode, "b");
     }
 
     snew(fio, 1);
@@ -331,30 +323,10 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
         fio->iFTP   = fn2ftp(fn);
         fio->fn     = gmx_strdup(fn);
 
+        fio->fp = gmx_ffopen(fn, newmode);
         /* If this file type is in the list of XDR files, open it like that */
         if (ftp_is_xdr(fio->iFTP))
         {
-            /* First check whether we have to make a backup,
-             * only for writing, not for read or append.
-             */
-            if (newmode[0] == 'w')
-            {
-#ifndef GMX_FAHCORE
-                /* only make backups for normal gromacs */
-                make_backup(fn);
-#endif
-            }
-            else
-            {
-                /* Check whether file exists */
-                if (!gmx_fexist(fn))
-                {
-                    gmx_open(fn);
-                }
-            }
-            /* Open the file */
-            fio->fp = gmx_ffopen(fn, newmode);
-
             /* determine the XDR direction */
             if (newmode[0] == 'w' || newmode[0] == 'a')
             {
@@ -364,14 +336,8 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
             {
                 fio->xdrmode = XDR_DECODE;
             }
-
             snew(fio->xdr, 1);
             xdrstdio_create(fio->xdr, fio->fp, fio->xdrmode);
-        }
-        else
-        {
-            /* If it is not, open it as a regular file */
-            fio->fp = gmx_ffopen(fn, newmode);
         }
 
         /* for appending seek to end of file to make sure ftell gives correct position
@@ -384,8 +350,6 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     fio->bRead             = bRead;
     fio->bReadWrite        = bReadWrite;
     fio->bDouble           = (sizeof(real) == sizeof(double));
-    fio->bDebug            = FALSE;
-    fio->bOpen             = TRUE;
 
     /* and now insert this file into the list of open files. */
     gmx_fio_insert(fio);
@@ -396,12 +360,7 @@ static int gmx_fio_close_locked(t_fileio *fio)
 {
     int rc = 0;
 
-    if (!fio->bOpen)
-    {
-        gmx_fatal(FARGS, "File %s closed twice!\n", fio->fn);
-    }
-
-    if (ftp_is_xdr(fio->iFTP))
+    if (fio->xdr != NULL)
     {
         xdr_destroy(fio->xdr);
         sfree(fio->xdr);
@@ -412,7 +371,6 @@ static int gmx_fio_close_locked(t_fileio *fio)
         rc = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
 
     }
-    fio->bOpen = FALSE;
 
     return rc;
 }
@@ -425,10 +383,6 @@ int gmx_fio_close(t_fileio *fio)
     /* We don't want two processes operating on the list at the same time */
     tMPI_Thread_mutex_lock(&open_file_mutex);
 
-    if (fio->iFTP == efTNG)
-    {
-        gmx_incons("gmx_fio_close should not be called on a TNG file");
-    }
     gmx_fio_lock(fio);
     /* first remove it from the list */
     gmx_fio_remove(fio);
@@ -448,7 +402,7 @@ int gmx_fio_fp_close(t_fileio *fio)
 {
     int rc = 0;
     gmx_fio_lock(fio);
-    if (!ftp_is_xdr(fio->iFTP))
+    if (fio->xdr == NULL)
     {
         rc      = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
         fio->fp = NULL;
@@ -643,7 +597,7 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
     {
         /* Skip the checkpoint files themselves, since they could be open when
            we call this routine... */
-        if (cur->bOpen && !cur->bRead && cur->iFTP != efCPT)
+        if (!cur->bRead && cur->iFTP != efCPT)
         {
             /* This is an output file currently open for writing, add it */
             if (nfiles == nalloc)
@@ -673,20 +627,6 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
     return 0;
 }
 
-
-void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble)
-{
-    gmx_fio_lock(fio);
-    fio->bDouble = bDouble;
-    gmx_fio_unlock(fio);
-}
-
-void gmx_fio_setdebug(t_fileio *fio, gmx_bool bDebug)
-{
-    gmx_fio_lock(fio);
-    fio->bDebug = bDebug;
-    gmx_fio_unlock(fio);
-}
 
 char *gmx_fio_getname(t_fileio *fio)
 {
@@ -748,11 +688,6 @@ static int gmx_fio_int_fsync(t_fileio *fio)
     {
         rc = gmx_fsync(fio->fp);
     }
-    else if (fio->xdr) /* this should normally not happen */
-    {
-        rc = gmx_fsync((FILE*) fio->xdr->x_private);
-        /* ^ is this actually OK? */
-    }
 
     return rc;
 }
@@ -779,7 +714,7 @@ t_fileio *gmx_fio_all_output_fsync(void)
     cur = gmx_fio_get_first();
     while (cur)
     {
-        if (cur->bOpen && !cur->bRead)
+        if (!cur->bRead)
         {
             /* if any of them fails, return failure code */
             int rc = gmx_fio_int_fsync(cur);
