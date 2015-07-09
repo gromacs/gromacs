@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
 #include "gmxpre.h"
 
 #include "princ.h"
+
+#include <cmath>
 
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -74,7 +76,7 @@ static void ptrans(char *s, real **inten, real d[], real e[])
         z = inten[m][3];
         n = x*x+y*y+z*z;
         fprintf(stderr, "%8s %8.3f %8.3f %8.3f, norm:%8.3f, d:%8.3f, e:%8.3f\n",
-                s, x, y, z, sqrt(n), d[m], e[m]);
+                s, x, y, z, std::sqrt(n), d[m], e[m]);
     }
     fprintf(stderr, "\n");
 }
