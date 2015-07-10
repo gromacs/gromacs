@@ -39,6 +39,7 @@
 #include "sfactor.h"
 
 #include <cmath>
+#include <cstring>
 
 #include <algorithm>
 
@@ -380,7 +381,7 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
 
     for (i = 0; (i < asize(uh)); i++)
     {
-        if (strcmp(name, uh[i].name) == 0)
+        if (std::strcmp(name, uh[i].name) == 0)
         {
             return NCMT-1+uh[i].nh;
         }
@@ -388,7 +389,7 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
 
     for (i = 0; (i < NCMT); i++)
     {
-        if (strncmp (name, gsft->atomnm[i], strlen(gsft->atomnm[i])) == 0)
+        if (std::strncmp (name, gsft->atomnm[i], std::strlen(gsft->atomnm[i])) == 0)
         {
             tndx[cnt] = i;
             cnt++;
@@ -405,9 +406,9 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
         nrc = 0;
         for (i = 0; i < cnt; i++)
         {
-            if (strlen(gsft->atomnm[tndx[i]]) > (size_t)nrc)
+            if (std::strlen(gsft->atomnm[tndx[i]]) > (size_t)nrc)
             {
-                nrc  = strlen(gsft->atomnm[tndx[i]]);
+                nrc  = std::strlen(gsft->atomnm[tndx[i]]);
                 fndx = tndx[i];
             }
         }
