@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -686,6 +686,12 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     {
         rvec  v1, v2;
         rvec  c1, c2;
+
+        clear_rvec(v1);
+        clear_rvec(v2);
+        clear_rvec(c1);
+        clear_rvec(c2);
+
         switch (g2type_[0])
         {
             case 'z':
@@ -701,12 +707,15 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int n = 0; n < angleCount_[g]; ++n, iter1.nextValue(), iter2.nextValue())
         {
             rvec x[4];
+            clear_rvecs(4, x);
+
             real angle;
             // checkSelections() ensures that this reflects all the involved
             // positions.
             const bool bPresent =
                 iter1.currentValuesSelected() && iter2.currentValuesSelected();
             iter1.getCurrentPositions(x);
+
             switch (g1type_[0])
             {
                 case 'a':
@@ -725,6 +734,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 case 'd':
                 {
                     rvec dx[3];
+                    clear_rvecs(3, dx);
                     if (pbc)
                     {
                         pbc_dx(pbc, x[0], x[1], dx[0]);
