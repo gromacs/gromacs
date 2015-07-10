@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <algorithm>
 
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
@@ -88,7 +90,7 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
-                add_atomtype(at, tab, a, name, nb, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 );
+                add_atomtype(at, tab, a, name, nb, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0 );
                 fprintf(stderr, "\rAtomtype %d", ++nratt);
             }
             else
@@ -332,7 +334,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                  gmx_bool bAllowOverrideRTP)
 {
     FILE         *in;
-    char          filebase[STRLEN], *ptr, line[STRLEN], header[STRLEN];
+    char          filebase[STRLEN], line[STRLEN], header[STRLEN];
     int           i, nrtp, maxrtp, bt, nparam;
     int           dum1, dum2, dum3;
     t_restp      *rrtp, *header_settings;
@@ -574,7 +576,7 @@ static int neq_str_sign(const char *a1, const char *a2)
 
     l1 = (int)strlen(a1);
     l2 = (int)strlen(a2);
-    lm = min(l1, l2);
+    lm = std::min(l1, l2);
 
     if (lm >= 1 &&
         ((l1 == l2+1 && is_sign(a1[l1-1])) ||

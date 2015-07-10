@@ -42,10 +42,6 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
                t_params plist[]);
 /* set parameters for virtual sites, return number of virtual sites */
@@ -58,9 +54,5 @@ void set_vsites_ptype(gmx_bool bVerbose,  gmx_moltype_t *molt);
  * Throw away all obsolete bonds, angles and dihedrals.
  * Throw away all constraints. */
 void clean_vsite_bondeds(t_params *ps, int natoms, gmx_bool bRmVSiteBds);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 #include "gmxpre.h"
 
 #include "calch.h"
+
+#include <cmath>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/units.h"
@@ -81,7 +83,6 @@ static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int *l)
 #undef BB
 #undef CC
     int        m;
-    rvec       kkk;
 
     /* This was copied from Gromos */
     for (m = 0; (m < DIM); m++)
@@ -119,7 +120,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
     real s6, rij, ra, rb, xd;
     int  d;
 
-    s6 = 0.5*sqrt(3.e0);
+    s6 = 0.5*std::sqrt(3.e0);
 
     /* common work for constructing one, two or three dihedral hydrogens */
     switch (nht)
@@ -137,7 +138,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
                 sb[d]  = xd-xAK[d];
                 rij   += sqr(sij[d]);
             }
-            rij    = sqrt(rij);
+            rij    = std::sqrt(rij);
             sa[XX] = sij[YY]*sb[ZZ]-sij[ZZ]*sb[YY];
             sa[YY] = sij[ZZ]*sb[XX]-sij[XX]*sb[ZZ];
             sa[ZZ] = sij[XX]*sb[YY]-sij[YY]*sb[XX];
@@ -147,7 +148,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
                 sij[d] = sij[d]/rij;
                 ra    += sqr(sa[d]);
             }
-            ra = sqrt(ra);
+            ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
             {
                 sa[d] = sa[d]/ra;
@@ -171,15 +172,15 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
                 rij   += sqr(sij[d]);
                 rb    += sqr(sb[d]);
             }
-            rij = sqrt(rij);
-            rb  = sqrt(rb);
+            rij = std::sqrt(rij);
+            rb  = std::sqrt(rb);
             ra  = 0.e0;
             for (d = 0; (d < DIM); d++)
             {
                 sa[d] = sij[d]/rij+sb[d]/rb;
                 ra   += sqr(sa[d]);
             }
-            ra = sqrt(ra);
+            ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
             {
                 xH1[d] = xAI[d]+distH*sa[d]/ra;

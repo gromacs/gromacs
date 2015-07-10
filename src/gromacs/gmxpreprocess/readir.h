@@ -42,10 +42,6 @@
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum {
     eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
 };
@@ -117,11 +113,8 @@ void do_index(const char* mdparin,
               gmx_mtop_t *mtop,
               gmx_bool    bVerbose,
               t_inputrec *ir,
-              rvec       *v,
               warninp_t   wi);
 /* Read the index file and assign grp numbers to atoms.
- * If v is not NULL, the velocities will be scaled to the correct number
- * of degrees of freedom.
  */
 
 /* Routines In readpull.c */
@@ -163,9 +156,5 @@ void make_rotation_groups(t_rot *rot, char **rotgnames,
 
 void set_reference_positions(t_rot *rot, rvec *x, matrix box,
                              const char *fn, gmx_bool bSet, warninp_t wi);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

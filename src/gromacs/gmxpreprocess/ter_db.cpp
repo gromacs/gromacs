@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,7 @@ static void read_atom(char *line, gmx_bool bAdd,
                       char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
 {
     int    nr, i;
-    char   buf[5][30], type[12];
+    char   buf[5][30];
     double m, q;
 
     /* This code is messy, because of support for different formats:
@@ -151,7 +151,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
 {
     FILE *out;
     int   i, j, k, bt, nrepl, nadd, ndel;
-    char  buf[STRLEN], nname[STRLEN];
+    char  buf[STRLEN];
 
     sprintf(buf, "%s-%c.tdb", ff, C);
     out = gmx_fio_fopen(buf, "w");
@@ -440,6 +440,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
                          const char *rtpname,
                          int *nret)
 {
+    // TODO Four years later, no force fields have ever used this, so decide status of this feature
     /* Since some force fields (e.g. OPLS) needs different
      * atomtypes for different residues there could be a lot
      * of entries in the databases for specific residues
@@ -462,9 +463,9 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
      */
 
     t_restp     *   restp;
-    int             i, j, n, len, none_idx;
+    int             i, j, n, none_idx;
     gmx_bool        found;
-    char           *rtpname_match, *s, *s2, *c;
+    char           *rtpname_match, *s;
     t_hackblock   **list;
 
     rtpname_match = search_rtp(rtpname, nrtp, rtp);
@@ -505,8 +506,8 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
         while (!found && s != NULL);
     }
 
-    /* All residue-specific termini have been added. See if there
-     * are some generic ones by searching for the occurence of
+    /* All residue-specific termini have been added. We might have to fall
+     * back on generic termini, which are characterized by not having
      * '-' in the name prior to the last position (which indicates charge).
      * The [ None ] alternative is special since we don't want that
      * to be the default, so we put it last in the list we return.
@@ -528,8 +529,22 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
             }
             else
             {
-                c = strchr(s, '-');
-                if (c == NULL || ((c-s+1) == strlen(s)))
+                /* Time to see if there's a generic terminus that matches.
+                   Is there a hyphen? */
+                char *c = strchr(s, '-');
+
+                /* A conjunction hyphen normally indicates a residue-specific
+                   terminus, which is named like "GLY-COOH". A generic terminus
+                   won't have a hyphen. */
+                bool bFoundAnyHyphen = (c != NULL);
+                /* '-' as the last character indicates charge, so if that's
+                   the only one found e.g. "COO-", then it was not a conjunction
+                   hyphen, so this is a generic terminus */
+                bool bOnlyFoundChargeHyphen = (bFoundAnyHyphen &&
+                                               *(c+1) == '\0');
+                /* Thus, "GLY-COO-" is not recognized as a generic terminus. */
+                bool bFoundGenericTerminus = !bFoundAnyHyphen || bOnlyFoundChargeHyphen;
+                if (bFoundGenericTerminus)
                 {
                     /* Check that we haven't already added a residue-specific version
                      * of this terminus.
@@ -567,12 +582,9 @@ t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title)
     printf("%s\n", title);
     for (i = 0; (i < nb); i++)
     {
-        char *advice_string = "";
-        if (0 == gmx_wcmatch("*ZWITTERION*", (*tb[i]).name))
-        {
-            advice_string = " (only use with zwitterions containing exactly one residue)";
-        }
-        printf("%2d: %s%s\n", i, (*tb[i]).name, advice_string);
+        bool bIsZwitterion = (0 == gmx_wcmatch("*ZWITTERION*", (*tb[i]).name));
+        printf("%2d: %s%s\n", i, (*tb[i]).name,
+               bIsZwitterion ? " (only use with zwitterions containing exactly one residue)" : "");
     }
     do
     {
