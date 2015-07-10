@@ -40,9 +40,12 @@
 #include "gen_ad.h"
 
 #include <ctype.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
@@ -510,10 +513,8 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
 static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
                          gmx_bool bAllowMissing)
 {
-    char         *a0;
     t_rbondeds   *impropers;
-    t_rbonded    *hbimproper;
-    int           nimproper, i, j, k, r, start, ninc, nalloc;
+    int           nimproper, i, j, k, start, ninc, nalloc;
     atom_id       ai[MAXATOMLIST];
     gmx_bool      bStop;
 
@@ -686,7 +687,7 @@ static void remove_excl(t_excls *excls, int remove)
 
 void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 {
-    int      i, j, j1, k, k1, l, l1, m, n, e;
+    int      i, j, j1, k, k1, l, l1, e;
     t_excls *excl;
 
     if (nrexcl >= 1)
@@ -750,10 +751,10 @@ void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 
 void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 {
-    int      i, j, j1, k, k1, l, l1, m, n, e, N;
+    int      i, j, n, N;
     t_excls *excl;
 
-    for (N = 1; (N < min(nrexcl, nnb->nrex)); N++)
+    for (N = 1; (N < std::min(nrexcl, nnb->nrex)); N++)
     {
         /* extract all i-j-k-l neighbours from nnb struct */
         for (i = 0; (i < nnb->nr); i++)
@@ -861,8 +862,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                             maxres = minres;
                             for (m = 1; m < 3; m++)
                             {
-                                minres = min(minres, atoms->atom[ang[nang].a[m]].resind);
-                                maxres = max(maxres, atoms->atom[ang[nang].a[m]].resind);
+                                minres = std::min(minres, atoms->atom[ang[nang].a[m]].resind);
+                                maxres = std::max(maxres, atoms->atom[ang[nang].a[m]].resind);
                             }
                             res = 2*minres-maxres;
                             do
@@ -925,8 +926,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                     maxres = minres;
                                     for (m = 1; m < 4; m++)
                                     {
-                                        minres = min(minres, atoms->atom[dih[ndih].a[m]].resind);
-                                        maxres = max(maxres, atoms->atom[dih[ndih].a[m]].resind);
+                                        minres = std::min(minres, atoms->atom[dih[ndih].a[m]].resind);
+                                        maxres = std::max(maxres, atoms->atom[dih[ndih].a[m]].resind);
                                     }
                                     res = 2*minres-maxres;
                                     do
@@ -1004,8 +1005,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 }
                                 if (nbd == 3)
                                 {
-                                    i1    = min(i, l1);
-                                    i2    = max(i, l1);
+                                    i1    = std::min(i, l1);
+                                    i2    = std::max(i, l1);
                                     bExcl = FALSE;
                                     for (m = 0; m < excls[i1].nr; m++)
                                     {

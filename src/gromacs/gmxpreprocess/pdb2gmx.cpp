@@ -38,6 +38,7 @@
 
 #include "pdb2gmx.h"
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -322,7 +323,7 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, int *r_start, int *r_end
                           int nrr, rtprename_t *rr, t_symtab *symtab,
                           gmx_bool bVerbose)
 {
-    int      r, i, j;
+    int      r, j;
     gmx_bool bStart, bEnd;
     char    *nn;
     gmx_bool bFFRTPTERRNM;
@@ -703,7 +704,6 @@ static void sort_pdbatoms(t_restp restp[],
     rvec       **xnew;
     int          i, j;
     t_restp     *rptr;
-    t_hackblock *hbr;
     t_pdbindex  *pdbi;
     atom_id     *a;
     char        *atomnm;
@@ -834,7 +834,10 @@ static int remove_duplicate_atoms(t_atoms *pdba, rvec x[], gmx_bool bVerbose)
             {
                 pdba->atom[j]     = pdba->atom[j+1];
                 pdba->atomname[j] = pdba->atomname[j+1];
-                pdba->pdbinfo[j]  = pdba->pdbinfo[j+1];
+                if (pdba->pdbinfo)
+                {
+                    pdba->pdbinfo[j]  = pdba->pdbinfo[j+1];
+                }
                 copy_rvec(x[j+1], x[j]);
             }
             srenew(pdba->atom,     pdba->nr);
@@ -921,42 +924,18 @@ void find_nc_ter(t_atoms *pdba, int r0, int r1, int *r_start, int *r_end,
 }
 
 
-static void
-modify_chain_numbers(t_atoms *       pdba,
-                     const char *    chainsep)
+enum SplittingType
 {
-    int           i;
-    char          old_prev_chainid;
-    char          old_this_chainid;
-    int           old_prev_chainnum;
-    int           old_this_chainnum;
-    t_resinfo    *ri;
-    char          select[STRLEN];
-    int           new_chainnum;
-    int           this_atomnum;
-    int           prev_atomnum;
-    const char *  prev_atomname;
-    const char *  this_atomname;
-    const char *  prev_resname;
-    const char *  this_resname;
-    int           prev_resnum;
-    int           this_resnum;
-    char          prev_chainid;
-    char          this_chainid;
-    int           prev_chainnumber;
-    int           this_chainnumber;
+    SPLIT_ID_OR_TER,
+    SPLIT_ID_AND_TER,
+    SPLIT_ID_ONLY,
+    SPLIT_TER_ONLY,
+    SPLIT_INTERACTIVE
+};
 
-    enum
-    {
-        SPLIT_ID_OR_TER,
-        SPLIT_ID_AND_TER,
-        SPLIT_ID_ONLY,
-        SPLIT_TER_ONLY,
-        SPLIT_INTERACTIVE
-    }
-    splitting;
-
-    splitting = SPLIT_TER_ONLY; /* keep compiler happy */
+static SplittingType getSplittingType(const char *chainsep)
+{
+    SplittingType splitting = SPLIT_TER_ONLY; /* keep compiler happy */
 
     /* Be a bit flexible to catch typos */
     if (!strncmp(chainsep, "id_o", 4))
@@ -990,6 +969,33 @@ modify_chain_numbers(t_atoms *       pdba,
     {
         gmx_fatal(FARGS, "Unidentified setting for chain separation: %s\n", chainsep);
     }
+    return splitting;
+}
+
+static void
+modify_chain_numbers(t_atoms *       pdba,
+                     const char *    chainsep)
+{
+    int           i;
+    char          old_prev_chainid;
+    char          old_this_chainid;
+    int           old_prev_chainnum;
+    int           old_this_chainnum;
+    t_resinfo    *ri;
+    char          select[STRLEN];
+    int           new_chainnum;
+    int           this_atomnum;
+    int           prev_atomnum;
+    const char *  prev_atomname;
+    const char *  this_atomname;
+    const char *  prev_resname;
+    const char *  this_resname;
+    int           prev_resnum;
+    int           this_resnum;
+    char          prev_chainid;
+    char          this_chainid;
+
+    SplittingType splitting = getSplittingType(chainsep);
 
     /* The default chain enumeration is based on TER records only, which is reflected in chainnum below */
 
@@ -1002,7 +1008,6 @@ modify_chain_numbers(t_atoms *       pdba,
     this_resname        = NULL;
     this_resnum         = -1;
     this_chainid        = '?';
-    this_chainnumber    = -1;
 
     for (i = 0; i < pdba->nres; i++)
     {
@@ -1015,14 +1020,12 @@ modify_chain_numbers(t_atoms *       pdba,
         prev_resname       = this_resname;
         prev_resnum        = this_resnum;
         prev_chainid       = this_chainid;
-        prev_chainnumber   = this_chainnumber;
 
         this_atomname      = *(pdba->atomname[i]);
         this_atomnum       = (pdba->pdbinfo != NULL) ? pdba->pdbinfo[i].atomnr : i+1;
         this_resname       = *ri->name;
         this_resnum        = ri->nr;
         this_chainid       = ri->chainid;
-        this_chainnumber   = ri->chainnum;
 
         switch (splitting)
         {
@@ -1257,17 +1260,16 @@ int gmx_pdb2gmx(int argc, char *argv[])
     const char       *watres;
     int               nrtpf;
     char            **rtpf;
-    char              rtp[STRLEN];
     int               nrrn;
     char            **rrn;
-    int               nrtprename, naa;
+    int               nrtprename;
     rtprename_t      *rtprename = NULL;
     int               nah, nNtdb, nCtdb, ntdblist;
     t_hackblock      *ntdb, *ctdb, **tdblist;
     int               nssbonds;
     t_ssbond         *ssbonds;
     rvec             *pdbx, *x;
-    gmx_bool          bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE, bCheckMerge;
+    gmx_bool          bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE;
     real              mHmult  = 0;
     t_hackblock      *hb_chain;
     t_restp          *restp_chain;
@@ -1441,6 +1443,9 @@ int gmx_pdb2gmx(int argc, char *argv[])
         mHmult = 1.0;
     }
 
+    /* parse_common_args ensures vsitestr has been selected, but
+       clang-static-analyzer needs clues to know that */
+    assert(vsitestr[0]);
     switch (vsitestr[0][0])
     {
         case 'n': /* none */
@@ -1481,7 +1486,6 @@ int gmx_pdb2gmx(int argc, char *argv[])
     sfree(rrn);
 
     /* Add all alternative names from the residue renaming database to the list of recognized amino/nucleic acids. */
-    naa = 0;
     for (i = 0; i < nrtprename; i++)
     {
         rc = gmx_residuetype_get_type(rt, rtprename[i].gmx, &p_restype);
@@ -1593,6 +1597,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 }
             }
 
+            /* On the first loop (==atom), the first chain is always recognized */
+            assert(i == 0 || (nch > 1 && pdb_ch != NULL));
             if (bMerged)
             {
                 pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] =
@@ -1781,7 +1787,6 @@ int gmx_pdb2gmx(int argc, char *argv[])
     nmol  = 0;
     incls = NULL;
     mols  = NULL;
-    nres  = 0;
     for (chain = 0; (chain < nch); chain++)
     {
         cc = &(chains[chain]);
@@ -1954,7 +1959,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
             block = new_blocka();
             snew(gnames, 1);
             sort_pdbatoms(restp_chain, natom, &pdba, &x, block, &gnames);
-            natom = remove_duplicate_atoms(pdba, x, bVerbose);
+            remove_duplicate_atoms(pdba, x, bVerbose);
             if (ftp2bSet(efNDX, NFILE, fnm))
             {
                 if (bRemoveH)

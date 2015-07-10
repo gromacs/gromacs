@@ -68,7 +68,7 @@ static void init_pull_group(t_pull_group *pg,
                             const char   *wbuf)
 {
     double d;
-    int    n, m;
+    int    n;
 
     pg->nweight = 0;
     while (sscanf(wbuf, "%lf %n", &d, &n) == 1)
@@ -84,9 +84,8 @@ static void init_pull_group(t_pull_group *pg,
 
 static void process_pull_dim(char *dim_buf, ivec dim)
 {
-    int           ndim, d, nchar, c;
+    int           ndim, d, nchar;
     char         *ptr, pulldim1[STRLEN];
-    t_pull_coord *pcrd;
 
     ptr  = dim_buf;
     ndim = 0;
@@ -189,13 +188,11 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
                        pull_params_t *pull,
                        warninp_t wi)
 {
-    int           ninp, i, nchar, nscan, m, idum;
+    int           ninp, i, nscan, idum;
     t_inpfile    *inp;
     const char   *tmp;
     char        **grpbuf;
-    char          dummy[STRLEN], buf[STRLEN], groups[STRLEN], dim_buf[STRLEN];
-    char          init[STRLEN];
-    const char   *init_def1 = "0.0", *init_def3 = "0.0 0.0 0.0";
+    char          buf[STRLEN], groups[STRLEN], dim_buf[STRLEN];
     char          wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
 
     t_pull_group *pgrp;

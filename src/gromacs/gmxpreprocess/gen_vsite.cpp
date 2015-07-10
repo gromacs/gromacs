@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,11 @@
 
 #include "gen_vsite.h"
 
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
@@ -158,7 +159,7 @@ static void read_vsite_database(const char *ddbname,
     FILE        *ddb;
     char         dirstr[STRLEN];
     char         pline[STRLEN];
-    int          i, j, n, k, nvsite, ntop, curdir, prevdir;
+    int          i, n, k, nvsite, ntop, curdir;
     t_vsiteconf *vsiteconflist;
     t_vsitetop  *vsitetoplist;
     char        *ch;
@@ -582,7 +583,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
                        int Heavy, int nrHatoms, int Hatoms[],
                        int nrheavies, int heavies[])
 {
-    int      i, j, ftype, other, moreheavy, bb;
+    int      i, j, ftype, other, moreheavy;
     gmx_bool bSwapParity;
 
     for (i = 0; i < nrHatoms; i++)
@@ -697,7 +698,7 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
 
     int  i, nvsite;
     real a, b, dCGCE, tmp1, tmp2, mtot, mG, mrest;
-    real xCG, yCG, xCE1, yCE1, xCE2, yCE2;
+    real xCG;
     /* CG, CE1 and CE2 stay and each get a part of the total mass,
      * so the c-o-m stays the same.
      */
@@ -711,7 +712,7 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
     }
 
     /* constraints between CG, CE1 and CE2: */
-    dCGCE = sqrt( cosrule(bond_cc, bond_cc, ANGLE_6RING) );
+    dCGCE = std::sqrt( cosrule(bond_cc, bond_cc, ANGLE_6RING) );
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE1], dCGCE);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE2], dCGCE);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCE1], ats[atCE2], dCGCE);
@@ -734,11 +735,6 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
      * the CE1-CE2 bond and y=0 at the line from CG to the middle of CE1-CE2 bond.
      */
     xCG  = -bond_cc+bond_cc*cos(ANGLE_6RING);
-    yCG  = 0;
-    xCE1 = 0;
-    yCE1 = bond_cc*sin(0.5*ANGLE_6RING);
-    xCE2 = 0;
-    yCE2 = -bond_cc*sin(0.5*ANGLE_6RING);
 
     mG                             = at->atom[ats[atCG]].m = at->atom[ats[atCG]].mB = xcom*mtot/xCG;
     mrest                          = mtot-mG;
@@ -792,7 +788,7 @@ static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
         atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2,
         atCZ, atHZ, atNR
     };
-    real x[atNR], y[atNR];
+    real x[atNR];
     /* Aromatic rings have 6-fold symmetry, so we only need one bond length.
      * (angle is always 120 degrees).
      */
@@ -800,27 +796,16 @@ static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
     bond_ch = get_ddb_bond(vsitetop, nvsitetop, "PHE", "CD1", "HD1");
 
     x[atCG]  = -bond_cc+bond_cc*cos(ANGLE_6RING);
-    y[atCG]  = 0;
     x[atCD1] = -bond_cc;
-    y[atCD1] = bond_cc*sin(0.5*ANGLE_6RING);
     x[atHD1] = x[atCD1]+bond_ch*cos(ANGLE_6RING);
-    y[atHD1] = y[atCD1]+bond_ch*sin(ANGLE_6RING);
     x[atCE1] = 0;
-    y[atCE1] = y[atCD1];
     x[atHE1] = x[atCE1]-bond_ch*cos(ANGLE_6RING);
-    y[atHE1] = y[atCE1]+bond_ch*sin(ANGLE_6RING);
     x[atCD2] = x[atCD1];
-    y[atCD2] = -y[atCD1];
     x[atHD2] = x[atHD1];
-    y[atHD2] = -y[atHD1];
     x[atCE2] = x[atCE1];
-    y[atCE2] = -y[atCE1];
     x[atHE2] = x[atHE1];
-    y[atHE2] = -y[atHE1];
     x[atCZ]  = bond_cc*cos(0.5*ANGLE_6RING);
-    y[atCZ]  = 0;
     x[atHZ]  = x[atCZ]+bond_ch;
-    y[atHZ]  = 0;
 
     xcom = mtot = 0;
     for (i = 0; i < atNR; i++)
@@ -840,14 +825,11 @@ static void calc_vsite3_param(real xd, real yd, real xi, real yi, real xj, real 
      * virtual site coordinates here.
      */
     real dx_ij, dx_ik, dy_ij, dy_ik;
-    real b_ij, b_ik;
 
     dx_ij = xj-xi;
     dy_ij = yj-yi;
     dx_ik = xk-xi;
     dy_ik = yk-yi;
-    b_ij  = sqrt(dx_ij*dx_ij+dy_ij*dy_ij);
-    b_ik  = sqrt(dx_ik*dx_ik+dy_ik*dy_ik);
 
     *a = ( (xd-xi)*dy_ik - dx_ik*(yd-yi) ) / (dx_ij*dy_ik - dx_ik*dy_ij);
     *b = ( yd - yi - (*a)*dy_ij ) / dy_ik;
@@ -877,20 +859,18 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     };
 
     real xi[atNR], yi[atNR];
-    real xcom[NMASS], ycom[NMASS], I, alpha;
-    real lineA, lineB, dist;
+    real xcom[NMASS], ycom[NMASS], alpha;
     real b_CD2_CE2, b_NE1_CE2, b_CG_CD2, b_CH2_HH2, b_CE2_CZ2;
     real b_NE1_HE1, b_CD2_CE3, b_CE3_CZ3, b_CB_CG;
     real b_CZ2_CH2, b_CZ2_HZ2, b_CD1_HD1, b_CE3_HE3;
     real b_CG_CD1, b_CZ3_HZ3;
     real a_NE1_CE2_CD2, a_CE2_CD2_CG, a_CB_CG_CD2, a_CE2_CD2_CE3;
-    real a_CB_CG_CD1, a_CD2_CG_CD1, a_CE2_CZ2_HZ2, a_CZ2_CH2_HH2;
+    real a_CD2_CG_CD1, a_CE2_CZ2_HZ2, a_CZ2_CH2_HH2;
     real a_CD2_CE2_CZ2, a_CD2_CE3_CZ3, a_CE3_CZ3_HZ3, a_CG_CD1_HD1;
     real a_CE2_CZ2_CH2, a_HE1_NE1_CE2, a_CD2_CE3_HE3;
-    real xM[NMASS];
     int  atM[NMASS], tpM, i, i0, j, nvsite;
-    real mwtot, mtot, mM[NMASS], dCBM1, dCBM2, dM1M2;
-    real a, b, c[MAXFORCEPARAM];
+    real mM[NMASS], dCBM1, dCBM2, dM1M2;
+    real a, b;
     rvec r_ij, r_ik, t1, t2;
     char name[10];
 
@@ -920,7 +900,7 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     a_CE2_CD2_CG  = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CE2", "CD2", "CG");
     a_CB_CG_CD2   = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CB", "CG", "CD2");
     a_CD2_CG_CD1  = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CD2", "CG", "CD1");
-    a_CB_CG_CD1   = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CB", "CG", "CD1");
+    /*a_CB_CG_CD1   = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CB", "CG", "CD1"); unused */
 
     a_CE2_CD2_CE3 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CE2", "CD2", "CE3");
     a_CD2_CE2_CZ2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TRP", "CD2", "CE2", "CZ2");
@@ -996,10 +976,6 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     alpha     = a_CE2_CD2_CE3 + a_CD2_CE3_CZ3 - a_CE3_CZ3_HZ3;
     xi[atHH2] = xi[atCH2]+b_CH2_HH2*sin(alpha);
     yi[atHH2] = yi[atCH2]-b_CH2_HH2*cos(alpha);
-
-    /* Determine coeff. for the line CB-CG */
-    lineA = (yi[atCB]-yi[atCG])/(xi[atCB]-xi[atCG]);
-    lineB = yi[atCG]-lineA*xi[atCG];
 
     /* Calculate masses for each ring and put it on the dummy masses */
     for (j = 0; j < NMASS; j++)
@@ -1097,9 +1073,9 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
 
     /* constraints between CB, M1 and M2 */
     /* 'add_shift' says which atoms won't be renumbered afterwards */
-    dCBM1 = sqrt( sqr(xcom[0]-xi[atCB]) + sqr(ycom[0]-yi[atCB]) );
-    dM1M2 = sqrt( sqr(xcom[0]-xcom[1]) + sqr(ycom[0]-ycom[1]) );
-    dCBM2 = sqrt( sqr(xcom[1]-xi[atCB]) + sqr(ycom[1]-yi[atCB]) );
+    dCBM1 = std::sqrt( sqr(xcom[0]-xi[atCB]) + sqr(ycom[0]-yi[atCB]) );
+    dM1M2 = std::sqrt( sqr(xcom[0]-xcom[1]) + sqr(ycom[0]-ycom[1]) );
+    dCBM2 = std::sqrt( sqr(xcom[1]-xi[atCB]) + sqr(ycom[1]-yi[atCB]) );
     my_add_param(&(plist[F_CONSTRNC]), ats[atCB],       add_shift+atM[0], dCBM1);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCB],       add_shift+atM[1], dCBM2);
     my_add_param(&(plist[F_CONSTRNC]), add_shift+atM[0], add_shift+atM[1], dM1M2);
@@ -1144,7 +1120,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     real dCGCE, dCEOH, dCGM, tmp1, a, b;
     real bond_cc, bond_ch, bond_co, bond_oh, angle_coh;
     real xcom, mtot;
-    real vmass, vdist, mM;
+    real vdist, mM;
     rvec r1;
     char name[10];
 
@@ -1153,7 +1129,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
         atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2,
         atCZ, atOH, atHH, atNR
     };
-    real xi[atNR], yi[atNR];
+    real xi[atNR];
     /* CG, CE1, CE2 (as in general 6-ring) and OH and HH stay,
        rest gets virtualized.
        Now we have two linked triangles with one improper keeping them flat */
@@ -1172,27 +1148,16 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     angle_coh = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, "TYR", "CZ", "OH", "HH");
 
     xi[atCG]  = -bond_cc+bond_cc*cos(ANGLE_6RING);
-    yi[atCG]  = 0;
     xi[atCD1] = -bond_cc;
-    yi[atCD1] = bond_cc*sin(0.5*ANGLE_6RING);
     xi[atHD1] = xi[atCD1]+bond_ch*cos(ANGLE_6RING);
-    yi[atHD1] = yi[atCD1]+bond_ch*sin(ANGLE_6RING);
     xi[atCE1] = 0;
-    yi[atCE1] = yi[atCD1];
     xi[atHE1] = xi[atCE1]-bond_ch*cos(ANGLE_6RING);
-    yi[atHE1] = yi[atCE1]+bond_ch*sin(ANGLE_6RING);
     xi[atCD2] = xi[atCD1];
-    yi[atCD2] = -yi[atCD1];
     xi[atHD2] = xi[atHD1];
-    yi[atHD2] = -yi[atHD1];
     xi[atCE2] = xi[atCE1];
-    yi[atCE2] = -yi[atCE1];
     xi[atHE2] = xi[atHE1];
-    yi[atHE2] = -yi[atHE1];
     xi[atCZ]  = bond_cc*cos(0.5*ANGLE_6RING);
-    yi[atCZ]  = 0;
     xi[atOH]  = xi[atCZ]+bond_co;
-    yi[atOH]  = 0;
 
     xcom = mtot = 0;
     for (i = 0; i < atOH; i++)
@@ -1214,8 +1179,8 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     at->atom[ats[atCZ]].m = at->atom[ats[atCZ]].mB = 0;
 
     /* constraints between CE1, CE2 and OH */
-    dCGCE = sqrt( cosrule(bond_cc, bond_cc, ANGLE_6RING) );
-    dCEOH = sqrt( cosrule(bond_cc, bond_co, ANGLE_6RING) );
+    dCGCE = std::sqrt( cosrule(bond_cc, bond_cc, ANGLE_6RING) );
+    dCEOH = std::sqrt( cosrule(bond_cc, bond_co, ANGLE_6RING) );
     my_add_param(&(plist[F_CONSTRNC]), ats[atCE1], ats[atOH], dCEOH);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCE2], ats[atOH], dCEOH);
 
@@ -1282,7 +1247,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     nvsite++;
     /* assume we also want the COH angle constrained: */
     tmp1 = bond_cc*cos(0.5*ANGLE_6RING) + dCGCE*sin(ANGLE_6RING*0.5) + bond_co;
-    dCGM = sqrt( cosrule(tmp1, vdist, angle_coh) );
+    dCGM = std::sqrt( cosrule(tmp1, vdist, angle_coh) );
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], add_shift+atM, dCGM);
     my_add_param(&(plist[F_CONSTRNC]), ats[atOH], add_shift+atM, vdist);
 
@@ -1375,8 +1340,8 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     }
 
     /* constraints between CG, CE1 and NE1 */
-    dCGCE1   = sqrt( cosrule(b_CG_ND1, b_ND1_CE1, a_CG_ND1_CE1) );
-    dCGNE2   = sqrt( cosrule(b_CG_CD2, b_CD2_NE2, a_CG_CD2_NE2) );
+    dCGCE1   = std::sqrt( cosrule(b_CG_ND1, b_ND1_CE1, a_CG_ND1_CE1) );
+    dCGNE2   = std::sqrt( cosrule(b_CG_CD2, b_CD2_NE2, a_CG_CD2_NE2) );
 
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE1], dCGCE1);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atNE2], dCGNE2);
@@ -1394,7 +1359,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     y[atCE1] = cosalpha*dCGCE1;
     x[atNE2] = 0;
     y[atNE2] = y[atCE1]-b_CE1_NE2;
-    sinalpha = sqrt(1-cosalpha*cosalpha);
+    sinalpha = std::sqrt(1-cosalpha*cosalpha);
     x[atCG]  = -sinalpha*dCGCE1;
     y[atCG]  = 0;
     x[atHE1] = x[atHE2] = x[atHD1] = x[atHD2] = 0;
@@ -1553,7 +1518,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     int               i, j, k, m, i0, ni0, whatres, resind, add_shift, ftype, nvsite, nadd;
     int               ai, aj, ak, al;
     int               nrfound = 0, needed, nrbonds, nrHatoms, Heavy, nrheavies, tpM, tpHeavy;
-    int               Hatoms[4], heavies[4], bb;
+    int               Hatoms[4], heavies[4];
     gmx_bool          bWARNING, bAddVsiteParam, bFirstWater;
     matrix            tmpmat;
     gmx_bool         *bResProcessed;
@@ -1959,7 +1924,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                         mHtot *= mHmult;
                     }
                     fact2 = mHtot/mtot;
-                    fact  = sqrt(fact2);
+                    fact  = std::sqrt(fact2);
                     /* generate vectors parallel and perpendicular to rotational axis:
                      * rpar  = Heavy -> Hcom
                      * rperp = Hcom  -> H1   */

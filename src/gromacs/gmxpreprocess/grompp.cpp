@@ -41,8 +41,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
-#include <math.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include <sys/types.h>
 
@@ -187,7 +190,7 @@ static void check_cg_sizes(const char *topfn, t_block *cgs, warninp_t wi)
     maxsize = 0;
     for (cg = 0; cg < cgs->nr; cg++)
     {
-        maxsize = max(maxsize, cgs->index[cg+1]-cgs->index[cg]);
+        maxsize = std::max(maxsize, cgs->index[cg+1]-cgs->index[cg]);
     }
 
     if (maxsize > MAX_CHARGEGROUP_SIZE)
@@ -289,7 +292,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
                 if (debug)
                 {
                     fprintf(debug, "fc %g m1 %g m2 %g period %g\n",
-                            fc, m1, m2, sqrt(period2));
+                            fc, m1, m2, std::sqrt(period2));
                 }
                 if (period2 < limit2)
                 {
@@ -334,7 +337,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
                 *w_moltype->name,
                 w_a1+1, *w_moltype->atoms.atomname[w_a1],
                 w_a2+1, *w_moltype->atoms.atomname[w_a2],
-                sqrt(w_period2), bWarn ? min_steps_warn : min_steps_note, dt,
+                std::sqrt(w_period2), bWarn ? min_steps_warn : min_steps_note, dt,
                 bWater ?
                 "Maybe you asked for fexible water." :
                 "Maybe you forgot to change the constraints mdp option.");
@@ -810,7 +813,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                         rvec com,
                         warninp_t wi)
 {
-    gmx_bool        bFirst = TRUE, *hadAtom;
+    gmx_bool       *hadAtom;
     rvec           *x, *v, *xp;
     dvec            sum;
     double          totmass;
@@ -826,7 +829,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     get_stx_coordnum(fn, &natoms);
     if (natoms != mtop->natoms)
     {
-        sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn, natoms, mtop->natoms, min(mtop->natoms, natoms), fn);
+        sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn, natoms, mtop->natoms, std::min(mtop->natoms, natoms), fn);
         warning(wi, warn_buf);
     }
     snew(x, natoms);
@@ -993,8 +996,6 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
                        rvec com, rvec comB,
                        warninp_t wi)
 {
-    int i, j;
-
     read_posres  (mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
     /* It is safer to simply read the b-state posres rather than trying
      * to be smart and copy the positions.
@@ -1091,7 +1092,7 @@ interpolate1d( double     xmin,
     int    ix;
     double a, b;
 
-    ix = (x-xmin)/dx;
+    ix = static_cast<int>((x-xmin)/dx);
 
     a = (xmin+(ix+1)*dx-x)/dx;
     b = (x-xmin-ix*dx)/dx;
@@ -1181,7 +1182,7 @@ setup_cmap (int              grid_spacing,
 
 void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
 {
-    int i, k, nelem;
+    int i, nelem;
 
     cmap_grid->ngrid        = ngrid;
     cmap_grid->grid_spacing = grid_spacing;
@@ -1308,22 +1309,19 @@ static real calc_temp(const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       rvec             *v)
 {
-    double                  sum_mv2;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
     int                     a;
-    int                     nrdf, g;
 
-    sum_mv2 = 0;
-
+    double                  sum_mv2 = 0;
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
     {
         sum_mv2 += atom->m*norm2(v[a]);
     }
 
-    nrdf = 0;
-    for (g = 0; g < ir->opts.ngtc; g++)
+    double nrdf = 0;
+    for (int g = 0; g < ir->opts.ngtc; g++)
     {
         nrdf += ir->opts.nrdf[g];
     }
@@ -1348,7 +1346,7 @@ static real get_max_reference_temp(const t_inputrec *ir,
         }
         else
         {
-            ref_t = max(ref_t, ir->opts.ref_t[i]);
+            ref_t = std::max(ref_t, ir->opts.ref_t[i]);
         }
     }
 
@@ -1370,7 +1368,6 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               matrix            box,
                               warninp_t         wi)
 {
-    int                    i;
     verletbuf_list_setup_t ls;
     real                   rlist_1x1;
     int                    n_nonlin_vsite;
@@ -1396,18 +1393,18 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     }
 
     printf("Calculated rlist for %dx%d atom pair-list as %.3f nm, buffer size %.3f nm\n",
-           1, 1, rlist_1x1, rlist_1x1-max(ir->rvdw, ir->rcoulomb));
+           1, 1, rlist_1x1, rlist_1x1-std::max(ir->rvdw, ir->rcoulomb));
 
     ir->rlistlong = ir->rlist;
     printf("Set rlist, assuming %dx%d atom pair-list, to %.3f nm, buffer size %.3f nm\n",
            ls.cluster_size_i, ls.cluster_size_j,
-           ir->rlist, ir->rlist-max(ir->rvdw, ir->rcoulomb));
+           ir->rlist, ir->rlist-std::max(ir->rvdw, ir->rcoulomb));
 
     printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
     if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
     {
-        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlistlong, sqrt(max_cutoff2(ir->ePBC, box)));
+        gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlistlong, std::sqrt(max_cutoff2(ir->ePBC, box)));
     }
 }
 
@@ -1516,26 +1513,21 @@ int gmx_grompp(int argc, char *argv[])
     t_molinfo         *mi, *intermolecular_interactions;
     gpp_atomtype_t     atype;
     t_inputrec        *ir;
-    int                natoms, nvsite, comb, mt;
+    int                nvsite, comb, mt;
     t_params          *plist;
     t_state           *state;
     matrix             box;
-    real               max_spacing, fudgeQQ;
+    real               fudgeQQ;
     double             reppow;
     char               fn[STRLEN], fnB[STRLEN];
     const char        *mdparin;
     int                ntype;
     gmx_bool           bNeedVel, bGenVel;
     gmx_bool           have_atomnumber;
-    int                n12, n13, n14;
-    t_params          *gb_plist = NULL;
-    gmx_genborn_t     *born     = NULL;
     output_env_t       oenv;
     gmx_bool           bVerbose = FALSE;
     warninp_t          wi;
     char               warn_buf[STRLEN];
-    unsigned int       useed;
-    t_atoms            IMDatoms;   /* Atoms to be operated on interactively (IMD) */
 
     t_filenm           fnm[] = {
         { efMDP, NULL,  NULL,        ffREAD  },
@@ -1603,7 +1595,7 @@ int gmx_grompp(int argc, char *argv[])
     if (ir->ld_seed == -1)
     {
         ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
-        fprintf(stderr, "Setting the LD random seed to %"GMX_PRId64 "\n", ir->ld_seed);
+        fprintf(stderr, "Setting the LD random seed to %" GMX_PRId64 "\n", ir->ld_seed);
     }
 
     if (ir->expandedvals->lmc_seed == -1)
@@ -1782,7 +1774,7 @@ int gmx_grompp(int argc, char *argv[])
     if (bRenum)
     {
         renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);
-        ntype = get_atomtype_ntypes(atype);
+        get_atomtype_ntypes(atype);
     }
 
     if (ir->implicit_solvent != eisNO)
@@ -1862,7 +1854,6 @@ int gmx_grompp(int argc, char *argv[])
     }
     do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm),
              sys, bVerbose, ir,
-             bGenVel ? state->v : NULL,
              wi);
 
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 &&
@@ -2009,8 +2000,8 @@ int gmx_grompp(int argc, char *argv[])
             set_warning_line(wi, mdparin, -1);
             warning_error(wi, "Some of the Fourier grid sizes are set, but all of them need to be set.");
         }
-        max_spacing = calc_grid(stdout, box, ir->fourier_spacing,
-                                &(ir->nkx), &(ir->nky), &(ir->nkz));
+        calc_grid(stdout, box, ir->fourier_spacing,
+                  &(ir->nkx), &(ir->nky), &(ir->nkz));
     }
 
     /* MRS: eventually figure out better logic for initializing the fep

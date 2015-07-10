@@ -41,10 +41,11 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
 
 #include <sys/types.h>
 
@@ -120,7 +121,8 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
     int     i, j, ntp, nrfp, nrfpA, nrfpB, nnn;
     real    scaling;
     ntp       = nbs->nr;
-    nnn       = sqrt(ntp);
+    nnn       = static_cast<int>(std::sqrt(static_cast<double>(ntp)));
+    assert(nnn * nnn == ntp);
     nrfp      = NRFP(F_LJ);
     nrfpA     = interaction_function[F_LJ14].nrfpA;
     nrfpB     = interaction_function[F_LJ14].nrfpB;
@@ -415,7 +417,7 @@ find_gb_anglelength(t_params *plist, int ai, int ak, real *length)
                     if (status1 == 0 && status2 == 0)
                     {
                         /* cosine theorem to get r13 */
-                        *length = sqrt(r12*r12+r23*r23-(2*r12*r23*cos(a123/RAD2DEG)));
+                        *length = std::sqrt(r12*r12+r23*r23-(2*r12*r23*cos(a123/RAD2DEG)));
                         found   = 1;
                     }
                 }
@@ -430,8 +432,7 @@ find_gb_anglelength(t_params *plist, int ai, int ak, real *length)
 int
 generate_gb_exclusion_interactions(t_molinfo *mi, gpp_atomtype_t atype, t_nextnb *nnb)
 {
-    int          i, j, k, n, ai, aj, ti, tj;
-    int          n12, n13, n14;
+    int          j, n, ai, aj, ti, tj;
     int          ftype;
     t_param      param;
     t_params *   plist;
@@ -575,7 +576,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          warninp_t   wi)
 {
     FILE           *out;
-    int             i, sl, nb_funct, comb;
+    int             i, sl, nb_funct;
     char           *pline = NULL, **title = NULL;
     char            line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
     char            genpairs[32];
@@ -583,12 +584,10 @@ static char **read_topol(const char *infile, const char *outfile,
     int             nrcopies, nmol, nmolb = 0, nscan, ncombs, ncopy;
     double          fLJ, fQQ, fPOW;
     gmx_molblock_t *molb  = NULL;
-    t_topology     *block = NULL;
     t_molinfo      *mi0   = NULL;
     DirStack       *DS;
     directive       d, newd;
     t_nbparam     **nbparam, **pair;
-    gmx_bool        bIntermolecularInteractions;
     t_block2       *block2;
     real            fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
     gmx_bool        bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
@@ -1260,7 +1259,6 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
         j       = 0;
         while (j < molt->ilist[i].nr)
         {
-            bexcl = FALSE;
             switch (nratoms)
             {
                 case 2:
@@ -1299,6 +1297,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
                     break;
                 default:
                     gmx_fatal(FARGS, "no such bonded interactions with %d atoms\n", nratoms);
+                    bexcl = FALSE;
             }
             if (bexcl)
             {
