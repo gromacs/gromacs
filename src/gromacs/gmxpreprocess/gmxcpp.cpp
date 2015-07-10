@@ -41,10 +41,13 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include <sys/types.h>
 
@@ -240,10 +243,9 @@ static void done_defines()
 int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
 {
     gmx_cpp_t    cpp;
-    char        *buf, *pdum;
+    char        *buf;
     char        *ptr, *ptr2;
     int          i;
-    unsigned int i1;
 
     /* First process options, they might be necessary for opening files
        (especially include statements). */
@@ -670,7 +672,9 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
             }
             if (nn > 0)
             {
-                len = strlen(buf) + nn*max(4, 4+strlen(defs[i].def)-strlen(defs[i].name));
+                size_t four = 4;
+
+                len = strlen(buf) + nn*std::max(four, four+strlen(defs[i].def)-strlen(defs[i].name));
                 snew(name, len);
                 ptr = buf;
                 while ((ptr2 = strstrw(ptr, defs[i].name)) != NULL)
@@ -702,7 +706,6 @@ int cpp_cur_linenr(const gmx_cpp_t *handlep)
 /* Close the file! Return integer status. */
 int cpp_close_file(gmx_cpp_t *handlep)
 {
-    int       i;
     gmx_cpp_t handle = (gmx_cpp_t)*handlep;
 
     if (!handle)

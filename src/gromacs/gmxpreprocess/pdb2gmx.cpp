@@ -322,7 +322,7 @@ static void rename_resrtp(t_atoms *pdba, int nterpairs, int *r_start, int *r_end
                           int nrr, rtprename_t *rr, t_symtab *symtab,
                           gmx_bool bVerbose)
 {
-    int      r, i, j;
+    int      r, j;
     gmx_bool bStart, bEnd;
     char    *nn;
     gmx_bool bFFRTPTERRNM;
@@ -703,7 +703,6 @@ static void sort_pdbatoms(t_restp restp[],
     rvec       **xnew;
     int          i, j;
     t_restp     *rptr;
-    t_hackblock *hbr;
     t_pdbindex  *pdbi;
     atom_id     *a;
     char        *atomnm;
@@ -943,8 +942,6 @@ modify_chain_numbers(t_atoms *       pdba,
     int           this_resnum;
     char          prev_chainid;
     char          this_chainid;
-    int           prev_chainnumber;
-    int           this_chainnumber;
 
     enum
     {
@@ -1002,7 +999,6 @@ modify_chain_numbers(t_atoms *       pdba,
     this_resname        = NULL;
     this_resnum         = -1;
     this_chainid        = '?';
-    this_chainnumber    = -1;
 
     for (i = 0; i < pdba->nres; i++)
     {
@@ -1015,14 +1011,12 @@ modify_chain_numbers(t_atoms *       pdba,
         prev_resname       = this_resname;
         prev_resnum        = this_resnum;
         prev_chainid       = this_chainid;
-        prev_chainnumber   = this_chainnumber;
 
         this_atomname      = *(pdba->atomname[i]);
         this_atomnum       = (pdba->pdbinfo != NULL) ? pdba->pdbinfo[i].atomnr : i+1;
         this_resname       = *ri->name;
         this_resnum        = ri->nr;
         this_chainid       = ri->chainid;
-        this_chainnumber   = ri->chainnum;
 
         switch (splitting)
         {
@@ -1257,17 +1251,16 @@ int gmx_pdb2gmx(int argc, char *argv[])
     const char       *watres;
     int               nrtpf;
     char            **rtpf;
-    char              rtp[STRLEN];
     int               nrrn;
     char            **rrn;
-    int               nrtprename, naa;
+    int               nrtprename;
     rtprename_t      *rtprename = NULL;
     int               nah, nNtdb, nCtdb, ntdblist;
     t_hackblock      *ntdb, *ctdb, **tdblist;
     int               nssbonds;
     t_ssbond         *ssbonds;
     rvec             *pdbx, *x;
-    gmx_bool          bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE, bCheckMerge;
+    gmx_bool          bVsites = FALSE, bWat, bPrevWat = FALSE, bITP, bVsiteAromatics = FALSE;
     real              mHmult  = 0;
     t_hackblock      *hb_chain;
     t_restp          *restp_chain;
@@ -1481,7 +1474,6 @@ int gmx_pdb2gmx(int argc, char *argv[])
     sfree(rrn);
 
     /* Add all alternative names from the residue renaming database to the list of recognized amino/nucleic acids. */
-    naa = 0;
     for (i = 0; i < nrtprename; i++)
     {
         rc = gmx_residuetype_get_type(rt, rtprename[i].gmx, &p_restype);

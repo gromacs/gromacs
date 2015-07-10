@@ -208,7 +208,6 @@ int read_h_db(const char *ffdir, t_hackblock **ah)
     int    nhdbf, f;
     char **hdbf;
     int    nah;
-    FILE  *fp;
 
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.

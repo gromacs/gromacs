@@ -42,6 +42,10 @@
 #include <limits.h>
 #include <stdlib.h>
 
+#include <cmath>
+
+#include <algorithm>
+
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/inputrec.h"
@@ -155,7 +159,7 @@ static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lamb
         }
         else if (simtemp->eSimTempScale == esimtempGEOMETRIC)  /* should give roughly equal acceptance for constant heat capacity . . . */
         {
-            simtemp->temperatures[i] = simtemp->simtemp_low * pow(simtemp->simtemp_high/simtemp->simtemp_low, (1.0*i)/(ntemps-1));
+            simtemp->temperatures[i] = simtemp->simtemp_low * std::pow(simtemp->simtemp_high/simtemp->simtemp_low, static_cast<real>((1.0*i)/(ntemps-1)));
         }
         else if (simtemp->eSimTempScale == esimtempEXPONENTIAL)
         {
@@ -172,7 +176,7 @@ static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lamb
 
 
 
-static void _low_check(gmx_bool b, char *s, warninp_t wi)
+static void _low_check(gmx_bool b, const char *s, warninp_t wi)
 {
     if (b)
     {
@@ -246,10 +250,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 #define CHECK(b) _low_check(b, err_buf, wi)
     char        err_buf[256], warn_buf[STRLEN];
     int         i, j;
-    int         ns_type  = 0;
-    real        dt_coupl = 0;
     real        dt_pcoupl;
-    int         nstcmin;
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
 
@@ -386,7 +387,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             warning_note(wi, "With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note that with the Verlet scheme, nstlist has no effect on the accuracy of your simulation.");
         }
 
-        rc_max = max(ir->rvdw, ir->rcoulomb);
+        rc_max = std::max(ir->rvdw, ir->rcoulomb);
 
         if (ir->verletbuf_tol <= 0)
         {
@@ -739,7 +740,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             sigma  = 0.34;
             /* Maximum estimate for A and B charges equal with lambda power 1 */
             lambda = 0.5;
-            r_sc   = pow(lambda*fep->sc_alpha*pow(sigma/ir->rcoulomb, fep->sc_r_power) + 1.0, 1.0/fep->sc_r_power);
+            r_sc   = std::pow(lambda*fep->sc_alpha*std::pow(sigma/ir->rcoulomb, fep->sc_r_power) + 1.0, 1.0/fep->sc_r_power);
             sprintf(warn_buf, "With PME there is a minor soft core effect present at the cut-off, proportional to (LJsigma/rcoulomb)^%g. This could have a minor effect on energy conservation, but usually other effects dominate. With a common sigma value of %g nm the fraction of the particle-particle potential at the cut-off at lambda=%g is around %.1e, while ewald-rtol is %.1e.",
                     fep->sc_r_power,
                     sigma, lambda, r_sc - 1.0, ir->ewald_rtol);
@@ -848,9 +849,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "If there is no temperature control, and lmc-mcmove!= 'no',mc_temperature must be set to a positive number");
         if (expand->nstTij > 0)
         {
+            sprintf(err_buf, "nstlog must be non-zero");
+            CHECK(ir->nstlog != 0);
             sprintf(err_buf, "nst-transition-matrix (%d) must be an integer multiple of nstlog (%d)",
                     expand->nstTij, ir->nstlog);
-            CHECK((mod(expand->nstTij, ir->nstlog) != 0));
+            CHECK((expand->nstTij % ir->nstlog) != 0);
         }
     }
 
@@ -1758,7 +1761,7 @@ static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
 void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
                          t_expanded *expand, warninp_t wi)
 {
-    int        ninp, nerror = 0;
+    int        ninp;
     t_inpfile *inp;
 
     ninp   = *ninp_p;
@@ -2843,8 +2846,8 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                         {
                             imin = 2;
                         }
-                        imin       = min(imin, nrdf2[ai]);
-                        jmin       = min(jmin, nrdf2[aj]);
+                        imin       = std::min(imin, nrdf2[ai]);
+                        jmin       = std::min(jmin, nrdf2[aj]);
                         nrdf2[ai] -= imin;
                         nrdf2[aj] -= jmin;
                         nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
@@ -2863,7 +2866,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 for (j = 0; j < 3; j++)
                 {
                     ai         = as + ia[1+j];
-                    imin       = min(2, nrdf2[ai]);
+                    imin       = std::min(2, nrdf2[ai]);
                     nrdf2[ai] -= imin;
                     nrdf_tc [ggrpnr(groups, egcTC, ai)]  -= 0.5*imin;
                     nrdf_vcm[ggrpnr(groups, egcVCM, ai)] -= 0.5*imin;
@@ -3208,7 +3211,7 @@ void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnam
 void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
               gmx_bool bVerbose,
-              t_inputrec *ir, rvec *v,
+              t_inputrec *ir,
               warninp_t wi)
 {
     t_blocka     *grps;
@@ -3223,10 +3226,8 @@ void do_index(const char* mdparin, const char *ndx,
     int           nacg, nfreeze, nfrdim, nenergy, nvcm, nuser;
     char         *ptr1[MAXPTR], *ptr2[MAXPTR], *ptr3[MAXPTR];
     int           i, j, k, restnm;
-    real          SAtime;
     gmx_bool      bExcl, bTable, bSetTCpar, bAnneal, bRest;
-    int           nQMmethod, nQMbasis, nQMcharge, nQMmult, nbSH, nCASorb, nCASelec,
-                  nSAon, nSAoff, nSAsteps, nQMg, nbOPT, nbTS;
+    int           nQMmethod, nQMbasis, nQMg;
     char          warn_buf[STRLEN];
 
     if (bVerbose)
@@ -3312,7 +3313,7 @@ void do_index(const char* mdparin, const char *ndx,
 
             if (ir->opts.tau_t[i] >= 0)
             {
-                tau_min = min(tau_min, ir->opts.tau_t[i]);
+                tau_min = std::min(tau_min, ir->opts.tau_t[i]);
             }
         }
         if (ir->etc != etcNO && ir->nsttcouple == -1)
@@ -3330,7 +3331,7 @@ void do_index(const char* mdparin, const char *ndx,
             {
                 if (ir->nstpcouple != ir->nsttcouple)
                 {
-                    int mincouple = min(ir->nstpcouple, ir->nsttcouple);
+                    int mincouple = std::min(ir->nstpcouple, ir->nsttcouple);
                     ir->nstpcouple = ir->nsttcouple = mincouple;
                     sprintf(warn_buf, "for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d", mincouple);
                     warning_note(wi, warn_buf);
@@ -3623,30 +3624,6 @@ void do_index(const char* mdparin, const char *ndx,
     /* Now we have filled the freeze struct, so we can calculate NRDF */
     calc_nrdf(mtop, ir, gnames);
 
-    if (v && NULL)
-    {
-        real fac, ntot = 0;
-
-        /* Must check per group! */
-        for (i = 0; (i < ir->opts.ngtc); i++)
-        {
-            ntot += ir->opts.nrdf[i];
-        }
-        if (ntot != (DIM*natoms))
-        {
-            fac = sqrt(ntot/(DIM*natoms));
-            if (bVerbose)
-            {
-                fprintf(stderr, "Scaling velocities by a factor of %.3f to account for constraints\n"
-                        "and removal of center of mass motion\n", fac);
-            }
-            for (i = 0; (i < natoms); i++)
-            {
-                svmul(fac, v[i], v[i]);
-            }
-        }
-    }
-
     nuser = str_nelem(is->user1, MAXPTR, ptr1);
     do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser1,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
@@ -3687,9 +3664,9 @@ void do_index(const char* mdparin, const char *ndx,
                                                eQMbasis_names);
 
     }
-    nQMmult   = str_nelem(is->QMmult, MAXPTR, ptr1);
-    nQMcharge = str_nelem(is->QMcharge, MAXPTR, ptr2);
-    nbSH      = str_nelem(is->bSH, MAXPTR, ptr3);
+    str_nelem(is->QMmult, MAXPTR, ptr1);
+    str_nelem(is->QMcharge, MAXPTR, ptr2);
+    str_nelem(is->bSH, MAXPTR, ptr3);
     snew(ir->opts.QMmult, nr);
     snew(ir->opts.QMcharge, nr);
     snew(ir->opts.bSH, nr);
@@ -3701,8 +3678,8 @@ void do_index(const char* mdparin, const char *ndx,
         ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i], "Y", 1) == 0);
     }
 
-    nCASelec  = str_nelem(is->CASelectrons, MAXPTR, ptr1);
-    nCASorb   = str_nelem(is->CASorbitals, MAXPTR, ptr2);
+    str_nelem(is->CASelectrons, MAXPTR, ptr1);
+    str_nelem(is->CASorbitals, MAXPTR, ptr2);
     snew(ir->opts.CASelectrons, nr);
     snew(ir->opts.CASorbitals, nr);
     for (i = 0; i < nr; i++)
@@ -3712,8 +3689,8 @@ void do_index(const char* mdparin, const char *ndx,
     }
     /* special optimization options */
 
-    nbOPT = str_nelem(is->bOPT, MAXPTR, ptr1);
-    nbTS  = str_nelem(is->bTS, MAXPTR, ptr2);
+    str_nelem(is->bOPT, MAXPTR, ptr1);
+    str_nelem(is->bTS, MAXPTR, ptr2);
     snew(ir->opts.bOPT, nr);
     snew(ir->opts.bTS, nr);
     for (i = 0; i < nr; i++)
@@ -3721,9 +3698,9 @@ void do_index(const char* mdparin, const char *ndx,
         ir->opts.bOPT[i] = (gmx_strncasecmp(ptr1[i], "Y", 1) == 0);
         ir->opts.bTS[i]  = (gmx_strncasecmp(ptr2[i], "Y", 1) == 0);
     }
-    nSAon     = str_nelem(is->SAon, MAXPTR, ptr1);
-    nSAoff    = str_nelem(is->SAoff, MAXPTR, ptr2);
-    nSAsteps  = str_nelem(is->SAsteps, MAXPTR, ptr3);
+    str_nelem(is->SAon, MAXPTR, ptr1);
+    str_nelem(is->SAoff, MAXPTR, ptr2);
+    str_nelem(is->SAsteps, MAXPTR, ptr3);
     snew(ir->opts.SAon, nr);
     snew(ir->opts.SAoff, nr);
     snew(ir->opts.SAsteps, nr);
@@ -3929,10 +3906,9 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
                                    gmx_bool *bC6ParametersWorkWithLBRules,
                                    gmx_bool *bLBRulesPossible)
 {
-    int           ntypes, tpi, tpj, thisLBdiff, thisgeomdiff;
+    int           ntypes, tpi, tpj;
     int          *typecount;
     real          tol;
-    double        geometricdiff, LBdiff;
     double        c6i, c6j, c12i, c12j;
     double        c6, c6_geometric, c6_LB;
     double        sigmai, sigmaj, epsi, epsj;
@@ -3959,7 +3935,6 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
     ntypes                                = mtop->ffparams.atnr;
     snew(typecount, ntypes);
     gmx_mtop_count_atomtypes(mtop, state, typecount);
-    geometricdiff           = LBdiff = 0.0;
     *bLBRulesPossible       = TRUE;
     for (tpi = 0; tpi < ntypes; ++tpi)
     {
@@ -3970,16 +3945,16 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
             c6j          = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c6;
             c12j         = mtop->ffparams.iparams[(ntypes + 1) * tpj].lj.c12;
             c6           = mtop->ffparams.iparams[ntypes * tpi + tpj].lj.c6;
-            c6_geometric = sqrt(c6i * c6j);
+            c6_geometric = std::sqrt(c6i * c6j);
             if (!gmx_numzero(c6_geometric))
             {
                 if (!gmx_numzero(c12i) && !gmx_numzero(c12j))
                 {
-                    sigmai   = pow(c12i / c6i, 1.0/6.0);
-                    sigmaj   = pow(c12j / c6j, 1.0/6.0);
+                    sigmai   = std::pow(c12i / c6i, 1.0/6.0);
+                    sigmaj   = std::pow(c12j / c6j, 1.0/6.0);
                     epsi     = c6i * c6i /(4.0 * c12i);
                     epsj     = c6j * c6j /(4.0 * c12j);
-                    c6_LB    = 4.0 * pow(epsi * epsj, 1.0/2.0) * pow(0.5 * (sigmai + sigmaj), 6);
+                    c6_LB    = 4.0 * std::pow(epsi * epsj, 1.0/2.0) * std::pow(0.5 * (sigmai + sigmaj), 6);
                 }
                 else
                 {
@@ -4009,7 +3984,6 @@ static void
 check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
                         warninp_t wi)
 {
-    char     err_buf[256];
     gmx_bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
 
     check_combination_rule_differences(mtop, 0,
@@ -4055,9 +4029,9 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
     char                      err_buf[STRLEN];
-    int                       i, m, c, nmol, npct;
+    int                       i, m, c, nmol;
     gmx_bool                  bCharge, bAcc;
-    real                      gdt_max, *mgrp, mt;
+    real                     *mgrp, mt;
     rvec                      acc;
     gmx_mtop_atomloop_block_t aloopb;
     gmx_mtop_atomloop_all_t   aloop;
@@ -4088,8 +4062,8 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         tau = 0;
         for (i = 0; i < ir->opts.ngtc; i++)
         {
-            T   = max(T, ir->opts.ref_t[i]);
-            tau = max(tau, ir->opts.tau_t[i]);
+            T   = std::max(T, ir->opts.ref_t[i]);
+            tau = std::max(tau, ir->opts.tau_t[i]);
         }
         if (T > 0)
         {
@@ -4411,7 +4385,7 @@ void double_check(t_inputrec *ir, matrix box,
         }
         else
         {
-            min_size = min(box[XX][XX], min(box[YY][YY], box[ZZ][ZZ]));
+            min_size = std::min(box[XX][XX], std::min(box[YY][YY], box[ZZ][ZZ]));
             if (2*ir->rlistlong >= min_size)
             {
                 sprintf(warn_buf, "ERROR: One of the box lengths is smaller than twice the cut-off length. Increase the box size or decrease rlist.");
@@ -4453,7 +4427,7 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
             sprintf(warn_buf,
                     "The sum of the two largest charge group radii (%f) "
                     "is larger than rlist (%f)\n",
-                    max(rvdw1+rvdw2, rcoul1+rcoul2), ir->rlist);
+                    std::max(rvdw1+rvdw2, rcoul1+rcoul2), ir->rlist);
             warning(wi, warn_buf);
         }
         else

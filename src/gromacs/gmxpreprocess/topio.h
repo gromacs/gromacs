@@ -43,10 +43,6 @@
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 double check_mol(gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
@@ -72,9 +68,5 @@ char **do_top(gmx_bool         bVerbose,
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

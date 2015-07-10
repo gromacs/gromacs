@@ -40,6 +40,8 @@
 
 #include <assert.h>
 
+#include <cmath>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -156,11 +158,11 @@ void mk_bonds(int nnm, t_nm2type nmt[],
 
             dx2 = iprod(dx, dx);
             if (is_bond(nnm, nmt, *atoms->atomname[i], *atoms->atomname[j],
-                        sqrt(dx2)))
+                        std::sqrt(dx2)))
             {
                 b.AI = i;
                 b.AJ = j;
-                b.C0 = sqrt(dx2);
+                b.C0 = std::sqrt(dx2);
                 add_param_to_list (bond, &b);
                 nbond[i]++;
                 nbond[j]++;
@@ -179,7 +181,7 @@ int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
 {
     int     i, n = 1;
     int    *cgnr;
-    double  qt = 0, mt = 0;
+    double  qt = 0;
 
     *qtot = *mtot = 0;
     snew(cgnr, atoms->nr);
@@ -276,7 +278,6 @@ void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
 void set_force_const(t_params plist[], real kb, real kt, real kp, gmx_bool bRound,
                      gmx_bool bParam)
 {
-    int  i;
     real c[MAXFORCEPARAM];
 
     c[0] = 0;
@@ -451,12 +452,10 @@ int gmx_x2top(int argc, char *argv[])
     int                bts[] = { 1, 1, 1, 2 };
     matrix             box;    /* box length matrix */
     int                natoms; /* number of atoms in one molecule  */
-    int                nres;   /* number of molecules? */
-    int                i, j, k, l, m, ndih;
     int                epbc;
     gmx_bool           bRTP, bTOP, bOPLS;
     t_symtab           symtab;
-    real               cutoff, qtot, mtot;
+    real               qtot, mtot;
     char               n2t[STRLEN];
     output_env_t       oenv;
 
@@ -466,7 +465,7 @@ int gmx_x2top(int argc, char *argv[])
         { efRTP, "-r", "out",  ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static real        scale = 1.1, kb = 4e5, kt = 400, kp = 5;
+    static real        kb = 4e5, kt = 400, kp = 5;
     static t_restp     rtp_header_settings;
     static gmx_bool    bRemoveDihedralIfWithImproper = FALSE;
     static gmx_bool    bGenerateHH14Interactions     = TRUE;
