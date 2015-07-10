@@ -163,7 +163,7 @@ void principal_comp(int n, atom_id index[], t_atom atom[], rvec x[],
 
     /* Sort eigenvalues in ascending order */
 #define SWAPPER(i)          \
-    if (fabs(dd[i+1]) < fabs(dd[i])) {    \
+    if (std::abs(dd[i+1]) < std::abs(dd[i])) {    \
         temp = dd[i];         \
         for (j = 0; (j < NDIM); j++) { tvec[j] = ev[j][i]; } \
         dd[i] = dd[i+1];          \
@@ -229,7 +229,7 @@ real calc_xcm(rvec x[], int gnx, atom_id *index, t_atom *atom, rvec xcm,
         {
             if (bQ)
             {
-                m0 = fabs(atom[ii].q);
+                m0 = std::abs(atom[ii].q);
             }
             else
             {

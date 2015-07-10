@@ -36,8 +36,8 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstring>
 
 #include <algorithm>
 
@@ -145,7 +145,7 @@ static void add2gkr(t_gkrbin *gb, real r, real cosa, real phi)
     }
     if (index < gb->nx)
     {
-        alpha = acos(cosa);
+        alpha = std::acos(cosa);
         if (gb->bPhi)
         {
             cy = static_cast<int>((M_PI+phi)*gb->ny/(2*M_PI));
@@ -166,9 +166,9 @@ static void add2gkr(t_gkrbin *gb, real r, real cosa, real phi)
 static void rvec2sprvec(rvec dipcart, rvec dipsp)
 {
     clear_rvec(dipsp);
-    dipsp[0] = sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]+dipcart[ZZ]*dipcart[ZZ]); /* R */
-    dipsp[1] = atan2(dipcart[YY], dipcart[XX]);                                               /* Theta */
-    dipsp[2] = atan2(sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]), dipcart[ZZ]);     /* Phi */
+    dipsp[0] = std::sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]+dipcart[ZZ]*dipcart[ZZ]);  /* R */
+    dipsp[1] = std::atan2(dipcart[YY], dipcart[XX]);                                                /* Theta */
+    dipsp[2] = std::atan2(std::sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]), dipcart[ZZ]); /* Phi */
 }
 
 
@@ -206,7 +206,7 @@ void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                 qtot = 0;
                 for (j = j0; j < j1; j++)
                 {
-                    q     = fabs(atom[j].q);
+                    q     = std::abs(atom[j].q);
                     qtot += q;
                     for (k = 0; k < DIM; k++)
                     {
@@ -247,7 +247,7 @@ void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                     phi = dih_angle(xi, xj, xk, xl, &pbc,
                                     r_ij, r_kj, r_kl, mm, nn, /* out */
                                     &sign, &t1, &t2, &t3);
-                    cosa = cos(phi);
+                    cosa = std::cos(phi);
                 }
                 else
                 {
@@ -370,7 +370,7 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
      * Multiply by 2 because we only take half the matrix of interactions
      * into account.
      */
-    fac  = 2.0/((double) ngrp * (double) nframes);
+    fac  = 2.0/(ngrp * nframes);
 
     x0 = 0;
     for (i = 0; i < last; i++)
@@ -457,7 +457,7 @@ static void neutralize_mols(int n, int *index, t_block *mols, t_atom *atom)
             qtot += atom[a].q;
         }
         /* This check is only for the count print */
-        if (fabs(qtot) > 0.01)
+        if (std::abs(qtot) > 0.01)
         {
             ncharged++;
         }
@@ -655,7 +655,7 @@ static void update_slab_dipoles(int k0, int k1, rvec x[], rvec mu,
         xdim += x[k][idim];
     }
     xdim /= (k1-k0);
-    k     = ((int)(xdim*nslice/box[idim][idim] + nslice)) % nslice;
+    k     = (static_cast<int>(xdim*nslice/box[idim][idim] + nslice)) % nslice;
     rvec_inc(slab_dipole[k], mu);
 }
 
@@ -704,15 +704,15 @@ static void compute_avercos(int n, rvec dip[], real *dd, rvec axis, gmx_bool bPa
     ddc1 = ddc2 = ddc3 = 0;
     for (i = k = 0; (i < n); i++)
     {
-        ddc1 += fabs(cos_angle(dip[i], xxx));
-        ddc2 += fabs(cos_angle(dip[i], yyy));
-        ddc3 += fabs(cos_angle(dip[i], zzz));
+        ddc1 += std::abs(cos_angle(dip[i], xxx));
+        ddc2 += std::abs(cos_angle(dip[i], yyy));
+        ddc3 += std::abs(cos_angle(dip[i], zzz));
         if (bPairs)
         {
             for (j = i+1; (j < n); j++, k++)
             {
                 dc  = cos_angle(dip[i], dip[j]);
-                d  += fabs(dc);
+                d  += std::abs(dc);
             }
         }
     }
@@ -825,19 +825,19 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         /* Determine the indexes of the energy grps we need */
         for (i = 0; (i < nre); i++)
         {
-            if (strstr(enm[i].name, "Volume"))
+            if (std::strstr(enm[i].name, "Volume"))
             {
                 iVol = i;
             }
-            else if (strstr(enm[i].name, "Mu-X"))
+            else if (std::strstr(enm[i].name, "Mu-X"))
             {
                 iMu[XX] = i;
             }
-            else if (strstr(enm[i].name, "Mu-Y"))
+            else if (std::strstr(enm[i].name, "Mu-Y"))
             {
                 iMu[YY] = i;
             }
-            else if (strstr(enm[i].name, "Mu-Z"))
+            else if (std::strstr(enm[i].name, "Mu-Z"))
             {
                 iMu[ZZ] = i;
             }
@@ -1020,7 +1020,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     {
         /* Use 0.7 iso 0.5 to account for pressure scaling */
         /*  rcut   = 0.7*sqrt(max_cutoff2(box)); */
-        rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
+        rcut   = 0.7*std::sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
 
         gkrbin = mk_gkrbin(rcut, rcmax, bPhi, ndegrees);
     }
@@ -1113,12 +1113,12 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                         M_av[m]  += dipole[i][m];               /* M per frame */
                         mu_mol   += dipole[i][m]*dipole[i][m];  /* calc. mu for distribution */
                     }
-                    mu_mol = sqrt(mu_mol);
+                    mu_mol = std::sqrt(mu_mol);
 
                     mu_ave += mu_mol;                         /* calc. the average mu */
 
                     /* Update the dipole distribution */
-                    ibin = (int)(ndipbin*mu_mol/mu_max + 0.5);
+                    ibin = static_cast<int>(ndipbin*mu_mol/mu_max + 0.5);
                     if (ibin < ndipbin)
                     {
                         dipole_bin[ibin]++;
@@ -1207,9 +1207,9 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         if (cosaver)
         {
             compute_avercos(gnx_tot, dipole, &dd, dipaxis, bPairs);
-            rms_cos = sqrt(sqr(dipaxis[XX]-0.5)+
-                           sqr(dipaxis[YY]-0.5)+
-                           sqr(dipaxis[ZZ]-0.5));
+            rms_cos = std::sqrt(sqr(dipaxis[XX]-0.5)+
+                                sqr(dipaxis[YY]-0.5)+
+                                sqr(dipaxis[ZZ]-0.5));
             if (bPairs)
             {
                 fprintf(caver, "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
@@ -1243,7 +1243,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         {
             fprintf(outmtot, "%10g  %12.8e %12.8e %12.8e %12.8e\n",
                     t, M_av[XX], M_av[YY], M_av[ZZ],
-                    sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
+                    std::sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
         }
 
         for (m = 0; (m < DIM); m++)
@@ -1398,7 +1398,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             {
                 do_autocorr(corf, oenv, "Dipole Autocorrelation Function",
                             teller, gnx_tot, muall, dt,
-                            mode, strcmp(corrtype, "molsep"));
+                            mode, std::strcmp(corrtype, "molsep"));
             }
         }
     }
@@ -1456,7 +1456,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         for (i = 0; (i < ndipbin); i++)
         {
             fprintf(outdd, "%10g  %10f\n",
-                    (i*mu_max)/ndipbin, dipole_bin[i]/(double)teller);
+                    (i*mu_max)/ndipbin, static_cast<real>(dipole_bin[i])/teller);
         }
         xvgrclose(outdd);
         sfree(dipole_bin);
