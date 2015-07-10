@@ -80,8 +80,8 @@ static real interpolate(real phi, real psi, t_shiftdata *sd)
     fphi  = phi*sd->dx;
     fpsi  = psi*sd->dy;
 
-    iphi  = (int)fphi;
-    ipsi  = (int)fpsi;
+    iphi  = static_cast<int>(fphi);
+    ipsi  = static_cast<int>(fpsi);
     fphi -= iphi; /* Fraction (offset from gridpoint) */
     fpsi -= ipsi;
 
