@@ -39,6 +39,7 @@
 #include "nrama.h"
 
 #include <cstdlib>
+#include <cstring>
 
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -112,7 +113,7 @@ static int find_atom(const char *find, char ***names, int start, int nr)
 
     for (i = start; (i < nr); i++)
     {
-        if (strcmp(find, *names[i]) == 0)
+        if (std::strcmp(find, *names[i]) == 0)
         {
             return i;
         }
