@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
 #include "gmxpre.h"
 
 #include <string.h>
+
+#include <algorithm>
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
@@ -216,8 +218,9 @@ void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
 
 int search_jtype(t_restp *rtp, char *name, gmx_bool bNterm)
 {
-    int   niter, iter, j, k, kmax, jmax, minstrlen;
-    char *rtpname, searchname[12];
+    int    niter, iter, j, jmax;
+    size_t k, kmax, minstrlen;
+    char  *rtpname, searchname[12];
 
     strcpy(searchname, name);
 
@@ -253,7 +256,7 @@ int search_jtype(t_restp *rtp, char *name, gmx_bool bNterm)
             }
             if (iter == niter - 1)
             {
-                minstrlen = min(strlen(searchname), strlen(rtpname));
+                minstrlen = std::min(strlen(searchname), strlen(rtpname));
                 for (k = 0; k < minstrlen; k++)
                 {
                     if (searchname[k] != rtpname[k])

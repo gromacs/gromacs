@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,8 +39,11 @@
 #include "specbond.h"
 
 #include <ctype.h>
-#include <math.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
@@ -274,7 +277,7 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
             for (j = 0; (j < nspec); j++)
             {
                 aj      = sgp[j];
-                d[i][j] = sqrt(distance2(x[ai], x[aj]));
+                d[i][j] = std::sqrt(distance2(x[ai], x[aj]));
             }
         }
         if (nspec > 1)
@@ -285,7 +288,7 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
             {
                 /* print resname/number column headings */
                 fprintf(stderr, "%8s%8s", "", "");
-                e = min(b+MAXCOL, nspec-1);
+                e = std::min(b+MAXCOL, nspec-1);
                 for (i = b; (i < e); i++)
                 {
                     sprintf(buf, "%s%d", *pdba->resinfo[pdba->atom[sgp[i]].resind].name,
@@ -295,7 +298,7 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                 fprintf(stderr, "\n");
                 /* print atomname/number column headings */
                 fprintf(stderr, "%8s%8s", "", "");
-                e = min(b+MAXCOL, nspec-1);
+                e = std::min(b+MAXCOL, nspec-1);
                 for (i = b; (i < e); i++)
                 {
                     sprintf(buf, "%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
@@ -303,7 +306,7 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                 }
                 fprintf(stderr, "\n");
                 /* print matrix */
-                e = min(b+MAXCOL, nspec);
+                e = std::min(b+MAXCOL, nspec);
                 for (i = b+1; (i < nspec); i++)
                 {
                     sprintf(buf, "%s%d", *pdba->resinfo[pdba->atom[sgp[i]].resind].name,
@@ -311,7 +314,7 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                     fprintf(stderr, "%8s", buf);
                     sprintf(buf, "%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
                     fprintf(stderr, "%8s", buf);
-                    e2 = min(i, e);
+                    e2 = std::min(i, e);
                     for (j = b; (j < e2); j++)
                     {
                         fprintf(stderr, " %7.3f", d[i][j]);

@@ -41,18 +41,10 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void convert_params(int atnr, t_params nbtypes[],
                     t_molinfo *mi,
                     t_molinfo *intermolecular_interactions,
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

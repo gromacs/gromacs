@@ -39,8 +39,9 @@
 
 #include "convparm.h"
 
-#include <math.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/topio.h"
@@ -81,21 +82,21 @@ static int round_check(real r, int limit, int ftype, const char *name)
     return i;
 }
 
-static void set_ljparams(int comb, double reppow, real v, real w,
+static void set_ljparams(int comb, double reppow, double v, double w,
                          real *c6, real *c12)
 {
     if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS)
     {
         if (v >= 0)
         {
-            *c6  = 4*w*pow(v, 6.0);
-            *c12 = 4*w*pow(v, reppow);
+            *c6  = 4*w*std::pow(v, 6.0);
+            *c12 = 4*w*std::pow(v, reppow);
         }
         else
         {
             /* Interpret negative sigma as c6=0 and c12 with -sigma */
             *c6  = 0;
-            *c12 = 4*w*pow(-v, reppow);
+            *c12 = 4*w*std::pow(-v, reppow);
         }
     }
     else
@@ -113,7 +114,6 @@ assign_param(t_functype ftype, t_iparams *newparam,
              real old[MAXFORCEPARAM], int comb, double reppow)
 {
     int      i, j;
-    real     tmp;
     gmx_bool all_param_zero = TRUE;
 
     /* Set to zero */
@@ -259,7 +259,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->thole.alpha2 = old[2];
             if ((old[1] > 0) && (old[2] > 0))
             {
-                newparam->thole.rfac = old[0]*pow(old[1]*old[2], -1.0/6.0);
+                newparam->thole.rfac = old[0]*std::pow(old[1]*old[2], static_cast<real>(-1.0/6.0));
             }
             else
             {
@@ -436,8 +436,8 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->vsiten.a = old[1];
             break;
         case F_CMAP:
-            newparam->cmap.cmapA = old[0];
-            newparam->cmap.cmapB = old[1];
+            newparam->cmap.cmapA = static_cast<int>(old[0]);
+            newparam->cmap.cmapB = static_cast<int>(old[1]);
             break;
         case F_GB12:
         case F_GB13:
@@ -571,7 +571,7 @@ void convert_params(int atnr, t_params nbtypes[],
                     int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop)
 {
-    int             i, j, maxtypes, mt;
+    int             i, maxtypes, mt;
     unsigned long   flags;
     gmx_ffparams_t *ffp;
     gmx_moltype_t  *molt;

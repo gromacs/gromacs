@@ -41,6 +41,8 @@
 
 #include <string.h>
 
+#include <algorithm>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -66,7 +68,7 @@ static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
     char          format[128], f1[128];
     char          buf[1024], elem[16], type[16], nbbuf[16], **newbuf;
     int           i, nb, nnnm, line = 1;
-    double        qq, mm, *blen;
+    double        qq, mm;
     t_nm2type    *nm2t = NULL;
 
     fp = fflib_open(fn);
@@ -201,7 +203,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
     int      cur = 0;
 #define prev (1-cur)
     int      i, j, k, m, n, nresolved, nb, maxbond, ai, aj, best, im, nqual[2][ematchNR];
-    int     *bbb, *n_mask, *m_mask, **match, **quality;
+    int     *bbb, *n_mask, *m_mask, **match;
     char    *aname_i, *aname_m, *aname_n, *type;
     double   qq, mm;
     t_param *param;
@@ -210,7 +212,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
     maxbond = 0;
     for (i = 0; (i < atoms->nr); i++)
     {
-        maxbond = max(maxbond, nbonds[i]);
+        maxbond = std::max(maxbond, nbonds[i]);
     }
     if (debug)
     {

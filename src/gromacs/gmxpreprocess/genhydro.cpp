@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -177,7 +177,7 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
 static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
                                   int *nabi, t_hack **abi, gmx_bool bN, gmx_bool bC)
 {
-    int      j, k, l, d;
+    int      j, k, l;
     gmx_bool bIgnore;
 
     /* we'll recursively add atoms to atoms */
@@ -320,7 +320,7 @@ static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[],
 
 static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 {
-    int i, j, k, d, rnr, nadd;
+    int i, j, k, rnr, nadd;
 
     nadd = 0;
     for (i = 0; i < pdba->nr; i++)
@@ -468,7 +468,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 {
     t_atoms        *newpdba = NULL, *pdba = NULL;
     int             nadd;
-    int             i, newi, j, d, natoms, nalreadypresent;
+    int             i, newi, j, natoms, nalreadypresent;
     int            *nab = NULL;
     t_hack        **ab  = NULL;
     t_hackblock    *hb;
@@ -725,10 +725,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
             sfree(pdba);
         }
         *pdbaptr = newpdba;
-    }
-    else
-    {
-        nadd = newi-natoms;
     }
 
     sfree(*xptr);
