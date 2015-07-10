@@ -36,8 +36,8 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstring>
 
 #include <algorithm>
 
@@ -165,9 +165,9 @@ static void add2gkr(t_gkrbin *gb, real r, real cosa, real phi)
 static void rvec2sprvec(rvec dipcart, rvec dipsp)
 {
     clear_rvec(dipsp);
-    dipsp[0] = sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]+dipcart[ZZ]*dipcart[ZZ]); /* R */
-    dipsp[1] = atan2(dipcart[YY], dipcart[XX]);                                               /* Theta */
-    dipsp[2] = atan2(sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]), dipcart[ZZ]);     /* Phi */
+    dipsp[0] = std::sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]+dipcart[ZZ]*dipcart[ZZ]);  /* R */
+    dipsp[1] = std::atan2(dipcart[YY], dipcart[XX]);                                                /* Theta */
+    dipsp[2] = std::atan2(std::sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]), dipcart[ZZ]); /* Phi */
 }
 
 
@@ -1019,7 +1019,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     {
         /* Use 0.7 iso 0.5 to account for pressure scaling */
         /*  rcut   = 0.7*sqrt(max_cutoff2(box)); */
-        rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
+        rcut   = 0.7*std::sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
 
         gkrbin = mk_gkrbin(rcut, rcmax, bPhi, ndegrees);
     }
@@ -1112,7 +1112,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                         M_av[m]  += dipole[i][m];               /* M per frame */
                         mu_mol   += dipole[i][m]*dipole[i][m];  /* calc. mu for distribution */
                     }
-                    mu_mol = sqrt(mu_mol);
+                    mu_mol = std::sqrt(mu_mol);
 
                     mu_ave += mu_mol;                         /* calc. the average mu */
 
@@ -1206,9 +1206,9 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         if (cosaver)
         {
             compute_avercos(gnx_tot, dipole, &dd, dipaxis, bPairs);
-            rms_cos = sqrt(sqr(dipaxis[XX]-0.5)+
-                           sqr(dipaxis[YY]-0.5)+
-                           sqr(dipaxis[ZZ]-0.5));
+            rms_cos = std::sqrt(sqr(dipaxis[XX]-0.5)+
+                                sqr(dipaxis[YY]-0.5)+
+                                sqr(dipaxis[ZZ]-0.5));
             if (bPairs)
             {
                 fprintf(caver, "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
@@ -1242,7 +1242,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         {
             fprintf(outmtot, "%10g  %12.8e %12.8e %12.8e %12.8e\n",
                     t, M_av[XX], M_av[YY], M_av[ZZ],
-                    sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
+                    std::sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
         }
 
         for (m = 0; (m < DIM); m++)
