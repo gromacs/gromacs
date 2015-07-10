@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,11 +43,6 @@
 #include "gromacs/gmxpreprocess/hackblock.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 /* stuff for pdb2gmx */
 
 void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
@@ -58,9 +53,5 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
 void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
                gmx_bool bDeuterate);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

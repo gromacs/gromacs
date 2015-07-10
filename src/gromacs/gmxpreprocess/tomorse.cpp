@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,9 +40,10 @@
 #include "tomorse.h"
 
 #include <ctype.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
@@ -250,7 +251,7 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                         bRemoveHarm[j] = TRUE;
                         b0             = mols[i].plist[bb].param[j].c[0];
                         kb             = mols[i].plist[bb].param[j].c[1];
-                        beta           = sqrt(kb/(2*edis));
+                        beta           = std::sqrt(kb/(2*edis));
                         mols[i].plist[F_MORSE].param[nrmorse].a[0] = ni;
                         mols[i].plist[F_MORSE].param[nrmorse].a[1] = nj;
                         mols[i].plist[F_MORSE].param[nrmorse].c[0] = b0;

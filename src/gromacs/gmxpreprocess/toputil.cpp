@@ -38,9 +38,11 @@
 
 #include "toputil.h"
 
-#include <assert.h>
-#include <math.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
@@ -48,6 +50,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* UTILITIES */
@@ -86,10 +89,10 @@ void pr_alloc (int extra, t_params *pr)
     {
         return;
     }
-    assert(!((pr->nr == 0) && (pr->param != NULL)));
+    GMX_ASSERT(pr->nr != 0 || pr->param == NULL, "Invalid t_params object");
     if (pr->nr+extra > pr->maxnr)
     {
-        pr->maxnr = max(1.2*pr->maxnr, pr->maxnr + extra);
+        pr->maxnr = std::max(static_cast<int>(1.2*pr->maxnr), pr->maxnr + extra);
         srenew(pr->param, pr->maxnr);
         for (i = pr->nr; (i < pr->maxnr); i++)
         {
@@ -477,6 +480,8 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                 gmx_fatal(FARGS, "tpA = %d, i= %d in print_atoms", tpA, i);
             }
 
+            /* This is true by construction, but static analysers don't know */
+            GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp, "-rtpres did not have residue name available");
             fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g",
                     i+1, tpnmA,
                     at->resinfo[ri].nr,

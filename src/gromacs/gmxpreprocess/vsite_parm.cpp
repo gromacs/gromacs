@@ -38,10 +38,12 @@
 
 #include "vsite_parm.h"
 
-#include <assert.h>
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/resall.h"
@@ -52,6 +54,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
@@ -448,7 +451,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
         bError = bError || (bjk != bjl);
 
         /* the X atom (C or N) in the XH2/XH3 group is the first after the masses: */
-        aN = max(param->AK, param->AL)+1;
+        aN = std::max(param->AK, param->AL)+1;
 
         /* get common bonds */
         bMM    = get_bond_length(nrbond, bonds, param->AK, param->AL);
@@ -458,7 +461,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
 
         /* calculate common things */
         rM  = 0.5*bMM;
-        dM  = sqrt( sqr(bCM) - sqr(rM) );
+        dM  = std::sqrt( sqr(bCM) - sqr(rM) );
 
         /* are we dealing with the X atom? */
         if (param->AI == aN)
@@ -617,7 +620,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         bError = bError || (bjk != bjl);
 
         /* the X atom (C or N) in the XH3 group is the first after the masses: */
-        aN = max(param->AK, param->AL)+1;
+        aN = std::max(param->AK, param->AL)+1;
 
         /* get all bondlengths and angles: */
         bMM    = get_bond_length(nrbond, bonds, param->AK, param->AL);
@@ -635,7 +638,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         rHx = rH*cos(DEG2RAD*30);
         rHy = rH*sin(DEG2RAD*30);
         rM  = 0.5*bMM;
-        dM  = sqrt( sqr(bCM) - sqr(rM) );
+        dM  = std::sqrt( sqr(bCM) - sqr(rM) );
         a   = 0.5*( (dH/dM) - (rHy/rM) );
         b   = 0.5*( (dH/dM) + (rHy/rM) );
         c   = rHx / (2*dM*rM);
@@ -656,9 +659,9 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         pijl = cos(aijl)*bij;
         a    = ( pijk + (pijk*cos(akjl)-pijl) * cos(akjl) / sqr(sin(akjl)) ) / bjk;
         b    = ( pijl + (pijl*cos(akjl)-pijk) * cos(akjl) / sqr(sin(akjl)) ) / bjl;
-        c    = -sqrt( sqr(bij) -
-                      ( sqr(pijk) - 2*pijk*pijl*cos(akjl) + sqr(pijl) )
-                      / sqr(sin(akjl)) )
+        c    = -std::sqrt( sqr(bij) -
+                           ( sqr(pijk) - 2*pijk*pijl*cos(akjl) + sqr(pijl) )
+                           / sqr(sin(akjl)) )
             / ( bjk*bjl*sin(akjl) );
     }
 
@@ -720,8 +723,8 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
             gmx_fatal(FARGS, "invalid construction in calc_vsite4fd for atom %d: "
                       "cosakl=%f, cosakm=%f\n", param->AI+1, cosakl, cosakm);
         }
-        sinakl = sqrt(1-sqr(cosakl));
-        sinakm = sqrt(1-sqr(cosakm));
+        sinakl = std::sqrt(1-sqr(cosakl));
+        sinakm = std::sqrt(1-sqr(cosakm));
 
         /* note: there is a '+' because of the way the sines are calculated */
         cl = -pk / ( pl*cosakl - pk + pl*sinakl*(pm*cosakm-pk)/(pm*sinakm) );
@@ -817,7 +820,6 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
     t_mybonded     *idihs;
 
     bFirst = TRUE;
-    bERROR = TRUE;
     nvsite = 0;
     if (debug)
     {
@@ -915,6 +917,7 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                                       "for %s atom %d",
                                       interaction_function[ftype].longname,
                                       plist[ftype].param[i].AI+1);
+                            bERROR = TRUE;
                     } /* switch */
                     if (bERROR)
                     {
@@ -1020,7 +1023,7 @@ static void check_vsite_constraints(t_params *plist,
 static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                               int cftype, int vsite_type[])
 {
-    int          ftype, i, j, parnr, k, l, m, n, nvsite, nOut, kept_i, vsitetype;
+    int          ftype, i, j, k, m, n, nvsite, nOut, kept_i;
     int          nconverted, nremoved;
     atom_id      atom, oatom, at1, at2;
     gmx_bool     bKeep, bRemove, bUsed, bPresent, bThisFD, bThisOUT, bAllFD, bFirstTwo;
@@ -1104,8 +1107,8 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                     }
                     else
                     {
-                        assert(vsnral != 0);
-                        assert(first_atoms != NULL);
+                        GMX_ASSERT(vsnral != 0, "nvsite > 1 must have vsnral != 0");
+                        GMX_ASSERT(first_atoms != NULL, "nvsite > 1 must have first_atoms != NULL");
                         /* if it is not the first then
                            check if this vsite is constructed from the same atoms */
                         if (vsnral == NRAL(pindex[atom].ftype)-1)
@@ -1175,7 +1178,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                     bUsed = FALSE;
                     for (m = 0; (m < vsnral) && !bUsed; m++)
                     {
-                        assert(first_atoms != NULL);
+                        GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
 
                         if (atom == first_atoms[m])
                         {
@@ -1286,7 +1289,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                                int cftype, int vsite_type[],
                                at2vsitecon_t *at2vc)
 {
-    int          i, j, parnr, k, l, m, n, nvsite, kept_i, vsitetype;
+    int          i, j, k, m, n, nvsite, kept_i;
     atom_id      atom, at1, at2;
     gmx_bool     bKeep, bUsed, bPresent, bAll3FAD, bFirstTwo;
     t_params    *ps;
@@ -1317,8 +1320,8 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                 }
                 else
                 {
-                    assert(vsnral != 0);
-                    assert(first_atoms != NULL);
+                    GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
+                    GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
                     /* check if this vsite is constructed from the same atoms */
                     if (vsnral == NRAL(pindex[atom].ftype)-1)
                     {
@@ -1366,7 +1369,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
                 bUsed = FALSE;
                 for (m = 0; (m < vsnral) && !bUsed; m++)
                 {
-                    assert(first_atoms != NULL);
+                    GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
 
                     if (atom == first_atoms[m])
                     {
@@ -1430,7 +1433,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     kept_i = 0;
     for (i = 0; (i < ps->nr); i++) /* for all dihedrals in the plist */
     {
-        int            ftype, parnr, k, l, m, n, nvsite;
+        int            k, m, n, nvsite;
         int            vsnral      = 0;
         const atom_id *first_atoms = NULL;
         atom_id        atom;
@@ -1461,9 +1464,8 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
                 }
                 else
                 {
-                    assert(vsnral != 0);
-                    assert(first_atoms != NULL);
-
+                    GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
+                    GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
                     /* check if this vsite is constructed from the same atoms */
                     if (vsnral == NRAL(pindex[atom].ftype)-1)
                     {
@@ -1504,9 +1506,8 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
            construction of virtual sites. If so, keep it, if not throw away: */
         for (k = 0; (k < 4) && !bKeep; k++) /* for all atoms in the dihedral */
         {
-            assert(vsnral != 0);
-            assert(first_atoms != NULL);
-
+            GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
+            GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
             atom = ps->param[i].a[k];
             if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
             {

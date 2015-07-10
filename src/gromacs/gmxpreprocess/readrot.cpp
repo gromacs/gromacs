@@ -46,7 +46,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static char *RotStr = {"Enforced rotation:"};
+static const char *RotStr = "Enforced rotation:";
 
 
 static char s_vec[STRLEN];
