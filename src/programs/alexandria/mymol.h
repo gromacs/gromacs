@@ -122,7 +122,7 @@ class MyMol : public MolProp
         t_inputrec               *inputrec_;
         gmx_shellfc_t             shell_;
         gmx_enerdata_t            enerd_;
-        gmx_resp_t                gr_;
+        Resp *                gr_;
         t_mdatoms                *md_;
         t_topology               *topology_;
 

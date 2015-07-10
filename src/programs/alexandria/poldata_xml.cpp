@@ -492,7 +492,6 @@ Poldata * PoldataXml::read(const char *fn, gmx_atomprop_t aps)
     {
         fprintf(debug, "Opening library file %s\n", fn2);
     }
-
     xmlDoValidityCheckingDefaultValue = 0;
     if ((doc = xmlParseFile(fn2)) == NULL)
     {
@@ -501,6 +500,7 @@ Poldata * PoldataXml::read(const char *fn, gmx_atomprop_t aps)
         sfree(fn2);
         return NULL;
     }
+
     pd = new Poldata();
     pd->set_filename( fn2);
     process_tree(debug, doc->children, 0, pd, aps);

@@ -47,8 +47,13 @@ namespace alexandria
 
 Poldata::Poldata()
 {
-    int           i;
-
+   
+    for (int x =0; x < egdNR; x++){
+      gt_dihedral_function[x]=NULL;
+      ngt_dihedral[x]=0;
+      ngt_dihedral_c[x]=0;
+      gt_dihedral[x]=NULL;
+    }
 
     /* Initiate some crucial variables */
     this->nexcl          = NOTSET;
@@ -58,7 +63,7 @@ Poldata::Poldata()
     this->gt_vdw_ftype   = NOTSET;
     this->gt_bond_ftype  = NOTSET;
     this->gt_angle_ftype = NOTSET;
-    for (i = 0; (i < egdNR); i++)
+    for (int i = 0; (i < egdNR); i++)
     {
         this->gt_dihedral_ftype[i] = NOTSET;
     }
@@ -1070,8 +1075,8 @@ int Poldata::elem_is_bond( char *elem1, char *elem2,
     return i;
 }
 
-//TODO add Poldata::?
- int gtb_comp(const void *a, const void *b)
+
+ int Poldata::gtb_comp(const void *a, const void *b)
 {
     t_gt_bond *ba = (t_gt_bond *)a;
     t_gt_bond *bb = (t_gt_bond *)b;
@@ -1296,7 +1301,7 @@ char *Poldata::get_bosque_unit()
     return this->bosque_polar_unit;
 }
 
-//TODO can be static
+
 int Poldata::search_bondtype( char *atom)
 {
     int j;
@@ -1850,10 +1855,11 @@ void Poldata::set_eemprops(ChargeDistributionModel eqd_model, char *name,
     t_eemprops              *eep;
     std::vector<std::string> sz, sq, sr;
 
-    eep = get_eep(eqd_model, name);
+    eep = this->get_eep(eqd_model, name);
     if (NULL == eep)
     {
-        srenew(this->eep, ++this->nep);
+      this->nep++;
+        srenew(this->eep,this->nep );
         eep = &(this->eep[this->nep-1]);
     }
     eep->eqd_model = eqd_model;

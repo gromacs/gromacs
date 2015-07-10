@@ -29,22 +29,112 @@
 #include "gromacs/topology/atomprop.h"
 #include "poldata.h"
 #include "molprop.h"
+#include "gmx_ra.h"
 
 
 
 
-typedef struct
+
+enum eParm {
+  eparmQ, eparmZ, eparmNR
+};
+
+
+namespace alexandria
 {
-    int  *row, atomnumber, atype;
-    bool  bRestrained;
-    char *atomtype;
-    int   nZeta;
-    real *q, *zeta, *zeta_ref;
-    int  *iq, *iz;
-} gmx_ra;
+  class Resp
+  {
+  public:
+    Resp(){}
 
-typedef struct gmx_resp
-{
+    Resp(ChargeDistributionModel iDistributionModel,
+	 bool bAXpRESP, real qfac, real b_hyper, real qtot,
+	 real zmin, real zmax, real delta_z, bool bZatyp,
+	 real watoms, real rDecrZeta,
+	 bool bRandZeta, bool bRandQ, real penalty_fac, bool bFitZeta,
+	 bool bEntropy, const char *dzatoms,
+	 unsigned int seed);
+
+
+    ~Resp();
+
+
+    int atomicnumber2row(int elem);
+
+
+
+    void statistics( int len, char buf[]);
+
+    void summary(FILE *gp, 
+		 std::vector<int> &symmetric_atoms);
+
+    void update_atomtypes( t_atoms *atoms);
+
+    void fill_zeta( alexandria::Poldata * pd);
+
+    void fill_q( t_atoms *atoms);
+
+    void add_atom_coords( rvec *x);
+
+    bool add_atom_info( t_atoms *atoms,
+			alexandria::Poldata * pd);
+
+    void get_atom_info( t_atoms *atoms,
+			t_symtab *symtab, rvec **x);
+
+    const char *get_stoichiometry();
+
+    void add_atom_symmetry(std::vector<int> &symmetric_atoms);
+
+    void add_point( double x, double y,
+		    double z, double V);
+
+    void make_grid( real spacing, matrix box, rvec x[]);
+
+    void copy_grid(Resp * src);
+
+    Resp * copy();
+
+    void calc_rms();
+
+    double get_rms( real *wtot);
+
+    void pot_lsq( gmx_stats_t lsq);
+
+    void calc_rho();
+
+    void calc_pot();
+
+    void read_cube( const char *fn, bool bESPonly);
+
+    void write_cube( const char *fn, char *title);
+
+    void write_rho( const char *fn, char *title);
+
+    void write_diff_cube(Resp * src,
+			 const char *cube_fn, const char *hist_fn,
+			 char *title, output_env_t oenv, int rho);
+
+    void write_histo(const char *fn,
+		     char *title, output_env_t oenv);
+
+    int  optimize_charges(FILE *fp,  int maxiter,
+			  real toler, real *rms);
+
+    void potcomp(const char *potcomp,
+		 const char *pdbdiff, output_env_t oenv);
+
+    double get_qtot( int atom);
+
+    double get_q( int atom, int zz);
+
+    double get_zeta( int atom, int zz);
+
+    void set_q( int atom, int zz, double q);
+
+    void set_zeta( int atom, int zz, double zeta);
+
+  private:
     ChargeDistributionModel iDistributionModel;
     int                     nesp, nrho, natom, natype, ngridp;
     double                  qtot, qsum, watoms;
@@ -57,108 +147,29 @@ typedef struct gmx_resp
     real                    qfac, b_hyper, zmin, zmax, delta_z, qmin, qmax, rDecrZeta;
     unsigned int            seed;
     int                     nparam; /* Total number of parameters */
-    gmx_ra                 *ra;
+    Ra                 **ra;
     char                  **dzatoms;
     const char             *stoichiometry;
     double                 *pot, *pot_calc, *rho;
     rvec                   *x, *esp;
-} gmx_resp;
 
-typedef struct gmx_resp *gmx_resp_t;
+    
+    void warning(const char *fn, int line);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-int atomicnumber2row(int elem);
+    void get_set_vector(bool         bSet,
+			bool         bRandQ,
+			bool         bRandZeta,
+			unsigned int seed,
+			double      *nmx);
 
-bool gmx_ra_init(gmx_ra *ra, int atomnumber, int atype,
-                 const char *atomtype, alexandria::Poldata * pd,
-                 int iDistributionModel, char **dzatoms);
+    real my_weight(int iatom);
 
-gmx_resp_t gmx_resp_init(ChargeDistributionModel iDistributionModel,
-                         bool bAXpRESP, real qfac, real b_hyper, real qtot,
-                         real zmin, real zmax, real delta_z, bool bZatyp,
-                         real watoms, real rDecrZeta,
-                         bool bRandZeta, bool bRandQ, real penalty_fac, bool bFitZeta,
-                         bool bEntropy, const char *dzatoms,
-                         unsigned int seed);
+    void calc_penalty();
 
-void gmx_resp_statistics(gmx_resp_t gr, int len, char buf[]);
+    void add_param( int atom, eParm eparm, int zz);
 
-void gmx_resp_summary(FILE *gp, gmx_resp_t gr,
-                      std::vector<int> &symmetric_atoms);
+    static double charge_function(void * gr,double v[]);
 
-void gmx_resp_update_atomtypes(gmx_resp_t gr, t_atoms *atoms);
-
-void gmx_resp_fill_zeta(gmx_resp_t gr, alexandria::Poldata * pd);
-
-void gmx_resp_fill_q(gmx_resp_t gr, t_atoms *atoms);
-
-void gmx_resp_add_atom_coords(gmx_resp_t gr, rvec *x);
-
-bool gmx_resp_add_atom_info(gmx_resp_t gr, t_atoms *atoms,
-                            alexandria::Poldata * pd);
-
-void gmx_resp_get_atom_info(gmx_resp_t gr, t_atoms *atoms,
-                            t_symtab *symtab, rvec **x);
-
-const char *gmx_resp_get_stoichiometry(gmx_resp_t gr);
-
-void gmx_resp_add_atom_symmetry(gmx_resp_t        gr,
-                                std::vector<int> &symmetric_atoms);
-
-void gmx_resp_add_point(gmx_resp_t gr, double x, double y,
-                        double z, double V);
-
-void gmx_resp_make_grid(gmx_resp_t gr, real spacing, matrix box, rvec x[]);
-
-void gmx_resp_copy_grid(gmx_resp_t dest, gmx_resp_t src);
-
-gmx_resp_t gmx_resp_copy(gmx_resp_t src);
-
-void gmx_resp_calc_rms(gmx_resp_t gr);
-
-double gmx_resp_get_rms(gmx_resp_t gr, real *wtot);
-
-void gmx_resp_pot_lsq(gmx_resp_t gr, gmx_stats_t lsq);
-
-void gmx_resp_calc_rho(gmx_resp_t gr);
-
-void gmx_resp_calc_pot(gmx_resp_t gr);
-
-void gmx_resp_read_cube(gmx_resp_t gr, const char *fn, bool bESPonly);
-
-void gmx_resp_write_cube(gmx_resp_t gr, const char *fn, char *title);
-
-void gmx_resp_write_rho(gmx_resp_t gr, const char *fn, char *title);
-
-void gmx_resp_write_diff_cube(gmx_resp_t grref, gmx_resp_t gr,
-                              const char *cube_fn, const char *hist_fn,
-                              char *title, output_env_t oenv, int rho);
-
-void gmx_resp_write_histo(gmx_resp_t gr, const char *fn,
-                          char *title, output_env_t oenv);
-
-int  gmx_resp_optimize_charges(FILE *fp, gmx_resp_t grt, int maxiter,
-                               real toler, real *rms);
-
-void gmx_resp_potcomp(gmx_resp_t gr, const char *potcomp,
-                      const char *pdbdiff, output_env_t oenv);
-
-void gmx_resp_destroy(gmx_resp_t grt);
-
-double gmx_resp_get_qtot(gmx_resp_t grt, int atom);
-
-double gmx_resp_get_q(gmx_resp_t grt, int atom, int zz);
-
-double gmx_resp_get_zeta(gmx_resp_t grt, int atom, int zz);
-
-void gmx_resp_set_q(gmx_resp_t grt, int atom, int zz, double q);
-
-void gmx_resp_set_zeta(gmx_resp_t grt, int atom, int zz, double zeta);
-
-#ifdef __cplusplus
+};
 }
-#endif
-
 #endif

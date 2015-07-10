@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="zeta">
+    <Int Name="Length">6</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>40.100000000000001</Real>
+    <Real>40.100000000000001</Real>
+    <Real>14.199999999999999</Real>
+    <Real>23.773</Real>
+  </Sequence>
+</ReferenceData>

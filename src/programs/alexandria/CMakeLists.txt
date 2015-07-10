@@ -99,6 +99,7 @@ set(ALEXANDRIA_SOURCES
         gen_table.cpp
         alex_modules.cpp
         categories.cpp
+	gmx_ra.cpp
 	)
 	
 

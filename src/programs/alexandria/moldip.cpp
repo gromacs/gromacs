@@ -578,7 +578,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 {
                     if (immOK == imm)
                     {
-                        mpnew.gr_ = gmx_resp_init(_iChargeDistributionModel,
+                        mpnew.gr_ = new Resp(_iChargeDistributionModel,
                                                   TRUE, 0.001, 0.1,
                                                   mpnew.getCharge(),
                                                   1, 100, 5,
@@ -711,7 +711,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
             if (immOK == imm)
             {
-                mpnew.gr_ = gmx_resp_init(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.getCharge(),
+                mpnew.gr_ = new  Resp(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.getCharge(),
                                           1, 100, 5,
                                           TRUE, watoms, 5, TRUE, TRUE,
                                           1, TRUE,
@@ -979,9 +979,9 @@ void MolDip::CalcDeviation()
             if ((NULL != mymol->gr_) && _bQM)
             {
                 /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),_pd);*/
-                gmx_resp_fill_zeta(mymol->gr_, _pd);
-                gmx_resp_fill_q(mymol->gr_, &(mymol->topology_->atoms));
-                gmx_resp_calc_pot(mymol->gr_);
+                mymol->gr_->fill_zeta( _pd);
+                mymol->gr_->fill_q(&(mymol->topology_->atoms));
+                mymol->gr_->calc_pot();
             }
             qtot = 0;
             for (j = 0; (j < mymol->topology_->atoms.nr); j++)
@@ -1031,7 +1031,7 @@ void MolDip::CalcDeviation()
                 }
                 if (NULL != mymol->gr_)
                 {
-                    _ener[ermsESP] += gmx_resp_get_rms(mymol->gr_, &wtot);
+                    _ener[ermsESP] += mymol->gr_->get_rms(&wtot);
                     if (NULL != debug)
                     {
                         fprintf(debug, "RMS %s = %g\n",

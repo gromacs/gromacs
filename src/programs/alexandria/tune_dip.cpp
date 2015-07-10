@@ -229,9 +229,9 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
             print_quad(fp, mi->Q_exp, NULL, NULL, quad_toler);
             print_quad(fp, mi->Q_exp, mi->Q_calc, (char *)"EEM", quad_toler);
             print_quad(fp, mi->Q_exp, mi->Q_esp, (char *)"ESP", quad_toler);
-            chi2 = gmx_resp_get_rms(mi->gr_, &wtot);
+            chi2 = mi->gr_->get_rms(&wtot);
             fprintf(fp, "ESP chi2 %g Hartree/e wtot = %g\n", chi2, wtot);
-            gmx_resp_pot_lsq(mi->gr_, lsq_esp);
+            mi->gr_->pot_lsq( lsq_esp);
             while (estatsOK == gmx_stats_get_point(lsq_esp, &espx, &espy,
                                                    &espdx, &espdy, 5))
             {

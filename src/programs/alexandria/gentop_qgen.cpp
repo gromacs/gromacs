@@ -50,7 +50,7 @@ namespace alexandria
 
 
 
- void GentopQgen::save_params( gmx_resp_t gr)
+ void GentopQgen::save_params( Resp * gr)
 {
     int i, j;
 
@@ -70,8 +70,8 @@ namespace alexandria
         {
             if (NULL != gr)
             {
-                this->q[i][j]    = gmx_resp_get_q(gr, i, j);
-                this->zeta[i][j] = gmx_resp_get_zeta(gr, i, j);
+                this->q[i][j]    = gr->get_q( i, j);
+                this->zeta[i][j] = gr->get_zeta( i, j);
             }
             this->qsave[i][j]    = this->q[i][j];
             this->zetasave[i][j] = this->zeta[i][j];
@@ -80,7 +80,7 @@ namespace alexandria
     this->bAllocSave = TRUE;
 }
 
- void GentopQgen::get_params( gmx_resp_t gr)
+ void GentopQgen::get_params( Resp * gr)
 {
     int i, j;
 
@@ -94,8 +94,8 @@ namespace alexandria
                 this->zeta[i][j] = this->zetasave[i][j];
                 if (NULL != gr)
                 {
-                    gmx_resp_set_q(gr, i, j, this->q[i][j]);
-                    gmx_resp_set_zeta(gr, i, j, this->zeta[i][j]);
+                    gr->set_q( i, j, this->q[i][j]);
+                    gr->set_zeta( i, j, this->zeta[i][j]);
                 }
             }
         }
@@ -745,16 +745,16 @@ void GentopQgen::print(FILE *fp, t_atoms *atoms)
     }
 }
 
-void GentopQgen::message( int len, char buf[], gmx_resp_t gr)
+void GentopQgen::message( int len, char buf[], Resp * gr)
 {
     switch (this->eQGEN)
     {
         case eQGEN_OK:
             if (NULL != gr)
             {
-                gmx_resp_calc_pot(gr);
-                gmx_resp_calc_rms(gr);
-                gmx_resp_statistics(gr, len, buf);
+                gr->calc_pot();
+                gr->calc_rms();
+                gr->statistics( len, buf);
             }
             else
             {
@@ -929,7 +929,7 @@ void GentopQgen::message( int len, char buf[], gmx_resp_t gr)
 }
 
 int GentopQgen::generate_charges(FILE *fp,
-                      gmx_resp_t gr,
+                      Resp * gr,
                      const char *molname, Poldata * pd,
                      t_atoms *atoms,
                      real tol, int maxiter, int maxcycle,
@@ -958,7 +958,7 @@ int GentopQgen::generate_charges(FILE *fp,
                     fprintf(fp, "Cycle %d/%d\n", cc+1, maxcycle);
                 }
                 /* Fit charges to electrostatic potential */
-                this->eQGEN = gmx_resp_optimize_charges(fp, gr, maxiter, tol, &chi2);
+                this->eQGEN = gr->optimize_charges(fp, maxiter, tol, &chi2);
                 if (this->eQGEN == eQGEN_OK)
                 {
                     eQGEN_min = this->eQGEN;

@@ -29,114 +29,109 @@
 #include "gmx_resp.h"
 
 enum {
-    eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR
+  eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR
 };
 
 enum ChargeGenerationAlgorithm {
-    eqgNONE, eqgEEM, eqgESP, eqgRESP, eqgNR
+  eqgNONE, eqgEEM, eqgESP, eqgRESP, eqgNR
 };
 
 namespace alexandria
 {
 
-class GentopQgen
-{
+  class GentopQgen
+  {
   
- private:
-  gmx_bool                  bWarned;
-  ChargeDistributionModel   iChargeDistributionModel;
-  ChargeGenerationAlgorithm iChargeGenerationAlgorithm;
-  int                       natom, eQGEN;
-  real                      qtotal, chieq, hfac, epsr;
-  /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
-  char                    **elem;
-  int                      *atomnr;
-  real                     *chi0, *rhs, *j00;
-  rvec                     *x;
-  /* Jab is a matrix over atom pairs */
-  real                    **Jab;
-  /* For each atom i there are nZeta[i] row, q and zeta entries */
-  int                      *nZeta;
-  int                     **row;
-  gmx_bool                  bAllocSave;
-  real                    **q, **zeta, **qsave, **zetasave;
+  public:
   
-  
-  real calc_jab(ChargeDistributionModel iChargeDistributionModel,
-		rvec xi, rvec xj,
-		int nZi, int nZj,
-		real *zeta_i, real *zeta_j,
-		int *rowi, int *rowj);
-  void calc_Jab();
-  
-  void solve_q_eem(FILE *fp,  real hardsness_factor);
-  
-  void update_J00();
-  
-  real calc_Sij(int i, int j);
-
-  void update_pd(t_atoms *atoms, Poldata * pd);
-  
-  
-  int generate_charges_bultinck(FILE *fp,
-				Poldata * pd, t_atoms *atoms,
-				gmx_atomprop_t aps);
+    ~GentopQgen();
 
 
+    GentopQgen(Poldata * pd, t_atoms *atoms,
+	       gmx_atomprop_t aps,
+	       rvec *x,
+	       ChargeDistributionModel   iChargeDistributionModel,
+	       ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
+	       real hfac, int qtotal,
+	       real epsr);
+  
+    // void done();
+  
+    int generate_charges_sm(FILE *fp,
+			    Poldata * pd, t_atoms *atoms,
+			    real tol, int maxiter, gmx_atomprop_t aps,
+			    real *chieq);
 
-  void calc_rhs();
+    int generate_charges(FILE *fp,
+			 Resp * gr, const char *molname,
+			 Poldata * pd,
+			 t_atoms *atoms,
+			 real tol, int maxiter, int maxcycle,
+			 gmx_atomprop_t aps);
+  
+    void message(int len, char buf[], Resp * gr);
+    gmx_bool SplitQ(ChargeDistributionModel iDistributionModel);
+  
+    /* The routines below return NOTSET if something is out of the ordinary */
+    int get_nzeta(int atom);
+  
+    int get_row(int atom, int z);
+  
+    double get_q(int atom, int z);
 
-
- 
- public:
+    void check_support(Poldata * pd, gmx_atomprop_t aps);
   
- ~GentopQgen();
-
-
-  GentopQgen(Poldata * pd, t_atoms *atoms,
-	     gmx_atomprop_t aps,
-	     rvec *x,
-	     ChargeDistributionModel   iChargeDistributionModel,
-	     ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
-	     real hfac, int qtotal,
-	     real epsr);
+    void save_params( Resp * gr);
   
-  // void done();
-  
-  int generate_charges_sm(FILE *fp,
-			Poldata * pd, t_atoms *atoms,
-			real tol, int maxiter, gmx_atomprop_t aps,
-                    real *chieq);
-
-  int generate_charges(FILE *fp,
-		       gmx_resp_t gr, const char *molname,
-		       Poldata * pd,
-		       t_atoms *atoms,
-		       real tol, int maxiter, int maxcycle,
-		       gmx_atomprop_t aps);
-  
-  void message(int len, char buf[], gmx_resp_t gr);
-  gmx_bool SplitQ(ChargeDistributionModel iDistributionModel);
-  
-  /* The routines below return NOTSET if something is out of the ordinary */
-  int get_nzeta(int atom);
-  
-  int get_row(int atom, int z);
-  
-  double get_q(int atom, int z);
-
-  void check_support(Poldata * pd, gmx_atomprop_t aps);
-  
-  void save_params( gmx_resp_t gr);
-  
-  void get_params( gmx_resp_t gr);
-  double get_zeta(int atom, int z);
+    void get_params( Resp *  gr);
+    double get_zeta(int atom, int z);
   
 
-void print(FILE *fp, t_atoms *atoms);
+    void print(FILE *fp, t_atoms *atoms);
   
-  void debugFun(FILE *fp);
+    void debugFun(FILE *fp);
+
+  private:
+    gmx_bool                  bWarned = false;
+    ChargeDistributionModel   iChargeDistributionModel;
+    ChargeGenerationAlgorithm iChargeGenerationAlgorithm;
+    int                       natom = 0, eQGEN = 0;
+    real                      qtotal = 0, chieq = 0, hfac = 0, epsr = 0;
+    /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
+    char                    **elem  = NULL;
+    int                      *atomnr  = NULL;
+    real                     *chi0  = NULL, *rhs  = NULL, *j00  = NULL;
+    rvec                     *x  = NULL;
+    /* Jab is a matrix over atom pairs */
+    real                    **Jab  = NULL;
+    /* For each atom i there are nZeta[i] row, q and zeta entries */
+    int                      *nZeta =  NULL;
+    int                     **row =  NULL;
+    gmx_bool                  bAllocSave = false;
+    real                    **q = NULL, **zeta  = NULL, **qsave  = NULL, **zetasave  = NULL;
   
-};
+  
+    real calc_jab(ChargeDistributionModel iChargeDistributionModel,
+		  rvec xi, rvec xj,
+		  int nZi, int nZj,
+		  real *zeta_i, real *zeta_j,
+		  int *rowi, int *rowj);
+
+    void calc_Jab();
+  
+    void solve_q_eem(FILE *fp,  real hardsness_factor);
+  
+    void update_J00();
+  
+    real calc_Sij(int i, int j);
+
+    void update_pd(t_atoms *atoms, Poldata * pd);
+  
+    int generate_charges_bultinck(FILE *fp,
+				  Poldata * pd, t_atoms *atoms,
+				  gmx_atomprop_t aps);
+
+    void calc_rhs();  
+  };
 }
 #endif
