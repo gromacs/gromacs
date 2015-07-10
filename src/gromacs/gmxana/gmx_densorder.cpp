@@ -34,9 +34,9 @@
  */
 #include "gmxpre.h"
 
-#include <ctype.h>
-#include <math.h>
-#include <string.h>
+#include <cctype>
+#include <cmath>
+#include <cstring>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/correlationfunctions/autocorr.h"
@@ -64,11 +64,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_DOUBLE
-#define FLOOR(x) ((int) floor(x))
-#else
-#define FLOOR(x) ((int) floorf(x))
-#endif
 
 enum {
     methSEL, methBISECT, methFUNCFIT, methNR
@@ -155,9 +150,9 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
 
 
     }
-    *zslices = 1+FLOOR(box[axis][axis]/bwz);
-    *yslices = 1+FLOOR(box[ax2][ax2]/bw);
-    *xslices = 1+FLOOR(box[ax1][ax1]/bw);
+    *zslices = 1+static_cast<int>(std::floor(box[axis][axis]/bwz));
+    *yslices = 1+static_cast<int>(std::floor(box[ax2][ax2]/bw));
+    *xslices = 1+static_cast<int>(std::floor(box[ax1][ax1]/bw));
     if (bps1d)
     {
         if (*xslices < *yslices)
@@ -248,9 +243,9 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
                 z -= box[axis][axis];
             }
 
-            slicex = ((int) (x/bbww[XX])) % *xslices;
-            slicey = ((int) (y/bbww[YY])) % *yslices;
-            slicez = ((int) (z/bbww[ZZ])) % *zslices;
+            slicex = static_cast<int>(x/bbww[XX]) % *xslices;
+            slicey = static_cast<int>(y/bbww[YY]) % *yslices;
+            slicez = static_cast<int>(z/bbww[ZZ]) % *zslices;
             Densslice[slicex][slicey][slicez] += (top->atoms.atom[index[0][j]].m*dscale);
         }
 
@@ -330,7 +325,7 @@ static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslice
     real  std, var;
     int   i, j, n, order;
     order = ftsize/2;
-    std   = ((real)order/2.0);
+    std   = order/2.0;
     var   = std*std;
     snew(kernel, ftsize);
     gausskernel(kernel, ftsize, var);
