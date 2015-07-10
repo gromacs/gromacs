@@ -379,7 +379,7 @@ gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_d
         {
             for (j = 0; j < pr->grn; j++)
             {
-                sq->s[i] += (pr->gr[j]/pr->r[j])*sin(sq->q[i]*pr->r[j]);
+                sq->s[i] += (pr->gr[j]/pr->r[j])*std::sin(sq->q[i]*pr->r[j]);
             }
             sq->s[i] /= sq->q[i];
         }
@@ -390,7 +390,7 @@ gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_d
         {
             for (j = 0; j < pr->grn; j++)
             {
-                sq->s[i] += (pr->gr[j]/pr->r[j])*sin(sq->q[i]*pr->r[j]);
+                sq->s[i] += (pr->gr[j]/pr->r[j])*std::sin(sq->q[i]*pr->r[j]);
             }
             sq->s[i] /= sq->q[i];
         }
