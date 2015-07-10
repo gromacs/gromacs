@@ -168,7 +168,7 @@ t_dlist *mk_dlist(FILE *log,
         /* end fixing aromatics */
 
         /* Special case for Pro, has no H */
-        if (strcmp(thisres, "PRO") == 0)
+        if (std::strcmp(thisres, "PRO") == 0)
         {
             atm.H = atm.Cn[4];
         }

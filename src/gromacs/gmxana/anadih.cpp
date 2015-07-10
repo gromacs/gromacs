@@ -764,7 +764,7 @@ void make_histo(FILE *log,
         }
         fprintf(log, "Min data: %10g  Max data: %10g\n", minx, maxx);
     }
-    dx = (double)npoints/(maxx-minx);
+    dx = npoints/(maxx-minx);
     if (debug)
     {
         fprintf(debug,
@@ -911,7 +911,7 @@ void read_ang_dih(const char *trj_fn,
                 for (i = 0; (i < nangles); i++)
                 {
                     real dd = angles[cur][i];
-                    angles[cur][i] = std::atan2(sin(dd), cos(dd));
+                    angles[cur][i] = std::atan2(std::sin(dd), std::cos(dd));
                 }
             }
             else
