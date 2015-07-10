@@ -220,7 +220,7 @@ void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
     {
         for (j = i+1; j < nn; j++)
         {
-            x = (int)(fac*mat[i][j]+0.5);
+            x = static_cast<int>(fac*mat[i][j]+0.5);
             if (x <= 100)
             {
                 histo[x]++;
