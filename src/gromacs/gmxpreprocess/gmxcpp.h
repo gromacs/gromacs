@@ -38,10 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_GMXCPP_H
 #define GMX_GMXPREPROCESS_GMXCPP_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct gmx_cpp *gmx_cpp_t;
 
 /* The possible return codes for these functions */
@@ -98,9 +94,5 @@ void cpp_done();
    NOT THREAD SAFE
  */
 char *cpp_error(gmx_cpp_t *handlep, int status);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

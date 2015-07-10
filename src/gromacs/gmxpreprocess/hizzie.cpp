@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,8 @@
 
 #include <stdio.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
@@ -176,7 +178,7 @@ static gmx_bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
                                 pdba->resinfo[pdba->atom[i].resind].nr, *pdba->atomname[i],
                                 *pdba->resinfo[pdba->atom[aj].resind].name,
                                 pdba->resinfo[pdba->atom[aj].resind].nr, *pdba->atomname[aj],
-                                sqrt(d2), a);
+                                std::sqrt(d2), a);
                     }
                     hbond[i] = TRUE;
                     bHB      = TRUE;
@@ -213,14 +215,13 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
 #define NPD asize(prot_don)
 
     gmx_bool *donor, *acceptor;
-    gmx_bool *hbond, bHaveH = FALSE;
+    gmx_bool *hbond;
     gmx_bool  bHDd, bHEd;
     rvec      xh1, xh2;
     int       natom;
-    int       i, j, nd, na, aj, hisind, his0, type = -1;
+    int       i, j, nd, na, hisind, type = -1;
     int       nd1, ne2, cg, cd2, ce1;
     t_blocka *hb;
-    real      d;
     char     *atomnm;
 
     natom = pdba->nr;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,8 +40,11 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <math.h>
 #include <stdlib.h>
+
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
@@ -86,7 +89,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             {
                                 ci = get_atomtype_nbparam(i, nf, atype);
                                 cj = get_atomtype_nbparam(j, nf, atype);
-                                c  = sqrt(ci * cj);
+                                c  = std::sqrt(ci * cj);
                                 plist->param[k].c[nf]      = c;
                             }
                         }
@@ -111,7 +114,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             {
                                 plist->param[k].c[0] *= -1;
                             }
-                            plist->param[k].c[1] = sqrt(ci1*cj1);
+                            plist->param[k].c[1] = std::sqrt(ci1*cj1);
                         }
                     }
 
@@ -126,7 +129,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             cj0                  = get_atomtype_nbparam(j, 0, atype);
                             ci1                  = get_atomtype_nbparam(i, 1, atype);
                             cj1                  = get_atomtype_nbparam(j, 1, atype);
-                            plist->param[k].c[0] = sqrt(fabs(ci0*cj0));
+                            plist->param[k].c[0] = std::sqrt(fabs(ci0*cj0));
                             /* Negative sigma signals that c6 should be set to zero later,
                              * so we need to propagate that through the combination rules.
                              */
@@ -134,7 +137,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             {
                                 plist->param[k].c[0] *= -1;
                             }
-                            plist->param[k].c[1] = sqrt(ci1*cj1);
+                            plist->param[k].c[1] = std::sqrt(ci1*cj1);
                         }
                     }
 
@@ -160,7 +163,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                     cj2                  = get_atomtype_nbparam(j, 2, atype);
                     bi                   = get_atomtype_nbparam(i, 1, atype);
                     bj                   = get_atomtype_nbparam(j, 1, atype);
-                    plist->param[k].c[0] = sqrt(ci0 * cj0);
+                    plist->param[k].c[0] = std::sqrt(ci0 * cj0);
                     if ((bi == 0) || (bj == 0))
                     {
                         plist->param[k].c[1] = 0;
@@ -169,7 +172,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                     {
                         plist->param[k].c[1] = 2.0/(1/bi+1/bj);
                     }
-                    plist->param[k].c[2] = sqrt(ci2 * cj2);
+                    plist->param[k].c[2] = std::sqrt(ci2 * cj2);
                 }
             }
 
@@ -516,9 +519,9 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
             gmx_fatal(FARGS, "Replacing atomtype %s failed", type);
         }
     }
-    else if ((nr = add_atomtype(at, symtab, atom, type, param,
-                                batype_nr, radius, vol,
-                                surftens, atomnr, gb_radius, S_hct)) == NOTSET)
+    else if ((add_atomtype(at, symtab, atom, type, param,
+                           batype_nr, radius, vol,
+                           surftens, atomnr, gb_radius, S_hct)) == NOTSET)
     {
         gmx_fatal(FARGS, "Adding atomtype %s failed", type);
     }
@@ -674,7 +677,7 @@ void push_bt(directive d, t_params bt[], int nral,
         "%*s%*s%*s%*s%*s%*s%*s"
     };
     const char *formlf = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-    int         i, ft, ftype, nn, nrfp, nrfpA, nrfpB;
+    int         i, ft, ftype, nn, nrfp, nrfpA;
     char        f1[STRLEN];
     char        alc[MAXATOMLIST+1][20];
     /* One force parameter more, so we can check if we read too many */
@@ -700,7 +703,6 @@ void push_bt(directive d, t_params bt[], int nral,
     ftype = ifunc_index(d, ft);
     nrfp  = NRFP(ftype);
     nrfpA = interaction_function[ftype].nrfpA;
-    nrfpB = interaction_function[ftype].nrfpB;
     strcpy(f1, formnl[nral]);
     strcat(f1, formlf);
     if ((nn = sscanf(line, f1, &c[0], &c[1], &c[2], &c[3], &c[4], &c[5], &c[6], &c[7], &c[8], &c[9], &c[10], &c[11], &c[12]))
@@ -786,7 +788,7 @@ void push_dihedraltype(directive d, t_params bt[],
         "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
         "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
     };
-    int          i, ft, ftype, nn, nrfp, nrfpA, nrfpB, nral;
+    int          i, ft, ftype, nn, nrfp, nrfpA, nral;
     char         f1[STRLEN];
     char         alc[MAXATOMLIST+1][20];
     double       c[MAXFORCEPARAM];
@@ -860,7 +862,6 @@ void push_dihedraltype(directive d, t_params bt[],
     ftype = ifunc_index(d, ft);
     nrfp  = NRFP(ftype);
     nrfpA = interaction_function[ftype].nrfpA;
-    nrfpB = interaction_function[ftype].nrfpB;
 
     strcpy(f1, formnl[nral]);
     strcat(f1, formlf[nrfp-1]);
@@ -925,14 +926,13 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
               warninp_t wi)
 {
     /* swap the atoms */
-    const char *form2 = "%*s%*s%*s%lf%lf";
     const char *form3 = "%*s%*s%*s%lf%lf%lf";
     const char *form4 = "%*s%*s%*s%lf%lf%lf%lf";
     const char *form5 = "%*s%*s%*s%lf%lf%lf%lf%lf";
     char        a0[80], a1[80];
-    int         i, f, n, ftype, atnr, nrfp;
+    int         i, f, n, ftype, nrfp;
     double      c[4], dum;
-    real        cr[4], sig6;
+    real        cr[4];
     atom_id     ai, aj;
     t_nbparam  *nbp;
     gmx_bool    bId;
@@ -1018,7 +1018,7 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     {
         gmx_fatal(FARGS, "Atomtype %s not found", a1);
     }
-    nbp = &(nbt[max(ai, aj)][min(ai, aj)]);
+    nbp = &(nbt[std::max(ai, aj)][std::min(ai, aj)]);
 
     if (nbp->bSet)
     {
@@ -1050,13 +1050,12 @@ void
 push_gb_params (gpp_atomtype_t at, char *line,
                 warninp_t wi)
 {
-    int    nfield;
     int    atype;
     double radius, vol, surftens, gb_radius, S_hct;
     char   atypename[STRLEN];
     char   errbuf[STRLEN];
 
-    if ( (nfield = sscanf(line, "%s%lf%lf%lf%lf%lf", atypename, &radius, &vol, &surftens, &gb_radius, &S_hct)) != 6)
+    if ( (sscanf(line, "%s%lf%lf%lf%lf%lf", atypename, &radius, &vol, &surftens, &gb_radius, &S_hct)) != 6)
     {
         sprintf(errbuf, "Too few gb parameters for type %s\n", atypename);
         warning(wi, errbuf);
@@ -1081,12 +1080,11 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 {
     const char  *formal = "%s%s%s%s%s%s%s%s";
 
-    int          i, j, ft, ftype, nn, nrfp, nrfpA, nrfpB;
+    int          i, ft, ftype, nn, nrfp, nrfpA, nrfpB;
     int          start;
     int          nxcmap, nycmap, ncmap, read_cmap, sl, nct;
     char         s[20], alc[MAXATOMLIST+2][20];
     t_param      p;
-    gmx_bool     bAllowRepeat;
     char         errbuf[256];
 
     /* Keep the compiler happy */
@@ -1464,7 +1462,8 @@ static gmx_bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
         /* First test the generated-pair position to save
          * time when we have 1000*1000 entries for e.g. OPLS...
          */
-        ntype = sqrt(nr);
+        ntype = static_cast<int>(std::sqrt(static_cast<double>(nr)));
+        assert(ntype * ntype == nr);
         if (bB)
         {
             ti = at->atom[p->a[0]].typeB;
@@ -1541,7 +1540,7 @@ static gmx_bool default_cmap_params(t_params bondtype[],
                                     t_param *p, gmx_bool bB,
                                     int *cmap_type, int *nparam_def)
 {
-    int      i, j, nparam_found;
+    int      i, nparam_found;
     int      ct;
     gmx_bool bFound = FALSE;
 
@@ -1731,7 +1730,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     /* One force parameter more, so we can check if we read too many */
     double       cc[MAXFORCEPARAM+1];
     int          aa[MAXATOMLIST+1];
-    t_param      param, paramB, *param_defA, *param_defB;
+    t_param      param, *param_defA, *param_defB;
     gmx_bool     bFoundA = FALSE, bFoundB = FALSE, bDef, bPert, bSwapParity = FALSE;
     int          nparam_defA, nparam_defB;
     char         errbuf[256];
@@ -2113,16 +2112,15 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
         "%d%d%d%d%d%d%d"
     };
 
-    int      i, j, nr, ftype, nral, nread, ncmap_params;
+    int      i, j, ftype, nral, nread, ncmap_params;
     int      cmap_type;
     int      aa[MAXATOMLIST+1];
     char     errbuf[256];
     gmx_bool bFound;
-    t_param  param, paramB, *param_defA, *param_defB;
+    t_param  param;
 
     ftype        = ifunc_index(d, 1);
     nral         = NRAL(ftype);
-    nr           = bondtype[ftype].nr;
     ncmap_params = 0;
 
     nread = sscanf(line, aaformat[nral-1],
@@ -2225,7 +2223,7 @@ void push_vsitesn(directive d, t_params bond[],
 
     param.a[0] = a - 1;
 
-    ret   = sscanf(ptr, "%d%n", &type, &n);
+    sscanf(ptr, "%d%n", &type, &n);
     ptr  += n;
     ftype = ifunc_index(d, type);
 
@@ -2606,7 +2604,8 @@ static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp)
     n    = mol->atoms.nr;
     atom = mol->atoms.atom;
 
-    ntype = sqrt(nbp->nr);
+    ntype = static_cast<int>(std::sqrt(static_cast<double>(nbp->nr)));
+    assert(ntype * ntype == nbp->nr);
 
     for (i = 0; i < MAXATOMLIST; i++)
     {

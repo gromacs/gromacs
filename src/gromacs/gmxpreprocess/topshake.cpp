@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,8 @@
 #include "topshake.h"
 
 #include <ctype.h>
-#include <math.h>
+
+#include <cmath>
 
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
@@ -108,7 +109,7 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
     t_params        *bonds;
     t_param          p, *bond, *ang;
     real             b_ij, b_jk;
-    int              nb, b, i, j, ftype, ftype_a;
+    int              i, j, ftype, ftype_a;
     gmx_bool         bFound;
 
     if (nshake != eshNONE)
@@ -193,8 +194,8 @@ void make_shake (t_params plist[], t_atoms *atoms, int nshake)
                                     if (bFound)
                                     {
                                         /* apply law of cosines */
-                                        p.C0 = sqrt( b_ij*b_ij + b_jk*b_jk -
-                                                     2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0) );
+                                        p.C0 = std::sqrt( b_ij*b_ij + b_jk*b_jk -
+                                                          2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0) );
                                         p.C1 = p.C0;
 #ifdef DEBUG
                                         printf("p: %d, q: %d, dist: %12.5e\n", p.AI, p.AJ, p.C0);

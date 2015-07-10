@@ -191,8 +191,11 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
     }
     gmx_ffclose(in);
 
-    /* Sort the list (necessary to be able to use bsearch */
-    qsort(aah, nah, (size_t)sizeof(**ah), compaddh);
+    if (nah > 0)
+    {
+        /* Sort the list (necessary to be able to use bsearch */
+        qsort(aah, nah, (size_t)sizeof(**ah), compaddh);
+    }
 
     /*
        if (debug)
@@ -208,7 +211,6 @@ int read_h_db(const char *ffdir, t_hackblock **ah)
     int    nhdbf, f;
     char **hdbf;
     int    nah;
-    FILE  *fp;
 
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.
