@@ -57,6 +57,46 @@
 namespace gmx
 {
 
+std::size_t
+countWords(const char *s)
+{
+    std::size_t nWords = 0;
+    // Use length variable to avoid N^2 complexity when executing strlen(s) every iteration
+    std::size_t length = std::strlen(s);
+
+    for (std::size_t i = 0; i < length; i++)
+    {
+        // If we found a new word, increase counter and step through the word
+        if (std::isalnum(s[i]))
+        {
+            ++nWords;
+            // If we hit string end, '\0' is not alphanumerical
+            while (std::isalnum(s[i]))
+            {
+                // This might increment i to the string end, and then the outer
+                // loop will increment i one unit beyond that, but since
+                // we compare to the string length in the outer loop this is fine.
+                i++;
+            }
+        }
+    }
+    return nWords;
+}
+
+
+/*!\ brief Returns the number of space-separated words in a string object
+ *
+ * \param str Reference to string object, which will not be changed.
+ *
+ * \returns number of words in string.
+ */
+std::size_t
+countWords(const std::string &str)
+{
+    // Under out beautiful C++ interfaces hides an ugly c-string implementation :-)
+    return countWords(str.c_str());
+}
+
 bool endsWith(const char *str, const char *suffix)
 {
     if (isNullOrEmpty(suffix))
