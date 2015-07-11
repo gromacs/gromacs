@@ -262,7 +262,7 @@ gmx_bool read_next_vmd_frame(t_trxframe *fr)
 
 static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 {
-    char            pathname[GMX_PATH_MAX], filename[GMX_PATH_MAX];
+    char            pathname[GMX_PATH_MAX];
     const char     *pathenv;
     const char     *err;
     int             i;
@@ -328,7 +328,7 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
                "The architecture (e.g. 32bit versus 64bit) of GROMACS and VMD has to match.\n");
         return 0;
     }
-    for (i = 0; i < globbuf.gl_pathc && vmdplugin->api == NULL; i++)
+    for (i = 0; i < static_cast<int>(globbuf.gl_pathc) && vmdplugin->api == NULL; i++)
     {
         /* FIXME: Undefined which plugin is chosen if more than one plugin
            can read a certain file ending. Requires some additional command
@@ -348,6 +348,7 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     }
     do
     {
+        char filename[GMX_PATH_MAX];
         sprintf(filename, "%s\\%s", pathenv, ffd.cFileName);
         ret |= load_sharedlibrary_plugins(filename, vmdplugin);
     }

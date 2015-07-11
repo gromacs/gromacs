@@ -38,13 +38,13 @@
 
 #include "gmxfio-xdr.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "gmxfio-impl.h"
@@ -66,7 +66,7 @@ XDR *gmx_fio_getxdr(t_fileio *fio)
 {
     XDR *ret = NULL;
     gmx_fio_lock(fio);
-    assert(fio->xdr != NULL);
+    GMX_RELEASE_ASSERT( fio->xdr != NULL, "Implementation error: NULL XDR pointers");
     ret = fio->xdr;
     gmx_fio_unlock(fio);
     return ret;
@@ -88,7 +88,6 @@ static void gmx_fio_check_nitem(int eio, int nitem, const char *file, int line)
 static void gmx_fio_fe(t_fileio *fio, int eio, const char *desc,
                        const char *srcfile, int line)
 {
-
     gmx_fatal(FARGS, "Trying to %s %s type %d (%s), src %s, line %d",
               fio->bRead ? "read" : "write", desc, eio,
               ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown",
@@ -111,7 +110,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     double          d = 0;
     float           f = 0;
 
-    assert(fio->xdr != NULL);
+    GMX_RELEASE_ASSERT( fio->xdr != NULL, "Implementation error: NULL XDR pointers");
     gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {
@@ -226,7 +225,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                     }
                 }
                 res = xdr_vector(fio->xdr, (char *) dvec, DIM,
-                                 (unsigned int) sizeof(double),
+                                 static_cast<unsigned int>(sizeof(double)),
                                  (xdrproc_t) xdr_double);
                 if (item)
                 {
@@ -246,7 +245,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
                     }
                 }
                 res = xdr_vector(fio->xdr, (char *) fvec, DIM,
-                                 (unsigned int) sizeof(float),
+                                 static_cast<unsigned int>(sizeof(float)),
                                  (xdrproc_t) xdr_float);
                 if (item)
                 {
