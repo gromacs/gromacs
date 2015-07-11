@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,59 +36,80 @@
  */
 #include "gmxpre.h"
 
-#include "timecontrol.h"
-
-#include "thread_mpi/threads.h"
-
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/fileio/xdrf.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
-/* The source code in this file should be thread-safe.
-         Please keep it that way. */
-
-/* Globals for trajectory input */
-typedef struct {
-    real     t;
-    gmx_bool bSet;
-} t_timecontrol;
-
-static t_timecontrol       timecontrol[TNR] = {
-    { 0, FALSE },
-    { 0, FALSE },
-    { 0, FALSE }
-};
-
-static tMPI_Thread_mutex_t tc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
-gmx_bool bTimeSet(int tcontrol)
+int xdr_real(XDR *xdrs, real *r)
 {
-    gmx_bool ret;
+#ifdef GMX_DOUBLE
+    float f;
+    int   ret;
 
-    tMPI_Thread_mutex_lock(&tc_mutex);
-    range_check(tcontrol, 0, TNR);
-    ret = timecontrol[tcontrol].bSet;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
+    f   = *r;
+    ret = xdr_float(xdrs, &f);
+    *r  = f;
 
     return ret;
+#else
+    return xdr_float(xdrs, (float *)r);
+#endif
 }
 
-real rTimeValue(int tcontrol)
+int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 {
-    real ret;
+#ifdef GMX_DOUBLE
+    float *ffp;
+    float  fprec;
+    int    i, ret, isize;
 
-    tMPI_Thread_mutex_lock(&tc_mutex);
-    range_check(tcontrol, 0, TNR);
-    ret = timecontrol[tcontrol].t;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
+    isize = *size*DIM;
+    if (isize <= 0)
+    {
+        gmx_fatal(FARGS, "Don't know what to malloc for ffp, isize = %d", isize);
+    }
+
+    snew(ffp, isize);
+
+    for (i = 0; (i < isize); i++)
+    {
+        ffp[i] = fp[i];
+    }
+    fprec = *precision;
+    ret   = xdr3dfcoord(xdrs, ffp, size, &fprec);
+
+    *precision = fprec;
+    for (i = 0; (i < isize); i++)
+    {
+        fp[i] = ffp[i];
+    }
+
+    sfree(ffp);
     return ret;
+#else
+    return xdr3dfcoord(xdrs, reinterpret_cast<float *>(fp), size, reinterpret_cast<float *>(precision));
+#endif
 }
 
-void setTimeValue(int tcontrol, real value)
+int xdr_int64(XDR *xdrs, gmx_int64_t *i)
 {
-    tMPI_Thread_mutex_lock(&tc_mutex);
-    range_check(tcontrol, 0, TNR);
-    timecontrol[tcontrol].t    = value;
-    timecontrol[tcontrol].bSet = TRUE;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
+    /* This routine stores values compatible with xdr_int64_t */
+
+    int imaj, imin;
+    int ret;
+
+    static const gmx_int64_t two_p32_m1 = 0xFFFFFFFF;
+    gmx_int64_t              imaj64, imin64;
+
+    imaj64 = ((*i)>>32) & two_p32_m1;
+    imin64 = (*i) & two_p32_m1;
+    imaj   = static_cast<int>(imaj64);
+    imin   = static_cast<int>(imin64);
+    ret    = xdr_int(xdrs, &imaj);
+    ret   |= xdr_int(xdrs, &imin);
+
+    *i = ((static_cast<gmx_int64_t>(imaj) << 32) | (static_cast<gmx_int64_t>(imin) & two_p32_m1));
+
+    return ret;
 }

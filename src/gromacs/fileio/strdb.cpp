@@ -38,9 +38,9 @@
 
 #include "strdb.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -61,12 +61,12 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
             sfree(line0);
             return FALSE;
         }
-        dum = strchr(line0, '\n');
+        dum = std::strchr(line0, '\n');
         if (dum)
         {
             dum[0] = '\0';
         }
-        else if (strlen(line0) == n)
+        else if (static_cast<int>(std::strlen(line0)) == n)
         {
             fprintf(stderr, "Warning: line length exceeds buffer length (%d), data might be corrupted\n", n);
             line0[n-1] = '\0';
@@ -76,12 +76,12 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
             fprintf(stderr, "Warning: file does not end with a newline, last line:\n%s\n",
                     line0);
         }
-        dum = strchr(line0, ';');
+        dum = std::strchr(line0, ';');
         if (dum)
         {
             dum[0] = '\0';
         }
-        strncpy(line, line0, n);
+        std::strncpy(line, line0, n);
         dum = line0;
         ltrim(dum);
     }
@@ -95,14 +95,14 @@ gmx_bool get_header(char line[], char *header)
 {
     char temp[STRLEN], *dum;
 
-    strcpy(temp, line);
-    dum = strchr(temp, '[');
+    std::strcpy(temp, line);
+    dum = std::strchr(temp, '[');
     if (dum == NULL)
     {
         return FALSE;
     }
     dum[0] = ' ';
-    dum    = strchr(temp, ']');
+    dum    = std::strchr(temp, ']');
     if (dum == NULL)
     {
         gmx_fatal(FARGS, "header is not terminated on line:\n'%s'\n", line);

@@ -38,8 +38,8 @@
 
 #include "filenm.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -170,9 +170,6 @@ static const t_deffile
 };
 
 #define NZEXT 2
-static const char *z_ext[NZEXT] =
-{ ".gz", ".Z" };
-
 const char *ftp2ext(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
@@ -312,7 +309,7 @@ int fn2ftp(const char *fn)
         return efNR;
     }
 
-    len = strlen(fn);
+    len = std::strlen(fn);
     if ((len >= 4) && (fn[len - 4] == '.'))
     {
         feptr = &(fn[len - 4]);
@@ -342,7 +339,7 @@ const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[])
 
     for (i = 0; (i < nfile); i++)
     {
-        if (strcmp(opt, fnm[i].opt) == 0)
+        if (std::strcmp(opt, fnm[i].opt) == 0)
         {
             return fnm[i].fns[0];
         }
@@ -432,7 +429,7 @@ gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
 
     for (i = 0; (i < nfile); i++)
     {
-        if (strcmp(opt, fnm[i].opt) == 0)
+        if (std::strcmp(opt, fnm[i].opt) == 0)
         {
             return (gmx_bool) IS_SET(fnm[i]);
         }
@@ -449,7 +446,7 @@ const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[])
 
     for (i = 0; (i < nfile); i++)
     {
-        if (strcmp(opt, fnm[i].opt) == 0)
+        if (std::strcmp(opt, fnm[i].opt) == 0)
         {
             if (IS_OPT(fnm[i]) && !IS_SET(fnm[i]))
             {
@@ -504,7 +501,7 @@ gmx_bool is_set(const t_filenm *fnm)
 
 int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
 {
-    int   i, j, pos;
+    int   i, j;
     char  buf[STRLEN], newname[STRLEN];
     char *extpos;
 
@@ -516,7 +513,7 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                for it, just in case... */
             for (j = 0; j < fnm[i].nfiles; j++)
             {
-                strncpy(buf, fnm[i].fns[j], STRLEN - 1);
+                std::strncpy(buf, fnm[i].fns[j], STRLEN - 1);
                 extpos  = strrchr(buf, '.');
                 *extpos = '\0';
                 sprintf(newname, "%s%s.%s", buf, suffix, extpos + 1);
