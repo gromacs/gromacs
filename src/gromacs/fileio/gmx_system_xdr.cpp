@@ -43,9 +43,8 @@
 
 #include "gmx_system_xdr.h"
 
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 
 /* NB - THIS FILE IS ONLY USED ON MICROSOFT WINDOWS, since that
@@ -420,7 +419,7 @@ xdr_opaque (XDR *xdrs, char *cp, unsigned int cnt)
  * of the string as specified by a protocol.
  */
 bool_t
-xdr_string (xdrs, cpp, maxsize)
+             xdr_string (xdrs, cpp, maxsize)
 XDR *xdrs;
 char       **cpp;
 unsigned int maxsize;
@@ -445,7 +444,7 @@ unsigned int maxsize;
             {
                 return FALSE;
             }
-            size = strlen (sp);
+            size = std::strlen (sp);
             break;
         case XDR_DECODE:
             break;
@@ -499,7 +498,7 @@ unsigned int maxsize;
 /* Floating-point stuff */
 
 bool_t
-xdr_float(xdrs, fp)
+       xdr_float(xdrs, fp)
 XDR *xdrs;
 float *fp;
 {
@@ -531,7 +530,7 @@ float *fp;
 
 
 bool_t
-xdr_double(xdrs, dp)
+        xdr_double(xdrs, dp)
 XDR *xdrs;
 double *dp;
 {
@@ -628,7 +627,7 @@ double *dp;
  * > xdr_elem: routine to XDR each element
  */
 bool_t
-xdr_vector (xdrs, basep, nelem, elemsize, xdr_elem)
+             xdr_vector (xdrs, basep, nelem, elemsize, xdr_elem)
 XDR *xdrs;
 char        *basep;
 unsigned int nelem;

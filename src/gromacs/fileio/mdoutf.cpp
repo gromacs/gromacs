@@ -327,11 +327,11 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             }
 
             gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
-                           (const rvec *) state_local->box,
+                           reinterpret_cast<const rvec *>(state_local->box),
                            top_global->natoms,
-                           (mdof_flags & MDOF_X) ? (const rvec *) state_global->x : NULL,
-                           (mdof_flags & MDOF_V) ? (const rvec *) global_v : NULL,
-                           (mdof_flags & MDOF_F) ? (const rvec *) f_global : NULL);
+                           (mdof_flags & MDOF_X) ? reinterpret_cast<const rvec *>(state_global->x) : NULL,
+                           (mdof_flags & MDOF_V) ? reinterpret_cast<const rvec *>(global_v) : NULL,
+                           (mdof_flags & MDOF_F) ? reinterpret_cast<const rvec *>(f_global) : NULL);
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
         {
@@ -369,9 +369,9 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                            step,
                            t,
                            state_local->lambda[efptFEP],
-                           (const rvec *) state_local->box,
+                           reinterpret_cast<const rvec *>(state_local->box),
                            of->natoms_x_compressed,
-                           (const rvec *) xxtc,
+                           reinterpret_cast<const rvec *>(xxtc),
                            NULL,
                            NULL);
             if (of->natoms_x_compressed != of->natoms_global)

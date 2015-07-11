@@ -38,9 +38,12 @@
 
 #include "confio.h"
 
-#include <errno.h>
-#include <math.h>
-#include <stdio.h>
+#include <cerrno>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -96,7 +99,7 @@ static int read_g96_pos(char line[], t_symtab *symtab,
         bEnd    = FALSE;
         while (!bEnd && fgets2(line, STRLEN, fp))
         {
-            bEnd = (strncmp(line, "END", 3) == 0);
+            bEnd = (std::strncmp(line, "END", 3) == 0);
             if (!bEnd  && (line[0] != '#'))
             {
                 if (sscanf(line+shift, "%15lf%15lf%15lf", &db1, &db2, &db3) != 3)
@@ -250,7 +253,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line)
     {
         while (!fr->bTitle && fgets2(line, STRLEN, fp))
         {
-            fr->bTitle = (strcmp(line, "TITLE") == 0);
+            fr->bTitle = (std::strcmp(line, "TITLE") == 0);
         }
         if (fr->title == NULL)
         {
@@ -260,7 +263,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line)
         bEnd = FALSE;
         while (!bEnd && fgets2(line, STRLEN, fp))
         {
-            bEnd = (strcmp(line, "END") == 0);
+            bEnd = (std::strcmp(line, "END") == 0);
         }
         fgets2(line, STRLEN, fp);
     }
@@ -272,11 +275,11 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line)
     bFinished = FALSE;
     do
     {
-        bTime  = (strcmp(line, "TIMESTEP") == 0);
-        bAtoms = (strcmp(line, "POSITION") == 0);
+        bTime  = (std::strcmp(line, "TIMESTEP") == 0);
+        bAtoms = (std::strcmp(line, "POSITION") == 0);
         bPos   = (bAtoms || (strcmp(line, "POSITIONRED") == 0));
-        bVel   = (strncmp(line, "VELOCITY", 8) == 0);
-        bBox   = (strcmp(line, "BOX") == 0);
+        bVel   = (std::strncmp(line, "VELOCITY", 8) == 0);
+        bBox   = (std::strcmp(line, "BOX") == 0);
         if (bTime)
         {
             if (!fr->bTime && !fr->bX)
@@ -601,7 +604,7 @@ static void read_espresso_conf(const char *infile,
     t_symtab *symtab = NULL;
     FILE     *fp;
     char      word[STRLEN], buf[STRLEN];
-    int       natoms, level, npar, r, nprop, p, i, m, molnr;
+    int       level, r, nprop, p, i, m, molnr;
     int       prop[32];
     double    d;
     gmx_bool  bFoundParticles, bFoundProp, bFoundVariable, bMol;
@@ -622,7 +625,7 @@ static void read_espresso_conf(const char *infile,
     level           = 0;
     while ((r = get_espresso_word(fp, word)))
     {
-        if (level == 1 && strcmp(word, "particles") == 0 && !bFoundParticles)
+        if (level == 1 && std::strcmp(word, "particles") == 0 && !bFoundParticles)
         {
             bFoundParticles = TRUE;
             level          += check_open_parenthesis(fp, r, infile, "particles");
@@ -684,7 +687,7 @@ static void read_espresso_conf(const char *infile,
                                 break;
                             case espTYPE:
                                 r                   = get_espresso_word(fp, word);
-                                atoms->atom[i].type = strtol(word, NULL, 10);
+                                atoms->atom[i].type = std::strtol(word, NULL, 10);
                                 break;
                             case espQ:
                                 r = get_espresso_word(fp, word);
@@ -708,7 +711,7 @@ static void read_espresso_conf(const char *infile,
                                 break;
                             case espMOLECULE:
                                 r     = get_espresso_word(fp, word);
-                                molnr = strtol(word, NULL, 10);
+                                molnr = std::strtol(word, NULL, 10);
                                 if (i == 0 ||
                                     atoms->resinfo[atoms->atom[i-1].resind].nr != molnr)
                                 {
@@ -768,13 +771,13 @@ static void read_espresso_conf(const char *infile,
                 gmx_fatal(FARGS, "Internal inconsistency in Espresso routines, read %d atoms, expected %d atoms", i, atoms->nr);
             }
         }
-        else if (level == 1 && strcmp(word, "variable") == 0 && !bFoundVariable)
+        else if (level == 1 && std::strcmp(word, "variable") == 0 && !bFoundVariable)
         {
             bFoundVariable = TRUE;
             level         += check_open_parenthesis(fp, r, infile, "variable");
             while (level == 2 && (r = get_espresso_word(fp, word)))
             {
-                if (level == 2 && strcmp(word, "box_l") == 0)
+                if (level == 2 && std::strcmp(word, "box_l") == 0)
                 {
                     for (m = 0; m < 3; m++)
                     {
@@ -1024,11 +1027,11 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         }
 
         /* atomname */
-        memcpy(name, line+10, 5);
+        std::memcpy(name, line+10, 5);
         atoms->atomname[i] = put_symtab(symtab, name);
 
         /* Copy resname to oldresname after we are done with the sanity check above */
-        strncpy(oldresname, resname, sizeof(oldresname));
+        std::strncpy(oldresname, resname, sizeof(oldresname));
 
         /* eventueel controle atomnumber met i+1 */
 
@@ -1094,8 +1097,8 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         {
             for (m = 0; (m < DIM); m++)
             {
-                xmin[m] = min(xmin[m], x[i][m]);
-                xmax[m] = max(xmax[m], x[i][m]);
+                xmin[m] = std::min(xmin[m], x[i][m]);
+                xmax[m] = std::max(xmax[m], x[i][m]);
             }
         }
         for (i = 0; i < DIM; i++)
@@ -1325,25 +1328,25 @@ void write_hconf_indexed_p(FILE *out, const char *title, t_atoms *atoms,
         ai = index[i];
 
         resind = atoms->atom[ai].resind;
-        strncpy(resnm, " ??? ", sizeof(resnm)-1);
+        std::strncpy(resnm, " ??? ", sizeof(resnm)-1);
         if (resind < atoms->nres)
         {
-            strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
+            std::strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
             resnr = atoms->resinfo[resind].nr;
         }
         else
         {
-            strncpy(resnm, " ??? ", sizeof(resnm)-1);
+            std::strncpy(resnm, " ??? ", sizeof(resnm)-1);
             resnr = resind + 1;
         }
 
         if (atoms->atom)
         {
-            strncpy(nm, *atoms->atomname[ai], sizeof(nm)-1);
+            std::strncpy(nm, *atoms->atomname[ai], sizeof(nm)-1);
         }
         else
         {
-            strncpy(nm, " ??? ", sizeof(nm)-1);
+            std::strncpy(nm, " ??? ", sizeof(nm)-1);
         }
 
         fprintf(out, "%5d%-5.5s%5.5s%5d", resnr%100000, resnm, nm, (ai+1)%100000);
@@ -1632,12 +1635,10 @@ void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
                    rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
-    char        buf[256];
     gmx_mtop_t *mtop;
     t_topology  top;
     t_trxframe  fr;
     int         i, ftp, natoms;
-    real        d;
     char        g96_line[STRLEN+1];
 
     if (atoms->nr == 0)
@@ -1671,7 +1672,7 @@ void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
             read_g96_conf(in, infile, &fr, g96_line);
             gmx_fio_fclose(in);
             copy_mat(fr.box, box);
-            strncpy(title, fr.title, STRLEN);
+            std::strncpy(title, fr.title, STRLEN);
             break;
         case efPDB:
         case efBRK:

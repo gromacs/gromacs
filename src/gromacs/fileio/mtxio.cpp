@@ -87,8 +87,6 @@ void gmx_mtxio_write(const char *             filename,
 {
     t_fileio   *fio;
     int         i, j, prec;
-    gmx_bool    bDum  = TRUE;
-    gmx_bool    bRead = FALSE;
     size_t      sz;
 
     if (full_matrix != NULL && sparse_matrix != NULL)
@@ -125,7 +123,7 @@ void gmx_mtxio_write(const char *             filename,
         i = GMX_MTXIO_FULL_MATRIX;
         gmx_fio_do_int(fio, i);
         sz   = nrow*ncol;
-        bDum = gmx_fio_ndo_real(fio, full_matrix, sz);
+        gmx_fio_ndo_real(fio, full_matrix, sz);
     }
     else
     {
@@ -139,7 +137,7 @@ void gmx_mtxio_write(const char *             filename,
         {
             gmx_fatal(FARGS, "Internal inconsistency in sparse matrix.\n");
         }
-        bDum = gmx_fio_ndo_int(fio, sparse_matrix->ndata, sparse_matrix->nrow);
+        gmx_fio_ndo_int(fio, sparse_matrix->ndata, sparse_matrix->nrow);
         for (i = 0; i < sparse_matrix->nrow; i++)
         {
             for (j = 0; j < sparse_matrix->ndata[i]; j++)
@@ -162,8 +160,6 @@ gmx_mtxio_read (const char *            filename,
 {
     t_fileio   *fio;
     int         i, j, prec;
-    gmx_bool    bDum  = TRUE;
-    gmx_bool    bRead = TRUE;
     char        gmxver[256];
     size_t      sz;
 
@@ -210,7 +206,7 @@ gmx_mtxio_read (const char *            filename,
 
         sz = (*nrow) * (*ncol);
         snew((*full_matrix), sz);
-        bDum = gmx_fio_ndo_real(fio, (*full_matrix), sz);
+        gmx_fio_ndo_real(fio, (*full_matrix), sz);
     }
     else if (NULL != sparse_matrix)
     {
@@ -227,8 +223,8 @@ gmx_mtxio_read (const char *            filename,
         snew((*sparse_matrix)->ndata, (*sparse_matrix)->nrow);
         snew((*sparse_matrix)->nalloc, (*sparse_matrix)->nrow);
         snew((*sparse_matrix)->data, (*sparse_matrix)->nrow);
-        bDum = gmx_fio_ndo_int(fio, (*sparse_matrix)->ndata,
-                               (*sparse_matrix)->nrow);
+        gmx_fio_ndo_int(fio, (*sparse_matrix)->ndata,
+                        (*sparse_matrix)->nrow);
 
         for (i = 0; i < (*sparse_matrix)->nrow; i++)
         {

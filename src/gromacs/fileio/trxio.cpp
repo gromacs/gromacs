@@ -40,8 +40,8 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -970,7 +970,10 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
                                &fr->prec, &bOK) == 0)
             {
-                assert(!bOK);
+                if (bOK)
+                {
+                    gmx_incons("OK status from read_first_xtc, but 0 atom coords read");
+                }
                 fr->not_ok = DATA_NOT_OK;
             }
             if (fr->not_ok)
