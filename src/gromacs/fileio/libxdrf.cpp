@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,11 +36,13 @@
  */
 #include "gmxpre.h"
 
-#include <limits.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <climits>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
@@ -69,12 +71,6 @@ const char *xdr_datatype_names[] =
  */
 #define MAXABS INT_MAX-2
 
-#ifndef MIN
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-#endif
-#ifndef MAX
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-#endif
 #ifndef SQR
 #define SQR(x) ((x)*(x))
 #endif
@@ -91,7 +87,7 @@ static const int magicints[] = {
 
 #define FIRSTIDX 9
 /* note that magicints[FIRSTIDX-1] == 0 */
-#define LASTIDX (sizeof(magicints) / sizeof(*magicints))
+#define LASTIDX static_cast<int>((sizeof(magicints) / sizeof(*magicints)))
 
 
 /*____________________________________________________________________________
@@ -112,10 +108,10 @@ static void sendbits(int buf[], int num_of_bits, int num)
     int             lastbits;
     unsigned char * cbuf;
 
-    cbuf     = ((unsigned char *)buf) + 3 * sizeof(*buf);
-    cnt      = (unsigned int) buf[0];
+    cbuf     = (reinterpret_cast<unsigned char *>(buf)) + 3 * sizeof(*buf);
+    cnt      = static_cast<unsigned int>(buf[0]);
     lastbits = buf[1];
-    lastbyte = (unsigned int) buf[2];
+    lastbyte = static_cast<unsigned int>(buf[2]);
     while (num_of_bits >= 8)
     {
         lastbyte     = (lastbyte << 8) | ((num >> (num_of_bits -8)) /* & 0xff*/);
@@ -299,10 +295,10 @@ static int receivebits(int buf[], int num_of_bits)
     unsigned char * cbuf;
     int             mask = (1 << num_of_bits) -1;
 
-    cbuf     = ((unsigned char *)buf) + 3 * sizeof(*buf);
+    cbuf     = reinterpret_cast<unsigned char *>(buf) + 3 * sizeof(*buf);
     cnt      = buf[0];
-    lastbits = (unsigned int) buf[1];
-    lastbyte = (unsigned int) buf[2];
+    lastbits = static_cast<unsigned int>(buf[1]);
+    lastbyte = static_cast<unsigned int>(buf[2]);
 
     num = 0;
     while (num_of_bits >= 8)
@@ -420,7 +416,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
     int          tmp, *thiscoord,  prevcoord[3];
     unsigned int tmpcoord[30];
 
-    int          bufsize, xdrid, lsize;
+    int          bufsize, lsize;
     unsigned int bitsize;
     float        inv_precision;
     int          errval = 1;
@@ -429,6 +425,14 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
     bRead         = (xdrs->x_op == XDR_DECODE);
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0]  = prevcoord[1]  = prevcoord[2]  = 0;
+
+    // The static analyzer warns about garbage values for thiscoord[] further
+    // down. It might be thrown off by all the reinterpret_casts, but we might
+    // as well make sure the small preallocated buffer is zero-initialized.
+    for (i = 0; i < static_cast<int>(prealloc_size); i++)
+    {
+        prealloc_ip[i] = 0;
+    }
 
     if (!bRead)
     {
@@ -444,8 +448,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
          */
         if (*size <= 9)
         {
-            return (xdr_vector(xdrs, (char *) fp, (unsigned int)size3,
-                               (unsigned int)sizeof(*fp), (xdrproc_t)xdr_float));
+            return (xdr_vector(xdrs, reinterpret_cast<char *>(fp), static_cast<unsigned int>(size3),
+                               static_cast<unsigned int>(sizeof(*fp)), (xdrproc_t)xdr_float));
         }
 
         if (xdr_float(xdrs, precision) == 0)
@@ -461,9 +465,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         else
         {
             we_should_free = 1;
-            bufsize        = size3 * 1.2;
-            ip             = (int *)malloc((size_t)(size3 * sizeof(*ip)));
-            buf            = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
+            bufsize        = static_cast<int>(size3 * 1.2);
+            ip             = reinterpret_cast<int *>(malloc(size3 * sizeof(*ip)));
+            buf            = reinterpret_cast<int *>(malloc(bufsize * sizeof(*buf)));
             if (ip == NULL || buf == NULL)
             {
                 fprintf(stderr, "malloc failed\n");
@@ -495,7 +499,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                 /* scaling would cause overflow */
                 errval = 0;
             }
-            lint1 = lf;
+            lint1 = static_cast<int>(lf);
             if (lint1 < minint[0])
             {
                 minint[0] = lint1;
@@ -519,7 +523,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                 /* scaling would cause overflow */
                 errval = 0;
             }
-            lint2 = lf;
+            lint2 = static_cast<int>(lf);
             if (lint2 < minint[1])
             {
                 minint[1] = lint2;
@@ -538,12 +542,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             {
                 lf = *lfp * *precision - 0.5;
             }
-            if (fabs(lf) > MAXABS)
+            if (std::abs(lf) > MAXABS)
             {
                 /* scaling would cause overflow */
                 errval = 0;
             }
-            lint3 = lf;
+            lint3 = static_cast<int>(lf);
             if (lint3 < minint[2])
             {
                 minint[2] = lint3;
@@ -554,7 +558,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             }
             *lip++ = lint3;
             lfp++;
-            diff = abs(oldlint1-lint1)+abs(oldlint2-lint2)+abs(oldlint3-lint3);
+            diff = std::abs(oldlint1-lint1)+std::abs(oldlint2-lint2)+std::abs(oldlint3-lint3);
             if (diff < mindiff && lfp > fp + 3)
             {
                 mindiff = diff;
@@ -603,8 +607,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         {
             bitsize = sizeofints(3, sizeint);
         }
-        lip      = ip;
-        luip     = (unsigned int *) ip;
+        luip     = reinterpret_cast<unsigned int *>(ip);
         smallidx = FIRSTIDX;
         while (smallidx < LASTIDX && magicints[smallidx] < mindiff)
         {
@@ -620,9 +623,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        maxidx       = MIN(LASTIDX, smallidx + 8);
+        maxidx       = std::min(LASTIDX, smallidx + 8);
         minidx       = maxidx - 8; /* often this equal smallidx */
-        smaller      = magicints[MAX(FIRSTIDX, smallidx-1)] / 2;
+        smaller      = magicints[std::max(FIRSTIDX, smallidx-1)] / 2;
         smallnum     = magicints[smallidx] / 2;
         sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
         larger       = magicints[maxidx] / 2;
@@ -630,11 +633,11 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         while (i < *size)
         {
             is_small  = 0;
-            thiscoord = (int *)(luip) + i * 3;
+            thiscoord = reinterpret_cast<int *>(luip) + i * 3;
             if (smallidx < maxidx && i >= 1 &&
-                abs(thiscoord[0] - prevcoord[0]) < larger &&
-                abs(thiscoord[1] - prevcoord[1]) < larger &&
-                abs(thiscoord[2] - prevcoord[2]) < larger)
+                std::abs(thiscoord[0] - prevcoord[0]) < larger &&
+                std::abs(thiscoord[1] - prevcoord[1]) < larger &&
+                std::abs(thiscoord[2] - prevcoord[2]) < larger)
             {
                 is_smaller = 1;
             }
@@ -648,9 +651,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             }
             if (i + 1 < *size)
             {
-                if (abs(thiscoord[0] - thiscoord[3]) < smallnum &&
-                    abs(thiscoord[1] - thiscoord[4]) < smallnum &&
-                    abs(thiscoord[2] - thiscoord[5]) < smallnum)
+                if (std::abs(thiscoord[0] - thiscoord[3]) < smallnum &&
+                    std::abs(thiscoord[1] - thiscoord[4]) < smallnum &&
+                    std::abs(thiscoord[2] - thiscoord[5]) < smallnum)
                 {
                     /* interchange first with second atom for better
                      * compression of water molecules
@@ -764,7 +767,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         }
 
 
-        rc = errval * (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]));
+        rc = errval * (xdr_opaque(xdrs, reinterpret_cast<char *>(&(buf[3])), static_cast<unsigned int>(buf[0])));
         if (we_should_free)
         {
             free(ip);
@@ -792,8 +795,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         if (*size <= 9)
         {
             *precision = -1;
-            return (xdr_vector(xdrs, (char *) fp, (unsigned int)size3,
-                               (unsigned int)sizeof(*fp), (xdrproc_t)xdr_float));
+            return (xdr_vector(xdrs, reinterpret_cast<char *>(fp), static_cast<unsigned int>(size3),
+                               static_cast<unsigned int>(sizeof(*fp)), (xdrproc_t)xdr_float));
         }
         if (xdr_float(xdrs, precision) == 0)
         {
@@ -808,9 +811,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         else
         {
             we_should_free = 1;
-            bufsize        = size3 * 1.2;
-            ip             = (int *)malloc((size_t)(size3 * sizeof(*ip)));
-            buf            = (int *)malloc((size_t)(bufsize * sizeof(*buf)));
+            bufsize        = static_cast<int>(size3 * 1.2);
+            ip             = reinterpret_cast<int *>(malloc(size3 * sizeof(*ip)));
+            buf            = reinterpret_cast<int *>(malloc(bufsize * sizeof(*buf)));
             if (ip == NULL || buf == NULL)
             {
                 fprintf(stderr, "malloc failed\n");
@@ -862,12 +865,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        maxidx       = MIN(LASTIDX, smallidx + 8);
-        minidx       = maxidx - 8; /* often this equal smallidx */
-        smaller      = magicints[MAX(FIRSTIDX, smallidx-1)] / 2;
+        smaller      = magicints[std::max(FIRSTIDX, smallidx-1)] / 2;
         smallnum     = magicints[smallidx] / 2;
         sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
-        larger       = magicints[maxidx];
 
         /* buf[0] holds the length in bytes */
 
@@ -882,7 +882,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         }
 
 
-        if (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]) == 0)
+        if (xdr_opaque(xdrs, reinterpret_cast<char *>(&(buf[3])), static_cast<unsigned int>(buf[0])) == 0)
         {
             if (we_should_free)
             {
@@ -903,7 +903,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         lip           = ip;
         while (i < lsize)
         {
-            thiscoord = (int *)(lip) + i * 3;
+            thiscoord = reinterpret_cast<int *>(lip) + i * 3;
 
             if (bitsize == 0)
             {
@@ -1272,7 +1272,6 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 
 static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 {
-    int       inp;
     gmx_off_t res;
     int       ret;
     int       step;
@@ -1431,7 +1430,6 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
     gmx_bool  bOK = FALSE;
     gmx_off_t low = 0;
     gmx_off_t high, offset, pos;
-    int       res;
     int       dt_sign = 0;
 
     if (bSeekForwardOnly)
@@ -1613,7 +1611,7 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
         return -1;
     }
 
-    if ( (res = gmx_fseek(fp, off, SEEK_SET)) != 0)
+    if (gmx_fseek(fp, off, SEEK_SET) != 0)
     {
         *bOK = 0;
         return -1;
@@ -1627,7 +1625,6 @@ xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 {
     int        frame;
     gmx_off_t  off;
-    int        res;
     *bOK = 1;
 
     if ((off = gmx_ftell(fp)) < 0)

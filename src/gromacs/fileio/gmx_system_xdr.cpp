@@ -43,9 +43,8 @@
 
 #include "gmx_system_xdr.h"
 
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 
 /* NB - THIS FILE IS ONLY USED ON MICROSOFT WINDOWS, since that
@@ -419,11 +418,7 @@ xdr_opaque (XDR *xdrs, char *cp, unsigned int cnt)
  * storage is allocated.  The last parameter is the max allowed length
  * of the string as specified by a protocol.
  */
-bool_t
-xdr_string (xdrs, cpp, maxsize)
-XDR *xdrs;
-char       **cpp;
-unsigned int maxsize;
+bool_t xdr_string (XDR *xdrs, char * cpp, unsigned int maxsize)
 {
     char        *sp       = *cpp; /* sp is the actual string pointer */
     unsigned int size     = 0;
@@ -445,7 +440,7 @@ unsigned int maxsize;
             {
                 return FALSE;
             }
-            size = strlen (sp);
+            size = std::strlen (sp);
             break;
         case XDR_DECODE:
             break;
@@ -498,10 +493,7 @@ unsigned int maxsize;
 
 /* Floating-point stuff */
 
-bool_t
-xdr_float(xdrs, fp)
-XDR *xdrs;
-float *fp;
+bool_t xdr_float(XDR * xdrs, float * fp)
 {
     xdr_int32_t tmp;
 
@@ -530,10 +522,7 @@ float *fp;
 }
 
 
-bool_t
-xdr_double(xdrs, dp)
-XDR *xdrs;
-double *dp;
+bool_t xdr_double(XDR * xdrs, double * dp)
 {
 
     /* Windows and some other systems dont define double-precision
@@ -627,13 +616,8 @@ double *dp;
  * > elemsize: size of each element
  * > xdr_elem: routine to XDR each element
  */
-bool_t
-xdr_vector (xdrs, basep, nelem, elemsize, xdr_elem)
-XDR *xdrs;
-char        *basep;
-unsigned int nelem;
-unsigned int elemsize;
-xdrproc_t    xdr_elem;
+bool_t xdr_vector (XDR * xdrs, char * basep, unsigned int nelem,
+                   unsigned int elemsize, xdrproc_t xdr_elem)
 {
 #define LASTUNSIGNED    ((unsigned int)0-1)
     unsigned int i;
@@ -815,6 +799,5 @@ xdrstdio_putuint32 (XDR *xdrs, xdr_uint32_t *ip)
 }
 
 #else
-int
-    gmx_system_xdr_empty;
+int gmx_system_xdr_empty;
 #endif /* GMX_SYSTEM_XDR */

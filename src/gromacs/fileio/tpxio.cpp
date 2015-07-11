@@ -40,8 +40,10 @@
 
 #include "tpxio.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filenm.h"
@@ -240,7 +242,6 @@ static void do_pullgrp_tpx_pre95(t_fileio     *fio,
                                  gmx_bool      bRead,
                                  int           file_version)
 {
-    int  i;
     rvec tmp;
 
     gmx_fio_do_int(fio, pgrp->nat);
@@ -274,8 +275,6 @@ static void do_pullgrp_tpx_pre95(t_fileio     *fio,
 
 static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
 {
-    int      i;
-
     gmx_fio_do_int(fio, pgrp->nat);
     if (bRead)
     {
@@ -294,8 +293,6 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
 static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
                           int ePullOld, int eGeomOld, ivec dimOld)
 {
-    int      i;
-
     gmx_fio_do_int(fio, pcrd->group[0]);
     gmx_fio_do_int(fio, pcrd->group[1]);
     if (file_version >= tpxv_PullCoordTypeGeom)
@@ -334,10 +331,6 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd, int file_version,
 
 static void do_expandedvals(t_fileio *fio, t_expanded *expand, t_lambda *fepvals, gmx_bool bRead, int file_version)
 {
-    /* i is used in the ndo_double macro*/
-    int      i;
-    real     fv;
-    real     rdum;
     int      n_lambda = fepvals->n_lambda;
 
     /* reset the lambda calculation window */
@@ -412,8 +405,7 @@ static void do_imd(t_fileio *fio, t_IMD *imd, gmx_bool bRead)
 static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int file_version)
 {
     /* i is defined in the ndo_double macro; use g to iterate. */
-    int      i, g;
-    real     fv;
+    int      g;
     real     rdum;
 
     /* free energy values */
@@ -637,7 +629,7 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
 static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
                     int file_version, int ePullOld)
 {
-    int  eGeomOld;
+    int  eGeomOld = 0;
     ivec dimOld;
     int  g;
 
@@ -700,7 +692,7 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
         for (g = 0; g < pull->ngroup; g++)
         {
             /* We read and ignore a pull coordinate for group 0 */
-            do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[max(g-1, 0)],
+            do_pullgrp_tpx_pre95(fio, &pull->group[g], &pull->coord[std::max(g-1, 0)],
                                  bRead, file_version);
             if (g > 0)
             {
@@ -728,8 +720,6 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
 
 static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg, gmx_bool bRead)
 {
-    int      i;
-
     gmx_fio_do_int(fio, rotg->eType);
     gmx_fio_do_int(fio, rotg->bMassW);
     gmx_fio_do_int(fio, rotg->nat);
@@ -775,8 +765,7 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
 
 static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
 {
-    int i, j;
-
+    int j;
 
     gmx_fio_do_int(fio, swap->nat);
     gmx_fio_do_int(fio, swap->nat_sol);
@@ -2161,7 +2150,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
 
 static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_version)
 {
-    int      i, k, idum;
+    int      i, idum;
 
     if (file_version < 44)
     {
@@ -2181,7 +2170,7 @@ static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_ver
 static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
                         gmx_bool bRead, int file_version)
 {
-    int          idum, i, j;
+    int          idum, i;
     unsigned int k;
 
     gmx_fio_do_int(fio, ffparams->atnr);
@@ -2276,7 +2265,7 @@ static void add_settle_atoms(t_ilist *ilist)
 static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
                       int file_version)
 {
-    int          i, j, renum[F_NRE];
+    int          j;
     gmx_bool     bClear;
     unsigned int k;
 
@@ -2432,7 +2421,6 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
                     int file_version, gmx_groups_t *groups, int atnr)
 {
     int    i, myngrp;
-    char * p_elem;
 
     gmx_fio_do_real(fio, atom->m);
     gmx_fio_do_real(fio, atom->q);
@@ -2450,7 +2438,7 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
             /* Set element string from atomic number if present.
              * This routine returns an empty string if the name is not found.
              */
-            strncpy(atom->elem, atomicnumber_to_element(atom->atomnumber), 4);
+            std::strncpy(atom->elem, atomicnumber_to_element(atom->atomnumber), 4);
             /* avoid warnings about potentially unterminated string */
             atom->elem[3] = '\0';
         }
@@ -2491,7 +2479,7 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
 static void do_grps(t_fileio *fio, int ngrp, t_grps grps[], gmx_bool bRead,
                     int file_version)
 {
-    int      i, j, myngrp;
+    int      j, myngrp;
 
     if (file_version < 23)
     {
@@ -2635,7 +2623,7 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
                       gmx_bool bRead, t_symtab *symtab,
                       int file_version)
 {
-    int      g, n, i;
+    int      g;
 
     do_grps(fio, egcNR, groups->grps, bRead, file_version);
     gmx_fio_do_int(fio, groups->ngrpname);
@@ -2668,7 +2656,7 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
 static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
                          int file_version)
 {
-    int      i, j;
+    int      j;
 
     if (file_version > 25)
     {
@@ -2832,8 +2820,6 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
                        t_symtab *symtab, int file_version,
                        gmx_groups_t *groups)
 {
-    int i;
-
     if (file_version >= 57)
     {
         do_symstr(fio, &(molt->name), bRead, symtab);
@@ -2863,8 +2849,6 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
 
 static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead)
 {
-    int i;
-
     gmx_fio_do_int(fio, molb->type);
     gmx_fio_do_int(fio, molb->nmol);
     gmx_fio_do_int(fio, molb->natoms_mol);
@@ -2941,7 +2925,7 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
     for (i = 0; i < il->nr; i += 2)
     {
         ip = &mtop->ffparams.iparams[il->iatoms[i]];
-        am = max(am, il->iatoms[i+1]);
+        am = std::max(am, il->iatoms[i+1]);
         if (ip->posres.pos0B[XX] != ip->posres.pos0A[XX] ||
             ip->posres.pos0B[YY] != ip->posres.pos0A[YY] ||
             ip->posres.pos0B[ZZ] != ip->posres.pos0A[ZZ])
@@ -2956,8 +2940,7 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
     {
         for (i = 0; i < ilfb->nr; i += 2)
         {
-            ip = &mtop->ffparams.iparams[ilfb->iatoms[i]];
-            am = max(am, ilfb->iatoms[i+1]);
+            am = std::max(am, ilfb->iatoms[i+1]);
         }
     }
     /* Make the posres coordinate block end at a molecule end */
@@ -3042,7 +3025,7 @@ static void set_disres_npair(gmx_mtop_t *mtop)
 static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
                     int file_version)
 {
-    int            mt, mb, i;
+    int            mt, mb;
     t_blocka       dumb;
 
     if (bRead)
@@ -3229,7 +3212,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     if (bRead)
     {
         gmx_fio_do_string(fio, buf);
-        if (strncmp(buf, "VERSION", 7))
+        if (std::strncmp(buf, "VERSION", 7))
         {
             gmx_fatal(FARGS, "Can not read file %s,\n"
                       "             this file is from a GROMACS version which is older than 2.0\n"
@@ -3293,7 +3276,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
             sprintf(file_tag, "%s", TPX_TAG_RELEASE);
         }
 
-        if (strcmp(file_tag, tpx_tag) != 0)
+        if (std::strcmp(file_tag, tpx_tag) != 0)
         {
             fprintf(stderr, "Note: file tpx tag '%s', software tpx tag '%s'\n",
                     file_tag, tpx_tag);
@@ -3301,7 +3284,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
             /* We only support reading tpx files with the same tag as the code
              * or tpx files with the release tag and with lower version number.
              */
-            if (strcmp(file_tag, TPX_TAG_RELEASE) != 0 && fver < tpx_version)
+            if (std::strcmp(file_tag, TPX_TAG_RELEASE) != 0 && fver < tpx_version)
             {
                 gmx_fatal(FARGS, "tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' with program for tpx version %d, tag '%s'",
                           gmx_fio_getname(fio), fver, file_tag,
@@ -3376,7 +3359,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     gmx_mtop_t      dum_top;
     gmx_bool        TopOnlyOK;
     int             file_version, file_generation;
-    int             i;
     rvec           *xptr, *vptr;
     int             ePBC;
     gmx_bool        bPeriodicMols;
@@ -3716,7 +3698,6 @@ int read_tpx_top(const char *fn,
                  rvec *x, rvec *v, rvec *f, t_topology *top)
 {
     gmx_mtop_t  mtop;
-    t_topology *ltop;
     int         ePBC;
 
     ePBC = read_tpx(fn, ir, box, natoms, x, v, f, &mtop);
@@ -3759,7 +3740,6 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
     int              natoms, i, version, generation;
     gmx_bool         bTop, bXNULL = FALSE;
     gmx_mtop_t      *mtop;
-    t_topology      *topconv;
     gmx_atomprop_t   aps;
 
     bTop  = fn2bTPX(infile);
@@ -3782,7 +3762,7 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
         /* In this case we need to throw away the group data too */
         done_gmx_groups_t(&mtop->groups);
         sfree(mtop);
-        strcpy(title, *top->name);
+        std::strcpy(title, *top->name);
         tpx_make_chain_identifiers(&top->atoms, &top->mols);
     }
     else

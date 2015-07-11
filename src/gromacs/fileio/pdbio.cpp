@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,9 +38,10 @@
 
 #include "pdbio.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -82,8 +83,8 @@ static void xlate_atomname_pdb2gmx(char *name)
     int  i, length;
     char temp;
 
-    length = strlen(name);
-    if (length > 3 && isdigit(name[0]))
+    length = std::strlen(name);
+    if (length > 3 && std::isdigit(name[0]))
     {
         temp = name[0];
         for (i = 1; i < length; i++)
@@ -99,8 +100,8 @@ static void xlate_atomname_gmx2pdb(char *name)
     int  i, length;
     char temp;
 
-    length = strlen(name);
-    if (length > 3 && isdigit(name[length-1]))
+    length = std::strlen(name);
+    if (length > 3 && std::isdigit(name[length-1]))
     {
         temp = name[length-1];
         for (i = length-1; i > 0; --i)
@@ -128,7 +129,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
 
     if (norm2(box[YY])*norm2(box[ZZ]) != 0)
     {
-        alpha = RAD2DEG*acos(cos_angle_no_table(box[YY], box[ZZ]));
+        alpha = RAD2DEG*std::acos(cos_angle_no_table(box[YY], box[ZZ]));
     }
     else
     {
@@ -136,7 +137,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
     }
     if (norm2(box[XX])*norm2(box[ZZ]) != 0)
     {
-        beta  = RAD2DEG*acos(cos_angle_no_table(box[XX], box[ZZ]));
+        beta  = RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[ZZ]));
     }
     else
     {
@@ -144,7 +145,7 @@ void gmx_write_pdb_box(FILE *out, int ePBC, matrix box)
     }
     if (norm2(box[XX])*norm2(box[YY]) != 0)
     {
-        gamma = RAD2DEG*acos(cos_angle_no_table(box[XX], box[YY]));
+        gamma = RAD2DEG*std::acos(cos_angle_no_table(box[XX], box[YY]));
     }
     else
     {
@@ -217,7 +218,7 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
         {
             if (alpha != 90.0)
             {
-                cosa = cos(alpha*DEG2RAD);
+                cosa = std::cos(alpha*DEG2RAD);
             }
             else
             {
@@ -225,7 +226,7 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
             }
             if (beta != 90.0)
             {
-                cosb = cos(beta*DEG2RAD);
+                cosb = std::cos(beta*DEG2RAD);
             }
             else
             {
@@ -233,8 +234,8 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
             }
             if (gamma != 90.0)
             {
-                cosg = cos(gamma*DEG2RAD);
-                sing = sin(gamma*DEG2RAD);
+                cosg = std::cos(gamma*DEG2RAD);
+                sing = std::sin(gamma*DEG2RAD);
             }
             else
             {
@@ -245,8 +246,8 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
             box[YY][YY] = fb*sing;
             box[ZZ][XX] = fc*cosb;
             box[ZZ][YY] = fc*(cosa - cosb*cosg)/sing;
-            box[ZZ][ZZ] = sqrt(fc*fc
-                               - box[ZZ][XX]*box[ZZ][XX] - box[ZZ][YY]*box[ZZ][YY]);
+            box[ZZ][ZZ] = std::sqrt(fc*fc
+                                    - box[ZZ][XX]*box[ZZ][XX] - box[ZZ][YY]*box[ZZ][YY]);
         }
         else
         {
@@ -271,9 +272,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     char              altloc;
     real              occup, bfac;
     gmx_bool          bOccup;
-    int               nlongname = 0;
     int               chainnum, lastchainnum;
-    int               lastresind, lastchainresind;
     gmx_residuetype_t*rt;
     const char       *p_restype;
     const char       *p_lastrestype;
@@ -305,15 +304,12 @@ void write_pdbfile_indexed(FILE *out, const char *title,
 
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
 
-    lastchainresind   = -1;
     lastchainnum      = -1;
-    resind            = -1;
     p_restype         = NULL;
 
     for (ii = 0; ii < nindex; ii++)
     {
         i             = index[ii];
-        lastresind    = resind;
         resind        = atoms->atom[i].resind;
         chainnum      = atoms->resinfo[resind].chainnum;
         p_lastrestype = p_restype;
@@ -328,7 +324,6 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                 fprintf(out, "TER\n");
             }
             lastchainnum    = chainnum;
-            lastchainresind = lastresind;
         }
 
         strncpy(resnm, *atoms->resinfo[resind].name, sizeof(resnm)-1);
@@ -359,7 +354,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
         }
         if (atoms->pdbinfo)
         {
-            type   = (enum PDB_record)(atoms->pdbinfo[i].type);
+            type   = static_cast<enum PDB_record>(atoms->pdbinfo[i].type);
             altloc = atoms->pdbinfo[i].altloc;
             if (!isalnum(altloc))
             {
@@ -444,7 +439,7 @@ int line2type(char *line)
 
     for (k = 0; (k < epdbNR); k++)
     {
-        if (strncmp(type, pdbtp[k], strlen(pdbtp[k])) == 0)
+        if (std::strncmp(type, pdbtp[k], strlen(pdbtp[k])) == 0)
         {
             break;
         }
@@ -478,10 +473,10 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
     trim(anm);
 
     /* Search backwards for number and name only */
-    atomnr = strtol(anr, NULL, 10);
+    atomnr = std::strtol(anr, NULL, 10);
     for (i = natom-1; (i >= 0); i--)
     {
-        if ((strcmp(anm, *(atoms->atomname[i])) == 0) &&
+        if ((std::strcmp(anm, *(atoms->atomname[i])) == 0) &&
             (atomnr == atoms->pdbinfo[i].atomnr))
         {
             break;
@@ -524,11 +519,11 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
     }
     for (i = 0; (i < atoms->nr); i++)
     {
-        strcpy(anm, atoms->pdbinfo[i].atomnm);
-        strcpy(anm_copy, atoms->pdbinfo[i].atomnm);
+        std::strcpy(anm, atoms->pdbinfo[i].atomnm);
+        std::strcpy(anm_copy, atoms->pdbinfo[i].atomnm);
         len        = strlen(anm);
         atomnumber = NOTSET;
-        if ((anm[0] != ' ') && ((len <= 2) || ((len > 2) && !isdigit(anm[2]))))
+        if ((anm[0] != ' ') && ((len <= 2) || ((len > 2) && !std::isdigit(anm[2]))))
         {
             anm_copy[2] = nc;
             if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
@@ -547,7 +542,7 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
         if (atomnumber == NOTSET)
         {
             k = 0;
-            while ((k < strlen(anm)) && (isspace(anm[k]) || isdigit(anm[k])))
+            while ((k < std::strlen(anm)) && (std::isspace(anm[k]) || std::isdigit(anm[k])))
             {
                 k++;
             }
@@ -560,7 +555,7 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
         }
         atoms->atom[i].atomnumber = atomnumber;
         ptr = gmx_atomprop_element(aps, atomnumber);
-        strncpy(atoms->atom[i].elem, ptr == NULL ? "" : ptr, 4);
+        std::strncpy(atoms->atom[i].elem, ptr == NULL ? "" : ptr, 4);
         if (debug)
         {
             fprintf(debug, "Atomnumber for atom '%s' is %d\n", anm, atomnumber);
@@ -601,7 +596,7 @@ static int read_atom(t_symtab *symtab,
         anm[k] = line[j];
     }
     anm[k] = nc;
-    strcpy(anm_copy, anm);
+    std::strcpy(anm_copy, anm);
     rtrim(anm_copy);
     atomnumber = NOTSET;
     trim(anm);
@@ -623,7 +618,7 @@ static int read_atom(t_symtab *symtab,
     }
     rnr[k] = nc;
     trim(rnr);
-    resnr = strtol(rnr, NULL, 10);
+    resnr = std::strtol(rnr, NULL, 10);
     resic = line[j];
     j    += 4;
 
@@ -723,14 +718,14 @@ gmx_bool is_hydrogen(const char *nm)
 {
     char buf[30];
 
-    strcpy(buf, nm);
+    std::strcpy(buf, nm);
     trim(buf);
 
     if (buf[0] == 'H')
     {
         return TRUE;
     }
-    else if ((isdigit(buf[0])) && (buf[1] == 'H'))
+    else if ((std::isdigit(buf[0])) && (buf[1] == 'H'))
     {
         return TRUE;
     }
@@ -741,10 +736,10 @@ gmx_bool is_dummymass(const char *nm)
 {
     char buf[30];
 
-    strcpy(buf, nm);
+    std::strcpy(buf, nm);
     trim(buf);
 
-    if ((buf[0] == 'M') && isdigit(buf[strlen(buf)-1]))
+    if ((buf[0] == 'M') && std::isdigit(buf[strlen(buf)-1]))
     {
         return TRUE;
     }
@@ -763,7 +758,7 @@ static void gmx_conect_addline(gmx_conect_t *con, char *line)
     {
         do
         {
-            strcat(form2, "%*s");
+            std::strcat(form2, "%*s");
             sprintf(format, "%s%%d", form2);
             n = sscanf(line, format, &aj);
             if (n == 1)
@@ -795,19 +790,19 @@ gmx_conect gmx_conect_init()
 
     snew(gc, 1);
 
-    return (gmx_conect) gc;
+    return static_cast<gmx_conect>(gc);
 }
 
 void gmx_conect_done(gmx_conect conect)
 {
-    gmx_conect_t *gc = (gmx_conect_t *)conect;
+    gmx_conect_t *gc = reinterpret_cast<gmx_conect_t *>(conect);
 
     sfree(gc->conect);
 }
 
 gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj)
 {
-    gmx_conect_t *gc = (gmx_conect_t *)conect;
+    gmx_conect_t *gc = reinterpret_cast<gmx_conect_t *>(conect);
     int           i;
 
     /* if (!gc->bSorted)
@@ -829,7 +824,6 @@ gmx_bool gmx_conect_exist(gmx_conect conect, int ai, int aj)
 void gmx_conect_add(gmx_conect conect, int ai, int aj)
 {
     gmx_conect_t *gc = (gmx_conect_t *)conect;
-    int           i;
 
     /* if (!gc->bSorted)
        sort_conect(gc);*/
@@ -846,15 +840,14 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
                  t_atoms *atoms, rvec x[], int *ePBC, matrix box, gmx_bool bChange,
                  gmx_conect conect)
 {
-    gmx_conect_t *gc = (gmx_conect_t *)conect;
+    gmx_conect_t *gc = reinterpret_cast<gmx_conect_t *>(conect);
     t_symtab      symtab;
     gmx_bool      bCOMPND;
     gmx_bool      bConnWarn = FALSE;
     char          line[STRLEN+1];
     int           line_type;
     char         *c, *d;
-    int           natom, chainnum, nres_ter_prev = 0;
-    char          chidmax = ' ';
+    int           natom, chainnum;
     gmx_bool      bStop   = FALSE;
 
     if (ePBC)
@@ -897,7 +890,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
 
             case epdbTITLE:
             case epdbHEADER:
-                if (strlen(line) > 6)
+                if (std::strlen(line) > 6)
                 {
                     c = line+6;
                     /* skip HEADER or TITLE and spaces */
@@ -910,22 +903,22 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
                         c++;
                     }
                     /* truncate after title */
-                    d = strstr(c, "      ");
+                    d = std::strstr(c, "      ");
                     if (d)
                     {
                         d[0] = '\0';
                     }
-                    if (strlen(c) > 0)
+                    if (std::strlen(c) > 0)
                     {
-                        strcpy(title, c);
+                        std::strcpy(title, c);
                     }
                 }
                 break;
 
             case epdbCOMPND:
-                if ((!strstr(line, ": ")) || (strstr(line+6, "MOLECULE:")))
+                if ((!std::strstr(line, ": ")) || (std::strstr(line+6, "MOLECULE:")))
                 {
-                    if (!(c = strstr(line+6, "MOLECULE:")) )
+                    if (!(c = std::strstr(line+6, "MOLECULE:")) )
                     {
                         c = line;
                     }
@@ -952,12 +945,12 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
                     {
                         if (bCOMPND)
                         {
-                            strcat(title, "; ");
-                            strcat(title, c);
+                            std::strcat(title, "; ");
+                            std::strcat(title, c);
                         }
                         else
                         {
-                            strcpy(title, c);
+                            std::strcpy(title, c);
                         }
                     }
                     bCOMPND = TRUE;
@@ -1006,11 +999,11 @@ void get_pdb_coordnum(FILE *in, int *natoms)
     *natoms = 0;
     while (fgets2(line, STRLEN, in))
     {
-        if (strncmp(line, "ENDMDL", 6) == 0)
+        if (std::strncmp(line, "ENDMDL", 6) == 0)
         {
             break;
         }
-        if ((strncmp(line, "ATOM  ", 6) == 0) || (strncmp(line, "HETATM", 6) == 0))
+        if ((std::strncmp(line, "ATOM  ", 6) == 0) || (std::strncmp(line, "HETATM", 6) == 0))
         {
             (*natoms)++;
         }
@@ -1082,16 +1075,16 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
         /* If the atom name is an element name with two chars, it should start already in column 13.
          * Otherwise it should start in column 14, unless the name length is 4 chars.
          */
-        if ( (element != NULL) && (strlen(element) >= 2) && (gmx_strncasecmp(atom_name, element, 2) == 0) )
+        if ( (element != NULL) && (std::strlen(element) >= 2) && (gmx_strncasecmp(atom_name, element, 2) == 0) )
         {
             start_name_in_col13 = TRUE;
         }
         else
         {
-            start_name_in_col13 = (strlen(atom_name) >= 4);
+            start_name_in_col13 = (std::strlen(atom_name) >= 4);
         }
         sprintf(tmp_atomname, start_name_in_col13 ? "" : " ");
-        strncat(tmp_atomname, atom_name, 4);
+        std::strncat(tmp_atomname, atom_name, 4);
         tmp_atomname[5] = '\0';
     }
     else
@@ -1100,14 +1093,14 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
     }
 
     /* Format residue name */
-    strncpy(tmp_resname, (res_name != NULL) ? res_name : "", 4);
+    std::strncpy(tmp_resname, (res_name != NULL) ? res_name : "", 4);
     /* Make sure the string is terminated if strlen was > 4 */
     tmp_resname[4] = '\0';
     /* String is properly terminated, so now we can use strcat. By adding a
      * space we can write it right-justified, and if the original name was
      * three characters or less there will be a space added on the right side.
      */
-    strcat(tmp_resname, " ");
+    std::strcat(tmp_resname, " ");
 
     /* Truncate integers so they fit */
     atom_seq_number = atom_seq_number % 100000;

@@ -38,8 +38,10 @@
 
 #include "enxio.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
@@ -386,7 +388,6 @@ void do_enxnms(ener_file_t ef, int *nre, gmx_enxnm_t **nms)
     XDR     *xdr;
     gmx_bool bRead = gmx_fio_getread(ef->fio);
     int      file_version;
-    int      i;
 
     xdr = gmx_fio_getxdr(ef->fio);
 
@@ -438,9 +439,8 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
 {
     int          magic = -7777777;
     real         first_real_to_check;
-    int          b, i, zero = 0, dum = 0;
+    int          b, zero = 0, dum = 0;
     gmx_bool     bRead      = gmx_fio_getread(ef->fio);
-    int          tempfix_nr = 0;
     int          ndisre     = 0;
     int          startb     = 0;
 #ifndef GMX_DOUBLE
@@ -536,7 +536,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
         }
         else
         {
-            fr->nsteps = max(1, fr->nsum);
+            fr->nsteps = std::max(1, fr->nsum);
         }
         if (*file_version >= 5)
         {
@@ -596,7 +596,10 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
         ((fr->nre > 0 && fr->nre != nre_test) ||
          fr->nre < 0 || ndisre < 0 || fr->nblock < 0))
     {
-        *bWrongPrecision = TRUE;
+        if (bWrongPrecision)
+        {
+            *bWrongPrecision = TRUE;
+        }
         return *bOK;
     }
 
@@ -750,11 +753,10 @@ static gmx_bool empty_file(const char *fn)
 {
     FILE    *fp;
     char     dum;
-    int      ret;
     gmx_bool bEmpty;
 
     fp     = gmx_fio_fopen(fn, "r");
-    ret    = fread(&dum, sizeof(dum), 1, fp);
+    fread(&dum, sizeof(dum), 1, fp);
     bEmpty = feof(fp);
     gmx_fio_fclose(fp);
 
@@ -764,7 +766,7 @@ static gmx_bool empty_file(const char *fn)
 
 ener_file_t open_enx(const char *fn, const char *mode)
 {
-    int               nre, i;
+    int               nre;
     gmx_enxnm_t      *nms          = NULL;
     int               file_version = -1;
     t_enxframe       *fr;
@@ -970,7 +972,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     {
         fprintf(stderr, "\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr, "Found: step=%"GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n"
+        fprintf(stderr, "Found: step=%" GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n"
                 "Trying to skip frame expect a crash though\n",
                 fr->step, fr->nre, fr->nblock, fr->t);
     }
@@ -1045,7 +1047,6 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
             }
 
             /* read/write data */
-            bOK1 = TRUE;
             switch (sub->type)
             {
                 case xdr_datatype_float:
@@ -1107,7 +1108,7 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
 
     for (i = 0; i < nre; i++)
     {
-        if (strcmp(enm[i].name, name) == 0)
+        if (std::strcmp(enm[i].name, name) == 0)
         {
             return fr->ener[i].e;
         }
@@ -1128,10 +1129,6 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
         "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
     };
 
-    static const char *pcouplmu_nm[] = {
-        "Pcoupl-Mu-XX", "Pcoupl-Mu-YY", "Pcoupl-Mu-ZZ",
-        "Pcoupl-Mu-YX", "Pcoupl-Mu-ZX", "Pcoupl-Mu-ZY"
-    };
     static const char *baro_nm[] = {
         "Barostat"
     };
