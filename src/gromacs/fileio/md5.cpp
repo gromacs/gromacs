@@ -40,6 +40,8 @@
 
 #include "config.h"
 
+#include <cstring>
+
 #if GMX_INTEGER_BIG_ENDIAN
 #define ARCH_IS_BIG_ENDIAN 1
 #else
@@ -99,8 +101,6 @@
  */
 
 #include "md5.h"
-
-#include <string.h>
 
 #undef BYTE_ORDER   /* 1 = big-endian, -1 = little-endian, 0 = unknown */
 #ifdef ARCH_IS_BIG_ENDIAN
@@ -201,15 +201,15 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
          */
         static const int w = 1;
 
-        if (*((const md5_byte_t *)&w)) /* dynamic little-endian */
+        if (*(reinterpret_cast<const md5_byte_t *>(&w))) /* dynamic little-endian */
 #endif
-#if BYTE_ORDER <= 0                    /* little-endian */
+#if BYTE_ORDER <= 0                                      /* little-endian */
         {
             /*
              * On little-endian machines, we can process properly aligned
              * data without copying it.
              */
-            if (!((data - (const md5_byte_t *)0) & 3))
+            if (!((data - reinterpret_cast<const md5_byte_t *>(0)) & 3))
             {
                 /* data are properly aligned */
                 X = (const md5_word_t *)data;
@@ -217,7 +217,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
             else
             {
                 /* not aligned */
-                memcpy(xbuf, data, 64);
+                std::memcpy(xbuf, data, 64);
                 X = xbuf;
             }
         }
@@ -398,7 +398,7 @@ gmx_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
     {
         int copy = (offset + nbytes > 64 ? 64 - offset : nbytes);
 
-        memcpy(pms->buf + offset, p, copy);
+        std::memcpy(pms->buf + offset, p, copy);
         if (offset + copy < 64)
         {
             return;

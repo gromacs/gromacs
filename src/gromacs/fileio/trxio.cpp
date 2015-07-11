@@ -40,8 +40,8 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -61,6 +61,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef GMX_USE_PLUGINS
@@ -784,7 +785,6 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
     real     pt;
     int      ct;
     gmx_bool bOK, bRet, bMissingData = FALSE, bSkip = FALSE;
-    int      dummy = 0;
     int      ftp;
 
     bRet = FALSE;
@@ -914,15 +914,13 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
 {
     t_fileio      *fio;
     gmx_bool       bFirst, bOK;
-    int            dummy = 0;
     int            ftp   = fn2ftp(fn);
-    gmx_int64_t   *tng_ids;
-
+    
     clear_trxframe(fr, TRUE);
     fr->flags = flags;
 
     bFirst = TRUE;
-
+    
     snew((*status), 1);
 
     status_init( *status );
@@ -964,15 +962,15 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             {
                 snew(fr->v, fr->natoms);
             }
-            fio = (*status)->fio = gmx_fio_open(fn, "r");
+            (*status)->fio = gmx_fio_open(fn, "r");
             break;
         case efXTC:
             if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
                                &fr->prec, &bOK) == 0)
             {
-                assert(!bOK);
-                fr->not_ok = DATA_NOT_OK;
+                GMX_RELEASE_ASSERT(!bOK, "Inconsistent results - OK status from read_first_xtc, but 0 atom coords read");
             }
+            fr->not_ok = DATA_NOT_OK;
             if (fr->not_ok)
             {
                 fr->natoms = 0;
@@ -1009,7 +1007,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             {
                 printcount(*status, oenv, fr->time, FALSE);
             }
-            bFirst = FALSE;
+        bFirst = FALSE;
             break;
         case efGRO:
             if (gro_first_x_or_v(gmx_fio_getfp(fio), fr))
@@ -1024,7 +1022,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
                     "Please make sure that the file is a trajectory!\n"
                     "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
                     "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn);
-            gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
+            gmx_fio_fp_close(fio);     /*only close the file without removing FIO entry*/
             if (!read_first_vmd_frame(fn, fr))
             {
                 gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn);
@@ -1037,14 +1035,14 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             break;
     }
     fr->tf = fr->time;
-
+    
     /* Return FALSE if we read a frame that's past the set ending time. */
     if (!bFirst && (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) > 0))
     {
         fr->t0 = fr->time;
         return FALSE;
     }
-
+    
     if (bFirst ||
         (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
     {
@@ -1055,12 +1053,12 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
         }
     }
     fr->t0 = fr->time;
-
+    
     /* We need the number of atoms for random-access XTC searching, even when
      * we don't have access to the actual frame data.
      */
     (*status)->natoms = fr->natoms;
-
+    
     return (fr->natoms > 0);
 }
 
