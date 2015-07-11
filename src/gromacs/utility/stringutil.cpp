@@ -57,6 +57,55 @@
 namespace gmx
 {
 
+std::size_t
+countWords(const char *s)
+{
+    std::size_t nWords = 0;
+
+    for (std::size_t i = 0; s[i] != '\0'; i++)
+    {
+        // If we found a new word, increase counter and step through the word
+        if (std::isalnum(s[i]))
+        {
+            nWords++;
+            // If we hit string end, '\0' is not alphanumerical
+            while (std::isalnum(s[i]))
+            {
+                i++;
+            }
+        }
+    }
+    return nWords;
+}
+
+
+/*!\ brief Returns the number of space-separated words in a string object
+ *
+ * \param str Reference to string object, which will not be changed.
+ *
+ * \returns number of words in string.
+ */
+std::size_t
+countWords(const std::string &str)
+{
+    std::size_t nWords = 0;
+
+    for (std::string::const_iterator currPos = str.begin(); currPos != str.end(); currPos++)
+    {
+        // If we found a new word, increase counter and step through the word
+        if (std::isalnum(*currPos))
+        {
+            nWords++;
+            // If we hit string end, '\0' is not alphanumerical
+            while (std::isalnum(*currPos))
+            {
+                currPos++;
+            }
+        }
+    }
+    return nWords;
+}
+
 bool endsWith(const char *str, const char *suffix)
 {
     if (isNullOrEmpty(suffix))

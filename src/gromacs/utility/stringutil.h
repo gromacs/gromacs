@@ -101,6 +101,27 @@ static inline bool endsWith(const std::string &str, const char *suffix)
     return endsWith(str.c_str(), suffix);
 }
 
+/*!\ brief Returns number of space-separated words in zero-terminated char ptr
+ *
+ * \param s Character pointer to zero-terminated, which will not be changed.
+ *
+ * \returns number of words in string.
+ *
+ * \note This routine is mainly meant to support legacy code in GROMACS. For
+ *       new source you should try hard to use C++ string objects instead.
+ */
+std::size_t
+countWords(const char *s);
+
+/*!\ brief Returns the number of space-separated words in a string object
+ *
+ * \param str Reference to string object, which will not be changed.
+ *
+ * \returns number of words in string.
+ */
+std::size_t
+countWords(const std::string &str);
+
 /*! \brief
  * Removes a suffix from a string.
  *
