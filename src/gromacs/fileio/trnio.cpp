@@ -38,7 +38,7 @@
 
 #include "trnio.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
