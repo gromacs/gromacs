@@ -217,7 +217,7 @@ typedef struct
      */
     /*!\{*/
     int      bins;                   //!< nr of bins, min, max, and dz of profile
-    real     min, max, dz;
+    real     minval, maxval, dz;
     real     Temperature, Tolerance; //!< temperature, converged when probability changes less than Tolerance
     gmx_bool bCycl;                  //!< generate cyclic (periodic) PMF
     /*!\}*/
