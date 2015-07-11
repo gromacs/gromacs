@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -686,21 +686,38 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     {
         rvec  v1, v2;
         rvec  c1, c2;
+
+        // v2 & c2 are conditionally set in the switch statement below, and conditionally
+        // used in a different switch statement later. Apparently the clang static analyzer
+        // thinks there are cases where they can be used uninitialzed (which I cannot find),
+        // but to avoid trouble if we ever change just one of the switch statements it
+        // makes sense to clear them outside the first switch.
+
+        clear_rvec(v2);
+        clear_rvec(c2);
+
         switch (g2type_[0])
         {
             case 'z':
-                clear_rvec(v2);
                 v2[ZZ] = 1.0;
-                clear_rvec(c2);
                 break;
             case 's':
                 copy_rvec(sel2_[g].position(0).x(), c2);
                 break;
+            default:
+                // do nothing
+                break;
         }
+
         dh.selectDataSet(g);
         for (int n = 0; n < angleCount_[g]; ++n, iter1.nextValue(), iter2.nextValue())
         {
             rvec x[4];
+            // x[] will be assigned below based on the number of atoms used to initialize iter1,
+            // which in turn should correspond perfectly to g1type_[0] (which determines how many we read),
+            // but unsurprisingly the static analyzer chokes a bit on that.
+            clear_rvecs(4, x);
+
             real angle;
             // checkSelections() ensures that this reflects all the involved
             // positions.
