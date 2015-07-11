@@ -40,9 +40,9 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 
 #ifdef HAVE_IO_H
 #include <io.h>
@@ -273,29 +273,29 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     gmx_bool  bRead, bReadWrite;
 
     /* sanitize the mode string */
-    if (strncmp(mode, "r+", 2) == 0)
+    if (std::strncmp(mode, "r+", 2) == 0)
     {
-        strcpy(newmode, "r+");
+        std::strcpy(newmode, "r+");
     }
     else if (mode[0] == 'r')
     {
-        strcpy(newmode, "r");
+        std::strcpy(newmode, "r");
     }
     else if (strncmp(mode, "w+", 2) == 0)
     {
-        strcpy(newmode, "w+");
+        std::strcpy(newmode, "w+");
     }
     else if (mode[0] == 'w')
     {
-        strcpy(newmode, "w");
+        std::strcpy(newmode, "w");
     }
     else if (strncmp(mode, "a+", 2) == 0)
     {
-        strcpy(newmode, "a+");
+        std::strcpy(newmode, "a+");
     }
     else if (mode[0] == 'a')
     {
-        strcpy(newmode, "a");
+        std::strcpy(newmode, "a");
     }
     else
     {
@@ -347,6 +347,11 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
             gmx_fseek(fio->fp, 0, SEEK_END);
         }
     }
+    else
+    {
+        gmx_fatal(FARGS, "Cannot open file with NULL filename string");
+    }
+
     fio->bRead             = bRead;
     fio->bReadWrite        = bReadWrite;
     fio->bDouble           = (sizeof(real) == sizeof(double));
@@ -606,7 +611,7 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
                 srenew(outputfiles, nalloc);
             }
 
-            strncpy(outputfiles[nfiles].filename, cur->fn, STRLEN - 1);
+            std::strncpy(outputfiles[nfiles].filename, cur->fn, STRLEN - 1);
 
             /* Get the file position */
             gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
@@ -688,7 +693,6 @@ static int gmx_fio_int_fsync(t_fileio *fio)
     {
         rc = gmx_fsync(fio->fp);
     }
-
     return rc;
 }
 

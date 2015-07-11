@@ -41,11 +41,10 @@
 #if GMX_INTERNAL_XDR
 
 
-#include "gmx_system_xdr.h"
+#include "gmx_internal_xdr.h"
 
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 
 /* NB - THIS FILE IS ONLY USED ON MICROSOFT WINDOWS, since that
@@ -103,8 +102,8 @@ static xdr_uint32_t xdr_swapbytes(xdr_uint32_t x)
 {
     xdr_uint32_t y;
     int          i;
-    char        *px = (char *)&x;
-    char        *py = (char *)&y;
+    char        *px = reinterpret_cast<char *>(&x);
+    char        *py = reinterpret_cast<char *>(&y);
 
     for (i = 0; i < 4; i++)
     {
@@ -117,7 +116,7 @@ static xdr_uint32_t xdr_swapbytes(xdr_uint32_t x)
 static xdr_uint32_t xdr_htonl(xdr_uint32_t x)
 {
     short s = 0x0F00;
-    if (*((char *)&s) == (char)0x0F)
+    if (*(reinterpret_cast<char *>(&s)) == static_cast<char>(0x0F))
     {
         /* bigendian, do nothing */
         return x;
@@ -132,7 +131,7 @@ static xdr_uint32_t xdr_htonl(xdr_uint32_t x)
 static xdr_uint32_t xdr_ntohl(xdr_uint32_t x)
 {
     short s = 0x0F00;
-    if (*((char *)&s) == (char)0x0F)
+    if (*(reinterpret_cast<char *>(&s)) == static_cast<char>(0x0F))
     {
         /* bigendian, do nothing */
         return x;
@@ -178,7 +177,7 @@ xdr_int (XDR *xdrs, int *ip)
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
-            l = (xdr_int32_t) (*ip);
+            l = static_cast<xdr_int32_t>(*ip);
             return xdr_putint32 (xdrs, &l);
 
         case XDR_DECODE:
@@ -186,7 +185,7 @@ xdr_int (XDR *xdrs, int *ip)
             {
                 return FALSE;
             }
-            *ip = (int) l;
+            *ip = static_cast<int>(l);
 
         case XDR_FREE:
             return TRUE;
@@ -206,7 +205,7 @@ xdr_u_int (XDR *xdrs, unsigned int *up)
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
-            l = (xdr_uint32_t) (*up);
+            l = static_cast<xdr_uint32_t>(*up);
             return xdr_putuint32 (xdrs, &l);
 
         case XDR_DECODE:
@@ -214,7 +213,7 @@ xdr_u_int (XDR *xdrs, unsigned int *up)
             {
                 return FALSE;
             }
-            *up = (unsigned int) l;
+            *up = static_cast<unsigned int>(l);
 
         case XDR_FREE:
             return TRUE;
@@ -236,7 +235,7 @@ xdr_short (XDR *xdrs, short *sp)
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
-            l = (xdr_int32_t) *sp;
+            l = static_cast<xdr_int32_t>(*sp);
             return xdr_putint32 (xdrs, &l);
 
         case XDR_DECODE:
@@ -244,7 +243,7 @@ xdr_short (XDR *xdrs, short *sp)
             {
                 return FALSE;
             }
-            *sp = (short) l;
+            *sp = static_cast<short>(l);
             return TRUE;
 
         case XDR_FREE:
@@ -265,7 +264,7 @@ xdr_u_short (XDR *xdrs, unsigned short *usp)
     switch (xdrs->x_op)
     {
         case XDR_ENCODE:
-            l = (xdr_uint32_t) *usp;
+            l = static_cast<xdr_uint32_t>(*usp);
             return xdr_putuint32 (xdrs, &l);
 
         case XDR_DECODE:
@@ -273,7 +272,7 @@ xdr_u_short (XDR *xdrs, unsigned short *usp)
             {
                 return FALSE;
             }
-            *usp = (unsigned short) l;
+            *usp = static_cast<unsigned short>(l);
             return TRUE;
 
         case XDR_FREE:
@@ -391,7 +390,7 @@ xdr_opaque (XDR *xdrs, char *cp, unsigned int cnt)
             {
                 return TRUE;
             }
-            return xdr_getbytes (xdrs, (char *)crud, rndup);
+            return xdr_getbytes (xdrs, crud, rndup);
 
         case XDR_ENCODE:
             if (!xdr_putbytes (xdrs, cp, cnt))
@@ -419,11 +418,7 @@ xdr_opaque (XDR *xdrs, char *cp, unsigned int cnt)
  * storage is allocated.  The last parameter is the max allowed length
  * of the string as specified by a protocol.
  */
-bool_t
-xdr_string (xdrs, cpp, maxsize)
-XDR *xdrs;
-char       **cpp;
-unsigned int maxsize;
+bool_t xdr_string (XDR *xdrs, char ** cpp, unsigned int maxsize)
 {
     char        *sp       = *cpp; /* sp is the actual string pointer */
     unsigned int size     = 0;
@@ -445,7 +440,7 @@ unsigned int maxsize;
             {
                 return FALSE;
             }
-            size = strlen (sp);
+            size = std::strlen (sp);
             break;
         case XDR_DECODE:
             break;
@@ -473,7 +468,7 @@ unsigned int maxsize;
             }
             if (sp == NULL)
             {
-                *cpp = sp = (char *) malloc (nodesize);
+                *cpp = sp = static_cast<char *>(std::malloc (nodesize));
             }
             if (sp == NULL)
             {
@@ -498,10 +493,7 @@ unsigned int maxsize;
 
 /* Floating-point stuff */
 
-bool_t
-xdr_float(xdrs, fp)
-XDR *xdrs;
-float *fp;
+bool_t xdr_float(XDR * xdrs, float * fp)
 {
     xdr_int32_t tmp;
 
@@ -509,7 +501,7 @@ float *fp;
     {
 
         case XDR_ENCODE:
-            tmp = *(xdr_int32_t *)fp;
+            tmp = *(reinterpret_cast<xdr_int32_t *>(fp));
             return (xdr_putint32(xdrs, &tmp));
 
             break;
@@ -517,7 +509,7 @@ float *fp;
         case XDR_DECODE:
             if (xdr_getint32(xdrs, &tmp))
             {
-                *(xdr_int32_t *)fp = tmp;
+                *(reinterpret_cast<xdr_int32_t *>(fp)) = tmp;
                 return (TRUE);
             }
 
@@ -530,10 +522,7 @@ float *fp;
 }
 
 
-bool_t
-xdr_double(xdrs, dp)
-XDR *xdrs;
-double *dp;
+bool_t xdr_double(XDR * xdrs, double * dp)
 {
 
     /* Windows and some other systems dont define double-precision
@@ -564,7 +553,7 @@ double *dp;
          *     B           B       3f ef 9a dd 3c 0e 56 b8
          */
 
-        unsigned char ix = *((char *)&x);
+        unsigned char ix = *(reinterpret_cast<char *>(&x));
 
         if (ix == 0xdd || ix == 0x3f)
         {
@@ -588,7 +577,7 @@ double *dp;
     {
 
         case XDR_ENCODE:
-            ip     = (int *)dp;
+            ip     = reinterpret_cast<int *>(dp);
             tmp[0] = ip[!LSW];
             tmp[1] = ip[LSW];
             return (xdr_putint32(xdrs, tmp) &&
@@ -597,7 +586,7 @@ double *dp;
             break;
 
         case XDR_DECODE:
-            ip = (int *)dp;
+            ip = reinterpret_cast<int *>(dp);
             if (xdr_getint32(xdrs, tmp+!LSW) &&
                 xdr_getint32(xdrs, tmp+LSW))
             {
@@ -627,13 +616,8 @@ double *dp;
  * > elemsize: size of each element
  * > xdr_elem: routine to XDR each element
  */
-bool_t
-xdr_vector (xdrs, basep, nelem, elemsize, xdr_elem)
-XDR *xdrs;
-char        *basep;
-unsigned int nelem;
-unsigned int elemsize;
-xdrproc_t    xdr_elem;
+bool_t xdr_vector (XDR * xdrs, char * basep, unsigned int nelem,
+                   unsigned int elemsize, xdrproc_t xdr_elem)
 {
 #define LASTUNSIGNED    ((unsigned int)0-1)
     unsigned int i;
@@ -666,47 +650,13 @@ static bool_t xdrstdio_getuint32 (XDR *, xdr_uint32_t *);
 static bool_t xdrstdio_putuint32 (XDR *, xdr_uint32_t *);
 
 /*
- * Ops vector for stdio type XDR
- */
-static const struct xdr_ops xdrstdio_ops =
-{
-    xdrstdio_getbytes,  /* deserialize counted bytes */
-    xdrstdio_putbytes,  /* serialize counted bytes */
-    xdrstdio_getpos,    /* get offset in the stream */
-    xdrstdio_setpos,    /* set offset in the stream */
-    xdrstdio_inline,    /* prime stream for inline macros */
-    xdrstdio_destroy,   /* destroy stream */
-    xdrstdio_getint32,  /* deserialize a int */
-    xdrstdio_putint32,  /* serialize a int */
-    xdrstdio_getuint32, /* deserialize a int */
-    xdrstdio_putuint32  /* serialize a int */
-};
-
-/*
- * Initialize a stdio xdr stream.
- * Sets the xdr stream handle xdrs for use on the stream file.
- * Operation flag is set to op.
- */
-void
-xdrstdio_create (XDR *xdrs, FILE *file, enum xdr_op op)
-{
-    xdrs->x_op = op;
-    /* We have to add the const since the `struct xdr_ops' in `struct XDR'
-       is not `const'.  */
-    xdrs->x_ops     = (struct xdr_ops *) &xdrstdio_ops;
-    xdrs->x_private = (char *) file;
-    xdrs->x_handy   = 0;
-    xdrs->x_base    = 0;
-}
-
-/*
  * Destroy a stdio xdr stream.
  * Cleans up the xdr stream handle xdrs previously set up by xdrstdio_create.
  */
 static void
 xdrstdio_destroy (XDR *xdrs)
 {
-    (void) fflush ((FILE *) xdrs->x_private);
+    fflush (reinterpret_cast<FILE *>(xdrs->x_private));
     /* xx should we close the file ?? */
 }
 
@@ -714,8 +664,8 @@ xdrstdio_destroy (XDR *xdrs)
 static bool_t
 xdrstdio_getbytes (XDR *xdrs, char *addr, unsigned int len)
 {
-    if ((len != 0) && (fread (addr, (int) len, 1,
-                              (FILE *) xdrs->x_private) != 1))
+    if ((len != 0) && (fread (addr, static_cast<int>(len), 1,
+                              reinterpret_cast<FILE *>(xdrs->x_private)) != 1))
     {
         return FALSE;
     }
@@ -725,8 +675,8 @@ xdrstdio_getbytes (XDR *xdrs, char *addr, unsigned int len)
 static bool_t
 xdrstdio_putbytes (XDR *xdrs, char *addr, unsigned int len)
 {
-    if ((len != 0) && (fwrite (addr, (int) len, 1,
-                               (FILE *) xdrs->x_private) != 1))
+    if ((len != 0) && (fwrite (addr, static_cast<int>(len), 1,
+                               reinterpret_cast<FILE *>(xdrs->x_private)) != 1))
     {
         return FALSE;
     }
@@ -736,13 +686,13 @@ xdrstdio_putbytes (XDR *xdrs, char *addr, unsigned int len)
 static unsigned int
 xdrstdio_getpos (XDR *xdrs)
 {
-    return (unsigned int) ftell ((FILE *) xdrs->x_private);
+    return static_cast<int>(ftell (reinterpret_cast<FILE *>(xdrs->x_private)));
 }
 
 static bool_t
 xdrstdio_setpos (XDR *xdrs, unsigned int pos)
 {
-    return fseek ((FILE *) xdrs->x_private, (xdr_int32_t) pos, 0) < 0 ? FALSE : TRUE;
+    return fseek (reinterpret_cast<FILE *>(xdrs->x_private), static_cast<xdr_int32_t>(pos), 0) < 0 ? FALSE : TRUE;
 }
 
 static xdr_int32_t *
@@ -767,7 +717,7 @@ xdrstdio_getint32 (XDR *xdrs, xdr_int32_t *ip)
 {
     xdr_int32_t mycopy;
 
-    if (fread ((char *) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
+    if (fread (&mycopy, 4, 1, reinterpret_cast<FILE *>(xdrs->x_private)) != 1)
     {
         return FALSE;
     }
@@ -781,7 +731,7 @@ xdrstdio_putint32 (XDR *xdrs, xdr_int32_t *ip)
     xdr_int32_t mycopy = xdr_htonl (*ip);
 
     ip = &mycopy;
-    if (fwrite ((char *) ip, 4, 1, (FILE *) xdrs->x_private) != 1)
+    if (fwrite (ip, 4, 1, reinterpret_cast<FILE *>(xdrs->x_private)) != 1)
     {
         return FALSE;
     }
@@ -793,7 +743,7 @@ xdrstdio_getuint32 (XDR *xdrs, xdr_uint32_t *ip)
 {
     xdr_uint32_t mycopy;
 
-    if (fread ((char *) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
+    if (fread (&mycopy, 4, 1, reinterpret_cast<FILE *>(xdrs->x_private)) != 1)
     {
         return FALSE;
     }
@@ -807,14 +757,45 @@ xdrstdio_putuint32 (XDR *xdrs, xdr_uint32_t *ip)
     xdr_uint32_t mycopy = xdr_htonl (*ip);
 
     ip = &mycopy;
-    if (fwrite ((char *) ip, 4, 1, (FILE *) xdrs->x_private) != 1)
+    if (fwrite (ip, 4, 1, reinterpret_cast<FILE *>(xdrs->x_private)) != 1)
     {
         return FALSE;
     }
     return TRUE;
 }
 
+/*
+ * Ops vector for stdio type XDR
+ */
+static struct XDR::xdr_ops xdrstdio_ops =
+{
+    xdrstdio_getbytes,  /* deserialize counted bytes */
+    xdrstdio_putbytes,  /* serialize counted bytes */
+    xdrstdio_getpos,    /* get offset in the stream */
+    xdrstdio_setpos,    /* set offset in the stream */
+    xdrstdio_inline,    /* prime stream for inline macros */
+    xdrstdio_destroy,   /* destroy stream */
+    xdrstdio_getint32,  /* deserialize a int */
+    xdrstdio_putint32,  /* serialize a int */
+    xdrstdio_getuint32, /* deserialize a int */
+    xdrstdio_putuint32  /* serialize a int */
+};
+
+/*
+ * Initialize a stdio xdr stream.
+ * Sets the xdr stream handle xdrs for use on the stream file.
+ * Operation flag is set to op.
+ */
+void
+xdrstdio_create (XDR *xdrs, FILE *file, enum xdr_op op)
+{
+    xdrs->x_op           = op;
+    xdrs->x_ops          = &xdrstdio_ops;
+    xdrs->x_private      = reinterpret_cast<char *>(file);
+    xdrs->x_handy        = 0;
+    xdrs->x_base         = 0;
+}
+
 #else
-int
-    gmx_system_xdr_empty;
-#endif /* GMX_SYSTEM_XDR */
+int gmx_internal_xdr_empty;
+#endif /* GMX_INTERNAL_XDR */
