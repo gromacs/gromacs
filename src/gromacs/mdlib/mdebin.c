@@ -1321,13 +1321,13 @@ static void pprint(FILE *log, const char *s, t_mdebin *md)
     fprintf(log, "\n");
 }
 
-void print_ebin_header(FILE *log, gmx_int64_t steps, double time, real lambda)
+void print_ebin_header(FILE *log, gmx_int64_t steps, double time)
 {
     char buf[22];
 
-    fprintf(log, "   %12s   %12s   %12s\n"
-            "   %12s   %12.5f   %12.5f\n\n",
-            "Step", "Time", "Lambda", gmx_step_str(steps, buf), time, lambda);
+    fprintf(log, "   %12s   %12s\n"
+            "   %12s   %12.5f\n\n",
+            "Step", "Time", gmx_step_str(steps, buf), time);
 }
 
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
