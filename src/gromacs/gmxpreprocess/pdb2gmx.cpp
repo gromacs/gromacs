@@ -1309,6 +1309,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
     /* Command line arguments must be static */
     static gmx_bool    bNewRTP        = FALSE;
+    static gmx_bool    bTestMode      = FALSE;
     static gmx_bool    bInter         = FALSE, bCysMan = FALSE;
     static gmx_bool    bLysMan        = FALSE, bAspMan = FALSE, bGluMan = FALSE, bHisMan = FALSE;
     static gmx_bool    bGlnMan        = FALSE, bArgMan = FALSE;
@@ -1331,6 +1332,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
           "HIDDENLong bond warning distance" },
         { "-sb",     FALSE, etREAL, {&short_bond_dist},
           "HIDDENShort bond warning distance" },
+        { "-testmode", FALSE, etBOOL, {&bTestMode},
+          "HIDDENRun in test mode (e.g. reproducible output)" },
         { "-chainsep", FALSE, etENUM, {chainsep},
           "Condition in PDB files when a new chain should be started (adding termini)" },
         { "-merge",  FALSE, etENUM, {&merge},
@@ -1782,7 +1785,11 @@ int gmx_pdb2gmx(int argc, char *argv[])
     top_fn   = ftp2fn(efTOP, NFILE, fnm);
     top_file = gmx_fio_fopen(top_fn, "w");
 
-    print_top_header(top_file, top_fn, FALSE, ffdir, mHmult);
+    if (!bTestMode)
+    {
+        print_top_comment(top_file, top_fn, ffdir, FALSE);
+    }
+    print_top_header(top_file, ffdir, mHmult);
 
     nincl = 0;
     nmol  = 0;
@@ -2099,7 +2106,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         }
         nmol++;
 
-        if (bITP)
+        if (bITP && !bTestMode)
         {
             print_top_comment(itp_file, itp_fn, ffdir, TRUE);
         }

@@ -609,7 +609,8 @@ int gmx_x2top(int argc, char *argv[])
     if (bTOP)
     {
         fp = ftp2FILE(efTOP, NFILE, fnm, "w");
-        print_top_header(fp, ftp2fn(efTOP, NFILE, fnm), TRUE, ffdir, 1.0);
+        print_top_comment(fp, ftp2fn(efTOP, NFILE, fnm), ffdir, TRUE);
+        print_top_header(fp, ffdir, 1.0);
 
         write_top(fp, NULL, mymol.name, atoms, FALSE, bts, plist, excls, atype,
                   cgnr, rtp_header_settings.nrexcl);

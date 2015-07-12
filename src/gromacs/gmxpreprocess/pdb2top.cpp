@@ -588,12 +588,9 @@ void print_top_comment(FILE       *out,
     }
 }
 
-void print_top_header(FILE *out, const char *filename,
-                      gmx_bool bITP, const char *ffdir, real mHmult)
+void print_top_header(FILE *out, const char *ffdir, real mHmult)
 {
     const char *p;
-
-    print_top_comment(out, filename, ffdir, bITP);
 
     print_top_heavy_H(out, mHmult);
     fprintf(out, "; Include forcefield parameters\n");
