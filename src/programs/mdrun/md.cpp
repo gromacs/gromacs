@@ -956,7 +956,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if (MASTER(cr) && do_log)
         {
-            print_ebin_header(fplog, step, t, state->lambda[efptFEP]); /* can we improve the information printed here? */
+            print_ebin_header(fplog, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != efepNO)
