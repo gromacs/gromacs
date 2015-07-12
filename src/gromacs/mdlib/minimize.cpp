@@ -1025,7 +1025,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
                    mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
                    NULL, NULL, vir, pres, NULL, mu_tot, constr);
 
-        print_ebin_header(fplog, step, step, s_min->s.lambda[efptFEP]);
+        print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
                    TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
@@ -1462,7 +1462,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
             if (do_log)
             {
-                print_ebin_header(fplog, step, step, s_min->s.lambda[efptFEP]);
+                print_ebin_header(fplog, step, step);
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
@@ -1508,7 +1508,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
         if (!do_log)
         {
             /* Write final value to log since we didn't do anything the last step */
-            print_ebin_header(fplog, step, step, s_min->s.lambda[efptFEP]);
+            print_ebin_header(fplog, step, step);
         }
         if (!do_ene || !do_log)
         {
@@ -1730,7 +1730,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                    mdatoms->tmass, enerd, state, inputrec->fepvals, inputrec->expandedvals, state->box,
                    NULL, NULL, vir, pres, NULL, mu_tot, constr);
 
-        print_ebin_header(fplog, step, step, state->lambda[efptFEP]);
+        print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
                    TRUE, mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
@@ -2276,7 +2276,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
             do_ene = do_per_step(step, inputrec->nstenergy);
             if (do_log)
             {
-                print_ebin_header(fplog, step, step, state->lambda[efptFEP]);
+                print_ebin_header(fplog, step, step);
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                        do_log ? fplog : NULL, step, step, eprNORMAL,
@@ -2322,7 +2322,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
      */
     if (!do_log) /* Write final value to log since we didn't do anythin last step */
     {
-        print_ebin_header(fplog, step, step, state->lambda[efptFEP]);
+        print_ebin_header(fplog, step, step);
     }
     if (!do_ene || !do_log) /* Write final energy file entries */
     {
@@ -2469,7 +2469,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
 
         if (MASTER(cr))
         {
-            print_ebin_header(fplog, count, count, s_try->s.lambda[efptFEP]);
+            print_ebin_header(fplog, count, count);
         }
 
         if (count == 0)
