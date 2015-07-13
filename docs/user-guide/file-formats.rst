@@ -210,7 +210,7 @@ The ene file extension stands for binary energy file. It holds the
 energies as generated during your :ref:`gmx mdrun`.
 
 The file can be transformed to a portable energy file (portable
-accross hardware platforms), the :ref:`edr` file using the program
+across hardware platforms), the :ref:`edr` file using the program
 :ref:`gmx eneconv`.
 
 See also :ref:`gmx energy`.
@@ -334,7 +334,7 @@ were removed with ``-ignh``.
 itp
 ---
 
-The itp file extension stands for include toplogy. These files are included in
+The itp file extension stands for include topology. These files are included in
 topology files (with the :ref:`top` extension).
 
 .. _log:
@@ -718,16 +718,16 @@ structure files in the protein databank file format.  The protein
 databank file format describes the positions of atoms in a molecular
 structure. Coordinates are read from the ATOM and HETATM records,
 until the file ends or an ENDMDL record is encountered.
-GROMACS programs can read and write a simlation box in the
+GROMACS programs can read and write a simulation box in the
 CRYST1 entry.
 The pdb format can also be used as a trajectory format:
-several structures, seperated by ENDMDL, can be read from
+several structures, separated by ENDMDL, can be read from
 or written to one file.
 
 Example
 +++++++
 
-An pdb file should look like this::
+A pdb file should look like this::
 
     ATOM      1  H1  LYS     1      14.260   6.590  34.480  1.00  0.00
     ATOM      2  H2  LYS     1      13.760   5.000  34.340  1.00  0.00
@@ -741,7 +741,7 @@ An pdb file should look like this::
 rtp
 ---
 
-The rtp file extension stands for residue toplogy.
+The rtp file extension stands for residue topology.
 Such a file is needed by :ref:`gmx pdb2gmx`
 to make a GROMACS topology for a protein contained in a :ref:`pdb`
 file. The file contains the default interaction type for the 4 bonded
@@ -767,10 +767,10 @@ It is possible to put more than one dihedral on a rotatable bond.
 :ref:`gmx pdb2gmx` sets the number exclusions to 3, which
 means that interactions between atoms connected by at most 3 bonds are
 excluded. Pair interactions are generated for all pairs of atoms which are
-seperated by 3 bonds (except pairs of hydrogens).
+separated by 3 bonds (except pairs of hydrogens).
 When more interactions need to be excluded, or some pair interactions should
 not be generated, an ``[exclusions]`` field can be added, followed by
-pairs of atom names on seperate lines. All non-bonded and pair interactions
+pairs of atom names on separate lines. All non-bonded and pair interactions
 between these atoms will be excluded.
 
 A sample is included below.
