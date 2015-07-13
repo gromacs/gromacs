@@ -576,11 +576,18 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     /* Check if we have more than 1 physical core, if detected,
      * or more than 1 hardware thread if physical cores were not detected.
      */
+#if !(defined GMX_OPENMP) && !(defined GMX_MPI)
     if ((hwinfo->ncore > 1) ||
         (hwinfo->ncore == 0 && hwinfo->nthreads_hw_avail > 1))
     {
         md_print_warn(cr, fplog, "NOTE: GROMACS was compiled without OpenMP and (thread-)MPI support, can only use a single CPU core\n");
     }
+#else
+    GMX_UNUSED_VALUE(hwinfo);
+    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(fplog);
+#endif
+
 #endif /* GMX_OPENMP && GMX_MPI */
 }
 
