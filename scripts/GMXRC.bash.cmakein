@@ -74,6 +74,7 @@ unset old_IFS
 # and this shell supports extended globbing
 if test -n "${BASH_VERSION+set}" && (complete) > /dev/null 2>&1; then
   if (shopt -s extglob) > /dev/null 2>&1; then
+    shopt -s extglob
     if [ -f $GMXBIN/gmx-completion.bash ]; then
       source $GMXBIN/gmx-completion.bash
       for cfile in $GMXBIN/gmx-completion-*.bash ; do
@@ -81,12 +82,15 @@ if test -n "${BASH_VERSION+set}" && (complete) > /dev/null 2>&1; then
       done
     fi
   fi
-# read zsh completions if understand how to use them
-# Currently disabled, since the completions don't work with the new
-# gmx binary with subcommands.
-# Contributions to get the functionality back are welcome.
-#elif test -n "${ZSH_VERSION+set}" && compctl >& /dev/null; then
-#  if [ -f $GMXBIN/gmx-completion.zsh ]; then
-#    source $GMXBIN/gmx-completion.zsh;
-#  fi
+elif test -n "${ZSH_VERSION+set}" > /dev/null 2>&1 ; then
+  autoload bashcompinit
+  if (bashcompinit) > /dev/null 2>&1; then
+    bashcompinit
+    if [ -f $GMXBIN/gmx-completion.bash ]; then
+      source $GMXBIN/gmx-completion.bash
+      for cfile in $GMXBIN/gmx-completion-*.bash ; do
+        source $cfile
+      done
+    fi
+  fi
 fi
