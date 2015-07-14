@@ -218,7 +218,6 @@ File *ShellCompletionWriter::outputFile()
 void ShellCompletionWriter::startCompletions()
 {
     impl_->file_.reset(new File(impl_->binaryName_ + "-completion.bash", "w"));
-    impl_->file_->writeLine("shopt -s extglob");
 }
 
 void ShellCompletionWriter::writeModuleCompletions(
