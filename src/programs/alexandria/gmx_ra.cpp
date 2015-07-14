@@ -53,7 +53,7 @@ namespace alexandria
     this->atomnumber  = atomnumber;
     this->atype       = atype;
     this->atomtype    = strdup(atomtype);
-    this->nZeta       = pd->get_nzeta(iDistributionModel, this->atomtype);
+    this->nZeta       = pd->getNzeta(iDistributionModel, this->atomtype);
     if (this->nZeta <= 0)
       {
         bSetUpcorrectly = false;
@@ -72,11 +72,11 @@ namespace alexandria
     for (zz = 0; (zz < this->nZeta); zz++)
       {
         this->iq[zz]       = -1;
-        this->q[zz]        = pd->get_q( iDistributionModel, this->atomtype, zz);
+        this->q[zz]        = pd->getQ( iDistributionModel, this->atomtype, zz);
         this->iz[zz]       = -1;
         this->zeta_ref[zz] =
-	  this->zeta[zz] = pd->get_zeta( iDistributionModel, this->atomtype, zz);
-        this->row[zz]      = pd->get_row( iDistributionModel, this->atomtype, zz);
+	  this->zeta[zz] = pd->getZeta( iDistributionModel, this->atomtype, zz);
+        this->row[zz]      = pd->getRow( iDistributionModel, this->atomtype, zz);
       }
     bSetUpcorrectly = true;
   }

@@ -407,7 +407,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
     char   pbuf[256];
     double bondorder;
 
-    pd->set_length_unit( unit2string(eg2cPm));
+    pd->setLengthUnit( unit2string(eg2cPm));
     for (i = 0; (i < b->nbond); i++)
     {
         gmx_stats_get_average(b->bond[i].lsq, &av);
@@ -417,7 +417,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         bondorder = b->bond[i].order;
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        pd->add_bond( b->bond[i].a1, b->bond[i].a2, av, sig, N, bondorder, pbuf);
+        pd->addBond( b->bond[i].a1, b->bond[i].a2, av, sig, N, bondorder, pbuf);
         fprintf(fp, "bond-%s-%s len %g sigma %g (pm) N = %d%s\n",
                 b->bond[i].a1, b->bond[i].a2, av, sig, N,
                 (sig > 1.5) ? " WARNING" : "");
@@ -438,7 +438,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         {
             sprintf(pbuf, "%g", klin);
         }
-        pd->add_angle(
+        pd->addAngle(
                               b->angle[i].a1, b->angle[i].a2,
                               b->angle[i].a3, av, sig, N, pbuf);
         fprintf(fp, "angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
@@ -453,7 +453,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         sprintf(pbuf, "%g  1", kp);
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        pd->add_dihedral( egdPDIHS,
+        pd->addDihedral( egdPDIHS,
                                  b->dih[i].a1, b->dih[i].a2,
                                  b->dih[i].a3, b->dih[i].a4, av, sig, N, pbuf);
         fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
@@ -467,7 +467,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata * pd,
         sprintf(pbuf, "%g  1", kp);
         // Rounding the numbers to 1/10 pm and 1/10 degree
         round_numbers(&av, &sig);
-        pd->add_dihedral( egdIDIHS,
+        pd->addDihedral( egdIDIHS,
                                  b->imp[i].a1, b->imp[i].a2,
                                  b->imp[i].a3, b->imp[i].a4, av, sig, N, pbuf);
         fprintf(fp, "improper-%s-%s-%s-%s angle %g sigma %g (deg)\n",
@@ -603,7 +603,7 @@ int alex_bastat(int argc, char *argv[])
                 }
                 continue;
             }
-#define BTP(ii) pd->atype_to_btype( *mmi.topology_->atoms.atomtype[ii])
+#define BTP(ii) pd->atypeToBtype( *mmi.topology_->atoms.atomtype[ii])
             for (i = 0; (i < mmi.topology_->atoms.nr); i++)
             {
                 if (NULL == BTP(i))

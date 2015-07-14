@@ -57,12 +57,12 @@ namespace alexandria
   
     // void done();
   
-    int generate_charges_sm(FILE *fp,
+    int generateChargesSm(FILE *fp,
 			    Poldata * pd, t_atoms *atoms,
 			    real tol, int maxiter, gmx_atomprop_t aps,
 			    real *chieq);
 
-    int generate_charges(FILE *fp,
+    int generateCharges(FILE *fp,
 			 Resp * gr, const char *molname,
 			 Poldata * pd,
 			 t_atoms *atoms,
@@ -73,18 +73,18 @@ namespace alexandria
     gmx_bool SplitQ(ChargeDistributionModel iDistributionModel);
   
     /* The routines below return NOTSET if something is out of the ordinary */
-    int get_nzeta(int atom);
+    int getNzeta(int atom);
   
-    int get_row(int atom, int z);
+    int getRow(int atom, int z);
   
-    double get_q(int atom, int z);
+    double getQ(int atom, int z);
 
-    void check_support(Poldata * pd, gmx_atomprop_t aps);
+    void checkSupport(Poldata * pd, gmx_atomprop_t aps);
   
-    void save_params( Resp * gr);
+    void saveParams( Resp * gr);
   
-    void get_params( Resp *  gr);
-    double get_zeta(int atom, int z);
+    void getParams( Resp *  gr);
+    double getZeta(int atom, int z);
   
 
     void print(FILE *fp, t_atoms *atoms);
@@ -92,46 +92,48 @@ namespace alexandria
     void debugFun(FILE *fp);
 
   private:
-    gmx_bool                  bWarned = false;
+    gmx_bool                  bWarned;
     ChargeDistributionModel   iChargeDistributionModel;
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm;
-    int                       natom = 0, eQGEN = 0;
-    real                      qtotal = 0, chieq = 0, hfac = 0, epsr = 0;
+    int                       natom, eQGEN;
+    real                      qtotal, chieq, hfac, epsr;
     /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
-    char                    **elem  = NULL;
-    int                      *atomnr  = NULL;
-    real                     *chi0  = NULL, *rhs  = NULL, *j00  = NULL;
-    rvec                     *x  = NULL;
+    std::vector<char *>                    elem;
+    std::vector<int>                      atomnr;
+    std::vector<real>                     chi0, rhs, j00;
+    std::vector<rvec>                     x;
     /* Jab is a matrix over atom pairs */
-    real                    **Jab  = NULL;
+    std::vector<std::vector<real> >                    Jab;
     /* For each atom i there are nZeta[i] row, q and zeta entries */
-    int                      *nZeta =  NULL;
-    int                     **row =  NULL;
-    gmx_bool                  bAllocSave = false;
-    real                    **q = NULL, **zeta  = NULL, **qsave  = NULL, **zetasave  = NULL;
+    std::vector<int>                      nZeta;
+    std::vector<std::vector<int> >                     row;
+    gmx_bool                  bAllocSave;
+    std::vector<std::vector<real> >                    q, zeta, qsave, zetasave;
   
   
-    real calc_jab(ChargeDistributionModel iChargeDistributionModel,
+    real calcJab(ChargeDistributionModel iChargeDistributionModel,
 		  rvec xi, rvec xj,
 		  int nZi, int nZj,
-		  real *zeta_i, real *zeta_j,
-		  int *rowi, int *rowj);
+		  std::vector<real> zeta_i,
+		  std::vector<real> zeta_j,
+		  std::vector<int> rowi, 
+		  std::vector<int> rowj);
 
-    void calc_Jab();
+    void calcJab();
   
-    void solve_q_eem(FILE *fp,  real hardsness_factor);
+    void solveQEem(FILE *fp,  real hardsness_factor);
   
-    void update_J00();
+    void updateJ00();
   
-    real calc_Sij(int i, int j);
+    real calcSij(int i, int j);
 
-    void update_pd(t_atoms *atoms, Poldata * pd);
+    void updatePd(t_atoms *atoms, Poldata * pd);
   
-    int generate_charges_bultinck(FILE *fp,
+    int generateChargesBultinck(FILE *fp,
 				  Poldata * pd, t_atoms *atoms,
 				  gmx_atomprop_t aps);
 
-    void calc_rhs();  
+    void calcRhs();  
   };
 }
 #endif

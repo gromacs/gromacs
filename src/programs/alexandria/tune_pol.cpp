@@ -193,7 +193,7 @@ static void dump_csv(Poldata *                     pd,
                  ani < mci->EndAtomNum(); ani++)
             {
                 const char  *atomname = ani->getAtom().c_str();
-                const char  *ptype    = pd->atype_to_ptype(atomname);
+                const char  *ptype    = pd->atypeToPtype(atomname);
                 unsigned int i;
                 for (i = 0; (i < ptypes.size()); i++)
                 {
@@ -255,7 +255,7 @@ static int decompose_frag(FILE *fplog,
     // Copy all atom types into array. Set usage array.
     {
         char *ptype;
-        while (1 == pd->get_ptype( &ptype, NULL, NULL, NULL, NULL))
+        while (1 == pd->getPtype( &ptype, NULL, NULL, NULL, NULL))
         {
 
             if (!bZeroPol(ptype, zeropol))
@@ -303,7 +303,7 @@ static int decompose_frag(FILE *fplog,
                  (bUseMol && (ani < mci->EndAtomNum())); ++ani)
             {
                 const char *atomname = ani->getAtom().c_str();
-                const char *ptype    = pd->atype_to_ptype( atomname);
+                const char *ptype    = pd->atypeToPtype( atomname);
                 if (NULL == ptype)
                 {
                     if (NULL != fplog)
@@ -318,7 +318,7 @@ static int decompose_frag(FILE *fplog,
                     npolarizable++;
                 }
 #ifdef OLD
-                else if (0 == pd->get_ptype_pol( ptype, &apol, &spol))
+                else if (0 == pd->getPtypePol( ptype, &apol, &spol))
                 {
                     /* No polarizability found for this one, seems unnecessary
                      * as we first lookup the polarizability ptype */
@@ -369,7 +369,7 @@ static int decompose_frag(FILE *fplog,
         {
             pi->resetCopies();
 
-            if ((1 == pd->get_ptype_pol( pi->name().c_str(),
+            if ((1 == pd->getPtypePol( pi->name().c_str(),
                                                 &pol, &sig_pol)) &&
                 ((pol == 0) || bForceFit))
             {
@@ -381,7 +381,7 @@ static int decompose_frag(FILE *fplog,
                          ani < mci->EndAtomNum(); ani++)
                     {
                         if (strcmp(pi->name().c_str(),
-                                   pd->atype_to_ptype( ani->getAtom().c_str())) == 0)
+                                   pd->atypeToPtype( ani->getAtom().c_str())) == 0)
                         {
                             pi->incCopies();
                             break;
@@ -564,7 +564,7 @@ static int decompose_frag(FILE *fplog,
         if ((estatsOK == (result1 = gmx_stats_get_average(i->stats(), &aver))) &&
             (estatsOK == (result2 = gmx_stats_get_sigma(i->stats(), &sigma))))
         {
-            pd->set_ptype_polarizability( i->name().c_str(), aver, sigma);
+            pd->setPtypePolarizability( i->name().c_str(), aver, sigma);
             fprintf(fplog, "%-5s  %8.3f +/- %.3f\n", i->name().c_str(), aver, sigma);
             int   nbins = 1+sqrt(nBootStrap);
             real *my_x, *my_y;
@@ -589,7 +589,7 @@ static int decompose_frag(FILE *fplog,
     if (bZero)
     {
         const char *null = (const char *)"0";
-        pd->add_ptype( null, NULL, null, a0, 0);
+        pd->addPtype( null, NULL, null, a0, 0);
     }
     sfree(fpp);
     free_matrix(a);

@@ -208,11 +208,11 @@ static void dump_index_count(t_index_count *ic, FILE *fp,
         fprintf(fp, "Name  Number  Action   #Zeta\n");
         for (i = 0; (i < ic->n); i++)
         {
-            nZeta = pd->get_nzeta(iDistributionModel, ic->name[i]);
+            nZeta = pd->getNzeta(iDistributionModel, ic->name[i]);
             nZopt = 0;
             for (j = 0; (j < nZeta); j++)
             {
-                zz = pd->get_zeta(iDistributionModel, ic->name[i], j);
+                zz = pd->getZeta(iDistributionModel, ic->name[i], j);
                 if (zz > 0)
                 {
                     nZopt++;
@@ -275,7 +275,7 @@ static void update_index_count_bool(t_index_count *ic, Poldata * pd,
     for (std::vector<std::string>::iterator k = ptr.begin();
          (k < ptr.end()); ++k)
     {
-        if (pd->have_eem_support(iDistributionModel, k->c_str(), bAllowZero))
+        if (pd->haveEemSupport(iDistributionModel, k->c_str(), bAllowZero))
         {
             add_index_count(ic, k->c_str(), bSet);
         }
@@ -309,11 +309,11 @@ static int check_data_sufficiency(FILE *fp,
     }
     else
     {
-        while (pd->get_eemprops(&mymodel, &myname, NULL, NULL, NULL, NULL, NULL) != 0)
+        while (pd->getEemprops(&mymodel, &myname, NULL, NULL, NULL, NULL, NULL) != 0)
         {
             if ((mymodel == iDistributionModel) &&
                 !const_index_count(ic, myname) &&
-                pd->have_eem_support( iDistributionModel, myname, FALSE))
+                pd->haveEemSupport( iDistributionModel, myname, FALSE))
             {
                 add_index_count(ic, myname, FALSE);
             }
@@ -521,12 +521,12 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
         gmx_fatal(FARGS, "Can not read the force field information. File %s missing or incorrect.", pd_fn);
     }
 
-    if ((n = _pd->get_numprops(_iChargeDistributionModel)) == 0)
+    if ((n = _pd->getNumprops(_iChargeDistributionModel)) == 0)
     {
         gmx_fatal(FARGS, "File %s does not contain the requested parameters for model %d", pd_fn, _iChargeDistributionModel);
     }
 
-    nexcl = _pd->get_nexcl();
+    nexcl = _pd->getNexcl();
 
     if (NULL != fp)
     {
@@ -899,7 +899,7 @@ void MolDip::CalcDeviation()
     }
     if (PAR(_cr))
     {
-    _pd->comm_eemprops(_cr);
+    _pd->commEemprops(_cr);
     }
     init_nrnb(&my_nrnb);
     snew(epot, 1);
@@ -932,7 +932,7 @@ void MolDip::CalcDeviation()
             }
             /*if (strcmp(mymol->molname,"1-butene") == 0)
                fprintf(stderr,"Ready for %s\n",mymol->molname);*/
-            eQ = mymol->qgen_->generate_charges_sm(debug,
+            eQ = mymol->qgen_->generateChargesSm(debug,
                                      _pd, &(mymol->topology_->atoms),
                                      1e-4, 100, _atomprop,
                                      &(mymol->chieq));

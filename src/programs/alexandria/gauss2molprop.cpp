@@ -117,7 +117,7 @@ int alex_gauss2molprop(int argc, char *argv[])
         alexandria::MolProp mmm;
 
         ReadGauss(fns[i], mmm, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd->get_force_field());
+                  maxpot, nsymm, pd->getForceField());
         mp.push_back(mmm);
     }
 

@@ -180,7 +180,7 @@ namespace alexandria
       {
         for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
 	  {
-            Resp::set_zeta( i, zz, pd->get_zeta( this->iDistributionModel,
+            Resp::set_zeta( i, zz, pd->getZeta( this->iDistributionModel,
 						 this->ra[i]->atomtype, zz));
 	  }
       }
@@ -876,7 +876,7 @@ namespace alexandria
 		break;
 	      default:
 		gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
-			  alexandria::Poldata::get_eemtype_name(this->iDistributionModel));
+			  alexandria::Poldata::getEemtypeName(this->iDistributionModel));
 	      }
             V  += vv;
 	  }

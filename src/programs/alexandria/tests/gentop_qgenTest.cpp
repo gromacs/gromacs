@@ -62,7 +62,7 @@ class gentopQgenTest : public ::testing::Test
 
 //init sett tolecrance
         gentopQgenTest ( )
-	  :refData_(gmx::test::erefdataUpdateAll), checker_(refData_.rootChecker())
+	  :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
         {
 	  
 

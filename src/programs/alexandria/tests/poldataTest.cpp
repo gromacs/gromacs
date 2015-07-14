@@ -63,7 +63,7 @@ protected:
 
   //init sett tolecrance
   PoldataTest ( )
-    :refData_(gmx::test::erefdataUpdateAll), checker_(refData_.rootChecker())
+    :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
   {
 	  
 
@@ -104,7 +104,7 @@ protected:
     char                    *name;
     double                   J0;
     std::vector<double>      values;
-    pd->get_atype(NULL,
+    pd->getAtype(NULL,
 		  NULL,
 		  &name,
 		  NULL,
@@ -114,7 +114,7 @@ protected:
     //	  pd->get_eemprops( &eqg_model, &name, &J0, &chi0, NULL, NULL, NULL);
     for (int model = 0; model < (int) 2; model++)
       {
-	values.push_back(pd->get_chi0((ChargeDistributionModel)model, name));
+	values.push_back(pd->getChi0((ChargeDistributionModel)model, name));
       }
     checker_.checkSequence(values.begin(), values.end(), "chi");
   }
@@ -135,7 +135,7 @@ TEST_F (PoldataTest, row){
   std::vector<double>      values;
   
   
-  pd->get_atype(NULL,
+  pd->getAtype(NULL,
 		NULL,
 		&name,
 		NULL,
@@ -149,7 +149,7 @@ TEST_F (PoldataTest, row){
     {
       for (int model = 0; model < (int) 2; model++)
 	{
-	  values.push_back(pd->get_row((ChargeDistributionModel)model, name, atomNr));
+	  values.push_back(pd->getRow((ChargeDistributionModel)model, name, atomNr));
         }
     }
   checker_.checkSequence(values.begin(), values.end(), "row");
@@ -161,7 +161,7 @@ TEST_F (PoldataTest, zeta)
   char                    *name;
   double                   J0;
   std::vector<double>      values;
-  pd->get_atype(NULL,
+  pd->getAtype(NULL,
 		NULL,
 		&name,
 		NULL,
@@ -175,7 +175,7 @@ TEST_F (PoldataTest, zeta)
     {
       for (int model = 0; model < (int) 2; model++)
 	{
-	  values.push_back(pd->get_zeta((ChargeDistributionModel)model, name, atomNr));
+	  values.push_back(pd->getZeta((ChargeDistributionModel)model, name, atomNr));
         }
     }
   checker_.checkSequence(values.begin(), values.end(), "zeta");

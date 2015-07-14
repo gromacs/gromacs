@@ -60,7 +60,7 @@ static void calc_frag_miller(Poldata *                     pd,
 
     ang3    = unit2string(eg2cAngstrom3);
     program = ShortProgram();
-    if (0 == pd->get_bosque_pol( null, &bos0))
+    if (0 == pd->getBosquePol( null, &bos0))
     {
         gmx_fatal(FARGS, "Can not find Bosque polarizability for %s", null);
     }
@@ -89,16 +89,16 @@ static void calc_frag_miller(Poldata *                     pd,
                         switch (ic)
                         {
                             case alexandria::iCalexandria:
-                                bSupport = (pd->get_atype_pol( (char *)atomname, &polar, &sig_pol) == 1);
+                                bSupport = (pd->getAtypePol( (char *)atomname, &polar, &sig_pol) == 1);
                                 break;
                             case alexandria::iCbosque:
-                                bSupport = (pd->get_bosque_pol( (char *)atomname, &polar) == 1);
+                                bSupport = (pd->getBosquePol( (char *)atomname, &polar) == 1);
                                 sig_pol  = 0;
                                 break;
                             case alexandria::iCmiller:
                                 double tau_ahc, alpha_ahp;
                                 int    atomnumber;
-                                bSupport = (pd->get_miller_pol( (char *)atomname, &atomnumber, &tau_ahc, &alpha_ahp) == 1);
+                                bSupport = (pd->getMillerPol( (char *)atomname, &atomnumber, &tau_ahc, &alpha_ahp) == 1);
 
                                 ahc   += tau_ahc*natom;
                                 ahp   += alpha_ahp*natom;

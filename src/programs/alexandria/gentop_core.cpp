@@ -348,7 +348,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
         }
         else
         {
-            while (pd->get_symcharges(&central,
+            while (pd->getSymcharges(&central,
                                               &attached, &nattached) == 1)
             {
                 anr_central  = gmx_atomprop_atomnumber(aps, central);

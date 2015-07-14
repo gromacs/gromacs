@@ -374,7 +374,7 @@ int alex_gentop(int argc, char *argv[])
     if (bVerbose)
     {
         printf("Reading force field information. There are %d atomtypes.\n",
-               pd->get_natypes());
+               pd->getNatypes());
     }
 
     if (strlen(dbname) > 0)
@@ -420,7 +420,7 @@ int alex_gentop(int argc, char *argv[])
             molnm = (char *)"XXX";
         }
         ReadGauss(fn, mp, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd->get_force_field());
+                  maxpot, nsymm, pd->getForceField());
         mps.push_back(mp);
         mpi = mps.begin();
     }

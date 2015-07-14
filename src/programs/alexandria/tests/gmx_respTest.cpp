@@ -62,7 +62,7 @@ class RespTest : public ::testing::Test
 
 //init sett tolecrance
         RespTest ( )
-	  :refData_(gmx::test::erefdataUpdateAll), checker_(refData_.rootChecker())
+	  :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
         {
 	  
 

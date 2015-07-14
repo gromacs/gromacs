@@ -939,11 +939,11 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
     char                    buf[STRLEN];
 
     nmax = 1+(int)(rcut/spacing);
-    while (1 == pd->get_eemprops( &eqg_model, &name, &J0, &chi0, NULL, NULL, NULL))
+    while (1 == pd->getEemprops( &eqg_model, &name, &J0, &chi0, NULL, NULL, NULL))
     {
         if (eqg_model == iDistributionModel)
         {
-            nzeta = pd->get_nzeta( iDistributionModel, name);
+            nzeta = pd->getNzeta( iDistributionModel, name);
             snew(zeta, nzeta);
             snew(q, nzeta);
             snew(row, nzeta);
@@ -951,10 +951,10 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
             qtot = 0;
             for (j = 0; (j < nzeta); j++)
             {
-                zeta[j] = pd->get_zeta( iDistributionModel, name, j);
-                q[j]    = pd->get_q( iDistributionModel, name, j);
+                zeta[j] = pd->getZeta( iDistributionModel, name, j);
+                q[j]    = pd->getQ( iDistributionModel, name, j);
                 qtot   += q[j];
-                row[j]  = pd->get_row( iDistributionModel, name, j);
+                row[j]  = pd->getRow( iDistributionModel, name, j);
                 switch (iDistributionModel)
                 {
                     case eqdAXg:
@@ -965,7 +965,7 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
                         break;
                     default:
                         gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                  Poldata::get_eemtype_name(iDistributionModel));
+                                  Poldata::getEemtypeName(iDistributionModel));
                 }
             }
             if (q[nzeta-1] == 0)
@@ -994,7 +994,7 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
                                 break;
                             default:
                                 gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                          Poldata::get_eemtype_name(iDistributionModel));
+                                          Poldata::getEemtypeName(iDistributionModel));
                         }
                     }
                 }
@@ -1031,7 +1031,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
     snew(zeta, natypemax);
     snew(q, natypemax);
     snew(row, natypemax);
-    while (1 == pd->get_eemprops( &eqg_model, &name[natype],
+    while (1 == pd->getEemprops( &eqg_model, &name[natype],
                                   &J0[natype], &chi0[natype],
                                   NULL, NULL, NULL))
     {
@@ -1054,15 +1054,15 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
     snew(bSplit, natype);
     for (i = 0; (i < natype); i++)
     {
-        nzeta[i] = pd->get_nzeta( iDistributionModel, name[i]);
+        nzeta[i] = pd->getNzeta( iDistributionModel, name[i]);
         snew(zeta[i], nzeta[i]);
         snew(q[i], nzeta[i]);
         snew(row[i], nzeta[i]);
         for (j = 0; (j < nzeta[i]); j++)
         {
-            zeta[i][j] = pd->get_zeta( iDistributionModel, name[i], j);
-            q[i][j]    = pd->get_q( iDistributionModel, name[i], j);
-            row[i][j]  = pd->get_row( iDistributionModel, name[i], j);
+            zeta[i][j] = pd->getZeta( iDistributionModel, name[i], j);
+            q[i][j]    = pd->getQ( iDistributionModel, name[i], j);
+            row[i][j]  = pd->getRow( iDistributionModel, name[i], j);
         }
         /* The bSplit array determines whether a particle is split in a nucleus
            and a shell, by checking whether there are more than one charges. */
@@ -1135,7 +1135,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
                                         break;
                                     default:
                                         gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                                  Poldata::get_eemtype_name(iDistributionModel));
+                                                  Poldata::getEemtypeName(iDistributionModel));
                                 }
                                 /* Note how charges are being handled:
                                    The "shell" charge is taken to be 1, because
