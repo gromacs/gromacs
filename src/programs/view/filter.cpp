@@ -36,13 +36,12 @@
  */
 #include "gmxpre.h"
 
-#include <string.h>
-
 #include <algorithm>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/dir_separator.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
