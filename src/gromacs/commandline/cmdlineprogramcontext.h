@@ -72,10 +72,10 @@ namespace gmx
  *
  * \inlibraryapi
  */
-class ExecutableEnvironmentInterface
+class IExecutableEnvironment
 {
     public:
-        virtual ~ExecutableEnvironmentInterface() {}
+        virtual ~IExecutableEnvironment() {}
 
         /*! \brief
          * Returns the working directory when the program was launched.
@@ -90,8 +90,8 @@ class ExecutableEnvironmentInterface
         virtual std::vector<std::string> getExecutablePaths() const = 0;
 };
 
-//! Shorthand for a smart pointer to ExecutableEnvironmentInterface.
-typedef boost::shared_ptr<ExecutableEnvironmentInterface>
+//! Shorthand for a smart pointer to IExecutableEnvironment.
+typedef boost::shared_ptr<IExecutableEnvironment>
     ExecutableEnvironmentPointer;
 
 /*! \libinternal \brief
@@ -109,7 +109,7 @@ typedef boost::shared_ptr<ExecutableEnvironmentInterface>
  *
  * \inlibraryapi
  */
-class CommandLineProgramContext : public ProgramContextInterface
+class CommandLineProgramContext : public IProgramContext
 {
     public:
         /*! \brief
@@ -143,13 +143,13 @@ class CommandLineProgramContext : public ProgramContextInterface
          * \param[in] env   Customizes the way the binary name is handled.
          *
          * This overload allows one to customize the way the binary is located
-         * by providing a custom ExecutableEnvironmentInterface implementation.
+         * by providing a custom IExecutableEnvironment implementation.
          * This is mainly useful for testing purposes to make it possible to
          * test different paths without setting environment variables, changing
          * the working directory or doing other process-wide operations.
          * It may also be useful for making Gromacs behave better when linked
          * into a non-Gromacs executable (with possible extensions in
-         * ExecutableEnvironmentInterface).
+         * IExecutableEnvironment).
          */
         CommandLineProgramContext(int argc, const char *const argv[],
                                   ExecutableEnvironmentPointer env);

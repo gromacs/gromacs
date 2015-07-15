@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements gmx::ProgramContextInterface and related methods.
+ * Implements gmx::IProgramContext and related methods.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
@@ -55,14 +55,14 @@ namespace
 //! \{
 
 /*! \brief
- * Default implementation of ProgramContextInterface.
+ * Default implementation of IProgramContext.
  *
  * This implementation is used if nothing has been set with
  * setProgramContext().
  *
  * Since it is constructed using a global initializer, it should not throw.
  */
-class DefaultProgramContext : public ProgramContextInterface
+class DefaultProgramContext : public IProgramContext
 {
     public:
         DefaultProgramContext() {}
@@ -78,7 +78,7 @@ class DefaultProgramContext : public ProgramContextInterface
 };
 
 //! Global program info; stores the object set with setProgramContext().
-const ProgramContextInterface *g_programContext;
+const IProgramContext         *g_programContext;
 //! Default program context if nothing is set.
 const DefaultProgramContext    g_defaultContext;
 
@@ -86,7 +86,7 @@ const DefaultProgramContext    g_defaultContext;
 
 }   // namespace
 
-const ProgramContextInterface &getProgramContext()
+const IProgramContext &getProgramContext()
 {
     if (g_programContext != NULL)
     {
@@ -95,7 +95,7 @@ const ProgramContextInterface &getProgramContext()
     return g_defaultContext;
 }
 
-void setProgramContext(const ProgramContextInterface *programContext)
+void setProgramContext(const IProgramContext *programContext)
 {
     g_programContext = programContext;
 }

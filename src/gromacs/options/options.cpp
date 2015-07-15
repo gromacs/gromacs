@@ -56,10 +56,10 @@ namespace gmx
 {
 
 /********************************************************************
- * OptionManagerInterface
+ * IOptionManager
  */
 
-OptionManagerInterface::~OptionManagerInterface()
+IOptionManager::~IOptionManager()
 {
 }
 
@@ -157,7 +157,7 @@ void Options::setDescription(const ConstArrayRef<const char *> &descArray)
     impl_->description_ = joinStrings(descArray, "\n");
 }
 
-void Options::addManager(OptionManagerInterface *manager)
+void Options::addManager(IOptionManager *manager)
 {
     GMX_RELEASE_ASSERT(impl_->parent_ == NULL,
                        "Can only add a manager in a top-level Options object");

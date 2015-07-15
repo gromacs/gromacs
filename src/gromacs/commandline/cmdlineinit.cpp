@@ -158,16 +158,16 @@ int processExceptionAtExitForCommandLine(const std::exception &ex)
 }
 
 int runCommandLineModule(int argc, char *argv[],
-                         CommandLineModuleInterface *module)
+                         ICommandLineModule *module)
 {
     return CommandLineModuleManager::runAsMainSingleModule(argc, argv, module);
 }
 
 int runCommandLineModule(int argc, char *argv[],
                          const char *name, const char *description,
-                         CommandLineOptionsModuleInterface *(*factory)())
+                         ICommandLineOptionsModule *(*factory)())
 {
-    return CommandLineOptionsModuleInterface::runAsMain(
+    return ICommandLineOptionsModule::runAsMain(
             argc, argv, name, description, factory);
 }
 

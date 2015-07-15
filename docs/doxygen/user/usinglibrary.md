@@ -18,11 +18,11 @@ low-level functions.
    the facilities provided by \ref module_commandline.  There are a few
    different alternatives, depending on how much control you want to give
    \Gromacs:
-    - For C++ code, you can implement gmx::CommandLineOptionsModuleInterface and
+    - For C++ code, you can implement gmx::ICommandLineOptionsModule and
       use gmx::runCommandLineModule() to execute it.  This interface assumes
       the use of the gmx::Options mechanism for declaring command-line options
       (see \ref module_options).
-      For a lower-level interface, gmx::CommandLineModuleInterface can be used,
+      For a lower-level interface, gmx::ICommandLineModule can be used,
       but this requires you to implement `-h` output and command-line parsing
       yourself (possibly using classes that \Gromacs provides).
     - For C code, you can use gmx_run_cmain() to wrap an existing C main
@@ -37,7 +37,7 @@ low-level functions.
       routines.  This allows you to write your own handling for command line
       options from scratch.  This is also discussed in \ref module_commandline.
  - For most control, you can use gmx::init() to do basic initialization, create
-   your own implementation for gmx::ProgramContextInterface, and set that using
+   your own implementation for gmx::IProgramContext, and set that using
    gmx::setProgramContext().  This allows you to customize how the \Gromacs
    library shows the name of the program in messages, as well as how it locates
    its own data files.

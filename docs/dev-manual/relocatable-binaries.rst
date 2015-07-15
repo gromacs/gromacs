@@ -134,7 +134,7 @@ implementation, which works like this:
 The above logic to find the installation prefix is in
 ``src/gromacs/commandline/cmdlineprogramcontext.cpp``.  Note that code that
 links to ``libgromacs`` can provide an alternative implementation for
-``gmx::ProgramContextInterface`` for locating the data files, and is then fully
+``gmx::IProgramContext`` for locating the data files, and is then fully
 responsible of the above considerations.
 
 Information about the used data directories is printed into the console output

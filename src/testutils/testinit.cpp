@@ -88,7 +88,7 @@ namespace
  *
  * \ingroup module_testutils
  */
-class TestProgramContext : public ProgramContextInterface
+class TestProgramContext : public IProgramContext
 {
     public:
         /*! \brief
@@ -96,7 +96,7 @@ class TestProgramContext : public ProgramContextInterface
          *
          * \param[in] context  Current \Gromacs program context.
          */
-        explicit TestProgramContext(const ProgramContextInterface &context)
+        explicit TestProgramContext(const IProgramContext &context)
             : context_(context), dataPath_(CMAKE_SOURCE_DIR)
         {
         }
@@ -131,7 +131,7 @@ class TestProgramContext : public ProgramContextInterface
         }
 
     private:
-        const ProgramContextInterface   &context_;
+        const IProgramContext           &context_;
         std::string                      dataPath_;
 };
 

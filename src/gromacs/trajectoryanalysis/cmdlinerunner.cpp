@@ -285,7 +285,7 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
  * \ingroup module_trajectoryanalysis
  */
 class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
-    : public CommandLineModuleInterface
+    : public ICommandLineModule
 {
     public:
         /*! \brief

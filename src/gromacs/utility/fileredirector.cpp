@@ -49,11 +49,11 @@
 namespace gmx
 {
 
-FileInputRedirectorInterface::~FileInputRedirectorInterface()
+IFileInputRedirector::~IFileInputRedirector()
 {
 }
 
-FileOutputRedirectorInterface::~FileOutputRedirectorInterface()
+IFileOutputRedirector::~IFileOutputRedirector()
 {
 }
 
@@ -68,7 +68,7 @@ namespace
  *
  * \ingroup module_utility
  */
-class DefaultInputRedirector : public FileInputRedirectorInterface
+class DefaultInputRedirector : public IFileInputRedirector
 {
     public:
         virtual bool fileExists(const char *filename) const
@@ -86,7 +86,7 @@ class DefaultInputRedirector : public FileInputRedirectorInterface
  *
  * \ingroup module_utility
  */
-class DefaultOutputRedirector : public FileOutputRedirectorInterface
+class DefaultOutputRedirector : public IFileOutputRedirector
 {
     public:
         virtual TextOutputStream &standardOutput()
@@ -102,13 +102,13 @@ class DefaultOutputRedirector : public FileOutputRedirectorInterface
 }   // namespace
 
 //! \cond libapi
-FileInputRedirectorInterface &defaultFileInputRedirector()
+IFileInputRedirector &defaultFileInputRedirector()
 {
     static DefaultInputRedirector instance;
     return instance;
 }
 
-FileOutputRedirectorInterface &defaultFileOutputRedirector()
+IFileOutputRedirector &defaultFileOutputRedirector()
 {
     static DefaultOutputRedirector instance;
     return instance;

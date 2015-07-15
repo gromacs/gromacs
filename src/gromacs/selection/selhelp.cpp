@@ -774,7 +774,7 @@ void KeywordsHelpTopic::writeKeywordSubTopics(const HelpWriterContext &context) 
             }
         }
 
-        const HelpTopicInterface *subTopic = findSubTopic(iter->first.c_str());
+        const IHelpTopic         *subTopic = findSubTopic(iter->first.c_str());
         GMX_RELEASE_ASSERT(subTopic != NULL, "Keyword subtopic no longer exists");
         HelpWriterContext         subContext(context);
         subContext.enterSubSection(title);

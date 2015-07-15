@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::ProgramContextInterface and related methods.
+ * Declares gmx::IProgramContext and related methods.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -51,7 +51,7 @@ namespace gmx
 
 /*! \brief
  * Provides information about installation prefix (see
- * ProgramContextInterface::installationPrefix()).
+ * IProgramContext::installationPrefix()).
  *
  * \inpublicapi
  */
@@ -109,7 +109,7 @@ struct InstallationPrefixInfo
  * \see setProgramContext()
  * \inpublicapi
  */
-class ProgramContextInterface
+class IProgramContext
 {
     public:
         /*! \brief
@@ -164,11 +164,11 @@ class ProgramContextInterface
         virtual const char *commandLine() const = 0;
 
     protected:
-        virtual ~ProgramContextInterface() {}
+        virtual ~IProgramContext() {}
 };
 
 /*! \brief
- * Returns the global ProgramContextInterface instance.
+ * Returns the global IProgramContext instance.
  *
  * \returns The context set with setProgramContext().
  *
@@ -185,11 +185,11 @@ class ProgramContextInterface
  * the presence of such calls.  For example, initForCommandLine() assumes that
  * such calls do not exist to be able to free the context before exiting.
  *
- * \see ProgramContextInterface
+ * \see IProgramContext
  */
-const ProgramContextInterface &getProgramContext();
+const IProgramContext &getProgramContext();
 /*! \brief
- * Sets the global ProgramContextInterface instance.
+ * Sets the global IProgramContext instance.
  *
  * \param[in] context  Program context to set
  *     (can be NULL to restore the default context).
@@ -209,9 +209,9 @@ const ProgramContextInterface &getProgramContext();
  *
  * Does not throw.
  *
- * \see ProgramContextInterface
+ * \see IProgramContext
  */
-void setProgramContext(const ProgramContextInterface *context);
+void setProgramContext(const IProgramContext *context);
 
 //! \}
 

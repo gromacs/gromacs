@@ -82,10 +82,10 @@ namespace
  */
 
 /*! \brief
- * Implements a CommandLineModuleInterface, given a function with C/C++ main()
+ * Implements a ICommandLineModule, given a function with C/C++ main()
  * signature.
  */
-class CMainCommandLineModule : public CommandLineModuleInterface
+class CMainCommandLineModule : public ICommandLineModule
 {
     public:
         //! \copydoc gmx::CommandLineModuleManager::CMainFunction
@@ -263,7 +263,7 @@ class CommandLineModuleManager::Impl
          * options).  Also finds the module that should be run and the
          * arguments that should be passed to it.
          */
-        CommandLineModuleInterface *
+        ICommandLineModule *
         processCommonOptions(CommandLineCommonOptionsHolder *optionsHolder,
                              int *argc, char ***argv);
 
@@ -292,7 +292,7 @@ class CommandLineModuleManager::Impl
          */
         CommandLineHelpModule       *helpModule_;
         //! If non-NULL, run this module in single-module mode.
-        CommandLineModuleInterface  *singleModule_;
+        ICommandLineModule          *singleModule_;
         //! Stores the value set with setQuiet().
         bool                         bQuiet_;
 
@@ -339,12 +339,12 @@ CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
     return modules_.find(name);
 }
 
-CommandLineModuleInterface *
+ICommandLineModule *
 CommandLineModuleManager::Impl::processCommonOptions(
         CommandLineCommonOptionsHolder *optionsHolder, int *argc, char ***argv)
 {
     // Check if we are directly invoking a certain module.
-    CommandLineModuleInterface *module = singleModule_;
+    ICommandLineModule *module = singleModule_;
 
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
@@ -437,13 +437,13 @@ void CommandLineModuleManager::setQuiet(bool bQuiet)
 }
 
 void CommandLineModuleManager::setOutputRedirector(
-        FileOutputRedirectorInterface *output)
+        IFileOutputRedirector *output)
 {
     impl_->ensureHelpModuleExists();
     impl_->helpModule_->setOutputRedirector(output);
 }
 
-void CommandLineModuleManager::setSingleModule(CommandLineModuleInterface *module)
+void CommandLineModuleManager::setSingleModule(ICommandLineModule *module)
 {
     impl_->singleModule_ = module;
 }
@@ -480,7 +480,7 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
-    CommandLineModuleInterface    *module;
+    ICommandLineModule            *module;
     const bool                     bMaster = (gmx_node_rank() == 0);
     bool                           bQuiet  = impl_->bQuiet_ || !bMaster;
     CommandLineCommonOptionsHolder optionsHolder;
@@ -562,7 +562,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 
 // static
 int CommandLineModuleManager::runAsMainSingleModule(
-        int argc, char *argv[], CommandLineModuleInterface *module)
+        int argc, char *argv[], ICommandLineModule *module)
 {
     CommandLineProgramContext &programContext = gmx::initForCommandLine(&argc, &argv);
     try

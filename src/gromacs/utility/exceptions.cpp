@@ -254,10 +254,10 @@ namespace
  * exceptions while still supporting output to different formats (e.g., to a
  * string or to \c stderr).
  */
-class MessageWriterInterface
+class IMessageWriter
 {
     public:
-        virtual ~MessageWriterInterface() {}
+        virtual ~IMessageWriter() {}
 
         /*! \brief
          * Writes a single line of text into the output.
@@ -283,7 +283,7 @@ class MessageWriterInterface
  * Formats the messages into the provided FILE handle without checking for
  * errors in std::fprintf() calls.
  */
-class MessageWriterFileNoThrow : public MessageWriterInterface
+class MessageWriterFileNoThrow : public IMessageWriter
 {
     public:
         //! Initializes a writer that writes to the given file handle.
@@ -312,7 +312,7 @@ class MessageWriterFileNoThrow : public MessageWriterInterface
 /*! \brief
  * Exception information writer to format into a TextOutputStream.
  */
-class MessageWriterTextWriter : public MessageWriterInterface
+class MessageWriterTextWriter : public IMessageWriter
 {
     public:
         //! Initializes a writer that writes to the given stream.
@@ -345,7 +345,7 @@ class MessageWriterTextWriter : public MessageWriterInterface
 /*! \brief
  * Exception information writer to format into an std::string.
  */
-class MessageWriterString : public MessageWriterInterface
+class MessageWriterString : public IMessageWriter
 {
     public:
         //! Post-processes the output string to not end in a line feed.
@@ -394,7 +394,7 @@ class MessageWriterString : public MessageWriterInterface
  *
  * Does not throw unless the writer throws.
  */
-void formatExceptionMessageInternal(MessageWriterInterface *writer,
+void formatExceptionMessageInternal(IMessageWriter *writer,
                                     const std::exception &ex, int indent)
 {
     const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);

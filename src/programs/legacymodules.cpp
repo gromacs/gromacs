@@ -69,7 +69,7 @@ namespace
  * Prints a message directing the user to a wiki page describing replacement
  * options.
  */
-class ObsoleteToolModule : public gmx::CommandLineModuleInterface
+class ObsoleteToolModule : public gmx::ICommandLineModule
 {
     public:
         //! Creates an obsolete tool module for a tool with the given name.
@@ -115,7 +115,7 @@ class ObsoleteToolModule : public gmx::CommandLineModuleInterface
 
 // TODO: Consider removing duplication with CMainCommandLineModule from
 // cmdlinemodulemanager.cpp.
-class NoNiceModule : public gmx::CommandLineModuleInterface
+class NoNiceModule : public gmx::ICommandLineModule
 {
     public:
         //! \copydoc gmx::CommandLineModuleManager::CMainFunction
@@ -233,7 +233,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModuleNoNice(manager, &gmx_mdrun, "mdrun",
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
 
-    gmx::CommandLineOptionsModuleInterface::registerModule(
+    gmx::ICommandLineOptionsModule::registerModule(
             manager, gmx::InsertMoleculesInfo::name,
             gmx::InsertMoleculesInfo::shortDescription,
             &gmx::InsertMoleculesInfo::create);

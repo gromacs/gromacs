@@ -48,7 +48,7 @@
  *    it can be rewrapped for console output.
  *  - helpformat.h provides some general text-processing classes, currently
  *    focused on producing aligned tables for console output.
- *  - helptopicinterface.h, helptopic.h, and helpmanager.h provide classes for
+ *  - ihelptopic.h, helptopic.h, and helpmanager.h provide classes for
  *    managing a hierarchy of help topics and printing out help from this
  *    hierarchy.
  *

@@ -81,7 +81,7 @@ const char *const c_compressedExtensions[] =
  */
 std::string findExistingExtension(const std::string                  &prefix,
                                   const FileNameOptionInfo           &option,
-                                  const FileInputRedirectorInterface *redirector)
+                                  const IFileInputRedirector         *redirector)
 {
     ConstArrayRef<int>                 types = option.fileTypes();
     ConstArrayRef<int>::const_iterator i;
@@ -117,7 +117,7 @@ class FileNameOptionManager::Impl
         }
 
         //! Redirector for file existence checks.
-        const FileInputRedirectorInterface *redirector_;
+        const IFileInputRedirector         *redirector_;
         //! Global default file name, if set.
         std::string                         defaultFileName_;
         //! Whether input option processing has been disabled.
@@ -138,7 +138,7 @@ FileNameOptionManager::~FileNameOptionManager()
 }
 
 void FileNameOptionManager::setInputRedirector(
-        const FileInputRedirectorInterface *redirector)
+        const IFileInputRedirector *redirector)
 {
     impl_->redirector_ = redirector;
 }

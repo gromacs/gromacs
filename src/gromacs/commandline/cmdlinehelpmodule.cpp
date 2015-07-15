@@ -77,7 +77,7 @@ namespace gmx
 
 namespace
 {
-class HelpExportInterface;
+class IHelpExport;
 class RootHelpTopic;
 }   // namespace
 
@@ -88,24 +88,24 @@ class RootHelpTopic;
 class CommandLineHelpModuleImpl
 {
     public:
-        CommandLineHelpModuleImpl(const ProgramContextInterface    &programContext,
+        CommandLineHelpModuleImpl(const IProgramContext            &programContext,
                                   const std::string                &binaryName,
                                   const CommandLineModuleMap       &modules,
                                   const CommandLineModuleGroupList &groups);
 
-        void exportHelp(HelpExportInterface *exporter);
+        void exportHelp(IHelpExport *exporter);
 
         boost::scoped_ptr<RootHelpTopic>  rootTopic_;
-        const ProgramContextInterface    &programContext_;
+        const IProgramContext            &programContext_;
         std::string                       binaryName_;
         const CommandLineModuleMap       &modules_;
         const CommandLineModuleGroupList &groups_;
 
         CommandLineHelpContext           *context_;
-        const CommandLineModuleInterface *moduleOverride_;
+        const ICommandLineModule         *moduleOverride_;
         bool                              bHidden_;
 
-        FileOutputRedirectorInterface    *outputRedirector_;
+        IFileOutputRedirector            *outputRedirector_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModuleImpl);
 };
@@ -114,7 +114,7 @@ namespace
 {
 
 /********************************************************************
- * HelpExportInterface
+ * IHelpExport
  */
 
 /*! \brief
@@ -122,13 +122,13 @@ namespace
  *
  * \ingroup module_commandline
  */
-class HelpExportInterface
+class IHelpExport
 {
     public:
         //! Shorthand for a list of modules contained in a group.
         typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
 
-        virtual ~HelpExportInterface() {};
+        virtual ~IHelpExport() {};
 
         /*! \brief
          * Called once before exporting individual modules.
@@ -146,7 +146,7 @@ class HelpExportInterface
          * \param[in] displayName Display name for the module (gmx something).
          */
         virtual void exportModuleHelp(
-            const CommandLineModuleInterface &module,
+            const ICommandLineModule         &module,
             const std::string                &tag,
             const std::string                &displayName) = 0;
         /*! \brief
@@ -184,7 +184,7 @@ class HelpExportInterface
          *
          * \param[in] topic   Topic to export.
          */
-        virtual void exportTopic(const HelpTopicInterface &topic) = 0;
+        virtual void exportTopic(const IHelpTopic &topic) = 0;
 };
 
 /********************************************************************
@@ -241,7 +241,7 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
             addSubTopic(move(topic));
         }
         //! Exports all the top-level topics with the given exporter.
-        void exportHelp(HelpExportInterface *exporter);
+        void exportHelp(IHelpExport *exporter);
 
         virtual void writeHelp(const HelpWriterContext &context) const;
 
@@ -256,14 +256,14 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
 
-void RootHelpTopic::exportHelp(HelpExportInterface *exporter)
+void RootHelpTopic::exportHelp(IHelpExport *exporter)
 {
     std::vector<std::string>::const_iterator topicName;
     for (topicName = exportedTopics_.begin();
          topicName != exportedTopics_.end();
          ++topicName)
     {
-        const HelpTopicInterface *topic = findSubTopic(topicName->c_str());
+        const IHelpTopic *topic = findSubTopic(topicName->c_str());
         GMX_RELEASE_ASSERT(topic != NULL, "Exported help topic no longer found");
         exporter->exportTopic(*topic);
     }
@@ -327,7 +327,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
  *
  * \ingroup module_commandline
  */
-class CommandsHelpTopic : public HelpTopicInterface
+class CommandsHelpTopic : public IHelpTopic
 {
     public:
         /*! \brief
@@ -345,7 +345,7 @@ class CommandsHelpTopic : public HelpTopicInterface
         virtual const char *name() const { return "commands"; }
         virtual const char *title() const { return "List of available commands"; }
         virtual bool hasSubTopics() const { return false; }
-        virtual const HelpTopicInterface *findSubTopic(const char * /*name*/) const
+        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
         {
             return NULL;
         }
@@ -408,17 +408,17 @@ void CommandsHelpTopic::writeHelp(const HelpWriterContext &context) const
 /*! \brief
  * Help topic wrapper for a command-line module.
  *
- * This class implements HelpTopicInterface such that it wraps a
- * CommandLineModuleInterface, allowing subcommand "help <command>"
+ * This class implements IHelpTopic such that it wraps a
+ * ICommandLineModule, allowing subcommand "help <command>"
  * to produce the help for "<command>".
  *
  * \ingroup module_commandline
  */
-class ModuleHelpTopic : public HelpTopicInterface
+class ModuleHelpTopic : public IHelpTopic
 {
     public:
         //! Constructs a help topic for a specific module.
-        ModuleHelpTopic(const CommandLineModuleInterface &module,
+        ModuleHelpTopic(const ICommandLineModule         &module,
                         const CommandLineHelpModuleImpl  &helpModule)
             : module_(module), helpModule_(helpModule)
         {
@@ -427,14 +427,14 @@ class ModuleHelpTopic : public HelpTopicInterface
         virtual const char *name() const { return module_.name(); }
         virtual const char *title() const { return NULL; }
         virtual bool hasSubTopics() const { return false; }
-        virtual const HelpTopicInterface *findSubTopic(const char * /*name*/) const
+        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
         {
             return NULL;
         }
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
-        const CommandLineModuleInterface &module_;
+        const ICommandLineModule         &module_;
         const CommandLineHelpModuleImpl  &helpModule_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(ModuleHelpTopic);
@@ -490,17 +490,17 @@ void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpMod
  *
  * \ingroup module_commandline
  */
-class HelpExportReStructuredText : public HelpExportInterface
+class HelpExportReStructuredText : public IHelpExport
 {
     public:
         //! Initializes reST exporter.
         HelpExportReStructuredText(
             const CommandLineHelpModuleImpl &helpModule,
-            FileOutputRedirectorInterface   *outputRedirector);
+            IFileOutputRedirector           *outputRedirector);
 
         virtual void startModuleExport();
         virtual void exportModuleHelp(
-            const CommandLineModuleInterface &module,
+            const ICommandLineModule         &module,
             const std::string                &tag,
             const std::string                &displayName);
         virtual void finishModuleExport();
@@ -510,10 +510,10 @@ class HelpExportReStructuredText : public HelpExportInterface
                                        const ModuleGroupContents &modules);
         virtual void finishModuleGroupExport();
 
-        virtual void exportTopic(const HelpTopicInterface &topic);
+        virtual void exportTopic(const IHelpTopic &topic);
 
     private:
-        FileOutputRedirectorInterface  *outputRedirector_;
+        IFileOutputRedirector          *outputRedirector_;
         const std::string              &binaryName_;
         HelpLinks                       links_;
         boost::scoped_ptr<TextWriter>   indexFile_;
@@ -522,7 +522,7 @@ class HelpExportReStructuredText : public HelpExportInterface
 
 HelpExportReStructuredText::HelpExportReStructuredText(
         const CommandLineHelpModuleImpl &helpModule,
-        FileOutputRedirectorInterface   *outputRedirector)
+        IFileOutputRedirector           *outputRedirector)
     : outputRedirector_(outputRedirector),
       binaryName_(helpModule.binaryName_),
       links_(eHelpOutputFormat_Rst)
@@ -555,7 +555,7 @@ void HelpExportReStructuredText::startModuleExport()
 }
 
 void HelpExportReStructuredText::exportModuleHelp(
-        const CommandLineModuleInterface &module,
+        const ICommandLineModule         &module,
         const std::string                &tag,
         const std::string                &displayName)
 {
@@ -658,7 +658,7 @@ void HelpExportReStructuredText::finishModuleGroupExport()
     manPagesFile_.reset();
 }
 
-void HelpExportReStructuredText::exportTopic(const HelpTopicInterface &topic)
+void HelpExportReStructuredText::exportTopic(const IHelpTopic &topic)
 {
     const std::string       path("onlinehelp/" + std::string(topic.name()) + ".rst");
     TextOutputStreamPointer file(outputRedirector_->openTextOutputFile(path));
@@ -678,7 +678,7 @@ void HelpExportReStructuredText::exportTopic(const HelpTopicInterface &topic)
  *
  * \ingroup module_commandline
  */
-class HelpExportCompletion : public HelpExportInterface
+class HelpExportCompletion : public IHelpExport
 {
     public:
         //! Initializes completion exporter.
@@ -686,7 +686,7 @@ class HelpExportCompletion : public HelpExportInterface
 
         virtual void startModuleExport();
         virtual void exportModuleHelp(
-            const CommandLineModuleInterface &module,
+            const ICommandLineModule         &module,
             const std::string                &tag,
             const std::string                &displayName);
         virtual void finishModuleExport();
@@ -696,7 +696,7 @@ class HelpExportCompletion : public HelpExportInterface
                                        const ModuleGroupContents & /*modules*/) {}
         virtual void finishModuleGroupExport() {}
 
-        virtual void exportTopic(const HelpTopicInterface & /*topic*/) {}
+        virtual void exportTopic(const IHelpTopic & /*topic*/) {}
 
     private:
         ShellCompletionWriter    bashWriter_;
@@ -715,7 +715,7 @@ void HelpExportCompletion::startModuleExport()
 }
 
 void HelpExportCompletion::exportModuleHelp(
-        const CommandLineModuleInterface &module,
+        const ICommandLineModule         &module,
         const std::string                 & /*tag*/,
         const std::string                 & /*displayName*/)
 {
@@ -744,7 +744,7 @@ void HelpExportCompletion::finishModuleExport()
  */
 
 CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
-        const ProgramContextInterface    &programContext,
+        const IProgramContext            &programContext,
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
@@ -755,7 +755,7 @@ CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
 {
 }
 
-void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter)
+void CommandLineHelpModuleImpl::exportHelp(IHelpExport *exporter)
 {
     // TODO: Would be nicer to have the file names supplied by the build system
     // and/or export a list of files from here.
@@ -798,7 +798,7 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
     public:
         ModificationCheckingFileOutputStream(
             const char                    *path,
-            FileOutputRedirectorInterface *redirector)
+            IFileOutputRedirector         *redirector)
             : path_(path), redirector_(redirector)
         {
         }
@@ -824,18 +824,18 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
     private:
         std::string                     path_;
         StringOutputStream              contents_;
-        FileOutputRedirectorInterface  *redirector_;
+        IFileOutputRedirector          *redirector_;
 };
 
 /********************************************************************
  * ModificationCheckingFileOutputRedirector
  */
 
-class ModificationCheckingFileOutputRedirector : public FileOutputRedirectorInterface
+class ModificationCheckingFileOutputRedirector : public IFileOutputRedirector
 {
     public:
         explicit ModificationCheckingFileOutputRedirector(
-            FileOutputRedirectorInterface *redirector)
+            IFileOutputRedirector *redirector)
             : redirector_(redirector)
         {
         }
@@ -851,7 +851,7 @@ class ModificationCheckingFileOutputRedirector : public FileOutputRedirectorInte
         }
 
     private:
-        FileOutputRedirectorInterface  *redirector_;
+        IFileOutputRedirector  *redirector_;
 };
 
 }   // namespace
@@ -861,7 +861,7 @@ class ModificationCheckingFileOutputRedirector : public FileOutputRedirectorInte
  */
 
 CommandLineHelpModule::CommandLineHelpModule(
-        const ProgramContextInterface    &programContext,
+        const IProgramContext            &programContext,
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
@@ -874,7 +874,7 @@ CommandLineHelpModule::~CommandLineHelpModule()
 }
 
 HelpTopicPointer CommandLineHelpModule::createModuleHelpTopic(
-        const CommandLineModuleInterface &module) const
+        const ICommandLineModule &module) const
 {
     return HelpTopicPointer(new ModuleHelpTopic(module, *impl_));
 }
@@ -890,13 +890,13 @@ void CommandLineHelpModule::setShowHidden(bool bHidden)
 }
 
 void CommandLineHelpModule::setModuleOverride(
-        const CommandLineModuleInterface &module)
+        const ICommandLineModule &module)
 {
     impl_->moduleOverride_ = &module;
 }
 
 void CommandLineHelpModule::setOutputRedirector(
-        FileOutputRedirectorInterface *output)
+        IFileOutputRedirector *output)
 {
     impl_->outputRedirector_ = output;
 }
@@ -915,7 +915,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (!exportFormat.empty())
     {
         ModificationCheckingFileOutputRedirector redirector(impl_->outputRedirector_);
-        boost::scoped_ptr<HelpExportInterface>   exporter;
+        boost::scoped_ptr<IHelpExport>           exporter;
         if (exportFormat == "rst")
         {
             exporter.reset(new HelpExportReStructuredText(*impl_, &redirector));

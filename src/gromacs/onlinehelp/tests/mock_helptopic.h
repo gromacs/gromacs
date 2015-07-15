@@ -34,7 +34,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares mock implementation of gmx::HelpTopicInterface.
+ * Declares mock implementation of gmx::IHelpTopic.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi

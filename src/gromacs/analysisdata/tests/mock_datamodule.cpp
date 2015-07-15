@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -304,7 +304,7 @@ void checkFrame(const AnalysisDataFrameRef       &frame,
  * Functor for checking data frame header against static test input data.
  *
  * This functor is designed to be invoked as a handled for
- * AnalysisDataModuleInterface::frameStarted().
+ * IAnalysisDataModule::frameStarted().
  */
 class StaticDataFrameHeaderChecker
 {
@@ -336,7 +336,7 @@ class StaticDataFrameHeaderChecker
  * Functor for checking data frame points against static test input data.
  *
  * This functor is designed to be invoked as a handled for
- * AnalysisDataModuleInterface::pointsAdded().
+ * IAnalysisDataModule::pointsAdded().
  */
 class StaticDataPointsChecker
 {
@@ -387,7 +387,7 @@ class StaticDataPointsChecker
  * Functor for requesting data storage.
  *
  * This functor is designed to be invoked as a handled for
- * AnalysisDataModuleInterface::dataStarted().
+ * IAnalysisDataModule::dataStarted().
  */
 class DataStorageRequester
 {
@@ -417,7 +417,7 @@ class DataStorageRequester
  * data.
  *
  * This functor is designed to be invoked as a handled for
- * AnalysisDataModuleInterface::pointsAdded().
+ * IAnalysisDataModule::pointsAdded().
  */
 class StaticDataPointsStorageChecker
 {

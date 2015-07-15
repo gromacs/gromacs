@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
  * used in its implementation: gmx::AbstractAnalysisData and
  * gmx::AnalysisDataStorage.
  * Most checking is done using gmx::test::AnalysisDataTestFixture and mock
- * modules that implement gmx::AnalysisDataModuleInterface.
+ * modules that implement gmx::IAnalysisDataModule.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
@@ -120,7 +120,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
     EXPECT_THROW_GMX(data.addModule(mod1), gmx::APIError);
 
     MockAnalysisDataModulePointer mod2(
-            new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+            new MockAnalysisDataModule(gmx::IAnalysisDataModule::efAllowMulticolumn));
     EXPECT_NO_THROW_GMX(data.addModule(mod2));
 }
 
@@ -138,7 +138,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultipointModules)
     EXPECT_THROW_GMX(data.addModule(mod1), gmx::APIError);
 
     MockAnalysisDataModulePointer mod2(
-            new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
+            new MockAnalysisDataModule(gmx::IAnalysisDataModule::efAllowMultipoint));
     EXPECT_NO_THROW_GMX(data.addModule(mod2));
 }
 

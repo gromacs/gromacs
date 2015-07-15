@@ -137,7 +137,7 @@ void DescriptionsFormatter::visitSubSection(const Options &section)
 }
 
 /********************************************************************
- * OptionsFormatterInterface
+ * IOptionsFormatter
  */
 
 /*! \brief
@@ -145,10 +145,10 @@ void DescriptionsFormatter::visitSubSection(const Options &section)
  *
  * \see OptionsFilter
  */
-class OptionsFormatterInterface
+class IOptionsFormatter
 {
     public:
-        virtual ~OptionsFormatterInterface() {}
+        virtual ~IOptionsFormatter() {}
 
         //! Formats a single option option.
         virtual void formatOption(const OptionInfo &option) = 0;
@@ -163,7 +163,7 @@ class OptionsFormatterInterface
  *
  * Together with code in CommandLineHelpWriter::writeHelp(), this class
  * implements the common logic for writing out the help.
- * An object implementing the OptionsFormatterInterface must be provided to the
+ * An object implementing the IOptionsFormatter must be provided to the
  * constructor, and does the actual formatting that is specific to the output
  * format.
  */
@@ -198,14 +198,14 @@ class OptionsFilter : public OptionsVisitor
 
         //! Formats selected options using the formatter.
         void formatSelected(FilterType                 type,
-                            OptionsFormatterInterface *formatter,
+                            IOptionsFormatter         *formatter,
                             const Options             &options);
 
         virtual void visitSubSection(const Options &section);
         virtual void visitOption(const OptionInfo &option);
 
     private:
-        OptionsFormatterInterface      *formatter_;
+        IOptionsFormatter              *formatter_;
         FilterType                      filterType_;
         bool                            bShowHidden_;
 
@@ -213,7 +213,7 @@ class OptionsFilter : public OptionsVisitor
 };
 
 void OptionsFilter::formatSelected(FilterType                 type,
-                                   OptionsFormatterInterface *formatter,
+                                   IOptionsFormatter         *formatter,
                                    const Options             &options)
 {
     formatter_  = formatter;
@@ -382,7 +382,7 @@ descriptionWithOptionDetails(const CommonFormatterData &common,
 /*! \brief
  * Formatter implementation for synopsis.
  */
-class SynopsisFormatter : public OptionsFormatterInterface
+class SynopsisFormatter : public IOptionsFormatter
 {
     public:
         //! Creates a helper object for formatting the synopsis.
@@ -473,7 +473,7 @@ void SynopsisFormatter::formatOption(const OptionInfo &option)
 /*! \brief
  * Formatter implementation for help export.
  */
-class OptionsListFormatter : public OptionsFormatterInterface
+class OptionsListFormatter : public IOptionsFormatter
 {
     public:
         //! Creates a helper object for formatting options.

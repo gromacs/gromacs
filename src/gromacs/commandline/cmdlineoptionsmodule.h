@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::CommandLineOptionsModuleInterface and supporting routines.
+ * Declares gmx::ICommandLineOptionsModule and supporting routines.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -48,8 +48,8 @@
 namespace gmx
 {
 
-class CommandLineModuleInterface;
 class CommandLineModuleManager;
+class ICommandLineModule;
 class Options;
 
 /*! \brief
@@ -57,12 +57,12 @@ class Options;
  * argument processing.
  *
  * This class provides a higher-level interface on top of
- * gmx::CommandLineModuleInterface for cases where gmx::Options will be used
+ * gmx::ICommandLineModule for cases where gmx::Options will be used
  * for declaring the command-line arguments.  The module only needs to declare
  * the options it uses, and the framework takes care of command-line parsing
  * and help output.  The module typically consists of the following parts:
  *  - init() allows for some interaction between the module and the framework
- *    when running the module; see CommandLineModuleInterface::init().  If no
+ *    when running the module; see ICommandLineModule::init().  If no
  *    such customization is necessary, an empty implementation is sufficient.
  *  - initOptions() is called both for running the module and for printing help
  *    for the module, and it should add the options that the module
@@ -75,8 +75,8 @@ class Options;
  *    variables.
  *
  * registerModule(), runAsMain(), or createModule() can be used to use modules
- * of this type in all contexts where a gmx::CommandLineModuleInterface is
- * expected.  These methods create a gmx::CommandLineModuleInterface
+ * of this type in all contexts where a gmx::ICommandLineModule is
+ * expected.  These methods create a gmx::ICommandLineModule
  * implementation that contains the common code needed to parse command-line
  * options and write help, based on the information provided from the methods
  * in this class.
@@ -84,7 +84,7 @@ class Options;
  * \inpublicapi
  * \ingroup module_commandline
  */
-class CommandLineOptionsModuleInterface
+class ICommandLineOptionsModule
 {
     public:
         /*! \brief
@@ -96,22 +96,22 @@ class CommandLineOptionsModuleInterface
          *
          * The caller takes responsibility to `delete` the returned pointer.
          */
-        typedef CommandLineOptionsModuleInterface *(*FactoryMethod)();
+        typedef ICommandLineOptionsModule *(*FactoryMethod)();
 
         /*! \brief
-         * Creates a CommandLineModuleInterface to run the specified module.
+         * Creates a ICommandLineModule to run the specified module.
          *
          * \param[in] name        Name for the module.
          * \param[in] description Short description for the module.
          * \param[in] factory     Factory that returns the module to run.
-         * \returns CommandLineModuleInterface object that runs the module
+         * \returns ICommandLineModule object that runs the module
          *     returned by \p factory.  Caller must `delete` the object.
          * \throws  std::bad_alloc if out of memory.
          *
          * This is mainly used by tests that want to bypass
          * CommandLineModuleManager.
          */
-        static CommandLineModuleInterface *
+        static ICommandLineModule *
         createModule(const char *name, const char *description,
                      FactoryMethod factory);
         /*! \brief
@@ -142,7 +142,7 @@ class CommandLineOptionsModuleInterface
          * \param[in] factory     Factory that returns the module to register.
          * \throws  std::bad_alloc if out of memory.
          *
-         * This method internally creates a CommandLineModuleInterface module
+         * This method internally creates a ICommandLineModule module
          * with the given \p name and \p description, and adds that to
          * \p manager.  When run or asked to write the help, the module calls
          * \p factory to get the actual module, and forwards the necessary
@@ -162,21 +162,21 @@ class CommandLineOptionsModuleInterface
          *     The method takes ownership (must have been allocated with `new`).
          * \throws  std::bad_alloc if out of memory.
          *
-         * This method internally creates a CommandLineModuleInterface module
+         * This method internally creates a ICommandLineModule module
          * with the given \p name and \p description, and adds that to
          * \p manager.
          *
          * This method is mainly used by tests that need to have a reference to
-         * the CommandLineOptionsModuleInterface instance (e.g., for mocking).
+         * the ICommandLineOptionsModule instance (e.g., for mocking).
          */
         static void
         registerModule(CommandLineModuleManager *manager,
                        const char *name, const char *description,
-                       CommandLineOptionsModuleInterface *module);
+                       ICommandLineOptionsModule *module);
 
-        virtual ~CommandLineOptionsModuleInterface();
+        virtual ~ICommandLineOptionsModule();
 
-        //! \copydoc gmx::CommandLineModuleInterface::init()
+        //! \copydoc gmx::ICommandLineModule::init()
         virtual void init(CommandLineModuleSettings *settings) = 0;
         /*! \brief
          * Initializes command-line arguments understood by the module.

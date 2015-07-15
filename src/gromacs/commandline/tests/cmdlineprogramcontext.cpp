@@ -73,7 +73,7 @@ using gmx::Path;
 namespace
 {
 
-class TestExecutableEnvironment : public gmx::ExecutableEnvironmentInterface
+class TestExecutableEnvironment : public gmx::IExecutableEnvironment
 {
     public:
         TestExecutableEnvironment()

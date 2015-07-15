@@ -46,8 +46,8 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/onlinehelp/helptopicinterface.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -67,7 +67,7 @@ class HelpManager::Impl
 {
     public:
         //! Container type for keeping the stack of active topics.
-        typedef std::vector<const HelpTopicInterface *> TopicStack;
+        typedef std::vector<const IHelpTopic *> TopicStack;
 
         //! Initializes a new manager with the given context.
         explicit Impl(const HelpWriterContext &context)
@@ -78,7 +78,7 @@ class HelpManager::Impl
         //! Whether the active topic is the root topic.
         bool isAtRootTopic() const { return topicStack_.size() == 1; }
         //! Returns the active topic.
-        const HelpTopicInterface &currentTopic() const
+        const IHelpTopic &currentTopic() const
         {
             return *topicStack_.back();
         }
@@ -115,7 +115,7 @@ std::string HelpManager::Impl::currentTopicAsString() const
  * HelpManager
  */
 
-HelpManager::HelpManager(const HelpTopicInterface &rootTopic,
+HelpManager::HelpManager(const IHelpTopic         &rootTopic,
                          const HelpWriterContext  &context)
     : impl_(new Impl(context))
 {
@@ -128,14 +128,14 @@ HelpManager::~HelpManager()
 
 void HelpManager::enterTopic(const char *name)
 {
-    const HelpTopicInterface &topic = impl_->currentTopic();
+    const IHelpTopic &topic = impl_->currentTopic();
     if (!topic.hasSubTopics())
     {
         GMX_THROW(InvalidInputError(
                           formatString("Help topic '%s' has no subtopics",
                                        impl_->currentTopicAsString().c_str())));
     }
-    const HelpTopicInterface *newTopic = topic.findSubTopic(name);
+    const IHelpTopic *newTopic = topic.findSubTopic(name);
     if (newTopic == NULL)
     {
         if (impl_->isAtRootTopic())
@@ -160,7 +160,7 @@ void HelpManager::enterTopic(const std::string &name)
 
 void HelpManager::writeCurrentTopic() const
 {
-    const HelpTopicInterface &topic = impl_->currentTopic();
+    const IHelpTopic         &topic = impl_->currentTopic();
     const char               *title = topic.title();
     HelpWriterContext         context(impl_->rootContext_);
     context.enterSubSection(title != NULL ? title : "");

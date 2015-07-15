@@ -171,7 +171,7 @@ class DataFileFinder
          * Constructs a default data file finder.
          *
          * The constructed finder searches only in the directory specified by
-         * the global program context (see ProgramContextInterface), and
+         * the global program context (see IProgramContext), and
          * optionally in the current directory.
          *
          * Does not throw.
