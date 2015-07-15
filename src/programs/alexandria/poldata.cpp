@@ -50,54 +50,40 @@ namespace alexandria
   Poldata::Poldata()
     :
     _gtDihedralFunction(egdNR),
-   _ngtDihedral(egdNR),
     _ngtDihedralC(egdNR),
-_gtDihedralFtype(egdNR),
- 
-
-    _gtDihedral(egdNR)
+    _gtDihedralFtype(egdNR),
+     _gtDihedral(egdNR)
   {
  
-    _nptype = 0;
- _nptypeC = 0;
-    _nalexandria = 0;
- _nalexandriaC = 0;
-    _nbtype = 0;
-    _nbrule = 0;
- _nbruleC = 0;
+
+    _nptypeC = 0;
+    _nalexandriaC = 0;
+    _nbruleC = 0;
     _nexcl = 0;
-    _ngtBond = 0; 
-_ngtBondC = 0;
- _gtBondFtype = 0;
-    _ngtAngle = 0;
- _ngtAngleC = 0;
- _gtAngleFtype = 0;
-      _nmiller = 0;
- _nmillerC = 0;  
-    _nbosque = 0;
- _nbosqueC = 0;
-    _nsymcharges = 0;
- _nsymchargesC = 0;
-    _nep = 0; _nepC = 0;
-    _ner = 0; _nerC = 0; 
-    _filename = NULL;
-    _alexandriaPolarUnit = NULL;
-    _alexandriaPolarRef = NULL;
-    _alexandriaForcefield = NULL;
-    _gtVdwFunction  = NULL;
-    _gtCombinationRule = NULL;
-    _gtBondFunction = NULL;
-    _gtLengthUnit = NULL;
-    _gtAngleFunction = NULL;
-    _gtAngleUnit = NULL;
-    _millerAhpUnit = NULL;
-    _bosquePolarUnit = NULL;
+    _gtBondFtype = 0;
+    _gtAngleFtype = 0;
+    _nmillerC = 0;  
+    _nbosqueC = 0;
+    _nsymchargesC = 0;
+    _nepC = 0;
+    _nerC = 0; 
+    _filename = "";
+    _alexandriaPolarUnit = "";
+    _alexandriaPolarRef = "";
+    _alexandriaForcefield = "";
+    _gtVdwFunction  = "";
+    _gtCombinationRule = "";
+    _gtBondFunction = "";
+    _gtLengthUnit = "";
+    _gtAngleFunction = "";
+    _gtAngleUnit = "";
+    _millerAhpUnit = "";
+    _bosquePolarUnit = "";
     
 
-
+ 
     for (int x =0; x < egdNR; x++){
-      _gtDihedralFunction[x]=NULL;
-      _ngtDihedral[x]=0;
+      _gtDihedralFunction[x]="";
       _ngtDihedralC[x]=0;
       // _gtDihedral[x]=NULL;
     }
@@ -124,23 +110,19 @@ _ngtBondC = 0;
         fprintf(stderr, "Trying to set Poldata filename to NULL\n");
         return;
       }
-    if (NULL != _filename)
+    if ("" != _filename)
       {
         fprintf(stderr, "Overwriting Poldata _filename from %s to %s\n",
-                _filename, fn2);
-        sfree(_filename);
+                _filename.c_str(), fn2);
+       
       }
-    _filename = strdup(fn2);
+    _filename.assign(fn2);
   }
 
   void Poldata::setVdwFunction( const char *func)
   {
-    int i;
+    unsigned int i;
 
-    if (NULL != _gtVdwFunction)
-      {
-        sfree(_gtVdwFunction);
-      }
     for (i = 0; (i < F_NRE); i++)
       {
         if (strcasecmp(interaction_function[i].name, func) == 0)
@@ -153,74 +135,53 @@ _ngtBondC = 0;
         gmx_fatal(FARGS, "Van der Waals function '%s' does not exist in gromacs", func);
       }
     _gtVdwFtype    = i;
-    _gtVdwFunction = strdup(func);
+    _gtVdwFunction.assign(func);
   }
 
-  char *Poldata::getVdwFunction()
-  {
-    return _gtVdwFunction;
-  }
 
   int Poldata::getVdwFtype()
   {
     if (NOTSET == _gtVdwFtype)
       {
         gmx_fatal(FARGS, "No valid function type for Van der Waals function in %s",
-                  _filename);
+                  _filename.c_str());
       }
     return _gtVdwFtype;
-  }
-
-  void Poldata::setNexcl( int nexcl)
-  {
-    _nexcl = nexcl;
   }
 
   int Poldata::getNexcl()
   {
     if (NOTSET == _nexcl)
       {
-        gmx_fatal(FARGS, "Nexclusions not set in %s", _filename);
+        gmx_fatal(FARGS, "Nexclusions not set in %s", _filename.c_str());
       }
     return _nexcl;
   }
 
-  void Poldata::setFudgeQQ( double fudgeQQ)
-  {
-    _fudgeQQ = fudgeQQ;
-  }
 
   double Poldata::getFudgeQQ()
   {
     if (NOTSET == _fudgeQQ)
       {
-        gmx_fatal(FARGS, "_fudgeQQ not set in %s", _filename);
+        gmx_fatal(FARGS, "_fudgeQQ not set in %s", _filename.c_str());
       }
     return _fudgeQQ;
   }
 
-  void Poldata::setFudgeLJ( double fudgeLJ)
-  {
-    _fudgeLJ = fudgeLJ;
-  }
 
   double Poldata::getFudgeLJ()
   {
     if (NOTSET == _fudgeLJ)
       {
-        gmx_fatal(FARGS, "_fudgeLJ not set in %s", _filename);
+        gmx_fatal(FARGS, "_fudgeLJ not set in %s", _filename.c_str());
       }
     return _fudgeLJ;
   }
 
   void Poldata::setCombinationRule( char *func)
   {
-    int i;
+    unsigned int i;
 
-    if (NULL != _gtCombinationRule)
-      {
-        sfree(_gtCombinationRule);
-      }
     for (i = 0; (i < eCOMB_NR); i++)
       {
         if (strcasecmp(ecomb_names[i], func) == 0)
@@ -233,24 +194,24 @@ _ngtBondC = 0;
         gmx_fatal(FARGS, "Combination rule '%s' does not exist in gromacs", func);
       }
     _gtCombRule        = i;
-    _gtCombinationRule = strdup(func);
+    _gtCombinationRule.assign(func);
   }
 
-  char *Poldata::getCombinationRule()
+  const char *Poldata::getCombinationRule()
   {
     if (NOTSET == _gtVdwFtype)
       {
         gmx_fatal(FARGS, "No valid function type for Van der Waals function in %s",
-                  _filename);
+                  _filename.c_str());
       }
-    return _gtCombinationRule;
+    return _gtCombinationRule.c_str();
   }
 
   int Poldata::getCombRule()
   {
     if (NOTSET == _gtCombRule)
       {
-        gmx_fatal(FARGS, "No valid combination rule in %s", _filename);
+        gmx_fatal(FARGS, "No valid combination rule in %s", _filename.c_str());
       }
     return _gtCombRule;
   }
@@ -263,19 +224,18 @@ _ngtBondC = 0;
 			 double        sig_pol)
   {
     t_ptype *sp;
-    int      i;
+    unsigned int      i;
 
-    for (i = 0; (i < _nptype); i++)
+    for (i = 0; (i < _ptype.size()); i++)
       {
         if (strcmp(_ptype[i].type, ptype) == 0)
 	  {
             break;
 	  }
       }
-    if (i == _nptype)
+    if (i == _ptype.size())
       {
-        _nptype++;
-        _ptype.resize(_nptype);
+        _ptype.resize(_ptype.size()+1);
 
         sp                 = &(_ptype[i]);
         sp->type           = strdup(ptype);
@@ -293,19 +253,18 @@ _ngtBondC = 0;
   void Poldata::addBtype(
 			 const char   *btype)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nbtype); i++)
+    for (i = 0; (i < _btype.size()); i++)
       {
-        if (strcmp(btype, _btype[i]) == 0)
+        if (strcmp(btype, _btype[i].c_str()) == 0)
 	  {
             break;
 	  }
       }
-    if (i == _nbtype)
+    if (i == _btype.size())
       {
-	_btype.resize(++_nbtype);
-        _btype[i] = strdup(btype);
+        _btype.push_back(btype);
       }
   }
 
@@ -319,19 +278,18 @@ _ngtBondC = 0;
 			 double        refEnthalpy)
   {
     t_ffatype *sp;
-    int        i;
+    unsigned int        i;
 
-    for (i = 0; (i < _nalexandria); i++)
+    for (i = 0; (i < _alexandria.size()); i++)
       {
         if (strcmp(_alexandria[i].type, atype) == 0)
 	  {
             break;
 	  }
       }
-    if (i == _nalexandria)
+    if (i == _alexandria.size())
       {
-        _nalexandria++;
-        _alexandria.resize(_nalexandria);
+        _alexandria.resize(_alexandria.size()+1);
 
         sp                 = &(_alexandria[i]);
         sp->elem           = strdup(elem);
@@ -356,28 +314,27 @@ _ngtBondC = 0;
 			       char *neighbors)
   {
     t_brule *sp;
-    int      i, j;
+    unsigned int      i, j;
 
-    for (j = 0; (j < _nalexandria); j++)
+    for (j = 0; (j < _alexandria.size()); j++)
       {
         if (strcmp(_alexandria[j].type, atype) == 0)
 	  {
             break;
 	  }
       }
-    if (j < _nalexandria)
+    if (j < _alexandria.size())
       {
-        for (i = 0; (i < _nbrule); i++)
+        for (i = 0; (i < _brule.size()); i++)
 	  {
             if (strcmp(_brule[i].rule, gtBrule) == 0)
 	      {
                 break;
 	      }
 	  }
-        if (i == _nbrule)
+        if (i == _brule.size())
 	  {
-            _nbrule++;
-            _brule.resize(_nbrule);
+            _brule.resize(_brule.size()+1);
 
             sp                 = &(_brule[i]);
             sp->elem           = strdup(_alexandria[j].elem);
@@ -408,7 +365,7 @@ _ngtBondC = 0;
 			      double *valence, int *iAromatic,
 			      char **neighbors)
   {
-    if (_nbruleC < _nbrule)
+    if (_nbruleC < _brule.size())
       {
         assignStr(gt_brule, _brule[_nbruleC].rule);
         assignStr(atype, _brule[_nbruleC].type);
@@ -425,39 +382,11 @@ _ngtBondC = 0;
     return 0;
   }
 
-  int Poldata::getNatypes()
-  {
-    return _nalexandria;
-  }
-
-  int Poldata::getNptypes()
-  {
-    return _nptype;
-  }
-
-  int Poldata::getNgtBond()
-  {
-    return _ngtBond;
-  }
-
-  int Poldata::getNgtAngle()
-  {
-    return _ngtAngle;
-  }
-
-  int Poldata::getNgtDihedral( int egd)
-  {
-    return _ngtDihedral[egd];
-  }
 
   void Poldata::setBondFunction( char *fn)
   {
-    int i;
+    unsigned int i;
 
-    if (NULL != _gtBondFunction)
-      {
-        sfree(_gtBondFunction);
-      }
     for (i = 0; (i < F_NRE); i++)
       {
         if (strcasecmp(interaction_function[i].name, fn) == 0)
@@ -470,22 +399,14 @@ _ngtBondC = 0;
         gmx_fatal(FARGS, "Bond function '%s' does not exist in gromacs", fn);
       }
     _gtBondFtype    = i;
-    _gtBondFunction = strdup(fn);
+    _gtBondFunction.assign(fn);
   }
 
-  char *Poldata::getBondFunction()
-  {
-    return _gtBondFunction;
-  }
 
   void Poldata::setAngleFunction( char *fn)
   {
-    int i;
+    unsigned int i;
 
-    if (NULL != _gtAngleFunction)
-      {
-        sfree(_gtAngleFunction);
-      }
     for (i = 0; (i < F_NRE); i++)
       {
         if (strcasecmp(interaction_function[i].name, fn) == 0)
@@ -498,37 +419,14 @@ _ngtBondC = 0;
         gmx_fatal(FARGS, "Angle function '%s' does not exist in gromacs", fn);
       }
     _gtAngleFtype    = i;
-    _gtAngleFunction = strdup(fn);
+    _gtAngleFunction.assign(fn);
   }
 
-  char *Poldata::getAngleFunction()
-  {
-    return _gtAngleFunction;
-  }
-
-  int Poldata::getBondFtype()
-  {
-    return _gtBondFtype;
-  }
-
-  int Poldata::getAngleFtype()
-  {
-    return _gtAngleFtype;
-  }
-
-  int Poldata::getDihedralFtype( int egd)
-  {
-    return _gtDihedralFtype[egd];
-  }
 
   void Poldata::setDihedralFunction( int egd, char *func)
   {
-    int i;
+    unsigned int i;
 
-    if (NULL != _gtDihedralFunction[egd])
-      {
-        sfree(_gtDihedralFunction[egd]);
-      }
     for (i = 0; (i < F_NRE); i++)
       {
         if (strcasecmp(interaction_function[i].name, func) == 0)
@@ -541,21 +439,17 @@ _ngtBondC = 0;
         gmx_fatal(FARGS, "Dihedral function '%s' does not exist in gromacs", func);
       }
     _gtDihedralFtype[egd]    = i;
-    _gtDihedralFunction[egd] = strdup(func);
+    _gtDihedralFunction[egd].assign(func);
   }
 
-  char *Poldata::getDihedralFunction( int egd)
-  {
-    return _gtDihedralFunction[egd];
-  }
 
   void Poldata::setPtypePolarizability( const char *ptype,
 					double polarizability, double sig_pol)
   {
     t_ptype *sp;
-    int      i;
+    unsigned int      i;
 
-    for (i = 0; (i < _nptype); i++)
+    for (i = 0; (i < _ptype.size()); i++)
       {
         if (strcmp(ptype, _ptype[i].type) == 0)
 	  {
@@ -565,65 +459,33 @@ _ngtBondC = 0;
             break;
 	  }
       }
-    if (i == _nptype)
+    if (i == _ptype.size())
       {
         fprintf(stderr, "No such ptype %s when trying to set the polarizability.\n", ptype);
       }
   }
 
-  char *Poldata::getPolarUnit()
-  {
-    return _alexandriaPolarUnit;
-  }
 
-  char *Poldata::getPolarRef()
+  const char *Poldata::getLengthUnit()
   {
-    return _alexandriaPolarRef;
-  }
-
-  char *Poldata::getLengthUnit()
-  {
-    if (NULL == _gtLengthUnit)
+    if ("" == _gtLengthUnit)
       {
         gmx_fatal(FARGS, "No length unit in %s",
-                  (NULL != _filename) ? _filename : "unknown");
+                  ("" != _filename) ? _filename.c_str() : "unknown");
       }
 
-    return _gtLengthUnit;
+    return _gtLengthUnit.c_str();
   }
 
-  void Poldata::setPolarUnit( const char *polarUnit)
-  {
-    _alexandriaPolarUnit   = strdup(polarUnit);
-  }
 
-  void Poldata::setPolarRef( const char *polarRef)
-  {
-    _alexandriaPolarRef   = strdup(polarRef);
-  }
-
-  char *Poldata::getForceField()
-  {
-    return _alexandriaForcefield;
-  }
-
-  void Poldata::setForceField( const char *forcefield)
-  {
-    _alexandriaForcefield   = strdup(forcefield);
-  }
-
-  void Poldata::setLengthUnit( const char *length_unit)
-  {
-    _gtLengthUnit   = strdup(length_unit);
-  }
 
   char *Poldata::getGeometry( char *gtBrule)
   {
-    int i;
+    unsigned int i;
 
     if (gtBrule)
       {
-        for (i = 0; (i < _nbrule); i++)
+        for (i = 0; (i < _brule.size()); i++)
 	  {
             if (strcmp(_brule[i].rule, gtBrule) == 0)
 	      {
@@ -637,11 +499,11 @@ _ngtBondC = 0;
 
   char *Poldata::getDesc( char *atype)
   {
-    int i;
+    unsigned int i;
 
     if (atype)
       {
-        for (i = 0; (i < _nalexandria); i++)
+        for (i = 0; (i < _alexandria.size()); i++)
 	  {
             if (strcmp(_alexandria[i].type, atype) == 0)
 	      {
@@ -702,10 +564,11 @@ _ngtBondC = 0;
 				   int iAromatic)
   {
     unsigned int    nnb;
-    int             i, nptr = 0, best = -1, score;
+    unsigned int             i;
+    int nptr = 0, best = -1, score;
     char          **ptr = NULL;
 
-    for (i = 0; (i < _nbrule); i++)
+    for (i = 0; (i < _brule.size()); i++)
       {
         nnb = countNeighbors(&(_brule[i]), nbond, neighbors, &score);
         if ((strcmp(_brule[i].elem, elem) == 0) &&
@@ -740,9 +603,9 @@ _ngtBondC = 0;
 
   int Poldata::bondingRuleValence( char *gtBrule, double *valence)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nbrule); i++)
+    for (i = 0; (i < _brule.size()); i++)
       {
         if (strcasecmp(gtBrule, _brule[i].rule) == 0)
 	  {
@@ -756,9 +619,9 @@ _ngtBondC = 0;
   int Poldata::getPtypePol( const char *ptype,
 			    double *polar, double *sig_pol)
   {
-    int j;
+    unsigned int j;
 
-    for (j = 0; (j < _nptype); j++)
+    for (j = 0; (j < _ptype.size()); j++)
       {
         if (strcmp(ptype, _ptype[j].type) == 0)
 	  {
@@ -780,9 +643,9 @@ _ngtBondC = 0;
   int Poldata::getAtypePol( const char *atype,
 			    double *polar, double *sigPol)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nalexandria); i++)
+    for (i = 0; (i < _alexandria.size()); i++)
       {
         if (strcmp(atype, _alexandria[i].type) == 0)
 	  {
@@ -796,9 +659,9 @@ _ngtBondC = 0;
   int Poldata::getAtypeRefEnthalpy( const char *atype,
 				    double *Href)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nalexandria); i++)
+    for (i = 0; (i < _alexandria.size()); i++)
       {
         if (strcmp(atype, _alexandria[i].type) == 0)
 	  {
@@ -811,9 +674,9 @@ _ngtBondC = 0;
 
   char *Poldata::ptypeToMiller( const char *ptype)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nptype); i++)
+    for (i = 0; (i < _ptype.size()); i++)
       {
         if (strcmp(ptype, _ptype[i].type) == 0)
 	  {
@@ -825,9 +688,9 @@ _ngtBondC = 0;
 
   char *Poldata::ptypeToBosque( const char *ptype)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nptype); i++)
+    for (i = 0; (i < _ptype.size()); i++)
       {
         if (strcmp(ptype, _ptype[i].type) == 0)
 	  {
@@ -846,7 +709,7 @@ _ngtBondC = 0;
   {
     t_ptype *sp;
 
-    if (_nptypeC < _nptype)
+    if (_nptypeC < _ptype.size())
       {
         sp = &(_ptype[_nptypeC]);
         assignScal(polarizability, sp->polarizability);
@@ -876,7 +739,7 @@ _ngtBondC = 0;
   {
     t_ffatype *sp;
 
-    if (_nalexandriaC < _nalexandria)
+    if (_nalexandriaC < _alexandria.size())
       {
         sp = &(_alexandria[_nalexandriaC]);
         assignStr(elem, sp->elem);
@@ -899,9 +762,9 @@ _ngtBondC = 0;
 
   const char *Poldata::atypeToPtype( const char *atype)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nalexandria); i++)
+    for (i = 0; (i < _alexandria.size()); i++)
       {
         if (strcmp(_alexandria[i].type, atype) == 0)
 	  {
@@ -913,9 +776,9 @@ _ngtBondC = 0;
 
   const char *Poldata::atypeToBtype( const char *atype)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nalexandria); i++)
+    for (i = 0; (i < _alexandria.size()); i++)
       {
         if (strcmp(_alexandria[i].type, atype) == 0)
 	  {
@@ -935,9 +798,9 @@ _ngtBondC = 0;
 			   char        **vdwparams)
   {
     t_ffatype *sp;
-    int        i;
+    unsigned int        i;
 
-    for (i = 0; (i < _nalexandria); i++)
+    for (i = 0; (i < _alexandria.size()); i++)
       {
         if (strcmp(key, _alexandria[i].type) == 0)
 	  {
@@ -945,7 +808,7 @@ _ngtBondC = 0;
 	  }
       }
 
-    if (i < _nalexandria)
+    if (i < _alexandria.size())
       {
         sp = &(_alexandria[i]);
         assignStr(elem, sp->elem);
@@ -966,9 +829,9 @@ _ngtBondC = 0;
   double Poldata::elemGetMaxValence( char *elem)
   {
     double mv = 0;
-    int    i;
+    unsigned int    i;
 
-    for (i = 0; (i < _nbrule); i++)
+    for (i = 0; (i < _brule.size()); i++)
       {
         if ((0 == gmx_strcasecmp(_brule[i].elem, elem)) &&
             (mv < _brule[i].valence))
@@ -984,18 +847,18 @@ _ngtBondC = 0;
   {
     double  dev, *bo = NULL;
     char   *ba1, *ba2;
-    int     i, j, k, nbo;
+    unsigned int     i, j, k, nbo;
 
     if ((NULL == elem1) || (NULL == elem2))
       {
         return 0;
       }
     nbo = 0;
-    for (i = 0; (i < _ngtBond); i++)
+    for (i = 0; (i < _gtBond.size()); i++)
       {
         if (0 == strlen(_gtBond[i].elem1))
 	  {
-            for (j = 0; (j < _nalexandria); j++)
+            for (j = 0; (j < _alexandria.size()); j++)
 	      {
                 if (strcmp(_alexandria[j].type, _gtBond[i].atom2) == 0)
 		  {
@@ -1005,7 +868,7 @@ _ngtBondC = 0;
 	  }
         if (0 == strlen(_gtBond[i].elem2))
 	  {
-            for (j = 0; (j < _nalexandria); j++)
+            for (j = 0; (j < _alexandria.size()); j++)
 	      {
                 if (strcmp(_alexandria[j].type, _gtBond[i].atom2) == 0)
 		  {
@@ -1046,17 +909,17 @@ _ngtBondC = 0;
   {
     char  *ba1, *ba2;
     double dev, devBest = 100000;
-    int    j, i;
+    unsigned int    j, i;
 
     if ((NULL == elem1) || (NULL == elem2))
       {
         return 0;
       }
-    for (i = 0; (i < _ngtBond); i++)
+    for (i = 0; (i < _gtBond.size()); i++)
       {
         if (0 == strlen(_gtBond[i].elem1))
 	  {
-            for (j = 0; (j < _nalexandria); j++)
+            for (j = 0; (j < _alexandria.size()); j++)
 	      {
                 if (strcmp(_alexandria[j].type, _gtBond[i].atom2) == 0)
 		  {
@@ -1066,7 +929,7 @@ _ngtBondC = 0;
 	  }
         if (0 == strlen(_gtBond[i].elem2))
 	  {
-            for (j = 0; (j < _nalexandria); j++)
+            for (j = 0; (j < _alexandria.size()); j++)
 	      {
                 if (strcmp(_alexandria[j].type, _gtBond[i].atom2) == 0)
 		  {
@@ -1155,7 +1018,7 @@ _ngtBondC = 0;
     key.atom2     = atom2;
     key.bondorder = bondorder;
 
-    gtB = (t_gt_bond *) bsearch(&key, vectorToArray(_gtBond), _ngtBond, sizeof(key), gtbComp);
+    gtB = (t_gt_bond *) bsearch(&key, vectorToArray(_gtBond), _gtBond.size(), sizeof(key), gtbComp);
     if (NULL != gtB)
       {
         i = indexOfPointInVector(gtB,_gtBond);
@@ -1172,7 +1035,8 @@ _ngtBondC = 0;
 				  double distance, double toler)
   {
     double     dev, devBest = 100000;
-    int        i, iBest = -1;
+    unsigned int        i;
+    int iBest = -1;
     t_gt_bond *gtB;
 
     if ((NULL == atype1) || (NULL == atype2))
@@ -1193,7 +1057,7 @@ _ngtBondC = 0;
 	      }
             i++;
 	  }
-        while ((i < _ngtBond) &&
+        while ((i < _gtBond.size()) &&
                (0 == loGtbComp(&(_gtBond[i]), &(_gtBond[i-1]))));
       }
     if (devBest < toler)
@@ -1212,9 +1076,8 @@ _ngtBondC = 0;
   {
     t_miller *mil;
 
-    _nmiller++;
-    _miller.resize(_nmiller);
-    mil             = &(_miller[_nmiller-1]);
+    _miller.resize(_miller.size()+1);
+    mil             = &(_miller[_miller.size()-1]);
     mil->miller     = strdup(miller);
     mil->atomnumber = atomnumber;
     mil->tau_ahc    = tauAhc;
@@ -1223,15 +1086,15 @@ _ngtBondC = 0;
 
   void Poldata::setMillerUnits( char *tauUnit, char *ahpUnit)
   {
-    _millerTauUnit = strdup(tauUnit);
-    _millerAhpUnit = strdup(ahpUnit);
+    _millerTauUnit.assign(tauUnit);
+    _millerAhpUnit.assign(ahpUnit);
   }
 
   void Poldata::getMillerUnits( char **tauUnit,
 				char **ahpUnit)
   {
-    assignStr(tauUnit, _millerTauUnit);
-    assignStr(ahpUnit, _millerAhpUnit);
+    assignStr(tauUnit, _millerTauUnit.c_str());
+    assignStr(ahpUnit, _millerAhpUnit.c_str());
   }
 
   int Poldata::getMiller(
@@ -1241,11 +1104,11 @@ _ngtBondC = 0;
 			 double       *alphaAhp)
   {
     t_miller *mil;
-    int       i;
+    unsigned int       i;
 
     i = _nmillerC;
 
-    if (i < _nmiller)
+    if (i < _miller.size())
       {
         mil = &(_miller[i]);
         assignStr(miller, mil->miller);
@@ -1271,9 +1134,9 @@ _ngtBondC = 0;
 			    double       *alphaAhp)
   {
     t_miller *mil;
-    int       i;
+    unsigned int       i;
 
-    for (i = 0; (i < _nmiller); i++)
+    for (i = 0; (i < _miller.size()); i++)
       {
         if (strcmp(miller, _miller[i].miller) == 0)
 	  {
@@ -1295,9 +1158,9 @@ _ngtBondC = 0;
   {
     t_bosque *bs;
 
-    _nbosque++;
-    _bosque.resize(_nbosque);
-    bs                 = &(_bosque[_nbosque-1]);
+    
+    _bosque.resize(_bosque.size() + 1);
+    bs                 = &(_bosque[_bosque.size()-1]);
     bs->bosque         = strdup(bosque);
     bs->polarizability = polarizability;
   }
@@ -1306,7 +1169,7 @@ _ngtBondC = 0;
 			 char        **bosque,
 			 double       *polarizability)
   {
-    if (_nbosqueC < _nbosque)
+    if (_nbosqueC < _bosque.size())
       {
         assignStr(bosque, _bosque[_nbosqueC].bosque);
         assignScal(polarizability, _bosque[_nbosqueC].polarizability);
@@ -1326,9 +1189,9 @@ _ngtBondC = 0;
 			    char         *bosque,
 			    double       *polarizability)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nbosque); i++)
+    for (i = 0; (i < _bosque.size()); i++)
       {
         if (strcasecmp(bosque, _bosque[i].bosque) == 0)
 	  {
@@ -1339,24 +1202,14 @@ _ngtBondC = 0;
     return 0;
   }
 
-  void Poldata::setBosqueUnit( char *polarUnit)
-  {
-    _bosquePolarUnit   = strdup(polarUnit);
-  }
-
-  char *Poldata::getBosqueUnit()
-  {
-    return _bosquePolarUnit;
-  }
-
 
   int Poldata::searchBondtype( char *atom)
   {
-    int j;
+    unsigned int j;
 
-    for (j = 0; (j < _nbtype); j++)
+    for (j = 0; (j < _btype.size()); j++)
       {
-        if (strcmp(_btype[j], atom) == 0)
+        if (strcmp(_btype[j].c_str(), atom) == 0)
 	  {
             return j;
 	  }
@@ -1372,9 +1225,9 @@ _ngtBondC = 0;
 			      double bondorder, char *params)
   {
     t_gt_bond *gtB;
-    int        i;
+    unsigned int        i;
 
-    for (i = 0; (i < _ngtBond); i++)
+    for (i = 0; (i < _gtBond.size()); i++)
       {
         gtB = &(_gtBond[i]);
         if (((((strcmp(gtB->atom1, atom1) == 0) &&
@@ -1386,7 +1239,7 @@ _ngtBondC = 0;
             break;
 	  }
       }
-    if (i < _ngtBond)
+    if (i < _gtBond.size())
       {
         if (length > 0)
 	  {
@@ -1428,9 +1281,9 @@ _ngtBondC = 0;
     if (setBondParams( atom1, atom2, length, sigma, ntrain,
 		       bondorder, params) == 0)
       {
-        _ngtBond++;
-        _gtBond.resize(_ngtBond);
-        gtB            = &(_gtBond[_ngtBond-1]);
+       
+        _gtBond.resize(_gtBond.size()+1);
+        gtB            = &(_gtBond[_gtBond.size()-1]);
         gtB->atom1     = strdup(atom1);
         strncpy(gtB->elem1, _alexandria[a1].elem, sizeof(gtB->elem1)-1);
         gtB->atom2     = strdup(atom2);
@@ -1440,7 +1293,7 @@ _ngtBondC = 0;
         gtB->ntrain    = ntrain;
         gtB->bondorder = bondorder;
         gtB->params    = strdup(params);
-        qsort(vectorToArray(_gtBond), _ngtBond, sizeof(_gtBond[0]), gtbComp);
+        qsort(vectorToArray(_gtBond), _gtBond.size(), sizeof(_gtBond[0]), gtbComp);
       }
     return 1;
   }
@@ -1451,7 +1304,7 @@ _ngtBondC = 0;
   {
     t_gt_bond *gtB;
 
-    if (_ngtBondC < _ngtBond)
+    if (_ngtBondC < _gtBond.size())
       {
         gtB = &(_gtBond[_ngtBondC]);
         assignStr(atom1, gtB->atom1);
@@ -1508,9 +1361,9 @@ _ngtBondC = 0;
 			       char *params)
   {
     t_gt_angle *gtB;
-    int         i;
+    unsigned int         i;
 
-    for (i = 0; (i < _ngtAngle); i++)
+    for (i = 0; (i < _gtAngle.size()); i++)
       {
         gtB = &(_gtAngle[i]);
         if ((strcmp(gtB->atom2, atom2) == 0) &&
@@ -1522,7 +1375,7 @@ _ngtBondC = 0;
             break;
 	  }
       }
-    if (i < _ngtAngle)
+    if (i < _gtAngle.size())
       {
         if (angle > 0)
 	  {
@@ -1562,9 +1415,9 @@ _ngtBondC = 0;
 
     if (0 == setAngleParams( atom1, atom2, atom3, angle, sigma, ntrain, params))
       {
-        _ngtAngle++;
-        _gtAngle.resize(_ngtAngle);
-        gtB          = &(_gtAngle[_ngtAngle-1]);
+
+        _gtAngle.resize(_gtAngle.size()+1);
+        gtB          = &(_gtAngle[_gtAngle.size()-1]);
         gtB->atom1   = strdup(atom1);
         gtB->atom2   = strdup(atom2);
         gtB->atom3   = strdup(atom3);
@@ -1606,7 +1459,7 @@ _ngtBondC = 0;
 			    int *ntrain, char **params)
   {
     t_gt_angle *gtB;
-    int         i;
+    unsigned int         i;
 
     if ((NULL == atom1) || (NULL == atom2) || (NULL == atom3))
       {
@@ -1632,15 +1485,6 @@ _ngtBondC = 0;
     return 0;
   }
 
-  void Poldata::setAngleUnit( char *angleUnit)
-  {
-    _gtAngleUnit   = strdup(angleUnit);
-  }
-
-  char *Poldata::getAngleUnit()
-  {
-    return _gtAngleUnit;
-  }
 
   /*
    * gt_dihedral stuff
@@ -1677,7 +1521,7 @@ _ngtBondC = 0;
         return NULL;
       }
     gtDptr    = vectorToArray(_gtDihedral[egd]);
-    nd         = _ngtDihedral[egd];
+    nd         = _gtDihedral[egd].size();
     gtA.atom1 = atom1;
     gtA.atom2 = atom2;
     gtA.atom3 = atom3;
@@ -1747,9 +1591,9 @@ _ngtBondC = 0;
 					 atom3, atom4, dihedral,
 					 sigma, ntrain, params))
       {
-        _ngtDihedral[egd]++;
-        _gtDihedral[egd].resize(_ngtDihedral[egd]);
-        gtB           = &(_gtDihedral[egd][_ngtDihedral[egd]-1]);
+
+        _gtDihedral[egd].resize(_gtDihedral[egd].size()+1);
+        gtB           = &(_gtDihedral[egd][_gtDihedral[egd].size()-1]);
         gtB->atom1    = strdup(atom1);
         gtB->atom2    = strdup(atom2);
         gtB->atom3    = strdup(atom3);
@@ -1758,7 +1602,7 @@ _ngtBondC = 0;
         gtB->sigma    = sigma;
         gtB->ntrain   = ntrain;
         gtB->params   = strdup(params);
-        qsort(vectorToArray(_gtDihedral[egd]), _ngtDihedral[egd], sizeof(_gtDihedral[egd][0]),
+        qsort(vectorToArray(_gtDihedral[egd]), _gtDihedral[egd].size(), sizeof(_gtDihedral[egd][0]),
               gtdComp);
       }
     return 1;
@@ -1771,7 +1615,7 @@ _ngtBondC = 0;
   {
     t_gt_dihedral *gtB;
 
-    if (_ngtDihedralC[egd] < _ngtDihedral[egd])
+    if (_ngtDihedralC[egd] < _gtDihedral[egd].size())
       {
         gtB = &(_gtDihedral[egd][_ngtDihedralC[egd]]);
         assignStr(atom1, gtB->atom1);
@@ -1816,9 +1660,9 @@ _ngtBondC = 0;
 			       char *attached, int numattach)
   {
     t_symcharges *sc;
-    int           i;
+    unsigned int           i;
 
-    for (i = 0; (i < _nsymcharges); i++)
+    for (i = 0; (i < _symcharges.size()); i++)
       {
         sc = &(_symcharges[i]);
         if ((strcasecmp(sc->central, central) == 0) &&
@@ -1828,10 +1672,10 @@ _ngtBondC = 0;
             break;
 	  }
       }
-    if (i == _nsymcharges)
+    if (i == _symcharges.size())
       {
-        _nsymcharges++;
-        _symcharges.resize(_nsymcharges);
+
+        _symcharges.resize(_symcharges.size()+1);
         sc              = &(_symcharges[i]);
         sc->central     = strdup(central);
         sc->attached    = strdup(attached);
@@ -1844,7 +1688,7 @@ _ngtBondC = 0;
   {
     t_symcharges *sc;
 
-    if (_nsymchargesC < _nsymcharges)
+    if (_nsymchargesC < _symcharges.size())
       {
         sc = &(_symcharges[_nsymchargesC]);
         assignStr(central, sc->central);
@@ -1863,9 +1707,9 @@ _ngtBondC = 0;
 				 char *attached, int numattach)
   {
     t_symcharges *sc;
-    int           i;
+    unsigned int           i;
 
-    for (i = 0; (i < _nsymcharges); i++)
+    for (i = 0; (i < _symcharges.size()); i++)
       {
         sc = &(_symcharges[i]);
         if ((strcasecmp(sc->central, central) == 0) &&
@@ -1883,9 +1727,9 @@ _ngtBondC = 0;
   t_eemprops *Poldata::getEep(ChargeDistributionModel eqdModel,
 			      const char *name)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nep); i++)
+    for (i = 0; (i < _eep.size()); i++)
       {
         if ((strcasecmp(_eep[i].name, name) == 0) &&
             (_eep[i].eqd_model == eqdModel))
@@ -1906,9 +1750,8 @@ _ngtBondC = 0;
     eep = getEep(eqdModel, name);
     if (NULL == eep)
       {
-	_nep++;
-	_eep.resize(_nep );
-        eep = &(_eep[_nep-1]);
+	_eep.resize(_eep.size()+1 );
+        eep = &(_eep[_eep.size()-1]);
       }
     eep->eqd_model = eqdModel;
     strncpy(eep->name, name, EEMBUFSIZE-1);
@@ -1965,7 +1808,7 @@ _ngtBondC = 0;
 			   ChargeDistributionModel *eqdModel, char **name,
 			   double *J0, double *chi0, char **zeta, char **q, char **row)
   {
-    if (_nepC < _nep)
+    if (_nepC < _eep.size())
       {
         assignScal(eqdModel, _eep[_nepC].eqd_model);
         assignStr(name, _eep[_nepC].name);
@@ -1986,9 +1829,9 @@ _ngtBondC = 0;
 
   int Poldata::getNumprops( ChargeDistributionModel eqdModel)
   {
-    int i, n = 0;
+    unsigned int i, n = 0;
 
-    for (i = 0; (i < _nep); i++)
+    for (i = 0; (i < _eep.size()); i++)
       {
         if (_eep[i].eqd_model == eqdModel)
 	  {
@@ -2001,9 +1844,9 @@ _ngtBondC = 0;
 
   int Poldata::havePolSupport( const char *atype)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _nalexandria); i++)
+    for (i = 0; (i < _alexandria.size()); i++)
       {
         if (strcmp(atype, _alexandria[i].type) == 0)
 	  {
@@ -2023,7 +1866,7 @@ _ngtBondC = 0;
     return (eep && (bAllowZeroParameters || ((eep->J0 > 0) && (eep->chi0 > 0))));
   }
 
-  double Poldata::getJ00( ChargeDistributionModel eqdModel, char *name)
+  double Poldata::getJ00( ChargeDistributionModel eqdModel,const char *name)
   {
     t_eemprops  *eer;
 
@@ -2061,7 +1904,7 @@ _ngtBondC = 0;
     return NULL;
   }
 
-  int Poldata::getRow( ChargeDistributionModel eqdModel, char *name, int zz)
+  int Poldata::getRow( ChargeDistributionModel eqdModel,const char *name, int zz)
   {
     t_eemprops *eer;
 
@@ -2073,7 +1916,7 @@ _ngtBondC = 0;
     return -1;
   }
 
-  double Poldata::getZeta( ChargeDistributionModel eqdModel, char *name, int zz)
+  double Poldata::getZeta( ChargeDistributionModel eqdModel,const char *name, int zz)
   {
     t_eemprops *eer;
 
@@ -2089,7 +1932,7 @@ _ngtBondC = 0;
     return -1;
   }
 
-  int Poldata::getNzeta( ChargeDistributionModel eqdModel, char *name)
+  int Poldata::getNzeta( ChargeDistributionModel eqdModel,const char *name)
   {
     t_eemprops *eer;
 
@@ -2100,7 +1943,7 @@ _ngtBondC = 0;
     return 0;
   }
 
-  double Poldata::getQ( ChargeDistributionModel eqdModel, char *name, int zz)
+  double Poldata::getQ( ChargeDistributionModel eqdModel,const char *name, int zz)
   {
     t_eemprops *eer;
 
@@ -2112,7 +1955,7 @@ _ngtBondC = 0;
     return -1;
   }
 
-  double Poldata::getChi0( ChargeDistributionModel eqdModel, char *name)
+  double Poldata::getChi0( ChargeDistributionModel eqdModel,const  char *name)
   {
     t_eemprops *eer;
 
@@ -2129,9 +1972,9 @@ _ngtBondC = 0;
 
   void Poldata::setEpref( ChargeDistributionModel eqdModel, char *epref)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _ner); i++)
+    for (i = 0; (i < _epr.size()); i++)
       {
         if (_epr[i].eqd_model == eqdModel)
 	  {
@@ -2143,19 +1986,19 @@ _ngtBondC = 0;
             break;
 	  }
       }
-    if (i == _ner)
+    if (i == _epr.size())
       {
-	_epr.resize(++_ner);
+	_epr.resize(_epr.size() + 1);
         _epr[i].eqd_model = eqdModel;
-        _epr[i].epref     = strdup(epref);
+        _epr[i].epref = strdup(epref);
       }
   }
 
   char *Poldata::getEpref( ChargeDistributionModel eqdModel)
   {
-    int i;
+    unsigned int i;
 
-    for (i = 0; (i < _ner); i++)
+    for (i = 0; (i < _epr.size()); i++)
       {
         if (_epr[i].eqd_model == eqdModel)
 	  {
@@ -2167,7 +2010,7 @@ _ngtBondC = 0;
 
   int Poldata::listEpref( ChargeDistributionModel *eqdModel, char **epref)
   {
-    if (_nerC < _ner)
+    if (_nerC < _epr.size())
       {
 	assignScal(eqdModel, _epr[_nerC].eqd_model);
         assignStr(epref, _epr[_nerC].epref);
@@ -2181,7 +2024,7 @@ _ngtBondC = 0;
 
   void Poldata::commEemprops( t_commrec *cr)
   {
-    int         i, j, nep;
+    unsigned int         i, j, nep;
     t_eemprops *ep;
 
     if (NULL != debug)
@@ -2190,22 +2033,22 @@ _ngtBondC = 0;
       }
     if (MASTER(cr))
       {
-        for (i = 1; (i < cr->nnodes); i++)
+        for (i = 1; ((int)i < cr->nnodes); i++)
 	  {
-            gmx_send_int(cr, i, _nep);
-            gmx_send(cr, i, vectorToArray(_eep), _nep*sizeof(_eep[0]));
+            gmx_send_int(cr, i, _eep.size());
+            gmx_send(cr, i, vectorToArray(_eep), _eep.size()*sizeof(_eep[0]));
 	  }
       }
     else
       {
         nep = gmx_recv_int(cr, 0);
-        if (nep != _nep)
+        if (nep != _eep.size())
 	  {
             gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
 	  }
-        snew(ep, _nep);
-        gmx_recv(cr, 0, ep, _nep*sizeof(ep[0]));
-        for (i = 0; (i < _nep); i++)
+        snew(ep, _eep.size());
+        gmx_recv(cr, 0, ep, _eep.size()*sizeof(ep[0]));
+        for (i = 0; (i < _eep.size()); i++)
 	  {
             _eep[i] = ep[i];
 	  }
@@ -2219,7 +2062,7 @@ _ngtBondC = 0;
             fprintf(debug, "%5s %5s %8.3f %8.3f",
                     getEemtypeName(_eep[i].eqd_model),
                     _eep[i].name, _eep[i].chi0, _eep[i].J0);
-            for (j = 0; (j < _eep[i].nzeta); j++)
+            for (j = 0; ((int)j < _eep[i].nzeta); j++)
 	      {
                 fprintf(debug, " %8.3f", _eep[i].zeta[j]);
 	      }
@@ -2230,7 +2073,7 @@ _ngtBondC = 0;
 
   void Poldata::commForceParameters(t_commrec *cr)
   {
-    int         i, j, nep;
+    unsigned int         i, j, nep;
     t_eemprops *ep;
 
     if (NULL != debug)
@@ -2239,10 +2082,10 @@ _ngtBondC = 0;
       }
     if (MASTER(cr))
       {
-        for (i = 1; (i < cr->nnodes); i++)
+        for (i = 1; ((int)i < cr->nnodes); i++)
 	  {
-            gmx_send_int(cr, i, _nep);
-            gmx_send(cr, i, vectorToArray(_eep), _nep*sizeof(_eep[0]));
+            gmx_send_int(cr, i, _eep.size());
+            gmx_send(cr, i, vectorToArray(_eep), _eep.size()*sizeof(_eep[0]));
 	  }
       }
     else
@@ -2253,8 +2096,8 @@ _ngtBondC = 0;
             gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
 	  }
         snew(ep, nep);
-        gmx_recv(cr, 0, ep, _nep*sizeof(ep[0]));
-        for (i = 0; (i < _nep); i++)
+        gmx_recv(cr, 0, ep, _eep.size()*sizeof(ep[0]));
+        for (i = 0; (i < _eep.size()); i++)
 	  {
             _eep[i] = ep[i];
 	  }
@@ -2263,12 +2106,12 @@ _ngtBondC = 0;
     if (NULL != debug)
       {
         fprintf(debug, "  EEP  Atom      Chi      J00     Zeta\n");
-        for (i = 0; (i < _nep); i++)
+        for (i = 0; (i < _eep.size()); i++)
 	  {
             fprintf(debug, "%5s %5s %8.3f %8.3f",
                     getEemtypeName(_eep[i].eqd_model),
                     _eep[i].name, _eep[i].chi0, _eep[i].J0);
-            for (j = 0; (j < _eep[i].nzeta); j++)
+            for (j = 0; ((int)j < _eep[i].nzeta); j++)
 	      {
                 fprintf(debug, " %8.3f", _eep[i].zeta[j]);
 	      }
@@ -2294,7 +2137,7 @@ _ngtBondC = 0;
 
   ChargeDistributionModel Poldata::name2eemtype(const char *name)
   {
-    int i;
+    unsigned int i;
 
     for (i = 0; (i < eqdNR); i++)
       {
@@ -2308,7 +2151,7 @@ _ngtBondC = 0;
 
   const char *Poldata::getEemtypeName(ChargeDistributionModel eem)
   {
-    int i;
+    unsigned int i;
 
     for (i = 0; (i < eqdNR); i++)
       {

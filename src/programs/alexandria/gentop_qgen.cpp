@@ -55,66 +55,64 @@ namespace alexandria
 			 ChargeGenerationAlgorithm iChargeGenerationAlgorithm,
 			 real hfac, int qtotal, real epsr)
   {
-    bWarned = false;  
-    bAllocSave = false;  
-    natom = 0;
-    eQGEN = 0;
-    qtotal = 0; 
-    chieq = 0;
-    hfac = 0;
-    epsr = 0;
+    _bWarned = false;  
+    _bAllocSave = false;  
+    _natom = 0;
+    _eQGEN = 0;
+    _qtotal = 0; 
+    _chieq = 0;
+    _hfac = 0;
+    _epsr = 0;
     char        *atp;
     gmx_bool     bSup = TRUE;
     int          i, j, k, atm, nz;
 
    
-    iChargeDistributionModel   = iChargeDistributionModel;
-    iChargeGenerationAlgorithm = iChargeGenerationAlgorithm;
-    hfac                       = hfac;
-    qtotal                     = qtotal;
+    _iChargeDistributionModel   = iChargeDistributionModel;
+    _iChargeGenerationAlgorithm = iChargeGenerationAlgorithm;
+    _hfac                       = hfac;
+    _qtotal                     = qtotal;
     if (epsr <= 1)
       {
         epsr = 1;
       }
-    epsr   = epsr;
+    _epsr   = epsr;
     for (i = j = 0; (i < atoms->nr); i++)
       {
         if (atoms->atom[i].ptype == eptAtom)
 	  {
-            natom++;
+            _natom++;
 	  }
       }
     
-    chi0.resize(natom);
-    
-    rhs.resize(natom+1);
-    
-    elem.resize(natom);
-   
-    atomnr.resize(natom);
-    row.resize(natom);
-       
-    Jab.resize(natom);
-    zeta.resize(natom);
-    j00.resize(natom);
-    q.resize(natom);
-    //this->x.resize(natom);
+    _chi0.resize(_natom);
+    _rhs.resize(_natom+1);
+    _elem.resize(_natom);
+    _atomnr.resize(_natom);
+    _row.resize(_natom);
+    _Jab.resize(_natom);
+    _zeta.resize(_natom);
+    _j00.resize(_natom);
+    _q.resize(_natom);
 
-    bAllocSave = FALSE;
-   
-    nZeta.resize(natom);
+    _nZeta.resize(_natom);
 
+    snew(_x,_natom);
+
+    _bAllocSave = FALSE;
+   
+    
     /* Special case for chi_eq */
-    nZeta[natom] = 1;
+    _nZeta[_natom] = 1;
    
-    q[natom].resize(natom);
+    _q[_natom].resize(_natom);
 
     for (i = j = 0; (i < atoms->nr) && bSup; i++)
       {
         if (atoms->atom[i].ptype == eptAtom)
 	  {
             
-	    Jab[natom].resize(natom+1);
+	    _Jab[_natom].resize(_natom+1);
             atm = atoms->atom[i].atomnumber;
             if (atm == NOTSET)
 	      {
@@ -123,34 +121,34 @@ namespace alexandria
                           *(atoms->atomname[j]));
 	      }
             atp = *atoms->atomtype[j];
-            if (pd->haveEemSupport(iChargeDistributionModel, atp, TRUE) == 0)
+            if (pd->haveEemSupport(_iChargeDistributionModel, atp, TRUE) == 0)
 	      {
                 atp = gmx_atomprop_element(aps, atm);
-                if (pd->haveEemSupport(iChargeDistributionModel, atp, TRUE) == 0)
+                if (pd->haveEemSupport(_iChargeDistributionModel, atp, TRUE) == 0)
 		  {
                     fprintf(stderr, "No charge distribution support for atom %s (element %s), model %s\n",
-                            *atoms->atomtype[j], atp, Poldata::getEemtypeName(iChargeDistributionModel));
+                            *atoms->atomtype[j], atp, Poldata::getEemtypeName(_iChargeDistributionModel));
                     bSup = FALSE;
 		  }
 	      }
             if (bSup)
 	      {
-                elem[j]   = strdup(atp);
-                atomnr[j] = atm;
-                nz              = pd->getNzeta(iChargeDistributionModel, atp);
-                nZeta[j]  = nz;
+                _elem[j].assign(atp);
+                _atomnr[j] = atm;
+                nz              = pd->getNzeta(_iChargeDistributionModel, atp);
+                _nZeta[j]  = nz;
                 
-		q[j].resize(nz);
+		_q[j].resize(nz);
                 
-		zeta[j].resize(nz);
+		_zeta[j].resize(nz);
                 
-		row[j].resize(nz);
+		_row[j].resize(nz);
                 for (k = 0; (k < nz); k++)
 		  {
-                    q[j][k]    = pd->getQ(iChargeDistributionModel, *atoms->atomtype[j], k);
-                    zeta[j][k] = pd->getZeta(iChargeDistributionModel, *atoms->atomtype[j], k);
-                    row[j][k]  = pd->getRow(iChargeDistributionModel, *atoms->atomtype[j], k);
-                    if (row[j][k] > SLATER_MAX)
+                    _q[j][k]    = pd->getQ(_iChargeDistributionModel, *atoms->atomtype[j], k);
+                    _zeta[j][k] = pd->getZeta(_iChargeDistributionModel, *atoms->atomtype[j], k);
+                    _row[j][k]  = pd->getRow(_iChargeDistributionModel, *atoms->atomtype[j], k);
+                    if (_row[j][k] > SLATER_MAX)
 		      {
                         if (debug)
 			  {
@@ -159,23 +157,23 @@ namespace alexandria
                                     *(atoms->resinfo[i].name),
                                     *(atoms->atomname[j]));
 			  }
-                        row[j][k] = SLATER_MAX;
+                        _row[j][k] = SLATER_MAX;
 		      }
 		  }
-                chi0[j]  = 0;
-                j00[j]   = 0;
-                copy_rvec(x[i], x[j]);
+                _chi0[j]  = 0;
+                _j00[j]   = 0;
+                copy_rvec(x[i], _x[j]);
                 j++;
 	      }
 	  }
       }
-    if (bSup)
+    /*if (bSup)
       {
       }
-    else
+      else
       {
-	//    done();
-      }
+      //    done();
+      }*/
   }
 
 
@@ -183,19 +181,20 @@ namespace alexandria
 
   GentopQgen::~GentopQgen()
   {
+    sfree(_x);
     //    int  i;
 
     /*   sfree(chi0);
-	 sfree(rhs);
+	 sfree(_rhs);
 	 sfree(atomnr);
 	 sfree(j00);
-	 sfree(x);
-	 for (i = 0; (i < natom); i++)
+	 
+	 for (i = 0; (i < _natom); i++)
 	 {
          sfree(row[i]);
 	 sfree(q[i]);
 	 sfree(zeta[i]);
-	 sfree(Jab[i]);
+	 sfree(_Jab[i]);
 	 sfree(elem[i]);
 	 if (bAllocSave)
 	 {
@@ -207,7 +206,7 @@ namespace alexandria
 	 sfree(zeta);
 	 sfree(elem);
 	 sfree(q);
-	 sfree(Jab);
+	 sfree(_Jab);
 	 sfree(nZeta);
 	 if (bAllocSave)
 	 {
@@ -222,48 +221,48 @@ namespace alexandria
   {
     int i, j;
 
-    if (!bAllocSave)
+    if (!_bAllocSave)
       {
-	qsave.resize(natom);
-	zetasave.resize(natom);
+	_qsave.resize(_natom);
+	_zetasave.resize(_natom);
       }
-    for (i = 0; (i < natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        if (!bAllocSave)
+        if (!_bAllocSave)
 	  {
-	    qsave[i].resize(nZeta[i]);
-	    zetasave[i].resize(nZeta[i]);
+	    _qsave[i].resize(_nZeta[i]);
+	    _zetasave[i].resize(_nZeta[i]);
 	  }
-        for (j = 0; (j < nZeta[i]); j++)
+        for (j = 0; (j < _nZeta[i]); j++)
 	  {
             if (NULL != gr)
 	      {
-		q[i][j]    = (real)gr->get_q( i, j);
-                zeta[i][j] = gr->get_zeta( i, j);
+		_q[i][j]    = (real)gr->getQ( i, j);
+                _zeta[i][j] = gr->getZeta( i, j);
 	      }
-            qsave[i][j]    = q[i][j];
-            zetasave[i][j] = zeta[i][j];
+            _qsave[i][j]    = _q[i][j];
+            _zetasave[i][j] = _zeta[i][j];
 	  }
       }
-    bAllocSave = TRUE;
+    _bAllocSave = TRUE;
   }
 
   void GentopQgen::getParams( Resp * gr)
   {
     int i, j;
 
-    if (bAllocSave)
+    if (_bAllocSave)
       {
-        for (i = 0; (i < natom); i++)
+        for (i = 0; (i < _natom); i++)
 	  {
-            for (j = 0; (j < nZeta[i]); j++)
+            for (j = 0; (j < _nZeta[i]); j++)
 	      {
-                q[i][j]    = qsave[i][j];
-                zeta[i][j] = zetasave[i][j];
+                _q[i][j]    = _qsave[i][j];
+                _zeta[i][j] = _zetasave[i][j];
                 if (NULL != gr)
 		  {
-                    gr->set_q( i, j, q[i][j]);
-                    gr->set_zeta( i, j, zeta[i][j]);
+                    gr->setQ( i, j, _q[i][j]);
+                    gr->setZeta( i, j, _zeta[i][j]);
 		  }
 	      }
 	  }
@@ -276,9 +275,9 @@ namespace alexandria
 
   int GentopQgen::getNzeta( int atom)
   {
-    if ((0 <= atom) && (atom < natom))
+    if ((0 <= atom) && (atom < _natom))
       {
-        return nZeta[atom];
+        return _nZeta[atom];
       }
     return NOTSET;
   
@@ -286,20 +285,20 @@ namespace alexandria
 
   int GentopQgen::getRow( int atom, int z)
   {
-    if ((0 <= atom) && (atom < natom) &&
-        (0 <= z) && (z <= nZeta[atom]))
+    if ((0 <= atom) && (atom < _natom) &&
+        (0 <= z) && (z <= _nZeta[atom]))
       {
-        return row[atom][z];
+        return _row[atom][z];
       }
     return NOTSET;
   
   }
   double GentopQgen::getQ(int atom, int z)
   {
-    if ((0 <= atom) && (atom < natom) &&
-        (0 <= z) && (z <= nZeta[atom]))
+    if ((0 <= atom) && (atom < _natom) &&
+        (0 <= z) && (z <= _nZeta[atom]))
       {
-        return q[atom][z];
+        return _q[atom][z];
       }
     return NOTSET;
 
@@ -308,10 +307,10 @@ namespace alexandria
 
   double GentopQgen::getZeta(int atom, int z)
   {
-    if ((0 <= atom) && (atom < natom) &&
-        (0 <= z) && (z <= nZeta[atom]))
+    if ((0 <= atom) && (atom < _natom) &&
+        (0 <= z) && (z <= _nZeta[atom]))
       {
-        return zeta[atom][z];
+        return _zeta[atom][z];
       }
     return NOTSET;
   }
@@ -382,15 +381,15 @@ namespace alexandria
     double **a, qtot, q;
     int      i, j, n;
 
-    n = natom+1;
+    n = _natom+1;
     a = alloc_matrix(n, n);
     for (i = 0; (i < n-1); i++)
       {
         for (j = 0; (j < n-1); j++)
 	  {
-            a[i][j] = Jab[i][j];
+            a[i][j] = _Jab[i][j];
 	  }
-        a[i][i] = hardness_factor*Jab[i][i];
+        a[i][i] = hardness_factor*_Jab[i][i];
       }
     for (j = 0; (j < n-1); j++)
       {
@@ -409,12 +408,12 @@ namespace alexandria
             q = 0;
             for (j = 0; (j < n); j++)
 	      {
-                q += a[i][j]*rhs[j];
+                q += a[i][j]*_rhs[j];
 	      }
-            this->q[i][nZeta[i]-1] = q;
+            this->_q[i][_nZeta[i]-1] = q;
             if (fp)
 	      {
-                fprintf(fp, "%2d RHS = %10g Charge= %10g\n", i, rhs[i], q);
+                fprintf(fp, "%2d _RHS = %10g Charge= %10g\n", i, _rhs[i], q);
 	      }
 	  }
       }
@@ -422,22 +421,22 @@ namespace alexandria
       {
         for (i = 0; (i < n); i++)
 	  {
-            this->q[i][nZeta[i]] = 1;
+            this->_q[i][_nZeta[i]] = 1;
 	  }
       }
-    chieq = this->q[n-1][nZeta[n-1]-1];
+    _chieq = this->_q[n-1][_nZeta[n-1]-1];
     qtot        = 0;
     for (i = 0; (i < n-1); i++)
       {
-        for (j = 0; (j < nZeta[i]); j++)
+        for (j = 0; (j < _nZeta[i]); j++)
 	  {
-            qtot += this->q[i][j];
+            qtot += this->_q[i][j];
 	  }
       }
 
-    if (fp && (fabs(qtot - qtotal) > 1e-2))
+    if (fp && (fabs(qtot - _qtotal) > 1e-2))
       {
-        fprintf(fp, "qtot = %g, it should be %g\n", qtot, qtotal);
+        fprintf(fp, "qtot = %g, it should be %g\n", qtot, _qtotal);
       }
     free_matrix(a);
   }
@@ -448,23 +447,23 @@ namespace alexandria
     double j0, qq;
     double zetaH = 1.0698;
 
-    for (i = 0; (i < natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        j0 = j00[i]/epsr;
-        if (((iChargeDistributionModel == eqdYang) ||
-             (iChargeDistributionModel == eqdRappe)) &&
-            (atomnr[i] == 1))
+        j0 = _j00[i]/_epsr;
+        if (((_iChargeDistributionModel == eqdYang) ||
+             (_iChargeDistributionModel == eqdRappe)) &&
+            (_atomnr[i] == 1))
 	  {
-            qq = q[i][nZeta[i]-1];
+            qq = _q[i][_nZeta[i]-1];
             j0 = (1+qq/zetaH)*j0;
 
-            if (debug && (j0 < 0) && !bWarned)
+            if (debug && (j0 < 0) && !_bWarned)
 	      {
-                fprintf(debug, "WARNING: J00 = %g for atom %d. The equations will be instable.\n", j0, i+1);
-                bWarned = TRUE;
+                fprintf(debug, "WARNING: _J00 = %g for atom %d. The equations will be instable.\n", j0, i+1);
+                _bWarned = TRUE;
 	      }
 	  }
-        Jab[i][i] = (j0 > 0) ? j0 : 0;
+        _Jab[i][i] = (j0 > 0) ? j0 : 0;
       }
   }
 
@@ -472,22 +471,22 @@ namespace alexandria
   {
     int i, j;
 
-    for (i = 0; (i < natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        fprintf(fp, "THIS: i: %2d chi0: %8g J0: %8g q:",
-                i+1, chi0[i], Jab[i][i]);
-        for (j = 0; (j < nZeta[i]); j++)
+        fprintf(fp, "THIS: i: %2d _chi0: %8g J0: %8g q:",
+                i+1, _chi0[i], _Jab[i][i]);
+        for (j = 0; (j < _nZeta[i]); j++)
 	  {
-            fprintf(fp, " %8g", q[i][j]);
+            fprintf(fp, " %8g", _q[i][j]);
 	  }
         fprintf(fp, "\n");
       }
-    fprintf(fp, "qgen Jab matrix:\n");
-    for (i = 0; (i < natom); i++)
+    fprintf(fp, "qgen _Jab matrix:\n");
+    for (i = 0; (i < _natom); i++)
       {
         for (j = 0; (j <= i); j++)
 	  {
-            fprintf(fp, "  %6.2f", Jab[i][j]);
+            fprintf(fp, "  %6.2f", _Jab[i][j]);
 	  }
         fprintf(fp, "\n");
       }
@@ -500,15 +499,15 @@ namespace alexandria
     rvec dx;
     int  l, m, tag;
 
-    rvec_sub(x[i], x[j], dx);
+    rvec_sub(_x[i],_x[j], dx);
     dist = norm(dx);
-    if ((dist < 0.118) && (atomnr[i] != 1) && (atomnr[j] != 1))
+    if ((dist < 0.118) && (_atomnr[i] != 1) && (_atomnr[j] != 1))
       {
         Sij = Sij*1.64;
       }
-    else if ((dist < 0.122) && (atomnr[i] != 1) && (atomnr[j] != 1))
+    else if ((dist < 0.122) && (_atomnr[i] != 1) && (_atomnr[j] != 1))
       {
-        if ((atomnr[i] != 8) && (atomnr[j] != 8))
+        if ((_atomnr[i] != 8) && (_atomnr[j] != 8))
 	  {
             Sij = Sij*2.23;
 	  }
@@ -520,47 +519,47 @@ namespace alexandria
     else if (dist < 0.125)
       {
         tag = 0;
-        if ((atomnr[i] == 6) && (atomnr[j] == 8))
+        if ((_atomnr[i] == 6) && (_atomnr[j] == 8))
 	  {
             tag = i;
 	  }
-        else if ((atomnr[i] == 8) && (atomnr[j] == 6))
+        else if ((_atomnr[i] == 8) && (_atomnr[j] == 6))
 	  {
             tag = j;
 	  }
         if (tag != 0)
 	  {
             printf("found CO\n");
-            for (l = 0; (l < natom); l++)
+            for (l = 0; (l < _natom); l++)
 	      {
-                if (atomnr[l] == 1)
+                if (_atomnr[l] == 1)
 		  {
                     printf("found H\n");
                     dism = 0.0;
                     for (m = 0; (m < DIM); m++)
 		      {
-                        dism = dism+sqr(x[tag][m]-x[l][m]);
+                        dism = dism+sqr(_x[tag][m]-_x[l][m]);
 		      }
 
                     printf("dist: %8.3f\n", sqrt(dism));
                     if (sqrt(dism) < 0.105)
 		      {
                         printf("dist %5d %5d %5s  %5s %8.3f\n",
-                               i, l, elem[tag], elem[l], sqrt(dism));
+                               i, l, _elem[tag].c_str(), _elem[l].c_str(), sqrt(dism));
                         Sij = Sij*1.605;
 		      }
 		  }
 	      }
 	  }
       }
-    else if ((atomnr[i] == 6) && (atomnr[j] == 8))
+    else if ((_atomnr[i] == 6) && (_atomnr[j] == 8))
       {
         Sij = Sij*1.03;
       }
-    else if (((atomnr[j] == 6) && (atomnr[i] == 7) && (dist < 0.15)) ||
-             ((atomnr[i] == 6) && (atomnr[j] == 7) && (dist < 0.15)))
+    else if (((_atomnr[j] == 6) && (_atomnr[i] == 7) && (dist < 0.15)) ||
+             ((_atomnr[i] == 6) && (_atomnr[j] == 7) && (dist < 0.15)))
       {
-        if (atomnr[i] == 6)
+        if (_atomnr[i] == 6)
 	  {
             tag = i;
 	  }
@@ -568,15 +567,15 @@ namespace alexandria
 	  {
             tag = j;
 	  }
-        for (l = 0; (l < natom); l++)
+        for (l = 0; (l < _natom); l++)
 	  {
-            if (atomnr[l] == 8)
+            if (_atomnr[l] == 8)
 	      {
                 printf("found Oxy\n");
                 dism = 0.0;
                 for (m = 0; (m < DIM); m++)
 		  {
-                    dism = dism+sqr(x[tag][m]-x[l][m]);
+                    dism = dism+sqr(_x[tag][m]-_x[l][m]);
 		  }
                 if (sqrt(dism) < 0.130)
 		  {
@@ -598,20 +597,20 @@ namespace alexandria
     int    i, j;
     double Jab;
 
-    for (i = 0; (i < natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        for (j = i+1; (j < natom); j++)
+        for (j = i+1; (j < _natom); j++)
 	  {
-            Jab = calcJab(iChargeDistributionModel,
-			  x[i], x[j],
-			  nZeta[i], nZeta[j],
-			  zeta[i], zeta[j],
-			  row[i], row[j]);
-            if (iChargeDistributionModel == eqdYang)
+            Jab = calcJab(_iChargeDistributionModel,
+			  _x[i], _x[j],
+			  _nZeta[i], _nZeta[j],
+			  _zeta[i], _zeta[j],
+			  _row[i], _row[j]);
+            if (_iChargeDistributionModel == eqdYang)
 	      {
                 Jab = Jab*calcSij(i, j);
 	      }
-            this->Jab[j][i] = this->Jab[i][j] = Jab/epsr;
+            _Jab[j][i] = _Jab[i][j] = Jab/_epsr;
 	  }
       }
   }
@@ -623,50 +622,50 @@ namespace alexandria
     real   r, j1, j1q, qcore;
 
     /* This right hand side is for all models */
-    for (i = 0; (i < natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        rhs[i] = -chi0[i];
+        _rhs[i] = -_chi0[i];
       }
-    rhs[natom] = qtotal;
+    _rhs[_natom] = _qtotal;
 
     /* In case the charge is split in nuclear charge and electronic charge
      * we need to add some more stuff. See paper for details.
      */
-    for (i = 0; (i < natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
         j1q   = 0;
         qcore = 0;
-        for (k = 0; (k < nZeta[i]-1); k++)
+        for (k = 0; (k < _nZeta[i]-1); k++)
 	  {
-            j1q   += j00[i]*q[i][k];
-            qcore += q[i][k];
+            j1q   += _j00[i]*_q[i][k];
+            qcore += _q[i][k];
 	  }
         j1 = 0;
         /* This assignment for k is superfluous because of the previous loop,
          * but if I take it out it will at some stage break the loop below where
          * exactly this value of k is needed.
          */
-        k  = nZeta[i]-1;
-        for (j = 0; (j < natom); j++)
+        k  = _nZeta[i]-1;
+        for (j = 0; (j < _natom); j++)
 	  {
             if (i != j)
 	      {
-                rvec_sub(x[i], x[j], dx);
+                rvec_sub(_x[i], _x[j], dx);
                 r = norm(dx);
-                switch (iChargeDistributionModel)
+                switch (_iChargeDistributionModel)
 		  {
 		  case eqdAXs:
 		  case eqdRappe:
 		  case eqdYang:
-		    for (l = 0; (l < nZeta[j]-1); l++)
+		    for (l = 0; (l < _nZeta[j]-1); l++)
 		      {
-			j1 += q[j][l]*Coulomb_SS(r, k, l, zeta[i][k], zeta[j][l]);
+			j1 += _q[j][l]*Coulomb_SS(r, k, l, _zeta[i][k], _zeta[j][l]);
 		      }
 		    break;
 		  case eqdAXg:
-		    for (l = 0; (l < nZeta[j]-1); l++)
+		    for (l = 0; (l < _nZeta[j]-1); l++)
 		      {
-			j1 += q[j][l]*Coulomb_GG(r, zeta[i][k], zeta[j][l]);
+			j1 += _q[j][l]*Coulomb_GG(r, _zeta[i][k], _zeta[j][l]);
 		      }
 		    break;
 		  default:
@@ -674,8 +673,8 @@ namespace alexandria
 		  }
 	      }
 	  }
-        rhs[i]           -= j1q + ONE_4PI_EPS0*j1/ELECTRONVOLT;
-        rhs[natom] -= qcore;
+        _rhs[i]           -= j1q + ONE_4PI_EPS0*j1/ELECTRONVOLT;
+        _rhs[_natom] -= qcore;
       }
   }
 
@@ -723,36 +722,36 @@ namespace alexandria
     rvec mu = { 0, 0, 0 };
     real qq;
 
-    if (eQGEN == eQGEN_OK)
+    if (_eQGEN == eQGEN_OK)
       {
         if (fp)
 	  {
-            fprintf(fp, "Res  Atom   Nr       J0     chi0 row        q zeta (1/nm)\n");
+            fprintf(fp, "Res  Atom   Nr       J0     _chi0 row        q zeta (1/nm)\n");
 	  }
         for (i = j = 0; (i < atoms->nr); i++)
 	  {
             if (atoms->atom[i].ptype == eptAtom)
 	      {
                 qq = 0;
-                for (k = 0; (k < nZeta[j]); k++)
+                for (k = 0; (k < _nZeta[j]); k++)
 		  {
-                    qq += q[j][k];
+                    qq += _q[j][k];
 		  }
 
                 atoms->atom[i].q = qq;
                 for (m = 0; (m < DIM); m++)
 		  {
-                    mu[m] += qq* x[i][m] * ENM2DEBYE;
+                    mu[m] += qq* _x[i][m] * ENM2DEBYE;
 		  }
                 if (fp)
 		  {
                     fprintf(fp, "%4s %4s%5d %8g %8g",
                             *(atoms->resinfo[atoms->atom[i].resind].name),
-                            *(atoms->atomname[i]), i+1, j00[j], chi0[j]);
-                    for (k = 0; (k < nZeta[j]); k++)
+                            *(atoms->atomname[i]), i+1, _j00[j], _chi0[j]);
+                    for (k = 0; (k < _nZeta[j]); k++)
 		      {
-                        fprintf(fp, " %3d %8.5f %8.4f", row[j][k], q[j][k],
-                                zeta[j][k]);
+                        fprintf(fp, " %3d %8.5f %8.4f", _row[j][k], _q[j][k],
+                                _zeta[j][k]);
 		      }
                     fprintf(fp, "\n");
 		  }
@@ -762,20 +761,20 @@ namespace alexandria
         if (fp)
 	  {
             fprintf(fp, "<chieq> = %10g\n|mu| = %8.3f ( %8.3f  %8.3f  %8.3f )\n",
-                    chieq, norm(mu), mu[XX], mu[YY], mu[ZZ]);
+                    _chieq, norm(mu), mu[XX], mu[YY], mu[ZZ]);
 	  }
       }
   }
 
   void GentopQgen::message( int len, char buf[], Resp * gr)
   {
-    switch (eQGEN)
+    switch (_eQGEN)
       {
       case eQGEN_OK:
 	if (NULL != gr)
 	  {
-	    gr->calc_pot();
-	    gr->calc_rms();
+	    gr->calcPot();
+	    gr->calcRms();
 	    gr->statistics( len, buf);
 	  }
 	else
@@ -791,7 +790,7 @@ namespace alexandria
 	break;
       case eQGEN_ERROR:
       default:
-	sprintf(buf, "Unknown status %d in charge generation.\n", eQGEN);
+	sprintf(buf, "Unknown status %d in charge generation.\n", _eQGEN);
       }
   }
 
@@ -800,27 +799,27 @@ namespace alexandria
     int      i;
     gmx_bool bSup = TRUE;
 
-    for (i = 0; (i < natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        if (pd->haveEemSupport(iChargeDistributionModel, elem[i], TRUE) == 0)
+        if (pd->haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), TRUE) == 0)
 	  {
             /*sfree(elem[i]);*/
-            elem[i] = strdup(gmx_atomprop_element(aps, atomnr[i]));
-            if (pd->haveEemSupport(iChargeDistributionModel, elem[i], TRUE) == 0)
+            _elem[i].assign(gmx_atomprop_element(aps, _atomnr[i]));
+            if (pd->haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), TRUE) == 0)
 	      {
                 fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                        elem[i], Poldata::getEemtypeName(iChargeDistributionModel));
+                        _elem[i].c_str(), Poldata::getEemtypeName(_iChargeDistributionModel));
                 bSup = FALSE;
 	      }
 	  }
       }
     if (bSup)
       {
-        eQGEN = eQGEN_OK;
+        _eQGEN = eQGEN_OK;
       }
     else
       {
-        eQGEN = eQGEN_NOSUPPORT;
+        _eQGEN = eQGEN_NOSUPPORT;
       }
   }
 
@@ -832,14 +831,14 @@ namespace alexandria
       {
         if (atoms->atom[i].ptype == eptAtom)
 	  {
-            chi0[j]  = pd->getChi0(iChargeDistributionModel, elem[j]);
-            j00[j]   = pd->getJ00(iChargeDistributionModel, elem[j]);
-            nz             = pd->getNzeta(iChargeDistributionModel, elem[j]);
+            _chi0[j]  = pd->getChi0(_iChargeDistributionModel, _elem[j].c_str());
+            _j00[j]   = pd->getJ00(_iChargeDistributionModel, _elem[j].c_str());
+            nz             = pd->getNzeta(_iChargeDistributionModel, _elem[j].c_str());
             for (n = 0; (n < nz); n++)
 	      {
-                zeta[j][n] = pd->getZeta(iChargeDistributionModel,elem[j], n);
-                q[j][n]    = pd->getQ(iChargeDistributionModel,elem[j], n);
-                row[j][n]  = pd->getRow(iChargeDistributionModel,elem[j], n);
+                _zeta[j][n] = pd->getZeta(_iChargeDistributionModel,_elem[j].c_str(), n);
+                _q[j][n]    = pd->getQ(_iChargeDistributionModel,_elem[j].c_str(), n);
+                _row[j][n]  = pd->getRow(_iChargeDistributionModel,_elem[j].c_str(), n);
 	      }
             j++;
 	  }
@@ -857,7 +856,7 @@ namespace alexandria
     real        rms;
 
     checkSupport(pd, aps);
-    if (eQGEN_OK == eQGEN)
+    if (eQGEN_OK == _eQGEN)
       {
 
         updatePd(atoms, pd);
@@ -867,7 +866,7 @@ namespace alexandria
 	  {
             if (atoms->atom[i].ptype != eptShell)
 	      {
-                qq[j] = q[j][nZeta[j]-1];
+                qq[j] = _q[j][_nZeta[j]-1];
                 j++;
 	      }
 	  }
@@ -887,8 +886,8 @@ namespace alexandria
 	      {
                 if (atoms->atom[i].ptype != eptShell)
 		  {
-                    rms  += sqr(qq[j] - q[j][nZeta[j]-1]);
-                    qq[j] = q[j][nZeta[j]-1];
+                    rms  += sqr(qq[j] - _q[j][_nZeta[j]-1]);
+                    qq[j] = _q[j][_nZeta[j]-1];
                     j++;
 		  }
 	      }
@@ -899,16 +898,16 @@ namespace alexandria
 
         if (iter < maxiter)
 	  {
-            eQGEN = eQGEN_OK;
+            _eQGEN = eQGEN_OK;
 	  }
         else
 	  {
-            eQGEN = eQGEN_NOTCONVERGED;
+            _eQGEN = eQGEN_NOTCONVERGED;
 	  }
 
         if (fp)
 	  {
-            if (eQGEN == eQGEN_OK)
+            if (_eQGEN == eQGEN_OK)
 	      {
                 fprintf(fp, "Converged to tolerance %g after %d iterations\n",
                         tol, iter);
@@ -919,16 +918,16 @@ namespace alexandria
                         maxiter, rms);
 	      }
 	  }
-        *chieq = this->chieq;
+        *chieq = _chieq;
         sfree(qq);
       }
 
-    if (eQGEN_OK == eQGEN)
+    if (eQGEN_OK == _eQGEN)
       {
         print(fp, atoms);
       }
 
-    return eQGEN;
+    return _eQGEN;
   }
 
   int GentopQgen::generateChargesBultinck(FILE *fp,
@@ -936,7 +935,7 @@ namespace alexandria
 					  gmx_atomprop_t aps)
   {
     checkSupport(pd, aps);
-    if (eQGEN_OK == eQGEN)
+    if (eQGEN_OK == _eQGEN)
       {
         updatePd(atoms, pd);
 
@@ -948,7 +947,7 @@ namespace alexandria
         print(fp, atoms);
       }
 
-    return eQGEN;
+    return _eQGEN;
   }
 
   int GentopQgen::generateCharges(FILE *fp,
@@ -962,7 +961,7 @@ namespace alexandria
     real chieq, chi2, chi2min = GMX_REAL_MAX;
 
     /* Generate charges */
-    switch (iChargeGenerationAlgorithm)
+    switch (_iChargeGenerationAlgorithm)
       {
       case eqgRESP:
 	if (NULL == gr)
@@ -972,7 +971,7 @@ namespace alexandria
 	if (fp)
 	  {
 	    fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
-		    Poldata::getEemtypeName(iChargeDistributionModel), molname);
+		    Poldata::getEemtypeName(_iChargeDistributionModel), molname);
 	  }
 	for (cc = 0; (cc < maxcycle); cc++)
 	  {
@@ -981,10 +980,10 @@ namespace alexandria
 		fprintf(fp, "Cycle %d/%d\n", cc+1, maxcycle);
 	      }
 	    /* Fit charges to electrostatic potential */
-	    eQGEN = gr->optimize_charges(fp, maxiter, tol, &chi2);
-	    if (eQGEN == eQGEN_OK)
+	    _eQGEN = gr->optimizeCharges(fp, maxiter, tol, &chi2);
+	    if (_eQGEN == eQGEN_OK)
 	      {
-		eQGEN_min = eQGEN;
+		eQGEN_min = _eQGEN;
 		if (chi2 <= chi2min)
 		  {
 		    saveParams(gr);
@@ -1007,16 +1006,16 @@ namespace alexandria
 	    getParams(gr);
 	    print(fp, atoms);
 	  }
-	eQGEN = eQGEN_min;
+	_eQGEN = eQGEN_min;
 	break;
       default:
 	/* Use empirical algorithms */
 	if (fp)
 	  {
 	    fprintf(fp, "Generating charges for %s using %s algorithm\n",
-		    molname, Poldata::getEemtypeName(iChargeDistributionModel));
+		    molname, Poldata::getEemtypeName(_iChargeDistributionModel));
 	  }
-	if (iChargeDistributionModel == eqdBultinck)
+	if (_iChargeDistributionModel == eqdBultinck)
 	  {
 	    (void) generateChargesBultinck(fp, pd, atoms, aps);
 	  }
@@ -1026,7 +1025,7 @@ namespace alexandria
 	  }
 	saveParams(gr);
       }
-    return eQGEN;
+    return _eQGEN;
   }
 
 }

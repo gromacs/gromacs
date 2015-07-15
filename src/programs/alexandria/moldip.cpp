@@ -979,9 +979,9 @@ void MolDip::CalcDeviation()
             if ((NULL != mymol->gr_) && _bQM)
             {
                 /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),_pd);*/
-                mymol->gr_->fill_zeta( _pd);
-                mymol->gr_->fill_q(&(mymol->topology_->atoms));
-                mymol->gr_->calc_pot();
+                mymol->gr_->fillZeta( _pd);
+                mymol->gr_->fillQ(&(mymol->topology_->atoms));
+                mymol->gr_->calcPot();
             }
             qtot = 0;
             for (j = 0; (j < mymol->topology_->atoms.nr); j++)
@@ -1031,7 +1031,7 @@ void MolDip::CalcDeviation()
                 }
                 if (NULL != mymol->gr_)
                 {
-                    _ener[ermsESP] += mymol->gr_->get_rms(&wtot);
+                    _ener[ermsESP] += mymol->gr_->getRms(&wtot);
                     if (NULL != debug)
                     {
                         fprintf(debug, "RMS %s = %g\n",

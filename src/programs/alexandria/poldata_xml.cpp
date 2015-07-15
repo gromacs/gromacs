@@ -522,13 +522,13 @@ void PoldataXml::add_xml_poldata(xmlNodePtr parent, Poldata * pd)
     int                     i, atomnumber, numbonds, nexcl,
                             numattach, bAromatic, ntrain;
     ChargeDistributionModel model;
-    char                   *elem, *geometry, *name, *atype, *vdwparams, *blu, *btype,
-    *atom1, *atom2, *atom3, *atom4, *tmp, *central, *attached, *tau_unit, *ahp_unit,
-    *epref, *desc, *params, *func;
+    char                   *elem, *geometry, *name, *atype, *vdwparams, *btype,
+    *atom1, *atom2, *atom3, *atom4, *central, *attached, *tau_unit, *ahp_unit,
+    *epref, *desc, *params;
     char  *neighbors, *zeta, *qstr, *rowstr;
     double polarizability, sig_pol, length, tau_ahc, alpha_ahp, angle, J0, chi0,
         bondorder, sigma, fudgeQQ, fudgeLJ, valence, ref_enthalpy;
-
+    const char *tmp, *func,*blu;
     child = add_xml_child(parent, exml_names[exmlATOMTYPES]);
     tmp   = pd->getForceField();
     if (NULL != tmp)

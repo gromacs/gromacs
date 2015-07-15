@@ -35,78 +35,77 @@ namespace alexandria
 
   Ra::Ra(int atomnumber, int atype,
                  const char *atomtype, Poldata * pd,
-                 ChargeDistributionModel iDistributionModel, char **dzatoms)
+	 ChargeDistributionModel iDistributionModel, std::vector<std::string> dzatoms)
   {
     int  k, zz;
     bool bRestr;
 
     bRestr = false;
-    if (NULL != dzatoms)
+    if (!dzatoms.empty())
       {
         k = 0;
-        while ((NULL != dzatoms[k]) && !bRestr)
+        while (("" != dzatoms[k]) && !bRestr)
 	  {
-            bRestr = (strcasecmp(atomtype, dzatoms[k]) == 0);
+            bRestr = (strcasecmp(atomtype, dzatoms[k].c_str()) == 0);
             k++;
 	  }
       }
-    this->atomnumber  = atomnumber;
-    this->atype       = atype;
-    this->atomtype    = strdup(atomtype);
-    this->nZeta       = pd->getNzeta(iDistributionModel, this->atomtype);
-    if (this->nZeta <= 0)
+    _atomnumber  = atomnumber;
+    _atype       = atype;
+    _atomtype    = (atomtype);
+    _nZeta       = pd->getNzeta(iDistributionModel, _atomtype.c_str());
+    if (_nZeta <= 0)
       {
-        bSetUpcorrectly = false;
+        _bSetUpcorrectly = false;
 	return;
       }
 
-    this->bRestrained = bRestr;
+    _bRestrained = bRestr;
 
-    snew(this->zeta, this->nZeta);
-    snew(this->zeta_ref, this->nZeta);
-    snew(this->q, this->nZeta);
-    snew(this->iz, this->nZeta);
-    snew(this->iq, this->nZeta);
-    snew(this->row, this->nZeta);
+    _zeta.resize(_nZeta);
+    _zetaRef.resize(_nZeta);
+    _q.resize(_nZeta);
+    _iz.resize(_nZeta);
+    _iq.resize(_nZeta);
+    _row.resize(_nZeta);
 
-    for (zz = 0; (zz < this->nZeta); zz++)
+    for (zz = 0; (zz < _nZeta); zz++)
       {
-        this->iq[zz]       = -1;
-        this->q[zz]        = pd->getQ( iDistributionModel, this->atomtype, zz);
-        this->iz[zz]       = -1;
-        this->zeta_ref[zz] =
-	  this->zeta[zz] = pd->getZeta( iDistributionModel, this->atomtype, zz);
-        this->row[zz]      = pd->getRow( iDistributionModel, this->atomtype, zz);
+        _iq[zz]       = -1;
+        _q[zz]        = pd->getQ( iDistributionModel, _atomtype.c_str(), zz);
+        _iz[zz]       = -1;
+        _zetaRef[zz] =
+	  _zeta[zz] = pd->getZeta( iDistributionModel, _atomtype.c_str(), zz);
+        _row[zz]      = pd->getRow( iDistributionModel, _atomtype.c_str(), zz);
       }
-    bSetUpcorrectly = true;
+    _bSetUpcorrectly = true;
   }
 
 
   bool Ra::setUpcorrectly(){
-    return bSetUpcorrectly;
+    return _bSetUpcorrectly;
   }
 
   Ra::~Ra()
   {
-    sfree(this->iz);
-    sfree(this->iq);
-    sfree(this->zeta);
-    sfree(this->q);
-    sfree(this->row);
-    sfree(this->atomtype);
+    /* sfree(_iz);
+    sfree(_iq);
+    sfree(_zeta);
+    sfree(_q);
+    sfree(_row);*/
+    // sfree(_atomtype);
   }
 
-  real Ra::get_q()
+  real Ra::getQ()
   {
     int  i;
     real q = 0;
 
-    for (i = 0; (i < this->nZeta); i++)
+    for (i = 0; (i < _nZeta); i++)
       {
-        q += this->q[i];
+        q += _q[i];
       }
 
     return q;
   }
-
 }

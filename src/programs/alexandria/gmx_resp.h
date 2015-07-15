@@ -68,107 +68,107 @@ namespace alexandria
     void summary(FILE *gp, 
 		 std::vector<int> &symmetric_atoms);
 
-    void update_atomtypes( t_atoms *atoms);
+    void updateAtomtypes( t_atoms *atoms);
 
-    void fill_zeta( alexandria::Poldata * pd);
+    void fillZeta( alexandria::Poldata * pd);
 
-    void fill_q( t_atoms *atoms);
+    void fillQ( t_atoms *atoms);
 
-    void add_atom_coords( rvec *x);
+    void addAtomCoords( rvec *x);
 
-    bool add_atom_info( t_atoms *atoms,
+    bool addAtomInfo( t_atoms *atoms,
 			alexandria::Poldata * pd);
 
-    void get_atom_info( t_atoms *atoms,
+    void getAtomInfo( t_atoms *atoms,
 			t_symtab *symtab, rvec **x);
 
-    const char *get_stoichiometry();
+    const char *getStoichiometry();
 
-    void add_atom_symmetry(std::vector<int> &symmetric_atoms);
+    void addAtomSymmetry(std::vector<int> &symmetric_atoms);
 
-    void add_point( double x, double y,
+    void addPoint( double x, double y,
 		    double z, double V);
 
-    void make_grid( real spacing, matrix box, rvec x[]);
+    void makeGrid( real spacing, matrix box, rvec x[]);
 
-    void copy_grid(Resp * src);
+    void copyGrid(Resp * src);
 
     Resp * copy();
 
-    void calc_rms();
+    void calcRms();
 
-    double get_rms( real *wtot);
+    double getRms( real *wtot);
 
-    void pot_lsq( gmx_stats_t lsq);
+    void potLsq( gmx_stats_t lsq);
 
-    void calc_rho();
+    void calcRho();
 
-    void calc_pot();
+    void calcPot();
 
-    void read_cube( const char *fn, bool bESPonly);
+    void readCube( const char *fn, bool bESPonly);
 
-    void write_cube( const char *fn, char *title);
+    void writeCube( const char *fn, char *title);
 
-    void write_rho( const char *fn, char *title);
+    void writeRho( const char *fn, char *title);
 
-    void write_diff_cube(Resp * src,
+    void writeDiffCube(Resp * src,
 			 const char *cube_fn, const char *hist_fn,
 			 char *title, output_env_t oenv, int rho);
 
-    void write_histo(const char *fn,
+    void writeHisto(const char *fn,
 		     char *title, output_env_t oenv);
 
-    int  optimize_charges(FILE *fp,  int maxiter,
+    int  optimizeCharges(FILE *fp,  int maxiter,
 			  real toler, real *rms);
 
     void potcomp(const char *potcomp,
 		 const char *pdbdiff, output_env_t oenv);
 
-    double get_qtot( int atom);
+    double getQtot( int atom);
 
-    double get_q( int atom, int zz);
+    double getQ( int atom, int zz);
 
-    double get_zeta( int atom, int zz);
+    double getZeta( int atom, int zz);
 
-    void set_q( int atom, int zz, double q);
+    void setQ( int atom, int zz, double q);
 
-    void set_zeta( int atom, int zz, double zeta);
+    void setZeta( int atom, int zz, double zeta);
 
   private:
-    ChargeDistributionModel iDistributionModel;
-    int                     nesp, nrho, natom, natype, ngridp;
-    double                  qtot, qsum, watoms;
-    double                  rms, rrms, penalty, pfac, entropy, wtot;
-    dvec                    origin, space;
-    bool                    bZatype, bFitZeta, bEntropy;
-    bool                    bRandZeta, bRandQ;
-    bool                    bAXpRESP;
-    ivec                    nxyz;
-    real                    qfac, b_hyper, zmin, zmax, delta_z, qmin, qmax, rDecrZeta;
-    unsigned int            seed;
-    int                     nparam; /* Total number of parameters */
-    Ra                 **ra;
-    char                  **dzatoms;
-    const char             *stoichiometry;
-    double                 *pot, *pot_calc, *rho;
-    rvec                   *x, *esp;
+    ChargeDistributionModel _iDistributionModel;
+    int                     _nesp, _natom, _natype;
+    double                  _qtot, _qsum, _watoms;
+    double                  _rms, _rrms, _penalty, _pfac, _entropy, _wtot;
+    dvec                    _origin, _space;
+    bool                    _bZatype, _bFitZeta, _bEntropy;
+    bool                    _bRandZeta, _bRandQ;
+    bool                    _bAXpRESP;
+    ivec                    _nxyz;
+    real                    _qfac, _bHyper, _zmin, _zmax, _deltaZ, _qmin, _qmax, _rDecrZeta;
+    unsigned int            _seed;
+    int                     _nparam; /* Total number of parameters */
+    std::vector<Ra *>                 _ra;
+    std::vector<std::string>                  _dzatoms;
+    const std::string             _stoichiometry;
+    std::vector<double>                 _pot, _potCalc, _rho;
+    rvec                   *_x, *_esp;
 
     
     void warning(const char *fn, int line);
 
-    void get_set_vector(bool         bSet,
+    void getSetVector(bool         bSet,
 			bool         bRandQ,
 			bool         bRandZeta,
 			unsigned int seed,
 			double      *nmx);
 
-    real my_weight(int iatom);
+    real myWeight(int iatom);
 
-    void calc_penalty();
+    void calcPenalty();
 
-    void add_param( int atom, eParm eparm, int zz);
+    void addParam( int atom, eParm eparm, int zz);
 
-    static double charge_function(void * gr,double v[]);
+    static double chargeFunction(void * gr,double v[]);
 
 };
 }

@@ -62,7 +62,7 @@ namespace alexandria
 {
   Resp::Resp(ChargeDistributionModel iDistributionModel,
 	     bool bAXpRESP, real qfac, real b_hyper, real qtot,
-	     real zmin, real zmax, real delta_z, bool bZatype,
+	     real zmin, real zmax, real deltaZ, bool bZatype,
 	     real watoms, real rDecrZeta, bool bRandZeta,
 	     bool bRandQ, real penalty_fac, bool bFitZeta, bool bEntropy,
 	     const char *dzatoms, unsigned int seed)
@@ -70,49 +70,62 @@ namespace alexandria
 
 
 
-    this->qtot                  = qtot;
-    this->qsum                  = qtot;
-    this->bAXpRESP              = bAXpRESP;
-    this->qfac                  = qfac;
-    this->b_hyper               = b_hyper;
-    this->wtot                  = 0;
-    this->iDistributionModel    = iDistributionModel;
-    this->zmin                  = zmin;
-    this->zmax                  = zmax;
-    this->delta_z               = delta_z;
+    _qtot                  = qtot;
+    _qsum                  = qtot;
+    _bAXpRESP              = bAXpRESP;
+    _qfac                  = qfac;
+    _bHyper               = b_hyper;
+    _wtot                  = 0;
+    _iDistributionModel    = iDistributionModel;
+    _zmin                  = zmin;
+    _zmax                  = zmax;
+    _deltaZ               = deltaZ;
     std::vector<std::string> ptr = split(dzatoms, ' ');
-    snew(this->dzatoms, ptr.size());
     for (unsigned int i = 0; (i < ptr.size()); ++i)
       {
-        this->dzatoms[i] = strdup(ptr[i].c_str());
+        _dzatoms[i].assign(ptr[i].c_str());
       }
-    this->pfac      = penalty_fac;
-    this->qmin      = -2;
-    this->qmax      = 2; /* e */
-    this->nesp      = 0;
-    this->nrho      = 0;
-    this->natom     = 0;
-    this->natype    = 0;
-    this->seed      = seed;
-    this->bEntropy  = bEntropy;
-    this->bZatype   = bZatype;
-    this->rDecrZeta = rDecrZeta;
-    this->bRandZeta = bRandZeta;
-    this->bRandQ    = bRandQ;
-    this->bFitZeta  = bFitZeta;
-    this->watoms    = watoms;
-    this->nparam    = 0;
+    _pfac      = penalty_fac;
+    _qmin      = -2;
+    _qmax      = 2; /* e */
+    _nesp      = 0;
+    _natom     = 0;
+    _natype    = 0;
+    _seed      = seed;
+    _bEntropy  = bEntropy;
+    _bZatype   = bZatype;
+    _rDecrZeta = rDecrZeta;
+    _bRandZeta = bRandZeta;
+    _bRandQ    = bRandQ;
+    _bFitZeta  = bFitZeta;
+    _watoms    = watoms;
+    _nparam    = 0;
 
   
   }
 
-  void Resp::get_atom_info( t_atoms *atoms,
+  Resp::~Resp()
+  {
+    //int i;
+
+    sfree(_x);
+    sfree(_esp);
+    //  sfree(_pot);
+    //    i = 0;
+    /* for (i = 0; (i < _natom); i++)
+      {
+        delete _ra[i];
+	}*/
+    //    sfree(_ra);
+  }
+
+  void Resp::getAtomInfo( t_atoms *atoms,
                             t_symtab *symtab, rvec **x)
   {
     int          i;
     const char  *rnm;
 
-    init_t_atoms(atoms, this->natom, true);
+    init_t_atoms(atoms, _natom, true);
     if (NULL == (*x))
       {
         snew((*x), atoms->nr);
@@ -121,31 +134,31 @@ namespace alexandria
       {
         snew(atoms->atomtype, atoms->nr);
       }
-    for (i = 0; (i < this->natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        atoms->atom[i].atomnumber = this->ra[i]->atomnumber;
-        atoms->atom[i].q          = this->ra[i]->get_q();
-        atoms->atomname[i]        = put_symtab(symtab, this->ra[i]->atomtype);
-        atoms->atomtype[i]        = put_symtab(symtab, this->ra[i]->atomtype);
+        atoms->atom[i].atomnumber = _ra[i]->getAtomnumber();
+        atoms->atom[i].q          = _ra[i]->getQ();
+        atoms->atomname[i]        = put_symtab(symtab, _ra[i]->getAtomtype().c_str());
+        atoms->atomtype[i]        = put_symtab(symtab, _ra[i]->getAtomtype().c_str());
         atoms->atom[i].resind     = 0;
 
-        strncpy(atoms->atom[i].elem, this->ra[i]->atomtype,
+        strncpy(atoms->atom[i].elem, _ra[i]->getAtomtype().c_str(),
                 sizeof(atoms->atom[i].elem)-1);
-        copy_rvec(this->x[i], (*x)[i]);
+        copy_rvec(_x[i], (*x)[i]);
       }
-    rnm = (NULL != this->stoichiometry) ? this->stoichiometry : (const char *)"BOE";
+    rnm = ("" != _stoichiometry) ? _stoichiometry.c_str() : (const char *)"BOE";
     t_atoms_set_resinfo(atoms, 0, symtab, rnm, 1, ' ', 1, ' ');
 
     atoms->nres = 1;
   }
 
-  void Resp::update_atomtypes( t_atoms *atoms)
+  void Resp::updateAtomtypes( t_atoms *atoms)
   {
     int i, j;
 
-    for (i = 0; (i < this->natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        this->ra[i]->atomtype = strdup(*atoms->atomtype[i]);
+        _ra[i]->getAtomtype() = strdup(*atoms->atomtype[i]);
         for (j = 0; (j < i); j++)
 	  {
             if (0 == strcmp(*atoms->atomtype[i], *atoms->atomtype[j]))
@@ -155,66 +168,66 @@ namespace alexandria
 	  }
         if (j == i)
 	  {
-            this->natype++;
+            _natype++;
 	  }
-        this->ra[i]->atype = j;
+        _ra[i]->setAtype(j);
       }
   }
 
-  void Resp::add_atom_coords( rvec *x)
+  void Resp::addAtomCoords( rvec *x)
   {
     int        i;
 
-    srenew(this->x, this->natom);
-    for (i = 0; (i < this->natom); i++)
+    srenew(_x, _natom);
+    for (i = 0; (i < _natom); i++)
       {
-        copy_rvec(x[i], this->x[i]);
+        copy_rvec(x[i], _x[i]);
       }
   }
 
-  void Resp::fill_zeta( alexandria::Poldata * pd)
+  void Resp::fillZeta( alexandria::Poldata * pd)
   {
     int i, zz;
 
-    for (i = 0; (i < this->natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-        for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+        for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	  {
-            Resp::set_zeta( i, zz, pd->getZeta( this->iDistributionModel,
-						 this->ra[i]->atomtype, zz));
+            setZeta( i, zz, pd->getZeta( _iDistributionModel,
+					 _ra[i]->getAtomtype().c_str(), zz));
 	  }
       }
   }
 
-  void Resp::fill_q( t_atoms *atoms)
+  void Resp::fillQ( t_atoms *atoms)
   {
     int    i, zz;
     double q;
 
-    for (i = 0; (i < this->natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
         q = 0;
-        for (zz = 0; (zz < this->ra[i]->nZeta-1); zz++)
+        for (zz = 0; (zz < _ra[i]->getNZeta()-1); zz++)
 	  {
-            q -= this->ra[i]->q[zz];
+            q -= _ra[i]->getQ(zz);
 	  }
         q += atoms->atom[i].q;
-        Resp::set_q( i, this->ra[i]->nZeta-1, q);
+        setQ( i, _ra[i]->getNZeta()-1, q);
       }
   }
 
-  bool Resp::add_atom_info( t_atoms *atoms, alexandria::Poldata * pd)
+  bool Resp::addAtomInfo( t_atoms *atoms, alexandria::Poldata * pd)
   {
     int  i;
 
-    this->natom    = atoms->nr;
-    snew(this->ra, this->natom);
+    _natom    = atoms->nr;
+    _ra.resize(_natom);
 
-    for (i = 0; (i < this->natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
-	this->ra[i] =  new Ra(atoms->atom[i].atomnumber, atoms->atom[i].type,
-			     *(atoms->atomtype[i]), pd, this->iDistributionModel, this->dzatoms);
-        if (this->ra[i]->setUpcorrectly() == false)
+	_ra[i] =  new Ra(atoms->atom[i].atomnumber, atoms->atom[i].type,
+			 *(atoms->atomtype[i]), pd, _iDistributionModel, _dzatoms);
+        if (_ra[i]->setUpcorrectly() == false)
 	  {
             return false;
 	  }
@@ -230,8 +243,8 @@ namespace alexandria
     if (NULL != fp)
       {
         fprintf(fp, "There are %d atoms, %d atomtypes %d parameters for (R)ESP fitting.\n",
-                this->natom, this->natype, this->nparam);
-        for (i = 0; (i < this->natom); i++)
+                _natom, _natype, _nparam);
+        for (i = 0; (i < _natom); i++)
 	  {
             fprintf(fp, " %d", symmetric_atoms[i]);
 	  }
@@ -241,24 +254,24 @@ namespace alexandria
 
 
 
-  void Resp::add_param( int atom, eParm eparm, int zz)
+  void Resp::addParam( int atom, eParm eparm, int zz)
   {
-    range_check(atom, 0, this->natom);
-    if ((zz >= 0) && (zz < this->ra[atom]->nZeta))
+    range_check(atom, 0, _natom);
+    if ((zz >= 0) && (zz < _ra[atom]->getNZeta()))
       {
         if (eparm == eparmQ)
 	  {
-            this->ra[atom]->iq[zz] = this->nparam++;
+            _ra[atom]->setIq(zz, _nparam++);
             if (debug)
 	      {
                 fprintf(debug, "GRESP: Adding parameter %d for atom %d zz %d\n", eparm, atom, zz);
 	      }
 	  }
-        else if (this->bFitZeta)
+        else if (_bFitZeta)
 	  {
-            if (this->ra[atom]->zeta[zz] != 0)
+            if (_ra[atom]->getZeta(zz) != 0)
 	      {
-                this->ra[atom]->iz[zz] = this->nparam++;
+                _ra[atom]->setIz(zz, _nparam++);
                 if (debug)
 		  {
                     fprintf(debug, "GRESP: Adding parameter %d for atom %d zz %d\n", eparm, atom, zz);
@@ -266,67 +279,67 @@ namespace alexandria
 	      }
             else
 	      {
-                this->ra[atom]->iz[zz] = -1;
+                _ra[atom]->setIz(zz, -1);
 	      }
 	  }
       }
   }
 
-  void Resp::add_atom_symmetry(std::vector<int> &symmetric_atoms)
+  void Resp::addAtomSymmetry(std::vector<int> &symmetric_atoms)
   {
     int        i, k, zz;
 
-    if (NULL == this->ra)
+    if (_ra.empty())
       {
         gmx_fatal(FARGS, "resp_atom struct not initialized");
       }
 
     /* Map the symmetric atoms */
-    for (i = 0; (i < this->natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
         if (0 == i)
 	  {
             /* The first charge is not a free variable, it follows from the total charge.
              * Only add the zeta values here.
              */
-            for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+            for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	      {
-                add_param( i, eparmZ, zz);
+                addParam( i, eparmZ, zz);
 	      }
 	  }
         else if (symmetric_atoms[i] == i)
 	  {
-            add_param( i, eparmQ, this->ra[i]->nZeta-1);
+            addParam( i, eparmQ, _ra[i]->getNZeta()-1);
 
-            if (this->bZatype)
+            if (_bZatype)
 	      {
                 for (k = 0; (k < i); k++)
 		  {
-                    if (this->ra[i]->atype == this->ra[k]->atype)
+                    if (_ra[i]->getAtype() == _ra[k]->getAtype())
 		      {
                         break;
 		      }
 		  }
                 if (k == i)
 		  {
-                    for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+                    for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		      {
-                        add_param( i, eparmZ, zz);
+                        addParam( i, eparmZ, zz);
 		      }
 		  }
                 else
 		  {
-                    for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+                    for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		      {
-                        this->ra[i]->iz[zz] = this->ra[k]->iz[zz];
+                        _ra[i]->setIz(zz, _ra[k]->getIz(zz));
 		      }
 		  }
 	      }
             else
 	      {
-                for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+                for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		  {
-                    add_param( i, eparmZ, zz);
+                    addParam( i, eparmZ, zz);
 		  }
 	      }
 	  }
@@ -334,13 +347,13 @@ namespace alexandria
 	  {
             gmx_fatal(FARGS, "The symmetric_atoms array can not point to larger atom numbers");
 	  }
-        else if (this->ra[i]->nZeta > 0)
+        else if (_ra[i]->getNZeta() > 0)
 	  {
-            this->ra[i]->iq[this->ra[i]->nZeta-1] =
-	      this->ra[symmetric_atoms[i]]->iq[this->ra[i]->nZeta-1];
-            for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+            _ra[i]->setIq(_ra[i]->getNZeta()-1,
+			  _ra[symmetric_atoms[i]]->getIq(_ra[i]->getNZeta()-1));
+            for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	      {
-                this->ra[i]->iz[zz] = this->ra[symmetric_atoms[i]]->iz[zz];
+                _ra[i]->setIz(zz,_ra[symmetric_atoms[i]]->getIz(zz));
 	      }
             if (debug)
 	      {
@@ -352,27 +365,27 @@ namespace alexandria
 	  {
             if (0 == i)
 	      {
-                this->ra[i]->iq[this->ra[i]->nZeta-1] = -1;
+                _ra[i]->setIq(_ra[i]->getNZeta()-1, -1);
 	      }
             else
 	      {
-                add_param( i, eparmQ, this->ra[i]->nZeta-1);
+                addParam( i, eparmQ, _ra[i]->getNZeta()-1);
 	      }
 
-            for (k = 0; (k < this->ra[i]->nZeta); k++)
+            for (k = 0; (k < _ra[i]->getNZeta()); k++)
 	      {
-                add_param( i, eparmZ, k);
+                addParam( i, eparmZ, k);
 	      }
 	  }
       }
     if (debug)
       {
         int maxz = 0;
-        for (i = 0; (i < this->natom); i++)
+        for (i = 0; (i < _natom); i++)
 	  {
-            if (this->ra[i]->nZeta > maxz)
+            if (_ra[i]->getNZeta() > maxz)
 	      {
-                maxz = this->ra[i]->nZeta;
+                maxz = _ra[i]->getNZeta();
 	      }
 	  }
 
@@ -382,22 +395,22 @@ namespace alexandria
             fprintf(debug, " %8s %4s %8s %4s\n", "q", "iq", "zeta", "iz");
 	  }
         fprintf(debug, "\n");
-        for (i = 0; (i < this->natom); i++)
+        for (i = 0; (i < _natom); i++)
 	  {
-            fprintf(debug, "GRQ: %3d %5s", i+1, this->ra[i]->atomtype);
-            for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+            fprintf(debug, "GRQ: %3d %5s", i+1, _ra[i]->getAtomtype().c_str());
+            for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	      {
                 fprintf(debug, " %8.4f %4d %8.4f %4d\n",
-                        this->ra[i]->q[zz], this->ra[i]->iq[zz],
-                        this->ra[i]->zeta[zz], this->ra[i]->iz[zz]);
+                        _ra[i]->getQ(zz), _ra[i]->getIq(zz),
+                        _ra[i]->getZeta(zz), _ra[i]->getIz(zz));
 	      }
             fprintf(debug, "\n");
 	  }
-        fprintf(debug, "this->qsum = %g\n", this->qsum);
+        fprintf(debug, "_qsum = %g\n", _qsum);
       }
   }
 
-  void Resp::write_histo( const char *fn, char *title, output_env_t oenv)
+  void Resp::writeHisto( const char *fn, char *title, output_env_t oenv)
   {
     FILE       *fp;
     gmx_stats_t gs;
@@ -409,9 +422,9 @@ namespace alexandria
         return;
       }
     gs = gmx_stats_init();
-    for (i = 0; (i < this->nesp); i++)
+    for (i = 0; (i < _nesp); i++)
       {
-        gmx_stats_add_point(gs, i, gmx2convert(this->pot_calc[i], eg2cHartree_e), 0, 0);
+        gmx_stats_add_point(gs, i, gmx2convert(_potCalc[i], eg2cHartree_e), 0, 0);
       }
 
     gmx_stats_make_histogram(gs, 0, &nbin, ehistoY, 1, &x, &y);
@@ -429,7 +442,7 @@ namespace alexandria
 
 
   //TODO  is src right or shood this be src
-  void Resp::write_diff_cube(Resp * src,const char *cube_fn,
+  void Resp::writeDiffCube(Resp * src,const char *cube_fn,
 			     const char *hist_fn, char *title, output_env_t oenv,
 			     int rho)
   {
@@ -450,56 +463,56 @@ namespace alexandria
         fprintf(fp, "%s\n", title);
         fprintf(fp, "POTENTIAL\n");
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n",
-                this->natom,
-                gmx2convert(this->origin[XX], eg2cBohr),
-                gmx2convert(this->origin[YY], eg2cBohr),
-                gmx2convert(this->origin[ZZ], eg2cBohr));
-        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", this->nxyz[XX],
-                gmx2convert(this->space[XX], eg2cBohr), 0.0, 0.0);
-        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", this->nxyz[YY],
-                0.0, gmx2convert(this->space[YY], eg2cBohr), 0.0);
-        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", this->nxyz[ZZ],
-                0.0, 0.0, gmx2convert(this->space[ZZ], eg2cBohr));
+                _natom,
+                gmx2convert(_origin[XX], eg2cBohr),
+                gmx2convert(_origin[YY], eg2cBohr),
+                gmx2convert(_origin[ZZ], eg2cBohr));
+        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", _nxyz[XX],
+                gmx2convert(_space[XX], eg2cBohr), 0.0, 0.0);
+        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", _nxyz[YY],
+                0.0, gmx2convert(_space[YY], eg2cBohr), 0.0);
+        fprintf(fp, "%5d%12.6f%12.6f%12.6f\n", _nxyz[ZZ],
+                0.0, 0.0, gmx2convert(_space[ZZ], eg2cBohr));
 
-        for (m = 0; (m < this->natom); m++)
+        for (m = 0; (m < _natom); m++)
 	  {
             q = 0;
-            for (zz = 0; (zz < this->ra[m]->nZeta); zz++)
+            for (zz = 0; (zz < _ra[m]->getNZeta()); zz++)
 	      {
-                q += this->ra[m]->q[zz];
+                q += _ra[m]->getQ(zz);
 	      }
             fprintf(fp, "%5d%12.6f%12.6f%12.6f%12.6f\n",
-                    this->ra[m]->atomnumber, q,
-                    gmx2convert(this->x[m][XX], eg2cBohr),
-                    gmx2convert(this->x[m][YY], eg2cBohr),
-                    gmx2convert(this->x[m][ZZ], eg2cBohr));
+                    _ra[m]->getAtomnumber(), q,
+                    gmx2convert(_x[m][XX], eg2cBohr),
+                    gmx2convert(_x[m][YY], eg2cBohr),
+                    gmx2convert(_x[m][ZZ], eg2cBohr));
 	  }
 
-        for (ix = m = 0; ix < this->nxyz[XX]; ix++)
+        for (ix = m = 0; ix < _nxyz[XX]; ix++)
 	  {
-            for (iy = 0; iy < this->nxyz[YY]; iy++)
+            for (iy = 0; iy < _nxyz[YY]; iy++)
 	      {
-                for (iz = 0; iz < this->nxyz[ZZ]; iz++, m++)
+                for (iz = 0; iz < _nxyz[ZZ]; iz++, m++)
 		  {
                     if (NULL != src)
 		      {
-                        pp = this->pot_calc[m] - src->pot[m];
+                        pp = _potCalc[m] - src->_pot[m];
                         if (NULL != ppcorr)
 			  {
                             gmx_stats_add_point(ppcorr,
-                                                gmx2convert(src->pot[m], eg2cHartree_e),
-                                                gmx2convert(this->pot_calc[m], eg2cHartree_e), 0, 0);
+                                                gmx2convert(src->_pot[m], eg2cHartree_e),
+                                                gmx2convert(_potCalc[m], eg2cHartree_e), 0, 0);
 			  }
 		      }
                     else
 		      {
                         if (rho == 0)
 			  {
-                            pp = gmx2convert(this->pot_calc[m], eg2cHartree_e);
+                            pp = gmx2convert(_potCalc[m], eg2cHartree_e);
 			  }
                         else
 			  {
-                            pp = this->rho[m]*pow(BOHR2NM, 3);
+                            pp = _rho[m]*pow(BOHR2NM, 3);
 			  }
 		      }
                     fprintf(fp, "%13.5e", pp);
@@ -511,9 +524,9 @@ namespace alexandria
 		      {
                         rmin = 1000;
                         /* Add point to histogram! */
-                        for (i = 0; (i < this->natom); i++)
+                        for (i = 0; (i < _natom); i++)
 			  {
-                            rvec_sub(this->x[i], this->esp[m], dx);
+                            rvec_sub(_x[i], _esp[m], dx);
                             r = norm(dx);
                             if (r < rmin)
 			      {
@@ -558,17 +571,17 @@ namespace alexandria
       }
   }
 
-  void Resp::write_cube(const char *fn, char *title)
+  void Resp::writeCube(const char *fn, char *title)
   {
-    write_diff_cube(NULL,  fn, NULL, title, NULL, 0);
+    writeDiffCube(NULL,  fn, NULL, title, NULL, 0);
   }
 
-  void Resp::write_rho( const char *fn, char *title)
+  void Resp::writeRho( const char *fn, char *title)
   {
-    write_diff_cube(NULL,  fn, NULL, title, NULL, 1);
+    writeDiffCube(NULL,  fn, NULL, title, NULL, 1);
   }
 
-  void Resp::read_cube( const char *fn, bool bESPonly)
+  void Resp::readCube( const char *fn, bool bESPonly)
   {
     char         **strings;
     bool           bOK;
@@ -598,10 +611,10 @@ namespace alexandria
       }
     if (bOK && !bESPonly)
       {
-        this->natom      = n;
-        this->origin[XX] = origin[XX];
-        this->origin[YY] = origin[YY];
-        this->origin[ZZ] = origin[ZZ];
+        _natom      = n;
+        _origin[XX] = origin[XX];
+        _origin[YY] = origin[YY];
+        _origin[ZZ] = origin[ZZ];
       }
     if (bOK)
       {
@@ -622,19 +635,19 @@ namespace alexandria
       {
         for (m = 0; (m < DIM); m++)
 	  {
-            this->nxyz[m]  = nxyz[m];
-            this->space[m] = space[m];
+            _nxyz[m]  = nxyz[m];
+            _space[m] = space[m];
 	  }
         for (m = 0; (m < DIM); m++)
 	  {
-            this->origin[m] = convert2gmx(this->origin[m], eg2cBohr);
-            this->space[m]  = convert2gmx(this->space[m], eg2cBohr);
+            _origin[m] = convert2gmx(_origin[m], eg2cBohr);
+            _space[m]  = convert2gmx(_space[m], eg2cBohr);
 	  }
       }
-    if (bOK && ((line+this->natom) < nlines))
+    if (bOK && ((line+_natom) < nlines))
       {
-        snew(this->x, this->natom);
-        for (m = 0; (m < this->natom); m++)
+        snew(_x, _natom);
+        for (m = 0; (m < _natom); m++)
 	  {
             bOK = (5 == sscanf(strings[line++], "%d%lf%lf%lf%lf",
                                &anr, &qq, &lx, &ly, &lz));
@@ -642,36 +655,36 @@ namespace alexandria
 	      {
                 if (!bESPonly)
 		  {
-                    this->ra[m]->atomnumber = anr;
-                    if (this->ra[m]->nZeta > 0)
+                    _ra[m]->setAtomnumber(anr);
+                    if (_ra[m]->getNZeta() > 0)
 		      {
-                        this->ra[m]->q[this->ra[m]->nZeta-1] = qq;
+                        _ra[m]->setQ(_ra[m]->getNZeta()-1, qq);
 		      }
 		  }
-                this->x[m][XX] = convert2gmx(lx, eg2cBohr);
-                this->x[m][YY] = convert2gmx(ly, eg2cBohr);
-                this->x[m][ZZ] = convert2gmx(lz, eg2cBohr);
+                _x[m][XX] = convert2gmx(lx, eg2cBohr);
+                _x[m][YY] = convert2gmx(ly, eg2cBohr);
+                _x[m][ZZ] = convert2gmx(lz, eg2cBohr);
 	      }
 	  }
       }
     if (bOK)
       {
-        this->nesp = this->nxyz[XX]*this->nxyz[YY]*this->nxyz[ZZ];
-        snew(this->pot, this->nesp);
-        snew(this->esp, this->nesp);
-        for (ix = m = 0; ix < this->nxyz[XX]; ix++)
+        _nesp = _nxyz[XX]*_nxyz[YY]*_nxyz[ZZ];
+        _pot.resize(_nesp);
+	snew(_esp,_nesp);
+        for (ix = m = 0; ix < _nxyz[XX]; ix++)
 	  {
-            for (iy = 0; iy < this->nxyz[YY]; iy++)
+            for (iy = 0; iy < _nxyz[YY]; iy++)
 	      {
-                for (iz = 0; iz < this->nxyz[ZZ]; iz++, m++)
+                for (iz = 0; iz < _nxyz[ZZ]; iz++, m++)
 		  {
-                    this->esp[m][XX] = this->origin[XX] + ix*this->space[XX];
-                    this->esp[m][YY] = this->origin[YY] + iy*this->space[YY];
-                    this->esp[m][ZZ] = this->origin[ZZ] + iz*this->space[ZZ];
+                    _esp[m][XX] = _origin[XX] + ix*_space[XX];
+                    _esp[m][YY] = _origin[YY] + iy*_space[YY];
+                    _esp[m][ZZ] = _origin[ZZ] + iz*_space[ZZ];
                     bOK            = (1 == sscanf(strings[line], forms[iz % 6], &pp));
                     if (bOK)
 		      {
-                        this->pot[m] = convert2gmx(pp, eg2cHartree_e);
+                        _pot[m] = convert2gmx(pp, eg2cHartree_e);
 		      }
                     if (iz % 6 == 5)
 		      {
@@ -698,23 +711,23 @@ namespace alexandria
     sfree(strings);
   }
 
-  void Resp::copy_grid(Resp * src)
+  void Resp::copyGrid(Resp * src)
   {
     int m;
 
     for (m = 0; (m < DIM); m++)
       {
-        this->origin[m] = src->origin[m];
-        this->space[m]  = src->space[m];
-        this->nxyz[m]   = src->nxyz[m];
+        _origin[m] = src->_origin[m];
+        _space[m]  = src->_space[m];
+        _nxyz[m]   = src->_nxyz[m];
       }
-    this->nesp = src->nesp;
-    snew(this->esp, this->nesp);
-    snew(this->pot, this->nesp);
-    snew(this->pot_calc, this->nesp);
-    for (m = 0; (m < this->nesp); m++)
+    _nesp = src->_nesp;
+    snew(_esp, _nesp);
+    _pot.resize(_nesp);
+    _potCalc.resize(_nesp);
+    for (m = 0; (m < _nesp); m++)
       {
-        copy_rvec(src->esp[m], this->esp[m]);
+        copy_rvec(src->_esp[m], _esp[m]);
       }
   }
 
@@ -727,12 +740,12 @@ namespace alexandria
     return dest;
   }
 
-  void Resp::make_grid( real spacing, matrix box, rvec x[])
+  void Resp::makeGrid( real spacing, matrix box, rvec x[])
   {
     int  i, j, k, m, n;
     rvec xyz;
 
-    if (0 != this->nesp)
+    if (0 != _nesp)
       {
         fprintf(stderr, "Overwriting existing ESP grid\n");
       }
@@ -741,58 +754,57 @@ namespace alexandria
         spacing = 0.1;
         fprintf(stderr, "spacing too small, setting it to %g\n", spacing);
       }
-    snew(this->x, this->natom);
-    for (i = 0; (i < this->natom); i++)
+    snew(_x, _natom);
+    for (i = 0; (i < _natom); i++)
       {
-        copy_rvec(x[i], this->x[i]);
+        copy_rvec(x[i], _x[i]);
       }
-    this->nesp = 1;
+    _nesp = 1;
     for (m = 0; (m < DIM); m++)
       {
-        this->nxyz[m]  = 1+(int) (box[m][m]/spacing);
-        this->space[m] = box[m][m]/this->nxyz[m];
-        this->nesp    *= this->nxyz[m];
+        _nxyz[m]  = 1+(int) (box[m][m]/spacing);
+        _space[m] = box[m][m]/_nxyz[m];
+        _nesp    *= _nxyz[m];
       }
     n = 0;
-    snew(this->esp, this->nesp);
-    snew(this->pot_calc, this->nesp);
-    for (i = 0; (i < this->nxyz[XX]); i++)
+    snew(_esp, _nesp);
+    _potCalc.resize(_nesp);
+    for (i = 0; (i < _nxyz[XX]); i++)
       {
-        xyz[XX] = (i-0.5*this->nxyz[XX])*this->space[XX];
-        for (j = 0; (j < this->nxyz[YY]); j++)
+        xyz[XX] = (i-0.5*_nxyz[XX])*_space[XX];
+        for (j = 0; (j < _nxyz[YY]); j++)
 	  {
-            xyz[YY] = (j-0.5*this->nxyz[YY])*this->space[YY];
-            for (k = 0; (k < this->nxyz[ZZ]); k++)
+            xyz[YY] = (j-0.5*_nxyz[YY])*_space[YY];
+            for (k = 0; (k < _nxyz[ZZ]); k++)
 	      {
-                xyz[ZZ] = (k-0.5*this->nxyz[ZZ])*this->space[ZZ];
-                copy_rvec(xyz, this->esp[n]);
+                xyz[ZZ] = (k-0.5*_nxyz[ZZ])*_space[ZZ];
+                copy_rvec(xyz, _esp[n]);
                 n++;
 	      }
 	  }
       }
   }
 
-  void Resp::calc_rho()
+  void Resp::calcRho()
   {
-    int  i, j, k;
+    unsigned int  i, j, k;
     real r, z, V, vv, pi32;
     rvec dx;
 
     pi32 = pow(M_PI, -1.5);
-    if (this->nrho < this->nesp)
+    if ((int)_rho.size() < _nesp)
       {
-        srenew(this->rho, this->nesp);
-        this->nrho = this->nesp;
+        _rho.resize(_nesp);
       }
-    for (i = 0; (i < this->nrho); i++)
+    for (i = 0; (i < _rho.size()); i++)
       {
         V = 0;
-        for (j = 0; (j < this->natom); j++)
+        for (j = 0; ((int)j < _natom); j++)
 	  {
             vv = 0;
-            rvec_sub(this->esp[i], this->x[j], dx);
+            rvec_sub(_esp[i], _x[j], dx);
             r = norm(dx);
-            switch (this->iDistributionModel)
+            switch (_iDistributionModel)
 	      {
 	      case eqdBultinck:
 	      case eqdAXp:
@@ -802,85 +814,85 @@ namespace alexandria
 		break;
 	      case eqdYang:
 	      case eqdRappe:
-		vv = this->ra[j]->q[0]*Nuclear_SS(r, this->ra[j]->row[0],
-						 this->ra[j]->zeta[0]);
+		vv = _ra[j]->getQ(0)*Nuclear_SS(r, _ra[j]->getRow(0),
+					     _ra[j]->getZeta(0));
 		break;
 	      case eqdAXg:
 		vv = 0;
-		for (k = 0; (k < this->ra[j]->nZeta); k++)
+		for (k = 0; ((int)k < _ra[j]->getNZeta()); k++)
 		  {
-		    z = this->ra[j]->zeta[k];
+		    z = _ra[j]->getZeta(k);
 		    if (z > 0)
 		      {
-			vv -= (this->ra[j]->q[k]*pi32*exp(-sqr(r*z))*
+			vv -= (_ra[j]->getQ(k)*pi32*exp(-sqr(r*z))*
 			       pow(z, 3));
 		      }
 		  }
 		break;
 	      default:
 		gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %d!",
-			  this->iDistributionModel);
+			  _iDistributionModel);
 	      }
             V  += vv;
 	  }
-        this->rho[i] = V;
+        _rho[i] = V;
       }
   }
 
-  void Resp::calc_pot()
+  void Resp::calcPot()
   {
     int    i, j, k, m;
     double r, r2, dx, V, vv;
 
-    for (i = 0; (i < this->nesp); i++)
+    for (i = 0; (i < _nesp); i++)
       {
         V = 0;
-        for (j = 0; (j < this->natom); j++)
+        for (j = 0; (j < _natom); j++)
 	  {
             vv = 0;
             r2 = 0;
             for (m = 0; (m < DIM); m++)
 	      {
-                dx  = this->esp[i][m]-this->x[j][m];
+                dx  = _esp[i][m]-_x[j][m];
                 r2 += dx*dx;
 	      }
             r = sqrt(r2);
-            switch (this->iDistributionModel)
+            switch (_iDistributionModel)
 	      {
 	      case eqdBultinck:
 	      case eqdAXp:
 		if (r > 0.01)
 		  {
-		    vv = this->ra[j]->q[0]/r;
+		    vv = _ra[j]->getQ(0)/r;
 		  }
 		break;
 	      case eqdAXs:
 		vv = 0;
-		for (k = 0; (k < this->ra[j]->nZeta); k++)
+		for (k = 0; (k < _ra[j]->getNZeta()); k++)
 		  {
-		    vv += this->ra[j]->q[k]*Nuclear_SS(r, this->ra[j]->row[k],
-						      this->ra[j]->zeta[k]);
+		    vv += _ra[j]->getQ(k)*Nuclear_SS(r, _ra[j]->getRow(k),
+						     _ra[j]->getZeta(k));
 		  }
 		break;
 	      case eqdYang:
 	      case eqdRappe:
-		vv = this->ra[j]->q[0]*Nuclear_SS(r, this->ra[j]->row[0],
-						 this->ra[j]->zeta[0]);
+		vv = _ra[j]->getQ(0)*Nuclear_SS(r, _ra[j]->getRow(0),
+					     _ra[j]->getZeta(0));
 		break;
 	      case eqdAXg:
 		vv = 0;
-		for (k = 0; (k < this->ra[j]->nZeta); k++)
+		for (k = 0; (k < _ra[j]->getNZeta()); k++)
 		  {
-		    vv += this->ra[j]->q[k]*Nuclear_GG(r, this->ra[j]->zeta[k]);
+		    vv += _ra[j]->getQ(k)*Nuclear_GG(r, _ra[j]->getZeta(k));
 		  }
 		break;
 	      default:
 		gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
-			  alexandria::Poldata::getEemtypeName(this->iDistributionModel));
+			  alexandria::Poldata::getEemtypeName(_iDistributionModel));
 	      }
             V  += vv;
 	  }
-        this->pot_calc[i] = V*ONE_4PI_EPS0;
+        _potCalc[i] = V*ONE_4PI_EPS0;
       }
   }
 
@@ -890,12 +902,12 @@ namespace alexandria
     fprintf(stderr, "         using the second set, starting at line %d\n", line);
   }
 
-  const char *Resp::get_stoichiometry()
+  const char *Resp::getStoichiometry()
   {
-    return this->stoichiometry;
+    return _stoichiometry.c_str();
   }
 
-  void Resp::get_set_vector(bool         bSet,
+  void Resp::getSetVector(bool         bSet,
 			    bool         bRandQ,
 			    bool         bRandZeta,
 			    unsigned int seed,
@@ -909,21 +921,21 @@ namespace alexandria
       {
         rnd = gmx_rng_init(seed);
       }
-    this->penalty = 0;
+    _penalty = 0;
     n           = 0;
     qtot        = 0;
     nrest       = 0;
-    for (i = 0; (i < this->natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
         if (bSet)
 	  {
             /* First do charges */
             qi = 0;
-            for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+            for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	      {
-                if (this->ra[i]->iq[zz] == n)
+                if (_ra[i]->getIq(zz) == n)
 		  {
-                    if (this->ra[i]->q[zz] == 0)
+                    if (_ra[i]->getQ(zz) == 0)
 		      {
                         nmx[n] = -qi;
                         if (bRandQ)
@@ -933,33 +945,33 @@ namespace alexandria
 		      }
                     else
 		      {
-                        nmx[n] = this->ra[i]->q[zz];
+                        nmx[n] = _ra[i]->getQ(zz);
 		      }
                     n++;
 		  }
-                qi += this->ra[i]->q[zz];
+                qi += _ra[i]->getQ(zz);
 	      }
             /* Then do zeta */
-            if (this->bFitZeta)
+            if (_bFitZeta)
 	      {
-                for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+                for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		  {
-                    if (this->ra[i]->iz[zz] == n)
+                    if (_ra[i]->getIz(zz) == n)
 		      {
-                        real zmin = this->zmin;
-                        real zmax = this->zmax;
+                        real zmin = _zmin;
+                        real zmax = _zmax;
 
-                        if ((this->delta_z > 0) && (this->ra[i]->bRestrained))
+                        if ((_deltaZ > 0) && (_ra[i]->getBRestrained()))
 			  {
-                            zmax = this->ra[i]->zeta_ref[zz]+this->delta_z;
-                            zmin = this->ra[i]->zeta_ref[zz]-this->delta_z;
+                            zmax = _ra[i]->getZetaRef(zz)+_deltaZ;
+                            zmin = _ra[i]->getZetaRef(zz)-_deltaZ;
 			  }
-                        if ((zz > 1) && (this->rDecrZeta >= 0))
+                        if ((zz > 1) && (_rDecrZeta >= 0))
 			  {
-                            zmax = this->ra[i]->zeta[zz-1]-this->rDecrZeta;
+                            zmax = _ra[i]->getZeta(zz-1)-_rDecrZeta;
                             if (zmax < zmin)
 			      {
-                                zmax = (zmin+this->ra[i]->zeta[zz-1])/2;
+                                zmax = (zmin+_ra[i]->getZeta(zz-1))/2;
 			      }
 			  }
                         if (bRandZeta)
@@ -968,9 +980,9 @@ namespace alexandria
 			  }
                         else
 			  {
-                            nmx[n] = this->ra[i]->zeta[zz];
+                            nmx[n] = _ra[i]->getZeta(zz);
 			  }
-                        this->ra[i]->zeta[zz] = nmx[n];
+                        _ra[i]->setZeta(zz, nmx[n]);
                         n++;
 		      }
 		  }
@@ -979,34 +991,34 @@ namespace alexandria
         else
 	  {
             /* Initialize to something strange */
-            if (this->bFitZeta)
+            if (_bFitZeta)
 	      {
-                for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+                for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		  {
-                    if (this->ra[i]->zeta[zz] != 0)
+                    if (_ra[i]->getZeta(zz) != 0)
 		      {
-                        this->ra[i]->zeta[zz] = NOTSET;
+                        _ra[i]->setZeta(zz, NOTSET);
 		      }
 		  }
 	      }
-            this->ra[i]->q[this->ra[i]->nZeta-1] = NOTSET;
+            _ra[i]->setQ(_ra[i]->getNZeta()-1, NOTSET);
 
             /* First do charges */
-            for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+            for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	      {
-                if (this->ra[i]->iq[zz] == n)
+                if (_ra[i]->getIq(zz) == n)
 		  {
-                    this->ra[i]->q[zz] = nmx[n];
-                    qtot           += this->ra[i]->q[zz];
+                    _ra[i]->setQ(zz, nmx[n]);
+                    qtot           += _ra[i]->getQ(zz);
                     n++;
 		  }
-                else if ((this->ra[i]->iq[zz] < n) && (this->ra[i]->iq[zz] >= 0))
+                else if ((_ra[i]->getIq(zz) < n) && (_ra[i]->getIq(zz) >= 0))
 		  {
                     for (zzz = 0; (zzz < i); zzz++)
 		      {
-                        if (this->ra[zzz]->iq[zz] == this->ra[i]->iq[zz])
+                        if (_ra[zzz]->getIq(zz) == _ra[i]->getIq(zz))
 			  {
-                            this->ra[i]->q[zz] = this->ra[zzz]->q[zz];
+                            _ra[i]->setQ(zz, _ra[zzz]->getQ(zz));
                             break;
 			  }
 		      }
@@ -1017,69 +1029,69 @@ namespace alexandria
 
                     /* Only sum those atoms to qtot, that are not part of
                        the "rest" charge */
-                    if (this->ra[i]->iq[zz] != -1)
+                    if (_ra[i]->getIq(zz) != -1)
 		      {
-                        qtot += this->ra[i]->q[zz];
+                        qtot += _ra[i]->getQ(zz);
 		      }
 		  }
-                else if (zz == this->ra[i]->nZeta-1)
+                else if (zz == _ra[i]->getNZeta()-1)
 		  {
                     nrest++;
 		  }
                 else
 		  {
-                    qtot += this->ra[i]->q[zz];
+                    qtot += _ra[i]->getQ(zz);
 		  }
 	      }
 
-            if (this->bFitZeta)
+            if (_bFitZeta)
 	      {
                 /* Then do zeta */
-                for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+                for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 		  {
-                    if (this->ra[i]->iz[zz] == n)
+                    if (_ra[i]->getIz(zz) == n)
 		      {
                         zeta               = nmx[n];
-                        this->ra[i]->zeta[zz] = zeta;
-                        if (this->delta_z >= 0)
+                        _ra[i]->setZeta(zz, zeta);
+                        if (_deltaZ >= 0)
 			  {
-                            real zmin = this->ra[i]->zeta_ref[zz]-this->delta_z;
-                            real zmax = this->ra[i]->zeta_ref[zz]+this->delta_z;
+                            real zmin = _ra[i]->getZetaRef(zz)-_deltaZ;
+                            real zmax = _ra[i]->getZetaRef(zz)+_deltaZ;
                             if (zeta <= zmin)
 			      {
-                                this->penalty += sqr(zeta-zmin);
+                                _penalty += sqr(zeta-zmin);
 			      }
                             else if (zeta >= zmax)
 			      {
-                                this->penalty += sqr(zmax-zeta);
+                                _penalty += sqr(zmax-zeta);
 			      }
 			  }
                         else
 			  {
-                            if (zeta <= this->zmin)
+                            if (zeta <= _zmin)
 			      {
-                                this->penalty += sqr(this->zmin-zeta);
+                                _penalty += sqr(_zmin-zeta);
 			      }
-                            else if (zeta >= this->zmax)
+                            else if (zeta >= _zmax)
 			      {
-                                this->penalty += sqr(this->zmax-zeta);
+                                _penalty += sqr(_zmax-zeta);
 			      }
-                            if ((this->rDecrZeta >= 0) && (zz > 0) &&
-                                (this->ra[i]->zeta[zz-1] != 0) &&
-                                ((this->ra[i]->zeta[zz-1] - zeta) < this->rDecrZeta))
+                            if ((_rDecrZeta >= 0) && (zz > 0) &&
+                                (_ra[i]->getZeta(zz-1) != 0) &&
+                                ((_ra[i]->getZeta(zz-1) - zeta) < _rDecrZeta))
 			      {
-                                this->penalty += sqr(this->ra[i]->zeta[zz-1] - zeta - this->rDecrZeta);
+                                _penalty += sqr(_ra[i]->getZeta(zz-1) - zeta - _rDecrZeta);
 			      }
 			  }
                         n++;
 		      }
-                    else if ((this->ra[i]->iz[zz] < n) && (this->ra[i]->iz[zz] >= 0))
+                    else if ((_ra[i]->getIz(zz) < n) && (_ra[i]->getIz(zz) >= 0))
 		      {
                         for (zzz = 0; (zzz < i); zzz++)
 			  {
-                            if (this->ra[zzz]->iz[zz] == this->ra[i]->iz[zz])
+                            if (_ra[zzz]->getIz(zz) == _ra[i]->getIz(zz))
 			      {
-                                this->ra[i]->zeta[zz] = this->ra[zzz]->zeta[zz];
+                                _ra[i]->setZeta(zz, _ra[zzz]->getZeta(zz));
                                 break;
 			      }
 			  }
@@ -1088,9 +1100,9 @@ namespace alexandria
                             gmx_fatal(FARGS, "Can not find a previous atom with iz[%d] = %d", zz, n);
 			  }
 		      }
-                    else if ((this->ra[i]->iz[zz] == -1) && (this->ra[i]->zeta[zz] != 0))
+                    else if ((_ra[i]->getIz(zz) == -1) && (_ra[i]->getZeta(zz) != 0))
 		      {
-                        gmx_fatal(FARGS, "ra[%d]->iz[%d] = %d whereas ra[%d]->zeta[%d] = %g", i, zz, this->ra[i]->iz[zz], i, zz, this->ra[i]->zeta[zz]);
+                        gmx_fatal(FARGS, "ra[%d]->iz[%d] = %d whereas ra[%d]->zeta[%d] = %g", i, zz, _ra[i]->getIz(zz), i, zz, _ra[i]->getZeta(zz));
 		      }
 		  }
 	      }
@@ -1100,72 +1112,72 @@ namespace alexandria
       {
         gmx_rng_destroy(rnd);
       }
-    if (n != this->nparam)
+    if (n != _nparam)
       {
-        gmx_fatal(FARGS, "Whoopsydaisies! n = %d, should be %d. bSet = %d", n, this->nparam, bSet);
+        gmx_fatal(FARGS, "Whoopsydaisies! n = %d, should be %d. bSet = %d", n, _nparam, bSet);
       }
 
     if (nrest > 0)
       {
-        dq = (this->qtot-qtot)/nrest;
+        dq = (_qtot-qtot)/nrest;
         if (debug)
 	  {
-            fprintf(debug, "this->qtot = %g, qtot = %g, nrest = %d, dq = %g\n",
-                    this->qtot, qtot, nrest, dq);
+            fprintf(debug, "_qtot = %g, qtot = %g, nrest = %d, dq = %g\n",
+                    _qtot, qtot, nrest, dq);
 	  }
-        for (i = 0; (i < this->natom); i++)
+        for (i = 0; (i < _natom); i++)
 	  {
-            if (this->ra[i]->iq[this->ra[i]->nZeta-1] == -1)
+            if (_ra[i]->getIq(_ra[i]->getNZeta()-1) == -1)
 	      {
-                this->ra[i]->q[this->ra[i]->nZeta-1] = dq;
+                _ra[i]->setQ(_ra[i]->getNZeta()-1,dq);
 	      }
 	  }
       }
     /* Check for excessive charges */
-    for (i = 0; (i < this->natom); i++)
+    for (i = 0; (i < _natom); i++)
       {
         qi = 0;
-        for (zz = 0; (zz < this->ra[i]->nZeta); zz++)
+        for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	  {
-            qi += this->ra[i]->q[zz];
+            qi += _ra[i]->getQ(zz);
 	  }
-        if (qi < this->qmin)
+        if (qi < _qmin)
 	  {
-            this->penalty += sqr(this->qmin-qi);
+            _penalty += sqr(_qmin-qi);
 	  }
-        else if (qi > this->qmax)
+        else if (qi > _qmax)
 	  {
-            this->penalty += sqr(this->qmax-qi);
+            _penalty += sqr(_qmax-qi);
 	  }
-        else if ((qi < -0.02) && (this->ra[i]->atomnumber == 1))
+        else if ((qi < -0.02) && (_ra[i]->getAtomnumber() == 1))
 	  {
-            this->penalty += qi*qi;
+            _penalty += qi*qi;
 	  }
       }
-    this->penalty *= this->pfac;
+    _penalty *= _pfac;
   }
 
-  void Resp::add_point( double x, double y,
+  void Resp::addPoint( double x, double y,
                         double z, double V)
   {
     int i;
 
-    i = this->nesp++;
-    srenew(this->esp, this->nesp);
-    srenew(this->pot, this->nesp);
-    srenew(this->pot_calc, this->nesp);
-    this->esp[i][XX]  = x;
-    this->esp[i][YY]  = y;
-    this->esp[i][ZZ]  = z;
-    this->pot[i]      = V;
-    this->pot_calc[i] = 0;
+    i = _nesp++;
+    snew(_esp,_nesp);
+    _pot.resize(_nesp);
+    _potCalc.resize(_nesp);
+    _esp[i][XX]  = x;
+    _esp[i][YY]  = y;
+    _esp[i][ZZ]  = z;
+    _pot[i]      = V;
+    _potCalc[i] = 0;
   }
 
-  real Resp::my_weight( int iatom)
+  real Resp::myWeight( int iatom)
   {
-    if (iatom < this->natom)
+    if (iatom < _natom)
       {
-        return this->watoms;
+        return _watoms;
       }
     else
       {
@@ -1173,109 +1185,109 @@ namespace alexandria
       }
   }
 
-  void Resp::pot_lsq( gmx_stats_t lsq)
+  void Resp::potLsq( gmx_stats_t lsq)
   {
     int    i;
     double w;
 
-    for (i = 0; (i < this->nesp); i++)
+    for (i = 0; (i < _nesp); i++)
       {
-        w = my_weight( i);
+        w = myWeight( i);
         if (w > 0)
 	  {
             gmx_stats_add_point(lsq,
-                                gmx2convert(this->pot[i], eg2cHartree_e),
-                                gmx2convert(this->pot_calc[i], eg2cHartree_e), 0, 0);
+                                gmx2convert(_pot[i], eg2cHartree_e),
+                                gmx2convert(_potCalc[i], eg2cHartree_e), 0, 0);
 	  }
       }
   }
 
-  void Resp::calc_rms()
+  void Resp::calcRms()
   {
     int    i;
     double pot2, s2, sum2, w, wtot, entropy;
     char   buf[STRLEN];
 
     pot2 = sum2 = wtot = entropy = 0;
-    sprintf(buf, " - weight %g in fit", this->watoms);
-    for (i = 0; (i < this->nesp); i++)
+    sprintf(buf, " - weight %g in fit", _watoms);
+    for (i = 0; (i < _nesp); i++)
       {
-        w = my_weight( i);
-        if ((NULL != debug) && (i < 2*this->natom))
+        w = myWeight( i);
+        if ((NULL != debug) && (i < 2*_natom))
 	  {
             fprintf(debug, "ESP %d QM: %g EEM: %g DIFF: %g%s\n",
-                    i, this->pot[i], this->pot_calc[i],
-                    this->pot[i]-this->pot_calc[i],
-                    (i < this->natom)  ? buf : "");
+                    i, _pot[i], _potCalc[i],
+                    _pot[i]-_potCalc[i],
+                    (i < _natom)  ? buf : "");
 	  }
-        s2    = w*sqr(this->pot[i]-this->pot_calc[i]);
-        if ((s2 > 0) && (this->bEntropy))
+        s2    = w*sqr(_pot[i]-_potCalc[i]);
+        if ((s2 > 0) && (_bEntropy))
 	  {
             entropy += s2*log(s2);
 	  }
         sum2 += s2;
-        pot2 += w*sqr(this->pot[i]);
+        pot2 += w*sqr(_pot[i]);
         wtot += w;
       }
-    this->wtot = wtot;
+    _wtot = wtot;
     if (wtot > 0)
       {
-        this->rms     = gmx2convert(sqrt(sum2/wtot), eg2cHartree_e);
-        this->entropy = gmx2convert(entropy/wtot, eg2cHartree_e);
+        _rms     = gmx2convert(sqrt(sum2/wtot), eg2cHartree_e);
+        _entropy = gmx2convert(entropy/wtot, eg2cHartree_e);
       }
     else
       {
-        this->rms     = 0;
-        this->entropy = 0;
+        _rms     = 0;
+        _entropy = 0;
       }
-    this->rrms = sqrt(sum2/pot2);
+    _rrms = sqrt(sum2/pot2);
   }
 
-  double Resp::get_rms( real *wtot)
+  double Resp::getRms( real *wtot)
   {
-    calc_rms();
-    *wtot = this->wtot;
-    if (this->bEntropy)
+    calcRms();
+    *wtot = _wtot;
+    if (_bEntropy)
       {
-        return this->entropy;
+        return _entropy;
       }
     else
       {
-        return this->rms;
+        return _rms;
       }
   }
 
-  void Resp::calc_penalty()
+  void Resp::calcPenalty()
   {
     int    i;
     double p, b2;
 
     p = 0;
-    if (this->bAXpRESP && (this->iDistributionModel == eqdAXp))
+    if (_bAXpRESP && (_iDistributionModel == eqdAXp))
       {
-        b2 = sqr(this->b_hyper);
-        for (i = 0; (i < this->natom); i++)
+        b2 = sqr(_bHyper);
+        for (i = 0; (i < _natom); i++)
 	  {
-            p += sqrt(sqr(this->ra[i]->q[0]) + b2) - this->b_hyper;
+            p += sqrt(sqr(_ra[i]->getQ(0)) + b2) - _bHyper;
 	  }
-        p = (this->qfac * p);
+        p = (_qfac * p);
       }
-    this->penalty += p;
+    _penalty += p;
   }
 
   //Writen in c stile, needed as an function argument
-  double Resp::charge_function(void * gr,double v[])
+  double Resp::chargeFunction(void * gr,double v[])
   {
     Resp * resp = (Resp *)gr;
     double     rms = 0;
     real       wtot;
 
-    resp->get_set_vector( false, false, false, resp->seed, v);
-    resp->calc_pot();
-    resp->calc_penalty();
-    rms = resp->get_rms( &wtot);
+    resp->getSetVector( false, false, false, resp->_seed, v);
+    resp->calcPot();
+    resp->calcPenalty();
+    rms = resp->getRms( &wtot);
 
-    return rms; // + this->penalty;
+    return rms; // + _penalty;
   }
 
   void Resp::statistics( int len, char buf[])
@@ -1283,7 +1295,7 @@ namespace alexandria
     if (len >= 100)
       {
         sprintf(buf, "RMS: %10e [Hartree/e] RRMS: %10e Entropy: %10e Penalty: %10e",
-                this->rms, this->rrms, this->entropy, this->penalty);
+                _rms, _rrms, _entropy, _penalty);
       }
     else
       {
@@ -1291,7 +1303,7 @@ namespace alexandria
       }
   }
 
-  int Resp::optimize_charges(FILE *fp,  int maxiter,
+  int Resp::optimizeCharges(FILE *fp,  int maxiter,
 			     real toler, real *rms)
   {
     double *param;
@@ -1299,11 +1311,11 @@ namespace alexandria
     int     bConv;
     char    buf[STRLEN];
 
-    snew(param, this->nparam);
+    snew(param, _nparam);
 
-    get_set_vector( true, this->bRandQ, this->bRandZeta, this->seed, param);
+    getSetVector( true, _bRandQ, _bRandZeta, _seed, param);
 
-    bConv = nmsimplex(fp, (void *)this, charge_function, param, this->nparam,
+    bConv = nmsimplex(fp, (void *)this, chargeFunction, param, _nparam,
                       toler, 1, maxiter, &ccc);
     if (bConv)
       {
@@ -1314,16 +1326,16 @@ namespace alexandria
         printf("NM Simplex did not converge\n\n");
       }
 
-    if (this->bEntropy)
+    if (_bEntropy)
       {
-        *rms = this->entropy;
+        *rms = _entropy;
       }
     else
       {
-        *rms = this->rms;
+        *rms = _rms;
       }
 
-    get_set_vector( false, false, false, this->seed, param);
+    getSetVector( false, false, false, _seed, param);
 
     sfree(param);
 
@@ -1337,29 +1349,6 @@ namespace alexandria
       }
   }
 
-  Resp::~Resp()
-  {
-    int i;
-
-    sfree(this->x);
-    sfree(this->esp);
-    sfree(this->pot);
-    i = 0;
-    while (NULL != this->dzatoms[i])
-      {
-        sfree(this->dzatoms[i]);
-        i++;
-      }
-    if (NULL != this->dzatoms)
-      {
-        sfree(this->dzatoms);
-      }
-    for (i = 0; (i < this->natom); i++)
-      {
-        delete this->ra[i];
-      }
-    sfree(this->ra);
-  }
 
   void Resp::potcomp( const char *potcomp,
                       const char *pdbdiff, output_env_t oenv)
@@ -1375,12 +1364,12 @@ namespace alexandria
         fp = xvgropen(potcomp, "Electrostatic potential", unit2string(unit), unit2string(unit), oenv);
         xvgr_legend(fp, 2, pcleg, oenv);
         fprintf(fp, "@type xy\n");
-        for (i = 0; (i < this->nesp); i++)
+        for (i = 0; (i < _nesp); i++)
 	  {
             /* Conversion may or may not be in vain depending on unit */
-            exp = gmx2convert(this->pot[i], unit);
-            eem = gmx2convert(this->pot_calc[i], unit);
-            if (i == this->natom)
+            exp = gmx2convert(_pot[i], unit);
+            eem = gmx2convert(_potCalc[i], unit);
+            if (i == _natom)
 	      {
                 fprintf(fp, "&\n");
                 fprintf(fp, "@type xy\n");
@@ -1394,61 +1383,61 @@ namespace alexandria
       {
         fp = fopen(pdbdiff, "w");
         fprintf(fp, "REMARK All distances are scaled by a factor of two.\n");
-        for (i = 0; (i < this->nesp); i++)
+        for (i = 0; (i < _nesp); i++)
 	  {
-            exp = gmx2convert(this->pot[i], eg2cHartree_e);
-            eem = gmx2convert(this->pot_calc[i], eg2cHartree_e);
-            pp  = this->pot[i]-this->pot_calc[i];
+            exp = gmx2convert(_pot[i], eg2cHartree_e);
+            eem = gmx2convert(_potCalc[i], eg2cHartree_e);
+            pp  = _pot[i]-_potCalc[i];
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                    "ATOM", 1, "HE", "HE", ' ', i+1, ' ', 20*this->esp[i][XX],
-                    20*this->esp[i][YY], 20*this->esp[i][ZZ], 0.0, pp);
+                    "ATOM", 1, "HE", "HE", ' ', i+1, ' ', 20*_esp[i][XX],
+                    20*_esp[i][YY], 20*_esp[i][ZZ], 0.0, pp);
 	  }
         fclose(fp);
       }
   }
 
-  double Resp::get_qtot( int atom)
+  double Resp::getQtot( int atom)
   {
     int    i;
     double q = 0;
 
-    range_check(atom, 0, this->natom);
-    for (i = 0; (i < this->ra[atom]->nZeta); i++)
+    range_check(atom, 0, _natom);
+    for (i = 0; (i < _ra[atom]->getNZeta()); i++)
       {
-        q += this->ra[atom]->q[i];
+        q += _ra[atom]->getQ(i);
       }
     return q;
   }
 
-  double Resp::get_q( int atom, int zz)
+  double Resp::getQ( int atom, int zz)
   {
-    range_check(atom, 0, this->natom);
-    range_check(zz, 0, this->ra[atom]->nZeta);
+    range_check(atom, 0, _natom);
+    range_check(zz, 0, _ra[atom]->getNZeta());
 
-    return this->ra[atom]->q[zz];
+    return _ra[atom]->getQ(zz);
   }
 
-  double Resp::get_zeta( int atom, int zz)
+  double Resp::getZeta( int atom, int zz)
   {
-    range_check(atom, 0, this->natom);
-    range_check(zz, 0, this->ra[atom]->nZeta);
+    range_check(atom, 0, _natom);
+    range_check(zz, 0, _ra[atom]->getNZeta());
 
-    return this->ra[atom]->zeta[zz];
+    return _ra[atom]->getZeta(zz);
   }
 
-  void Resp::set_q( int atom, int zz, double q)
+  void Resp::setQ( int atom, int zz, double q)
   {
-    range_check(atom, 0, this->natom);
-    range_check(zz, 0, this->ra[atom]->nZeta);
+    range_check(atom, 0, _natom);
+    range_check(zz, 0, _ra[atom]->getNZeta());
 
-    this->ra[atom]->q[zz] = q;
+    _ra[atom]->setQ(zz,q);
   }
 
-  void Resp::set_zeta( int atom, int zz, double zeta)
+  void Resp::setZeta( int atom, int zz, double zeta)
   {
-    range_check(atom, 0, this->natom);
-    range_check(zz, 0, this->ra[atom]->nZeta);
+    range_check(atom, 0, _natom);
+    range_check(zz, 0, _ra[atom]->getNZeta());
 
-    this->ra[atom]->zeta[zz] = zeta;
+    _ra[atom]->setZeta(zz,zeta);
   }
 }

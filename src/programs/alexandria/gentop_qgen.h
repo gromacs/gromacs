@@ -92,23 +92,23 @@ namespace alexandria
     void debugFun(FILE *fp);
 
   private:
-    gmx_bool                  bWarned;
-    ChargeDistributionModel   iChargeDistributionModel;
-    ChargeGenerationAlgorithm iChargeGenerationAlgorithm;
-    int                       natom, eQGEN;
-    real                      qtotal, chieq, hfac, epsr;
+    gmx_bool                  _bWarned;
+    ChargeDistributionModel   _iChargeDistributionModel;
+    ChargeGenerationAlgorithm _iChargeGenerationAlgorithm;
+    int                       _natom, _eQGEN;
+    real                      _qtotal, _chieq, _hfac, _epsr;
     /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
-    std::vector<char *>                    elem;
-    std::vector<int>                      atomnr;
-    std::vector<real>                     chi0, rhs, j00;
-    std::vector<rvec>                     x;
+    std::vector<std::string>                    _elem;
+    std::vector<int>                      _atomnr;
+    std::vector<real>                     _chi0, _rhs, _j00;
+    rvec *                     _x;
     /* Jab is a matrix over atom pairs */
-    std::vector<std::vector<real> >                    Jab;
+    std::vector<std::vector<real> >                    _Jab;
     /* For each atom i there are nZeta[i] row, q and zeta entries */
-    std::vector<int>                      nZeta;
-    std::vector<std::vector<int> >                     row;
-    gmx_bool                  bAllocSave;
-    std::vector<std::vector<real> >                    q, zeta, qsave, zetasave;
+    std::vector<int>                      _nZeta;
+    std::vector<std::vector<int> >                     _row;
+    gmx_bool                  _bAllocSave;
+    std::vector<std::vector<real> >                   _q, _zeta, _qsave, _zetasave;
   
   
     real calcJab(ChargeDistributionModel iChargeDistributionModel,
