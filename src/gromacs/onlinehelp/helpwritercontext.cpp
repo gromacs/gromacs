@@ -215,10 +215,10 @@ std::string repall(const std::string &s, const t_sandr (&sa)[nsr])
  * Provides an interface that is used to implement different types of output
  * from HelpWriterContext::Impl::processMarkup().
  */
-class WrapperInterface
+class IWrapper
 {
     public:
-        virtual ~WrapperInterface() {}
+        virtual ~IWrapper() {}
 
         /*! \brief
          * Provides the wrapping settings.
@@ -235,7 +235,7 @@ class WrapperInterface
 /*! \brief
  * Wraps markup output into a single string.
  */
-class WrapperToString : public WrapperInterface
+class WrapperToString : public IWrapper
 {
     public:
         //! Creates a wrapper with the given settings.
@@ -263,7 +263,7 @@ class WrapperToString : public WrapperInterface
 /*! \brief
  * Wraps markup output into a vector of string (one line per element).
  */
-class WrapperToVector : public WrapperInterface
+class WrapperToVector : public IWrapper
 {
     public:
         //! Creates a wrapper with the given settings.
@@ -520,7 +520,7 @@ class HelpWriterContext::Impl
          * or providing an interface for the caller to retrieve the output.
          */
         void processMarkup(const std::string &text,
-                           WrapperInterface  *wrapper) const;
+                           IWrapper          *wrapper) const;
 
         //! Constant state shared by all child context objects.
         StatePointer            state_;
@@ -549,7 +549,7 @@ std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) cons
 }
 
 void HelpWriterContext::Impl::processMarkup(const std::string &text,
-                                            WrapperInterface  *wrapper) const
+                                            IWrapper          *wrapper) const
 {
     std::string result(text);
     for (ReplaceList::const_iterator i = replacements_.begin();

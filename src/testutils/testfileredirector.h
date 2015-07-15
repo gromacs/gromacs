@@ -57,7 +57,7 @@ namespace test
 class TestReferenceChecker;
 
 /*! \libinternal \brief
- * In-memory implementation for FileInputRedirectorInterface for tests.
+ * In-memory implementation for IFileInputRedirector for tests.
  *
  * By default, this implementation will return `false` for all file existence
  * checks.  To return `true` for a specific path, use addExistingFile().
@@ -65,7 +65,7 @@ class TestReferenceChecker;
  * \inlibraryapi
  * \ingroup module_testutils
  */
-class TestFileInputRedirector : public FileInputRedirectorInterface
+class TestFileInputRedirector : public IFileInputRedirector
 {
     public:
         TestFileInputRedirector();
@@ -80,7 +80,7 @@ class TestFileInputRedirector : public FileInputRedirectorInterface
          */
         void addExistingFile(const char *filename);
 
-        // From FileInputRedirectorInterface
+        // From IFileInputRedirector
         virtual bool fileExists(const char *filename) const;
 
     private:
@@ -90,14 +90,14 @@ class TestFileInputRedirector : public FileInputRedirectorInterface
 };
 
 /*! \libinternal \brief
- * In-memory implementation of FileOutputRedirectorInterface for tests.
+ * In-memory implementation of IFileOutputRedirector for tests.
  *
  * This class redirects all output files to in-memory buffers, and supports
  * checking the contents of these files using the reference data framework.
  *
  * \ingroup module_testutils
  */
-class TestFileOutputRedirector : public FileOutputRedirectorInterface
+class TestFileOutputRedirector : public IFileOutputRedirector
 {
     public:
         TestFileOutputRedirector();
@@ -113,7 +113,7 @@ class TestFileOutputRedirector : public FileOutputRedirectorInterface
          */
         void checkRedirectedFiles(TestReferenceChecker *checker);
 
-        // From FileOutputRedirectorInterface
+        // From IFileOutputRedirector
         virtual TextOutputStream &standardOutput();
         virtual TextOutputStreamPointer openTextOutputFile(const char *filename);
 

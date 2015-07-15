@@ -34,7 +34,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::FileOutputRedirectorInterface.
+ * Declares gmx::IFileOutputRedirector.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -57,7 +57,7 @@ namespace gmx
  * all file system operations that need to support this redirection.
  *
  * This allows tests to override the file existence checks without actually
- * using the file system.  See FileOutputRedirectorInterface for notes on
+ * using the file system.  See IFileOutputRedirector for notes on
  * a typical usage pattern.
  *
  * With some further refactoring of the File class, this could also support
@@ -67,10 +67,10 @@ namespace gmx
  * \inlibraryapi
  * \ingroup module_utility
  */
-class FileInputRedirectorInterface
+class IFileInputRedirector
 {
     public:
-        virtual ~FileInputRedirectorInterface();
+        virtual ~IFileInputRedirector();
 
         /*! \brief
          * Checks whether the provided path exists (and is a file).
@@ -110,10 +110,10 @@ class FileInputRedirectorInterface
  * \inlibraryapi
  * \ingroup module_utility
  */
-class FileOutputRedirectorInterface
+class IFileOutputRedirector
 {
     public:
-        virtual ~FileOutputRedirectorInterface();
+        virtual ~IFileOutputRedirector();
 
         /*! \brief
          * Returns a stream to use for `stdout` output.
@@ -135,7 +135,7 @@ class FileOutputRedirectorInterface
 
 //! \cond libapi
 /*! \brief
- * Returns default implementation for FileInputRedirectorInterface.
+ * Returns default implementation for IFileInputRedirector.
  *
  * The returned implementation does not redirect anything, but just uses the
  * file system normally.
@@ -144,9 +144,9 @@ class FileOutputRedirectorInterface
  *
  * \ingroup module_utility
  */
-FileInputRedirectorInterface &defaultFileInputRedirector();
+IFileInputRedirector &defaultFileInputRedirector();
 /*! \brief
- * Returns default implementation for FileOutputRedirectorInterface.
+ * Returns default implementation for IFileOutputRedirector.
  *
  * The returned implementation does not redirect anything, but just opens the
  * files at requested locations.
@@ -155,7 +155,7 @@ FileInputRedirectorInterface &defaultFileInputRedirector();
  *
  * \ingroup module_utility
  */
-FileOutputRedirectorInterface &defaultFileOutputRedirector();
+IFileOutputRedirector &defaultFileOutputRedirector();
 //! \endcond
 
 } // namespace gmx

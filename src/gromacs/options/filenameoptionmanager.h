@@ -51,8 +51,8 @@
 namespace gmx
 {
 
-class FileInputRedirectorInterface;
 class FileNameOptionInfo;
+class IFileInputRedirector;
 class Options;
 
 /*! \brief
@@ -79,7 +79,7 @@ class Options;
  * \inpublicapi
  * \ingroup module_selection
  */
-class FileNameOptionManager : public OptionManagerInterface
+class FileNameOptionManager : public IOptionManager
 {
     public:
         FileNameOptionManager();
@@ -101,7 +101,7 @@ class FileNameOptionManager : public OptionManagerInterface
          * For tests, there should only be need to call this a single time,
          * right after creating the manager.
          */
-        void setInputRedirector(const FileInputRedirectorInterface *redirector);
+        void setInputRedirector(const IFileInputRedirector *redirector);
 
         /*! \brief
          * Disables special input file option handling.

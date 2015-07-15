@@ -87,8 +87,11 @@ C++ code
   You may use an all-lowercase name with underscores if your class closely
   resembles an external construct (e.g., a standard library construct) named
   that way.
-* C++ interfaces are named with a ``Interface`` suffix, and abstract base
-  classes with an ``Abstract`` prefix.
+* C++ interfaces are named with an ``I`` prefix, such as in ICommandLineModule.
+  This keeps interfaces identifiable, without introducing too much clutter
+  (as the interface is typically used quite widely, spelling out
+  ``Interface`` would make many of the names unnecessarily long).
+* Abstract base classes are typically named with an ``Abstract`` prefix.
 * Member variables are named with a trailing underscore.
 * Accessors for a variable ``foo_`` are named ``foo()`` and ``setFoo()``.
 * Global variables are named with a ``g_`` prefix.

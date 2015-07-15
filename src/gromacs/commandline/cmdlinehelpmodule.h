@@ -43,7 +43,7 @@
 #define GMX_COMMANDLINE_CMDLINEHELPMODULE_H
 
 #include "gromacs/commandline/cmdlinemodule.h"
-#include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/classhelpers.h"
 
 #include "cmdlinemodulemanager-impl.h"
@@ -52,8 +52,8 @@ namespace gmx
 {
 
 class CommandLineHelpContext;
-class FileOutputRedirectorInterface;
-class ProgramContextInterface;
+class IFileOutputRedirector;
+class IProgramContext;
 
 class CommandLineHelpModuleImpl;
 
@@ -66,7 +66,7 @@ class CommandLineHelpModuleImpl;
  *
  * \ingroup module_commandline
  */
-class CommandLineHelpModule : public CommandLineModuleInterface
+class CommandLineHelpModule : public ICommandLineModule
 {
     public:
         /*! \brief
@@ -79,7 +79,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * \param[in] groups   List of module groups.
          * \throws    std::bad_alloc if out of memory.
          */
-        CommandLineHelpModule(const ProgramContextInterface    &programContext,
+        CommandLineHelpModule(const IProgramContext            &programContext,
                               const std::string                &binaryName,
                               const CommandLineModuleMap       &modules,
                               const CommandLineModuleGroupList &groups);
@@ -96,7 +96,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * safety in CommandLineModuleManager::addModule().
          */
         HelpTopicPointer
-        createModuleHelpTopic(const CommandLineModuleInterface &module) const;
+        createModuleHelpTopic(const ICommandLineModule &module) const;
         /*! \brief
          * Adds a top-level help topic.
          *
@@ -114,7 +114,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * If called, the help module directly prints the help for the given
          * module when called, skipping any other processing.
          */
-        void setModuleOverride(const CommandLineModuleInterface &module);
+        void setModuleOverride(const ICommandLineModule &module);
 
         /*! \brief
          * Sets a file redirector for writing help output.
@@ -122,7 +122,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * Used for unit testing; see
          * CommandLineModuleManager::setOutputRedirector() for more details.
          */
-        void setOutputRedirector(FileOutputRedirectorInterface *output);
+        void setOutputRedirector(IFileOutputRedirector *output);
 
         virtual const char *name() const { return "help"; }
         virtual const char *shortDescription() const

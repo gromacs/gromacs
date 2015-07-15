@@ -169,7 +169,7 @@ MockOptionsModule &
 CommandLineModuleManagerTestBase::addOptionsModule(const char *name, const char *description)
 {
     MockOptionsModule *module = new MockOptionsModule();
-    gmx::CommandLineOptionsModuleInterface::registerModule(
+    gmx::ICommandLineOptionsModule::registerModule(
             &manager(), name, description, module);
     return *module;
 }

@@ -264,7 +264,7 @@ class CommandLineTestHelper::Impl
 
 // static
 int CommandLineTestHelper::runModule(
-        CommandLineModuleInterface *module, CommandLine *commandLine)
+        ICommandLineModule *module, CommandLine *commandLine)
 {
     CommandLineModuleSettings settings;
     module->init(&settings);
@@ -273,12 +273,12 @@ int CommandLineTestHelper::runModule(
 
 // static
 int CommandLineTestHelper::runModule(
-        CommandLineOptionsModuleInterface::FactoryMethod  factory,
+        ICommandLineOptionsModule::FactoryMethod          factory,
         CommandLine                                      *commandLine)
 {
     // The name and description are not used in the tests, so they can be NULL.
-    boost::scoped_ptr<CommandLineModuleInterface> module(
-            CommandLineOptionsModuleInterface::createModule(NULL, NULL, factory));
+    boost::scoped_ptr<ICommandLineModule> module(
+            ICommandLineOptionsModule::createModule(NULL, NULL, factory));
     return runModule(module.get(), commandLine);
 }
 

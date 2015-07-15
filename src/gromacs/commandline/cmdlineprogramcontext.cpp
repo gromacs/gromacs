@@ -86,12 +86,12 @@ std::string quoteIfNecessary(const char *str)
 }
 
 /*! \brief
- * Default implementation for ExecutableEnvironmentInterface.
+ * Default implementation for IExecutableEnvironment.
  *
- * Used if ExecutableEnvironmentInterface is not explicitly provided when
+ * Used if IExecutableEnvironment is not explicitly provided when
  * constructing CommandLineProgramContext.
  */
-class DefaultExecutableEnvironment : public ExecutableEnvironmentInterface
+class DefaultExecutableEnvironment : public IExecutableEnvironment
 {
     public:
         //! Allocates a default environment.
@@ -128,8 +128,8 @@ class DefaultExecutableEnvironment : public ExecutableEnvironmentInterface
  * If a binary with the given name cannot be located, \p invokedName is
  * returned.
  */
-std::string findFullBinaryPath(const std::string                    &invokedName,
-                               const ExecutableEnvironmentInterface &env)
+std::string findFullBinaryPath(const std::string            &invokedName,
+                               const IExecutableEnvironment &env)
 {
     std::string searchName = invokedName;
     // On Windows & Cygwin we need to add the .exe extension,

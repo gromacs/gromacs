@@ -63,11 +63,11 @@ class MockHelpTopic;
 class TestFileOutputRedirector;
 
 /*! \internal \brief
- * Mock implementation of gmx::CommandLineModuleInterface.
+ * Mock implementation of gmx::ICommandLineModule.
  *
  * \ingroup module_commandline
  */
-class MockModule : public gmx::CommandLineModuleInterface
+class MockModule : public gmx::ICommandLineModule
 {
     public:
         //! Creates a mock module with the given name and description.
@@ -97,11 +97,11 @@ class MockModule : public gmx::CommandLineModuleInterface
 };
 
 /*! \internal \brief
- * Mock implementation of gmx::CommandLineOptionsModuleInterface.
+ * Mock implementation of gmx::ICommandLineOptionsModule.
  *
  * \ingroup module_commandline
  */
-class MockOptionsModule : public gmx::CommandLineOptionsModuleInterface
+class MockOptionsModule : public gmx::ICommandLineOptionsModule
 {
     public:
         MockOptionsModule();

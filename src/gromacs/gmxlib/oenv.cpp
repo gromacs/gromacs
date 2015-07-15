@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 
 struct output_env
 {
-    explicit output_env(const gmx::ProgramContextInterface &context)
+    explicit output_env(const gmx::IProgramContext &context)
         : programContext(context)
     {
         time_unit   = time_ps;
@@ -53,7 +53,7 @@ struct output_env
         verbosity   = 0;
     }
 
-    const gmx::ProgramContextInterface  &programContext;
+    const gmx::IProgramContext  &programContext;
 
     /* the time unit, enum defined in oenv.h */
     time_unit_t                          time_unit;
@@ -91,7 +91,7 @@ static const char *time_units_xvgr[] = {
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
 void output_env_init(output_env_t *oenvp,
-                     const gmx::ProgramContextInterface &context,
+                     const gmx::IProgramContext &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity)
 {
@@ -207,7 +207,7 @@ const char *output_env_get_program_display_name(const output_env_t oenv)
     return displayName;
 }
 
-const gmx::ProgramContextInterface &
+const gmx::IProgramContext &
 output_env_get_program_context(const output_env_t oenv)
 {
     return oenv->programContext;

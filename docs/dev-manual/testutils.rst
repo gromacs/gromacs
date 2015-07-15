@@ -136,7 +136,7 @@ a few parts:
 In addition to ``src/testutils/``, some of the module test directories may
 provide reusable test code that is used in higher-level tests.  For example,
 the ``src/gromacs/analysisdata/tests/`` provides test fixtures, a mock
-implementation for gmx::AnalysisDataModuleInterface, and some helper classes
+implementation for gmx::IAnalysisDataModule, and some helper classes
 that are also used in ``src/gromacs/trajectoryanalysis/tests/``.
 These cases are handled using CMake object libraries that are linked to all the
 test binaries that need them.

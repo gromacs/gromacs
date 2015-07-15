@@ -53,10 +53,10 @@
  *    temporary files that need to be created during the test.
  *  - gmx::test::TestFileInputRedirector (in testfileredirector.h) provides
  *    functionality for capturing file existence checks in code that uses
- *    gmx::FileInputRedirectorInterface.
+ *    gmx::IFileInputRedirector.
  *  - gmx::test::TestFileOutputRedirector (in testfileredirector.h) provides
  *    functionality for capturing file output (including `stdout`) from code
- *    that uses gmx::FileOutputRedirectorInterface, and checking that output
+ *    that uses gmx::IFileOutputRedirector, and checking that output
  *    against reference data.
  *  - gmx::test::InteractiveTestHelper (in interactivetest.h) provides
  *    a helper class for testing an interactive session that uses

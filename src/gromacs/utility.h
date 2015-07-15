@@ -153,7 +153,7 @@
  * The header sysinfo.h declares gmx_getpid() for getting the current process
  * id.
  *
- * The header programcontext.h declares a gmx::ProgramContextInterface that is
+ * The header programcontext.h declares a gmx::IProgramContext that is
  * used to
  * initialize and access information about the running program, such as the
  * name and path of the executable.  This information is used, e.g., by the

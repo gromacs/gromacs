@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,7 @@ class AnalysisDataFrameAverager
          *
          * \throws std::bad_alloc if out of memory.
          *
-         * Typically called from AnalysisDataModuleInterface::dataStarted().
+         * Typically called from IAnalysisDataModule::dataStarted().
          *
          * Must be called exactly once, before setting calling any other method
          * in the class.
@@ -103,7 +103,7 @@ class AnalysisDataFrameAverager
         /*! \brief
          * Accumulates data from a given point set into the average.
          *
-         * Typically called from AnalysisDataModuleInterface::pointsAdded().
+         * Typically called from IAnalysisDataModule::pointsAdded().
          *
          * Each call accumulates the values for those columns that are present
          * in the point set.  Can be called multiple times for a frame, and
@@ -117,7 +117,7 @@ class AnalysisDataFrameAverager
          * addPoints().  Currently, does nothing, but provided as a placeholder
          * for more complex implementation.
          *
-         * Typically called from AnalysisDataModuleInterface::dataFinished().
+         * Typically called from IAnalysisDataModule::dataFinished().
          */
         void finish();
 

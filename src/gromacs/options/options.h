@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,10 +76,10 @@ class OptionsIterator;
  * \inlibraryapi
  * \ingroup module_options
  */
-class OptionManagerInterface
+class IOptionManager
 {
     protected:
-        virtual ~OptionManagerInterface();
+        virtual ~IOptionManager();
 };
 
 /*! \brief
@@ -192,7 +192,7 @@ class Options
          *
          * This method cannot be called after adding options or subsections.
          */
-        void addManager(OptionManagerInterface *manager);
+        void addManager(IOptionManager *manager);
 
         /*! \brief
          * Adds an option collection as a subsection of this collection.

@@ -34,14 +34,14 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::HelpTopicInterface.
+ * Declares gmx::IHelpTopic.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_onlinehelp
  */
-#ifndef GMX_ONLINEHELP_HELPTOPICINTERFACE_H
-#define GMX_ONLINEHELP_HELPTOPICINTERFACE_H
+#ifndef GMX_ONLINEHELP_IHELPTOPIC_H
+#define GMX_ONLINEHELP_IHELPTOPIC_H
 
 #include "gromacs/utility/uniqueptr.h"
 
@@ -63,10 +63,10 @@ class HelpWriterContext;
  * \inlibraryapi
  * \ingroup module_onlinehelp
  */
-class HelpTopicInterface
+class IHelpTopic
 {
     public:
-        virtual ~HelpTopicInterface() {}
+        virtual ~IHelpTopic() {}
 
         /*! \brief
          * Returns the name of the topic.
@@ -93,7 +93,7 @@ class HelpTopicInterface
          * \returns   Pointer to the found subtopic, or NULL if matching topic
          *      is not found.
          */
-        virtual const HelpTopicInterface *findSubTopic(const char *name) const = 0;
+        virtual const IHelpTopic *findSubTopic(const char *name) const = 0;
 
         /*! \brief
          * Prints the help text for this topic.
@@ -105,8 +105,8 @@ class HelpTopicInterface
         virtual void writeHelp(const HelpWriterContext &context) const = 0;
 };
 
-//! Smart pointer type to manage a HelpTopicInterface object.
-typedef gmx_unique_ptr<HelpTopicInterface>::type HelpTopicPointer;
+//! Smart pointer type to manage a IHelpTopic object.
+typedef gmx_unique_ptr<IHelpTopic>::type HelpTopicPointer;
 
 } // namespace gmx
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,7 @@ class AnalysisDataModuleManager::Impl
          * \param[in] bSet     Value of the property to check against.
          * \throws    APIError if \p module is not compatible with the data.
          */
-        void checkModuleProperty(const AnalysisDataModuleInterface &module,
+        void checkModuleProperty(const IAnalysisDataModule &module,
                                  DataProperty property, bool bSet) const;
         /*! \brief
          * Checks whether a module is compatible with the data properties.
@@ -115,7 +115,7 @@ class AnalysisDataModuleManager::Impl
          * Does not currently check the actual data (e.g., missing values), but
          * only the dimensionality and other preset properties of the data.
          */
-        void checkModuleProperties(const AnalysisDataModuleInterface &module) const;
+        void checkModuleProperties(const IAnalysisDataModule &module) const;
 
         /*! \brief
          * Present data already added to the data object to a module.
@@ -133,7 +133,7 @@ class AnalysisDataModuleManager::Impl
          * been registered to the data object when the data was added.
          */
         void presentData(AbstractAnalysisData        *data,
-                         AnalysisDataModuleInterface *module);
+                         IAnalysisDataModule         *module);
 
         //! List of modules added to the data.
         ModuleList              modules_;
@@ -175,7 +175,7 @@ AnalysisDataModuleManager::Impl::Impl()
 
 void
 AnalysisDataModuleManager::Impl::checkModuleProperty(
-        const AnalysisDataModuleInterface &module,
+        const IAnalysisDataModule &module,
         DataProperty property, bool bSet) const
 {
     bool      bOk   = true;
@@ -183,20 +183,20 @@ AnalysisDataModuleManager::Impl::checkModuleProperty(
     switch (property)
     {
         case eMultipleDataSets:
-            if (bSet && !(flags & AnalysisDataModuleInterface::efAllowMultipleDataSets))
+            if (bSet && !(flags & IAnalysisDataModule::efAllowMultipleDataSets))
             {
                 bOk = false;
             }
             break;
         case eMultipleColumns:
-            if (bSet && !(flags & AnalysisDataModuleInterface::efAllowMulticolumn))
+            if (bSet && !(flags & IAnalysisDataModule::efAllowMulticolumn))
             {
                 bOk = false;
             }
             break;
         case eMultipoint:
-            if ((bSet && !(flags & AnalysisDataModuleInterface::efAllowMultipoint))
-                || (!bSet && (flags & AnalysisDataModuleInterface::efOnlyMultipoint)))
+            if ((bSet && !(flags & IAnalysisDataModule::efAllowMultipoint))
+                || (!bSet && (flags & IAnalysisDataModule::efOnlyMultipoint)))
             {
                 bOk = false;
             }
@@ -212,7 +212,7 @@ AnalysisDataModuleManager::Impl::checkModuleProperty(
 
 void
 AnalysisDataModuleManager::Impl::checkModuleProperties(
-        const AnalysisDataModuleInterface &module) const
+        const IAnalysisDataModule &module) const
 {
     for (int i = 0; i < eDataPropertyNR; ++i)
     {
@@ -221,8 +221,8 @@ AnalysisDataModuleManager::Impl::checkModuleProperties(
 }
 
 void
-AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData        *data,
-                                             AnalysisDataModuleInterface *module)
+AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData *data,
+                                             IAnalysisDataModule  *module)
 {
     if (state_ == eNotStarted)
     {
@@ -232,7 +232,7 @@ AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData        *data,
                        "Cannot apply a modules in mid-frame");
     module->dataStarted(data);
     const bool bCheckMissing = bAllowMissing_
-        && !(module->flags() & AnalysisDataModuleInterface::efAllowMissing);
+        && !(module->flags() & IAnalysisDataModule::efAllowMissing);
     for (int i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);
@@ -298,7 +298,7 @@ AnalysisDataModuleManager::addModule(AbstractAnalysisData      *data,
                        "Cannot add a data module in mid-frame");
     impl_->presentData(data, module.get());
 
-    if (!(module->flags() & AnalysisDataModuleInterface::efAllowMissing))
+    if (!(module->flags() & IAnalysisDataModule::efAllowMissing))
     {
         impl_->bAllowMissing_ = false;
     }
@@ -306,8 +306,8 @@ AnalysisDataModuleManager::addModule(AbstractAnalysisData      *data,
 }
 
 void
-AnalysisDataModuleManager::applyModule(AbstractAnalysisData        *data,
-                                       AnalysisDataModuleInterface *module)
+AnalysisDataModuleManager::applyModule(AbstractAnalysisData *data,
+                                       IAnalysisDataModule  *module)
 {
     impl_->checkModuleProperties(*module);
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eFinished,

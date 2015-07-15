@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements supporting routines for gmx::CommandLineOptionsModuleInterface.
+ * Implements supporting routines for gmx::ICommandLineOptionsModule.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
@@ -62,11 +62,11 @@ namespace
  * CommandLineOptionsModule
  */
 
-class CommandLineOptionsModule : public CommandLineModuleInterface
+class CommandLineOptionsModule : public ICommandLineModule
 {
     public:
         //! Shorthand for the factory function pointer type.
-        typedef CommandLineOptionsModuleInterface::FactoryMethod FactoryMethod;
+        typedef ICommandLineOptionsModule::FactoryMethod FactoryMethod;
 
         CommandLineOptionsModule(const char *name, const char *description,
                                  FactoryMethod factory)
@@ -74,7 +74,7 @@ class CommandLineOptionsModule : public CommandLineModuleInterface
         {
         }
         CommandLineOptionsModule(const char *name, const char *description,
-                                 CommandLineOptionsModuleInterface *module)
+                                 ICommandLineOptionsModule *module)
             : name_(name), description_(description), factory_(NULL),
               module_(module)
         {
@@ -92,7 +92,7 @@ class CommandLineOptionsModule : public CommandLineModuleInterface
         const char    *name_;
         const char    *description_;
         FactoryMethod  factory_;
-        boost::scoped_ptr<CommandLineOptionsModuleInterface> module_;
+        boost::scoped_ptr<ICommandLineOptionsModule> module_;
 };
 
 void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
@@ -114,8 +114,8 @@ int CommandLineOptionsModule::run(int argc, char *argv[])
 
 void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) const
 {
-    boost::scoped_ptr<CommandLineOptionsModuleInterface> moduleGuard;
-    CommandLineOptionsModuleInterface                   *module = module_.get();
+    boost::scoped_ptr<ICommandLineOptionsModule> moduleGuard;
+    ICommandLineOptionsModule                   *module = module_.get();
     if (!module)
     {
         GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
@@ -148,23 +148,23 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
 }   // namespace
 
 /********************************************************************
- * CommandLineOptionsModuleInterface
+ * ICommandLineOptionsModule
  */
 
-CommandLineOptionsModuleInterface::~CommandLineOptionsModuleInterface()
+ICommandLineOptionsModule::~ICommandLineOptionsModule()
 {
 }
 
 // static
-CommandLineModuleInterface *
-CommandLineOptionsModuleInterface::createModule(
+ICommandLineModule *
+ICommandLineOptionsModule::createModule(
         const char *name, const char *description, FactoryMethod factory)
 {
     return new CommandLineOptionsModule(name, description, factory);
 }
 
 // static
-int CommandLineOptionsModuleInterface::runAsMain(
+int ICommandLineOptionsModule::runAsMain(
         int argc, char *argv[], const char *name, const char *description,
         FactoryMethod factory)
 {
@@ -173,7 +173,7 @@ int CommandLineOptionsModuleInterface::runAsMain(
 }
 
 // static
-void CommandLineOptionsModuleInterface::registerModule(
+void ICommandLineOptionsModule::registerModule(
         CommandLineModuleManager *manager, const char *name,
         const char *description, FactoryMethod factory)
 {
@@ -182,9 +182,9 @@ void CommandLineOptionsModuleInterface::registerModule(
 }
 
 // static
-void CommandLineOptionsModuleInterface::registerModule(
+void ICommandLineOptionsModule::registerModule(
         CommandLineModuleManager *manager, const char *name,
-        const char *description, CommandLineOptionsModuleInterface *module)
+        const char *description, ICommandLineOptionsModule *module)
 {
     CommandLineModulePointer wrapperModule(
             new CommandLineOptionsModule(name, description, module));

@@ -65,7 +65,7 @@ bool AbstractSimpleHelpTopic::hasSubTopics() const
     return false;
 }
 
-const HelpTopicInterface *
+const IHelpTopic *
 AbstractSimpleHelpTopic::findSubTopic(const char * /* name */) const
 {
     return NULL;
@@ -91,7 +91,7 @@ class AbstractCompositeHelpTopic::Impl
         //! Container for subtopics.
         typedef std::vector<HelpTopicPointer> SubTopicList;
         //! Container for mapping subtopic names to help topic objects.
-        typedef std::map<std::string, const HelpTopicInterface *> SubTopicMap;
+        typedef std::map<std::string, const IHelpTopic *> SubTopicMap;
 
         /*! \brief
          * Subtopics in the order they were added.
@@ -125,7 +125,7 @@ bool AbstractCompositeHelpTopic::hasSubTopics() const
     return !impl_->subTopics_.empty();
 }
 
-const HelpTopicInterface *
+const IHelpTopic *
 AbstractCompositeHelpTopic::findSubTopic(const char *name) const
 {
     Impl::SubTopicMap::const_iterator topic = impl_->subTopicMap_.find(name);
@@ -205,7 +205,7 @@ void AbstractCompositeHelpTopic::addSubTopic(HelpTopicPointer topic)
 {
     GMX_ASSERT(impl_->subTopicMap_.find(topic->name()) == impl_->subTopicMap_.end(),
                "Attempted to register a duplicate help topic name");
-    const HelpTopicInterface *topicPtr = topic.get();
+    const IHelpTopic *topicPtr = topic.get();
     impl_->subTopics_.reserve(impl_->subTopics_.size() + 1);
     impl_->subTopicMap_.insert(std::make_pair(std::string(topicPtr->name()), topicPtr));
     impl_->subTopics_.push_back(move(topic));

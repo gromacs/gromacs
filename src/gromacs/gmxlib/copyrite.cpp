@@ -817,14 +817,14 @@ BinaryInformationSettings::BinaryInformationSettings()
 {
 }
 
-void printBinaryInformation(FILE                          *fp,
-                            const ProgramContextInterface &programContext)
+void printBinaryInformation(FILE                  *fp,
+                            const IProgramContext &programContext)
 {
     printBinaryInformation(fp, programContext, BinaryInformationSettings());
 }
 
 void printBinaryInformation(FILE                            *fp,
-                            const ProgramContextInterface   &programContext,
+                            const IProgramContext           &programContext,
                             const BinaryInformationSettings &settings)
 {
     const char *prefix          = settings.prefix_;
