@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@
 
 #include "config.h"
 
-#include <time.h>
+#include <ctime>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -201,7 +201,7 @@ gmx_gettime()
     double          seconds;
 
     clock_gettime(CLOCK_REALTIME, &t);
-    seconds = (double) t.tv_sec + 1e-9*(double)t.tv_nsec;
+    seconds = static_cast<double>(t.tv_sec) + 1e-9*t.tv_nsec;
 
     return seconds;
 #elif defined HAVE_GETTIMEOFDAY
@@ -211,7 +211,7 @@ gmx_gettime()
     double         seconds;
 
     gettimeofday(&t, NULL);
-    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
+    seconds = static_cast<double>(t.tv_sec) + 1e-6*t.tv_usec;
 
     return seconds;
 #else
@@ -231,7 +231,7 @@ gmx_gettime_per_thread()
     double          seconds;
 
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t);
-    seconds = (double) t.tv_sec + 1e-9*(double)t.tv_nsec;
+    seconds = static_cast<double>(t.tv_sec) + 1e-9*t.tv_nsec;
 
     return seconds;
 #else
