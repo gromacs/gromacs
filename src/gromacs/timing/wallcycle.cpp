@@ -40,14 +40,14 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
@@ -110,6 +110,7 @@ static const char *wcn[ewcNR] =
     "Enforced rotation", "Add rot. forces", "Coordinate swapping", "IMD", "Test"
 };
 
+#ifdef GMX_CYCLE_SUBCOUNTERS
 static const char *wcsn[ewcsNR] =
 {
     "DD redist.", "DD NS grid + sort", "DD setup comm.",
@@ -124,6 +125,7 @@ static const char *wcsn[ewcsNR] =
     "NB X buffer ops.",
     "NB F buffer ops.",
 };
+#endif
 
 gmx_bool wallcycle_have_counter(void)
 {
@@ -344,7 +346,7 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c)
 {
     *n = wc->wcc[ewc].n;
-    *c = (double)wc->wcc[ewc].c;
+    *c = static_cast<double>(wc->wcc[ewc].c);
 }
 
 void wallcycle_reset_all(gmx_wallcycle_t wc)
@@ -393,7 +395,7 @@ static void subtract_cycles(wallcc_t *wcc, int ewc_main, int ewc_sub)
 {
     if (wcc[ewc_sub].n > 0)
     {
-        assert(wcc[ewc_main].c >= wcc[ewc_sub].c);
+        GMX_ASSERT(wcc[ewc_main].c >= wcc[ewc_sub].c, "Subcounter cannot have more ticks than parent");
 
         wcc[ewc_main].c -= wcc[ewc_sub].c;
     }
@@ -403,7 +405,11 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 {
     wallcc_t *wcc;
     double    cycles[ewcNR+ewcsNR];
-    double    cycles_n[ewcNR+ewcsNR], buf[ewcNR+ewcsNR], *cyc_all, *buf_all;
+#ifdef GMX_MPI
+    double    cycles_n[ewcNR+ewcsNR];
+    double    buf[ewcNR+ewcsNR];
+    double   *buf_all, *cyc_all;
+#endif
     int       i, j;
     int       nsum;
 
@@ -466,7 +472,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         if (wcc[ewcPMEMESH].n > 0)
         {
             /* This must be a PME only node, calculate the Wait + Comm. time */
-            assert(wcc[ewcRUN].c >= wcc[ewcPMEMESH].c);
+            GMX_ASSERT(wcc[ewcRUN].c >= wcc[ewcPMEMESH].c, "Total run ticks must be greater than PME-only ticks");
             wcc[ewcPMEWAITCOMM].c = wcc[ewcRUN].c - wcc[ewcPMEMESH].c;
         }
     }
@@ -474,16 +480,20 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     /* Store the cycles in a double buffer for summing */
     for (i = 0; i < ewcNR; i++)
     {
-        cycles_n[i] = (double)wcc[i].n;
-        cycles[i]   = (double)wcc[i].c;
+#ifdef GMX_MPI
+        cycles_n[i] = static_cast<double>(wcc[i].n);
+#endif
+        cycles[i]   = static_cast<double>(wcc[i].c);
     }
     nsum = ewcNR;
 #ifdef GMX_CYCLE_SUBCOUNTERS
     for (i = 0; i < ewcsNR; i++)
     {
         wc->wcsc[i].c    *= wc->nthreads_pp;
-        cycles_n[ewcNR+i] = (double)wc->wcsc[i].n;
-        cycles[ewcNR+i]   = (double)wc->wcsc[i].c;
+#ifdef GMX_MPI
+        cycles_n[ewcNR+i] = static_cast<double>(wc->wcsc[i].n);
+#endif
+        cycles[ewcNR+i]   = static_cast<double>(wc->wcsc[i].c);
     }
     nsum += ewcsNR;
 #endif
@@ -495,12 +505,12 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
                       cr->mpi_comm_mysim);
         for (i = 0; i < ewcNR; i++)
         {
-            wcc[i].n = (int)(buf[i] + 0.5);
+            wcc[i].n = static_cast<int>(buf[i] + 0.5);
         }
 #ifdef GMX_CYCLE_SUBCOUNTERS
         for (i = 0; i < ewcsNR; i++)
         {
-            wc->wcsc[i].n = (int)(buf[ewcNR+i] + 0.5);
+            wc->wcsc[i].n = static_cast<int>(buf[ewcNR+i] + 0.5);
         }
 #endif
 
@@ -519,7 +529,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
                           cr->mpi_comm_mysim);
             for (i = 0; i < ewcNR*ewcNR; i++)
             {
-                wc->wcc_all[i].c = buf_all[i];
+                wc->wcc_all[i].c = static_cast<gmx_cycles_t>(buf_all[i]);
             }
             sfree(buf_all);
             sfree(cyc_all);
@@ -658,18 +668,18 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     }
 
     nth_pp  = wc->nthreads_pp;
-    assert(nth_pp > 0);
+    GMX_ASSERT(nth_pp > 0, "Number of particle-particle threads must be >0");
 
     nth_pme = wc->nthreads_pme;
-    assert(nth_pme > 0);
+    GMX_ASSERT(nth_pme > 0, "Number of PME threads must be >0");
 
     cyc_sum = wc->cycles_sum;
 
-    assert(nnodes > 0);
-    assert(npme >= 0);
+    GMX_ASSERT(nnodes > 0, "Number of nodes must be >0");
+    GMX_ASSERT(npme >= 0, "Number of PME nodes cannot be negative");
     npp     = nnodes - npme;
     /* npme is the number of PME-only ranks used, and we always do PP work */
-    assert(npp > 0);
+    GMX_ASSERT(npp > 0, "Number of particle-particle nodes must be >0");
 
     nth_tot = npp*nth_pp + npme*nth_pme;
 
@@ -694,10 +704,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 
     /* Conversion factor from cycles to seconds */
     c2t     = realtime/tot;
-    c2t_pp  = c2t * nth_tot / (double) (npp*nth_pp);
+    c2t_pp  = c2t * nth_tot / static_cast<double>(npp*nth_pp);
     if (npme > 0)
     {
-        c2t_pme = c2t * nth_tot / (double) (npme*nth_pme);
+        c2t_pme = c2t * nth_tot / static_cast<double>(npme*nth_pme);
     }
     else
     {
@@ -752,7 +762,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             }
         }
     }
-    tot_for_rest = tot * (npp * nth_pp) / (double) nth_tot;
+    tot_for_rest = tot * npp * nth_pp / static_cast<double>(nth_tot);
     print_cycles(fplog, c2t_pp, "Rest",
                  npp, nth_pp,
                  -1, tot_for_rest - tot_for_pp, tot);
