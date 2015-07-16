@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@
 
 #include "config.h"
 
-#include <time.h>
+#include <ctime>
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -72,7 +72,7 @@ gmx_cycles_calibrate(double sampletime)
 
     QueryPerformanceFrequency(&i);
 
-    return 1.0/((double) i.QuadPart);
+    return 1.0/static_cast<double>(i.QuadPart);
     /* end of MS Windows implementation */
 
 #elif (defined HAVE_GETTIMEOFDAY)
@@ -82,7 +82,6 @@ gmx_cycles_calibrate(double sampletime)
     gmx_cycles_t   c1, c2;
     double         timediff, cyclediff;
     double         d = 0.1; /* Dummy variable so we don't optimize away delay loop */
-    int            i;
 
     if (!gmx_cycles_have_counter())
     {
@@ -116,15 +115,14 @@ gmx_cycles_calibrate(double sampletime)
          * that will underflow to zero in most cases. By conditionally adding it
          * to a result at the end it cannot be removed. n=10000 is arbitrary...
          */
-        for (i = 0; i < 10000; i++)
+        for (int i = 0; i < 10000; i++)
         {
-            d = d/(1.0+(double)i);
+            d = d/(1.0+static_cast<double>(i));
         }
         /* Read the time again */
         gettimeofday(&t2, NULL);
         c2       = gmx_cycles_read();
-        timediff = (double)(t2.tv_sec-t1.tv_sec)+
-            (double)(t2.tv_usec-t1.tv_usec)*1e-6;
+        timediff = static_cast<double>(t2.tv_sec-t1.tv_sec)+(t2.tv_usec-t1.tv_usec)*1e-6;
     }
     while (timediff < sampletime);
 
