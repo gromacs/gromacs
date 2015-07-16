@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB STATISTICS_SOURCES statistics.c)
+file(GLOB STATISTICS_SOURCES *.cpp)
 
 set(LIBGROMACS_SOURCES
     ${LIBGROMACS_SOURCES} ${STATISTICS_SOURCES} PARENT_SCOPE)
