@@ -53,6 +53,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/selection/indexutil.h"
@@ -167,7 +168,7 @@ TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
 
 
 void
-TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
+TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options)
 {
     TrajectoryAnalysisSettings &settings = impl_->settings_;
 
@@ -200,7 +201,7 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
     settings.impl_->timeUnitManager.addTimeUnitOption(options, "tu");
 
     // Add plot options.
-    settings.impl_->plotSettings.addOptions(options);
+    settings.impl_->plotSettings.initOptions(options);
 
     // Add common options for trajectory processing.
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))

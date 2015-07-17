@@ -39,7 +39,7 @@
 #include <math.h>
 
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "testutils/testoptions.h"

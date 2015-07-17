@@ -55,6 +55,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
@@ -245,7 +246,7 @@ class Angle : public TrajectoryAnalysisModule
     public:
         Angle();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void optionsFinished(Options                    *options,
                                      TrajectoryAnalysisSettings *settings);
@@ -304,7 +305,7 @@ Angle::Angle()
 
 
 void
-Angle::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
+Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] computes different types of angles between vectors.",

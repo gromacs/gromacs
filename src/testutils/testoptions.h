@@ -50,7 +50,7 @@
 namespace gmx
 {
 
-class Options;
+class IOptionsContainer;
 
 namespace test
 {
@@ -72,7 +72,7 @@ class TestOptionsProvider
          *
          * \param   options  The options need to be added here.
          */
-        virtual void initOptions(Options *options) = 0;
+        virtual void initOptions(IOptionsContainer *options) = 0;
 
     protected:
         virtual ~TestOptionsProvider() {}
@@ -106,7 +106,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
  *
  * \ingroup module_testutils
  */
-void initTestOptions(Options *options);
+void initTestOptions(IOptionsContainer *options);
 
 // Uncrustify screws up the indentation for the example otherwise.
 /* *INDENT-OFF* */
@@ -127,7 +127,7 @@ void initTestOptions(Options *options);
  * Typical usage:
  * \code
    #include "gromacs/options/basicoptions.h"
-   #include "gromacs/options/options.h"
+   #include "gromacs/options/ioptionscontainer.h"
 
    #include "testutils/testoptions.h"
 
@@ -170,12 +170,12 @@ void initTestOptions(Options *options);
             { \
                 ::gmx::test::registerTestOptions(#name, this); \
             } \
-            virtual void initOptions(::gmx::Options *options); \
+            virtual void initOptions(::gmx::IOptionsContainer *options); \
     }; \
     \
     static name s_ ## name ## Instance; \
     \
-    void name::initOptions(::gmx::Options *options)
+    void name::initOptions(::gmx::IOptionsContainer *options)
 
 } // namespace test
 } // namespace gmx

@@ -48,7 +48,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/textreader.h"
 
 #include "testutils/refdata.h"

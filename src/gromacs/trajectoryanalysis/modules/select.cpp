@@ -62,7 +62,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/topology/topology.h"
@@ -261,7 +261,7 @@ class Select : public TrajectoryAnalysisModule
     public:
         Select();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void optionsFinished(Options                    *options,
                                      TrajectoryAnalysisSettings *settings);
@@ -327,7 +327,7 @@ Select::Select()
 
 
 void
-Select::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
+Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] writes out basic data about dynamic selections.",

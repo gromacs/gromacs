@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include <algorithm>
 
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/utility/arrayref.h"
@@ -138,7 +139,7 @@ void TimeUnitManager::setTimeUnitFromEnvironment()
     }
 }
 
-void TimeUnitManager::addTimeUnitOption(Options *options, const char *name)
+void TimeUnitManager::addTimeUnitOption(IOptionsContainer *options, const char *name)
 {
     options->addOption(StringOption(name).enumValue(g_timeUnits)
                            .defaultValue(g_timeUnits[timeUnit()])
