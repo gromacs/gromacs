@@ -40,8 +40,10 @@
 
 #include "gromacs/legacyheaders/txtdump.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+
+#include <algorithm>
 
 #include <algorithm>
 
@@ -60,7 +62,7 @@ int pr_indent(FILE *fp, int n)
 
     for (i = 0; i < n; i++)
     {
-        (void) fprintf(fp, " ");
+        fprintf(fp, " ");
     }
     return n;
 }
@@ -73,29 +75,29 @@ int available(FILE *fp, void *p, int indent, const char *title)
         {
             pr_indent(fp, indent);
         }
-        (void) fprintf(fp, "%s: not available\n", title);
+        fprintf(fp, "%s: not available\n", title);
     }
     return (p != NULL);
 }
 
 int pr_title(FILE *fp, int indent, const char *title)
 {
-    (void) pr_indent(fp, indent);
-    (void) fprintf(fp, "%s:\n", title);
+    pr_indent(fp, indent);
+    fprintf(fp, "%s:\n", title);
     return (indent+INDENT);
 }
 
 int pr_title_n(FILE *fp, int indent, const char *title, int n)
 {
-    (void) pr_indent(fp, indent);
-    (void) fprintf(fp, "%s (%d):\n", title, n);
+    pr_indent(fp, indent);
+    fprintf(fp, "%s (%d):\n", title, n);
     return (indent+INDENT);
 }
 
 int pr_title_nxn(FILE *fp, int indent, const char *title, int n1, int n2)
 {
-    (void) pr_indent(fp, indent);
-    (void) fprintf(fp, "%s (%dx%d):\n", title, n1, n2);
+    pr_indent(fp, indent);
+    fprintf(fp, "%s (%dx%d):\n", title, n1, n2);
     return (indent+INDENT);
 }
 
@@ -108,8 +110,8 @@ void pr_ivec(FILE *fp, int indent, const char *title, int vec[], int n, gmx_bool
         indent = pr_title_n(fp, indent, title, n);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%d]=%d\n", title, bShowNumbers ? i : -1, vec[i]);
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]=%d\n", title, bShowNumbers ? i : -1, vec[i]);
         }
     }
 }
@@ -134,20 +136,20 @@ void pr_ivec_block(FILE *fp, int indent, const char *title, int vec[], int n, gm
             {
                 while (i < j)
                 {
-                    (void) pr_indent(fp, indent);
-                    (void) fprintf(fp, "%s[%d]=%d\n",
-                                   title, bShowNumbers ? i : -1, vec[i]);
+                    pr_indent(fp, indent);
+                    fprintf(fp, "%s[%d]=%d\n",
+                            title, bShowNumbers ? i : -1, vec[i]);
                     i++;
                 }
             }
             else
             {
-                (void) pr_indent(fp, indent);
-                (void) fprintf(fp, "%s[%d,...,%d] = {%d,...,%d}\n",
-                               title,
-                               bShowNumbers ? i : -1,
-                               bShowNumbers ? j-1 : -1,
-                               vec[i], vec[j-1]);
+                pr_indent(fp, indent);
+                fprintf(fp, "%s[%d,...,%d] = {%d,...,%d}\n",
+                        title,
+                        bShowNumbers ? i : -1,
+                        bShowNumbers ? j-1 : -1,
+                        vec[i], vec[j-1]);
                 i = j;
             }
         }
@@ -163,9 +165,9 @@ void pr_bvec(FILE *fp, int indent, const char *title, gmx_bool vec[], int n, gmx
         indent = pr_title_n(fp, indent, title, n);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%d]=%s\n", title, bShowNumbers ? i : -1,
-                           EBOOL(vec[i]));
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]=%s\n", title, bShowNumbers ? i : -1,
+                    EBOOL(vec[i]));
         }
     }
 }
@@ -179,17 +181,17 @@ void pr_ivecs(FILE *fp, int indent, const char *title, ivec vec[], int n, gmx_bo
         indent = pr_title_nxn(fp, indent, title, n, DIM);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%d]={", title, bShowNumbers ? i : -1);
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]={", title, bShowNumbers ? i : -1);
             for (j = 0; j < DIM; j++)
             {
                 if (j != 0)
                 {
-                    (void) fprintf(fp, ", ");
+                    fprintf(fp, ", ");
                 }
                 fprintf(fp, "%d", vec[i][j]);
             }
-            (void) fprintf(fp, "}\n");
+            fprintf(fp, "}\n");
         }
     }
 }
@@ -250,17 +252,17 @@ void pr_rvecs_len(FILE *fp, int indent, const char *title, rvec vec[], int n)
         indent = pr_title_nxn(fp, indent, title, n, DIM);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%5d]={", title, i);
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%5d]={", title, i);
             for (j = 0; j < DIM; j++)
             {
                 if (j != 0)
                 {
-                    (void) fprintf(fp, ", ");
+                    fprintf(fp, ", ");
                 }
-                (void) fprintf(fp, "%12.5e", vec[i][j]);
+                fprintf(fp, "%12.5e", vec[i][j]);
             }
-            (void) fprintf(fp, "} len=%12.5e\n", norm(vec[i]));
+            fprintf(fp, "} len=%12.5e\n", norm(vec[i]));
         }
     }
 }
@@ -286,17 +288,17 @@ void pr_rvecs(FILE *fp, int indent, const char *title, rvec vec[], int n)
         indent = pr_title_nxn(fp, indent, title, n, DIM);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%5d]={", title, i);
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%5d]={", title, i);
             for (j = 0; j < DIM; j++)
             {
                 if (j != 0)
                 {
-                    (void) fprintf(fp, ", ");
+                    fprintf(fp, ", ");
                 }
-                (void) fprintf(fp, format, vec[i][j]);
+                fprintf(fp, format, vec[i][j]);
             }
-            (void) fprintf(fp, "}\n");
+            fprintf(fp, "}\n");
         }
     }
 }
@@ -323,17 +325,17 @@ void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, rvec vec[], int n,
         indent = pr_title_nxn(fp, indent, title, n, dim);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%5d]={", title, i);
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%5d]={", title, i);
             for (j = 0; j < dim; j++)
             {
                 if (j != 0)
                 {
-                    (void) fprintf(fp, ", ");
+                    fprintf(fp, ", ");
                 }
-                (void) fprintf(fp, format, vec[i][j]);
+                fprintf(fp, format, vec[i][j]);
             }
-            (void) fprintf(fp, "}\n");
+            fprintf(fp, "}\n");
         }
     }
 }
@@ -344,13 +346,13 @@ void pr_reals(FILE *fp, int indent, const char *title, real *vec, int n)
 
     if (available(fp, vec, indent, title))
     {
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "%s:\t", title);
+        pr_indent(fp, indent);
+        fprintf(fp, "%s:\t", title);
         for (i = 0; i < n; i++)
         {
             fprintf(fp, "  %10g", vec[i]);
         }
-        (void) fprintf(fp, "\n");
+        fprintf(fp, "\n");
     }
 }
 
@@ -360,13 +362,13 @@ void pr_doubles(FILE *fp, int indent, const char *title, double *vec, int n)
 
     if (available(fp, vec, indent, title))
     {
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "%s:\t", title);
+        pr_indent(fp, indent);
+        fprintf(fp, "%s:\t", title);
         for (i = 0; i < n; i++)
         {
             fprintf(fp, "  %10g", vec[i]);
         }
-        (void) fprintf(fp, "\n");
+        fprintf(fp, "\n");
     }
 }
 
@@ -391,17 +393,17 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, 
         indent = pr_title_nxn(fp, indent, title, n, dim);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%5d]={", title, i);
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%5d]={", title, i);
             for (j = 0; j < dim; j++)
             {
                 if (j != 0)
                 {
-                    (void) fprintf(fp, ", ");
+                    fprintf(fp, ", ");
                 }
-                (void) fprintf(fp, format, vec[i * dim  + j]);
+                fprintf(fp, format, vec[i * dim  + j]);
             }
-            (void) fprintf(fp, "}\n");
+            fprintf(fp, "}\n");
         }
     }
 }
@@ -591,18 +593,18 @@ static void pr_cosine(FILE *fp, int indent, const char *title, t_cosines *cos,
     else
     {
         indent = pr_title(fp, indent, title);
-        (void) pr_indent(fp, indent);
+        pr_indent(fp, indent);
         fprintf(fp, "n = %d\n", cos->n);
         if (cos->n > 0)
         {
-            (void) pr_indent(fp, indent+2);
+            pr_indent(fp, indent+2);
             fprintf(fp, "a =");
             for (j = 0; (j < cos->n); j++)
             {
                 fprintf(fp, " %e", cos->a[j]);
             }
             fprintf(fp, "\n");
-            (void) pr_indent(fp, indent+2);
+            pr_indent(fp, indent+2);
             fprintf(fp, "phi =");
             for (j = 0; (j < cos->n); j++)
             {
@@ -1401,28 +1403,28 @@ void pr_ilist(FILE *fp, int indent, const char *title,
     if (available(fp, ilist, indent, title) && ilist->nr > 0)
     {
         indent = pr_title(fp, indent, title);
-        (void) pr_indent(fp, indent);
+        pr_indent(fp, indent);
         fprintf(fp, "nr: %d\n", ilist->nr);
         if (ilist->nr > 0)
         {
-            (void) pr_indent(fp, indent);
+            pr_indent(fp, indent);
             fprintf(fp, "iatoms:\n");
             iatoms = ilist->iatoms;
             for (i = j = 0; i < ilist->nr; )
             {
 #ifndef DEBUG
-                (void) pr_indent(fp, indent+INDENT);
+                pr_indent(fp, indent+INDENT);
                 type  = *(iatoms++);
                 ftype = functype[type];
-                (void) fprintf(fp, "%d type=%d (%s)",
-                               bShowNumbers ? j : -1, bShowNumbers ? type : -1,
-                               interaction_function[ftype].name);
+                fprintf(fp, "%d type=%d (%s)",
+                        bShowNumbers ? j : -1, bShowNumbers ? type : -1,
+                        interaction_function[ftype].name);
                 j++;
                 for (k = 0; k < interaction_function[ftype].nratoms; k++)
                 {
-                    (void) fprintf(fp, " %d", *(iatoms++));
+                    fprintf(fp, " %d", *(iatoms++));
                 }
-                (void) fprintf(fp, "\n");
+                fprintf(fp, "\n");
                 i += 1+interaction_function[ftype].nratoms;
 #else
                 fprintf(fp, "%5d%5d\n", i, iatoms[i]);
@@ -1479,20 +1481,20 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
     int i;
 
     indent = pr_title(fp, indent, title);
-    (void) pr_indent(fp, indent);
-    (void) fprintf(fp, "atnr=%d\n", ffparams->atnr);
-    (void) pr_indent(fp, indent);
-    (void) fprintf(fp, "ntypes=%d\n", ffparams->ntypes);
+    pr_indent(fp, indent);
+    fprintf(fp, "atnr=%d\n", ffparams->atnr);
+    pr_indent(fp, indent);
+    fprintf(fp, "ntypes=%d\n", ffparams->ntypes);
     for (i = 0; i < ffparams->ntypes; i++)
     {
-        (void) pr_indent(fp, indent+INDENT);
-        (void) fprintf(fp, "functype[%d]=%s, ",
-                       bShowNumbers ? i : -1,
-                       interaction_function[ffparams->functype[i]].name);
+        pr_indent(fp, indent+INDENT);
+        fprintf(fp, "functype[%d]=%s, ",
+                bShowNumbers ? i : -1,
+                interaction_function[ffparams->functype[i]].name);
         pr_iparams(fp, ffparams->functype[i], &ffparams->iparams[i]);
     }
-    (void) pr_double(fp, indent, "reppow", ffparams->reppow);
-    (void) pr_real(fp, indent, "fudgeQQ", ffparams->fudgeQQ);
+    pr_double(fp, indent, "reppow", ffparams->reppow);
+    pr_real(fp, indent, "fudgeQQ", ffparams->fudgeQQ);
     pr_cmap(fp, indent, "cmap", &ffparams->cmap_grid, bShowNumbers);
 }
 
@@ -1503,19 +1505,19 @@ void pr_idef(FILE *fp, int indent, const char *title, t_idef *idef, gmx_bool bSh
     if (available(fp, idef, indent, title))
     {
         indent = pr_title(fp, indent, title);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "atnr=%d\n", idef->atnr);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "ntypes=%d\n", idef->ntypes);
+        pr_indent(fp, indent);
+        fprintf(fp, "atnr=%d\n", idef->atnr);
+        pr_indent(fp, indent);
+        fprintf(fp, "ntypes=%d\n", idef->ntypes);
         for (i = 0; i < idef->ntypes; i++)
         {
-            (void) pr_indent(fp, indent+INDENT);
-            (void) fprintf(fp, "functype[%d]=%s, ",
-                           bShowNumbers ? i : -1,
-                           interaction_function[idef->functype[i]].name);
+            pr_indent(fp, indent+INDENT);
+            fprintf(fp, "functype[%d]=%s, ",
+                    bShowNumbers ? i : -1,
+                    interaction_function[idef->functype[i]].name);
             pr_iparams(fp, idef->functype[i], &idef->iparams[i]);
         }
-        (void) pr_real(fp, indent, "fudgeQQ", idef->fudgeQQ);
+        pr_real(fp, indent, "fudgeQQ", idef->fudgeQQ);
 
         for (j = 0; (j < F_NRE); j++)
         {
@@ -1530,8 +1532,8 @@ static int pr_block_title(FILE *fp, int indent, const char *title, t_block *bloc
     if (available(fp, block, indent, title))
     {
         indent = pr_title(fp, indent, title);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "nr=%d\n", block->nr);
+        pr_indent(fp, indent);
+        fprintf(fp, "nr=%d\n", block->nr);
     }
     return indent;
 }
@@ -1541,10 +1543,10 @@ static int pr_blocka_title(FILE *fp, int indent, const char *title, t_blocka *bl
     if (available(fp, block, indent, title))
     {
         indent = pr_title(fp, indent, title);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "nr=%d\n", block->nr);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "nra=%d\n", block->nra);
+        pr_indent(fp, indent);
+        fprintf(fp, "nr=%d\n", block->nr);
+        pr_indent(fp, indent);
+        fprintf(fp, "nra=%d\n", block->nra);
     }
     return indent;
 }
@@ -1558,15 +1560,15 @@ static void low_pr_blocka(FILE *fp, int indent, const char *title, t_blocka *blo
         indent = pr_blocka_title(fp, indent, title, block);
         for (i = 0; i <= block->nr; i++)
         {
-            (void) pr_indent(fp, indent+INDENT);
-            (void) fprintf(fp, "%s->index[%d]=%d\n",
-                           title, bShowNumbers ? i : -1, block->index[i]);
+            pr_indent(fp, indent+INDENT);
+            fprintf(fp, "%s->index[%d]=%d\n",
+                    title, bShowNumbers ? i : -1, block->index[i]);
         }
         for (i = 0; i < block->nra; i++)
         {
-            (void) pr_indent(fp, indent+INDENT);
-            (void) fprintf(fp, "%s->a[%d]=%d\n",
-                           title, bShowNumbers ? i : -1, block->a[i]);
+            pr_indent(fp, indent+INDENT);
+            fprintf(fp, "%s->a[%d]=%d\n",
+                    title, bShowNumbers ? i : -1, block->a[i]);
         }
     }
 }
@@ -1581,7 +1583,7 @@ void pr_block(FILE *fp, int indent, const char *title, t_block *block, gmx_bool 
         start  = 0;
         if (block->index[start] != 0)
         {
-            (void) fprintf(fp, "block->index[%d] should be 0\n", start);
+            fprintf(fp, "block->index[%d] should be 0\n", start);
         }
         else
         {
@@ -1616,7 +1618,7 @@ void pr_blocka(FILE *fp, int indent, const char *title, t_blocka *block, gmx_boo
         end    = start;
         if ((ok = (block->index[start] == 0)) == 0)
         {
-            (void) fprintf(fp, "block->index[%d] should be 0\n", start);
+            fprintf(fp, "block->index[%d] should be 0\n", start);
         }
         else
         {
@@ -1642,19 +1644,19 @@ void pr_blocka(FILE *fp, int indent, const char *title, t_blocka *block, gmx_boo
                     }
                     if ((size) > (USE_WIDTH))
                     {
-                        (void) fprintf(fp, "\n");
+                        fprintf(fp, "\n");
                         size = pr_indent(fp, indent+INDENT);
                     }
                     size += fprintf(fp, "%d", block->a[j]);
                 }
-                (void) fprintf(fp, "}\n");
+                fprintf(fp, "}\n");
                 start = end;
             }
         }
         if ((end != block->nra) || (!ok))
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "tables inconsistent, dumping complete tables:\n");
+            pr_indent(fp, indent);
+            fprintf(fp, "tables inconsistent, dumping complete tables:\n");
             low_pr_blocka(fp, indent, title, block, bShowNumbers);
         }
     }
@@ -1669,9 +1671,9 @@ static void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int 
         indent = pr_title_n(fp, indent, title, n);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%d]={name=\"%s\"}\n",
-                           title, bShowNumbers ? i : -1, *(nm[i]));
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]={name=\"%s\"}\n",
+                    title, bShowNumbers ? i : -1, *(nm[i]));
         }
     }
 }
@@ -1686,9 +1688,9 @@ static void pr_strings2(FILE *fp, int indent, const char *title,
         indent = pr_title_n(fp, indent, title, n);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%d]={name=\"%s\",nameB=\"%s\"}\n",
-                           title, bShowNumbers ? i : -1, *(nm[i]), *(nmB[i]));
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]={name=\"%s\",nameB=\"%s\"}\n",
+                    title, bShowNumbers ? i : -1, *(nm[i]), *(nmB[i]));
         }
     }
 }
@@ -1702,11 +1704,11 @@ static void pr_resinfo(FILE *fp, int indent, const char *title, t_resinfo *resin
         indent = pr_title_n(fp, indent, title, n);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
-            (void) fprintf(fp, "%s[%d]={name=\"%s\", nr=%d, ic='%c'}\n",
-                           title, bShowNumbers ? i : -1,
-                           *(resinfo[i].name), resinfo[i].nr,
-                           (resinfo[i].ic == '\0') ? ' ' : resinfo[i].ic);
+            pr_indent(fp, indent);
+            fprintf(fp, "%s[%d]={name=\"%s\", nr=%d, ic='%c'}\n",
+                    title, bShowNumbers ? i : -1,
+                    *(resinfo[i].name), resinfo[i].nr,
+                    (resinfo[i].ic == '\0') ? ' ' : resinfo[i].ic);
         }
     }
 }
@@ -1720,7 +1722,7 @@ static void pr_atom(FILE *fp, int indent, const char *title, t_atom *atom, int n
         indent = pr_title_n(fp, indent, title, n);
         for (i = 0; i < n; i++)
         {
-            (void) pr_indent(fp, indent);
+            pr_indent(fp, indent);
             fprintf(fp, "%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
                     "q=%12.5e, mB=%12.5e, qB=%12.5e, resind=%5d, atomnumber=%3d}\n",
                     title, i, atom[i].type, atom[i].typeB, ptype_str[atom[i].ptype],
@@ -1754,7 +1756,7 @@ static void pr_groups(FILE *fp, int indent,
     pr_grps(fp, "grp", groups->grps, groups->grpname);
     pr_strings(fp, indent, "grpname", groups->grpname, groups->ngrpname, bShowNumbers);
 
-    (void) pr_indent(fp, indent);
+    pr_indent(fp, indent);
     fprintf(fp, "groups          ");
     for (g = 0; g < egcNR; g++)
     {
@@ -1762,7 +1764,7 @@ static void pr_groups(FILE *fp, int indent,
     }
     printf("\n");
 
-    (void) pr_indent(fp, indent);
+    pr_indent(fp, indent);
     fprintf(fp, "allocated       ");
     nat_max = 0;
     for (g = 0; g < egcNR; g++)
@@ -1774,7 +1776,7 @@ static void pr_groups(FILE *fp, int indent,
 
     if (nat_max == 0)
     {
-        (void) pr_indent(fp, indent);
+        pr_indent(fp, indent);
         fprintf(fp, "groupnr[%5s] =", "*");
         for (g = 0; g < egcNR; g++)
         {
@@ -1786,7 +1788,7 @@ static void pr_groups(FILE *fp, int indent,
     {
         for (i = 0; i < nat_max; i++)
         {
-            (void) pr_indent(fp, indent);
+            pr_indent(fp, indent);
             fprintf(fp, "groupnr[%5d] =", i);
             for (g = 0; g < egcNR; g++)
             {
@@ -1839,8 +1841,8 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
     int j;
 
     indent = pr_title_n(fp, indent, title, n);
-    (void) pr_indent(fp, indent);
-    (void) fprintf(fp, "name=\"%s\"\n", *(molt->name));
+    pr_indent(fp, indent);
+    fprintf(fp, "name=\"%s\"\n", *(molt->name));
     pr_atoms(fp, indent, "atoms", &(molt->atoms), bShowNumbers);
     pr_block(fp, indent, "cgs", &molt->cgs, bShowNumbers);
     pr_blocka(fp, indent, "excls", &molt->excls, bShowNumbers);
@@ -1856,9 +1858,9 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
                         gmx_moltype_t *molt)
 {
     indent = pr_title_n(fp, indent, title, n);
-    (void) pr_indent(fp, indent);
-    (void) fprintf(fp, "%-20s = %d \"%s\"\n",
-                   "moltype", molb->type, *(molt[molb->type].name));
+    pr_indent(fp, indent);
+    fprintf(fp, "%-20s = %d \"%s\"\n",
+            "moltype", molb->type, *(molt[molb->type].name));
     pr_int(fp, indent, "#molecules", molb->nmol);
     pr_int(fp, indent, "#atoms_mol", molb->natoms_mol);
     pr_int(fp, indent, "#posres_xA", molb->nposres_xA);
@@ -1881,8 +1883,8 @@ void pr_mtop(FILE *fp, int indent, const char *title, gmx_mtop_t *mtop,
     if (available(fp, mtop, indent, title))
     {
         indent = pr_title(fp, indent, title);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "name=\"%s\"\n", *(mtop->name));
+        pr_indent(fp, indent);
+        fprintf(fp, "name=\"%s\"\n", *(mtop->name));
         pr_int(fp, indent, "#atoms", mtop->natoms);
         pr_int(fp, indent, "#molblock", mtop->nmolblock);
         for (mb = 0; mb < mtop->nmolblock; mb++)
@@ -1915,8 +1917,8 @@ void pr_top(FILE *fp, int indent, const char *title, t_topology *top, gmx_bool b
     if (available(fp, top, indent, title))
     {
         indent = pr_title(fp, indent, title);
-        (void) pr_indent(fp, indent);
-        (void) fprintf(fp, "name=\"%s\"\n", *(top->name));
+        pr_indent(fp, indent);
+        fprintf(fp, "name=\"%s\"\n", *(top->name));
         pr_atoms(fp, indent, "atoms", &(top->atoms), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(top->atomtypes), bShowNumbers);
         pr_block(fp, indent, "cgs", &top->cgs, bShowNumbers);

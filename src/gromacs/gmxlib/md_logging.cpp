@@ -38,8 +38,8 @@
 
 #include "gromacs/legacyheaders/md_logging.h"
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 
 #include "gromacs/legacyheaders/types/commrec.h"
 

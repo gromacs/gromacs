@@ -39,7 +39,9 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
-#include <string.h>
+#include <cstring>
+
+#include <algorithm>
 
 #include <algorithm>
 
@@ -56,7 +58,7 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 {
     int i;
 
-    i = (int)step;
+    i = static_cast<int>(step);
 
     if (warn != NULL && (step < INT_MIN || step > INT_MAX))
     {
@@ -71,7 +73,7 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 
 void init_inputrec(t_inputrec *ir)
 {
-    memset(ir, 0, (size_t)sizeof(*ir));
+    std::memset(ir, 0, sizeof(*ir));
     snew(ir->fepvals, 1);
     snew(ir->expandedvals, 1);
     snew(ir->simtempvals, 1);

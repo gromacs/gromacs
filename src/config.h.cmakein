@@ -250,6 +250,9 @@
 /* Define relative path to OpenCL kernels */
 #define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
 
+/* Define to 1 if __cpuidex() is available (on windows), 0 otherwise */
+#cmakedefine01 HAVE_CPUIDEX
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
 

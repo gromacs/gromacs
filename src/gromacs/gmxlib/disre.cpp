@@ -41,8 +41,11 @@
 
 #include "config.h"
 
-#include <math.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
+
+#include <algorithm>
 
 #include <algorithm>
 
@@ -109,7 +112,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     else
     {
         dd->dr_bMixed = ir->bDisreMixed;
-        dd->ETerm     = exp(-(ir->delta_t/ir->dr_tau));
+        dd->ETerm     = std::exp(-(ir->delta_t/ir->dr_tau));
     }
     dd->ETerm1        = 1.0 - dd->ETerm;
 
@@ -331,7 +334,7 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             rt_1 = gmx_invsqrt(rt2);
             rt_3 = rt_1*rt_1*rt_1;
 
-            rt[pair]         = sqrt(rt2);
+            rt[pair]         = std::sqrt(rt2);
             if (bTav)
             {
                 /* Here we update rm3tav in t_fcdata using the data
@@ -429,15 +432,15 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
         {
             bConservative = (dr_weighting == edrwConservative) && (npair > 1);
             bMixed        = dr_bMixed;
-            Rt            = pow(Rt_6[res], -sixth);
-            Rtav          = pow(Rtav_6[res], -sixth);
+            Rt            = std::pow(Rt_6[res], -sixth);
+            Rtav          = std::pow(Rtav_6[res], -sixth);
         }
         else
         {
             /* When rtype=2 use instantaneous not ensemble avereged distance */
             bConservative = (npair > 1);
             bMixed        = FALSE;
-            Rt            = pow(Rtl_6[res], -sixth);
+            Rt            = std::pow(Rtl_6[res], -sixth);
             Rtav          = Rt;
         }
 
@@ -501,7 +504,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 }
                 if (bViolation)
                 {
-                    mixed_viol = sqrt(tav_viol*instant_viol);
+                    mixed_viol = std::sqrt(tav_viol*instant_viol);
                     f_scal     = -k0*mixed_viol;
                     violtot   += mixed_viol;
                 }
@@ -528,7 +531,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             }
             else
             {
-                f_scal /= (real)npair;
+                f_scal /= npair;
                 f_scal  = std::max(f_scal, fmax_scal);
             }
 
@@ -557,12 +560,12 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 {
                     if (!dr_bMixed)
                     {
-                        weight_rt_1 *= pow(dd->rm3tav[pair], seven_three);
+                        weight_rt_1 *= std::pow(dd->rm3tav[pair], seven_three);
                     }
                     else
                     {
-                        weight_rt_1 *= tav_viol_Rtav7*pow(dd->rm3tav[pair], seven_three)+
-                            instant_viol_Rtav7*pow(dd->rt[pair], -7);
+                        weight_rt_1 *= tav_viol_Rtav7*std::pow(dd->rm3tav[pair], seven_three)+
+                            instant_viol_Rtav7*std::pow(dd->rt[pair], static_cast<real>(-7));
                     }
                 }
 

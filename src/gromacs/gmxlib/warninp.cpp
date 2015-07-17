@@ -38,7 +38,7 @@
 
 #include "gromacs/legacyheaders/warninp.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/utility/cstringutil.h"
@@ -76,7 +76,7 @@ void set_warning_line(warninp_t wi, const char *s, int line)
 {
     if (s != NULL)
     {
-        strcpy(wi->filenm, s);
+        std::strcpy(wi->filenm, s);
     }
     wi->lineno = line;
 }
@@ -101,15 +101,15 @@ static void low_warning(warninp_t wi, const char *wtype, int n, const char *s)
     {
         s = "Empty error message.";
     }
-    snew(temp, strlen(s)+indent+1);
+    snew(temp, std::strlen(s)+indent+1);
     for (i = 0; i < indent; i++)
     {
         temp[i] = ' ';
     }
     temp[indent] = '\0';
-    strcat(temp, s);
+    std::strcat(temp, s);
     temp2 = wrap_lines(temp, 78-indent, indent, FALSE);
-    if (strlen(wi->filenm) > 0)
+    if (std::strlen(wi->filenm) > 0)
     {
         if (wi->lineno != -1)
         {
