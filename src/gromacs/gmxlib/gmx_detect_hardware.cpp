@@ -38,11 +38,11 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -182,11 +182,11 @@ static void print_gpu_detection_stats(FILE                 *fplog,
 
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
     /* We only print the detection on one, of possibly multiple, nodes */
-    strncpy(onhost, " on host ", 10);
+    std::strncpy(onhost, " on host ", 10);
     gmx_gethostname(onhost + 9, HOSTNAMELEN);
 #else
     /* We detect all relevant GPUs */
-    strncpy(onhost, "", 1);
+    std::strncpy(onhost, "", 1);
 #endif
 
     if (ngpu > 0)
@@ -327,8 +327,8 @@ void gmx_check_hw_runconf_consistency(FILE                *fplog,
     char     th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
     gmx_bool btMPI, bMPI, bNthreadsAuto, bEmulateGPU;
 
-    assert(hwinfo);
-    assert(cr);
+    GMX_RELEASE_ASSERT(hwinfo, "hwinfo must be a non-NULL pointer");
+    GMX_RELEASE_ASSERT(cr, "cr must be a non-NULL pointer");
 
     /* Below we only do consistency checks for PP and GPUs,
      * this is irrelevant for PME only nodes, so in that case we return
@@ -572,8 +572,8 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     int  i, uniq_count, ngpu;
     int *uniq_ids;
 
-    assert(gpu_info);
-    assert(gpu_opt);
+    GMX_RELEASE_ASSERT(gpu_info, "gpu_info must be a non-NULL pointer");
+    GMX_RELEASE_ASSERT(gpu_opt, "gpu_opt must be a non-NULL pointer");
 
     ngpu = gpu_info->n_dev;
 
@@ -707,7 +707,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
     MPI_Comm_rank(physicalnode_comm, &rank_local);
 #else
     /* Here there should be only one process, check this */
-    assert(cr->nnodes == 1 && cr->sim_nodeid == 0);
+    GMX_RELEASE_ASSERT(cr->nnodes == 1 && cr->sim_nodeid == 0, "Only a single (master) process should execute here");
 
     rank_local = 0;
 #endif

@@ -40,10 +40,10 @@
 
 #include "config.h"
 
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -155,12 +155,12 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     nc->bUse = FALSE;
 #ifndef GMX_THREAD_MPI
 #ifdef GMX_MPI
-    int n, rank, nodehash, ng, ni;
+    int n, rank;
 
     MPI_Comm_size(cr->mpi_comm_mygroup, &n);
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
 
-    nodehash = gmx_physicalnode_id_hash();
+    int nodehash = gmx_physicalnode_id_hash();
 
     if (debug)
     {
@@ -182,6 +182,8 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
      */
     MPI_Comm_split(cr->mpi_comm_mygroup, nc->rank_intra, rank, &nc->comm_inter);
     /* Check if this really created two step communication */
+    int ng, ni;
+
     MPI_Comm_size(nc->comm_inter, &ng);
     MPI_Comm_size(nc->comm_intra, &ni);
     if (debug)

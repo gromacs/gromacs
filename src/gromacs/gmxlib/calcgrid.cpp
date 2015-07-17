@@ -38,7 +38,9 @@
 
 #include "gromacs/legacyheaders/calcgrid.h"
 
-#include <math.h>
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
@@ -98,7 +100,7 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
         {
             box_size[d] += box[d][i]*box[d][i];
         }
-        box_size[d] = sqrt(box_size[d]);
+        box_size[d] = std::sqrt(box_size[d]);
     }
 
     n[XX] = *nx;
@@ -119,7 +121,7 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
     {
         if (n[d] <= 0)
         {
-            nmin = (int)(box_size[d]/gr_sp + 0.999);
+            nmin = static_cast<int>(box_size[d]/gr_sp + 0.999);
 
             i = g_initNR - 1;
             if (grid_init[i] >= nmin)
@@ -156,11 +158,8 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
             }
         }
 
-        spacing[d] = box_size[d]/n[d];
-        if (spacing[d] > max_spacing)
-        {
-            max_spacing = spacing[d];
-        }
+        spacing[d]  = box_size[d]/n[d];
+        max_spacing = std::max(max_spacing, spacing[d]);
     }
     *nx = n[XX];
     *ny = n[YY];
