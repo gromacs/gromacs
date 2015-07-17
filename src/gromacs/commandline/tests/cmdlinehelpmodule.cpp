@@ -107,7 +107,7 @@ TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
  *
  * \ingroup module_commandline
  */
-void initOptionsBasic(gmx::Options                           *options,
+void initOptionsBasic(gmx::IOptionsContainer                 *options,
                       gmx::ICommandLineOptionsModuleSettings *settings)
 {
     const char *const desc[] = {

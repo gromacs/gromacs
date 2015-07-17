@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/utility/exceptions.h"
@@ -95,7 +95,7 @@ AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection *sele
 
 
 void
-AnalysisDataPlotSettings::addOptions(Options *options)
+AnalysisDataPlotSettings::initOptions(IOptionsContainer *options)
 {
     options->addOption(StringOption("xvg").enumValue(g_plotFormats)
                            .defaultValue("xmgrace")

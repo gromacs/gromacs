@@ -57,7 +57,7 @@
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/topology/topology.h"
@@ -496,7 +496,7 @@ SelectionCollection::~SelectionCollection()
 
 
 void
-SelectionCollection::initOptions(Options *options)
+SelectionCollection::initOptions(IOptionsContainer *options)
 {
     const char * const debug_levels[]
         = { "no", "basic", "compile", "eval", "full" };
