@@ -38,10 +38,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 
 #ifdef HAVE_SCHED_AFFINITY
 #  include <sched.h>
@@ -60,6 +59,7 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -189,7 +189,7 @@ gmx_set_thread_affinity(FILE                *fplog,
                         const gmx_hw_info_t *hwinfo)
 {
     int        nth_affinity_set, thread0_id_node,
-               nthread_local, nthread_node, nthread_hw_max, nphyscore;
+               nthread_local, nthread_node;
     int        offset;
     const int *locality_order;
     int        rc;
@@ -309,7 +309,7 @@ gmx_set_thread_affinity(FILE                *fplog,
         setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
 
         /* store the per-thread success-values of the setaffinity */
-        nth_affinity_set = (setaffinity_ret == 0);
+        nth_affinity_set += (setaffinity_ret == 0);
 
         if (debug)
         {
@@ -374,16 +374,8 @@ gmx_check_thread_affinity_set(FILE            *fplog,
                               int  gmx_unused  nthreads_hw_avail,
                               gmx_bool         bAfterOpenmpInit)
 {
-#ifdef HAVE_SCHED_AFFINITY
-    cpu_set_t mask_current;
-    int       i, ret, cpu_count, cpu_set;
-    gmx_bool  bAllSet;
-#endif
-#ifdef GMX_LIB_MPI
-    gmx_bool  bAllSet_All;
-#endif
+    GMX_RELEASE_ASSERT(hw_opt, "hw_opt must be a non-NULL pointer");
 
-    assert(hw_opt);
     if (!bAfterOpenmpInit)
     {
         /* Check for externally set OpenMP affinity and turn off internal
@@ -418,6 +410,9 @@ gmx_check_thread_affinity_set(FILE            *fplog,
     }
 
 #ifdef HAVE_SCHED_GETAFFINITY
+    int       ret;
+    cpu_set_t mask_current;
+
     if (hw_opt->thread_affinity == threadaffOFF)
     {
         /* internal affinity setting is off, don't bother checking process affinity */
@@ -450,13 +445,15 @@ gmx_check_thread_affinity_set(FILE            *fplog,
     }
 #endif /* CPU_COUNT */
 
-    bAllSet = TRUE;
-    for (i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
+    gmx_bool bAllSet = TRUE;
+    for (int i = 0; (i < nthreads_hw_avail && i < CPU_SETSIZE); i++)
     {
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
 
 #ifdef GMX_LIB_MPI
+    gmx_bool  bAllSet_All;
+
     MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
     bAllSet = bAllSet_All;
 #endif
