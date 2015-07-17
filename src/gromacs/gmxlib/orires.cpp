@@ -38,6 +38,8 @@
 
 #include "gromacs/legacyheaders/orires.h"
 
+#include <cmath>
+
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/network.h"
@@ -137,7 +139,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     else
     {
         snew(od->Dtav, od->nr);
-        od->edt   = exp(-ir->delta_t/ir->orires_tau);
+        od->edt   = std::exp(-ir->delta_t/ir->orires_tau);
         od->edt_1 = 1.0 - od->edt;
 
         /* Extend the state with the orires history */
@@ -588,7 +590,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 
         d++;
     }
-    od->rmsdev = sqrt(wsv2/sw);
+    od->rmsdev = std::sqrt(wsv2/sw);
 
     /* Rotate the S matrices back, so we get the correct grad(tr(S D)) */
     for (ex = 0; ex < od->nex; ex++)
@@ -669,7 +671,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 }
                 else
                 {
-                    dev = sqrt(dev*devins);
+                    dev = std::sqrt(dev*devins);
                     if (devins < 0)
                     {
                         dev = -dev;

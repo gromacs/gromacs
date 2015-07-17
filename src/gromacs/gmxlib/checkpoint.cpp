@@ -41,9 +41,9 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 
 #include <fcntl.h>
 #ifdef GMX_NATIVE_WINDOWS
@@ -189,14 +189,11 @@ static void cp_error()
 
 static void do_cpt_string_err(XDR *xd, gmx_bool bRead, const char *desc, char **s, FILE *list)
 {
-    bool_t res = 0;
-
     if (bRead)
     {
         snew(*s, CPTSTRLEN);
     }
-    res = xdr_string(xd, s, CPTSTRLEN);
-    if (res == 0)
+    if (xdr_string(xd, s, CPTSTRLEN) == 0)
     {
         cp_error();
     }
@@ -209,10 +206,7 @@ static void do_cpt_string_err(XDR *xd, gmx_bool bRead, const char *desc, char **
 
 static int do_cpt_int(XDR *xd, const char *desc, int *i, FILE *list)
 {
-    bool_t res = 0;
-
-    res = xdr_int(xd, i);
-    if (res == 0)
+    if (xdr_int(xd, i) == 0)
     {
         return -1;
     }
@@ -225,13 +219,12 @@ static int do_cpt_int(XDR *xd, const char *desc, int *i, FILE *list)
 
 static int do_cpt_u_chars(XDR *xd, const char *desc, int n, unsigned char *i, FILE *list)
 {
-    bool_t res = 1;
-    int    j;
     if (list)
     {
         fprintf(list, "%s = ", desc);
     }
-    for (j = 0; j < n && res; j++)
+    bool_t res = 1;
+    for (int j = 0; j < n && res; j++)
     {
         res &= xdr_u_char(xd, &i[j]);
         if (list)
@@ -261,11 +254,9 @@ static void do_cpt_int_err(XDR *xd, const char *desc, int *i, FILE *list)
 
 static void do_cpt_step_err(XDR *xd, const char *desc, gmx_int64_t *i, FILE *list)
 {
-    bool_t res = 0;
     char   buf[STEPSTRSIZE];
 
-    res = xdr_int64(xd, i);
-    if (res == 0)
+    if (xdr_int64(xd, i) == 0)
     {
         cp_error();
     }
@@ -277,10 +268,7 @@ static void do_cpt_step_err(XDR *xd, const char *desc, gmx_int64_t *i, FILE *lis
 
 static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
 {
-    bool_t res = 0;
-
-    res = xdr_double(xd, f);
-    if (res == 0)
+    if (xdr_double(xd, f) == 0)
     {
         cp_error();
     }
@@ -292,12 +280,10 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
 
 static void do_cpt_real_err(XDR *xd, real *f)
 {
-    bool_t res = 0;
-
 #ifdef GMX_DOUBLE
-    res = xdr_double(xd, f);
+    bool_t res = xdr_double(xd, f);
 #else
-    res = xdr_float(xd, f);
+    bool_t res = xdr_float(xd, f);
 #endif
     if (res == 0)
     {
@@ -307,11 +293,9 @@ static void do_cpt_real_err(XDR *xd, real *f)
 
 static void do_cpt_n_rvecs_err(XDR *xd, const char *desc, int n, rvec f[], FILE *list)
 {
-    int i, j;
-
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
-        for (j = 0; j < DIM; j++)
+        for (int j = 0; j < DIM; j++)
         {
             do_cpt_real_err(xd, &f[i][j]);
         }
@@ -404,14 +388,14 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
     {
         if (dtc == xdr_datatype_float)
         {
-            vf = (float *)vp;
+            vf = reinterpret_cast<float *>(vp);
         }
         else
         {
             snew(vf, nf);
         }
-        res = xdr_vector(xd, (char *)vf, nf,
-                         (unsigned int)sizeof(float), (xdrproc_t)xdr_float);
+        res = xdr_vector(xd, reinterpret_cast<char *>(vf), nf,
+                         static_cast<unsigned int>(sizeof(float)), (xdrproc_t)xdr_float);
         if (res == 0)
         {
             return -1;
@@ -437,8 +421,8 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
         {
             snew(vd, nf);
         }
-        res = xdr_vector(xd, (char *)vd, nf,
-                         (unsigned int)sizeof(double), (xdrproc_t)xdr_double);
+        res = xdr_vector(xd, reinterpret_cast<char *>(vd), nf,
+                         static_cast<unsigned int>(sizeof(double)), (xdrproc_t)xdr_double);
         if (res == 0)
         {
             return -1;
@@ -545,8 +529,8 @@ static int do_cpte_ints(XDR *xd, int cptp, int ecpt, int sflags,
         }
         vp = *v;
     }
-    res = xdr_vector(xd, (char *)vp, nf,
-                     (unsigned int)sizeof(int), (xdrproc_t)xdr_int);
+    res = xdr_vector(xd, reinterpret_cast<char *>(vp), nf,
+                     static_cast<unsigned int>(sizeof(int)), (xdrproc_t)xdr_int);
     if (res == 0)
     {
         return -1;
@@ -612,8 +596,8 @@ static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
         }
         vp = *v;
     }
-    res = xdr_vector(xd, (char *)vp, nf,
-                     (unsigned int)sizeof(double), (xdrproc_t)xdr_double);
+    res = xdr_vector(xd, reinterpret_cast<char *>(vp), nf,
+                     static_cast<unsigned int>(sizeof(double)), (xdrproc_t)xdr_double);
     if (res == 0)
     {
         return -1;
@@ -650,7 +634,7 @@ static int do_cpte_matrix(XDR *xd, int cptp, int ecpt, int sflags,
     real *vr;
     int   ret;
 
-    vr  = (real *)&(v[0][0]);
+    vr  = &(v[0][0]);
     ret = do_cpte_reals_low(xd, cptp, ecpt, sflags,
                             DIM*DIM, NULL, &vr, NULL, ecprMATRIX);
 
@@ -1390,7 +1374,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
         if (bRead)
         {
             do_cpt_string_err(xd, bRead, "output filename", &buf, list);
-            strncpy(outputfiles[i].filename, buf, CPTSTRLEN-1);
+            std::strncpy(outputfiles[i].filename, buf, CPTSTRLEN-1);
             if (list == NULL)
             {
                 sfree(buf);
@@ -1404,7 +1388,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
             {
                 return -1;
             }
-            outputfiles[i].offset = ( ((gmx_off_t) offset_high) << 32 ) | ( (gmx_off_t) offset_low & mask );
+            outputfiles[i].offset = (static_cast<gmx_off_t>(offset_high) << 32 ) | ( static_cast<gmx_off_t>(offset_low) & mask );
         }
         else
         {
@@ -1419,8 +1403,8 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
             }
             else
             {
-                offset_low  = (int) (offset & mask);
-                offset_high = (int) ((offset >> 32) & mask);
+                offset_low  = static_cast<int>(offset & mask);
+                offset_high = static_cast<int>((offset >> 32) & mask);
             }
             if (do_cpt_int(xd, "file_offset_high", &offset_high, list) != 0)
             {
@@ -1489,18 +1473,18 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
 #if !GMX_NO_RENAME
     /* make the new temporary filename */
-    snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
-    strcpy(fntemp, fn);
-    fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+    snew(fntemp, std::strlen(fn)+5+STEPSTRSIZE);
+    std::strcpy(fntemp, fn);
+    fntemp[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
     sprintf(suffix, "_%s%s", "step", gmx_step_str(step, sbuf));
-    strcat(fntemp, suffix);
-    strcat(fntemp, fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+    std::strcat(fntemp, suffix);
+    std::strcat(fntemp, fn+std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1);
 #else
     /* if we can't rename, we just overwrite the cpt file.
      * dangerous if interrupted.
      */
-    snew(fntemp, strlen(fn));
-    strcpy(fntemp, fn);
+    snew(fntemp, std::strlen(fn));
+    std::strcpy(fntemp, fn);
 #endif
     gmx_format_current_time(timebuf, STRLEN);
 
@@ -1648,10 +1632,10 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         if (gmx_fexist(fn))
         {
             /* Rename the previous checkpoint file */
-            strcpy(buf, fn);
-            buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-            strcat(buf, "_prev");
-            strcat(buf, fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+            std::strcpy(buf, fn);
+            buf[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+            std::strcat(buf, "_prev");
+            std::strcat(buf, fn+std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1);
 #ifndef GMX_FAHCORE
             /* we copy here so that if something goes wrong between now and
              * the rename below, there's always a state.cpt.
@@ -1725,7 +1709,7 @@ static void check_string(FILE *fplog, const char *type, const char *p,
 {
     FILE *fp = fplog ? fplog : stderr;
 
-    if (strcmp(p, f) != 0)
+    if (std::strcmp(p, f) != 0)
     {
         fprintf(fp, "  %s mismatch,\n", type);
         fprintf(fp, "    current program: %s\n", p);
@@ -2153,7 +2137,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                     else
                     {
                         gmx_fatal(FARGS, "Failed to lock: %s. %s.",
-                                  outputfiles[i].filename, strerror(errno));
+                                  outputfiles[i].filename, std::strerror(errno));
                     }
                 }
             }
@@ -2173,7 +2157,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             {
                 if (gmx_fio_seek(chksum_file, outputfiles[i].offset))
                 {
-                    gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", strerror(errno));
+                    gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", std::strerror(errno));
                 }
             }
 #endif

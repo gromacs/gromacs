@@ -40,7 +40,7 @@
 
 #include "config.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
@@ -182,7 +182,7 @@ const char *gmx_get_signal_name(void)
 gmx_bool gmx_got_usr_signal(void)
 {
 #if HAVE_SIGUSR1
-    gmx_bool ret = (gmx_bool)usr_condition;
+    gmx_bool ret = static_cast<gmx_bool>(usr_condition);
     usr_condition = 0;
     return ret;
 #else
