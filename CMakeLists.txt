@@ -502,6 +502,7 @@ if(WIN32)
     # This makes windows.h not declare min/max as macros that would break
     # C++ code using std::min/std::max.
     add_definitions(-DNOMINMAX)
+    check_symbol_exists(__cpuidex intrin.h HAVE_CPUIDEX)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Work-around for cmake bug #10837
