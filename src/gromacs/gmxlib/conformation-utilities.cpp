@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,9 @@
 
 #include "conformation-utilities.h"
 
-#include <math.h>
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
@@ -127,7 +129,6 @@ void make_new_box(int natoms, rvec *x, matrix box, rvec box_space,
 {
     int  i, m;
     rvec xmin, xmax;
-    real max_box;
 
     /*calculate minimum and maximum x[0..DIM-1]*/
     for (m = 0; (m < DIM); m++)
@@ -138,8 +139,8 @@ void make_new_box(int natoms, rvec *x, matrix box, rvec box_space,
     {
         for (m = 0; m < DIM; m++)
         {
-            xmin[m] = min(xmin[m], x[i][m]);
-            xmax[m] = max(xmax[m], x[i][m]);
+            xmin[m] = std::min(xmin[m], x[i][m]);
+            xmax[m] = std::max(xmax[m], x[i][m]);
         }
     }
 

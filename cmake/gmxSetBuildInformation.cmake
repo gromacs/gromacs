@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -89,32 +89,32 @@ macro(gmx_set_build_information)
         endif()
         try_run(GMX_CPUID_RUN_VENDOR GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.cpp
             COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_VENDOR ARGS "-vendor")
         try_run(GMX_CPUID_RUN_BRAND GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.cpp
             COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_BRAND ARGS "-brand")
         try_run(GMX_CPUID_RUN_FAMILY GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.cpp
             COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_FAMILY ARGS "-family")
         try_run(GMX_CPUID_RUN_MODEL GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.cpp
             COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_MODEL ARGS "-model")
        try_run(GMX_CPUID_RUN_STEPPING GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.cpp
             COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_STEPPING ARGS "-stepping")
         try_run(GMX_CPUID_RUN_FEATURES GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
-            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+            ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.cpp
             COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_FEATURES ARGS "-features")
         unset(_compile_definitions)
