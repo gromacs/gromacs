@@ -289,11 +289,15 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         }
         cmdlineContext->setModuleDisplayName(helpModule_.binaryName_);
         optionsHolder.initOptions();
-        Options &options = *optionsHolder.options();
-        options.setDescription(RootHelpText::text);
+        Options                    &options = *optionsHolder.options();
+        ConstArrayRef<const char *> helpText;
+        if (context.outputFormat() != eHelpOutputFormat_Console)
+        {
+            helpText = RootHelpText::text;
+        }
         // TODO: Add <command> [<args>] into the synopsis.
         CommandLineHelpWriter(options)
-            .setShowDescriptions(context.outputFormat() != eHelpOutputFormat_Console)
+            .setHelpText(helpText)
             .writeHelp(*cmdlineContext);
     }
     if (context.outputFormat() == eHelpOutputFormat_Console)

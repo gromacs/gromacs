@@ -101,7 +101,7 @@ AnalysisTemplate::initOptions(Options                    *options,
         "analysis groups."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o")
                            .filetype(eftPlot).outputFile()

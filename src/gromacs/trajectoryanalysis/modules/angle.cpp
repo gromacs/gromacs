@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -304,7 +304,7 @@ Angle::Angle()
 
 
 void
-Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Angle::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] computes different types of angles between vectors.",
@@ -359,7 +359,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     static const char *const cGroup2TypeEnum[] =
     { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
                            .store(&fnAverage_).defaultBasename("angaver")
