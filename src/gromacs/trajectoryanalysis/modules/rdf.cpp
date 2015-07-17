@@ -61,6 +61,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/nbsearch.h"
@@ -96,7 +97,7 @@ class Rdf : public TrajectoryAnalysisModule
     public:
         Rdf();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void optionsFinished(Options                    *options,
                                      TrajectoryAnalysisSettings *settings);
@@ -200,7 +201,7 @@ Rdf::Rdf()
 }
 
 void
-Rdf::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
+Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates radial distribution functions from one",

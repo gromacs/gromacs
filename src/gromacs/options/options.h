@@ -48,9 +48,8 @@
 
 #include <string>
 
-#include "gromacs/options/abstractoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -83,32 +82,10 @@ class IOptionManager
 /*! \brief
  * Collection of options.
  *
- * This class provides a standard interface for implementing input options.
- * Standard usage is to write a method that creates an Options that is owned by
- * the object, populates it with supported options, and then returns it:
- * \code
-   // <as class attributes>
-   using gmx::Options;
-   Options      options("common", "Common Options");
-   std::string  arg1;
-   int          arg2;
-
-   // <populating>
-   using gmx::StringOption;
-   using gmx::IntegerOption;
-   options.addOption(StringOption("arg1").store(&arg1));
-   options.addOption(IntegerOption("arg2").store(&arg2));
-   return &options;
-   \endcode
- * The caller of that method can then use a parser implementation such as
- * CommandLineParser to provide values for the options.
+ * See \ref module_options for an overview of how the options work.
+ * The IOptionsContainer interface documents how to add options.
  *
- * Header basicoptions.h provides declarations of several standard
- * option types for use with addOption().  Documentation of those classes
- * also give more examples of how to define options.
- *
- * In order to keep the public interface of this class simple and to reduce
- * build dependencies on objects that simply provide options, functionality
+ * In order to keep the public interface of this class simple, functionality
  * to assign values to options is provided by a separate OptionsAssigner class.
  * Similarly, functionality for looping over all options (e.g., for writing out
  * help) is provided by OptionsIterator.
@@ -116,7 +93,7 @@ class IOptionManager
  * \inpublicapi
  * \ingroup module_options
  */
-class Options
+class Options : public IOptionsContainer
 {
     public:
         /*! \brief
@@ -175,49 +152,10 @@ class Options
          * If an attempt is made, the function asserts.
          */
         void addSubSection(Options *section);
-        /*! \brief
-         * Adds a recognized option to the collection.
-         *
-         * \param[in] settings Option description.
-         * \returns   OptionInfo object for the created option (never NULL).
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * This method provides the internal implementation, but in most cases
-         * the templated method is called from user code.
-         * See the templated method for more details.
-         */
-        OptionInfo *addOption(const AbstractOption &settings);
-        /*! \brief
-         * Adds a recognized option to the collection.
-         *
-         * \tparam    OptionType Type of the options description object.
-         * \param[in] settings   Option description.
-         * \returns   OptionInfo object for the created option (never NULL).
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * The return value is a pointer for more convenient use in callers:
-         * often callers need to declare the variable that will hold the return
-         * value in wider scope than would be achieved by declaring it at the
-         * site where addOption() is called.
-         * The returned pointer must not be freed.
-         *
-         * See \link Options class documentation \endlink for example usage.
-         *
-         * \libinternal
-         * \p OptionType::InfoType must specify a type that derives from
-         * OptionInfo and matches the type that is returned by
-         * AbstractOptionStorage::optionInfo() for the storage object that
-         * corresponds to \p OptionType.
-         */
-        template <class OptionType>
-        typename OptionType::InfoType *addOption(const OptionType &settings)
-        {
-            OptionInfo *info
-                = addOption(static_cast<const AbstractOption &>(settings));
-            GMX_ASSERT(info->isType<typename OptionType::InfoType>(),
-                       "Mismatching option info type declaration and implementation");
-            return info->toType<typename OptionType::InfoType>();
-        }
+
+        // From IOptionsContainer
+        virtual OptionInfo *addOption(const AbstractOption &settings);
+        using IOptionsContainer::addOption;
 
         //! Returns true if option \p name is set.
         bool isSet(const char *name) const;

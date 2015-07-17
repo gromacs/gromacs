@@ -52,6 +52,7 @@ template <typename T> class ConstArrayRef;
 
 class CommandLineModuleManager;
 class ICommandLineModule;
+class IOptionsContainer;
 class Options;
 
 /*! \brief
@@ -230,7 +231,7 @@ class ICommandLineOptionsModule
          * the module to \p options.  Output values from options should be
          * stored in member variables.
          */
-        virtual void initOptions(Options                           *options,
+        virtual void initOptions(IOptionsContainer                 *options,
                                  ICommandLineOptionsModuleSettings *settings) = 0;
         /*! \brief
          * Called after all option values have been set.

@@ -47,7 +47,7 @@
 
 #include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/topology.h"
