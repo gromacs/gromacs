@@ -53,7 +53,7 @@ namespace gmx
 
 class FileNameOptionInfo;
 class IFileInputRedirector;
-class Options;
+class IOptionsContainer;
 
 /*! \brief
  * Handles interaction of file name options with global options.
@@ -132,7 +132,7 @@ class FileNameOptionManager : public IOptionManager
          * instead from an option-specific default
          * (FileNameOption::defaultBaseName()).
          */
-        void addDefaultFileNameOption(Options *options, const char *name);
+        void addDefaultFileNameOption(IOptionsContainer *options, const char *name);
 
         /*! \brief
          * Completes file name option values.

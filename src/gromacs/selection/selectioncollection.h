@@ -60,7 +60,7 @@ struct t_trxframe;
 namespace gmx
 {
 
-class Options;
+class IOptionsContainer;
 class SelectionCompiler;
 class SelectionEvaluator;
 class TextInputStream;
@@ -130,7 +130,7 @@ class SelectionCollection
          * position types (see setReferencePosType() and setOutputPosType())
          * and debugging flags.
          */
-        void initOptions(Options *options);
+        void initOptions(IOptionsContainer *options);
 
         /*! \brief
          * Sets the default reference position handling for a selection

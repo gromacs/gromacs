@@ -79,7 +79,7 @@ class TestOptionsRegistry
         }
 
         //! Initializes the options from all the provides.
-        void initOptions(Options *options);
+        void initOptions(IOptionsContainer *options);
 
     private:
         TestOptionsRegistry() {}
@@ -92,7 +92,7 @@ class TestOptionsRegistry
         GMX_DISALLOW_COPY_AND_ASSIGN(TestOptionsRegistry);
 };
 
-void TestOptionsRegistry::initOptions(Options *options)
+void TestOptionsRegistry::initOptions(IOptionsContainer *options)
 {
     // TODO: Have some deterministic order for the options; now it depends on
     // the order in which the global initializers are run.
@@ -111,7 +111,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
     TestOptionsRegistry::getInstance().add(name, provider);
 }
 
-void initTestOptions(Options *options)
+void initTestOptions(IOptionsContainer *options)
 {
     TestOptionsRegistry::getInstance().initOptions(options);
 }

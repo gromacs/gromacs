@@ -50,7 +50,7 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fileredirector.h"
@@ -149,7 +149,7 @@ void FileNameOptionManager::disableInputOptionChecking(bool bDisable)
 }
 
 void FileNameOptionManager::addDefaultFileNameOption(
-        Options *options, const char *name)
+        IOptionsContainer *options, const char *name)
 {
     options->addOption(
             StringOption(name).store(&impl_->defaultFileName_)

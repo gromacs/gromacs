@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,7 +178,7 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
  * appropriate.  Otherwise, values that are provided before adjustments will
  * need to follow the more strict checks.  In most cases in trajectory analysis
  * (which is the main use case for selection options), the adjustments should
- * be done in TrajectoryAnalysisModule::initOptionsDone() for them to take
+ * be done in TrajectoryAnalysisModule::optionsFinished() for them to take
  * place before interactive selection prompts.
  *
  * An instance of this class for a selection option can be obtained with

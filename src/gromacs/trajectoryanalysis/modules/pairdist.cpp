@@ -55,7 +55,7 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -105,7 +105,7 @@ class PairDistance : public TrajectoryAnalysisModule
     public:
         PairDistance();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
@@ -177,7 +177,7 @@ PairDistance::PairDistance()
 
 
 void
-PairDistance::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
+PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates pairwise distances between one reference",
