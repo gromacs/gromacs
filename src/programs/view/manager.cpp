@@ -36,17 +36,18 @@
  */
 #include "gmxpre.h"
 
+#include "manager.h"
+
 #include "config.h"
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h> // for usleep()
 #endif
-
-#include "manager.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -85,7 +86,7 @@ static void add_bonds(t_manager *man, t_functype func[],
     int          i, delta, ftype;
 
 #ifdef DEBUG
-    fprintf(stderr, "Going to make bonds from an ilist with %d entries\n", b->nr);
+    std::fprintf(stderr, "Going to make bonds from an ilist with %d entries\n", b->nr);
 #endif
     ia = b->iatoms;
     for (i = 0; (i < b->nr); )
@@ -107,7 +108,7 @@ static void add_bonds(t_manager *man, t_functype func[],
         {
             aj = ia[2];
 #ifdef DEBUG
-            fprintf(stderr, "Adding bond from %d to %d\n", ai, aj);
+            std::fprintf(stderr, "Adding bond from %d to %d\n", ai, aj);
 #endif
             bB[ai] = bB[aj] = true;
             if (!(bH[ai] == bH[aj]))
@@ -120,7 +121,7 @@ static void add_bonds(t_manager *man, t_functype func[],
             }
         }
 #ifdef DEBUG
-        fprintf(stderr, "Type: %5d, delta: %5d\n", type, delta);
+        std::fprintf(stderr, "Type: %5d, delta: %5d\n", type, delta);
 #endif
         ia += delta+1;
         i  += delta+1;
@@ -148,7 +149,7 @@ static atom_id which_atom(t_manager *man, int x, int y)
 
     for (i = 0; (i < man->natom); i++)
     {
-        if ((abs(ix[i][XX]-x) < DELTA) && (abs(ix[i][YY]-y) < DELTA))
+        if ((std::abs(ix[i][XX]-x) < DELTA) && (std::abs(ix[i][YY]-y) < DELTA))
         {
             if (man->bVis[i])
             {
@@ -184,7 +185,7 @@ static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
         }
         XSetForeground(x11->disp, x11->gc, col);
         XDrawString(x11->disp, man->molw->wd.self, x11->gc, x+2, y-2, man->szLab[ai],
-                    strlen(man->szLab[ai]));
+                    std::strlen(man->szLab[ai]));
         XSetForeground(x11->disp, x11->gc, x11->fg);
     }
 }
@@ -242,7 +243,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     }
 
     cool_quote(quote, 255, NULL);
-    sprintf(buf, "%s: %s", *man->top.name, quote);
+    std::sprintf(buf, "%s: %s", *man->top.name, quote);
     man->title.text = gmx_strdup(buf);
     man->view       = init_view(man->box);
     at              = &(man->top.atoms);
@@ -256,11 +257,11 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
         snew(man->szLab[i], 20);
         if (ri->ic != ' ')
         {
-            sprintf(man->szLab[i], "%s%d%c, %s", *ri->name, ri->nr, ri->ic, aname);
+            std::sprintf(man->szLab[i], "%s%d%c, %s", *ri->name, ri->nr, ri->ic, aname);
         }
         else
         {
-            sprintf(man->szLab[i], "%s%d, %s", *ri->name, ri->nr, aname);
+            std::sprintf(man->szLab[i], "%s%d, %s", *ri->name, ri->nr, aname);
         }
         man->bHydro[i] = (toupper(aname[0]) == 'H');
         if (man->bHydro[i])
@@ -356,8 +357,8 @@ static bool step_man(t_manager *man, int *nat)
 
     if (!man->natom)
     {
-        fprintf(stderr, "Not initiated yet!");
-        exit(1);
+        std::fprintf(stderr, "Not initiated yet!");
+        std::exit(1);
     }
     bEof = read_next_x(man->oenv, man->status, &man->time, man->x, man->box);
     *nat = man->natom;
@@ -373,7 +374,7 @@ static bool step_man(t_manager *man, int *nat)
                                                      man->natom, man->x);
                 if (warn && !bWarn)
                 {
-                    fprintf(stderr, "\n%s\n", warn);
+                    std::fprintf(stderr, "\n%s\n", warn);
                     bWarn = true;
                 }
                 break;
@@ -569,7 +570,7 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
     int th;
 
 #ifdef DEBUG
-    fprintf(stderr, "Move manager %dx%d\n", width, height);
+    std::fprintf(stderr, "Move manager %dx%d\n", width, height);
 #endif
     man->wd.width  = width;
     man->wd.height = height;
@@ -593,7 +594,7 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
 
     if (y0 > height)
     {
-        printf("Error: Windows falling out of main window!\n");
+        std::printf("Error: Windows falling out of main window!\n");
     }
 
     /* Button Box */
