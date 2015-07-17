@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,10 +40,10 @@
 
 #include "config.h"
 
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdarg>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -138,7 +138,6 @@ t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 {
     gmx_nodecomm_t *nc;
-    int             n, rank, nodehash, ng, ni;
 
     /* Many MPI implementations do not optimize MPI_Allreduce
      * (and probably also other global communication calls)
@@ -156,10 +155,12 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     nc->bUse = FALSE;
 #ifndef GMX_THREAD_MPI
 #ifdef GMX_MPI
+    int n, rank;
+
     MPI_Comm_size(cr->mpi_comm_mygroup, &n);
     MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
 
-    nodehash = gmx_physicalnode_id_hash();
+    int nodehash = gmx_physicalnode_id_hash();
 
     if (debug)
     {
@@ -181,6 +182,8 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
      */
     MPI_Comm_split(cr->mpi_comm_mygroup, nc->rank_intra, rank, &nc->comm_inter);
     /* Check if this really created two step communication */
+    int ng, ni;
+
     MPI_Comm_size(nc->comm_inter, &ng);
     MPI_Comm_size(nc->comm_intra, &ni);
     if (debug)

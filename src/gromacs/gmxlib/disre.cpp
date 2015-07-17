@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,8 +41,11 @@
 
 #include "config.h"
 
-#include <math.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -62,8 +65,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr,
                  t_fcdata *fcd, t_state *state, gmx_bool bIsREMD)
 {
-    int                  fa, nmol, i, npair, np;
-    t_iparams           *ip;
+    int                  fa, nmol, npair, np;
     t_disresdata        *dd;
     history_t           *hist;
     gmx_mtop_ilistloop_t iloop;
@@ -108,11 +110,9 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     else
     {
         dd->dr_bMixed = ir->bDisreMixed;
-        dd->ETerm     = exp(-(ir->delta_t/ir->dr_tau));
+        dd->ETerm     = std::exp(-(ir->delta_t/ir->dr_tau));
     }
     dd->ETerm1        = 1.0 - dd->ETerm;
-
-    ip = mtop->ffparams.iparams;
 
     dd->nres  = 0;
     dd->npair = 0;
@@ -222,7 +222,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
         if (fplog)
         {
             fprintf(fplog, "Our ensemble consists of systems:");
-            for (i = 0; i < dd->nsystems; i++)
+            for (int i = 0; i < dd->nsystems; i++)
             {
                 fprintf(fplog, " %d",
                         (cr->ms->sim/dd->nsystems)*dd->nsystems+i);
@@ -266,12 +266,11 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                      t_fcdata *fcd, history_t *hist)
 {
     atom_id         ai, aj;
-    int             fa, res, i, pair, ki, kj, m;
+    int             fa, res, pair;
     int             type, npair, np;
     rvec            dx;
     real           *rt, *rm3tav, *Rtl_6, *Rt_6, *Rtav_6;
     real            rt_1, rt_3, rt2;
-    ivec            it, jt, dt;
     t_disresdata   *dd;
     real            ETerm, ETerm1, cf1 = 0, cf2 = 0, invn = 0;
     gmx_bool        bTav;
@@ -333,7 +332,7 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             rt_1 = gmx_invsqrt(rt2);
             rt_3 = rt_1*rt_1*rt_1;
 
-            rt[pair]         = sqrt(rt2);
+            rt[pair]         = std::sqrt(rt2);
             if (bTav)
             {
                 /* Here we update rm3tav in t_fcdata using the data
@@ -387,7 +386,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
     real            tav_viol_Rtav7, instant_viol_Rtav7;
     real            up1, up2, low;
     gmx_bool        bConservative, bMixed, bViolation;
-    ivec            it, jt, dt;
+    ivec            dt;
     t_disresdata   *dd;
     int             dr_weighting;
     gmx_bool        dr_bMixed;
@@ -431,15 +430,15 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
         {
             bConservative = (dr_weighting == edrwConservative) && (npair > 1);
             bMixed        = dr_bMixed;
-            Rt            = pow(Rt_6[res], -sixth);
-            Rtav          = pow(Rtav_6[res], -sixth);
+            Rt            = std::pow(Rt_6[res], -sixth);
+            Rtav          = std::pow(Rtav_6[res], -sixth);
         }
         else
         {
             /* When rtype=2 use instantaneous not ensemble avereged distance */
             bConservative = (npair > 1);
             bMixed        = FALSE;
-            Rt            = pow(Rtl_6[res], -sixth);
+            Rt            = std::pow(Rtl_6[res], -sixth);
             Rtav          = Rt;
         }
 
@@ -503,7 +502,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 }
                 if (bViolation)
                 {
-                    mixed_viol = sqrt(tav_viol*instant_viol);
+                    mixed_viol = std::sqrt(tav_viol*instant_viol);
                     f_scal     = -k0*mixed_viol;
                     violtot   += mixed_viol;
                 }
@@ -516,7 +515,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             /* Correct the force for the number of restraints */
             if (bConservative)
             {
-                f_scal  = max(f_scal, fmax_scal);
+                f_scal  = std::max(f_scal, fmax_scal);
                 if (!bMixed)
                 {
                     f_scal *= Rtav/Rtav_6[res];
@@ -530,8 +529,8 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             }
             else
             {
-                f_scal /= (real)npair;
-                f_scal  = max(f_scal, fmax_scal);
+                f_scal /= npair;
+                f_scal  = std::max(f_scal, fmax_scal);
             }
 
             /* Exert the force ... */
@@ -559,12 +558,12 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 {
                     if (!dr_bMixed)
                     {
-                        weight_rt_1 *= pow(dd->rm3tav[pair], seven_three);
+                        weight_rt_1 *= std::pow(dd->rm3tav[pair], seven_three);
                     }
                     else
                     {
-                        weight_rt_1 *= tav_viol_Rtav7*pow(dd->rm3tav[pair], seven_three)+
-                            instant_viol_Rtav7*pow(dd->rt[pair], -7);
+                        weight_rt_1 *= tav_viol_Rtav7*std::pow(dd->rm3tav[pair], seven_three)+
+                            instant_viol_Rtav7*std::pow(dd->rt[pair], static_cast<real>(-7));
                     }
                 }
 
