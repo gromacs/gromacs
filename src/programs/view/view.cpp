@@ -38,8 +38,7 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -84,7 +83,7 @@ static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
 {
     int y0, wl, hl;
 #ifdef DEBUG
-    fprintf(stderr, "Move gmx %dx%d\n", width, height);
+    std::fprintf(stderr, "Move gmx %dx%d\n", width, height);
 #endif
     y0 = XTextHeight(x11->font);
     /* Resize PD-Menu */
@@ -406,14 +405,14 @@ int gmx_view(int argc, char *argv[])
                           0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
 #if !GMX_X11
-        fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
+        std::fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
 #else
         t_x11 *x11;
 
         if ((x11 = GetX11(&argc, argv)) == NULL)
         {
-            fprintf(stderr, "Can't connect to X Server.\n"
-                    "Check your DISPLAY environment variable\n");
+            std::fprintf(stderr, "Can't connect to X Server.\n"
+                         "Check your DISPLAY environment variable\n");
         }
         else
         {
