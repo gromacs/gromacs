@@ -36,9 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
 
 #include "gromacs/fileio/writeps.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -260,7 +258,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     nvis = filter_vis(man);
     if (nvis && man->bSort)
     {
-        qsort(man->obj, nvis, sizeof(man->obj[0]), compare_obj);
+        std::qsort(man->obj, nvis, sizeof(man->obj[0]), compare_obj);
     }
 
     /* Draw the objects */

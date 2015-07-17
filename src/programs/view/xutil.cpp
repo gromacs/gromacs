@@ -38,9 +38,8 @@
 
 #include "xutil.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
@@ -70,7 +69,7 @@ int CheckWin(Window win, const char *file, int line)
     {
         if (win == winerr[i].n)
         {
-            fprintf(stderr, "%s", winerr[i].s);
+            std::fprintf(stderr, "%s", winerr[i].s);
             break;
         }
     }
@@ -79,7 +78,7 @@ int CheckWin(Window win, const char *file, int line)
         return 1;
     }
 
-    fprintf(stderr, " in file %s, line %d\n", file, line);
+    std::fprintf(stderr, " in file %s, line %d\n", file, line);
     return 0;
 }
 
@@ -108,7 +107,7 @@ void SpecialTextInRect(t_x11 *x11, XFontStruct *font, Drawable win,
         f = x11->font;
     }
 
-    fw = XTextWidth(f, s, strlen(s));
+    fw = XTextWidth(f, s, std::strlen(s));
     fh = XTextHeight(f);
     switch (eX)
     {
@@ -136,7 +135,7 @@ void SpecialTextInRect(t_x11 *x11, XFontStruct *font, Drawable win,
             y0 = y+(height-fh)/2+f->ascent;
             break;
     }
-    XDrawString(x11->disp, win, x11->gc, x0, y0, s, strlen(s));
+    XDrawString(x11->disp, win, x11->gc, x0, y0, s, std::strlen(s));
     if (font)
     {
         XSetFont(x11->disp, x11->gc, x11->font->fid);
@@ -176,7 +175,7 @@ void InitWin(t_windata *win, int x0, int y0, int w, int h, int bw, const char *t
         win->text = NULL;
     }
 #ifdef DEBUG
-    printf("%s: %d x %d at %d, %d\n", text, w, h, x0, y0);
+    std::printf("%s: %d x %d at %d, %d\n", text, w, h, x0, y0);
 #endif
 }
 
@@ -276,7 +275,7 @@ void PushMouse(Display *disp, Window dest, int x, int y)
     mpos         = newpos;
     XWarpPointer(disp, None, dest, 0, 0, 0, 0, x, y);
 #ifdef DEBUG
-    fprintf(stderr, "Pushmouse %d, %d\n", x, y);
+    std::fprintf(stderr, "Pushmouse %d, %d\n", x, y);
 #endif
 }
 
@@ -292,7 +291,7 @@ void PopMouse(Display *disp)
 
     XWarpPointer(disp, None, DefaultRootWindow(disp), 0, 0, 0, 0, old->x, old->y);
 #ifdef DEBUG
-    fprintf(stderr, "Popmouse %d, %d\n", old->x, old->y);
+    std::fprintf(stderr, "Popmouse %d, %d\n", old->x, old->y);
 #endif
     mpos = old->prev;
     sfree(old);
@@ -317,13 +316,13 @@ bool GrabOK(FILE *out, int err)
         case GrabSuccess:
             return true;
         case GrabNotViewable:
-            fprintf(out, "GrabNotViewable\n"); break;
+            std::fprintf(out, "GrabNotViewable\n"); break;
         case AlreadyGrabbed:
-            fprintf(out, "AlreadyGrabbed\n"); break;
+            std::fprintf(out, "AlreadyGrabbed\n"); break;
         case GrabFrozen:
-            fprintf(out, "GrabFrozen\n"); break;
+            std::fprintf(out, "GrabFrozen\n"); break;
         case GrabInvalidTime:
-            fprintf(out, "GrabInvalidTime\n"); break;
+            std::fprintf(out, "GrabInvalidTime\n"); break;
         default:
             break;
     }

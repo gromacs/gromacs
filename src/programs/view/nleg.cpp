@@ -38,7 +38,7 @@
 
 #include "nleg.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 
@@ -78,7 +78,7 @@ int search_ac(const char *type)
     {
         for (i = 0; (i < NAC); i++)
         {
-            mij = std::min((int)strlen(type), (int)strlen(ac[i].tp));
+            mij = std::min(static_cast<int>(std::strlen(type)), static_cast<int>(std::strlen(ac[i].tp)));
             for (nb = 0; (nb < mij); nb++)
             {
                 if (type[nb] != ac[i].tp[nb])

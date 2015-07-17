@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include <algorithm>
@@ -94,7 +95,7 @@ static void FilterCB(t_x11 *x11, int dlg_mess, int /*item_id*/,
     f   = gmx->filter;
 
 #ifdef DEBUG
-    printf("item_id: %d, set: %s\n", item_id, set);
+    std::printf("item_id: %d, set: %s\n", item_id, set);
 #endif
     switch (dlg_mess)
     {
@@ -148,47 +149,47 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     std::strcpy(tmpfile, "filterXXXXXX");
     gmx_tmpnam(tmpfile);
 #ifdef DEBUG
-    fprintf(stderr, "file: %s\n", tmpfile);
+    std::fprintf(stderr, "file: %s\n", tmpfile);
 #endif
-    if ((tmp = fopen(tmpfile, "w")) == NULL)
+    if ((tmp = std::fopen(tmpfile, "w")) == NULL)
     {
-        sprintf(tmpfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
+        std::sprintf(tmpfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
         gmx_tmpnam(tmpfile);
-        if ((tmp = fopen(tmpfile, "w")) == NULL)
+        if ((tmp = std::fopen(tmpfile, "w")) == NULL)
         {
             gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile);
         }
     }
     tlen = 1+ncol*(1+len);
-    fprintf(tmp, "grid %d %d {\n\n", tlen, ht);
+    std::fprintf(tmp, "grid %d %d {\n\n", tlen, ht);
 
     for (k = j = 0, x0 = 1; (j < ncol); j++, x0 += len+1)
     {
-        fprintf(tmp, "group \"%s-%d\" %d 1 %d %d {\n", title, j+1, x0, len, ht-5);
+        std::fprintf(tmp, "group \"%s-%d\" %d 1 %d %d {\n", title, j+1, x0, len, ht-5);
         for (i = 0; (i < nrow) && (k < gmx->filter->grps->nr); i++, k++)
         {
             if (!gmx->filter->bDisable[k])
             {
-                fprintf(tmp, "checkbox \"%s\" \"%d\" %s %s %s\n",
+                std::fprintf(tmp, "checkbox \"%s\" \"%d\" %s %s %s\n",
                         gmx->filter->grpnames[k], k, dummy, dummy, dummy);
             }
             else
             {
-                fprintf(tmp, "statictext { \"  %s\" } \"%d\" %s %s %s\n",
+                std::fprintf(tmp, "statictext { \"  %s\" } \"%d\" %s %s %s\n",
                         gmx->filter->grpnames[k], k, dummy, dummy, dummy);
             }
         }
-        fprintf(tmp, "}\n\n");
+        std::fprintf(tmp, "}\n\n");
     }
-    fprintf(tmp, "simple 1 %d %d 2 {\n", ht-3, tlen-2);
-    fprintf(tmp, "defbutton %s %s %s %s %s\n", ok, ok, dummy, dummy, dummy);
-    fprintf(tmp, "}\n\n}\n");
-    fclose(tmp);
+    std::fprintf(tmp, "simple 1 %d %d 2 {\n", ht-3, tlen-2);
+    std::fprintf(tmp, "defbutton %s %s %s %s %s\n", ok, ok, dummy, dummy, dummy);
+    std::fprintf(tmp, "}\n\n}\n");
+    std::fclose(tmp);
 
     dlg = ReadDlg(x11, gmx->wd->self, title, tmpfile,
                   0, 0, true, false, FilterCB, gmx);
 
-    remove(tmpfile);
+    std::remove(tmpfile);
 
     return dlg;
 }

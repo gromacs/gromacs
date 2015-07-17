@@ -38,8 +38,8 @@
 
 #include "buttons.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
@@ -213,7 +213,7 @@ t_butbox *init_vbox(t_x11 *x11, Window Parent, Window SendTo, unsigned long fg, 
                 break;
             default:
                 fprintf(stderr, "Invalid bitmap in init_vbox %d\n", ID);
-                exit(1);
+                std::exit(1);
         }
         /* Rely on the fact that all bitmaps are equal size */
         pm = XCreatePixmapFromBitmapData(x11->disp, x11->root,

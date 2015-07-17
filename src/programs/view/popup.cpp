@@ -38,8 +38,7 @@
 
 #include "popup.h"
 
-#include <math.h>
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 
@@ -142,7 +141,7 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     mlen = 0;
     for (i = 0; (i < nent); i++)
     {
-        mlen = std::max(mlen, XTextWidth(x11->font, ent[i].str, strlen(ent[i].str)));
+        mlen = std::max(mlen, XTextWidth(x11->font, ent[i].str, std::strlen(ent[i].str)));
     }
     mht = XTextHeight(x11->font);
     /* Now we have the biggest single box, add a border of 2 pixels */
@@ -150,7 +149,7 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     mht  += 4;
     /* Calculate the area of the menu */
     area = mlen*mht;
-    ht   = sqrt(area);
+    ht   = std::sqrt(area);
     /* No the number of rows per column, only beyond 8 rows */
     if (ncol == 0)
     {

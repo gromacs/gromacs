@@ -38,9 +38,8 @@
 
 #include "xmb.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -89,8 +88,8 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
         ((Flags & MB_NO) && (Flags & MB_CANCEL))  ||
         (!(Flags & MB_OK) && !(Flags & MB_YES)))
     {
-        fprintf(stderr, "Invalid button selection in MessageBox\n");
-        exit(1);
+        std::fprintf(stderr, "Invalid button selection in MessageBox\n");
+        std::exit(1);
     }
     nicon = 0;
     if (Flags & MB_ICONSTOP)
