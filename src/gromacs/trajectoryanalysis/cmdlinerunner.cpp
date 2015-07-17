@@ -273,7 +273,7 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
     selections.initOptions(&selectionOptions);
 
     CommandLineHelpWriter(options)
-        .setShowDescriptions(true)
+        .setHelpText(settings.helpText())
         .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
         .writeHelp(context);
 }

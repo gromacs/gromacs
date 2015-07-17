@@ -132,7 +132,7 @@ Distance::Distance()
 
 
 void
-Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Distance::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates distances between pairs of positions",
@@ -156,7 +156,7 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
         "distances, use [gmx-pairdist]."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
                            .store(&fnAverage_).defaultBasename("distave")

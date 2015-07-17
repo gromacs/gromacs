@@ -50,13 +50,33 @@
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/options/filenameoptionmanager.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
 
 namespace
 {
+
+/********************************************************************
+ * CommandLineOptionsModuleSettings
+ */
+
+class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSettings
+{
+    public:
+        const std::string &helpText() const { return helpText_; }
+
+        virtual void setHelpText(const ConstArrayRef<const char *> &help)
+        {
+            helpText_ = joinStrings(help, "\n");
+        }
+
+    private:
+        std::string helpText_;
+};
 
 /********************************************************************
  * CommandLineOptionsModule
@@ -122,10 +142,11 @@ void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) 
         moduleGuard.reset(factory_());
         module = moduleGuard.get();
     }
-    Options options(name(), shortDescription());
-    module->initOptions(&options);
+    Options                          options(name(), shortDescription());
+    CommandLineOptionsModuleSettings settings;
+    module->initOptions(&options, &settings);
     CommandLineHelpWriter(options)
-        .setShowDescriptions(true)
+        .setHelpText(settings.helpText())
         .writeHelp(context);
 }
 
@@ -136,7 +157,8 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
 
     options.addManager(&fileoptManager);
 
-    module_->initOptions(&options);
+    CommandLineOptionsModuleSettings settings;
+    module_->initOptions(&options, &settings);
     {
         CommandLineParser parser(&options);
         parser.parse(&argc, argv);
@@ -146,6 +168,14 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
 }
 
 }   // namespace
+
+/********************************************************************
+ * ICommandLineOptionsModuleSettings
+ */
+
+ICommandLineOptionsModuleSettings::~ICommandLineOptionsModuleSettings()
+{
+}
 
 /********************************************************************
  * ICommandLineOptionsModule

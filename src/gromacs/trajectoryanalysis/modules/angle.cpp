@@ -304,7 +304,7 @@ Angle::Angle()
 
 
 void
-Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Angle::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] computes different types of angles between vectors.",
@@ -359,7 +359,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     static const char *const cGroup2TypeEnum[] =
     { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
                            .store(&fnAverage_).defaultBasename("angaver")

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -177,7 +177,7 @@ PairDistance::PairDistance()
 
 
 void
-PairDistance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+PairDistance::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates pairwise distances between one reference",
@@ -214,7 +214,7 @@ PairDistance::initOptions(Options *options, TrajectoryAnalysisSettings * /*setti
         "[gmx-distance] may be a more suitable tool."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
                            .store(&fnDist_).defaultBasename("dist")

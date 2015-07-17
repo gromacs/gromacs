@@ -74,69 +74,6 @@ namespace
 //! \{
 
 /********************************************************************
- * DescriptionsFormatter
- */
-
-class DescriptionsFormatter : public OptionsVisitor
-{
-    public:
-        /*! \brief
-         * Creates a new description formatter.
-         *
-         * \param[in] context   Help context to use to write the help.
-         */
-        explicit DescriptionsFormatter(const HelpWriterContext &context)
-            : context_(context), title_(NULL), bDidOutput_(false)
-        {
-        }
-
-        //! Formats all section descriptions from a given options.
-        void format(const Options &options, const char *title)
-        {
-            title_      = title;
-            bDidOutput_ = false;
-            visitSubSection(options);
-            if (bDidOutput_)
-            {
-                context_.outputFile().writeLine();
-            }
-        }
-
-        //! Formats the description for a single subsection and handles recursion.
-        virtual void visitSubSection(const Options &section);
-        // This method is not used and never called.
-        virtual void visitOption(const OptionInfo & /*option*/) {}
-
-    private:
-        const HelpWriterContext &context_;
-        const char              *title_;
-        bool                     bDidOutput_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(DescriptionsFormatter);
-};
-
-void DescriptionsFormatter::visitSubSection(const Options &section)
-{
-    if (!section.description().empty())
-    {
-        if (bDidOutput_)
-        {
-            context_.outputFile().writeLine();
-        }
-        else if (title_ != NULL)
-        {
-            context_.writeTitle(title_);
-        }
-        // TODO: Print title for the section?
-        context_.writeTextBlock(section.description());
-        bDidOutput_ = true;
-    }
-
-    OptionsIterator iterator(section);
-    iterator.acceptSubSections(this);
-}
-
-/********************************************************************
  * IOptionsFormatter
  */
 
@@ -578,17 +515,16 @@ class CommandLineHelpWriter::Impl
 
         //! Options object to use for generating help.
         const Options               &options_;
+        //! Help text.
+        std::string                  helpText_;
         //! List of bugs/knows issues.
         ConstArrayRef<const char *>  bugs_;
         //! Time unit to show in descriptions.
         std::string                  timeUnit_;
-        //! Whether to write descriptions to output.
-        bool                         bShowDescriptions_;
 };
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
-    : options_(options), timeUnit_(TimeUnitManager().timeUnitAsString()),
-      bShowDescriptions_(false)
+    : options_(options), timeUnit_(TimeUnitManager().timeUnitAsString())
 {
 }
 
@@ -622,16 +558,23 @@ CommandLineHelpWriter::~CommandLineHelpWriter()
 }
 
 CommandLineHelpWriter &
-CommandLineHelpWriter::setShowDescriptions(bool bSet)
+CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
 {
-    impl_->bShowDescriptions_ = bSet;
+    impl_->timeUnit_ = timeUnit;
     return *this;
 }
 
 CommandLineHelpWriter &
-CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
+CommandLineHelpWriter::setHelpText(const std::string &help)
 {
-    impl_->timeUnit_ = timeUnit;
+    impl_->helpText_ = help;
+    return *this;
+}
+
+CommandLineHelpWriter &
+CommandLineHelpWriter::setHelpText(const ConstArrayRef<const char *> &help)
+{
+    impl_->helpText_ = joinStrings(help, "\n");
     return *this;
 }
 
@@ -669,10 +612,11 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
         synopsisFormatter.finish();
     }
 
-    if (impl_->bShowDescriptions_)
+    if (!impl_->helpText_.empty())
     {
-        DescriptionsFormatter descriptionFormatter(writerContext);
-        descriptionFormatter.format(impl_->options_, "Description");
+        writerContext.writeTitle("Description");
+        writerContext.writeTextBlock(impl_->helpText_);
+        writerContext.outputFile().writeLine();
     }
     CommonFormatterData    common(impl_->timeUnit_.c_str());
     OptionsListFormatter   formatter(writerContext, common, "Options");

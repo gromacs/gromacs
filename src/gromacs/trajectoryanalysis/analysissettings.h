@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_H
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/classhelpers.h"
@@ -51,6 +53,8 @@ struct t_topology;
 
 namespace gmx
 {
+
+template <typename T> class ConstArrayRef;
 
 class AnalysisDataPlotSettings;
 class Options;
@@ -217,6 +221,11 @@ class TrajectoryAnalysisSettings
          * from the trajectory.
          */
         void setFrameFlags(int frflags);
+
+        //! Returns the help text.
+        const std::string &helpText() const;
+        //! \copydoc ICommandLineOptionsModuleSettings::setHelpText(const std::string &)
+        void setHelpText(const ConstArrayRef<const char *> &help);
 
     private:
         class Impl;

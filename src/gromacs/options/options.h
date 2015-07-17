@@ -55,8 +55,6 @@
 namespace gmx
 {
 
-template <typename T> class ConstArrayRef;
-
 class AbstractOption;
 class OptionsAssigner;
 class OptionsIterator;
@@ -134,43 +132,6 @@ class Options
 
         //! Returns the short name of the option collection.
         const std::string &name() const;
-        //! Returns the title of the option collection.
-        const std::string &title() const;
-        //! Returns the full description of the option collection.
-        const std::string &description() const;
-
-        /*! \brief
-         * Sets the full description of the option collection.
-         *
-         * \param[in] desc  String to set as the description.
-         *
-         * This overload is mainly useful if the description is very short.
-         * Currently this is mostly the case in unit testing.
-         */
-        void setDescription(const std::string &desc);
-        /*! \brief
-         * Sets the full description of the option collection from string array.
-         *
-         * \param[in] descArray  String array to set as the description.
-         *
-         * All strings in `descArray` are concatenated to form the description.
-         * Spaces are inserted between strings if they are missing.
-         *
-         * Example usage:
-         * \code
-           const char *const desc[] = {
-               "This is the description",
-               "for the options"
-           };
-
-           gmx::Options options(NULL, NULL);
-           options.setDescription(desc);
-           \endcode
-         *
-         * To use this overload, you must also include
-         * `gromacs/utility/arrayref.h`.
-         */
-        void setDescription(const ConstArrayRef<const char *> &descArray);
 
         /*! \brief
          * Adds an option manager.
