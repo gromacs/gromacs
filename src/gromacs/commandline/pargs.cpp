@@ -498,7 +498,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         fileOptManager.disableInputOptionChecking(
                 FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
         options.addManager(&fileOptManager);
-        options.setDescription(gmx::constArrayRefFromArray<const char *>(desc, ndesc));
 
         if (FF(PCA_CAN_SET_DEFFNM))
         {
@@ -567,7 +566,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                                "Help output should be handled higher up and "
                                "only get called only on the master rank");
             gmx::CommandLineHelpWriter(options)
-                .setShowDescriptions(true)
+                .setHelpText(gmx::constArrayRefFromArray<const char *>(desc, ndesc))
                 .setTimeUnitString(timeUnitManager.timeUnitAsString())
                 .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))
                 .writeHelp(*context);

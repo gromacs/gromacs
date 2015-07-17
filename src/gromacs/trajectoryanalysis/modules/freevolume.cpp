@@ -196,8 +196,7 @@ FreeVolume::initOptions(Options                    *options,
         "the terminal."
     };
 
-    // Add the descriptive text (program help text) to the options
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     // Add option for optional output file
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()

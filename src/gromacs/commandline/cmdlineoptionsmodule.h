@@ -48,9 +48,46 @@
 namespace gmx
 {
 
+template <typename T> class ConstArrayRef;
+
 class CommandLineModuleManager;
 class ICommandLineModule;
 class Options;
+
+/*! \brief
+ * Settings to pass information between a CommandLineOptionsModule and generic
+ * code that runs it.
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
+class ICommandLineOptionsModuleSettings
+{
+    public:
+        /*! \brief
+         * Sets the help text for the module from string array.
+         *
+         * \param[in] help  String array to set as the description.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Formatting for the help text is described on \ref page_onlinehelp.
+         *
+         * Example usage:
+         * \code
+           const char *const desc[] = {
+               "This is the description",
+               "for the options"
+           };
+
+           settings->setHelpText(desc);
+           \endcode
+         */
+        virtual void setHelpText(const ConstArrayRef<const char *> &help) = 0;
+
+    protected:
+        // Disallow deletion through the interface.
+        ~ICommandLineOptionsModuleSettings();
+};
 
 /*! \brief
  * Module that can be run from a command line and uses gmx::Options for
@@ -182,6 +219,8 @@ class ICommandLineOptionsModule
          * Initializes command-line arguments understood by the module.
          *
          * \param[in,out] options  Options object to add the options to.
+         * \param[in,out] settings Settings to communicate information
+         *     to/from generic code running the module.
          *
          * When running the module, this method is called after init().
          * When printing help, there is no call to init(), and this is the only
@@ -190,7 +229,8 @@ class ICommandLineOptionsModule
          * the module to \p options.  Output values from options should be
          * stored in member variables.
          */
-        virtual void initOptions(Options *options)             = 0;
+        virtual void initOptions(Options                           *options,
+                                 ICommandLineOptionsModuleSettings *settings) = 0;
         /*! \brief
          * Called after all option values have been set.
          *
@@ -203,7 +243,7 @@ class ICommandLineOptionsModule
          * If the module needs to call, e.g., Options::isSet(), this is the
          * place to do that.
          */
-        virtual void optionsFinished(Options *options)         = 0;
+        virtual void optionsFinished(Options *options) = 0;
 
         /*! \brief
          * Runs the module.

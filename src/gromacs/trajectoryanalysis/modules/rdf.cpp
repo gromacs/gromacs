@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -200,7 +200,7 @@ Rdf::Rdf()
 }
 
 void
-Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Rdf::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates radial distribution functions from one",
@@ -240,7 +240,7 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "i.e. the average number of particles within a distance r.[PAR]"
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
                            .store(&fnRdf_).defaultBasename("rdf")

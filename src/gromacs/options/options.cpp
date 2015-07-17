@@ -67,8 +67,8 @@ IOptionManager::~IOptionManager()
  * Options::Impl
  */
 
-Options::Impl::Impl(const char *name, const char *title)
-    : name_(name != NULL ? name : ""), title_(title != NULL ? title : ""),
+Options::Impl::Impl(const char *name, const char * /*title*/)
+    : name_(name != NULL ? name : "")
       parent_(NULL)
 {
 }
@@ -137,25 +137,6 @@ const std::string &Options::name() const
     return impl_->name_;
 }
 
-const std::string &Options::title() const
-{
-    return impl_->title_;
-}
-
-const std::string &Options::description() const
-{
-    return impl_->description_;
-}
-
-void Options::setDescription(const std::string &desc)
-{
-    impl_->description_ = desc;
-}
-
-void Options::setDescription(const ConstArrayRef<const char *> &descArray)
-{
-    impl_->description_ = joinStrings(descArray, "\n");
-}
 
 void Options::addManager(IOptionManager *manager)
 {

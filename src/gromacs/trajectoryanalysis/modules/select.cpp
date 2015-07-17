@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -327,7 +327,7 @@ Select::Select()
 
 
 void
-Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Select::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] writes out basic data about dynamic selections.",
@@ -391,7 +391,7 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "dynamic selections."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("os").filetype(eftPlot).outputFile()
                            .store(&fnSize_).defaultBasename("size")

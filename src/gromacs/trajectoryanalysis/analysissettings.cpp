@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,8 +46,10 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "analysissettings-impl.h"
 
@@ -159,6 +161,18 @@ void
 TrajectoryAnalysisSettings::setFrameFlags(int frflags)
 {
     impl_->frflags = frflags;
+}
+
+const std::string &
+TrajectoryAnalysisSettings::helpText() const
+{
+    return impl_->helpText_;
+}
+
+void
+TrajectoryAnalysisSettings::setHelpText(const ConstArrayRef<const char *> &help)
+{
+    impl_->helpText_ = joinStrings(help, "\n");
 }
 
 

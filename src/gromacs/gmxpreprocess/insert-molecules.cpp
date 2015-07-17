@@ -318,7 +318,8 @@ class InsertMolecules : public ICommandLineOptionsModule
         {
         }
 
-        virtual void initOptions(Options *options);
+        virtual void initOptions(Options                           *options,
+                                 ICommandLineOptionsModuleSettings *settings);
         virtual void optionsFinished(Options *options);
 
         virtual int run();
@@ -339,7 +340,8 @@ class InsertMolecules : public ICommandLineOptionsModule
         int         enumRot_;
 };
 
-void InsertMolecules::initOptions(Options *options)
+void InsertMolecules::initOptions(Options                           *options,
+                                  ICommandLineOptionsModuleSettings *settings)
 {
     const char *const desc[] = {
         "[THISMODULE] inserts [TT]-nmol[tt] copies of the system specified in",
@@ -376,7 +378,7 @@ void InsertMolecules::initOptions(Options *options)
         "[TT]-try[tt] and [TT]-rot[tt] work as in the default mode (see above)."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     // TODO: Replace use of legacyType.
     options->addOption(FileNameOption("f")
