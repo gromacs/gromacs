@@ -47,7 +47,7 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     public:
         AnalysisTemplate();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
@@ -82,7 +82,7 @@ AnalysisTemplate::AnalysisTemplate()
 
 
 void
-AnalysisTemplate::initOptions(Options                    *options,
+AnalysisTemplate::initOptions(IOptionsContainer          *options,
                               TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {

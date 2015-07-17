@@ -51,6 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
@@ -318,7 +319,7 @@ class InsertMolecules : public ICommandLineOptionsModule
         {
         }
 
-        virtual void initOptions(Options                           *options,
+        virtual void initOptions(IOptionsContainer                 *options,
                                  ICommandLineOptionsModuleSettings *settings);
         virtual void optionsFinished(Options *options);
 
@@ -340,7 +341,7 @@ class InsertMolecules : public ICommandLineOptionsModule
         int         enumRot_;
 };
 
-void InsertMolecules::initOptions(Options                           *options,
+void InsertMolecules::initOptions(IOptionsContainer                 *options,
                                   ICommandLineOptionsModuleSettings *settings)
 {
     const char *const desc[] = {

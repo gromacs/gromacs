@@ -64,6 +64,14 @@ IOptionManager::~IOptionManager()
 }
 
 /********************************************************************
+ * IOptionsContainer
+ */
+
+IOptionsContainer::~IOptionsContainer()
+{
+}
+
+/********************************************************************
  * Options::Impl
  */
 

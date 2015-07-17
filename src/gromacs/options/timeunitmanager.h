@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 namespace gmx
 {
 
+class IOptionsContainer;
 class Options;
 
 /*! \brief
@@ -130,7 +131,7 @@ class TimeUnitManager
          * Adds an enum option to \p options to select the time unit for this
          * manager.
          */
-        void addTimeUnitOption(Options *options, const char *name);
+        void addTimeUnitOption(IOptionsContainer *options, const char *name);
         /*! \brief
          * Scales user input values given to time options.
          *

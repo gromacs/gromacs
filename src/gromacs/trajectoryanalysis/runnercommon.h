@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@ struct t_trxframe;
 namespace gmx
 {
 
+class IOptionsContainer;
 class Options;
 class SelectionCollection;
 class TopologyInformation;
@@ -79,7 +80,7 @@ class TrajectoryAnalysisRunnerCommon
          *
          * \param[in,out] options  Options object to add the options to.
          */
-        void initOptions(Options *options);
+        void initOptions(IOptionsContainer *options);
         //! Scales time option values according to the time unit set.
         void scaleTimeOptions(Options *options);
         /*! \brief
