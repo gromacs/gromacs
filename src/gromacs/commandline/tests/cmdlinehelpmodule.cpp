@@ -107,13 +107,14 @@ TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
  *
  * \ingroup module_commandline
  */
-void initOptionsBasic(gmx::Options *options)
+void initOptionsBasic(gmx::Options                           *options,
+                      gmx::ICommandLineOptionsModuleSettings *settings)
 {
     const char *const desc[] = {
         "Sample description",
         "for testing [THISMODULE]."
     };
-    options->setDescription(desc);
+    settings->setHelpText(desc);
     options->addOption(gmx::IntegerOption("int"));
 }
 
@@ -143,8 +144,8 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
     MockHelpTopic &topic2 = addHelpTopic("topic2", "Another topic");
     using ::testing::_;
     using ::testing::Invoke;
-    EXPECT_CALL(mod1, initOptions(_)).WillOnce(Invoke(&initOptionsBasic));
-    EXPECT_CALL(mod2, initOptions(_));
+    EXPECT_CALL(mod1, initOptions(_, _)).WillOnce(Invoke(&initOptionsBasic));
+    EXPECT_CALL(mod2, initOptions(_, _));
     EXPECT_CALL(topic1, writeHelp(_));
     EXPECT_CALL(sub1, writeHelp(_));
     EXPECT_CALL(sub2, writeHelp(_));

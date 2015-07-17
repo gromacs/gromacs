@@ -56,6 +56,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringstream.h"
 
 #include "testutils/stringtest.h"
@@ -246,32 +247,22 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
 #endif
 
 /*
- * Tests help printing for multiple sections.
+ * Tests help output using a help text.
  */
-TEST_F(CommandLineHelpWriterTest, HandlesMultipleSections)
+TEST_F(CommandLineHelpWriterTest, HandlesHelpText)
 {
-    using namespace gmx;
+    const char *const help[] = {
+        "Help text",
+        "for testing."
+    };
+    using gmx::IntegerOption;
 
-    Options options("test", "Main Title");
-    Options subSect1("subsect1", "Subsection 1 Title");
-    Options subSect2("subsect2", "Subsection 2 Title");
-    Options subSect3("subsect3", NULL);
-    options.addSubSection(&subSect1);
-    options.addSubSection(&subSect2);
-    options.addSubSection(&subSect3);
-    options.setDescription("Description for main section.");
-    subSect1.setDescription("Description for subsection 1.");
-    subSect2.setDescription("Description for subsection 2.");
-    subSect3.setDescription("Description for subsection 3.");
-    options.addOption(IntegerOption("main")
-                          .description("Option in main section"));
-    subSect1.addOption(IntegerOption("sub1")
-                           .description("Option in subsection 1"));
-    subSect2.addOption(IntegerOption("sub2")
-                           .description("Option in subsection 2"));
+    gmx::Options options(NULL, NULL);
+    options.addOption(IntegerOption("int").description("Integer option")
+                          .defaultValue(2));
 
-    CommandLineHelpWriter writer(options);
-    writer.setShowDescriptions(true);
+    gmx::CommandLineHelpWriter writer(options);
+    writer.setHelpText(help);
     checkHelp(&writer);
 }
 
