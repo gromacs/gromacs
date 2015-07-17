@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,10 +38,7 @@
 
 #include "xdlgitem.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 
@@ -77,7 +74,7 @@ static void ShowCaret(t_x11 *x11, t_dlgitem *dlgitem)
         int x, y1, y2;
 
         et = &(dlgitem->u.edittext);
-        x  = XTextWidth(x11->font, dlgitem->win.text, strlen(dlgitem->win.text))+XCARET+
+        x  = XTextWidth(x11->font, dlgitem->win.text, std::strlen(dlgitem->win.text))+XCARET+
             XTextWidth(x11->font, (char*) &(et->buf[et->strbegin]), et->pos);
         y1 = (dlgitem->win.height-XTextHeight(x11->font))/2;
         y2 = (dlgitem->win.height-y1);
@@ -102,7 +99,7 @@ static int DefWndProc(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     char           c[BUFSIZE+1];
 
 #ifdef DEBUG
-    printf("DefWndProc\n");
+    std::printf("DefWndProc\n");
 #endif
     switch (event->type)
     {
@@ -148,7 +145,7 @@ static int WndProcBN(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
         gmx_incons("button processing");
     }
     win = &(dlgitem->win);
-    w   = XTextWidth(x11->font, win->text, strlen(win->text));
+    w   = XTextWidth(x11->font, win->text, std::strlen(win->text));
     x   = (win->width-w)/2;
     th  = XTextHeight(x11->font)+OFFS_Y;
     switch (event->type)
@@ -230,7 +227,7 @@ static int WndProcGB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     }
     win = &(dlgitem->win);
 
-    x = XTextWidth(x11->font, win->text, strlen(win->text));
+    x = XTextWidth(x11->font, win->text, std::strlen(win->text));
     y = XTextHeight(x11->font);
     switch (event->type)
     {
@@ -329,7 +326,7 @@ static bool insert(char *s, char c, int *pos)
 
     if (isprint(c))
     {
-        sl = strlen(s);
+        sl = std::strlen(s);
         /* +1 for zero termination */
         for (i = sl+1; (i > *pos); i--)
         {
@@ -346,7 +343,7 @@ static bool my_backspace(char *s, int *pos)
 {
     int i, sl;
 
-    sl = strlen(s);
+    sl = std::strlen(s);
     if ((sl > 0) && ((*pos) > 0))
     {
         for (i = *pos-1; (i < sl); i++)
@@ -363,7 +360,7 @@ static bool my_delete(char *s, int *pos)
 {
     int i, sl;
 
-    sl = strlen(s);
+    sl = std::strlen(s);
     if ((sl > 0) && ((*pos) < sl))
     {
         for (i = *pos; (i < sl); i++)
@@ -403,7 +400,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     {
         case Expose:
             XSetForeground(x11->disp, x11->gc, x11->fg);
-            xtitle = XTextWidth(x11->font, win->text, strlen(win->text));
+            xtitle = XTextWidth(x11->font, win->text, std::strlen(win->text));
             ewidth = win->width-xtitle;
             TextInRect(x11, win->self, win->text,
                        0, 0, xtitle-1, win->height, eXLeft, eYCenter);
@@ -411,7 +408,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             TextInRect(x11, win->self, scrbuf,
                        xtitle+XCARET, 0, ewidth, win->height, eXLeft, eYCenter);
 #ifdef DEBUG
-            printf("Expose\n");
+            std::printf("Expose\n");
 #endif
             if (win->bFocus)
             {
@@ -420,11 +417,11 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             break;
         case ButtonPress:
             /* Calculate new position for caret */
-            et->pos = strlen(et->buf);
+            et->pos = std::strlen(et->buf);
             bp      = gmx_strdup(et->buf);
-            xp      = event->xbutton.x-XTextWidth(x11->font, win->text, strlen(win->text))-
+            xp      = event->xbutton.x-XTextWidth(x11->font, win->text, std::strlen(win->text))-
                 XCARET;
-            while ((et->pos > 0) && (XTextWidth(x11->font, bp, strlen(bp)) > xp))
+            while ((et->pos > 0) && (XTextWidth(x11->font, bp, std::strlen(bp)) > xp))
             {
                 et->pos--;
                 bp[et->pos] = '\0';
@@ -440,7 +437,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             }
             XLookupString(&(event->xkey), c, BUFSIZE, &keysym, NULL);
 #ifdef DEBUG
-            printf("Keysym: %x\n", keysym);
+            std::printf("Keysym: %x\n", keysym);
 #endif
             switch (keysym)
             {
@@ -477,12 +474,12 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
                 case XK_End:
                     if (strlen(et->buf) <= (unsigned int)et->buflen)
                     {
-                        et->pos = strlen(et->buf);
+                        et->pos = std::strlen(et->buf);
                     }
                     else
                     {
                         et->pos      = et->buflen;
-                        et->strbegin = strlen(et->buf)-et->buflen;
+                        et->strbegin = std::strlen(et->buf)-et->buflen;
                     }
                     et->bChanged = true;
                     return ETCHANGED;
@@ -563,12 +560,12 @@ t_dlgitem *CreateButton(t_x11 *x11,
     }
     if (w == 0)
     {
-        w = XTextWidth(x11->font, szLab, strlen(szLab))+2*OFFS_X;
+        w = XTextWidth(x11->font, szLab, std::strlen(szLab))+2*OFFS_X;
     }
     if (bDef)
     {
-        snew(lab, strlen(szLab)+7); /* 6 for >> << and 1 for \0 */
-        sprintf(lab, ">> %s <<", szLab);
+        snew(lab, std::strlen(szLab)+7); /* 6 for >> << and 1 for \0 */
+        std::sprintf(lab, ">> %s <<", szLab);
     }
     else
     {
@@ -599,7 +596,7 @@ t_dlgitem *CreateRadioButton(t_x11 *x11,
     }
     if (w == 0)
     {
-        w = XTextWidth(x11->font, szLab, strlen(szLab))+OFFS_X+h;
+        w = XTextWidth(x11->font, szLab, std::strlen(szLab))+OFFS_X+h;
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, szLab);
     dlgitem->ID                    = id;
@@ -625,7 +622,7 @@ t_dlgitem *CreateGroupBox(t_x11 *x11,
     }
     if (w == 0)
     {
-        w = XTextWidth(x11->font, szLab, strlen(szLab))+2*OFFS_X;
+        w = XTextWidth(x11->font, szLab, std::strlen(szLab))+2*OFFS_X;
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, szLab);
     dlgitem->GroupID           = id;
@@ -633,8 +630,8 @@ t_dlgitem *CreateGroupBox(t_x11 *x11,
     dlgitem->type              = edlgGB;
     dlgitem->u.groupbox.nitems = nitems;
     snew(dlgitem->u.groupbox.item, nitems);
-    memcpy((char *)dlgitem->u.groupbox.item, (char *)items,
-           nitems*sizeof(items[0]));
+    std::memcpy((char *)dlgitem->u.groupbox.item, (char *)items,
+                nitems*sizeof(items[0]));
     dlgitem->WndProc = WndProcGB;
 
     return dlgitem;
@@ -654,7 +651,7 @@ t_dlgitem *CreateCheckBox(t_x11 *x11,
     }
     if (w == 0)
     {
-        w = XTextWidth(x11->font, szLab, strlen(szLab))+OFFS_X+h;
+        w = XTextWidth(x11->font, szLab, std::strlen(szLab))+OFFS_X+h;
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, szLab);
     dlgitem->ID                  = id;
@@ -698,7 +695,7 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
     {
         for (i = 0; (i < nlines); i++)
         {
-            w = std::max(w, XTextWidth(x11->font, lines[i], strlen(lines[i])));
+            w = std::max(w, XTextWidth(x11->font, lines[i], std::strlen(lines[i])));
         }
         w += 2*OFFS_X;
     }
@@ -735,9 +732,9 @@ t_dlgitem *CreateEditText(t_x11 *x11,
         char *test;
 
         snew(test, screenbuf);
-        memset(test, 'w', screenbuf);
+        std::memset(test, 'w', screenbuf);
         w = XTextWidth(x11->font, test, screenbuf)+
-            XTextWidth(x11->font, title, strlen(title))+
+            XTextWidth(x11->font, title, std::strlen(title))+
             2*XCARET+2*OFFS_X;
         sfree(test);
     }
@@ -747,7 +744,7 @@ t_dlgitem *CreateEditText(t_x11 *x11,
     dlgitem->type    = edlgET;
     et               = &(dlgitem->u.edittext);
     snew(et->buf, STRLEN);
-    strcpy(et->buf, buf);
+    std::strcpy(et->buf, buf);
     et->buflen       = screenbuf;
     et->strbegin     = 0;
     et->bChanged     = false;
@@ -766,6 +763,6 @@ void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
     dlgitem->get     = SC(get);
     dlgitem->help    = SC(help);
 #ifdef DEBUG
-    printf("Help is: '%s'\n", dlgitem->help);
+    std::printf("Help is: '%s'\n", dlgitem->help);
 #endif
 }
