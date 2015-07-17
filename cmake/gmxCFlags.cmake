@@ -300,6 +300,8 @@ MACRO(gmx_c_flags)
         else() #Projects only use the C++ flags
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800 /wd4355 /wd4996 /wd4305 /wd4244 /wd4101 /wd4267 /wd4090" GMXC_CXXFLAGS)
         endif()
+        #      Without this flag, MSVC 2010 does not find __cpuidex()
+        GMX_TEST_CXXFLAG(CXXFLAGS_LANG "/clr" GMXC_CXXFLAGS)
     endif()
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")

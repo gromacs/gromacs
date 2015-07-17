@@ -40,10 +40,10 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 
 #include <algorithm>
 
@@ -102,11 +102,11 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
         rng    = gmx_rng_init(gmx_rng_make_seed());
         *cqnum = static_cast<int>(nhlp*gmx_rng_uniform_real(rng));
         gmx_rng_destroy(rng);
-        if (strlen(help[*cqnum]) >= STRLEN)
+        if (std::strlen(help[*cqnum]) >= STRLEN)
         {
             help[*cqnum][STRLEN-1] = '\0';
         }
-        strncpy(retstring, help[*cqnum], retsize);
+        std::strncpy(retstring, help[*cqnum], retsize);
         for (i = 0; (i < nhlp); i++)
         {
             sfree(help[i]);
@@ -116,7 +116,7 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
     else
     {
         *cqnum = -1;
-        strncpy(retstring, defstring, retsize);
+        std::strncpy(retstring, defstring, retsize);
     }
 }
 
@@ -149,7 +149,7 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
     pukeit("gurgle.dat", "Thanx for Using GROMACS - Have a Nice Day",
            tmpstr, retsize-2, p);
 
-    if ((ptr = strchr(tmpstr, '_')) != NULL)
+    if ((ptr = std::strchr(tmpstr, '_')) != NULL)
     {
         *ptr = '\0';
         ptr++;
@@ -157,7 +157,7 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
     }
     else
     {
-        strcpy(retstring, tmpstr);
+        std::strcpy(retstring, tmpstr);
     }
     sfree(tmpstr);
 }
@@ -844,7 +844,7 @@ void printBinaryInformation(FILE                            *fp,
     std::string title
         = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
     const int   indent
-        = centeringOffset(78 - strlen(prefix) - strlen(suffix), title.length()) + 1;
+        = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
     fprintf(fp, "%s%*c%s%s\n", prefix, indent, ' ', title.c_str(), suffix);
     fprintf(fp, "%s%s\n", prefix, suffix);
     if (settings.bCopyright_)
