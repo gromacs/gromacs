@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,9 @@
 
 #include "gromacs/legacyheaders/calcgrid.h"
 
-#include <math.h>
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
@@ -65,7 +67,7 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
     int  d, n[DIM];
     int  i;
     rvec box_size;
-    int  nmin, fac2, try;
+    int  nmin, fac2, attempt;
     rvec spacing;
     real max_spacing;
 
@@ -98,7 +100,7 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
         {
             box_size[d] += box[d][i]*box[d][i];
         }
-        box_size[d] = sqrt(box_size[d]);
+        box_size[d] = std::sqrt(box_size[d]);
     }
 
     n[XX] = *nx;
@@ -119,7 +121,7 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
     {
         if (n[d] <= 0)
         {
-            nmin = (int)(box_size[d]/gr_sp + 0.999);
+            nmin = static_cast<int>(box_size[d]/gr_sp + 0.999);
 
             i = g_initNR - 1;
             if (grid_init[i] >= nmin)
@@ -143,12 +145,12 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
                 /* Find the smallest grid that is >= nmin */
                 do
                 {
-                    try = fac2*grid_base[i];
+                    attempt = fac2*grid_base[i];
                     /* We demand a factor of 4, avoid 140, allow 90 */
-                    if (((try % 4 == 0 && try != 140) || try == 90) &&
-                        try >= nmin)
+                    if (((attempt % 4 == 0 && attempt != 140) || attempt == 90) &&
+                        attempt >= nmin)
                     {
-                        n[d] = try;
+                        n[d] = attempt;
                     }
                     i--;
                 }
@@ -156,11 +158,8 @@ real calc_grid(FILE *fp, matrix box, real gr_sp,
             }
         }
 
-        spacing[d] = box_size[d]/n[d];
-        if (spacing[d] > max_spacing)
-        {
-            max_spacing = spacing[d];
-        }
+        spacing[d]  = box_size[d]/n[d];
+        max_spacing = std::max(max_spacing, spacing[d]);
     }
     *nx = n[XX];
     *ny = n[YY];

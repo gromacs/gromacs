@@ -40,10 +40,9 @@
 
 #include "config.h"
 
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -70,14 +69,14 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
                    gmx_bool bAppendSimId, gmx_bool bAppendNodeId,
                    char buf[], int bufsize)
 {
-    if ((size_t)bufsize < (strlen(base)+10))
+    if (static_cast<std::size_t>(bufsize) < (std::strlen(base)+10))
     {
         gmx_mem("Character buffer too small!");
     }
 
     /* Copy to buf, and strip extension */
-    strcpy(buf, base);
-    buf[strlen(base) - strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
+    std::strcpy(buf, base);
+    buf[strlen(base) - std::strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
 
     if (bAppendSimId)
     {
@@ -85,13 +84,13 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
     }
     if (bAppendNodeId)
     {
-        strcat(buf, "_rank");
+        std::strcat(buf, "_rank");
         sprintf(buf+strlen(buf), "%d", cr->nodeid);
     }
-    strcat(buf, ".");
+    std::strcat(buf, ".");
 
     /* Add extension again */
-    strcat(buf, (ftp == efTPR) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
+    std::strcat(buf, (ftp == efTPR) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
     if (debug)
     {
         fprintf(debug, "rank %d par_fn '%s'\n", cr->nodeid, buf);

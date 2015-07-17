@@ -39,7 +39,9 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
-#include <string.h>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
@@ -54,13 +56,13 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 {
     int i;
 
-    i = (int)step;
+    i = static_cast<int>(step);
 
     if (warn != NULL && (step < INT_MIN || step > INT_MAX))
     {
         fprintf(stderr, "\nWARNING during %s:\n", warn);
         fprintf(stderr, "step value ");
-        fprintf(stderr, "%"GMX_PRId64, step);
+        fprintf(stderr, "%" GMX_PRId64, step);
         fprintf(stderr, " does not fit in int, converted to %d\n\n", i);
     }
 
@@ -69,7 +71,7 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 
 void init_inputrec(t_inputrec *ir)
 {
-    memset(ir, 0, (size_t)sizeof(*ir));
+    std::memset(ir, 0, sizeof(*ir));
     snew(ir->fepvals, 1);
     snew(ir->expandedvals, 1);
     snew(ir->simtempvals, 1);
@@ -461,7 +463,7 @@ real max_cutoff(real cutoff1, real cutoff2)
     }
     else
     {
-        return max(cutoff1, cutoff2);
+        return std::max(cutoff1, cutoff2);
     }
 }
 
