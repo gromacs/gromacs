@@ -39,10 +39,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -52,6 +51,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
@@ -196,7 +196,7 @@ void gmx_omp_nthreads_read_env(int     *nthreads_omp,
     gmx_bool bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
     char     buffer[STRLEN];
 
-    assert(nthreads_omp);
+    GMX_RELEASE_ASSERT(nthreads_omp, "nthreads_omp must be a non-NULL pointer");
 
     if ((env = getenv("OMP_NUM_THREADS")) != NULL)
     {
@@ -297,7 +297,7 @@ static void manage_number_of_openmp_threads(FILE               *fplog,
     nth = 1;
     if ((env = getenv("OMP_NUM_THREADS")) != NULL)
     {
-        if (!bOMP && (strncmp(env, "1", 1) != 0))
+        if (!bOMP && (std::strncmp(env, "1", 1) != 0))
         {
             gmx_warning("OMP_NUM_THREADS is set, but %s was compiled without OpenMP support!",
                         ShortProgram());
@@ -524,7 +524,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
-    int      nth_pmeonly, gmx_maxth, nppn;
+    int      nppn;
     gmx_bool bSepPME, bOMP;
 
 #ifdef GMX_OPENMP
@@ -576,7 +576,7 @@ gmx_omp_nthreads_set(int mod, int nthreads)
 {
     /* Catch an attempt to set the number of threads on an invalid
      * OpenMP module. */
-    assert(mod >= 0 && mod < emntNR);
+    GMX_RELEASE_ASSERT(mod >= 0 && mod < emntNR, "Trying to set nthreads on invalid OpenMP module");
 
     modth.nth[mod] = nthreads;
 }

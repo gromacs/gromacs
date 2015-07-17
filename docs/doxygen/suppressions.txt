@@ -13,6 +13,10 @@ src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" fir
 src/gromacs/linearalgebra/gmx_lapack/*: warning: should include "config.h"
 src/gromacs/utility/baseversion-gen.c: warning: does not include "gmxpre.h" first
 
+# We need to add buildinfo as a special header...
+src/*.cpp: warning: included file "buildinfo.h" is not documented as exposed outside its module
+src/*.cu: warning: included file "buildinfo.h" is not documented as exposed outside its module
+
 # Exclude header files that are used for inlining code; the responsibility for
 # making the right #includes should be on the source file that uses these.
 # TODO: # Stop using the preprocessor for meta-programming!

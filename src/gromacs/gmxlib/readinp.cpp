@@ -38,8 +38,11 @@
 
 #include "gromacs/legacyheaders/readinp.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -80,7 +83,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
         if (ptr)
         {
             /* Strip comment */
-            if ((cptr = strchr(buf, COMMENTSIGN)) != NULL)
+            if ((cptr = std::strchr(buf, COMMENTSIGN)) != NULL)
             {
                 *cptr = '\0';
             }
@@ -220,7 +223,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
 
 static int inp_comp(const void *a, const void *b)
 {
-    return ((t_inpfile *)a)->count - ((t_inpfile *)b)->count;
+    return (reinterpret_cast<const t_inpfile *>(a))->count - (reinterpret_cast<const t_inpfile *>(b))->count;
 }
 
 static void sort_inp(int ninp, t_inpfile inp[])
@@ -230,7 +233,7 @@ static void sort_inp(int ninp, t_inpfile inp[])
     mm = -1;
     for (i = 0; (i < ninp); i++)
     {
-        mm = max(mm, inp[i].count);
+        mm = std::max(mm, inp[i].count);
     }
     for (i = 0; (i < ninp); i++)
     {
@@ -239,7 +242,7 @@ static void sort_inp(int ninp, t_inpfile inp[])
             inp[i].count = mm++;
         }
     }
-    gmx_qsort(inp, ninp, (size_t)sizeof(inp[0]), inp_comp);
+    gmx_qsort(inp, ninp, static_cast<size_t>(sizeof(inp[0])), inp_comp);
 }
 
 void write_inpfile(const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUnknown,
@@ -331,14 +334,7 @@ static int get_einp(int *ninp, t_inpfile **inp, const char *name)
 {
     int    i;
     int    notfound = FALSE;
-    char   warn_buf[STRLEN];
 
-/*  if (inp==NULL)
-    return -1;
-   for(i=0; (i<(*ninp)); i++)
-    if (gmx_strcasecmp_min(name,(*inp)[i].name) == 0)
-      break;
-   if (i == (*ninp)) {*/
     i = search_einp(*ninp, *inp, name);
     if (i == -1)
     {
@@ -384,7 +380,7 @@ int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
     }
     else
     {
-        ret = strtol((*inp)[ii].value, &ptr, 10);
+        ret = std::strtol((*inp)[ii].value, &ptr, 10);
         if (ptr == (*inp)[ii].value)
         {
             sprintf(warn_buf, "Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n", (*inp)[ii].value, (*inp)[ii].name);
@@ -407,7 +403,7 @@ gmx_int64_t get_eint64(int *ninp, t_inpfile **inp,
 
     if (ii == -1)
     {
-        sprintf(buf, "%"GMX_PRId64, def);
+        sprintf(buf, "%" GMX_PRId64, def);
         (*inp)[(*ninp)-1].value = gmx_strdup(buf);
 
         return def;
@@ -535,7 +531,5 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
 
 int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs)
 {
-    int dum = 0;
-
     return get_eeenum(ninp, inp, name, defs, NULL);
 }

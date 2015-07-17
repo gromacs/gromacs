@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 
 #include "gromacs/legacyheaders/chargegroup.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
@@ -139,10 +139,10 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
 
     sfree(bLJ);
 
-    *rvdw1  = sqrt(r2v1);
-    *rvdw2  = sqrt(r2v2);
-    *rcoul1 = sqrt(r2c1);
-    *rcoul2 = sqrt(r2c2);
+    *rvdw1  = std::sqrt(r2v1);
+    *rvdw2  = std::sqrt(r2v2);
+    *rcoul1 = std::sqrt(r2c1);
+    *rcoul2 = std::sqrt(r2c2);
 }
 
 void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, t_block *cgs,

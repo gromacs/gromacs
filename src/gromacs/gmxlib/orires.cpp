@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 #include "gmxpre.h"
 
 #include "gromacs/legacyheaders/orires.h"
+
+#include <cmath>
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/main.h"
@@ -137,7 +139,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     else
     {
         snew(od->Dtav, od->nr);
-        od->edt   = exp(-ir->delta_t/ir->orires_tau);
+        od->edt   = std::exp(-ir->delta_t/ir->orires_tau);
         od->edt_1 = 1.0 - od->edt;
 
         /* Extend the state with the orires history */
@@ -588,7 +590,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 
         d++;
     }
-    od->rmsdev = sqrt(wsv2/sw);
+    od->rmsdev = std::sqrt(wsv2/sw);
 
     /* Rotate the S matrices back, so we get the correct grad(tr(S D)) */
     for (ex = 0; ex < od->nex; ex++)
@@ -669,7 +671,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 }
                 else
                 {
-                    dev = sqrt(dev*devins);
+                    dev = std::sqrt(dev*devins);
                     if (devins < 0)
                     {
                         dev = -dev;
