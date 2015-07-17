@@ -78,7 +78,7 @@ function(gmx_suggest_simd _suggested_simd)
     if(NOT CMAKE_CROSSCOMPILING)
         try_run(GMX_CPUID_RUN_SIMD GMX_CPUID_COMPILED
                 ${CMAKE_BINARY_DIR}
-                ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+                ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.cpp
                 COMPILE_DEFINITIONS ${_compile_definitions}
                 RUN_OUTPUT_VARIABLE OUTPUT_TMP
                 COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT

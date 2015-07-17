@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,15 +38,17 @@
 
 #include "gromacs/legacyheaders/splitter.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct {
@@ -230,9 +232,9 @@ typedef struct {
 
 static int ms_comp(const void *a, const void *b)
 {
-    t_merge_sid *ma = (t_merge_sid *)a;
-    t_merge_sid *mb = (t_merge_sid *)b;
-    int          d;
+    const t_merge_sid *ma = reinterpret_cast<const t_merge_sid *>(a);
+    const t_merge_sid *mb = reinterpret_cast<const t_merge_sid *>(b);
+    int                d;
 
     d = ma->first-mb->first;
     if (d == 0)
@@ -250,7 +252,6 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
 {
     int          i, j, k, n, isid, ndel;
     t_merge_sid *ms;
-    int          nChanged;
 
     /* We try to remdy the following problem:
      * Atom: 1  2  3  4  5 6 7 8 9 10
@@ -272,8 +273,8 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
         range_check(isid, -1, nsid);
         if (isid >= 0)
         {
-            ms[isid].first = min(ms[isid].first, sid[i].atom);
-            ms[isid].last  = max(ms[isid].last, sid[i].atom);
+            ms[isid].first = std::min(ms[isid].first, sid[i].atom);
+            ms[isid].last  = std::max(ms[isid].last, sid[i].atom);
         }
     }
     qsort(ms, nsid, sizeof(ms[0]), ms_comp);
@@ -286,8 +287,8 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
         {
             if (ms[j].first <= ms[k].last)
             {
-                ms[k].last  = max(ms[k].last, ms[j].last);
-                ms[k].first = min(ms[k].first, ms[j].first);
+                ms[k].last  = std::max(ms[k].last, ms[j].last);
+                ms[k].first = std::min(ms[k].first, ms[j].first);
                 ms[j].sid   = -1;
                 ndel++;
                 j++;
@@ -309,7 +310,7 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
         {
             for (j = k+1; (j < nsid); j++)
             {
-                memcpy(&(ms[j-1]), &(ms[j]), sizeof(ms[0]));
+                std::memcpy(&(ms[j-1]), &(ms[j]), sizeof(ms[0]));
             }
             nsid--;
         }
@@ -345,16 +346,10 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
             }
         }
     }
-    assert(k == nsid);
-    /* Removed 2007-09-04
-       sblock->index[k+1] = natoms;
-       for(k=0; (k<natoms); k++)
-       if (sid[k].sid == -1)
-        sblock->a[n++] = k;
-       assert(n == natoms);
-     */
+
     sblock->nra = n;
-    assert(sblock->index[k] == sblock->nra);
+    GMX_RELEASE_ASSERT(sblock->index[k] == sblock->nra, "Internal inconsistency; sid merge failed");
+
     sfree(ms);
 
     return nsid;
@@ -365,9 +360,9 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
                  gmx_bool bSettle)
 {
     t_graph *g;
-    int      i, i0, j, k, istart, n;
+    int      i, i0;
     t_sid   *sid;
-    int      isid, nsid;
+    int      nsid;
 
     g = mk_graph(NULL, idef, at_start, at_end, TRUE, bSettle);
     if (debug)
@@ -388,7 +383,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
     }
 
     /* Now sort the shake blocks... */
-    qsort(sid+at_start, at_end-at_start, (size_t)sizeof(sid[0]), sid_comp);
+    qsort(sid+at_start, at_end-at_start, static_cast<size_t>(sizeof(sid[0])), sid_comp);
 
     if (debug)
     {

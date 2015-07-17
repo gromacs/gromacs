@@ -38,8 +38,10 @@
 
 #include "gromacs/legacyheaders/nrnb.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
+
+#include <algorithm>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
@@ -331,19 +333,19 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
     *nbfs = 0.0;
     for (i = 0; (i < eNR_NBKERNEL_ALLVSALLGB); i++)
     {
-        if (strstr(nbdata[i].name, "W3-W3") != NULL)
+        if (std::strstr(nbdata[i].name, "W3-W3") != NULL)
         {
             *nbfs += 9e-6*nrnb->n[i];
         }
-        else if (strstr(nbdata[i].name, "W3") != NULL)
+        else if (std::strstr(nbdata[i].name, "W3") != NULL)
         {
             *nbfs += 3e-6*nrnb->n[i];
         }
-        else if (strstr(nbdata[i].name, "W4-W4") != NULL)
+        else if (std::strstr(nbdata[i].name, "W4-W4") != NULL)
         {
             *nbfs += 10e-6*nrnb->n[i];
         }
-        else if (strstr(nbdata[i].name, "W4") != NULL)
+        else if (std::strstr(nbdata[i].name, "W4") != NULL)
         {
             *nbfs += 4e-6*nrnb->n[i];
         }
@@ -536,7 +538,7 @@ static double pr_av(FILE *log, t_commrec *cr,
         for (i = 0; (i < cr->nnodes); i++)
         {
             dperc = (100.0*ftot[i])/fav;
-            unb   = max(unb, dperc);
+            unb   = std::max(unb, dperc);
             perc  = dperc;
             fprintf(log, "%3d ", perc);
         }
@@ -585,7 +587,7 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
     }
     for (j = 0; (j < eNRNB); j++)
     {
-        av->n[j] = av->n[j]/(double)(cr->nnodes - cr->npmenodes);
+        av->n[j] = av->n[j]/static_cast<double>(cr->nnodes - cr->npmenodes);
     }
 
     fprintf(log, "\nDetailed load balancing info in percentage of average\n");
@@ -612,7 +614,7 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
             for (i = 0; (i < cr->nnodes); i++)
             {
                 dperc = (100.0*nrnb[i].n[j])/av->n[j];
-                unb   = max(unb, dperc);
+                unb   = std::max(unb, dperc);
                 perc  = dperc;
                 fprintf(log, "%3d ", perc);
             }

@@ -38,10 +38,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <errno.h>
-#include <stdio.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 
 #ifdef HAVE_SCHED_AFFINITY
 #  include <sched.h>
@@ -60,6 +59,7 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -189,7 +189,7 @@ gmx_set_thread_affinity(FILE                *fplog,
                         const gmx_hw_info_t *hwinfo)
 {
     int        nth_affinity_set, thread0_id_node,
-               nthread_local, nthread_node, nthread_hw_max, nphyscore;
+               nthread_local, nthread_node;
     int        offset;
     const int *locality_order;
     int        rc;
@@ -383,7 +383,8 @@ gmx_check_thread_affinity_set(FILE            *fplog,
     gmx_bool  bAllSet_All;
 #endif
 
-    assert(hw_opt);
+    GMX_RELEASE_ASSERT(hw_opt, "hw_opt must be a non-NULL pointer");
+
     if (!bAfterOpenmpInit)
     {
         /* Check for externally set OpenMP affinity and turn off internal
