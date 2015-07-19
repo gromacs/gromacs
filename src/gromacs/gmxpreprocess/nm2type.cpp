@@ -234,8 +234,8 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
         nb      = 0;
         for (j = 0; (j < bonds->nr); j++)
         {
-            ai = bonds->param[j].AI;
-            aj = bonds->param[j].AJ;
+            ai = bonds->param[j].AI();
+            aj = bonds->param[j].AJ();
             if (ai == i)
             {
                 bbb[nb++] = aj;

@@ -63,6 +63,11 @@ typedef struct {
                               .rtp/.tdb to .top and will be parsed by cpp
                               during grompp */
     gmx_bool match;        /* boolean to mark that the entry has been found */
+    char*   &AI() { return a[0]; }
+    char*   &AJ() { return a[1]; }
+    char*   &AK() { return a[2]; }
+    char*   &AL() { return a[3]; }
+    char*   &AM() { return a[4]; }
 } t_rbonded;
 
 typedef struct {
@@ -109,6 +114,10 @@ typedef struct {
     gmx_bool    bXSet;
     rvec        newx; /* calculated new position    */
     atom_id     newi; /* new atom index number (after additions) */
+    char*      &AI() { return a[0]; }
+    char*      &AJ() { return a[1]; }
+    char*      &AK() { return a[2]; }
+    char*      &AL() { return a[3]; }
 } t_hack;
 
 typedef struct {

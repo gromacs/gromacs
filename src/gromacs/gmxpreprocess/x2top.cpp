@@ -159,9 +159,9 @@ void mk_bonds(int nnm, t_nm2type nmt[],
             if (is_bond(nnm, nmt, *atoms->atomname[i], *atoms->atomname[j],
                         std::sqrt(dx2)))
             {
-                b.AI = i;
-                b.AJ = j;
-                b.C0 = std::sqrt(dx2);
+                b.AI() = i;
+                b.AJ() = j;
+                b.C0() = std::sqrt(dx2);
                 add_param_to_list (bond, &b);
                 nbond[i]++;
                 nbond[j]++;
@@ -307,9 +307,9 @@ void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
     }
     for (i = 0; (i < ang->nr); i++)
     {
-        ai = ang->param[i].AI;
-        aj = ang->param[i].AJ;
-        ak = ang->param[i].AK;
+        ai = ang->param[i].AI();
+        aj = ang->param[i].AJ();
+        ak = ang->param[i].AK();
         th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : NULL,
                                 r_ij, r_kj, &costh, &t1, &t2);
         if (debug)
@@ -317,14 +317,14 @@ void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
             fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
                     ai, aj, ak, norm(r_ij), norm(r_kj), th);
         }
-        ang->param[i].C0 = th;
+        ang->param[i].C0() = th;
     }
     for (i = 0; (i < dih->nr); i++)
     {
-        ai = dih->param[i].AI;
-        aj = dih->param[i].AJ;
-        ak = dih->param[i].AK;
-        al = dih->param[i].AL;
+        ai = dih->param[i].AI();
+        aj = dih->param[i].AJ();
+        ak = dih->param[i].AK();
+        al = dih->param[i].AL();
         ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : NULL,
                                r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
         if (debug)
@@ -332,7 +332,7 @@ void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
             fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
                     ai, aj, ak, al, norm(r_ij), norm(r_kj), norm(r_kl), ph);
         }
-        dih->param[i].C0 = ph;
+        dih->param[i].C0() = ph;
     }
 }
 
