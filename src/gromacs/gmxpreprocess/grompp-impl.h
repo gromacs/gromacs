@@ -50,32 +50,21 @@ typedef struct {
  * non-bonded parameter combinations, which will be copied to t_params.
  */
 
-/*
- * With the macros below you don't
- * have to use an index if you don't wan't to. You can eg. use
- * param.C0 instead of param.c[0].
- * In a similar fashion, you can use param.AI instead of
- * param.a[0]
- *
- * For C++ those should be replaced with member functions.
- */
-
-#define AI  a[0]
-#define AJ  a[1]
-#define AK  a[2]
-#define AL  a[3]
-#define AM  a[4]
-
-#define C0  c[0]
-#define C1  c[1]
-#define C2  c[2]
-
 typedef struct {
     atom_id    a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
     /* i = a[0] (AI), j = a[1] (AJ))	*/
     real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
     char       s[MAXSLEN];       /* A string (instead of parameters),    *
                                   * read from the .rtp file in pdb2gmx   */
+    atom_id   &AI() { return a[0]; }
+    atom_id   &AJ() { return a[1]; }
+    atom_id   &AK() { return a[2]; }
+    atom_id   &AL() { return a[3]; }
+    atom_id   &AM() { return a[4]; }
+
+    real      &C0() { return c[0]; }
+    real      &C1() { return c[1]; }
+    real      &C2() { return c[2]; }
 } t_param;
 
 typedef struct {

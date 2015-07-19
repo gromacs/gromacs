@@ -439,13 +439,13 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
     heavy = NOTSET;
     for (i = 0; (i < psb->nr) && (heavy == NOTSET); i++)
     {
-        if (psb->param[i].AI == atom)
+        if (psb->param[i].AI() == atom)
         {
-            heavy = psb->param[i].AJ;
+            heavy = psb->param[i].AJ();
         }
-        else if (psb->param[i].AJ == atom)
+        else if (psb->param[i].AJ() == atom)
         {
-            heavy = psb->param[i].AI;
+            heavy = psb->param[i].AI();
         }
     }
     if (heavy == NOTSET)
@@ -459,13 +459,13 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
     nrhv  = 0;
     for (i = 0; i < psb->nr; i++)
     {
-        if (psb->param[i].AI == heavy)
+        if (psb->param[i].AI() == heavy)
         {
-            other = psb->param[i].AJ;
+            other = psb->param[i].AJ();
         }
-        else if (psb->param[i].AJ == heavy)
+        else if (psb->param[i].AJ() == heavy)
         {
-            other = psb->param[i].AI;
+            other = psb->param[i].AI();
         }
         if (other != NOTSET)
         {
@@ -636,13 +636,13 @@ static void add_vsites(t_params plist[], int vsite_type[],
                         other = moreheavy = NOTSET;
                         for (j = 0; (j < plist[F_BONDS].nr) && (moreheavy == NOTSET); j++)
                         {
-                            if (plist[F_BONDS].param[j].AI == heavies[0])
+                            if (plist[F_BONDS].param[j].AI() == heavies[0])
                             {
-                                other = plist[F_BONDS].param[j].AJ;
+                                other = plist[F_BONDS].param[j].AJ();
                             }
-                            else if (plist[F_BONDS].param[j].AJ == heavies[0])
+                            else if (plist[F_BONDS].param[j].AJ() == heavies[0])
                             {
-                                other = plist[F_BONDS].param[j].AI;
+                                other = plist[F_BONDS].param[j].AI();
                             }
                             if ( (other != NOTSET) && (other != Heavy) )
                             {
@@ -2144,11 +2144,11 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     params = &(plist[F_CONSTRNC]);
     for (i = 0; i < params->nr; i++)
     {
-        if (params->param[i].AI > params->param[i].AJ)
+        if (params->param[i].AI() > params->param[i].AJ())
         {
-            j                   = params->param[i].AJ;
-            params->param[i].AJ = params->param[i].AI;
-            params->param[i].AI = j;
+            j                     = params->param[i].AJ();
+            params->param[i].AJ() = params->param[i].AI();
+            params->param[i].AI() = j;
         }
     }
 
@@ -2177,15 +2177,15 @@ void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
             for (j = 0; (j < psb->nr) && (a == NOTSET); j++)
             {
                 /* if other atom is not a virtual site, it is the one we want */
-                if ( (psb->param[j].AI == i) &&
-                     !is_vsite(vsite_type[psb->param[j].AJ]) )
+                if ( (psb->param[j].AI() == i) &&
+                     !is_vsite(vsite_type[psb->param[j].AJ()]) )
                 {
-                    a = psb->param[j].AJ;
+                    a = psb->param[j].AJ();
                 }
-                else if ( (psb->param[j].AJ == i) &&
-                          !is_vsite(vsite_type[psb->param[j].AI]) )
+                else if ( (psb->param[j].AJ() == i) &&
+                          !is_vsite(vsite_type[psb->param[j].AI()]) )
                 {
-                    a = psb->param[j].AI;
+                    a = psb->param[j].AI();
                 }
             }
             if (a == NOTSET)

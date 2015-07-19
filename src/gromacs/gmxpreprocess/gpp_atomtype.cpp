@@ -348,7 +348,7 @@ void print_at (FILE * out, gpp_atomtype_t ga)
     {
         fprintf(out, "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
                 *(ga->atomname[i]), atom[i].m, atom[i].q, "A",
-                nb[i].C0, nb[i].C1);
+                nb[i].C0(), nb[i].C1());
     }
 
     fprintf (out, "\n");

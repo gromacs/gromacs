@@ -865,7 +865,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             atom = mtop->moltype[molb->type].atoms.atom;
             for (i = 0; (i < pr->nr); i++)
             {
-                ai = pr->param[i].AI;
+                ai = pr->param[i].AI();
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
@@ -885,7 +885,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             /* Same for flat-bottomed posres, but do not count an atom twice for COM */
             for (i = 0; (i < prfb->nr); i++)
             {
-                ai = prfb->param[i].AI;
+                ai = prfb->param[i].AI();
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",

@@ -240,8 +240,8 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                 /* Now loop over the harmonics, trying to convert them */
                 for (j = 0; (j < nrharm); j++)
                 {
-                    ni   = mols[i].plist[bb].param[j].AI;
-                    nj   = mols[i].plist[bb].param[j].AJ;
+                    ni   = mols[i].plist[bb].param[j].AI();
+                    nj   = mols[i].plist[bb].param[j].AJ();
                     edis =
                         search_e_diss(n2m, t2m,
                                       get_atomtype_name(mols[i].atoms.atom[ni].type, atype),
