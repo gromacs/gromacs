@@ -93,6 +93,9 @@ class TrajectoryAnalysisRunnerCommon::Impl
         double                      startTime_;
         double                      endTime_;
         double                      deltaTime_;
+        bool                        bStartTimeSet_;
+        bool                        bEndTimeSet_;
+        bool                        bDeltaTimeSet_;
 
         gmx_ana_indexgrps_t        *grps_;
         bool                        bTrajOpen_;
@@ -108,6 +111,7 @@ class TrajectoryAnalysisRunnerCommon::Impl
 TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
     : settings_(*settings),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
+      bStartTimeSet_(false), bEndTimeSet_(false), bDeltaTimeSet_(false),
       grps_(NULL),
       bTrajOpen_(false), fr(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL)
 {
@@ -190,11 +194,17 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options)
                            .description("Extra index groups"));
 
     // Add options for trajectory time control.
-    options->addOption(DoubleOption("b").store(&impl_->startTime_).timeValue()
+    options->addOption(DoubleOption("b")
+                           .store(&impl_->startTime_).storeIsSet(&impl_->bStartTimeSet_)
+                           .timeValue()
                            .description("First frame (%t) to read from trajectory"));
-    options->addOption(DoubleOption("e").store(&impl_->endTime_).timeValue()
+    options->addOption(DoubleOption("e")
+                           .store(&impl_->endTime_).storeIsSet(&impl_->bEndTimeSet_)
+                           .timeValue()
                            .description("Last frame (%t) to read from trajectory"));
-    options->addOption(DoubleOption("dt").store(&impl_->deltaTime_).timeValue()
+    options->addOption(DoubleOption("dt")
+                           .store(&impl_->deltaTime_).storeIsSet(&impl_->bDeltaTimeSet_)
+                           .timeValue()
                            .description("Only use frame if t MOD dt == first time (%t)"));
 
     // Add time unit option.
@@ -227,7 +237,7 @@ TrajectoryAnalysisRunnerCommon::scaleTimeOptions(Options *options)
 
 
 void
-TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
+TrajectoryAnalysisRunnerCommon::optionsFinished()
 {
     impl_->settings_.impl_->plotSettings.setTimeUnit(
             impl_->settings_.impl_->timeUnitManager.timeUnit());
@@ -237,15 +247,15 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
         GMX_THROW(InconsistentInputError("No trajectory or topology provided, nothing to do!"));
     }
 
-    if (options->isSet("b"))
+    if (impl_->bStartTimeSet_)
     {
         setTimeValue(TBEGIN, impl_->startTime_);
     }
-    if (options->isSet("e"))
+    if (impl_->bEndTimeSet_)
     {
         setTimeValue(TEND, impl_->endTime_);
     }
-    if (options->isSet("dt"))
+    if (impl_->bDeltaTimeSet_)
     {
         setTimeValue(TDELTA, impl_->deltaTime_);
     }

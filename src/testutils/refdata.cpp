@@ -54,7 +54,7 @@
 #include <libxml/xmlmemory.h>
 
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
@@ -97,7 +97,7 @@ namespace gmx
 namespace test
 {
 
-void initReferenceData(Options *options)
+void initReferenceData(IOptionsContainer *options)
 {
     // Needs to correspond to the enum order in refdata.h.
     const char *const refDataEnum[] = { "check", "create", "update" };

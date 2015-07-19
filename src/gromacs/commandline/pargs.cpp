@@ -487,9 +487,10 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     try
     {
-        double                     tbegin    = 0.0, tend = 0.0, tdelta = 0.0;
-        bool                       bView     = false;
-        int                        xvgFormat = 0;
+        double                     tbegin        = 0.0, tend = 0.0, tdelta = 0.0;
+        bool                       bBeginTimeSet = false, bEndTimeSet = false, bDtSet = false;
+        bool                       bView         = false;
+        int                        xvgFormat     = 0;
         gmx::TimeUnitManager       timeUnitManager;
         gmx::OptionsAdapter        adapter(*argc, argv);
         gmx::Options               options(NULL, NULL);
@@ -506,19 +507,22 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         if (FF(PCA_CAN_BEGIN))
         {
             options.addOption(
-                    gmx::DoubleOption("b").store(&tbegin).timeValue()
+                    gmx::DoubleOption("b")
+                        .store(&tbegin).storeIsSet(&bBeginTimeSet).timeValue()
                         .description("First frame (%t) to read from trajectory"));
         }
         if (FF(PCA_CAN_END))
         {
             options.addOption(
-                    gmx::DoubleOption("e").store(&tend).timeValue()
+                    gmx::DoubleOption("e")
+                        .store(&tend).storeIsSet(&bEndTimeSet).timeValue()
                         .description("Last frame (%t) to read from trajectory"));
         }
         if (FF(PCA_CAN_DT))
         {
             options.addOption(
-                    gmx::DoubleOption("dt").store(&tdelta).timeValue()
+                    gmx::DoubleOption("dt")
+                        .store(&tdelta).storeIsSet(&bDtSet).timeValue()
                         .description("Only use frame when t MOD dt = first time (%t)"));
         }
         if (FF(PCA_TIME_UNIT))
@@ -586,16 +590,15 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         timeUnitManager.scaleTimeOptions(&options);
 
         /* Extract Time info from arguments */
-        // TODO: Use OptionInfo objects instead of string constants
-        if (FF(PCA_CAN_BEGIN) && options.isSet("b"))
+        if (bBeginTimeSet)
         {
             setTimeValue(TBEGIN, tbegin);
         }
-        if (FF(PCA_CAN_END) && options.isSet("e"))
+        if (bEndTimeSet)
         {
             setTimeValue(TEND, tend);
         }
-        if (FF(PCA_CAN_DT) && options.isSet("dt"))
+        if (bDtSet)
         {
             setTimeValue(TDELTA, tdelta);
         }

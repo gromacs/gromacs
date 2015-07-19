@@ -101,7 +101,7 @@ class AbstractOption
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : minValueCount_(1), maxValueCount_(1),
-              name_(name), descr_(NULL)
+              name_(name), descr_(NULL), storeIsSet_(NULL)
         { }
 
         /*! \brief
@@ -133,6 +133,8 @@ class AbstractOption
 
         //! Sets the description for the option.
         void setDescription(const char *descr) { descr_ = descr; }
+        //! Sets the storage location for whether the option is set.
+        void setStoreIsSet(bool *store) { storeIsSet_ = store; }
         //! Sets a flag for the option.
         void setFlag(OptionFlag flag) { flags_.set(flag); }
         //! Clears a flag for the option.
@@ -188,6 +190,7 @@ class AbstractOption
         //! Pointer to description of the option.
         const char             *descr_;
         OptionFlags             flags_;
+        bool                   *storeIsSet_;
 
         /*! \brief
          * Needed to initialize an AbstractOptionStorage object from this class
@@ -332,6 +335,8 @@ class OptionTemplate : public AbstractOption
          */
         MyClass &storeVector(std::vector<T> *store)
         { storeVector_ = store; return me(); }
+        MyClass &storeIsSet(bool *store)
+        { setStoreIsSet(store); return me(); }
 
     protected:
         /*! \cond libapi */

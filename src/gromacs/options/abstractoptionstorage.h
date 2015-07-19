@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -220,7 +220,7 @@ class AbstractOptionStorage
                               OptionFlags           staticFlags);
 
         //! Marks the option as set.
-        void markAsSet() { flags_.set(efOption_Set); }
+        void markAsSet();
         //! Returns true if the given flag is set.
         bool hasFlag(OptionFlag flag) const { return flags_.test(flag); }
         //! Sets the given flag.
@@ -320,6 +320,7 @@ class AbstractOptionStorage
         std::string             descr_;
         //! Flags for the option.
         OptionFlags             flags_;
+        bool                   *storeIsSet_;
         //! Minimum number of values required (in one set).
         int                     minValueCount_;
         //! Maximum allowed number of values (in one set), or -1 if no limit.

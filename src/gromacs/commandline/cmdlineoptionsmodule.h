@@ -236,16 +236,13 @@ class ICommandLineOptionsModule
         /*! \brief
          * Called after all option values have been set.
          *
-         * \param[in,out] options  Options object in which options are stored.
-         *
          * When running the module, this method is called after all
-         * command-line arguments have been parsed, but while the Options
-         * object still exists.
+         * command-line arguments have been parsed.
          *
-         * If the module needs to call, e.g., Options::isSet(), this is the
-         * place to do that.
+         * \todo
+         * Remove if no real need materializes.
          */
-        virtual void optionsFinished(Options *options) = 0;
+        virtual void optionsFinished() = 0;
 
         /*! \brief
          * Runs the module.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,7 @@ namespace gmx
 AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
                                              OptionFlags           staticFlags)
     : flags_(settings.flags_ | staticFlags),
+      storeIsSet_(settings.storeIsSet_),
       minValueCount_(settings.minValueCount_),
       maxValueCount_(settings.maxValueCount_),
       bInSet_(false), bSetValuesHadErrors_(false)
@@ -77,6 +78,10 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
     if (settings.descr_ != NULL)
     {
         descr_ = settings.descr_;
+    }
+    if (storeIsSet_ != NULL)
+    {
+        *storeIsSet_ = false;
     }
     setFlag(efOption_ClearOnNextSet);
 }
@@ -125,6 +130,15 @@ void AbstractOptionStorage::appendValue(const std::string &value)
     }
 }
 
+void AbstractOptionStorage::markAsSet()
+{
+    setFlag(efOption_Set);
+    if (storeIsSet_ != NULL)
+    {
+        *storeIsSet_ = true;
+    }
+}
+
 void AbstractOptionStorage::finishSet()
 {
     GMX_RELEASE_ASSERT(bInSet_, "startSet() not called");
@@ -132,7 +146,7 @@ void AbstractOptionStorage::finishSet()
     // We mark the option as set even when there are errors to avoid additional
     // errors from required options not set.
     // TODO: There could be a separate flag for this purpose.
-    setFlag(efOption_Set);
+    markAsSet();
     if (!bSetValuesHadErrors_)
     {
         // TODO: Correct handling of the efOption_ClearOnNextSet requires
