@@ -130,8 +130,8 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         options.finish();
     }
 
-    common->optionsFinished(&options);
-    module_->optionsFinished(&options, settings);
+    common->optionsFinished();
+    module_->optionsFinished(settings);
 
     common->initIndexGroups(selections, bUseDefaultGroups_);
 

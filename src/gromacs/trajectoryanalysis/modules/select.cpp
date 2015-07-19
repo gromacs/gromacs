@@ -263,8 +263,7 @@ class Select : public TrajectoryAnalysisModule
 
         virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
@@ -439,8 +438,7 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
 }
 
 void
-Select::optionsFinished(Options                     * /*options*/,
-                        TrajectoryAnalysisSettings *settings)
+Select::optionsFinished(TrajectoryAnalysisSettings *settings)
 {
     if (!fnPDB_.empty())
     {

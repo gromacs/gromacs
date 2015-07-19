@@ -59,6 +59,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/testasserts.h"
+
 namespace
 {
 
@@ -94,9 +96,12 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
 {
     gmx::Options     options(NULL, NULL);
     std::vector<int> values;
+    bool             bIsSet;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
-                            IntegerOption("p").storeVector(&values).multiValue()));
+                            IntegerOption("p")
+                                .storeVector(&values).storeIsSet(&bIsSet)
+                                .multiValue()));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -107,7 +112,7 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    EXPECT_TRUE(options.isSet("p"));
+    EXPECT_TRUE(bIsSet);
     ASSERT_EQ(1U, values.size());
     EXPECT_EQ(1, values[0]);
 }
@@ -116,22 +121,25 @@ TEST(OptionsAssignerTest, HandlesMultipleParameter)
 {
     gmx::Options     options(NULL, NULL);
     std::vector<int> values;
+    bool             bIsSet;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
-                            IntegerOption("p").storeVector(&values).allowMultiple()));
+                            IntegerOption("p")
+                                .storeVector(&values).storeIsSet(&bIsSet)
+                                .allowMultiple()));
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("1"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("2"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("1"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("2"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
-    EXPECT_TRUE(options.isSet("p"));
+    EXPECT_TRUE(bIsSet);
     ASSERT_EQ(2U, values.size());
     EXPECT_EQ(1, values[0]);
     EXPECT_EQ(2, values[1]);

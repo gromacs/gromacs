@@ -52,7 +52,7 @@
 namespace gmx
 {
 
-class Options;
+class IOptionsContainer;
 
 namespace test
 {
@@ -103,7 +103,7 @@ enum ReferenceDataMode
  *
  * \ingroup module_testutils
  */
-void initReferenceData(Options *options);
+void initReferenceData(IOptionsContainer *options);
 
 class TestReferenceChecker;
 

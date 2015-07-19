@@ -83,12 +83,8 @@ class TrajectoryAnalysisRunnerCommon
         void initOptions(IOptionsContainer *options);
         //! Scales time option values according to the time unit set.
         void scaleTimeOptions(Options *options);
-        /*! \brief
-         * Processes common option values after they have been parsed.
-         *
-         * \param[in,out] options Options object in which options are stored.
-         */
-        void optionsFinished(Options *options);
+        //! Processes common option values after they have been parsed.
+        void optionsFinished();
         //! Initialize index groups for selections.
         void initIndexGroups(SelectionCollection *selections,
                              bool                 bUseDefaults);
