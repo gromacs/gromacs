@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-main <int>] [-sub11 <int>] [-sub12 <int>] [-sub2 <int>]
+
+OPTIONS
+
+Other options:
+
+ -main   <int>
+           Option in root group
+ -sub11  <int>
+           Option in group 1
+ -sub12  <int>
+           Option in group 1
+ -sub2   <int>
+           Option in group 2
+
+]]></String>
+</ReferenceData>

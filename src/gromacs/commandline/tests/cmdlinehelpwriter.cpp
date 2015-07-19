@@ -247,6 +247,25 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
 #endif
 
 /*
+ * Tests help output with option groups.
+ */
+TEST_F(CommandLineHelpWriterTest, HandlesOptionGroups)
+{
+    using gmx::IntegerOption;
+
+    gmx::Options            options(NULL, NULL);
+    gmx::IOptionsContainer &group1 = options.addGroup();
+    gmx::IOptionsContainer &group2 = options.addGroup();
+    group2.addOption(IntegerOption("sub2").description("Option in group 2"));
+    group1.addOption(IntegerOption("sub11").description("Option in group 1"));
+    options.addOption(IntegerOption("main").description("Option in root group"));
+    group1.addOption(IntegerOption("sub12").description("Option in group 1"));
+
+    gmx::CommandLineHelpWriter writer(options);
+    checkHelp(&writer);
+}
+
+/*
  * Tests help output using a help text.
  */
 TEST_F(CommandLineHelpWriterTest, HandlesHelpText)

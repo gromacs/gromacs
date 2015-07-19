@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,40 @@
 namespace gmx
 {
 
+using internal::OptionsImpl;
+
+namespace
+{
+
+//! Helper function to call visitOptions() and handle correct indirection.
+void visitOption(OptionsVisitor *visitor, OptionInfo &optionInfo)
+{
+    visitor->visitOption(optionInfo);
+}
+//! Helper function to call visitOptions() and handle correct indirection.
+void visitOption(OptionsModifyingVisitor *visitor, OptionInfo &optionInfo)
+{
+    visitor->visitOption(&optionInfo);
+}
+
+//! Helper function to recursively visit all options in a group.
+template <class VisitorType>
+void acceptOptionsGroup(const OptionsImpl::Group &group, VisitorType *visitor)
+{
+    OptionsImpl::Group::OptionList::const_iterator option;
+    for (option = group.options_.begin(); option != group.options_.end(); ++option)
+    {
+        visitOption(visitor, (*option)->optionInfo());
+    }
+    OptionsImpl::Group::SubgroupList::const_iterator subgroup;
+    for (subgroup = group.subgroups_.begin(); subgroup != group.subgroups_.end(); ++subgroup)
+    {
+        acceptOptionsGroup(*subgroup, visitor);
+    }
+}
+
+}   // namespace
+
 /********************************************************************
  * OptionsIterator
  */
@@ -62,9 +96,9 @@ OptionsIterator::OptionsIterator(const Options &options)
 
 void OptionsIterator::acceptSubSections(OptionsVisitor *visitor) const
 {
-    const Options::Impl::SubSectionList          &subSectionList =
+    const OptionsImpl::SubSectionList          &subSectionList =
         options_.impl_->subSections_;
-    Options::Impl::SubSectionList::const_iterator i;
+    OptionsImpl::SubSectionList::const_iterator i;
     for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
     {
         visitor->visitSubSection(*(*i));
@@ -73,16 +107,7 @@ void OptionsIterator::acceptSubSections(OptionsVisitor *visitor) const
 
 void OptionsIterator::acceptOptions(OptionsVisitor *visitor) const
 {
-    const Options::Impl::OptionList          &optionList =
-        options_.impl_->options_;
-    Options::Impl::OptionList::const_iterator i;
-    for (i = optionList.begin(); i != optionList.end(); ++i)
-    {
-        // This is not strictly const-correct, since optionInfo() is
-        // not const (while the input options is), but this makes things much
-        // simpler.
-        visitor->visitOption((*i)->optionInfo());
-    }
+    acceptOptionsGroup(options_.impl_->rootGroup_, visitor);
 }
 
 /********************************************************************
@@ -96,9 +121,9 @@ OptionsModifyingIterator::OptionsModifyingIterator(Options *options)
 
 void OptionsModifyingIterator::acceptSubSections(OptionsModifyingVisitor *visitor) const
 {
-    const Options::Impl::SubSectionList          &subSectionList =
+    const OptionsImpl::SubSectionList          &subSectionList =
         options_.impl_->subSections_;
-    Options::Impl::SubSectionList::const_iterator i;
+    OptionsImpl::SubSectionList::const_iterator i;
     for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
     {
         visitor->visitSubSection(*i);
@@ -107,13 +132,7 @@ void OptionsModifyingIterator::acceptSubSections(OptionsModifyingVisitor *visito
 
 void OptionsModifyingIterator::acceptOptions(OptionsModifyingVisitor *visitor) const
 {
-    const Options::Impl::OptionList          &optionList =
-        options_.impl_->options_;
-    Options::Impl::OptionList::const_iterator i;
-    for (i = optionList.begin(); i != optionList.end(); ++i)
-    {
-        visitor->visitOption(&(*i)->optionInfo());
-    }
+    acceptOptionsGroup(options_.impl_->rootGroup_, visitor);
 }
 
 } // namespace gmx
