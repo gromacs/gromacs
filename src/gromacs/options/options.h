@@ -58,6 +58,11 @@ class AbstractOption;
 class OptionsAssigner;
 class OptionsIterator;
 
+namespace internal
+{
+class OptionsImpl;
+}
+
 /*! \brief
  * Base class for option managers.
  *
@@ -153,6 +158,19 @@ class Options : public IOptionsContainer
          */
         void addSubSection(Options *section);
 
+        /*! \brief
+         * Creates a subgroup of options within the current options.
+         *
+         * To add options to the group, use the returned interface.
+         *
+         * Currently, this is only used to influence the order of options:
+         * all options in a group appear before options in a group added after
+         * it, no matter in which order the options are added to the groups.
+         * In the future, the groups could also be used to influence the help
+         * output.
+         */
+        IOptionsContainer &addGroup();
+
         // From IOptionsContainer
         virtual OptionInfo *addOption(const AbstractOption &settings);
         using IOptionsContainer::addOption;
@@ -176,10 +194,10 @@ class Options : public IOptionsContainer
         void finish();
 
     private:
-        class Impl;
+        PrivateImplPointer<internal::OptionsImpl> impl_;
 
-        PrivateImplPointer<Impl> impl_;
-
+        //! Needed for the implementation to access subsections.
+        friend class internal::OptionsImpl;
         //! Needed to be able to extend the interface of this object.
         friend class OptionsAssigner;
         //! Needed to be able to extend the interface of this object.
