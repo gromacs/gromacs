@@ -111,19 +111,15 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     FileNameOptionManager  fileoptManager;
     SelectionOptionManager seloptManager(selections);
     Options                options(NULL, NULL);
-    Options                moduleOptions(module_->name(), module_->description());
-    Options                commonOptions("common", "Common analysis control");
-    Options                selectionOptions("selection", "Common selection control");
 
     options.addManager(&fileoptManager);
     options.addManager(&seloptManager);
-    options.addSubSection(&commonOptions);
-    options.addSubSection(&selectionOptions);
-    options.addSubSection(&moduleOptions);
+    IOptionsContainer &commonOptions = options.addGroup();
+    IOptionsContainer &moduleOptions = options.addGroup();
 
     module_->initOptions(&moduleOptions, settings);
     common->initOptions(&commonOptions);
-    selections->initOptions(&selectionOptions);
+    selections->initOptions(&commonOptions);
 
     {
         CommandLineParser  parser(&options);
@@ -134,8 +130,8 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         options.finish();
     }
 
-    common->optionsFinished(&commonOptions);
-    module_->optionsFinished(&moduleOptions, settings);
+    common->optionsFinished(&options);
+    module_->optionsFinished(&options, settings);
 
     common->initIndexGroups(selections, bUseDefaultGroups_);
 
@@ -259,18 +255,14 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
 
     SelectionOptionManager          seloptManager(&selections);
     Options                         options(NULL, NULL);
-    Options                         moduleOptions(impl_->module_->name(), impl_->module_->description());
-    Options                         commonOptions("common", "Common analysis control");
-    Options                         selectionOptions("selection", "Common selection control");
 
     options.addManager(&seloptManager);
-    options.addSubSection(&commonOptions);
-    options.addSubSection(&selectionOptions);
-    options.addSubSection(&moduleOptions);
+    IOptionsContainer &commonOptions = options.addGroup();
+    IOptionsContainer &moduleOptions = options.addGroup();
 
     impl_->module_->initOptions(&moduleOptions, &settings);
     common.initOptions(&commonOptions);
-    selections.initOptions(&selectionOptions);
+    selections.initOptions(&commonOptions);
 
     CommandLineHelpWriter(options)
         .setHelpText(settings.helpText())

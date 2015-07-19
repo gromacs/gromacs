@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,8 +90,6 @@ class OptionsAssigner::Impl
         Options                &options_;
         //! Recognize boolean option "name" also as "noname".
         bool                    bAcceptBooleanNoPrefix_;
-        //! Look for options in all sections, not just the current one.
-        bool                    bNoStrictSectioning_;
         /*! \brief
          * List of (sub)sections being assigned to.
          *
@@ -113,8 +111,7 @@ class OptionsAssigner::Impl
 
 OptionsAssigner::Impl::Impl(Options *options)
     : options_(*options), bAcceptBooleanNoPrefix_(false),
-      bNoStrictSectioning_(false), currentOption_(NULL),
-      currentValueCount_(0), reverseBoolean_(false)
+      currentOption_(NULL), currentValueCount_(0), reverseBoolean_(false)
 {
     sectionStack_.push_back(&options_);
 }
@@ -124,69 +121,21 @@ OptionsAssigner::Impl::findOption(const char *name)
 {
     GMX_RELEASE_ASSERT(currentOption_ == NULL,
                        "Cannot search for another option while processing one");
-    AbstractOptionStorage *option  = NULL;
-    Options               *section = NULL;
-    Options               *root    = &currentSection();
-    Options               *oldRoot = NULL;
-    int                    upcount = 0;
-    std::deque<Options *>  searchList;
-    searchList.push_back(root);
-    while (option == NULL && !searchList.empty())
+    const Options         &section = currentSection();
+    AbstractOptionStorage *option  = section.impl_->findOption(name);
+    if (option == NULL && bAcceptBooleanNoPrefix_)
     {
-        section = searchList.front();
-        option  = section->impl_->findOption(name);
-        if (option == NULL && bAcceptBooleanNoPrefix_)
+        if (name[0] == 'n' && name[1] == 'o')
         {
-            if (name[0] == 'n' && name[1] == 'o')
+            option = section.impl_->findOption(name + 2);
+            if (option != NULL && option->isBoolean())
             {
-                option = section->impl_->findOption(name + 2);
-                if (option != NULL && option->isBoolean())
-                {
-                    reverseBoolean_ = true;
-                }
-                else
-                {
-                    option = NULL;
-                }
+                reverseBoolean_ = true;
             }
-        }
-        searchList.pop_front();
-        if (bNoStrictSectioning_)
-        {
-            Options::Impl::SubSectionList::const_iterator i;
-            for (i = section->impl_->subSections_.begin();
-                 i != section->impl_->subSections_.end(); ++i)
+            else
             {
-                if (*i != oldRoot)
-                {
-                    searchList.push_back(*i);
-                }
+                option = NULL;
             }
-            if (searchList.empty() && root != &options_)
-            {
-                root = root->impl_->parent_;
-                ++upcount;
-                searchList.push_back(root);
-            }
-        }
-    }
-    if (bNoStrictSectioning_ && option != NULL)
-    {
-        while (upcount > 0)
-        {
-            sectionStack_.pop_back();
-            --upcount;
-        }
-        std::vector<Options *> sections;
-        while (section != &currentSection())
-        {
-            sections.push_back(section);
-            section = section->impl_->parent_;
-        }
-        while (!sections.empty())
-        {
-            sectionStack_.push_back(sections.back());
-            sections.pop_back();
         }
     }
     return option;
@@ -208,11 +157,6 @@ OptionsAssigner::~OptionsAssigner()
 void OptionsAssigner::setAcceptBooleanNoPrefix(bool bEnabled)
 {
     impl_->bAcceptBooleanNoPrefix_ = bEnabled;
-}
-
-void OptionsAssigner::setNoStrictSectioning(bool bEnabled)
-{
-    impl_->bNoStrictSectioning_ = bEnabled;
 }
 
 void OptionsAssigner::start()
@@ -297,13 +241,6 @@ void OptionsAssigner::finishSubSection()
 void OptionsAssigner::finish()
 {
     GMX_RELEASE_ASSERT(impl_->currentOption_ == NULL, "finishOption() not called");
-    if (impl_->bNoStrictSectioning_)
-    {
-        while (impl_->inSubSection())
-        {
-            finishSubSection();
-        }
-    }
     GMX_RELEASE_ASSERT(!impl_->inSubSection(), "finishSubSection() not called");
 }
 

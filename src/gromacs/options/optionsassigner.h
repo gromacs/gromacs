@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,22 +109,6 @@ class OptionsAssigner
          * Does not throw.
          */
         void setAcceptBooleanNoPrefix(bool bEnabled);
-        /*! \brief
-         * Sets the assigner to find options in non-active sections.
-         *
-         * By default, options are only looked for in the currently active
-         * subsection.  With this option set, if no matching option is found in
-         * the current section, a breadth-first search is performed, first on
-         * all subsections of the current section, and then going up one level
-         * at a time.  The first matching option is used, and the current
-         * section is changed to the section that contains the matching option.
-         *
-         * Can be set or cleared at any time, and will have effect on all
-         * subsequent calls of startOption().
-         *
-         * Does not throw.
-         */
-        void setNoStrictSectioning(bool bEnabled);
 
         /*! \brief
          * Starts assigning values.
