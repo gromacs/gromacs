@@ -127,8 +127,8 @@ void dump_ab(FILE *out, int natom, int nab[], t_hack *ab[], gmx_bool bHeader)
             fprintf(out, "%4d %2d %-4s %-4s %2d %-4s %-4s %-4s %-4s %s %g %g %g\n",
                     i+1, ab[i][j].nr, SS(ab[i][j].oname), SS(ab[i][j].nname),
                     ab[i][j].tp,
-                    SS(ab[i][j].AI), SS(ab[i][j].AJ),
-                    SS(ab[i][j].AK), SS(ab[i][j].AL),
+                    SS(ab[i][j].ai()), SS(ab[i][j].aj()),
+                    SS(ab[i][j].ak()), SS(ab[i][j].al()),
                     ab[i][j].atom ? "+" : "",
                     ab[i][j].newx[XX], ab[i][j].newx[YY], ab[i][j].newx[ZZ]);
         }
@@ -206,12 +206,12 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
            delete/replace from tdb (oname!=NULL) and oname matches this atom */
         if (debug)
         {
-            fprintf(debug, " %s", hbr->hack[j].oname ? hbr->hack[j].oname : hbr->hack[j].AI);
+            fprintf(debug, " %s", hbr->hack[j].oname ? hbr->hack[j].oname : hbr->hack[j].ai());
         }
 
         if (!bIgnore &&
             ( ( ( hbr->hack[j].tp > 0 || hbr->hack[j].oname == NULL ) &&
-                strcmp(atomname, hbr->hack[j].AI) == 0 ) ||
+                strcmp(atomname, hbr->hack[j].ai()) == 0 ) ||
               ( hbr->hack[j].oname != NULL &&
                 strcmp(atomname, hbr->hack[j].oname) == 0) ) )
         {

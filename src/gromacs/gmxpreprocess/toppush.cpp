@@ -1623,10 +1623,10 @@ static gmx_bool default_params(int ftype, t_params bt[],
                 pi     = &(bt[ftype].param[i]);
                 bFound =
                     (
-                        ((pi->AI == -1) || (get_atomtype_batype(at->atom[p->AI].typeB, atype) == pi->AI)) &&
-                        ((pi->AJ == -1) || (get_atomtype_batype(at->atom[p->AJ].typeB, atype) == pi->AJ)) &&
-                        ((pi->AK == -1) || (get_atomtype_batype(at->atom[p->AK].typeB, atype) == pi->AK)) &&
-                        ((pi->AL == -1) || (get_atomtype_batype(at->atom[p->AL].typeB, atype) == pi->AL))
+                        ((pi->ai() == -1) || (get_atomtype_batype(at->atom[p->ai()].typeB, atype) == pi->ai())) &&
+                        ((pi->aj() == -1) || (get_atomtype_batype(at->atom[p->aj()].typeB, atype) == pi->aj())) &&
+                        ((pi->ak() == -1) || (get_atomtype_batype(at->atom[p->ak()].typeB, atype) == pi->ak())) &&
+                        ((pi->al() == -1) || (get_atomtype_batype(at->atom[p->al()].typeB, atype) == pi->al()))
                     );
             }
         }
@@ -1638,10 +1638,10 @@ static gmx_bool default_params(int ftype, t_params bt[],
                 pi     = &(bt[ftype].param[i]);
                 bFound =
                     (
-                        ((pi->AI == -1) || (get_atomtype_batype(at->atom[p->AI].type, atype) == pi->AI)) &&
-                        ((pi->AJ == -1) || (get_atomtype_batype(at->atom[p->AJ].type, atype) == pi->AJ)) &&
-                        ((pi->AK == -1) || (get_atomtype_batype(at->atom[p->AK].type, atype) == pi->AK)) &&
-                        ((pi->AL == -1) || (get_atomtype_batype(at->atom[p->AL].type, atype) == pi->AL))
+                        ((pi->ai() == -1) || (get_atomtype_batype(at->atom[p->ai()].type, atype) == pi->ai())) &&
+                        ((pi->aj() == -1) || (get_atomtype_batype(at->atom[p->aj()].type, atype) == pi->aj())) &&
+                        ((pi->ak() == -1) || (get_atomtype_batype(at->atom[p->ak()].type, atype) == pi->ak())) &&
+                        ((pi->al() == -1) || (get_atomtype_batype(at->atom[p->al()].type, atype) == pi->al()))
                     );
             }
         }
@@ -1656,7 +1656,7 @@ static gmx_bool default_params(int ftype, t_params bt[],
             for (j = i+1; j < nr && bSame; j += 2)
             {
                 pj    = &(bt[ftype].param[j]);
-                bSame = (pi->AI == pj->AI && pi->AJ == pj->AJ && pi->AK == pj->AK && pi->AL == pj->AL);
+                bSame = (pi->ai() == pj->ai() && pi->aj() == pj->aj() && pi->ak() == pj->ak() && pi->al() == pj->al());
                 if (bSame)
                 {
                     nparam_found++;
@@ -1986,7 +1986,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
 
                     if (bSwapParity)
                     {
-                        param.C1 = -1; /* flag to swap parity of vsite construction */
+                        param.c1() = -1; /* flag to swap parity of vsite construction */
                     }
                 }
                 else
@@ -2010,10 +2010,10 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
                     switch (ftype)
                     {
                         case F_VSITE3FAD:
-                            param.C0 = 360 - param.C0;
+                            param.c0() = 360 - param.c0();
                             break;
                         case F_VSITE3OUT:
-                            param.C2 = -param.C2;
+                            param.c2() = -param.c2();
                             break;
                     }
                 }

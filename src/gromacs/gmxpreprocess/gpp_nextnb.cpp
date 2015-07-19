@@ -311,8 +311,8 @@ static void add_b(t_params *bonds, int *nrf, sortable *s)
 
     for (i = 0; (i < bonds->nr); i++)
     {
-        ai = bonds->param[i].AI;
-        aj = bonds->param[i].AJ;
+        ai = bonds->param[i].ai();
+        aj = bonds->param[i].aj();
         if ((ai < 0) || (aj < 0))
         {
             gmx_fatal(FARGS, "Impossible atom numbers in bond %d: ai=%d, aj=%d",

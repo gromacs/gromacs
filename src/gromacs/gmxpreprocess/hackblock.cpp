@@ -436,8 +436,8 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
                         j, hb[i].hack[j].nr,
                         SS(hb[i].hack[j].oname), SS(hb[i].hack[j].nname),
                         SA(hb[i].hack[j].atom), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
-                        SS(hb[i].hack[j].AI), SS(hb[i].hack[j].AJ),
-                        SS(hb[i].hack[j].AK), SS(hb[i].hack[j].AL) );
+                        SS(hb[i].hack[j].ai()), SS(hb[i].hack[j].aj()),
+                        SS(hb[i].hack[j].ak()), SS(hb[i].hack[j].al()) );
             }
         }
         for (j = 0; j < ebtsNR; j++)
