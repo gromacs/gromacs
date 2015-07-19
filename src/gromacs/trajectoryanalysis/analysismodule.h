@@ -255,7 +255,6 @@ class TrajectoryAnalysisModule
         /*! \brief
          * Called after all option values have been set.
          *
-         * \param[in,out] options  Options object in which options are stored.
          * \param[in,out] settings Settings to pass to and from the module.
          *
          * This method is called after option values have been assigned (but
@@ -268,8 +267,7 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         /*! \brief
          * Initializes the analysis.
          *

@@ -221,12 +221,6 @@ OptionInfo *Options::addOption(const AbstractOption &settings)
     return impl_->rootGroup_.addOption(settings);
 }
 
-bool Options::isSet(const char *name) const
-{
-    AbstractOptionStorage *option = impl_->findOption(name);
-    return (option != NULL ? option->isSet() : false);
-}
-
 void Options::finish()
 {
     // TODO: Consider how to customize these error messages based on context.

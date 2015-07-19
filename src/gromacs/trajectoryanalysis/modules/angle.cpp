@@ -56,7 +56,6 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
-#include "gromacs/options/options.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -248,8 +247,7 @@ class Angle : public TrajectoryAnalysisModule
 
         virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
@@ -393,7 +391,7 @@ Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setti
 
 
 void
-Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* settings */)
+Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
 {
     const bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
 
@@ -402,7 +400,7 @@ Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* setting
         GMX_THROW(InconsistentInputError("Cannot use a second group (-g2) with "
                                          "-g1 angle or dihedral"));
     }
-    if (bSingle && options->isSet("group2"))
+    if (bSingle && sel2info_->isSet())
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection "
                                          "(-group2) with -g1 angle or dihedral"));
@@ -434,7 +432,7 @@ Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* setting
         default:
             GMX_THROW(InternalError("invalid -g2 value"));
     }
-    if (natoms2_ == 0 && options->isSet("group2"))
+    if (natoms2_ == 0 && sel2info_->isSet())
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection (-group2) with -g2 t0 or z"));
     }

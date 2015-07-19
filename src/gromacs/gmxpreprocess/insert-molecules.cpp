@@ -52,7 +52,6 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
-#include "gromacs/options/options.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
@@ -321,7 +320,7 @@ class InsertMolecules : public ICommandLineOptionsModule
 
         virtual void initOptions(IOptionsContainer                 *options,
                                  ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished(Options *options);
+        virtual void optionsFinished() {}
 
         virtual int run();
 
@@ -404,7 +403,7 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
                            .description("Output configuration after insertion"));
 
     options->addOption(RealOption("box").vector()
-                           .store(newBox_)
+                           .store(newBox_).storeIsSet(&bBox_)
                            .description("Box size (in nm)"));
     options->addOption(IntegerOption("nmol")
                            .store(&nmolIns_)
@@ -428,11 +427,6 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
     options->addOption(StringOption("rot").enumValue(cRotationEnum)
                            .storeEnumIndex(&enumRot_)
                            .description("Rotate inserted molecules randomly"));
-}
-
-void InsertMolecules::optionsFinished(Options *options)
-{
-    bBox_ = options->isSet("box");
 }
 
 int InsertMolecules::run()

@@ -109,7 +109,7 @@ class MockOptionsModule : public gmx::ICommandLineOptionsModule
 
         MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
         MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer *options, gmx::ICommandLineOptionsModuleSettings *settings));
-        MOCK_METHOD1(optionsFinished, void(gmx::Options *options));
+        MOCK_METHOD0(optionsFinished, void());
         MOCK_METHOD0(run, int());
 };
 

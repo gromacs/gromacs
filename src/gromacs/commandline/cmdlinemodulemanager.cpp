@@ -146,7 +146,8 @@ class CMainCommandLineModule : public ICommandLineModule
 CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
     : options_(NULL, NULL), bHelp_(false), bHidden_(false),
       bQuiet_(false), bVersion_(false), bCopyright_(true),
-      niceLevel_(19), bBackup_(true), bFpexcept_(false), debugLevel_(0)
+      niceLevel_(19), bNiceSet_(false), bBackup_(true), bFpexcept_(false),
+      debugLevel_(0)
 {
     binaryInfoSettings_.copyright(true);
 }
@@ -168,7 +169,7 @@ void CommandLineCommonOptionsHolder::initOptions()
                            .description("Print extended version information and quit"));
     options_.addOption(BooleanOption("copyright").store(&bCopyright_)
                            .description("Print copyright information on startup"));
-    options_.addOption(IntegerOption("nice").store(&niceLevel_)
+    options_.addOption(IntegerOption("nice").store(&niceLevel_).storeIsSet(&bNiceSet_)
                            .description("Set the nicelevel (default depends on command)"));
     options_.addOption(BooleanOption("backup").store(&bBackup_)
                            .description("Write backups if output files exist"));
@@ -193,7 +194,7 @@ bool CommandLineCommonOptionsHolder::finishOptions()
 void CommandLineCommonOptionsHolder::adjustFromSettings(
         const CommandLineModuleSettings &settings)
 {
-    if (!options_.isSet("nice"))
+    if (!bNiceSet_)
     {
         niceLevel_ = settings.defaultNiceLevel();
     }

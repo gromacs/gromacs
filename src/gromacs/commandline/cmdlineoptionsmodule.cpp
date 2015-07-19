@@ -164,7 +164,7 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
         parser.parse(&argc, argv);
         options.finish();
     }
-    module_->optionsFinished(&options);
+    module_->optionsFinished();
 }
 
 }   // namespace

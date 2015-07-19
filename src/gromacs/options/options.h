@@ -175,8 +175,6 @@ class Options : public IOptionsContainer
         virtual OptionInfo *addOption(const AbstractOption &settings);
         using IOptionsContainer::addOption;
 
-        //! Returns true if option \p name is set.
-        bool isSet(const char *name) const;
         /*! \brief
          * Notifies the collection that all option values are assigned.
          *
