@@ -47,6 +47,8 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
+
 #include <assert.h>
 
 #include <algorithm>
@@ -152,8 +154,7 @@ reduce_thread_force_buffer(int n, rvec *f,
     /* This reduction can run on any number of threads,
      * independently of nthreads.
      */
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (b = 0; b < nblock; b++)
+    tbb::parallel_for(0, nblock, [&](int b)
     {
         rvec *fp[MAX_BONDED_THREADS];
         int   nfb, ft, fb;
@@ -182,7 +183,7 @@ reduce_thread_force_buffer(int n, rvec *f,
                 }
             }
         }
-    }
+    });
 }
 
 /*! \brief Reduce thread-local forces */
@@ -485,8 +486,7 @@ void calc_listed(const gmx_multisim_t *ms,
     }
 
     wallcycle_sub_start(wcycle, ewcsLISTED);
-#pragma omp parallel for num_threads(fr->nthreads) schedule(static)
-    for (thread = 0; thread < fr->nthreads; thread++)
+    tbb::parallel_for(0, fr->nthreads, [&](int thread)
     {
         int                ftype;
         real              *epot, v;
@@ -527,7 +527,7 @@ void calc_listed(const gmx_multisim_t *ms,
                 epot[ftype] += v;
             }
         }
-    }
+    });
     wallcycle_sub_stop(wcycle, ewcsLISTED);
 
     if (fr->nthreads > 1)

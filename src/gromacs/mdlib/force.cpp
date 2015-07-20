@@ -40,6 +40,7 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
 #include <assert.h>
 #include <math.h>
 #include <string.h>
@@ -118,20 +119,17 @@ static void reduce_thread_forces(int n, rvec *f,
                                  real *dvdl_q, real *dvdl_lj,
                                  int nthreads, f_thread_t *f_t)
 {
-    int t, i;
-    int nthreads_loop gmx_unused;
-
-    // cppcheck-suppress unreadVariable
-    nthreads_loop = gmx_omp_nthreads_get(emntBonded);
     /* This reduction can run over any number of threads */
-#pragma omp parallel for num_threads(nthreads_loop) private(t) schedule(static)
-    for (i = 0; i < n; i++)
+    tbb::parallel_for(0, n, [&](int i)
     {
+    	int t;
         for (t = 1; t < nthreads; t++)
         {
             rvec_inc(f[i], f_t[t].f[i]);
         }
-    }
+    });
+
+    int t;
     for (t = 1; t < nthreads; t++)
     {
         *Vcorr_q  += f_t[t].Vcorr_q;
@@ -440,8 +438,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 }
 
                 nthreads = gmx_omp_nthreads_get(emntBonded);
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-                for (t = 0; t < nthreads; t++)
+                tbb::parallel_for(0, nthreads, [&](int t)
                 {
                     int     i;
                     rvec   *fnv;
@@ -491,7 +488,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                        Vcorrt_q, Vcorrt_lj,
                                        lambda[efptCOUL], lambda[efptVDW],
                                        dvdlt_q, dvdlt_lj);
-                }
+                });
                 if (nthreads > 1)
                 {
                     reduce_thread_forces(fr->natoms_force, fr->f_novirsum,

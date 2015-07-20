@@ -39,6 +39,7 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
@@ -459,7 +460,7 @@ nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
     const real simdFalse = -1, simdTrue = 1;
     real      *simd_interaction_array;
 
-    simd_4xn_diag_size = max(NBNXN_CPU_CLUSTER_I_SIZE, simd_width);
+    simd_4xn_diag_size = std::max(NBNXN_CPU_CLUSTER_I_SIZE, simd_width);
     snew_aligned(nbat->simd_4xn_diagonal_j_minus_i, simd_4xn_diag_size, NBNXN_MEM_ALIGN);
     for (j = 0; j < simd_4xn_diag_size; j++)
     {
@@ -716,7 +717,7 @@ void nbnxn_atomdata_init(FILE *fp,
 
         if (bSIMD)
         {
-            pack_x = max(NBNXN_CPU_CLUSTER_I_SIZE,
+            pack_x = std::max(NBNXN_CPU_CLUSTER_I_SIZE,
                          nbnxn_kernel_to_cj_size(nb_kernel_type));
             switch (pack_x)
             {
@@ -1436,13 +1437,11 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 
     memset(nbat->syncStep, 0, sizeof(*(nbat->syncStep))*nth);
 
-#pragma omp parallel num_threads(nth)
+    tbb::parallel_for(0, nth, [&](int th)
     {
         int   b0, b1, b;
         int   i0, i1;
-        int   group_size, th;
-
-        th = gmx_omp_get_thread_num();
+        int   group_size;
 
         for (group_size = 2; group_size < 2*next_pow2; group_size *= 2)
         {
@@ -1474,7 +1473,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                     tMPI_Atomic_memory_barrier();
                 }
 #else           /* TMPI_ATOMICS */
-#pragma omp barrier
+#error "TMPI Atomics required for TBB"
 #endif
             }
 
@@ -1544,7 +1543,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                 }
             }
         }
-    }
+    });
 }
 
 
@@ -1650,8 +1649,8 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
             nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
         }
     }
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (th = 0; th < nth; th++)
+
+    tbb::parallel_for(0, nth, [&](int th)
     {
         nbnxn_atomdata_add_nbat_f_to_f_part(nbs, nbat,
                                             nbat->out,
@@ -1659,7 +1658,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                             a0+((th+0)*na)/nth,
                                             a0+((th+1)*na)/nth,
                                             f);
-    }
+    });
 
     nbs_cycle_stop(&nbs->cc[enbsCCreducef]);
 }

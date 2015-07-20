@@ -36,6 +36,7 @@
 #define GMX_THREAD_AFFINITY_H_
 
 #include <stdio.h>
+#include <tbb/tbb.h>
 
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -49,14 +50,15 @@ extern "C" {
 
 struct t_commrec;
 
-/* Sets the thread affinity using the requested setting stored in hw_opt.
- * The hardware topologu is requested from hwinfo, when present.
+/* Initialize TBB threads. Sets the number of threads and creates
+ * a callback that sets each thread's affinity when it is first used.
  */
 void
-gmx_set_thread_affinity(FILE                       *fplog,
-                        const struct t_commrec     *cr,
-                        gmx_hw_opt_t               *hw_opt,
-                        const gmx_hw_info_t        *hwinfo);
+gmx_init_tbb_threads(tbb::task_scheduler_init &scheduler,
+                      FILE *fplog,
+                      const t_commrec     *cr,
+                      gmx_hw_opt_t        *hw_opt,
+                      const gmx_hw_info_t *hwinfo);
 
 /* Check the process affinity mask and if it is found to be non-zero,
  * will honor it and disable mdrun internal affinity setting.
@@ -74,6 +76,16 @@ void
 gmx_check_thread_affinity_set(FILE *fplog, const struct t_commrec *cr,
                               gmx_hw_opt_t *hw_opt, int ncpus,
                               gmx_bool bAfterOpenmpInit);
+
+/* Sets the thread affinity for OpenMP using the requested setting stored
+ * in hw_opt. The hardware topology is requested from hwinfo, when present.
+ */
+void
+gmx_set_openmp_thread_affinity(FILE                       *fplog,
+                               const struct t_commrec     *cr,
+                               gmx_hw_opt_t               *hw_opt,
+                               const gmx_hw_info_t        *hwinfo);
+
 
 #ifdef __cplusplus
 }
