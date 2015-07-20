@@ -40,7 +40,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trajectory_writing.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/checkpoint.h"

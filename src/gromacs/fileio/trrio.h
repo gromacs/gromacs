@@ -34,9 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_FILEIO_TRNIO_H
-#define GMX_FILEIO_TRNIO_H
+#ifndef GMX_FILEIO_TRRIO_H
+#define GMX_FILEIO_TRRIO_H
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -50,9 +49,9 @@
  * The files are backward compatible, therefore the header holds
  * some unused variables.
  *
- * The routines in the corresponding c-file trnio.c
- * are based on the lower level routines in gmxfio.c
- * The integer file pointer returned from open_trn
+ * The routines in the corresponding c-file trrio.cpp
+ * are based on the lower level routines in gmxfio.cpp
+ * The file handle returned from open_trn
  * can also be used with the routines in gmxfio.h
  *
  **************************************************************/

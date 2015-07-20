@@ -51,7 +51,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trrio.h"
 #include "txtdump.h"
 #include "gromacs/math/vec.h"
 

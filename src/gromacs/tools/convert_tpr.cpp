@@ -41,7 +41,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/macros.h"

@@ -40,9 +40,6 @@
 #include <stdio.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
