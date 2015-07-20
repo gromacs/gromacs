@@ -132,7 +132,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
                     ndh_tot += 1;
                 }
                 /* as data blocks: 1 real per dH point */
-                cio += div_nsteps(nsteps, ir->fepvals->nstdhdl)*(ndh+ndhdl)*sizeof(real);
+                cio += div_nsteps(nsteps, ir->fepvals->nstdhdl)*ndh_tot*sizeof(real);
             }
             else
             {

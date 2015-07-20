@@ -1485,7 +1485,9 @@ int gmx_grompp(int argc, char *argv[])
         "with [TT]-cpi[tt]. If you wish to change the ensemble or things",
         "like output frequency, then supplying the checkpoint file to",
         "[THISMODULE] with [TT]-t[tt] along with a new [REF].mdp[ref] file",
-        "with [TT]-f[tt] is the recommended procedure.[PAR]",
+        "with [TT]-f[tt] is the recommended procedure. Actually preserving",
+        "the ensemble (if possible) still requires passing the checkpoint",
+        "file to [gmx-mdrun] [TT]-cpi[tt].[PAR]",
 
         "By default, all bonded interactions which have constant energy due to",
         "virtual site constructions will be removed. If this constant energy is",
