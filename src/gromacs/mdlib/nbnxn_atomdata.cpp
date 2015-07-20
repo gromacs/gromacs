@@ -39,6 +39,7 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1416,15 +1417,13 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 
     memset(nbat->syncStep, 0, sizeof(*(nbat->syncStep))*nth);
 
-#pragma omp parallel num_threads(nth)
+    tbb::parallel_for(0, nth, [&](int th)
     {
         try
         {
             int   b0, b1, b;
             int   i0, i1;
-            int   group_size, th;
-
-            th = gmx_omp_get_thread_num();
+            int   group_size;
 
             for (group_size = 2; group_size < 2*next_pow2; group_size *= 2)
             {
@@ -1456,7 +1455,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                         tMPI_Atomic_memory_barrier();
                     }
 #else               /* TMPI_ATOMICS */
-#pragma omp barrier
+#error "TMPI Atomics required for TBB"
 #endif
                 }
 
@@ -1528,7 +1527,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 }
 
 
@@ -1633,8 +1632,8 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
             nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
         }
     }
-#pragma omp parallel for num_threads(nth) schedule(static)
-    for (int th = 0; th < nth; th++)
+
+    tbb::parallel_for(0, nth, [&](int th)
     {
         try
         {
@@ -1646,7 +1645,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
                                                 f);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 
     nbs_cycle_stop(&nbs->cc[enbsCCreducef]);
 }

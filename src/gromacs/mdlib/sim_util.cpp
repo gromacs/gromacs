@@ -40,6 +40,7 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -107,6 +108,7 @@
 #include "gromacs/utility/sysinfo.h"
 
 #include "nbnxn_gpu.h"
+#include "SFGraph.h"
 
 static const bool useCuda   = GMX_GPU == GMX_GPU_CUDA;
 static const bool useOpenCL = GMX_GPU == GMX_GPU_OPENCL;
@@ -763,6 +765,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
      * also be used by gmx_wallcycle_t */
     gmx_cycles_t        cycleCountBeforeLocalWorkCompletes = 0;
     nonbonded_verlet_t *nbv;
+    SFGraph kernel_pipeline(2);
 
     cycles_force    = 0;
     cycles_wait_gpu = 0;
@@ -1185,9 +1188,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (!bUseOrEmulGPU)
     {
-        /* Maybe we should move this into do_force_lowlevel */
-        do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
-                     nrnb, wcycle);
+    	kernel_pipeline.add_node(0, [&](continue_msg){
+    			do_nb_verlet(fr, ic, enerd, flags, eintLocal,
+    					enbvClearFYes, nrnb, wcycle);});
     }
 
     if (fr->efep != efepNO)
@@ -1197,19 +1200,21 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          */
         if (fr->nbv->grp[eintLocal].nbl_lists.nbl_fep[0]->nrj > 0)
         {
+        	kernel_pipeline.add_node(0, [&](continue_msg){
             do_nb_verlet_fep(&fr->nbv->grp[eintLocal].nbl_lists,
                              fr, x, f, mdatoms,
                              inputrec->fepvals, lambda,
-                             enerd, flags, nrnb, wcycle);
+                             enerd, flags, nrnb, wcycle);});
         }
 
         if (DOMAINDECOMP(cr) &&
             fr->nbv->grp[eintNonlocal].nbl_lists.nbl_fep[0]->nrj > 0)
         {
+        	kernel_pipeline.add_node(0, [&](continue_msg){
             do_nb_verlet_fep(&fr->nbv->grp[eintNonlocal].nbl_lists,
                              fr, x, f, mdatoms,
                              inputrec->fepvals, lambda,
-                             enerd, flags, nrnb, wcycle);
+                             enerd, flags, nrnb, wcycle);});
         }
     }
 
@@ -1219,9 +1224,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
         if (DOMAINDECOMP(cr))
         {
-            do_nb_verlet(fr, ic, enerd, flags, eintNonlocal,
-                         bDiffKernels ? enbvClearFYes : enbvClearFNo,
-                         nrnb, wcycle);
+        	kernel_pipeline.add_node(0, [&](continue_msg){
+        		    do_nb_verlet(fr, ic, enerd, flags, eintNonlocal,
+        		        bDiffKernels ? enbvClearFYes : enbvClearFNo,
+        		        nrnb, wcycle);});
         }
 
         if (!bUseOrEmulGPU)
@@ -1240,7 +1246,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         cycles_force += wallcycle_stop(wcycle, ewcFORCE);
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);
+        kernel_pipeline.add_node(0, [&](continue_msg){
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);});
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_start_nocount(wcycle, ewcFORCE);
@@ -1251,8 +1258,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             /* This is not in a subcounter because it takes a
                negligible and constant-sized amount of time */
+        	kernel_pipeline.add_node(0, [&](continue_msg){
             nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
-                                                     fr->fshift);
+                                                     fr->fshift);});
         }
     }
 
@@ -1263,12 +1271,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
+    kernel_pipeline.add_node(1, [&](continue_msg){
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
                       x, hist, f, enerd, fcd, top, fr->born,
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
-                      flags, &cycles_pme);
+                      flags, &cycles_pme);});
+    kernel_pipeline.run();
 
     cycles_force += wallcycle_stop(wcycle, ewcFORCE);
 
