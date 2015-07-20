@@ -40,7 +40,6 @@
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"

@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "trnio.h"
+#include "trrio.h"
 
 #include <cstring>
 

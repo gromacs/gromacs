@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"

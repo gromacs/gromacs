@@ -41,7 +41,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/correlationfunctions/autocorr.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
