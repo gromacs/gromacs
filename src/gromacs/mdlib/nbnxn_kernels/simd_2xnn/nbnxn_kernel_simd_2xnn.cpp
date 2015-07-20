@@ -39,7 +39,7 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
+#include <tbb/tbb.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -277,7 +277,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
     int                nnbl;
     nbnxn_pairlist_t **nbl;
     int                coulkt, vdwkt = 0;
-    int                nb, nthreads;
+    int                nthreads;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
@@ -349,86 +349,84 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         gmx_incons("Unsupported VdW interaction type");
     }
     // cppcheck-suppress unreadVariable
-    nthreads = gmx_omp_nthreads_get(emntNonbonded);
-#pragma omp parallel for schedule(static) num_threads(nthreads)
-    for (nb = 0; nb < nnbl; nb++)
-    {
+    tbb::parallel_for(0, nnbl, [&](int nb)
+                      {
         // Presently, the kernels do not call C++ code that can throw, so
         // no need for a try/catch pair in this OpenMP region.
-        nbnxn_atomdata_output_t *out;
-        real                    *fshift_p;
+                          nbnxn_atomdata_output_t *out;
+                          real                    *fshift_p;
 
-        out = &nbat->out[nb];
+                          out = &nbat->out[nb];
 
-        if (clearF == enbvClearFYes)
-        {
-            clear_f(nbat, nb, out->f);
-        }
+                          if (clearF == enbvClearFYes)
+                          {
+                              clear_f(nbat, nb, out->f);
+                          }
 
-        if ((force_flags & GMX_FORCE_VIRIAL) && nnbl == 1)
-        {
-            fshift_p = fshift;
-        }
-        else
-        {
-            fshift_p = out->fshift;
+                          if ((force_flags & GMX_FORCE_VIRIAL) && nnbl == 1)
+                          {
+                              fshift_p = fshift;
+                          }
+                          else
+                          {
+                              fshift_p = out->fshift;
 
-            if (clearF == enbvClearFYes)
-            {
-                clear_fshift(fshift_p);
-            }
-        }
+                              if (clearF == enbvClearFYes)
+                              {
+                                  clear_fshift(fshift_p);
+                              }
+                          }
 
-        if (!(force_flags & GMX_FORCE_ENERGY))
-        {
-            /* Don't calculate energies */
-            p_nbk_noener[coulkt][vdwkt](nbl[nb], nbat,
-                                        ic,
-                                        shift_vec,
-                                        out->f,
-                                        fshift_p);
-        }
-        else if (out->nV == 1)
-        {
-            /* No energy groups */
-            out->Vvdw[0] = 0;
-            out->Vc[0]   = 0;
+                          if (!(force_flags & GMX_FORCE_ENERGY))
+                          {
+                              /* Don't calculate energies */
+                              p_nbk_noener[coulkt][vdwkt](nbl[nb], nbat,
+                                                          ic,
+                                                          shift_vec,
+                                                          out->f,
+                                                          fshift_p);
+                          }
+                          else if (out->nV == 1)
+                          {
+                              /* No energy groups */
+                              out->Vvdw[0] = 0;
+                              out->Vc[0]   = 0;
 
-            p_nbk_ener[coulkt][vdwkt](nbl[nb], nbat,
-                                      ic,
-                                      shift_vec,
-                                      out->f,
-                                      fshift_p,
-                                      out->Vvdw,
-                                      out->Vc);
-        }
-        else
-        {
-            /* Calculate energy group contributions */
-            int i;
+                              p_nbk_ener[coulkt][vdwkt](nbl[nb], nbat,
+                                                        ic,
+                                                        shift_vec,
+                                                        out->f,
+                                                        fshift_p,
+                                                        out->Vvdw,
+                                                        out->Vc);
+                          }
+                          else
+                          {
+                              /* Calculate energy group contributions */
+                              int i;
 
-            for (i = 0; i < out->nVS; i++)
-            {
-                out->VSvdw[i] = 0;
-            }
-            for (i = 0; i < out->nVS; i++)
-            {
-                out->VSc[i] = 0;
-            }
+                              for (i = 0; i < out->nVS; i++)
+                              {
+                                  out->VSvdw[i] = 0;
+                              }
+                              for (i = 0; i < out->nVS; i++)
+                              {
+                                  out->VSc[i] = 0;
+                              }
 
-            p_nbk_energrp[coulkt][vdwkt](nbl[nb], nbat,
-                                         ic,
-                                         shift_vec,
-                                         out->f,
-                                         fshift_p,
-                                         out->VSvdw,
-                                         out->VSc);
+                              p_nbk_energrp[coulkt][vdwkt](nbl[nb], nbat,
+                                                           ic,
+                                                           shift_vec,
+                                                           out->f,
+                                                           fshift_p,
+                                                           out->VSvdw,
+                                                           out->VSc);
 
-            reduce_group_energies(nbat->nenergrp, nbat->neg_2log,
-                                  out->VSvdw, out->VSc,
-                                  out->Vvdw, out->Vc);
-        }
-    }
+                              reduce_group_energies(nbat->nenergrp, nbat->neg_2log,
+                                                    out->VSvdw, out->VSc,
+                                                    out->Vvdw, out->Vc);
+                          }
+                      });
 
     if (force_flags & GMX_FORCE_ENERGY)
     {

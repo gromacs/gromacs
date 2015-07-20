@@ -40,6 +40,7 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
 #include <assert.h>
 #include <math.h>
 #include <string.h>
@@ -115,7 +116,6 @@ static void reduce_thread_energies(tensor vir_q, tensor vir_lj,
                                    ewald_corr_thread_t *ewc_t)
 {
     int t;
-
     for (t = 1; t < nthreads; t++)
     {
         *Vcorr_q  += ewc_t[t].Vcorr_q;
@@ -414,8 +414,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 }
 
                 nthreads = fr->nthread_ewc;
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-                for (t = 0; t < nthreads; t++)
+                tbb::parallel_for(0, nthreads, [&](int t)
                 {
                     try
                     {
@@ -466,7 +465,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                            dvdlt_q, dvdlt_lj);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                }
+                });
                 if (nthreads > 1)
                 {
                     reduce_thread_energies(fr->vir_el_recip, fr->vir_lj_recip,

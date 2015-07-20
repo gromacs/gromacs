@@ -47,6 +47,7 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -1205,6 +1206,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         snew(pmedata, 1);
     }
 
+    // Task scheduler must be created outside of "if" block to remain in scope
+    tbb::task_scheduler_init tbbinit(tbb::task_scheduler_init::deferred);
     if (hw_opt->thread_affinity != threadaffOFF)
     {
         /* Before setting affinity, check whether the affinity has changed
@@ -1213,9 +1216,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          */
         gmx_check_thread_affinity_set(fplog, cr,
                                       hw_opt, hwinfo->nthreads_hw_avail, TRUE);
-
-        /* Set the CPU affinity */
-        gmx_set_thread_affinity(fplog, cr, hw_opt, hwinfo);
+        gmx_set_openmp_thread_affinity(fplog, cr, hw_opt, hwinfo);
+        gmx_init_tbb_threads(tbbinit, fplog, cr, hw_opt, hwinfo);
     }
 
     /* Initiate PME if necessary,
