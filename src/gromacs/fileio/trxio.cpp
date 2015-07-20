@@ -395,8 +395,8 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
             write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec);
             break;
         case efTRR:
-            fwrite_trn(status->fio, nframes_read(status),
-                       fr->time, fr->step, fr->box, nind, xout, vout, fout);
+            gmx_trr_write_frame(status->fio, nframes_read(status),
+                                fr->time, fr->step, fr->box, nind, xout, vout, fout);
             break;
         case efGRO:
         case efPDB:
@@ -547,8 +547,8 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             write_xtc(status->fio, fr->natoms, fr->step, fr->time, fr->box, fr->x, prec);
             break;
         case efTRR:
-            fwrite_trn(status->fio, fr->step, fr->time, fr->lambda, fr->box, fr->natoms,
-                       fr->bX ? fr->x : NULL, fr->bV ? fr->v : NULL, fr->bF ? fr->f : NULL);
+            gmx_trr_write_frame(status->fio, fr->step, fr->time, fr->lambda, fr->box, fr->natoms,
+                                fr->bX ? fr->x : NULL, fr->bV ? fr->v : NULL, fr->bF ? fr->f : NULL);
             break;
         case efGRO:
         case efPDB:
@@ -634,12 +634,12 @@ t_trxstatus *open_trx(const char *outfile, const char *filemode)
 
 static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
 {
-    t_trnheader sh;
-    gmx_bool    bOK, bRet;
+    gmx_trr_header_t sh;
+    gmx_bool         bOK, bRet;
 
     bRet = FALSE;
 
-    if (fread_trnheader(status->fio, &sh, &bOK))
+    if (gmx_trr_read_frame_header(status->fio, &sh, &bOK))
     {
         fr->bDouble   = sh.bDouble;
         fr->natoms    = sh.natoms;
@@ -675,7 +675,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             }
             fr->bF = sh.f_size > 0;
         }
-        if (fread_htrn(status->fio, &sh, fr->box, fr->x, fr->v, fr->f))
+        if (gmx_trr_read_frame_data(status->fio, &sh, fr->box, fr->x, fr->v, fr->f))
         {
             bRet = TRUE;
         }

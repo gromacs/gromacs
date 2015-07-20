@@ -239,12 +239,12 @@ extern void set_reference_positions(
         t_rot *rot, rvec *x, matrix box,
         const char *fn, gmx_bool bSet, warninp_t wi)
 {
-    int         g, i, ii;
-    t_rotgrp   *rotg;
-    t_trnheader header;    /* Header information of reference file */
-    char        base[STRLEN], extension[STRLEN], reffile[STRLEN];
-    char       *extpos;
-    rvec        f_box[3];  /* Box from reference file */
+    int              g, i, ii;
+    t_rotgrp        *rotg;
+    gmx_trr_header_t header;    /* Header information of reference file */
+    char             base[STRLEN], extension[STRLEN], reffile[STRLEN];
+    char            *extpos;
+    rvec             f_box[3]; /* Box from reference file */
 
 
     /* Base name and extension of the reference file: */
@@ -276,13 +276,13 @@ extern void set_reference_positions(
         if (gmx_fexist(reffile))
         {
             fprintf(stderr, "  Reading them from %s.\n", reffile);
-            read_trnheader(reffile, &header);
+            gmx_trr_read_single_header(reffile, &header);
             if (rotg->nat != header.natoms)
             {
                 gmx_fatal(FARGS, "Number of atoms in file %s (%d) does not match the number of atoms in rotation group (%d)!\n",
                           reffile, header.natoms, rotg->nat);
             }
-            read_trn(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, NULL, NULL);
+            gmx_trr_read_single_frame(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, NULL, NULL);
 
             /* Check whether the box is unchanged and output a warning if not: */
             check_box_unchanged(f_box, box, reffile, wi);
@@ -295,7 +295,7 @@ extern void set_reference_positions(
                 ii = rotg->ind[i];
                 copy_rvec(x[ii], rotg->x_ref[i]);
             }
-            write_trn(reffile, g, 0.0, 0.0, box, rotg->nat, rotg->x_ref, NULL, NULL);
+            gmx_trr_write_single_frame(reffile, g, 0.0, 0.0, box, rotg->nat, rotg->x_ref, NULL, NULL);
         }
     }
 }

@@ -203,57 +203,57 @@ static void list_top(const char *fn)
     }
 }
 
-static void list_trn(const char *fn)
+static void list_trr(const char *fn)
 {
-    t_fileio       *fpread;
-    int             nframe, indent;
-    char            buf[256];
-    rvec           *x, *v, *f;
-    matrix          box;
-    t_trnheader     trn;
-    gmx_bool        bOK;
+    t_fileio         *fpread;
+    int               nframe, indent;
+    char              buf[256];
+    rvec             *x, *v, *f;
+    matrix            box;
+    gmx_trr_header_t  trrheader;
+    gmx_bool          bOK;
 
-    fpread  = open_trn(fn, "r");
+    fpread  = gmx_trr_open(fn, "r");
 
     nframe = 0;
-    while (fread_trnheader(fpread, &trn, &bOK))
+    while (gmx_trr_read_frame_header(fpread, &trrheader, &bOK))
     {
-        snew(x, trn.natoms);
-        snew(v, trn.natoms);
-        snew(f, trn.natoms);
-        if (fread_htrn(fpread, &trn,
-                       trn.box_size ? box : NULL,
-                       trn.x_size   ? x : NULL,
-                       trn.v_size   ? v : NULL,
-                       trn.f_size   ? f : NULL))
+        snew(x, trrheader.natoms);
+        snew(v, trrheader.natoms);
+        snew(f, trrheader.natoms);
+        if (gmx_trr_read_frame_data(fpread, &trrheader,
+                                    trrheader.box_size ? box : NULL,
+                                    trrheader.x_size   ? x : NULL,
+                                    trrheader.v_size   ? v : NULL,
+                                    trrheader.f_size   ? f : NULL))
         {
             sprintf(buf, "%s frame %d", fn, nframe);
             indent = 0;
             indent = pr_title(stdout, indent, buf);
             pr_indent(stdout, indent);
             fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  lambda=%10g\n",
-                    trn.natoms, trn.step, trn.t, trn.lambda);
-            if (trn.box_size)
+                    trrheader.natoms, trrheader.step, trrheader.t, trrheader.lambda);
+            if (trrheader.box_size)
             {
                 pr_rvecs(stdout, indent, "box", box, DIM);
             }
-            if (trn.x_size)
+            if (trrheader.x_size)
             {
-                pr_rvecs(stdout, indent, "x", x, trn.natoms);
+                pr_rvecs(stdout, indent, "x", x, trrheader.natoms);
             }
-            if (trn.v_size)
+            if (trrheader.v_size)
             {
-                pr_rvecs(stdout, indent, "v", v, trn.natoms);
+                pr_rvecs(stdout, indent, "v", v, trrheader.natoms);
             }
-            if (trn.f_size)
+            if (trrheader.f_size)
             {
-                pr_rvecs(stdout, indent, "f", f, trn.natoms);
+                pr_rvecs(stdout, indent, "f", f, trrheader.natoms);
             }
         }
         else
         {
             fprintf(stderr, "\nWARNING: Incomplete frame: nr %d, t=%g\n",
-                    nframe, trn.t);
+                    nframe, trrheader.t);
         }
 
         sfree(x);
@@ -264,9 +264,9 @@ static void list_trn(const char *fn)
     if (!bOK)
     {
         fprintf(stderr, "\nWARNING: Incomplete frame header: nr %d, t=%g\n",
-                nframe, trn.t);
+                nframe, trrheader.t);
     }
-    close_trn(fpread);
+    gmx_trr_close(fpread);
 }
 
 void list_xtc(const char *fn)
@@ -405,7 +405,7 @@ void list_trx(const char *fn)
             list_xtc(fn);
             break;
         case efTRR:
-            list_trn(fn);
+            list_trr(fn);
             break;
         case efTNG:
             list_tng(fn);

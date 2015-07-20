@@ -50,7 +50,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
                        int *nvec, int **eignr,
                        rvec ***eigvec, real **eigval)
 {
-    t_trnheader        head;
+    gmx_trr_header_t   head;
     int                i, snew_size;
     struct t_fileio   *status;
     rvec              *x;
@@ -60,11 +60,11 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
     *bDMR = FALSE;
 
     /* read (reference (t=-1) and) average (t=0) structure */
-    status = open_trn(file, "r");
-    fread_trnheader(status, &head, &bOK);
+    status = gmx_trr_open(file, "r");
+    gmx_trr_read_frame_header(status, &head, &bOK);
     *natoms = head.natoms;
     snew(*xav, *natoms);
-    fread_htrn(status, &head, box, *xav, NULL, NULL);
+    gmx_trr_read_frame_data(status, &head, box, *xav, NULL, NULL);
 
     if ((head.t >= -1.1) && (head.t <= -0.9))
     {
@@ -85,8 +85,8 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
             sfree(*xref);
             *xref = NULL;
         }
-        fread_trnheader(status, &head, &bOK);
-        fread_htrn(status, &head, box, *xav, NULL, NULL);
+        gmx_trr_read_frame_header(status, &head, &bOK);
+        gmx_trr_read_frame_data(status, &head, box, *xav, NULL, NULL);
     }
     else
     {
@@ -115,9 +115,9 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
     snew(*eigvec, snew_size);
 
     *nvec = 0;
-    while (fread_trnheader(status, &head, &bOK))
+    while (gmx_trr_read_frame_header(status, &head, &bOK))
     {
-        fread_htrn(status, &head, box, x, NULL, NULL);
+        gmx_trr_read_frame_data(status, &head, box, x, NULL, NULL);
         if (*nvec >= snew_size)
         {
             snew_size += 10;
@@ -136,16 +136,17 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
         (*nvec)++;
     }
     sfree(x);
+    gmx_trr_close(status);
     fprintf(stderr, "Read %d eigenvectors (for %d atoms)\n\n", *nvec, *natoms);
 }
 
 
-void write_eigenvectors(const char *trnname, int natoms, real mat[],
+void write_eigenvectors(const char *trrname, int natoms, real mat[],
                         gmx_bool bReverse, int begin, int end,
                         int WriteXref, rvec *xref, gmx_bool bDMR,
                         rvec xav[], gmx_bool bDMA, real eigval[])
 {
-    struct t_fileio *trnout;
+    struct t_fileio *trrout;
     int              ndim, i, j, d, vec;
     matrix           zerobox;
     rvec            *x;
@@ -157,22 +158,22 @@ void write_eigenvectors(const char *trnname, int natoms, real mat[],
     fprintf (stderr,
              "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
              (WriteXref == eWXR_YES) ? "reference, " : "",
-             begin, end, trnname);
+             begin, end, trrname);
 
-    trnout = open_trn(trnname, "w");
+    trrout = gmx_trr_open(trrname, "w");
     if (WriteXref == eWXR_YES)
     {
         /* misuse lambda: 0/1 mass weighted fit no/yes */
-        fwrite_trn(trnout, -1, -1, bDMR ? 1.0 : 0.0, zerobox, natoms, xref, NULL, NULL);
+        gmx_trr_write_frame(trrout, -1, -1, bDMR ? 1.0 : 0.0, zerobox, natoms, xref, NULL, NULL);
     }
     else if (WriteXref == eWXR_NOFIT)
     {
         /* misuse lambda: -1 no fit */
-        fwrite_trn(trnout, -1, -1, -1.0, zerobox, natoms, x, NULL, NULL);
+        gmx_trr_write_frame(trrout, -1, -1, -1.0, zerobox, natoms, x, NULL, NULL);
     }
 
     /* misuse lambda: 0/1 mass weighted analysis no/yes */
-    fwrite_trn(trnout, 0, 0, bDMA ? 1.0 : 0.0, zerobox, natoms, xav, NULL, NULL);
+    gmx_trr_write_frame(trrout, 0, 0, bDMA ? 1.0 : 0.0, zerobox, natoms, xav, NULL, NULL);
 
     for (i = 0; i <= (end-begin); i++)
     {
@@ -195,9 +196,9 @@ void write_eigenvectors(const char *trnname, int natoms, real mat[],
         }
 
         /* Store the eigenvalue in the time field */
-        fwrite_trn(trnout, begin+i, eigval[vec], 0, zerobox, natoms, x, NULL, NULL);
+        gmx_trr_write_frame(trrout, begin+i, eigval[vec], 0, zerobox, natoms, x, NULL, NULL);
     }
-    close_trn(trnout);
+    gmx_trr_close(trrout);
 
     sfree(x);
 }

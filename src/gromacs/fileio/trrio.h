@@ -51,7 +51,7 @@
  *
  * The routines in the corresponding c-file trrio.cpp
  * are based on the lower level routines in gmxfio.cpp
- * The file handle returned from open_trn
+ * The file handle returned from gmx_trr_open()
  * can also be used with the routines in gmxfio.h
  *
  **************************************************************/
@@ -62,70 +62,71 @@ extern "C" {
 
 struct t_fileio;
 
-typedef struct           /* This struct describes the order and the	*/
-                         /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
+/* This struct describes the order and the  */
+/* sizes of the structs in a trr file, sizes are given in bytes. */
+typedef struct gmx_trr_header_t
 {
-    gmx_bool  bDouble;   /* Double precision?                            */
-    int       ir_size;   /* Backward compatibility		        */
-    int       e_size;    /* Backward compatibility		        */
-    int       box_size;  /* Non zero if a box is present			*/
-    int       vir_size;  /* Backward compatibility		        */
-    int       pres_size; /* Backward compatibility		        */
-    int       top_size;  /* Backward compatibility		        */
-    int       sym_size;  /* Backward compatibility		        */
-    int       x_size;    /* Non zero if coordinates are present		*/
-    int       v_size;    /* Non zero if velocities are present		*/
-    int       f_size;    /* Non zero if forces are present		*/
+    gmx_bool  bDouble;   /* Double precision?                   */
+    int       ir_size;   /* Backward compatibility              */
+    int       e_size;    /* Backward compatibility              */
+    int       box_size;  /* Non zero if a box is present        */
+    int       vir_size;  /* Backward compatibility              */
+    int       pres_size; /* Backward compatibility              */
+    int       top_size;  /* Backward compatibility              */
+    int       sym_size;  /* Backward compatibility              */
+    int       x_size;    /* Non zero if coordinates are present */
+    int       v_size;    /* Non zero if velocities are present  */
+    int       f_size;    /* Non zero if forces are present      */
 
-    int       natoms;    /* The total number of atoms			*/
-    int       step;      /* Current step number				*/
-    int       nre;       /* Backward compatibility		        */
-    real      t;         /* Current time					*/
-    real      lambda;    /* Current value of lambda			*/
-    int       fep_state; /* Current value of alchemical state */
-} t_trnheader;
+    int       natoms;    /* The total number of atoms           */
+    int       step;      /* Current step number                 */
+    int       nre;       /* Backward compatibility              */
+    real      t;         /* Current time                        */
+    real      lambda;    /* Current value of lambda             */
+    int       fep_state; /* Current value of alchemical state   */
+} gmx_trr_header_t;
 
-struct t_fileio *open_trn(const char *fn, const char *mode);
-/* Open a trr / trr file */
+struct t_fileio *gmx_trr_open(const char *fn, const char *mode);
+/* Open a trr file */
 
-void close_trn(struct t_fileio *fio);
+void gmx_trr_close(struct t_fileio *fio);
 /* Close it */
 
-gmx_bool fread_trnheader(struct t_fileio *fio, t_trnheader *trn, gmx_bool *bOK);
-/* Read the header of a trn file. Return FALSE if there is no frame.
+gmx_bool gmx_trr_read_frame_header(struct t_fileio *fio, gmx_trr_header_t *header, gmx_bool *bOK);
+/* Read the header of a trr file. Return FALSE if there is no frame.
  * bOK will be FALSE when the header is incomplete.
  */
 
-void read_trnheader(const char *fn, t_trnheader *header);
-/* Read the header of a trn file from fn, and close the file afterwards.
- */
-
-void fwrite_trn(struct t_fileio *fio, int step, real t, real lambda,
-                rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
-/* Write a trn frame to file fp, box, x, v, f may be NULL */
-
-gmx_bool fread_htrn(struct t_fileio *fio, t_trnheader *sh,
-                    rvec *box, rvec *x, rvec *v, rvec *f);
+gmx_bool gmx_trr_read_frame_data(struct t_fileio *fio, gmx_trr_header_t *sh,
+                                 rvec *box, rvec *x, rvec *v, rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
- * using routine read_trnheader, see above) from a trn file.
+ * using routine gmx_trr_read_frame_header(), see above) from a trr file.
  * Return FALSE on error
  */
 
-gmx_bool fread_trn(struct t_fileio *fio, int *step, real *t, real *lambda,
-                   rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
-/* Read a trn frame, including the header from fp. box, x, v, f may
+gmx_bool gmx_trr_read_frame(struct t_fileio *fio, int *step, real *t, real *lambda,
+                            rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
+/* Read a trr frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.
  * return FALSE on error
  */
 
-void write_trn(const char *fn, int step, real t, real lambda,
-               rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
-/* Write a single trn frame to file fn, which is closed afterwards */
+void gmx_trr_write_frame(struct t_fileio *fio, int step, real t, real lambda,
+                         rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+/* Write a trr frame to file fp, box, x, v, f may be NULL */
 
-void read_trn(const char *fn, int *step, real *t, real *lambda,
-              rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
-/* Read a single trn frame from file fn, which is closed afterwards
+void gmx_trr_read_single_header(const char *fn, gmx_trr_header_t *header);
+/* Read the header of a trr file from fn, and close the file afterwards.
  */
+
+void gmx_trr_read_single_frame(const char *fn, int *step, real *t, real *lambda,
+                               rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
+/* Read a single trr frame from file fn, which is closed afterwards
+ */
+
+void gmx_trr_write_single_frame(const char *fn, int step, real t, real lambda,
+                                rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+/* Write a single trr frame to file fn, which is closed afterwards */
 
 #ifdef __cplusplus
 }

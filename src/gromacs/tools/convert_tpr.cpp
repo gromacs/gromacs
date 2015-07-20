@@ -352,7 +352,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     const char       *top_fn, *frame_fn;
     struct t_fileio  *fp;
     ener_file_t       fp_ener = NULL;
-    t_trnheader       head;
+    gmx_trr_header_t  head;
     int               i;
     gmx_int64_t       nsteps_req, run_step, frame;
     double            run_t, state_t;
@@ -489,7 +489,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                     "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
                     frame_fn);
 
-            fp = open_trn(frame_fn, "r");
+            fp = gmx_trr_open(frame_fn, "r");
             if (bScanEner)
             {
                 fp_ener = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
@@ -505,7 +505,7 @@ int gmx_convert_tpr(int argc, char *argv[])
             frame  = 0;
             while (bFrame)
             {
-                bFrame = fread_trnheader(fp, &head, &bOK);
+                bFrame = gmx_trr_read_frame_header(fp, &head, &bOK);
                 if (bOK && frame == 0)
                 {
                     if (mtop.natoms != head.natoms)
@@ -520,7 +520,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                 bFrame = bFrame && bOK;
                 if (bFrame)
                 {
-                    bOK = fread_htrn(fp, &head, newbox, newx, newv, NULL);
+                    bOK = gmx_trr_read_frame_data(fp, &head, newbox, newx, newv, NULL);
                 }
                 bFrame = bFrame && bOK;
                 bUse   = FALSE;
@@ -572,7 +572,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                 free_enxframe(fr_ener);
                 free_enxnms(nre, enm);
             }
-            close_trn(fp);
+            gmx_trr_close(fp);
             fprintf(stderr, "\n");
 
             if (!bOK)
