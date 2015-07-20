@@ -39,7 +39,7 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
+#include <tbb/tbb.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -274,7 +274,6 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
     int                nnbl;
     nbnxn_pairlist_t **nbl;
     int                coulkt, vdwkt = 0;
-    int                nb;
     int                nthreads gmx_unused;
 
     nnbl = nbl_list->nnbl;
@@ -347,9 +346,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
         gmx_incons("Unsupported VdW interaction type");
     }
 
-    nthreads = gmx_omp_nthreads_get(emntNonbonded);
-#pragma omp parallel for schedule(static) num_threads(nthreads)
-    for (nb = 0; nb < nnbl; nb++)
+    tbb::parallel_for(0, nnbl, [&](int nb)
     {
         nbnxn_atomdata_output_t *out;
         real                    *fshift_p;
@@ -424,7 +421,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
                                   out->VSvdw, out->VSc,
                                   out->Vvdw, out->Vc);
         }
-    }
+    });
 
     if (force_flags & GMX_FORCE_ENERGY)
     {
