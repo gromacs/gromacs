@@ -56,11 +56,11 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void dump_dih_trn(int nframes, int nangles, real **dih, const char *fn,
+static void dump_dih_trr(int nframes, int nangles, real **dih, const char *fn,
                          real *time)
 {
     int              i, j, k, l, m, na;
-    struct t_fileio *trn;
+    struct t_fileio *fio;
     rvec            *x;
     matrix           box = {{2, 0, 0}, {0, 2, 0}, {0, 0, 2}};
 
@@ -76,7 +76,7 @@ static void dump_dih_trn(int nframes, int nangles, real **dih, const char *fn,
     printf("There are %d dihedrals. Will fill %d atom positions with cos/sin\n",
            nangles, na);
     snew(x, na);
-    trn = open_trn(fn, "w");
+    fio = gmx_trr_open(fn, "w");
     for (i = 0; (i < nframes); i++)
     {
         k = l = 0;
@@ -93,9 +93,9 @@ static void dump_dih_trn(int nframes, int nangles, real **dih, const char *fn,
                 }
             }
         }
-        fwrite_trn(trn, i, time[i], 0, box, na, x, NULL, NULL);
+        gmx_trr_write_frame(fio, i, time[i], 0, box, na, x, NULL, NULL);
     }
-    close_trn(trn);
+    gmx_trr_close(fio);
     sfree(x);
 }
 
@@ -209,7 +209,7 @@ int gmx_g_angle(int argc, char *argv[])
     {
         if (mult != 4)
         {
-            gmx_fatal(FARGS, "Can not combine angles with trn dump");
+            gmx_fatal(FARGS, "Can not combine angles with trr dump");
         }
         else
         {
@@ -309,7 +309,7 @@ int gmx_g_angle(int argc, char *argv[])
     }
     if (opt2bSet("-or", NFILE, fnm))
     {
-        dump_dih_trn(nframes, nangles, dih, opt2fn("-or", NFILE, fnm), time);
+        dump_dih_trr(nframes, nangles, dih, opt2fn("-or", NFILE, fnm), time);
     }
 
     if (bFrac)

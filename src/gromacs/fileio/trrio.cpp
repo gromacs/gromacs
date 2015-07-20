@@ -51,7 +51,7 @@
 #define BUFSIZE     128
 #define GROMACS_MAGIC   1993
 
-static int nFloatSize(t_trnheader *sh)
+static int nFloatSize(gmx_trr_header_t *sh)
 {
     int nflsize = 0;
 
@@ -73,7 +73,7 @@ static int nFloatSize(t_trnheader *sh)
     }
     else
     {
-        gmx_file("Can not determine precision of trn file");
+        gmx_file("Can not determine precision of trr file");
     }
 
     if (((nflsize != sizeof(float)) && (nflsize != sizeof(double))))
@@ -84,7 +84,8 @@ static int nFloatSize(t_trnheader *sh)
     return nflsize;
 }
 
-static gmx_bool do_trnheader(t_fileio *fio, gmx_bool bRead, t_trnheader *sh, gmx_bool *bOK)
+static gmx_bool
+do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *bOK)
 {
     int             magic  = GROMACS_MAGIC;
     static gmx_bool bFirst = TRUE;
@@ -102,7 +103,7 @@ static gmx_bool do_trnheader(t_fileio *fio, gmx_bool bRead, t_trnheader *sh, gmx
         *bOK = *bOK && gmx_fio_do_string(fio, buf);
         if (bFirst)
         {
-            fprintf(stderr, "trn version: %s ", buf);
+            fprintf(stderr, "trr version: %s ", buf);
         }
     }
     else
@@ -143,8 +144,9 @@ static gmx_bool do_trnheader(t_fileio *fio, gmx_bool bRead, t_trnheader *sh, gmx
     return *bOK;
 }
 
-static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
-                        rvec *box, rvec *x, rvec *v, rvec *f)
+static gmx_bool
+do_trr_frame_data(t_fileio *fio, gmx_trr_header_t *sh,
+                  rvec *box, rvec *x, rvec *v, rvec *f)
 {
     matrix   pv;
     gmx_bool bOK;
@@ -178,11 +180,12 @@ static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
     return bOK;
 }
 
-static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *lambda,
-                       rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
+static gmx_bool
+do_trr_frame(t_fileio *fio, bool bRead, int *step, real *t, real *lambda,
+             rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
-    t_trnheader *sh;
-    gmx_bool     bOK;
+    gmx_trr_header_t *sh;
+    gmx_bool          bOK;
 
     snew(sh, 1);
     if (!bRead)
@@ -197,7 +200,7 @@ static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
         sh->t        = *t;
         sh->lambda   = *lambda;
     }
-    if (!do_trnheader(fio, bRead, sh, &bOK))
+    if (!do_trr_frame_header(fio, bRead, sh, &bOK))
     {
         return FALSE;
     }
@@ -209,22 +212,22 @@ static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
         *lambda = sh->lambda;
         if (sh->ir_size)
         {
-            gmx_file("inputrec in trn file");
+            gmx_file("inputrec in trr file");
         }
         if (sh->e_size)
         {
-            gmx_file("energies in trn file");
+            gmx_file("energies in trr file");
         }
         if (sh->top_size)
         {
-            gmx_file("topology in trn file");
+            gmx_file("topology in trr file");
         }
         if (sh->sym_size)
         {
-            gmx_file("symbol table in trn file");
+            gmx_file("symbol table in trr file");
         }
     }
-    bOK = do_htrn(fio, sh, box, x, v, f);
+    bOK = do_trr_frame_data(fio, sh, box, x, v, f);
 
     sfree(sh);
 
@@ -237,72 +240,66 @@ static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
  *
  ************************************************************/
 
-void read_trnheader(const char *fn, t_trnheader *trn)
+void gmx_trr_read_single_header(const char *fn, gmx_trr_header_t *header)
 {
-    t_fileio *fio;
+    t_fileio *fio = gmx_trr_open(fn, "r");
     gmx_bool  bOK;
-
-    fio = open_trn(fn, "r");
-    if (!do_trnheader(fio, TRUE, trn, &bOK))
+    if (!do_trr_frame_header(fio, true, header, &bOK))
     {
         gmx_fatal(FARGS, "Empty file %s", fn);
     }
-    close_trn(fio);
+    gmx_trr_close(fio);
 }
 
-gmx_bool fread_trnheader(t_fileio *fio, t_trnheader *trn, gmx_bool *bOK)
+gmx_bool gmx_trr_read_frame_header(t_fileio *fio, gmx_trr_header_t *header, gmx_bool *bOK)
 {
-    return do_trnheader(fio, TRUE, trn, bOK);
+    return do_trr_frame_header(fio, true, header, bOK);
 }
 
-void write_trn(const char *fn, int step, real t, real lambda,
-               rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
+void gmx_trr_write_single_frame(const char *fn, int step, real t, real lambda,
+                                rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
 {
-    t_fileio *fio;
-
-    fio = open_trn(fn, "w");
-    do_trn(fio, FALSE, &step, &t, &lambda, box, &natoms, x, v, f);
-    close_trn(fio);
+    t_fileio *fio = gmx_trr_open(fn, "w");
+    do_trr_frame(fio, false, &step, &t, &lambda, box, &natoms, x, v, f);
+    gmx_trr_close(fio);
 }
 
-void read_trn(const char *fn, int *step, real *t, real *lambda,
-              rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
+void gmx_trr_read_single_frame(const char *fn, int *step, real *t, real *lambda,
+                               rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
-    t_fileio *fio;
-
-    fio = open_trn(fn, "r");
-    (void) do_trn(fio, TRUE, step, t, lambda, box, natoms, x, v, f);
-    close_trn(fio);
+    t_fileio *fio = gmx_trr_open(fn, "r");
+    do_trr_frame(fio, true, step, t, lambda, box, natoms, x, v, f);
+    gmx_trr_close(fio);
 }
 
-void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
-                rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
+void gmx_trr_write_frame(t_fileio *fio, int step, real t, real lambda,
+                         rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
 {
-    if (do_trn(fio, FALSE, &step, &t, &lambda, box, &natoms, x, v, f) == FALSE)
+    if (!do_trr_frame(fio, false, &step, &t, &lambda, box, &natoms, x, v, f))
     {
         gmx_file("Cannot write trajectory frame; maybe you are out of disk space?");
     }
 }
 
 
-gmx_bool fread_trn(t_fileio *fio, int *step, real *t, real *lambda,
-                   rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
+gmx_bool gmx_trr_read_frame(t_fileio *fio, int *step, real *t, real *lambda,
+                            rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
-    return do_trn(fio, TRUE, step, t, lambda, box, natoms, x, v, f);
+    return do_trr_frame(fio, true, step, t, lambda, box, natoms, x, v, f);
 }
 
-gmx_bool fread_htrn(t_fileio *fio, t_trnheader *trn, rvec *box, rvec *x, rvec *v,
-                    rvec *f)
+gmx_bool gmx_trr_read_frame_data(t_fileio *fio, gmx_trr_header_t *header,
+                                 rvec *box, rvec *x, rvec *v, rvec *f)
 {
-    return do_htrn(fio, trn, box, x, v, f);
+    return do_trr_frame_data(fio, header, box, x, v, f);
 }
 
-t_fileio *open_trn(const char *fn, const char *mode)
+t_fileio *gmx_trr_open(const char *fn, const char *mode)
 {
     return gmx_fio_open(fn, mode);
 }
 
-void close_trn(t_fileio *fio)
+void gmx_trr_close(t_fileio *fio)
 {
     gmx_fio_close(fio);
 }

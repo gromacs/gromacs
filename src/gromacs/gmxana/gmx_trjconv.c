@@ -463,7 +463,7 @@ static void mk_filenm(char *base, const char *ext, int ndigit, int file_nr,
     strcat(out_file, ext);
 }
 
-void check_trn(const char *fn)
+void check_trr(const char *fn)
 {
     if (fn2ftp(fn) != efTRR)
     {
@@ -476,7 +476,7 @@ void do_trunc(const char *fn, real t0)
     t_fileio        *in;
     FILE            *fp;
     gmx_bool         bStop, bOK;
-    t_trnheader      sh;
+    gmx_trr_header_t sh;
     gmx_off_t        fpos;
     char             yesno[256];
     int              j;
@@ -488,23 +488,23 @@ void do_trunc(const char *fn, real t0)
     }
 
     /* Check whether this is a .trr file */
-    check_trn(fn);
+    check_trr(fn);
 
-    in   = open_trn(fn, "r");
+    in   = gmx_trr_open(fn, "r");
     fp   = gmx_fio_getfp(in);
     if (fp == NULL)
     {
         fprintf(stderr, "Sorry, can not trunc %s, truncation of this filetype is not supported\n", fn);
-        close_trn(in);
+        gmx_trr_close(in);
     }
     else
     {
         j     = 0;
         fpos  = gmx_fio_ftell(in);
         bStop = FALSE;
-        while (!bStop && fread_trnheader(in, &sh, &bOK))
+        while (!bStop && gmx_trr_read_frame_header(in, &sh, &bOK))
         {
-            fread_htrn(in, &sh, NULL, NULL, NULL, NULL);
+            gmx_trr_read_frame_data(in, &sh, NULL, NULL, NULL, NULL);
             fpos = gmx_ftell(fp);
             t    = sh.t;
             if (t >= t0)
@@ -525,7 +525,7 @@ void do_trunc(const char *fn, real t0)
             if (strcmp(yesno, "YES") == 0)
             {
                 fprintf(stderr, "Once again, I'm gonna DO this...\n");
-                close_trn(in);
+                gmx_trr_close(in);
                 if (0 != gmx_truncate(fn, fpos))
                 {
                     gmx_fatal(FARGS, "Error truncating file %s", fn);
@@ -539,7 +539,7 @@ void do_trunc(const char *fn, real t0)
         else
         {
             fprintf(stderr, "Already at end of file (t=%g)...\n", t);
-            close_trn(in);
+            gmx_trr_close(in);
         }
     }
 }

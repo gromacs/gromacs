@@ -125,7 +125,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             {
                 case efTRR:
                 case efTRN:
-                    of->fp_trn = open_trn(filename, filemode);
+                    of->fp_trn = gmx_trr_open(filename, filemode);
                     break;
                 case efTNG:
                     gmx_tng_open(filename, filemode[0], &of->tng);
@@ -315,11 +315,11 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
         {
             if (of->fp_trn)
             {
-                fwrite_trn(of->fp_trn, step, t, state_local->lambda[efptFEP],
-                           state_local->box, top_global->natoms,
-                           (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                           (mdof_flags & MDOF_V) ? global_v : NULL,
-                           (mdof_flags & MDOF_F) ? f_global : NULL);
+                gmx_trr_write_frame(of->fp_trn, step, t, state_local->lambda[efptFEP],
+                                    state_local->box, top_global->natoms,
+                                    (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                                    (mdof_flags & MDOF_V) ? global_v : NULL,
+                                    (mdof_flags & MDOF_F) ? f_global : NULL);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
                     gmx_file("Cannot write trajectory; maybe you are out of disk space?");
@@ -405,7 +405,7 @@ void done_mdoutf(gmx_mdoutf_t of)
     }
     if (of->fp_trn)
     {
-        close_trn(of->fp_trn);
+        gmx_trr_close(of->fp_trn);
     }
     if (of->fp_dhdl != NULL)
     {
