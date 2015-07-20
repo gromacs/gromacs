@@ -47,6 +47,8 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
+
 #include <assert.h>
 
 #include <algorithm>
@@ -154,8 +156,7 @@ reduce_thread_forces(int n, rvec *f,
      * which means that threads mostly reduce their own data which increases
      * the number of cache hits.
      */
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int b = 0; b < bt->nblock_used; b++)
+    tbb::parallel_for(0, bt->nblock_used, [&](int b)
     {
         try
         {
@@ -188,7 +189,7 @@ reduce_thread_forces(int n, rvec *f,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
 }
 
 /*! \brief Reduce thread-local forces, shift forces and energies */
@@ -487,8 +488,7 @@ void calc_listed(const struct gmx_multisim_t *ms,
     }
 
     wallcycle_sub_start(wcycle, ewcsLISTED);
-#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
-    for (thread = 0; thread < bt->nthreads; thread++)
+    tbb::parallel_for(0, bt->nthreads, [&](int thread)
     {
         try
         {
@@ -533,7 +533,7 @@ void calc_listed(const struct gmx_multisim_t *ms,
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    }
+    });
     wallcycle_sub_stop(wcycle, ewcsLISTED);
 
     wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);

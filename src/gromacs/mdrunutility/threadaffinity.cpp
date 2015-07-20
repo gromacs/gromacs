@@ -192,7 +192,7 @@ get_thread_affinity_layout(FILE *fplog,
     return 0;
 }
 
-/* Set CPU affinity. Can be important for performance.
+/* Set CPU affinity for OpenMP. Can be important for performance.
    On some systems (e.g. Cray) CPU Affinity is set by default.
    But default assigning doesn't work (well) with only some ranks
    having threads. This causes very low performance.
@@ -202,10 +202,10 @@ get_thread_affinity_layout(FILE *fplog,
    if only PME is using threads.
  */
 void
-gmx_set_thread_affinity(FILE                *fplog,
-                        const t_commrec     *cr,
-                        const gmx_hw_opt_t  *hw_opt,
-                        const gmx_hw_info_t *hwinfo)
+gmx_set_openmp_thread_affinity(FILE                *fplog,
+                               const t_commrec     *cr,
+                               const gmx_hw_opt_t  *hw_opt,
+                               const gmx_hw_info_t *hwinfo)
 {
     int        nth_affinity_set, thread0_id_node,
                nthread_local, nthread_node;
@@ -390,6 +390,185 @@ gmx_set_thread_affinity(FILE                *fplog,
         }
     }
     return;
+}
+
+/* Set CPU affinity for current thread only. Can be important for performance.
+   On some systems (e.g. Cray) CPU Affinity is set by default.
+   But default assigning doesn't work (well) with only some ranks
+   having threads. This causes very low performance.
+   External tools have cumbersome syntax for setting affinity
+   in the case that only some ranks have threads.
+   Thus it is important that GROMACS sets the affinity internally
+   if only PME is using threads.
+ */
+static void
+gmx_set_tbb_thread_affinity(FILE                *fplog,
+                            const t_commrec     *cr,
+                            const gmx_hw_opt_t  *hw_opt,
+                            const gmx_hw_info_t *hwinfo)
+{
+    int        nth_affinity_set, thread0_id_node,
+               nthread_local, nthread_node;
+    int        offset;
+    int *      localityOrder = nullptr;
+    int        rc;
+
+    if (hw_opt->thread_affinity == threadaffOFF)
+    {
+        /* Nothing to do */
+        return;
+    }
+
+    /* If the tMPI thread affinity setting is not supported encourage the user
+     * to report it as it's either a bug or an exotic platform which we might
+     * want to support. */
+    if (tMPI_Thread_setaffinity_support() != TMPI_SETAFFINITY_SUPPORT_YES)
+    {
+        /* we know Mac OS & BlueGene do not support setting thread affinity, so there's
+           no point in warning the user in that case. In any other case
+           the user might be able to do something about it. */
+#if !defined(__APPLE__) && !defined(__bg__)
+        md_print_warn(NULL, fplog,
+                      "NOTE: Cannot set thread affinities on the current platform.");
+#endif  /* __APPLE__ */
+        return;
+    }
+
+    /* threads on this MPI process or TMPI thread */
+    if (cr->duty & DUTY_PP)
+    {
+        nthread_local = gmx_omp_nthreads_get(emntNonbonded);
+    }
+    else
+    {
+        nthread_local = gmx_omp_nthreads_get(emntPME);
+    }
+
+    /* map the current process to cores */
+    thread0_id_node = 0;
+    nthread_node    = nthread_local;
+#if GMX_MPI
+    if (PAR(cr) || MULTISIM(cr))
+    {
+        /* We need to determine a scan of the thread counts in this
+         * compute node.
+         */
+        MPI_Comm comm_intra;
+
+        MPI_Comm_split(MPI_COMM_WORLD,
+                       gmx_physicalnode_id_hash(), cr->rank_intranode,
+                       &comm_intra);
+        MPI_Scan(&nthread_local, &thread0_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
+        /* MPI_Scan is inclusive, but here we need exclusive */
+        thread0_id_node -= nthread_local;
+        /* Get the total number of threads on this physical node */
+        MPI_Allreduce(&nthread_local, &nthread_node, 1, MPI_INT, MPI_SUM, comm_intra);
+        MPI_Comm_free(&comm_intra);
+    }
+#endif
+
+    if (hw_opt->thread_affinity == threadaffAUTO &&
+        nthread_node != hwinfo->nthreads_hw_avail)
+    {
+        if (nthread_node > 1 && nthread_node < hwinfo->nthreads_hw_avail)
+        {
+            md_print_warn(cr, fplog,
+                          "NOTE: The number of threads is not equal to the number of (logical) cores\n"
+                          "      and the -pin option is set to auto: will not pin thread to cores.\n"
+                          "      This can lead to significant performance degradation.\n"
+                          "      Consider using -pin on (and -pinoffset in case you run multiple jobs).\n");
+        }
+
+        return;
+    }
+
+    // TODO: Assumes that each thread calls function only once.
+    // It would be good to assert this is true at least.
+    static tbb::atomic<int> thread_id_counter = 0;
+    int thread_id = thread_id_counter.fetch_and_add(1);
+
+    offset = 0;
+    if (hw_opt->core_pinning_offset != 0)
+    {
+        offset = hw_opt->core_pinning_offset;
+        if (thread_id == 0)
+        {
+            md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
+        }
+    }
+
+    int core_pinning_stride = hw_opt->core_pinning_stride;
+    rc = get_thread_affinity_layout(fplog, cr, hwinfo,
+                                    nthread_node,
+                                    offset, &core_pinning_stride,
+                                    &localityOrder);
+    gmx::scoped_guard_sfree localityOrderGuard(localityOrder);
+
+    if (rc != 0)
+    {
+        /* Incompatible layout, don't pin, warning was already issued */
+        return;
+    }
+
+    int thread_id_node = thread0_id_node + thread_id;
+    int index = offset + thread_id_node*core_pinning_stride;
+    int core;
+
+    if (localityOrder != nullptr)
+    {
+        core = localityOrder[index];
+    }
+    else
+    {
+        core = index;
+    }
+
+    int setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+    if (setaffinity_ret != 0)
+    {
+        md_print_warn(cr, fplog, "Setting affinity for thread %d failed\n", thread_id);
+    }
+
+    if (debug)
+    {
+        fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
+                cr->nodeid, thread_id, index, core, setaffinity_ret);
+    }
+}
+
+// TBB callback infrastructure for setting individual thread affinities
+// Calls gmx_set_tbb_thread_affinity to actually set affinity value
+class affinity_observer: public tbb::task_scheduler_observer {
+    FILE *fplog;
+    const t_commrec *cr;
+    gmx_hw_opt_t *hw_opt;
+    const gmx_hw_info_t *hwinfo;
+
+public:
+    affinity_observer(FILE                *f,
+                      const t_commrec     *c,
+                      gmx_hw_opt_t        *opt,
+                      const gmx_hw_info_t *info)
+    : fplog(f), cr(c), hw_opt(opt), hwinfo(info) {}
+
+    void on_scheduler_entry( bool )
+    {
+         gmx_set_tbb_thread_affinity(fplog, cr, hw_opt, hwinfo);
+    }
+};
+
+static affinity_observer *tbb_affinity_observer;
+
+void
+gmx_init_tbb_threads(tbb::task_scheduler_init &scheduler,
+                          FILE *fplog,
+                          const t_commrec     *cr,
+                          gmx_hw_opt_t        *hw_opt,
+                          const gmx_hw_info_t *hwinfo)
+{
+    scheduler.initialize(gmx_omp_nthreads_get(emntNonbonded));
+    tbb_affinity_observer = new affinity_observer(fplog, cr, hw_opt, hwinfo);
+    tbb_affinity_observer->observe(1);
 }
 
 /* Check the process affinity mask and if it is found to be non-zero,
