@@ -38,6 +38,7 @@
 
 #include "config.h"
 
+#include <tbb/tbb.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -175,7 +176,7 @@ get_thread_affinity_layout(FILE *fplog,
     return 0;
 }
 
-/* Set CPU affinity. Can be important for performance.
+/* Set CPU affinity for current thread only. Can be important for performance.
    On some systems (e.g. Cray) CPU Affinity is set by default.
    But default assigning doesn't work (well) with only some ranks
    having threads. This causes very low performance.
@@ -184,7 +185,7 @@ get_thread_affinity_layout(FILE *fplog,
    Thus it is important that GROMACS sets the affinity internally
    if only PME is using threads.
  */
-void
+static void
 gmx_set_thread_affinity(FILE                *fplog,
                         const t_commrec     *cr,
                         gmx_hw_opt_t        *hw_opt,
@@ -267,11 +268,19 @@ gmx_set_thread_affinity(FILE                *fplog,
         return;
     }
 
+    // TODO: Assumes that each thread calls function only once.
+    // It would be good to assert this is true at least.
+    static int thread_id = -1;
+    thread_id++;
+
     offset = 0;
     if (hw_opt->core_pinning_offset != 0)
     {
         offset = hw_opt->core_pinning_offset;
-        md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
+        if (thread_id == 0)
+        {
+            md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
+        }
     }
 
     rc = get_thread_affinity_layout(fplog, cr, hwinfo,
@@ -285,87 +294,65 @@ gmx_set_thread_affinity(FILE                *fplog,
         return;
     }
 
-    /* Set the per-thread affinity. In order to be able to check the success
-     * of affinity settings, we will set nth_affinity_set to 1 on threads
-     * where the affinity setting succeded and to 0 where it failed.
-     * Reducing these 0/1 values over the threads will give the total number
-     * of threads on which we succeeded.
-     */
-    nth_affinity_set = 0;
-#pragma omp parallel num_threads(nthread_local) reduction(+:nth_affinity_set)
+    int thread_id_node = thread0_id_node + thread_id;
+    int index = offset + thread_id_node*hw_opt->core_pinning_stride;
+    int core;
+
+    if (locality_order != NULL)
     {
-        int      thread_id, thread_id_node;
-        int      index, core;
-        gmx_bool setaffinity_ret;
-
-        thread_id      = gmx_omp_get_thread_num();
-        thread_id_node = thread0_id_node + thread_id;
-        index          = offset + thread_id_node*hw_opt->core_pinning_stride;
-        if (locality_order != NULL)
-        {
-            core = locality_order[index];
-        }
-        else
-        {
-            core = index;
-        }
-
-        setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
-
-        /* store the per-thread success-values of the setaffinity */
-        nth_affinity_set = (setaffinity_ret == 0);
-
-        if (debug)
-        {
-            fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
-                    cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
-        }
-    }
-
-    if (nth_affinity_set > nthread_local)
-    {
-        char msg[STRLEN];
-
-        sprintf(msg, "Looks like we have set affinity for more threads than "
-                "we have (%d > %d)!\n", nth_affinity_set, nthread_local);
-        gmx_incons(msg);
+        core = locality_order[index];
     }
     else
     {
-        /* check & warn if some threads failed to set their affinities */
-        if (nth_affinity_set != nthread_local)
-        {
-            char sbuf1[STRLEN], sbuf2[STRLEN];
-
-            /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
-            sbuf1[0] = sbuf2[0] = '\0';
-            /* Only add rank info if we have more than one rank. */
-            if (cr->nnodes > 1)
-            {
-#ifdef GMX_MPI
-#ifdef GMX_THREAD_MPI
-                sprintf(sbuf1, "In tMPI thread #%d: ", cr->nodeid);
-#else           /* GMX_LIB_MPI */
-                sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
-#endif
-#endif          /* GMX_MPI */
-            }
-
-            if (nthread_local > 1)
-            {
-                sprintf(sbuf2, "for %d/%d thread%s ",
-                        nthread_local - nth_affinity_set, nthread_local,
-                        nthread_local > 1 ? "s" : "");
-            }
-
-            md_print_warn(NULL, fplog,
-                          "WARNING: %sAffinity setting %sfailed.\n"
-                          "         This can cause performance degradation! If you think your setting are\n"
-                          "         correct, contact the GROMACS developers.",
-                          sbuf1, sbuf2);
-        }
+        core = index;
     }
-    return;
+
+    int setaffinity_return = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+    if (setaffinity_return != 0)
+    {
+        md_print_warn(cr, fplog, "%s", "Setting affinity for thread %d failed\n", thread_id);
+    }
+
+    if (debug)
+    {
+        fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
+                cr->nodeid, thread_id, index, core, setaffinity_return);
+    }
+}
+
+// TBB callback infrastructure for setting individual thread affinities
+// Calls gmx_set_thread_affinity to actually set affinity value
+class affinity_observer: public tbb::task_scheduler_observer {
+    FILE *fplog;
+    const t_commrec *cr;
+    gmx_hw_opt_t *hw_opt;
+    const gmx_hw_info_t *hwinfo;
+
+public:
+    affinity_observer(FILE                *f,
+                      const t_commrec     *c,
+                      gmx_hw_opt_t        *opt,
+                      const gmx_hw_info_t *info)
+    : fplog(f), cr(c), hw_opt(opt), hwinfo(info) {}
+
+    void on_scheduler_entry( bool )
+    {
+         gmx_set_thread_affinity(fplog, cr, hw_opt, hwinfo);
+    }
+};
+
+static affinity_observer *tbb_affinity_observer;
+
+void
+gmx_init_tbb_threads(tbb::task_scheduler_init &scheduler,
+                          FILE *fplog,
+                          const t_commrec     *cr,
+                          gmx_hw_opt_t        *hw_opt,
+                          const gmx_hw_info_t *hwinfo)
+{
+    scheduler.initialize(gmx_omp_nthreads_get(emntNonbonded));
+    tbb_affinity_observer = new affinity_observer(fplog, cr, hw_opt, hwinfo);
+    tbb_affinity_observer->observe(1);
 }
 
 /* Check the process affinity mask and if it is found to be non-zero,
