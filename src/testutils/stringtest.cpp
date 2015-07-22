@@ -140,5 +140,18 @@ StringTestBase::checkFileContents(const std::string &filename, const char *id)
     checkText(text, id);
 }
 
+void
+StringTestBase::testFilesEqual(const std::string &refFilename,
+                               const std::string &testFilename)
+{
+    const std::string expectedContents = TextReader::readFileToString(refFilename);
+    const std::string contents         = TextReader::readFileToString(testFilename);
+    if (g_bWriteToStdOut)
+    {
+        printf("%s[END]\n", contents.c_str());
+    }
+    EXPECT_EQ(expectedContents, contents);
+}
+
 } // namespace test
 } // namespace gmx
