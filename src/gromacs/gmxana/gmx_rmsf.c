@@ -41,7 +41,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
@@ -225,7 +224,6 @@ int gmx_rmsf(int argc, char *argv[])
     int              step, nre, natoms, i, g, m, teller = 0;
     real             t, lambda, *w_rls, *w_rms;
 
-    t_tpxheader      header;
     t_inputrec       ir;
     t_topology       top;
     int              ePBC;

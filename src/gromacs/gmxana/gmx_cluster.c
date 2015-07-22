@@ -41,8 +41,8 @@
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"

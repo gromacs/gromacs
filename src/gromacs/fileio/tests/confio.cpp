@@ -50,7 +50,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"

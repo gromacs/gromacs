@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@ extern "C" {
 
 struct gmx_mtop_t;
 struct t_atoms;
+struct t_topology;
 
 int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line);
 /* read a Gromos96 coordinate or trajectory file,                       *
@@ -105,6 +106,15 @@ void read_stx_conf(const char *infile, char *title,
                    rvec x[], rvec *v, int *ePBC, matrix box);
 /* Read atoms, x, v and box from an STX file.
  * If ePBC!=NULL return the type of pbc in *ePBC or -1 if unknown.
+ */
+
+gmx_bool read_tps_conf(const char *infile, char *title, struct t_topology *top,
+                       int *ePBC, rvec **x, rvec **v, matrix box, gmx_bool bMass);
+/* Read title, top.atoms, x, v (if not NULL) and box from an STX file,
+ * memory for atoms, x and v will be allocated.
+ * Return TRUE if a complete topology was read.
+ * If infile is a TPX file read the whole top,
+ * else if bMass=TRUE, read the masses into top.atoms from the mass database.
  */
 
 #ifdef __cplusplus

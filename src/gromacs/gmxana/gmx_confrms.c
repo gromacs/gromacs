@@ -43,7 +43,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
