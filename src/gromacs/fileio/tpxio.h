@@ -123,17 +123,6 @@ int read_tpx_top(const char *fn,
 gmx_bool fn2bTPX(const char *file);
 /* return if *file is one of the TPX file types */
 
-gmx_bool read_tps_conf(const char *infile, char *title, struct t_topology *top,
-                       int *ePBC, rvec **x, rvec **v, matrix box, gmx_bool bMass);
-/* Read title, top.atoms, x, v (if not NULL) and box from an STX file,
- * memory for atoms, x and v will be allocated.
- * Return TRUE if a complete topology was read.
- * If infile is a TPX file read the whole top,
- * else if bMass=TRUE, read the masses into top.atoms from the mass database.
- */
-
-void tpx_make_chain_identifiers(struct t_atoms *atoms, struct t_block *mols);
-
 #ifdef __cplusplus
 }
 #endif

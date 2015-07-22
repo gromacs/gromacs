@@ -38,7 +38,6 @@
 
 #include "eigio.h"
 
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"

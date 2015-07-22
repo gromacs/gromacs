@@ -58,6 +58,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
@@ -1632,6 +1633,50 @@ void get_stx_coordnum(const char *infile, int *natoms)
     }
 }
 
+static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
+{
+    int  m, a, a0, a1, r;
+    char c, chainid;
+    int  chainnum;
+
+    /* We always assign a new chain number, but save the chain id characters
+     * for larger molecules.
+     */
+#define CHAIN_MIN_ATOMS 15
+
+    chainnum = 0;
+    chainid  = 'A';
+    for (m = 0; m < mols->nr; m++)
+    {
+        a0 = mols->index[m];
+        a1 = mols->index[m+1];
+        if ((a1-a0 >= CHAIN_MIN_ATOMS) && (chainid <= 'Z'))
+        {
+            c = chainid;
+            chainid++;
+        }
+        else
+        {
+            c = ' ';
+        }
+        for (a = a0; a < a1; a++)
+        {
+            atoms->resinfo[atoms->atom[a].resind].chainnum = chainnum;
+            atoms->resinfo[atoms->atom[a].resind].chainid  = c;
+        }
+        chainnum++;
+    }
+
+    /* Blank out the chain id if there was only one chain */
+    if (chainid == 'B')
+    {
+        for (r = 0; r < atoms->nres; r++)
+        {
+            atoms->resinfo[r].chainid = ' ';
+        }
+    }
+}
+
 void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
                    rvec x[], rvec *v, int *ePBC, matrix box)
 {
@@ -1712,4 +1757,104 @@ void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
         default:
             gmx_incons("Not supported in read_stx_conf");
     }
+}
+
+static void done_gmx_groups_t(gmx_groups_t *g)
+{
+    int i;
+
+    for (i = 0; (i < egcNR); i++)
+    {
+        if (NULL != g->grps[i].nm_ind)
+        {
+            sfree(g->grps[i].nm_ind);
+            g->grps[i].nm_ind = NULL;
+        }
+        if (NULL != g->grpnr[i])
+        {
+            sfree(g->grpnr[i]);
+            g->grpnr[i] = NULL;
+        }
+    }
+    /* The contents of this array is in symtab, don't free it here */
+    sfree(g->grpname);
+}
+
+gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *ePBC,
+                       rvec **x, rvec **v, matrix box, gmx_bool bMass)
+{
+    t_tpxheader      header;
+    int              natoms, i, version, generation;
+    gmx_bool         bTop, bXNULL = FALSE;
+    gmx_mtop_t      *mtop;
+    gmx_atomprop_t   aps;
+
+    bTop  = fn2bTPX(infile);
+    *ePBC = -1;
+    if (bTop)
+    {
+        read_tpxheader(infile, &header, TRUE, &version, &generation);
+        if (x)
+        {
+            snew(*x, header.natoms);
+        }
+        if (v)
+        {
+            snew(*v, header.natoms);
+        }
+        snew(mtop, 1);
+        *ePBC = read_tpx(infile, NULL, box, &natoms,
+                         (x == NULL) ? NULL : *x, (v == NULL) ? NULL : *v, NULL, mtop);
+        *top = gmx_mtop_t_to_t_topology(mtop);
+        /* In this case we need to throw away the group data too */
+        done_gmx_groups_t(&mtop->groups);
+        sfree(mtop);
+        std::strcpy(title, *top->name);
+        tpx_make_chain_identifiers(&top->atoms, &top->mols);
+    }
+    else
+    {
+        get_stx_coordnum(infile, &natoms);
+        init_t_atoms(&top->atoms, natoms, (fn2ftp(infile) == efPDB));
+        if (x == NULL)
+        {
+            snew(x, 1);
+            bXNULL = TRUE;
+        }
+        snew(*x, natoms);
+        if (v)
+        {
+            snew(*v, natoms);
+        }
+        read_stx_conf(infile, title, &top->atoms, *x, (v == NULL) ? NULL : *v, ePBC, box);
+        if (bXNULL)
+        {
+            sfree(*x);
+            sfree(x);
+        }
+        if (bMass)
+        {
+            aps = gmx_atomprop_init();
+            for (i = 0; (i < natoms); i++)
+            {
+                if (!gmx_atomprop_query(aps, epropMass,
+                                        *top->atoms.resinfo[top->atoms.atom[i].resind].name,
+                                        *top->atoms.atomname[i],
+                                        &(top->atoms.atom[i].m)))
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, "Can not find mass for atom %s %d %s, setting to 1\n",
+                                *top->atoms.resinfo[top->atoms.atom[i].resind].name,
+                                top->atoms.resinfo[top->atoms.atom[i].resind].nr,
+                                *top->atoms.atomname[i]);
+                    }
+                }
+            }
+            gmx_atomprop_destroy(aps);
+        }
+        top->idef.ntypes = -1;
+    }
+
+    return bTop;
 }
