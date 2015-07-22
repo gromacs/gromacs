@@ -47,7 +47,7 @@ extern "C" {
 
 struct t_trxframe;
 
-int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line);
+int read_g96_conf(FILE *fp, const char *infile, struct t_trxframe *fr, char *line);
 /* read a Gromos96 coordinate or trajectory file,                       *
  * returns the number of atoms                                          *
  * sets what's in the frame in info                                     *
@@ -57,7 +57,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line);
  * title, atoms, x, v can all be NULL, in which case they won't be read *
  * line holds the previous line for trajectory reading                  */
 
-void write_g96_conf(FILE *out, t_trxframe *fr, int nindex, const atom_id *index);
+void write_g96_conf(FILE *out, struct t_trxframe *fr, int nindex, const atom_id *index);
 /* write a Gromos96 coordinate file or trajectory frame *
  * index can be NULL                                    */
 

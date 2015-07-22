@@ -44,6 +44,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/groio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
