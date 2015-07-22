@@ -34,16 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_FILEIO_CONFIO_H
-#define GMX_FILEIO_CONFIO_H
+#ifndef GMX_FILEIO_GROIO_H
+#define GMX_FILEIO_GROIO_H
 
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
 
-/* For reading coordinate files it is assumed that enough memory
- * has been allocated beforehand.
- */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,42 +48,31 @@ extern "C" {
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_topology;
+struct t_trxframe;
 
-void write_sto_conf_indexed(const char *outfile, const char *title,
-                            struct t_atoms *atoms,
-                            rvec x[], rvec *v, int ePBC, matrix box,
-                            atom_id nindex, atom_id index[]);
-/* like write_sto_conf, but indexed */
+void get_coordnum(const char *infile, int *natoms);
+void read_whole_conf(const char *infile, char *title,
+                     struct t_atoms *atoms, rvec x[], rvec *v, matrix box);
 
-void write_sto_conf(const char *outfile, const char *title,
-                    struct t_atoms *atoms,
-                    rvec x[], rvec *v, int ePBC, matrix box);
-/* write atoms, x, v (if .gro and not NULL) and box (if not NULL)
- * to an STO (.gro or .pdb) file */
+gmx_bool gro_next_x_or_v(FILE *status, struct t_trxframe *fr);
+int gro_first_x_or_v(FILE *status, struct t_trxframe *fr);
+/* read first/next x and/or v frame from gro file */
 
-void write_sto_conf_mtop(const char *outfile, const char *title,
-                         struct gmx_mtop_t *mtop,
-                         rvec x[], rvec *v, int ePBC, matrix box);
-/* As write_sto_conf, but uses a gmx_mtop_t struct */
+void write_hconf_indexed_p(FILE *out, const char *title, struct t_atoms *atoms,
+                           int nx, const atom_id index[], int ndec,
+                           rvec *x, rvec *v, matrix box);
 
-void get_stx_coordnum (const char *infile, int *natoms);
-/* read the number of atoms from an STX file */
+void write_hconf_mtop(FILE *out, const char *title, struct gmx_mtop_t *mtop, int pr,
+                      rvec *x, rvec *v, matrix box);
 
-void read_stx_conf(const char *infile, char *title,
-                   struct t_atoms *atoms,
-                   rvec x[], rvec *v, int *ePBC, matrix box);
-/* Read atoms, x, v and box from an STX file.
- * If ePBC!=NULL return the type of pbc in *ePBC or -1 if unknown.
- */
+void write_hconf_p(FILE *out, const char *title, struct t_atoms *atoms, int ndec,
+                   rvec *x, rvec *v, matrix box);
+/* Write a Gromos file with precision ndec: number of decimal places in x,
+ * v has one place more. */
 
-gmx_bool read_tps_conf(const char *infile, char *title, struct t_topology *top,
-                       int *ePBC, rvec **x, rvec **v, matrix box, gmx_bool bMass);
-/* Read title, top.atoms, x, v (if not NULL) and box from an STX file,
- * memory for atoms, x and v will be allocated.
- * Return TRUE if a complete topology was read.
- * If infile is a TPX file read the whole top,
- * else if bMass=TRUE, read the masses into top.atoms from the mass database.
- */
+void write_conf_p(const char *outfile, const char *title,
+                  struct t_atoms *atoms, int pr,
+                  rvec *x, rvec *v, matrix box);
 
 #ifdef __cplusplus
 }
