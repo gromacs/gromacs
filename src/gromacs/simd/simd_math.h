@@ -61,6 +61,7 @@
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/real.h"
 
 /*! \cond libapi */
 /*! \addtogroup module_simd */
