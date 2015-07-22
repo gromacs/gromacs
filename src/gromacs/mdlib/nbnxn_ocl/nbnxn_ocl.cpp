@@ -470,6 +470,13 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
             cl_error = clEnqueueMarker(stream, &(nb->misc_ops_and_local_H2D_done));
 #endif
             assert(CL_SUCCESS == cl_error);
+
+            /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
+             * in the local stream in order to be able to sync with the above event
+             * from the non-local stream.
+             */
+            cl_error = clFlush(stream);
+            assert(CL_SUCCESS == cl_error);
         }
         else
         {
@@ -948,6 +955,10 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     /* DtoH f */
     ocl_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f, adat_begin*3*sizeof(float),
                        (adat_len)* adat->f_elem_size, stream, bDoTime ? &(t->nb_d2h_f[iloc]) : NULL);
+
+    /* kick off work */
+    cl_error = clFlush(stream);
+    assert(CL_SUCCESS == cl_error);
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
