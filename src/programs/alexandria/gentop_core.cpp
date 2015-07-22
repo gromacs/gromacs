@@ -314,7 +314,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                         gmx_atomprop_t aps, const char *symm_string,
                         std::vector<int> &sym_charges)
 {
-    char  *central, *attached;
+  std::string  central, attached;
     int    nattached, nh, ai, aj, anri, anrj;
     int    anr_central, anr_attached, nrq;
     int    hs[8];
@@ -351,8 +351,8 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
             while (pd->getSymcharges(&central,
                                               &attached, &nattached) == 1)
             {
-                anr_central  = gmx_atomprop_atomnumber(aps, central);
-                anr_attached = gmx_atomprop_atomnumber(aps, attached);
+	      anr_central  = gmx_atomprop_atomnumber(aps, central.c_str());
+                anr_attached = gmx_atomprop_atomnumber(aps, attached.c_str());
                 hsmin        = -1;
                 for (int i = 0; (i < atoms->nr); i++)
                 {

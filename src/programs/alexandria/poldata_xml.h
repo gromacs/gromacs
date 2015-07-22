@@ -33,30 +33,30 @@
 namespace alexandria
 {
   //using namespace alexandria;
-/* This source code file is part of the Alexandria project */
-class PoldataXml
-{
- public:
+  /* This source code file is part of the Alexandria project */
+  class PoldataXml
+  {
+  public:
 
-  PoldataXml(){}
+    PoldataXml(){}
 
-static void write(const char *fn, Poldata * pd,
-                              gmx_bool bCompress);
+    static void write(const std::string fn, Poldata * pd,
+		      gmx_bool bCompress);
 
-static Poldata * read(const char *fn, gmx_atomprop_t aps);
+    static Poldata * read(std::string fn, gmx_atomprop_t aps);
 
- private:
-static void sp(int n, char buf[], int maxindent);
+  private:
+    static void sp(int n, char buf[], int maxindent);
 
-static void process_attr(FILE *fp, xmlAttrPtr attr, int elem,
-		  int indent, Poldata  * pd);
+    static void process_attr(FILE *fp, xmlAttrPtr attr, int elem,
+			     int indent, Poldata  * pd);
 
-static void process_tree(FILE *fp, xmlNodePtr tree, int indent,
-		  Poldata * pd, gmx_atomprop_t aps);
+    static void process_tree(FILE *fp, xmlNodePtr tree, int indent,
+			     Poldata * pd, gmx_atomprop_t aps);
 
-static void add_xml_poldata(xmlNodePtr parent, Poldata * pd);
+    static void add_xml_poldata(xmlNodePtr parent, Poldata * pd);
 
 
-};
+  };
 }
 #endif

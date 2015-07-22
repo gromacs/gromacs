@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="polarUnit">A3</String>
+  <String Name="polarRef">Maaren2014a</String>
+  <String Name="forceFiled">GAFF</String>
+  <String Name="lenghtUnit">pm</String>
+</ReferenceData>

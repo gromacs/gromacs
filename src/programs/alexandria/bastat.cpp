@@ -606,7 +606,7 @@ int alex_bastat(int argc, char *argv[])
 #define BTP(ii) pd->atypeToBtype( *mmi.topology_->atoms.atomtype[ii])
             for (i = 0; (i < mmi.topology_->atoms.nr); i++)
             {
-                if (NULL == BTP(i))
+	      if (0 == BTP(i).size())
                 {
                     if (NULL != debug)
                     {
@@ -625,9 +625,9 @@ int alex_bastat(int argc, char *argv[])
                 int         ai = mmi.ltop_->idef.il[ftb].iatoms[j+1];
                 int         aj = mmi.ltop_->idef.il[ftb].iatoms[j+2];
                 rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
-                const char *cai = BTP(ai);
-                const char *caj = BTP(aj);
-                if ((NULL != cai) && (NULL != caj))
+		std::string cai = BTP(ai);
+		std::string caj = BTP(aj);
+                if ((0 != cai.size()) && (0 != caj.size()))
                 {
                     for (alexandria::BondIterator bi = mmi.BeginBond(); (bi < mmi.EndBond()); bi++)
                     {
@@ -639,7 +639,7 @@ int alex_bastat(int argc, char *argv[])
                         }
                         if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
                         {
-                            add_bond(fp, mmi.getMolname().c_str(), b, cai, caj, 1000*norm(dx),
+                            add_bond(fp, mmi.getMolname().c_str(), b, cai.c_str(), caj.c_str(), 1000*norm(dx),
                                      bspacing, xb);
                             break;
                         }
@@ -648,7 +648,7 @@ int alex_bastat(int argc, char *argv[])
                 else
                 {
                     fprintf(stderr, "No bond_atom type for either %s or %s\n",
-                            BTP(ai), BTP(aj));
+                            BTP(ai).c_str(), BTP(aj).c_str());
                 }
             }
             for (int j = 0; (j < mmi.ltop_->idef.il[fta].nr); j += interaction_function[fta].nratoms+1)
@@ -659,17 +659,17 @@ int alex_bastat(int argc, char *argv[])
                 rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
                 rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
                 double      ang = RAD2DEG*gmx_angle(dx, dx2);
-                const char *cai = BTP(ai);
-                const char *caj = BTP(aj);
-                const char *cak = BTP(ak);
-                if ((NULL != cai) && (NULL != caj) && (NULL != cak))
+		std::string cai = BTP(ai);
+		std::string caj = BTP(aj);
+		std::string cak = BTP(ak);
+                if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()))
                 {
-                    add_angle(fp, mmi.getMolname().c_str(), b, cai, caj, cak, ang, aspacing);
+                    add_angle(fp, mmi.getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
                 }
                 else
                 {
                     fprintf(stderr, "No bond_atom type for either %s, %s or %s\n",
-                            BTP(ai), BTP(aj), BTP(ak));
+                            BTP(ai).c_str(), BTP(aj).c_str(), BTP(ak).c_str());
                 }
             }
             clear_mat(box);
@@ -685,18 +685,18 @@ int alex_bastat(int argc, char *argv[])
                                                mmi.x_[ak], mmi.x_[al],
                                                &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
                                                &sign, &t1, &t2, &t3);
-                const char *cai = BTP(ai);
-                const char *caj = BTP(aj);
-                const char *cak = BTP(ak);
-                const char *cal = BTP(al);
-                if ((NULL != cai) && (NULL != caj) && (NULL != cak) && (NULL != cal))
+		std::string cai = BTP(ai);
+		std::string caj = BTP(aj);
+		std::string cak = BTP(ak);
+		std::string cal = BTP(al);
+                if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()) && (0 != cal.size()))
                 {
-                    add_dih(fp, mmi.getMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdPDIHS);
+                    add_dih(fp, mmi.getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdPDIHS);
                 }
                 else
                 {
                     fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
-                            BTP(ai), BTP(aj), BTP(ak), BTP(al));
+                            BTP(ai).c_str(), BTP(aj).c_str(), BTP(ak).c_str(), BTP(al).c_str());
                 }
             }
 
@@ -710,18 +710,18 @@ int alex_bastat(int argc, char *argv[])
                                                mmi.x_[ak], mmi.x_[al],
                                                &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
                                                &sign, &t1, &t2, &t3);
-                const char *cai = BTP(ai);
-                const char *caj = BTP(aj);
-                const char *cak = BTP(ak);
-                const char *cal = BTP(al);
-                if ((NULL != cai) && (NULL != caj) && (NULL != cak) && (NULL != cal))
+                std::string cai = BTP(ai);
+                std::string caj = BTP(aj);
+                std::string cak = BTP(ak);
+                std::string cal = BTP(al);
+                if ((0 != cai.size()) && (0 != caj.size()) && (0 != cak.size()) && (0 != cal.size()))
                 {
-                    add_dih(fp, mmi.getMolname().c_str(), b, cai, caj, cak, cal, ang, dspacing, egdIDIHS);
+                    add_dih(fp, mmi.getMolname().c_str(), b, cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(), ang, dspacing, egdIDIHS);
                 }
                 else
                 {
                     fprintf(stderr, "No bond_atom type for either %s, %s, %s or %s\n",
-                            BTP(ai), BTP(aj), BTP(ak), BTP(al));
+                            BTP(ai).c_str(), BTP(aj).c_str(), BTP(ak).c_str(), BTP(al).c_str());
                 }
             }
         }

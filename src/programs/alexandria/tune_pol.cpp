@@ -193,11 +193,11 @@ static void dump_csv(Poldata *                     pd,
                  ani < mci->EndAtomNum(); ani++)
             {
                 const char  *atomname = ani->getAtom().c_str();
-                const char  *ptype    = pd->atypeToPtype(atomname);
+		std::string ptype    = pd->atypeToPtype(atomname);
                 unsigned int i;
                 for (i = 0; (i < ptypes.size()); i++)
                 {
-                    if (strcmp(ptype, ptypes[i].name().c_str()) == 0)
+		  if (strcmp(ptype.c_str(), ptypes[i].name().c_str()) == 0)
                     {
                         break;
                     }
@@ -209,7 +209,7 @@ static void dump_csv(Poldata *                     pd,
                 else if (NULL != debug)
                 {
                     fprintf(debug, "Supported molecule %s has unsupported or zeropol atom %s (ptype %s)",
-                            mpi->getMolname().c_str(), atomname, ptype);
+                            mpi->getMolname().c_str(), atomname, ptype.c_str());
                 }
             }
             for (unsigned int i = 0; (i < ptypes.size()); i++)
@@ -254,13 +254,13 @@ static int decompose_frag(FILE *fplog,
     snew(x, mp.size()+1);
     // Copy all atom types into array. Set usage array.
     {
-        char *ptype;
+      std::string ptype;
         while (1 == pd->getPtype( &ptype, NULL, NULL, NULL, NULL))
         {
 
-            if (!bZeroPol(ptype, zeropol))
+	  if (!bZeroPol(ptype.c_str(), zeropol))
             {
-                ptypes.push_back(pType(ptype, false, 0));
+	      ptypes.push_back(pType(ptype.c_str(), false, 0));
             }
         }
     }
@@ -303,8 +303,8 @@ static int decompose_frag(FILE *fplog,
                  (bUseMol && (ani < mci->EndAtomNum())); ++ani)
             {
                 const char *atomname = ani->getAtom().c_str();
-                const char *ptype    = pd->atypeToPtype( atomname);
-                if (NULL == ptype)
+		std::string ptype    = pd->atypeToPtype( atomname);
+                if (0 == ptype.size())
                 {
                     if (NULL != fplog)
                     {
@@ -313,12 +313,12 @@ static int decompose_frag(FILE *fplog,
                     }
                     bUseMol = false;
                 }
-                else if (!bZeroPol(ptype, zeropol))
+                else if (!bZeroPol(ptype.c_str(), zeropol))
                 {
                     npolarizable++;
                 }
 #ifdef OLD
-                else if (0 == pd->getPtypePol( ptype, &apol, &spol))
+                else if (0 == pd->getPtypePol( ptype.c_str(), &apol, &spol))
                 {
                     /* No polarizability found for this one, seems unnecessary
                      * as we first lookup the polarizability ptype */
@@ -369,7 +369,7 @@ static int decompose_frag(FILE *fplog,
         {
             pi->resetCopies();
 
-            if ((1 == pd->getPtypePol( pi->name().c_str(),
+            if ((1 == pd->getPtypePol( pi->name(),
                                                 &pol, &sig_pol)) &&
                 ((pol == 0) || bForceFit))
             {
@@ -381,7 +381,7 @@ static int decompose_frag(FILE *fplog,
                          ani < mci->EndAtomNum(); ani++)
                     {
                         if (strcmp(pi->name().c_str(),
-                                   pd->atypeToPtype( ani->getAtom().c_str())) == 0)
+                                   pd->atypeToPtype( ani->getAtom()).c_str()) == 0)
                         {
                             pi->incCopies();
                             break;

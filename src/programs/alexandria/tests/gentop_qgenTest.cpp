@@ -80,26 +80,17 @@ class gentopQgenTest : public ::testing::Test
 	  
         }
 
-
-  void setUp(){
-
-
-  }
         static void TearDownTestCase()
         {
         }
 
-
-        void test()
-        {
-        }
 };
 
 
 
 
 
-TEST_F (getopQgenTest, test)
+TEST_F (gentopQgenTest, test)
 {
-    test();
+
 }

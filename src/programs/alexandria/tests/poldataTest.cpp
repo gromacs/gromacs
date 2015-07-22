@@ -55,15 +55,16 @@
 class PoldataTest : public ::testing::Test
 {
 
-  //using gmx::test::TestReferenceData;
+
 protected:
   static  alexandria::Poldata * pd;
   gmx::test::TestReferenceData                     refData_;
   gmx::test::TestReferenceChecker                  checker_;
+  static const  int numModels = 3;
 
   //init sett tolecrance
   PoldataTest ( )
-    :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
+    :refData_(gmx::test::erefdataUpdateAll), checker_(refData_.rootChecker())
   {
 	  
 
@@ -77,77 +78,95 @@ protected:
 
   // Static initiation, only run once every test.
   static void SetUpTestCase()
-  {
-    std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-	  
+  {	  
     gmx_atomprop_t aps = gmx_atomprop_init();
-    //pd = NULL;
+
+    // Reads the file, the file only suport 3 chargedisributionModels
+    // eqdAXp,eqdAXg,  eqdAXs,
+    std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
     pd = alexandria::PoldataXml::read(dataName.c_str(), aps);  
-    std::cout << "e i test" << "\n";         
+
 	  
   }
 
-
-  void setUp(){
-
-
-  }
   static void TearDownTestCase()
   {
   }
 
-
-  void test()
-  {
-    std::cout << "e i test";
-    //ChargeDistributionModel  eqg_model;
-    char                    *name;
-    double                   J0;
-    std::vector<double>      values;
-    pd->getAtype(NULL,
-		  NULL,
-		  &name,
-		  NULL,
-		  NULL,
-		  NULL,
-		  &J0);
-    //	  pd->get_eemprops( &eqg_model, &name, &J0, &chi0, NULL, NULL, NULL);
-    for (int model = 0; model < (int) 2; model++)
-      {
-	values.push_back(pd->getChi0((ChargeDistributionModel)model, name));
-      }
-    checker_.checkSequence(values.begin(), values.end(), "chi");
-  }
+   
 };
 
 
 alexandria::Poldata * PoldataTest::pd;
+const int PoldataTest::numModels;
 
+
+TEST_F (PoldataTest, getAtype){
+
+  std::string elem;
+  std::string desc;
+  std::string name;
+  std::string ptype;
+  std::string btype;
+  std::string vdwparams;
+  double                   J0;
+  pd->getAtype(&elem,
+	       &desc,
+	       &name,
+	       &ptype,
+	       &btype,
+	       &vdwparams,
+	       &J0);
+  checker_.checkString(elem,"elem");
+  checker_.checkString(desc,"desc");
+  checker_.checkString(name,"name");
+  checker_.checkString(ptype,"ptype");
+  checker_.checkString(btype,"btype");
+  checker_.checkString(vdwparams,"vdwparams");
+  checker_.checkDouble(J0,"J0");
+
+}
 
 TEST_F (PoldataTest, chi)
 {
-  test();
+  
+  
+  std::string                    name;
+  double                   J0;
+  std::vector<double>      values;
+  pd->getAtype(NULL,
+	       NULL,
+	       &name,
+	       NULL,
+	       NULL,
+	       NULL,
+	       &J0);
+  for (int model = 0; model < numModels; model++)
+    {
+      values.push_back(pd->getChi0((ChargeDistributionModel)model, name));
+    }
+  checker_.checkSequence(values.begin(), values.end(), "chi");
 }
 
 TEST_F (PoldataTest, row){
-  char                    *name;
+  std::string              name;
   double                   J0;
   std::vector<double>      values;
   
   
   pd->getAtype(NULL,
-		NULL,
-		&name,
-		NULL,
-		NULL,
-		NULL,
-		&J0);
-  int nrow =3;
-  // pd->get_nzeta((ChargeDistributionModel)model, name);
+	       NULL,
+	       &name,
+	       NULL,
+	       NULL,
+	       NULL,
+	       &J0);
+  int numAtoms = 3;
+  
 
-  for (int atomNr = 0; atomNr < std::min(3, nrow); atomNr++)
+  for (int atomNr = 0; atomNr < numAtoms; atomNr++)
     {
-      for (int model = 0; model < (int) 2; model++)
+      for (int model = 0; model <  numModels; model++)
 	{
 	  values.push_back(pd->getRow((ChargeDistributionModel)model, name, atomNr));
         }
@@ -158,22 +177,20 @@ TEST_F (PoldataTest, row){
 
 TEST_F (PoldataTest, zeta)
 {
-  char                    *name;
+  std::string              name;
   double                   J0;
   std::vector<double>      values;
   pd->getAtype(NULL,
-		NULL,
-		&name,
-		NULL,
-		NULL,
-		NULL,
-		&J0);
-  int nzeta =3;
-  // pd->get_nzeta((ChargeDistributionModel)model, name);
-
-  for (int atomNr = 0; atomNr < std::min(3, nzeta); atomNr++)
+	       NULL,
+	       &name,
+	       NULL,
+	       NULL,
+	       NULL,
+	       &J0);
+  int numAtoms = 3;
+  for (int atomNr = 0; atomNr < numAtoms; atomNr++)
     {
-      for (int model = 0; model < (int) 2; model++)
+      for (int model = 0; model <  numModels; model++)
 	{
 	  values.push_back(pd->getZeta((ChargeDistributionModel)model, name, atomNr));
         }
@@ -181,29 +198,20 @@ TEST_F (PoldataTest, zeta)
   checker_.checkSequence(values.begin(), values.end(), "zeta");
 }
 
-    char * get_polar_unit( );
-
-    char * get_polar_ref( );
-
-    char * get_force_field( );
-
-    char * get_length_unit( );
 
 
 
 TEST_F (PoldataTest, geters)
 {
+  std::string value = pd->getPolarUnit( );
+  checker_.checkString(value,"polarUnit");
 
-  /*  Char * value = NULL;
-  value = pd->get_polar_unit( );
-  checker_.checkSequence(values.begin(), values.end(), "zeta");
+  value =  pd->getPolarRef( );
+  checker_.checkString(value, "polarRef");
 
-  value = pd->get_polar_ref( );
+  value =  pd->getForceField( );
+  checker_.checkString(value,"forceFiled");
 
-
-  value = get_force_field();
-
-
-  value = get_length_unit();*/
-
+  value =  pd->getLengthUnit( );
+  checker_.checkString(value,"lenghtUnit");
 }

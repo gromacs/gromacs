@@ -659,8 +659,8 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     double                                     ahc, ahp, bos_pol, alexandria_pol, sig_pol;
-    char                                      *ptype;
-    char                                      *miller, *bosque;
+    std::string                                      ptype;
+    std::string                                      miller, bosque;
     char                                       longbuf[STRLEN];
     MolPropObservable                          mpo = MPO_POLARIZABILITY;
     alexandria::LongTable                      lt(fp, false, NULL);
@@ -700,9 +700,9 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
 
                     for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); !bFound && (ani < mci->EndAtomNum()); ++ani)
                     {
-                        const char *pt =
-                            pd->atypeToPtype(ani->getAtom().c_str());
-                        if ((NULL != pt) && (strcasecmp(pt, ptype) == 0))
+		      std::string pt =
+                            pd->atypeToPtype(ani->getAtom());
+		      if ((0 != pt.size()) && (strcasecmp(pt.c_str(), ptype.c_str()) == 0))
                         {
                             bFound = true;
                         }
@@ -740,7 +740,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
             /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
 
             snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
-                     ptype,
+                     ptype.c_str(),
                      (nexp > 0)     ? gmx_itoa(nexp).c_str()     : "",
                      (nqm > 0)      ? gmx_itoa(nqm).c_str()      : "",
                      (alexandria_pol > 0)  ? gmx_ftoa(alexandria_pol).c_str()  : "",
@@ -758,8 +758,12 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
 static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
 {
     int     i, k, m, cur = 0;
-    char   *elem, *gt_type[2] = { NULL, NULL };
-    char   *spref, *desc, *ptype, *btype;
+    std::string gt_type[2] = { "", "" };
+    std::string   spref, desc, ptype, btype;
+    std::string elem;
+
+
+
 #define prev (1-cur)
 #define NEQG 5
     ChargeDistributionModel eqgcol[NEQG] = { eqdAXp, eqdAXs, eqdAXg };
@@ -783,7 +787,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
     for (i = 0; (i < NEQG); i++)
     {
         snprintf(buf, 256, " & \\multicolumn{%d}{c}{%s}", npcol[i],
-                 Poldata::getEemtypeName(eqgcol[i]));
+                 Poldata::getEemtypeName(eqgcol[i]).c_str());
         strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
     }
     lt.addHeadLine(longbuf);
@@ -808,9 +812,9 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
                                       &spref,
                                       &ref_enthalpy))
     {
-        if (((NULL == gt_type[prev]) || (strcmp(gt_type[cur], gt_type[prev]) != 0)))
+      if (((0 == gt_type[prev].size()) || (strcmp(gt_type[cur].c_str(),gt_type[prev].c_str()) != 0)))
         {
-            snprintf(longbuf, STRLEN, "%s\n", gt_type[cur]);
+	  snprintf(longbuf, STRLEN, "%s\n", gt_type[cur].c_str());
             for (k = 0; (k < NEQG); k++)
             {
                 if (pd->haveEemSupport(eqgcol[k], gt_type[cur], false))

@@ -61,7 +61,7 @@
 namespace alexandria
 {
   Resp::Resp(ChargeDistributionModel iDistributionModel,
-	     bool bAXpRESP, real qfac, real b_hyper, real qtot,
+	     bool bAXpRESP, real qfac, real bHyper, real qtot,
 	     real zmin, real zmax, real deltaZ, bool bZatype,
 	     real watoms, real rDecrZeta, bool bRandZeta,
 	     bool bRandQ, real penalty_fac, bool bFitZeta, bool bEntropy,
@@ -74,7 +74,7 @@ namespace alexandria
     _qsum                  = qtot;
     _bAXpRESP              = bAXpRESP;
     _qfac                  = qfac;
-    _bHyper               = b_hyper;
+    _bHyper               = bHyper;
     _wtot                  = 0;
     _iDistributionModel    = iDistributionModel;
     _zmin                  = zmin;
@@ -146,7 +146,7 @@ namespace alexandria
                 sizeof(atoms->atom[i].elem)-1);
         copy_rvec(_x[i], (*x)[i]);
       }
-    rnm = ("" != _stoichiometry) ? _stoichiometry.c_str() : (const char *)"BOE";
+    rnm = (0 != _stoichiometry.size()) ? _stoichiometry.c_str() : (const char *)"BOE";
     t_atoms_set_resinfo(atoms, 0, symtab, rnm, 1, ' ', 1, ' ');
 
     atoms->nres = 1;
@@ -888,7 +888,7 @@ namespace alexandria
 		break;
 	      default:
 		gmx_fatal(FARGS, "Krijg nou wat, iDistributionModel = %s!",
-			  alexandria::Poldata::getEemtypeName(_iDistributionModel));
+			  alexandria::Poldata::getEemtypeName(_iDistributionModel).c_str());
 	      }
             V  += vv;
 	  }

@@ -933,7 +933,7 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
     FILE                   *fp;
     int                     j, n, nmax;
     ChargeDistributionModel eqg_model;
-    char                   *name;
+    std::string                   name;
     double                  rho, rr, J0, *A, chi0, *zeta, *q, qtot;
     int                    *row, nzeta;
     char                    buf[STRLEN];
@@ -965,7 +965,7 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
                         break;
                     default:
                         gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                  Poldata::getEemtypeName(iDistributionModel));
+                                  Poldata::getEemtypeName(iDistributionModel).c_str());
                 }
             }
             if (q[nzeta-1] == 0)
@@ -973,7 +973,7 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
                 q[nzeta-1] = -qtot;
             }
 
-            sprintf(buf, "%s_%s", name, fn);
+            sprintf(buf, "%s_%s", name.c_str(), fn);
 
             fp = xvgropen(buf, "Rho", "r (nm)", "rho(r)", oenv);
             for (n = 0; (n <= nmax); n++)
@@ -994,7 +994,7 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
                                 break;
                             default:
                                 gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                          Poldata::getEemtypeName(iDistributionModel));
+                                          Poldata::getEemtypeName(iDistributionModel).c_str());
                         }
                     }
                 }
@@ -1016,7 +1016,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
     int                        i, j, k, l, n, nmax, bi, bk;
     ChargeDistributionModel    eqg_model;
     gmx_bool                  *bSplit;
-    char                     **name;
+    std::string                     *name;
     double                     dV, V, dVp, Vp, rr, *J0, *chi0, **zeta, **q, qij, qkl, vc, vd, fd, fc, vr, fr;
     int                      **row, *nzeta;
     int                        natypemax = 32, natype = 0;
@@ -1105,8 +1105,8 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
                     }
                     strncpy(fnbuf, fn, strlen(fn)-4);
                     fnbuf[strlen(fn)-4] = '\0';
-                    sprintf(buf, "%s_%s%s_%s%s.xvg", fnbuf, name[i], ns[bi],
-                            name[k], ns[bk]);
+                    sprintf(buf, "%s_%s%s_%s%s.xvg", fnbuf, name[i].c_str(), ns[bi],
+                            name[k].c_str(), ns[bk]);
                     fp = xvgropen(buf, buf, "r (nm)", "V (kJ/mol e)", oenv);
                     for (n = 0; (n <= nmax); n++)
                     {
@@ -1135,7 +1135,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
                                         break;
                                     default:
                                         gmx_fatal(FARGS, "Don't know how to handle model %s",
-                                                  Poldata::getEemtypeName(iDistributionModel));
+                                                  Poldata::getEemtypeName(iDistributionModel).c_str());
                                 }
                                 /* Note how charges are being handled:
                                    The "shell" charge is taken to be 1, because

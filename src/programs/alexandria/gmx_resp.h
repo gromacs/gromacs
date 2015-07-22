@@ -51,7 +51,7 @@ namespace alexandria
 	 bool bAXpRESP, real qfac, real b_hyper, real qtot,
 	 real zmin, real zmax, real delta_z, bool bZatyp,
 	 real watoms, real rDecrZeta,
-	 bool bRandZeta, bool bRandQ, real penalty_fac, bool bFitZeta,
+	 bool bRandZeta, bool bRandQ, real penaltyFac, bool bFitZeta,
 	 bool bEntropy, const char *dzatoms,
 	 unsigned int seed);
 

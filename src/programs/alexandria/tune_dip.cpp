@@ -419,8 +419,8 @@ static double dipole_function(void *params, double v[])
     alexandria::MolDip *md = (alexandria::MolDip *) params;
     int                 j, k, zz, nzeta;
     double              chi0, z, J0, bounds = 0;
-    char               *name;
-    char               *qstr, *rowstr;
+    std::string              name, rowstr;
+    std::string                qstr;
     char                zstr[STRLEN], buf[STRLEN];
 
 #define HARMONIC(x, xmin, xmax) (x < xmin) ? (sqr(x-xmin)) : ((x > xmax) ? (sqr(x-xmax)) : 0)
@@ -429,11 +429,12 @@ static double dipole_function(void *params, double v[])
      * go out of bounds as well.
      */
     k = 0;
-    while ((name = opt_index_count(md->_ic)) != NULL)
+    name = opt_index_count(md->_ic);
+    while (name.size() != 0)
     {
         J0      = v[k++];
         bounds += HARMONIC(J0, md->_J0_0, md->_J0_1);
-        if (strcasecmp(name, md->_fixchi) != 0)
+        if (strcasecmp(name.c_str(), md->_fixchi) != 0)
         {
             chi0    = v[k++];
             bounds += HARMONIC(chi0, md->_Chi0_0, md->_Chi0_1);
@@ -523,7 +524,9 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
                            double orig_param[], double test_param[])
 {
     double     J00, xxx, chi0, zeta;
-    char      *name, *qstr, *rowstr;
+    char * name;
+    std::string      rowstr;
+    std::string qstr;
     char       zstr[STRLEN], buf[STRLEN];
     gmx_bool   bStart = (/*(run == 0) &&*/ (iter == 0));
     gmx_bool   bRand  = bRandom && (iter == 0);
@@ -576,11 +579,13 @@ static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
             }
             test_param[k++] = chi0;
         }
-        if ((qstr = md->_pd->getQstr( md->_iChargeDistributionModel, name)) == NULL)
+	qstr = md->_pd->getQstr( md->_iChargeDistributionModel, name);
+	 if (qstr.size() == 0)
         {
             gmx_fatal(FARGS, "No qstr for atom %s model %d\n", name, md->_iChargeDistributionModel);
         }
-        if ((rowstr = md->_pd->getRowstr( md->_iChargeDistributionModel, name)) == NULL)
+	rowstr = md->_pd->getRowstr( md->_iChargeDistributionModel, name);
+	  if (rowstr.size() == 0)
         {
             gmx_fatal(FARGS, "No rowstr for atom %s model %d\n", name, md->_iChargeDistributionModel);
         }
@@ -631,7 +636,8 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
     double    *test_param, *orig_param, *best_param, *start;
     gmx_bool   bMinimum = FALSE;
     double     J00, chi0, zeta;
-    char      *name, *qstr, *rowstr;
+    std::string name;
+    std::string qstr, rowstr;
     char       zstr[STRLEN], buf[STRLEN];
     gmx_rng_t  rng;
 
@@ -640,11 +646,12 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
         rng = gmx_rng_init(seed);
 
         nparam = 0;
-        while ((name = opt_index_count(md->_ic)) != NULL)
+	name = opt_index_count(md->_ic);
+        while (name.size() != 0)
         {
             /* One parameter for J00 and one for chi0 */
             nparam++;
-            if (strcasecmp(name, md->_fixchi) != 0)
+            if (strcasecmp(name.c_str(), md->_fixchi) != 0)
             {
                 nparam++;
             }
@@ -750,11 +757,12 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                 start[k] = best_param[k];
             }
             k = 0;
-            while ((name = opt_index_count(md->_ic)) != NULL)
+	    name = opt_index_count(md->_ic);
+            while (name.size() != 0)
             {
                 J00    = start[k++];
                 chi0   = md->_pd->getChi0( md->_iChargeDistributionModel, name);
-                if (strcasecmp(name, md->_fixchi) != 0)
+                if (strcasecmp(name.c_str(), md->_fixchi) != 0)
                 {
                     chi0 = start[k++];
                 }

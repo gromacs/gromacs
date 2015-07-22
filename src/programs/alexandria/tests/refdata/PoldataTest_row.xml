@@ -2,7 +2,10 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Sequence Name="row">
-    <Int Name="Length">6</Int>
+    <Int Name="Length">9</Int>
+    <Real>1</Real>
+    <Real>1</Real>
+    <Real>1</Real>
     <Real>1</Real>
     <Real>1</Real>
     <Real>1</Real>

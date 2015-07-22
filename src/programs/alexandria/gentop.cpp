@@ -420,7 +420,7 @@ int alex_gentop(int argc, char *argv[])
             molnm = (char *)"XXX";
         }
         ReadGauss(fn, mp, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd->getForceField());
+                  maxpot, nsymm, pd->getForceField().c_str());
         mps.push_back(mp);
         mpi = mps.begin();
     }

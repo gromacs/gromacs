@@ -124,13 +124,13 @@ static void check_support(FILE                           *fp,
                 for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); i += interaction_function[ft].nratoms+1)
                 {
                     int   ai, aj, ak, al, gt = 0;
-                    char *aai, *aaj, *aak, *aal;
+		    std::string aai, aaj, aak, aal;
 
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    aai = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ai]);
-                    aaj = (char *)pd->atypeToBtype(*mymol->topology_->atoms.atomtype[aj]);
-                    if ((NULL == aai) || (NULL == aaj))
+                    aai = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ai]);
+                    aaj = pd->atypeToBtype(*mymol->topology_->atoms.atomtype[aj]);
+                    if ((0 == aai.size()) || (0 == aaj.size()))
                     {
                         bSupport = false;
                     }
@@ -142,8 +142,8 @@ static void check_support(FILE                           *fp,
                             break;
                         case ebtsANGLES:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            aak = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
-                            if (NULL == aak)
+                            aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
+                            if (0 == aak.size())
                             {
                                 bSupport = false;
                             }
@@ -157,9 +157,9 @@ static void check_support(FILE                           *fp,
                         case ebtsIDIHS:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            aak = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
-                            aal = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[al]);
-                            if ((NULL == aak) || (NULL == aal))
+                            aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
+                            aal = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[al]);
+                            if ((0 == aak.size()) || (0 == aal.size()))
                             {
                                 bSupport = false;
                             }
@@ -208,7 +208,7 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
 {
     int         gt, i, bt, ai, aj, ak, al, ft;
     int         ntot[ebtsNR];
-    char       *aai, *aaj, *aak, *aal, *params;
+    std::string       aai, aaj, aak, aal, params;
     opt_mask_t *omt;
     const char *btsnames[ebtsNR] =  { "bond", "angle", "proper", "improper", NULL, NULL };
 
@@ -253,8 +253,8 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                 {
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
-                    aai = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ai]);
-                    aaj = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[aj]);
+                    aai = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ai]);
+                    aaj = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[aj]);
                     char buf[STRLEN];
                     gt = 0;
                     switch (bt)
@@ -264,31 +264,31 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                                                          NULL, NULL, NULL, &params);
                             if (gt > 0)
                             {
-                                sprintf(buf, "%s-%s", aai, aaj);
+                                sprintf(buf, "%s-%s", aai.c_str(), aaj.c_str());
                             }
                             break;
                         case ebtsANGLES:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
-                            aak = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
+                            aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
                             gt  = pd->searchAngle( aai, aaj, aak, NULL,
                                                            NULL, NULL, &params);
                             if (gt > 0)
                             {
-                                sprintf(buf, "%s-%s-%s", aai, aaj, aak);
+                                sprintf(buf, "%s-%s-%s", aai.c_str(), aaj.c_str(), aak.c_str());
                             }
                             break;
                         case ebtsPDIHS:
                         case ebtsIDIHS:
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             al  = mymol->ltop_->idef.il[ft].iatoms[i+4];
-                            aak = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
-                            aal = (char *)pd->atypeToBtype( *mymol->topology_->atoms.atomtype[al]);
+                            aak = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[ak]);
+                            aal = pd->atypeToBtype( *mymol->topology_->atoms.atomtype[al]);
                             gt  = pd->searchDihedral( (bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
                                                               aai, aaj, aak, aal,
                                                               NULL, NULL, NULL, &params);
                             if (gt > 0)
                             {
-                                sprintf(buf, "%s-%s-%s-%s", aai, aaj, aak, aal);
+			      sprintf(buf, "%s-%s-%s-%s", aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
                             }
                             break;
                     }
@@ -298,10 +298,6 @@ static opt_mask_t *analyze_idef(FILE                          *fp,
                         if (NULL == omt->cgt[bt][gt-1])
                         {
                             omt->cgt[bt][gt-1] = strdup(buf);
-                        }
-                        if (NULL != params)
-                        {
-                            sfree(params);
                         }
                     }
                 }
@@ -351,7 +347,7 @@ typedef struct {
     double *param;
 } opt_bad_t;
 
-static void add_obt(opt_bad_t *obt, int natom, char **ai,
+static void add_obt(opt_bad_t *obt, int natom, std::string *ai,
                     int nparam, double *param, double bondorder, int gt)
 {
     int i;
@@ -361,7 +357,7 @@ static void add_obt(opt_bad_t *obt, int natom, char **ai,
     snew(obt->ai, natom);
     for (i = 0; (i < natom); i++)
     {
-        obt->ai[i] = strdup(ai[i]);
+      obt->ai[i] = (char *)ai[i].c_str();
     }
     obt->nparam = nparam;
     snew(obt->param, nparam);
@@ -397,7 +393,7 @@ class OptParam : public MolDip
         void getDissociationEnergy(FILE *fplog);
         void Opt2List();
         void List2Opt();
-        void Add(int otype, int natom, char **ai,
+  void Add(int otype, int natom, std::string *ai,
                  int nparam, double *param, double bondorder, int gt);
         void Print(FILE *fp);
         double CalcDeviation();
@@ -522,7 +518,7 @@ void OptParam::List2Opt()
     }
 }
 
-void OptParam::Add(int otype, int natom, char **ai,
+  void OptParam::Add(int otype, int natom, std::string *ai,
                    int nparam, double *param, double bondorder, int gt)
 {
     assert(otype < ebtsNR);
@@ -627,8 +623,8 @@ void OptParam::getDissociationEnergy(FILE *fplog)
         {
             ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
             aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-            char *aai = (char *)_pd->atypeToBtype(*mymol->topology_->atoms.atomtype[ai]);
-            char *aaj = (char *)_pd->atypeToBtype(*mymol->topology_->atoms.atomtype[aj]);
+	    std::string aai = _pd->atypeToBtype(*mymol->topology_->atoms.atomtype[ai]);
+	    std::string aaj = _pd->atypeToBtype(*mymol->topology_->atoms.atomtype[aj]);
             if ((gt = _pd->searchBond(aai, aaj,
                                               NULL, NULL, NULL, NULL, NULL)) != 0)
             {
@@ -638,14 +634,14 @@ void OptParam::getDissociationEnergy(FILE *fplog)
                 test[gti]++;
                 if (NULL == ctest[gti])
                 {
-                    sprintf(buf, "%s-%s", aai, aaj);
+		  sprintf(buf, "%s-%s", aai.c_str(), aaj.c_str());
                     ctest[gti] = strdup(buf);
                 }
             }
             else
             {
                 gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
-                          aai, aaj,
+                          aai.c_str(), aaj.c_str(),
                           *mymol->topology_->atoms.atomtype[ai],
                           *mymol->topology_->atoms.atomtype[aj],
                           mymol->getIupac().c_str());
@@ -765,9 +761,9 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                        real D0, real beta0,
                        opt_mask_t *omt, real factor)
 {
-    char   *ai[4];
-    char   *params;
-    int     gt, i, n, maxfc = 0;
+  std::string ai[4];
+  std::string params;
+    int     gt, i, n = 0, maxfc = 0;
     double *fc = NULL;
     double  bondorder;
 
@@ -806,17 +802,6 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                 Add(ebtsBONDS, 2, ai, n, fc, bondorder, gt);
                 *nparam += n;
             }
-            if (NULL != params)
-            {
-                sfree(params);
-            }
-            for (n = 0; (n < 2); n++)
-            {
-                if (NULL != ai[n])
-                {
-                    sfree(ai[n]);
-                }
-            }
         }
     }
     if (bOpt[ebtsANGLES])
@@ -840,17 +825,6 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                 }
                 Add(ebtsANGLES, 3, ai, n, fc, 0, gt);
                 *nparam += n;
-            }
-            if (NULL != params)
-            {
-                sfree(params);
-            }
-            for (n = 0; (n < 3); n++)
-            {
-                if (NULL != ai[n])
-                {
-                    sfree(ai[n]);
-                }
             }
         }
     }
@@ -877,13 +851,6 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                 Add(ebtsPDIHS, 4, ai, n, fc, 0, gt);
                 *nparam += n;
             }
-            for (n = 0; (n < 4); n++)
-            {
-                if (NULL != ai[n])
-                {
-                    sfree(ai[n]);
-                }
-            }
         }
     }
     if (bOpt[ebtsIDIHS])
@@ -908,13 +875,6 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                 }
                 Add(ebtsIDIHS, 4, ai, n, fc, 0, gt);
                 *nparam += n;
-            }
-            for (n = 0; (n < 4); n++)
-            {
-                if (NULL != ai[n])
-                {
-                    sfree(ai[n]);
-                }
             }
         }
     }

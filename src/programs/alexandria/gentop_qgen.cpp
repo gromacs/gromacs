@@ -127,7 +127,7 @@ namespace alexandria
                 if (pd->haveEemSupport(_iChargeDistributionModel, atp, TRUE) == 0)
 		  {
                     fprintf(stderr, "No charge distribution support for atom %s (element %s), model %s\n",
-                            *atoms->atomtype[j], atp, Poldata::getEemtypeName(_iChargeDistributionModel));
+                            *atoms->atomtype[j], atp, Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
                     bSup = FALSE;
 		  }
 	      }
@@ -808,7 +808,7 @@ namespace alexandria
             if (pd->haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), TRUE) == 0)
 	      {
                 fprintf(stderr, "No charge generation support for atom %s, model %s\n",
-                        _elem[i].c_str(), Poldata::getEemtypeName(_iChargeDistributionModel));
+                        _elem[i].c_str(), Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
                 bSup = FALSE;
 	      }
 	  }
@@ -971,7 +971,7 @@ namespace alexandria
 	if (fp)
 	  {
 	    fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
-		    Poldata::getEemtypeName(_iChargeDistributionModel), molname);
+		    Poldata::getEemtypeName(_iChargeDistributionModel).c_str(), molname);
 	  }
 	for (cc = 0; (cc < maxcycle); cc++)
 	  {
@@ -1013,7 +1013,7 @@ namespace alexandria
 	if (fp)
 	  {
 	    fprintf(fp, "Generating charges for %s using %s algorithm\n",
-		    molname, Poldata::getEemtypeName(_iChargeDistributionModel));
+		    molname, Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
 	  }
 	if (_iChargeDistributionModel == eqdBultinck)
 	  {

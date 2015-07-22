@@ -735,20 +735,20 @@ bool MolProp::GenerateComposition(Poldata * pd)
             AtomNum ans(cai->getObtype(), 1);
             mci_alexandria.AddAtom(ans);
 
-            const char *ptype = pd->atypeToPtype(cai->getObtype().c_str());
-            if (NULL != ptype)
+            std::string ptype = pd->atypeToPtype(cai->getObtype());
+            if (0 != ptype.size())
             {
-                const char *bos_type = pd->ptypeToBosque(ptype);
-                if (NULL != bos_type)
+	      std::string bos_type = pd->ptypeToBosque(ptype);
+	      if (0 != bos_type.size())
                 {
                     AtomNum anb(bos_type, 1);
                     mci_bosque.AddAtom(anb);
                 }
-                const char *mil_type = pd->ptypeToMiller(ptype);
+	      std::string mil_type = pd->ptypeToMiller(ptype);
 
-                if (NULL != mil_type)
+	      if (0 != mil_type.size())
                 {
-                    AtomNum anm(mil_type, 1);
+		  AtomNum anm(mil_type.c_str(), 1);
                     mci_miller.AddAtom(anm);
                 }
             }

@@ -56,72 +56,117 @@ enum DihedralType {
   egdNR
 };
 
-typedef struct {
-  char   *type, *miller, *bosque;
-  double  polarizability, sig_pol;
-} t_ptype;
+class Ptype {
+public:
+  std::string type;
+  std::string miller; 
+  std::string bosque;
+  double polarizability;
+  double sig_pol;
+}; 
 
-typedef struct {
-  char   *desc, *type, *ptype, *btype, *elem, *vdwparams;
+class Ffatype {
+public:
+  std::string desc;
+  std::string type;
+  std::string ptype;
+  std::string btype;
+  std::string elem; 
+  std::string vdwparams;
   double  ref_enthalpy;
-} t_ffatype;
+};
 
-typedef struct {
-  char                    *elem, *rule, *type, *neighbors, *geometry;
-  int                      numbonds, iAromatic;
+class Brule {
+public:
+  std::string elem;
+  std::string rule;
+  std::string type;
+  std::string neighbors;
+  std::string geometry;
+  int                      numbonds;
+  int iAromatic;
   double                   valence;
   std::vector<std::string> nb;
-} t_brule;
+}; 
 
-typedef struct {
-  char   *atom1, *atom2, *params;
-  char    elem1[4], elem2[4];
-  double  length, sigma, bondorder;
+class  GtBond {
+public:
+  std::string atom1;
+  std::string atom2;
+  std::string params;
+  std::string    elem1, elem2;
+  double  length;
+  double sigma;
+  double bondorder;
   int     ntrain;
-} t_gt_bond;
+};
 
-typedef struct {
-  char   *atom1, *atom2, *atom3, *params;
-  double  angle, sigma;
+class GtAngle {
+public:
+  std::string   atom1; 
+  std::string atom2;
+  std::string atom3; 
+  std::string params;
+  double  angle;
+  double  sigma;
   int     ntrain;
-} t_gt_angle;
+};
 
-typedef struct {
-  char   *atom1, *atom2, *atom3, *atom4, *params;
-  double  dihedral, sigma;
+class GtDihedral {
+public:
+  std::string atom1; 
+  std::string atom2;
+  std::string atom3;
+  std::string atom4;
+  std::string params;
+  double  dihedral;
+  double  sigma;
   int     ntrain;
-} t_gt_dihedral;
+};
 
-typedef struct {
-  char   *bosque;
+class Bosque {
+public:
+  std::string bosque;
   double  polarizability;
-} t_bosque;
+};
 
-typedef struct {
-  char   *miller;
+class Miller {
+public:
+  std::string miller;
   int     atomnumber;
-  double  tau_ahc, alpha_ahp;
-} t_miller;
+  double  tau_ahc;
+  double alpha_ahp;
+};
 
-typedef struct {
-  char *central;
-  char *attached;
+class Symcharges {
+public:
+  std::string central;
+  std::string attached;
   int   numattach;
-} t_symcharges;
+};
 
-typedef struct {
+class Epref {
+public:
   ChargeDistributionModel eqd_model;
-  char                   *epref;
-} t_epref;
+  std::string epref;
+};
 
 #define EEMBUFSIZE 256
 #define MAXZETA    12
-typedef struct {
+class Eemprops {
+ public:
   ChargeDistributionModel eqd_model;
-  int                     nzeta, row[MAXZETA];
-  char                    name[EEMBUFSIZE], zetastr[EEMBUFSIZE], qstr[EEMBUFSIZE], rowstr[EEMBUFSIZE];
-  double                  J0, chi0, q[MAXZETA], zeta[MAXZETA];
-} t_eemprops;
+  int nzeta;
+  int row[MAXZETA];
+  std::string name;
+  std::string zetastr;
+  std::string qstr;
+  std::string rowstr;
+  double J0;
+  double chi0;
+  double q[MAXZETA];
+  double zeta[MAXZETA];
+};
 
 
 namespace alexandria
@@ -134,57 +179,59 @@ namespace alexandria
     ~Poldata(){}
 
 
-    void  setFilename(char *fn2);  
+    void  setFilename(std::string fn2);  
 
-    void  addBondingRule(char *gtBrule, char *atype,
-			 char *geometry, int numbonds,
+    void  addBondingRule(std::string gtBrule, std::string atype,
+			 std::string geometry, int numbonds,
 			 double valence, int iAromatic,
-			 char *neighbors);
+			 std::string neighbors);
 
-    int  getBondingRule(char **gtBrule, char **atype,
-			char **geometry, int *numbonds,
+    int  getBondingRule(std::string *gtBrule, std::string *atype,
+			std::string *geometry, int *numbonds,
 			double *valence, int *iAromatic,
-			char **neighbors);
+			std::string *neighbors);
 
-    void  addPtype(const char   *ptype,
-		   const char   *miller,
-		   const char   *bosque,
+    void  addPtype(const std::string ptype,
+		   const std::string miller,
+		   const std::string bosque,
 		   double        polarizability,
 		   double        sigPol);
 
-    void  addAtype(const char *elem,
-		   const char *desc,
-		   const char *atype,
-		   const char *ptype,
-		   const char *btype,
-		   const char *vdwparams,
+    void  addAtype(const std::string elem,
+		   const std::string desc,
+		   const std::string atype,
+		   const std::string ptype,
+		   const std::string btype,
+		   const std::string vdwparams,
 		   double      ref_enthalpy);
 
-    void  setPtypePolarizability(  const char *ptype,
+    void  setPtypePolarizability(  const std::string ptype,
 				   double polarizability, double sigPol);
 
    
 
-    void setPolarUnit( const char *polarUnit){
+    void setPolarUnit( const std::string polarUnit){
       _alexandriaPolarUnit.assign(polarUnit);
+
     }
 
-    void setPolarRef( const char *polarRef){
+    void setPolarRef( const std::string polarRef){
       _alexandriaPolarRef.assign(polarRef);
     }
-    const char *getForceField(){
-      return _alexandriaForcefield.c_str();
+
+     std::string getForceField(){
+      return _alexandriaForcefield;
     }
 
-    void setForceField( const char *forcefield){
+    void setForceField( const std::string forcefield){
       _alexandriaForcefield.assign(forcefield);
     }
 
-    void setLengthUnit( const char *length_unit){
+    void setLengthUnit( const std::string length_unit){
       _gtLengthUnit.assign(length_unit);
     }
 
-    void  setVdwFunction(  const char *func);
+    void  setVdwFunction(  const std::string func);
 
     int  getVdwFtype( );
 
@@ -227,171 +274,171 @@ namespace alexandria
 
     double  getFudgeLJ( );
 
-    int getAtypeRefEnthalpy( const char *atype,
+    int getAtypeRefEnthalpy( const std::string atype,
 			     double     *Href);
 
-    void  setCombinationRule(  char *func);
+    void  setCombinationRule(  std::string func);
 
-    const char * getCombinationRule( );
+     std::string  getCombinationRule( );
 
     int  getCombRule( );
 
-    const char * getLengthUnit( );
+     std::string  getLengthUnit( );
 
     /* Return array of atomtypes compatible with the bonded neighbors.
        The array should be freed, but not the contents of the elements.
     */
-    char ** getBondingRules(  char *elem,
-			      int nbond, char *neighbors[],
-			      const char *geometry,
+     std::string * getBondingRules(  std::string elem,
+			      int nbond, std::string neighbors[],
+			      const std::string geometry,
 			      int iAromatic);
 
-    char * getGeometry(  char *gtBrule);
+     std::string  getGeometry(  std::string gtBrule);
 
-    char * getDesc(  char *atype);
+     std::string  getDesc(  std::string atype);
 
     /* Get the charge from the gentop.dat file */
-    char * getCharge(  char *atype);
+     std::string  getCharge(  std::string atype);
 
     /* Returns 1 if OK, 0 if last */
     int  getAtype(
-		  char        **elem,
-		  char        **desc,
-		  char        **atype,
-		  char        **ptype,
-		  char        **btype,
-		  char        **vdwparams,
+		  std::string  *elem,
+		  std::string  *desc,
+		  std::string  *atype,
+		  std::string  *ptype,
+		  std::string  *btype,
+		  std::string  *vdwparams,
 		  double       *refEnthalpy);
 
     int  getPtype(
-		  char        **ptype,
-		  char        **miller,
-		  char        **bosque,
+		  std::string  *ptype,
+		  std::string  *miller,
+		  std::string  *bosque,
 		  double       *polarizability,
 		  double       *sigPol);
 
-    const char * atypeToPtype(  const char *atype);
+     std::string  atypeToPtype(  const std::string atype);
 
-    const char * atypeToBtype(  const char *atype);
+     std::string  atypeToBtype(  const std::string atype);
 
     /* Return 1 if OK, 0 if not found */
     int  searchAtype(
-		     char         *key,
-		     char        **elem,
-		     char        **desc,
-		     char        **atype,
-		     char        **ptype,
-		     char        **btype,
-		     char        **vdwparams);
+		     std::string   key,
+		     std::string  *elem,
+		     std::string  *desc,
+		     std::string  *atype,
+		     std::string  *ptype,
+		     std::string  *btype,
+		     std::string  *vdwparams);
 
     /* Return 1 if OK, 0 if not found */
-    int  getPtypePol(  const char *ptype,
+    int  getPtypePol(  const std::string ptype,
 		       double *polarizability, double *sigPol);
-    int  getAtypePol(  const char *atype,
+    int  getAtypePol(  const std::string atype,
 		       double *polarizability, double *sigPol);
 
-    int getAtypeRefEnthalpy(Poldata * pd, const char *atype,
+    int getAtypeRefEnthalpy(Poldata * pd, const std::string atype,
 			    double *Href);
 
     /* Return 1 if OK, 0 if not found */
-    int  bondingRuleValence(  char *gtBrule, double *valence);
+    int  bondingRuleValence(  std::string gtBrule, double *valence);
 
     void  addMiller(
-		    char         *miller,
+		    std::string   miller,
 		    int           atomnumber,
 		    double        tauAhc,
 		    double        alphaAhp);
 
     /* Return 1 if "miller" was found */
     int  getMillerPol(
-		      char         *miller,
+		      std::string   miller,
 		      int          *atomnumber,
 		      double       *tauAhc,
 		      double       *alphaAhp);
 
     int  getMiller(
-		   char        **miller,
+		   std::string  *miller,
 		   int          *atomnumber,
 		   double       *tauAhc,
 		   double       *alphaAhp);
 
-    void  setMillerUnits(  char *tauUnit,
-			   char *ahpUnit);
+    void  setMillerUnits(  std::string tauUnit,
+			   std::string ahpUnit);
 
-    void  getMillerUnits(  char **tauUnit,
-			   char **ahpUnit);
+    void  getMillerUnits(  std::string *tauUnit,
+			   std::string *ahpUnit);
 
     /* Returns miller name or NULL if not found */
-    char * ptypeToMiller(  const char *ptype);
+     std::string  ptypeToMiller(  const std::string ptype);
 
     void  addBosque(
-		    char         *bosque,
+		    std::string   bosque,
 		    double        polarizability);
 
     int  getBosque(
-		   char        **bosque,
+		   std::string  *bosque,
 		   double       *polarizability);
 
-    void setBosqueUnit( char *polarUnit){
+    void setBosqueUnit( std::string polarUnit){
       _bosquePolarUnit.assign(polarUnit);
     }
 
-    const char *getBosqueUnit(){
-      return _bosquePolarUnit.c_str();
+     std::string getBosqueUnit(){
+      return _bosquePolarUnit;
     }
 
 
 
     /* Returns bosque name or NULL if not found */
-    char * ptypeToBosque(  const char *ptype);
+     std::string  ptypeToBosque(  const std::string ptype);
 
-    int  getBosquePol(  char *bosque, double *polarizability);
+    int  getBosquePol(  std::string bosque, double *polarizability);
 
     /* Return 1 on success or 0 otherwise */
-    int  addBond(  char *atom1, char *atom2,
+    int  addBond(  std::string atom1, std::string atom2,
 		   double length, double sigma, int ntrain,
-		   double bondorder, char *params);
+		   double bondorder, std::string params);
 
-    int  setBondParams(  char *atom1, char *atom2,
+    int  setBondParams(  std::string atom1, std::string atom2,
 			 double length, double sigma, int ntrain,
-			 double bondorder, char *params);
+			 double bondorder, std::string params);
 
     /* Return bond-index 1-N or 0 if not found */
-    int  getBond(  char **atom1, char **atom2,
+    int  getBond(  std::string *atom1, std::string *atom2,
 		   double *length, double *sigma, int *ntrain,
-		   double *bondorder, char **params);
+		   double *bondorder, std::string *params);
 
-    void  setBondFunction(  char *fn);
+    void  setBondFunction(  std::string fn);
 
-    const char *getBondFunction(){
-      return _gtBondFunction.c_str();
+     std::string getBondFunction(){
+      return _gtBondFunction;
     }
 
 
 
     /* Return bond-index 1-N or 0 if not found */
-    int  searchBond(  char *atom1, char *atom2,
+    int  searchBond(  std::string atom1, std::string atom2,
 		      double *length, double *sigma, int *ntrain,
-		      double *bondorder, char **params);
+		      double *bondorder, std::string *params);
 
     /* Returns 1 if there is a bond, 0 if not. Toler is absolute in length-units. */
-    int  elemIsBond(  char *elem1, char *elem2,
+    int  elemIsBond(  std::string elem1, std::string elem2,
 		      double distance, double toler);
 
     /* Return maximal valence for a give element */
-    double  elemGetMaxValence(  char *elem);
+    double  elemGetMaxValence(  std::string elem);
 
     /* Return NULL-terminated array of potential bondorders */
-    double * elemGetBondorders(  char *elem1, char *elem2,
+    double * elemGetBondorders(  std::string elem1, std::string elem2,
 				 double distance, double toler);
     /* Returns the bondorder. Toler is absolute in length-units. */
-    double  atypeBondorder(  char *atype1, char *atype2,
+    double  atypeBondorder(  std::string atype1, std::string atype2,
 			     double distance, double toler);
 
-    void  setAngleFunction(  char *fn);
+    void  setAngleFunction(  std::string fn);
 
-    const char *getAngleFunction() {
-      return _gtAngleFunction.c_str();
+     std::string getAngleFunction() {
+      return _gtAngleFunction;
     }
 
     int getBondFtype() {
@@ -406,140 +453,139 @@ namespace alexandria
       return _gtDihedralFtype[egd];
     }
 
-    const char *getVdwFunction(){
-      return _gtVdwFunction.c_str();
+     std::string getVdwFunction(){
+      return _gtVdwFunction;
     }
 
-    const char *getPolarUnit(){
-      return _alexandriaPolarUnit.c_str();
+     std::string getPolarUnit(){
+      return _alexandriaPolarUnit;
     }
 
-    const char *getPolarRef(){
-      return _alexandriaPolarRef.c_str();
+     std::string getPolarRef(){
+      return _alexandriaPolarRef;
     }
 
     /* Return 1 on success, 0 otherwise */
     int  addAngle(
-		  char *atom1, char *atom2,
-		  char *atom3, double angle, double sigma,
-		  int ntrain, char *params);
+		  std::string atom1, std::string atom2,
+		  std::string atom3, double angle, double sigma,
+		  int ntrain, std::string params);
 
-    int  setAngleParams(  char *atom1, char *atom2,
-			  char *atom3,
-			  double angle, double sigma, int ntrain, char *params);
-
-    /* Return angle-index 1-N or 0 if not found */
-    int  getAngle(  char **atom1, char **atom2,
-		    char **atom3, double *angle, double *sigma,
-		    int *ntrain, char **params);
+    int  setAngleParams(  std::string atom1, std::string atom2,
+			  std::string atom3,
+			  double angle, double sigma, int ntrain, std::string params);
 
     /* Return angle-index 1-N or 0 if not found */
-    int  searchAngle(  char *atom1, char *atom2,
-		       char *atom3, double *angle, double *sigma,
-		       int *ntrain, char **params);
+    int  getAngle(  std::string *atom1, std::string *atom2,
+		    std::string *atom3, double *angle, double *sigma,
+		    int *ntrain, std::string *params);
 
-    void setAngleUnit( char *angleUnit){
+    /* Return angle-index 1-N or 0 if not found */
+    int  searchAngle(  std::string atom1, std::string atom2,
+		       std::string atom3, double *angle, double *sigma,
+		       int *ntrain, std::string *params);
+
+    void setAngleUnit( std::string angleUnit){
       _gtAngleUnit.assign(angleUnit);
     }
 
-    const  char *getAngleUnit(){
-      return _gtAngleUnit.c_str();
+      std::string getAngleUnit(){
+      return _gtAngleUnit;
     }
 
 
-    void  setDihedralFunction(  int egd, char *fn);
+    void  setDihedralFunction(  int egd, std::string fn);
 
-    const  char *getDihedralFunction( int egd){
-      return _gtDihedralFunction[egd].c_str();
+      std::string getDihedralFunction( int egd){
+      return _gtDihedralFunction[egd];
     }
 
     /* Return 1 on success or 0 otherwise */
-    int  addDihedral(  int egd, char *atom1, char *atom2,
-		       char *atom3, char *atom4,
+    int  addDihedral(  int egd, std::string atom1, std::string atom2,
+		       std::string atom3, std::string atom4,
 		       double dihedral, double sigma,
-		       int ntrain, char *params);
+		       int ntrain, std::string params);
 
     int  setDihedralParams(  int egd,
-			     char *atom1, char *atom2,
-			     char *atom3, char *atom4,
+			     std::string atom1, std::string atom2,
+			     std::string atom3, std::string atom4,
 			     double angle, double sigma,
-			     int ntrain, char *params);
+			     int ntrain, std::string params);
 
     /* Return dihedral-index 1-N or 0 if not found */
     int  getDihedral(  int egd,
-		       char **atom1, char **atom2,
-		       char **atom3, char **atom4,
+		       std::string *atom1, std::string *atom2,
+		       std::string *atom3, std::string *atom4,
 		       double *dihedral, double *sigma,
-		       int *ntrain, char **params);
+		       int *ntrain, std::string *params);
 
     /* Return dihedral-index 1-N or 0 if not found */
     int  searchDihedral(  int egd,
-			  char *atom1, char *atom2,
-			  char *atom3, char *atom4,
+			  std::string atom1, std::string atom2,
+			  std::string atom3, std::string atom4,
 			  double *dihedral, double *sigma,
-			  int *ntrain, char **params);
+			  int *ntrain, std::string *params);
 
     void  setDihedralUnit(  int   egd,
-			    char *dihedralUnit);
+			    std::string dihedralUnit);
 
-    char * getDihedralUnit(  int egd);
+     std::string  getDihedralUnit(  int egd);
 
-    void  addSymcharges(  char *central,
-			  char *attached, int numattach);
+    void  addSymcharges(  std::string central,
+			  std::string attached, int numattach);
 
-    int  getSymcharges(  char **central,
-			 char **attached, int *numattach);
+    int  getSymcharges(  std::string *central,
+			 std::string *attached, int *numattach);
 
-    int  searchSymcharges(  char *central,
-			    char *attached, int numattach);
+    int  searchSymcharges(  std::string central,
+			    std::string attached, int numattach);
 
-    static ChargeDistributionModel name2eemtype(const char *name);
+    static ChargeDistributionModel name2eemtype(const std::string name);
 
-    static const char *getEemtypeName(ChargeDistributionModel eem);
+    static  std::string getEemtypeName(ChargeDistributionModel eem);
 
-    char * getEemref(  ChargeDistributionModel eqdModel);
+     std::string  getEemref(  ChargeDistributionModel eqdModel);
 
     int  getNumprops(  ChargeDistributionModel eqdModel);
 
-    int  havePolSupport(  const char *atype);
+    int  havePolSupport(  const std::string atype);
 
     int  haveEemSupport(  ChargeDistributionModel eqdModel,
-			  const char             *name,
+			  const std::string       name,
 			  gmx_bool                bAllowZeroParameters);
 
-    double  getJ00(  ChargeDistributionModel eqdModel,const char *name);
+    double  getJ00(  ChargeDistributionModel eqdModel,const std::string name);
 
-    int  getNzeta(  ChargeDistributionModel eqdModel,const char *name);
+    int  getNzeta(  ChargeDistributionModel eqdModel,const std::string name);
 
-    double  getZeta(  ChargeDistributionModel eqdModel,const char *name, int zz);
+    double  getZeta(  ChargeDistributionModel eqdModel,const std::string name, int zz);
 
-    char * getQstr(  ChargeDistributionModel eqdModel, char *name);
+     std::string  getQstr(  ChargeDistributionModel eqdModel, std::string name);
 
-    char * getRowstr(  ChargeDistributionModel eqdModel, char *name);
+     std::string  getRowstr(  ChargeDistributionModel eqdModel, std::string name);
 
-    double  getQ(  ChargeDistributionModel eqdModel,const char *name, int zz);
+    double  getQ(  ChargeDistributionModel eqdModel,const std::string name, int zz);
 
-    int  getRow(  ChargeDistributionModel eqdModel,const char *name, int zz);
+    int  getRow(  ChargeDistributionModel eqdModel,const std::string name, int zz);
 
-    double  getChi0(  ChargeDistributionModel eqdModel,const char *name);
+    double  getChi0(  ChargeDistributionModel eqdModel,const std::string name);
 
-    char * getOpts(  ChargeDistributionModel eqdModel, char *name);
+     std::string  getOpts(  ChargeDistributionModel eqdModel, std::string name);
 
-    void  setEemprops(
-		      ChargeDistributionModel eqdModel, char *name,
+    void  setEemprops(ChargeDistributionModel eqdModel,const std::string name,
 		      double J0, double chi0,
-		      char *zeta, char *q, char *row);
+		      const std::string zeta,const  std::string q, const std::string row);
 
     int  getEemprops(
-		     ChargeDistributionModel *eqdModel, char **name,
+		     ChargeDistributionModel *eqdModel, std::string *name,
 		     double *J0, double *chi0,
-		     char **zeta, char **q, char **row);
+		     std::string *zeta, std::string *q, std::string *row);
 
-    void  setEpref(  ChargeDistributionModel eqdModel, char *epref);
+    void  setEpref(  ChargeDistributionModel eqdModel, std::string epref);
 
-    char * getEpref(ChargeDistributionModel eqdModel);
+     std::string  getEpref(ChargeDistributionModel eqdModel);
 
-    int listEpref(  ChargeDistributionModel *eqdModel, char **epref);
+    int listEpref(  ChargeDistributionModel *eqdModel, std::string *epref);
 
     void  commEemprops(  t_commrec *cr);
 
@@ -547,15 +593,14 @@ namespace alexandria
 
 
   private:
-
     std::string          _filename;
     unsigned int            _nptypeC;
-    std::vector<t_ptype>       _ptype;
+    std::vector<Ptype>       _ptype;
     unsigned int            _nalexandriaC;
-    std::vector<t_ffatype>  _alexandria;
+    std::vector<Ffatype>  _alexandria;
     std::vector<std::string>         _btype;
     unsigned int            _nbruleC;
-    std::vector<t_brule> _brule;
+    std::vector<Brule> _brule;
     std::string          _alexandriaPolarUnit;
     std::string          _alexandriaPolarRef;
     std::string          _alexandriaForcefield;
@@ -566,43 +611,43 @@ namespace alexandria
     std::string          _gtBondFunction;
     unsigned int            _ngtBondC, _gtBondFtype;
     std::string          _gtLengthUnit;
-    std::vector<t_gt_bond>  _gtBond;
+    std::vector<GtBond>  _gtBond;
     std::string          _gtAngleFunction;
     unsigned int            _ngtAngleC, _gtAngleFtype;
     std::string          _gtAngleUnit;
-    std::vector<t_gt_angle>     _gtAngle;
+    std::vector<GtAngle>     _gtAngle;
     std::vector<std::string>          _gtDihedralFunction;
     std::vector<unsigned int>             _ngtDihedralC, _gtDihedralFtype;
-    std::vector<std::vector<t_gt_dihedral> > _gtDihedral;
+    std::vector<std::vector<GtDihedral> > _gtDihedral;
     unsigned int            _nmillerC;
-    std::vector<t_miller>   _miller;
+    std::vector<Miller>   _miller;
     std::string          _millerTauUnit, _millerAhpUnit;
     unsigned int             _nbosqueC;
-    std::vector<t_bosque>     _bosque;
+    std::vector<Bosque>     _bosque;
     std::string          _bosquePolarUnit;
     unsigned int              _nsymchargesC;
-    std::vector<t_symcharges>  _symcharges;
+    std::vector<Symcharges>  _symcharges;
     unsigned int            _nepC;
-    std::vector<t_eemprops>  _eep;
+    std::vector<Eemprops>  _eep;
     unsigned int             _nerC;
-    std::vector<t_epref>   _epr;
+    std::vector<Epref>   _epr;
 
-    void addBtype(const char   *btype);
+    void addBtype(const std::string btype);
 
-    gmx_bool strcasestrStart(char *needle, char *haystack);
+    gmx_bool strcasestrStart(std::string needle, std::string haystack);
 
-    int countNeighbors(t_brule *brule, int nbond, char *nbhybrid[], int *score);
+    int countNeighbors(Brule *brule, int nbond, std::string nbhybrid[], int *score);
 
-    t_gt_bond *searchBond(  char *atom1, char *atom2,
-			    double bondorder);
+    GtBond *searchBond(  std::string atom1, std::string atom2,
+			 double bondorder);
 
-    int searchBondtype(  char *atom);
+    int searchBondtype(  std::string atom);
 
-    t_eemprops *getEep(ChargeDistributionModel eqdModel,
-		       const char             *name);
+    Eemprops *getEep(ChargeDistributionModel eqdModel,
+		     const std::string             name);
 
-    t_gt_dihedral *searchDihedral( int egd, char *atom1, char *atom2,
-				   char *atom3, char *atom4);
+    GtDihedral *searchDihedral( int egd, std::string atom1, std::string atom2,
+				std::string atom3, std::string atom4);
 
     static int gtbComp(const void *a, const void *b);
 
