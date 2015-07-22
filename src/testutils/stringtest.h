@@ -110,6 +110,15 @@ class StringTestBase : public ::testing::Test
          */
         void checkFileContents(const std::string &filename, const char *id);
 
+        /*! \brief
+         * Tests that contents of two files are equal.
+         *
+         * \param[in] refFilename   File with the expected contents.
+         * \param[in] testFilename  File with the contents to be tested.
+         */
+        void testFilesEqual(const std::string &refFilename,
+                            const std::string &testFilename);
+
     private:
         class Impl;
 

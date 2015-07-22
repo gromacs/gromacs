@@ -599,7 +599,7 @@ const char *esp_prop[espNR] = {
     "molecule"
 };
 
-static void read_espresso_conf(const char *infile,
+static void read_espresso_conf(const char *infile, char *title,
                                t_atoms *atoms, rvec x[], rvec *v, matrix box)
 {
     t_symtab *symtab = NULL;
@@ -615,6 +615,8 @@ static void read_espresso_conf(const char *infile,
         snew(symtab, 1);
         open_symtab(symtab);
     }
+    // TODO: The code does not understand titles it writes...
+    title[0] = '\0';
 
     clear_mat(box);
 
@@ -1681,7 +1683,7 @@ void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
             read_pdb_conf(infile, title, atoms, x, ePBC, box, TRUE, NULL);
             break;
         case efESP:
-            read_espresso_conf(infile, atoms, x, v, box);
+            read_espresso_conf(infile, title, atoms, x, v, box);
             break;
         case efTPR:
             snew(mtop, 1);

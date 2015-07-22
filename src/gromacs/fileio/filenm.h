@@ -45,8 +45,8 @@
 extern "C" {
 #endif
 
-/* this enum should correspond to the array deffile in gmxlib/filenm.c */
-enum {
+/* this enum should correspond to the array deffile in filenm.cpp */
+enum GromacsFileType {
     efMDP,
     efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
     efEDR,
