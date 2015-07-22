@@ -44,6 +44,7 @@
 #include <cmath>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/pdbio.h"
