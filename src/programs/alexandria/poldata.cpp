@@ -64,23 +64,8 @@ namespace alexandria
     _nsymchargesC = 0;
     _nepC = 0;
     _nerC = 0; 
-    _filename = "";
-    _alexandriaPolarUnit = "";
-    _alexandriaPolarRef = "";
-    _alexandriaForcefield = "";
-    _gtVdwFunction  = "";
-    _gtCombinationRule = "";
-    _gtBondFunction = "";
-    _gtLengthUnit = "";
-    _gtAngleFunction = "";
-    _gtAngleUnit = "";
-    _millerAhpUnit = "";
-    _bosquePolarUnit = "";
-    
-
  
     for (int x =0; x < egdNR; x++){
-      _gtDihedralFunction[x]="";
       _ngtDihedralC[x]=0;
       // _gtDihedral[x]=NULL;
     }
@@ -1741,7 +1726,6 @@ namespace alexandria
       }
     eep->eqd_model = eqdModel;
     eep->name =name;
-    eep->name[EEMBUFSIZE-1] = '\0';
     eep->J0                 = J0;
     sz = split(zeta, ' ');
     sq = split(q, ' ');
@@ -1755,9 +1739,9 @@ namespace alexandria
       {
 	if (n < MAXZETA)
 	  {
-	    eep->zeta[n] = atof(sz[n].c_str());
-	    eep->q[n]    = atof(sq[n].c_str());
-	    eep->row[n]  = atoi(sr[n].c_str());
+	    eep->setZeta(n,atof(sz[n].c_str()));
+	    eep->setQ(n,atof(sq[n].c_str()));
+	    eep->setRow(n,atoi(sr[n].c_str()));
 	  }
       }
     if (sz.size() > nn)
@@ -1783,9 +1767,9 @@ namespace alexandria
       }
     for (; (n < MAXZETA); n++)
       {
-	eep->zeta[n] = 0;
-	eep->q[n]    = 0;
-	eep->row[n]  = 0;
+	eep->setZeta(n,0);
+	eep->setQ(n,0);
+	eep->setRow(n,0);
       }
     eep->chi0  = chi0;
   }
@@ -1897,7 +1881,7 @@ namespace alexandria
     if ((eer = getEep( eqdModel, name)) != NULL)
       {
 	range_check(zz, 0, eer->nzeta);
-	return eer->row[zz];
+	return eer->getRow(zz);
       }
     return -1;
   }
@@ -1913,7 +1897,7 @@ namespace alexandria
 	    printf("Bleh\n");
 	  }
 	range_check(zz, 0, eer->nzeta);
-	return eer->zeta[zz];
+	return eer->getZeta(zz);
       }
     return -1;
   }
@@ -1936,7 +1920,7 @@ namespace alexandria
     if ((eer = getEep( eqdModel, name)) != NULL)
       {
 	range_check(zz, 0, eer->nzeta);
-	return eer->q[zz];
+	return eer->getQ(zz);
       }
     return -1;
   }
@@ -2047,7 +2031,7 @@ namespace alexandria
 		    _eep[i].J0);
 	    for (j = 0; ((int)j < _eep[i].nzeta); j++)
 	      {
-		fprintf(debug, " %8.3f", _eep[i].zeta[j]);
+		fprintf(debug, " %8.3f", _eep[i].getZeta(j));
 	      }
 	    fprintf(debug, "\n");
 	  }
@@ -2097,7 +2081,7 @@ namespace alexandria
 		    _eep[i].J0);
 	    for (j = 0; ((int)j < _eep[i].nzeta); j++)
 	      {
-		fprintf(debug, " %8.3f", _eep[i].zeta[j]);
+		fprintf(debug, " %8.3f", _eep[i].getZeta(j));
 	      }
 	    fprintf(debug, "\n");
 	  }
@@ -2133,7 +2117,7 @@ namespace alexandria
     return eqdNR;
   }
 
-   std::string Poldata::getEemtypeName(ChargeDistributionModel eem)
+  std::string Poldata::getEemtypeName(ChargeDistributionModel eem)
   {
     unsigned int i;
 

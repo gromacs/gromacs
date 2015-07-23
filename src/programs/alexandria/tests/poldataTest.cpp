@@ -61,13 +61,14 @@ protected:
   gmx::test::TestReferenceData                     refData_;
   gmx::test::TestReferenceChecker                  checker_;
   static const  int numModels = 3;
+  static   std::vector<std::string>            atomNames;
+  static std::string atomName;
 
   //init sett tolecrance
   PoldataTest ( )
     :refData_(gmx::test::erefdataUpdateAll), checker_(refData_.rootChecker())
   {
 	  
-
 
 #ifdef GMX_DOUBLE
     checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
@@ -82,10 +83,15 @@ protected:
     gmx_atomprop_t aps = gmx_atomprop_init();
 
     // Reads the file, the file only suport 3 chargedisributionModels
-    // eqdAXp,eqdAXg,  eqdAXs,
+    // eqdAXp,eqdAXg,  eqdAXs,  23/07/15
     std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-    pd = alexandria::PoldataXml::read(dataName.c_str(), aps);  
+    pd = alexandria::PoldataXml::read(dataName.c_str(), aps);
 
+    alexandria::FfatypeIterator iter = pd->getAtypeBegin();
+    atomName = iter->type;
+    for (; iter != pd->getAtypeEnd(); iter++){
+      atomNames.push_back(iter->type);
+    }
 	  
   }
 
@@ -99,7 +105,8 @@ protected:
 
 alexandria::Poldata * PoldataTest::pd;
 const int PoldataTest::numModels;
-
+std::vector<std::string> PoldataTest::atomNames;
+std::string PoldataTest::atomName;
 
 TEST_F (PoldataTest, getAtype){
 
@@ -124,51 +131,29 @@ TEST_F (PoldataTest, getAtype){
   checker_.checkString(btype,"btype");
   checker_.checkString(vdwparams,"vdwparams");
   checker_.checkDouble(J0,"J0");
-
 }
 
 TEST_F (PoldataTest, chi)
 {
-  
-  
-  std::string                    name;
-  double                   J0;
   std::vector<double>      values;
-  pd->getAtype(NULL,
-	       NULL,
-	       &name,
-	       NULL,
-	       NULL,
-	       NULL,
-	       &J0);
+
+
   for (int model = 0; model < numModels; model++)
     {
-      values.push_back(pd->getChi0((ChargeDistributionModel)model, name));
+      values.push_back(pd->getChi0((ChargeDistributionModel)model, atomName));
     }
   checker_.checkSequence(values.begin(), values.end(), "chi");
 }
 
 TEST_F (PoldataTest, row){
-  std::string              name;
-  double                   J0;
   std::vector<double>      values;
-  
-  
-  pd->getAtype(NULL,
-	       NULL,
-	       &name,
-	       NULL,
-	       NULL,
-	       NULL,
-	       &J0);
   int numAtoms = 3;
-  
 
   for (int atomNr = 0; atomNr < numAtoms; atomNr++)
     {
       for (int model = 0; model <  numModels; model++)
 	{
-	  values.push_back(pd->getRow((ChargeDistributionModel)model, name, atomNr));
+	  values.push_back(pd->getRow((ChargeDistributionModel)model, atomName, atomNr));
         }
     }
   checker_.checkSequence(values.begin(), values.end(), "row");
@@ -177,31 +162,61 @@ TEST_F (PoldataTest, row){
 
 TEST_F (PoldataTest, zeta)
 {
-  std::string              name;
-  double                   J0;
   std::vector<double>      values;
-  pd->getAtype(NULL,
-	       NULL,
-	       &name,
-	       NULL,
-	       NULL,
-	       NULL,
-	       &J0);
   int numAtoms = 3;
+
   for (int atomNr = 0; atomNr < numAtoms; atomNr++)
     {
       for (int model = 0; model <  numModels; model++)
 	{
-	  values.push_back(pd->getZeta((ChargeDistributionModel)model, name, atomNr));
+	  values.push_back(pd->getZeta((ChargeDistributionModel)model, atomName, atomNr));
         }
     }
   checker_.checkSequence(values.begin(), values.end(), "zeta");
 }
 
 
+TEST_F (PoldataTest, Ptype)
+{
+  alexandria::PtypeIterator ptype = pd->getPtypeBegin();
+  checker_.checkString(ptype->type,"type");
+  checker_.checkString(ptype->miller,"miller");
+  checker_.checkString(ptype->bosque,"bosque");
+  checker_.checkDouble(ptype->polarizability,"polarizability");
+  checker_.checkDouble(ptype->sig_pol,"sig_pol");
+}
+
+TEST_F (PoldataTest, Miller)
+{
+  alexandria::MillerIterator miller = pd->getMillerBegin();
+  checker_.checkInteger(miller->atomnumber,"atomnumber");
+  checker_.checkDouble(miller->tau_ahc,"tau_ahc");
+  checker_.checkDouble(miller->alpha_ahp,"alpha_ahp");
+}
 
 
-TEST_F (PoldataTest, geters)
+TEST_F (PoldataTest, Bosque)
+{
+  alexandria::BosqueIterator bosque = pd->getBosqueBegin();
+  checker_.checkString(bosque->bosque,"bosque");
+  checker_.checkDouble(bosque->polarizability,"polarizability");
+}
+
+
+TEST_F (PoldataTest, Dihedral)
+{
+  alexandria::DihedralIterator dihedral = pd->getDihedralBegin(0);
+  checker_.checkString(dihedral->atom1,"atom1");
+checker_.checkString(dihedral->atom2,"atom2");
+  checker_.checkString(dihedral->atom3,"atom3");
+  checker_.checkString(dihedral->atom4,"atom4");
+  checker_.checkString(dihedral->params,"params");
+  checker_.checkDouble(dihedral->dihedral,"dihedral");
+  checker_.checkDouble(dihedral->sigma,"sigma");
+  checker_.checkInteger(dihedral->ntrain,"ntrain");
+}
+
+TEST_F (PoldataTest, simpleGeters)
 {
   std::string value = pd->getPolarUnit( );
   checker_.checkString(value,"polarUnit");

@@ -56,43 +56,41 @@ class RespTest : public ::testing::Test
 {
 
   //using gmx::test::TestReferenceData;
-    protected:
+protected:
   gmx::test::TestReferenceData                     refData_;
-        gmx::test::TestReferenceChecker                  checker_;
+  gmx::test::TestReferenceChecker                  checker_;
+  static alexandria::Resp resp;
 
-//init sett tolecrance
-        RespTest ( )
-	  :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
-        {
-	  
-
-
+  //init sett tolecrance
+  RespTest ( )
+    :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
+  {
 #ifdef GMX_DOUBLE
-            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
+    checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
 #else
-            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-3));
+    checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-3));
 #endif
-        }
+  }
 
-        // Static initiation, only run once every test.
-        static void SetUpTestCase()
-        {
-	  
-        }
+  // Static initiation, only run once every test.
+  static void SetUpTestCase()
+  {
+    //    resp = new resp()
+  }
 
 
   void setUp(){
 
 
   }
-        static void TearDownTestCase()
-        {
-        }
+  static void TearDownTestCase()
+  {
+  }
 
 
-        void test()
-        {
-        }
+  void test()
+  {
+  }
 };
 
 
@@ -101,5 +99,5 @@ class RespTest : public ::testing::Test
 
 TEST_F (RespTest, test)
 {
-    test();
+  test();
 }
