@@ -63,7 +63,7 @@ namespace alexandria
     _chieq = 0;
     _hfac = 0;
     _epsr = 0;
-    char        *atp;
+    std::string atp;
     gmx_bool     bSup = TRUE;
     int          i, j, k, atm, nz;
 
@@ -127,7 +127,7 @@ namespace alexandria
                 if (pd->haveEemSupport(_iChargeDistributionModel, atp, TRUE) == 0)
 		  {
                     fprintf(stderr, "No charge distribution support for atom %s (element %s), model %s\n",
-                            *atoms->atomtype[j], atp, Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
+                            *atoms->atomtype[j], atp.c_str(), Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
                     bSup = FALSE;
 		  }
 	      }
@@ -167,13 +167,6 @@ namespace alexandria
 	      }
 	  }
       }
-    /*if (bSup)
-      {
-      }
-      else
-      {
-      //    done();
-      }*/
   }
 
 
@@ -182,45 +175,12 @@ namespace alexandria
   GentopQgen::~GentopQgen()
   {
     sfree(_x);
-    //    int  i;
-
-    /*   sfree(chi0);
-	 sfree(_rhs);
-	 sfree(atomnr);
-	 sfree(j00);
-	 
-	 for (i = 0; (i < _natom); i++)
-	 {
-         sfree(row[i]);
-	 sfree(q[i]);
-	 sfree(zeta[i]);
-	 sfree(_Jab[i]);
-	 sfree(elem[i]);
-	 if (bAllocSave)
-	 {
-	 sfree(qsave[i]);
-	 sfree(zetasave[i]);
-	 }
-	 }
-	 sfree(row);
-	 sfree(zeta);
-	 sfree(elem);
-	 sfree(q);
-	 sfree(_Jab);
-	 sfree(nZeta);
-	 if (bAllocSave)
-	 {
-	 sfree(qsave);
-	 sfree(zetasave);
-	 bAllocSave = FALSE;
-	 }*/
   }
 
 
   void GentopQgen::saveParams( Resp * gr)
   {
     int i, j;
-
     if (!_bAllocSave)
       {
 	_qsave.resize(_natom);
@@ -323,8 +283,8 @@ namespace alexandria
   real GentopQgen::calcJab(ChargeDistributionModel iChargeDistributionModel,
 			   rvec xi, rvec xj,
 			   int nZi, int nZj,
-			   std::vector<real> zeta_i, std::vector<real> zeta_j,
-			   std::vector<int> rowi, std::vector<int> rowj)
+			   std::vector<real> zetaI, std::vector<real> zetaJ,
+			   std::vector<int> rowI, std::vector<int> rowJ)
   {
     int  i, j;
     rvec dx;
@@ -337,8 +297,7 @@ namespace alexandria
       {
         gmx_fatal(FARGS, "Zero distance between atoms!\n");
       }
-    //    if ((*zeta_i <= 0) || (*zeta_j <= 0)) correct TODO
-    if ((zeta_i[0] <= 0) || (zeta_j[0] <= 0))
+    if ((zetaI[0] <= 0) || (zetaJ[0] <= 0))
       {
         iChargeDistributionModel = eqdAXp;
       }
@@ -355,7 +314,7 @@ namespace alexandria
 	  {
 	    for (j = nZj-1; (j < nZj); j++)
 	      {
-		eTot += Coulomb_SS(r, rowi[i], rowj[j], zeta_i[i], zeta_j[j]);
+		eTot += Coulomb_SS(r, rowI[i], rowJ[j], zetaI[i], zetaJ[j]);
 	      }
 	  }
 	break;
@@ -365,7 +324,7 @@ namespace alexandria
 	  {
 	    for (j = nZj-1; (j < nZj); j++)
 	      {
-		eTot += Coulomb_GG(r, zeta_i[i], zeta_j[j]);
+		eTot += Coulomb_GG(r, zetaI[i], zetaJ[j]);
 	      }
 	  }
 	break;
@@ -376,7 +335,7 @@ namespace alexandria
     return ONE_4PI_EPS0*(eTot)/ELECTRONVOLT;
   }
 
-  void GentopQgen::solveQEem(FILE *fp,  real hardness_factor)
+  void GentopQgen::solveQEem(FILE *fp,  real hardnessFactor)
   {
     double **a, qtot, q;
     int      i, j, n;
@@ -389,7 +348,7 @@ namespace alexandria
 	  {
             a[i][j] = _Jab[i][j];
 	  }
-        a[i][i] = hardness_factor*_Jab[i][i];
+        a[i][i] = hardnessFactor*_Jab[i][i];
       }
     for (j = 0; (j < n-1); j++)
       {
@@ -851,7 +810,7 @@ namespace alexandria
 				    real tol, int maxiter, gmx_atomprop_t aps,
 				    real *chieq)
   {
-    real       *qq = NULL;
+    std::vector<real>       qq;
     int         i, j, iter;
     real        rms;
 
@@ -861,7 +820,7 @@ namespace alexandria
 
         updatePd(atoms, pd);
 
-        snew(qq, atoms->nr+1);
+        qq.resize(atoms->nr+1);
         for (i = j = 0; (i < atoms->nr); i++)
 	  {
             if (atoms->atom[i].ptype != eptShell)
@@ -919,7 +878,6 @@ namespace alexandria
 	      }
 	  }
         *chieq = _chieq;
-        sfree(qq);
       }
 
     if (eQGEN_OK == _eQGEN)
@@ -952,7 +910,7 @@ namespace alexandria
 
   int GentopQgen::generateCharges(FILE *fp,
 				  Resp * gr,
-				  const char *molname, Poldata * pd,
+				  const std::string molname, Poldata * pd,
 				  t_atoms *atoms,
 				  real tol, int maxiter, int maxcycle,
 				  gmx_atomprop_t aps)
@@ -971,7 +929,7 @@ namespace alexandria
 	if (fp)
 	  {
 	    fprintf(fp, "Generating %s charges for %s using RESP algorithm\n",
-		    Poldata::getEemtypeName(_iChargeDistributionModel).c_str(), molname);
+		    Poldata::getEemtypeName(_iChargeDistributionModel).c_str(), molname.c_str());
 	  }
 	for (cc = 0; (cc < maxcycle); cc++)
 	  {
@@ -1013,7 +971,7 @@ namespace alexandria
 	if (fp)
 	  {
 	    fprintf(fp, "Generating charges for %s using %s algorithm\n",
-		    molname, Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
+		    molname.c_str(), Poldata::getEemtypeName(_iChargeDistributionModel).c_str());
 	  }
 	if (_iChargeDistributionModel == eqdBultinck)
 	  {

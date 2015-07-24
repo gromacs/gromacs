@@ -48,13 +48,13 @@ namespace alexandria
   private:
     static void sp(int n, char buf[], int maxindent);
 
-    static void process_attr(FILE *fp, xmlAttrPtr attr, int elem,
+    static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 			     int indent, Poldata  * pd);
 
-    static void process_tree(FILE *fp, xmlNodePtr tree, int indent,
+    static void processTree(FILE *fp, xmlNodePtr tree, int indent,
 			     Poldata * pd, gmx_atomprop_t aps);
 
-    static void add_xml_poldata(xmlNodePtr parent, Poldata * pd);
+    static void addXmlPoldata(xmlNodePtr parent, Poldata * pd);
 
 
   };

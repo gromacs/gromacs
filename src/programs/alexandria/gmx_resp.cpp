@@ -65,7 +65,7 @@ namespace alexandria
 	     real zmin, real zmax, real deltaZ, bool bZatype,
 	     real watoms, real rDecrZeta, bool bRandZeta,
 	     bool bRandQ, real penalty_fac, bool bFitZeta, bool bEntropy,
-	     const char *dzatoms, unsigned int seed)
+	     const std::string dzatoms, unsigned int seed)
   {
 
 
@@ -80,7 +80,7 @@ namespace alexandria
     _zmin                  = zmin;
     _zmax                  = zmax;
     _deltaZ               = deltaZ;
-    std::vector<std::string> ptr = split(dzatoms, ' ');
+    std::vector<std::string> ptr = split(dzatoms.c_str(), ' ');
     for (unsigned int i = 0; (i < ptr.size()); ++i)
       {
         _dzatoms[i].assign(ptr[i].c_str());
@@ -106,24 +106,15 @@ namespace alexandria
 
   Resp::~Resp()
   {
-    //int i;
-
     sfree(_x);
     sfree(_esp);
-    //  sfree(_pot);
-    //    i = 0;
-    /* for (i = 0; (i < _natom); i++)
-      {
-        delete _ra[i];
-	}*/
-    //    sfree(_ra);
   }
 
   void Resp::getAtomInfo( t_atoms *atoms,
                             t_symtab *symtab, rvec **x)
   {
     int          i;
-    const char  *rnm;
+    std::string rnm;
 
     init_t_atoms(atoms, _natom, true);
     if (NULL == (*x))
@@ -146,8 +137,8 @@ namespace alexandria
                 sizeof(atoms->atom[i].elem)-1);
         copy_rvec(_x[i], (*x)[i]);
       }
-    rnm = (0 != _stoichiometry.size()) ? _stoichiometry.c_str() : (const char *)"BOE";
-    t_atoms_set_resinfo(atoms, 0, symtab, rnm, 1, ' ', 1, ' ');
+    rnm = (0 != _stoichiometry.size()) ? _stoichiometry : "BOE";
+    t_atoms_set_resinfo(atoms, 0, symtab, rnm.c_str(), 1, ' ', 1, ' ');
 
     atoms->nres = 1;
   }
@@ -236,7 +227,7 @@ namespace alexandria
   }
 
   void Resp::summary(FILE *fp, 
-		     std::vector<int> &symmetric_atoms)
+		     std::vector<int> &symmetricAtoms)
   {
     int i;
 
@@ -246,7 +237,7 @@ namespace alexandria
                 _natom, _natype, _nparam);
         for (i = 0; (i < _natom); i++)
 	  {
-            fprintf(fp, " %d", symmetric_atoms[i]);
+            fprintf(fp, " %d", symmetricAtoms[i]);
 	  }
         fprintf(fp, "\n");
       }
@@ -285,7 +276,7 @@ namespace alexandria
       }
   }
 
-  void Resp::addAtomSymmetry(std::vector<int> &symmetric_atoms)
+  void Resp::addAtomSymmetry(std::vector<int> &symmetricAtoms)
   {
     int        i, k, zz;
 
@@ -307,7 +298,7 @@ namespace alexandria
                 addParam( i, eparmZ, zz);
 	      }
 	  }
-        else if (symmetric_atoms[i] == i)
+        else if (symmetricAtoms[i] == i)
 	  {
             addParam( i, eparmQ, _ra[i]->getNZeta()-1);
 
@@ -343,22 +334,22 @@ namespace alexandria
 		  }
 	      }
 	  }
-        else if (symmetric_atoms[i] > i)
+        else if (symmetricAtoms[i] > i)
 	  {
-            gmx_fatal(FARGS, "The symmetric_atoms array can not point to larger atom numbers");
+            gmx_fatal(FARGS, "The symmetricAtoms array can not point to larger atom numbers");
 	  }
         else if (_ra[i]->getNZeta() > 0)
 	  {
             _ra[i]->setIq(_ra[i]->getNZeta()-1,
-			  _ra[symmetric_atoms[i]]->getIq(_ra[i]->getNZeta()-1));
+			  _ra[symmetricAtoms[i]]->getIq(_ra[i]->getNZeta()-1));
             for (zz = 0; (zz < _ra[i]->getNZeta()); zz++)
 	      {
-                _ra[i]->setIz(zz,_ra[symmetric_atoms[i]]->getIz(zz));
+                _ra[i]->setIz(zz,_ra[symmetricAtoms[i]]->getIz(zz));
 	      }
             if (debug)
 	      {
                 fprintf(debug, "Atom %d is a copy of atom %d\n",
-                        i+1, symmetric_atoms[i]+1);
+                        i+1, symmetricAtoms[i]+1);
 	      }
 	  }
         else
@@ -410,14 +401,14 @@ namespace alexandria
       }
   }
 
-  void Resp::writeHisto( const char *fn, char *title, output_env_t oenv)
+  void Resp::writeHisto( const std::string fn, std::string title, output_env_t oenv)
   {
     FILE       *fp;
     gmx_stats_t gs;
     real       *x, *y;
     int         i, nbin = 100;
 
-    if (NULL == fn)
+    if (0 == fn.size())
       {
         return;
       }
@@ -429,7 +420,7 @@ namespace alexandria
 
     gmx_stats_make_histogram(gs, 0, &nbin, ehistoY, 1, &x, &y);
 
-    fp = xvgropen(fn, title, "Pot (1/a.u.)", "()", oenv);
+    fp = xvgropen(fn.c_str(), title.c_str(), "Pot (1/a.u.)", "()", oenv);
     for (i = 0; (i < nbin); i++)
       {
         fprintf(fp, "%10g  %10g\n", x[i], y[i]);
@@ -440,10 +431,8 @@ namespace alexandria
     gmx_stats_done(gs);
   }
 
-
-  //TODO  is src right or shood this be src
-  void Resp::writeDiffCube(Resp * src,const char *cube_fn,
-			     const char *hist_fn, char *title, output_env_t oenv,
+  void Resp::writeDiffCube(Resp * src, const std::string cubeFn,
+			   const std::string histFn, std::string title, output_env_t oenv,
 			     int rho)
   {
     FILE       *fp;
@@ -452,15 +441,15 @@ namespace alexandria
     rvec        dx;
     gmx_stats_t gst = NULL, ppcorr = NULL;
 
-    if (NULL != hist_fn)
+    if (0 != histFn.size())
       {
         gst    = gmx_stats_init();
         ppcorr = gmx_stats_init();
       }
-    if (NULL != cube_fn)
+    if (0 != cubeFn.size())
       {
-        fp = gmx_ffopen(cube_fn, "w");
-        fprintf(fp, "%s\n", title);
+        fp = gmx_ffopen(cubeFn.c_str(), "w");
+        fprintf(fp, "%s\n", title.c_str());
         fprintf(fp, "POTENTIAL\n");
         fprintf(fp, "%5d%12.6f%12.6f%12.6f\n",
                 _natom,
@@ -549,7 +538,7 @@ namespace alexandria
         int   nb = 0;
         real *x  = NULL, *y = NULL;
 
-        fp = xvgropen(hist_fn, "Absolute deviation from QM", "Distance (nm)",
+        fp = xvgropen(histFn.c_str(), "Absolute deviation from QM", "Distance (nm)",
                       "Potential", oenv);
         gmx_stats_dump_xy(gst, fp);
         if (0)
@@ -571,17 +560,17 @@ namespace alexandria
       }
   }
 
-  void Resp::writeCube(const char *fn, char *title)
+  void Resp::writeCube(const std::string fn, std::string title)
   {
     writeDiffCube(NULL,  fn, NULL, title, NULL, 0);
   }
 
-  void Resp::writeRho( const char *fn, char *title)
+  void Resp::writeRho( const std::string fn, std::string title)
   {
     writeDiffCube(NULL,  fn, NULL, title, NULL, 1);
   }
 
-  void Resp::readCube( const char *fn, bool bESPonly)
+  void Resp::readCube( const std::string fn, bool bESPonly)
   {
     char         **strings;
     bool           bOK;
@@ -592,12 +581,12 @@ namespace alexandria
       "%lf", "%*s%lf", "%*s%*s%lf", "%*s%*s%*s%lf",
       "%*s%*s%*s%*s%lf", "%*s%*s%*s%*s%*s%lf"
     };
-    if (NULL == fn)
+    if (0 == fn.size())
       {
         return;
       }
 
-    nlines = get_file(fn, &strings);
+    nlines = get_file(fn.c_str(), &strings);
     bOK    = (nlines > 100);
     if (bOK)
       {
@@ -701,7 +690,7 @@ namespace alexandria
     bOK = (line == nlines);
     if (!bOK)
       {
-        gmx_fatal(FARGS, "Error reading %s, line %d out of %d", fn, line, nlines);
+        gmx_fatal(FARGS, "Error reading %s, line %d out of %d", fn.c_str(), line, nlines);
       }
 
     for (m = 0; (m < nlines); m++)
@@ -896,15 +885,15 @@ namespace alexandria
       }
   }
 
-  void Resp::warning(const char *fn, int line)
+  void Resp::warning(const std::string fn, int line)
   {
-    fprintf(stderr, "WARNING: It seems like you have two sets of ESP data in your file\n         %s\n", fn);
+    fprintf(stderr, "WARNING: It seems like you have two sets of ESP data in your file\n         %s\n", fn.c_str());
     fprintf(stderr, "         using the second set, starting at line %d\n", line);
   }
 
-  const char *Resp::getStoichiometry()
+  const std::string Resp::getStoichiometry()
   {
-    return _stoichiometry.c_str();
+    return _stoichiometry;
   }
 
   void Resp::getSetVector(bool         bSet,
@@ -1306,12 +1295,10 @@ namespace alexandria
   int Resp::optimizeCharges(FILE *fp,  int maxiter,
 			     real toler, real *rms)
   {
-    double *param;
+    double param[_nparam];
     double  ccc;
     int     bConv;
     char    buf[STRLEN];
-
-    snew(param, _nparam);
 
     getSetVector( true, _bRandQ, _bRandZeta, _seed, param);
 
@@ -1337,8 +1324,6 @@ namespace alexandria
 
     getSetVector( false, false, false, _seed, param);
 
-    sfree(param);
-
     if (bConv)
       {
         return eQGEN_OK;
@@ -1350,18 +1335,18 @@ namespace alexandria
   }
 
 
-  void Resp::potcomp( const char *potcomp,
-                      const char *pdbdiff, output_env_t oenv)
+  void Resp::potcomp( const std::string potcomp,
+                      const std::string pdbdiff, output_env_t oenv)
   {
     int     i;
     double  pp, exp, eem;
     FILE   *fp;
     int     unit = eg2cHartree_e;
 
-    if (NULL != potcomp)
+    if (0 != potcomp.size())
       {
         const char *pcleg[2] = { "Atoms", "ESP points" };
-        fp = xvgropen(potcomp, "Electrostatic potential", unit2string(unit), unit2string(unit), oenv);
+        fp = xvgropen(potcomp.c_str(), "Electrostatic potential", unit2string(unit), unit2string(unit), oenv);
         xvgr_legend(fp, 2, pcleg, oenv);
         fprintf(fp, "@type xy\n");
         for (i = 0; (i < _nesp); i++)
@@ -1379,9 +1364,9 @@ namespace alexandria
         fprintf(fp, "&\n");
         fclose(fp);
       }
-    if (NULL != pdbdiff)
+    if (0 != pdbdiff.c_str())
       {
-        fp = fopen(pdbdiff, "w");
+        fp = fopen(pdbdiff.c_str(), "w");
         fprintf(fp, "REMARK All distances are scaled by a factor of two.\n");
         for (i = 0; (i < _nesp); i++)
 	  {

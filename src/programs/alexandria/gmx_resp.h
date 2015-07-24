@@ -52,7 +52,7 @@ namespace alexandria
 	 real zmin, real zmax, real delta_z, bool bZatyp,
 	 real watoms, real rDecrZeta,
 	 bool bRandZeta, bool bRandQ, real penaltyFac, bool bFitZeta,
-	 bool bEntropy, const char *dzatoms,
+	 bool bEntropy, const std::string dzatoms,
 	 unsigned int seed);
 
 
@@ -66,7 +66,7 @@ namespace alexandria
     void statistics( int len, char buf[]);
 
     void summary(FILE *gp, 
-		 std::vector<int> &symmetric_atoms);
+		 std::vector<int> &symmetricAtoms);
 
     void updateAtomtypes( t_atoms *atoms);
 
@@ -82,9 +82,9 @@ namespace alexandria
     void getAtomInfo( t_atoms *atoms,
 			t_symtab *symtab, rvec **x);
 
-    const char *getStoichiometry();
+    const std::string getStoichiometry();
 
-    void addAtomSymmetry(std::vector<int> &symmetric_atoms);
+    void addAtomSymmetry(std::vector<int> &symmetricAtoms);
 
     void addPoint( double x, double y,
 		    double z, double V);
@@ -105,24 +105,24 @@ namespace alexandria
 
     void calcPot();
 
-    void readCube( const char *fn, bool bESPonly);
+    void readCube( const std::string fn, bool bESPonly);
 
-    void writeCube( const char *fn, char *title);
+    void writeCube( const std::string fn, std::string title);
 
-    void writeRho( const char *fn, char *title);
+    void writeRho( const std::string fn, std::string  title);
 
     void writeDiffCube(Resp * src,
-			 const char *cube_fn, const char *hist_fn,
-			 char *title, output_env_t oenv, int rho);
+		       const std::string cubeFn, const std::string histFn,
+		       std::string title, output_env_t oenv, int rho);
 
-    void writeHisto(const char *fn,
-		     char *title, output_env_t oenv);
+    void writeHisto(const std::string fn,
+		    std::string title, output_env_t oenv);
 
     int  optimizeCharges(FILE *fp,  int maxiter,
 			  real toler, real *rms);
 
-    void potcomp(const char *potcomp,
-		 const char *pdbdiff, output_env_t oenv);
+    void potcomp(const std::string potcomp,
+		 const std::string pdbdiff, output_env_t oenv);
 
     double getQtot( int atom);
 
@@ -154,13 +154,13 @@ namespace alexandria
     rvec                   *_x, *_esp;
 
     
-    void warning(const char *fn, int line);
+    void warning(const std::string fn, int line);
 
     void getSetVector(bool         bSet,
 			bool         bRandQ,
 			bool         bRandZeta,
 			unsigned int seed,
-			double      *nmx);
+		        double    *  nmx);
 
     real myWeight(int iatom);
 
@@ -168,7 +168,7 @@ namespace alexandria
 
     void addParam( int atom, eParm eparm, int zz);
 
-    static double chargeFunction(void * gr,double v[]);
+    static double chargeFunction(void * gr, double v[]);
 
 };
 }

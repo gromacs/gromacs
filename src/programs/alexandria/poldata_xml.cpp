@@ -144,7 +144,7 @@ void PoldataXml::sp(int n, char buf[], int maxindent)
     buf[i] = '\0';
 }
 
-void PoldataXml::process_attr(FILE *fp, xmlAttrPtr attr, int elem,
+void PoldataXml::processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                          int indent, Poldata * pd)
 {
   std::string attrname, attrval;
@@ -427,7 +427,7 @@ void PoldataXml::process_attr(FILE *fp, xmlAttrPtr attr, int elem,
 
 }
 
-void PoldataXml::process_tree(FILE *fp, xmlNodePtr tree, int indent,
+void PoldataXml::processTree(FILE *fp, xmlNodePtr tree, int indent,
                          Poldata * pd, gmx_atomprop_t aps)
 {
     int           elem;
@@ -460,12 +460,12 @@ void PoldataXml::process_tree(FILE *fp, xmlNodePtr tree, int indent,
             {
                 if (elem != exmlGENTOP)
                 {
-                    process_attr(fp, tree->properties, elem, indent+2, pd);
+                    processAttr(fp, tree->properties, elem, indent+2, pd);
                 }
 
                 if (tree->children)
                 {
-                    process_tree(fp, tree->children, indent+2, pd, aps);
+                    processTree(fp, tree->children, indent+2, pd, aps);
                 }
             }
         }
@@ -504,7 +504,7 @@ void PoldataXml::process_tree(FILE *fp, xmlNodePtr tree, int indent,
 
     pd = new Poldata();
     pd->setFilename( fn2);
-    process_tree(debug, doc->children, 0, pd, aps);
+    processTree(debug, doc->children, 0, pd, aps);
 
     xmlFreeDoc(doc);
 
@@ -517,7 +517,7 @@ void PoldataXml::process_tree(FILE *fp, xmlNodePtr tree, int indent,
     return pd;
 }
 
-void PoldataXml::add_xml_poldata(xmlNodePtr parent, Poldata * pd)
+void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
 {
     xmlNodePtr              child, grandchild;
     int                     i, atomnumber, numbonds, nexcl,
@@ -811,7 +811,7 @@ void PoldataXml::add_xml_poldata(xmlNodePtr parent, Poldata * pd)
     myroot->prev = (xmlNodePtr) dtd;
 
     /* Add molecule definitions */
-    add_xml_poldata(myroot, pd);
+    addXmlPoldata(myroot, pd);
 
     xmlSetDocCompressMode(doc, (int)bCompress);
     xmlIndentTreeOutput = 1;

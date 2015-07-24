@@ -63,7 +63,7 @@ namespace alexandria
 			    real *chieq);
 
     int generateCharges(FILE *fp,
-			 Resp * gr, const char *molname,
+			Resp * gr, const std::string molname,
 			 Poldata * pd,
 			 t_atoms *atoms,
 			 real tol, int maxiter, int maxcycle,
@@ -114,14 +114,14 @@ namespace alexandria
     real calcJab(ChargeDistributionModel iChargeDistributionModel,
 		  rvec xi, rvec xj,
 		  int nZi, int nZj,
-		  std::vector<real> zeta_i,
-		  std::vector<real> zeta_j,
-		  std::vector<int> rowi, 
-		  std::vector<int> rowj);
+		  std::vector<real> zetaI,
+		  std::vector<real> zetaJ,
+		  std::vector<int> rowI, 
+		  std::vector<int> rowJ);
 
     void calcJab();
   
-    void solveQEem(FILE *fp,  real hardsness_factor);
+    void solveQEem(FILE *fp,  real hardsnesFactor);
   
     void updateJ00();
   
