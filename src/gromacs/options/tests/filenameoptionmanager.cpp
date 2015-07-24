@@ -358,4 +358,27 @@ TEST_F(FileNameOptionManagerTest,
     EXPECT_EQ("testfile.trr", value);
 }
 
+TEST_F(FileNameOptionManagerTest, DefaultNameOptionWorksWithoutInputChecking)
+{
+    std::string value;
+    ASSERT_NO_THROW_GMX(manager_.disableInputOptionChecking(true));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                FileNameOption("f").store(&value).required()
+                                    .filetype(gmx::eftIndex).inputFile()
+                                    .defaultBasename("default")
+                                    .allowMissing()));
+    ASSERT_NO_THROW_GMX(manager_.addDefaultFileNameOption(&options_, "deffnm"));
+    EXPECT_EQ("default.ndx", value);
+
+    gmx::OptionsAssigner assigner(&options_);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("deffnm"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("missing"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_EQ("missing.ndx", value);
+}
+
 } // namespace

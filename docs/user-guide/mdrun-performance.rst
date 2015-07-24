@@ -4,7 +4,7 @@ The GROMACS build system and the :ref:`gmx mdrun` tool has a lot of built-in
 and configurable intelligence to detect your hardware and make pretty
 effective use of that hardware. For a lot of casual and serious use of
 :ref:`gmx mdrun`, the automatic machinery works well enough. But to get the
-most from your hardware to maximise your scientific quality, read on!
+most from your hardware to maximize your scientific quality, read on!
 
 Hardware background information
 -------------------------------
@@ -152,7 +152,7 @@ log file, stdout and stderr are used to print diagnostics that
 inform the user about the choices made and possible consequences.
 
 A number of command-line parameters are available to vary the default
-behaviour.
+behavior.
 
 ``-nt``
     The total number of threads to use. The default, 0, will start as
@@ -168,7 +168,7 @@ behaviour.
 ``-ntomp``
     The total number of OpenMP threads per rank to start. The
     default, 0, will start one thread on each available core.
-    Alternatively, mdrun will honour the appropriate system
+    Alternatively, mdrun will honor the appropriate system
     environment variable (e.g. ``OMP_NUM_THREADS``) if set.
 
 ``-npme``
@@ -460,7 +460,7 @@ parallel hardware.
     comes for free with the non-bonded communication. Particles beyond
     the non-bonded cut-off are only communicated when they have
     missing bonded interactions; this means that the extra cost is
-    minor and nearly indepedent of the value of ``-rdd``. With dynamic
+    minor and nearly independent of the value of ``-rdd``. With dynamic
     load balancing, option ``-rdd`` also sets the lower limit for the
     domain decomposition cell sizes. By default ``-rdd`` is determined
     by :ref:`gmx mdrun` based on the initial coordinates. The chosen value will

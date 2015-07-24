@@ -18,10 +18,10 @@ subsets of the molecular system (see :ref:`gmx convert-tpr` and
 :ref:`gmx trjconv`). It is easier to do a correct "single-point" energy
 evaluation with this feature than a 0-step simulation.
 
-Neighbour searching is normally performed for every frame in the
+Neighbor searching is normally performed for every frame in the
 trajectory, since :ref:`gmx mdrun` can no longer assume anything about how the
 structures were generated. If :mdp:`nstlist` is zero, then only one
-neighbour list will be constructed. Naturally, no update or constraint
+neighbor list will be constructed. Naturally, no update or constraint
 algorithms are ever used.
 
 Running a simulation in reproducible mode
@@ -129,7 +129,7 @@ Normally, the length of an MD simulation is best managed through the
 more control is useful. `mdrun -nsteps 100` overrides the [.mdp] file
 and executes 100 steps. `mdrun -maxh 2.5` will terminate the
 simulation shortly before 2.5 hours elapse, which can be useful when
-running under cluster queues (as long as the queueing system does not
+running under cluster queues (as long as the queuing system does not
 ever suspend the simulation).
 
 Running a membrane protein embedding simulation
@@ -143,7 +143,7 @@ long time in a previous simulation. In theory that could be accomplished
 with a procedure similar to genbox, but since lipids are much larger
 than water molecules it will lead to a large vacuum layer between the
 protein and membrane if we remove all molecules where any atom is
-overlapping. Instead, this module works by first artifically shrinking
+overlapping. Instead, this module works by first artificially shrinking
 the protein in the xy-plane, then it removes lipids that overlap with
 a much smaller core, after which we gradually push the protein atoms
 back to their initial positions, while using normal dynamics for the
@@ -152,7 +152,7 @@ rest of the system so lipids adapt to the protein.
 To use membrane embedding, start by building a lipid bilayer that is
 just-so-slightly larger in the xy-plane than what you expect to need
 in the end, and make sure you have enough water outside the membrane
-to accomodate globular domains. Place the protein in the same coordinate
+to accommodate globular domains. Place the protein in the same coordinate
 file (and topology) as your lipid bilayer, and make sure it is in the
 orientation and position you want right in the middle of the bilayer.
 

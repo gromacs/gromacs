@@ -9,7 +9,7 @@ listed in the following sections. Most environment variables function
 by being set in your shell to any non-NULL value. Specific
 requirements are described below if other values need to be set. You
 should consult the documentation for your shell for instructions on
-how to set environment variables in the current shell, or in config
+how to set environment variables in the current shell, or in configuration
 files for future shells. Note that requirements for exporting
 environment variables to jobs run under batch control systems vary and
 you should consult your local documentation for details.

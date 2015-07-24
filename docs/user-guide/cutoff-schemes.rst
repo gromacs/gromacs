@@ -7,7 +7,7 @@ on modern CPUs and accelerators, and support nearly all of the
 algorithms used in |Gromacs|.
 
 Before version 4.6, |Gromacs| always used pair-lists based on groups of
-particles. These groups of particles were orginally charge-groups, which were
+particles. These groups of particles were originally charge-groups, which were
 necessary with plain cut-off electrostatics. With the use of PME (or
 reaction-field with a buffer), charge groups are no longer necessary
 (and are ignored in the Verlet scheme). In |Gromacs| 4.6 and later, the
@@ -18,7 +18,7 @@ converted, and for the few cases where it may allow faster simulations
 with bio-molecular systems dominated by water.
 
 Without PME, the group cut-off scheme should generally be combined
-with a buffered pair-list to help avoid artefacts. However, the
+with a buffered pair-list to help avoid artifacts. However, the
 group-scheme kernels that can implement this are much slower than
 either the unbuffered group-scheme kernels, or the buffered
 Verlet-scheme kernels. Use of the Verlet scheme is strongly encouraged
@@ -53,7 +53,7 @@ unbuffered cut-off scheme             default      not by default
 exact cut-off                         shift/switch always
 potential-shift interactions          yes          yes
 potential-switch interactions         yes          yes
-force-switch interations              yes          yes
+force-switch interactions             yes          yes
 switched potential                    yes          yes
 switched forces                       yes          yes
 non-periodic systems                  yes          Z + walls
@@ -86,7 +86,7 @@ the cut-off length each time step. This makes simulations much
 slower. The performance of the Verlet scheme with the new non-bonded
 kernels is independent of system composition and is intended to always
 run with a buffered pair-list. Typically, buffer size is 0 to 10% of
-the cut-off, so you could win a bit of peformance by reducing or
+the cut-off, so you could win a bit of performance by reducing or
 removing the buffer, but this might not be a good trade-off of
 simulation quality.
 

@@ -268,15 +268,14 @@ std::string FileNameOptionManager::completeFileName(
 std::string FileNameOptionManager::completeDefaultFileName(
         const std::string &prefix, const FileNameOptionInfo &option)
 {
-    if (option.isDirectoryOption() || impl_->bInputCheckingDisabled_)
+    if (option.isDirectoryOption())
     {
         return std::string();
     }
     const bool        bInput = option.isInputFile() || option.isInputOutputFile();
     const std::string realPrefix
         = !impl_->defaultFileName_.empty() ? impl_->defaultFileName_ : prefix;
-    const bool        bAllowMissing = option.allowMissing();
-    if (bInput)
+    if (bInput && !impl_->bInputCheckingDisabled_)
     {
         const std::string completedName
             = findExistingExtension(realPrefix, option, impl_->redirector_);
@@ -284,7 +283,7 @@ std::string FileNameOptionManager::completeDefaultFileName(
         {
             return completedName;
         }
-        if (bAllowMissing)
+        if (option.allowMissing())
         {
             return realPrefix + option.defaultExtension();
         }

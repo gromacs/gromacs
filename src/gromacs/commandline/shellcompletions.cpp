@@ -218,7 +218,6 @@ TextOutputStream &ShellCompletionWriter::outputStream()
 void ShellCompletionWriter::startCompletions()
 {
     impl_->file_.reset(new TextWriter(impl_->binaryName_ + "-completion.bash"));
-    impl_->file_->writeLine("shopt -s extglob");
 }
 
 void ShellCompletionWriter::writeModuleCompletions(
