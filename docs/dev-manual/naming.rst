@@ -52,14 +52,6 @@ Common guidelines for C and C++ code
 * Preprocessor macros should be all upper-case.  Do not use leading
   underscores, as all such names are reserved according to the C/C++ standard.
 * Name include guards like ``GMX_DIRNAME_HEADERNAME_H``.
-* Boolean variables are always named with a ``b`` prefix, followed by a
-  CamelCase name.
-* Enum values are named with an ``e`` prefix.  For enum types exposed widely in
-  the codebase, this is followed typically by a part that makes the enum
-  values not conflict with other enums in the same scope.  In C code, this is
-  typically an all-lowercase acronym (e.g., ``epbcNONE``); in C++, the same
-  approach may be used, or the name of the enum type is used (e.g.,
-  ``eHelpOutputFormat_Console``).
 * Avoid abbreviations that are not obvious to a general reader.
 * If you use acronyms (e.g., PME, DD) in names, follow the Microsoft policy on
   casing: two letters is uppercase (DD), three or more is lowercase (Pme).
@@ -77,6 +69,10 @@ C code
   Some parts of the code use a ``_gmx_`` prefix for internal functions, but
   strictly speaking, these are reserved names, so, e.g., a trailing underscore
   would be better.
+* Old C code and changes to it can still use the hungarian notation for
+  booleans and enumerated variable names, as well as enum values, where they
+  are prefixed with ``b`` and ``e`` respectively, or you can gradually move
+  to the C++ practice below. Whatever you choose, avoid complex abbreviations.
 
 C++ code
 --------
@@ -103,6 +99,19 @@ C++ code
   a module start with the module name, omitting or abbreviating the module
   name is OK).  Currently, all source file names are lowercase, but this
   casing difference should be the only difference.
+* For new C++ code, avoid using the hungarian notation that is a descendant
+  from the C code (i.e., the practice of using a ``b`` prefix for boolean
+  variables and an ``e`` prefix for enumerated variables and/or values).
+  Instead, make the names long with a good description of what they control,
+  typically including a verb for boolean variables, like ``foundAtom``.
+* It is a good idea to include the name of the enum type
+  as a base in the name of enum values, e.g., ``HelpOutputFormat_Console``,
+  in particular for settings exposed to other modules.
+* Prefer to use enumerated types and values instead of booleans as control
+  parameters to functions. It is reasonably easy to understand what the
+  argument ``HelpOutputFormat_Console`` is controling, while it is almost
+  impossible to decipher ``TRUE`` in the same place without checking the
+  documentation for the role of the parameter.
 
 The rationale for the trailing underscore and the global/static prefixes is
 that it is immediately clear whether a variable referenced in a method is local
