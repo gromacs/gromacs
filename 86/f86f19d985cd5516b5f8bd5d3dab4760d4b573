@@ -1,0 +1,9 @@
+Code-Review+1: David van der Spoel <davidvanderspoel@gmail.com>
+Code-Review+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Sat, 25 Jul 2015 18:49:34 +0200
+Reviewed-on: https://gerrit.gromacs.org/4909
+Project: gromacs
+Branch: refs/heads/master
