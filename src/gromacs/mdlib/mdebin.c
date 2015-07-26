@@ -1249,7 +1249,9 @@ void upd_mdebin(t_mdebin       *md,
             {
                 fprintf(md->fp_dhdl, " %#.8g", md->dE[i]);
             }
-            if ((md->epc != epcNO)  &&
+            if (md->bDynBox &&
+                md->bDiagPres &&
+                (md->epc != epcNO) &&
                 (enerd->n_lambda > 0) &&
                 (fep->init_lambda < 0))
             {
