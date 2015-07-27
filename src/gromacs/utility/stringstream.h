@@ -46,7 +46,6 @@
 
 #include <string>
 
-#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/textstream.h"
 
 namespace gmx
@@ -73,6 +72,32 @@ class StringOutputStream : public TextOutputStream
 
     private:
         std::string str_;
+};
+
+//! Forward declaration of template class.
+template<typename T> class ConstArrayRef;
+
+/*! \libinternal \brief
+ * Helper class to convert static string data to a stream
+ */
+class StringInputStream : public TextInputStream
+{
+    public:
+        /*! \brief
+         * Constructor that initializes local variables including iterator.
+         *
+         * \param[in] input Pointer to vector of strings to be served by the stream.
+         */
+        explicit StringInputStream(ConstArrayRef<const char *> input);
+
+        virtual ~StringInputStream() {}
+
+        // From TextInputStream
+        virtual bool readLine(std::string *line);
+        virtual void close() {};
+    private:
+        std::string input_;
+        size_t      pos_;
 };
 
 } // namespace gmx
