@@ -46,6 +46,7 @@
 
 #include <string>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/textstream.h"
 
@@ -73,6 +74,68 @@ class StringOutputStream : public TextOutputStream
 
     private:
         std::string str_;
+};
+
+/*! \libinternal \brief
+ * Helper class to convert static string data to a stream
+ */
+class StringInputStream : public TextInputStream
+{
+    public:
+        /*! \brief
+         * Constructor that initializes local variables including iterator.
+         *
+         * \param[in] input Pointer to vector of strings to be served by the stream.
+         */
+        StringInputStream(ConstArrayRef<const char *> input)
+        {
+            for (ConstArrayRef<const char *>::iterator i = input.begin(); (i < input.end()); ++i)
+            {
+                input_.append(*i);
+                input_.append("\n");
+            }
+            pos_   = 0;
+        }
+        virtual ~StringInputStream() {}
+
+        /*! \brief
+         * Reads a line (with newline included) from the stream.
+         *
+         * \param[out] line    String to receive the line.
+         * \returns    `false` if nothing was read because the stream ended.
+         *
+         * On error or when `false` is returned, \p line will be empty.
+         */
+        virtual bool readLine(std::string *line)
+        {
+            if (pos_ == input_.size())
+            {
+                return false;
+            }
+            else
+            {
+                size_t newpos = input_.find("\n", pos_);
+                if (newpos == std::string::npos)
+                {
+                    newpos = input_.size();
+                }
+                else
+                {
+                    // To include the newline as well!
+                    newpos += 1;
+                }
+                line->assign(input_.substr(pos_, newpos-pos_));
+                pos_ = newpos;
+                return true;
+            }
+        }
+        /*! \brief
+         * Closes the stream (does nothing in this case).
+         */
+        virtual void close() {};
+    private:
+        std::string input_;
+        size_t      pos_;
 };
 
 } // namespace gmx

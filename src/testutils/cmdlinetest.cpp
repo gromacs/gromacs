@@ -55,6 +55,7 @@
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
@@ -62,6 +63,7 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/xvgtest.h"
 
 namespace gmx
 {
@@ -241,10 +243,12 @@ class CommandLineTestHelper::Impl
             OutputFileInfo(const char *option, const std::string &path)
                 : option(option), path(path)
             {
+                xvg = endsWith(path, ".xvg");
             }
 
             std::string         option;
             std::string         path;
+            bool                xvg;
         };
 
         typedef std::vector<OutputFileInfo>        OutputFileList;
@@ -346,8 +350,16 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
              outfile != impl_->outputFiles_.end();
              ++outfile)
         {
-            std::string output = TextReader::readFileToString(outfile->path);
-            outputChecker.checkStringBlock(output, outfile->option.c_str());
+            if (outfile->xvg)
+            {
+                TextInputFile sis(outfile->path);
+                checkXvgFile(&sis, &checker);
+            }
+            else
+            {
+                std::string output = TextReader::readFileToString(outfile->path);
+                outputChecker.checkStringBlock(output, outfile->option.c_str());
+            }
         }
     }
 }
