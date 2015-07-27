@@ -287,10 +287,6 @@ class CommandLineTestHelper
          * \p filename is given to TestTemporaryFileManager to make a unique
          * filename for the temporary file, but is not otherwise used.
          *
-         * Currently, this method should not be called for an XVG file, because
-         * the comments in the beginning of the file contain timestamps and
-         * other variable information, causing the test to fail.  Best used
-         * only for custom data formats.
          */
         void setOutputFile(CommandLine *args, const char *option,
                            const char *filename);
