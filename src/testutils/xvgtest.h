@@ -32,61 +32,47 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Implements classes from stringstream.h.
+ * Declares function to add the content of an xvg file to a checker.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_utility
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
-#include "gmxpre.h"
-
-#include "stringstream.h"
+#ifndef GMX_TESTUTILS_XVGTESTS_H
+#define GMX_TESTUTILS_XVGTESTS_H
 
 #include <string>
-
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
 
-void StringOutputStream::write(const char *str)
-{
-    str_.append(str);
-}
+class TextInputStream;
 
-void StringOutputStream::close()
+namespace test
 {
-}
 
-StringInputStream::StringInputStream(ConstArrayRef<const char *> input) :
-    input_(joinStrings(input.begin(), input.end(), "\n")), pos_(0)
-{
-}
+class TestReferenceChecker;
 
-bool StringInputStream::readLine(std::string *line)
-{
-    if (pos_ == input_.size())
-    {
-        return false;
-    }
-    else
-    {
-        size_t newpos = input_.find("\n", pos_);
-        if (newpos == std::string::npos)
-        {
-            newpos = input_.size();
-        }
-        else
-        {
-            // To include the newline as well!
-            newpos += 1;
-        }
-        line->assign(input_.substr(pos_, newpos-pos_));
-        pos_ = newpos;
-        return true;
-    }
-}
+/*! \brief
+ * Adds content of xvg file to TestReferenceChecker object.
+ *
+ * A stream of strings is parsed. The columns
+ * are analyzed with a relative tolerance provided by the input.
+ * Xmgrace formatting is ignored and only multi-column data is
+ * understood.
+ *
+ * \param[in] input       Object returning the lines of the file/data
+ *                        one by one.
+ * \param[in,out] checker The checker object.
+ */
+void checkXvgFile(TextInputStream      *input,
+                  TestReferenceChecker *checker);
+
+
+} // namespace test
 
 } // namespace gmx
+
+#endif
