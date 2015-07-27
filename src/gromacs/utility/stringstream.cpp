@@ -45,6 +45,9 @@
 
 #include <string>
 
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/stringutil.h"
+
 namespace gmx
 {
 
@@ -55,6 +58,37 @@ void StringOutputStream::write(const char *str)
 
 void StringOutputStream::close()
 {
+}
+
+StringInputStream::StringInputStream(ConstArrayRef<const char *> &input) :
+    input_(joinStrings(input.begin(), input.end(), "\n")), pos_(0)
+{
+    input_.append("\n");
+}
+
+bool StringInputStream::readLine(std::string *line)
+{
+    if (pos_ == input_.size())
+    {
+        line->assign("");
+        return false;
+    }
+    else
+    {
+        size_t newpos = input_.find("\n", pos_);
+        if (newpos == std::string::npos)
+        {
+            newpos = input_.size();
+        }
+        else
+        {
+            // To include the newline as well!
+            newpos += 1;
+        }
+        line->assign(input_.substr(pos_, newpos-pos_));
+        pos_ = newpos;
+        return true;
+    }
 }
 
 } // namespace gmx

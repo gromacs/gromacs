@@ -34,74 +34,44 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares implementations for textstream.h interfaces for input/output to
- * in-memory strings.
+ * Declares function to add the content of an xvg file to a checker.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_testutils
  */
-#ifndef GMX_UTILITY_STRINGSTREAM_H
-#define GMX_UTILITY_STRINGSTREAM_H
+#ifndef GMX_TESTUTILS_XVGTESTS_H
+#define GMX_TESTUTILS_XVGTESTS_H
 
 #include <string>
-
-#include "gromacs/utility/textstream.h"
 
 namespace gmx
 {
 
-/*! \libinternal \brief
- * Text output stream implementation for writing to an in-memory string.
- *
- * Implementations for the TextOutputStream methods throw std::bad_alloc if
- * reallocation of the string fails.
- *
- * \inlibraryapi
- * \ingroup module_utility
- */
-class StringOutputStream : public TextOutputStream
+class TextInputStream;
+
+namespace test
 {
-    public:
-        //! Returns the text written to the stream so far.
-        const std::string &toString() const { return str_; }
 
-        // From TextOutputStream
-        virtual void write(const char *text);
-        virtual void close();
+class TestReferenceChecker;
 
-    private:
-        std::string str_;
-};
-
-template<typename T> class ConstArrayRef;
-
-/*! \libinternal \brief
- * Helper class to convert static string data to a stream.
+/*! \brief
+ * Adds content of xvg file to TestReferenceChecker object.
  *
- * Provides a text input stream that returns lines from a string
+ * A stream of strings is parsed. The columns
+ * are analyzed with a relative tolerance provided by the input.
+ * Xmgrace formatting is ignored and only multi-column data is
+ * understood.
+ *
+ * \param[in] input       Object returning the lines of the file/data
+ *                        one by one.
+ * \param[in,out] checker The checker object.
  */
-class StringInputStream : public TextInputStream
-{
-    public:
-        //! Empty default constructor.
-        StringInputStream() {};
-        /*! \brief
-         * Constructor that stores input lines in a string.
-         *
-         * The array of char * is stored as a string separated by newline.
-         *
-         * \param[in] input Pointer to vector of strings to be served by the stream.
-         */
-        explicit StringInputStream(ConstArrayRef<const char *> &input);
+void checkXvgFile(TextInputStream      *input,
+                  TestReferenceChecker *checker);
 
-        // From TextInputStream
-        virtual bool readLine(std::string *line);
-        virtual void close() {};
-    private:
-        std::string input_;
-        size_t      pos_;
-};
+
+} // namespace test
 
 } // namespace gmx
 
