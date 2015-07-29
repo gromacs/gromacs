@@ -203,7 +203,7 @@ namespace alexandria
 			 const std::string miller,
 			 const std::string bosque,
 			 double        polarizability,
-			 double        sig_pol)
+			 double        sigPol)
   {
     Ptype *sp;
     unsigned int      i;
@@ -224,7 +224,7 @@ namespace alexandria
         sp->bosque         = bosque;
         sp->miller         = miller;
         sp->polarizability = polarizability;
-        sp->sig_pol        = sig_pol;
+        sp->sigPol        = sigPol;
       }
     else
       {
@@ -280,7 +280,7 @@ namespace alexandria
         sp->ptype          = ptype;
         sp->btype          = btype;
         sp->vdwparams      = vdwparams;
-        sp->ref_enthalpy   = refEnthalpy;
+        sp->refEnthalpy   = refEnthalpy;
         addBtype(btype);
       }
     else
@@ -426,7 +426,7 @@ namespace alexandria
 
 
   void Poldata::setPtypePolarizability( const std::string ptype,
-					double polarizability, double sig_pol)
+					double polarizability, double sigPol)
   {
     Ptype *sp;
     unsigned int      i;
@@ -437,7 +437,7 @@ namespace alexandria
 	  {
             sp                 = &(_ptype[i]);
             sp->polarizability = polarizability;
-            sp->sig_pol        = sig_pol;
+            sp->sigPol        = sigPol;
             break;
 	  }
       }
@@ -508,10 +508,11 @@ namespace alexandria
 
   int Poldata::countNeighbors(Brule *brule, int nbond, std::string nbhybrid[], int *score)
   {
-    int j, ni = 0, *jj, IFound;
+    int j, ni = 0, IFound;
+    std::vector<int> jj;
 
     *score = 0;
-    snew(jj, nbond+1);
+    jj.resize(nbond+1);
     for (unsigned int i = 0; (i < brule->nb.size()); i++)
       {
         IFound = 0;
@@ -535,7 +536,6 @@ namespace alexandria
 	      }
 	  }
       }
-    sfree(jj);
 
     return ni;
   }
@@ -599,7 +599,7 @@ namespace alexandria
   }
 
   int Poldata::getPtypePol( const std::string ptype,
-			    double *polar, double *sig_pol)
+			    double *polar, double *sigPol)
   {
     unsigned int j;
 
@@ -612,9 +612,9 @@ namespace alexandria
 		*polar   = _ptype[j].polarizability;
 	      }
 
-	    if (NULL != sig_pol)
+	    if (NULL != sigPol)
 	      {
-		*sig_pol = _ptype[j].sig_pol;
+		*sigPol = _ptype[j].sigPol;
 	      }
 	    return 1;
 	  }
@@ -647,7 +647,7 @@ namespace alexandria
       {
 	if (atype.compare(_alexandria[i].type) == 0)
 	  {
-	    *Href = _alexandria[i].ref_enthalpy;
+	    *Href = _alexandria[i].refEnthalpy;
 	    return 1;
 	  }
       }
@@ -695,7 +695,7 @@ namespace alexandria
       {
 	sp = &(_ptype[_nptypeC]);
 	assignScal(polarizability, sp->polarizability);
-	assignScal(sigPol, sp->sig_pol);
+	assignScal(sigPol, sp->sigPol);
 	assignStr(ptype, sp->type);
 	assignStr(miller, sp->miller);
 	assignStr(bosque, sp->bosque);
@@ -730,7 +730,7 @@ namespace alexandria
 	assignStr(ptype, sp->ptype);
 	assignStr(btype, sp->btype);
 	assignStr(vdwparams, sp->vdwparams);
-	*refEnthalpy = sp->ref_enthalpy;
+	*refEnthalpy = sp->refEnthalpy;
 	_nalexandriaC++;
 	return 1;
       }
@@ -1063,8 +1063,8 @@ namespace alexandria
     mil             = &(_miller[_miller.size()-1]);
     mil->miller     = miller;
     mil->atomnumber = atomnumber;
-    mil->tau_ahc    = tauAhc;
-    mil->alpha_ahp  = alphaAhp;
+    mil->tauAhc    = tauAhc;
+    mil->alphaAhp  = alphaAhp;
   }
 
   void Poldata::setMillerUnits( std::string tauUnit, std::string ahpUnit)
@@ -1096,8 +1096,8 @@ namespace alexandria
 	mil = &(_miller[i]);
 	assignStr(miller, mil->miller);
 	assignScal(atomnumber, mil->atomnumber);
-	assignScal(tauAhc, mil->tau_ahc);
-	assignScal(alphaAhp, mil->alpha_ahp);
+	assignScal(tauAhc, mil->tauAhc);
+	assignScal(alphaAhp, mil->alphaAhp);
 	_nmillerC++;
 
 	return 1;
@@ -1125,8 +1125,8 @@ namespace alexandria
 	  {
 	    mil = &(_miller[i]);
 	    assignScal(atomnumber, mil->atomnumber);
-	    assignScal(tauAhc, mil->tau_ahc);
-	    assignScal(alphaAhp, mil->alpha_ahp);
+	    assignScal(tauAhc, mil->tauAhc);
+	    assignScal(alphaAhp, mil->alphaAhp);
 
 	    return 1;
 	  }
@@ -1703,7 +1703,7 @@ namespace alexandria
     for (i = 0; (i < _eep.size()); i++)
       {
 	if ((strcasecmp(_eep[i].name.c_str(), name.c_str()) == 0) &&
-	    (_eep[i].eqd_model == eqdModel))
+	    (_eep[i].eqdModel == eqdModel))
 	  {
 	    return &(_eep[i]);
 	  }
@@ -1724,7 +1724,7 @@ namespace alexandria
 	_eep.resize(_eep.size()+1 );
 	eep = &(_eep[_eep.size()-1]);
       }
-    eep->eqd_model = eqdModel;
+    eep->eqdModel = eqdModel;
     eep->name =name;
     eep->J0                 = J0;
     sz = split(zeta, ' ');
@@ -1780,7 +1780,7 @@ namespace alexandria
   {
     if (_nepC < _eep.size())
       {
-	assignScal(eqdModel, _eep[_nepC].eqd_model);
+	assignScal(eqdModel, _eep[_nepC].eqdModel);
 	assignStr(name, _eep[_nepC].name);
 	assignScal(J0, _eep[_nepC].J0);
 	assignStr(zeta, _eep[_nepC].zetastr);
@@ -1803,7 +1803,7 @@ namespace alexandria
 
     for (i = 0; (i < _eep.size()); i++)
       {
-	if (_eep[i].eqd_model == eqdModel)
+	if (_eep[i].eqdModel == eqdModel)
 	  {
 	    n++;
 	  }
@@ -1946,7 +1946,7 @@ namespace alexandria
 
     for (i = 0; (i < _epr.size()); i++)
       {
-	if (_epr[i].eqd_model == eqdModel)
+	if (_epr[i].eqdModel == eqdModel)
 	  {
 	    _epr[i].epref = epref;
 	    break;
@@ -1955,7 +1955,7 @@ namespace alexandria
     if (i == _epr.size())
       {
 	_epr.resize(_epr.size() + 1);
-	_epr[i].eqd_model = eqdModel;
+	_epr[i].eqdModel = eqdModel;
 	_epr[i].epref = epref;
       }
   }
@@ -1966,7 +1966,7 @@ namespace alexandria
 
     for (i = 0; (i < _epr.size()); i++)
       {
-	if (_epr[i].eqd_model == eqdModel)
+	if (_epr[i].eqdModel == eqdModel)
 	  {
 	    return _epr[i].epref;
 	  }
@@ -1978,7 +1978,7 @@ namespace alexandria
   {
     if (_nerC < _epr.size())
       {
-	assignScal(eqdModel, _epr[_nerC].eqd_model);
+	assignScal(eqdModel, _epr[_nerC].eqdModel);
 	assignStr(epref, _epr[_nerC].epref);
 	_nerC++;
 	return 1;
@@ -1991,7 +1991,7 @@ namespace alexandria
   void Poldata::commEemprops( t_commrec *cr)
   {
     unsigned int         i, j, nep;
-    Eemprops *ep;
+    std::vector<Eemprops> ep;
 
     if (NULL != debug)
       {
@@ -2012,13 +2012,12 @@ namespace alexandria
 	  {
 	    gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
 	  }
-	snew(ep, _eep.size());
-	gmx_recv(cr, 0, ep, _eep.size()*sizeof(ep[0]));
+	ep.resize(_eep.size());
+	gmx_recv(cr, 0, vectorToArray(ep), _eep.size()*sizeof(ep[0]));
 	for (i = 0; (i < _eep.size()); i++)
 	  {
 	    _eep[i] = ep[i];
 	  }
-	sfree(ep);
       }
     if (NULL != debug)
       {
@@ -2026,7 +2025,7 @@ namespace alexandria
 	for (i = 0; (i < nep); i++)
 	  {
 	    fprintf(debug, "%5s %5s %8.3f %8.3f",
-		    getEemtypeName(_eep[i].eqd_model).c_str(),
+		    getEemtypeName(_eep[i].eqdModel).c_str(),
 		    _eep[i].name.c_str(), _eep[i].chi0, 
 		    _eep[i].J0);
 	    for (j = 0; ((int)j < _eep[i].nzeta); j++)
@@ -2041,7 +2040,7 @@ namespace alexandria
   void Poldata::commForceParameters(t_commrec *cr)
   {
     unsigned int         i, j, nep;
-    Eemprops *ep;
+    std::vector<Eemprops> ep;
 
     if (NULL != debug)
       {
@@ -2062,13 +2061,12 @@ namespace alexandria
 	  {
 	    gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
 	  }
-	snew(ep, nep);
-	gmx_recv(cr, 0, ep, _eep.size()*sizeof(ep[0]));
+	ep.resize(nep);
+	gmx_recv(cr, 0, vectorToArray(ep), _eep.size()*sizeof(ep[0]));
 	for (i = 0; (i < _eep.size()); i++)
 	  {
 	    _eep[i] = ep[i];
 	  }
-	sfree(ep);
       }
     if (NULL != debug)
       {
@@ -2076,7 +2074,7 @@ namespace alexandria
 	for (i = 0; (i < _eep.size()); i++)
 	  {
 	    fprintf(debug, "%5s %5s %8.3f %8.3f",
-		    getEemtypeName(_eep[i].eqd_model).c_str(),
+		    getEemtypeName(_eep[i].eqdModel).c_str(),
 		    _eep[i].name.c_str(), _eep[i].chi0,
 		    _eep[i].J0);
 	    for (j = 0; ((int)j < _eep[i].nzeta); j++)

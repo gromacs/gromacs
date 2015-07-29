@@ -3,9 +3,9 @@
 <ReferenceData>
   <String Name="elem">H</String>
   <String Name="desc">other hydrogen e.g. on aromatic C</String>
-  <String Name="name">h1</String>
+  <String Name="type">h1</String>
   <String Name="ptype">ha</String>
   <String Name="btype">h1</String>
   <String Name="vdwparams">2.47135e-01 6.56888e-02</String>
-  <Real Name="J0">217.999</Real>
+  <Real Name="refEnthalpy">217.999</Real>
 </ReferenceData>

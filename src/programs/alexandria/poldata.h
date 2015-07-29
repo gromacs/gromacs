@@ -68,7 +68,7 @@ namespace alexandria
     std::string miller; 
     std::string bosque;
     double polarizability;
-    double sig_pol;
+    double sigPol;
   }; 
   typedef std::vector<Ptype>::iterator PtypeIterator;
 
@@ -80,7 +80,7 @@ namespace alexandria
     std::string btype;
     std::string elem; 
     std::string vdwparams;
-    double  ref_enthalpy;
+    double  refEnthalpy;
   };
   typedef std::vector<Ffatype>::iterator FfatypeIterator;
 
@@ -148,8 +148,8 @@ namespace alexandria
   public:
     std::string miller;
     int     atomnumber;
-    double  tau_ahc;
-    double alpha_ahp;
+    double  tauAhc;
+    double alphaAhp;
   };
   typedef std::vector<Miller>::iterator MillerIterator;
 
@@ -163,7 +163,7 @@ namespace alexandria
 
   class Epref {
   public:
-    ChargeDistributionModel eqd_model;
+    ChargeDistributionModel eqdModel;
     std::string epref;
   };
   typedef std::vector<Epref>::iterator EprefIterator;
@@ -180,7 +180,7 @@ namespace alexandria
 #define MAXZETA    12
   class Eemprops {
   public:
-    ChargeDistributionModel eqd_model;
+    ChargeDistributionModel eqdModel;
     int nzeta;
     std::string name;
     std::string zetastr;
@@ -373,8 +373,7 @@ namespace alexandria
       return _alexandria.end();
     }
 
-    int  getPtype(
-		  std::string  *ptype,
+    int  getPtype(std::string  *ptype,
 		  std::string  *miller,
 		  std::string  *bosque,
 		  double       *polarizability,
@@ -394,8 +393,7 @@ namespace alexandria
     std::string  atypeToBtype(  const std::string atype);
 
     /* Return 1 if OK, 0 if not found */
-    int  searchAtype(
-		     std::string   key,
+    int  searchAtype(std::string   key,
 		     std::string  *elem,
 		     std::string  *desc,
 		     std::string  *atype,
@@ -415,8 +413,7 @@ namespace alexandria
     /* Return 1 if OK, 0 if not found */
     int  bondingRuleValence(  std::string gtBrule, double *valence);
 
-    void  addMiller(
-		    std::string   miller,
+    void  addMiller(std::string   miller,
 		    int           atomnumber,
 		    double        tauAhc,
 		    double        alphaAhp);
