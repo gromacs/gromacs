@@ -50,8 +50,6 @@ struct t_trxframe;
  * passed to compute_globals in md.c and global_stat.
  */
 
-/* We are rerunning the simulation */
-#define CGLO_RERUNMD        (1<<1)
 /* we are computing the kinetic energy from average velocities */
 #define CGLO_EKINAVEVEL     (1<<2)
 /* we are removing the center of mass momenta */

@@ -572,7 +572,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   | (bStopCM ? CGLO_STOPCM : 0)
                   | (bVV ? CGLO_PRESSURE : 0)
                   | (bVV ? CGLO_CONSTRAINT : 0)
-                  | (bRerunMD ? CGLO_RERUNMD : 0)
                   | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN : 0));
 
     bSumEkinhOld = FALSE;
@@ -990,7 +989,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
                             top_global, &bSumEkinhOld,
-                            CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
+                            CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
 
@@ -1041,11 +1040,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bCalcEner = TRUE;
             bGStat    = TRUE;
         }
-
-        /* these CGLO_ options remain the same throughout the iteration */
-        cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
-                      (bGStat ? CGLO_GSTAT : 0)
-                      );
 
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
@@ -1183,7 +1177,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, NULL, FALSE, state->box,
                                 top_global, &bSumEkinhOld,
-                                cglo_flags
+                                (bGStat ? CGLO_GSTAT : 0)
                                 | CGLO_ENERGY
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
                                 | (bPres ? CGLO_PRESSURE : 0)
@@ -1219,7 +1213,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                         constr, NULL, FALSE, state->box,
                                         top_global, &bSumEkinhOld,
-                                        CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
+                                        CGLO_GSTAT | CGLO_TEMPERATURE);
                         wallcycle_start(wcycle, ewcUPDATE);
                     }
                 }
@@ -1470,7 +1464,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, NULL, FALSE, lastbox,
                                 top_global, &bSumEkinhOld,
-                                cglo_flags | CGLO_TEMPERATURE
+                                (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
                                 );
                 wallcycle_start(wcycle, ewcUPDATE);
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
@@ -1556,7 +1550,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
                             lastbox,
                             top_global, &bSumEkinhOld,
-                            cglo_flags
+                            (bGStat ? CGLO_GSTAT : 0)
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
                             | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
