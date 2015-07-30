@@ -88,7 +88,7 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 #include <openbabel/obmolecformat.h>
 #include <openbabel/mol.h>
 #include <openbabel/atom.h>
-#include <openbabel/data.h>
+#include <openbabel/data_utilities.h>
 #include <openbabel/residue.h>
 #include <openbabel/obiter.h>
 #include <openbabel/obconversion.h>
@@ -319,6 +319,7 @@ static void gmx_molprop_read_babel(const char *g98,
         double              temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T, CVT, CPT;
         std::vector<double> Scomponents;
         if (extract_thermochemistry(mol, false, &nsymm,
+                                    0, 0.0,
                                     &temperature,
                                     &DeltaHf0,
                                     &DeltaHfT,
