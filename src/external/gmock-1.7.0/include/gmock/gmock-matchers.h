@@ -1529,6 +1529,11 @@ struct MatcherList<2, Matcher1, Matcher2> {
 // AllOf(m_1, m_2, ...) and AnyOf(m_1, m_2, ...).
 // CombiningMatcher<T> is used to recursively combine the provided matchers
 // (of type Args...).
+
+// Skip variadic implementation of matchers if using GCC < 4.7 due to
+// Bug 35722 -[C++0x] Variadic templates expansion into non-variadic class template
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=35722
+#if !defined(__GNUC__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7 ) )
 template <template <typename T> class CombiningMatcher, typename... Args>
 class VariadicMatcher {
  public:
@@ -1555,6 +1560,7 @@ class VariadicMatcher {
 template <typename... Args>
 using AllOfMatcher = VariadicMatcher<BothOfMatcherImpl, Args...>;
 
+#endif  // GCC >= 4.7
 #endif  // GTEST_LANG_CXX11
 
 // Used for implementing the AllOf(m_1, ..., m_n) matcher, which
