@@ -134,29 +134,6 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
     }
 }
 
-static void set_mat(FILE *fp, int **mat, int i0, int ni, int j0, int nj,
-                    gmx_bool bSymm, int shift)
-{
-    int i, j;
-
-    for (i = i0; (i < i0+ni); i++)
-    {
-        for (j = j0; (j < j0+nj); j++)
-        {
-            if (mat[i][j] != 0)
-            {
-                fprintf(fp, "mat[%d][%d] changing from %d to %d\n",
-                        i, j, mat[i][j], shift+1);
-            }
-            mat[i][j] = shift+1;
-            if (bSymm)
-            {
-                mat[j][i] = 27-shift;
-            }
-        }
-    }
-}
-
 
 
 void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL)

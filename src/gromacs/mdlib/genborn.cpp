@@ -1489,13 +1489,6 @@ static void add_bondeds_to_gblist(t_ilist *il,
     }
 }
 
-static int
-compare_int (const void * a, const void * b)
-{
-    return ( *(int*)a - *(int*)b );
-}
-
-
 
 int make_gb_nblist(t_commrec *cr, int gb_algorithm,
                    rvec x[], matrix box,
@@ -1615,35 +1608,6 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
             }
         }
     }
-
-
-#ifdef SORT_GB_LIST
-    for (i = 0; i < fr->gblist.nri; i++)
-    {
-        nj0 = fr->gblist.jindex[i];
-        nj1 = fr->gblist.jindex[i+1];
-        ai  = fr->gblist.iinr[i];
-
-        /* Temporary fix */
-        for (j = nj0; j < nj1; j++)
-        {
-            if (fr->gblist.jjnr[j] < ai)
-            {
-                fr->gblist.jjnr[j] += fr->natoms_force;
-            }
-        }
-        qsort(fr->gblist.jjnr+nj0, nj1-nj0, sizeof(int), compare_int);
-        /* Fix back */
-        for (j = nj0; j < nj1; j++)
-        {
-            if (fr->gblist.jjnr[j] >= fr->natoms_force)
-            {
-                fr->gblist.jjnr[j] -= fr->natoms_force;
-            }
-        }
-
-    }
-#endif
 
     return 0;
 }

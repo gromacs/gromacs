@@ -77,19 +77,6 @@ gmx_shakedata_t shake_init()
     return d;
 }
 
-static void pv(FILE *log, char *s, rvec x)
-{
-    int m;
-
-    fprintf(log, "%5s:", s);
-    for (m = 0; (m < DIM); m++)
-    {
-        fprintf(log, "  %10.3f", x[m]);
-    }
-    fprintf(log, "\n");
-    fflush(log);
-}
-
 /*! \brief Inner kernel for SHAKE constraints
  *
  * Original implementation from R.C. van Schaik and W.F. van Gunsteren

@@ -256,7 +256,6 @@ int ifunc_index(directive d, int type)
                     return F_POSRES;
                 case 2:
                     return F_FBPOSRES;
-                    break;
                 default:
                     gmx_fatal(FARGS, "Invalid position restraint type %d", type);
             }

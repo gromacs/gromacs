@@ -562,10 +562,3 @@ void parse_digits_from_plain_string(const char *digitstring, int *ndigits, int *
         (*digitlist)[i] = digitstring[i] - '0';
     }
 }
-
-static void parse_digits_from_csv_string(const char gmx_unused *digitstring, int gmx_unused *ndigits, int gmx_unused *digitlist)
-{
-    /* TODO Implement csv format to support (e.g.) more than 10
-       different GPUs in a node. */
-    gmx_incons("Not implemented yet");
-}

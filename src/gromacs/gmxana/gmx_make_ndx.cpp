@@ -541,39 +541,43 @@ static gmx_bool atoms_from_residuenumbers(t_atoms *atoms, int group, t_blocka *b
     return *nr;
 }
 
-static gmx_bool comp_name(char *name, char *search)
+static gmx_bool comp_name(const char *name, const char *search)
 {
-    while (name[0] != '\0' && search[0] != '\0')
+    gmx_bool matches = TRUE;
+
+    // Loop while name and search are not end-of-string and matches is true
+    for (; *name && *search && matches; name++, search++)
     {
-        switch (search[0])
+        if (*search == '?')
         {
-            case '?':
-                /* Always matches */
-                break;
-            case '*':
-                if (search[1] != '\0')
-                {
-                    printf("WARNING: Currently '*' is only supported at the end of an expression\n");
-                    return FALSE;
-                }
-                else
-                {
-                    return TRUE;
-                }
-                break;
-            default:
-                /* Compare a single character */
-                if (( bCase && std::strncmp(name, search, 1)) ||
-                    (!bCase && gmx_strncasecmp(name, search, 1)))
-                {
-                    return FALSE;
-                }
+            // still matching, continue to next character
+            continue;
         }
-        name++;
-        search++;
+        else if (*search == '*')
+        {
+            if (*(search+1))
+            {
+                printf("WARNING: Currently '*' is only supported at the end of an expression\n");
+            }
+            // if * is the last char in search string, we have a match,
+            // otherwise we just failed. Return in either case, we're done.
+            return (*(search+1) == '\0');
+        }
+
+        // Compare one character
+        if (bCase)
+        {
+            matches = (*name == *search);
+        }
+        else
+        {
+            matches = (std::toupper(*name) == std::toupper(*search));
+        }
     }
 
-    return (name[0] == '\0' && (search[0] == '\0' || search[0] == '*'));
+    matches = matches && (*name == '\0' && (*search == '\0' || *search == '*'));
+
+    return matches;
 }
 
 static int select_chainnames(t_atoms *atoms, int n_names, char **names,

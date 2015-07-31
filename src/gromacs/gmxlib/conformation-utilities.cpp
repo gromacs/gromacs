@@ -46,20 +46,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 
-static real dist2(t_pbc *pbc, rvec x, rvec y)
-{
-    rvec dx;
-
-    pbc_dx(pbc, x, y, dx);
-
-    return norm2(dx);
-}
-
-static real distance_to_z(rvec x)
-{
-    return (sqr(x[XX])+sqr(x[YY]));
-} /*distance_to_z()*/
-
 static void low_rotate_conf(int natom, rvec *x, real alfa, real beta, real gamma)
 {
     int  i;
@@ -82,31 +68,6 @@ static void low_rotate_conf(int natom, rvec *x, real alfa, real beta, real gamma
         x[i][XX] = x_old[XX]*cos(gamma) - x_old[YY]*sin(gamma);
         x[i][YY] = x_old[XX]*sin(gamma) + x_old[YY]*cos(gamma);
         x[i][ZZ] =                                             x_old[ZZ];
-    }
-}
-
-static void low_rotate_conf_indexed(int nindex, int *index, rvec *x, real alfa, real beta, real gamma)
-{
-    int  i;
-    rvec x_old;
-
-    for (i = 0; i < nindex; i++)
-    {
-        copy_rvec(x[index[i]], x_old);
-        /*calculate new x[index[i]] by rotation alfa around the x-axis*/
-        x[index[i]][XX] =   x_old[XX];
-        x[index[i]][YY] =             cos(alfa)*x_old[YY] - sin(alfa)*x_old[ZZ];
-        x[index[i]][ZZ] =             sin(alfa)*x_old[YY] + cos(alfa)*x_old[ZZ];
-        copy_rvec(x[index[i]], x_old);
-        /*calculate new x[index[i]] by rotation beta around the y-axis*/
-        x[index[i]][XX] =   cos(beta)*x_old[XX]           + sin(beta)*x_old[ZZ];
-        x[index[i]][YY] =                       x_old[YY];
-        x[index[i]][ZZ] = -sin(beta)*x_old[XX]           + cos(beta)*x_old[ZZ];
-        copy_rvec(x[index[i]], x_old);
-        /*calculate new x[index[i]] by rotation gamma around the z-axis*/
-        x[index[i]][XX] = x_old[XX]*cos(gamma) - x_old[YY]*sin(gamma);
-        x[index[i]][YY] = x_old[XX]*sin(gamma) + x_old[YY]*cos(gamma);
-        x[index[i]][ZZ] =                                             x_old[ZZ];
     }
 }
 
