@@ -190,16 +190,6 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_BUILD_SHARED_EXE
 
-.. cmake:: GMX_CXX11
-
-   If ``ON``, some C++11 features are used internally (mainly
-   ``std::unique_ptr``).
-   If ``OFF``, no C++11 features are used in the code (``boost::shared_ptr`` is
-   used as a replacement).
-   The default is ``ON`` if the compilation environment is determined to
-   support enough C++11 (GPU builds cannot for now use C++11).
-   Installed headers are not affected.
-
 .. cmake:: GMX_CYCLE_SUBCOUNTERS
 
 .. cmake:: GMX_DATA_INSTALL_DIR
