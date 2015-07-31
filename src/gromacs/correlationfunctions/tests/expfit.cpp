@@ -193,7 +193,7 @@ TEST_F (ExpfitTest, EffnERREST) {
 }
 
 TEST_F (ExpfitTest, EffnVAC) {
-    double param[] = {30, 0.0};
+    double param[] = {0.6, 0.1};
     test(effnVAC, param, 0.05, 0);
 }
 
