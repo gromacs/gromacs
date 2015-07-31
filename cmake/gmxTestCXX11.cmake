@@ -50,24 +50,12 @@ MACRO(GMX_TEST_CXX11 VARIABLE FLAG)
 "#include <vector>
 #include <memory>
 #include <utility>
-struct A {
-  A(int *i=NULL) : p(i) {} ;
-  std::unique_ptr<int> p;
-};
-template <typename Head, typename... Tail>
-struct VarList {
-  typedef VarList<Tail...> VarListTail;
-  typedef std::pair<Head, typename VarListTail::ListType> ListType;
-};
 class a { explicit operator bool() {return true;} };
 int main() {
   typedef std::unique_ptr<int> intPointer;
   intPointer p(new int(10));
   std::vector<intPointer> v;
   v.push_back(std::move(p));
-  std::vector<A> v2;
-  v2.push_back(A());  //requires default move constructor
-  v2.push_back(A(new int(5))); //detects bug in ICC
 }" ${VARIABLE})
     set(CMAKE_REQUIRED_FLAGS "")
     if(${VARIABLE})

@@ -43,7 +43,7 @@
 #ifndef GMX_ONLINEHELP_IHELPTOPIC_H
 #define GMX_ONLINEHELP_IHELPTOPIC_H
 
-#include "gromacs/utility/uniqueptr.h"
+#include <memory>
 
 namespace gmx
 {
@@ -106,7 +106,7 @@ class IHelpTopic
 };
 
 //! Smart pointer type to manage a IHelpTopic object.
-typedef gmx_unique_ptr<IHelpTopic>::type HelpTopicPointer;
+typedef std::unique_ptr<IHelpTopic> HelpTopicPointer;
 
 } // namespace gmx
 
