@@ -822,7 +822,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
                 }
                 for (j = 0; (j < nfitpnts); j++)
                 {
-                    real ttt = x0 ? x0[i] : dt*j;
+                    real ttt = x0 ? x0[j] : dt*j;
                     fprintf(fp, "%10.5e  %10.5e  %10.5e\n",
                             x[j], y[j], lmcurves[eFitFn](ttt, fitparms));
                 }
