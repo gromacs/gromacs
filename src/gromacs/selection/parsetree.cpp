@@ -359,7 +359,7 @@ SelectionParserParameter::SelectionParserParameter(
         SelectionParserValueListPointer  values,
         const SelectionLocation         &location)
     : name_(name != NULL ? name : ""), location_(location),
-      values_(values ? move(values)
+      values_(values ? std::move(values)
               : SelectionParserValueListPointer(new SelectionParserValueList))
 {
 }
@@ -734,7 +734,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
         params.push_back(
                 SelectionParserParameter::createFromExpression(NULL, child));
         params.push_back(
-                SelectionParserParameter::create(NULL, move(args), location));
+                SelectionParserParameter::create(NULL, std::move(args), location));
         _gmx_sel_parse_params(params, root->u.expr.method->nparams,
                               root->u.expr.method->param, root, scanner);
     }
@@ -758,7 +758,7 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method,
                       gmx::SelectionParserValueListPointer args,
                       const char *rpost, yyscan_t scanner)
 {
-    return init_keyword_internal(method, gmx::eStringMatchType_Auto, move(args),
+    return init_keyword_internal(method, gmx::eStringMatchType_Auto, std::move(args),
                                  rpost, scanner);
 }
 
@@ -783,7 +783,7 @@ _gmx_sel_init_keyword_strmatch(gmx_ana_selmethod_t *method,
                        "String keyword method called for a non-string-valued method");
     GMX_RELEASE_ASSERT(args && !args->empty(),
                        "String keyword matching method called without any values");
-    return init_keyword_internal(method, matchType, move(args), rpost, scanner);
+    return init_keyword_internal(method, matchType, std::move(args), rpost, scanner);
 }
 
 /*!
@@ -1193,7 +1193,7 @@ _gmx_sel_append_selection(const gmx::SelectionTreeElementPointer &sel,
             gmx::SelectionDataPointer selPtr(
                     new gmx::internal::SelectionData(
                             sel.get(), _gmx_sel_lexer_pselstr(scanner)));
-            sc->sel.push_back(gmx::move(selPtr));
+            sc->sel.push_back(std::move(selPtr));
         }
     }
     /* Clear the selection string now that we've saved it */

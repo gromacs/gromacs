@@ -84,13 +84,29 @@ architectures including x86, AMD64/x86-64, PPC, ARM v7 and SPARC VIII.
 Compiler
 --------
 Technically, |Gromacs| can be compiled on any platform with an ANSI C99
-and C++98 compiler, and their respective standard C/C++ libraries.
-We use only a few C99 features, but note that the C++ compiler also needs to
-support these C99 features (notably, int64_t and related things), which are not
-part of the C++98 standard.
+and C++11 compiler, and their respective standard C/C++ libraries.
+GROMACS uses a subset of C99 and C++11. A not fully standard compliant
+compiler might be able to compile GROMACS.
 Getting good performance on an OS and architecture requires choosing a
 good compiler. In practice, many compilers struggle to do a good job
 optimizing the |Gromacs| architecture-optimized SIMD kernels.
+
+C++11 support requires both support in the compiler as well as in the
+C++ library. Multiple compilers do not provide their own library
+but use the system library. It is required to select a library with
+sufficient C++11 support. Both the Intel and clang compiler on Linux use
+the libstdc++ which comes with gcc as the default C++ library. 4.6.1 of
+that library is required. Also the C++ library version has to be
+supported by the compiler. To select the C++ library version use:
+
+* For Intel: ``CXXFLAGS=-gcc-name=/path/to/gcc/binary`` or make sure
+  that the correct gcc version is first in path (e.g. by loading the gcc
+  module)
+* For clang: ``CFLAGS=--gcc-toolchain=/path/to/gcc/folder
+  CXXFLAGS=--gcc-toolchain=/path/to/gcc/folder``. This folder should
+  contain ``include/c++``.
+* On Windows with e.g. Intel: at least MSVC 2013 is required. Load the
+  enviroment with vcvarsall.bat.
 
 For best performance, the |Gromacs| team strongly recommends you get the
 most recent version of your preferred compiler for your platform.
@@ -1151,9 +1167,9 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
-is currently tested on x86 with gcc versions ranging from 4.4 through
-4.7, and versions 12 and 13 of the Intel compiler as well as Clang
-version 3.1 through 3.4. For this, we use a variety of GNU/Linux
+is currently tested on x86 with gcc versions ranging from 4.6 through
+5.1, and versions 14 and 15 of the Intel compiler as well as Clang
+version 3.4 through 3.6. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent version of Mac OS X.  Under
 Windows we test both MSVC and the Intel compiler. For details, you can
 have a look at the `continuous integration server used by GROMACS`_,

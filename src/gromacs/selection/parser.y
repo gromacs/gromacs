@@ -674,7 +674,7 @@ method_param_list:
                  BEGIN_ACTION;
                  SelectionParserParameterListPointer list(get($1));
                  list->push_back(get($2));
-                 set($$, move(list));
+                 set($$, std::move(list));
                  END_ACTION;
              }
 ;
@@ -705,7 +705,7 @@ value_list_contents:
                  BEGIN_ACTION;
                  SelectionParserValueListPointer list(get($1));
                  list->push_back(get($2));
-                 set($$, move(list));
+                 set($$, std::move(list));
                  END_ACTION;
              }
            | value_list_contents ',' value_item
@@ -713,7 +713,7 @@ value_list_contents:
                  BEGIN_ACTION;
                  SelectionParserValueListPointer list(get($1));
                  list->push_back(get($3));
-                 set($$, move(list));
+                 set($$, std::move(list));
                  END_ACTION;
              }
 ;
@@ -735,7 +735,7 @@ basic_value_list_contents:
                  BEGIN_ACTION;
                  SelectionParserValueListPointer list(get($1));
                  list->push_back(get($2));
-                 set($$, move(list));
+                 set($$, std::move(list));
                  END_ACTION;
              }
            | basic_value_list_contents ',' basic_value_item
@@ -743,7 +743,7 @@ basic_value_list_contents:
                  BEGIN_ACTION;
                  SelectionParserValueListPointer list(get($1));
                  list->push_back(get($3));
-                 set($$, move(list));
+                 set($$, std::move(list));
                  END_ACTION;
              }
 ;

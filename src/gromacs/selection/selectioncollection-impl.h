@@ -45,6 +45,7 @@
 #ifndef GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H
 #define GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -54,7 +55,6 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
 #include "gromacs/selection/selectioncollection.h"
-#include "gromacs/utility/uniqueptr.h"
 
 #include "poscalc.h"
 #include "selelem.h"
@@ -68,7 +68,7 @@ namespace gmx
 {
 
 //! Smart pointer for managing an internal selection data object.
-typedef gmx_unique_ptr<internal::SelectionData>::type SelectionDataPointer;
+typedef std::unique_ptr<internal::SelectionData> SelectionDataPointer;
 //! Container for storing a list of selections internally.
 typedef std::vector<SelectionDataPointer> SelectionDataList;
 
