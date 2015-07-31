@@ -43,9 +43,10 @@
 #ifndef GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
 #define GMX_COMMANDLINE_CMDLINEMODULEMANAGER_H
 
+#include <memory>
+
 #include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -60,7 +61,7 @@ class IFileOutputRedirector;
 //! \{
 
 //! Smart pointer type for managing a ICommandLineModule.
-typedef gmx_unique_ptr<ICommandLineModule>::type
+typedef std::unique_ptr<ICommandLineModule>
     CommandLineModulePointer;
 
 /*! \libinternal \brief

@@ -151,26 +151,13 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
     }
 //!\}
 
-#if !GMX_CXX11
-//! No-op to enable use of same get()/set() implementation as with C++11.
-static gmx::SelectionParserValue &move(gmx::SelectionParserValue &src)
-{
-    return src;
-}
-//! No-op to enable use of same get()/set() implementation as with C++11.
-static gmx::SelectionParserParameter &move(gmx::SelectionParserParameter &src)
-{
-    return src;
-}
-#endif
-
 /*! \brief
  * Retrieves a semantic value.
  *
  * \param[in] src  Semantic value to get the value from.
  * \returns   Retrieved value.
  * \throws    unspecified  Any exception thrown by the move constructor of
- *      ValueType (copy constructor if GMX_CXX11 is 0).
+ *      ValueType.
  *
  * There should be no statements that may throw exceptions in actions before
  * this function has been called for all semantic values that have a C++ object
@@ -186,7 +173,7 @@ ValueType get(ValueType *src)
 {
     GMX_RELEASE_ASSERT(src != NULL, "Semantic value pointers should be non-NULL");
     boost::scoped_ptr<ValueType> srcGuard(src);
-    return ValueType(move(*src));
+    return ValueType(std::move(*src));
 }
 /*! \brief
  * Sets a semantic value.
@@ -196,7 +183,7 @@ ValueType get(ValueType *src)
  * \param[in]  value Value to put into the semantic value.
  * \throws     std::bad_alloc if out of memory.
  * \throws     unspecified  Any exception thrown by the move constructor of
- *      ValueType (copy constructor if GMX_CXX11 is 0).
+ *      ValueType.
  *
  * This should be the last statement before ::END_ACTION, except for a
  * possible ::CHECK_SEL.
@@ -204,7 +191,7 @@ ValueType get(ValueType *src)
 template <typename ValueType> static
 void set(ValueType * &dest, ValueType value)
 {
-    dest = new ValueType(move(value));
+    dest = new ValueType(std::move(value));
 }
 /*! \brief
  * Sets an empty semantic value.
