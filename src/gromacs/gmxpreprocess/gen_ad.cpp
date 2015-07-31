@@ -308,30 +308,6 @@ static int atom_id_comp(const void *a, const void *b)
     return (*(atom_id *)a) - (*(atom_id *)b);
 }
 
-static int eq_imp(atom_id a1[], atom_id a2[])
-{
-    int b1[4], b2[4];
-    int j;
-
-    for (j = 0; (j < 4); j++)
-    {
-        b1[j] = a1[j];
-        b2[j] = a2[j];
-    }
-    qsort(b1, 4, (size_t)sizeof(b1[0]), int_comp);
-    qsort(b2, 4, (size_t)sizeof(b2[0]), int_comp);
-
-    for (j = 0; (j < 4); j++)
-    {
-        if (b1[j] != b2[j])
-        {
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-
 static int idcomp(const void *a, const void *b)
 {
     t_param *pa, *pb;

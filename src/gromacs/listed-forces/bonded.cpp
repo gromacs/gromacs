@@ -1868,18 +1868,6 @@ dopdihs_noener(real cpA, real cpB, real phiA, real phiB, int mult,
     /* That was 20 flops */
 }
 
-static void
-dopdihs_mdphi(real cpA, real cpB, real phiA, real phiB, int mult,
-              real phi, real lambda, real *cp, real *mdphi)
-{
-    real L1   = 1.0 - lambda;
-    real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
-
-    *cp    = L1*cpA + lambda*cpB;
-
-    *mdphi = mult*phi - ph0;
-}
-
 static real dopdihs_min(real cpA, real cpB, real phiA, real phiB, int mult,
                         real phi, real lambda, real *V, real *F)
 /* similar to dopdihs, except for a minus sign  *

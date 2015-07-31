@@ -947,8 +947,7 @@ calc_dr_x_xp_simd(int                       b0,
         gmx_simd_store_r(sol + bs, rhs_S);
     }
 }
-#endif /* LINCS_SIMD */
-
+#else
 /* Determine the distances and right-hand side for the next iteration */
 static void calc_dist_iter(int                       b0,
                            int                       b1,
@@ -997,6 +996,7 @@ static void calc_dist_iter(int                       b0,
         sol[b]  = mvb;
     } /* 20*ncons flops */
 }
+#endif
 
 #ifdef LINCS_SIMD
 /* As the function above, but using SIMD intrinsics */

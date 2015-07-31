@@ -455,38 +455,6 @@ static void exchange_reals(const gmx_multisim_t gmx_unused *ms, int gmx_unused b
 }
 
 
-static void exchange_ints(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, int *v, int n)
-{
-    int *buf;
-    int  i;
-
-    if (v)
-    {
-        snew(buf, n);
-#ifdef GMX_MPI
-        /*
-           MPI_Sendrecv(v,  n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
-             buf,n*sizeof(int),MPI_BYTE,MSRANK(ms,b),0,
-             ms->mpi_comm_masters,MPI_STATUS_IGNORE);
-         */
-        {
-            MPI_Request mpi_req;
-
-            MPI_Isend(v, n*sizeof(int), MPI_BYTE, MSRANK(ms, b), 0,
-                      ms->mpi_comm_masters, &mpi_req);
-            MPI_Recv(buf, n*sizeof(int), MPI_BYTE, MSRANK(ms, b), 0,
-                     ms->mpi_comm_masters, MPI_STATUS_IGNORE);
-            MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
-        }
-#endif
-        for (i = 0; i < n; i++)
-        {
-            v[i] = buf[i];
-        }
-        sfree(buf);
-    }
-}
-
 static void exchange_doubles(const gmx_multisim_t gmx_unused *ms, int gmx_unused b, double *v, int n)
 {
     double *buf;
@@ -1120,19 +1088,6 @@ test_for_replica_exchange(FILE                 *fplog,
         re->nmoves[pind[i]][re->ind[i]] += 1;
     }
     fflush(fplog); /* make sure we can see what the last exchange was */
-}
-
-static void write_debug_x(t_state *state)
-{
-    int i;
-
-    if (debug)
-    {
-        for (i = 0; i < state->natoms; i += 10)
-        {
-            fprintf(debug, "dx %5d %10.5f %10.5f %10.5f\n", i, state->x[i][XX], state->x[i][YY], state->x[i][ZZ]);
-        }
-    }
 }
 
 static void

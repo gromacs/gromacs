@@ -168,10 +168,10 @@ static const char *st_names(int cptp, int ecpt)
 {
     switch (cptp)
     {
-        case cptpEST: return est_names [ecpt]; break;
-        case cptpEEKS: return eeks_names[ecpt]; break;
-        case cptpEENH: return eenh_names[ecpt]; break;
-        case cptpEDFH: return edfh_names[ecpt]; break;
+        case cptpEST: return est_names [ecpt];
+        case cptpEEKS: return eeks_names[ecpt];
+        case cptpEENH: return eenh_names[ecpt];
+        case cptpEDFH: return edfh_names[ecpt];
     }
 
     return NULL;

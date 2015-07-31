@@ -1835,59 +1835,6 @@ static int ns_simple_core(t_forcerec *fr,
  *
  ************************************************/
 
-static gmx_inline void get_dx(int Nx, real gridx, real rc2, int xgi, real x,
-                              int *dx0, int *dx1, real *dcx2)
-{
-    real dcx, tmp;
-    int  xgi0, xgi1, i;
-
-    if (xgi < 0)
-    {
-        *dx0 = 0;
-        xgi0 = -1;
-        *dx1 = -1;
-        xgi1 = 0;
-    }
-    else if (xgi >= Nx)
-    {
-        *dx0 = Nx;
-        xgi0 = Nx-1;
-        *dx1 = Nx-1;
-        xgi1 = Nx;
-    }
-    else
-    {
-        dcx2[xgi] = 0;
-        *dx0      = xgi;
-        xgi0      = xgi-1;
-        *dx1      = xgi;
-        xgi1      = xgi+1;
-    }
-
-    for (i = xgi0; i >= 0; i--)
-    {
-        dcx = (i+1)*gridx-x;
-        tmp = dcx*dcx;
-        if (tmp >= rc2)
-        {
-            break;
-        }
-        *dx0    = i;
-        dcx2[i] = tmp;
-    }
-    for (i = xgi1; i < Nx; i++)
-    {
-        dcx = i*gridx-x;
-        tmp = dcx*dcx;
-        if (tmp >= rc2)
-        {
-            break;
-        }
-        *dx1    = i;
-        dcx2[i] = tmp;
-    }
-}
-
 static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
                                  int ncpddc, int shift_min, int shift_max,
                                  int *g0, int *g1, real *dcx2)
@@ -2296,13 +2243,8 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
             ZI = cgcm[icg][ZZ]+tz*box[ZZ][ZZ];
             /* Calculate range of cells in Z direction that have the shift tz */
             zgi = cell_z + tz*Nz;
-#define FAST_DD_NS
-#ifndef FAST_DD_NS
-            get_dx(Nz, gridz, rl2, zgi, ZI, &dz0, &dz1, dcz2);
-#else
             get_dx_dd(Nz, gridz, rl2, zgi, ZI-grid_offset[ZZ],
                       ncpddc[ZZ], sh0[ZZ], sh1[ZZ], &dz0, &dz1, dcz2);
-#endif
             if (dz0 > dz1)
             {
                 continue;
@@ -2319,12 +2261,8 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                 {
                     ygi = cell_y + ty*Ny;
                 }
-#ifndef FAST_DD_NS
-                get_dx(Ny, gridy, rl2, ygi, YI, &dy0, &dy1, dcy2);
-#else
                 get_dx_dd(Ny, gridy, rl2, ygi, YI-grid_offset[YY],
                           ncpddc[YY], sh0[YY], sh1[YY], &dy0, &dy1, dcy2);
-#endif
                 if (dy0 > dy1)
                 {
                     continue;
@@ -2341,12 +2279,8 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
                     {
                         xgi = cell_x + tx*Nx;
                     }
-#ifndef FAST_DD_NS
-                    get_dx(Nx, gridx, rl2, xgi*Nx, XI, &dx0, &dx1, dcx2);
-#else
                     get_dx_dd(Nx, gridx, rl2, xgi, XI-grid_offset[XX],
                               ncpddc[XX], sh0[XX], sh1[XX], &dx0, &dx1, dcx2);
-#endif
                     if (dx0 > dx1)
                     {
                         continue;
@@ -2534,7 +2468,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
              gmx_ns_t *ns, t_forcerec *fr,
              const gmx_mtop_t *mtop)
 {
-    int  mt, icg, nr_in_cg, maxcg, i, j, jcg, ngid, ncg;
+    int      mt, icg, nr_in_cg, maxcg, i, j, jcg, ngid, ncg;
     t_block *cgs;
 
     /* Compute largest charge groups size (# atoms) */
@@ -2654,17 +2588,17 @@ int search_neighbours(FILE *log, t_forcerec *fr,
                       gmx_bool bFillGrid,
                       gmx_bool bDoLongRangeNS)
 {
-    t_block  *cgs = &(top->cgs);
-    rvec     box_size, grid_x0, grid_x1;
-    int      m, ngid;
-    real     min_size, grid_dens;
-    int      nsearch;
-    gmx_bool     bGrid;
-    int      start, end;
-    gmx_ns_t *ns;
-    t_grid   *grid;
+    t_block            *cgs = &(top->cgs);
+    rvec                box_size, grid_x0, grid_x1;
+    int                 m, ngid;
+    real                min_size, grid_dens;
+    int                 nsearch;
+    gmx_bool            bGrid;
+    int                 start, end;
+    gmx_ns_t           *ns;
+    t_grid             *grid;
     gmx_domdec_zones_t *dd_zones;
-    put_in_list_t *put_in_list;
+    put_in_list_t      *put_in_list;
 
     ns = &fr->ns;
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,40 +98,6 @@ int gmx_node_rank(void)
 #endif
 }
 
-static int mpi_hostname_hash(void)
-{
-    int hash_int;
-
-#ifndef GMX_LIB_MPI
-    /* We have a single physical node */
-    hash_int = 0;
-#else
-    int  resultlen;
-    char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
-
-    /* This procedure can only differentiate nodes with different names.
-     * Architectures where different physical nodes have identical names,
-     * such as IBM Blue Gene, should use an architecture specific solution.
-     */
-    MPI_Get_processor_name(mpi_hostname, &resultlen);
-
-    /* The string hash function returns an unsigned int. We cast to an int.
-     * Negative numbers are converted to positive by setting the sign bit to 0.
-     * This makes the hash one bit smaller.
-     * A 63-bit hash (with 64-bit int) should be enough for unique node hashes,
-     * even on a million node machine. 31 bits might not be enough though!
-     */
-    hash_int =
-        (int)gmx_string_fullhash_func(mpi_hostname, gmx_string_hash_init);
-    if (hash_int < 0)
-    {
-        hash_int -= INT_MIN;
-    }
-#endif
-
-    return hash_int;
-}
-
 #if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
 #ifdef __clang__
 /* IBM's declaration of this function in
@@ -194,26 +160,53 @@ static int bgq_nodenum(void)
 }
 #endif
 
-int gmx_physicalnode_id_hash(void)
+static int mpi_hostname_hash(void)
 {
-    int hash;
+    int hash_int;
 
-#ifndef GMX_MPI
-    hash = 0;
+#ifdef GMX_TARGET_BGQ
+    hash_int = bgq_nodenum();
+#elif defined GMX_LIB_MPI
+    int  resultlen;
+    char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
+
+    /* This procedure can only differentiate nodes with different names.
+     * Architectures where different physical nodes have identical names,
+     * such as IBM Blue Gene, should use an architecture specific solution.
+     */
+    MPI_Get_processor_name(mpi_hostname, &resultlen);
+
+    /* The string hash function returns an unsigned int. We cast to an int.
+     * Negative numbers are converted to positive by setting the sign bit to 0.
+     * This makes the hash one bit smaller.
+     * A 63-bit hash (with 64-bit int) should be enough for unique node hashes,
+     * even on a million node machine. 31 bits might not be enough though!
+     */
+    hash_int =
+        (int)gmx_string_fullhash_func(mpi_hostname, gmx_string_hash_init);
+    if (hash_int < 0)
+    {
+        hash_int -= INT_MIN;
+    }
 #else
-#ifdef GMX_THREAD_MPI
     /* thread-MPI currently puts the thread number in the process name,
      * we might want to change this, as this is inconsistent with what
      * most MPI implementations would do when running on a single node.
      */
-    hash = 0;
-#else
-#ifdef GMX_TARGET_BGQ
-    hash = bgq_nodenum();
-#else
+    hash_int = 0;
+#endif
+
+    return hash_int;
+}
+
+int gmx_physicalnode_id_hash(void)
+{
+    int hash;
+
+#ifdef GMX_MPI
     hash = mpi_hostname_hash();
-#endif
-#endif
+#else
+    hash = 0;
 #endif
 
     if (debug)

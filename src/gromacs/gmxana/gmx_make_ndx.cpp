@@ -559,7 +559,6 @@ static gmx_bool comp_name(char *name, char *search)
                 {
                     return TRUE;
                 }
-                break;
             default:
                 /* Compare a single character */
                 if (( bCase && std::strncmp(name, search, 1)) ||
