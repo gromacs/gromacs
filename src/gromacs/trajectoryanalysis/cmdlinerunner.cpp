@@ -349,7 +349,7 @@ TrajectoryAnalysisCommandLineRunner::registerModule(
 {
     CommandLineModulePointer module(
             new Impl::RunnerCommandLineModule(name, description, factory));
-    manager->addModule(move(module));
+    manager->addModule(std::move(module));
 }
 
 } // namespace gmx

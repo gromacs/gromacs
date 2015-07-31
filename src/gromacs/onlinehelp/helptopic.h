@@ -43,10 +43,11 @@
 #ifndef GMX_ONLINEHELP_HELPTOPIC_H
 #define GMX_ONLINEHELP_HELPTOPIC_H
 
+#include <memory>
+
 #include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -184,7 +185,7 @@ class AbstractCompositeHelpTopic : public IHelpTopic
  *
  * \inlibraryapi
  */
-typedef gmx_unique_ptr<AbstractCompositeHelpTopic>::type
+typedef std::unique_ptr<AbstractCompositeHelpTopic>
     CompositeHelpTopicPointer;
 //! \endcond
 
