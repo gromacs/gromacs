@@ -97,32 +97,6 @@ static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
     }
 }
 
-static void move_x(int natoms, rvec x[], matrix box)
-{
-    int  i, m;
-    rvec xcm;
-
-    clear_rvec(xcm);
-    for (i = 0; (i < natoms); i++)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            xcm[m] += x[i][m];
-        }
-    }
-    for (m = 0; (m < DIM); m++)
-    {
-        xcm[m] = 0.5*box[m][m]-xcm[m]/natoms;
-    }
-    for (i = 0; (i < natoms); i++)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            x[i][m] += xcm[m];
-        }
-    }
-}
-
 int gmx_genconf(int argc, char *argv[])
 {
     const char     *desc[] = {
@@ -349,8 +323,6 @@ int gmx_genconf(int argc, char *argv[])
         /* With an even number of boxes in x we can forgot about the screw */
         ePBC = epbcXYZ;
     }
-
-    /* move_x(natoms*vol,x,box); */          /* put atoms in box? */
 
     atoms->nr   *= vol;
     atoms->nres *= vol;
