@@ -797,7 +797,7 @@ HelpTopicPointer createSelectionHelpTopic()
     root->registerSubTopic<SimpleHelpTopic<EvaluationHelpText> >();
     root->registerSubTopic<SimpleHelpTopic<LimitationsHelpText> >();
     root->registerSubTopic<SimpleHelpTopic<ExamplesHelpText> >();
-    return move(root);
+    return std::move(root);
 }
 //! \endcond
 

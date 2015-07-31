@@ -276,7 +276,11 @@
 // -std={c,gnu}++{0x,11} is passed.  The C++11 standard specifies a
 // value for __cplusplus, and recent versions of clang, gcc, and
 // probably other compilers set that too in C++11 mode.
-# if __GXX_EXPERIMENTAL_CXX0X__ || __cplusplus >= 201103L
+
+// Skip variadic implementation of matchers if using GCC < 4.7 due to
+// Bug 35722 -[C++0x] Variadic templates expansion into non-variadic class template
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=35722
+# if (__GXX_EXPERIMENTAL_CXX0X__ || __cplusplus >= 201103L) && !(defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && (GTEST_GCC_VER_<40700))
 // Compiling in at least C++11 mode.
 #  define GTEST_LANG_CXX11 1
 # else

@@ -43,11 +43,10 @@
  * \ingroup module_mdrun
  */
 
+#include <memory>
 #include <string>
 
 #include <gtest/gtest.h>
-
-#include "gromacs/utility/uniqueptr.h"
 
 #include "testutils/cmdlinetest.h"
 
@@ -59,7 +58,7 @@ namespace test
 {
 
 //! Convenience typedef
-typedef gmx_unique_ptr<CommandLine>::type CommandLinePointer;
+typedef std::unique_ptr<CommandLine> CommandLinePointer;
 
 class MultiSimTest : public gmx::test::ParameterizedMdrunTestFixture
 {

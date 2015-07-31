@@ -168,7 +168,7 @@ TEST_F(HelpTopicFormattingTest, FormatsCompositeTopicWithSubTopics)
     gmx::CompositeHelpTopicPointer topic(new gmx::CompositeHelpTopic<TestHelpText>);
     MockHelpTopic::addSubTopic(topic.get(), "subtopic", "First subtopic", "Text");
     MockHelpTopic::addSubTopic(topic.get(), "other", "Second subtopic", "Text");
-    rootTopic_.addSubTopic(move(topic));
+    rootTopic_.addSubTopic(std::move(topic));
     checkHelpFormatting();
 }
 
