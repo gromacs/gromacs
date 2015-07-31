@@ -70,6 +70,12 @@ if (CMAKE_USE_PTHREADS_INIT)
     set(PTHREADS_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+# Skip variadic implementation of matchers if using GCC < 4.7 due to
+# GCC Bug 35722 -[C++0x] Variadic templates expansion into non-variadic class template
+if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7")
+    list(APPEND GMOCK_COMPILE_DEFINITIONS "GTEST_LANG_CXX11=0")
+endif()
+
 set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(GTEST_DIR ${GMOCK_DIR}/gtest)
 set(GTEST_SOURCES ${GTEST_DIR}/src/gtest-all.cc)

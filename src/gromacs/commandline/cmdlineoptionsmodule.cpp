@@ -208,7 +208,7 @@ void ICommandLineOptionsModule::registerModule(
         const char *description, FactoryMethod factory)
 {
     CommandLineModulePointer module(createModule(name, description, factory));
-    manager->addModule(move(module));
+    manager->addModule(std::move(module));
 }
 
 // static
@@ -218,7 +218,7 @@ void ICommandLineOptionsModule::registerModule(
 {
     CommandLineModulePointer wrapperModule(
             new CommandLineOptionsModule(name, description, module));
-    manager->addModule(move(wrapperModule));
+    manager->addModule(std::move(wrapperModule));
 }
 
 } // namespace gmx
