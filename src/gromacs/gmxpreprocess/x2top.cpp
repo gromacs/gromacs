@@ -101,21 +101,6 @@ static gmx_bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
     return FALSE;
 }
 
-static int get_atype(char *nm)
-{
-    int i, aai = NATP-1;
-
-    for (i = 0; (i < NATP-1); i++)
-    {
-        if (nm[0] == atp[i])
-        {
-            aai = i;
-            break;
-        }
-    }
-    return aai;
-}
-
 void mk_bonds(int nnm, t_nm2type nmt[],
               t_atoms *atoms, rvec x[], t_params *bond, int nbond[],
               gmx_bool bPBC, matrix box)

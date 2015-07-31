@@ -59,31 +59,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-/* Print name of first atom in all groups in index file */
-static void print_types(int index[], int a[], int ngrps,
-                        char *groups[], t_topology *top)
-{
-    int i;
-
-    fprintf(stderr, "Using following groups: \n");
-    for (i = 0; i < ngrps; i++)
-    {
-        fprintf(stderr, "Groupname: %s First atomname: %s First atomnr %d\n",
-                groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
-    }
-    fprintf(stderr, "\n");
-}
-
-static void check_length(real length, int a, int b)
-{
-    if (length > 0.3)
-    {
-        fprintf(stderr, "WARNING: distance between atoms %d and "
-                "%d > 0.3 nm (%f). Index file might be corrupt.\n",
-                a, b, length);
-    }
-}
-
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
                                   rvec x[], int maxidx, int index[],

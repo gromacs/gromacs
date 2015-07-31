@@ -47,6 +47,9 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
+#define NDIM 4
+
+#ifdef DEBUG
 static void m_op(matrix mat, rvec x)
 {
     rvec xp;
@@ -62,9 +65,6 @@ static void m_op(matrix mat, rvec x)
             xp[ZZ]/x[ZZ]);
 }
 
-#define NDIM 4
-
-#ifdef DEBUG
 static void ptrans(char *s, real **inten, real d[], real e[])
 {
     int  m;

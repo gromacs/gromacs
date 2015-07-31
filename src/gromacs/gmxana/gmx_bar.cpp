@@ -303,11 +303,6 @@ static void lambda_vec_init(lambda_vec_t *lv, const lambda_components_t *lc)
     lv->lc    = lc;
 }
 
-static void lambda_vec_destroy(lambda_vec_t *lv)
-{
-    sfree(lv->val);
-}
-
 static void lambda_vec_copy(lambda_vec_t *lv, const lambda_vec_t *orig)
 {
     int i;
@@ -399,31 +394,6 @@ static void lambda_vec_print_intermediate(const lambda_vec_t *a,
     }
 }
 
-
-
-/* calculate the difference in lambda vectors: c = a-b.
-   c must be initialized already, and a and b must describe non-derivative
-   lambda points */
-static void lambda_vec_diff(const lambda_vec_t *a, const lambda_vec_t *b,
-                            lambda_vec_t *c)
-{
-    int i;
-
-    if ( (a->dhdl > 0)  || (b->dhdl > 0) )
-    {
-        gmx_fatal(FARGS,
-                  "Trying to calculate the difference between derivatives instead of lambda points");
-    }
-    if ((a->lc != b->lc) || (a->lc != c->lc) )
-    {
-        gmx_fatal(FARGS,
-                  "Trying to calculate the difference lambdas with differing basis set");
-    }
-    for (i = 0; i < a->lc->N; i++)
-    {
-        c->val[i] = a->val[i] - b->val[i];
-    }
-}
 
 /* calculate and return the absolute difference in lambda vectors: c = |a-b|.
    a and b must describe non-derivative lambda points */
@@ -593,12 +563,6 @@ static void hist_init(hist_t *h, int nhist, int *nbin)
     h->sum   = 0;
     h->nhist = nhist;
 }
-
-static void hist_destroy(hist_t *h)
-{
-    sfree(h->bin);
-}
-
 
 static void xvg_init(xvg_t *ba)
 {

@@ -167,68 +167,6 @@ static void lo_fcv(int i0, int i1,
     upd_vir(vir[ZZ], dvzx, dvzy, dvzz);
 }
 
-static void lo_fcv2(int i0, int i1,
-                    rvec x[], rvec f[], tensor vir,
-                    ivec is[], matrix box, gmx_bool bTriclinic)
-{
-    int      i, gg, tx, ty, tz;
-    real     xx, yy, zz;
-    real     dvxx = 0, dvxy = 0, dvxz = 0, dvyx = 0, dvyy = 0, dvyz = 0, dvzx = 0, dvzy = 0, dvzz = 0;
-
-    if (bTriclinic)
-    {
-        for (i = i0, gg = 0; (i < i1); i++, gg++)
-        {
-            tx = is[gg][XX];
-            ty = is[gg][YY];
-            tz = is[gg][ZZ];
-
-            xx    = x[i][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
-            dvxx += xx*f[i][XX];
-            dvxy += xx*f[i][YY];
-            dvxz += xx*f[i][ZZ];
-
-            yy    = x[i][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
-            dvyx += yy*f[i][XX];
-            dvyy += yy*f[i][YY];
-            dvyz += yy*f[i][ZZ];
-
-            zz    = x[i][ZZ]-tz*box[ZZ][ZZ];
-            dvzx += zz*f[i][XX];
-            dvzy += zz*f[i][YY];
-            dvzz += zz*f[i][ZZ];
-        }
-    }
-    else
-    {
-        for (i = i0, gg = 0; (i < i1); i++, gg++)
-        {
-            tx = is[gg][XX];
-            ty = is[gg][YY];
-            tz = is[gg][ZZ];
-
-            xx    = x[i][XX]-tx*box[XX][XX];
-            dvxx += xx*f[i][XX];
-            dvxy += xx*f[i][YY];
-            dvxz += xx*f[i][ZZ];
-
-            yy    = x[i][YY]-ty*box[YY][YY];
-            dvyx += yy*f[i][XX];
-            dvyy += yy*f[i][YY];
-            dvyz += yy*f[i][ZZ];
-
-            zz    = x[i][ZZ]-tz*box[ZZ][ZZ];
-            dvzx += zz*f[i][XX];
-            dvzy += zz*f[i][YY];
-            dvzz += zz*f[i][ZZ];
-        }
-    }
-
-    upd_vir(vir[XX], dvxx, dvxy, dvxz);
-    upd_vir(vir[YY], dvyx, dvyy, dvyz);
-    upd_vir(vir[ZZ], dvzx, dvzy, dvzz);
-}
-
 void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
                 t_graph *g, matrix box)
 {
@@ -241,11 +179,7 @@ void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
          */
         start = std::max(i0, g->at_start);
         end   = std::min(i1, g->at_end);
-#ifdef SAFE
-        lo_fcv2(start, end, x, f, vir, g->ishift, box, TRICLINIC(box));
-#else
         lo_fcv(start, end, x[0], f[0], vir, g->ishift[0], box[0], TRICLINIC(box));
-#endif
 
         /* If not all atoms are bonded, calculate their virial contribution
          * anyway, without shifting back their coordinates.

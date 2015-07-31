@@ -134,20 +134,6 @@ static int struct_comp(const void *a, const void *b)
 
 } /* struct_comp */
 
-static int int_comp(const void *a, const void *b)
-{
-
-    return (*(int *)a) - (*(int *)b);
-
-} /* int_comp */
-
-static int QMlayer_comp(const void *a, const void *b)
-{
-
-    return (int)(((t_QMrec *)a)->nrQMatoms)-(int)(((t_QMrec *)b)->nrQMatoms);
-
-} /* QMlayer_comp */
-
 real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec gmx_unused *qm,
                     t_MMrec gmx_unused *mm, rvec gmx_unused f[], rvec gmx_unused fshift[])
 {

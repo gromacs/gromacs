@@ -256,7 +256,12 @@ macro (gmx_c_flags)
         GMX_TEST_CFLAG(CFLAGS_OPT "-Mnoipa" GMXC_CFLAGS_RELEASE)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "PGI")
+        # Using ipa exposes internal PGI-15.7 compiler bugs at compile time
         GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-Mnoipa" GMXC_CXXFLAGS_RELEASE)
+        # PGI identifies itself as GCC, but does not understand the GCC
+        # pragmas that occur in parser.cpp. Since that file is generated
+        # we cannot add a define there, but supress the warning instead.
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "--diag_suppress=1675" GMXC_CXXFLAGS)
     endif()
 
     # Pathscale
@@ -267,7 +272,7 @@ macro (gmx_c_flags)
         if (GMX_COMPILER_WARNINGS)
             GMX_TEST_CFLAG(CFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CFLAGS)
         endif()
-        GMX_TEST_CFLAG(CFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math" 
+        GMX_TEST_CFLAG(CFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math"
                          GMXC_CFLAGS_RELEASE)
         GMX_TEST_CFLAG(CFLAGS_LANG "-std=gnu99" GMXC_CFLAGS)
     endif()
@@ -278,7 +283,7 @@ macro (gmx_c_flags)
         if (GMX_COMPILER_WARNINGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused -Wunused-value" GMXC_CXXFLAGS)
         endif()
-        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math" 
+        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-OPT:Ofast -fno-math-errno -ffast-math"
                          GMXC_CXXFLAGS_RELEASE)
     endif()
 
