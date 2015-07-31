@@ -84,7 +84,7 @@ architectures including x86, AMD64/x86-64, PPC, ARM v7 and SPARC VIII.
 Compiler
 --------
 Technically, |Gromacs| can be compiled on any platform with an ANSI C99
-and C++98 compiler, and their respective standard C/C++ libraries.
+and C++11 compiler, and their respective standard C/C++ libraries.
 We use only a few C99 features, but note that the C++ compiler also needs to
 support these C99 features (notably, int64_t and related things), which are not
 part of the C++98 standard.
@@ -1151,9 +1151,9 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
-is currently tested on x86 with gcc versions ranging from 4.4 through
-4.7, and versions 12 and 13 of the Intel compiler as well as Clang
-version 3.1 through 3.4. For this, we use a variety of GNU/Linux
+is currently tested on x86 with gcc versions ranging from 4.6 through
+5.0, and versions 14 and 15 of the Intel compiler as well as Clang
+version 3.4 through 3.6. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent version of Mac OS X.  Under
 Windows we test both MSVC and the Intel compiler. For details, you can
 have a look at the `continuous integration server used by GROMACS`_,

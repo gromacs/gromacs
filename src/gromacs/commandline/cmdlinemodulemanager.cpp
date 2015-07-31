@@ -319,8 +319,8 @@ void CommandLineModuleManager::Impl::addModule(CommandLineModulePointer module)
     ensureHelpModuleExists();
     HelpTopicPointer helpTopic(helpModule_->createModuleHelpTopic(*module));
     modules_.insert(std::make_pair(std::string(module->name()),
-                                   move(module)));
-    helpModule_->addTopic(move(helpTopic), false);
+                                   std::move(module)));
+    helpModule_->addTopic(std::move(helpTopic), false);
 }
 
 void CommandLineModuleManager::Impl::ensureHelpModuleExists()
@@ -451,7 +451,7 @@ void CommandLineModuleManager::setSingleModule(ICommandLineModule *module)
 
 void CommandLineModuleManager::addModule(CommandLineModulePointer module)
 {
-    impl_->addModule(move(module));
+    impl_->addModule(std::move(module));
 }
 
 void CommandLineModuleManager::addModuleCMain(
@@ -460,7 +460,7 @@ void CommandLineModuleManager::addModuleCMain(
 {
     CommandLineModulePointer module(
             new CMainCommandLineModule(name, shortDescription, mainFunction));
-    addModule(move(module));
+    addModule(std::move(module));
 }
 
 CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
@@ -469,14 +469,14 @@ CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
     const char *const                 binaryName = impl_->binaryName_.c_str();
     CommandLineModuleGroupDataPointer group(
             new CommandLineModuleGroupData(impl_->modules_, binaryName, title));
-    impl_->moduleGroups_.push_back(move(group));
+    impl_->moduleGroups_.push_back(std::move(group));
     return CommandLineModuleGroup(impl_->moduleGroups_.back().get());
 }
 
 void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 {
     impl_->ensureHelpModuleExists();
-    impl_->helpModule_->addTopic(move(topic), true);
+    impl_->helpModule_->addTopic(std::move(topic), true);
 }
 
 int CommandLineModuleManager::run(int argc, char *argv[])

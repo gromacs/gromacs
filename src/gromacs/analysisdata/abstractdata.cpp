@@ -43,6 +43,7 @@
 
 #include "abstractdata.h"
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/analysisdata/dataframe.h"
@@ -50,7 +51,6 @@
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/uniqueptr.h"
 
 #include "dataproxy.h"
 
