@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
 
 #include <cmath>
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/correlationfunctions/expfit.h"
@@ -53,7 +55,6 @@
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/uniqueptr.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -67,7 +68,7 @@ namespace
 {
 
 //! Definition of pointer to class containing test data.
-typedef gmx_unique_ptr<CorrelationDataSet>::type CorrelationDataSetPointer;
+typedef std::unique_ptr<CorrelationDataSet> CorrelationDataSetPointer;
 
 class AutocorrTest : public ::testing::Test
 {
