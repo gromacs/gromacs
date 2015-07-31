@@ -174,42 +174,6 @@ static void get_dih(t_xrama *xr, t_atoms *atoms)
     fprintf(stderr, "Found %d phi-psi combinations\n", xr->npp);
 }
 
-static int search_ff(int thisff[NPP], int ndih, int **ff)
-{
-    int      j, k;
-    gmx_bool bFound = FALSE;
-
-    for (j = 0; (j < ndih); j++)
-    {
-        bFound = TRUE;
-        for (k = 1; (k <= 3); k++)
-        {
-            bFound = bFound && (thisff[k] == ff[j][k]);
-        }
-        if (bFound)
-        {
-            if (thisff[0] == -1)
-            {
-                ff[j][4] = thisff[4];
-            }
-            else
-            {
-                ff[j][0] = thisff[0];
-            }
-            break;
-        }
-    }
-    if (!bFound)
-    {
-        for (k = 0; (k < 5); k++)
-        {
-            ff[ndih][k] = thisff[k];
-        }
-        ndih++;
-    }
-    return ndih;
-}
-
 static void min_max(t_xrama *xr)
 {
     int ai, i, j;

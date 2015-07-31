@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,19 +76,6 @@ gmx_shakedata_t shake_init()
     d->gamma = 1000000;
 
     return d;
-}
-
-static void pv(FILE *log, char *s, rvec x)
-{
-    int m;
-
-    fprintf(log, "%5s:", s);
-    for (m = 0; (m < DIM); m++)
-    {
-        fprintf(log, "  %10.3f", x[m]);
-    }
-    fprintf(log, "\n");
-    fflush(log);
 }
 
 /*! \brief Inner kernel for SHAKE constraints

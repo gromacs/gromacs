@@ -1878,18 +1878,6 @@ void compute_derivative(int nn, real x[], real y[], real dydx[])
     dydx[nn-1] = 2*dydx[nn-2] - dydx[nn-3];
 }
 
-static void parallel_print(int *data, int nThreads)
-{
-    /* This prints the donors on which each tread is currently working. */
-    int i;
-
-    fprintf(stderr, "\r");
-    for (i = 0; i < nThreads; i++)
-    {
-        fprintf(stderr, "%-7i", data[i]);
-    }
-}
-
 static void normalizeACF(real *ct, real *gt, int nhb, int len)
 {
     real ct_fac, gt_fac = 0;
