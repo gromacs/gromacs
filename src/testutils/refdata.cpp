@@ -64,61 +64,24 @@
 #include "testutils/testexceptions.h"
 #include "testutils/testfilemanager.h"
 
-namespace
-{
-
-/*! \internal \brief
- * Global test environment for freeing up libxml2 internal buffers.
- */
-class TestReferenceDataEnvironment : public ::testing::Environment
-{
-    public:
-        //! Frees internal buffers allocated by libxml2.
-        virtual void TearDown()
-        {
-            xmlCleanupParser();
-        }
-};
-
-//! Global reference data mode set with gmx::test::setReferenceDataMode().
-// TODO: Make this a real enum; requires solving a TODO in StringOption.
-int g_referenceDataMode = gmx::test::erefdataCompare;
-
-//! Returns the global reference data mode.
-gmx::test::ReferenceDataMode getReferenceDataMode()
-{
-    return static_cast<gmx::test::ReferenceDataMode>(g_referenceDataMode);
-}
-
-} // namespace
-
 namespace gmx
 {
 namespace test
 {
 
-void initReferenceData(IOptionsContainer *options)
-{
-    // Needs to correspond to the enum order in refdata.h.
-    const char *const refDataEnum[] = { "check", "create", "update" };
-    options->addOption(
-            StringOption("ref-data").enumValue(refDataEnum)
-                .defaultEnumIndex(0)
-                .storeEnumIndex(&g_referenceDataMode)
-                .description("Operation mode for tests that use reference data"));
-    ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
-}
-
 /********************************************************************
- * TestReferenceData::Impl
+ * TestReferenceData::Impl declaration
  */
+
+namespace internal
+{
 
 /*! \internal \brief
  * Private implementation class for TestReferenceData.
  *
  * \ingroup module_testutils
  */
-class TestReferenceData::Impl
+class TestReferenceDataImpl
 {
     public:
         //! String constant for output XML version string.
@@ -131,8 +94,11 @@ class TestReferenceData::Impl
         static const xmlChar * const cRootNodeName;
 
         //! Initializes a checker in the given mode.
-        Impl(ReferenceDataMode mode, bool bSelfTestMode);
-        ~Impl();
+        TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfTestMode);
+        ~TestReferenceDataImpl();
+
+        //! Performs final reference data processing when test ends.
+        void onTestEnd();
 
         //! Full path of the reference data file.
         std::string             fullFilename_;
@@ -155,17 +121,111 @@ class TestReferenceData::Impl
         bool                    bInUse_;
 };
 
-const xmlChar * const TestReferenceData::Impl::cXmlVersion =
+}       // namespace internal
+
+/********************************************************************
+ * Internal helpers
+ */
+
+namespace
+{
+
+//! Convenience typedef for a smart pointer to TestReferenceDataImpl;
+typedef boost::shared_ptr<internal::TestReferenceDataImpl>
+    TestReferenceDataImplPointer;
+
+/*! \brief
+ * Global reference data instance.
+ *
+ * The object is destructed between tests using an event listener.
+ */
+TestReferenceDataImplPointer g_referenceData;
+//! Global reference data mode set with setReferenceDataMode().
+// TODO: Make this a real enum; requires solving a TODO in StringOption.
+int                          g_referenceDataMode = erefdataCompare;
+
+//! Returns the global reference data mode.
+ReferenceDataMode getReferenceDataMode()
+{
+    return static_cast<ReferenceDataMode>(g_referenceDataMode);
+}
+
+//! Returns a reference to the global reference data object.
+TestReferenceDataImplPointer initReferenceDataInstance()
+{
+    GMX_RELEASE_ASSERT(!g_referenceData,
+                       "Test cannot create multiple TestReferenceData instances");
+    g_referenceData.reset(new internal::TestReferenceDataImpl(getReferenceDataMode(), false));
+    return g_referenceData;
+}
+
+//! Handles reference data creation for self-tests.
+TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataMode mode)
+{
+    if (g_referenceData)
+    {
+        g_referenceData->onTestEnd();
+        g_referenceData.reset();
+    }
+    g_referenceData.reset(new internal::TestReferenceDataImpl(mode, true));
+    return g_referenceData;
+}
+
+class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
+{
+    public:
+        virtual void OnTestEnd(const ::testing::TestInfo &)
+        {
+            if (g_referenceData)
+            {
+                GMX_RELEASE_ASSERT(g_referenceData.unique(),
+                                   "Test leaked TestRefeferenceData objects");
+                g_referenceData->onTestEnd();
+                g_referenceData.reset();
+            }
+        }
+
+        // Frees internal buffers allocated by libxml2.
+        virtual void OnTestProgramEnd(const ::testing::UnitTest &)
+        {
+            xmlCleanupParser();
+        }
+};
+
+}       // namespace
+
+void initReferenceData(IOptionsContainer *options)
+{
+    // Needs to correspond to the enum order in refdata.h.
+    const char *const refDataEnum[] = { "check", "create", "update" };
+    options->addOption(
+            StringOption("ref-data").enumValue(refDataEnum)
+                .defaultEnumIndex(0)
+                .storeEnumIndex(&g_referenceDataMode)
+                .description("Operation mode for tests that use reference data"));
+    ::testing::UnitTest::GetInstance()->listeners().Append(
+            new ReferenceDataTestEventListener);
+}
+
+/********************************************************************
+ * TestReferenceDataImpl definition
+ */
+
+namespace internal
+{
+
+const xmlChar * const TestReferenceDataImpl::cXmlVersion =
     (const xmlChar *)"1.0";
-const xmlChar * const TestReferenceData::Impl::cXmlStyleSheetNodeName =
+const xmlChar * const TestReferenceDataImpl::cXmlStyleSheetNodeName =
     (const xmlChar *)"xml-stylesheet";
-const xmlChar * const TestReferenceData::Impl::cXmlStyleSheetContent =
+const xmlChar * const TestReferenceDataImpl::cXmlStyleSheetContent =
     (const xmlChar *)"type=\"text/xsl\" href=\"referencedata.xsl\"";
-const xmlChar * const TestReferenceData::Impl::cRootNodeName =
+const xmlChar * const TestReferenceDataImpl::cRootNodeName =
     (const xmlChar *)"ReferenceData";
 
 
-TestReferenceData::Impl::Impl(ReferenceDataMode mode, bool bSelfTestMode)
+TestReferenceDataImpl::TestReferenceDataImpl(
+        ReferenceDataMode mode, bool bSelfTestMode)
     : refDoc_(NULL), bWrite_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
 {
     const std::string dirname =
@@ -221,8 +281,15 @@ TestReferenceData::Impl::Impl(ReferenceDataMode mode, bool bSelfTestMode)
     }
 }
 
+TestReferenceDataImpl::~TestReferenceDataImpl()
+{
+    if (refDoc_ != NULL)
+    {
+        xmlFreeDoc(refDoc_);
+    }
+}
 
-TestReferenceData::Impl::~Impl()
+void TestReferenceDataImpl::onTestEnd()
 {
     if (bWrite_ && bInUse_ && refDoc_ != NULL)
     {
@@ -239,11 +306,9 @@ TestReferenceData::Impl::~Impl()
             ADD_FAILURE() << "Saving reference data failed for " + fullFilename_;
         }
     }
-    if (refDoc_ != NULL)
-    {
-        xmlFreeDoc(refDoc_);
-    }
 }
+
+}       // namespace internal
 
 
 /********************************************************************
@@ -622,13 +687,13 @@ TestReferenceChecker::Impl::shouldIgnore() const
  */
 
 TestReferenceData::TestReferenceData()
-    : impl_(new Impl(getReferenceDataMode(), false))
+    : impl_(initReferenceDataInstance())
 {
 }
 
 
 TestReferenceData::TestReferenceData(ReferenceDataMode mode)
-    : impl_(new Impl(mode, true))
+    : impl_(initReferenceDataInstanceForSelfTest(mode))
 {
 }
 
