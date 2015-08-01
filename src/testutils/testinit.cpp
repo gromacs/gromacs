@@ -190,6 +190,12 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
         // TODO: Make this into a FileNameOption (or a DirectoryNameOption).
         options.addOption(StringOption("src-root").store(&sourceRoot)
                               .description("Override source tree location (for data files)"));
+        // The potential MPI test event listener must be initialized first,
+        // because it should appear in the start of the event listener list,
+        // before other event listeners that may generate test failures
+        // (currently, such an event listener is used by the reference data
+        // framework).
+        initMPIOutput();
         // TODO: Consider removing this option from test binaries that do not need it.
         initReferenceData(&options);
         initTestOptions(&options);
@@ -214,7 +220,6 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
                     Path::join(sourceRoot, dataPath));
         }
         setFatalErrorHandler(NULL);
-        initMPIOutput();
     }
     catch (const std::exception &ex)
     {
