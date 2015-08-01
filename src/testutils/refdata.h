@@ -46,6 +46,8 @@
 #include <iterator>
 #include <string>
 
+#include <boost/shared_ptr.hpp>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -107,14 +109,19 @@ void initReferenceData(IOptionsContainer *options);
 
 class TestReferenceChecker;
 
+namespace internal
+{
+class TestReferenceDataImpl;
+}
+
 /*! \libinternal \brief
  * Handles creation of and comparison to test reference data.
  *
  * This class provides functionality to use the same code to generate reference
  * data and then on later runs compare the results of the code against that
  * reference.  The mode in which the class operates (writing reference data or
- * comparing against existing data) is set with parseReferenceDataArgs(), which
- * is automatically called when using the testutils module to implement tests.
+ * comparing against existing data) is set using a command-line option that
+ * is automatically managed when using the testutils module to implement tests.
  * Tests only need to create an instance of TestReferenceData, obtain a
  * TestReferenceChecker using the rootChecker() method and use the various
  * check*() methods in TestReferenceChecker to indicate values to check.  If
@@ -176,8 +183,8 @@ class TestReferenceData
         /*! \brief
          * Frees reference data structures.
          *
-         * In the current implementation, this function writes the reference
-         * data out if necessary.
+         * The reference data is written out if necessary automatically when
+         * the test finishes.
          */
         ~TestReferenceData();
 
@@ -192,9 +199,9 @@ class TestReferenceData
         TestReferenceChecker rootChecker();
 
     private:
-        class Impl;
+        boost::shared_ptr<internal::TestReferenceDataImpl> impl_;
 
-        PrivateImplPointer<Impl> impl_;
+        GMX_DISALLOW_COPY_AND_ASSIGN(TestReferenceData);
 };
 
 /*! \libinternal \brief
