@@ -502,8 +502,6 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
         xlabel = bRelative ? "Average coordinate (nm)" : "Coordinate (nm)";
     }
 
-    GMX_RELEASE_ASSERT(dens_opt[0] != NULL, "Option setting inconsistency; dens_opt[0] is NULL");
-
     switch (dens_opt[0][0])
     {
         case 'm': ylabel = "Density (kg m\\S-3\\N)"; break;
@@ -683,6 +681,8 @@ int gmx_density(int argc, char *argv[])
     {
         return 0;
     }
+
+    GMX_RELEASE_ASSERT(dens_opt[0] != NULL, "Option setting inconsistency; dens_opt[0] is NULL");
 
     if (bSymmetrize && !bCenter)
     {
