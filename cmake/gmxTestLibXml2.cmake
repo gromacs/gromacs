@@ -51,7 +51,7 @@ function(GMX_TEST_LIBXML2 VARIABLE)
             unset(LIBXML2_LINKS_OK CACHE)
         endif()
         if(HAVE_ZLIB)
-            set(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES}" z PARENT_SCOPE) #not needed for dynamic but does not hurt
+            set(LIBXML2_LIBRARIES "${LIBXML2_LIBRARIES};${ZLIB_LIBRARIES}" PARENT_SCOPE) #not needed for dynamic but does not hurt
         endif()
         check_library_exists("${LIBXML2_LIBRARIES}" "xmlTextWriterEndAttribute" "" LIBXML2_LINKS_OK)
         if(LIBXML2_LINKS_OK)
