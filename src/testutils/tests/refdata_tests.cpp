@@ -145,8 +145,8 @@ TEST(ReferenceDataTest, HandlesStringBlockData)
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkStringBlock("Line1\nLine2\n", "block");
-        EXPECT_NONFATAL_FAILURE(checker.checkString("Line1\nLine2\n", "block"), "");
-        EXPECT_NONFATAL_FAILURE(checker.checkStringBlock("Test", "string"), "");
+        checker.checkString("Line1\nLine2\n", "block");
+        checker.checkStringBlock("Test", "string");
     }
 }
 
