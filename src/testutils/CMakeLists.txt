@@ -40,6 +40,7 @@ set(TESTUTILS_SOURCES
     interactivetest.cpp
     mpi-printer.cpp
     refdata.cpp
+    refdata-xml.cpp
     stringtest.cpp
     testasserts.cpp
     testfilemanager.cpp
