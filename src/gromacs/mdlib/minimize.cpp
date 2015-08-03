@@ -798,9 +798,9 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     {
         wallcycle_start(wcycle, ewcMoveE);
 
-        global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
+        global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                     inputrec, NULL, NULL, NULL, 1, &terminate,
-                    top_global, &ems->s, FALSE,
+                    NULL, FALSE,
                     CGLO_ENERGY |
                     CGLO_PRESSURE |
                     CGLO_CONSTRAINT);

@@ -45,6 +45,8 @@
 
 #include "gmxpre.h"
 
+#include <string>
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
