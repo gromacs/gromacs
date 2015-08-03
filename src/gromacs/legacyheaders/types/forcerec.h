@@ -213,7 +213,7 @@ typedef struct t_forcerec {
 
     /* Dispersion correction stuff */
     int  eDispCorr;
-
+    int  numAtomsForDispersionCorrection;
     /* The shift of the shift or user potentials */
     real enershiftsix;
     real enershifttwelve;

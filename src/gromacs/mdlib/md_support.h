@@ -68,6 +68,10 @@ struct t_trxframe;
 #define CGLO_READEKIN       (1<<10)
 /* we need to reset the ekin rescaling factor here */
 #define CGLO_SCALEEKIN      (1<<11)
+/* After a new DD partitioning, we need to set a flag to schedule
+ * global reduction of the total number of bonded interactions that
+ * will be computed, to check none are missing. */
+#define CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS (1<<12)
 
 
 /* return the number of steps between global communcations */
@@ -114,7 +118,8 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr *constr,
                      gmx_signalling_t *gs, gmx_bool bInterSimGS,
-                     matrix box, gmx_mtop_t *top_global, gmx_bool *bSumEkinhOld, int flags);
+                     matrix box, int *totalNumberOfBondedInteractions,
+                     gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
 
 #endif
