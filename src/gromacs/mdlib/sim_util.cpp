@@ -2281,7 +2281,6 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 }
 
 void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
-                   int natoms,
                    matrix box, real lambda, tensor pres, tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
@@ -2307,13 +2306,13 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
         if (fr->n_tpi)
         {
             /* Only correct for the interactions with the inserted molecule */
-            dens   = (natoms - fr->n_tpi)*invvol;
+            dens   = (fr->numAtomsForDispersionCorrection - fr->n_tpi)*invvol;
             ninter = fr->n_tpi;
         }
         else
         {
-            dens   = natoms*invvol;
-            ninter = 0.5*natoms;
+            dens   = fr->numAtomsForDispersionCorrection*invvol;
+            ninter = 0.5*fr->numAtomsForDispersionCorrection;
         }
 
         if (ir->efep == efepNO)

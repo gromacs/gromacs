@@ -2840,6 +2840,7 @@ void init_forcerec(FILE              *fp,
     }
 
     fr->eDispCorr = ir->eDispCorr;
+    fr->numAtomsForDispersionCorrection = mtop->natoms;
     if (ir->eDispCorr != edispcNO)
     {
         set_avcsixtwelve(fp, fr, mtop);

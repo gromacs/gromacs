@@ -136,14 +136,14 @@ static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
     return to;
 }
 
-void global_stat(FILE *fplog, gmx_global_stat_t gs,
+void global_stat(gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind, gmx_constr_t constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
-                 gmx_mtop_t *top_global, t_state *state_local,
+                 int *totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
@@ -159,6 +159,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     real      *rmsd_data = NULL;
     double     nb;
     gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
+    bool       checkNumberOfBondedInteractions = flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;
 
     bVV           = EI_VV(inputrec->eI);
     bTemp         = flags & CGLO_TEMPERATURE;
@@ -281,7 +282,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
         }
     }
 
-    if (DOMAINDECOMP(cr))
+    if (checkNumberOfBondedInteractions)
     {
         nb  = cr->dd->nbonded_local;
         inb = add_bind(rb, 1, &nb);
@@ -362,13 +363,10 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
                 extract_bind(rb, iepl, enerd->n_lambda, enerd->enerpart_lambda);
             }
         }
-        if (DOMAINDECOMP(cr))
+        if (checkNumberOfBondedInteractions)
         {
             extract_bind(rb, inb, 1, &nb);
-            if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-            {
-                dd_print_missing_interactions(fplog, cr, (int)(nb + 0.5), top_global, state_local);
-            }
+            *totalNumberOfBondedInteractions = static_cast<int>(nb+0.5);
         }
         where();
 
