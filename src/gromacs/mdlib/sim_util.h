@@ -71,16 +71,15 @@ gmx_global_stat_t global_stat_init(t_inputrec *ir);
 
 void global_stat_destroy(gmx_global_stat_t gs);
 
-void global_stat(FILE *log, gmx_global_stat_t gs,
+void global_stat(gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
                  gmx_constr *constr, t_vcm *vcm,
                  int nsig, real *sig,
-                 gmx_mtop_t *top_global, t_state *state_local,
                  gmx_bool bSumEkinhOld, int flags);
-/* Communicate statistics over cr->mpi_comm_mysim */
+/* Communicate energy-like quantities over cr->mpi_comm_mysim */
 
 int do_per_step(gmx_int64_t step, gmx_int64_t nstep);
 /* Return TRUE if io should be done */
