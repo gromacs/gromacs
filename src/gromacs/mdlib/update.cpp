@@ -68,6 +68,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -1464,7 +1465,6 @@ static void combine_forces(gmx_update_t upd,
          * the constraint virial for the nstcalclr-1 extra f_lr.
          * Constrain only the additional LR part of the force.
          */
-        /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         rvec *xp;
         real  fac;
         int   gf = 0;
@@ -1928,13 +1928,13 @@ void update_coords(FILE             *fplog,
     bNH = inputrec->etc == etcNOSEHOOVER;
     bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK));
 
-    if (bDoLR && inputrec->nstcalclr > 1 && !EI_VV(inputrec->eI))  /* get this working with VV? */
+    if (bDoLR && inputrec->nstcalclr > 1)
     {
+        GMX_RELEASE_ASSERT(!EI_VV(inputrec->eI), "The twin-range setup is not supported by velocity-Verlet integrators");
         /* Store the total force + nstcalclr-1 times the LR force
          * in forces_lr, so it can be used in a normal update algorithm
          * to produce twin time stepping.
          */
-        /* is this correct in the new construction? MRS */
         combine_forces(upd,
                        inputrec->nstcalclr, constr, inputrec, md, idef, cr,
                        step, state, bMolPBC,
