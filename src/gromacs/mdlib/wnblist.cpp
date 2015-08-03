@@ -54,8 +54,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-#define header "Neighborlist:"
-
 static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL)
 {
     int                 i, nii, ii, j, zi, zj0, zj1, aj, zj, nj;
@@ -64,8 +62,10 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
 
     if (nblist->nri > 0)
     {
-        fprintf(out, "ielec: %d, ivdw: %d, type: %d, Solvent opt: %s\n",
-                nblist->ielec, nblist->ivdw, nblist->type,
+        fprintf(out, "elec: %s, vdw: %s, type: %s, Solvent opt: %s\n",
+                gmx_nbkernel_elec_names[nblist->ielec],
+                gmx_nbkernel_vdw_names[nblist->ivdw],
+                gmx_nblist_interaction_names[nblist->type],
                 gmx_nblist_geometry_names[nblist->igeometry]);
         fprintf(out, "nri: %d  npair: %d\n", nblist->nri, nblist->nrj);
         if (dd)
@@ -164,7 +164,7 @@ void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL)
 {
     int  n, i;
 
-    fprintf(out, "%s\n", header);
+    fprintf(out, "Neighborlist:\n");
 
     for (n = 0; (n < fr->nnblists); n++)
     {
