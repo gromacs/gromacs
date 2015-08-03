@@ -604,19 +604,17 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         int cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
                           | (bStopCM ? CGLO_STOPCM : 0)
-                          | (EI_VV(ir->eI) ? CGLO_PRESSURE : 0)
-                          | (EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0)
                           | (EI_VV(ir->eI) ? CGLO_EKINFROMFULLSTEPVEL : 0)
                           | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN : 0));
 
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                        NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                        NULL, enerd, NULL, NULL, NULL, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
                         NULL, &bSumEkinhOld, cglo_flags
                         | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
         if (ir->eI == eiVVAK)
         {
-            cglo_flags = cglo_flags & ~(CGLO_STOPCM | CGLO_PRESSURE | CGLO_EKINFROMFULLSTEPVEL);
+            cglo_flags = cglo_flags & ~(CGLO_STOPCM | CGLO_EKINFROMFULLSTEPVEL);
 
             /* a second call to get the half-step temperature initialized as well */
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
@@ -1131,7 +1129,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             wallcycle_start(wcycle, ewcUPDATE);
             if (ir->eI == eiVV && bInitStep)
             {
-                /* if using velocity verlet with full time step Ekin,
+                /* if using md-vv (ie. with full time step Ekin),
                  * take the first half step only to compute the
                  * virial for the first step. From there,
                  * revert back to the initial coordinates
@@ -1142,7 +1140,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
             else
             {
-                /* this is for NHC in the Ekin(t+dt/2) version of vv */
+                /* this is for Nose-Hoover in md-vv-avek */
+                /* TODO And also md-vv when !bInitStep? */
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
@@ -1477,7 +1476,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* erase F_EKIN and F_TEMP here? */
                 /* just compute the kinetic energy at the half step to perform a trotter step */
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, mdatoms, nrnb, vcm,
-                                wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
+                                wcycle, enerd, NULL, NULL, NULL, pres, mu_tot,
                                 constr, NULL, FALSE, lastbox,
                                 NULL, &bSumEkinhOld,
                                 (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE

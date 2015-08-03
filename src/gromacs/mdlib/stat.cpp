@@ -61,6 +61,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct gmx_global_stat
@@ -186,15 +187,13 @@ void global_stat(gmx_global_stat_t gs,
 
     nener = filter_enerdterm(enerd->term, TRUE, copyenerd, bTemp, bPres, bEner);
 
-    /* First, the data that needs to be communicated with velocity verlet every time
-       This is just the constraint virial.*/
     if (bConstrVir)
     {
+        GMX_ASSERT(svir, "Constraint virial tensor cannot be null with pressure coupling");
         isv = add_binr(rb, DIM*DIM, svir[0]);
         where();
     }
 
-/* We need the force virial and the kinetic energy for the first time through with velocity verlet */
     if (bTemp)
     {
         if (ekind)
@@ -228,6 +227,7 @@ void global_stat(gmx_global_stat_t gs,
 
     if (bPres)
     {
+        GMX_ASSERT(fvir, "Force virial tensor cannot be null with pressure coupling");
         ifv = add_binr(rb, DIM*DIM, fvir[0]);
     }
 
@@ -310,7 +310,6 @@ void global_stat(gmx_global_stat_t gs,
         extract_binr(rb, isv, DIM*DIM, svir[0]);
     }
 
-    /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
     if (bTemp)
     {
         if (ekind)
