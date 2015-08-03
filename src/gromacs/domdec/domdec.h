@@ -311,10 +311,6 @@ int *dd_constraints_nlocalatoms(struct gmx_domdec_t *dd);
 
 /* In domdec_top.c */
 
-/*! \brief Print error output when interactions are missing */
-void dd_print_missing_interactions(FILE *fplog, struct t_commrec *cr,
-                                   int local_count,  gmx_mtop_t *top_global, t_state *state_local);
-
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE *fplog,
                          struct gmx_domdec_t *dd, gmx_mtop_t *mtop,

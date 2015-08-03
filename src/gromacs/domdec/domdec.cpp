@@ -9532,6 +9532,20 @@ void dd_partition_system(FILE                *fplog,
                       fr,
                       fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x,
                       vsite, top_global, top_local);
+    if (debug)
+    {
+        /* Check that the total number of local bonds equals the number of global bonds */
+        /* TODO After removing the group scheme, this check can perhaps
+           move inside dd_make_local_top, because the state_local fields x and
+           box are all that is required for write_dd_pdb */
+        real nbonded_local = dd->nbonded_local;
+        gmx_sumf(1, &nbonded_local, cr);
+        int  nbonded_global = static_cast<int>(nbonded_local + 0.5);
+        if (nbonded_global != dd->nbonded_global)
+        {
+            dd_print_missing_interactions(fplog, cr, nbonded_global, top_global, state_local);
+        }
+    }
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 

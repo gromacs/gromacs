@@ -269,7 +269,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
                      struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
-                     matrix box, gmx_mtop_t *top_global,
+                     matrix box, int sim_natoms,
                      gmx_bool *bSumEkinhOld, int flags)
 {
     tensor   corr_vir, corr_pres;
@@ -340,10 +340,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
-                global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
+                global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                             ir, ekind, constr, bStopCM ? vcm : NULL,
                             signalBuffer.size(), signalBuffer.data(),
-                            top_global, state,
                             *bSumEkinhOld, flags);
                 wallcycle_stop(wcycle, ewcMoveE);
             }
@@ -395,7 +394,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     if (bEner || bPres || bConstrain)
     {
-        calc_dispcorr(ir, fr, top_global->natoms, box, state->lambda[efptVDW],
+        calc_dispcorr(ir, fr, sim_natoms, box, state->lambda[efptVDW],
                       corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
     }
 

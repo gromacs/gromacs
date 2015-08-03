@@ -36,7 +36,6 @@
  */
 #include "gmxpre.h"
 
-#include <stdio.h>
 #include <string.h>
 
 #include "gromacs/domdec/domdec.h"
@@ -136,28 +135,26 @@ static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
     return to;
 }
 
-void global_stat(FILE *fplog, gmx_global_stat_t gs,
+void global_stat(gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind, gmx_constr_t constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
-                 gmx_mtop_t *top_global, t_state *state_local,
                  gmx_bool bSumEkinhOld, int flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
     t_bin     *rb;
     int       *itc0, *itc1;
     int        ie    = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
-    int        idedl = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
+    int        idedl = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0;
     int        isig  = -1;
     int        icj   = -1, ici = -1, icx = -1;
     int        inn[egNR];
     real       copyenerd[F_NRE];
     int        nener, j;
     real      *rmsd_data = NULL;
-    double     nb;
     gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
 
     bVV           = EI_VV(inputrec->eI);
@@ -281,11 +278,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
         }
     }
 
-    if (DOMAINDECOMP(cr))
-    {
-        nb  = cr->dd->nbonded_local;
-        inb = add_bind(rb, 1, &nb);
-    }
     where();
     if (nsig > 0)
     {
@@ -360,14 +352,6 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             if (enerd->n_lambda > 0)
             {
                 extract_bind(rb, iepl, enerd->n_lambda, enerd->enerpart_lambda);
-            }
-        }
-        if (DOMAINDECOMP(cr))
-        {
-            extract_bind(rb, inb, 1, &nb);
-            if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-            {
-                dd_print_missing_interactions(fplog, cr, (int)(nb + 0.5), top_global, state_local);
             }
         }
         where();

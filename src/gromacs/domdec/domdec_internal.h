@@ -402,6 +402,10 @@ real dd_cutoff_multibody(const gmx_domdec_t *dd);
 /*! \brief Returns the DD cut-off distance for two-body interactions */
 real dd_cutoff_twobody(const gmx_domdec_t *dd);
 
+/*! \brief Print error output when interactions are missing */
+void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
+                                   int local_count,  gmx_mtop_t *top_global, t_state *state_local);
+
 /*! \endcond */
 
 #endif
