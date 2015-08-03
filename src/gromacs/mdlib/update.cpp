@@ -1194,7 +1194,7 @@ void update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind)
 }
 
 void restore_ekinstate_from_state(t_commrec *cr,
-                                  gmx_ekindata_t *ekind, ekinstate_t *ekinstate)
+                                  gmx_ekindata_t *ekind, const ekinstate_t *ekinstate)
 {
     int i, n;
 

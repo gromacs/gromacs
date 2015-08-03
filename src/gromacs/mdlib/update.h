@@ -172,9 +172,11 @@ init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir);
 void
 update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind);
 
+/*! \brief Restores data from \p ekinstate to \p ekind, then broadcasts it
+   to the rest of the simulation */
 void
 restore_ekinstate_from_state(t_commrec *cr,
-                             gmx_ekindata_t *ekind, ekinstate_t *ekinstate);
+                             gmx_ekindata_t *ekind, const ekinstate_t *ekinstate);
 
 void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt);
 
