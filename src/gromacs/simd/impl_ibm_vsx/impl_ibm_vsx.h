@@ -91,7 +91,7 @@
  * We check explicitly for xlc, since that compiler appears to like pretending it is gcc,
  * but there double precision seems to work fine.
  */
-#if defined(__ibmxl__) || defined(__xlC__) || !(defined(__GNUC__) && ((__GNUC__ < 4) || ((__GNUC__ == 4) && (__GNUC_MINOR < 9))))
+#if defined(__ibmxl__) || defined(__xlC__) || !(defined(__GNUC__) && ((__GNUC__ < 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ < 9))))
 #    define GMX_SIMD_HAVE_DOUBLE
 #    define GMX_SIMD_HAVE_DINT32
 #    define GMX_SIMD_HAVE_DINT32_EXTRACT
