@@ -334,7 +334,9 @@ typedef struct t_forcerec {
     gmx_bool bTwinRange;
     int      nlr;
     rvec    *f_twin;
-    /* Constraint virial correction for multiple time stepping */
+    /* Constraint virial correction for multiple time
+       stepping. Supported for the group scheme when not using
+       velocity-Verlet integrators. */
     tensor   vir_twin_constr;
 
     /* Forces that should not enter into the virial summation:

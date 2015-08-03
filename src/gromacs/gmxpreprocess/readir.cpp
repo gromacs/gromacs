@@ -310,6 +310,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "Can not have nstlist == 0 with twin-range interactions");
         }
+        if (IR_TWINRANGE(*ir) && EI_VV(ir->eI))
+        {
+            sprintf(warn_buf, "Twin-range interactions are not supported with integrator %s.", ei_names[ir->eI]);
+            warning_error(wi, warn_buf);
+        }
     }
 
     if (ir->rlistlong == ir->rlist)
@@ -1372,12 +1377,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                     eel_names[eelPMESWITCH], eel_names[eelRF_ZERO]);
             warning_note(wi, warn_buf);
         }
-    }
-
-    if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
-    {
-        sprintf(warn_buf, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
-        warning_error(wi, warn_buf);
     }
 
     /* IMPLICIT SOLVENT */

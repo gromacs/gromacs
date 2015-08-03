@@ -1113,20 +1113,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            /* If we are using twin-range interactions where the long-range component
-             * is only evaluated every nstcalclr>1 steps, we should do a special update
-             * step to combine the long-range forces on these steps.
-             * For nstcalclr=1 this is not done, since the forces would have been added
-             * directly to the short-range forces already.
-             *
-             * TODO Remove various aspects of VV+twin-range in master
-             * branch, because VV integrators did not ever support
-             * twin-range multiple time stepping with constraints.
-             */
-            bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
-
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
-                          f, bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
+                          f, FALSE, NULL, NULL, fcd,
                           ekind, M, upd, bInitStep, etrtVELOCITY1,
                           cr, nrnb, constr, &top->idef);
 
@@ -1139,11 +1127,6 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    cr, nrnb, wcycle, upd, constr,
                                    TRUE, bCalcVir);
                 wallcycle_start(wcycle, ewcUPDATE);
-                if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
-                {
-                    /* Correct the virial for multiple time stepping */
-                    m_sub(shake_vir, fr->vir_twin_constr, shake_vir);
-                }
             }
             else if (graph)
             {
@@ -1412,11 +1395,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             if (bVV)
             {
-                bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
-
                 /* velocity half-step update */
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                              bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
+                              FALSE, NULL, NULL, fcd,
                               ekind, M, upd, FALSE, etrtVELOCITY2,
                               cr, nrnb, constr, &top->idef);
             }
@@ -1436,7 +1417,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 copy_rvecn(state->x, cbuf, 0, state->natoms);
             }
-            bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
+            bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr) && !EI_VV(ir->eI));
 
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                           bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
@@ -1470,10 +1451,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* now we know the scaling, we can compute the positions again again */
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
-                bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
-
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                              bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
+                              FALSE, NULL, NULL, fcd,
                               ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
