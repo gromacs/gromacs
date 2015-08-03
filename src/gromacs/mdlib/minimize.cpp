@@ -798,9 +798,9 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     {
         wallcycle_start(wcycle, ewcMoveE);
 
-        global_stat(fplog, gstat, cr, enerd, force_vir, shake_vir, mu_tot,
+        global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
                     inputrec, NULL, NULL, NULL, 1, &terminate,
-                    top_global, &ems->s, FALSE,
+                    NULL, FALSE,
                     CGLO_ENERGY |
                     CGLO_PRESSURE |
                     CGLO_CONSTRAINT);
@@ -809,7 +809,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     }
 
     /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(inputrec, fr, top_global->natoms, ems->s.box, ems->s.lambda[efptVDW],
+    calc_dispcorr(inputrec, fr, ems->s.box, ems->s.lambda[efptVDW],
                   pres, force_vir, &prescorr, &enercorr, &dvdlcorr);
     enerd->term[F_DISPCORR] = enercorr;
     enerd->term[F_EPOT]    += enercorr;
