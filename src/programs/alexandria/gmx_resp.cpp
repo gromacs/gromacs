@@ -60,48 +60,38 @@
 
 namespace alexandria
 {
-  Resp::Resp(ChargeDistributionModel iDistributionModel,
-	     bool bAXpRESP, real qfac, real bHyper, real qtot,
-	     real zmin, real zmax, real deltaZ, bool bZatype,
-	     real watoms, real rDecrZeta, bool bRandZeta,
-	     bool bRandQ, real penalty_fac, bool bFitZeta, bool bEntropy,
-	     const std::string dzatoms, unsigned int seed)
+  Resp::Resp(ChargeDistributionModel iDistributionModel, real qtot)
   {
-
-
-
     _qtot                  = qtot;
-    _qsum                  = qtot;
-    _bAXpRESP              = bAXpRESP;
-    _qfac                  = qfac;
-    _bHyper               = bHyper;
+    _qsum                  = _qtot;
+    _bAXpRESP              = false;
+    _qfac                  = 1e-3;
+    _bHyper               = 0.1;
     _wtot                  = 0;
     _iDistributionModel    = iDistributionModel;
-    _zmin                  = zmin;
-    _zmax                  = zmax;
-    _deltaZ               = deltaZ;
-    std::vector<std::string> ptr = split(dzatoms.c_str(), ' ');
-    for (unsigned int i = 0; (i < ptr.size()); ++i)
+    _zmin                  = 5;
+    _zmax                  = 100;
+    _deltaZ               = -1;
+    std::vector<std::string> ptr;
+    /*for (unsigned int i = 0; (i < ptr.size()); ++i)
       {
         _dzatoms[i].assign(ptr[i].c_str());
-      }
-    _pfac      = penalty_fac;
+      }*/
+    _pfac      = 1;
     _qmin      = -2;
     _qmax      = 2; /* e */
     _nesp      = 0;
     _natom     = 0;
     _natype    = 0;
-    _seed      = seed;
-    _bEntropy  = bEntropy;
-    _bZatype   = bZatype;
-    _rDecrZeta = rDecrZeta;
-    _bRandZeta = bRandZeta;
-    _bRandQ    = bRandQ;
-    _bFitZeta  = bFitZeta;
-    _watoms    = watoms;
+    _seed      = 0;
+    _bEntropy  = false;
+    _bZatype   = true;
+    _rDecrZeta = true;
+    _bRandZeta = false;
+    _bRandQ    = true;
+    _bFitZeta  = true;
+    _watoms    = 0;
     _nparam    = 0;
-
-  
   }
 
   Resp::~Resp()

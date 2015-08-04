@@ -439,11 +439,14 @@ int alex_gentop(int argc, char *argv[])
         {
             seed = gmx_rng_make_seed();
         }
-        mymol.gr_ = new Resp(iChargeDistributionModel, bAXpRESP, qweight, bhyper, mymol.getCharge(),
+	/* mymol.gr_ = new Resp(iChargeDistributionModel, bAXpRESP, qweight, bhyper, mymol.getCharge(),
                                   zmin, zmax, delta_z,
                                   bZatype, watoms, rDecrZeta, bRandZeta, bRandQ,
                                   penalty_fac, bFitZeta,
-                                  bEntropy, dzatoms, seed);
+                                  bEntropy, dzatoms, seed);*/
+
+	mymol.gr_ = new Resp(iChargeDistributionModel, mymol.getCharge());
+ 
         if (NULL == mymol.gr_)
         {
             imm = immRespInit;

@@ -40,7 +40,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_correlationfunctions
  */
-//#include "gmxpre.h"
+
 
 #include <math.h>
 #include <gtest/gtest.h>
@@ -49,17 +49,21 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+#include "programs/alexandria/mymol.h"
+#include "programs/alexandria/poldata.h"
+#include "programs/alexandria/poldata_xml.h"
+
 #include "programs/alexandria/gmx_resp.h"
+#include "programs/alexandria/gauss_io.h"
 
 
 class RespTest : public ::testing::Test
 {
 
-  //using gmx::test::TestReferenceData;
 protected:
   gmx::test::TestReferenceData                     refData_;
   gmx::test::TestReferenceChecker                  checker_;
-  static alexandria::Resp resp;
+  static alexandria::Resp *resp;
 
   //init sett tolecrance
   RespTest ( )
@@ -75,29 +79,58 @@ protected:
   // Static initiation, only run once every test.
   static void SetUpTestCase()
   {
-    //        resp = new resp()
+
+    alexandria::MyMol mp;
+    gmx_atomprop_t aps = gmx_atomprop_init();
+    ChargeDistributionModel iChargeDistributionModel = eqdAXp;
+
+    //needed for ReadGauss
+    char * molnm = (char *)"XXX";
+    char * iupac = (char *)"";
+    char * conf = (char *)"minimum";
+    char * basis = (char *)"";
+    int maxpot = 0;
+    int nsymm = 0;
+    int nexcl = 2;
+    const char               *dihopt[] = { NULL, "No", "Single", "All", NULL };
+    eDih                      edih = (eDih) get_option(dihopt);
+
+    //Needed for GenerateCharges
+    real hfac = 0;
+    real epsr = 1;
+    const char *lot = "B3LYP/aug-cc-pVTZ";
+    char *symm_string = (char *)"";
+
+
+    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) eqgRESP;  
+
+
+    std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
+    alexandria::Poldata *pd = alexandria::PoldataXml::read(dataName.c_str(), aps);
+    
+    dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
+    ReadGauss(dataName.c_str(), mp, molnm, iupac, conf, basis,
+	      maxpot, nsymm, pd->getForceField().c_str());
+
+    mp.GenerateTopology(aps,pd,lot,iChargeDistributionModel, nexcl, false,false,edih);
+    
+    mp.gr_ = new alexandria::Resp(iChargeDistributionModel, mp.getCharge());
+    mp.GenerateCharges(pd,aps,iChargeDistributionModel,iChargeGenerationAlgorithm,hfac,epsr,lot,true,symm_string);
+    resp = mp.gr_;
   }
 
-
-  void setUp(){
-
-
-  }
-  static void TearDownTestCase()
-  {
+  static void TearDownTestCase(){
   }
 
-
-  void test()
-  {
-  }
 };
 
+alexandria::Resp *RespTest::resp;
 
 
 
 
 TEST_F (RespTest, test)
 {
-  test();
+  double value = resp->getQtot(0);
+  std::cout << value;
 }

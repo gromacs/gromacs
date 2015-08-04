@@ -69,6 +69,19 @@ namespace alexandria
     std::string bosque;
     double polarizability;
     double sigPol;
+    
+    
+  Ptype(std::string ptype, std::string miller, std::string bosque,
+	double polarizability, double sigPol)
+    :
+    type(ptype),
+      miller(miller),
+      bosque(bosque), 
+      polarizability(polarizability),
+      sigPol(sigPol)
+      {
+      }
+
   }; 
   typedef std::vector<Ptype>::iterator PtypeIterator;
 
@@ -81,6 +94,24 @@ namespace alexandria
     std::string elem; 
     std::string vdwparams;
     double  refEnthalpy;
+
+  Ffatype(std::string desc,
+	  std::string type,
+	  std::string ptype,
+	  std::string btype,
+	  std::string elem, 
+	  std::string vdwparams,
+	  double  refEnthalpy):
+    desc(desc),
+      type(type),
+      ptype(ptype),
+      btype(btype),
+      elem(elem),
+      vdwparams(vdwparams),
+      refEnthalpy(refEnthalpy)
+      {
+      }
+    
   };
   typedef std::vector<Ffatype>::iterator FfatypeIterator;
 
@@ -96,6 +127,27 @@ namespace alexandria
     int iAromatic;
     double                   valence;
     std::vector<std::string> nb;
+
+  Brule(std::string elem,
+	std::string rule,
+	std::string type,
+	std::string neighbors,
+	std::string geometry,
+	int                      numbonds,
+	int iAromatic,
+	double                   valence,
+	std::vector<std::string> nb):
+    elem(elem),
+      rule(rule),
+      type(type),
+      neighbors(neighbors),
+      geometry(geometry),
+      numbonds(numbonds),
+      iAromatic(iAromatic),
+      valence(valence),
+      nb(nb)
+      {
+      }
   }; 
   typedef std::vector<Brule>::iterator BruleIterator;
 
@@ -109,18 +161,65 @@ namespace alexandria
     double sigma;
     double bondorder;
     int     ntrain;
+
+  GtBond(std::string atom1,
+	 std::string atom2,
+	 std::string params,
+	 std::string elem1,
+	 std::string elem2,
+	 double  length,
+	 double sigma,
+	 double bondorder,
+	 int     ntrain)
+    :
+    atom1(atom1),
+      atom2(atom2),
+      params(params),
+      elem1(elem1),
+      elem2(elem2),
+      length(length),
+      sigma(sigma),
+      bondorder(bondorder),
+      ntrain(ntrain)
+      {
+      }
+
+    GtBond(){
+    }
+
   };
   typedef std::vector<GtBond>::iterator GtBondIterator;
 
   class GtAngle {
   public:
-    std::string atom1; 
+    std::string atom1;
     std::string atom2;
     std::string atom3; 
     std::string params;
     double  angle;
     double  sigma;
     int     ntrain;
+  GtAngle(std::string atom1,
+	  std::string atom2,
+	  std::string atom3, 
+	  std::string params,
+	  double  angle,
+	  double  sigma,
+	  int     ntrain)
+    :
+    atom1(atom1),
+      atom2(atom2),
+      atom3(atom3),
+      params(params),
+      angle(angle),
+      sigma(sigma),
+      ntrain(ntrain)
+      {
+      }
+
+    GtAngle(){
+    }
+    
   };
   typedef std::vector<GtAngle>::iterator GtAngleIterator;
 
@@ -134,6 +233,29 @@ namespace alexandria
     double  dihedral;
     double  sigma;
     int     ntrain;
+
+  GtDihedral(std::string atom1, 
+	     std::string atom2,
+	     std::string atom3,
+	     std::string atom4,
+	     std::string params,
+	     double  dihedral,
+	     double  sigma,
+	     int     ntrain)
+    :
+      atom1(atom1),
+      atom2(atom2),
+      atom3(atom3),
+      atom4(atom4),
+      params(params),
+      dihedral(dihedral),
+      sigma(sigma),
+      ntrain(ntrain)
+      {
+      }
+
+    GtDihedral(){
+    }
   };
   typedef std::vector<GtDihedral>::iterator DihedralIterator;
 
@@ -141,6 +263,15 @@ namespace alexandria
   public:
     std::string bosque;
     double  polarizability;
+
+  Bosque(std::string bosque,
+	 double  polarizability)
+    :
+    bosque(bosque),
+      polarizability(polarizability)
+      {
+      }
+    
   };
   typedef std::vector<Bosque>::iterator BosqueIterator;
 
@@ -150,21 +281,51 @@ namespace alexandria
     int     atomnumber;
     double  tauAhc;
     double alphaAhp;
+
+  Miller(std::string miller,
+	 int     atomnumber,
+	 double  tauAhc,
+	 double alphaAhp)
+    :
+    miller(miller),
+      atomnumber(atomnumber),
+      tauAhc(tauAhc),
+      alphaAhp(alphaAhp)
+      {
+      }
   };
   typedef std::vector<Miller>::iterator MillerIterator;
-
+  
   class Symcharges {
   public:
     std::string central;
     std::string attached;
     int   numattach;
+
+  Symcharges(std::string central,
+	     std::string attached,
+	     int   numattach):
+    central(central),
+      attached(attached),
+      numattach(numattach)
+      {
+      }
   };
   typedef std::vector<Symcharges>::iterator SymchargesIterator;
-
+  
   class Epref {
   public:
     ChargeDistributionModel eqdModel;
     std::string epref;
+
+  Epref(ChargeDistributionModel eqdModel,
+	std::string epref)
+    :
+    eqdModel(eqdModel),
+      epref(epref)
+      {
+      }
+
   };
   typedef std::vector<Epref>::iterator EprefIterator;
 
@@ -174,6 +335,19 @@ namespace alexandria
     double q;
     double zeta;
     int row;
+
+  EempropsData(double q,
+	       double zeta,
+	       int row)
+    :
+    q(q),
+      zeta(zeta),
+      row(row)
+      {
+      }
+    
+    EempropsData(){
+    }
   };
 
   //#define EEMBUFSIZE 256
@@ -191,9 +365,31 @@ namespace alexandria
   
   private: 
     std::vector<EempropsData> data;
-
+    
+    
 
   public:
+  Eemprops(ChargeDistributionModel eqdModel,
+	   int nzeta,
+	   std::string name,
+	   std::string zetastr,
+	   std::string qstr,
+	   std::string rowstr,
+	   double J0,
+	   double chi0)
+    :
+    eqdModel(eqdModel),
+      nzeta(nzeta),
+      name(name),
+      zetastr(zetastr),
+      qstr(qstr),
+      rowstr(rowstr),
+      J0(J0),
+      chi0(chi0),
+      data(MAXZETA)
+      {
+      }
+
   Eemprops():
     data(MAXZETA){
     }

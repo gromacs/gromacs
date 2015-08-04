@@ -578,13 +578,16 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 {
                     if (immOK == imm)
                     {
-                        mpnew.gr_ = new Resp(_iChargeDistributionModel,
+		      /*mpnew.gr_ = new Resp(_iChargeDistributionModel,
                                                   TRUE, 0.001, 0.1,
                                                   mpnew.getCharge(),
                                                   1, 100, 5,
                                                   TRUE, watoms, 5, TRUE, TRUE,
                                                   1, TRUE,
-                                                  TRUE, NULL, seed);
+                                                  TRUE, NULL, seed);*/
+		      //TODO fix steter for the specified varibels 
+		      mpnew.gr_ = new Resp(_iChargeDistributionModel, mpnew.getCharge());
+		      
                         if (NULL == mpnew.gr_)
                         {
                             imm = immRespInit;
@@ -711,11 +714,14 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
             if (immOK == imm)
             {
-                mpnew.gr_ = new  Resp(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.getCharge(),
+              /*  mpnew.gr_ = new  Resp(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.getCharge(),
                                           1, 100, 5,
                                           TRUE, watoms, 5, TRUE, TRUE,
                                           1, TRUE,
-                                          TRUE, NULL, seed);
+                                          TRUE, NULL, seed);*/
+
+	      //TODO add sters for data
+	      mpnew.gr_ = new  Resp(_iChargeDistributionModel, mpnew.getCharge());
                 if (NULL == mpnew.gr_)
                 {
                     imm = immRespInit;

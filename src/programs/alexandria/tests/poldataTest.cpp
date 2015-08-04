@@ -168,13 +168,17 @@ TEST_F(PoldataTest, addAtype){
 		vdwparams,
 		ref_enthalpy);
 
-  pd->searchAtype(atype,
+  int value = pd->searchAtype(atype,
 		  &newElem,
 		  &newDesc,
 		  &newAtype,
 		  &newPtype,
 		  &newBtype,
 		  &newVdwparams);
+  //will faill if the seartch failed
+  assert(value == 1);
+
+  //test if the extraction where corect
   assert(newElem.compare(elem) == 0);
   assert(newDesc.compare(desc) == 0);
   assert(newAtype.compare(atype) == 0);

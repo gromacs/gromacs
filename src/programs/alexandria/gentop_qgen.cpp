@@ -90,10 +90,10 @@ namespace alexandria
     _elem.resize(_natom);
     _atomnr.resize(_natom);
     _row.resize(_natom);
-    _Jab.resize(_natom);
+    _Jab.resize(_natom+1);
     _zeta.resize(_natom);
     _j00.resize(_natom);
-    _q.resize(_natom);
+    _q.resize(_natom+1);
 
     _nZeta.resize(_natom);
 

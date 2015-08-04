@@ -47,15 +47,32 @@ namespace alexandria
   public:
     Resp(){}
 
+        Resp(ChargeDistributionModel iDistributionModel, real qtot);
+    /*
     Resp(ChargeDistributionModel iDistributionModel,
 	 bool bAXpRESP, real qfac, real b_hyper, real qtot,
-	 real zmin, real zmax, real delta_z, bool bZatyp,
+	 real zmin, real zmax, real deltaZ, bool bZatyp,
 	 real watoms, real rDecrZeta,
 	 bool bRandZeta, bool bRandQ, real penaltyFac, bool bFitZeta,
 	 bool bEntropy, const std::string dzatoms,
 	 unsigned int seed);
 
 
+    //Constructor with defult values 
+    Resp(ChargeDistributionModel iDistributionModel,real qtot){
+      
+
+      //Defult values from gentop.ccp 31-07-2015
+      return Resp(ChargeDistributionModel iDistributionModel,
+		  FALSE, 1e-3, 0.1, qtot,
+		  5, 100, -1, TRUE,
+		  0, -1,
+		  FALSE, TRUE,1, TRUE,
+		  FALSE, "",
+		  0);
+    }
+    
+    */
     ~Resp();
 
 

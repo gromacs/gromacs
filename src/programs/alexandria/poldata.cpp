@@ -205,7 +205,7 @@ namespace alexandria
 			 double        polarizability,
 			 double        sigPol)
   {
-    Ptype *sp;
+
     unsigned int      i;
 
     for (i = 0; (i < _ptype.size()); i++)
@@ -217,14 +217,8 @@ namespace alexandria
       }
     if (i == _ptype.size())
       {
-        _ptype.resize(_ptype.size()+1);
-
-        sp                 = &(_ptype[i]);
-        sp->type           = ptype;
-        sp->bosque         = bosque;
-        sp->miller         = miller;
-        sp->polarizability = polarizability;
-        sp->sigPol        = sigPol;
+	Ptype sp(ptype,miller,bosque,polarizability,sigPol);       
+	_ptype.push_back(sp);
       }
     else
       {
@@ -259,7 +253,7 @@ namespace alexandria
 			 const std::string vdwparams,
 			 double        refEnthalpy)
   {
-    Ffatype *sp;
+    
     unsigned int        i;
 
     for (i = 0; (i < _alexandria.size()); i++)
@@ -271,17 +265,10 @@ namespace alexandria
       }
     if (i == _alexandria.size())
       {
-        _alexandria.resize(_alexandria.size()+1);
-
-        sp                 = &(_alexandria[i]);
-        sp->elem           = elem;
-        sp->desc           = desc;
-        sp->type           = atype;
-        sp->ptype          = ptype;
-        sp->btype          = btype;
-        sp->vdwparams      = vdwparams;
-        sp->refEnthalpy   = refEnthalpy;
-        addBtype(btype);
+        Ffatype sp(desc, atype, ptype, btype,
+		   elem, vdwparams, refEnthalpy);
+	
+	_alexandria.push_back(sp);
       }
     else
       {
@@ -289,13 +276,11 @@ namespace alexandria
       }
   }
 
-  void Poldata::addBondingRule(
-			       std::string gtBrule, std::string atype,
+  void Poldata::addBondingRule(std::string gtBrule, std::string atype,
 			       std::string geometry, int numbonds,
 			       double valence, int iAromatic,
 			       std::string neighbors)
   {
-    Brule *sp;
     unsigned int      i, j;
 
     for (j = 0; (j < _alexandria.size()); j++)
@@ -316,18 +301,11 @@ namespace alexandria
 	  }
         if (i == _brule.size())
 	  {
-            _brule.resize(_brule.size()+1);
-
-            sp                 = &(_brule[i]);
-            sp->elem           = (_alexandria[j].elem);
-            sp->rule           = gtBrule;
-            sp->type           = atype;
-            sp->neighbors      = neighbors;
-            sp->valence        = valence;
-            sp->iAromatic      = iAromatic;
-            sp->nb             = split(neighbors, ' ');
-            sp->geometry       = geometry;
-            sp->numbonds       = numbonds;
+            
+	    Brule brule(_alexandria[j].elem, gtBrule, atype, neighbors, geometry,
+			numbonds, iAromatic, valence, split(neighbors, ' '));
+	    
+	    _brule.push_back(brule);
 	  }
         else
 	  {
@@ -1051,20 +1029,14 @@ namespace alexandria
     return 0.0;
   }
 
-  void Poldata::addMiller(
-			  std::string   miller,
+  void Poldata::addMiller(std::string   miller,
 			  int           atomnumber,
 			  double        tauAhc,
 			  double        alphaAhp)
   {
-    Miller *mil;
+    Miller mil(miller, atomnumber, tauAhc, alphaAhp);
 
-    _miller.resize(_miller.size()+1);
-    mil             = &(_miller[_miller.size()-1]);
-    mil->miller     = miller;
-    mil->atomnumber = atomnumber;
-    mil->tauAhc    = tauAhc;
-    mil->alphaAhp  = alphaAhp;
+    _miller.push_back(mil);
   }
 
   void Poldata::setMillerUnits( std::string tauUnit, std::string ahpUnit)
@@ -1139,13 +1111,8 @@ namespace alexandria
 			  std::string   bosque,
 			  double        polarizability)
   {
-    Bosque *bs;
-
-    
-    _bosque.resize(_bosque.size() + 1);
-    bs                 = &(_bosque[_bosque.size()-1]);
-    bs->bosque         = bosque;
-    bs->polarizability = polarizability;
+    Bosque bos(bosque,polarizability);
+    _bosque.push_back(bos);
   }
 
   int Poldata::getBosque(
@@ -1246,7 +1213,6 @@ namespace alexandria
 			double length, double sigma, int ntrain,
 			double bondorder, std::string params)
   {
-    GtBond *gtB;
     int        a1, a2;
 
     if (-1 == (a1 = searchBondtype( atom1)))
@@ -1260,18 +1226,11 @@ namespace alexandria
     if (setBondParams( atom1, atom2, length, sigma, ntrain,
 		       bondorder, params) == 0)
       {
-       
-	_gtBond.resize(_gtBond.size()+1);
-	gtB            = &(_gtBond[_gtBond.size()-1]);
-	gtB->atom1     = atom1;
-	gtB->elem1 =  _alexandria[a1].elem;
-	gtB->atom2 = atom2;
-	gtB->elem2 =  _alexandria[a2].elem;
-	gtB->length    = length;
-	gtB->sigma     = sigma;
-	gtB->ntrain    = ntrain;
-	gtB->bondorder = bondorder;
-	gtB->params    = params;
+	GtBond bond(atom1, atom2, params,
+		    _alexandria[a1].elem, _alexandria[a2].elem,
+		    length, sigma, bondorder, ntrain);
+	
+	_gtBond.push_back(bond);
 	qsort(vectorToArray(_gtBond), _gtBond.size(), sizeof(_gtBond[0]), gtbComp);
       }
     return 1;
@@ -1374,12 +1333,10 @@ namespace alexandria
     return 0;
   }
 
-  int Poldata::addAngle(
-			std::string atom1, std::string atom2,
+  int Poldata::addAngle(std::string atom1, std::string atom2,
 			std::string atom3, double angle, double sigma,
 			int ntrain, std::string params)
   {
-    GtAngle *gtB;
 
     if ((-1 == searchBondtype( atom1)) ||
 	(-1 == searchBondtype( atom2)) ||
@@ -1390,16 +1347,11 @@ namespace alexandria
 
     if (0 == setAngleParams( atom1, atom2, atom3, angle, sigma, ntrain, params))
       {
-
-	_gtAngle.resize(_gtAngle.size()+1);
-	gtB          = &(_gtAngle[_gtAngle.size()-1]);
-	gtB->atom1   = atom1;
-	gtB->atom2   = atom2;
-	gtB->atom3   = atom3;
-	gtB->angle   = angle;
-	gtB->sigma   = sigma;
-	gtB->ntrain  = ntrain;
-	gtB->params  = params;
+	GtAngle ang(atom1, atom2, atom3, 
+		      params, angle, sigma, ntrain);
+	
+	_gtAngle.push_back(ang);
+	
       }
     return 1;
   }
@@ -1410,7 +1362,7 @@ namespace alexandria
   {
     GtAngle *gtB;
 
-    if (_ngtAngleC < _ngtAngleC)
+    if (_ngtAngleC < _gtAngle.size())
       {
 	gtB = &(_gtAngle[_ngtAngleC]);
 	assignStr(atom1, gtB->atom1);
@@ -1548,7 +1500,6 @@ namespace alexandria
 			    std::string atom3, std::string atom4, double dihedral,
 			    double sigma, int ntrain, std::string params)
   {
-    GtDihedral *gtB;
 
     if ((-1 == searchBondtype( atom1)) ||
 	(-1 == searchBondtype( atom2)) ||
@@ -1563,16 +1514,10 @@ namespace alexandria
 					 sigma, ntrain, params))
       {
 
-	_gtDihedral[egd].resize(_gtDihedral[egd].size()+1);
-	gtB           = &(_gtDihedral[egd][_gtDihedral[egd].size()-1]);
-	gtB->atom1    = atom1;
-	gtB->atom2    = atom2;
-	gtB->atom3    = atom3;
-	gtB->atom4    = atom4;
-	gtB->dihedral = dihedral;
-	gtB->sigma    = sigma;
-	gtB->ntrain   = ntrain;
-	gtB->params   = params;
+	GtDihedral dihed(atom1, atom2, atom3, atom4,
+			    params, dihedral, sigma, ntrain);
+	
+	_gtDihedral[egd].push_back(dihed);
 	qsort(vectorToArray(_gtDihedral[egd]), _gtDihedral[egd].size(), sizeof(_gtDihedral[egd][0]),
 	      gtdComp);
       }
@@ -1630,9 +1575,8 @@ namespace alexandria
   void Poldata::addSymcharges( std::string central,
 			       std::string attached, int numattach)
   {
-    Symcharges *sc;
     unsigned int           i;
-
+    Symcharges * sc;
     for (i = 0; (i < _symcharges.size()); i++)
       {
 	sc = &(_symcharges[i]);
@@ -1645,12 +1589,9 @@ namespace alexandria
       }
     if (i == _symcharges.size())
       {
-
-	_symcharges.resize(_symcharges.size()+1);
-	sc              = &(_symcharges[i]);
-	sc->central = central;
-	sc->attached = attached;
-	sc->numattach   = numattach;
+	Symcharges symcharges(central, attached, numattach);
+  
+	_symcharges.push_back(symcharges);
       }
   }
 
@@ -1954,9 +1895,8 @@ namespace alexandria
       }
     if (i == _epr.size())
       {
-	_epr.resize(_epr.size() + 1);
-	_epr[i].eqdModel = eqdModel;
-	_epr[i].epref = epref;
+	Epref epr(eqdModel, epref);
+	_epr.push_back(epr);
       }
   }
 
@@ -2057,7 +1997,7 @@ namespace alexandria
     else
       {
 	nep = gmx_recv_int(cr, 0);
-	if (nep != nep)
+	if (_eep.size() != nep)
 	  {
 	    gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
 	  }
