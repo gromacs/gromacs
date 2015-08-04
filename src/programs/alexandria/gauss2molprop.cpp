@@ -106,7 +106,7 @@ int alex_gauss2molprop(int argc, char *argv[])
     aps = gmx_atomprop_init();
 
     /* Read polarization stuff */
-    if ((pd = alexandria::PoldataXml::read(NULL, aps)) == NULL)
+    if ((pd = alexandria::PoldataXml::read("", aps)) == NULL)
     {
         gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
     }
