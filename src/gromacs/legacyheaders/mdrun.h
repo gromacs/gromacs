@@ -72,6 +72,7 @@ extern "C" {
 #define MD_STARTFROMCPT   (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 #define MD_TUNEPME        (1<<20)
+#define MD_NTOMPSET       (1<<21)
 #define MD_IMDWAIT        (1<<23)
 #define MD_IMDTERM        (1<<24)
 #define MD_IMDPULL        (1<<25)
@@ -98,7 +99,6 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                  gmx_membed_t membed,
                                  real cpt_period, real max_hours,
-                                 const char *deviceOptions,
                                  int imdport,
                                  unsigned long Flags,
                                  gmx_walltime_accounting_t walltime_accounting);
@@ -160,7 +160,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             const char *deviceOptions, int imdport, unsigned long Flags);
+             int imdport, unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
 void bcast_state(const struct t_commrec *cr, t_state *state);

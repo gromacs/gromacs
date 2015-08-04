@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,11 +40,6 @@
 
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/legacyheaders/typedefs.h"
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 void add_param(t_params *ps, int ai, int aj, real *c, char *s);
 
@@ -86,9 +81,5 @@ void add_vsite3_rtp_param(t_params *ps, int ai, int aj, int ak, int al, char *s)
 void add_vsite4_rtp_param(t_params *ps, int ai, int aj, int ak, int al, int am, char *s);
 
 int search_jtype(t_restp *rp, char *name, gmx_bool bFirstRes);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

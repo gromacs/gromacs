@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,17 +42,17 @@
  * containers to simplify implementation of other code.  Contents of the module
  * are discussed in more details under the different headings below.
  * Some of the code in installed headers in the module is intended for use
- * directly from code outside the Gromacs library, but a significant portion is
- * exposed only because other public headers depend on it.
+ * directly from code outside the \Gromacs library, but a significant portion
+ * is exposed only because other public headers depend on it.
  *
  * Since this module implements error handling, it should be at the lowest
  * level: it should not depend on other modules.  Any functionality needed by
  * the error handling code should also be kept in this module.
  *
- * <H3>Error Handling</H3>
+ * <H3>Error handling</H3>
  *
  * Exception classes used in the library are declared in the exceptions.h header
- * file.  Most Gromacs-specific exceptions derive from gmx::GromacsException.
+ * file.  Most \Gromacs-specific exceptions derive from gmx::GromacsException.
  *
  * This header also declares a ::GMX_THROW macro that should be used for
  * throwing exceptions.  ::GMX_THROW_WITH_ERRNO is also provided for reporting
@@ -87,17 +87,29 @@
  * \endif
  *
  *
- * <H3>Basic %File Handling</H3>
+ * \if libapi
  *
- * The header file.h declares a gmx::File class for basic I/O support.
+ * <H3>Basic file handling and streams</H3>
  *
- * The header path.h declares helpers for manipulating paths and for managing
- * directories.
+ * The header textstream.h declares interfaces for simple text format streams.
+ * Headers filestream.h and stringstream.h provide implementations for these
+ * streams for reading/writing files and for writing to in-memory strings.
  *
- * The fate of these headers depends on what is decided in Redmine issue #950.
+ * The header fileredirector.h provides interfaces for redirecting file input
+ * and/or output to alternative streams, for use in testing, as well as default
+ * implementations for these interfaces that just use the file system.
  *
+ * The header textwriter.h provides gmx::TextWriter for more formatting support
+ * when writing to a text stream.  Similarly, textreader.h provides more
+ * formatting support when reading from a text stream.
  *
- * <H3>Implementation Helpers</H3>
+ * The header path.h declares helpers for manipulating paths as strings and for
+ * managing directories and files.
+ * The fate of this header depends on what is decided in Redmine issue #950.
+ *
+ * \endif
+ *
+ * <H3>Implementation helpers</H3>
  *
  * The header basedefinitions.h contains common definitions and macros used
  * throughout \Gromacs.  It includes fixed-width integer types (`gmx_int64_t`
@@ -114,7 +126,7 @@
  * safety when using bit flag fields.
  *
  *
- * <H3>Other Functionality</H3>
+ * <H3>Other functionality</H3>
  *
  * The header init.h declares gmx::init() and gmx::finalize() for initializing
  * and deinitializing the \Gromacs library.
@@ -141,7 +153,7 @@
  * The header sysinfo.h declares gmx_getpid() for getting the current process
  * id.
  *
- * The header programcontext.h declares a gmx::ProgramContextInterface that is
+ * The header programcontext.h declares a gmx::IProgramContext that is
  * used to
  * initialize and access information about the running program, such as the
  * name and path of the executable.  This information is used, e.g., by the

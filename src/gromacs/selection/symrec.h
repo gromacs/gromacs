@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -217,19 +217,13 @@ class SelectionParserSymbolTable
          * Finds a symbol by name.
          *
          * \param[in] name   Symbol name to find.
-         * \param[in] bExact If false, symbols that begin with \p name are also
-         *      considered.
          * \returns   Pointer to the symbol with name \p name, or
          *      NULL if not found.
-         * \throws    InvalidInputError if \p bExact is false and an ambiguous
-         *      symbol is provided.
          *
-         * If no exact match is found and \p bExact is false, returns a symbol
-         * that begins with \p name if a unique matching symbol is found.
-         * Only selection methods are considered for this inexact match.
+         * Does not throw.
          */
         const SelectionParserSymbol *
-        findSymbol(const std::string &name, bool bExact) const;
+        findSymbol(const std::string &name) const;
 
         /*! \brief
          * Returns the start iterator for iterating symbols of a given type.

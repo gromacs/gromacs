@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,12 +155,8 @@ gmx_bool uses_simple_tables(int                        cutoff_scheme,
 
 void init_interaction_const_tables(FILE                *fp,
                                    interaction_const_t *ic,
-                                   gmx_bool             bSimpleTable,
                                    real                 rtab);
-/* Initializes the tables in the interaction constant data structure.
- * Setting verlet_kernel_type to -1 always initializes tables for
- * use with group kernels.
- */
+/* Initializes the tables in the interaction constant data structure. */
 
 void init_forcerec(FILE              *fplog,
                    const output_env_t oenv,
@@ -279,10 +275,10 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               float        *cycles_pme);
 /* Call all the force routines */
 
-void free_gpu_resources(const t_forcerec     *fr,
-                        const t_commrec      *cr,
-                        const gmx_gpu_info_t *gpu_info,
-                        const gmx_gpu_opt_t  *gpu_opt);
+void free_gpu_resources(const t_forcerec            *fr,
+                        const t_commrec             *cr,
+                        const struct gmx_gpu_info_t *gpu_info,
+                        const gmx_gpu_opt_t         *gpu_opt);
 
 #ifdef __cplusplus
 }

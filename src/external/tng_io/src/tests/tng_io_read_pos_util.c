@@ -11,13 +11,14 @@
  * modify it under the terms of the Revised BSD License.
  */
 
+#include "tng/tng_io.h"
+
 #ifdef USE_STD_INTTYPES_H
 #include <inttypes.h>
 #endif
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "tng/tng_io.h"
 
 int main(int argc, char **argv)
 {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,8 @@ namespace gmx
 {
 
 class FileNameOptionInfo;
-class Options;
+class IFileInputRedirector;
+class IOptionsContainer;
 
 /*! \brief
  * Handles interaction of file name options with global options.
@@ -78,11 +79,29 @@ class Options;
  * \inpublicapi
  * \ingroup module_selection
  */
-class FileNameOptionManager : public OptionManagerInterface
+class FileNameOptionManager : public IOptionManager
 {
     public:
         FileNameOptionManager();
         virtual ~FileNameOptionManager();
+
+        /*! \brief
+         * Redirects file existence checks.
+         *
+         * \param[in] redirector  File redirector to use for existence checks.
+         *
+         * The manager checks for existence of various files on the file system
+         * to complete file extensions.  This method can be used to redirect
+         * those checks to an alternative implementation.
+         *
+         * This is used for unit tests to more easily control the result of the
+         * checks and to keep the tests as fast as possible by avoiding real
+         * file system access.  To keep implementation options open, behavior
+         * with `redirector == NULL` is undefined and should not be relied on.
+         * For tests, there should only be need to call this a single time,
+         * right after creating the manager.
+         */
+        void setInputRedirector(const IFileInputRedirector *redirector);
 
         /*! \brief
          * Disables special input file option handling.
@@ -113,7 +132,7 @@ class FileNameOptionManager : public OptionManagerInterface
          * instead from an option-specific default
          * (FileNameOption::defaultBaseName()).
          */
-        void addDefaultFileNameOption(Options *options, const char *name);
+        void addDefaultFileNameOption(IOptionsContainer *options, const char *name);
 
         /*! \brief
          * Completes file name option values.

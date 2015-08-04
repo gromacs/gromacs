@@ -684,14 +684,12 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
                                    t_nrnb *nrnb, gmx_wallcycle_t wcycle)
 {
     /* Repartition the domain decomposition */
-    wallcycle_start(wcycle, ewcDOMDEC);
     dd_partition_system(fplog, step, cr, FALSE, 1,
                         NULL, top_global, ir,
                         &ems->s, &ems->f,
                         mdatoms, top, fr, vsite, shellfc, constr,
                         nrnb, wcycle, FALSE);
     dd_store_state(cr->dd, &ems->s);
-    wallcycle_stop(wcycle, ewcDOMDEC);
 }
 
 static void evaluate_energy(FILE *fplog, t_commrec *cr,
@@ -965,7 +963,6 @@ double do_cg(FILE *fplog, t_commrec *cr,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
-             const char gmx_unused *deviceOptions,
              int imdport,
              unsigned long gmx_unused Flags,
              gmx_walltime_accounting_t walltime_accounting)
@@ -1593,7 +1590,6 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
-                const char gmx_unused *deviceOptions,
                 int imdport,
                 unsigned long gmx_unused Flags,
                 gmx_walltime_accounting_t walltime_accounting)
@@ -2404,7 +2400,6 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
                 gmx_membed_t gmx_unused membed,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
-                const char  gmx_unused *deviceOptions,
                 int imdport,
                 unsigned long gmx_unused Flags,
                 gmx_walltime_accounting_t walltime_accounting)
@@ -2644,7 +2639,6 @@ double do_nm(FILE *fplog, t_commrec *cr,
              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
              gmx_membed_t gmx_unused membed,
              real gmx_unused cpt_period, real gmx_unused max_hours,
-             const char gmx_unused *deviceOptions,
              int imdport,
              unsigned long gmx_unused Flags,
              gmx_walltime_accounting_t walltime_accounting)
@@ -2696,9 +2690,9 @@ double do_nm(FILE *fplog, t_commrec *cr,
     if (bIsMaster)
     {
         fprintf(stderr,
-                "NOTE: This version of Gromacs has been compiled in single precision,\n"
+                "NOTE: This version of GROMACS has been compiled in single precision,\n"
                 "      which MIGHT not be accurate enough for normal mode analysis.\n"
-                "      Gromacs now uses sparse matrix storage, so the memory requirements\n"
+                "      GROMACS now uses sparse matrix storage, so the memory requirements\n"
                 "      are fairly modest even if you recompile in double precision.\n\n");
     }
 #endif

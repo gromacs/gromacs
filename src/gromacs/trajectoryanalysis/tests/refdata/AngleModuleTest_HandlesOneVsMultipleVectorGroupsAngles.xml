@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">angle -g1 vector -group1 'resname RV1 and name A1 A2' 'resname RV3 RV4 and name A1 A2' -g2 plane -group2 'resname RP1 RP2 and name A1 A2 A3' -binw 60</String>
+  <String Name="CommandLine">angle -g1 vector -group1 'resname RV2 and name A1 A2' 'resname RV3 RV4 and name A1 A2' -g2 plane -group2 'resname RP1 RP2 and name A1 A2 A3' -binw 60</String>
   <OutputData Name="Data">
     <AnalysisData Name="angle">
       <DataFrame Name="Frame0">
@@ -10,10 +10,10 @@
           <Int Name="Count">2</Int>
           <Int Name="DataSet">0</Int>
           <DataValue>
-            <Real Name="Value">90</Real>
+            <Real Name="Value">180</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">120.00000000000001</Real>
+            <Real Name="Value">45</Real>
           </DataValue>
         </DataValues>
         <DataValues>
@@ -34,7 +34,7 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">105</Real>
+            <Real Name="Value">112.5</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">112.5</Real>
@@ -48,7 +48,7 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">0</Real>
+            <Real Name="Value">0.0083333333333333332</Real>
             <Real Name="Error">0</Real>
           </DataValue>
           <DataValue>
@@ -62,7 +62,7 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">0.0083333333333333332</Real>
+            <Real Name="Value">0</Real>
             <Real Name="Error">0</Real>
           </DataValue>
           <DataValue>

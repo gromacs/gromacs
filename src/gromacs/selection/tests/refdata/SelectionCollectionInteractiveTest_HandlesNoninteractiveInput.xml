@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <InteractiveSession Name="Interactive">
+    <String Name="Input1"><![CDATA[
+foo = resname RA
+]]></String>
+    <String Name="Input2"><![CDATA[
+resname RB
+]]></String>
+    <String Name="Input3"><![CDATA[
+"Name" resname RC
+]]></String>
+    <String Name="Input4"><![CDATA[
+]]></String>
+  </InteractiveSession>
+</ReferenceData>

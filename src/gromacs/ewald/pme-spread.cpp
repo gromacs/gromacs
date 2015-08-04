@@ -44,11 +44,13 @@
 
 #include <algorithm>
 
-#include "gromacs/ewald/pme-internal.h"
-#include "gromacs/ewald/pme-simd.h"
-#include "gromacs/ewald/pme-spline-work.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/ewald/pme.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "pme-internal.h"
+#include "pme-simd.h"
+#include "pme-spline-work.h"
 
 /* TODO consider split of pme-spline from this file */
 
@@ -202,13 +204,11 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
  */
 #define CALC_SPLINE(order)                     \
     {                                              \
-        int  j, k, l;                                 \
-        real dr, div;                               \
-        real data[PME_ORDER_MAX];                  \
-        real ddata[PME_ORDER_MAX];                 \
-                                               \
-        for (j = 0; (j < DIM); j++)                     \
+        for (int j = 0; (j < DIM); j++)            \
         {                                          \
+            real dr, div;                          \
+            real data[PME_ORDER_MAX];              \
+                                                   \
             dr  = xptr[j];                         \
                                                \
             /* dr is relative offset from lower cell limit */ \
@@ -216,11 +216,11 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
             data[1]       = dr;                          \
             data[0]       = 1 - dr;                      \
                                                \
-            for (k = 3; (k < order); k++)               \
+            for (int k = 3; (k < order); k++)      \
             {                                      \
                 div       = 1.0/(k - 1.0);               \
                 data[k-1] = div*dr*data[k-2];      \
-                for (l = 1; (l < (k-1)); l++)           \
+                for (int l = 1; (l < (k-1)); l++)  \
                 {                                  \
                     data[k-l-1] = div*((dr+l)*data[k-l-2]+(k-l-dr)* \
                                        data[k-l-1]);                \
@@ -228,25 +228,24 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
                 data[0] = div*(1-dr)*data[0];      \
             }                                      \
             /* differentiate */                    \
-            ddata[0] = -data[0];                   \
-            for (k = 1; (k < order); k++)               \
+            dtheta[j][i*order+0] = -data[0];       \
+            for (int k = 1; (k < order); k++)      \
             {                                      \
-                ddata[k] = data[k-1] - data[k];    \
+                dtheta[j][i*order+k] = data[k-1] - data[k]; \
             }                                      \
                                                \
             div           = 1.0/(order - 1);                 \
             data[order-1] = div*dr*data[order-2];  \
-            for (l = 1; (l < (order-1)); l++)           \
+            for (int l = 1; (l < (order-1)); l++)  \
             {                                      \
                 data[order-l-1] = div*((dr+l)*data[order-l-2]+    \
                                        (order-l-dr)*data[order-l-1]); \
             }                                      \
             data[0] = div*(1 - dr)*data[0];        \
                                                \
-            for (k = 0; k < order; k++)                 \
+            for (int k = 0; k < order; k++)        \
             {                                      \
                 theta[j][i*order+k]  = data[k];    \
-                dtheta[j][i*order+k] = ddata[k];   \
             }                                      \
         }                                          \
     }
@@ -269,6 +268,7 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
         if (bDoSplines || coefficient[ii] != 0.0)
         {
             xptr = fractx[ii];
+            assert(order >= 4 && order <= PME_ORDER_MAX);
             switch (order)
             {
                 case 4:  CALC_SPLINE(4);     break;
@@ -367,7 +367,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 4
 #endif
-#include "gromacs/ewald/pme-simd4.h"
+#include "pme-simd4.h"
 #else
                     DO_BSPLINE(4);
 #endif
@@ -376,7 +376,7 @@ static void spread_coefficients_bsplines_thread(pmegrid_t                       
 #ifdef PME_SIMD4_SPREAD_GATHER
 #define PME_SPREAD_SIMD4_ALIGNED
 #define PME_ORDER 5
-#include "gromacs/ewald/pme-simd4.h"
+#include "pme-simd4.h"
 #else
                     DO_BSPLINE(5);
 #endif

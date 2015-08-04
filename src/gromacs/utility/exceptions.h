@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,8 @@
 
 namespace gmx
 {
+
+class TextWriter;
 
 namespace internal
 {
@@ -444,6 +446,15 @@ std::string formatExceptionMessageToString(const std::exception &ex);
  * \throws    std::bad_alloc if out of memory.
  */
 void formatExceptionMessageToFile(FILE *fp, const std::exception &ex);
+/*! \brief
+ * Formats an error message for reporting an exception.
+ *
+ * \param     writer  Writer to use for writing the message.
+ * \param[in] ex      Exception to format.
+ * \throws    std::bad_alloc if out of memory.
+ */
+void formatExceptionMessageToWriter(TextWriter           *writer,
+                                    const std::exception &ex);
 /*! \brief
  * Handles an exception that is causing the program to terminate.
  *

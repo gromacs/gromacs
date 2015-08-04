@@ -136,12 +136,12 @@ This is the top-level wrapper that you should always include first.
 It will check the settings made at configuration time and include a
 suitable low-level implementation (that can be either single, double,
 or both). It also contains the routines for memory alignment, and
-based on the current Gromacs precision it will set aliases to 'real'
+based on the current \Gromacs precision it will set aliases to 'real'
 SIMD datatypes (see further down) so the implementations do not have
-to care about Gromacs-specific details. However, note that you might
-not get all SIMD support you hoped for: If you compiled Gromacs in
+to care about \Gromacs-specific details. However, note that you might
+not get all SIMD support you hoped for: If you compiled \Gromacs in
 double precision but the hardware only supports single-precision SIMD
-there will not be any SIMD routines for default Gromacs 'real' precision.
+there will not be any SIMD routines for default \Gromacs 'real' precision.
 There are \#defines you can use to check this, as described further down.
 </dd>
 <dt>`gromacs/simd/impl_reference.h`</dt>
@@ -162,7 +162,7 @@ algorithms if these features are present.
 <dd>
 This file contains a few rvec-related SIMD functions, e.g. to
 calculate scalar products, norms, or cross products. They obviously
-cannot operate on scalar Gromacs rvec types, but use separate SIMD
+cannot operate on scalar \Gromacs rvec types, but use separate SIMD
 variables for X,Y, and Z vector components.
 </dd>
 </dl>
@@ -216,7 +216,7 @@ integers too.
 <dl>
 <dt>`#gmx_simd_int32_t`</dt>
 <dd>
-This is used for integers when converting to/from Gromacs default "real" type.
+This is used for integers when converting to/from \Gromacs default "real" type.
 The corresponding routines have suffix `_i`, e.g. `gmx_simd_add_i()`.
 </dd>
 <dt>`gmx_simd_fint32_t`</dt>
@@ -309,7 +309,7 @@ the preprocessor macros described below.
 </dd>
 </dl>
 
-Operations on these types will be defined to either float/double (or corresponding integers) based on the current Gromacs precision, so the documentation is occasionally more detailed for the lower-level actual implementation functions.
+Operations on these types will be defined to either float/double (or corresponding integers) based on the current \Gromacs precision, so the documentation is occasionally more detailed for the lower-level actual implementation functions.
 
 SIMD4 Macros
 ------------
@@ -499,4 +499,13 @@ implementation detail you won't have to worry about until you start writing
 support for a new SIMD architecture.
 
 
+Automated checking
+------------------
 
+Having fallback implementations when SIMD is not supported can be a
+performance problem if the code does not correctly include
+`gromacs/simd/simd.h`, particularly after refactoring.
+`make check-source` checks the whole code for the use of symbols defined
+in `gromacs/simd/simd.h` and requires that files using those symbols
+do the correct include. Similar checking is done for higher-level
+SIMD-management headers, e.g. `gromacs/ewald/pme-simd.h`.

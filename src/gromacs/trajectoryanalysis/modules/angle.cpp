@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -245,10 +245,9 @@ class Angle : public TrajectoryAnalysisModule
     public:
         Angle();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
@@ -304,7 +303,7 @@ Angle::Angle()
 
 
 void
-Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] computes different types of angles between vectors.",
@@ -359,7 +358,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     static const char *const cGroup2TypeEnum[] =
     { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
                            .store(&fnAverage_).defaultBasename("angaver")
@@ -392,7 +391,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 
 
 void
-Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* settings */)
+Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
 {
     const bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
 
@@ -401,7 +400,7 @@ Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* setting
         GMX_THROW(InconsistentInputError("Cannot use a second group (-g2) with "
                                          "-g1 angle or dihedral"));
     }
-    if (bSingle && options->isSet("group2"))
+    if (bSingle && sel2info_->isSet())
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection "
                                          "(-group2) with -g1 angle or dihedral"));
@@ -433,7 +432,7 @@ Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* setting
         default:
             GMX_THROW(InternalError("invalid -g2 value"));
     }
-    if (natoms2_ == 0 && options->isSet("group2"))
+    if (natoms2_ == 0 && sel2info_->isSet())
     {
         GMX_THROW(InconsistentInputError("Cannot provide a second selection (-group2) with -g2 t0 or z"));
     }
@@ -686,21 +685,38 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     {
         rvec  v1, v2;
         rvec  c1, c2;
+
+        // v2 & c2 are conditionally set in the switch statement below, and conditionally
+        // used in a different switch statement later. Apparently the clang static analyzer
+        // thinks there are cases where they can be used uninitialzed (which I cannot find),
+        // but to avoid trouble if we ever change just one of the switch statements it
+        // makes sense to clear them outside the first switch.
+
+        clear_rvec(v2);
+        clear_rvec(c2);
+
         switch (g2type_[0])
         {
             case 'z':
-                clear_rvec(v2);
                 v2[ZZ] = 1.0;
-                clear_rvec(c2);
                 break;
             case 's':
                 copy_rvec(sel2_[g].position(0).x(), c2);
                 break;
+            default:
+                // do nothing
+                break;
         }
+
         dh.selectDataSet(g);
         for (int n = 0; n < angleCount_[g]; ++n, iter1.nextValue(), iter2.nextValue())
         {
             rvec x[4];
+            // x[] will be assigned below based on the number of atoms used to initialize iter1,
+            // which in turn should correspond perfectly to g1type_[0] (which determines how many we read),
+            // but unsurprisingly the static analyzer chokes a bit on that.
+            clear_rvecs(4, x);
+
             real angle;
             // checkSelections() ensures that this reflects all the involved
             // positions.

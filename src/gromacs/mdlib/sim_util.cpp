@@ -76,9 +76,8 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
+#include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda.h"
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
@@ -88,6 +87,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
@@ -96,6 +96,7 @@
 #include "gromacs/utility/sysinfo.h"
 
 #include "adress.h"
+#include "nbnxn_gpu.h"
 
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -331,7 +332,7 @@ static void pull_potential_wrapper(t_commrec *cr,
     set_pbc(&pbc, ir->ePBC, box);
     dvdl                     = 0;
     enerd->term[F_COM_PULL] +=
-        pull_potential(ir->pull, mdatoms, &pbc,
+        pull_potential(ir->pull_work, mdatoms, &pbc,
                        cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
@@ -462,7 +463,7 @@ static void do_nb_verlet(t_forcerec *fr,
 {
     int                        enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     nonbonded_verlet_group_t  *nbvg;
-    gmx_bool                   bCUDA;
+    gmx_bool                   bUsingGpuKernels;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -472,15 +473,15 @@ static void do_nb_verlet(t_forcerec *fr,
 
     nbvg = &fr->nbv->grp[ilocality];
 
-    /* CUDA kernel launch overhead is already timed separately */
+    /* GPU kernel launch overhead is already timed separately */
     if (fr->cutoff_scheme != ecutsVERLET)
     {
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    bCUDA = (nbvg->kernel_type == nbnxnk8x8x8_CUDA);
+    bUsingGpuKernels = (nbvg->kernel_type == nbnxnk8x8x8_GPU);
 
-    if (!bCUDA)
+    if (!bUsingGpuKernels)
     {
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
@@ -526,8 +527,8 @@ static void do_nb_verlet(t_forcerec *fr,
                                    enerd->grpp.ener[egLJSR]);
             break;
 
-        case nbnxnk8x8x8_CUDA:
-            nbnxn_cuda_launch_kernel(fr->nbv->cu_nbv, nbvg->nbat, flags, ilocality);
+        case nbnxnk8x8x8_GPU:
+            nbnxn_gpu_launch_kernel(fr->nbv->gpu_nbv, nbvg->nbat, flags, ilocality);
             break;
 
         case nbnxnk8x8x8_PlainC:
@@ -548,7 +549,7 @@ static void do_nb_verlet(t_forcerec *fr,
             gmx_incons("Invalid nonbonded kernel type passed!");
 
     }
-    if (!bCUDA)
+    if (!bUsingGpuKernels)
     {
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
@@ -557,8 +558,8 @@ static void do_nb_verlet(t_forcerec *fr,
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
-    else if ((!bCUDA && nbvg->ewald_excl == ewaldexclAnalytical) ||
-             (bCUDA && nbnxn_cuda_is_kernel_ewald_analytical(fr->nbv->cu_nbv)))
+    else if ((!bUsingGpuKernels && nbvg->ewald_excl == ewaldexclAnalytical) ||
+             (bUsingGpuKernels && nbnxn_gpu_is_kernel_ewald_analytical(fr->nbv->gpu_nbv)))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
@@ -913,12 +914,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (bNS)
         {
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            nbnxn_cuda_init_atomdata(nbv->cu_nbv, nbv->grp[eintLocal].nbat);
+            nbnxn_gpu_init_atomdata(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
 
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-        nbnxn_cuda_upload_shiftvec(nbv->cu_nbv, nbv->grp[eintLocal].nbat);
+        nbnxn_gpu_upload_shiftvec(nbv->gpu_nbv, nbv->grp[eintLocal].nbat);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -940,9 +941,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (bUseGPU)
         {
             /* initialize local pair-list on the GPU */
-            nbnxn_cuda_init_pairlist(nbv->cu_nbv,
-                                     nbv->grp[eintLocal].nbl_lists.nbl[0],
-                                     eintLocal);
+            nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
+                                    nbv->grp[eintLocal].nbl_lists.nbl[0],
+                                    eintLocal);
         }
         wallcycle_stop(wcycle, ewcNS);
     }
@@ -1008,12 +1009,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
 
-            if (nbv->grp[eintNonlocal].kernel_type == nbnxnk8x8x8_CUDA)
+            if (nbv->grp[eintNonlocal].kernel_type == nbnxnk8x8x8_GPU)
             {
                 /* initialize non-local pair-list on the GPU */
-                nbnxn_cuda_init_pairlist(nbv->cu_nbv,
-                                         nbv->grp[eintNonlocal].nbl_lists.nbl[0],
-                                         eintNonlocal);
+                nbnxn_gpu_init_pairlist(nbv->gpu_nbv,
+                                        nbv->grp[eintNonlocal].nbl_lists.nbl[0],
+                                        eintNonlocal);
             }
             wallcycle_stop(wcycle, ewcNS);
         }
@@ -1053,11 +1054,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
         if (DOMAINDECOMP(cr) && !bDiffKernels)
         {
-            nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintNonlocal].nbat,
-                                      flags, eatNonlocal);
+            nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintNonlocal].nbat,
+                                     flags, eatNonlocal);
         }
-        nbnxn_cuda_launch_cpyback(nbv->cu_nbv, nbv->grp[eintLocal].nbat,
-                                  flags, eatLocal);
+        nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintLocal].nbat,
+                                 flags, eatLocal);
         cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -1154,9 +1155,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         clear_rvec(fr->vir_diag_posres);
     }
 
-    if (inputrec->bPull && inputrec->pull->bConstraint)
+    if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {
-        clear_pull_forces(inputrec->pull);
+        clear_pull_forces(inputrec->pull_work);
     }
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
@@ -1283,11 +1284,11 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                 float cycles_tmp;
 
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
-                nbnxn_cuda_wait_gpu(nbv->cu_nbv,
-                                    nbv->grp[eintNonlocal].nbat,
-                                    flags, eatNonlocal,
-                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                    fr->fshift);
+                nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                                       nbv->grp[eintNonlocal].nbat,
+                                       flags, eatNonlocal,
+                                       enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                       fr->fshift);
                 cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
                 cycles_wait_gpu += cycles_tmp;
                 cycles_force    += cycles_tmp;
@@ -1302,7 +1303,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
             /* skip the reduction if there was no non-local work to do */
-            if (nbv->grp[eintLocal].nbl_lists.nbl[0]->nsci > 0)
+            if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
                                                nbv->grp[eintNonlocal].nbat, f);
@@ -1342,15 +1343,16 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
+#if defined(GMX_GPU) && !defined(GMX_USE_OPENCL)
             float       cycles_tmp, cycles_wait_est;
             const float cuda_api_overhead_margin = 50000.0f; /* cycles */
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-            nbnxn_cuda_wait_gpu(nbv->cu_nbv,
-                                nbv->grp[eintLocal].nbat,
-                                flags, eatLocal,
-                                enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                fr->fshift);
+            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                                   nbv->grp[eintLocal].nbat,
+                                   flags, eatLocal,
+                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                   fr->fshift);
             cycles_tmp      = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
             if (bDoForces && DOMAINDECOMP(cr))
@@ -1381,10 +1383,20 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             cycles_force    += cycles_wait_est;
             cycles_wait_gpu += cycles_wait_est;
 
-            /* now clear the GPU outputs while we finish the step on the CPU */
+#elif defined(GMX_GPU) && defined(GMX_USE_OPENCL)
 
+            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
+            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
+                                   nbv->grp[eintLocal].nbat,
+                                   flags, eatLocal,
+                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
+                                   fr->fshift);
+            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+#endif
+
+            /* now clear the GPU outputs while we finish the step on the CPU */
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
-            nbnxn_cuda_clear_outputs(nbv->cu_nbv, flags);
+            nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
             wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
         else
@@ -1397,12 +1409,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        if (nbv->grp[eintLocal].nbl_lists.nbl[0]->nsci > 0)
-        {
-            /* skip the reduction if there was no non-local work to do */
-            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
-                                           nbv->grp[eintLocal].nbat, f);
-        }
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
+                                       nbv->grp[eintLocal].nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
@@ -1458,7 +1466,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (inputrec->bPull && inputrec->pull->bPotential)
+    if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
     {
         /* Since the COM pulling is always done mass-weighted, no forces are
          * applied to vsites and this call can be done after vsite spreading.
@@ -1801,9 +1809,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
         clear_rvec(fr->vir_diag_posres);
     }
-    if (inputrec->bPull && inputrec->pull->bConstraint)
+    if (inputrec->bPull && pull_have_constraint(inputrec->pull_work))
     {
-        clear_pull_forces(inputrec->pull);
+        clear_pull_forces(inputrec->pull_work);
     }
 
     /* update QMMMrec, if necessary */
@@ -1863,7 +1871,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (bDoAdressWF && fr->adress_icor == eAdressICThermoForce)
         {
             /* Compute thermodynamic force in hybrid AdResS region */
-            adress_thermo_force(start, homenr, &(top->cgs), x, fr->f_novirsum, fr, mdatoms,
+            adress_thermo_force(start, homenr, x, fr->f_novirsum, fr, mdatoms,
                                 inputrec->ePBC == epbcNONE ? NULL : &pbc);
         }
 
@@ -1922,7 +1930,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
     }
 
-    if (inputrec->bPull && inputrec->pull->bPotential)
+    if (inputrec->bPull && pull_have_potential(inputrec->pull_work))
     {
         pull_potential_wrapper(cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t,
@@ -2625,8 +2633,8 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
-        wallclock_gpu_t* gputimes = use_GPU(nbv) ?
-            nbnxn_cuda_get_timings(nbv->cu_nbv) : NULL;
+        struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : NULL;
+
         wallcycle_print(fplog, cr->nnodes, cr->npmenodes,
                         elapsed_time_over_all_ranks,
                         wcycle, gputimes);

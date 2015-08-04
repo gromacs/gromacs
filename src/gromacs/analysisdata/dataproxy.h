@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,16 +56,16 @@ namespace gmx
  * Internal implementation class used to implement column modules.
  *
  * This class serves as a proxy between AbstractAnalysisData and the attached
- * AnalysisDataModuleInterface object.  For each notification that
+ * IAnalysisDataModule object.  For each notification that
  * AbstractAnalysisData sends, it maps it such that only the relevant columns
- * are visible to the AnalysisDataModuleInterface.  Similarly, it implements
+ * are visible to the IAnalysisDataModule.  Similarly, it implements
  * the frame access methods of AbstractAnalysisData such that only the relevant
  * columns are returned.
  *
  * \ingroup module_analysisdata
  */
 class AnalysisDataProxy : public AbstractAnalysisData,
-                          public AnalysisDataModuleInterface
+                          public IAnalysisDataModule
 {
     public:
         /*! \brief

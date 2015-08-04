@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,12 +55,15 @@
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/xvgtest.h"
 
 namespace gmx
 {
@@ -240,10 +243,12 @@ class CommandLineTestHelper::Impl
             OutputFileInfo(const char *option, const std::string &path)
                 : option(option), path(path)
             {
+                xvg = endsWith(path, ".xvg");
             }
 
             std::string         option;
             std::string         path;
+            bool                xvg;
         };
 
         typedef std::vector<OutputFileInfo>        OutputFileList;
@@ -263,7 +268,7 @@ class CommandLineTestHelper::Impl
 
 // static
 int CommandLineTestHelper::runModule(
-        CommandLineModuleInterface *module, CommandLine *commandLine)
+        ICommandLineModule *module, CommandLine *commandLine)
 {
     CommandLineModuleSettings settings;
     module->init(&settings);
@@ -272,12 +277,12 @@ int CommandLineTestHelper::runModule(
 
 // static
 int CommandLineTestHelper::runModule(
-        CommandLineOptionsModuleInterface::FactoryMethod  factory,
+        ICommandLineOptionsModule::FactoryMethod          factory,
         CommandLine                                      *commandLine)
 {
     // The name and description are not used in the tests, so they can be NULL.
-    boost::scoped_ptr<CommandLineModuleInterface> module(
-            CommandLineOptionsModuleInterface::createModule(NULL, NULL, factory));
+    boost::scoped_ptr<ICommandLineModule> module(
+            ICommandLineOptionsModule::createModule(NULL, NULL, factory));
     return runModule(module.get(), commandLine);
 }
 
@@ -297,7 +302,7 @@ void CommandLineTestHelper::setInputFileContents(
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
-    File::writeFileFromString(fullFilename, contents);
+    TextWriter::writeFileFromString(fullFilename, contents);
     args->addOption(option, fullFilename);
 }
 
@@ -308,7 +313,7 @@ void CommandLineTestHelper::setInputFileContents(
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
                 formatString("%d.%s", args->argc(), extension));
-    File        file(fullFilename, "w");
+    TextWriter  file(fullFilename);
     ConstArrayRef<const char *>::const_iterator i;
     for (i = contents.begin(); i != contents.end(); ++i)
     {
@@ -345,8 +350,18 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
              outfile != impl_->outputFiles_.end();
              ++outfile)
         {
-            std::string output = File::readToString(outfile->path);
-            outputChecker.checkStringBlock(output, outfile->option.c_str());
+            if (outfile->xvg)
+            {
+                TestReferenceChecker testChecker = checker.checkCompound("File",
+                                                                         outfile->option.c_str());
+                TextInputFile        sis(outfile->path);
+                checkXvgFile(&sis, &testChecker);
+            }
+            else
+            {
+                std::string output = TextReader::readFileToString(outfile->path);
+                outputChecker.checkStringBlock(output, outfile->option.c_str());
+            }
         }
     }
 }

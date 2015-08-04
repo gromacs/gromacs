@@ -34,8 +34,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares helper classes and functions for implementing
- * gmx::HelpTopicInterface.
+ * Declares helper classes for implementing gmx::IHelpTopic.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -44,7 +43,7 @@
 #ifndef GMX_ONLINEHELP_HELPTOPIC_H
 #define GMX_ONLINEHELP_HELPTOPIC_H
 
-#include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/uniqueptr.h"
@@ -52,47 +51,27 @@
 namespace gmx
 {
 
-/*! \cond libapi */
-/*! \libinternal \brief
- * Helper for writing simple help text.
- *
- * \param[in] context Context for writing the help.
- * \param[in] topic   Topic to write the help for (used for title).
- * \param[in] text    Text to write for the topic.
- * \throws    std::bad_alloc if out of memory.
- * \throws    FileIOError on any I/O error.
- *
- * Formats basic help by writing a title (obtained from \p topic), followed by
- * \p text with markup substituted and lines properly wrapped.
- *
- * \inlibraryapi
- */
-void writeBasicHelpTopic(const HelpWriterContext  &context,
-                         const HelpTopicInterface &topic,
-                         const std::string        &text);
-//! \endcond
-
 /*! \libinternal \brief
  * Abstract base class for help topics that have simple text and no subtopics.
  *
- * This class implements subtopic-related methods from HelpTopicInterface such
+ * This class implements subtopic-related methods from IHelpTopic such
  * that there are no subtopics.  writeHelp() is also implemented such that it
- * uses writeBasicHelpTopic() to write out the text returned by a new virtual
- * method helpText().
+ * uses HelpTopicContext::writeTextBlock() to write out the text returned by a
+ * new virtual method helpText().
  *
  * \see SimpleHelpTopic
  *
  * \inlibraryapi
  * \ingroup module_onlinehelp
  */
-class AbstractSimpleHelpTopic : public HelpTopicInterface
+class AbstractSimpleHelpTopic : public IHelpTopic
 {
     public:
         virtual const char *name() const  = 0;
         virtual const char *title() const = 0;
 
         virtual bool hasSubTopics() const;
-        virtual const HelpTopicInterface *findSubTopic(const char *name) const;
+        virtual const IHelpTopic *findSubTopic(const char *name) const;
 
         virtual void writeHelp(const HelpWriterContext &context) const;
 
@@ -111,18 +90,19 @@ class AbstractSimpleHelpTopic : public HelpTopicInterface
  * Abstract base class for help topics that have simple text and subtopics.
  *
  * This class implements an internal container for subtopics and provides
- * public methods for adding subtopics (as HelpTopicInterface objects).
- * Subtopic-related methods from HelpTopicInterface are implemented to access
+ * public methods for adding subtopics (as IHelpTopic objects).
+ * Subtopic-related methods from IHelpTopic are implemented to access
  * the internal container.  writeHelp() is also implemented such that it
- * uses writeBasicHelpTopic() to write out the text returned by a new virtual
- * method helpText(), and a list of subtopics is written after the actual text.
+ * uses HelpTopicContext::writeTextBlock() to write out the text returned by a
+ * new virtual method helpText(), and a list of subtopics is written after the
+ * actual text.
  *
  * \see CompositeHelpTopic
  *
  * \inlibraryapi
  * \ingroup module_onlinehelp
  */
-class AbstractCompositeHelpTopic : public HelpTopicInterface
+class AbstractCompositeHelpTopic : public IHelpTopic
 {
     public:
         AbstractCompositeHelpTopic();
@@ -132,7 +112,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
         virtual const char *title() const = 0;
 
         virtual bool hasSubTopics() const;
-        virtual const HelpTopicInterface *findSubTopic(const char *name) const;
+        virtual const IHelpTopic *findSubTopic(const char *name) const;
 
         virtual void writeHelp(const HelpWriterContext &context) const;
 
@@ -154,7 +134,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
          * \throws  std::bad_alloc if out of memory.
          *
          * \p Topic must be default-constructible and implement
-         * HelpTopicInterface.
+         * IHelpTopic.
          *
          * This method is provided as a convenient alternative to addSubTopic()
          * for cases where each topic is implemented by a different type

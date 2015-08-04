@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,18 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+/*! \brief Return whether mdrun can use more than one GPU per node
+ *
+ * The OpenCL implementation cannot use more than one GPU per node,
+ * for example. */
+gmx_bool gmx_multiple_gpu_per_node_supported();
+
+/*! \brief Return whether PP ranks can share a GPU
+ *
+ * The OpenCL implementation cannot share a GPU between ranks, for
+ * example. */
+gmx_bool gmx_gpu_sharing_supported();
+
 /* the init and consistency functions depend on commrec that may not be
    consistent in cuda because MPI types don't exist there.  */
 #ifndef __CUDACC__
@@ -52,6 +64,12 @@ extern "C" {
    it. Caller is responsible for freeing this pointer. */
 gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
                                    gmx_bool bDetectGPUs);
+
+/* Print information about the detected hardware to fplog (if != NULL)
+ * and to stderr the master rank.
+ */
+void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+                                 const gmx_hw_info_t *hwinfo);
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 

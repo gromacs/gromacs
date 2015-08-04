@@ -43,10 +43,10 @@ macro(gmx_use_clang_as_with_gnu_compilers_on_osx)
     # does not support AVX, so we need to tell the linker to use the clang
     # compilers assembler instead - and this has to happen before we detect AVX
     # flags.
-    if(APPLE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    if(APPLE AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
         gmx_test_cflag(GNU_C_USE_CLANG_AS "-Wa,-q" SIMD_C_FLAGS)
     endif()
-    if(APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if(APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         gmx_test_cxxflag(GNU_CXX_USE_CLANG_AS "-Wa,-q" SIMD_CXX_FLAGS)
     endif()
 endmacro()
@@ -61,7 +61,7 @@ set(GMX_SIMD_ACCURACY_BITS_SINGLE 22 CACHE STRING "Target mantissa bits for SIMD
 # and the first iteration can sometimes be done as a pair in single precision. This should
 # be plenty enough for Molecular Dynamics applications. Many of our double precision math
 # functions still achieve very close to full double precision, but we do not guarantee that
-# they will be able to achieve higher accuracy if you set this beyond 44 bits. Gromacs will
+# they will be able to achieve higher accuracy if you set this beyond 44 bits. GROMACS will
 # work - but some unit tests might fail.
 #
 set(GMX_SIMD_ACCURACY_BITS_DOUBLE 44 CACHE STRING "Target mantissa bits for SIMD double math")
@@ -86,10 +86,10 @@ endif()
 # calling this macro.
 #
 
-if(${GMX_SIMD} STREQUAL "NONE")
+if(GMX_SIMD STREQUAL "NONE")
     # nothing to do configuration-wise
     set(SIMD_STATUS_MESSAGE "SIMD instructions disabled")
-elseif(${GMX_SIMD} STREQUAL "SSE2")
+elseif(GMX_SIMD STREQUAL "SSE2")
 
     gmx_find_cflag_for_source(CFLAGS_SSE2 "C compiler SSE2 flag"
                               "#include<xmmintrin.h>
@@ -109,7 +109,7 @@ elseif(${GMX_SIMD} STREQUAL "SSE2")
     set(GMX_SIMD_X86_SSE2 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE2 SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "SSE4.1")
+elseif(GMX_SIMD STREQUAL "SSE4.1")
 
     # Note: MSVC enables SSE4.1 with the SSE2 flag, so we include that in testing.
     gmx_find_cflag_for_source(CFLAGS_SSE4_1 "C compiler SSE4.1 flag"
@@ -135,7 +135,7 @@ elseif(${GMX_SIMD} STREQUAL "SSE4.1")
     set(GMX_SIMD_X86_SSE4_1 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE4.1 SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "AVX_128_FMA")
+elseif(GMX_SIMD STREQUAL "AVX_128_FMA")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -206,8 +206,8 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return _mm_movemask_ps(x);
     # We don't have the full compiler version string yet (BUILD_C_COMPILER),
     # so we can't distinguish vanilla from Apple clang versions, but catering for a few rare AMD
     # hackintoshes is not worth the effort.
-    if (APPLE AND ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang" OR
-                "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
+    if (APPLE AND (CMAKE_C_COMPILER_ID STREQUAL "Clang" OR
+                CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
         message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA SIMD. As we cannot work around this bug on OS X, you will have to select a different compiler or SIMD instruction set.")
     endif()
 
@@ -226,9 +226,9 @@ int main(){__m128 x=_mm_set1_ps(0.5);x=_mm_frcz_ps(x);return _mm_movemask_ps(x);
     gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
 
     set(GMX_SIMD_X86_AVX_128_FMA 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD Gromacs SIMD (with fused-multiply add)")
+    set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD GROMACS SIMD (with fused-multiply add)")
 
-elseif(${GMX_SIMD} STREQUAL "AVX_256")
+elseif(GMX_SIMD STREQUAL "AVX_256")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -252,7 +252,7 @@ elseif(${GMX_SIMD} STREQUAL "AVX_256")
     set(GMX_SIMD_X86_AVX_256 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "AVX2_256")
+elseif(GMX_SIMD STREQUAL "AVX2_256")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -276,13 +276,13 @@ elseif(${GMX_SIMD} STREQUAL "AVX2_256")
     set(GMX_SIMD_X86_AVX2_256 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "MIC")
+elseif(GMX_SIMD STREQUAL "MIC")
 
     # No flags needed. Not testing.
     set(GMX_SIMD_X86_MIC 1)
     set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "AVX_512F")
+elseif(GMX_SIMD STREQUAL "AVX_512F")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -304,7 +304,7 @@ elseif(${GMX_SIMD} STREQUAL "AVX_512F")
     set(GMX_SIMD_X86_AVX_512F 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512F SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "AVX_512ER")
+elseif(GMX_SIMD STREQUAL "AVX_512ER")
 
     gmx_use_clang_as_with_gnu_compilers_on_osx()
 
@@ -326,7 +326,7 @@ elseif(${GMX_SIMD} STREQUAL "AVX_512ER")
     set(GMX_SIMD_X86_AVX_512ER 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512ER SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "ARM_NEON")
+elseif(GMX_SIMD STREQUAL "ARM_NEON")
 
     gmx_find_cflag_for_source(CFLAGS_ARM_NEON "C compiler 32-bit ARM NEON flag"
                               "#include<arm_neon.h>
@@ -346,7 +346,7 @@ elseif(${GMX_SIMD} STREQUAL "ARM_NEON")
     set(GMX_SIMD_ARM_NEON 1)
     set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "ARM_NEON_ASIMD")
+elseif(GMX_SIMD STREQUAL "ARM_NEON_ASIMD")
     # Gcc-4.8.1 appears to have a bug where the c++ compiler requires
     # -D__STDC_CONSTANT_MACROS if we include arm_neon.h
 
@@ -376,7 +376,7 @@ elseif(${GMX_SIMD} STREQUAL "ARM_NEON_ASIMD")
     set(GMX_SIMD_ARM_NEON_ASIMD 1)
     set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) NEON Advanced SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
+elseif(GMX_SIMD STREQUAL "IBM_QPX")
 
     try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
         "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c")
@@ -390,7 +390,7 @@ elseif(${GMX_SIMD} STREQUAL "IBM_QPX")
         message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics. If you are compiling for BlueGene/Q with the XL compilers, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-C' to set up the tool chain.")
     endif()
 
-elseif(${GMX_SIMD} STREQUAL "IBM_VMX")
+elseif(GMX_SIMD STREQUAL "IBM_VMX")
 
     gmx_find_cflag_for_source(CFLAGS_IBM_VMX "C compiler IBM VMX SIMD flag"
                               "#include<altivec.h>
@@ -410,7 +410,13 @@ elseif(${GMX_SIMD} STREQUAL "IBM_VMX")
     set(GMX_SIMD_IBM_VMX 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "IBM_VSX")
+elseif(GMX_SIMD STREQUAL "IBM_VSX")
+
+    # Altivec was originally single-only, and it took a while for compilers
+    # to support the double-precision features in VSX. 
+    if(GMX_DOUBLE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+        message(FATAL_ERROR "Using VSX SIMD in double precision with GCC requires GCC-4.9 or later.")
+    endif()
 
     gmx_find_cflag_for_source(CFLAGS_IBM_VSX "C compiler IBM VSX SIMD flag"
                               "#include<altivec.h>
@@ -430,14 +436,14 @@ elseif(${GMX_SIMD} STREQUAL "IBM_VSX")
     set(GMX_SIMD_IBM_VSX 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VSX SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "SPARC64_HPC_ACE")
+elseif(GMX_SIMD STREQUAL "SPARC64_HPC_ACE")
 
     # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
 
     set(GMX_SIMD_SPARC64_HPC_ACE 1)
     set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions")
 
-elseif(${GMX_SIMD} STREQUAL "REFERENCE")
+elseif(GMX_SIMD STREQUAL "REFERENCE")
 
     # NB: This file handles settings for the SIMD module, so in the interest 
     # of proper modularization, please do NOT put any verlet kernel settings in this file.

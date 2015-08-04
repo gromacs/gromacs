@@ -241,6 +241,18 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
 }
 
 
+int
+gmx_cpuid_is_intel_nehalem  (const gmx_cpuid_t          cpuid)
+{
+    return (cpuid->vendor == GMX_CPUID_VENDOR_INTEL &&
+            cpuid->family == 6 &&
+            (cpuid->model == 0x2E ||
+             cpuid->model == 0x1A ||
+             cpuid->model == 0x1E ||
+             cpuid->model == 0x2F ||
+             cpuid->model == 0x2C ||
+             cpuid->model == 0x25));
+}
 
 
 /* What type of SIMD was compiled in, if any? */
@@ -275,6 +287,13 @@ static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_REFERENCE;
 #else
 static const enum gmx_cpuid_simd compiled_simd = GMX_CPUID_SIMD_NONE;
 #endif
+
+
+enum gmx_cpuid_simd
+gmx_compiled_simd()
+{
+    return compiled_simd;
+}
 
 
 #ifdef GMX_CPUID_X86
@@ -1162,19 +1181,19 @@ gmx_cpuid_formatstring       (gmx_cpuid_t              cpuid,
 
 #ifdef _MSC_VER
     _snprintf(str, n,
-              "Vendor: %s\n"
-              "Brand:  %s\n"
-              "Family: %2d  Model: %2d  Stepping: %2d\n"
-              "Features:",
+              "    Vendor: %s\n"
+              "    Brand:  %s\n"
+              "    Family: %2d  model: %2d  stepping: %2d\n"
+              "    CPU features:",
               gmx_cpuid_vendor_string[gmx_cpuid_vendor(cpuid)],
               gmx_cpuid_brand(cpuid),
               gmx_cpuid_family(cpuid), gmx_cpuid_model(cpuid), gmx_cpuid_stepping(cpuid));
 #else
     snprintf(str, n,
-             "Vendor: %s\n"
-             "Brand:  %s\n"
-             "Family: %2d  Model: %2d  Stepping: %2d\n"
-             "Features:",
+             "    Vendor: %s\n"
+             "    Brand:  %s\n"
+             "    Family: %2d  model: %2d  stepping: %2d\n"
+             "    CPU features:",
              gmx_cpuid_vendor_string[gmx_cpuid_vendor(cpuid)],
              gmx_cpuid_brand(cpuid),
              gmx_cpuid_family(cpuid), gmx_cpuid_model(cpuid), gmx_cpuid_stepping(cpuid));
@@ -1295,34 +1314,14 @@ gmx_cpuid_simd_suggest  (gmx_cpuid_t                 cpuid)
 }
 
 
-
 int
-gmx_cpuid_simd_check(gmx_cpuid_t   cpuid,
-                     FILE *        log,
-                     int           print_to_stderr)
+gmx_cpuid_simd_check(enum gmx_cpuid_simd  simd_suggest,
+                     FILE *               log,
+                     int                  print_to_stderr)
 {
-    int                           rc;
-    char                          str[1024];
-    enum gmx_cpuid_simd           simd;
+    int  rc;
 
-    simd = gmx_cpuid_simd_suggest(cpuid);
-
-    rc = (simd != compiled_simd);
-
-    gmx_cpuid_formatstring(cpuid, str, 1023);
-    str[1023] = '\0';
-
-    if (log != NULL)
-    {
-        fprintf(log,
-                "\nDetecting CPU SIMD instructions.\nPresent hardware specification:\n"
-                "%s"
-                "SIMD instructions most likely to fit this hardware: %s\n"
-                "SIMD instructions selected at GROMACS compile time: %s\n\n",
-                str,
-                gmx_cpuid_simd_string[simd],
-                gmx_cpuid_simd_string[compiled_simd]);
-    }
+    rc = (simd_suggest != compiled_simd);
 
     if (rc != 0)
     {
@@ -1331,14 +1330,14 @@ gmx_cpuid_simd_check(gmx_cpuid_t   cpuid,
             fprintf(log, "\nBinary not matching hardware - you might be losing performance.\n"
                     "SIMD instructions most likely to fit this hardware: %s\n"
                     "SIMD instructions selected at GROMACS compile time: %s\n\n",
-                    gmx_cpuid_simd_string[simd],
+                    gmx_cpuid_simd_string[simd_suggest],
                     gmx_cpuid_simd_string[compiled_simd]);
         }
         if (print_to_stderr)
         {
-            fprintf(stderr, "Compiled SIMD instructions: %s (Gromacs could use %s on this machine, which is better)\n",
+            fprintf(stderr, "Compiled SIMD instructions: %s, GROMACS could use %s on this machine, which is better\n\n",
                     gmx_cpuid_simd_string[compiled_simd],
-                    gmx_cpuid_simd_string[simd]);
+                    gmx_cpuid_simd_string[simd_suggest]);
         }
     }
     return rc;

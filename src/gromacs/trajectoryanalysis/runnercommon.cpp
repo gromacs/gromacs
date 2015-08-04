@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,14 +45,15 @@
 
 #include <string.h>
 
+#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/timecontrol.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/selection/indexutil.h"
@@ -60,6 +61,7 @@
 #include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
@@ -91,6 +93,9 @@ class TrajectoryAnalysisRunnerCommon::Impl
         double                      startTime_;
         double                      endTime_;
         double                      deltaTime_;
+        bool                        bStartTimeSet_;
+        bool                        bEndTimeSet_;
+        bool                        bDeltaTimeSet_;
 
         gmx_ana_indexgrps_t        *grps_;
         bool                        bTrajOpen_;
@@ -106,6 +111,7 @@ class TrajectoryAnalysisRunnerCommon::Impl
 TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
     : settings_(*settings),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
+      bStartTimeSet_(false), bEndTimeSet_(false), bDeltaTimeSet_(false),
       grps_(NULL),
       bTrajOpen_(false), fr(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL)
 {
@@ -166,7 +172,7 @@ TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
 
 
 void
-TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
+TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options)
 {
     TrajectoryAnalysisSettings &settings = impl_->settings_;
 
@@ -188,18 +194,24 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
                            .description("Extra index groups"));
 
     // Add options for trajectory time control.
-    options->addOption(DoubleOption("b").store(&impl_->startTime_).timeValue()
+    options->addOption(DoubleOption("b")
+                           .store(&impl_->startTime_).storeIsSet(&impl_->bStartTimeSet_)
+                           .timeValue()
                            .description("First frame (%t) to read from trajectory"));
-    options->addOption(DoubleOption("e").store(&impl_->endTime_).timeValue()
+    options->addOption(DoubleOption("e")
+                           .store(&impl_->endTime_).storeIsSet(&impl_->bEndTimeSet_)
+                           .timeValue()
                            .description("Last frame (%t) to read from trajectory"));
-    options->addOption(DoubleOption("dt").store(&impl_->deltaTime_).timeValue()
+    options->addOption(DoubleOption("dt")
+                           .store(&impl_->deltaTime_).storeIsSet(&impl_->bDeltaTimeSet_)
+                           .timeValue()
                            .description("Only use frame if t MOD dt == first time (%t)"));
 
     // Add time unit option.
     settings.impl_->timeUnitManager.addTimeUnitOption(options, "tu");
 
     // Add plot options.
-    settings.impl_->plotSettings.addOptions(options);
+    settings.impl_->plotSettings.initOptions(options);
 
     // Add common options for trajectory processing.
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))
@@ -225,7 +237,7 @@ TrajectoryAnalysisRunnerCommon::scaleTimeOptions(Options *options)
 
 
 void
-TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
+TrajectoryAnalysisRunnerCommon::optionsFinished()
 {
     impl_->settings_.impl_->plotSettings.setTimeUnit(
             impl_->settings_.impl_->timeUnitManager.timeUnit());
@@ -235,15 +247,15 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
         GMX_THROW(InconsistentInputError("No trajectory or topology provided, nothing to do!"));
     }
 
-    if (options->isSet("b"))
+    if (impl_->bStartTimeSet_)
     {
         setTimeValue(TBEGIN, impl_->startTime_);
     }
-    if (options->isSet("e"))
+    if (impl_->bEndTimeSet_)
     {
         setTimeValue(TEND, impl_->endTime_);
     }
-    if (options->isSet("dt"))
+    if (impl_->bDeltaTimeSet_)
     {
         setTimeValue(TDELTA, impl_->deltaTime_);
     }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-#define MAXSLEN 64 
+#define MAXSLEN 32
 
 typedef struct {
     gmx_bool bSet;              /* Has this combination been set        */
@@ -54,7 +54,6 @@ typedef struct {
  * non-bonded parameter combinations, which will be copied to t_params.
  */
 
-#ifndef __cplusplus
 /*
  * With the macros below you don't
  * have to use an index if you don't wan't to. You can eg. use
@@ -74,7 +73,6 @@ typedef struct {
 #define C0  c[0]
 #define C1  c[1]
 #define C2  c[2]
-#endif
 
 typedef struct {
     atom_id    a[MAXATOMLIST];   /* The atom list (eg. bonds: particle	*/
@@ -166,13 +164,10 @@ typedef enum {
     d_orientation_restraints,
     d_dihedral_restraints,
     d_cmap,
+    d_intermolecular_interactions,
     d_maxdir,
     d_invalid,
     d_none
 } directive;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

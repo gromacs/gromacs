@@ -155,21 +155,118 @@ TEST_F(HelpWriterContextTest, FormatsLiteralText)
     testFormatting(text);
 }
 
+TEST_F(HelpWriterContextTest, FormatsLiteralTextAtBeginning)
+{
+    const char *const text[] = {
+        "::",
+        "",
+        "    literal block",
+        "    another line",
+        "",
+        "Normal paragraph"
+    };
+    testFormatting(text);
+}
+
+TEST_F(HelpWriterContextTest, FormatsLiteralTextWithIndentation)
+{
+    const char *const text[] = {
+        "Sample paragraph::",
+        "",
+        "    literal block",
+        "      another indented line",
+        "",
+        "Normal paragraph",
+        "with wrapping"
+    };
+    testFormatting(text);
+}
+
 TEST_F(HelpWriterContextTest, FormatsBulletList)
 {
     const char *const text[] = {
         "Sample list:",
         "",
-        " * first item",
-        " * second item that",
-        "   spans multiple lines",
-        " * third item that has a single long line",
+        "* first item",
+        "* second item that",
+        "  spans multiple lines",
+        "* third item that has a single long line",
         "",
         "Normal paragraph"
     };
     // Wrapping to rst with a fixed line length does not currently work
     // correctly, but it is not used, either.
     settings_.setLineLength(15);
+    testFormatting(text);
+}
+
+TEST_F(HelpWriterContextTest, FormatsEnumeratedList)
+{
+    const char *const text[] = {
+        "Sample list:",
+        "",
+        "1. first item",
+        "2. second item that",
+        "   spans multiple lines",
+        "3. third item that has a single long line",
+        "",
+        "9.  Item with extra indentation",
+        "10. Double digit item",
+        "",
+        "Normal paragraph"
+    };
+    // Wrapping to rst with a fixed line length does not currently work
+    // correctly, but it is not used, either.
+    settings_.setLineLength(15);
+    testFormatting(text);
+}
+
+TEST_F(HelpWriterContextTest, FormatsSimpleTable)
+{
+    const char *const text[] = {
+        "Simple table:",
+        "",
+        "============  =============",
+        "First column  Second header",
+        "============  =============",
+        "text          text",
+        "============  =============",
+        "",
+        "Normal paragraph",
+        "again."
+    };
+    testFormatting(text);
+}
+
+TEST_F(HelpWriterContextTest, FormatsGridTable)
+{
+    const char *const text[] = {
+        "Grid table:",
+        "",
+        "+--------------+---------------+",
+        "| First column | Second header |",
+        "+--------------+---------------+",
+        "| text         | text          |",
+        "+--------------+---------------+",
+        "",
+        "Normal paragraph",
+        "again."
+    };
+    testFormatting(text);
+}
+
+TEST_F(HelpWriterContextTest, FormatsTitles)
+{
+    const char *const text[] = {
+        "Title",
+        "=====",
+        "Some text without spacing",
+        "",
+        "Subtitle",
+        "++++++++",
+        "",
+        "More text",
+    };
     testFormatting(text);
 }
 

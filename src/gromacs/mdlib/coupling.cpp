@@ -52,6 +52,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -1563,12 +1564,14 @@ void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
         }
         if (randomize[gc])
         {
-            if (ir->etc == etcANDERSEN)
+            if (ir->etc == etcANDERSENMASSIVE)
             {
+                /* Randomize particle always */
                 bRandomize = TRUE;
             }
             else
             {
+                /* Randomize particle probabilistically */
                 double uniform[2];
 
                 gmx_rng_cycle_2uniform(step*2, ng, ir->andersen_seed, RND_SEED_ANDERSEN, uniform);

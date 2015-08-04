@@ -47,40 +47,19 @@
 /* TODO: For now, disable Doxygen warnings from here */
 /*! \cond */
 
-/* Binary suffix for the created binaries */
-#define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
-
-/* Installation prefix (default location of data files) */
-#define CMAKE_INSTALL_PREFIX "@CMAKE_INSTALL_PREFIX@"
-
-/* Location of data files in the installation directory */
-#define DATA_INSTALL_DIR "@DATA_INSTALL_DIR@"
-
-/* Source directory for the build */
-#cmakedefine CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@"
-
-/* Binary directory for the build */
-#cmakedefine CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@"
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
-#cmakedefine GMX_FLOAT_FORMAT_IEEE754
+#cmakedefine01 GMX_FLOAT_FORMAT_IEEE754
 
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
 
 /* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
-#cmakedefine GMX_DISABLE_FFTW_MEASURE
-
-/* Use Built-in FFTPACK FFT library */
-#cmakedefine GMX_FFT_FFTPACK
+#cmakedefine01 GMX_DISABLE_FFTW_MEASURE
 
 /* Use FFTW3 FFT library */
-#cmakedefine GMX_FFT_FFTW3
-
-/* Use Intel MKL FFT library */
-#cmakedefine GMX_FFT_MKL
+#cmakedefine01 GMX_FFT_FFTW3
 
 /* Target platform is x86 or x86_64 */
 #cmakedefine GMX_TARGET_X86
@@ -95,7 +74,7 @@
 #cmakedefine GMX_CYGWIN
 
 /** Define if we have sufficient C++11 support */
-#cmakedefine GMX_CXX11
+#cmakedefine01 GMX_CXX11
 
 /* GCC bug in AVX maskload/maskstore arguments - worked around internally */
 #cmakedefine GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
@@ -158,16 +137,16 @@
 #define GMX_SIMD_ACCURACY_BITS_DOUBLE @GMX_SIMD_ACCURACY_BITS_DOUBLE@
 
 /* Integer byte order is big endian. */
-#cmakedefine GMX_INTEGER_BIG_ENDIAN
+#cmakedefine01 GMX_INTEGER_BIG_ENDIAN
 
 /* Use our own instead of system XDR libraries */
-#cmakedefine GMX_INTERNAL_XDR
+#cmakedefine01 GMX_INTERNAL_XDR
 
 /* Compile to use TNG library */
 #cmakedefine GMX_USE_TNG
 
 /* Add support for tracing using Extrae */
-#cmakedefine HAVE_EXTRAE
+#cmakedefine01 HAVE_EXTRAE
 
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
@@ -193,20 +172,20 @@
 /* Maximum number of OpenMP threads supported */
 #define GMX_OPENMP_MAX_THREADS @GMX_OPENMP_MAX_THREADS@
 
-/* Use if can't rename checkpoints */
-#cmakedefine GMX_NO_RENAME
+/* Use if we cannot rename checkpoints */
+#cmakedefine01 GMX_NO_RENAME
 
 /* Use (modified) Gamess-UK for QM-MM calculations */
-#cmakedefine GMX_QMMM_GAMESS
+#cmakedefine01 GMX_QMMM_GAMESS
 
 /* Use (modified) Gaussian0x for QM-MM calculations */
-#cmakedefine GMX_QMMM_GAUSSIAN
+#cmakedefine01 GMX_QMMM_GAUSSIAN
 
 /* Use (modified) Mopac 7 for QM-MM calculations */
-#cmakedefine GMX_QMMM_MOPAC
+#cmakedefine01 GMX_QMMM_MOPAC
 
 /* Use ORCA for QM-MM calculations */
-#cmakedefine GMX_QMMM_ORCA
+#cmakedefine01 GMX_QMMM_ORCA
 
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
@@ -248,7 +227,7 @@
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
 /* Define for X-Windows */
-#cmakedefine GMX_X11
+#cmakedefine01 GMX_X11
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
@@ -264,6 +243,12 @@
 
 /* Use NVML */
 #cmakedefine HAVE_NVML
+
+/* Use OpenCL acceleators */
+#cmakedefine GMX_USE_OPENCL
+
+/* Define relative path to OpenCL kernels */
+#define OCL_INSTALL_DIR "@OCL_INSTALL_DIR@"
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
@@ -347,10 +332,10 @@
 #cmakedefine HAVE_SCHED_H
 
 /* Define to 1 if you have the POSIX <regex.h> header file. */
-#cmakedefine HAVE_POSIX_REGEX
+#cmakedefine01 HAVE_POSIX_REGEX
 
 /* Define to 1 if you have the C++11 <regex> header file. */
-#cmakedefine HAVE_CXX11_REGEX
+#cmakedefine01 HAVE_CXX11_REGEX
 
 /* Define to 1 if you have the sysconf() function */
 #cmakedefine HAVE_SYSCONF
@@ -360,30 +345,30 @@
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
-#cmakedefine GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER
+#cmakedefine01 GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER
 
 /* The two words in a double precision variable are in b ig-endian order if
    set, little-endian if not. Do NOT assume this is the same as the byte
    order! Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
-#cmakedefine GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
+#cmakedefine01 GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
 
 /* Define if SIGUSR1 is present */
-#cmakedefine HAVE_SIGUSR1
+#cmakedefine01 HAVE_SIGUSR1
 
 /* Enable gromacs quotes */
-#cmakedefine GMX_COOL_QUOTES
+#cmakedefine01 GMX_COOL_QUOTES
 
 /* default name mangling maybe wrong on exotic plattforms */
 #define F77_FUNC(name,NAME) name ## _
 
 /* Define if we have pipes */
-#cmakedefine HAVE_PIPES
+#cmakedefine01 HAVE_PIPES
 
 /* Define if we have feenableexcept */
-#cmakedefine HAVE_FEENABLEEXCEPT
+#cmakedefine01 HAVE_FEENABLEEXCEPT
 
 /* Define if we have zlib */
-#cmakedefine HAVE_ZLIB
+#cmakedefine01 HAVE_ZLIB
 
 /*! \endcond */
 

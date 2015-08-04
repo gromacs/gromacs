@@ -4,14 +4,6 @@
 
 [ moleculetype ]
 ; molname   nrexcl
-CU          1
-
-[ atoms ]
-; id    at type res nr  residu name at name  cg nr  charge   mass
-1       Cu2+    1       CU          CU       1      2        63.54600
-
-[ moleculetype ]
-; molname   nrexcl
 MG          1
 
 [ atoms ]

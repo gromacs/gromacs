@@ -51,12 +51,15 @@
 # conf-vars.py.cmakein), which in turn is included by the Sphinx configuration
 # file conf.py.
 
-option(GMX_BUILD_WEBPAGE "Whether to try to configure to build the GROMACS static webpages" OFF)
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_WEBPAGE GMX_BUILD_MANUAL)
+set(SOURCE_MD5SUM "unknown" CACHE STRING
+    "MD5 sum of the source tarball, normally used only for the pre-release webpage build")
+# REGRESSIONTEST_MD5SUM is set in cmake/gmxVersionInfo.cmake because it is used also in tests/CMakeLists.txt
+mark_as_advanced(SOURCE_MD5SUM)
+
+set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
 find_package(PythonInterp)
-find_package(Sphinx 1.2.3 COMPONENTS pygments)
+find_package(Sphinx 1.2.3 QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -73,32 +76,44 @@ if (SOURCE_IS_SOURCE_DISTRIBUTION)
 endif()
 
 add_subdirectory(doxygen)
-if(GMX_BUILD_MANUAL)
-    # Make sure we only do detection of manual-building dependencies
-    # when the user opted in for that.
-    add_subdirectory(manual)
-endif()
+add_subdirectory(manual)
 
 if (SPHINX_FOUND)
-    # We need to copy all the Sphinx input files to a single directory, and
-    # since some of them are (or will be) generated, we just copy everything
-    # into the build tree, to this directory.
+    # We need to have all the Sphinx input files in a single directory, and
+    # since some of them are generated, we copy everything into the build tree,
+    # to this directory.
     set(SPHINX_INPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sphinx-input)
     set(SPHINX_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/conf.py)
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
     set(SPHINX_EXTENSION_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-    gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
-        EXTRA_VARS
-            SPHINX_EXTENSION_PATH
-            GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
-            REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
-            SOURCE_MD5SUM REGRESSIONTESTS_MD5SUM
-        COMMENT "Configuring Sphinx configuration file")
+    if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_TARBALL)
+        # The real build of the webpage happens from the tarball, and
+        # this should be set to the matching MD5 sum.
+        set(REGRESSIONTEST_MD5SUM_STRING "${REGRESSIONTEST_MD5SUM}")
+    else()
+        # But for testing the webpage build (e.g. from the repo) we
+        # need a default value.
+        set(REGRESSIONTEST_MD5SUM_STRING "unknown")
+    endif()
     set(SPHINX_SOURCE_FILES
         index.rst
         download.rst
+        dev-manual/index.rst
+        dev-manual/build-system.rst
+        dev-manual/doxygen.rst
+        dev-manual/formatting.rst
+        dev-manual/gmxtree.rst
+        dev-manual/includestyle.rst
+        dev-manual/jenkins.rst
+        dev-manual/naming.rst
+        dev-manual/overview.rst
+        dev-manual/relocatable-binaries.rst
+        dev-manual/style.rst
+        dev-manual/testutils.rst
+        dev-manual/tools.rst
+        dev-manual/uncrustify.rst
+        fragments/doxygen-links.rst
         install-guide/index.rst
-        man/gromacs.7.rst
         user-guide/index.rst
         user-guide/getting-started.rst
         user-guide/flow.rst
@@ -107,13 +122,38 @@ if (SPHINX_FOUND)
         user-guide/mdrun-performance.rst
         user-guide/mdp-options.rst
         user-guide/file-formats.rst
-        user-guide/tools.rst
+        user-guide/cmdline.rst
         user-guide/environment-variables.rst
         user-guide/plotje.gif
         user-guide/xvgr.gif
         conf.py
         links.dat
         )
+
+    # Remove other rst files from the build tree, since they confuse Sphinx.
+    file(GLOB_RECURSE _obsolete_sources RELATIVE ${SPHINX_INPUT_DIR}
+         ${SPHINX_INPUT_DIR}/*.rst)
+    list(REMOVE_ITEM _obsolete_sources ${SPHINX_SOURCE_FILES})
+    foreach(_file ${_obsolete_sources})
+        # Skip generated files in onlinehelp/, and fragments.
+        # The latter do not cause issues with obsolete files, as they
+        # are not considered as Sphinx input files, but will only be
+        # included using an explicit .. include::.
+        if (NOT _file MATCHES "^(onlinehelp|fragments)/.*\\.rst$")
+            message(STATUS "Removing obsolete Sphinx input ${_file}")
+            file(REMOVE ${SPHINX_INPUT_DIR}/${_file})
+        endif()
+    endforeach()
+
+    gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
+        EXTRA_VARS
+            SPHINX_EXTENSION_PATH
+            EXPECTED_DOXYGEN_VERSION
+            GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
+            REQUIRED_OPENCL_MIN_VERSION
+            REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
+            SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
+        COMMENT "Configuring Sphinx configuration file")
     set(SPHINX_INPUT_FILES ${SPHINX_CONFIG_VARS_FILE})
     foreach(_file ${SPHINX_SOURCE_FILES})
         add_custom_command(
@@ -129,8 +169,11 @@ if (SPHINX_FOUND)
     endforeach()
     gmx_add_custom_output_target(sphinx-input OUTPUT STAMP
         DEPENDS ${SPHINX_INPUT_FILES})
+    # TODO: Make this remove obsolete .rst files.
+    # TODO: This does not work in cross-compilation scenarios; disable up to
+    # the necessary level.
     gmx_add_custom_output_target(sphinx-programs OUTPUT STAMP
-        COMMAND ${CMAKE_COMMAND} -E make_directory programs
+        COMMAND ${CMAKE_COMMAND} -E make_directory onlinehelp
         COMMAND gmx -quiet help -export rst
         DEPENDS gmx
         WORKING_DIRECTORY ${SPHINX_INPUT_DIR}
@@ -163,31 +206,6 @@ if (SPHINX_FOUND)
         )
     add_dependencies(install-guide sphinx-input)
     gmx_cpack_add_generated_source_directory(install-guide/text DESTINATION /)
-
-    # For a real build of the webpage, the md5sum of the tarballs must
-    # already be known, and so we may as well require that the real
-    # build of the webpage take place from cmake run from the unpacked
-    # tarball. Then, the *_MD5SUM and *_TARBALL variables will be able
-    # to be set on the cmake command line (e.g. by a Jenkins job
-    # configuration), and we can require that they are set. For local
-    # building of the webpages (e.g. for debugging), those variables
-    # can be left unset, and if so, the download section will not be
-    # constructed.
-    if(SOURCE_IS_SOURCE_DISTRIBUTION AND GMX_BUILD_WEBPAGE)
-        foreach(VAR SOURCE_MD5SUM REGRESSIONTESTS_MD5SUM SOURCE_TARBALL REGRESSIONTESTS_TARBALL)
-            if(NOT DEFINED ${VAR})
-                message(FATAL_ERROR "The build of the webpage requires that ${VAR} is set in the cmake cache, e.g. on the CMake command line")
-            endif()
-        endforeach()
-        set(BUILD_DOWNLOAD_SECTION on)
-    else()
-        if (SOURCE_TARBALL AND SOURCE_MD5SUM AND
-                REGRESSIONTESTS_TARBALL AND REGRESSIONTESTS_MD5SUM)
-            set(BUILD_DOWNLOAD_SECTION on)
-        else()
-            set(BUILD_DOWNLOAD_SECTION off)
-        endif()
-    endif()
 
     # Sphinx cache with pickled ReST documents
     set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
@@ -227,6 +245,19 @@ if (SPHINX_FOUND)
         # manually build the target.
         set(MAN_PAGE_DIR ${CMAKE_CURRENT_BINARY_DIR})
     endif()
+else()
+    add_custom_target(webpage-sphinx
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "HTML pages cannot be built because Sphinx is not available"
+        VERBATIM)
+    add_custom_target(install-guide
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "INSTALL cannot be built because Sphinx is not available"
+        VERBATIM)
+    add_custom_target(man
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "man pages cannot be built because Sphinx is not available"
+        VERBATIM)
 endif()
 
 if (MAN_PAGE_DIR)
@@ -244,107 +275,81 @@ if (MAN_PAGE_DIR)
 endif()
 gmx_cpack_add_generated_source_directory(man)
 
-set(HTML_BUILD_IS_POSSIBLE OFF)
-# We can only configure to build the webpage if the user asked for it,
-# the build is outside of the source dir, and all the components can
-# be built. There's no intrinsic need to be talkative if we fail -
-# most people never need to know, unless they've asked for the webpage
-# build.
-if(GMX_BUILD_WEBPAGE)
-    set(HTML_BUILD_IS_POSSIBLE ON)
-    # Next, turn it off in any of the preconditions are unsatisified
+# Determine whether we can build all the HTML pages and content linked from
+# there.  If not, construct an informative message if the user tries to
+# build the target; most people never need to know, unless they've asked for
+# the webpage build.
+set(HTML_BUILD_IS_POSSIBLE ON)
+set(HTML_BUILD_NOT_POSSIBLE_REASON)
+set(HTML_BUILD_WARNINGS)
 
-    if(NOT MANUAL_BUILD_IS_POSSIBLE)
-        set(HTML_BUILD_IS_POSSIBLE OFF)
-        message(STATUS "Cannot build webpage without being able to build the reference PDF manual")
-    endif()
-
-    if(NOT PYTHON_EXECUTABLE)
-        set(HTML_BUILD_IS_POSSIBLE OFF)
-        message(STATUS "Cannot build webpage without python")
-    endif()
-
-    if(NOT SPHINX_FOUND)
-        set(HTML_BUILD_IS_POSSIBLE OFF)
-        message(STATUS "Cannot build webpage without sphinx")
-    endif()
-
-    if(NOT DOXYGEN_EXECUTABLE)
-        set(HTML_BUILD_IS_POSSIBLE OFF)
-        message(STATUS "Cannot build webpage without doxygen")
-    endif()
-
-    if(NOT DOXYGEN_MSCGEN_EXECUTABLE)
-        set(HTML_BUILD_IS_POSSIBLE OFF)
-        message(STATUS "Cannot build webpage without mscgen")
-    endif()
+# Next, turn it off if any of the preconditions are unsatisified
+if (NOT PYTHON_EXECUTABLE)
+    set(HTML_BUILD_IS_POSSIBLE OFF)
+    set(HTML_BUILD_NOT_POSSIBLE_REASON "Python is required")
+elseif (NOT SPHINX_FOUND)
+    # Hardly anything gets built if Sphinx is not available, so don't bother.
+    set(HTML_BUILD_IS_POSSIBLE OFF)
+    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx is required")
+endif()
+if (NOT MANUAL_BUILD_IS_POSSIBLE)
+    list(APPEND HTML_BUILD_WARNINGS
+         "Reference PDF manual was not built, so links to it do not work")
+endif()
+if (NOT DOXYGEN_EXECUTABLE)
+    list(APPEND HTML_BUILD_WARNINGS
+        "Doxygen was not available, so links to Doxygen do not work")
+endif()
+if (NOT DOXYGEN_DOT_EXECUTABLE)
+    list(APPEND HTML_BUILD_WARNINGS
+        "dot/graphviz was not found, so some graphs are missing")
 endif()
 
-# TODO Get rid of the remaining content in old-html
-add_custom_target(webpage-old-images
-    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/old-html ${HTML_OUTPUT_DIR}
-    COMMENT "Copying flowchart images"
-    VERBATIM
-    )
-
-if(HTML_BUILD_IS_POSSIBLE)
-    # If building the webpage from the repo, then tarballs may not
-    # exist, and if so, it would not make sense to build that part of
-    # the front page from index.rst.
-    if(BUILD_DOWNLOAD_SECTION)
-        # Copy the source tarball to the webpage output
-        add_custom_command(
-            OUTPUT ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
-            COMMAND ${CMAKE_COMMAND}
-               -E copy ${SOURCE_TARBALL} ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
-            VERBATIM
-            )
-
-        # Copy the regressiontests tarball to the webpage output
-        add_custom_command(
-            OUTPUT ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
-            COMMAND ${CMAKE_COMMAND}
-               -E copy ${REGRESSIONTESTS_TARBALL} ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
-            VERBATIM
-            )
-
-        # Add other dependencies for doing the webpage build from the real
-        # tarball
-        list(APPEND extra_webpage_dependencies
-            ${HTML_OUTPUT_DIR}/gromacs-${GMX_VERSION_STRING}.tar.gz
-            ${HTML_OUTPUT_DIR}/regressiontests-${GMX_VERSION_STRING}.tar.gz
-            )
+if (HTML_BUILD_IS_POSSIBLE)
+    set(_webpage_target_properties)
+    if (HTML_BUILD_WARNINGS)
+        list(APPEND _webpage_target_properties
+             COMMAND ${CMAKE_COMMAND} -E echo
+                 "webpage was built, but with the following limitations:")
+        foreach(_warning ${HTML_BUILD_WARNINGS})
+        list(APPEND _webpage_target_properties
+             COMMAND ${CMAKE_COMMAND} -E echo " - ${_warning}")
+        endforeach()
     endif()
 
-    # Make the PDF reference guide
-    # TODO Try to make the PDF arrive directly in ${HTML_OUTPUT_DIR}
-    add_custom_command(
-        OUTPUT ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf
-        COMMAND ${CMAKE_COMMAND}
-            -E remove -f ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf
-        COMMAND ${CMAKE_COMMAND}
-            -E copy ${CMAKE_CURRENT_BINARY_DIR}/manual/gromacs.pdf ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf
-        # UseLATEX.cmake makes a target called pdf, not ${CMAKE_CURRENT_BINARY_DIR}/manual/gromacs.pdf
-        DEPENDS pdf
-        VERBATIM
-        )
+    if (MANUAL_BUILD_IS_POSSIBLE)
+        # Make the PDF reference guide
+        # TODO Try to make the PDF arrive directly in ${HTML_OUTPUT_DIR}
+        # TODO Make this depend on the output of the manual build, so that the
+        # file actually gets copied multiple times.
+        set(_manual_target_location ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf)
+        add_custom_command(
+            OUTPUT ${_manual_target_location}
+            COMMAND ${CMAKE_COMMAND}
+                -E remove -f ${_manual_target_location}
+            COMMAND ${CMAKE_COMMAND}
+                -E copy ${CMAKE_CURRENT_BINARY_DIR}/manual/gromacs.pdf ${_manual_target_location}
+            DEPENDS manual
+            VERBATIM)
+        list(APPEND _webpage_target_properties
+             DEPENDS ${_manual_target_location})
+    endif()
 
     # The Doxygen configuration in doxygen/Doxyfile-common.cmakein
     # makes all the Doxygen output directly in
     # ${HTML_OUTPUT_DIR}/doxygen (and makes the directory if it needs
     # to).
 
-    # Add a top-level target for the others to hook onto
-    add_custom_target(webpage
-        DEPENDS
-           ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf
-           ${extra_webpage_dependencies}
-        VERBATIM
-        )
-    add_dependencies(webpage webpage-sphinx webpage-old-images doxygen-all)
+    # Add a top-level target that builds everything related to the webpage,
+    # for Jenkins (and possibly others) to use
+    add_custom_target(webpage ${_webpage_target_properties}
+        COMMENT "Building webpage"
+        VERBATIM)
+    add_dependencies(webpage webpage-sphinx doxygen-all)
 else()
     add_custom_target(webpage
-        COMMAND ${CMAKE_COMMAND} -E echo "Cannot build webpage because of missing requirements. Check cmake status output for reasons"
-        COMMENT "Webpage build disabled"
-        )
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "Cannot build webpage because ${HTML_BUILD_NOT_POSSIBLE_REASON}"
+        COMMENT "Webpage build not possible"
+        VERBATIM)
 endif()

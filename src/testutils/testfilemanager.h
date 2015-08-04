@@ -40,14 +40,6 @@
  * \inlibraryapi
  * \ingroup module_testutils
  */
-/*! \libinternal \defgroup module_testutils Unit Testing Utilities (testutils)
- * \brief
- * Common helper classes and functions for writing unit tests.
- *
- * To build unit tests using these utilities, libxml2 is required.
- *
- * \ingroup group_utilitymodules
- */
 #ifndef GMX_TESTUTILS_TESTFILEMANAGER_H
 #define GMX_TESTUTILS_TESTFILEMANAGER_H
 

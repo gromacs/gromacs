@@ -45,8 +45,8 @@
 extern "C" {
 #endif
 
-/* this enum should correspond to the array deffile in gmxlib/filenm.c */
-enum {
+/* this enum should correspond to the array deffile in filenm.cpp */
+enum GromacsFileType {
     efMDP,
     efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
     efEDR,
@@ -119,8 +119,8 @@ const char *ftp2defnm(int ftp);
 const char *ftp2defopt(int ftp);
 /* Return default option name for file type */
 
-const char *ftp2ftype(int ftp);
-/* Return Binary or ASCII depending on file type */
+gmx_bool ftp_is_text(int ftp);
+gmx_bool ftp_is_xdr(int ftp);
 
 const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
 /* Return the filename belonging to cmd-line option opt, or NULL when

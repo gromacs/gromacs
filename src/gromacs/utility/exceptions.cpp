@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,7 @@
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "errorformat.h"
 
@@ -253,10 +254,10 @@ namespace
  * exceptions while still supporting output to different formats (e.g., to a
  * string or to \c stderr).
  */
-class MessageWriterInterface
+class IMessageWriter
 {
     public:
-        virtual ~MessageWriterInterface() {}
+        virtual ~IMessageWriter() {}
 
         /*! \brief
          * Writes a single line of text into the output.
@@ -282,7 +283,7 @@ class MessageWriterInterface
  * Formats the messages into the provided FILE handle without checking for
  * errors in std::fprintf() calls.
  */
-class MessageWriterFileNoThrow : public MessageWriterInterface
+class MessageWriterFileNoThrow : public IMessageWriter
 {
     public:
         //! Initializes a writer that writes to the given file handle.
@@ -309,9 +310,42 @@ class MessageWriterFileNoThrow : public MessageWriterInterface
 };
 
 /*! \brief
+ * Exception information writer to format into a TextOutputStream.
+ */
+class MessageWriterTextWriter : public IMessageWriter
+{
+    public:
+        //! Initializes a writer that writes to the given stream.
+        explicit MessageWriterTextWriter(TextWriter *writer) : writer_(writer)
+        {
+        }
+
+        virtual void writeLine(const char *text, int indent)
+        {
+            writer_->wrapperSettings().setIndent(indent);
+            writer_->writeLine(text);
+        }
+        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                    int indent)
+        {
+            writer_->wrapperSettings().setIndent(indent);
+            writer_->writeLine(formatString("Reason: %s", std::strerror(errorNumber)));
+            if (funcName != NULL)
+            {
+                writer_->writeLine(
+                        formatString("(call to %s() returned error code %d)",
+                                     funcName, errorNumber));
+            }
+        }
+
+    private:
+        TextWriter     *writer_;
+};
+
+/*! \brief
  * Exception information writer to format into an std::string.
  */
-class MessageWriterString : public MessageWriterInterface
+class MessageWriterString : public IMessageWriter
 {
     public:
         //! Post-processes the output string to not end in a line feed.
@@ -360,7 +394,7 @@ class MessageWriterString : public MessageWriterInterface
  *
  * Does not throw unless the writer throws.
  */
-void formatExceptionMessageInternal(MessageWriterInterface *writer,
+void formatExceptionMessageInternal(IMessageWriter *writer,
                                     const std::exception &ex, int indent)
 {
     const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);
@@ -517,6 +551,13 @@ void formatExceptionMessageToFile(FILE *fp, const std::exception &ex)
 {
     MessageWriterFileNoThrow writer(fp);
     formatExceptionMessageInternal(&writer, ex, 0);
+}
+
+void formatExceptionMessageToWriter(TextWriter           *writer,
+                                    const std::exception &ex)
+{
+    MessageWriterTextWriter messageWriter(writer);
+    formatExceptionMessageInternal(&messageWriter, ex, 0);
 }
 
 int processExceptionAtExit(const std::exception & /*ex*/)

@@ -40,16 +40,17 @@
  *
  *  \author Jochen Hub <jhub@gwdg.de>
  */
-
 #include "gmxpre.h"
 
 #include "config.h"
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
+#include <algorithm>
 #include <sstream>
 
 #include "gromacs/commandline/pargs.h"
@@ -64,6 +65,8 @@
 #include "gromacs/random/random.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
 //! longest file names allowed in input files
@@ -398,7 +401,7 @@ void setup_tab(const char *fn, t_UmbrellaOptions *opt)
     }
     for (i = 0; i < nl-1; i++)
     {
-        if  (fabs(y[0][i+1]-y[0][i]-opt->tabDz) > opt->tabDz/1e6)
+        if  (std::abs(y[0][i+1]-y[0][i]-opt->tabDz) > opt->tabDz/1e6)
         {
             gmx_fatal(FARGS, "z-values in %s are not equally spaced.\n", ny, fn);
         }
@@ -429,13 +432,13 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
     }
     ist.str(line);
     ist >> Buffer0 >> Buffer1 >> Buffer2;
-    if (strcmp(Buffer1, "UMBRELLA"))
+    if (std::strcmp(Buffer1, "UMBRELLA"))
     {
         gmx_fatal(FARGS, "This does not appear to be a valid pdo file. Found %s, expected %s\n"
                   "(Found in first line: `%s')\n",
                   Buffer1, "UMBRELLA", line);
     }
-    if (strcmp(Buffer2, "3.0"))
+    if (std::strcmp(Buffer2, "3.0"))
     {
         gmx_fatal(FARGS, "This does not appear to be a version 3.0 pdo file");
     }
@@ -509,7 +512,7 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
     }
     ist.str(line);
     ist >> Buffer3;
-    if (strcmp(Buffer3, "#####") != 0)
+    if (std::strcmp(Buffer3, "#####") != 0)
     {
         gmx_fatal(FARGS, "Expected '#####', found %s. Hick.\n", Buffer3);
     }
@@ -526,7 +529,7 @@ static char *fgets3(FILE *fp, char ptr[], int *len)
         return NULL;
     }
     p = ptr;
-    while ((strchr(ptr, '\n') == NULL) && (!feof(fp)))
+    while ((std::strchr(ptr, '\n') == NULL) && (!feof(fp)))
     {
         /* This line is longer than len characters, let's increase len! */
         *len += STRLEN;
@@ -537,7 +540,7 @@ static char *fgets3(FILE *fp, char ptr[], int *len)
             break;
         }
     }
-    slen = strlen(ptr);
+    slen = std::strlen(ptr);
     if (ptr[slen-1] == '\n')
     {
         ptr[slen-1] = '\0';
@@ -558,7 +561,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
                    gmx_bool bGetMinMax, real *mintmp, real *maxtmp)
 {
     int                i, inttemp, bins, count, ntot;
-    real               min, max, minfound = 1e20, maxfound = -1e20;
+    real               minval, maxval, minfound = 1e20, maxfound = -1e20;
     double             temp, time, time0 = 0, dt;
     char              *ptr    = 0;
     t_UmbrellaWindow * window = 0;
@@ -570,9 +573,9 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
 
     if (!bGetMinMax)
     {
-        bins = opt->bins;
-        min  = opt->min;
-        max  = opt->max;
+        bins    = opt->bins;
+        minval  = opt->min;
+        maxval  = opt->max;
 
         window = win+fileno;
         /* Need to alocate memory and set up structure */
@@ -622,7 +625,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
     {
         minfound = 1e20;
         maxfound = -1e20;
-        min      = max = bins = 0; /* Get rid of warnings */
+        minval   = maxval = bins = 0; /* Get rid of warnings */
     }
 
     count = 0;
@@ -631,14 +634,14 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
     {
         trim(ptr);
 
-        if (ptr[0] == '#' || strlen(ptr) < 2)
+        if (ptr[0] == '#' || std::strlen(ptr) < 2)
         {
             continue;
         }
 
         /* Initiate format string */
         fmtign[0] = '\0';
-        strcat(fmtign, "%*s");
+        std::strcat(fmtign, "%*s");
 
         sscanf(ptr, fmtlf, &time); /* printf("Time %f\n",time); */
         /* Round time to fs */
@@ -677,9 +680,9 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
         {
             for (i = 0; i < header->nPull; ++i)
             {
-                strcpy(fmt, fmtign);
-                strcat(fmt, "%lf");      /* Creating a format stings such as "%*s...%*s%lf" */
-                strcat(fmtign, "%*s");   /* ignoring one more entry in the next loop */
+                std::strcpy(fmt, fmtign);
+                std::strcat(fmt, "%lf");      /* Creating a format stings such as "%*s...%*s%lf" */
+                std::strcat(fmtign, "%*s");   /* ignoring one more entry in the next loop */
                 if (sscanf(ptr, fmt, &temp))
                 {
                     temp += header->UmbPos[i][0];
@@ -708,10 +711,10 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
                             window->ztime[i][ntot] = temp;
                         }
 
-                        temp -= min;
-                        temp /= (max-min);
+                        temp -= minval;
+                        temp /= (maxval-minval);
                         temp *= bins;
-                        temp  = floor(temp);
+                        temp  = std::floor(temp);
 
                         inttemp = static_cast<int> (temp);
                         if (opt->bCycl)
@@ -794,7 +797,7 @@ double tabulated_pot(double dist, t_UmbrellaOptions *opt)
     int    jl, ju;
     double pl, pu, dz, dp;
 
-    jl = static_cast<int> (floor((dist-opt->tabMin)/opt->tabDz));
+    jl = static_cast<int> (std::floor((dist-opt->tabMin)/opt->tabDz));
     ju = jl+1;
     if (jl < 0 || ju >= opt->tabNbins)
     {
@@ -879,10 +882,9 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
                 else
                 {
                     U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
-
                 }
-                contrib1                 = profile[k]*exp(-U/(8.314e-3*opt->Temperature));
-                contrib2                 = window[i].N[j]*exp(-U/(8.314e-3*opt->Temperature) + window[i].z[j]);
+                contrib1                 = profile[k]*std::exp(-U/(8.314e-3*opt->Temperature));
+                contrib2                 = window[i].N[j]*std::exp(-U/(8.314e-3*opt->Temperature) + window[i].z[j]);
                 window[i].bContrib[j][k] = (contrib1 > wham_contrib_lim || contrib2 > wham_contrib_lim);
                 bAnyContrib              = (bAnyContrib | window[i].bContrib[j][k]);
                 if (window[i].bContrib[j][k])
@@ -921,53 +923,62 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
 void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
                   t_UmbrellaOptions *opt, gmx_bool bExact)
 {
-    int    i, k, j;
-    double num, ztot_half, ztot, distance, min = opt->min, dz = opt->dz;
-    double denom, U = 0, temp = 0, invg;
+    double ztot_half, ztot, min = opt->min, dz = opt->dz;
 
     ztot      = opt->max-opt->min;
     ztot_half = ztot/2;
 
-    for (i = 0; i < opt->bins; ++i)
+#pragma omp parallel
     {
-        num = denom = 0.;
-        for (j = 0; j < nWindows; ++j)
+        int nthreads  = gmx_omp_get_max_threads();
+        int thread_id = gmx_omp_get_thread_num();
+        int i;
+        int i0        = thread_id*opt->bins/nthreads;
+        int i1        = std::min(opt->bins, ((thread_id+1)*opt->bins)/nthreads);
+
+        for (i = i0; i < i1; ++i)
         {
-            for (k = 0; k < window[j].nPull; ++k)
+            int    j, k;
+            double num, denom, invg, temp = 0, distance, U = 0;
+            num = denom = 0.;
+            for (j = 0; j < nWindows; ++j)
             {
-                invg = 1.0/window[j].g[k] * window[j].bsWeight[k];
-                temp = (1.0*i+0.5)*dz+min;
-                num += invg*window[j].Histo[k][i];
+                for (k = 0; k < window[j].nPull; ++k)
+                {
+                    invg = 1.0/window[j].g[k] * window[j].bsWeight[k];
+                    temp = (1.0*i+0.5)*dz+min;
+                    num += invg*window[j].Histo[k][i];
 
-                if (!(bExact || window[j].bContrib[k][i]))
-                {
-                    continue;
-                }
-                distance = temp - window[j].pos[k];   /* distance to umbrella center */
-                if (opt->bCycl)
-                {                                     /* in cyclic wham:             */
-                    if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                    if (!(bExact || window[j].bContrib[k][i]))
                     {
-                        distance -= ztot;
+                        continue;
                     }
-                    else if (distance < -ztot_half)
-                    {
-                        distance += ztot;
+                    distance = temp - window[j].pos[k];   /* distance to umbrella center */
+                    if (opt->bCycl)
+                    {                                     /* in cyclic wham:             */
+                        if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                        {
+                            distance -= ztot;
+                        }
+                        else if (distance < -ztot_half)
+                        {
+                            distance += ztot;
+                        }
                     }
-                }
 
-                if (!opt->bTab)
-                {
-                    U = 0.5*window[j].k[k]*sqr(distance);       /* harmonic potential assumed. */
+                    if (!opt->bTab)
+                    {
+                        U = 0.5*window[j].k[k]*sqr(distance);       /* harmonic potential assumed. */
+                    }
+                    else
+                    {
+                        U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
+                    }
+                    denom += invg*window[j].N[k]*std::exp(-U/(8.314e-3*opt->Temperature) + window[j].z[k]);
                 }
-                else
-                {
-                    U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
-                }
-                denom += invg*window[j].N[k]*exp(-U/(8.314e-3*opt->Temperature) + window[j].z[k]);
             }
+            profile[i] = num/denom;
         }
-        profile[i] = num/denom;
     }
 }
 
@@ -975,67 +986,90 @@ void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
 double calc_z(double * profile, t_UmbrellaWindow * window, int nWindows,
               t_UmbrellaOptions *opt, gmx_bool bExact)
 {
-    int    i, j, k;
-    double U   = 0, min = opt->min, dz = opt->dz, temp, ztot_half, distance, ztot;
-    double MAX = -1e20, total = 0;
+    double min     = opt->min, dz = opt->dz, ztot_half, ztot;
+    double maxglob = -1e20;
 
     ztot      = opt->max-opt->min;
     ztot_half = ztot/2;
 
-    for (i = 0; i < nWindows; ++i)
+#pragma omp parallel
     {
-        for (j = 0; j < window[i].nPull; ++j)
-        {
-            total = 0;
-            for (k = 0; k < window[i].nBin; ++k)
-            {
-                if (!(bExact || window[i].bContrib[j][k]))
-                {
-                    continue;
-                }
-                temp     = (1.0*k+0.5)*dz+min;
-                distance = temp - window[i].pos[j];   /* distance to umbrella center */
-                if (opt->bCycl)
-                {                                     /* in cyclic wham:             */
-                    if (distance > ztot_half)         /*    |distance| < ztot_half   */
-                    {
-                        distance -= ztot;
-                    }
-                    else if (distance < -ztot_half)
-                    {
-                        distance += ztot;
-                    }
-                }
+        int    nthreads  = gmx_omp_get_max_threads();
+        int    thread_id = gmx_omp_get_thread_num();
+        int    i;
+        int    i0        = thread_id*nWindows/nthreads;
+        int    i1        = std::min(nWindows, ((thread_id+1)*nWindows)/nthreads);
+        double maxloc    = -1e20;
 
-                if (!opt->bTab)
+        for (i = i0; i < i1; ++i)
+        {
+            double total     = 0, temp, distance, U = 0;
+            int    j, k;
+
+            for (j = 0; j < window[i].nPull; ++j)
+            {
+                total = 0;
+                for (k = 0; k < window[i].nBin; ++k)
                 {
-                    U = 0.5*window[i].k[j]*sqr(distance);       /* harmonic potential assumed. */
+                    if (!(bExact || window[i].bContrib[j][k]))
+                    {
+                        continue;
+                    }
+                    temp     = (1.0*k+0.5)*dz+min;
+                    distance = temp - window[i].pos[j];   /* distance to umbrella center */
+                    if (opt->bCycl)
+                    {                                     /* in cyclic wham:             */
+                        if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                        {
+                            distance -= ztot;
+                        }
+                        else if (distance < -ztot_half)
+                        {
+                            distance += ztot;
+                        }
+                    }
+
+                    if (!opt->bTab)
+                    {
+                        U = 0.5*window[i].k[j]*sqr(distance);       /* harmonic potential assumed. */
+                    }
+                    else
+                    {
+                        U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
+                    }
+                    total += profile[k]*std::exp(-U/(8.314e-3*opt->Temperature));
+                }
+                /* Avoid floating point exception if window is far outside min and max */
+                if (total != 0.0)
+                {
+                    total = -std::log(total);
                 }
                 else
                 {
-                    U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
-
+                    total = 1000.0;
                 }
-                total += profile[k]*exp(-U/(8.314e-3*opt->Temperature));
+                temp = std::abs(total - window[i].z[j]);
+                if (temp > maxloc)
+                {
+                    maxloc = temp;
+                }
+                window[i].z[j] = total;
             }
-            /* Avoid floating point exception if window is far outside min and max */
-            if (total != 0.0)
+        }
+        /* Now get maximum maxloc from the threads and put in maxglob */
+        if (maxloc > maxglob)
+        {
+#pragma omp critical
             {
-                total = -log(total);
+                if (maxloc > maxglob)
+                {
+                    maxglob = maxloc;
+                }
             }
-            else
-            {
-                total = 1000.0;
-            }
-            temp = fabs(total - window[i].z[j]);
-            if (temp > MAX)
-            {
-                MAX = temp;
-            }
-            window[i].z[j] = total;
         }
     }
-    return MAX;
+
+    return maxglob;
 }
 
 //! Make PMF symmetric around 0 (useful e.g. for membranes)
@@ -1058,7 +1092,7 @@ void symmetrizeProfile(double* profile, t_UmbrellaOptions *opt)
         z    = min+(i+0.5)*dz;
         zsym = -z;
         /* bin left of zsym */
-        j = static_cast<int> (floor((zsym-min)/dz-0.5));
+        j = static_cast<int> (std::floor((zsym-min)/dz-0.5));
         if (j >= 0 && (j+1) < bins)
         {
             /* interpolate profile linearly between bins j and j+1 */
@@ -1074,7 +1108,7 @@ void symmetrizeProfile(double* profile, t_UmbrellaOptions *opt)
         }
     }
 
-    memcpy(profile, prof2, bins*sizeof(double));
+    std::memcpy(profile, prof2, bins*sizeof(double));
     sfree(prof2);
 }
 
@@ -1115,7 +1149,7 @@ void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
     {
         if (profile[i] > 0.0)
         {
-            profile[i] = -log(profile[i])*unit_factor;
+            profile[i] = -std::log(profile[i])*unit_factor;
         }
     }
 
@@ -1212,9 +1246,9 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
 
     if (opt->bs_verbose)
     {
-        snew(fn, strlen(fnhist)+10);
-        snew(buf, strlen(fnhist)+10);
-        sprintf(fn, "%s_cumul.xvg", strncpy(buf, fnhist, strlen(fnhist)-4));
+        snew(fn, std::strlen(fnhist)+10);
+        snew(buf, std::strlen(fnhist)+10);
+        sprintf(fn, "%s_cumul.xvg", std::strncpy(buf, fnhist, std::strlen(fnhist)-4));
         fp = xvgropen(fn, "CDFs of umbrella windows", xlabel, "CDF", opt->oenv);
     }
 
@@ -1330,11 +1364,11 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
                 "cannot be predicted. You have 3 options:\n"
                 "1) Make g_wham estimate the ACTs (options -ac and -acsig).\n"
                 "2) Calculate the ACTs by yourself (e.g. with g_analyze) and provide them\n");
-        strcat(errstr,
-               "   with option -iiact for all umbrella windows.\n"
-               "3) If all ACTs are identical and know, you can define them with -bs-tau.\n"
-               "   Use option (3) only if you are sure what you're doing, you may severely\n"
-               "   underestimate the error if a too small ACT is given.\n");
+        std::strcat(errstr,
+                    "   with option -iiact for all umbrella windows.\n"
+                    "3) If all ACTs are identical and know, you can define them with -bs-tau.\n"
+                    "   Use option (3) only if you are sure what you're doing, you may severely\n"
+                    "   underestimate the error if a too small ACT is given.\n");
         gmx_fatal(FARGS, errstr);
     }
 
@@ -1373,9 +1407,9 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
        Note: The ACT of the flat distribution and of the generated histogram is not
        100% exactly tau, but near tau (my test was 3.8 instead of 4).
      */
-    a        = exp(-1.0/tausteps);
-    ap       = sqrt(1-a*a);
-    invsqrt2 = 1./sqrt(2.0);
+    a        = std::exp(-1.0/tausteps);
+    ap       = std::sqrt(1.0-a*a);
+    invsqrt2 = 1.0/std::sqrt(2.0);
 
     /* init random sequence */
     x = gmx_rng_gaussian_table(opt->rng);
@@ -1408,7 +1442,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
             y    = gmx_rng_gaussian_table(opt->rng);
             x    = a*x+ap*y;
             z    = x*sig+mu;
-            ibin = static_cast<int> (floor((z-opt->min)/opt->dz));
+            ibin = static_cast<int> (std::floor((z-opt->min)/opt->dz));
             if (opt->bCycl)
             {
                 if (ibin < 0)
@@ -1454,15 +1488,15 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
 
     if (bs_index >= 0)
     {
-        snew(fn, strlen(fnhist)+10);
-        snew(buf, strlen(fnhist)+1);
-        sprintf(fn, "%s_bs%d.xvg", strncpy(buf, fnhist, strlen(fnhist)-4), bs_index);
+        snew(fn, std::strlen(fnhist)+10);
+        snew(buf, std::strlen(fnhist)+1);
+        sprintf(fn, "%s_bs%d.xvg", std::strncpy(buf, fnhist, std::strlen(fnhist)-4), bs_index);
         sprintf(title, "Umbrella histograms. Bootstrap #%d", bs_index);
     }
     else
     {
         fn = gmx_strdup(fnhist);
-        strcpy(title, "Umbrella histograms");
+        std::strcpy(title, "Umbrella histograms");
     }
 
     fp   = xvgropen(fn, title, xlabel, "count", opt->oenv);
@@ -1471,7 +1505,7 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindow
     /* Write histograms */
     for (l = 0; l < bins; ++l)
     {
-        fprintf(fp, "%e\t", (double)(l+0.5)*opt->dz+opt->min);
+        fprintf(fp, "%e\t", (l+0.5)*opt->dz+opt->min);
         for (i = 0; i < nWindows; ++i)
         {
             for (j = 0; j < window[i].nPull; ++j)
@@ -1684,7 +1718,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         i         = 0;
         bExact    = FALSE;
         maxchange = 1e20;
-        memcpy(bsProfile, profile, opt->bins*sizeof(double)); /* use profile as guess */
+        std::memcpy(bsProfile, profile, opt->bins*sizeof(double)); /* use profile as guess */
         do
         {
             if ( (i%opt->stepUpdateContrib) == 0)
@@ -1739,7 +1773,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         bsProfiles_av [i] /= opt->nBootStrap;
         bsProfiles_av2[i] /= opt->nBootStrap;
         tmp                = bsProfiles_av2[i]-sqr(bsProfiles_av[i]);
-        stddev             = (tmp >= 0.) ? sqrt(tmp) : 0.; /* Catch rouding errors */
+        stddev             = (tmp >= 0.) ? std::sqrt(tmp) : 0.; /* Catch rouding errors */
         fprintf(fp, "%e\t%e\t%e\n", (i+0.5)*opt->dz+opt->min, bsProfiles_av [i], stddev);
     }
     xvgrclose(fp);
@@ -1750,16 +1784,16 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
 int whaminFileType(char *fn)
 {
     int len;
-    len = strlen(fn);
-    if (strcmp(fn+len-3, "tpr") == 0)
+    len = std::strlen(fn);
+    if (std::strcmp(fn+len-3, "tpr") == 0)
     {
         return whamin_tpr;
     }
-    else if (strcmp(fn+len-3, "xvg") == 0 || strcmp(fn+len-6, "xvg.gz") == 0)
+    else if (std::strcmp(fn+len-3, "xvg") == 0 || std::strcmp(fn+len-6, "xvg.gz") == 0)
     {
         return whamin_pullxf;
     }
-    else if (strcmp(fn+len-3, "pdo") == 0 || strcmp(fn+len-6, "pdo.gz") == 0)
+    else if (std::strcmp(fn+len-3, "pdo") == 0 || std::strcmp(fn+len-6, "pdo.gz") == 0)
     {
         return whamin_pdo;
     }
@@ -1783,7 +1817,7 @@ void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
     sizenow = 0;
     while (fgets(tmp, sizeof(tmp), fp) != NULL)
     {
-        if (strlen(tmp) >= WHAM_MAXFILELEN)
+        if (std::strlen(tmp) >= WHAM_MAXFILELEN)
         {
             gmx_fatal(FARGS, "Filename too long in %s. Only %d characters allowed.\n", fn, WHAM_MAXFILELEN);
         }
@@ -1797,11 +1831,11 @@ void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
             }
         }
         /* remove newline if there is one */
-        if (tmp[strlen(tmp)-1] == '\n')
+        if (tmp[std::strlen(tmp)-1] == '\n')
         {
-            tmp[strlen(tmp)-1] = '\0';
+            tmp[std::strlen(tmp)-1] = '\0';
         }
-        strcpy(filename[nread], tmp);
+        std::strcpy(filename[nread], tmp);
         if (opt->verbose)
         {
             printf("Found file %s in %s\n", filename[nread], fn);
@@ -1820,7 +1854,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
     static gmx_bool bFirst = 1;
 
     /* gzipped pdo file? */
-    if ((strcmp(fn+strlen(fn)-3, ".gz") == 0))
+    if ((std::strcmp(fn+std::strlen(fn)-3, ".gz") == 0))
     {
         /* search gunzip executable */
         if (!(Path = getenv("GMX_PATH_GZIP")))
@@ -1863,7 +1897,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
         {
             printf("Executing command '%s'\n", Buffer);
         }
-#ifdef HAVE_PIPES
+#if HAVE_PIPES
         if ((pipe = popen(Buffer, "r")) == NULL)
         {
             gmx_fatal(FARGS, "Unable to open pipe to `%s'\n", Buffer);
@@ -1885,7 +1919,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
 //! Close file or pipe
 void pdo_close_file(FILE *fp)
 {
-#ifdef HAVE_PIPES
+#if HAVE_PIPES
     pclose(fp);
 #else
     gmx_ffclose(fp);
@@ -2139,7 +2173,7 @@ double dist_ndim(double **dx, int ndim, int line)
     {
         r2 += sqr(dx[i][line]);
     }
-    return sqrt(r2);
+    return std::sqrt(r2);
 }
 
 //! Read pullx.xvg or pullf.xvg
@@ -2426,7 +2460,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
                         window->ztime[gUsed][ntot] = pos;
                     }
 
-                    ibin = static_cast<int> (floor((pos-min)/(max-min)*bins));
+                    ibin = static_cast<int> (std::floor((pos-min)/(max-min)*bins));
                     if (opt->bCycl)
                     {
                         if (ibin < 0)
@@ -2608,7 +2642,7 @@ void smoothIact(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
     siglim  = 3.0*opt->sigSmoothIact;
     siglim2 = dsqr(siglim);
     /* pre-factor of Gaussian */
-    gaufact    = 1.0/(sqrt(2*M_PI)*opt->sigSmoothIact);
+    gaufact    = 1.0/(std::sqrt(2*M_PI)*opt->sigSmoothIact);
     invtwosig2 = 0.5/dsqr(opt->sigSmoothIact);
 
     for (i = 0; i < nwins; i++)
@@ -2626,7 +2660,7 @@ void smoothIact(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
                     dpos2 = dsqr(window[j].pos[jg]-pos);
                     if (dpos2 < siglim2)
                     {
-                        w       = gaufact*exp(-dpos2*invtwosig2);
+                        w       = gaufact*std::exp(-dpos2*invtwosig2);
                         weight += w;
                         tausm  += w*window[j].tau[jg];
                         /*printf("Weight %g dpos2=%g pos=%g gaufact=%g invtwosig2=%g\n",
@@ -2845,7 +2879,7 @@ void averageSigma(t_UmbrellaWindow *window, int nwins)
                 diff  = ztime[k]-av;
                 sum2 += diff*diff;
             }
-            sig                = sqrt(sum2/ntot);
+            sig                = std::sqrt(sum2/ntot);
             window[i].aver[ig] = av;
 
             /* Note: This estimate for sigma is biased from the limited sampling.
@@ -3005,7 +3039,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
             for (ig = 0; ig < window[i].nPull; ig++)
             {
                 hispos = window[i].pos[ig];
-                dist   = fabs(hispos-pos);
+                dist   = std::abs(hispos-pos);
                 /* average force within bin */
                 if (dist < dz/2)
                 {
@@ -3063,7 +3097,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
      */
     for (j = 0; j < opt->bins; ++j)
     {
-        pot[j] = exp(-pot[j]/(8.314e-3*opt->Temperature));
+        pot[j] = std::exp(-pot[j]/(8.314e-3*opt->Temperature));
     }
     calc_z(pot, window, nWindows, opt, TRUE);
 
@@ -3077,7 +3111,7 @@ static int wordcount(char *ptr)
     int i, n, is[2];
     int cur = 0;
 
-    if (strlen(ptr) == 0)
+    if (std::strlen(ptr) == 0)
     {
         return 0;
     }
@@ -3130,8 +3164,8 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
         fmtign[0] = '\0';
         for (i = 0; i < n; i++)
         {
-            strcpy(fmt, fmtign);
-            strcat(fmt, "%d");
+            std::strcpy(fmt, fmtign);
+            std::strcat(fmt, "%d");
             if (sscanf(ptr, fmt, &temp))
             {
                 opt->groupsel[iline].bUse[i] = (temp > 0);
@@ -3140,7 +3174,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
                     opt->groupsel[iline].nUse++;
                 }
             }
-            strcat(fmtign, "%*s");
+            std::strcat(fmtign, "%*s");
         }
         iline++;
     }
@@ -3191,36 +3225,36 @@ int gmx_wham(int argc, char *argv[])
         "",
         "At present, three input modes are supported.",
         "",
-        " * With option [TT]-it[tt], the user provides a file which contains the",
-        "   file names of the umbrella simulation run-input files ([REF].tpr[ref] files),",
-        "   AND, with option [TT]-ix[tt], a file which contains file names of",
-        "   the pullx [TT]mdrun[tt] output files. The [REF].tpr[ref] and pullx files must",
-        "   be in corresponding order, i.e. the first [REF].tpr[ref] created the",
-        "   first pullx, etc.",
-        " * Same as the previous input mode, except that the the user",
-        "   provides the pull force output file names ([TT]pullf.xvg[tt]) with option [TT]-if[tt].",
-        "   From the pull force the position in the umbrella potential is",
-        "   computed. This does not work with tabulated umbrella potentials.",
-        " * With option [TT]-ip[tt], the user provides file names of (gzipped) [REF].pdo[ref] files, i.e.",
-        "   the GROMACS 3.3 umbrella output files. If you have some unusual"
-        "   reaction coordinate you may also generate your own [REF].pdo[ref] files and",
-        "   feed them with the [TT]-ip[tt] option into to [THISMODULE]. The [REF].pdo[ref] file header",
-        "   must be similar to the following::",
+        "* With option [TT]-it[tt], the user provides a file which contains the",
+        "  file names of the umbrella simulation run-input files ([REF].tpr[ref] files),",
+        "  AND, with option [TT]-ix[tt], a file which contains file names of",
+        "  the pullx [TT]mdrun[tt] output files. The [REF].tpr[ref] and pullx files must",
+        "  be in corresponding order, i.e. the first [REF].tpr[ref] created the",
+        "  first pullx, etc.",
+        "* Same as the previous input mode, except that the the user",
+        "  provides the pull force output file names ([TT]pullf.xvg[tt]) with option [TT]-if[tt].",
+        "  From the pull force the position in the umbrella potential is",
+        "  computed. This does not work with tabulated umbrella potentials.",
+        "* With option [TT]-ip[tt], the user provides file names of (gzipped) [REF].pdo[ref] files, i.e.",
+        "  the GROMACS 3.3 umbrella output files. If you have some unusual"
+        "  reaction coordinate you may also generate your own [REF].pdo[ref] files and",
+        "  feed them with the [TT]-ip[tt] option into to [THISMODULE]. The [REF].pdo[ref] file header",
+        "  must be similar to the following::",
         "",
-        "     # UMBRELLA      3.0",
-        "     # Component selection: 0 0 1",
-        "     # nSkip 1",
-        "     # Ref. Group 'TestAtom'",
-        "     # Nr. of pull groups 2",
-        "     # Group 1 'GR1'  Umb. Pos. 5.0 Umb. Cons. 1000.0",
-        "     # Group 2 'GR2'  Umb. Pos. 2.0 Umb. Cons. 500.0",
-        "     #####",
+        "    # UMBRELLA      3.0",
+        "    # Component selection: 0 0 1",
+        "    # nSkip 1",
+        "    # Ref. Group 'TestAtom'",
+        "    # Nr. of pull groups 2",
+        "    # Group 1 'GR1'  Umb. Pos. 5.0 Umb. Cons. 1000.0",
+        "    # Group 2 'GR2'  Umb. Pos. 2.0 Umb. Cons. 500.0",
+        "    #####",
         "",
-        "   The number of pull groups, umbrella positions, force constants, and names ",
-        "   may (of course) differ. Following the header, a time column and ",
-        "   a data column for each pull group follows (i.e. the displacement",
-        "   with respect to the umbrella center). Up to four pull groups are possible ",
-        "   per [REF].pdo[ref] file at present.",
+        "  The number of pull groups, umbrella positions, force constants, and names ",
+        "  may (of course) differ. Following the header, a time column and ",
+        "  a data column for each pull group follows (i.e. the displacement",
+        "  with respect to the umbrella center). Up to four pull groups are possible ",
+        "  per [REF].pdo[ref] file at present.",
         "",
         "By default, all pull groups found in all pullx/pullf files are used in WHAM. If only ",
         "some of the pull groups should be used, a pull group selection file (option [TT]-is[tt]) can ",
@@ -3236,20 +3270,22 @@ int gmx_wham(int argc, char *argv[])
         "",
         "By default, the output files are",
         "",
-        " * [TT]-o[tt]      PMF output file",
-        " * [TT]-hist[tt]   Histograms output file",
+        "* [TT]-o[tt]      PMF output file",
+        "* [TT]-hist[tt]   Histograms output file",
         "",
         "Always check whether the histograms sufficiently overlap.[PAR]",
         "The umbrella potential is assumed to be harmonic and the force constants are ",
         "read from the [REF].tpr[ref] or [REF].pdo[ref] files. If a non-harmonic umbrella force was applied ",
-        "a tabulated potential can be provided with [TT]-tab[tt].[PAR]",
-        "WHAM OPTIONS[BR]------------[BR]",
+        "a tabulated potential can be provided with [TT]-tab[tt].",
         "",
-        " * [TT]-bins[tt]   Number of bins used in analysis",
-        " * [TT]-temp[tt]   Temperature in the simulations",
-        " * [TT]-tol[tt]    Stop iteration if profile (probability) changed less than tolerance",
-        " * [TT]-auto[tt]   Automatic determination of boundaries",
-        " * [TT]-min,-max[tt]   Boundaries of the profile",
+        "WHAM options",
+        "^^^^^^^^^^^^",
+        "",
+        "* [TT]-bins[tt]   Number of bins used in analysis",
+        "* [TT]-temp[tt]   Temperature in the simulations",
+        "* [TT]-tol[tt]    Stop iteration if profile (probability) changed less than tolerance",
+        "* [TT]-auto[tt]   Automatic determination of boundaries",
+        "* [TT]-min,-max[tt]   Boundaries of the profile",
         "",
         "The data points that are used to compute the profile",
         "can be restricted with options [TT]-b[tt], [TT]-e[tt], and [TT]-dt[tt]. ",
@@ -3266,8 +3302,16 @@ int gmx_wham(int argc, char *argv[])
         "periodicity of the system and generate a periodic PMF. The first and the last bin of the",
         "reaction coordinate will assumed be be neighbors.[PAR]",
         "Option [TT]-sym[tt] symmetrizes the profile around z=0 before output, ",
-        "which may be useful for, e.g. membranes.[PAR]",
-        "AUTOCORRELATIONS[BR]----------------[BR]",
+        "which may be useful for, e.g. membranes.",
+        "",
+        "Parallelization",
+        "^^^^^^^^^^^^^^^",
+        "",
+        "If available, the number of OpenMP threads used by g_wham is controlled with [TT]-nt[tt].",
+        "",
+        "Autocorrelations",
+        "^^^^^^^^^^^^^^^^",
+        "",
         "With [TT]-ac[tt], [THISMODULE] estimates the integrated autocorrelation ",
         "time (IACT) [GRK]tau[grk] for each umbrella window and weights the respective ",
         "window with 1/[1+2*[GRK]tau[grk]/dt]. The IACTs are written ",
@@ -3282,8 +3326,11 @@ int gmx_wham(int argc, char *argv[])
         "less robust) method such as fitting to a double exponential, you can ",
         "compute the IACTs with [gmx-analyze] and provide them to [THISMODULE] with the file ",
         "[TT]iact-in.dat[tt] (option [TT]-iiact[tt]), which should contain one line per ",
-        "input file ([REF].pdo[ref] or pullx/f file) and one column per pull group in the respective file.[PAR]",
-        "ERROR ANALYSIS[BR]--------------[BR]",
+        "input file ([REF].pdo[ref] or pullx/f file) and one column per pull group in the respective file.",
+        "",
+        "Error analysis",
+        "^^^^^^^^^^^^^^",
+        "",
         "Statistical errors may be estimated with bootstrap analysis. Use it with care, ",
         "otherwise the statistical error may be substantially underestimated. ",
         "More background and examples for the bootstrap technique can be found in ",
@@ -3292,36 +3339,36 @@ int gmx_wham(int argc, char *argv[])
         "Four bootstrapping methods are supported and ",
         "selected with [TT]-bs-method[tt].",
         "",
-        " * [TT]b-hist[tt]   Default: complete histograms are considered as independent ",
-        "   data points, and the bootstrap is carried out by assigning random weights to the ",
-        "   histograms (\"Bayesian bootstrap\"). Note that each point along the reaction coordinate",
-        "   must be covered by multiple independent histograms (e.g. 10 histograms), otherwise the ",
-        "   statistical error is underestimated.",
-        " * [TT]hist[tt]    Complete histograms are considered as independent data points. ",
-        "   For each bootstrap, N histograms are randomly chosen from the N given histograms ",
-        "   (allowing duplication, i.e. sampling with replacement).",
-        "   To avoid gaps without data along the reaction coordinate blocks of histograms ",
-        "   ([TT]-histbs-block[tt]) may be defined. In that case, the given histograms are ",
-        "   divided into blocks and only histograms within each block are mixed. Note that ",
-        "   the histograms within each block must be representative for all possible histograms, ",
-        "   otherwise the statistical error is underestimated.",
-        " * [TT]traj[tt]  The given histograms are used to generate new random trajectories,",
-        "   such that the generated data points are distributed according the given histograms ",
-        "   and properly autocorrelated. The autocorrelation time (ACT) for each window must be ",
-        "   known, so use [TT]-ac[tt] or provide the ACT with [TT]-iiact[tt]. If the ACT of all ",
-        "   windows are identical (and known), you can also provide them with [TT]-bs-tau[tt]. ",
-        "   Note that this method may severely underestimate the error in case of limited sampling, ",
-        "   that is if individual histograms do not represent the complete phase space at ",
-        "   the respective positions.",
-        " * [TT]traj-gauss[tt]  The same as method [TT]traj[tt], but the trajectories are ",
-        "   not bootstrapped from the umbrella histograms but from Gaussians with the average ",
-        "   and width of the umbrella histograms. That method yields similar error estimates ",
-        "   like method [TT]traj[tt].",
+        "* [TT]b-hist[tt]   Default: complete histograms are considered as independent ",
+        "  data points, and the bootstrap is carried out by assigning random weights to the ",
+        "  histograms (\"Bayesian bootstrap\"). Note that each point along the reaction coordinate",
+        "  must be covered by multiple independent histograms (e.g. 10 histograms), otherwise the ",
+        "  statistical error is underestimated.",
+        "* [TT]hist[tt]    Complete histograms are considered as independent data points. ",
+        "  For each bootstrap, N histograms are randomly chosen from the N given histograms ",
+        "  (allowing duplication, i.e. sampling with replacement).",
+        "  To avoid gaps without data along the reaction coordinate blocks of histograms ",
+        "  ([TT]-histbs-block[tt]) may be defined. In that case, the given histograms are ",
+        "  divided into blocks and only histograms within each block are mixed. Note that ",
+        "  the histograms within each block must be representative for all possible histograms, ",
+        "  otherwise the statistical error is underestimated.",
+        "* [TT]traj[tt]  The given histograms are used to generate new random trajectories,",
+        "  such that the generated data points are distributed according the given histograms ",
+        "  and properly autocorrelated. The autocorrelation time (ACT) for each window must be ",
+        "  known, so use [TT]-ac[tt] or provide the ACT with [TT]-iiact[tt]. If the ACT of all ",
+        "  windows are identical (and known), you can also provide them with [TT]-bs-tau[tt]. ",
+        "  Note that this method may severely underestimate the error in case of limited sampling, ",
+        "  that is if individual histograms do not represent the complete phase space at ",
+        "  the respective positions.",
+        "* [TT]traj-gauss[tt]  The same as method [TT]traj[tt], but the trajectories are ",
+        "  not bootstrapped from the umbrella histograms but from Gaussians with the average ",
+        "  and width of the umbrella histograms. That method yields similar error estimates ",
+        "  like method [TT]traj[tt].",
         "",
         "Bootstrapping output:",
         "",
-        " * [TT]-bsres[tt]   Average profile and standard deviations",
-        " * [TT]-bsprof[tt]  All bootstrapping profiles",
+        "* [TT]-bsres[tt]   Average profile and standard deviations",
+        "* [TT]-bsprof[tt]  All bootstrapping profiles",
         "",
         "With [TT]-vbs[tt] (verbose bootstrapping), the histograms of each bootstrap are written, ",
         "and, with bootstrap method [TT]traj[tt], the cumulative distribution functions of ",
@@ -3331,10 +3378,14 @@ int gmx_wham(int argc, char *argv[])
     const char              *en_unit[]       = {NULL, "kJ", "kCal", "kT", NULL};
     const char              *en_unit_label[] = {"", "E (kJ mol\\S-1\\N)", "E (kcal mol\\S-1\\N)", "E (kT)", NULL};
     const char              *en_bsMethod[]   = { NULL, "b-hist", "hist", "traj", "traj-gauss", NULL };
-
     static t_UmbrellaOptions opt;
+    static int               nthreads = -1;
 
     t_pargs                  pa[] = {
+#ifdef GMX_OPENMP
+        { "-nt", FALSE, etINT, {&nthreads},
+          "Number of threads used by g_wham (if -1, all threads will be used or what is specified by the environment variable OMP_NUM_THREADS)"},
+#endif
         { "-min", FALSE, etREAL, {&opt.min},
           "Minimum coordinate in profile"},
         { "-max", FALSE, etREAL, {&opt.max},
@@ -3533,6 +3584,20 @@ int gmx_wham(int argc, char *argv[])
                   "(option -iiact) or define all ACTs with -bs-tau for bootstrapping\n. Not Both.");
     }
 
+    /* Set # of OpenMP threads */
+    if (nthreads > 0)
+    {
+        gmx_omp_set_num_threads(nthreads);
+    }
+    else
+    {
+        nthreads = gmx_omp_get_max_threads();
+    }
+    if (nthreads > 1)
+    {
+        printf("\nNote: Will use %d OpenMP threads.\n\n", nthreads);
+    }
+
     /* Reading gmx4 pull output and tpr files */
     if (opt.bTpr || opt.bPullf || opt.bPullx)
     {
@@ -3582,7 +3647,7 @@ int gmx_wham(int argc, char *argv[])
                        xlabel, "count", opt.oenv);
     for (l = 0; l < opt.bins; ++l)
     {
-        fprintf(histout, "%e\t", (double)(l+0.5)/opt.bins*(opt.max-opt.min)+opt.min);
+        fprintf(histout, "%e\t", (l+0.5)/opt.bins*(opt.max-opt.min)+opt.min);
         for (i = 0; i < nwins; ++i)
         {
             for (j = 0; j < window[i].nPull; ++j)
@@ -3672,13 +3737,13 @@ int gmx_wham(int argc, char *argv[])
     if (opt.bLog)
     {
         prof_normalization_and_unit(profile, &opt);
-        strcpy(ylabel, en_unit_label[opt.unit]);
-        strcpy(title, "Umbrella potential");
+        std::strcpy(ylabel, en_unit_label[opt.unit]);
+        std::strcpy(title, "Umbrella potential");
     }
     else
     {
-        strcpy(ylabel, "Density of states");
-        strcpy(title, "Density of states");
+        std::strcpy(ylabel, "Density of states");
+        std::strcpy(title, "Density of states");
     }
 
     /* symmetrize profile around z=0? */
@@ -3691,7 +3756,7 @@ int gmx_wham(int argc, char *argv[])
     profout = xvgropen(opt2fn("-o", NFILE, fnm), title, xlabel, ylabel, opt.oenv);
     for (i = 0; i < opt.bins; ++i)
     {
-        fprintf(profout, "%e\t%e\n", (double)(i+0.5)/opt.bins*(opt.max-opt.min)+opt.min, profile[i]);
+        fprintf(profout, "%e\t%e\n", (i+0.5)/opt.bins*(opt.max-opt.min)+opt.min, profile[i]);
     }
     xvgrclose(profout);
     printf("Wrote %s\n", opt2fn("-o", NFILE, fnm));

@@ -886,14 +886,16 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 /* Write a topology where the number of molecules is correct for the system after embedding */
 static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
 {
-#define TEMP_FILENM "temp.top"
-    int        bMolecules = 0;
+    int        bMolecules         = 0;
     FILE      *fpin, *fpout;
     char       buf[STRLEN], buf2[STRLEN], *temp;
     int        i, *nmol_rm, nmol, line;
+    char       temporary_filename[STRLEN];
 
     fpin  = gmx_ffopen(topfile, "r");
-    fpout = gmx_ffopen(TEMP_FILENM, "w");
+    strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+    gmx_tmpnam(temporary_filename);
+    fpout = gmx_ffopen(temporary_filename, "w");
 
     snew(nmol_rm, mtop->nmoltype);
     for (i = 0; i < rm_p->nr; i++)
@@ -962,8 +964,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     /* use gmx_ffopen to generate backup of topinout */
     fpout = gmx_ffopen(topfile, "w");
     gmx_ffclose(fpout);
-    rename(TEMP_FILENM, topfile);
-#undef TEMP_FILENM
+    rename(temporary_filename, topfile);
 }
 
 void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x)
@@ -1141,14 +1142,15 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         {
             warn++;
             fprintf(stderr, "\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d)"
-                    " is probably too small.\nIncrease -nz or maxwarn.\n\n", warn, ins, it_z);
+                    " is probably too small.\nIncrease -nz or the maxwarn setting in the membed input file.\n\n", warn, ins, it_z);
         }
 
         if (it_xy+it_z > inputrec->nsteps)
         {
             warn++;
             fprintf(stderr, "\nWarning %d:\nThe number of growth steps (-nxy + -nz) is larger than the "
-                    "number of steps in the tpr.\n\n", warn);
+                    "number of steps in the tpr.\n"
+                    "(increase maxwarn in the membed input file to override)\n\n", warn);
         }
 
         fr_id = -1;
@@ -1224,13 +1226,13 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             warn++;
             fprintf(stderr, "\nWarning %d:\nThe xy-area is very small compared to the area of the protein.\n"
                     "This might cause pressure problems during the growth phase. Just try with\n"
-                    "current setup (-maxwarn + 1), but if pressure problems occur, lower the\n"
-                    "compressibility in the mdp-file or use no pressure coupling at all.\n\n", warn);
+                    "current setup and increase 'maxwarn' in your membed settings file, but lower the\n"
+                    "compressibility in the mdp-file or disable pressure coupling if problems occur.\n\n", warn);
         }
 
         if (warn > maxwarn)
         {
-            gmx_fatal(FARGS, "Too many warnings.\n");
+            gmx_fatal(FARGS, "Too many warnings (override by setting maxwarn in the membed input file)\n");
         }
 
         printf("The estimated area of the protein in the membrane is %.3f nm^2\n", prot_area);
@@ -1293,7 +1295,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             warn++;
             fprintf(stderr, "\nWarning %d:\nTrying to remove a larger lipid area than the estimated "
                     "protein area\nTry making the -xyinit resize factor smaller or increase "
-                    "maxwarn.\n\n", warn);
+                    "maxwarn in the membed input file.\n\n", warn);
         }
 
         /*remove all lipids and waters overlapping and update all important structures*/
@@ -1309,8 +1311,8 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
 
         if (warn > maxwarn)
         {
-            gmx_fatal(FARGS, "Too many warnings.\nIf you are sure these warnings are harmless, "
-                      "you can increase -maxwarn");
+            gmx_fatal(FARGS, "Too many warnings.\nIf you are sure these warnings are harmless,\n"
+                      "you can increase the maxwarn setting in the membed input file.");
         }
 
         if (ftp2bSet(efTOP, nfile, fnm))

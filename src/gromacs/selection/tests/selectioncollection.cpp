@@ -47,7 +47,7 @@
 
 #include "gromacs/fileio/trx.h"
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/topology.h"
@@ -57,6 +57,7 @@
 #include "gromacs/utility/gmxregex.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/interactivetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -149,6 +150,39 @@ SelectionCollectionTest::loadIndexGroups(const char *filename)
         gmx::test::TestFileManager::getInputFilePath(filename);
     gmx_ana_indexgrps_init(&grps_, NULL, fullpath.c_str());
     sc_.setIndexGroups(grps_);
+}
+
+
+/********************************************************************
+ * Test fixture for interactive SelectionCollection tests
+ */
+
+class SelectionCollectionInteractiveTest : public SelectionCollectionTest
+{
+    public:
+        SelectionCollectionInteractiveTest()
+            : helper_(data_.rootChecker())
+        {
+        }
+
+        void runTest(int count, bool bInteractive,
+                     const gmx::ConstArrayRef<const char *> &input);
+
+        gmx::test::TestReferenceData      data_;
+        gmx::test::InteractiveTestHelper  helper_;
+};
+
+void SelectionCollectionInteractiveTest::runTest(
+        int count, bool bInteractive,
+        const gmx::ConstArrayRef<const char *> &inputLines)
+{
+    helper_.setInputLines(inputLines);
+    // TODO: Check something about the returned selections as well.
+    ASSERT_NO_THROW_GMX(sc_.parseInteractive(
+                                count, &helper_.inputStream(),
+                                bInteractive ? &helper_.outputStream() : NULL,
+                                "for test context"));
+    helper_.checkSession();
 }
 
 
@@ -617,6 +651,150 @@ TEST_F(SelectionCollectionTest, HandlesFramesWithTooSmallAtomSubsets3)
 
 // TODO: Tests for more evaluation errors
 
+/********************************************************************
+ * Tests for interactive selection input
+ */
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesBasicInput)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "resname RB",
+        "\"Name\" resname RC"
+    };
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesContinuation)
+{
+    const char *const input[] = {
+        "resname RB and \\",
+        "resname RC"
+    };
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesSingleSelectionInput)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "resname RA"
+    };
+    runTest(1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesTwoSelectionInput)
+{
+    const char *const input[] = {
+        "resname RA",
+        "resname RB"
+    };
+    runTest(2, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesStatusWithGroups)
+{
+    const char *const input[] = {
+        "resname RA",
+        ""
+    };
+    loadIndexGroups("simple.ndx");
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesStatusWithExistingSelections)
+{
+    const char *const input[] = {
+        "",
+        "bar = resname RC",
+        "resname RA",
+        ""
+    };
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("foo = resname RA"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("resname RB"));
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesSingleSelectionInputStatus)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "",
+        "resname RB"
+    };
+    runTest(1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesTwoSelectionInputStatus)
+{
+    const char *const input[] = {
+        "\"Sel\" resname RA",
+        "",
+        "resname RB"
+    };
+    runTest(2, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesMultiSelectionInputStatus)
+{
+    const char *const input[] = {
+        "\"Sel\" resname RA",
+        "\"Sel2\" resname RB",
+        ""
+    };
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesNoFinalNewline)
+{
+    // TODO: There is an extra prompt printed after the input is finished; it
+    // would be cleaner not to have it, but it's only a cosmetic issue.
+    const char *const input[] = {
+        "resname RA"
+    };
+    helper_.setLastNewline(false);
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesEmptySelections)
+{
+    const char *const input[] = {
+        "resname RA;",
+        "; resname RB;;",
+        " ",
+        ";"
+    };
+    runTest(-1, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesMultipleSelectionsOnLine)
+{
+    const char *const input[] = {
+        "resname RA; resname RB and \\",
+        "resname RC"
+    };
+    runTest(2, true, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesNoninteractiveInput)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "resname RB",
+        "\"Name\" resname RC"
+    };
+    runTest(-1, false, input);
+}
+
+TEST_F(SelectionCollectionInteractiveTest, HandlesSingleSelectionInputNoninteractively)
+{
+    const char *const input[] = {
+        "foo = resname RA",
+        "resname RA"
+    };
+    runTest(1, false, input);
+}
+
 
 /********************************************************************
  * Tests for selection keywords
@@ -972,7 +1150,12 @@ TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelections)
         "group \"GrpA\"",
         "GrpB",
         "1",
-        "group \"GrpB\" and resname RB"
+        // These test that the name of the group is not too eagerly promoted to
+        // the name of the selection.
+        "group \"GrpB\" and resname RB",
+        "group \"GrpA\" permute 5 3 2 1 4",
+        "group \"GrpA\" plus group \"GrpB\"",
+        "res_cog of group \"GrpA\""
     };
     setFlags(TestFlags() | efTestSelectionNames);
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
@@ -1061,6 +1244,32 @@ TEST_F(SelectionCollectionDataTest, HandlesWithinConstantPositions)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesOverlappingIntegerRanges)
+{
+    static const char * const selections[] = {
+        "atomnr 2 to 4 5 to 8",
+        "atomnr 2 to 5 4 to 7"
+    };
+    ASSERT_NO_FATAL_FAILURE(runTest(10, selections));
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesOverlappingRealRanges)
+{
+    static const char * const selections[] = {
+        "charge {-0.35 to -0.05 0.25 to 0.75}",
+        "charge {0.05 to -0.3 -0.05 to 0.55}"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    for (int i = 0; i < top_->atoms.nr; ++i)
+    {
+        top_->atoms.atom[i].q = i / 10.0 - 0.5;
+    }
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesForcedStringMatchingMode)
 {
     static const char * const selections[] = {
@@ -1123,6 +1332,16 @@ TEST_F(SelectionCollectionDataTest, HandlesEmptySelectionWithUnevaluatedExpressi
     static const char * const selections[] = {
         "none and x > 2",
         "none and same resname as resnr 2"
+    };
+    runTest("simple.gro", selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesEmptyReferenceForSame)
+{
+    static const char * const selections[] = {
+        "same residue as none",
+        "same resname as none"
     };
     runTest("simple.gro", selections);
 }

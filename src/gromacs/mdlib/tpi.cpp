@@ -46,7 +46,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
@@ -70,10 +69,10 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -123,7 +122,6 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
               gmx_membed_t gmx_unused membed,
               real gmx_unused cpt_period, real gmx_unused max_hours,
-              const char gmx_unused *deviceOptions,
               int gmx_unused imdport,
               unsigned long gmx_unused Flags,
               gmx_walltime_accounting_t walltime_accounting)
@@ -465,11 +463,6 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             gmx_fatal(FARGS, "Unknown integrator %s", ei_names[inputrec->eI]);
     }
 
-#ifdef GMX_SIMD
-    /* Make sure we don't detect SIMD overflow generated before this point */
-    gmx_simd_check_and_reset_overflow();
-#endif
-
     while (bNotLastFrame)
     {
         frame_step      = rerun_fr.step;
@@ -669,17 +662,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
             epot               = enerd->term[F_EPOT];
             bEnergyOutOfBounds = FALSE;
-#ifdef GMX_SIMD_X86_SSE2_OR_HIGHER
-            /* With SSE the energy can overflow, check for this */
-            if (gmx_simd_check_and_reset_overflow())
-            {
-                if (debug)
-                {
-                    fprintf(debug, "Found an SSE overflow, assuming the energy is out of bounds\n");
-                }
-                bEnergyOutOfBounds = TRUE;
-            }
-#endif
+
             /* If the compiler doesn't optimize this check away
              * we catch the NAN energies.
              * The epot>GMX_REAL_MAX check catches inf values,

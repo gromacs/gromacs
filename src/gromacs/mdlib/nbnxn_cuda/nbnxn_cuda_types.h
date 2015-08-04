@@ -50,7 +50,6 @@
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
 #ifndef HAVE_CUDA_TEXOBJ_SUPPORT
@@ -227,32 +226,34 @@ struct cu_timers
 /** \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
-struct nbnxn_cuda
+struct gmx_nbnxn_cuda_t
 {
-    cuda_dev_info_t *dev_info;       /**< CUDA device information                              */
-    bool             bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
-    bool             bUseStreamSync; /**< true if the standard cudaStreamSynchronize is used
-                                          and not memory polling-based waiting                 */
-    cu_atomdata_t   *atdat;          /**< atom data                                            */
-    cu_nbparam_t    *nbparam;        /**< parameters required for the non-bonded calc.         */
-    cu_plist_t      *plist[2];       /**< pair-list data structures (local and non-local)      */
-    nb_staging_t     nbst;           /**< staging area where fshift/energies get downloaded    */
+    struct gmx_device_info_t *dev_info;       /**< CUDA device information                              */
+    bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
+    bool                      bUseStreamSync; /**< true if the standard cudaStreamSynchronize is used
+                                                   and not memory polling-based waiting                 */
+    cu_atomdata_t            *atdat;          /**< atom data                                            */
+    cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
+    cu_plist_t               *plist[2];       /**< pair-list data structures (local and non-local)      */
+    nb_staging_t              nbst;           /**< staging area where fshift/energies get downloaded    */
 
-    cudaStream_t     stream[2];      /**< local and non-local GPU streams                      */
+    cudaStream_t              stream[2];      /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
-    cudaEvent_t    nonlocal_done;    /**< event triggered when the non-local non-bonded kernel
-                                        is done (and the local transfer can proceed)           */
-    cudaEvent_t    misc_ops_done;    /**< event triggered when the operations that precede the
-                                          main force calculations are done (e.g. buffer 0-ing) */
+    cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
+                                                   is done (and the local transfer can proceed)           */
+    cudaEvent_t    misc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
+                                                   the local stream that need to precede the
+                                                   non-local force calculations are done
+                                                   (e.g. f buffer 0-ing, local x/q H2D) */
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
      * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
-    bool             bDoTime;       /**< True if event-based timing is enabled.               */
-    cu_timers_t     *timers;        /**< CUDA event-based timers.                             */
-    wallclock_gpu_t *timings;       /**< Timing data.                                         */
+    bool                 bDoTime;   /**< True if event-based timing is enabled.               */
+    cu_timers_t         *timers;    /**< CUDA event-based timers.                             */
+    gmx_wallclock_gpu_t *timings;   /**< Timing data.                                         */
 };
 
 #ifdef __cplusplus

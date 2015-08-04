@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,9 +59,9 @@
 #include "gromacs/options/optionsvisitor.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
@@ -107,7 +107,7 @@ class OptionsListWriter : public OptionsVisitor
 class OptionCompletionWriter : public OptionsVisitor
 {
     public:
-        explicit OptionCompletionWriter(File *out) : out_(*out) {}
+        explicit OptionCompletionWriter(TextWriter *out) : out_(*out) {}
 
         virtual void visitSubSection(const Options &section)
         {
@@ -121,7 +121,7 @@ class OptionCompletionWriter : public OptionsVisitor
         void writeOptionCompletion(const OptionInfo  &option,
                                    const std::string &completion);
 
-        File &out_;
+        TextWriter &out_;
 };
 
 void OptionCompletionWriter::visitOption(const OptionInfo &option)
@@ -196,8 +196,8 @@ class ShellCompletionWriter::Impl
             return formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
         }
 
-        std::string             binaryName_;
-        boost::scoped_ptr<File> file_;
+        std::string                   binaryName_;
+        boost::scoped_ptr<TextWriter> file_;
 };
 
 ShellCompletionWriter::ShellCompletionWriter(const std::string     &binaryName,
@@ -210,22 +210,21 @@ ShellCompletionWriter::~ShellCompletionWriter()
 {
 }
 
-File *ShellCompletionWriter::outputFile()
+TextOutputStream &ShellCompletionWriter::outputStream()
 {
-    return impl_->file_.get();
+    return impl_->file_->stream();
 }
 
 void ShellCompletionWriter::startCompletions()
 {
-    impl_->file_.reset(new File(impl_->binaryName_ + "-completion.bash", "w"));
-    impl_->file_->writeLine("shopt -s extglob");
+    impl_->file_.reset(new TextWriter(impl_->binaryName_ + "-completion.bash"));
 }
 
 void ShellCompletionWriter::writeModuleCompletions(
         const char    *moduleName,
         const Options &options)
 {
-    File &out = *impl_->file_;
+    TextWriter &out = *impl_->file_;
     out.writeLine(formatString("%s() {", impl_->completionFunctionName(moduleName).c_str()));
     out.writeLine("local IFS=$'\\n'");
     out.writeLine("local c=${COMP_WORDS[COMP_CWORD]}");

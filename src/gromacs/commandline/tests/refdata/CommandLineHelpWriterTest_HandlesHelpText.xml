@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="HelpText"><![CDATA[
+SYNOPSIS
+
+gmx [-int <int>]
+
+DESCRIPTION
+
+Help text for testing.
+
+OPTIONS
+
+Other options:
+
+ -int    <int>              (2)
+           Integer option
+
+]]></String>
+</ReferenceData>

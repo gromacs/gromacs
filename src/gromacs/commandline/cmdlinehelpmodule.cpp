@@ -57,12 +57,18 @@
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/fileredirector.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "shellcompletions.h"
 
@@ -71,7 +77,7 @@ namespace gmx
 
 namespace
 {
-class HelpExportInterface;
+class IHelpExport;
 class RootHelpTopic;
 }   // namespace
 
@@ -82,24 +88,24 @@ class RootHelpTopic;
 class CommandLineHelpModuleImpl
 {
     public:
-        CommandLineHelpModuleImpl(const ProgramContextInterface    &programContext,
+        CommandLineHelpModuleImpl(const IProgramContext            &programContext,
                                   const std::string                &binaryName,
                                   const CommandLineModuleMap       &modules,
                                   const CommandLineModuleGroupList &groups);
 
-        void exportHelp(HelpExportInterface *exporter) const;
+        void exportHelp(IHelpExport *exporter);
 
         boost::scoped_ptr<RootHelpTopic>  rootTopic_;
-        const ProgramContextInterface    &programContext_;
+        const IProgramContext            &programContext_;
         std::string                       binaryName_;
         const CommandLineModuleMap       &modules_;
         const CommandLineModuleGroupList &groups_;
 
         CommandLineHelpContext           *context_;
-        const CommandLineModuleInterface *moduleOverride_;
+        const ICommandLineModule         *moduleOverride_;
         bool                              bHidden_;
 
-        File                             *outputOverride_;
+        IFileOutputRedirector            *outputRedirector_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModuleImpl);
 };
@@ -108,27 +114,108 @@ namespace
 {
 
 /********************************************************************
+ * IHelpExport
+ */
+
+/*! \brief
+ * Callbacks for exporting help information for command-line modules.
+ *
+ * \ingroup module_commandline
+ */
+class IHelpExport
+{
+    public:
+        //! Shorthand for a list of modules contained in a group.
+        typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
+
+        virtual ~IHelpExport() {};
+
+        /*! \brief
+         * Called once before exporting individual modules.
+         *
+         * Can, e.g., open shared output files (e.g., if the output is written
+         * into a single file, or if a separate index is required) and write
+         * headers into them.
+         */
+        virtual void startModuleExport() = 0;
+        /*! \brief
+         * Called to export the help for each module.
+         *
+         * \param[in] module      Module for which the help should be exported.
+         * \param[in] tag         Unique tag for the module (gmx-something).
+         * \param[in] displayName Display name for the module (gmx something).
+         */
+        virtual void exportModuleHelp(
+            const ICommandLineModule         &module,
+            const std::string                &tag,
+            const std::string                &displayName) = 0;
+        /*! \brief
+         * Called after all modules have been exported.
+         *
+         * Can close files opened in startModuleExport(), write footers to them
+         * etc.
+         */
+        virtual void finishModuleExport() = 0;
+
+        /*! \brief
+         * Called once before exporting module groups.
+         *
+         * Can, e.g., open a single output file for listing all the groups.
+         */
+        virtual void startModuleGroupExport() = 0;
+        /*! \brief
+         * Called to export the help for each module group.
+         *
+         * \param[in] title    Title for the group.
+         * \param[in] modules  List of modules in the group.
+         */
+        virtual void exportModuleGroup(const char                *title,
+                                       const ModuleGroupContents &modules) = 0;
+        /*! \brief
+         * Called after all module groups have been exported.
+         *
+         * Can close files opened in startModuleGroupExport(), write footers to them
+         * etc.
+         */
+        virtual void finishModuleGroupExport() = 0;
+
+        /*! \brief
+         * Called to export the help for a top-level topic.
+         *
+         * \param[in] topic   Topic to export.
+         */
+        virtual void exportTopic(const IHelpTopic &topic) = 0;
+};
+
+/********************************************************************
  * RootHelpTopic
  */
 
 struct RootHelpText
 {
-    static const char        name[];
     static const char        title[];
     static const char *const text[];
 };
 
-// The first two are not used.
-const char        RootHelpText::name[]  = "";
-const char        RootHelpText::title[] = "";
-const char *const RootHelpText::text[]  = { "" };
+// These are used for the gmx.1 man page.
+// TODO: Do not hardcode them here, but pass them from the outside to make this
+// code more generic.
+const char        RootHelpText::title[] = "molecular dynamics simulation suite";
+const char *const RootHelpText::text[]  = {
+    "|Gromacs| is a full-featured suite of programs to perform molecular",
+    "dynamics simulations, i.e., to simulate the behavior of systems with",
+    "hundreds to millions of particles using Newtonian equations of motion.",
+    "It is primarily used for research on proteins, lipids, and polymers, but",
+    "can be applied to a wide variety of chemical and biological research",
+    "questions.",
+};
 
 /*! \brief
  * Help topic that forms the root of the help tree for the help subcommand.
  *
  * \ingroup module_commandline
  */
-class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
+class RootHelpTopic : public AbstractCompositeHelpTopic
 {
     public:
         /*! \brief
@@ -141,38 +228,98 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
         {
         }
 
+        virtual const char *name() const { return helpModule_.binaryName_.c_str(); }
+        virtual const char *title() const { return title_.c_str(); }
+
+        //! Adds a top-level topic and optionally marks it as exported.
+        void addTopic(HelpTopicPointer topic, bool bExported)
+        {
+            if (bExported)
+            {
+                exportedTopics_.push_back(topic->name());
+            }
+            addSubTopic(move(topic));
+        }
+        //! Exports all the top-level topics with the given exporter.
+        void exportHelp(IHelpExport *exporter);
+
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
+        // unused because of the writeHelp() override
+        virtual std::string helpText() const { return ""; }
+
         const CommandLineHelpModuleImpl  &helpModule_;
+        std::string                       title_;
+        std::vector<std::string>          exportedTopics_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
 
+void RootHelpTopic::exportHelp(IHelpExport *exporter)
+{
+    std::vector<std::string>::const_iterator topicName;
+    for (topicName = exportedTopics_.begin();
+         topicName != exportedTopics_.end();
+         ++topicName)
+    {
+        const IHelpTopic *topic = findSubTopic(topicName->c_str());
+        GMX_RELEASE_ASSERT(topic != NULL, "Exported help topic no longer found");
+        exporter->exportTopic(*topic);
+    }
+    // For now, the title is only set for the export to make it not appear in
+    // console output, which makes things consistent for 'gmx help' and
+    // 'gmx help <command>'.
+    title_ = RootHelpText::title;
+    exporter->exportTopic(*this);
+}
+
 void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    if (context.outputFormat() != eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "Root help is not implemented for this output format"));
-    }
-    {
-        CommandLineCommonOptionsHolder optionsHolder;
-        CommandLineHelpContext         cmdlineContext(*helpModule_.context_);
-        cmdlineContext.setModuleDisplayName(helpModule_.binaryName_);
+        CommandLineCommonOptionsHolder            optionsHolder;
+        boost::scoped_ptr<CommandLineHelpContext> cmdlineContext;
+        if (helpModule_.context_ != NULL)
+        {
+            cmdlineContext.reset(new CommandLineHelpContext(*helpModule_.context_));
+        }
+        else
+        {
+            cmdlineContext.reset(new CommandLineHelpContext(context));
+        }
+        cmdlineContext->setModuleDisplayName(helpModule_.binaryName_);
         optionsHolder.initOptions();
+        Options                    &options = *optionsHolder.options();
+        ConstArrayRef<const char *> helpText;
+        if (context.outputFormat() != eHelpOutputFormat_Console)
+        {
+            helpText = RootHelpText::text;
+        }
         // TODO: Add <command> [<args>] into the synopsis.
-        CommandLineHelpWriter(*optionsHolder.options())
-            .writeHelp(cmdlineContext);
+        CommandLineHelpWriter(options)
+            .setHelpText(helpText)
+            .writeHelp(*cmdlineContext);
     }
-    // TODO: Consider printing a list of "core" commands. Would require someone
-    // to determine such a set...
-    writeSubTopicList(context,
-                      "Additional help is available on the following topics:");
-    context.writeTextBlock("To access the help, use '[PROGRAM] help <topic>'.");
-    context.writeTextBlock("For help on a command, use '[PROGRAM] help <command>'.");
+    if (context.outputFormat() == eHelpOutputFormat_Console)
+    {
+        // TODO: Consider printing a list of "core" commands. Would require someone
+        // to determine such a set...
+        writeSubTopicList(context,
+                          "Additional help is available on the following topics:");
+        context.writeTextBlock("To access the help, use '[PROGRAM] help <topic>'.");
+        context.writeTextBlock("For help on a command, use '[PROGRAM] help <command>'.");
+    }
+    else
+    {
+        // TODO: This should not really end up on the HTML page.
+        context.writeTitle(formatString("%s commands", helpModule_.binaryName_.c_str()));
+        context.writeTextBlock(
+                "The following commands are available. Please refer to their "
+                "individual man pages or [TT][PROGRAM] help <command>[tt] "
+                "for further details.");
+        context.writeTextBlock("");
+        context.writeTextBlock(".. include:: /fragments/bytopic-man.rst");
+    }
 }
 
 /********************************************************************
@@ -184,7 +331,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
  *
  * \ingroup module_commandline
  */
-class CommandsHelpTopic : public HelpTopicInterface
+class CommandsHelpTopic : public IHelpTopic
 {
     public:
         /*! \brief
@@ -202,7 +349,7 @@ class CommandsHelpTopic : public HelpTopicInterface
         virtual const char *name() const { return "commands"; }
         virtual const char *title() const { return "List of available commands"; }
         virtual bool hasSubTopics() const { return false; }
-        virtual const HelpTopicInterface *findSubTopic(const char * /*name*/) const
+        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
         {
             return NULL;
         }
@@ -237,7 +384,7 @@ void CommandsHelpTopic::writeHelp(const HelpWriterContext &context) const
     context.writeTextBlock(
             "Usage: [PROGRAM] [<options>] <command> [<args>][PAR]"
             "Available commands:");
-    File              &file = context.outputFile();
+    TextWriter        &file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(NULL, maxNameLength + 1, false);
     formatter.addColumn(NULL, 72 - maxNameLength, true);
@@ -265,17 +412,17 @@ void CommandsHelpTopic::writeHelp(const HelpWriterContext &context) const
 /*! \brief
  * Help topic wrapper for a command-line module.
  *
- * This class implements HelpTopicInterface such that it wraps a
- * CommandLineModuleInterface, allowing subcommand "help <command>"
+ * This class implements IHelpTopic such that it wraps a
+ * ICommandLineModule, allowing subcommand "help <command>"
  * to produce the help for "<command>".
  *
  * \ingroup module_commandline
  */
-class ModuleHelpTopic : public HelpTopicInterface
+class ModuleHelpTopic : public IHelpTopic
 {
     public:
         //! Constructs a help topic for a specific module.
-        ModuleHelpTopic(const CommandLineModuleInterface &module,
+        ModuleHelpTopic(const ICommandLineModule         &module,
                         const CommandLineHelpModuleImpl  &helpModule)
             : module_(module), helpModule_(helpModule)
         {
@@ -284,14 +431,14 @@ class ModuleHelpTopic : public HelpTopicInterface
         virtual const char *name() const { return module_.name(); }
         virtual const char *title() const { return NULL; }
         virtual bool hasSubTopics() const { return false; }
-        virtual const HelpTopicInterface *findSubTopic(const char * /*name*/) const
+        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
         {
             return NULL;
         }
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
-        const CommandLineModuleInterface &module_;
+        const ICommandLineModule         &module_;
         const CommandLineHelpModuleImpl  &helpModule_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(ModuleHelpTopic);
@@ -306,71 +453,8 @@ void ModuleHelpTopic::writeHelp(const HelpWriterContext & /*context*/) const
 }
 
 /********************************************************************
- * HelpExportInterface
+ * HelpExportReStructuredText
  */
-
-/*! \brief
- * Callbacks for exporting help information for command-line modules.
- *
- * \ingroup module_commandline
- */
-class HelpExportInterface
-{
-    public:
-        //! Shorthand for a list of modules contained in a group.
-        typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
-
-        virtual ~HelpExportInterface() {};
-
-        /*! \brief
-         * Called once before exporting individual modules.
-         *
-         * Can, e.g., open shared output files (e.g., if the output is written
-         * into a single file, or if a separate index is required) and write
-         * headers into them.
-         */
-        virtual void startModuleExport() = 0;
-        /*! \brief
-         * Called to export the help for each module.
-         *
-         * \param[in] module      Module for which the help should be exported.
-         * \param[in] tag         Unique tag for the module (gmx-something).
-         * \param[in] displayName Display name for the module (gmx something).
-         */
-        virtual void exportModuleHelp(
-            const CommandLineModuleInterface &module,
-            const std::string                &tag,
-            const std::string                &displayName) = 0;
-        /*! \brief
-         * Called after all modules have been exported.
-         *
-         * Can close files opened in startModuleExport(), write footers to them
-         * etc.
-         */
-        virtual void finishModuleExport() = 0;
-
-        /*! \brief
-         * Called once before exporting module groups.
-         *
-         * Can, e.g., open a single output file for listing all the groups.
-         */
-        virtual void startModuleGroupExport() = 0;
-        /*! \brief
-         * Called to export the help for each module group.
-         *
-         * \param[in] title    Title for the group.
-         * \param[in] modules  List of modules in the group.
-         */
-        virtual void exportModuleGroup(const char                *title,
-                                       const ModuleGroupContents &modules) = 0;
-        /*! \brief
-         * Called after all module groups have been exported.
-         *
-         * Can close files opened in startModuleGroupExport(), write footers to them
-         * etc.
-         */
-        virtual void finishModuleGroupExport() = 0;
-};
 
 /*! \internal \brief
  * Adds hyperlinks to modules within this binary.
@@ -405,25 +489,22 @@ void initProgramLinks(HelpLinks *links, const CommandLineHelpModuleImpl &helpMod
     }
 }
 
-/********************************************************************
- * HelpExportReStructuredText
- */
-
 /*! \internal \brief
  * Implements export for web pages as reStructuredText.
  *
  * \ingroup module_commandline
  */
-class HelpExportReStructuredText : public HelpExportInterface
+class HelpExportReStructuredText : public IHelpExport
 {
     public:
         //! Initializes reST exporter.
-        explicit HelpExportReStructuredText(
-            const CommandLineHelpModuleImpl &helpModule);
+        HelpExportReStructuredText(
+            const CommandLineHelpModuleImpl &helpModule,
+            IFileOutputRedirector           *outputRedirector);
 
         virtual void startModuleExport();
         virtual void exportModuleHelp(
-            const CommandLineModuleInterface &module,
+            const ICommandLineModule         &module,
             const std::string                &tag,
             const std::string                &displayName);
         virtual void finishModuleExport();
@@ -433,19 +514,26 @@ class HelpExportReStructuredText : public HelpExportInterface
                                        const ModuleGroupContents &modules);
         virtual void finishModuleGroupExport();
 
+        virtual void exportTopic(const IHelpTopic &topic);
+
     private:
-        HelpLinks                links_;
-        boost::scoped_ptr<File>  indexFile_;
-        boost::scoped_ptr<File>  manPagesFile_;
+        IFileOutputRedirector          *outputRedirector_;
+        const std::string              &binaryName_;
+        HelpLinks                       links_;
+        boost::scoped_ptr<TextWriter>   indexFile_;
+        boost::scoped_ptr<TextWriter>   manPagesFile_;
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(
-        const CommandLineHelpModuleImpl &helpModule)
-    : links_(eHelpOutputFormat_Rst)
+        const CommandLineHelpModuleImpl &helpModule,
+        IFileOutputRedirector           *outputRedirector)
+    : outputRedirector_(outputRedirector),
+      binaryName_(helpModule.binaryName_),
+      links_(eHelpOutputFormat_Rst)
 {
-    File             linksFile("links.dat", "r");
-    std::string      line;
-    while (linksFile.readLine(&line))
+    TextReader   linksFile("links.dat");
+    std::string  line;
+    while (linksFile.readLineTrimmed(&line))
     {
         links_.addLink("[REF]." + line + "[ref]",
                        formatString(":ref:`.%s <%s>`", line.c_str(), line.c_str()),
@@ -458,51 +546,56 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 
 void HelpExportReStructuredText::startModuleExport()
 {
-    indexFile_.reset(new File("programs/byname.rst", "w"));
-    indexFile_->writeLine("Tools by Name");
-    indexFile_->writeLine("=============");
-    manPagesFile_.reset(new File("conf-man.py", "w"));
+    indexFile_.reset(
+            new TextWriter(
+                    outputRedirector_->openTextOutputFile("fragments/byname.rst")));
+    indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
+                                       binaryName_.c_str(), binaryName_.c_str(),
+                                       RootHelpText::title));
+    manPagesFile_.reset(
+            new TextWriter(
+                    outputRedirector_->openTextOutputFile("conf-man.py")));
     manPagesFile_->writeLine("man_pages = [");
 }
 
 void HelpExportReStructuredText::exportModuleHelp(
-        const CommandLineModuleInterface &module,
+        const ICommandLineModule         &module,
         const std::string                &tag,
         const std::string                &displayName)
 {
-    // TODO: Ideally, the file would only be touched if it really changes.
-    // This would make Sphinx reruns much faster.
-    File file("programs/" + tag + ".rst", "w");
-    file.writeLine(formatString(".. _%s:", displayName.c_str()));
-    if (0 == displayName.compare("gmx mdrun"))
+    TextOutputStreamPointer file
+        = outputRedirector_->openTextOutputFile("onlinehelp/" + tag + ".rst");
+    TextWriter              writer(file);
+    writer.writeLine(formatString(".. _%s:", displayName.c_str()));
+    if (0 == displayName.compare(binaryName_ + " mdrun"))
     {
         // Make an extra link target for the convenience of
         // MPI-specific documentation
-        file.writeLine(".. _mdrun_mpi:");
+        writer.writeLine(".. _mdrun_mpi:");
     }
-    file.writeLine();
-    file.writeLine(displayName);
-    file.writeLine(std::string(displayName.length(), '='));
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Rst, &links_);
+    writer.writeLine();
+
+    CommandLineHelpContext context(file.get(), eHelpOutputFormat_Rst, &links_, binaryName_);
+    context.enterSubSection(displayName);
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
 
-    file.writeLine();
-    file.writeLine(".. only:: man");
-    file.writeLine();
-    file.writeLine("   See also");
-    file.writeLine("   --------");
-    file.writeLine();
-    file.writeLine("   :manpage:`gromacs(7)`");
-    file.writeLine();
-    file.writeLine("   More information about |Gromacs| is available at <http://www.gromacs.org/>.");
-    file.close();
+    writer.writeLine();
+    writer.writeLine(".. only:: man");
+    writer.writeLine();
+    writer.writeLine("   See also");
+    writer.writeLine("   --------");
+    writer.writeLine();
+    writer.writeLine(formatString("   :manpage:`%s(1)`", binaryName_.c_str()));
+    writer.writeLine();
+    writer.writeLine("   More information about |Gromacs| is available at <http://www.gromacs.org/>.");
+    file->close();
 
-    indexFile_->writeLine(formatString("* :doc:`%s <%s>` - %s",
+    indexFile_->writeLine(formatString("* :doc:`%s </onlinehelp/%s>` - %s",
                                        displayName.c_str(), tag.c_str(),
                                        module.shortDescription()));
     manPagesFile_->writeLine(
-            formatString("    ('programs/%s', '%s', \"%s\", '', 1),",
+            formatString("    ('onlinehelp/%s', '%s', \"%s\", '', 1),",
                          tag.c_str(), tag.c_str(), module.shortDescription()));
 }
 
@@ -510,7 +603,11 @@ void HelpExportReStructuredText::finishModuleExport()
 {
     indexFile_->close();
     indexFile_.reset();
-    manPagesFile_->writeLine("    ('man/gromacs.7', 'gromacs', 'molecular dynamics simulation suite', '', 7)");
+    // TODO: Generalize.
+    manPagesFile_->writeLine(
+            formatString("    ('onlinehelp/%s', '%s', '%s', '', 1)",
+                         binaryName_.c_str(), binaryName_.c_str(),
+                         RootHelpText::title));
     manPagesFile_->writeLine("]");
     manPagesFile_->close();
     manPagesFile_.reset();
@@ -518,10 +615,12 @@ void HelpExportReStructuredText::finishModuleExport()
 
 void HelpExportReStructuredText::startModuleGroupExport()
 {
-    indexFile_.reset(new File("programs/bytopic.rst", "w"));
-    indexFile_->writeLine("Tools by Topic");
-    indexFile_->writeLine("==============");
-    manPagesFile_.reset(new File("man/bytopic.rst", "w"));
+    indexFile_.reset(
+            new TextWriter(
+                    outputRedirector_->openTextOutputFile("fragments/bytopic.rst")));
+    manPagesFile_.reset(
+            new TextWriter(
+                    outputRedirector_->openTextOutputFile("fragments/bytopic-man.rst")));
 }
 
 void HelpExportReStructuredText::exportModuleGroup(
@@ -529,9 +628,9 @@ void HelpExportReStructuredText::exportModuleGroup(
         const ModuleGroupContents &modules)
 {
     indexFile_->writeLine(title);
-    indexFile_->writeLine(std::string(std::strlen(title), '-'));
+    indexFile_->writeLine(std::string(std::strlen(title), '^'));
     manPagesFile_->writeLine(title);
-    manPagesFile_->writeLine(std::string(std::strlen(title), '+'));
+    manPagesFile_->writeLine(std::string(std::strlen(title), '^'));
 
     ModuleGroupContents::const_iterator module;
     for (module = modules.begin(); module != modules.end(); ++module)
@@ -544,11 +643,11 @@ void HelpExportReStructuredText::exportModuleGroup(
         GMX_RELEASE_ASSERT(dashPos != std::string::npos,
                            "There should always be at least one dash in the tag");
         displayName[dashPos] = ' ';
-        indexFile_->writeLine(formatString("| :doc:`%s <%s>` - %s",
+        indexFile_->writeLine(formatString(":doc:`%s </onlinehelp/%s>`\n  %s",
                                            displayName.c_str(), tag.c_str(),
                                            module->second));
-        manPagesFile_->writeLine(formatString("| ``%s`` - %s",
-                                              displayName.c_str(),
+        manPagesFile_->writeLine(formatString(":manpage:`%s(1)`\n  %s",
+                                              tag.c_str(),
                                               module->second));
     }
     indexFile_->writeLine();
@@ -563,6 +662,17 @@ void HelpExportReStructuredText::finishModuleGroupExport()
     manPagesFile_.reset();
 }
 
+void HelpExportReStructuredText::exportTopic(const IHelpTopic &topic)
+{
+    const std::string       path("onlinehelp/" + std::string(topic.name()) + ".rst");
+    TextOutputStreamPointer file(outputRedirector_->openTextOutputFile(path));
+    CommandLineHelpContext  context(file.get(), eHelpOutputFormat_Rst, &links_,
+                                    binaryName_);
+    HelpManager             manager(topic, context.writerContext());
+    manager.writeCurrentTopic();
+    file->close();
+}
+
 /********************************************************************
  * HelpExportCompletion
  */
@@ -572,7 +682,7 @@ void HelpExportReStructuredText::finishModuleGroupExport()
  *
  * \ingroup module_commandline
  */
-class HelpExportCompletion : public HelpExportInterface
+class HelpExportCompletion : public IHelpExport
 {
     public:
         //! Initializes completion exporter.
@@ -580,7 +690,7 @@ class HelpExportCompletion : public HelpExportInterface
 
         virtual void startModuleExport();
         virtual void exportModuleHelp(
-            const CommandLineModuleInterface &module,
+            const ICommandLineModule         &module,
             const std::string                &tag,
             const std::string                &displayName);
         virtual void finishModuleExport();
@@ -589,6 +699,8 @@ class HelpExportCompletion : public HelpExportInterface
         virtual void exportModuleGroup(const char                * /*title*/,
                                        const ModuleGroupContents & /*modules*/) {}
         virtual void finishModuleGroupExport() {}
+
+        virtual void exportTopic(const IHelpTopic & /*topic*/) {}
 
     private:
         ShellCompletionWriter    bashWriter_;
@@ -607,7 +719,7 @@ void HelpExportCompletion::startModuleExport()
 }
 
 void HelpExportCompletion::exportModuleHelp(
-        const CommandLineModuleInterface &module,
+        const ICommandLineModule         &module,
         const std::string                 & /*tag*/,
         const std::string                 & /*displayName*/)
 {
@@ -634,19 +746,20 @@ void HelpExportCompletion::finishModuleExport()
 /********************************************************************
  * CommandLineHelpModuleImpl implementation
  */
+
 CommandLineHelpModuleImpl::CommandLineHelpModuleImpl(
-        const ProgramContextInterface    &programContext,
+        const IProgramContext            &programContext,
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
     : rootTopic_(new RootHelpTopic(*this)), programContext_(programContext),
       binaryName_(binaryName), modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false),
-      outputOverride_(NULL)
+      outputRedirector_(&defaultFileOutputRedirector())
 {
 }
 
-void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter) const
+void CommandLineHelpModuleImpl::exportHelp(IHelpExport *exporter)
 {
     // TODO: Would be nicer to have the file names supplied by the build system
     // and/or export a list of files from here.
@@ -673,14 +786,86 @@ void CommandLineHelpModuleImpl::exportHelp(HelpExportInterface *exporter) const
         exporter->exportModuleGroup((*group)->title(), (*group)->modules());
     }
     exporter->finishModuleGroupExport();
+
+    rootTopic_->exportHelp(exporter);
 }
+
+namespace
+{
+
+/********************************************************************
+ * ModificationCheckingFileOutputStream
+ */
+
+class ModificationCheckingFileOutputStream : public TextOutputStream
+{
+    public:
+        ModificationCheckingFileOutputStream(
+            const char                    *path,
+            IFileOutputRedirector         *redirector)
+            : path_(path), redirector_(redirector)
+        {
+        }
+
+        virtual void write(const char *str) { contents_.write(str); }
+        virtual void close()
+        {
+            const std::string &newContents = contents_.toString();
+            // TODO: Redirect these for unit tests.
+            if (File::exists(path_))
+            {
+                const std::string originalContents_
+                    = TextReader::readFileToString(path_);
+                if (originalContents_ == newContents)
+                {
+                    return;
+                }
+            }
+            TextWriter writer(redirector_->openTextOutputFile(path_));
+            writer.writeString(newContents);
+        }
+
+    private:
+        std::string                     path_;
+        StringOutputStream              contents_;
+        IFileOutputRedirector          *redirector_;
+};
+
+/********************************************************************
+ * ModificationCheckingFileOutputRedirector
+ */
+
+class ModificationCheckingFileOutputRedirector : public IFileOutputRedirector
+{
+    public:
+        explicit ModificationCheckingFileOutputRedirector(
+            IFileOutputRedirector *redirector)
+            : redirector_(redirector)
+        {
+        }
+
+        virtual TextOutputStream &standardOutput()
+        {
+            return redirector_->standardOutput();
+        }
+        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
+        {
+            return TextOutputStreamPointer(
+                    new ModificationCheckingFileOutputStream(filename, redirector_));
+        }
+
+    private:
+        IFileOutputRedirector  *redirector_;
+};
+
+}   // namespace
 
 /********************************************************************
  * CommandLineHelpModule
  */
 
 CommandLineHelpModule::CommandLineHelpModule(
-        const ProgramContextInterface    &programContext,
+        const IProgramContext            &programContext,
         const std::string                &binaryName,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
@@ -693,14 +878,14 @@ CommandLineHelpModule::~CommandLineHelpModule()
 }
 
 HelpTopicPointer CommandLineHelpModule::createModuleHelpTopic(
-        const CommandLineModuleInterface &module) const
+        const ICommandLineModule &module) const
 {
     return HelpTopicPointer(new ModuleHelpTopic(module, *impl_));
 }
 
-void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
+void CommandLineHelpModule::addTopic(HelpTopicPointer topic, bool bExported)
 {
-    impl_->rootTopic_->addSubTopic(move(topic));
+    impl_->rootTopic_->addTopic(move(topic), bExported);
 }
 
 void CommandLineHelpModule::setShowHidden(bool bHidden)
@@ -709,20 +894,21 @@ void CommandLineHelpModule::setShowHidden(bool bHidden)
 }
 
 void CommandLineHelpModule::setModuleOverride(
-        const CommandLineModuleInterface &module)
+        const ICommandLineModule &module)
 {
     impl_->moduleOverride_ = &module;
 }
 
-void CommandLineHelpModule::setOutputRedirect(File *output)
+void CommandLineHelpModule::setOutputRedirector(
+        IFileOutputRedirector *output)
 {
-    impl_->outputOverride_ = output;
+    impl_->outputRedirector_ = output;
 }
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
     // Add internal topics lazily here.
-    addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)));
+    addTopic(HelpTopicPointer(new CommandsHelpTopic(*impl_)), false);
 
     const char *const exportFormats[] = { "rst", "completion" };
     std::string       exportFormat;
@@ -732,10 +918,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     CommandLineParser(&options).parse(&argc, argv);
     if (!exportFormat.empty())
     {
-        boost::scoped_ptr<HelpExportInterface> exporter;
+        ModificationCheckingFileOutputRedirector redirector(impl_->outputRedirector_);
+        boost::scoped_ptr<IHelpExport>           exporter;
         if (exportFormat == "rst")
         {
-            exporter.reset(new HelpExportReStructuredText(*impl_));
+            exporter.reset(new HelpExportReStructuredText(*impl_, &redirector));
         }
         else if (exportFormat == "completion")
         {
@@ -749,26 +936,21 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         return 0;
     }
 
-    File *outputFile = &File::standardOutput();
-    if (impl_->outputOverride_ != NULL)
-    {
-        outputFile = impl_->outputOverride_;
-    }
-    HelpLinks                                 links(eHelpOutputFormat_Console);
+    TextOutputStream      &outputFile = impl_->outputRedirector_->standardOutput();
+    HelpLinks              links(eHelpOutputFormat_Console);
     initProgramLinks(&links, *impl_);
-    boost::scoped_ptr<CommandLineHelpContext> context(
-            new CommandLineHelpContext(outputFile,
-                                       eHelpOutputFormat_Console, &links));
-    context->setShowHidden(impl_->bHidden_);
+    CommandLineHelpContext context(&outputFile, eHelpOutputFormat_Console, &links,
+                                   impl_->binaryName_);
+    context.setShowHidden(impl_->bHidden_);
     if (impl_->moduleOverride_ != NULL)
     {
-        context->setModuleDisplayName(impl_->programContext_.displayName());
-        impl_->moduleOverride_->writeHelp(*context);
+        context.setModuleDisplayName(impl_->programContext_.displayName());
+        impl_->moduleOverride_->writeHelp(context);
         return 0;
     }
-    impl_->context_ = context.get();
+    impl_->context_ = &context;
 
-    HelpManager helpManager(*impl_->rootTopic_, context->writerContext());
+    HelpManager helpManager(*impl_->rootTopic_, context.writerContext());
     try
     {
         for (int i = 1; i < argc; ++i)

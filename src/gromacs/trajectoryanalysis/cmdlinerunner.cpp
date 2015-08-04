@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "runnercommon.h"
@@ -111,19 +111,15 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     FileNameOptionManager  fileoptManager;
     SelectionOptionManager seloptManager(selections);
     Options                options(NULL, NULL);
-    Options                moduleOptions(module_->name(), module_->description());
-    Options                commonOptions("common", "Common analysis control");
-    Options                selectionOptions("selection", "Common selection control");
 
     options.addManager(&fileoptManager);
     options.addManager(&seloptManager);
-    options.addSubSection(&commonOptions);
-    options.addSubSection(&selectionOptions);
-    options.addSubSection(&moduleOptions);
+    IOptionsContainer &commonOptions = options.addGroup();
+    IOptionsContainer &moduleOptions = options.addGroup();
 
     module_->initOptions(&moduleOptions, settings);
     common->initOptions(&commonOptions);
-    selections->initOptions(&selectionOptions);
+    selections->initOptions(&commonOptions);
 
     {
         CommandLineParser  parser(&options);
@@ -134,12 +130,12 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         options.finish();
     }
 
-    common->optionsFinished(&commonOptions);
-    module_->optionsFinished(&moduleOptions, settings);
+    common->optionsFinished();
+    module_->optionsFinished(settings);
 
     common->initIndexGroups(selections, bUseDefaultGroups_);
 
-    const bool bInteractive = File::standardInput().isInteractive();
+    const bool bInteractive = StandardInputStream::instance().isInteractive();
     seloptManager.parseRequestedFromStdin(bInteractive);
     common->doneIndexGroups(selections);
 
@@ -259,21 +255,17 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
 
     SelectionOptionManager          seloptManager(&selections);
     Options                         options(NULL, NULL);
-    Options                         moduleOptions(impl_->module_->name(), impl_->module_->description());
-    Options                         commonOptions("common", "Common analysis control");
-    Options                         selectionOptions("selection", "Common selection control");
 
     options.addManager(&seloptManager);
-    options.addSubSection(&commonOptions);
-    options.addSubSection(&selectionOptions);
-    options.addSubSection(&moduleOptions);
+    IOptionsContainer &commonOptions = options.addGroup();
+    IOptionsContainer &moduleOptions = options.addGroup();
 
     impl_->module_->initOptions(&moduleOptions, &settings);
     common.initOptions(&commonOptions);
-    selections.initOptions(&selectionOptions);
+    selections.initOptions(&commonOptions);
 
     CommandLineHelpWriter(options)
-        .setShowDescriptions(true)
+        .setHelpText(settings.helpText())
         .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
         .writeHelp(context);
 }
@@ -285,7 +277,7 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
  * \ingroup module_trajectoryanalysis
  */
 class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
-    : public CommandLineModuleInterface
+    : public ICommandLineModule
 {
     public:
         /*! \brief

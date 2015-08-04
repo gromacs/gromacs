@@ -51,11 +51,14 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
+
+#include "rstparser.h"
 
 namespace gmx
 {
@@ -65,6 +68,9 @@ namespace
 
 //! \internal \addtogroup module_onlinehelp
 //! \{
+
+//! Characters used for reStructuredText title underlining.
+const char g_titleChars[] = "=-^*~+#'_.";
 
 struct t_sandr
 {
@@ -128,7 +134,6 @@ const t_sandr sandrTty[] = {
     { "[TANH]", "tanh(" },
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
-    { "[BR]", "\n"},
     { "[GRK]", "" },
     { "[grk]", "" }
 };
@@ -178,8 +183,6 @@ const t_sandr sandrRst[] = {
     { "[TANH]", "tanh(" },
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
-    // [BR] is fundamentally incompatible with rst
-    { "[BR]", "\n\n"},
     { "[GRK]", "" },
     { "[grk]", "" }
 };
@@ -212,10 +215,10 @@ std::string repall(const std::string &s, const t_sandr (&sa)[nsr])
  * Provides an interface that is used to implement different types of output
  * from HelpWriterContext::Impl::processMarkup().
  */
-class WrapperInterface
+class IWrapper
 {
     public:
-        virtual ~WrapperInterface() {}
+        virtual ~IWrapper() {}
 
         /*! \brief
          * Provides the wrapping settings.
@@ -232,7 +235,7 @@ class WrapperInterface
 /*! \brief
  * Wraps markup output into a single string.
  */
-class WrapperToString : public WrapperInterface
+class WrapperToString : public IWrapper
 {
     public:
         //! Creates a wrapper with the given settings.
@@ -260,7 +263,7 @@ class WrapperToString : public WrapperInterface
 /*! \brief
  * Wraps markup output into a vector of string (one line per element).
  */
-class WrapperToVector : public WrapperInterface
+class WrapperToVector : public IWrapper
 {
     public:
         //! Creates a wrapper with the given settings.
@@ -306,8 +309,7 @@ std::string toUpperCase(const std::string &text)
  * \param[in] text  Input text.
  * \returns   \p text with all sequences of more than two newlines replaced
  *     with just two newlines.
- *
- * Does not throw.
+ * \throws    std::bad_alloc if out of memory.
  */
 std::string removeExtraNewlinesRst(const std::string &text)
 {
@@ -432,21 +434,48 @@ class HelpWriterContext::Impl
          *
          * \ingroup module_onlinehelp
          */
-        struct SharedState
+        class SharedState
         {
-            //! Initializes the state with the given parameters.
-            SharedState(File *file, HelpOutputFormat format,
-                        const HelpLinks *links)
-                : file_(*file), format_(format), links_(links)
-            {
-            }
+            public:
+                //! Initializes the state with the given parameters.
+                SharedState(TextOutputStream *stream, HelpOutputFormat format,
+                            const HelpLinks *links)
+                    : file_(stream), format_(format), links_(links)
+                {
+                }
 
-            //! Output file to which the help is written.
-            File                   &file_;
-            //! Output format for the help output.
-            HelpOutputFormat        format_;
-            //! Links to use.
-            const HelpLinks        *links_;
+                /*! \brief
+                 * Returns a formatter for formatting options lists for console
+                 * output.
+                 *
+                 * The formatter is lazily initialized on first access.
+                 */
+                TextTableFormatter &consoleOptionsFormatter() const
+                {
+                    GMX_RELEASE_ASSERT(format_ == eHelpOutputFormat_Console,
+                                       "Accessing console formatter for non-console output");
+                    if (!consoleOptionsFormatter_)
+                    {
+                        consoleOptionsFormatter_.reset(new TextTableFormatter());
+                        consoleOptionsFormatter_->setFirstColumnIndent(1);
+                        consoleOptionsFormatter_->addColumn(NULL, 7, false);
+                        consoleOptionsFormatter_->addColumn(NULL, 18, false);
+                        consoleOptionsFormatter_->addColumn(NULL, 16, false);
+                        consoleOptionsFormatter_->addColumn(NULL, 28, false);
+                    }
+                    return *consoleOptionsFormatter_;
+                }
+
+                //! Writer for writing the help.
+                TextWriter              file_;
+                //! Output format for the help output.
+                HelpOutputFormat        format_;
+                //! Links to use.
+                const HelpLinks        *links_;
+
+            private:
+                //! Formatter for console output options.
+                mutable boost::scoped_ptr<TextTableFormatter> consoleOptionsFormatter_;
         };
 
         struct ReplaceItem
@@ -465,15 +494,12 @@ class HelpWriterContext::Impl
         //! Shorthand for a list of markup/other replacements.
         typedef std::vector<ReplaceItem> ReplaceList;
 
-        //! Initializes the context with the given state.
-        explicit Impl(const StatePointer &state)
-            : state_(state)
+        //! Initializes the context with the given state and section depth.
+        Impl(const StatePointer &state, int sectionDepth)
+            : state_(state), sectionDepth_(sectionDepth)
         {
-            initDefaultReplacements();
         }
 
-        //! Initializes default replacements for the chosen output format.
-        void initDefaultReplacements();
         //! Adds a new replacement.
         void addReplacement(const std::string &search,
                             const std::string &replace)
@@ -494,22 +520,18 @@ class HelpWriterContext::Impl
          * or providing an interface for the caller to retrieve the output.
          */
         void processMarkup(const std::string &text,
-                           WrapperInterface  *wrapper) const;
+                           IWrapper          *wrapper) const;
 
         //! Constant state shared by all child context objects.
         StatePointer            state_;
         //! List of markup/other replacements.
         ReplaceList             replacements_;
+        //! Number of subsections above this context.
+        int                     sectionDepth_;
 
     private:
         GMX_DISALLOW_ASSIGN(Impl);
 };
-
-void HelpWriterContext::Impl::initDefaultReplacements()
-{
-    const char *program = getProgramContext().programName();
-    addReplacement("[PROGRAM]", program);
-}
 
 std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) const
 {
@@ -527,7 +549,7 @@ std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) cons
 }
 
 void HelpWriterContext::Impl::processMarkup(const std::string &text,
-                                            WrapperInterface  *wrapper) const
+                                            IWrapper          *wrapper) const
 {
     std::string result(text);
     for (ReplaceList::const_iterator i = replacements_.begin();
@@ -543,113 +565,18 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
             const int   baseIndent          = wrapper->settings().indent();
             result = repall(result, sandrTty);
             result = replaceLinks(result);
-            std::string paragraph;
+            std::string          paragraph;
             paragraph.reserve(result.length());
-            size_t      i             = 0;
-            int         nextBreakSize = 0;
-            bool        bLiteral      = false;
-            while (i < result.length())
+            RstParagraphIterator iter(result);
+            while (iter.nextParagraph())
             {
-                while (i < result.length() && result[i] == '\n')
-                {
-                    ++i;
-                }
-                if (i == result.length())
-                {
-                    break;
-                }
-                const int breakSize     = nextBreakSize;
-                int       currentLine   = 0;
-                bool      bLineStart    = true;
-                int       currentIndent = 0;
-                int       firstIndent   = 0;
-                int       indent        = 0;
-                paragraph.clear();
-                for (;; ++i)
-                {
-                    if (result[i] == '\n' || i == result.length())
-                    {
-                        if (currentLine == 0)
-                        {
-                            firstIndent = currentIndent;
-                        }
-                        else if (currentLine == 1)
-                        {
-                            indent = currentIndent;
-                        }
-                        ++currentLine;
-                        bLineStart    = true;
-                        currentIndent = 0;
-                        if (i + 1 >= result.length() || result[i + 1] == '\n')
-                        {
-                            nextBreakSize = 2;
-                            break;
-                        }
-                        if (!bLiteral)
-                        {
-                            if (!std::isspace(result[i - 1]))
-                            {
-                                paragraph.push_back(' ');
-                            }
-                            continue;
-                        }
-                    }
-                    else if (bLineStart)
-                    {
-                        if (std::isspace(result[i]))
-                        {
-                            ++currentIndent;
-                            continue;
-                        }
-                        else if (i + 1 < result.length()
-                                 && result[i] == '*' && result[i + 1] == ' ')
-                        {
-                            if (currentLine > 0)
-                            {
-                                while (i > 0 && result[i - 1] != '\n')
-                                {
-                                    --i;
-                                }
-                                paragraph     = stripString(paragraph);
-                                nextBreakSize = 1;
-                                break;
-                            }
-                            indent = currentIndent + 2;
-                        }
-                        bLineStart = false;
-                    }
-                    paragraph.push_back(result[i]);
-                }
-                if (endsWith(paragraph, "::"))
-                {
-                    bLiteral = true;
-                    if (paragraph.length() == 2)
-                    {
-                        continue;
-                    }
-                    if (paragraph[paragraph.length() - 3] == ' ')
-                    {
-                        paragraph.resize(paragraph.length() - 3);
-                    }
-                    else
-                    {
-                        paragraph.resize(paragraph.length() - 1);
-                    }
-                }
-                else
-                {
-                    bLiteral = false;
-                }
-                if (breakSize > 0)
-                {
-                    wrapper->wrap(std::string(breakSize, '\n'));
-                }
-                wrapper->settings().setFirstLineIndent(baseFirstLineIndent + firstIndent);
-                wrapper->settings().setIndent(baseIndent + indent);
+                iter.getParagraphText(&paragraph);
+                wrapper->settings().setFirstLineIndent(baseFirstLineIndent + iter.firstLineIndent());
+                wrapper->settings().setIndent(baseIndent + iter.indent());
                 wrapper->wrap(paragraph);
-                wrapper->settings().setFirstLineIndent(baseFirstLineIndent);
-                wrapper->settings().setIndent(baseIndent);
             }
+            wrapper->settings().setFirstLineIndent(baseFirstLineIndent);
+            wrapper->settings().setIndent(baseIndent);
             break;
         }
         case eHelpOutputFormat_Rst:
@@ -671,14 +598,14 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
  * HelpWriterContext
  */
 
-HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, NULL))))
+HelpWriterContext::HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format)
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(stream, format, NULL)), 0))
 {
 }
 
-HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format,
+HelpWriterContext::HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format,
                                      const HelpLinks *links)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, links))))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(stream, format, links)), 0))
 {
     if (links != NULL)
     {
@@ -712,9 +639,18 @@ HelpOutputFormat HelpWriterContext::outputFormat() const
     return impl_->state_->format_;
 }
 
-File &HelpWriterContext::outputFile() const
+TextWriter &HelpWriterContext::outputFile() const
 {
-    return impl_->state_->file_;
+    // TODO: Consider how to deal with the const/non-const difference better.
+    return const_cast<TextWriter &>(impl_->state_->file_);
+}
+
+void HelpWriterContext::enterSubSection(const std::string &title)
+{
+    GMX_RELEASE_ASSERT(impl_->sectionDepth_ - 1 < static_cast<int>(std::strlen(g_titleChars)),
+                       "Too deeply nested subsections");
+    writeTitle(title);
+    ++impl_->sectionDepth_;
 }
 
 std::string
@@ -737,7 +673,11 @@ HelpWriterContext::substituteMarkupAndWrapToVector(
 
 void HelpWriterContext::writeTitle(const std::string &title) const
 {
-    File &file = outputFile();
+    if (title.empty())
+    {
+        return;
+    }
+    TextWriter &file = outputFile();
     switch (outputFormat())
     {
         case eHelpOutputFormat_Console:
@@ -746,7 +686,8 @@ void HelpWriterContext::writeTitle(const std::string &title) const
             break;
         case eHelpOutputFormat_Rst:
             file.writeLine(title);
-            file.writeLine(std::string(title.length(), '-'));
+            file.writeLine(std::string(title.length(),
+                                       g_titleChars[impl_->sectionDepth_]));
             break;
         default:
             GMX_THROW(NotImplementedError(
@@ -769,19 +710,52 @@ void HelpWriterContext::writeOptionListStart() const
 }
 
 void HelpWriterContext::writeOptionItem(const std::string &name,
-                                        const std::string &args,
+                                        const std::string &value,
+                                        const std::string &defaultValue,
+                                        const std::string &info,
                                         const std::string &description) const
 {
-    File &file = outputFile();
+    TextWriter &file = outputFile();
     switch (outputFormat())
     {
         case eHelpOutputFormat_Console:
-            // TODO: Generalize this when there is need for it; the current,
-            // special implementation is in CommandLineHelpWriter.
-            GMX_THROW(NotImplementedError("Option item formatting for console output not implemented"));
+        {
+            TextTableFormatter &formatter(impl_->state_->consoleOptionsFormatter());
+            formatter.clear();
+            formatter.addColumnLine(0, name);
+            formatter.addColumnLine(1, value);
+            if (!defaultValue.empty())
+            {
+                formatter.addColumnLine(2, "(" + defaultValue + ")");
+            }
+            if (!info.empty())
+            {
+                formatter.addColumnLine(3, "(" + info + ")");
+            }
+            TextLineWrapperSettings settings;
+            settings.setIndent(11);
+            settings.setLineLength(78);
+            std::string formattedDescription
+                = substituteMarkupAndWrapToString(settings, description);
+            file.writeLine(formatter.formatRow());
+            file.writeLine(formattedDescription);
             break;
+        }
         case eHelpOutputFormat_Rst:
         {
+            std::string args(value);
+            if (!defaultValue.empty())
+            {
+                args.append(" (");
+                args.append(defaultValue);
+                args.append(")");
+            }
+            if (!info.empty())
+            {
+                args.append(" (");
+                args.append(info);
+                args.append(")");
+            }
             file.writeLine(formatString("``%s`` %s", name.c_str(), args.c_str()));
             TextLineWrapperSettings settings;
             settings.setIndent(4);

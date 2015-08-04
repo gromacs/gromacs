@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares gmx::CommandLineModuleInterface and supporting classes.
+ * Declares gmx::ICommandLineModule and supporting classes.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -90,10 +90,10 @@ class CommandLineModuleSettings
  * \inpublicapi
  * \ingroup module_commandline
  */
-class CommandLineModuleInterface
+class ICommandLineModule
 {
     public:
-        virtual ~CommandLineModuleInterface() {}
+        virtual ~ICommandLineModule() {}
 
         //! Returns the name of the module.
         virtual const char *name() const = 0;
@@ -137,7 +137,7 @@ class CommandLineModuleInterface
 
 //! \cond libapi
 /*! \libinternal \brief
- * Helper to implement CommandLineModuleInterface::writeHelp() with a C-like
+ * Helper to implement ICommandLineModule::writeHelp() with a C-like
  * main() function that calls parse_common_args().
  *
  * \param[in] context      Context object for writing the help.

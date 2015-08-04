@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -165,7 +165,7 @@ class AnalysisDataFrameLocalDataHandle
  * data for use in analysis data modules that support parallel processing.
  * The object is initialized by setting the desired dimensionality with
  * setDataSetCount() and setColumnCount(), followed by a call to init(),
- * typically in AnalysisDataModuleInterface::parallelDataStarted(),
+ * typically in IAnalysisDataModule::parallelDataStarted(),
  *
  * After initialization, frameData() can be used to access the data for a given
  * frame, independently from other frames.  This works if the assumptions about
@@ -180,7 +180,7 @@ class AnalysisDataFrameLocalDataHandle
  * over all frames in a lock-free manner.
  *
  * frameDataSet() is provided for convenience when only a single data set
- * needs to be accessed (typically in AnalysisDataModuleInterface::pointsAdded()).
+ * needs to be accessed (typically in IAnalysisDataModule::pointsAdded()).
  *
  * Methods in this class do not throw except where indicated.
  *

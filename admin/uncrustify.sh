@@ -36,13 +36,14 @@
 # This script runs uncrustify and copyright header checks on modified files and
 # reports/applies the necessary changes.
 #
-# See `uncrustify.sh -h` for a brief usage, and docs/dev-manual/uncrustify.md
+# See `uncrustify.sh -h` for a brief usage, and docs/dev-manual/uncrustify.rst
 # for more details.
 
 # Parse command-line arguments
 function usage() {
     echo "usage: uncrustify.sh [-f|--force] [--rev=REV]"
-    echo "           [--uncrustify=(off|check)] [--copyright=<cmode>] [<action>]"
+    echo "           [--uncrustify=(off|check)] [--copyright=<cmode>]"
+    echo "           [--warnings=<file>] [<action>]"
     echo "<action>: (check*|diff|update)[-(index|workdir*)] (*=default)"
     echo "<cmode>:  off|add|update*|replace|full"
 }
@@ -53,6 +54,7 @@ baserev="HEAD"
 force=
 uncrustify_mode=check
 copyright_mode=update
+warning_file=
 for arg in "$@" ; do
     if [[ "$arg" == "check-index" || "$arg" == "check-workdir" || \
           "$arg" == "diff-index" || "$arg" == "diff-workdir" || \
@@ -77,6 +79,8 @@ for arg in "$@" ; do
         force=1
     elif [[ "$arg" == --rev=* ]] ; then
         baserev=${arg#--rev=}
+    elif [[ "$arg" == --warnings=* ]] ; then
+        warning_file=${arg#--warnings=}
     elif [[ "$arg" == "-h" || "$arg" == "--help" ]] ; then
         usage
         exit 0
@@ -100,7 +104,7 @@ then
         echo "Please set the path to uncrustify using UNCRUSTIFY or"
         echo "git config hooks.uncrustifypath."
         echo "Note that you need a custom version of uncrustify."
-        echo "See docs/dev-manual/uncrustify.md for how to get one."
+        echo "See docs/dev-manual/uncrustify.rst for how to get one."
         exit 2
     fi
     if ! which "$UNCRUSTIFY" 1>/dev/null
@@ -272,7 +276,11 @@ elif [[ $action == update-workdir ]] ; then
 fi
 
 # Report what was done
-sort $tmpdir/messages
+if [ "$warning_file" ]; then
+     sort $tmpdir/messages | tee $srcdir/$warning_file
+else
+     sort $tmpdir/messages
+fi
 
 rm -rf $tmpdir
 exit $changes

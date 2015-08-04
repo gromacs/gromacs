@@ -12,7 +12,7 @@
 #ifndef MERGE_SORT_H
 #define MERGE_SORT_H
 
-void Ptngc_merge_sort(void *base, size_t nmemb, size_t size,
+void Ptngc_merge_sort(void *base, const size_t nmemb, const size_t size,
 		int (*compar)(const void *v1,const void *v2,const void *private),
 		void *private);
 

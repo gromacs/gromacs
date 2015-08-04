@@ -47,6 +47,8 @@
 
 #include "bonded.h"
 
+#include "config.h"
+
 #include <assert.h>
 
 #include <cmath>
@@ -57,8 +59,8 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
-#include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
@@ -68,6 +70,164 @@
 #include "listed-internal.h"
 #include "pairs.h"
 #include "restcbt.h"
+
+
+#if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
+
+// This was originally work-in-progress for augmenting the SIMD module with
+// masked load/store operations. Instead, that turned into and extended SIMD
+// interface that supports gather/scatter in all platforms, which will be
+// part of a future Gromacs version. However, since the code for bonded
+// interactions and LINCS was already written it would be a pity not to get
+// the performance gains in Gromacs-5.1. For this reason we have added it as
+// a bit of a hack in the two files that use it. It will be replaced with the
+// new generic functionality after version 5.1
+
+#    ifdef GMX_DOUBLE
+static gmx_inline void gmx_simdcall
+gmx_hack_simd_transpose4_r(gmx_simd_double_t *row0,
+                           gmx_simd_double_t *row1,
+                           gmx_simd_double_t *row2,
+                           gmx_simd_double_t *row3)
+{
+    __m256d tmp0, tmp1, tmp2, tmp3;
+
+    tmp0  = _mm256_unpacklo_pd(*row0, *row1);
+    tmp2  = _mm256_unpacklo_pd(*row2, *row3);
+    tmp1  = _mm256_unpackhi_pd(*row0, *row1);
+    tmp3  = _mm256_unpackhi_pd(*row2, *row3);
+    *row0 = _mm256_permute2f128_pd(tmp0, tmp2, 0x20);
+    *row1 = _mm256_permute2f128_pd(tmp1, tmp3, 0x20);
+    *row2 = _mm256_permute2f128_pd(tmp0, tmp2, 0x31);
+    *row3 = _mm256_permute2f128_pd(tmp1, tmp3, 0x31);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_double_t *a,
+                                   gmx_simd_double_t        *row0,
+                                   gmx_simd_double_t        *row1,
+                                   gmx_simd_double_t        *row2,
+                                   gmx_simd_double_t        *row3)
+{
+    *row0 = a[0];
+    *row1 = a[1];
+    *row2 = a[2];
+    *row3 = a[3];
+
+    gmx_hack_simd_transpose4_r(row0, row1, row2, row3);
+}
+
+#    ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#        define gmx_hack_simd4_load3_r(mem)    _mm256_maskload_pd((mem), _mm_castsi128_ps(_mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1)))
+#    else
+#        define gmx_hack_simd4_load3_r(mem)    _mm256_maskload_pd((mem), _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1))
+#    endif
+
+#    else /* single instead of double */
+static gmx_inline void gmx_simdcall
+gmx_hack_simd_transpose4_r(gmx_simd_float_t *row0,
+                           gmx_simd_float_t *row1,
+                           gmx_simd_float_t *row2,
+                           gmx_simd_float_t *row3)
+{
+    __m256 tmp0, tmp1, tmp2, tmp3;
+
+    tmp0  = _mm256_unpacklo_ps(*row0, *row1);
+    tmp2  = _mm256_unpacklo_ps(*row2, *row3);
+    tmp1  = _mm256_unpackhi_ps(*row0, *row1);
+    tmp3  = _mm256_unpackhi_ps(*row2, *row3);
+    *row0 = _mm256_shuffle_ps(tmp0, tmp2, 0x44);
+    *row1 = _mm256_shuffle_ps(tmp0, tmp2, 0xEE);
+    *row2 = _mm256_shuffle_ps(tmp1, tmp3, 0x44);
+    *row3 = _mm256_shuffle_ps(tmp1, tmp3, 0xEE);
+}
+
+static gmx_inline void gmx_simdcall
+gmx_hack_simd4_transpose_to_simd_r(const gmx_simd4_float_t *a,
+                                   gmx_simd_float_t        *row0,
+                                   gmx_simd_float_t        *row1,
+                                   gmx_simd_float_t        *row2,
+                                   gmx_simd_float_t        *row3)
+{
+    *row0 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[0]), a[4], 1);
+    *row1 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[1]), a[5], 1);
+    *row2 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[2]), a[6], 1);
+    *row3 = _mm256_insertf128_ps(_mm256_castps128_ps256(a[3]), a[7], 1);
+
+    gmx_hack_simd_transpose4_r(row0, row1, row2, row3);
+}
+#ifdef GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
+#        define gmx_hack_simd4_load3_r(mem)    _mm_maskload_ps((mem), _mm_castsi256_pd(_mm_set_epi32(0, -1, -1, -1)))
+#else
+#        define gmx_hack_simd4_load3_r(mem)    _mm_maskload_ps((mem), _mm_set_epi32(0, -1, -1, -1))
+#endif
+
+#endif
+
+#endif /* AVX */
+
+
+
+#ifdef GMX_SIMD_HAVE_REAL
+/*! \brief Store differences between indexed rvecs in SIMD registers.
+ *
+ * Returns SIMD register with the difference vectors:
+ *     v[index0[i]] - v[index1[i]]
+ *
+ * \param[in]     v           Array of rvecs
+ * \param[in]     index0      Index into the vector array
+ * \param[in]     index1      Index into the vector array
+ * \param[in,out] buf         Aligned tmp buffer of size 3*GMX_SIMD_REAL_WIDTH
+ * \param[out]    dx          SIMD register with x difference
+ * \param[out]    dy          SIMD register with y difference
+ * \param[out]    dz          SIMD register with z difference
+ */
+static gmx_inline void gmx_simdcall
+gmx_hack_simd_gather_rvec_dist_two_index(const rvec      *v,
+                                         const int       *index0,
+                                         const int       *index1,
+                                         real gmx_unused *buf,
+                                         gmx_simd_real_t *dx,
+                                         gmx_simd_real_t *dy,
+                                         gmx_simd_real_t *dz)
+{
+#if defined(GMX_SIMD_X86_AVX_256) || defined(GMX_SIMD_X86_AVX2_256)
+    int              i;
+    gmx_simd4_real_t d[GMX_SIMD_REAL_WIDTH];
+    gmx_simd_real_t  tmp;
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        d[i] = gmx_simd4_sub_r(gmx_hack_simd4_load3_r(&(v[index0[i]][0])),
+                               gmx_hack_simd4_load3_r(&(v[index1[i]][0])));
+
+    }
+    gmx_hack_simd4_transpose_to_simd_r(d, dx, dy, dz, &tmp);
+#else /* generic SIMD */
+#if GMX_ALIGNMENT
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) buf_aligned[3*GMX_SIMD_REAL_WIDTH];
+#else
+    real* buf_aligned = buf;
+#endif
+
+    int i, m;
+
+    for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        /* Store the distances packed and aligned */
+        for (m = 0; m < DIM; m++)
+        {
+            buf_aligned[m*GMX_SIMD_REAL_WIDTH + i] =
+                v[index0[i]][m] - v[index1[i]][m];
+        }
+    }
+    *dx = gmx_simd_load_r(buf_aligned + 0*GMX_SIMD_REAL_WIDTH);
+    *dy = gmx_simd_load_r(buf_aligned + 1*GMX_SIMD_REAL_WIDTH);
+    *dz = gmx_simd_load_r(buf_aligned + 2*GMX_SIMD_REAL_WIDTH);
+#endif
+}
+#endif /* GMX_SIMD_HAVE_REAL */
+
 
 /*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {
@@ -1234,13 +1394,6 @@ angles_noener_simd(int nbonds,
             coeff[s]                     = forceparams[type].harmonic.krA;
             coeff[GMX_SIMD_REAL_WIDTH+s] = forceparams[type].harmonic.rA*DEG2RAD;
 
-            /* Store the non PBC corrected distances packed and aligned */
-            for (m = 0; m < DIM; m++)
-            {
-                dr[s +      m *GMX_SIMD_REAL_WIDTH] = x[ai[s]][m] - x[aj[s]][m];
-                dr[s + (DIM+m)*GMX_SIMD_REAL_WIDTH] = x[ak[s]][m] - x[aj[s]][m];
-            }
-
             /* At the end fill the arrays with identical entries */
             if (iu + nfa1 < nbonds)
             {
@@ -1248,15 +1401,14 @@ angles_noener_simd(int nbonds,
             }
         }
 
+        /* Store the non PBC corrected distances packed and aligned */
+        gmx_hack_simd_gather_rvec_dist_two_index(x, ai, aj, dr,
+                                                 &rijx_S, &rijy_S, &rijz_S);
+        gmx_hack_simd_gather_rvec_dist_two_index(x, ak, aj, dr + 3*GMX_SIMD_REAL_WIDTH,
+                                                 &rkjx_S, &rkjy_S, &rkjz_S);
+
         k_S       = gmx_simd_load_r(coeff);
         theta0_S  = gmx_simd_load_r(coeff+GMX_SIMD_REAL_WIDTH);
-
-        rijx_S    = gmx_simd_load_r(dr + 0*GMX_SIMD_REAL_WIDTH);
-        rijy_S    = gmx_simd_load_r(dr + 1*GMX_SIMD_REAL_WIDTH);
-        rijz_S    = gmx_simd_load_r(dr + 2*GMX_SIMD_REAL_WIDTH);
-        rkjx_S    = gmx_simd_load_r(dr + 3*GMX_SIMD_REAL_WIDTH);
-        rkjy_S    = gmx_simd_load_r(dr + 4*GMX_SIMD_REAL_WIDTH);
-        rkjz_S    = gmx_simd_load_r(dr + 5*GMX_SIMD_REAL_WIDTH);
 
         pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, &pbc_simd);
         pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, &pbc_simd);
@@ -1649,7 +1801,6 @@ dih_angle_simd(const rvec *x,
                real *p,
                real *q)
 {
-    int             s, m;
     gmx_simd_real_t rijx_S, rijy_S, rijz_S;
     gmx_simd_real_t rkjx_S, rkjy_S, rkjz_S;
     gmx_simd_real_t rklx_S, rkly_S, rklz_S;
@@ -1672,25 +1823,13 @@ dih_angle_simd(const rvec *x,
     /* The value of the last significant bit (GMX_REAL_EPS is half of that) */
     real_eps_S  = gmx_simd_set1_r(2*GMX_REAL_EPS);
 
-    for (s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
-    {
-        for (m = 0; m < DIM; m++)
-        {
-            dr[s + (0*DIM + m)*GMX_SIMD_REAL_WIDTH] = x[ai[s]][m] - x[aj[s]][m];
-            dr[s + (1*DIM + m)*GMX_SIMD_REAL_WIDTH] = x[ak[s]][m] - x[aj[s]][m];
-            dr[s + (2*DIM + m)*GMX_SIMD_REAL_WIDTH] = x[ak[s]][m] - x[al[s]][m];
-        }
-    }
-
-    rijx_S = gmx_simd_load_r(dr + 0*GMX_SIMD_REAL_WIDTH);
-    rijy_S = gmx_simd_load_r(dr + 1*GMX_SIMD_REAL_WIDTH);
-    rijz_S = gmx_simd_load_r(dr + 2*GMX_SIMD_REAL_WIDTH);
-    rkjx_S = gmx_simd_load_r(dr + 3*GMX_SIMD_REAL_WIDTH);
-    rkjy_S = gmx_simd_load_r(dr + 4*GMX_SIMD_REAL_WIDTH);
-    rkjz_S = gmx_simd_load_r(dr + 5*GMX_SIMD_REAL_WIDTH);
-    rklx_S = gmx_simd_load_r(dr + 6*GMX_SIMD_REAL_WIDTH);
-    rkly_S = gmx_simd_load_r(dr + 7*GMX_SIMD_REAL_WIDTH);
-    rklz_S = gmx_simd_load_r(dr + 8*GMX_SIMD_REAL_WIDTH);
+    /* Store the non PBC corrected distances packed and aligned */
+    gmx_hack_simd_gather_rvec_dist_two_index(x, ai, aj, dr,
+                                             &rijx_S, &rijy_S, &rijz_S);
+    gmx_hack_simd_gather_rvec_dist_two_index(x, ak, aj, dr + 3*GMX_SIMD_REAL_WIDTH,
+                                             &rkjx_S, &rkjy_S, &rkjz_S);
+    gmx_hack_simd_gather_rvec_dist_two_index(x, ak, al, dr + 6*GMX_SIMD_REAL_WIDTH,
+                                             &rklx_S, &rkly_S, &rklz_S);
 
     pbc_correct_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc);
     pbc_correct_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc);

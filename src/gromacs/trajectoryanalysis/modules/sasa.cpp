@@ -60,7 +60,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -287,7 +287,7 @@ class Sasa : public TrajectoryAnalysisModule
     public:
         Sasa();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
@@ -406,7 +406,7 @@ Sasa::Sasa()
 }
 
 void
-Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
+Sasa::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] computes solvent accessible surface areas.",
@@ -445,7 +445,7 @@ Sasa::initOptions(Options *options, TrajectoryAnalysisSettings *settings)
         "that are both too high."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
                            .store(&fnArea_).defaultBasename("area")
@@ -655,7 +655,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
                 AnalysisDataPlotModulePointer plotm(
                         new AnalysisDataPlotModule(settings.plotSettings()));
                 plotm->setFileName(fnAtomArea_);
-                plotm->setTitle("Area per residue over the trajectory");
+                plotm->setTitle("Area per atom over the trajectory");
                 plotm->setXLabel("Atom");
                 plotm->setXFormat(8, 0);
                 plotm->setYLabel("Area (nm\\S2\\N)");
@@ -667,11 +667,18 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         {
             AnalysisDataAverageModulePointer avem(new AnalysisDataAverageModule);
+            int prevResind = -1;
+            int row        = 0;
             for (int i = 0; i < surfaceSel_.posCount(); ++i)
             {
                 const int atomIndex     = surfaceSel_.position(i).atomIndices()[0];
                 const int residueIndex  = atoms.atom[atomIndex].resind;
-                avem->setXAxisValue(i, atoms.resinfo[residueIndex].nr);
+                if (residueIndex != prevResind)
+                {
+                    avem->setXAxisValue(row, atoms.resinfo[residueIndex].nr);
+                    prevResind = residueIndex;
+                    ++row;
+                }
             }
             residueArea_.addModule(avem);
             if (!fnResidueArea_.empty())
@@ -679,7 +686,7 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
                 AnalysisDataPlotModulePointer plotm(
                         new AnalysisDataPlotModule(settings.plotSettings()));
                 plotm->setFileName(fnResidueArea_);
-                plotm->setTitle("Area per atom over the trajectory");
+                plotm->setTitle("Area per residue over the trajectory");
                 plotm->setXLabel("Residue");
                 plotm->setXFormat(8, 0);
                 plotm->setYLabel("Area (nm\\S2\\N)");

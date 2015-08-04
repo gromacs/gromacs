@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@ class AbstractAnalysisData;
 class AnalysisData;
 class AnalysisDataHandle;
 class AnalysisDataParallelOptions;
+class IOptionsContainer;
 class Options;
 class SelectionCollection;
 class TopologyInformation;
@@ -249,12 +250,11 @@ class TrajectoryAnalysisModule
          * If settings depend on the option values provided by the user, see
          * optionsFinished().
          */
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings) = 0;
         /*! \brief
          * Called after all option values have been set.
          *
-         * \param[in,out] options  Options object in which options are stored.
          * \param[in,out] settings Settings to pass to and from the module.
          *
          * This method is called after option values have been assigned (but
@@ -267,8 +267,7 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         /*! \brief
          * Initializes the analysis.
          *

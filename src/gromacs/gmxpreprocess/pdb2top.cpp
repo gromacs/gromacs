@@ -39,9 +39,10 @@
 #include "pdb2top.h"
 
 #include <ctype.h>
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <cmath>
 
 #include <algorithm>
 #include <string>
@@ -70,7 +71,6 @@
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
@@ -578,7 +578,7 @@ void print_top_comment(FILE       *out,
 
     if (strchr(ffdir, '/') == NULL)
     {
-        fprintf(out, ";\tForce field was read from the standard Gromacs share directory.\n;\n\n");
+        fprintf(out, ";\tForce field was read from the standard GROMACS share directory.\n;\n\n");
     }
     else if (ffdir[0] == '.')
     {
@@ -894,12 +894,12 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
 
                 {
                     fprintf(stderr, "Warning: Long Bond (%d-%d = %g nm)\n",
-                            ai+1, aj+1, sqrt(dist2));
+                            ai+1, aj+1, std::sqrt(dist2));
                 }
                 else if (dist2 < short_bond_dist2)
                 {
                     fprintf(stderr, "Warning: Short Bond (%d-%d = %g nm)\n",
-                            ai+1, aj+1, sqrt(dist2));
+                            ai+1, aj+1, std::sqrt(dist2));
                 }
                 add_param(psb, ai, aj, NULL, hb[resind].rb[ebtsBONDS].b[j].s);
             }

@@ -1695,16 +1695,6 @@ applicable pulling coordinate.
    system, *e.g.* a water slab (see Engin et al. J. Chem. Phys. B
    2010).
 
-.. mdp:: pull-coord1-groups
-
-   The two groups indices should be given on which this pull
-   coordinate will operate. The first index can be 0, in which case an
-   absolute reference of :mdp:`pull-coord1-origin` is used. With an
-   absolute reference the system is no longer translation invariant
-   and one should think about what to do with the center of mass
-   motion. Note that (only) for :mdp:`pull-coord1-geometry` =
-   :mdp-value:`direction-relative` four groups are required.
-
 .. mdp:: pull-coord1-type:
 
    .. mdp-value:: umbrella
@@ -1779,6 +1769,16 @@ applicable pulling coordinate.
       from the COM of the pull group has both a radial and an axial
       component. This geometry is not supported with constraint
       pulling.
+
+.. mdp:: pull-coord1-groups
+
+   The two groups indices should be given on which this pull
+   coordinate will operate. The first index can be 0, in which case an
+   absolute reference of :mdp:`pull-coord1-origin` is used. With an
+   absolute reference the system is no longer translation invariant
+   and one should think about what to do with the center of mass
+   motion. Note that (only) for :mdp:`pull-coord1-geometry` =
+   :mdp-value:`direction-relative` four groups are required.
 
 .. mdp:: pull-coord1-dim
 
@@ -2104,11 +2104,14 @@ Free energy calculations
 .. mdp:: sc-coul
 
    (no)
-   Whether to apply the soft core free energy interaction
+   Whether to apply the soft-core free energy interaction
    transformation to the Columbic interaction of a molecule. Default
    is no, as it is generally more efficient to turn off the Coulomic
    interactions linearly before turning off the van der Waals
-   interactions.
+   interactions. Note that it is only taken into account when lambda
+   states are used, not with :mdp:`couple-lambda0` /
+   :mdp:`couple-lambda1`, and you can still turn off soft-core
+   interactions by setting :mdp:`sc-alpha` to 0.
 
 .. mdp:: sc-power
 

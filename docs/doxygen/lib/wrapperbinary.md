@@ -29,14 +29,14 @@ Command line modules
 ====================
 
 All modules within the wrapper binary are implemented as classes that implement
-the gmx::CommandLineModuleInterface interface.  There is generally some helper
+the gmx::ICommandLineModule interface.  There is generally some helper
 class in between:
  * General C++ modules typically use gmx::Options for their command-line
    handling.  Instead of each module implementing parsing and help separately
-   with identical code, they implement gmx::CommandLineOptionsModuleInterface
+   with identical code, they implement gmx::ICommandLineOptionsModule
    instead.  The framework then provides a bridge class that contains the
-   common code and wraps gmx::CommandLineOptionsModuleInterface into a
-   gmx::CommandLineModuleInterface.
+   common code and wraps gmx::ICommandLineOptionsModule into a
+   gmx::ICommandLineModule.
  * For C++ trajectory analysis modules, there is a general implementation for
    running the gmx::TrajectoryAnalysisModule subclasses in cmdlinerunner.cpp.
  * For old C-style %main() functions, see \ref section_wrapperbinary_cmain.
@@ -75,7 +75,7 @@ line manager throws away all the other arguments before passing control to the
 module.
 
 After the above translations, the internal help module handles all the help
-output.  All the help is organized into a hierarchy of gmx::HelpTopicInterface
+output.  All the help is organized into a hierarchy of gmx::IHelpTopic
 instances.  The help module internally creates a root help topic that is
 printed with `gmx help`.  If there are additional words after the `gmx help`
 command, then those are taken to specify the topic to show in the hierarchy.
@@ -83,42 +83,32 @@ command, then those are taken to specify the topic to show in the hierarchy.
 gmx::CommandLineModuleManager internally creates a help topic for each added
 module.  These topics are shown when `gmx help` _module_ is invoked.
 They forward the request to the actual module (to
-gmx::CommandLineModuleInterface::writeHelp()).
+gmx::ICommandLineModule::writeHelp()).
 
 In addition to the topics created internally, gmx::CommandLineModuleManager
 provides methods to add additional help topics.  Currently, this is used to
 expose some reference material for the selections (the same content that is
 accessible using `help` in the selection prompt).
 
-Help export for other formats
------------------------------
+Help in other formats
+---------------------
 
-The build system provides two targets, `make man` and `make html`, to generate
-man pages and online HTML help for the commands.  These targets are run
-automatically as part of `make` if `GMX_BUILD_HELP=ON` is set in CMake.
-Otherwise, they can be run manually.  Internally, these execute
-`gmx help -export` _format_, which triggers special handling in the internal
-help module.
+The build system provides a target, `make sphinx-programs`, that generates
+reStructuredText help for the commands, which in turn is used to generate man
+and HTML help.  Internally, this executes `gmx help -export rst`, which
+triggers special handling in the internal help module.
+See documentation for
+\linktodevmanual{build-system,special targets in the build system} for details
+of which targets to use for generating the documentation..
 
 If this option is set, the help module loops through all the modules in the
 binary, writing help for each into a separate file.  The help module writes
 common headers and footers, and asks the actual module to write the
-module-specific content (with gmx::CommandLineModuleInterface::writeHelp(),
+module-specific content (with gmx::ICommandLineModule::writeHelp(),
 using a different help context than for console output).
 
 Additionally, a list of all the modules is generated (`gromacs.7` for man
 pages, and alphabetical and by-topic lists for the HTML pages).
-
-Part of the functionality depends on template files and other data files that
-the help module reads from `share/man/` and `share/html/` and uses to generate
-its output.
-
-Part of the HTML help is stored as partial HTML files under `share/html/`.
-To produce the full HTML pages, the `gmx help -export html` command creates
-`header.html` from a `header.html.in` template file.  This file is used by a
-separate CMake script that is run by `make html` to add headers and footers to
-these partial HTML files.
-The final HTML help is produced in `share/html/final/`.
 
 Handling C %main() functions {#section_wrapperbinary_cmain}
 ----------------------------

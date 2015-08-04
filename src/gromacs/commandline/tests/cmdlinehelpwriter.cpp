@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,10 +56,10 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/stringstream.h"
 
 #include "testutils/stringtest.h"
-#include "testutils/testfilemanager.h"
 
 namespace
 {
@@ -71,20 +71,19 @@ class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 
         void checkHelp(gmx::CommandLineHelpWriter *writer);
 
-        gmx::test::TestFileManager tempFiles_;
         bool                       bHidden_;
 };
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
-    std::string                 filename = tempFiles_.getTemporaryFilePath("helptext.txt");
-    gmx::File                   file(filename, "w");
-    gmx::CommandLineHelpContext context(&file, gmx::eHelpOutputFormat_Console, NULL);
+    gmx::StringOutputStream     stream;
+    gmx::CommandLineHelpContext context(&stream, gmx::eHelpOutputFormat_Console,
+                                        NULL, "test");
     context.setShowHidden(bHidden_);
     writer->writeHelp(context);
-    file.close();
+    stream.close();
 
-    checkFileContents(filename, "HelpText");
+    checkText(stream.toString(), "HelpText");
 }
 
 
@@ -248,32 +247,41 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
 #endif
 
 /*
- * Tests help printing for multiple sections.
+ * Tests help output with option groups.
  */
-TEST_F(CommandLineHelpWriterTest, HandlesMultipleSections)
+TEST_F(CommandLineHelpWriterTest, HandlesOptionGroups)
 {
-    using namespace gmx;
+    using gmx::IntegerOption;
 
-    Options options("test", "Main Title");
-    Options subSect1("subsect1", "Subsection 1 Title");
-    Options subSect2("subsect2", "Subsection 2 Title");
-    Options subSect3("subsect3", NULL);
-    options.addSubSection(&subSect1);
-    options.addSubSection(&subSect2);
-    options.addSubSection(&subSect3);
-    options.setDescription("Description for main section.");
-    subSect1.setDescription("Description for subsection 1.");
-    subSect2.setDescription("Description for subsection 2.");
-    subSect3.setDescription("Description for subsection 3.");
-    options.addOption(IntegerOption("main")
-                          .description("Option in main section"));
-    subSect1.addOption(IntegerOption("sub1")
-                           .description("Option in subsection 1"));
-    subSect2.addOption(IntegerOption("sub2")
-                           .description("Option in subsection 2"));
+    gmx::Options            options(NULL, NULL);
+    gmx::IOptionsContainer &group1 = options.addGroup();
+    gmx::IOptionsContainer &group2 = options.addGroup();
+    group2.addOption(IntegerOption("sub2").description("Option in group 2"));
+    group1.addOption(IntegerOption("sub11").description("Option in group 1"));
+    options.addOption(IntegerOption("main").description("Option in root group"));
+    group1.addOption(IntegerOption("sub12").description("Option in group 1"));
 
-    CommandLineHelpWriter writer(options);
-    writer.setShowDescriptions(true);
+    gmx::CommandLineHelpWriter writer(options);
+    checkHelp(&writer);
+}
+
+/*
+ * Tests help output using a help text.
+ */
+TEST_F(CommandLineHelpWriterTest, HandlesHelpText)
+{
+    const char *const help[] = {
+        "Help text",
+        "for testing."
+    };
+    using gmx::IntegerOption;
+
+    gmx::Options options(NULL, NULL);
+    options.addOption(IntegerOption("int").description("Integer option")
+                          .defaultValue(2));
+
+    gmx::CommandLineHelpWriter writer(options);
+    writer.setHelpText(help);
     checkHelp(&writer);
 }
 

@@ -51,15 +51,13 @@
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nbnxn_internal.h"
+#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/smalloc.h"
-
-/* nbnxn_internal.h included gromacs/simd/macros.h */
-#include "gromacs/mdlib/nbnxn_internal.h"
-#ifdef GMX_SIMD
+#include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
-#endif
+#include "gromacs/utility/smalloc.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
 /* Always use 4-wide SIMD for bounding box calculations */
@@ -233,7 +231,7 @@ static int get_2log(int n)
     return log2;
 }
 
-static int nbnxn_kernel_to_ci_size(int nb_kernel_type)
+int nbnxn_kernel_to_ci_size(int nb_kernel_type)
 {
     switch (nb_kernel_type)
     {
@@ -241,7 +239,7 @@ static int nbnxn_kernel_to_ci_size(int nb_kernel_type)
         case nbnxnk4xN_SIMD_4xN:
         case nbnxnk4xN_SIMD_2xNN:
             return NBNXN_CPU_CLUSTER_I_SIZE;
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             /* The cluster size for super/sub lists is only set here.
              * Any value should work for the pair-search and atomdata code.
@@ -275,7 +273,7 @@ int nbnxn_kernel_to_cj_size(int nb_kernel_type)
         case nbnxnk4xN_SIMD_2xNN:
             cj_size = nbnxn_simd_width/2;
             break;
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             cj_size = nbnxn_kernel_to_ci_size(nb_kernel_type);
             break;
@@ -307,7 +305,7 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 
     switch (nb_kernel_type)
     {
-        case nbnxnk8x8x8_CUDA:
+        case nbnxnk8x8x8_GPU:
         case nbnxnk8x8x8_PlainC:
             return FALSE;
 
@@ -2627,7 +2625,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
             nbl->ncj/(double)grid->nc*grid->na_sc/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nc*grid->na_sc/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
     fprintf(fp, "nbl average j cell list length %.1f\n",
-            0.25*nbl->ncj/(double)nbl->nci);
+            0.25*nbl->ncj/(double)max(nbl->nci, 1));
 
     for (s = 0; s < SHIFTS; s++)
     {
@@ -2648,7 +2646,7 @@ static void print_nblist_statistics_simple(FILE *fp, const nbnxn_pairlist_t *nbl
         }
     }
     fprintf(fp, "nbl cell pairs, total: %d excl: %d %.1f%%\n",
-            nbl->ncj, npexcl, 100*npexcl/(double)nbl->ncj);
+            nbl->ncj, npexcl, 100*npexcl/(double)max(nbl->ncj, 1));
     for (s = 0; s < SHIFTS; s++)
     {
         if (cs[s] > 0)
@@ -2665,6 +2663,8 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     const nbnxn_grid_t *grid;
     int                 i, j4, j, si, b;
     int                 c[GPU_NSUBCELL+1];
+    double              sum_nsp, sum_nsp2;
+    int                 nsp_max;
 
     /* This code only produces correct statistics with domain decomposition */
     grid = &nbs->grid[0];
@@ -2676,17 +2676,18 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
             nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c,
             nbl->nci_tot/(double)grid->nsubc_tot*grid->na_c/(0.5*4.0/3.0*M_PI*rl*rl*rl*grid->nsubc_tot*grid->na_c/(grid->size[XX]*grid->size[YY]*grid->size[ZZ])));
 
-    fprintf(fp, "nbl average j super cell list length %.1f\n",
-            0.25*nbl->ncj4/(double)nbl->nsci);
-    fprintf(fp, "nbl average i sub cell list length %.1f\n",
-            nbl->nci_tot/((double)nbl->ncj4));
-
+    sum_nsp  = 0;
+    sum_nsp2 = 0;
+    nsp_max  = 0;
     for (si = 0; si <= GPU_NSUBCELL; si++)
     {
         c[si] = 0;
     }
     for (i = 0; i < nbl->nsci; i++)
     {
+        int nsp;
+
+        nsp = 0;
         for (j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
         {
             for (j = 0; j < NBNXN_GPU_JGROUP_SIZE; j++)
@@ -2699,14 +2700,30 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
                         b++;
                     }
                 }
+                nsp += b;
                 c[b]++;
             }
         }
+        sum_nsp  += nsp;
+        sum_nsp2 += nsp*nsp;
+        nsp_max   = max(nsp_max, nsp);
     }
-    for (b = 0; b <= GPU_NSUBCELL; b++)
+    if (nbl->nsci > 0)
     {
-        fprintf(fp, "nbl j-list #i-subcell %d %7d %4.1f\n",
-                b, c[b], 100.0*c[b]/(double)(nbl->ncj4*NBNXN_GPU_JGROUP_SIZE));
+        sum_nsp  /= nbl->nsci;
+        sum_nsp2 /= nbl->nsci;
+    }
+    fprintf(fp, "nbl #cluster-pairs: av %.1f stddev %.1f max %d\n",
+            sum_nsp, sqrt(sum_nsp2 - sum_nsp*sum_nsp), nsp_max);
+
+    if (nbl->ncj4 > 0)
+    {
+        for (b = 0; b <= GPU_NSUBCELL; b++)
+        {
+            fprintf(fp, "nbl j-list #i-subcell %d %7d %4.1f\n",
+                    b, c[b],
+                    100.0*c[b]/(double)(nbl->ncj4*NBNXN_GPU_JGROUP_SIZE));
+        }
     }
 }
 
@@ -3936,10 +3953,11 @@ static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
  * both on nthread and our own thread index.
  */
 static void split_sci_entry(nbnxn_pairlist_t *nbl,
-                            int nsp_max_av, gmx_bool progBal, int nc_bal,
+                            int nsp_target_av,
+                            gmx_bool progBal, int nsp_tot_est,
                             int thread, int nthread)
 {
-    int nsci_est;
+    int nsp_est;
     int nsp_max;
     int cj4_start, cj4_end, j4len, cj4;
     int sci;
@@ -3951,18 +3969,26 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
         /* Estimate the total numbers of ci's of the nblist combined
          * over all threads using the target number of ci's.
          */
-        nsci_est = nc_bal*thread/nthread + nbl->nsci;
+        nsp_est = (nsp_tot_est*thread)/nthread + nbl->nci_tot;
 
         /* The first ci blocks should be larger, to avoid overhead.
          * The last ci blocks should be smaller, to improve load balancing.
+         * The factor 3/2 makes the first block 3/2 times the target average
+         * and ensures that the total number of blocks end up equal to
+         * that with of equally sized blocks of size nsp_target_av.
          */
-        nsp_max = max(1,
-                      nsp_max_av*nc_bal*3/(2*(nsci_est - 1 + nc_bal)));
+        nsp_max = nsp_target_av*nsp_tot_est*3/(2*(nsp_est + nsp_tot_est));
     }
     else
     {
-        nsp_max = nsp_max_av;
+        nsp_max = nsp_target_av;
     }
+
+    /* Since nsp_max is a maximum/cut-off (this avoids high outliers,
+     * which lead to load imbalance), not an average, we add half the
+     * number of pairs in a cj4 block to get the average about right.
+     */
+    nsp_max += GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE/2;
 
     cj4_start = nbl->sci[nbl->nsci-1].cj4_ind_start;
     cj4_end   = nbl->sci[nbl->nsci-1].cj4_ind_end;
@@ -3988,7 +4014,8 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
 
-            if (nsp_cj4 > 0 && nsp + nsp_cj4 > nsp_max)
+            /* Check if we should split at this cj4 to get a list of size nsp */
+            if (nsp > 0 && nsp + nsp_cj4 > nsp_max)
             {
                 /* Split the list at cj4 */
                 nbl->sci[sci].cj4_ind_end = cj4;
@@ -4028,7 +4055,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
 /* Clost this super/sub list i entry */
 static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
                                     int nsp_max_av,
-                                    gmx_bool progBal, int nc_bal,
+                                    gmx_bool progBal, int nsp_tot_est,
                                     int thread, int nthread)
 {
     int j4len, tlen;
@@ -4051,7 +4078,8 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
         if (nsp_max_av > 0)
         {
             /* Measure the size of the new entry and potentially split it */
-            split_sci_entry(nbl, nsp_max_av, progBal, nc_bal, thread, nthread);
+            split_sci_entry(nbl, nsp_max_av, progBal, nsp_tot_est,
+                            thread, nthread);
         }
     }
 }
@@ -4323,11 +4351,17 @@ static real nonlocal_vol2(const gmx_domdec_zones_t *zones, rvec ls, real r)
 }
 
 /* Estimates the average size of a full j-list for super/sub setup */
-static int get_nsubpair_max(const nbnxn_search_t nbs,
-                            int                  iloc,
-                            real                 rlist,
-                            int                  min_ci_balanced)
+static void get_nsubpair_target(const nbnxn_search_t  nbs,
+                                int                   iloc,
+                                real                  rlist,
+                                int                   min_ci_balanced,
+                                int                  *nsubpair_target,
+                                int                  *nsubpair_tot_est)
 {
+    /* The target value of 36 seems to be the optimum for Kepler.
+     * Maxwell is less sensitive to the exact value.
+     */
+    const int           nsubpair_target_min = 36;
     const nbnxn_grid_t *grid;
     rvec                ls;
     real                xy_diag2, r_eff_sup, vol_est, nsp_est, nsp_est_nl;
@@ -4337,13 +4371,16 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
 
     if (min_ci_balanced <= 0 || grid->nc >= min_ci_balanced || grid->nc == 0)
     {
-        /* We don't need to worry */
-        return -1;
+        /* We don't need to balance the list sizes */
+        *nsubpair_target  = 0;
+        *nsubpair_tot_est = 0;
+
+        return;
     }
 
     ls[XX] = (grid->c1[XX] - grid->c0[XX])/(grid->ncx*GPU_NSUBCELL_X);
     ls[YY] = (grid->c1[YY] - grid->c0[YY])/(grid->ncy*GPU_NSUBCELL_Y);
-    ls[ZZ] = (grid->c1[ZZ] - grid->c0[ZZ])*grid->ncx*grid->ncy/(grid->nc*GPU_NSUBCELL_Z);
+    ls[ZZ] = grid->na_c/(grid->atom_density*ls[XX]*ls[YY]);
 
     /* The average squared length of the diagonal of a sub cell */
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
@@ -4373,10 +4410,24 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
         /* 4 octants of a sphere */
         vol_est += 0.5*4.0/3.0*M_PI*pow(r_eff_sup, 3);
 
+        /* Estimate the number of cluster pairs as the local number of
+         * clusters times the volume they interact with times the density.
+         */
         nsp_est = grid->nsubc_tot*vol_est*grid->atom_density/grid->na_c;
 
         /* Subtract the non-local pair count */
         nsp_est -= nsp_est_nl;
+
+        /* For small cut-offs nsp_est will be an underesimate.
+         * With DD nsp_est_nl is an overestimate so nsp_est can get negative.
+         * So to avoid too small or negative nsp_est we set a minimum of
+         * all cells interacting with all 3^3 direct neighbors (3^3-1)/2+1=14.
+         * This might be a slight overestimate for small non-periodic groups of
+         * atoms as will occur for a local domain with DD, but for small
+         * groups of atoms we'll anyhow be limited by nsubpair_target_min,
+         * so this overestimation will not matter.
+         */
+        nsp_est = max(nsp_est, grid->nsubc_tot*14.0);
 
         if (debug)
         {
@@ -4389,22 +4440,19 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
         nsp_est = nsp_est_nl;
     }
 
-    /* Thus the (average) maximum j-list size should be as follows */
-    nsubpair_max = max(1, (int)(nsp_est/min_ci_balanced+0.5));
-
-    /* Since the target value is a maximum (this avoids high outliers,
-     * which lead to load imbalance), not average, we add half the
-     * number of pairs in a cj4 block to get the average about right.
+    /* Thus the (average) maximum j-list size should be as follows.
+     * Since there is overhead, we shouldn't make the lists too small
+     * (and we can't chop up j-groups) so we use a minimum target size of 36.
      */
-    nsubpair_max += GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE/2;
+    *nsubpair_target  = max(nsubpair_target_min,
+                            (int)(nsp_est/min_ci_balanced + 0.5));
+    *nsubpair_tot_est = (int)nsp_est;
 
     if (debug)
     {
-        fprintf(debug, "nbl nsp estimate %.1f, nsubpair_max %d\n",
-                nsp_est, nsubpair_max);
+        fprintf(debug, "nbl nsp estimate %.1f, nsubpair_target %d\n",
+                nsp_est, *nsubpair_target);
     }
-
-    return nsubpair_max;
 }
 
 /* Debug list print function */
@@ -4786,9 +4834,22 @@ static int get_ci_block_size(const nbnxn_grid_t *gridi,
     /* Without domain decomposition
      * or with less than 3 blocks per task, divide in nth blocks.
      */
-    if (!bDomDec || ci_block*3*nth > gridi->nc)
+    if (!bDomDec || nth*3*ci_block > gridi->nc)
     {
         ci_block = (gridi->nc + nth - 1)/nth;
+    }
+
+    if (ci_block > 1 && (nth - 1)*ci_block >= gridi->nc)
+    {
+        /* Some threads have no work. Although reducing the block size
+         * does not decrease the block count on the first few threads,
+         * with GPUs better mixing of "upper" cells that have more empty
+         * clusters results in a somewhat lower max load over all threads.
+         * Without GPUs the regime of so few atoms per thread is less
+         * performance relevant, but with 8-wide SIMD the same reasoning
+         * applies, since the pair list uses 4 i-atom "sub-clusters".
+         */
+        ci_block--;
     }
 
     return ci_block;
@@ -4807,7 +4868,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      gmx_bool bFBufferFlag,
                                      int nsubpair_max,
                                      gmx_bool progBal,
-                                     int min_ci_balanced,
+                                     int nsubpair_tot_est,
                                      int th, int nth,
                                      nbnxn_pairlist_t *nbl,
                                      t_nblist *nbl_fep)
@@ -5322,7 +5383,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                             break;
 #endif
                                         case nbnxnk8x8x8_PlainC:
-                                        case nbnxnk8x8x8_CUDA:
+                                        case nbnxnk8x8x8_GPU:
                                             check_subcell_list_space_supersub(nbl, cl-cf+1);
                                             for (cj = cf; cj <= cl; cj++)
                                             {
@@ -5401,7 +5462,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                     {
                         close_ci_entry_supersub(nbl,
                                                 nsubpair_max,
-                                                progBal, min_ci_balanced,
+                                                progBal, nsubpair_tot_est,
                                                 th, nth);
                     }
                 }
@@ -5595,7 +5656,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     nbnxn_grid_t      *gridi, *gridj;
     gmx_bool           bGPUCPU;
     int                nzi, zi, zj0, zj1, zj;
-    int                nsubpair_max;
+    int                nsubpair_target, nsubpair_tot_est;
     int                th;
     int                nnbl;
     nbnxn_pairlist_t **nbl;
@@ -5665,11 +5726,13 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
 
     if (!nbl_list->bSimple && min_ci_balanced > 0)
     {
-        nsubpair_max = get_nsubpair_max(nbs, iloc, rlist, min_ci_balanced);
+        get_nsubpair_target(nbs, iloc, rlist, min_ci_balanced,
+                            &nsubpair_target, &nsubpair_tot_est);
     }
     else
     {
-        nsubpair_max = 0;
+        nsubpair_target  = 0;
+        nsubpair_tot_est = 0;
     }
 
     /* Clear all pair-lists */
@@ -5746,8 +5809,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                                          nb_kernel_type,
                                          ci_block,
                                          nbat->bUseBufferFlags,
-                                         nsubpair_max,
-                                         progBal, min_ci_balanced,
+                                         nsubpair_target,
+                                         progBal, nsubpair_tot_est,
                                          th, nnbl,
                                          nbl[th],
                                          nbl_list->nbl_fep[th]);

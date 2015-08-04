@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,6 +85,25 @@ class Path
         Path();
 };
 
+class File
+{
+    public:
+        /*! \brief
+         * Checks whether a file exists and is a regular file.
+         *
+         * \param[in] filename  Path to the file to check.
+         * \returns   `true` if \p filename exists and is accessible.
+         *
+         * Does not throw.
+         */
+        static bool exists(const char *filename);
+        //! \copydoc exists(const char *)
+        static bool exists(const std::string &filename);
+
+    private:
+        // Disallow instantiation.
+        File();
+};
 
 class Directory
 {

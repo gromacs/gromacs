@@ -49,6 +49,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/fileio/trx.h"
@@ -56,15 +57,16 @@
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "compiler.h"
 #include "mempool.h"
@@ -129,43 +131,44 @@ namespace
 /*! \brief
  * Reads a single selection line from stdin.
  *
- * \param[in]  infile        File to read from (typically File::standardInput()).
- * \param[in]  bInteractive  Whether to print interactive prompts.
+ * \param[in]  inputStream   Stream to read from (typically the StandardInputStream).
+ * \param[in]  statusWriter  Stream to print prompts to (if NULL, no output is done).
  * \param[out] line          The read line in stored here.
  * \returns true if something was read, false if at end of input.
  *
  * Handles line continuation, reading also the continuing line(s) in one call.
  */
-bool promptLine(File *infile, bool bInteractive, std::string *line)
+bool promptLine(TextInputStream *inputStream, TextWriter *statusWriter,
+                std::string *line)
 {
-    if (bInteractive)
+    if (statusWriter != NULL)
     {
-        fprintf(stderr, "> ");
+        statusWriter->writeString("> ");
     }
-    if (!infile->readLineWithTrailingSpace(line))
+    if (!inputStream->readLine(line))
     {
         return false;
     }
     while (endsWith(*line, "\\\n"))
     {
         line->resize(line->length() - 2);
-        if (bInteractive)
+        if (statusWriter != NULL)
         {
-            fprintf(stderr, "... ");
+            statusWriter->writeString("... ");
         }
         std::string buffer;
         // Return value ignored, buffer remains empty and works correctly
         // if there is nothing to read.
-        infile->readLineWithTrailingSpace(&buffer);
+        inputStream->readLine(&buffer);
         line->append(buffer);
     }
     if (endsWith(*line, "\n"))
     {
         line->resize(line->length() - 1);
     }
-    else if (bInteractive)
+    else if (statusWriter != NULL)
     {
-        fprintf(stderr, "\n");
+        statusWriter->writeLine();
     }
     return true;
 }
@@ -185,26 +188,14 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
                   bool bInteractive)
 {
     int status    = YYPUSH_MORE;
-    int prevToken = 0;
     do
     {
         YYSTYPE value;
         YYLTYPE location;
         int     token = _gmx_sel_yylex(&value, &location, scanner);
-        if (bInteractive)
+        if (bInteractive && token == 0)
         {
-            if (token == 0)
-            {
-                break;
-            }
-            // Empty commands cause the interactive parser to print out
-            // status information. This avoids producing those unnecessarily,
-            // e.g., from "resname RA;;".
-            if (prevToken == CMD_SEP && token == CMD_SEP)
-            {
-                continue;
-            }
-            prevToken = token;
+            break;
         }
         status = _gmx_sel_yypush_parse(parserState, token, &value, &location, scanner);
     }
@@ -216,6 +207,7 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
 /*! \brief
  * Print current status in response to empty line in interactive input.
  *
+ * \param[in] writer         Writer to use for the output.
  * \param[in] sc             Selection collection data structure.
  * \param[in] grps           Available index groups.
  * \param[in] firstSelection Index of first selection from this interactive
@@ -227,52 +219,54 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
  *
  * Prints the available index groups and currently provided selections.
  */
-void printCurrentStatus(gmx_ana_selcollection_t *sc, gmx_ana_indexgrps_t *grps,
-                        size_t firstSelection, int maxCount,
-                        const std::string &context, bool bFirst)
+void printCurrentStatus(TextWriter *writer, gmx_ana_selcollection_t *sc,
+                        gmx_ana_indexgrps_t *grps, size_t firstSelection,
+                        int maxCount, const std::string &context, bool bFirst)
 {
     if (grps != NULL)
     {
-        std::fprintf(stderr, "Available static index groups:\n");
-        gmx_ana_indexgrps_print(stderr, grps, 0);
+        writer->writeLine("Available static index groups:");
+        gmx_ana_indexgrps_print(writer, grps, 0);
     }
-    std::fprintf(stderr, "Specify ");
+    writer->writeString("Specify ");
     if (maxCount < 0)
     {
-        std::fprintf(stderr, "any number of selections");
+        writer->writeString("any number of selections");
     }
     else if (maxCount == 1)
     {
-        std::fprintf(stderr, "a selection");
+        writer->writeString("a selection");
     }
     else
     {
-        std::fprintf(stderr, "%d selections", maxCount);
+        writer->writeString(formatString("%d selections", maxCount));
     }
-    std::fprintf(stderr, "%s%s:\n",
-                 context.empty() ? "" : " ", context.c_str());
-    std::fprintf(stderr,
-                 "(one per line, <enter> for status/groups, 'help' for help%s)\n",
-                 maxCount < 0 ? ", Ctrl-D to end" : "");
+    writer->writeString(formatString("%s%s:\n",
+                                     context.empty() ? "" : " ", context.c_str()));
+    writer->writeString(formatString(
+                                "(one per line, <enter> for status/groups, 'help' for help%s)\n",
+                                maxCount < 0 ? ", Ctrl-D to end" : ""));
     if (!bFirst && (sc->nvars > 0 || sc->sel.size() > firstSelection))
     {
-        std::fprintf(stderr, "Currently provided selections:\n");
+        writer->writeLine("Currently provided selections:");
         for (int i = 0; i < sc->nvars; ++i)
         {
-            std::fprintf(stderr, "     %s\n", sc->varstrs[i]);
+            writer->writeString(formatString("     %s\n", sc->varstrs[i]));
         }
         for (size_t i = firstSelection; i < sc->sel.size(); ++i)
         {
-            std::fprintf(stderr, " %2d. %s\n",
-                         static_cast<int>(i - firstSelection + 1),
-                         sc->sel[i]->selectionText());
+            writer->writeString(formatString(
+                                        " %2d. %s\n",
+                                        static_cast<int>(i - firstSelection + 1),
+                                        sc->sel[i]->selectionText()));
         }
         if (maxCount > 0)
         {
             const int remaining
                 = maxCount - static_cast<int>(sc->sel.size() - firstSelection);
-            std::fprintf(stderr, "(%d more selection%s required)\n",
-                         remaining, remaining > 1 ? "s" : "");
+            writer->writeString(formatString(
+                                        "(%d more selection%s required)\n",
+                                        remaining, remaining > 1 ? "s" : ""));
         }
     }
 }
@@ -280,20 +274,21 @@ void printCurrentStatus(gmx_ana_selcollection_t *sc, gmx_ana_indexgrps_t *grps,
 /*! \brief
  * Prints selection help in interactive selection input.
  *
+ * \param[in] writer Writer to use for the output.
  * \param[in] sc    Selection collection data structure.
  * \param[in] line  Line of user input requesting help (starting with `help`).
  *
  * Initializes the selection help if not yet initialized, and finds the help
  * topic based on words on the input line.
  */
-void printHelp(gmx_ana_selcollection_t *sc, const std::string &line)
+void printHelp(TextWriter *writer, gmx_ana_selcollection_t *sc,
+               const std::string &line)
 {
     if (sc->rootHelp.get() == NULL)
     {
         sc->rootHelp = createSelectionHelpTopic();
     }
-    HelpWriterContext context(&File::standardError(),
-                              eHelpOutputFormat_Console);
+    HelpWriterContext context(&writer->stream(), eHelpOutputFormat_Console);
     HelpManager       manager(*sc->rootHelp, context);
     try
     {
@@ -307,7 +302,7 @@ void printHelp(gmx_ana_selcollection_t *sc, const std::string &line)
     }
     catch (const InvalidInputError &ex)
     {
-        fprintf(stderr, "%s\n", ex.what());
+        writer->writeLine(ex.what());
         return;
     }
     manager.writeCurrentTopic();
@@ -317,8 +312,10 @@ void printHelp(gmx_ana_selcollection_t *sc, const std::string &line)
  * Helper function that runs the parser once the tokenizer has been
  * initialized.
  *
- * \param[in,out] scanner Scanner data structure.
- * \param[in]     bStdIn  Whether to use a line-based reading
+ * \param[in,out] scanner       Scanner data structure.
+ * \param[in]     inputStream   Stream to use for input (currently only with
+ *      `bInteractive==true`).
+ * \param[in]     bInteractive  Whether to use a line-based reading
  *      algorithm designed for interactive input.
  * \param[in]     maxnr   Maximum number of selections to parse
  *      (if -1, parse as many as provided by the user).
@@ -327,11 +324,11 @@ void printHelp(gmx_ana_selcollection_t *sc, const std::string &line)
  * \throws        std::bad_alloc if out of memory.
  * \throws        InvalidInputError if there is a parsing error.
  *
- * Used internally to implement parseFromStdin(), parseFromFile() and
+ * Used internally to implement parseInteractive(), parseFromFile() and
  * parseFromString().
  */
-SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
-                        const std::string &context)
+SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
+                        bool bInteractive, int maxnr, const std::string &context)
 {
     boost::shared_ptr<void>  scannerGuard(scanner, &_gmx_sel_free_lexer);
     gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
@@ -341,30 +338,29 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr,
     {
         boost::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
-        if (bStdIn)
+        if (bInteractive)
         {
-            File       &stdinFile(File::standardInput());
-            const bool  bInteractive = _gmx_sel_is_lexer_interactive(scanner);
-            if (bInteractive)
+            TextWriter *statusWriter = _gmx_sel_lexer_get_status_writer(scanner);
+            if (statusWriter != NULL)
             {
-                printCurrentStatus(sc, grps, oldCount, maxnr, context, true);
+                printCurrentStatus(statusWriter, sc, grps, oldCount, maxnr, context, true);
             }
             std::string line;
             int         status;
-            while (promptLine(&stdinFile, bInteractive, &line))
+            while (promptLine(inputStream, statusWriter, &line))
             {
-                if (bInteractive)
+                if (statusWriter != NULL)
                 {
                     line = stripString(line);
                     if (line.empty())
                     {
-                        printCurrentStatus(sc, grps, oldCount, maxnr, context, false);
+                        printCurrentStatus(statusWriter, sc, grps, oldCount, maxnr, context, false);
                         continue;
                     }
                     if (startsWith(line, "help")
                         && (line[4] == 0 || std::isspace(line[4])))
                     {
-                        printHelp(sc, line);
+                        printHelp(statusWriter, sc, line);
                         continue;
                     }
                 }
@@ -500,7 +496,7 @@ SelectionCollection::~SelectionCollection()
 
 
 void
-SelectionCollection::initOptions(Options *options)
+SelectionCollection::initOptions(IOptionsContainer *options)
 {
     const char * const debug_levels[]
         = { "no", "basic", "compile", "eval", "full" };
@@ -673,17 +669,32 @@ SelectionCollection::requiresTopology() const
     return false;
 }
 
+SelectionList
+SelectionCollection::parseFromStdin(int count, bool bInteractive,
+                                    const std::string &context)
+{
+    return parseInteractive(count, &StandardInputStream::instance(),
+                            bInteractive ? &TextOutputFile::standardError() : NULL,
+                            context);
+}
 
 SelectionList
-SelectionCollection::parseFromStdin(int nr, bool bInteractive,
-                                    const std::string &context)
+SelectionCollection::parseInteractive(int                count,
+                                      TextInputStream   *inputStream,
+                                      TextOutputStream  *statusStream,
+                                      const std::string &context)
 {
     yyscan_t scanner;
 
-    _gmx_sel_init_lexer(&scanner, &impl_->sc_, bInteractive, nr,
-                        impl_->bExternalGroupsSet_,
-                        impl_->grps_);
-    return runParser(scanner, true, nr, context);
+    boost::scoped_ptr<TextWriter> statusWriter;
+    if (statusStream != NULL)
+    {
+        statusWriter.reset(new TextWriter(statusStream));
+        statusWriter->wrapperSettings().setLineLength(78);
+    }
+    _gmx_sel_init_lexer(&scanner, &impl_->sc_, statusWriter.get(),
+                        count, impl_->bExternalGroupsSet_, impl_->grps_);
+    return runParser(scanner, inputStream, true, count, context);
 }
 
 
@@ -693,14 +704,14 @@ SelectionCollection::parseFromFile(const std::string &filename)
 
     try
     {
-        yyscan_t scanner;
-        File     file(filename, "r");
+        yyscan_t      scanner;
+        TextInputFile file(filename);
         // TODO: Exception-safe way of using the lexer.
-        _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
+        _gmx_sel_init_lexer(&scanner, &impl_->sc_, NULL, -1,
                             impl_->bExternalGroupsSet_,
                             impl_->grps_);
         _gmx_sel_set_lex_input_file(scanner, file.handle());
-        return runParser(scanner, false, -1, std::string());
+        return runParser(scanner, NULL, false, -1, std::string());
     }
     catch (GromacsException &ex)
     {
@@ -717,11 +728,11 @@ SelectionCollection::parseFromString(const std::string &str)
 {
     yyscan_t scanner;
 
-    _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
+    _gmx_sel_init_lexer(&scanner, &impl_->sc_, NULL, -1,
                         impl_->bExternalGroupsSet_,
                         impl_->grps_);
     _gmx_sel_set_lex_input_str(scanner, str.c_str());
-    return runParser(scanner, false, -1, std::string());
+    return runParser(scanner, NULL, false, -1, std::string());
 }
 
 

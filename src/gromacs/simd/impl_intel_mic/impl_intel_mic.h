@@ -555,28 +555,4 @@ gmx_simd_log_f_mic(__m512 x)
     return _mm512_mul_ps(_mm512_set1_ps(0.693147180559945286226764), _mm512_log2ae23_ps(x));
 }
 
-/* Function to check whether SIMD operations have resulted in overflow */
-static int
-gmx_simd_check_and_reset_overflow(void)
-{
-    int                MXCSR;
-    int                sse_overflow;
-    /* The overflow flag is bit 3 in the register */
-    const unsigned int flag = 0x8;
-
-    MXCSR = _mm_getcsr();
-    if (MXCSR & flag)
-    {
-        sse_overflow = 1;
-        /* Set the overflow flag to zero */
-        MXCSR = MXCSR & ~flag;
-        _mm_setcsr(MXCSR);
-    }
-    else
-    {
-        sse_overflow = 0;
-    }
-    return sse_overflow;
-}
-
 #endif /* GMX_SIMD_IMPL_INTEL_MIC_H */

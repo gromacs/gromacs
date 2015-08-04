@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,9 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -132,7 +134,7 @@ void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n)
                        nbat->alloc, nbat->free);
     for (t = 0; t < nbat->nout; t++)
     {
-        /* Allocate one element extra for possible signaling with CUDA */
+        /* Allocate one element extra for possible signaling with GPUs */
         nbnxn_realloc_void((void **)&nbat->out[t].f,
                            nbat->natoms*nbat->fstride*sizeof(*nbat->out[t].f),
                            n*nbat->fstride*sizeof(*nbat->out[t].f),

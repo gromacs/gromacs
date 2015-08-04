@@ -50,7 +50,7 @@
 #include "gromacs/math/units.h"
 #include "names.h"
 #include "txtdump.h"
-#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/trrio.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/fileio/confio.h"

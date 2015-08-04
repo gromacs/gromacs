@@ -43,7 +43,6 @@
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/types/commrec_fwd.h"
-#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -51,6 +50,7 @@ extern "C" {
 #endif
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
+struct gmx_wallclock_gpu_t;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
@@ -98,6 +98,9 @@ void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */
 
+void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c);
+/* Returns the cumulative count and cycle count for ewc */
+
 void wallcycle_reset_all(gmx_wallcycle_t wc);
 /* Resets all cycle counters to zero */
 
@@ -105,7 +108,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-                     gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
+                     gmx_wallcycle_t wc, struct gmx_wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);

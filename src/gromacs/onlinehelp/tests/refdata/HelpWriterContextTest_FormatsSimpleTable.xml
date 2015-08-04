@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Console"><![CDATA[
+Simple table:
+
+============  =============
+First column  Second header
+============  =============
+text          text
+============  =============
+
+Normal paragraph again.]]></String>
+  <String Name="reStructuredText"><![CDATA[
+Simple table:
+
+============  =============
+First column  Second header
+============  =============
+text          text
+============  =============
+
+Normal paragraph
+again.]]></String>
+</ReferenceData>

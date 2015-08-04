@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,9 +60,11 @@ struct t_trxframe;
 namespace gmx
 {
 
-class Options;
+class IOptionsContainer;
 class SelectionCompiler;
 class SelectionEvaluator;
+class TextInputStream;
+class TextOutputStream;
 
 /*! \brief
  * Collection of selections.
@@ -79,7 +81,7 @@ class SelectionEvaluator;
  * initialization options.
  *
  * After setting the default values, one or more selections can be parsed with
- * one or more calls to parseFromStdin(), parseFromFile(), and/or
+ * one or more calls to parseInteractive(), parseFromStdin(), parseFromFile(), and/or
  * parseFromString().  After all selections are parsed, the topology must be
  * set with setTopology() unless requiresTopology() returns false (the topology
  * can also be set earlier).
@@ -128,7 +130,7 @@ class SelectionCollection
          * position types (see setReferencePosType() and setOutputPosType())
          * and debugging flags.
          */
-        void initOptions(Options *options);
+        void initOptions(IOptionsContainer *options);
 
         /*! \brief
          * Sets the default reference position handling for a selection
@@ -257,6 +259,31 @@ class SelectionCollection
          */
         SelectionList parseFromStdin(int count, bool bInteractive,
                                      const std::string &context);
+        /*! \brief
+         * Parses selection(s) interactively using provided streams.
+         *
+         * \param[in]  count    Number of selections to parse
+         *      (if -1, parse as many as provided by the user).
+         * \param[in]  inputStream  Stream to use for input.
+         * \param[in]  outputStream Stream to use for output
+         *      (if NULL, the parser runs non-interactively and does not
+         *      produce any status messages).
+         * \param[in]  context  Context to print for interactive input.
+         * \returns    Vector of parsed selections.
+         * \throws     std::bad_alloc if out of memory.
+         * \throws     InvalidInputError if there is a parsing error
+         *      (an interactive parser only throws this if too few selections
+         *      are provided and the user forced the end of input).
+         *
+         * Works the same as parseFromStdin(), except that the caller can
+         * provide streams to use instead of `stdin` and `stderr`.
+         *
+         * Mainly usable for unit testing interactive input.
+         */
+        SelectionList parseInteractive(int                count,
+                                       TextInputStream   *inputStream,
+                                       TextOutputStream  *outputStream,
+                                       const std::string &context);
         /*! \brief
          * Parses selection(s) from a file.
          *

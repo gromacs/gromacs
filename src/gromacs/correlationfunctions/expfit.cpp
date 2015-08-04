@@ -822,7 +822,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
                 }
                 for (j = 0; (j < nfitpnts); j++)
                 {
-                    real ttt = x0 ? x0[i] : dt*j;
+                    real ttt = x0 ? x0[j] : dt*j;
                     fprintf(fp, "%10.5e  %10.5e  %10.5e\n",
                             x[j], y[j], lmcurves[eFitFn](ttt, fitparms));
                 }
@@ -861,14 +861,6 @@ real fit_acf(int ncorr, int fitfn, const output_env_t oenv, gmx_bool bVerbose,
     }
     nf_int = std::min(ncorr, (int)(tendfit/dt));
     sum    = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
-
-    /* Estimate the correlation time for better fitting */
-    ct_estimate = 0.5*c1[0];
-    for (i = 1; (i < ncorr) && (c1[i] > 0); i++)
-    {
-        ct_estimate += c1[i];
-    }
-    ct_estimate *= dt/c1[0];
 
     if (bPrint)
     {

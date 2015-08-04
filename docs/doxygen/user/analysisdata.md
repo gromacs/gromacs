@@ -9,7 +9,7 @@ module is visualized below:
   digraph analysisdata_overview {
     rankdir = BT
     dataobject [label="data object\n(subclass of gmx::AbstractAnalysisData)"]
-    datamodule1 [label="data module\n(implements gmx::AnalysisDataModuleInterface)"]
+    datamodule1 [label="data module\n(implements gmx::IAnalysisDataModule)"]
     datamodule2 [label="data module\nthat also provides data"]
     datamodule3 [label="data module"]
     datamodule1 -> dataobject
@@ -26,7 +26,7 @@ To perform operations on the data, one or more _data modules_ can be attached
 to the data object.  Examples of such operations are averaging, histogramming,
 and plotting the data into a file.  Some data modules are provided by the \ref
 module_analysisdata module.  To implement new ones, it is necessary to create a
-class that implements gmx::AnalysisDataModuleInterface.
+class that implements gmx::IAnalysisDataModule.
 
 In many cases, such data modules also provide data that can be processed
 further, acting as data objects themselves.  This makes it possible to attach
@@ -171,7 +171,7 @@ with a short description.  See the documentation of the individual classes for
 more details.
 Note that this list is manually maintained, so it may not always be up-to-date.
 A comprehensive list can be found by looking at the inheritance graph of
-gmx::AnalysisDataModuleInterface, but the list here is more user-friendly.
+gmx::IAnalysisDataModule, but the list here is more user-friendly.
 
 <dl>
 <dt>gmx::AnalysisDataAverageModule</dt>

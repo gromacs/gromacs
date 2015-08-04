@@ -58,7 +58,7 @@
  * not work with xlc, which requires us to use bool. Solve the conflict by
  * defining a new vsx_bool.
  */
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
 #    define vsx_bool __bool
 #    undef  bool
 #else
@@ -70,17 +70,12 @@
  * reading this because you saw the error below for a new compiler, try removing
  * the checks, but then make sure you run 'make test'.
  */
-#if !(defined __GNUC__) && !(defined __IBMC__) && !(defined __IBMCPP__)
+#if !(defined __GNUC__) && !(defined __ibmxl__) && !(defined __xlC__)
 #    error VSX acceleration is very compiler-dependent, and only tested for gcc & xlc.
-#endif
-
-#if !(defined __BIG_ENDIAN__) && !(defined __LITTLE_ENDIAN__)
-#    error VSX platform not recognized - both gcc & xlc should define big or little endian!
 #endif
 
 /* Capability definitions for IBM VSX */
 #define GMX_SIMD_HAVE_FLOAT
-#define GMX_SIMD_HAVE_DOUBLE
 #define GMX_SIMD_HAVE_HARDWARE
 #define GMX_SIMD_HAVE_LOADU
 #define GMX_SIMD_HAVE_STOREU
@@ -91,10 +86,19 @@
 #define GMX_SIMD_HAVE_FINT32_EXTRACT
 #define GMX_SIMD_HAVE_FINT32_LOGICAL
 #define GMX_SIMD_HAVE_FINT32_ARITHMETICS
-#define GMX_SIMD_HAVE_DINT32
-#define GMX_SIMD_HAVE_DINT32_EXTRACT
-#define GMX_SIMD_HAVE_DINT32_LOGICAL
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS
+
+/* With GCC, only version 4.9 or later supports all parts of double precision VSX.
+ * We check explicitly for xlc, since that compiler appears to like pretending it is gcc,
+ * but there double precision seems to work fine.
+ */
+#if defined(__ibmxl__) || defined(__xlC__) || !(defined(__GNUC__) && ((__GNUC__ < 4) || ((__GNUC__ == 4) && (__GNUC_MINOR < 9))))
+#    define GMX_SIMD_HAVE_DOUBLE
+#    define GMX_SIMD_HAVE_DINT32
+#    define GMX_SIMD_HAVE_DINT32_EXTRACT
+#    define GMX_SIMD_HAVE_DINT32_LOGICAL
+#    define GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#endif
+
 #define GMX_SIMD4_HAVE_FLOAT
 #undef  GMX_SIMD4_HAVE_DOUBLE
 
@@ -106,22 +110,37 @@
 #define GMX_SIMD_RSQRT_BITS         14
 #define GMX_SIMD_RCP_BITS           14
 
+/* The VSX load & store operations are a slight mess. The interface is different
+ * for xlc version 12, xlc version 13, and gcc. Long-term IBM recommends
+ * simply using pointer dereferencing both for aligned and unaligned loads.
+ * That's nice, but unfortunately xlc still bugs out when the pointer is
+ * not aligned. Sticking to vec_xl/vec_xst isn't a solution either, since
+ * that appears to be buggy for some _aligned_ loads :-)
+ *
+ * For now, we use pointer dereferencing for all aligned load/stores, and
+ * for unaligned ones with gcc. On xlc we use vec_xlw4/vec_xstw4 for
+ * unaligned memory operations. The latest docs recommend using the overloaded
+ * vec_xl/vec_xst, but that is not supported on xlc version 12. We'll
+ * revisit things once xlc is a bit more stable - for now you probably want
+ * to stick to gcc...
+ */
+
 /****************************************************
  *      SINGLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
 #define gmx_simd_float_t           __vector float
-#ifdef __GNUC__
-#    define gmx_simd_load_f(m)     vec_vsx_ld(0, (const float *)(m))
-#    define gmx_simd_store_f(m, x) vec_vsx_st(x, 0, (float *)(m))
-#else
-/* IBM xlC */
-#    define gmx_simd_load_f(m)     vec_xlw4(0, (float *)(m))
-#    define gmx_simd_store_f(m, x) vec_xstw4(x, 0, (float *)(m))
-#endif
+#define gmx_simd_load_f(m)         (*(const gmx_simd_float_t *)(m))
+#define gmx_simd_store_f(m, x)      { *(gmx_simd_float_t *)(m) = (x); }
 #define gmx_simd_load1_f(m)        vec_splats((float)(*m))
 #define gmx_simd_set1_f(x)         vec_splats((float)(x))
-#define gmx_simd_loadu_f           gmx_simd_load_f
-#define gmx_simd_storeu_f          gmx_simd_store_f
+#if defined(__ibmxl__) || defined(__xlC__)
+#    define gmx_simd_loadu_f(m)    vec_xlw4(0, (float *)(m))
+#    define gmx_simd_storeu_f(m, x) vec_xstw4(x, 0, (m))
+#else
+/* GCC can handle unaligned load/store as pointer dereference */
+#    define gmx_simd_loadu_f       gmx_simd_load_f
+#    define gmx_simd_storeu_f      gmx_simd_store_f
+#endif
 #define gmx_simd_setzero_f()       vec_splats(0.0f)
 #define gmx_simd_add_f(a, b)       vec_add(a, b)
 #define gmx_simd_sub_f(a, b)       vec_sub(a, b)
@@ -139,14 +158,7 @@
 #define gmx_simd_rsqrt_f(a)        vec_rsqrte(a)
 #define gmx_simd_rcp_f(a)          vec_re(a)
 #define gmx_simd_fabs_f(a)         vec_abs(a)
-#ifdef __GNUC__
-/* gcc up to at least version 4.9 is missing intrinsics for vec_neg(), use inline asm. */
-#    define gmx_simd_fneg_f(a)     ({ __vector float res; __asm__ ("xvnegsp %0,%1" : \
-                                                                   "=ww" ((__vector float)res) : "ww" ((__vector float)(a))); res; })
-#else
-/* IBM xlC */
-#    define gmx_simd_fneg_f(a)     vec_neg(a)
-#endif
+#define gmx_simd_fneg_f(a)         (-(a))
 #define gmx_simd_max_f(a, b)       vec_max(a, b)
 #define gmx_simd_min_f(a, b)       vec_min(a, b)
 #define gmx_simd_round_f(a)        vec_round(a)
@@ -157,17 +169,17 @@
 #define gmx_simd_set_exponent_f(a) gmx_simd_set_exponent_f_ibm_vsx(a)
 /* integer datatype corresponding to float: gmx_simd_fint32_t */
 #define gmx_simd_fint32_t          __vector signed int
-#ifdef __GNUC__
-#    define gmx_simd_load_fi(m)     vec_vsx_ld(0, (const int *)(m))
-#    define gmx_simd_store_fi(m, x) vec_vsx_st(x, 0, (int *)(m))
-#else
-/* IBM xlC */
-#    define gmx_simd_load_fi(m)     vec_xlw4(0, (int *)(m))
-#    define gmx_simd_store_fi(m, x) vec_xstw4(x, 0, (int *)(m))
-#endif
+#define gmx_simd_load_fi(m)        (*(const gmx_simd_fint32_t *)(m))
+#define gmx_simd_store_fi(m, x)     { *(gmx_simd_fint32_t *)(m) = (x); }
 #define gmx_simd_set1_fi(i)        vec_splats((int)(i))
-#define gmx_simd_loadu_fi          gmx_simd_load_fi
-#define gmx_simd_storeu_fi         gmx_simd_store_fi
+#if defined(__ibmxl__) || defined(__xlC__)
+#    define gmx_simd_loadu_fi(m)    vec_xlw4(0, (int *)(m))
+#    define gmx_simd_storeu_fi(m, x) vec_xstw4(x, 0, (m))
+#else
+/* GCC can handle unaligned load/store as pointer dereference */
+#    define gmx_simd_loadu_fi      gmx_simd_load_fi
+#    define gmx_simd_storeu_fi     gmx_simd_store_fi
+#endif
 #define gmx_simd_setzero_fi()      vec_splats((int)0)
 #define gmx_simd_cvt_f2i(a)        vec_cts(vec_round(a), 0)
 #define gmx_simd_cvtt_f2i(a)       vec_cts(a, 0)
@@ -183,17 +195,7 @@
 /* Integer arithmetic ops on gmx_simd_fint32_t */
 #define gmx_simd_add_fi(a, b)       vec_add(a, b)
 #define gmx_simd_sub_fi(a, b)       vec_sub(a, b)
-#ifdef __GNUC__
-/* gcc-4.9 does not provide vec_mul() for integers */
-#    ifdef __BIG_ENDIAN__
-#        define gmx_simd_mul_fi(a, b)   vec_mulo((__vector short)a, (__vector short)b)
-#    else
-#        define gmx_simd_mul_fi(a, b)   vec_mule((__vector short)a, (__vector short)b)
-#    endif
-#else
-/* IBM xlC */
-#    define gmx_simd_mul_fi(a, b)   vec_mul(a, b)
-#endif
+#define gmx_simd_mul_fi(a, b)      ((a)*(b))
 /* Boolean & comparison operations on gmx_simd_float_t */
 #define gmx_simd_fbool_t           __vector vsx_bool int
 #define gmx_simd_cmpeq_f(a, b)     vec_cmpeq(a, b)
@@ -224,18 +226,18 @@
  *      DOUBLE PRECISION SIMD IMPLEMENTATION        *
  ****************************************************/
 #define gmx_simd_double_t          __vector double
-#ifdef __GNUC__
-#    define gmx_simd_load_d(m)      vec_vsx_ld(0, (const __vector double *)(m))
-#    define gmx_simd_store_d(m, x)  vec_vsx_st(x, 0, (__vector double *)(m))
-#else
-/* IBM xlC */
-#    define gmx_simd_load_d(m)      vec_xld2(0, (double *)(m))
-#    define gmx_simd_store_d(m, x)  vec_xstd2(x, 0, (double *)(m))
-#endif
+#define gmx_simd_load_d(m)         (*(const gmx_simd_double_t *)(m))
+#define gmx_simd_store_d(m, x)      { *(gmx_simd_double_t *)(m) = (x); }
 #define gmx_simd_load1_d(m)        vec_splats((double)(*m))
 #define gmx_simd_set1_d(x)         vec_splats((double)(x))
-#define gmx_simd_loadu_d           gmx_simd_load_d
-#define gmx_simd_storeu_d          gmx_simd_store_d
+#if defined(__ibmxl__) || defined(__xlC__)
+#    define gmx_simd_loadu_d(m)    vec_xld2(0, (double *)(m))
+#    define gmx_simd_storeu_d(m, x) vec_xstd2(x, 0, (m))
+#else
+/* GCC can handle unaligned load/store as pointer dereference */
+#    define gmx_simd_loadu_d       gmx_simd_load_d
+#    define gmx_simd_storeu_d      gmx_simd_store_d
+#endif
 #define gmx_simd_setzero_d()       vec_splats(0.0)
 #define gmx_simd_add_d(a, b)       vec_add(a, b)
 #define gmx_simd_sub_d(a, b)       vec_sub(a, b)
@@ -253,23 +255,15 @@
 #define gmx_simd_rsqrt_d(a)        vec_rsqrte(a)
 #define gmx_simd_rcp_d(a)          vec_re(a)
 #define gmx_simd_fabs_d(a)         vec_abs(a)
-#ifdef __GNUC__
-/* gcc up to at least version 4.9 is missing intrinsics for vec_neg(), use inline asm. */
-#    define gmx_simd_fneg_d(a)     ({ __vector double res; __asm__ ("xvnegdp %0,%1" : \
-                                                                    "=ww" (res) : "ww" ((__vector double) (a))); res; })
-#else
-/* IBM xlC */
-#    define gmx_simd_fneg_d(a)     vec_neg(a)
-#endif
+#define gmx_simd_fneg_d(a)         (-(a))
 #define gmx_simd_max_d(a, b)       vec_max(a, b)
 #define gmx_simd_min_d(a, b)       vec_min(a, b)
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
 /* gcc up to at least version 4.9 does not support vec_round() in double precision. */
-#    define gmx_simd_round_d(a)     ({ __vector double res; __asm__ ("xvrdpi %0,%1" : \
-                                                                     "=ww" (res) : "ww" ((__vector double) (a))); res; })
+#    define gmx_simd_round_d(a)    ({ __vector double res; __asm__ ("xvrdpi %0,%1" : "=ww" (res) : "ww" ((__vector double) (a))); res; })
 #else
 /* IBM xlC */
-#    define gmx_simd_round_d(a)        vec_round(a)
+#    define gmx_simd_round_d(a)    vec_round(a)
 #endif
 #define gmx_simd_trunc_d(a)        vec_trunc(a)
 #define gmx_simd_fraction_d(x)     vec_sub(x, vec_trunc(x))
@@ -284,14 +278,12 @@
 #define gmx_simd_loadu_di          gmx_simd_load_di
 #define gmx_simd_storeu_di         gmx_simd_store_di
 #define gmx_simd_setzero_di()      vec_splats((int)0)
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
 /* gcc up to at least version 4.9 is missing intrinsics for double precision
  * to integer conversion, use inline asm instead.
  */
-#    define gmx_simd_cvtt_d2i(a)   ({ __vector signed int res; __asm__ ("xvcvdpsxws %0,%1" : \
-                                                                        "=ww" (res) : "ww" ((__vector double) (a))); res; })
-#    define gmx_simd_cvt_i2d(a)    ({ __vector double res; __asm__ ("xvcvsxwdp %0,%1" : \
-                                                                    "=ww" (res) : "ww" ((__vector signed int) (a))); res; })
+#    define gmx_simd_cvtt_d2i(a)   gmx_simd_cvtt_d2i_ibm_vsx(a)
+#    define gmx_simd_cvt_i2d(a)    gmx_simd_cvt_i2d_ibm_vsx(a)
 #else
 /* IBM xlC */
 #    define gmx_simd_cvtt_d2i(a)       vec_cts(a, 0)
@@ -309,17 +301,7 @@
 /* Integer arithmetic ops on gmx_simd_dint32_t */
 #define gmx_simd_add_di(a, b)       vec_add(a, b)
 #define gmx_simd_sub_di(a, b)       vec_sub(a, b)
-#ifdef __GNUC__
-/* gcc 4.9 does not provide vec_mul() for integers */
-#    ifdef __BIG_ENDIAN__
-#        define gmx_simd_mul_di(a, b)   vec_mulo((__vector short)a, (__vector short)b)
-#    else
-#        define gmx_simd_mul_di(a, b)   vec_mule((__vector short)a, (__vector short)b)
-#    endif
-#else
-/* IBM xlC */
-#    define gmx_simd_mul_di(a, b)   vec_mul(a, b)
-#endif
+#define gmx_simd_mul_di(a, b)       ((a)*(b))
 /* Boolean & comparison operations on gmx_simd_double_t */
 #define gmx_simd_dbool_t           __vector vsx_bool long long
 #define gmx_simd_cmpeq_d(a, b)     vec_cmpeq(a, b)
@@ -350,29 +332,11 @@
 #define gmx_simd_cvt_f2dd(f, d0, d1)  gmx_simd_cvt_f2dd_ibm_vsx(f, d0, d1)
 #define gmx_simd_cvt_dd2f(d0, d1)     gmx_simd_cvt_dd2f_ibm_vsx(d0, d1)
 
-/* Convenience defines to work around GCC/xlc compiler differences */
-
-#ifdef __GNUC__
-/* vec_xxsldwi() and vec_xxpermdi() were missing from altivec.h
- * in gcc-4.8, but the builtins are available. This was fixed in gcc-4.9.
- */
-#    ifndef vec_xxsldwi
-#        define vec_xxsldwi  __builtin_vsx_xxsldwi
-#    endif
-#    ifndef vec_xxpermdi
-#        define vec_xxpermdi __builtin_vsx_xxpermdi
-#    endif
-/* gcc up to at least 4.9 is missing intrinsics for
- * double-to-float and float-to-double conversions. Use inline asm.
- */
-#    define gmx_vsx_f2d(x) ({ __vector double res; __asm__ ("xvcvspdp %0,%1" : \
-                                                            "=ww" (res) : "ww" ((__vector float) (x))); res; })
-#    define gmx_vsx_d2f(x) ({ __vector float res; __asm__ ("xvcvdpsp %0,%1" : \
-                                                           "=ww" (res) : "ww" ((__vector double) (x))); res; })
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+/* gcc-4.9 is missing double-to-float/float-to-double conversions. */
+#    define gmx_vsx_f2d(x) ({ __vector double res; __asm__ ("xvcvspdp %0,%1" : "=ww" (res) : "ww" ((__vector float) (x))); res; })
+#    define gmx_vsx_d2f(x) ({ __vector float res; __asm__ ("xvcvdpsp %0,%1" : "=ww" (res) : "ww" ((__vector double) (x))); res; })
 #else
-/* IBM xlC */
-#    define vec_xxsldwi          vec_sldw
-#    define vec_xxpermdi         vec_permi
 /* f2d and d2f are indeed identical on xlC; it is selected by the argument and result type. */
 #    define gmx_vsx_f2d(x)       vec_cvf(x)
 #    define gmx_vsx_d2f(x)       vec_cvf(x)
@@ -418,29 +382,19 @@ gmx_simd_set_exponent_f_ibm_vsx(gmx_simd_float_t x)
 static gmx_inline float
 gmx_simd_reduce_f_ibm_vsx(gmx_simd_float_t x)
 {
-    x = vec_add(x, vec_xxsldwi(x, x, 2));
-    x = vec_add(x, vec_xxsldwi(x, x, 1));
+    const __vector unsigned char perm1 = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
+    const __vector unsigned char perm2 = { 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3 };
+
+    x = vec_add(x, vec_perm(x, x, perm1));
+    x = vec_add(x, vec_perm(x, x, perm2));
     return vec_extract(x, 0);
 }
 
+/* gcc-4.9 does not detect that vec_extract() uses its argument */
 static gmx_inline int
 gmx_simd_extract_fi_ibm_vsx(gmx_simd_fint32_t gmx_unused x, unsigned int i)
 {
-    /* For some reason gcc-4.9 warns about x being unused, which it isn't. */
-#if (defined __GNUC__) && (defined __LITTLE_ENDIAN__)
-    /* On Power7 and earlier big-endian architecture the GNU version of vec_extract()
-     * works fine, but it appears to be buggy on Power8 running in little-endian mode.
-     * Use inline assembly instead. Since this can only happen on Power8 and later,
-     * we can use a Power8-specific direct move instruction.
-     */
-    int res;
-    __asm__ ("mfvsrwz %0,%1" : "=r" (res) : \
-             "ww" ((vec_xxsldwi((x), (x), (((2-(i))&0x3 ))))));
-    return res;
-#else
-    /* IBM xlC, and GNU when running in big-endian mode */
     return vec_extract(x, i);
-#endif
 }
 
 /****************************************************
@@ -449,36 +403,77 @@ gmx_simd_extract_fi_ibm_vsx(gmx_simd_fint32_t gmx_unused x, unsigned int i)
 static gmx_inline gmx_simd_dint32_t
 gmx_simd_load_di_ibm_vsx(const int *m)
 {
-    __vector signed int vi;
-    __vector signed int d0 = vec_splats(m[0]);
-    __vector signed int d1 = vec_splats(m[1]);
-#ifdef __LITTLE_ENDIAN__
-    vi = (__vector signed int)vec_xxpermdi((__vector double)d1, (__vector double)d0, 0x0);
+#ifdef __xlC__
+    /* old xlc version 12 does not understand long long VSX instructions */
+    __vector signed int          t0, t1;
+    const __vector unsigned char perm = { 0, 1, 2, 3, 0, 1, 2, 3, 16, 17, 18, 19, 16, 17, 18, 19 };
+    t0 = vec_splats(m[0]);
+    t1 = vec_splats(m[1]);
+    return vec_perm(t0, t1, perm);
 #else
-    vi = (__vector signed int)vec_xxpermdi((__vector double)d0, (__vector double)d1, 0x0);
+    __vector long long int t0;
+    t0 = vec_splats(*(long long int *)m);
+    return vec_mergeh((__vector signed int)t0, (__vector signed int)t0);
 #endif
-    return vi;
 }
 
 static gmx_inline void
 gmx_simd_store_di_ibm_vsx(int *m, gmx_simd_dint32_t x)
 {
-    m[0] = gmx_simd_extract_di(x, 0);
-    m[1] = gmx_simd_extract_di(x, 1);
+#ifdef __xlC__
+    /* old xlc version 12 does not understand long long VSX instructions */
+    m[0] = vec_extract(x, 0);
+    m[1] = vec_extract(x, 2);
+#else
+    __vector unsigned char perm = { 0, 1, 2, 3, 8, 9, 10, 11, 0, 1, 2, 3, 8, 9, 10, 11 };
+    x                   = vec_perm(x, x, perm);
+    *(long long int *)m = vec_extract((__vector long long int)x, 0);
+#endif
 }
+
+#if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
+static gmx_inline gmx_simd_dint32_t
+gmx_simd_cvtt_d2i_ibm_vsx(gmx_simd_double_t x)
+{
+    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+    gmx_simd_dint32_t            ix;
+
+    __asm__ ("xvcvdpsxws %0,%1" : "=ww" (ix) : "ww" ((__vector double) (x)));
+
+    return vec_perm(ix, ix, perm);
+}
+
+static gmx_inline gmx_simd_double_t
+gmx_simd_cvt_i2d_ibm_vsx(gmx_simd_dint32_t ix)
+{
+    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+    gmx_simd_double_t            x;
+    ix = vec_perm(ix, ix, perm);
+    __asm__ ("xvcvsxwdp %0,%1" : "=ww" (x) : "ww" ((__vector signed int) (ix)));
+    return x;
+}
+#endif
+
 
 static gmx_inline gmx_simd_double_t
 gmx_simd_get_exponent_d_ibm_vsx(gmx_simd_double_t x)
 {
-    gmx_simd_double_t  expmask = (__vector double)vec_mergel(vec_splats((int)0x7FF00000), vec_splats((int)0));
-    gmx_simd_dint32_t  i1023   = vec_splats(1023);
-    gmx_simd_dint32_t  iexp;
+#ifndef __BIG_ENDIAN__
+    const __vector unsigned char perm = {4, 5, 6, 7, 0, 1, 2, 3, 12, 13, 14, 15, 8, 9, 10, 11};
+#endif
+    gmx_simd_double_t            expmask = (__vector double)vec_splats(0x7FF0000000000000ULL);
+    gmx_simd_dint32_t            i1023   = vec_splats(1023);
+    gmx_simd_dint32_t            iexp;
 
     iexp = (__vector signed int)gmx_simd_and_d(x, expmask);
-    /* The upper half of each double is already in positions 0/2, so we only need
-     * to shift by another 52-32=20 bits.
+    /* The data is in the upper half of each double (corresponding to elements 1/3).
+     * First shift 52-32=20bits, and then permute to swap 0 with 1 and 2 with 3
+     * For big endian they are in opposite order, so we avoid the swap.
      */
     iexp = gmx_simd_srli_fi(iexp, 20);
+#ifndef __BIG_ENDIAN__
+    iexp = vec_perm(iexp, iexp, perm);
+#endif
     iexp = vec_sub(iexp, i1023);
     /* Now we have the correct integer in elements 0 & 2. Never mind about elements 1,3 */
     return gmx_simd_cvt_i2d(iexp);
@@ -487,7 +482,7 @@ gmx_simd_get_exponent_d_ibm_vsx(gmx_simd_double_t x)
 static gmx_inline gmx_simd_double_t
 gmx_simd_get_mantissa_d_ibm_vsx(gmx_simd_double_t x)
 {
-    gmx_simd_double_t  expmask = (__vector double)vec_mergel(vec_splats((int)0x7FF00000), vec_splats((int)0));
+    gmx_simd_double_t  expmask = (__vector double)vec_splats(0x7FF0000000000000ULL);
 
     x = gmx_simd_andnot_d(expmask, vec_abs(x));
     /* Reset zero (but correctly biased) exponent */
@@ -497,27 +492,35 @@ gmx_simd_get_mantissa_d_ibm_vsx(gmx_simd_double_t x)
 static gmx_inline gmx_simd_double_t
 gmx_simd_set_exponent_d_ibm_vsx(gmx_simd_double_t x)
 {
-    gmx_simd_dint32_t  iexp  = gmx_simd_cvt_d2i(x);
-    gmx_simd_dint32_t  i1023 = vec_splats(1023);
-    gmx_simd_dint32_t  tmp;
+    gmx_simd_dint32_t            iexp  = gmx_simd_cvt_d2i(x);
+    gmx_simd_dint32_t            i1023 = vec_splats(1023);
+#ifdef __BIG_ENDIAN__
+    const __vector unsigned char perm = {0, 1, 2, 3, 16, 17, 18, 19, 8, 9, 10, 11, 16, 17, 18, 19};
+#else
+    const __vector unsigned char perm = {16, 17, 18, 19, 0, 1, 2, 3, 16, 17, 18, 19, 8, 9, 10, 11};
+#endif
 
     iexp = vec_add(iexp, i1023);
     /* exponent is now present in pairs of integers; 0011.
      * Elements 0/2 already correspond to the upper half of each double,
      * so we only need to shift by another 52-32=20 bits.
-     * The remaining elements 1/3 are shifted by 32 bits to make them zero.
+     * The remaining elements are set to zero.
      */
     iexp = vec_sl(iexp, (__vector unsigned int)vec_splats((int)20));
-    tmp  = vec_mergeh(iexp, iexp);
-    iexp = vec_mergel(tmp, iexp);
-    iexp = vec_mergel(iexp, gmx_simd_setzero_di());
+    iexp = vec_perm(iexp, vec_splats(0), perm);
     return (__vector double)iexp;
 }
 
 static gmx_inline double
 gmx_simd_reduce_d_ibm_vsx(gmx_simd_double_t x)
 {
-    x = vec_add(x, vec_xxsldwi(x, x, 2));
+    const __vector unsigned char perm = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
+#ifdef __xlC__
+    /* old xlc version 12 does not understand vec_perm() with double arguments */
+    x = vec_add(x, (__vector double)vec_perm((__vector signed int)x, (__vector signed int)x, (__vector unsigned char)perm));
+#else
+    x = vec_add(x, vec_perm(x, x, (__vector unsigned char)perm));
+#endif
     return vec_extract(x, 0);
 }
 
@@ -608,20 +611,13 @@ gmx_simd_cvt_dd2f_ibm_vsx(gmx_simd_double_t d0, gmx_simd_double_t d1)
 static gmx_inline float
 gmx_simd4_dotproduct3_f_ibm_vsx(gmx_simd4_float_t a, gmx_simd4_float_t b)
 {
-    gmx_simd4_float_t c = gmx_simd_mul_f(a, b);
-    gmx_simd4_float_t sum;
-    sum = vec_add(c, vec_xxsldwi(c, c, 2));
-    sum = vec_add(sum, vec_xxsldwi(c, c, 1));
+    gmx_simd4_float_t            c     = gmx_simd_mul_f(a, b);
+    const __vector unsigned char perm1 = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
+    const __vector unsigned char perm2 = { 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3 };
+    __vector float               sum;
+    sum = vec_add(c, vec_perm(c, c, (__vector unsigned char)perm1));
+    sum = vec_add(sum, vec_perm(c, c, (__vector unsigned char)perm2));
     return vec_extract(sum, 0);
-}
-
-/* Function to check whether SIMD operations have resulted in overflow.
- * For now, this is unfortunately a dummy for this architecture.
- */
-static int
-gmx_simd_check_and_reset_overflow(void)
-{
-    return 0;
 }
 
 /* Undefine our temporary work-arounds so they are not used by mistake */

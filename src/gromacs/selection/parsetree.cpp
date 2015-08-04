@@ -66,8 +66,9 @@
  *    methods and initializes the children of the method element.
  *  - selectioncollection.h, selectioncollection.cpp:
  *    These files define the high-level public interface to the parser
- *    through SelectionCollection::parseFromStdin(),
- *    SelectionCollection::parseFromFile() and
+ *    through SelectionCollection::parseInteractive(),
+ *    SelectionCollection::parseFromStdin(),
+ *    SelectionCollection::parseFromFile(), and
  *    SelectionCollection::parseFromString().
  *
  * The basic control flow in the parser is as follows: when a parser function
@@ -232,9 +233,9 @@
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/file.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "keywords.h"
 #include "poscalc.h"
@@ -310,9 +311,11 @@ _gmx_selparser_handle_error(yyscan_t scanner)
     catch (gmx::UserInputError &ex)
     {
         ex.prependContext(context);
-        if (_gmx_sel_is_lexer_interactive(scanner))
+        gmx::TextWriter *statusWriter
+            = _gmx_sel_lexer_get_status_writer(scanner);
+        if (statusWriter != NULL)
         {
-            gmx::formatExceptionMessageToFile(stderr, ex);
+            gmx::formatExceptionMessageToWriter(statusWriter, ex);
             return true;
         }
         throw;
@@ -1062,10 +1065,13 @@ _gmx_sel_init_selection(const char                             *name,
     root->fillNameIfMissing(_gmx_sel_lexer_pselstr(scanner));
 
     /* Print out some information if the parser is interactive */
-    if (_gmx_sel_is_lexer_interactive(scanner))
+    gmx::TextWriter *statusWriter = _gmx_sel_lexer_get_status_writer(scanner);
+    if (statusWriter != NULL)
     {
-        fprintf(stderr, "Selection '%s' parsed\n",
-                _gmx_sel_lexer_pselstr(scanner));
+        const std::string message
+            = gmx::formatString("Selection '%s' parsed",
+                                _gmx_sel_lexer_pselstr(scanner));
+        statusWriter->writeLine(message);
     }
 
     return root;
@@ -1129,9 +1135,12 @@ _gmx_sel_assign_variable(const char                             *name,
     srenew(sc->varstrs, sc->nvars + 1);
     sc->varstrs[sc->nvars] = gmx_strdup(pselstr);
     ++sc->nvars;
-    if (_gmx_sel_is_lexer_interactive(scanner))
+    gmx::TextWriter *statusWriter = _gmx_sel_lexer_get_status_writer(scanner);
+    if (statusWriter != NULL)
     {
-        fprintf(stderr, "Variable '%s' parsed\n", pselstr);
+        const std::string message
+            = gmx::formatString("Variable '%s' parsed", pselstr);
+        statusWriter->writeLine(message);
     }
     return root;
 }

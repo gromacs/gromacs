@@ -51,8 +51,9 @@
 namespace gmx
 {
 
-class File;
 class TextLineWrapperSettings;
+class TextOutputStream;
+class TextWriter;
 
 /*! \cond libapi */
 //! \libinternal Output format for help writing.
@@ -123,9 +124,7 @@ class HelpLinks
  *
  * The state of a context object (excluding the fact that the output file is
  * written to) does not change after initial construction of the object.
- * Copying creates a context object that shares state with the source.
- *
- * TODO: This class will need additional work as part of Redmine issue #969.
+ * Copying creates a context objects that share state with the source.
  *
  * \inlibraryapi
  * \ingroup module_onlinehelp
@@ -134,13 +133,13 @@ class HelpWriterContext
 {
     public:
         /*! \brief
-         * Initializes a context with the given output file and format.
+         * Initializes a context with the given output stream and format.
          *
          * \throws std::bad_alloc if out of memory.
          */
-        HelpWriterContext(File *file, HelpOutputFormat format);
+        HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format);
         /*! \brief
-         * Initializes a context with the given output file, format and links.
+         * Initializes a context with the given output stream, format and links.
          *
          * \throws std::bad_alloc if out of memory.
          *
@@ -148,7 +147,7 @@ class HelpWriterContext
          * is destructed.  The caller is responsible for ensuring that the
          * links object remains valid long enough.
          */
-        HelpWriterContext(File *file, HelpOutputFormat format,
+        HelpWriterContext(TextOutputStream *stream, HelpOutputFormat format,
                           const HelpLinks *links);
         //! Creates a copy of the context.
         HelpWriterContext(const HelpWriterContext &other);
@@ -176,15 +175,37 @@ class HelpWriterContext
          */
         HelpOutputFormat outputFormat() const;
         /*! \brief
-         * Returns the raw output file for writing the help.
+         * Returns the raw writer for writing the help.
          *
-         * Using this file directly should be avoided, as it requires one to
+         * Using this writer directly should be avoided, as it requires one to
          * have different code for each output format.
          * Using other methods in this class should be preferred.
          *
          * Does not throw.
          */
-        File &outputFile() const;
+        TextWriter &outputFile() const;
+
+        /*! \brief
+         * Creates a subsection in the output help.
+         *
+         * \param[in] title  Title for the subsection.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    FileIOError on any I/O error.
+         *
+         * Writes \p title using writeTitle() and makes any further
+         * writeTitle() calls write headings one level deeper.
+         *
+         * Typical use for writing a subsection is to create a copy of the
+         * context for the parent section, and then call enterSubSection() on
+         * the copy.
+         * The whole subsection should be written out using the returned
+         * context before calling any further methods in the parent context.
+         *
+         * This method is only necessary if the subsection will contain further
+         * subsections.  If there is only one level of subsections, it is
+         * possible to use writeTitle() directly.
+         */
+        void enterSubSection(const std::string &title);
 
         /*! \brief
          * Substitutes markup used in help text and wraps lines.
@@ -243,12 +264,16 @@ class HelpWriterContext
          * Writes an entry for a single option into the output.
          *
          * \param[in] name  Name of the option.
-         * \param[in] args  Placeholder for values and other information about
-         *     the option (placed after \p name).
+         * \param[in] value        Placeholder for option value.
+         * \param[in] defaultValue Default value for the option.
+         * \param[in] info         Additional (brief) info/attributes for the
+         *      option.
          * \param[in] description  Full description of the option.
          */
-        void writeOptionItem(const std::string &name, const std::string &args,
-                             const std::string &description) const;
+        void writeOptionItem(
+            const std::string &name, const std::string &value,
+            const std::string &defaultValue, const std::string &info,
+            const std::string &description) const;
         /*! \brief
          * Finishes writing a list of options.
          *

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/testasserts.h"
+
 namespace
 {
 
@@ -94,9 +96,12 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
 {
     gmx::Options     options(NULL, NULL);
     std::vector<int> values;
+    bool             bIsSet;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
-                            IntegerOption("p").storeVector(&values).multiValue()));
+                            IntegerOption("p")
+                                .storeVector(&values).storeIsSet(&bIsSet)
+                                .multiValue()));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -107,7 +112,7 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
     EXPECT_NO_THROW(assigner.finish());
     EXPECT_NO_THROW(options.finish());
 
-    EXPECT_TRUE(options.isSet("p"));
+    EXPECT_TRUE(bIsSet);
     ASSERT_EQ(1U, values.size());
     EXPECT_EQ(1, values[0]);
 }
@@ -116,22 +121,25 @@ TEST(OptionsAssignerTest, HandlesMultipleParameter)
 {
     gmx::Options     options(NULL, NULL);
     std::vector<int> values;
+    bool             bIsSet;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
-                            IntegerOption("p").storeVector(&values).allowMultiple()));
+                            IntegerOption("p")
+                                .storeVector(&values).storeIsSet(&bIsSet)
+                                .allowMultiple()));
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("1"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("2"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("1"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("2"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
-    EXPECT_TRUE(options.isSet("p"));
+    EXPECT_TRUE(bIsSet);
     ASSERT_EQ(2U, values.size());
     EXPECT_EQ(1, values[0]);
     EXPECT_EQ(2, values[1]);
@@ -177,6 +185,38 @@ TEST(OptionsAssignerTest, HandlesExtraValue)
     EXPECT_EQ(0, value1);
 }
 
+TEST(OptionsAssignerTest, HandlesGroups)
+{
+    gmx::Options            options(NULL, NULL);
+    gmx::IOptionsContainer &group1 = options.addGroup();
+    gmx::IOptionsContainer &group2 = options.addGroup();
+    int                     value  = 3;
+    int                     value1 = 1;
+    int                     value2 = 2;
+    using gmx::IntegerOption;
+    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&value)));
+    ASSERT_NO_THROW(group1.addOption(IntegerOption("q").store(&value1)));
+    ASSERT_NO_THROW(group2.addOption(IntegerOption("r").store(&value2)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    EXPECT_NO_THROW(assigner.appendValue("5"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("q"));
+    EXPECT_NO_THROW(assigner.appendValue("4"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    ASSERT_NO_THROW(assigner.startOption("r"));
+    EXPECT_NO_THROW(assigner.appendValue("6"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ(5, value);
+    EXPECT_EQ(4, value1);
+    EXPECT_EQ(6, value2);
+}
+
 TEST(OptionsAssignerTest, HandlesSubSections)
 {
     gmx::Options options(NULL, NULL);
@@ -213,54 +253,6 @@ TEST(OptionsAssignerTest, HandlesSubSections)
     EXPECT_EQ(4, value);
     EXPECT_EQ(5, value1);
     EXPECT_EQ(6, value2);
-}
-
-TEST(OptionsAssignerTest, HandlesNoStrictSubSections)
-{
-    gmx::Options options(NULL, NULL);
-    gmx::Options sub1("section1", NULL);
-    gmx::Options sub2("section2", NULL);
-    int          pvalue  = 3;
-    int          pvalue1 = 1;
-    int          qvalue  = 4;
-    int          pvalue2 = 2;
-    int          rvalue  = 5;
-    using gmx::IntegerOption;
-    ASSERT_NO_THROW(options.addSubSection(&sub1));
-    ASSERT_NO_THROW(options.addSubSection(&sub2));
-    ASSERT_NO_THROW(options.addOption(IntegerOption("p").store(&pvalue)));
-    ASSERT_NO_THROW(sub1.addOption(IntegerOption("p").store(&pvalue1)));
-    ASSERT_NO_THROW(sub1.addOption(IntegerOption("q").store(&qvalue)));
-    ASSERT_NO_THROW(sub2.addOption(IntegerOption("p").store(&pvalue2)));
-    ASSERT_NO_THROW(sub2.addOption(IntegerOption("r").store(&rvalue)));
-
-    gmx::OptionsAssigner assigner(&options);
-    assigner.setNoStrictSectioning(true);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("q"));
-    EXPECT_NO_THROW(assigner.appendValue("6"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    EXPECT_NO_THROW(assigner.appendValue("7"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("r"));
-    EXPECT_NO_THROW(assigner.appendValue("8"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    EXPECT_NO_THROW(assigner.appendValue("9"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finishSubSection());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    EXPECT_NO_THROW(assigner.appendValue("10"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
-
-    EXPECT_EQ(6, qvalue);
-    EXPECT_EQ(7, pvalue1);
-    EXPECT_EQ(8, rvalue);
-    EXPECT_EQ(9, pvalue2);
-    EXPECT_EQ(10, pvalue);
 }
 
 TEST(OptionsAssignerTest, HandlesMultipleSources)

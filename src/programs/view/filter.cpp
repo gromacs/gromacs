@@ -36,12 +36,13 @@
  */
 #include "gmxpre.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <algorithm>
 
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -123,10 +124,10 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     char               tmpfile[STRLEN];
     int                i, j, k, len, tlen, ht, ncol, nrow, x0;
 
-    len = strlen(title);
+    len = std::strlen(title);
     for (i = 0; (i < (int)gmx->filter->grps->nr); i++)
     {
-        len = std::max(len, (int)strlen(gmx->filter->grpnames[i]));
+        len = std::max(len, static_cast<int>(std::strlen(gmx->filter->grpnames[i])));
     }
     len += 2;
 
@@ -144,7 +145,7 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     {
         ht = 1+(gmx->filter->grps->nr+1)*2+3;
     }
-    strcpy(tmpfile, "filterXXXXXX");
+    std::strcpy(tmpfile, "filterXXXXXX");
     gmx_tmpnam(tmpfile);
 #ifdef DEBUG
     fprintf(stderr, "file: %s\n", tmpfile);

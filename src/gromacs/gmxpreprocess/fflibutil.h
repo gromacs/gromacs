@@ -38,20 +38,15 @@
 
 #include <stdio.h>
 
-#include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
 #include <vector>
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/datafilefinder.h"
 
 /*! \brief
  * Enumerates forcefields in the data directories.
  */
 std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields();
-
-extern "C" {
-#endif
 
 const char *fflib_forcefield_dir_ext();
 /* Returns the name of the force field directory extension */
@@ -85,9 +80,5 @@ FILE *fflib_open(const char *file);
  * "file" should contain the whole path to the force field library,
  * either absolute or relative to the current dir.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

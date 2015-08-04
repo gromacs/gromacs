@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef GMX_X11
+#if GMX_X11
 
 #include "gromacs/fileio/writeps.h"
 
@@ -277,7 +277,7 @@ static t_mentry  DispMenu[] = {
 
 static t_mentry  HelpMenu[] = {
     { 0,  IDHELP,     false,  "Help"             },
-    { 0,  IDABOUT,    false,  "About Gromacs..." }
+    { 0,  IDABOUT,    false,  "About GROMACS..." }
 };
 
 static t_mentry *gmx_pd[] = { FileMenu, DispMenu, HelpMenu };
@@ -406,7 +406,7 @@ int gmx_view(int argc, char *argv[])
     if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
                           0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
-#ifndef GMX_X11
+#if !GMX_X11
         fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
 #else
         t_x11 *x11;

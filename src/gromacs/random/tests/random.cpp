@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,9 +78,9 @@ const threefry2x64_ctr_t tf_zero = {{0, 0}};
 const threefry2x64_ctr_t tf_max  = {{std::numeric_limits<gmx_uint64_t>::max(),
                                      std::numeric_limits<gmx_uint64_t>::max()}};
 /** input value: Pi */
-const threefry2x64_ctr_t tf_pi1  = {{0x243f6a8885a308d3, 0x13198a2e03707344}};
+const threefry2x64_ctr_t tf_pi1  = {{0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL}};
 /** input value: More Pi */
-const threefry2x64_ctr_t tf_pi2  = {{0xa4093822299f31d0, 0x082efa98ec4e6c89}};
+const threefry2x64_ctr_t tf_pi2  = {{0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL}};
 
 INSTANTIATE_TEST_CASE_P(0_ff_pi, Threefry,
                             ::testing::Values(std::make_pair(tf_zero, tf_zero),

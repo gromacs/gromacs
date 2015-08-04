@@ -53,12 +53,13 @@ appropriate value instead of ``xxx`` :
 * ``-DCMAKE_C_COMPILER=xxx`` equal to the name of the C99 `Compiler`_ you wish to use (or the environment variable ``CC``)
 * ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
 * ``-DGMX_MPI=on`` to build using `MPI support`_
-* ``-DGMX_GPU=on`` to build using nvcc to run with an NVIDIA `native GPU acceleration`_
-* ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which :ref:`gmx mdrun` will run
+* ``-DGMX_GPU=on`` to build using nvcc to run using NVIDIA `native GPU acceleration`_ or an OpenCL_ GPU
+* ``-DGMX_USE_OPENCL=on`` to build with OpenCL_ support enabled. ``GMX_GPU`` must also be set.
+* ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which mdrun will run
 * ``-DGMX_BUILD_MDRUN_ONLY=on`` for `building only mdrun`_, e.g. for compute cluster back-end nodes
 * ``-DGMX_DOUBLE=on`` to run |Gromacs| in double precision (slower, and not normally useful)
 * ``-DCMAKE_PREFIX_PATH=xxx`` to add a non-standard location for CMake to `search for libraries, headers or programs`_
-* ``-DCMAKE_INSTALL_PREFIX=xxx`` to install |Gromacs| to a non-standard location (default ``/usr/local/gromacs``)
+* ``-DCMAKE_INSTALL_PREFIX=xxx`` to install |Gromacs| to a `non-standard location`_ (default ``/usr/local/gromacs``)
 * ``-DBUILD_SHARED_LIBS=off`` to turn off the building of shared libraries to help with `static linking`_
 * ``-DGMX_FFT_LIBRARY=xxx`` to select whether to use ``fftw``, ``mkl`` or ``fftpack`` libraries for `FFT support`_
 * ``-DCMAKE_BUILD_TYPE=Debug`` to build |Gromacs| in debug mode
@@ -164,6 +165,17 @@ version for |Gromacs| code as used as the back-end compiler for nvcc,
 but it could be faster to mix compiler versions to suit particular
 contexts.
 
+To make it possible to use other accelerators, |Gromacs| also includes
+OpenCL_ support. The current version is recommended for use with
+GCN-based AMD GPUs. It does work with NVIDIA GPUs, but see the
+known limitations in the user guide. The minimum
+OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|.
+
+It is not possible to configure both CUDA and OpenCL support in the
+same version of |Gromacs|.
+
+.. _mpi-support:
+
 MPI support
 ^^^^^^^^^^^
 If you wish to run in parallel on multiple machines across a network,
@@ -193,7 +205,7 @@ different options and parallelization schemes for the actual
 simulations you want to run. You will still get *good*,
 performance with the default build and runtime options, but if you
 truly want to push your hardware to the performance limit, the days of
-just blindly starting programs with :ref:`gmx mdrun` are gone.
+just blindly starting programs with ``mdrun`` are gone.
 
 CMake
 -----
@@ -238,19 +250,24 @@ recommends either
 * that you build FFTW from the source code.
 
 If you build FFTW from source yourself, get the most recent version
-and follow the `FFTW installation guide`_.
-Choose the precision for FFTW (i.e. single or float vs. double) to
+and follow the `FFTW installation guide`_. Note that we have recently
+contributed new SIMD optimization for several extra platforms to
+FFTW, which will appear in FFTW-3.3.5 (for now it is available in the
+FFTW repository on github, or you can find a very unofficial prerelease
+version at ftp://ftp.gromacs.org/pub/prerequisite_software ).
+Choose the precision for FFTW (i.e. single/float vs. double) to
 match whether you will later use mixed or double precision for
 |Gromacs|. There is no need to compile FFTW with
 threading or MPI support, but it does no harm. On x86 hardware,
-compile *only* with ``--enable-sse2`` (regardless of precision) even if
-your processors can take advantage of AVX extensions. Since |Gromacs|
-uses fairly short transform lengths we do not benefit from the FFTW
-AVX acceleration, and because of memory system performance
-limitations, it can even degrade |Gromacs| performance by around
-20%. There is no way for |Gromacs| to limit the use to SSE2 SIMD at run
-time if AVX support has been compiled into FFTW, so you need to set
-this at compile time.
+compile with *both* ``--enable-sse2`` and ``--enable-avx`` for
+FFTW-3.3.4 and earlier. As of FFTW-3.3.5 you should also add
+``--enable-avx2``. FFTW will create a fat library with codelets
+for all different instruction sets, and pick the fastest supported
+one at runtime. On IBM Power8, you definitely want the upcoming
+FFTW-3.3.5 and use ``--enable-vsx`` for SIMD support. If you are
+using a Cray, there is a special modified (commercial) version of
+FFTs using the FFTW interface which might be faster, but we have
+not yet tested this extensively.
 
 Using MKL
 ^^^^^^^^^
@@ -285,11 +302,11 @@ Optional build components
   matrix manipulation, but they do not provide any benefits for normal
   simulations. Configuring these are discussed at
   `linear algebra libraries`_.
-* The built-in |Gromacs| trajectory viewer :ref:`gmx view` requires X11 and
+* The built-in |Gromacs| trajectory viewer ``gmx view`` requires X11 and
   Motif/Lesstif libraries and header files. You may prefer to use
   third-party software for visualization, such as VMD_ or PyMol_.
 * An external TNG library for trajectory-file handling can be used,
-  but TNG 1.6 is bundled in the |Gromacs| source already
+  but TNG 1.7.3 is bundled in the |Gromacs| source already
 * zlib is used by TNG for compressing some kinds of trajectory data
 * Running the |Gromacs| test suite requires libxml2
 * Building the |Gromacs| documentation requires ImageMagick, pdflatex,
@@ -377,9 +394,8 @@ configuration, in particular if you need to resolve errors.
 
 A key thing to consider here is the setting of
 ``CMAKE_INSTALL_PREFIX``. You will need to be able to write to this
-directory in order to install |Gromacs| later, and if you change your
-mind later, changing it in the cache triggers a full re-build,
-unfortunately. So if you do not have super-user privileges on your
+directory in order to install |Gromacs| later.
+So if you do not have super-user privileges on your
 machine, then you will need to choose a sensible location within your
 home directory for your |Gromacs| installation. Even if you do have
 super-user privileges, you should use them only for the installation
@@ -393,6 +409,22 @@ after each pass that does not produce errors.
 
 You cannot attempt to change compilers after the initial run of
 ``cmake``. If you need to change, clean up, and start again.
+
+.. _non-standard location:
+
+Where to install GROMACS
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A key thing to consider is the setting of
+``CMAKE_INSTALL_PREFIX``. You will need to be able to write to this
+directory in order to install GROMACS later, this directory cannot
+be the same as the build tree, and if you change your
+mind later, changing it in the cache triggers a full re-build,
+unfortunately. So if you do not have super-user privileges on your
+machine, then you will need to choose a sensible location within your
+home directory for your GROMACS installation. Even if you do have
+super-user privileges, you should use them only for the installation
+phase, and never for configuring, building, or running GROMACS!
 
 .. _cmake options:
 
@@ -412,7 +444,7 @@ For example, the following command line
 
     cmake .. -DGMX_GPU=ON -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=/home/marydoe/programs
 
-can be used to build with GPUs, MPI and install in a custom
+can be used to build with CUDA GPUs, MPI and install in a custom
 location. You can even save that in a shell script to make it even
 easier next time. You can also do this kind of thing with ``ccmake``,
 but you should avoid this, because the options set with ``-D`` will not
@@ -466,15 +498,15 @@ highest number in the list is generally the one you should choose:
 8. ``Sparc64_HPC_ACE`` Fujitsu machines like the K computer have this.
 
 The CMake configure system will check that the compiler you have
-chosen can target the architecture you have chosen. :ref:`gmx mdrun` will check
+chosen can target the architecture you have chosen. mdrun will check
 further at runtime, so if in doubt, choose the lowest setting you
-think might work, and see what :ref:`gmx mdrun` says. The configure system also
+think might work, and see what mdrun says. The configure system also
 works around many known issues in many versions of common HPC
 compilers. However, since the options also enable general compiler
 flags for the platform in question, you can end up in situations
 where e.g. an ``AVX_128_FMA`` binary will just crash on any
 Intel machine, since the code will try to execute general illegal
-instructions (inserted by the compiler) before :ref:`gmx mdrun` gets to the
+instructions (inserted by the compiler) before mdrun gets to the
 architecture detection routines.
 
 A further ``GMX_SIMD=Reference`` option exists, which is a special
@@ -534,8 +566,10 @@ and its relatives.
 
 See also the page on `CMake environment variables`_.
 
-Native GPU acceleration
-^^^^^^^^^^^^^^^^^^^^^^^
+.. _Native GPU acceleration:
+
+Native CUDA GPU acceleration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 ::
@@ -544,12 +578,58 @@ If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 (or whichever path has your installation). In some cases, you might
 need to specify manually which of your C++ compilers should be used,
-e.g. with the advanced option ``CUDA_HOST_COMPILER``.
+e.g. with the advanced option ``CUDA_HOST_COMPILER``. To make it
+possible to get best performance from NVIDIA Tesla and Quadro GPUs,
+you should install the `GPU Deployment Kit
+<https://developer.nvidia.com/gpu-deployment-kit>`_ and configure
+|Gromacs| to use it by setting the CMake variable
+``-DGPU_DEPLOYMENT_KIT_ROOT_DIR=/path/to/your/kit``. The NVML support
+is most useful if
+``nvidia-smi --applications-clocks-permission=UNRESTRICTED`` is run
+(as root). When application clocks permissions are unrestricted, the
+GPU clock speed can be increased automatically, which increases the
+GPU kernel performance roughly proportional to the clock
+increase. When using |Gromacs| on suitable GPUs under restricted
+permissions, clocks cannot be changed, and in that case informative
+log file messages will be produced. Background details can be found at
+this `NVIDIA blog post
+<http://devblogs.nvidia.com/parallelforall/increase-performance-gpu-boost-k80-autoboost/>`_.
+
+By default, optimized code will be generated for CUDA architectures
+supported by the nvcc compiler (and the |Gromacs| build system). 
+However, it can be beneficial to manually pick the specific CUDA architecture(s)
+to generate code for either to reduce compilation time (and binary size) or to
+target a new architecture not yet supported by the |GROMACS| build system.
+Setting the desired CUDA architecture(s) and virtual architecture(s)
+can be done using the ``GMX_CUDA_TARGET_SM`` and ``GMX_CUDA_TARGET_COMPUTE``
+variables, respectively. These take a semicolon delimited string with 
+the two digit suffixes of CUDA (virtual) architectures names
+(for details see the "Options for steering GPU code generation" section of the
+nvcc man / help or Chapter 6. of the nvcc manual).
 
 The GPU acceleration has been tested on AMD64/x86-64 platforms with
 Linux, Mac OS X and Windows operating systems, but Linux is the
 best-tested and supported of these. Linux running on ARM v7 (32 bit)
 CPUs also works.
+
+OpenCL GPU acceleration
+^^^^^^^^^^^^^^^^^^^^^^^
+To build Gromacs with OpenCL support enabled, an OpenCL_ SDK
+(e.g. `from AMD <http://developer.amd.com/appsdk>`_) must be installed
+in a path found in ``CMAKE_PREFIX_PATH`` (or via the environment
+variables ``AMDAPPSDKROOT`` or ``CUDA_PATH``), and the following CMake
+flags must be set
+
+::
+
+    cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+
+Building |Gromacs| OpenCL support for a CUDA_ GPU works, but see the
+known limitations in the user guide. If you want to
+do so anyway, because NVIDIA OpenCL support is part of the CUDA
+package, a C++ compiler supported by your CUDA installation is
+required.
+
 
 Static linking
 ^^^^^^^^^^^^^^
@@ -574,6 +654,13 @@ simulation using MPI libraries (e.g. BlueGene, Cray).
   where that is the default. To use static system libraries,
   additional compiler/linker flags are necessary, e.g. ``-static-libgcc
   -static-libstdc++``.
+* To attempt to link a fully static binary set
+  ``-DGMX_BUILD_SHARED_EXE=OFF``. This will prevent CMake from explicitly
+  setting any dynamic linking flags. This option also sets
+  ``-DBUILD_SHARED_LIBS=OFF`` and ``-DGMX_PREFER_STATIC_LIBS=ON`` by
+  default, but the above caveats apply. For compilers which don't
+  default to static linking, the required flags have to be specified. On
+  Linux, this is usually ``CFLAGS=-static CXXFLAGS=-static``.
 
 Portability aspects
 ^^^^^^^^^^^^^^^^^^^
@@ -597,16 +684,16 @@ architectures does not support the ``RDTSCP`` instruction.  However, we
 discourage attempts to use a single |Gromacs| installation when the
 execution environment is heterogeneous, such as a mix of AVX and
 earlier hardware, because this will lead to programs (especially
-:ref:`gmx mdrun`) that run slowly on the new hardware. Building two full
+mdrun) that run slowly on the new hardware. Building two full
 installations and locally managing how to call the correct one
 (e.g. using the module system) is the recommended
 approach. Alternatively, as at the moment the |Gromacs| tools do not
 make strong use of SIMD acceleration, it can be convenient to create
 an installation with tools portable across different x86 machines, but
-with separate :ref:`gmx mdrun` binaries for each architecture. To achieve this,
+with separate mdrun binaries for each architecture. To achieve this,
 one can first build a full installation with the
 least-common-denominator SIMD instruction set, e.g. ``-DGMX_SIMD=SSE2``,
-then build separate :ref:`gmx mdrun` binaries for each architecture present in
+then build separate mdrun binaries for each architecture present in
 the heterogeneous environment. By using custom binary and library
 suffixes for the mdrun-only builds, these can be installed to the
 same location as the "generic" tools installation.
@@ -641,7 +728,7 @@ Changing the names of |Gromacs| binaries and libraries
 It is sometimes convenient to have different versions of the same
 |Gromacs| programs installed. The most common use cases have been single
 and double precision, and with and without MPI. This mechanism can
-also be used to install side-by-side multiple versions of :ref:`gmx mdrun`
+also be used to install side-by-side multiple versions of mdrun
 optimized for different CPU architectures, as mentioned previously.
 
 By default, |Gromacs| will suffix programs and libraries for such builds
@@ -725,14 +812,14 @@ Building only mdrun
 Past versions of the build system offered "mdrun" and "install-mdrun"
 targets (similarly for other programs too) to build and install only
 the mdrun program, respectively. Such a build is useful when the
-configuration is only relevant for :ref:`gmx mdrun` (such as with
+configuration is only relevant for mdrun (such as with
 parallelization options for MPI, SIMD, GPUs, or on BlueGene or Cray),
 or the length of time for the compile-link-install cycle is relevant
 when developing.
 
 This is now supported with the ``cmake`` option
 ``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a cut-down version of
-``libgromacs`` and/or the :ref:`gmx mdrun` program (according to whether shared
+``libgromacs`` and/or the mdrun program (according to whether shared
 or static). Naturally, now ``make install`` installs only those
 products. By default, mdrun-only builds will default to static linking
 against |Gromacs| libraries, because this is generally a good idea for
@@ -792,8 +879,8 @@ trust your build.
 The simplest way to run the checks is to build |Gromacs| with
 ``-DREGRESSIONTEST_DOWNLOAD``, and run ``make check``.
 |Gromacs| will automatically download and run the tests for you.
-Alternatively, you can download and unpack the
-`GROMACS regression test suite`_ tarball yourself
+Alternatively, you can download and unpack the GROMACS
+regression test suite |gmx-regressiontests-package| tarball yourself
 and use the advanced ``cmake`` option ``REGRESSIONTEST_PATH`` to
 specify the path to the unpacked tarball, which will then be used for
 testing. If the above does not work, then please read on.
@@ -842,7 +929,7 @@ directory:
     source /your/installation/prefix/here/bin/GMXRC
     ./gmxtest.pl all -np 2
 
-If your :ref:`gmx mdrun` program has been suffixed in a non-standard way, then
+If your mdrun program has been suffixed in a non-standard way, then
 the ``./gmxtest.pl -mdrun`` option will let you specify that name to the
 test machinery. You can use ``./gmxtest.pl -double`` to test the
 double-precision version. You can use ``./gmxtest.pl -crosscompiling``
@@ -862,15 +949,13 @@ set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
 Typically, one might use variable values ``mpirun``, ``-np``, ``2``, ``''``,
 ``''`` respectively, in order to run on two ranks.
 
-.. _GROMACS regression test suite: `gmx-regression-tests`_
-
 
 Testing |Gromacs| for performance
 ---------------------------------
 We are still working on a set of benchmark systems for testing
 the performance of |Gromacs|. Until that is ready, we recommend that
 you try a few different parallelization options, and experiment with
-tools such as :ref:`gmx tune_pme`.
+tools such as ``gmx tune_pme``.
 
 Having difficulty?
 ------------------
@@ -938,13 +1023,10 @@ Building on Cray
 ----------------
 |Gromacs| builds mostly out of the box on modern Cray machines, but
 
-* you may need to specify the use of static or dynamic libraries
-  (depending on the machine) with ``-DBUILD_SHARED_LIBS=off``,
+* you may need to specify the use of static binaries
+  with ``-DGMX_BUILD_SHARED_EXE=off``,
 * you may need to set the F77 environmental variable to ``ftn`` when
   compiling FFTW,
-* you may need to use ``-DCMAKE_SKIP_RPATH=YES``, and
-* you may need to modify the CMakeLists.txt files to specify the
-  ``BUILD_SEARCH_END_STATIC`` target property.
 
 Building on BlueGene
 --------------------

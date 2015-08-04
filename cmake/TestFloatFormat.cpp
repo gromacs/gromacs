@@ -48,11 +48,12 @@ volatile const double abc [10] = {
     (double) -5.22995989424860458374e+10, (double) 0.0,
 };
 
+/* Check that a double is 8 bytes - compilation dies if it isnt */
+extern char xyz [sizeof(double) == 8 ? 1 : -1];
+
 int
 main()
 {
-    /* Check that a double is 8 bytes - compilation dies if it isnt */
-    extern char xyz [sizeof(double) == 8 ? 1 : -1];
     int         i;
     double      d;
 

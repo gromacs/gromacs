@@ -4,12 +4,12 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">beta 0</String>
-      <String Name="Text">betafactor 0</String>
+      <String Name="Text">beta 0</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">beta &gt;= 0.3</String>
-      <String Name="Text">betafactor &gt;= 0.3</String>
+      <String Name="Text">beta &gt;= 0.3</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
   </ParsedSelections>

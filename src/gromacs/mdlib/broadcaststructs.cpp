@@ -239,7 +239,7 @@ void bcast_state(const t_commrec *cr, t_state *state)
     int      i, nnht, nnhtp;
     gmx_bool bAlloc;
 
-    if (!PAR(cr))
+    if (!PAR(cr) || (cr->nnodes - cr->npmenodes <= 1))
     {
         return;
     }
@@ -493,7 +493,7 @@ static void bc_pull_group(const t_commrec *cr, t_pull_group *pgrp)
     }
 }
 
-static void bc_pull(const t_commrec *cr, t_pull *pull)
+static void bc_pull(const t_commrec *cr, pull_params_t *pull)
 {
     int g;
 
@@ -811,6 +811,13 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
     for (i = 0; i < mtop->nmoltype; i++)
     {
         bc_moltype(cr, &mtop->symtab, &mtop->moltype[i]);
+    }
+
+    block_bc(cr, mtop->bIntermolecularInteractions);
+    if (mtop->bIntermolecularInteractions)
+    {
+        snew_bc(cr, mtop->intermolecular_ilist, F_NRE);
+        bc_ilists(cr, mtop->intermolecular_ilist);
     }
 
     block_bc(cr, mtop->nmolblock);

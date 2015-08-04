@@ -18,9 +18,9 @@ F77_FUNC(dlasq5,DLASQ5)(int *i0,
     int i__1;
     double d__1, d__2;
 
-    static double d__;
-    static int j4, j4p2;
-    static double emin, temp;
+    double d__;
+    int    j4, j4p2;
+    double emin, temp;
 
     --z__;
 

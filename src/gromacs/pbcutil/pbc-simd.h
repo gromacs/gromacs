@@ -108,7 +108,7 @@ pbc_correct_dx_simd(gmx_simd_real_t  *dx,
 {
     gmx_simd_real_t shz, shy, shx;
 
-#if defined _MSC_VER && _MSC_VER < 1700
+#if defined _MSC_VER && _MSC_VER < 1700 && !defined(__ICL)
     /* The caller side should make sure we never end up here.
      * TODO Black-list _MSC_VER < 1700 when it's old enough, so we can rid
      * of this code complication.

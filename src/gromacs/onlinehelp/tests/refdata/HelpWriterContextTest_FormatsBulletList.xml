@@ -4,27 +4,27 @@
   <String Name="Console"><![CDATA[
 Sample list:
 
- * first item
- * second item
-   that spans
-   multiple
-   lines
- * third item
-   that has a
-   single long
-   line
+* first item
+* second item
+  that spans
+  multiple
+  lines
+* third item
+  that has a
+  single long
+  line
 
 Normal
 paragraph]]></String>
   <String Name="reStructuredText"><![CDATA[
 Sample list:
 
- * first item
- * second item
+* first item
+* second item
 that
-   spans
+  spans
 multiple lines
- * third item
+* third item
 that has a
 single long
 line

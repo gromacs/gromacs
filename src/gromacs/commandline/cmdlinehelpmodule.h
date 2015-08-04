@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@
 #define GMX_COMMANDLINE_CMDLINEHELPMODULE_H
 
 #include "gromacs/commandline/cmdlinemodule.h"
-#include "gromacs/onlinehelp/helptopicinterface.h"
+#include "gromacs/onlinehelp/ihelptopic.h"
 #include "gromacs/utility/classhelpers.h"
 
 #include "cmdlinemodulemanager-impl.h"
@@ -52,8 +52,8 @@ namespace gmx
 {
 
 class CommandLineHelpContext;
-class File;
-class ProgramContextInterface;
+class IFileOutputRedirector;
+class IProgramContext;
 
 class CommandLineHelpModuleImpl;
 
@@ -66,7 +66,7 @@ class CommandLineHelpModuleImpl;
  *
  * \ingroup module_commandline
  */
-class CommandLineHelpModule : public CommandLineModuleInterface
+class CommandLineHelpModule : public ICommandLineModule
 {
     public:
         /*! \brief
@@ -79,7 +79,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * \param[in] groups   List of module groups.
          * \throws    std::bad_alloc if out of memory.
          */
-        CommandLineHelpModule(const ProgramContextInterface    &programContext,
+        CommandLineHelpModule(const IProgramContext            &programContext,
                               const std::string                &binaryName,
                               const CommandLineModuleMap       &modules,
                               const CommandLineModuleGroupList &groups);
@@ -96,14 +96,16 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * safety in CommandLineModuleManager::addModule().
          */
         HelpTopicPointer
-        createModuleHelpTopic(const CommandLineModuleInterface &module) const;
+        createModuleHelpTopic(const ICommandLineModule &module) const;
         /*! \brief
          * Adds a top-level help topic.
          *
-         * \param[in] topic  Help topic to add.
+         * \param[in] topic     Help topic to add.
+         * \param[in] bExported Whether this topic will be directly exported to
+         *     the user guide.
          * \throws    std::bad_alloc if out of memory.
          */
-        void addTopic(HelpTopicPointer topic);
+        void addTopic(HelpTopicPointer topic, bool bExported);
         //! Sets whether hidden options will be shown in help.
         void setShowHidden(bool bHidden);
         /*! \brief
@@ -112,15 +114,15 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * If called, the help module directly prints the help for the given
          * module when called, skipping any other processing.
          */
-        void setModuleOverride(const CommandLineModuleInterface &module);
+        void setModuleOverride(const ICommandLineModule &module);
 
         /*! \brief
-         * Sets a file to write help output to instead of default `stdout`.
+         * Sets a file redirector for writing help output.
          *
          * Used for unit testing; see
-         * CommandLineModuleManager::setOutputRedirect() for more details.
+         * CommandLineModuleManager::setOutputRedirector() for more details.
          */
-        void setOutputRedirect(File *output);
+        void setOutputRedirector(IFileOutputRedirector *output);
 
         virtual const char *name() const { return "help"; }
         virtual const char *shortDescription() const

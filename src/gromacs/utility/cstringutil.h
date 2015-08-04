@@ -71,9 +71,9 @@ int continuing(char *s);
 /*! \brief
  * Reads a line from a stream.
  *
- * This routine reads a string from stream of max length n
- * and zero terminated, without newlines.
- * \p s should be long enough (>= \p n)
+ * This routine reads a string from stream of max length n, including
+ * \0 and zero terminated, without newlines.  \p s should be long
+ * enough (>= \p n)
  */
 char *fgets2(char *s, int n, FILE *stream);
 

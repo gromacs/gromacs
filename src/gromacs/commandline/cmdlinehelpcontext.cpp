@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,8 +74,9 @@ class CommandLineHelpContext::Impl
 {
     public:
         //! Creates the implementation class and the low-level context.
-        Impl(File *file, HelpOutputFormat format, const HelpLinks *links)
-            : writerContext_(file, format, links), moduleDisplayName_("gmx"),
+        Impl(TextOutputStream *stream, HelpOutputFormat format,
+             const HelpLinks *links)
+            : writerContext_(stream, format, links), moduleDisplayName_("gmx"),
               completionWriter_(NULL), bHidden_(false)
         {
         }
@@ -97,9 +98,11 @@ class CommandLineHelpContext::Impl
 };
 
 CommandLineHelpContext::CommandLineHelpContext(
-        File *file, HelpOutputFormat format, const HelpLinks *links)
-    : impl_(new Impl(file, format, links))
+        TextOutputStream *stream, HelpOutputFormat format,
+        const HelpLinks *links, const std::string &programName)
+    : impl_(new Impl(stream, format, links))
 {
+    impl_->writerContext_.setReplacement("[PROGRAM]", programName);
 }
 
 CommandLineHelpContext::CommandLineHelpContext(
@@ -110,7 +113,7 @@ CommandLineHelpContext::CommandLineHelpContext(
 
 CommandLineHelpContext::CommandLineHelpContext(
         ShellCompletionWriter *writer)
-    : impl_(new Impl(writer->outputFile(), eHelpOutputFormat_Other, NULL))
+    : impl_(new Impl(&writer->outputStream(), eHelpOutputFormat_Other, NULL))
 {
     impl_->completionWriter_ = writer;
 }
@@ -134,6 +137,11 @@ void CommandLineHelpContext::setModuleDisplayName(const std::string &name)
 void CommandLineHelpContext::setShowHidden(bool bHidden)
 {
     impl_->bHidden_ = bHidden;
+}
+
+void CommandLineHelpContext::enterSubSection(const std::string &title)
+{
+    impl_->writerContext_.enterSubSection(title);
 }
 
 const HelpWriterContext &CommandLineHelpContext::writerContext() const

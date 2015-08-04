@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/selection.h"
@@ -96,10 +96,9 @@ class Rdf : public TrajectoryAnalysisModule
     public:
         Rdf();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(Options                    *options,
-                                     TrajectoryAnalysisSettings *settings);
+        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
         virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
@@ -171,6 +170,7 @@ class Rdf : public TrajectoryAnalysisModule
         double                                    cutoff_;
         double                                    rmax_;
         bool                                      bNormalize_;
+        bool                                      bNormalizationSet_;
         bool                                      bXY_;
         bool                                      bExclusions_;
 
@@ -187,7 +187,8 @@ Rdf::Rdf()
       pairCounts_(new AnalysisDataSimpleHistogramModule()),
       normAve_(new AnalysisDataAverageModule()),
       binwidth_(0.002), cutoff_(0.0), rmax_(0.0),
-      bNormalize_(true), bXY_(false), bExclusions_(false),
+      bNormalize_(true), bNormalizationSet_(false), bXY_(false),
+      bExclusions_(false),
       cut2_(0.0), rmax2_(0.0), surfaceGroupCount_(0)
 {
     pairDist_.setMultipoint(true);
@@ -200,7 +201,7 @@ Rdf::Rdf()
 }
 
 void
-Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates radial distribution functions from one",
@@ -240,7 +241,7 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "i.e. the average number of particles within a distance r.[PAR]"
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
                            .store(&fnRdf_).defaultBasename("rdf")
@@ -252,6 +253,7 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(DoubleOption("bin").store(&binwidth_)
                            .description("Bin width (nm)"));
     options->addOption(BooleanOption("norm").store(&bNormalize_)
+                           .storeIsSet(&bNormalizationSet_)
                            .description("Normalize for bin volume and density"));
     options->addOption(BooleanOption("xy").store(&bXY_)
                            .description("Use only the x and y components of the distance"));
@@ -275,13 +277,13 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 }
 
 void
-Rdf::optionsFinished(Options *options, TrajectoryAnalysisSettings *settings)
+Rdf::optionsFinished(TrajectoryAnalysisSettings *settings)
 {
     if (surface_ != "no")
     {
         settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 
-        if (options->isSet("norm") && bNormalize_)
+        if (bNormalizationSet_ && bNormalize_)
         {
             GMX_THROW(InconsistentInputError("-surf cannot be combined with -norm"));
         }

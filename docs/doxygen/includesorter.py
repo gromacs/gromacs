@@ -174,6 +174,23 @@ class GroupedSorter(object):
             return IncludeGroup.gmx_test
         return IncludeGroup.gmx_general
 
+    def _split_path(self, path):
+        """Split include path into sortable compoments.
+
+        Plain string on the full path in the #include directive causes some
+        unintuitive behavior, so this splits the path into a tuple at
+        points that allow more natural sorting: primary sort criterion is the
+        directory name, followed by the basename (without extension) of the
+        included file.
+        """
+        path_components = list(os.path.split(path))
+        path_components[1] = os.path.splitext(path_components[1])
+        return tuple(path_components)
+
+    def _join_path(self, path_components):
+        """Reconstruct path from the return value of _split_path."""
+        return os.path.join(path_components[0], ''.join(path_components[1]))
+
     def get_sortable_object(self, include):
         """Produce a sortable, opaque object for an include.
 
@@ -210,7 +227,7 @@ class GroupedSorter(object):
             including_file = include.get_including_file()
             group = self._get_gmx_group(including_file, included_file)
             path = self._get_path(included_file, group, including_file)
-        return (group, os.path.split(path), include)
+        return (group, self._split_path(path), include)
 
     def format_include(self, obj, prev):
         """Format an #include directive after sorting."""
@@ -228,9 +245,9 @@ class GroupedSorter(object):
         match = re.match(include_re, line)
         assert match
         if include.is_system():
-            path = '<{0}>'.format(os.path.join(obj[1][0], obj[1][1]))
+            path = '<{0}>'.format(self._join_path(obj[1]))
         else:
-            path = '"{0}"'.format(os.path.join(obj[1][0], obj[1][1]))
+            path = '"{0}"'.format(self._join_path(obj[1]))
         result.append('{0}{1}{2}\n'.format(match.group('head'), path, match.group('tail')))
         return result
 
@@ -300,10 +317,20 @@ class IncludeSorter(object):
         """Check that includes within a file are sorted."""
         # TODO: Make the checking work without full contents of the file
         lines = fileobj.get_contents()
-        self._changed = False
+        is_sorted = True
+        details = None
         for block in fileobj.get_include_blocks():
-            self._sort_include_block(block, lines)
-        return not self._changed
+            self._changed = False
+            sorted_lines = self._sort_include_block(block, lines)
+            if self._changed:
+                is_sorted = False
+                # TODO: Do a proper diff to show the actual changes.
+                if details is None:
+                    details = ["Correct order/style is:"]
+                else:
+                    details.append("    ...")
+                details.extend(["    " + x.rstrip() for x in sorted_lines])
+        return (is_sorted, details)
 
 def main():
     """Run the include sorter script."""
@@ -328,7 +355,7 @@ def main():
     # version.
     parser.add_option('-s', '--style', type='choice', default='pub-priv',
                       choices=('single-group', 'pub-priv', 'pub-local'),
-                      help='Style for Gromacs includes')
+                      help='Style for GROMACS includes')
     parser.add_option('--absolute', action='store_true',
                       help='Write all include paths relative to src/')
     options, args = parser.parse_args()

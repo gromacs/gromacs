@@ -165,7 +165,7 @@ void push_ps(FILE *fp)
 #ifdef gmx_ffclose
 #undef gmx_ffclose
 #endif
-#if (!defined(HAVE_PIPES) && !defined(__native_client__))
+#if (!HAVE_PIPES && !defined(__native_client__))
 static FILE *popen(const char *nm, const char *mode)
 {
     gmx_impl("Sorry no pipes...");
@@ -179,7 +179,7 @@ static int pclose(FILE *fp)
 
     return 0;
 }
-#endif /* !defined(HAVE_PIPES) && !defined(__native_client__) */
+#endif /* !HAVE_PIPES && !defined(__native_client__) */
 #endif /* GMX_FAHCORE */
 
 int gmx_ffclose(FILE *fp)
@@ -587,19 +587,10 @@ void gmx_tmpnam(char *buf)
 #else
     int fd = mkstemp(buf);
 
-    switch (fd)
+    if (fd < 0)
     {
-        case EINVAL:
-            gmx_fatal(FARGS, "Invalid template %s for mkstemp", buf);
-            break;
-        case EEXIST:
-            gmx_fatal(FARGS, "mkstemp created existing file", buf);
-            break;
-        case EACCES:
-            gmx_fatal(FARGS, "Permission denied for opening %s", buf);
-            break;
-        default:
-            break;
+        gmx_fatal(FARGS, "Creating temporary file %s: %s", buf,
+                  strerror(errno));
     }
     close(fd);
 #endif

@@ -40,15 +40,17 @@
 
 #include "config.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+
+#include <algorithm>
 
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
-#ifdef HAVE_EXTRAE
+#if HAVE_EXTRAE
 #include <extrae_user_events.h>
 #endif
 #include <boost/version.hpp>
@@ -76,7 +78,7 @@ static gmx_bool be_cool(void)
      * but we dont call this routine often, and it avoids using
      * a mutex for locking the variable...
      */
-#ifdef GMX_COOL_QUOTES
+#if GMX_COOL_QUOTES
     return (getenv("GMX_NO_QUOTES") == NULL);
 #else
     /*be uncool*/
@@ -100,11 +102,11 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
         rng    = gmx_rng_init(gmx_rng_make_seed());
         *cqnum = static_cast<int>(nhlp*gmx_rng_uniform_real(rng));
         gmx_rng_destroy(rng);
-        if (strlen(help[*cqnum]) >= STRLEN)
+        if (std::strlen(help[*cqnum]) >= STRLEN)
         {
             help[*cqnum][STRLEN-1] = '\0';
         }
-        strncpy(retstring, help[*cqnum], retsize);
+        std::strncpy(retstring, help[*cqnum], retsize);
         for (i = 0; (i < nhlp); i++)
         {
             sfree(help[i]);
@@ -114,7 +116,7 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
     else
     {
         *cqnum = -1;
-        strncpy(retstring, defstring, retsize);
+        std::strncpy(retstring, defstring, retsize);
     }
 }
 
@@ -147,7 +149,7 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
     pukeit("gurgle.dat", "Thanx for Using GROMACS - Have a Nice Day",
            tmpstr, retsize-2, p);
 
-    if ((ptr = strchr(tmpstr, '_')) != NULL)
+    if ((ptr = std::strchr(tmpstr, '_')) != NULL)
     {
         *ptr = '\0';
         ptr++;
@@ -155,9 +157,20 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
     }
     else
     {
-        strcpy(retstring, tmpstr);
+        std::strcpy(retstring, tmpstr);
     }
     sfree(tmpstr);
+}
+
+static int centeringOffset(int width, int length)
+{
+    return std::max(width - length, 0) / 2;
+}
+
+static void printCentered(FILE *fp, int width, const char *text)
+{
+    const int offset = centeringOffset(width, std::strlen(text));
+    fprintf(fp, "%*s%s", offset, "", text);
 }
 
 static void printCopyright(FILE *fp)
@@ -173,6 +186,9 @@ static void printCopyright(FILE *fp)
         "Sebastian Fritsch",
         "Gerrit Groenhof",
         "Christoph Junghans",
+        "Anca Hamuraru",
+        "Vincent Hindriksen",
+        "Dimitrios Karkoulis",
         "Peter Kasson",
         "Carsten Kutzner",
         "Per Larsson",
@@ -188,6 +204,7 @@ static void printCopyright(FILE *fp)
         "Michael Shirts",
         "Alfons Sijbers",
         "Peter Tieleman",
+        "Teemu Virolainen",
         "Christian Wennberg",
         "Maarten Wolf"
     };
@@ -215,18 +232,27 @@ static void printCopyright(FILE *fp)
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
-    fprintf(fp, "GROMACS is written by:\n");
+    printCentered(fp, 78, "GROMACS is written by:");
+    fprintf(fp, "\n");
     for (int i = 0; i < NCONTRIBUTORS; )
     {
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
         {
-            fprintf(fp, "%-18s ", Contributors[i]);
+            const int width = 18;
+            char      buf[30];
+            const int offset = centeringOffset(width, strlen(Contributors[i]));
+            GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < asize(buf),
+                               "Formatting buffer is not long enough");
+            std::fill(buf, buf+width, ' ');
+            std::strcpy(buf+offset, Contributors[i]);
+            fprintf(fp, " %-*s", width, buf);
         }
         fprintf(fp, "\n");
     }
-    fprintf(fp, "and the project leaders:\n");
-    fprintf(fp, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel\n");
+    printCentered(fp, 78, "and the project leaders:");
     fprintf(fp, "\n");
+    printCentered(fp, 78, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel");
+    fprintf(fp, "\n\n");
     for (int i = 0; i < NCR; ++i)
     {
         fprintf(fp, "%s\n", CopyrightText[i]);
@@ -583,7 +609,17 @@ void please_cite(FILE *fp, const char *key)
           "J. A. Lemkul, B. Roux, D. van der Spoel, and A. D. MacKerell Jr.",
           "Implementation of Extended Lagrangian Dynamics in GROMACS for Polarizable Simulations Using the Classical Drude Oscillator Model",
           "J. Comput. Chem.",
-          36, 2015, "1473-1479"}
+          36, 2015, "1473-1479"},
+        { "Pronk2013",
+          "S. Pronk, S. Páll, R. Schulz, P. Larsson, P. Bjelkmar, R. Apostolov, M. R. Shirts, J. C. Smith, P. M. Kasson, D. van der Spoel, B. Hess, and E. Lindahl",
+          "GROMACS 4.5: a high-throughput and highly parallel open source molecular simulation toolkit",
+          "Bioinformatics",
+          29, 2013, "845-54"},
+        { "Pall2015",
+          "S. Páll, M. J. Abraham, C. Kutzner, B. Hess, E. Lindahl",
+          "Tackling Exascale Software Challenges in Molecular Dynamics Simulations with GROMACS",
+          "In S. Markidis & E. Laure (Eds.), Solving Software Challenges for Exascale",
+          8759, 2015, "3–27" }
     };
 #define NSTR (int)asize(citedb)
 
@@ -656,11 +692,11 @@ const char *Program(void)
 }
 
 
-extern void gmx_print_version_info_gpu(FILE *fp);
+extern void gmx_print_version_info_cuda_gpu(FILE *fp);
 
 static void gmx_print_version_info(FILE *fp)
 {
-    fprintf(fp, "Gromacs version:    %s\n", gmx_version());
+    fprintf(fp, "GROMACS version:    %s\n", gmx_version());
     const char *const git_hash = gmx_version_git_full_hash();
     if (git_hash[0] != '\0')
     {
@@ -696,6 +732,11 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "GPU support:        disabled\n");
 #endif
+#if defined(GMX_GPU) && defined(GMX_USE_OPENCL)
+    fprintf(fp, "OpenCL support:     enabled\n");
+#else
+    fprintf(fp, "OpenCL support:     disabled\n");
+#endif
     /* A preprocessor trick to avoid duplicating logic from vec.h */
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
@@ -707,7 +748,7 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "RDTSCP usage:       disabled\n");
 #endif
-#ifdef GMX_CXX11
+#if GMX_CXX11
     fprintf(fp, "C++11 compilation:  enabled\n");
 #else
     fprintf(fp, "C++11 compilation:  disabled\n");
@@ -717,7 +758,7 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "TNG support:        disabled\n");
 #endif
-#ifdef HAVE_EXTRAE
+#if HAVE_EXTRAE
     unsigned major, minor, revision;
     Extrae_get_version(&major, &minor, &revision);
     fprintf(fp, "Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision);
@@ -754,8 +795,14 @@ static void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Boost version:      %d.%d.%d%s\n", BOOST_VERSION / 100000,
             BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100,
             bExternalBoost ? " (external)" : " (internal)");
-#ifdef GMX_GPU
-    gmx_print_version_info_gpu(fp);
+#if defined(GMX_GPU)
+#ifdef GMX_USE_OPENCL
+    fprintf(fp, "OpenCL include dir: %s\n", OPENCL_INCLUDE_DIR);
+    fprintf(fp, "OpenCL library:     %s\n", OPENCL_LIBRARY);
+    fprintf(fp, "OpenCL version:     %s\n", OPENCL_VERSION_STRING);
+#else
+    gmx_print_version_info_cuda_gpu(fp);
+#endif
 #endif
 }
 
@@ -780,14 +827,14 @@ BinaryInformationSettings::BinaryInformationSettings()
 {
 }
 
-void printBinaryInformation(FILE                          *fp,
-                            const ProgramContextInterface &programContext)
+void printBinaryInformation(FILE                  *fp,
+                            const IProgramContext &programContext)
 {
     printBinaryInformation(fp, programContext, BinaryInformationSettings());
 }
 
 void printBinaryInformation(FILE                            *fp,
-                            const ProgramContextInterface   &programContext,
+                            const IProgramContext           &programContext,
                             const BinaryInformationSettings &settings)
 {
     const char *prefix          = settings.prefix_;
@@ -801,26 +848,29 @@ void printBinaryInformation(FILE                            *fp,
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
     }
+    // TODO: It would be nice to know here whether we are really running a
+    // Gromacs binary or some other binary that is calling Gromacs; we
+    // could then print "%s is part of GROMACS" or some alternative text.
+    std::string title
+        = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
+    const int   indent
+        = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
+    fprintf(fp, "%s%*c%s%s\n", prefix, indent, ' ', title.c_str(), suffix);
+    fprintf(fp, "%s%s\n", prefix, suffix);
     if (settings.bCopyright_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
                            "Prefix/suffix not supported with copyright");
+        printCopyright(fp);
+        fprintf(fp, "\n");
         // This line is printed again after the copyright notice to make it
         // appear together with all the other information, so that it is not
         // necessary to read stuff above the copyright notice.
         // The line above the copyright notice puts the copyright notice is
         // context, though.
-        // TODO: It would be nice to know here whether we are really running a
-        // Gromacs binary or some other binary that is calling Gromacs; we
-        // could then print "%s is part of GROMACS" or some alternative text.
-        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name,
+        fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
                 gmx_version(), precisionString, suffix);
-        fprintf(fp, "\n");
-        printCopyright(fp);
-        fprintf(fp, "\n");
     }
-    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name,
-            gmx_version(), precisionString, suffix);
     const char *const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
     {

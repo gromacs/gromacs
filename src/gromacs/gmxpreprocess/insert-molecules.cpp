@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
@@ -303,7 +303,7 @@ namespace gmx
 namespace
 {
 
-class InsertMolecules : public CommandLineOptionsModuleInterface
+class InsertMolecules : public ICommandLineOptionsModule
 {
     public:
         InsertMolecules()
@@ -318,8 +318,9 @@ class InsertMolecules : public CommandLineOptionsModuleInterface
         {
         }
 
-        virtual void initOptions(Options *options);
-        virtual void optionsFinished(Options *options);
+        virtual void initOptions(IOptionsContainer                 *options,
+                                 ICommandLineOptionsModuleSettings *settings);
+        virtual void optionsFinished() {}
 
         virtual int run();
 
@@ -339,7 +340,8 @@ class InsertMolecules : public CommandLineOptionsModuleInterface
         int         enumRot_;
 };
 
-void InsertMolecules::initOptions(Options *options)
+void InsertMolecules::initOptions(IOptionsContainer                 *options,
+                                  ICommandLineOptionsModuleSettings *settings)
 {
     const char *const desc[] = {
         "[THISMODULE] inserts [TT]-nmol[tt] copies of the system specified in",
@@ -376,7 +378,7 @@ void InsertMolecules::initOptions(Options *options)
         "[TT]-try[tt] and [TT]-rot[tt] work as in the default mode (see above)."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     // TODO: Replace use of legacyType.
     options->addOption(FileNameOption("f")
@@ -401,7 +403,7 @@ void InsertMolecules::initOptions(Options *options)
                            .description("Output configuration after insertion"));
 
     options->addOption(RealOption("box").vector()
-                           .store(newBox_)
+                           .store(newBox_).storeIsSet(&bBox_)
                            .description("Box size (in nm)"));
     options->addOption(IntegerOption("nmol")
                            .store(&nmolIns_)
@@ -425,11 +427,6 @@ void InsertMolecules::initOptions(Options *options)
     options->addOption(StringOption("rot").enumValue(cRotationEnum)
                            .storeEnumIndex(&enumRot_)
                            .description("Rotate inserted molecules randomly"));
-}
-
-void InsertMolecules::optionsFinished(Options *options)
-{
-    bBox_ = options->isSet("box");
 }
 
 int InsertMolecules::run()
@@ -541,7 +538,7 @@ int InsertMolecules::run()
 const char InsertMoleculesInfo::name[]             = "insert-molecules";
 const char InsertMoleculesInfo::shortDescription[] =
     "Insert molecules into existing vacancies";
-CommandLineOptionsModuleInterface *InsertMoleculesInfo::create()
+ICommandLineOptionsModule *InsertMoleculesInfo::create()
 {
     return new InsertMolecules();
 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,8 @@
 
 #include "config.h"
 
-#ifdef GMX_INTERNAL_XDR
-#include "gromacs/fileio/gmx_system_xdr.h"
+#if GMX_INTERNAL_XDR
+#include "gromacs/fileio/gmx_internal_xdr.h"
 #else
 #include <rpc/rpc.h>
 #include <rpc/xdr.h>
@@ -58,8 +58,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct t_fileio;
 
 /* Read or write reduced precision *float* coordinates */
 int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
@@ -91,16 +89,6 @@ float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bO
 
 
 int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
-
-
-/* Defined in gmxfio.c.
- * TODO: It would be nice to decouple this header from t_fileio completely,
- * and not need the XDR struct in gmxfio.h, but that would require some
- * extra code that is not warranted for this single function.
- * Can be reconsidered if the file I/O gets refactored in the future.
- */
-XDR *gmx_fio_getxdr(struct t_fileio *fio);
-/* Return the file pointer itself */
 
 #ifdef __cplusplus
 }

@@ -57,11 +57,15 @@ include(gmxVersionInfo)
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
     set(CMAKE_INSTALL_PREFIX "/usr/local/gromacs" CACHE STRING "Installation prefix (installation will need write permissions here)" FORCE)
 endif()
+if("${CMAKE_INSTALL_PREFIX}" STREQUAL "${CMAKE_BINARY_DIR}")
+    message(FATAL_ERROR "GROMACS cannot be installed into the build tree, choose a different location for CMAKE_INSTALL_PREFIX")
+endif()
 
 include(gmxBuildTypeReference)
 include(gmxBuildTypeProfile)
 include(gmxBuildTypeTSAN)
 include(gmxBuildTypeASAN)
+include(gmxBuildTypeMSAN)
 include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -158,9 +162,11 @@ mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
-option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
+option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
+
+option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
 # Decide on GPU settings based on user-settings and GPU/CUDA detection.
 # We support CUDA >=v4.0 on *nix, but <= v4.1 doesn't work with MSVC
@@ -170,7 +176,21 @@ else()
     set(REQUIRED_CUDA_VERSION 4.0)
 endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
-include(gmxManageGPU)
+
+# OpenCL required version: 1.1 or newer
+set(REQUIRED_OPENCL_MIN_VERSION 1.1)
+
+if(NOT GMX_USE_OPENCL)
+    # CUDA detection is done only if GMX_USE_OPENCL is OFF
+    include(gmxManageGPU)
+else()
+    #Now the OpenCL path
+    if(GMX_GPU)
+        include(gmxManageOpenCL)
+    else(GMX_GPU)
+        message(FATAL_ERROR "OpenCL requested but GPU option is not enabled (try -DGMX_GPU=on) ")
+    endif(GMX_GPU)
+endif()
 
 include(gmxDetectSimd)
 gmx_detect_simd(GMX_SUGGESTED_SIMD)
@@ -243,6 +263,11 @@ option(GMX_DEVELOPER_BUILD
     "Enable Developer convenience features: always build unit-tests"
     OFF)
 mark_as_advanced(GMX_DEVELOPER_BUILD)
+
+option(GMX_BUILD_SHARED_EXE
+    "Build exectuables as shared binaries. If not set, this disables rpath and dynamic linker flags in an attempt to build a static binary, but this may require setting up the toolchain properly and making appropriate libraries available."
+    ON)
+mark_as_advanced(GMX_BUILD_SHARED_EXE)
 
 ######################################################################
 # Detect OpenMP support
@@ -328,28 +353,27 @@ check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
 
 check_include_files(regex.h      HAVE_POSIX_REGEX)
-check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 # TODO: It could be nice to inform the user if no regex support is found,
 # as selections won't be fully functional.
 
-include(CheckFunctionExists)
-check_function_exists(posix_memalign    HAVE_POSIX_MEMALIGN)
-check_function_exists(memalign          HAVE_MEMALIGN)
-check_function_exists(_aligned_malloc   HAVE__ALIGNED_MALLOC)
-check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
-check_function_exists(fsync             HAVE_FSYNC)
-check_function_exists(_fileno           HAVE__FILENO)
-check_function_exists(fileno            HAVE_FILENO)
-check_function_exists(_commit           HAVE__COMMIT)
-check_function_exists(sigaction         HAVE_SIGACTION)
-check_function_exists(sysconf           HAVE_SYSCONF)
-check_function_exists(rsqrt             HAVE_RSQRT)
-check_function_exists(rsqrtf            HAVE_RSQRTF)
-check_function_exists(sqrtf             HAVE_SQRTF)
-check_function_exists(nice              HAVE_NICE)
+include(CheckCXXSymbolExists)
+check_cxx_symbol_exists(posix_memalign    stdlib.h     HAVE_POSIX_MEMALIGN)
+check_cxx_symbol_exists(memalign          stdlib.h     HAVE_MEMALIGN)
+check_cxx_symbol_exists(_aligned_malloc   stdlib.h     HAVE__ALIGNED_MALLOC)
+check_cxx_symbol_exists(gettimeofday      sys/time.h   HAVE_GETTIMEOFDAY)
+check_cxx_symbol_exists(sysconf           unistd.h     HAVE_SYSCONF)
+check_cxx_symbol_exists(nice              unistd.h     HAVE_NICE)
+check_cxx_symbol_exists(fsync             unistd.h     HAVE_FSYNC)
+check_cxx_symbol_exists(_fileno           stdio.h      HAVE__FILENO)
+check_cxx_symbol_exists(fileno            stdio.h      HAVE_FILENO)
+check_cxx_symbol_exists(_commit           io.h         HAVE__COMMIT)
+check_cxx_symbol_exists(sigaction         signal.h     HAVE_SIGACTION)
+check_cxx_symbol_exists(rsqrt             math.h       HAVE_RSQRT)
+check_cxx_symbol_exists(rsqrtf            math.h       HAVE_RSQRTF)
+check_cxx_symbol_exists(sqrtf             math.h       HAVE_SQRTF)
 
 include(CheckLibraryExists)
-check_library_exists(m sqrt "" HAVE_LIBM)
+find_library(HAVE_LIBM m)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 
@@ -394,6 +418,11 @@ include(gmxManageSharedLibraries)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
+
+# TNG wants zlib if it is available. And static libxml2 might have a dependency
+find_package(ZLIB QUIET)
+include(gmxTestZLib)
+gmx_test_zlib(HAVE_ZLIB)
 
 # Unconditionally find the package, as it is also required for unit
 # tests. This exports LIBXML2_FOUND, which we should not use because
@@ -475,6 +504,15 @@ if(WIN32)
     add_definitions(-DNOMINMAX)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Work-around for cmake bug #10837
+    if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Intel" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_INCLUDE_SYSTEM_FLAG_C "-isystem ")
+    endif()
+    if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Intel" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem ")
+    endif()
+endif()
+
 # Detect boost unless GMX_EXTERNAL_BOOST is explicitly OFF
 # Used for default if GMX_EXTERNAL_BOOST is not defined (first CMake pass)
 if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
@@ -489,7 +527,7 @@ if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
     if(NOT DEFINED GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
         message("Boost >= 1.44 not found. Using minimal internal version. "
                 "This may cause trouble if you plan on compiling/linking other "
-                "software that uses Boost against Gromacs.")
+                "software that uses Boost against GROMACS.")
     endif()
 endif()
 option(GMX_EXTERNAL_BOOST "Use external Boost instead of minimal built-in version"
@@ -498,7 +536,7 @@ if(GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
     message(FATAL_ERROR
         "Boost >= 1.44 not found. "
         "You can set GMX_EXTERNAL_BOOST=OFF to compile against minimal "
-        "version of Boost included with Gromacs.")
+        "version of Boost included with GROMACS.")
 endif()
 
 if(NOT DEFINED GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
@@ -511,13 +549,6 @@ if (GMX_BUILD_UNITTESTS AND NOT HAVE_LIBXML2)
     message(FATAL_ERROR
         "Cannot build unit tests without libxml2. "
         "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find a working version of libxml2.")
-endif()
-
-if(GMX_USE_TNG AND NOT GMX_EXTERNAL_TNG)
-    # TNG wants zlib if it is available
-    find_package(ZLIB QUIET)
-    include(gmxTestZLib)
-    gmx_test_zlib(HAVE_ZLIB)
 endif()
 
 ########################################################################
@@ -592,6 +623,8 @@ if(GMX_CXX11)
     set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
 endif()
 
+# Now we can test for CXX11_REGEX include file
+check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
@@ -759,6 +792,7 @@ set(MAN_INSTALL_DIR       share/man)
 set(CMAKE_INSTALL_DIR     share/cmake)
 # TODO: Make GMXRC adapt if this is changed
 set(PKGCONFIG_INSTALL_DIR ${LIB_INSTALL_DIR}/pkgconfig)
+set(OCL_INSTALL_DIR       ${DATA_INSTALL_DIR}/opencl)
 set(INCL_INSTALL_DIR      include)
 
 list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR})
@@ -772,7 +806,13 @@ include(gmxManageSuffixes)
 # CMake supports RPATH on OS X only from 2.8.12 upwards.
 # CMAKE_SYSTEM_VERSION > 8.0 matches OS X 10.5 and above, where RPATH support
 # was added.
-if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
+
+if(NOT GMX_BUILD_SHARED_EXE)
+    # No rpath
+    set(CMAKE_SKIP_RPATH TRUE)
+    set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS) # remove -Wl,-Bdynamic
+    set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+elseif((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
    ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
     # The build folder always has bin/ and lib/; if we are also going to
     # install to lib/, then the installation RPATH works also in the build
@@ -807,10 +847,10 @@ endif()
 install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
 
 if(GMX_EXTERNAL_BOOST)
-    include_directories(${Boost_INCLUDE_DIRS})
+    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
     list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
 else()
-    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/boost)
+    include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/boost)
     list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR}/gromacs/external/boost)
     list(APPEND INSTALLED_HEADED_DEFINITIONS "-DBOOST_NO_TYPEID")
     # typeid not supported for minimal internal version

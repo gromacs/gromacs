@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@
 #include <libxml/xmlmemory.h>
 
 #include "gromacs/options/basicoptions.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
@@ -84,6 +84,12 @@ class TestReferenceDataEnvironment : public ::testing::Environment
 // TODO: Make this a real enum; requires solving a TODO in StringOption.
 int g_referenceDataMode = gmx::test::erefdataCompare;
 
+//! Returns the global reference data mode.
+gmx::test::ReferenceDataMode getReferenceDataMode()
+{
+    return static_cast<gmx::test::ReferenceDataMode>(g_referenceDataMode);
+}
+
 } // namespace
 
 namespace gmx
@@ -91,22 +97,7 @@ namespace gmx
 namespace test
 {
 
-ReferenceDataMode getReferenceDataMode()
-{
-    return static_cast<ReferenceDataMode>(g_referenceDataMode);
-}
-
-void setReferenceDataMode(ReferenceDataMode mode)
-{
-    g_referenceDataMode = mode;
-}
-
-std::string getReferenceDataPath()
-{
-    return TestFileManager::getInputFilePath("refdata");
-}
-
-void initReferenceData(Options *options)
+void initReferenceData(IOptionsContainer *options)
 {
     // Needs to correspond to the enum order in refdata.h.
     const char *const refDataEnum[] = { "check", "create", "update" };
@@ -177,9 +168,12 @@ const xmlChar * const TestReferenceData::Impl::cRootNodeName =
 TestReferenceData::Impl::Impl(ReferenceDataMode mode, bool bSelfTestMode)
     : refDoc_(NULL), bWrite_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
 {
-    std::string dirname  = getReferenceDataPath();
-    std::string filename = TestFileManager::getTestSpecificFileName(".xml");
-    fullFilename_ = Path::join(dirname, filename);
+    const std::string dirname =
+        bSelfTestMode
+        ? TestFileManager::getGlobalOutputTempDirectory()
+        : TestFileManager::getInputDataDirectory();
+    const std::string filename = TestFileManager::getTestSpecificFileName(".xml");
+    fullFilename_ = Path::join(dirname, "refdata", filename);
 
     bWrite_ = true;
     if (mode != erefdataUpdateAll)
@@ -232,7 +226,7 @@ TestReferenceData::Impl::~Impl()
 {
     if (bWrite_ && bInUse_ && refDoc_ != NULL)
     {
-        std::string dirname = getReferenceDataPath();
+        std::string dirname = Path::getParentPath(fullFilename_);
         if (!Directory::exists(dirname))
         {
             if (Directory::create(dirname) != 0)

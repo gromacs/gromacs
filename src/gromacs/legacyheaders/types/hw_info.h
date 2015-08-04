@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,6 @@
 #define HWINFO_H
 
 #include "gromacs/legacyheaders/gmx_cpuid.h"
-#include "gromacs/legacyheaders/types/nbnxn_cuda_types_ext.h"
 #include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
@@ -47,6 +46,8 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+struct gmx_device_info_t;
+
 /* Possible results of the GPU detection/check.
  *
  * The egpuInsane value means that during the sanity checks an error
@@ -54,24 +55,21 @@ extern "C" {
  * incompatible driver/runtime. */
 typedef enum
 {
-    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuInsane
+    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuInsane, egpuNR
 } e_gpu_detect_res_t;
 
-/* Textual names of the GPU detection/check results (see e_gpu_detect_res_t). */
-static const char * const gpu_detect_res_str[] =
-{
-    "compatible", "inexistent", "incompatible", "insane"
-};
+/* Names of the GPU detection/check results */
+extern const char * const gpu_detect_res_str[egpuNR];
 
-/* GPU device information -- for now with only CUDA devices.
+/* GPU device information -- includes either CUDA or OpenCL devices.
  * The gmx_hardware_detect module initializes it. */
-typedef struct
+struct gmx_gpu_info_t
 {
-    gmx_bool             bDetectGPUs;          /* Did we try to detect GPUs? */
-    int                  ncuda_dev;            /* total number of devices detected */
-    cuda_dev_info_ptr_t  cuda_dev;             /* devices detected in the system (per node) */
-    int                  ncuda_dev_compatible; /* number of compatible GPUs */
-} gmx_gpu_info_t;
+    gmx_bool                  bDetectGPUs;      /* Did we try to detect GPUs? */
+    int                       n_dev;            /* total number of GPU devices detected */
+    struct gmx_device_info_t *gpu_dev;          /* GPU devices detected in the system (per node) */
+    int                       n_dev_compatible; /* number of compatible GPUs */
+};
 
 /* Hardware information structure with CPU and GPU information.
  * It is initialized by gmx_detect_hardware().
@@ -79,14 +77,36 @@ typedef struct
  *       (i.e. must be able to be shared among all threads) */
 typedef struct
 {
-    gmx_gpu_info_t  gpu_info;            /* Information about GPUs detected in the system */
+    /* Data for our local physical node */
+    struct gmx_gpu_info_t gpu_info;          /* Information about GPUs detected in the system */
 
-    gmx_cpuid_t     cpuid_info;          /* CPUID information about CPU detected;
-                                            NOTE: this will only detect the CPU thread 0 of the
-                                            current process runs on. */
-    int             nthreads_hw_avail;   /* Number of hardware threads available; this number
-                                            is based on the number of CPUs reported as available
-                                            by the OS at the time of detection. */
+    gmx_cpuid_t           cpuid_info;        /* CPUID information about CPU detected;
+                                                NOTE: this will only detect the CPU thread 0 of the
+                                                current process runs on. */
+    int                   ncore;             /* Number of cores, will be 0 when not detected */
+    int                   nthreads_hw_avail; /* Number of hardware threads available; this number
+                                                is based on the number of CPUs reported as available
+                                                by the OS at the time of detection. */
+
+    /* Data reduced through MPI over all physical nodes */
+    int                 nphysicalnode;       /* Number of physical nodes */
+    int                 ncore_tot;           /* Sum of #cores over all nodes, can be 0 */
+    int                 ncore_min;           /* Min #cores over all nodes */
+    int                 ncore_max;           /* Max #cores over all nodes */
+    int                 nhwthread_tot;       /* Sum of #hwthreads over all nodes */
+    int                 nhwthread_min;       /* Min #hwthreads over all nodes */
+    int                 nhwthread_max;       /* Max #hwthreads over all nodes */
+    int                 ngpu_compatible_tot; /* Sum of #GPUs over all nodes */
+    int                 ngpu_compatible_min; /* Min #GPUs over all nodes */
+    int                 ngpu_compatible_max; /* Max #GPUs over all nodes */
+
+    /* The values below are only used for printing, so here it's not an issue
+     * that stricly speaking SIMD instruction sets can't be uniquely ordered.
+     */
+    enum gmx_cpuid_simd simd_suggest_min;    /* Highest SIMD instruction set supported by all ranks */
+    enum gmx_cpuid_simd simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
+
+    gmx_bool            bIdenticalGPUs;      /* TRUE if all ranks have the same type(s) and order of GPUs */
 } gmx_hw_info_t;
 
 
@@ -95,16 +115,16 @@ enum {
     threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
 };
 
-/* GPU device selection information -- for now with only CUDA devices */
+/* GPU device selection information -- includes either CUDA or OpenCL devices */
 typedef struct
 {
-    char     *gpu_id;               /* GPU id's to use, each specified as chars */
-    gmx_bool  bUserSet;             /* true if the GPUs in cuda_dev_use are manually provided by the user */
+    char     *gpu_id;           /* GPU id's to use, each specified as chars */
+    gmx_bool  bUserSet;         /* true if the GPUs in dev_use are manually provided by the user */
 
-    int       ncuda_dev_compatible; /* number of compatible GPU devices that could be used */
-    int      *cuda_dev_compatible;  /* array of compatible GPU device IDs, from which automatic selection occurs */
-    int       ncuda_dev_use;        /* number of GPU devices selected to be used, either by the user or automatically */
-    int      *cuda_dev_use;         /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
+    int       n_dev_compatible; /* number of compatible GPU devices that could be used */
+    int      *dev_compatible;   /* array of compatible GPU device IDs, from which automatic selection occurs */
+    int       n_dev_use;        /* number of GPU devices selected to be used, either by the user or automatically */
+    int      *dev_use;          /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
 } gmx_gpu_opt_t;
 
 /* Threading and GPU options, can be set automatically or by the user */

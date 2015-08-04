@@ -32,6 +32,10 @@ out of the framework.  The main features are:
    such language bindings in the framework (no such integration is implemented
    at this time, though).
 
+There are also some reusable analysis routines that can be used independent of
+the framework:
+ - \subpage page_analysisnbsearch
+
 For a crash course on how to implement an analysis tool using the framework, see
 \subpage page_analysistemplate.
 
@@ -110,14 +114,14 @@ Input options {#section_analysisframework_options}
 
 To declare input data for the tool (typically, command-line options, including
 input files and selections), \ref module_options module is used.
-The analysis tool code receives a pre-initialized gmx::Options object in one of
-its initialization methods, and fills it with its input options.
+The analysis tool code receives an instance of gmx::IOptionsContainer for one of
+its initialization methods, and uses it to provide its input options.
 Basic options are declared in basicoptions.h, and also gmx::SelectionOption is
 used in the same manner.  For each option, the tool declares a local variable
 that will receive the value for that option.  After the options are parsed from
 the command line (by the framework), the tool code can read the values from
-these variables.  The option declarations, and other information filled into
-the gmx::Options object, are also used to provide help to the user (also
+these variables.  The option declarations filled into the
+gmx::IOptionsContainer object are also used to provide help to the user (also
 handled by the framework).
 See the documentation for gmx::TrajectoryAnalysisModule and the
 [options module documentation](\ref module_options) for more details.

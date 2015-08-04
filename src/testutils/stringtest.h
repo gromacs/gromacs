@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,15 +45,17 @@
 
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 
-#include "testutils/refdata.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
+
 namespace test
 {
+
+class TestReferenceChecker;
 
 /*! \libinternal \brief
  * Test fixture for tests that check string formatting.
@@ -69,6 +71,16 @@ namespace test
 class StringTestBase : public ::testing::Test
 {
     public:
+        /*! \brief
+         * Checks a block of text.
+         *
+         * This static method is provided for code that does not derive from
+         * StringTestBase to use the same functionality, e.g., implementing the
+         * `-stdout` option.
+         */
+        static void checkText(TestReferenceChecker *checker,
+                              const std::string &text, const char *id);
+
         StringTestBase();
         ~StringTestBase();
 
@@ -81,14 +93,14 @@ class StringTestBase : public ::testing::Test
         TestReferenceChecker &checker();
 
         /*! \brief
-         * Check a string.
+         * Checks a string.
          *
          * \param[in] text  String to check.
          * \param[in] id    Unique (within a single test) id for the string.
          */
         void checkText(const std::string &text, const char *id);
         /*! \brief
-         * Check contents of a file as a single string.
+         * Checks contents of a file as a single string.
          *
          * \param[in] filename  Name of the file to check.
          * \param[in] id        Unique (within a single test) id for the string.
@@ -98,9 +110,19 @@ class StringTestBase : public ::testing::Test
          */
         void checkFileContents(const std::string &filename, const char *id);
 
+        /*! \brief
+         * Tests that contents of two files are equal.
+         *
+         * \param[in] refFilename   File with the expected contents.
+         * \param[in] testFilename  File with the contents to be tested.
+         */
+        void testFilesEqual(const std::string &refFilename,
+                            const std::string &testFilename);
+
     private:
-        TestReferenceData                       data_;
-        boost::scoped_ptr<TestReferenceChecker> checker_;
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="onlinehelp/test-help.rst"><![CDATA[
+.. _test help:
+
+test help
+=========
+
+.. only:: man
+
+   See also
+   --------
+
+   :manpage:`test(1)`
+
+   More information about |Gromacs| is available at <http://www.gromacs.org/>.
+]]></String>
+  <String Name="onlinehelp/test-module.rst"><![CDATA[
+.. _test module:
+
+test module
+===========
+Synopsis
+--------
+.. parsed-literal::
+
+    test module [:strong:`-int` :emphasis:`<int>`]
+
+Description
+-----------
+Sample description
+for testing ``test module``.
+
+Options
+-------
+Other options:
+
+``-int`` <int>
+
+
+
+.. only:: man
+
+   See also
+   --------
+
+   :manpage:`test(1)`
+
+   More information about |Gromacs| is available at <http://www.gromacs.org/>.
+]]></String>
+  <String Name="onlinehelp/test-other.rst"><![CDATA[
+.. _test other:
+
+test other
+==========
+Synopsis
+--------
+.. parsed-literal::
+
+    test other
+
+
+.. only:: man
+
+   See also
+   --------
+
+   :manpage:`test(1)`
+
+   More information about |Gromacs| is available at <http://www.gromacs.org/>.
+]]></String>
+  <String Name="fragments/byname.rst"><![CDATA[
+* :doc:`test </onlinehelp/test>` - molecular dynamics simulation suite
+* :doc:`test help </onlinehelp/test-help>` - Print help information
+* :doc:`test module </onlinehelp/test-module>` - First module
+* :doc:`test other </onlinehelp/test-other>` - Second module
+]]></String>
+  <String Name="conf-man.py"><![CDATA[
+man_pages = [
+    ('onlinehelp/test-help', 'test-help', "Print help information", '', 1),
+    ('onlinehelp/test-module', 'test-module', "First module", '', 1),
+    ('onlinehelp/test-other', 'test-other', "Second module", '', 1),
+    ('onlinehelp/test', 'test', 'molecular dynamics simulation suite', '', 1)
+]
+]]></String>
+  <String Name="fragments/bytopic.rst"><![CDATA[
+Group 1
+^^^^^^^
+:doc:`test module </onlinehelp/test-module>`
+  First module
+
+Group 2
+^^^^^^^
+:doc:`test other </onlinehelp/test-other>`
+  Second module
+
+]]></String>
+  <String Name="fragments/bytopic-man.rst"><![CDATA[
+Group 1
+^^^^^^^
+:manpage:`test-module(1)`
+  First module
+
+Group 2
+^^^^^^^
+:manpage:`test-other(1)`
+  Second module
+
+]]></String>
+  <String Name="onlinehelp/topic1.rst"><![CDATA[
+Test topic
+==========
+Help text
+
+Subtopic 1
+----------
+Sub text
+
+Subtopic 2
+----------
+Sub text
+
+Out-of-order subtopic
+---------------------
+Sub text
+]]></String>
+  <String Name="onlinehelp/topic2.rst"><![CDATA[
+Another topic
+=============
+Help text
+]]></String>
+  <String Name="onlinehelp/test.rst"><![CDATA[
+molecular dynamics simulation suite
+===================================
+Synopsis
+--------
+.. parsed-literal::
+
+    test [:strong:`-[no]h`] [:strong:`-[no]quiet`] [:strong:`-[no]version`] [:strong:`-[no]copyright`] [:strong:`-nice` :emphasis:`<int>`]
+         [:strong:`-[no]backup`]
+
+Description
+-----------
+|Gromacs| is a full-featured suite of programs to perform molecular
+dynamics simulations, i.e., to simulate the behavior of systems with
+hundreds to millions of particles using Newtonian equations of motion.
+It is primarily used for research on proteins, lipids, and polymers, but
+can be applied to a wide variety of chemical and biological research
+questions.
+
+Options
+-------
+Other options:
+
+``-[no]h``  (no)
+    Print help and quit
+``-[no]quiet``  (no)
+    Do not print common startup info or quotes
+``-[no]version``  (no)
+    Print extended version information and quit
+``-[no]copyright``  (yes)
+    Print copyright information on startup
+``-nice`` <int> (19)
+    Set the nicelevel (default depends on command)
+``-[no]backup``  (yes)
+    Write backups if output files exist
+
+test commands
+-------------
+The following commands are available. Please refer to their individual man pages or ``test help <command>`` for further details.
+
+.. include:: /fragments/bytopic-man.rst
+]]></String>
+</ReferenceData>

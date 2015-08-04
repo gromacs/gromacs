@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
-#include "gromacs/options/options.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectionoption.h"
@@ -76,7 +76,7 @@ class Distance : public TrajectoryAnalysisModule
     public:
         Distance();
 
-        virtual void initOptions(Options                    *options,
+        virtual void initOptions(IOptionsContainer          *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
@@ -132,7 +132,7 @@ Distance::Distance()
 
 
 void
-Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Distance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
         "[THISMODULE] calculates distances between pairs of positions",
@@ -156,7 +156,7 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
         "distances, use [gmx-pairdist]."
     };
 
-    options->setDescription(desc);
+    settings->setHelpText(desc);
 
     options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
                            .store(&fnAverage_).defaultBasename("distave")
@@ -271,7 +271,7 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     {
         AnalysisDataPlotModulePointer plotm(
                 new AnalysisDataPlotModule(settings.plotSettings()));
-        plotm->setFileName(fnAll_);
+        plotm->setFileName(fnXYZ_);
         plotm->setTitle("Distance");
         plotm->setXAxisIsTime();
         plotm->setYLabel("Distance (nm)");

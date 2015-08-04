@@ -47,20 +47,11 @@
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/nbnxn_consts.h"
+#include "gromacs/mdlib/nb_verlet.h"
+#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-
-#ifdef GMX_NBNXN_SIMD
-/* The include below sets the SIMD instruction type (precision+width)
- * for all nbnxn SIMD search and non-bonded kernel code.
- */
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gromacs/simd/simd.h"
-#endif
-
 
 /* The code in this file estimates a pairlist buffer length
  * given a target energy drift per atom per picosecond.
@@ -118,26 +109,44 @@ typedef struct
     int                           n;    /* #atoms of this type in the system */
 } verletbuf_atomtype_t;
 
-void verletbuf_get_list_setup(gmx_bool                bGPU,
+void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
+                              gmx_bool                bGPU,
                               verletbuf_list_setup_t *list_setup)
 {
-    list_setup->cluster_size_i     = NBNXN_CPU_CLUSTER_I_SIZE;
+    /* When calling this function we often don't know which kernel type we
+     * are going to use. W choose the kernel type with the smallest possible
+     * i- and j-cluster sizes, so we potentially overestimate, but never
+     * underestimate, the buffer drift.
+     * Note that the current buffer estimation code only handles clusters
+     * of size 1, 2 or 4, so for 4x8 or 8x8 we use the estimate for 4x4.
+     */
 
     if (bGPU)
     {
-        list_setup->cluster_size_j = NBNXN_GPU_CLUSTER_SIZE;
+        /* The CUDA kernels split the j-clusters in two halves */
+        list_setup->cluster_size_i = nbnxn_kernel_to_ci_size(nbnxnk8x8x8_GPU);
+        list_setup->cluster_size_j = nbnxn_kernel_to_cj_size(nbnxnk8x8x8_GPU)/2;
     }
     else
     {
-#ifndef GMX_NBNXN_SIMD
-        list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
-#else
-        list_setup->cluster_size_j = GMX_SIMD_REAL_WIDTH;
+        int kernel_type;
+
+        kernel_type = nbnxnk4x4_PlainC;
+
+#ifdef GMX_NBNXN_SIMD
+        if (bSIMD)
+        {
 #ifdef GMX_NBNXN_SIMD_2XNN
-        /* We assume the smallest cluster size to be on the safe side */
-        list_setup->cluster_size_j /= 2;
+            /* We use the smallest cluster size to be on the safe side */
+            kernel_type = nbnxnk4xN_SIMD_2xNN;
+#else
+            kernel_type = nbnxnk4xN_SIMD_4xN;
 #endif
+        }
 #endif
+
+        list_setup->cluster_size_i = nbnxn_kernel_to_ci_size(kernel_type);
+        list_setup->cluster_size_j = nbnxn_kernel_to_cj_size(kernel_type);
     }
 }
 
@@ -208,8 +217,8 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
             for (i = 0; i < il->nr; i += 1+NRAL(ft))
             {
                 const t_iparams *ip;
-                real             cam[5] = {0}, inv_mass, coeff, m_aj;
-                int              a1, j, aj;
+                real             inv_mass, coeff, m_aj;
+                int              a1, aj;
 
                 ip = &ffparams->iparams[il->iatoms[i]];
 
@@ -217,7 +226,15 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 
                 if (ft != F_VSITEN)
                 {
-                    for (j = 1; j < NRAL(ft); j++)
+                    /* Only vsiten can have more than four
+                       constructing atoms, so NRAL(ft) <= 5 */
+                    int        j;
+                    real      *cam;
+                    const int  maxj = NRAL(ft);
+
+                    snew(cam, maxj);
+                    assert(maxj <= 5);
+                    for (j = 1; j < maxj; j++)
                     {
                         cam[j] = moltype->atoms.atom[il->iatoms[i+1+j]].m;
                         if (cam[j] == 0)
@@ -232,64 +249,70 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                                       il->iatoms[i+1+j]+1);
                         }
                     }
-                }
 
-                switch (ft)
+                    switch (ft)
+                    {
+                        case F_VSITE2:
+                            /* Exact */
+                            vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a));
+                            break;
+                        case F_VSITE3:
+                            /* Exact */
+                            vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b));
+                            break;
+                        case F_VSITEN:
+                            gmx_incons("Invalid vsite type");
+                            break;
+                        default:
+                            /* Use the mass of the lightest constructing atom.
+                             * This is an approximation.
+                             * If the distance of the virtual site to the
+                             * constructing atom is less than all distances
+                             * between constructing atoms, this is a safe
+                             * over-estimate of the displacement of the vsite.
+                             * This condition holds for all H mass replacement
+                             * vsite constructions, except for SP2/3 groups.
+                             * In SP3 groups one H will have a F_VSITE3
+                             * construction, so even there the total drift
+                             * estimate shouldn't be far off.
+                             */
+                            vsite_m[a1] = cam[1];
+                            for (j = 2; j < maxj; j++)
+                            {
+                                vsite_m[a1] = min(vsite_m[a1], cam[j]);
+                            }
+                            (*n_nonlin_vsite)++;
+                            break;
+                    }
+                    sfree(cam);
+                }
+                else
                 {
-                    case F_VSITE2:
-                        /* Exact */
-                        vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a));
-                        break;
-                    case F_VSITE3:
-                        /* Exact */
-                        vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b));
-                        break;
-                    case F_VSITEN:
-                        /* Exact */
-                        inv_mass = 0;
-                        for (j = 0; j < 3*ffparams->iparams[il->iatoms[i]].vsiten.n; j += 3)
+                    int j;
+
+                    /* Exact */
+                    inv_mass = 0;
+                    for (j = 0; j < 3*ffparams->iparams[il->iatoms[i]].vsiten.n; j += 3)
+                    {
+                        aj    = il->iatoms[i+j+2];
+                        coeff = ffparams->iparams[il->iatoms[i+j]].vsiten.a;
+                        if (moltype->atoms.atom[aj].ptype == eptVSite)
                         {
-                            aj    = il->iatoms[i+j+2];
-                            coeff = ffparams->iparams[il->iatoms[i+j]].vsiten.a;
-                            if (moltype->atoms.atom[aj].ptype == eptVSite)
-                            {
-                                m_aj = vsite_m[aj];
-                            }
-                            else
-                            {
-                                m_aj = moltype->atoms.atom[aj].m;
-                            }
-                            if (m_aj <= 0)
-                            {
-                                gmx_incons("The mass of a vsiten constructing atom is <= 0");
-                            }
-                            inv_mass += coeff*coeff/m_aj;
+                            m_aj = vsite_m[aj];
                         }
-                        vsite_m[a1] = 1/inv_mass;
-                        /* Correct for loop increment of i */
-                        i += j - 1 - NRAL(ft);
-                        break;
-                    default:
-                        /* Use the mass of the lightest constructing atom.
-                         * This is an approximation.
-                         * If the distance of the virtual site to the
-                         * constructing atom is less than all distances
-                         * between constructing atoms, this is a safe
-                         * over-estimate of the displacement of the vsite.
-                         * This condition holds for all H mass replacement
-                         * vsite constructions, except for SP2/3 groups.
-                         * In SP3 groups one H will have a F_VSITE3
-                         * construction, so even there the total drift
-                         * estimate shouldn't be far off.
-                         */
-                        assert(j >= 1);
-                        vsite_m[a1] = cam[1];
-                        for (j = 2; j < NRAL(ft); j++)
+                        else
                         {
-                            vsite_m[a1] = min(vsite_m[a1], cam[j]);
+                            m_aj = moltype->atoms.atom[aj].m;
                         }
-                        (*n_nonlin_vsite)++;
-                        break;
+                        if (m_aj <= 0)
+                        {
+                            gmx_incons("The mass of a vsiten constructing atom is <= 0");
+                        }
+                        inv_mass += coeff*coeff/m_aj;
+                    }
+                    vsite_m[a1] = 1/inv_mass;
+                    /* Correct for loop increment of i */
+                    i += j - 1 - NRAL(ft);
                 }
                 if (gmx_debug_at)
                 {

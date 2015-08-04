@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Console"><![CDATA[
+Title
+=====
+Some text without spacing
+
+Subtitle
+++++++++
+
+More text]]></String>
+  <String Name="reStructuredText"><![CDATA[
+Title
+=====
+Some text without spacing
+
+Subtitle
+++++++++
+
+More text]]></String>
+</ReferenceData>

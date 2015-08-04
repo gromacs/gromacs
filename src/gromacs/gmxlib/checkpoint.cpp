@@ -41,9 +41,9 @@
 
 #include "config.h"
 
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 
 #include <fcntl.h>
 #ifdef GMX_NATIVE_WINDOWS
@@ -54,6 +54,7 @@
 #include "buildinfo.h"
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -188,14 +189,11 @@ static void cp_error()
 
 static void do_cpt_string_err(XDR *xd, gmx_bool bRead, const char *desc, char **s, FILE *list)
 {
-    bool_t res = 0;
-
     if (bRead)
     {
         snew(*s, CPTSTRLEN);
     }
-    res = xdr_string(xd, s, CPTSTRLEN);
-    if (res == 0)
+    if (xdr_string(xd, s, CPTSTRLEN) == 0)
     {
         cp_error();
     }
@@ -208,10 +206,7 @@ static void do_cpt_string_err(XDR *xd, gmx_bool bRead, const char *desc, char **
 
 static int do_cpt_int(XDR *xd, const char *desc, int *i, FILE *list)
 {
-    bool_t res = 0;
-
-    res = xdr_int(xd, i);
-    if (res == 0)
+    if (xdr_int(xd, i) == 0)
     {
         return -1;
     }
@@ -224,13 +219,12 @@ static int do_cpt_int(XDR *xd, const char *desc, int *i, FILE *list)
 
 static int do_cpt_u_chars(XDR *xd, const char *desc, int n, unsigned char *i, FILE *list)
 {
-    bool_t res = 1;
-    int    j;
     if (list)
     {
         fprintf(list, "%s = ", desc);
     }
-    for (j = 0; j < n && res; j++)
+    bool_t res = 1;
+    for (int j = 0; j < n && res; j++)
     {
         res &= xdr_u_char(xd, &i[j]);
         if (list)
@@ -260,11 +254,9 @@ static void do_cpt_int_err(XDR *xd, const char *desc, int *i, FILE *list)
 
 static void do_cpt_step_err(XDR *xd, const char *desc, gmx_int64_t *i, FILE *list)
 {
-    bool_t res = 0;
     char   buf[STEPSTRSIZE];
 
-    res = xdr_int64(xd, i);
-    if (res == 0)
+    if (xdr_int64(xd, i) == 0)
     {
         cp_error();
     }
@@ -276,10 +268,7 @@ static void do_cpt_step_err(XDR *xd, const char *desc, gmx_int64_t *i, FILE *lis
 
 static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
 {
-    bool_t res = 0;
-
-    res = xdr_double(xd, f);
-    if (res == 0)
+    if (xdr_double(xd, f) == 0)
     {
         cp_error();
     }
@@ -291,12 +280,10 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
 
 static void do_cpt_real_err(XDR *xd, real *f)
 {
-    bool_t res = 0;
-
 #ifdef GMX_DOUBLE
-    res = xdr_double(xd, f);
+    bool_t res = xdr_double(xd, f);
 #else
-    res = xdr_float(xd, f);
+    bool_t res = xdr_float(xd, f);
 #endif
     if (res == 0)
     {
@@ -306,11 +293,9 @@ static void do_cpt_real_err(XDR *xd, real *f)
 
 static void do_cpt_n_rvecs_err(XDR *xd, const char *desc, int n, rvec f[], FILE *list)
 {
-    int i, j;
-
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
-        for (j = 0; j < DIM; j++)
+        for (int j = 0; j < DIM; j++)
         {
             do_cpt_real_err(xd, &f[i][j]);
         }
@@ -403,14 +388,14 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
     {
         if (dtc == xdr_datatype_float)
         {
-            vf = (float *)vp;
+            vf = reinterpret_cast<float *>(vp);
         }
         else
         {
             snew(vf, nf);
         }
-        res = xdr_vector(xd, (char *)vf, nf,
-                         (unsigned int)sizeof(float), (xdrproc_t)xdr_float);
+        res = xdr_vector(xd, reinterpret_cast<char *>(vf), nf,
+                         static_cast<unsigned int>(sizeof(float)), (xdrproc_t)xdr_float);
         if (res == 0)
         {
             return -1;
@@ -436,8 +421,8 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
         {
             snew(vd, nf);
         }
-        res = xdr_vector(xd, (char *)vd, nf,
-                         (unsigned int)sizeof(double), (xdrproc_t)xdr_double);
+        res = xdr_vector(xd, reinterpret_cast<char *>(vd), nf,
+                         static_cast<unsigned int>(sizeof(double)), (xdrproc_t)xdr_double);
         if (res == 0)
         {
             return -1;
@@ -544,8 +529,8 @@ static int do_cpte_ints(XDR *xd, int cptp, int ecpt, int sflags,
         }
         vp = *v;
     }
-    res = xdr_vector(xd, (char *)vp, nf,
-                     (unsigned int)sizeof(int), (xdrproc_t)xdr_int);
+    res = xdr_vector(xd, reinterpret_cast<char *>(vp), nf,
+                     static_cast<unsigned int>(sizeof(int)), (xdrproc_t)xdr_int);
     if (res == 0)
     {
         return -1;
@@ -611,8 +596,8 @@ static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
         }
         vp = *v;
     }
-    res = xdr_vector(xd, (char *)vp, nf,
-                     (unsigned int)sizeof(double), (xdrproc_t)xdr_double);
+    res = xdr_vector(xd, reinterpret_cast<char *>(vp), nf,
+                     static_cast<unsigned int>(sizeof(double)), (xdrproc_t)xdr_double);
     if (res == 0)
     {
         return -1;
@@ -649,7 +634,7 @@ static int do_cpte_matrix(XDR *xd, int cptp, int ecpt, int sflags,
     real *vr;
     int   ret;
 
-    vr  = (real *)&(v[0][0]);
+    vr  = &(v[0][0]);
     ret = do_cpte_reals_low(xd, cptp, ecpt, sflags,
                             DIM*DIM, NULL, &vr, NULL, ecprMATRIX);
 
@@ -1389,7 +1374,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
         if (bRead)
         {
             do_cpt_string_err(xd, bRead, "output filename", &buf, list);
-            strncpy(outputfiles[i].filename, buf, CPTSTRLEN-1);
+            std::strncpy(outputfiles[i].filename, buf, CPTSTRLEN-1);
             if (list == NULL)
             {
                 sfree(buf);
@@ -1403,7 +1388,7 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
             {
                 return -1;
             }
-            outputfiles[i].offset = ( ((gmx_off_t) offset_high) << 32 ) | ( (gmx_off_t) offset_low & mask );
+            outputfiles[i].offset = (static_cast<gmx_off_t>(offset_high) << 32 ) | ( static_cast<gmx_off_t>(offset_low) & mask );
         }
         else
         {
@@ -1418,8 +1403,8 @@ static int do_cpt_files(XDR *xd, gmx_bool bRead,
             }
             else
             {
-                offset_low  = (int) (offset & mask);
-                offset_high = (int) ((offset >> 32) & mask);
+                offset_low  = static_cast<int>(offset & mask);
+                offset_high = static_cast<int>((offset >> 32) & mask);
             }
             if (do_cpt_int(xd, "file_offset_high", &offset_high, list) != 0)
             {
@@ -1486,20 +1471,20 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         npmenodes = 0;
     }
 
-#ifndef GMX_NO_RENAME
+#if !GMX_NO_RENAME
     /* make the new temporary filename */
-    snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
-    strcpy(fntemp, fn);
-    fntemp[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+    snew(fntemp, std::strlen(fn)+5+STEPSTRSIZE);
+    std::strcpy(fntemp, fn);
+    fntemp[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
     sprintf(suffix, "_%s%s", "step", gmx_step_str(step, sbuf));
-    strcat(fntemp, suffix);
-    strcat(fntemp, fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+    std::strcat(fntemp, suffix);
+    std::strcat(fntemp, fn+std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1);
 #else
     /* if we can't rename, we just overwrite the cpt file.
      * dangerous if interrupted.
      */
-    snew(fntemp, strlen(fn));
-    strcpy(fntemp, fn);
+    snew(fntemp, std::strlen(fn));
+    std::strcpy(fntemp, fn);
 #endif
     gmx_format_current_time(timebuf, STRLEN);
 
@@ -1529,16 +1514,15 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     flags_enh = 0;
     if (state->enerhist.nsum > 0 || state->enerhist.nsum_sim > 0)
     {
-        flags_enh |= (1<<eenhENERGY_N);
+        flags_enh |= (1<<eenhENERGY_N) | (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSTEPS_SIM);
         if (state->enerhist.nsum > 0)
         {
             flags_enh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
-                          (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSUM));
+                          (1<<eenhENERGY_NSUM));
         }
         if (state->enerhist.nsum_sim > 0)
         {
-            flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSTEPS_SIM) |
-                          (1<<eenhENERGY_NSUM_SIM));
+            flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSUM_SIM));
         }
         if (state->enerhist.dht)
         {
@@ -1642,16 +1626,16 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     /* we don't move the checkpoint if the user specified they didn't want it,
        or if the fsyncs failed */
-#ifndef GMX_NO_RENAME
+#if !GMX_NO_RENAME
     if (!bNumberAndKeep && !ret)
     {
         if (gmx_fexist(fn))
         {
             /* Rename the previous checkpoint file */
-            strcpy(buf, fn);
-            buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
-            strcat(buf, "_prev");
-            strcat(buf, fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+            std::strcpy(buf, fn);
+            buf[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+            std::strcat(buf, "_prev");
+            std::strcat(buf, fn+std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1);
 #ifndef GMX_FAHCORE
             /* we copy here so that if something goes wrong between now and
              * the rename below, there's always a state.cpt.
@@ -1725,7 +1709,7 @@ static void check_string(FILE *fplog, const char *type, const char *p,
 {
     FILE *fp = fplog ? fplog : stderr;
 
-    if (strcmp(p, f) != 0)
+    if (std::strcmp(p, f) != 0)
     {
         fprintf(fp, "  %s mismatch,\n", type);
         fprintf(fp, "    current program: %s\n", p);
@@ -1791,8 +1775,8 @@ static void check_match(FILE *fplog,
     if (mm)
     {
         const char msg_version_difference[] =
-            "The current Gromacs major & minor version are not identical to those that\n"
-            "generated the checkpoint file. In principle Gromacs does not support\n"
+            "The current GROMACS major & minor version are not identical to those that\n"
+            "generated the checkpoint file. In principle GROMACS does not support\n"
             "continuation from checkpoints between different versions, so we advise\n"
             "against this. If you still want to try your luck we recommend that you use\n"
             "the -noappend flag to keep your output files from the two versions separate.\n"
@@ -1800,7 +1784,7 @@ static void check_match(FILE *fplog,
             "file have changed between the different major & minor versions.\n";
 
         const char msg_mismatch_notice[] =
-            "Gromacs patchlevel, binary or parallel settings differ from previous run.\n"
+            "GROMACS patchlevel, binary or parallel settings differ from previous run.\n"
             "Continuation is exact, but not guaranteed to be binary identical.\n";
 
         const char msg_logdetails[] =
@@ -2153,7 +2137,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                     else
                     {
                         gmx_fatal(FARGS, "Failed to lock: %s. %s.",
-                                  outputfiles[i].filename, strerror(errno));
+                                  outputfiles[i].filename, std::strerror(errno));
                     }
                 }
             }
@@ -2173,7 +2157,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
             {
                 if (gmx_fio_seek(chksum_file, outputfiles[i].offset))
                 {
-                    gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", strerror(errno));
+                    gmx_fatal(FARGS, "Seek error! Failed to truncate log-file: %s.", std::strerror(errno));
                 }
             }
 #endif
@@ -2517,145 +2501,24 @@ void list_checkpoint(const char *fn, FILE *out)
     done_state(&state);
 }
 
-
-static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm fnm[])
-{
-    int i;
-
-    /* Check if the output file name stored in the checkpoint file
-     * is one of the output file names of mdrun.
-     */
-    i = 0;
-    while (i < nfile &&
-           !(is_output(&fnm[i]) && strcmp(fnm_cp, fnm[i].fns[0]) == 0))
-    {
-        i++;
-    }
-
-    return (i < nfile && gmx_fexist(fnm_cp));
-}
-
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                         t_commrec *cr,
-                                         gmx_bool bAppendReq,
-                                         int nfile, const t_filenm fnm[],
-                                         const char *part_suffix, gmx_bool *bAddPart)
+void
+read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
+                                              int                  *simulation_part,
+                                              int                  *nfiles,
+                                              gmx_file_position_t **outputfiles)
 {
-    t_fileio            *fp;
-    gmx_int64_t          step = 0;
-    double               t;
-    /* This next line is nasty because the sub-structures of t_state
-     * cannot be assumed to be zeroed (or even initialized in ways the
-     * rest of the code might assume). Using snew would be better, but
-     * this will all go away for 5.0. */
-    t_state              state;
-    int                  nfiles;
-    gmx_file_position_t *outputfiles;
-    int                  nexist, f;
-    gmx_bool             bAppend;
-    char                *fn, suf_up[STRLEN];
+    gmx_int64_t step = 0;
+    double      t;
+    t_state     state;
 
-    bAppend = FALSE;
+    init_state(&state, 0, 0, 0, 0, 0);
 
-    if (SIMMASTER(cr))
+    read_checkpoint_data(fp, simulation_part, &step, &t, &state,
+                         nfiles, outputfiles);
+    if (gmx_fio_close(fp) != 0)
     {
-        if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
-        {
-            *simulation_part = 0;
-        }
-        else
-        {
-            init_state(&state, 0, 0, 0, 0, 0);
-
-            read_checkpoint_data(fp, simulation_part, &step, &t, &state,
-                                 &nfiles, &outputfiles);
-            if (gmx_fio_close(fp) != 0)
-            {
-                gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
-            }
-            done_state(&state);
-
-            if (bAppendReq)
-            {
-                nexist = 0;
-                for (f = 0; f < nfiles; f++)
-                {
-                    if (exist_output_file(outputfiles[f].filename, nfile, fnm))
-                    {
-                        nexist++;
-                    }
-                }
-                if (nexist == nfiles)
-                {
-                    bAppend = bAppendReq;
-                }
-                else if (nexist > 0)
-                {
-                    fprintf(stderr,
-                            "Output file appending has been requested,\n"
-                            "but some output files listed in the checkpoint file %s\n"
-                            "are not present or are named differently by the current program:\n",
-                            filename);
-                    fprintf(stderr, "output files present:");
-                    for (f = 0; f < nfiles; f++)
-                    {
-                        if (exist_output_file(outputfiles[f].filename,
-                                              nfile, fnm))
-                        {
-                            fprintf(stderr, " %s", outputfiles[f].filename);
-                        }
-                    }
-                    fprintf(stderr, "\n");
-                    fprintf(stderr, "output files not present or named differently:");
-                    for (f = 0; f < nfiles; f++)
-                    {
-                        if (!exist_output_file(outputfiles[f].filename,
-                                               nfile, fnm))
-                        {
-                            fprintf(stderr, " %s", outputfiles[f].filename);
-                        }
-                    }
-                    fprintf(stderr, "\n");
-
-                    gmx_fatal(FARGS, "File appending requested, but %d of the %d output files are not present or are named differently", nfiles-nexist, nfiles);
-                }
-            }
-
-            if (bAppend)
-            {
-                if (nfiles == 0)
-                {
-                    gmx_fatal(FARGS, "File appending requested, but no output file information is stored in the checkpoint file");
-                }
-                fn = outputfiles[0].filename;
-                if (strlen(fn) < 4 ||
-                    gmx_strcasecmp(fn+strlen(fn)-4, ftp2ext(efLOG)) == 0)
-                {
-                    gmx_fatal(FARGS, "File appending requested, but the log file is not the first file listed in the checkpoint file");
-                }
-                /* Set bAddPart to whether the suffix string '.part' is present
-                 * in the log file name.
-                 */
-                strcpy(suf_up, part_suffix);
-                upstring(suf_up);
-                *bAddPart = (strstr(fn, part_suffix) != NULL ||
-                             strstr(fn, suf_up) != NULL);
-            }
-
-            sfree(outputfiles);
-        }
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(*simulation_part), simulation_part, cr);
-
-        if (*simulation_part > 0 && bAppendReq)
-        {
-            gmx_bcast(sizeof(bAppend), &bAppend, cr);
-            gmx_bcast(sizeof(*bAddPart), bAddPart, cr);
-        }
-    }
-
-    return bAppend;
+    done_state(&state);
 }

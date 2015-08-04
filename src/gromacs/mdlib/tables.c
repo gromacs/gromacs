@@ -40,7 +40,6 @@
 
 #include <math.h>
 
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/macros.h"
@@ -50,6 +49,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -944,11 +944,11 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 break;
             case etabEwald:
             case etabEwaldSwitch:
-                Vtab  = gmx_erfc(ewc*rc)/rc;
+                Vcut  = gmx_erfc(ewc*rc)/rc;
                 break;
             case etabEwaldUser:
                 /* Only calculate minus the reciprocal space contribution */
-                Vtab  = -gmx_erf(ewc*rc)/rc;
+                Vcut  = -gmx_erf(ewc*rc)/rc;
                 break;
             case etabRF:
             case etabRF_ZERO:

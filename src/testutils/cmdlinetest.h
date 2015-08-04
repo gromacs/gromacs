@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,8 +55,8 @@
 namespace gmx
 {
 
-class CommandLineModuleInterface;
-class CommandLineOptionsModuleInterface;
+class ICommandLineModule;
+class ICommandLineOptionsModule;
 
 namespace test
 {
@@ -206,7 +206,7 @@ class CommandLineTestHelper
 {
     public:
         /*! \brief
-         * Runs a command-line program that implements CommandLineModuleInterface.
+         * Runs a command-line program that implements ICommandLineModule.
          *
          * \param[in,out] module       Module to run.
          *     The function does not take ownership.
@@ -216,10 +216,10 @@ class CommandLineTestHelper
          * \throws  unspecified  Any exception thrown by the module.
          */
         static int
-        runModule(CommandLineModuleInterface *module, CommandLine *commandLine);
+        runModule(ICommandLineModule *module, CommandLine *commandLine);
         /*! \brief
          * Runs a command-line program that implements
-         * CommandLineOptionsModuleInterface.
+         * ICommandLineOptionsModule.
          *
          * \param[in] factory          Factory method for the module to run.
          * \param[in,out] commandLine  Command line parameters to pass.
@@ -229,7 +229,7 @@ class CommandLineTestHelper
          *     module.
          */
         static int
-        runModule(CommandLineOptionsModuleInterface *(*factory)(),
+        runModule(ICommandLineOptionsModule         *(*factory)(),
                   CommandLine                      *commandLine);
 
         /*! \brief
@@ -287,10 +287,6 @@ class CommandLineTestHelper
          * \p filename is given to TestTemporaryFileManager to make a unique
          * filename for the temporary file, but is not otherwise used.
          *
-         * Currently, this method should not be called for an XVG file, because
-         * the comments in the beginning of the file contain timestamps and
-         * other variable information, causing the test to fail.  Best used
-         * only for custom data formats.
          */
         void setOutputFile(CommandLine *args, const char *option,
                            const char *filename);
