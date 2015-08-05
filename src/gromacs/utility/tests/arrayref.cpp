@@ -187,12 +187,13 @@ TYPED_TEST(ArrayRefTest, MakeFromArrayWorks)
     this->runTests(a, aSize, a, arrayRef);
 }
 
+// std::vector only has the data() method from C++11
 TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
 {
     DEFINE_ARRAY(a, aSize);
     std::vector<typename TestFixture::ValueType> v(a, a + aSize);
     typename TestFixture::ArrayRefType           arrayRef(v);
-    this->runTests(a, aSize, v.data(), arrayRef);
+    this->runTests(a, aSize, &v[0], arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, MakeFromVectorWorks)
@@ -201,7 +202,7 @@ TYPED_TEST(ArrayRefTest, MakeFromVectorWorks)
     std::vector<typename TestFixture::ValueType> v(a, a + aSize);
     typename TestFixture::ArrayRefType arrayRef
         = TestFixture::ArrayRefType::fromVector(v.begin(), v.end());
-    this->runTests(a, aSize, v.data(), arrayRef);
+    this->runTests(a, aSize, &v[0], arrayRef);
 }
 
 //! Helper struct for the case actually used in mdrun signalling
