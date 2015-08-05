@@ -51,15 +51,19 @@ if (UNIX)
             ${PATH_SEARCH_TEST_DIR}/bin/test-abs-link)
 endif()
 
-gmx_add_unit_test(CommandLineUnitTests commandline-test
-                  cmdlinehelpmodule.cpp
-                  cmdlinehelpwriter.cpp
-                  cmdlinemodulemanager.cpp
-                  cmdlinemodulemanagertest.cpp
-                  cmdlineparser.cpp
-                  cmdlineprogramcontext.cpp
-                  pargs.cpp
-                  $<TARGET_OBJECTS:onlinehelp-test-shared>)
+# TODO A proper solution for Redmine #1795 is under discussion in
+# Gerrit. When merging with master, do not merge this hack fix.
+if(NOT GMX_TARGET_BGQ)
+    gmx_add_unit_test(CommandLineUnitTests commandline-test
+        cmdlinehelpmodule.cpp
+        cmdlinehelpwriter.cpp
+        cmdlinemodulemanager.cpp
+        cmdlinemodulemanagertest.cpp
+        cmdlineparser.cpp
+        cmdlineprogramcontext.cpp
+        pargs.cpp
+        $<TARGET_OBJECTS:onlinehelp-test-shared>)
+endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
     # This suppression stops a very verbose cascade of messages about the
