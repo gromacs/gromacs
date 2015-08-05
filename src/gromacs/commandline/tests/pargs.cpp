@@ -46,6 +46,8 @@
 
 #include "gromacs/commandline/pargs.h"
 
+#include "config.h"
+
 #include <string>
 
 #include <gtest/gtest.h>
@@ -460,6 +462,7 @@ TEST_F(ParseCommonArgsTest, AcceptsNonExistentInputFilesIfSpecified)
     done_filenms(nfile(), fnm);
 }
 
+#ifndef GMX_TARGET_BGQ
 TEST_F(ParseCommonArgsTest, HandlesCompressedFiles)
 {
     t_filenm          fnm[] = {
@@ -535,6 +538,7 @@ TEST_F(ParseCommonArgsTest, CompletesExtensionFromExistingFileWithDefaultFileNam
     EXPECT_EQ(expected4, opt2fn("-f4", nfile(), fnm));
     done_filenms(nfile(), fnm);
 }
+#endif
 
 /********************************************************************
  * Tests for general behavior

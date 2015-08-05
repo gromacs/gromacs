@@ -51,14 +51,19 @@ if (UNIX)
             ${PATH_SEARCH_TEST_DIR}/bin/test-abs-link)
 endif()
 
+list(APPEND commandline_unit_test_source_files
+    cmdlinehelpwriter.cpp
+    cmdlineparser.cpp
+    cmdlineprogramcontext.cpp
+    pargs.cpp)
+if(NOT GMX_TARGET_BGQ)
+    list(APPEND commandline_unit_test_source_files
+        cmdlinehelpmodule.cpp
+        cmdlinemodulemanager.cpp
+        cmdlinemodulemanagertest.cpp)
+endif()
 gmx_add_unit_test(CommandLineUnitTests commandline-test
-                  cmdlinehelpmodule.cpp
-                  cmdlinehelpwriter.cpp
-                  cmdlinemodulemanager.cpp
-                  cmdlinemodulemanagertest.cpp
-                  cmdlineparser.cpp
-                  cmdlineprogramcontext.cpp
-                  pargs.cpp
+                  ${commandline_unit_test_source_files}
                   $<TARGET_OBJECTS:onlinehelp-test-shared>)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
