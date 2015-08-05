@@ -630,6 +630,8 @@ do so anyway, because NVIDIA OpenCL support is part of the CUDA
 package, a C++ compiler supported by your CUDA installation is
 required.
 
+On Mac OS, an AMD GPU can be used only with OS version 10.10.4 and
+higher; earlier OS versions are known to run incorrectly.
 
 Static linking
 ^^^^^^^^^^^^^^
