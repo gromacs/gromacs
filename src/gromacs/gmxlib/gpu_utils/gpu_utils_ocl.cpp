@@ -46,6 +46,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if __APPLE__
+#    include <sys/sysctl.h>
+#endif
 
 #include <memory.h>
 
@@ -81,6 +84,36 @@ static bool is_compatible_gpu(int stat)
     return (stat == egpuCompatible);
 }
 
+/*! \brief Return true if executing on OS X earlier than 10.10.4
+ *
+ * Uses the BSD sysctl() interfaces to extract the kernel version.
+ *
+ * \return true if version is 14.4 or later (= OS X version 10.10.4),
+ *         otherwise false.
+ */
+static bool
+runningOnWorkingOSXVersionForAmd()
+{
+#ifdef __APPLE__
+    int    mib[2];
+    char   kernelVersion[256];
+    size_t len = sizeof(kernelVersion);
+
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_OSRELEASE;
+
+    sysctl(mib, sizeof(mib)/sizeof(mib[0]), kernelVersion, &len, NULL, 0);
+
+    int major = strtod(kernelVersion, NULL);
+    int minor = strtod(strchr(kernelVersion, '.')+1, NULL);
+
+    // Kernel 14.4 corresponds to OS X 10.10.4
+    return (major > 14 || (major == 14 && minor >= 4));
+#else
+    return false;
+#endif
+}
+
 /*! \brief Returns true if the gpu characterized by the device properties is
  *  supported by the native gpu acceleration.
  * \returns             true if the GPU properties passed indicate a compatible
@@ -89,14 +122,17 @@ static bool is_compatible_gpu(int stat)
 static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
 {
     /* Only AMD and NVIDIA GPUs are supported for now */
-    if ((OCL_VENDOR_NVIDIA == ocl_gpu_device->vendor_e) ||
-        (OCL_VENDOR_AMD == ocl_gpu_device->vendor_e))
+    switch (ocl_gpu_device->vendor_e)
     {
-        return egpuCompatible;
+        case OCL_VENDOR_NVIDIA:
+            return egpuCompatible;
+        case OCL_VENDOR_AMD:
+            return runningOnWorkingOSXVersionForAmd() ? egpuCompatible : egpuIncompatible;
+        default:
+            return egpuIncompatible;
     }
-
-    return egpuIncompatible;
 }
+
 
 /*! \brief Returns an ocl_vendor_id_t value corresponding to the input OpenCL vendor name.
  *

@@ -537,12 +537,9 @@ The following devices are known to work correctly:
    - NVIDIA: GeForce GTX 660M, GeForce GTX 660Ti, GeForce GTX 750Ti,
      GeForce GTX 780, GTX Titan
 
-Building an OpenCL program can take a significant amount of
-time. NVIDIA implements a mechanism to cache the result of the
-build. As a consequence, only the first run will take longer (because
-of the kernel builds), and the following runs will be very fast. AMD
-drivers, on the other hand, implement no caching and the initial phase
-of running an OpenCL program can be very slow. This is not normally a
+Building the OpenCL program can take a few seconds when :ref:`gmx
+mdrun` starts up, because the kernels that run on the
+GPU can only be compiled at run time. This is not normally a
 problem for long production MD, but you might prefer to do some kinds
 of work on just the CPU (e.g. see ``-nb`` above).
 
