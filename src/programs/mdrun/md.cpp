@@ -1158,7 +1158,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, NULL, FALSE, state->box,
-                                top_global, &bSumEkinhOld,
+                                top_global, &(top->idef), &bSumEkinhOld,
                                 cglo_flags
                                 | CGLO_ENERGY
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
@@ -1181,7 +1181,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (bTrotter)
                 {
                     m_add(force_vir, shake_vir, total_vir);     /* we need the un-dispersion corrected total vir here */
-                    trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ2);
+                    trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ2);
                 }
                 else
                 {
@@ -1194,7 +1194,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                         wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                         constr, NULL, FALSE, state->box,
-                                        top_global, &bSumEkinhOld,
+                                        top_global, &(top->idef), &bSumEkinhOld,
                                         CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
                         wallcycle_start(wcycle, ewcUPDATE);
                     }
@@ -1379,7 +1379,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
             if (bTrotter)
             {
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ3);
+                trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ3);
                 /* We can only do Berendsen coupling after we have summed
                  * the kinetic energy or virial. Since the happens
                  * in global_state after update, we should only do it at
@@ -1449,11 +1449,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, NULL, FALSE, lastbox,
-                                top_global, &bSumEkinhOld,
+                                top_global, &(top->idef), &bSumEkinhOld,
                                 cglo_flags | CGLO_TEMPERATURE
                                 );
                 wallcycle_start(wcycle, ewcUPDATE);
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
+                trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
                 /* now we know the scaling, we can compute the positions again again */
                 copy_rvecn(cbuf, state->x, 0, state->natoms);
 
@@ -1540,7 +1540,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             (step_rel % gs.nstms == 0) &&
                             (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
                             lastbox,
-                            top_global, &bSumEkinhOld,
+                            top_global, &(top->idef), &bSumEkinhOld,
                             cglo_flags
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
                             | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)

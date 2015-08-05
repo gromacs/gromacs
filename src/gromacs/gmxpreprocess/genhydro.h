@@ -79,8 +79,4 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
 void add_drudes(t_atoms **pdbaptr, rvec *xptr[]);
 /* Add Drudes to input structure */
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif

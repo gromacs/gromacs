@@ -40,10 +40,6 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define MAXSLEN 32
 
 typedef struct {
