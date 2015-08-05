@@ -187,6 +187,8 @@ TYPED_TEST(ArrayRefTest, MakeFromArrayWorks)
     this->runTests(a, aSize, a, arrayRef);
 }
 
+#if GMX_CXX11
+// std::vector only has the data() method from C++11
 TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
 {
     DEFINE_ARRAY(a, aSize);
@@ -203,6 +205,7 @@ TYPED_TEST(ArrayRefTest, MakeFromVectorWorks)
         = TestFixture::ArrayRefType::fromVector(v.begin(), v.end());
     this->runTests(a, aSize, v.data(), arrayRef);
 }
+#endif
 
 //! Helper struct for the case actually used in mdrun signalling
 template <typename T>
