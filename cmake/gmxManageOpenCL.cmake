@@ -57,6 +57,11 @@ if (UNIX)
     set(OPENCL_DEFINITIONS ${OPENCL_DEFINITIONS} " -Wno-comment")
 endif()
 
+# Yes Virginia, Darwin kernel version 14.4 corresponds to OS X 10.4.
+if(APPLE) AND ${CMAKE_SYSTEM_VERSION} VERSION_LESS "14.4")
+        message(WARNING "OS X prior to version 10.10.4 produces incorrect AMD OpenCL code at runtime. You will not be able to use AMD GPUs on this host unless you upgrade your operating system.");
+endif()
+
 add_definitions(${OPENCL_DEFINITIONS})
 
 include_directories(${OPENCL_INCLUDE_DIRS})

@@ -46,6 +46,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if __APPLE__
+#    include <sys/sysctl.h>
+#endif
 
 #include <memory.h>
 
@@ -126,6 +129,29 @@ ocl_vendor_id_t get_vendor_id(char *vendor_name)
     return OCL_VENDOR_UNKNOWN;
 }
 
+bool
+isBuggyOSXVersionForOpenCL()
+{
+#ifdef __APPLE__
+    int    mib[2];
+    char   kernelVersion[256];
+    size_t len = sizeof(kernelVersion);
+
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_OSRELEASE;
+
+    sysctl(mib, sizeof(mib)/sizeof(mib[0]), kernelVersion, &len, NULL, 0);
+
+    int major = strtod(kernelVersion, NULL);
+    int minor = strtod(strchr(kernelVersion, '.')+1, NULL);
+
+    // Kernel 14.4 corresponds to OS X 10.10.4
+    return (major > 14 || (major == 14 && minor >= 4));
+#else
+    return false;
+#endif
+}
+
 
 //! This function is documented in the header file
 int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
@@ -133,7 +159,9 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
     int             retval;
     cl_uint         ocl_platform_count;
     cl_platform_id *ocl_platform_ids;
-    cl_device_type  req_dev_type = CL_DEVICE_TYPE_GPU;
+    cl_device_type  req_dev_type    = CL_DEVICE_TYPE_GPU;
+    bool            disableAmdOnOSX = isBuggyOSXVersionForOpenCL();
+    bool            warnAmdOnOSX    = true;
 
     retval           = 0;
     ocl_platform_ids = NULL;
@@ -231,7 +259,20 @@ int detect_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 
                     gpu_info->gpu_dev[device_index].vendor_e = get_vendor_id(gpu_info->gpu_dev[device_index].device_vendor);
 
-                    gpu_info->gpu_dev[device_index].stat = is_gmx_supported_gpu_id(gpu_info->gpu_dev + device_index);
+                    if (disableAmdOnOSX && gpu_info->gpu_dev[device_index].vendor_e == OCL_VENDOR_AMD)
+                    {
+                        gpu_info->gpu_dev[device_index].stat = egpuIncompatible;
+                        if (warnAmdOnOSX)
+                        {
+                            printf("Found compatible AMD GPU(s) that cannot be used. OS X prior to version 10.10.4\n"
+                                   "has bugs in the compiler and/or drivers that produces incorrect OpenCL code.");
+                            warnAmdOnOSX = false;
+                        }
+                    }
+                    else
+                    {
+                        gpu_info->gpu_dev[device_index].stat = is_gmx_supported_gpu_id(gpu_info->gpu_dev + device_index);
+                    }
 
                     if (egpuCompatible == gpu_info->gpu_dev[device_index].stat)
                     {
