@@ -239,12 +239,13 @@ MACRO(gmx_c_flags)
         endif()
     endif()
 
-    # pgi
+    # PGI
+    # Inter-procedural analysis causes pgcc/pgc++ to crash when linking the library with PGI release 15.7.
     if (CMAKE_C_COMPILER_ID MATCHES "PGI")
-        GMX_TEST_CFLAG(CFLAGS_OPT "-fastsse" GMXC_CFLAGS_RELEASE)
+        GMX_TEST_CFLAG(CFLAGS_OPT "-Mnoipa" GMXC_CFLAGS_RELEASE)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "PGI")
-        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-fastsse" GMXC_CXXFLAGS_RELEASE)
+        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-Mnoipa" GMXC_CXXFLAGS_RELEASE)
     endif()
 
     # Pathscale
