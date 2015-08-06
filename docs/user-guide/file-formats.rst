@@ -660,7 +660,7 @@ This file is in portable binary format an can be read with :ref:`gmx dump`.
 
 or if you're not such a fast reader::
 
-   % gmx dump -f traj.tng | less
+   gmx dump -f traj.tng | less
 
 You can also get a quick look in the contents of the file (number of
 frames etc.) using:
@@ -782,7 +782,7 @@ file type:
 
 or if you're not such a fast reader::
 
-   % gmx dump -s topol.tpr | less
+   gmx dump -s topol.tpr | less
 
 You can also compare two tpr files using:
 
@@ -800,11 +800,11 @@ In this file all the coordinates, velocities, forces and energies are
 printed as you told GROMACS in your mdp file. This file is in portable binary
 format an can be read with :ref:`gmx dump`::
 
-    % gmx dump -f traj.trr
+    gmx dump -f traj.trr
 
 or if you're not such a fast reader::
 
-    % gmx dump -f traj.trr | less
+    gmx dump -f traj.trr | less
 
 You can also get a quick look in the contents of the file (number of
 frames etc.) using:
