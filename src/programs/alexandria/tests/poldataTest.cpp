@@ -66,7 +66,7 @@ class PoldataTest : public ::testing::Test
 
         //init sett tolecrance
         PoldataTest ( )
-            : refData_(gmx::test::erefdataUpdateAll), checker_(refData_.rootChecker())
+            : refData_(gmx::test::erefdataCompare), checker_(refData_.rootChecker())
         {
 
 
@@ -169,7 +169,7 @@ TEST_F(PoldataTest, addAtype){
                   vdwparams,
                   ref_enthalpy);
 
-    int value = pd->searchAtype(atype,
+    int valid = pd->searchAtype(atype,
                                 &newElem,
                                 &newDesc,
                                 &newAtype,
@@ -177,7 +177,7 @@ TEST_F(PoldataTest, addAtype){
                                 &newBtype,
                                 &newVdwparams);
     //will faill if the seartch failed
-    assert(value == 1);
+    assert(valid == 1);
 
     //test if the extraction where corect
     assert(newElem.compare(elem) == 0);
@@ -233,68 +233,68 @@ TEST_F (PoldataTest, Bosque)
 
 TEST_F (PoldataTest, chi)
 {
-    std::vector<double>      values;
+    std::vector<double>      chi0s;
 
 
     for (int model = 0; model < numModels; model++)
     {
-        values.push_back(pd->getChi0((ChargeDistributionModel)model, atomName));
+        chi0s.push_back(pd->getChi0((ChargeDistributionModel)model, atomName));
     }
-    checker_.checkSequence(values.begin(), values.end(), "chi");
+    checker_.checkSequence(chi0s.begin(), chi0s.end(), "chi");
 }
 
 TEST_F (PoldataTest, row){
-    std::vector<double>      values;
+    std::vector<double>      rows;
     int numAtoms = 3;
 
     for (int atomNr = 0; atomNr < numAtoms; atomNr++)
     {
         for (int model = 0; model <  numModels; model++)
         {
-            values.push_back(pd->getRow((ChargeDistributionModel)model, atomName, atomNr));
+            rows.push_back(pd->getRow((ChargeDistributionModel)model, atomName, atomNr));
         }
     }
-    checker_.checkSequence(values.begin(), values.end(), "row");
+    checker_.checkSequence(rows.begin(), rows.end(), "row");
 }
 
 
 TEST_F (PoldataTest, zeta)
 {
-    std::vector<double>      values;
+    std::vector<double>      zetas;
     int numAtoms = 3;
 
     for (int atomNr = 0; atomNr < numAtoms; atomNr++)
     {
         for (int model = 0; model <  numModels; model++)
         {
-            values.push_back(pd->getZeta((ChargeDistributionModel)model, atomName, atomNr));
+            zetas.push_back(pd->getZeta((ChargeDistributionModel)model, atomName, atomNr));
         }
     }
-    checker_.checkSequence(values.begin(), values.end(), "zeta");
+    checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
 }
 
 TEST_F (PoldataTest, forceField)
 {
-    std::string value =  pd->getForceField( );
-    checker_.checkString(value, "forceField");
+    std::string force =  pd->getForceField( );
+    checker_.checkString(force, "forceField");
 }
 
 TEST_F (PoldataTest, lenghtUnit)
 {
-    std::string value =  pd->getLengthUnit( );
-    checker_.checkString(value, "lenghtUnit");
+    std::string lenght =  pd->getLengthUnit( );
+    checker_.checkString(lenght, "lenghtUnit");
 }
 
 
 TEST_F (PoldataTest, polarUnit)
 {
-    std::string value = pd->getPolarUnit( );
-    checker_.checkString(value, "polarUnit");
+    std::string polarUnit = pd->getPolarUnit( );
+    checker_.checkString(polarUnit, "polarUnit");
 }
 
 
 TEST_F (PoldataTest, polarRef)
 {
-    std::string value =  pd->getPolarRef( );
-    checker_.checkString(value, "polarRef");
+    std::string polarRef =  pd->getPolarRef( );
+    checker_.checkString(polarRef, "polarRef");
 }

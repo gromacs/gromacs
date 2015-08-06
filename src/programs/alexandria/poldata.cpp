@@ -1309,7 +1309,7 @@ int Poldata::setAngleParams( std::string atom1, std::string atom2,
             (((gtB->atom1.compare(atom1) == 0) &&
               (gtB->atom3.compare(atom3) == 0)) ||
              ((gtB->atom1.compare(atom3) == 0) &&
-          (gtB->atom3.compare(atom1) == 0))))
+              (gtB->atom3.compare(atom1) == 0))))
         {
             break;
         }
@@ -1400,7 +1400,7 @@ int Poldata::searchAngle( std::string atom1, std::string atom2,
             (((gtB->atom1.compare(atom1) == 0) &&
               (gtB->atom3.compare(atom3) == 0)) ||
              ((gtB->atom1.compare(atom3) == 0) &&
-          (gtB->atom3.compare(atom1) == 0))))
+              (gtB->atom3.compare(atom1) == 0))))
         {
             assignScal(angle, gtB->angle);
             assignScal(sigma, gtB->sigma);
@@ -1669,12 +1669,12 @@ void Poldata::setEemprops(ChargeDistributionModel eqdModel, const  std::string n
     eep->eqdModel           = eqdModel;
     eep->name               = name;
     eep->J0                 = J0;
-    sz           = split(zeta, ' ');
-    sq           = split(q, ' ');
-    sr           = split(row, ' ');
-    eep->zetastr = zeta;
-    eep->qstr    = q;
-    eep->rowstr  = row;
+    sz                      = split(zeta, ' ');
+    sq                      = split(q, ' ');
+    sr                      = split(row, ' ');
+    eep->zetastr            = zeta;
+    eep->qstr               = q;
+    eep->rowstr             = row;
     unsigned int nn = std::min(sz.size(), std::min(sq.size(), sr.size()));
     unsigned int n;
     for (n = 0; (n < nn); n++)

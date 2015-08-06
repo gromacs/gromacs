@@ -64,7 +64,7 @@ class RespTest : public ::testing::Test
         gmx::test::TestReferenceData                     refData_;
         gmx::test::TestReferenceChecker                  checker_;
         static alexandria::Resp *resp;
-        static const int         nrAtoms = 16;
+        static const int         nrAtoms = 15;
         //init sett tolecrance
         RespTest ( )
             : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
@@ -131,10 +131,12 @@ const int         RespTest::nrAtoms;
 
 
 
-TEST_F (RespTest, test)
+TEST_F (RespTest, qtotValues)
 {
+    std::vector<double> qtotValues(nrAtoms);
     for (int i = 0; i < nrAtoms; i++)
     {
-        double value = resp->getQtot(0);
+        qtotValues.push_back(resp->getQtot(i));
     }
+    checker_.checkSequence(qtotValues.begin(), qtotValues.end(), "qtotValues");
 }

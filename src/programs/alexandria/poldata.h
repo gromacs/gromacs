@@ -426,19 +426,19 @@ class Eemprops
             return data[index].row;
         }
 
-        void setZeta(int index, double value)
+        void setZeta(int index, double zeta)
         {
-            data[index].zeta = value;
+            data[index].zeta = zeta;
         }
 
-        void setQ(int index, double value)
+        void setQ(int index, double q)
         {
-            data[index].q = value;
+            data[index].q = q;
         }
 
-        void setRow(int index, int value)
+        void setRow(int index, int row)
         {
-            data[index].row = value;
+            data[index].row = row;
         }
 };
 typedef std::vector<Eemprops>::iterator EempropsIterator;
