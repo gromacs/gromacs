@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -559,6 +559,40 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  *
  * Works exactly like ASSERT_EQ comparing with a null pointer. */
 #define ASSERT_NULL(val) ASSERT_EQ((void *) NULL, val)
+
+//! \}
+
+//! \cond internal
+/*! \internal \brief
+ * Helper method for `(EXPECT|ASSERT)_PLAIN`.
+ */
+static inline ::testing::AssertionResult
+plainAssertHelper(const char * /*expr*/, const ::testing::AssertionResult &expr)
+{
+    return expr;
+}
+//! \endcond
+
+/*! \brief
+ * Assert for predicates that return AssertionResult and produce a full failure
+ * message.
+ *
+ * `expr` should evaluate to AssertionResult, and on failure the message from
+ * the result is used as-is, unlike in EXPECT_TRUE().
+ *
+ * \hideinitializer
+ */
+#define EXPECT_PLAIN(expr) EXPECT_PRED_FORMAT1(plainAssertHelper, expr)
+/*! \brief
+ * Assert for predicates that return AssertionResult and produce a full failure
+ * message.
+ *
+ * `expr` should evaluate to AssertionResult, and on failure the message from
+ * the result is used as-is, unlike in ASSERT_TRUE().
+ *
+ * \hideinitializer
+ */
+#define ASSERT_PLAIN(expr) ASSERT_PRED_FORMAT1(plainAssertHelper, expr)
 
 //! \}
 
