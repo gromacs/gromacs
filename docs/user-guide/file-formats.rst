@@ -652,22 +652,18 @@ related to the trajectory of a simulation. For example, it might
 contain coordinates, velocities, forces and/or energies. Various :ref:`mdp`
 file options control which of these are written by mdrun, whether data
 is written with compression, and how lossy that compression can be.
-This file is in portable binary format an can be read with :ref:`gmx dump`.
+This file is in portable binary format an can be read with :ref:`gmx dump`::
 
-.. parsed-literal:
+   gmx dump -f traj.tng
 
-   % :ref:`gmx dump` -f traj.tng
+Or if you're not such a fast reader::
 
-or if you're not such a fast reader::
-
-   % gmx dump -f traj.tng | less
+   gmx dump -f traj.tng | less
 
 You can also get a quick look in the contents of the file (number of
-frames etc.) using:
+frames etc.) using::
 
-.. parsed-literal:
-
-   % :ref:`gmx check` -f traj.tng
+   gmx check -f traj.tng
 
 .. _top:
 
@@ -774,21 +770,17 @@ The tpr file extension stands for portable binary run input file. This file
 contains  the starting structure of your simulation, the molecular topology
 and all the simulation parameters. Because this file is in binary format it
 cannot be read with a normal editor. To read a portable binary run input
-file type:
+file type::
 
-.. parsed-literal:
+   gmx dump -s topol.tpr
 
-   % :ref:`gmx dump` -s topol.tpr
+Or, if you're not such a fast reader::
 
-or if you're not such a fast reader::
+   gmx dump -s topol.tpr | less
 
-   % gmx dump -s topol.tpr | less
+You can also compare two tpr files using::
 
-You can also compare two tpr files using:
-
-.. parsed-literal:
-
-   % :ref:`gmx check` -s1 top1 -s2 top2 | less
+   gmx check -s1 top1 -s2 top2 | less
 
 .. _trr:
 
@@ -800,18 +792,16 @@ In this file all the coordinates, velocities, forces and energies are
 printed as you told GROMACS in your mdp file. This file is in portable binary
 format an can be read with :ref:`gmx dump`::
 
-    % gmx dump -f traj.trr
+    gmx dump -f traj.trr
 
 or if you're not such a fast reader::
 
-    % gmx dump -f traj.trr | less
+    gmx dump -f traj.trr | less
 
 You can also get a quick look in the contents of the file (number of
-frames etc.) using:
+frames etc.) using::
 
-.. parsed-literal:
-
-   % :ref:`gmx check` -f traj.trr
+   gmx check -f traj.trr
 
 .. _xpm:
 

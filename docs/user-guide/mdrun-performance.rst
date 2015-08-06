@@ -235,6 +235,7 @@ Examples for mdrun on one node
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
+
     mdrun
 
 Starts mdrun using all the available resources. mdrun
@@ -244,6 +245,7 @@ to compatible GPUs. Details will vary with hardware
 and the kind of simulation being run.
 
 ::
+
     mdrun -nt 8
 
 Starts mdrun using 8 threads, which might be thread-MPI
@@ -251,6 +253,7 @@ or OpenMP threads depending on hardware and the kind
 of simulation being run.
 
 ::
+
     mdrun -ntmpi 2 -ntomp 4
 
 Starts mdrun using eight total threads, with four thread-MPI
@@ -263,6 +266,7 @@ sockets, and the number of cores per node must be
 a multiple of the number of threads per rank.
 
 ::
+
     mdrun -gpu_id 12
 
 Starts mdrun using GPUs with IDs 1 and 2 (e.g. because
@@ -271,6 +275,7 @@ two thread-MPI ranks, and will split the available
 CPU cores between them using OpenMP threads.
 
 ::
+
     mdrun -ntmpi 4 -gpu_id "1122"
 
 Starts mdrun using four thread-MPI ranks, and maps them
@@ -278,6 +283,7 @@ to GPUs with IDs 1 and 2. The CPU cores available will
 be split evenly between the ranks using OpenMP threads.
 
 ::
+
     mdrun -nt 6 -pin on -pinoffset 0
     mdrun -nt 6 -pin on -pinoffset 3
 
@@ -291,6 +297,7 @@ if restricting mdrun to a subset of cores to share a
 node with other processes.
 
 ::
+
     mpirun_mpi -np 2
 
 When using an :ref:`gmx mdrun` compiled with external MPI,
@@ -402,6 +409,7 @@ five do the PP component, with two OpenMP threads
 each.
 
 ::
+
     mpirun -np 4 mdrun -ntomp 6 -gpu_id 00
 
 Starts :ref:`mdrun_mpi` on a machine with two nodes, using
@@ -409,6 +417,7 @@ four total ranks, each rank with six OpenMP threads,
 and both ranks on a node sharing GPU with ID 0.
 
 ::
+
     mpirun -np 8 mdrun -ntomp 3 -gpu_id 0000
 
 Starts :ref:`mdrun_mpi` on a machine with two nodes, using
@@ -418,6 +427,7 @@ This may or may not be faster than the previous setup
 on the same hardware.
 
 ::
+
     mpirun -np 20 mdrun_mpi -ntomp 4 -gpu_id 0
 
 Starts :ref:`mdrun_mpi` with 20 ranks, and assigns the CPU cores evenly
@@ -426,6 +436,7 @@ suitable when there are ten nodes, each with one GPU, and each node
 has two sockets.
 
 ::
+
     mpirun -np 20 mdrun_mpi -gpu_id 00
 
 Starts :ref:`mdrun_mpi` with 20 ranks, and assigns the CPU cores evenly
@@ -434,6 +445,7 @@ suitable when there are ten nodes, each with one GPU, and each node
 has two sockets.
 
 ::
+
     mpirun -np 20 mdrun_mpi -gpu_id 01
 
 Starts :ref:`mdrun_mpi` with 20 ranks. This setup is likely
@@ -441,6 +453,7 @@ to be suitable when there are ten nodes, each with two
 GPUs.
 
 ::
+
     mpirun -np 40 mdrun_mpi -gpu_id 0011
 
 Starts :ref:`mdrun_mpi` with 40 ranks. This setup is likely
