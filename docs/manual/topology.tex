@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -1231,8 +1231,8 @@ periodic improper dihedral         & {\tts dihedrals}               & 4     & 4 
 Fourier dihedral                   & {\tts dihedrals}               & 4     & 5     & $C_1$, $C_2$, $C_3$, $C_4$ (\kJmol)                   & all        & \ssecref{Fourierdihedral} \\
 tabulated dihedral                 & {\tts dihedrals}               & 4     & 8     & table number ($\geq 0$); $k$ (\kJmol)                 & $k$        & \ssecref{tabulatedinteraction} \\
 proper dihedral (multiple)         & {\tts dihedrals}               & 4     & 9     & $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity       & $\phi,k$   & \ssecref{properdihedral} \\
-restricted dihedral                & {\tts dihedrals}               & 4     & 11    & $\phi_0$ (deg); $k_\phi$ (\kJmol)                    &            & \ssecref{ReT} \\
-combined bending-torsion potential & {\tts dihedrals}               & 4     & 10    & $a_0$, $a_1$, $a_2$, $a_3$, $a_4$ (\kJmol)       &            & \ssecref{CBT} \\
+restricted dihedral                & {\tts dihedrals}               & 4     & 10    & $\phi_0$ (deg); $k_\phi$ (\kJmol)                    &            & \ssecref{ReT} \\
+combined bending-torsion potential & {\tts dihedrals}               & 4     & 11    & $a_0$, $a_1$, $a_2$, $a_3$, $a_4$ (\kJmol)       &            & \ssecref{CBT} \\
 exclusions                         & {\tts exclusions}              & 1     &       & one or more atom indices                              &            & \tsecref{excl} \\
 constraint                         & {\tts constraints}\fnm{4}      & 2     & 1     & $b_0$ (nm)                                            & all        & \sssecref{constraints},\tsecref{constraints} \\
 constraint\fnm{6}                  & {\tts constraints}             & 2     & 2     & $b_0$ (nm)                                            & all        & \sssecref{constraints},\tsecref{constraints},\tsecref{excl} \\
