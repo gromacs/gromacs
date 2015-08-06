@@ -103,7 +103,7 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
     {
         std::string g98z(g98);
         g98z += ".gz";
-        g98f.open(g98z, ios::in);
+        g98f.open(g98z.c_str(), ios::in);
         isGzip = g98f.is_open();
     }
     else

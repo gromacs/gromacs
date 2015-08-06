@@ -585,9 +585,15 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                                                   TRUE, watoms, 5, TRUE, TRUE,
                                                   1, TRUE,
                                                   TRUE, NULL, seed);*/
-		      //TODO fix steter for the specified varibels 
 		      mpnew.gr_ = new Resp(_iChargeDistributionModel, mpnew.getCharge());
-		      
+		      mpnew.gr_->setBAXpRESP(true);
+		      mpnew.gr_->setZmin(1);
+		      mpnew.gr_->setDeltaZ(5);
+		      mpnew.gr_->setWatoms(watoms);
+		      mpnew.gr_->setRDecrZeta(5);
+		      mpnew.gr_->setBRandZeta(true);
+		      mpnew.gr_->setBEntropy(true);
+		      mpnew.gr_->setSeed(seed);
                         if (NULL == mpnew.gr_)
                         {
                             imm = immRespInit;
@@ -720,8 +726,15 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                                           1, TRUE,
                                           TRUE, NULL, seed);*/
 
-	      //TODO add sters for data
 	      mpnew.gr_ = new  Resp(_iChargeDistributionModel, mpnew.getCharge());
+		      mpnew.gr_->setBAXpRESP(true);
+		      mpnew.gr_->setZmin(1);
+		      mpnew.gr_->setDeltaZ(5);
+		      mpnew.gr_->setWatoms(watoms);
+		      mpnew.gr_->setRDecrZeta(5);
+		      mpnew.gr_->setBRandZeta(true);
+		      mpnew.gr_->setBEntropy(true);
+		      mpnew.gr_->setSeed(seed);
                 if (NULL == mpnew.gr_)
                 {
                     imm = immRespInit;

@@ -151,6 +151,37 @@ namespace alexandria
 
     void setZeta( int atom, int zz, double zeta);
 
+    void setBAXpRESP(bool bAXpRESP){
+      _bAXpRESP = bAXpRESP;
+    }
+
+    void setZmin(real zmin){ 
+      _zmin = zmin;
+    }
+
+    void setDeltaZ(real detlaZ){
+      _deltaZ = detlaZ;
+    }
+    
+    void setWatoms(double watoms){
+      _watoms = watoms;
+    }
+    void setRDecrZeta(real rDecrZeta){
+      _rDecrZeta = rDecrZeta;
+    }
+
+    void setBRandZeta(bool bRandZeta){
+      _bRandZeta = bRandZeta;
+    }
+
+    void setSeed(unsigned int seed){ 
+      _seed = seed;
+    }
+    
+    void setBEntropy(bool bEntropy){
+      _bEntropy  = bEntropy;
+    }
+
   private:
     ChargeDistributionModel _iDistributionModel;
     int                     _nesp, _natom, _natype;

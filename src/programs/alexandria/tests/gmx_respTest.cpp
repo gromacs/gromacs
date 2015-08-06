@@ -64,7 +64,7 @@ protected:
   gmx::test::TestReferenceData                     refData_;
   gmx::test::TestReferenceChecker                  checker_;
   static alexandria::Resp *resp;
-
+  static const int nrAtoms = 16;
   //init sett tolecrance
   RespTest ( )
     :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
@@ -104,16 +104,17 @@ protected:
 
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) eqgRESP;  
 
-
+    //read input file for poldata
     std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
     alexandria::Poldata *pd = alexandria::PoldataXml::read(dataName.c_str(), aps);
     
+    //Read input file for molprop
     dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
     ReadGauss(dataName.c_str(), mp, molnm, iupac, conf, basis,
 	      maxpot, nsymm, pd->getForceField().c_str());
 
+    //Generate charges and topology
     mp.GenerateTopology(aps,pd,lot,iChargeDistributionModel, nexcl, false,false,edih);
-    
     mp.gr_ = new alexandria::Resp(iChargeDistributionModel, mp.getCharge());
     mp.GenerateCharges(pd,aps,iChargeDistributionModel,iChargeGenerationAlgorithm,hfac,epsr,lot,true,symm_string);
     resp = mp.gr_;
@@ -125,12 +126,13 @@ protected:
 };
 
 alexandria::Resp *RespTest::resp;
-
+const int RespTest::nrAtoms;
 
 
 
 TEST_F (RespTest, test)
 {
-  double value = resp->getQtot(0);
-  std::cout << value;
+  for (int i = 0; i < nrAtoms; i++){
+    double value = resp->getQtot(0);
+  }
 }
