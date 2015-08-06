@@ -57,6 +57,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/refdata-checkers.h"
 #include "testutils/refdata-impl.h"
 #include "testutils/refdata-xml.h"
 #include "testutils/testasserts.h"
@@ -295,8 +296,6 @@ class TestReferenceChecker::Impl
         Impl(const std::string &path, ReferenceDataEntry *rootEntry, bool bWrite,
              bool bSelfTestMode, const FloatingPointTolerance &defaultTolerance);
 
-        //! Returns a string for SCOPED_TRACE() for checking element \p id.
-        std::string traceString(const char *id) const;
         //! Returns the path of this checker with \p id appended.
         std::string appendPath(const char *id) const;
 
@@ -367,11 +366,9 @@ class TestReferenceChecker::Impl
          * In write mode, creates the node if it is not found, sets its value
          * as \p value and returns \p value.
          */
-        std::string processItem(const char *name, const char *id,
-                                const char *value, bool *bFound);
-        //! Convenience wrapper that takes a std::string.
-        std::string processItem(const char *name, const char *id,
-                                const std::string &value, bool *bFound);
+        ::testing::AssertionResult
+        processItem(const char *name, const char *id,
+                    const IReferenceDataEntryChecker &checker);
         /*! \brief
          * Whether the checker should ignore all validation calls.
          *
@@ -379,7 +376,7 @@ class TestReferenceChecker::Impl
          * reference data could not be found, such that only one error is
          * issued for the missing compound, instead of every individual value.
          */
-        bool shouldIgnore() const;
+        bool shouldIgnore() const { return rootEntry_ == NULL; }
 
         //! Default floating-point comparison tolerance.
         FloatingPointTolerance  defaultTolerance_;
@@ -453,13 +450,6 @@ TestReferenceChecker::Impl::Impl(const std::string &path, ReferenceDataEntry *ro
       rootEntry_(rootEntry), prevFoundNode_(rootEntry->children().end()),
       bWrite_(bWrite), bSelfTestMode_(bSelfTestMode), seqIndex_(0)
 {
-}
-
-
-std::string
-TestReferenceChecker::Impl::traceString(const char *id) const
-{
-    return "Checking '" + appendPath(id) + "'";
 }
 
 
@@ -556,51 +546,46 @@ TestReferenceChecker::Impl::findOrCreateEntry(const char *type,
             node           = rootEntry_->addChild(move(newEntry));
             prevFoundNode_ = node;
         }
-        else
-        {
-            ADD_FAILURE() << "Reference data item not found";
-        }
     }
     seqIndex_ = (id == NULL) ? seqIndex_+1 : 0;
 
     return isValidEntry(node) ? node->get() : NULL;
 }
 
-
-std::string
+::testing::AssertionResult
 TestReferenceChecker::Impl::processItem(const char *type, const char *id,
-                                        const char *value, bool *bFound)
+                                        const IReferenceDataEntryChecker &checker)
 {
-    ReferenceDataEntry *node = findOrCreateEntry(type, id, bFound);
-    if (node == NULL)
+    if (shouldIgnore())
     {
-        return std::string();
+        return ::testing::AssertionSuccess();
     }
-    if (bWrite_ && !*bFound)
+    std::string         fullId = appendPath(id);
+    bool                bFound;
+    ReferenceDataEntry *entry = findOrCreateEntry(type, id, &bFound);
+    if (entry == NULL)
     {
-        node->setValue(value);
-        *bFound = true;
-        return std::string(value);
+        return ::testing::AssertionFailure()
+               << "Reference data item " << appendPath(id) << " not found";
+    }
+    if (bWrite_ && !bFound)
+    {
+        checker.fillEntry(entry);
+        return ::testing::AssertionSuccess();
     }
     else
     {
-        return node->value();
+        ::testing::AssertionResult result(checker.checkEntry(*entry, fullId));
+        if (bSelfTestMode_ && !result)
+        {
+            ReferenceDataEntry expected(type, id);
+            checker.fillEntry(&expected);
+            result << std::endl
+            << "String value: " << expected.value() << std::endl
+            << " Ref. string: " << entry->value();
+        }
+        return result;
     }
-}
-
-
-std::string
-TestReferenceChecker::Impl::processItem(const char *type, const char *id,
-                                        const std::string &value, bool *bFound)
-{
-    return processItem(type, id, value.c_str(), bFound);
-}
-
-
-bool
-TestReferenceChecker::Impl::shouldIgnore() const
-{
-    return rootEntry_ == NULL;
 }
 
 
@@ -718,7 +703,6 @@ bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
 
 TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const char *id)
 {
-    SCOPED_TRACE(impl_->traceString(id));
     if (impl_->shouldIgnore())
     {
         return TestReferenceChecker(new Impl(isWriteMode()));
@@ -727,6 +711,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
     ReferenceDataEntry *newNode = impl_->findOrCreateEntry(type, id, &bFound);
     if (newNode == NULL)
     {
+        ADD_FAILURE() << "Reference data item " << appendPath(id) << " not found";
         return TestReferenceChecker(new Impl(isWriteMode()));
     }
     return TestReferenceChecker(
@@ -737,180 +722,62 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
 
 void TestReferenceChecker::checkBoolean(bool value, const char *id)
 {
-    if (impl_->shouldIgnore())
-    {
-        return;
-    }
-    SCOPED_TRACE(impl_->traceString(id));
-    bool        bFound      = false;
-    const char *strValue    = value ? "true" : "false";
-    std::string refStrValue =
-        impl_->processItem(Impl::cBooleanNodeName, id, strValue, &bFound);
-    if (bFound)
-    {
-        EXPECT_EQ(refStrValue, strValue);
-    }
+    EXPECT_TRUE(impl_->processItem(Impl::cBooleanNodeName, id,
+                                   ExactStringChecker(value ? "true" : "false")));
 }
 
 
 void TestReferenceChecker::checkString(const char *value, const char *id)
 {
-    if (impl_->shouldIgnore())
-    {
-        return;
-    }
-    SCOPED_TRACE(impl_->traceString(id));
-    bool        bFound      = false;
-    std::string refStrValue =
-        impl_->processItem(Impl::cStringNodeName, id, value, &bFound);
-    if (bFound)
-    {
-        EXPECT_EQ(refStrValue, value);
-    }
+    EXPECT_TRUE(impl_->processItem(Impl::cStringNodeName, id,
+                                   ExactStringChecker(value)));
 }
 
 
 void TestReferenceChecker::checkString(const std::string &value, const char *id)
 {
-    checkString(value.c_str(), id);
+    EXPECT_TRUE(impl_->processItem(Impl::cStringNodeName, id,
+                                   ExactStringChecker(value)));
 }
 
 
 void TestReferenceChecker::checkStringBlock(const std::string &value,
                                             const char        *id)
 {
-    if (impl_->shouldIgnore())
-    {
-        return;
-    }
-    SCOPED_TRACE(impl_->traceString(id));
-    bool                bFound;
-    ReferenceDataEntry *node = impl_->findOrCreateEntry(Impl::cStringNodeName, id, &bFound);
-    if (node == NULL)
-    {
-        return;
-    }
-    if (isWriteMode() && !bFound)
-    {
-        node->setTextBlockValue(value);
-    }
-    else
-    {
-        EXPECT_EQ(node->value(), value);
-    }
+    EXPECT_TRUE(impl_->processItem(Impl::cStringNodeName, id,
+                                   ExactStringBlockChecker(value)));
 }
 
 
 void TestReferenceChecker::checkInteger(int value, const char *id)
 {
-    if (impl_->shouldIgnore())
-    {
-        return;
-    }
-    SCOPED_TRACE(impl_->traceString(id));
-    bool        bFound      = false;
-    std::string strValue    = formatString("%d", value);
-    std::string refStrValue =
-        impl_->processItem(Impl::cIntegerNodeName, id, strValue, &bFound);
-    if (bFound)
-    {
-        EXPECT_EQ(refStrValue, strValue);
-    }
+    EXPECT_TRUE(impl_->processItem(Impl::cIntegerNodeName, id,
+                                   ExactStringChecker(formatString("%d", value))));
 }
 
 void TestReferenceChecker::checkInt64(gmx_int64_t value, const char *id)
 {
-    if (impl_->shouldIgnore())
-    {
-        return;
-    }
-    SCOPED_TRACE(impl_->traceString(id));
-    bool        bFound      = false;
-    std::string strValue    = formatString("%" GMX_PRId64, value);
-    std::string refStrValue =
-        impl_->processItem(Impl::cInt64NodeName, id, strValue, &bFound);
-    if (bFound)
-    {
-        EXPECT_EQ(refStrValue, strValue);
-    }
+    EXPECT_TRUE(impl_->processItem(Impl::cInt64NodeName, id,
+                                   ExactStringChecker(formatString("%" GMX_PRId64, value))));
 }
 
 void TestReferenceChecker::checkUInt64(gmx_uint64_t value, const char *id)
 {
-    if (impl_->shouldIgnore())
-    {
-        return;
-    }
-    SCOPED_TRACE(impl_->traceString(id));
-    bool        bFound      = false;
-    std::string strValue    = formatString("%" GMX_PRIu64, value);
-    std::string refStrValue =
-        impl_->processItem(Impl::cUInt64NodeName, id, strValue, &bFound);
-    if (bFound)
-    {
-        EXPECT_EQ(refStrValue, strValue);
-    }
+    EXPECT_TRUE(impl_->processItem(Impl::cUInt64NodeName, id,
+                                   ExactStringChecker(formatString("%" GMX_PRIu64, value))));
 }
 
 void TestReferenceChecker::checkDouble(double value, const char *id)
 {
-    if (impl_->shouldIgnore())
-    {
-        return;
-    }
-    SCOPED_TRACE(impl_->traceString(id));
-    bool        bFound      = false;
-    const int   prec        = std::numeric_limits<double>::digits10 + 2;
-    std::string strValue    = formatString("%.*g", prec, value);
-    std::string refStrValue =
-        impl_->processItem(Impl::cRealNodeName, id, strValue, &bFound);
-    if (bFound)
-    {
-        char  *endptr;
-        double refValue = std::strtod(refStrValue.c_str(), &endptr);
-        EXPECT_EQ('\0', *endptr);
-        if (impl_->bSelfTestMode_)
-        {
-            EXPECT_DOUBLE_EQ_TOL(refValue, value, impl_->defaultTolerance_)
-            << "String value: " << strValue << std::endl
-            << " Ref. string: " << refStrValue;
-        }
-        else
-        {
-            EXPECT_DOUBLE_EQ_TOL(refValue, value, impl_->defaultTolerance_);
-        }
-    }
+    FloatingPointChecker<double> checker(value, impl_->defaultTolerance_);
+    EXPECT_TRUE(impl_->processItem(Impl::cRealNodeName, id, checker));
 }
 
 
 void TestReferenceChecker::checkFloat(float value, const char *id)
 {
-    if (impl_->shouldIgnore())
-    {
-        return;
-    }
-    SCOPED_TRACE(impl_->traceString(id));
-    bool        bFound      = false;
-    const int   prec        = std::numeric_limits<float>::digits10 + 2;
-    std::string strValue    = formatString("%.*g", prec, value);
-    std::string refStrValue =
-        impl_->processItem(Impl::cRealNodeName, id, strValue, &bFound);
-    if (bFound)
-    {
-        char  *endptr;
-        float  refValue = static_cast<float>(std::strtod(refStrValue.c_str(), &endptr));
-        EXPECT_EQ('\0', *endptr);
-        if (impl_->bSelfTestMode_)
-        {
-            EXPECT_FLOAT_EQ_TOL(refValue, value, impl_->defaultTolerance_)
-            << "String value: " << strValue << std::endl
-            << " Ref. string: " << refStrValue;
-        }
-        else
-        {
-            EXPECT_FLOAT_EQ_TOL(refValue, value, impl_->defaultTolerance_);
-        }
-    }
+    FloatingPointChecker<float> checker(value, impl_->defaultTolerance_);
+    EXPECT_TRUE(impl_->processItem(Impl::cRealNodeName, id, checker));
 }
 
 
