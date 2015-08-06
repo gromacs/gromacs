@@ -149,26 +149,22 @@ TEST_F(SimdIntegerTest, gmxSimdExtractI)
      */
     extracted_int = gmx_simd_extract_i(simd, 0);
     EXPECT_EQ(1, extracted_int);
-    if (GMX_SIMD_INT32_WIDTH >= 2)
-    {
-        extracted_int = gmx_simd_extract_i(simd, 1);
-        EXPECT_EQ(2, extracted_int);
-    }
-    if (GMX_SIMD_INT32_WIDTH >= 4)
-    {
-        extracted_int = gmx_simd_extract_i(simd, 3);
-        EXPECT_EQ(4, extracted_int);
-    }
-    if (GMX_SIMD_INT32_WIDTH >= 6)
-    {
-        extracted_int = gmx_simd_extract_i(simd, 5);
-        EXPECT_EQ(6, extracted_int);
-    }
-    if (GMX_SIMD_INT32_WIDTH >= 8)
-    {
-        extracted_int = gmx_simd_extract_i(simd, 7);
-        EXPECT_EQ(8, extracted_int);
-    }
+#if GMX_SIMD_INT32_WIDTH >= 2
+    extracted_int = gmx_simd_extract_i(simd, 1);
+    EXPECT_EQ(2, extracted_int);
+#endif
+#if GMX_SIMD_INT32_WIDTH >= 4
+    extracted_int = gmx_simd_extract_i(simd, 3);
+    EXPECT_EQ(4, extracted_int);
+#endif
+#if GMX_SIMD_INT32_WIDTH >= 6
+    extracted_int = gmx_simd_extract_i(simd, 5);
+    EXPECT_EQ(6, extracted_int);
+#endif
+#if GMX_SIMD_INT32_WIDTH >= 8
+    extracted_int = gmx_simd_extract_i(simd, 7);
+    EXPECT_EQ(8, extracted_int);
+#endif
 }
 #endif
 
