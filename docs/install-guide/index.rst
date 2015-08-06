@@ -943,7 +943,9 @@ set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
 ``MPIEXEC_PREFLAGS`` and ``MPIEXEC_POSTFLAGS`` so that
 ``mdrun-mpi-test_mpi`` would run on multiple ranks via the shell command
 
-    $ ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROC} ${MPIEXEC_PREFLAGS} \
+::
+
+    ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROC} ${MPIEXEC_PREFLAGS} \
           mdrun-mpi-test_mpi ${MPIEXEC_POSTFLAGS} -otherflags
 
 Typically, one might use variable values ``mpirun``, ``-np``, ``2``, ``''``,
