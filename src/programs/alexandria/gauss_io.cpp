@@ -27,7 +27,6 @@
 #include <algorithm>
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/topology/symtab.h"
@@ -98,15 +97,14 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mol)
 {
     ifstream          g98f;
-    char             *g98z, *ptr;
+    bool              isGzip = false;
 
-    if (FALSE == gmx_fexist(g98))
+    if (!gmx_fexist(g98))
     {
-        snew(g98z, strlen(g98)+4);
-        strcpy(g98z, g98);
-        strcat(g98z, ".gz");
+        std::string g98z(g98);
+        g98z += ".gz";
         g98f.open(g98z, ios::in);
-        sfree(g98z);
+        isGzip = g98f.is_open();
     }
     else
     {
@@ -120,20 +118,9 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
     // Read from g98f
     OpenBabel::OBConversion *conv = new OpenBabel::OBConversion(&g98f, &cout);
 
-    // Try to set input format to G98 file if it is not clear from the extension,
-    // that means, this code will equally well read sdf, pdb etc.
-    ptr = (char *)strrchr(g98, '.');
-    if ((NULL != ptr) && (strlen(ptr) >= 2))
+    if (conv->SetInFormat("g09", isGzip))
     {
-        ptr++;
-    }
-    else
-    {
-        ptr = (char *)"g98";
-    }
-    if (conv->SetInFormat(ptr))
-    {
-        if (conv->Read(mol))
+        if (conv->Read(mol, &g98f))
         {
             g98f.close();
 
