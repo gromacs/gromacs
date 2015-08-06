@@ -92,6 +92,8 @@ namespace alexandria
     _bFitZeta  = true;
     _watoms    = 0;
     _nparam    = 0;
+    _x         = NULL;
+    _esp       = NULL;
   }
 
   Resp::~Resp()

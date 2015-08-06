@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE molprops.dtd PUBLIC "molprops.dtd" "molprops.dtd">
+<molecules>
+  <molecule molname="unknown" formula="C4H10O" mass="74.1216" charge="0" multiplicity="1">
+    <molinfo iupac="unknown" cas="" cid="" inchi="InChI=1S/C4H10O/c1-2-3-4-5/h5H,2-4H2,1H3"/>
+    <bond ai="13" aj="11" bondorder="1"/>
+    <bond ai="3" aj="1" bondorder="1"/>
+    <bond ai="9" aj="8" bondorder="1"/>
+    <bond ai="7" aj="5" bondorder="1"/>
+    <bond ai="14" aj="11" bondorder="1"/>
+    <bond ai="14" aj="15" bondorder="1"/>
+    <bond ai="5" aj="8" bondorder="1"/>
+    <bond ai="5" aj="1" bondorder="1"/>
+    <bond ai="5" aj="6" bondorder="1"/>
+    <bond ai="8" aj="11" bondorder="1"/>
+    <bond ai="8" aj="10" bondorder="1"/>
+    <bond ai="2" aj="1" bondorder="1"/>
+    <bond ai="11" aj="12" bondorder="1"/>
+    <bond ai="1" aj="4" bondorder="1"/>
+    <calculation program="Gaussian 03, Revision D.01" method="B3LYP" basisset="gen" reference="Ghahremanpour2015a" conformation="minimum" datafile="1-butanol3-polar.log">
+      <dipole type="electronic" unit="Debye" temperature="0">
+        <average>1.557</average>
+        <error>0.000</error>
+        <x>-0.052</x>
+        <y>1.556</y>
+        <z>0.001</z>
+      </dipole>
+      <polarizability type="electronic" unit="Angstrom3" temperature="0">
+        <average>8.695</average>
+        <error>0.000</error>
+        <xx>10.265</xx>
+        <yy>8.229</yy>
+        <zz>7.591</zz>
+        <xy>0.098</xy>
+        <xz>0.000</xz>
+        <yz>-0.000</yz>
+      </polarizability>
+      <quadrupole type="electronic" unit="Buckingham" temperature="0">
+        <xx>1.891</xx>
+        <yy>-1.567</yy>
+        <zz>-0.324</zz>
+        <xy>4.012</xy>
+        <xz>0.005</xz>
+        <yz>0.000</yz>
+      </quadrupole>
+      <atom name="C" obtype="c3" atomid="1">
+        <x unit="Pm">-251.55</x>
+        <y unit="Pm">-29.458</y>
+        <z unit="Pm">0.007</z>
+        <q type="Mulliken" unit="e" temperature="0">-0.753</q>
+      </atom>
+      <atom name="H" obtype="hc" atomid="2">
+        <x unit="Pm">-339.731</x>
+        <y unit="Pm">34.751</y>
+        <z unit="Pm">0.003</z>
+        <q type="Mulliken" unit="e" temperature="0">0.169</q>
+      </atom>
+      <atom name="H" obtype="hc" atomid="3">
+        <x unit="Pm">-257.255</x>
+        <y unit="Pm">-93.717</y>
+        <z unit="Pm">-88.062</z>
+        <q type="Mulliken" unit="e" temperature="0">0.190</q>
+      </atom>
+      <atom name="H" obtype="hc" atomid="4">
+        <x unit="Pm">-257.241</x>
+        <y unit="Pm">-93.715</y>
+        <z unit="Pm">88.080</z>
+        <q type="Mulliken" unit="e" temperature="0">0.190</q>
+      </atom>
+      <atom name="C" obtype="c3" atomid="5">
+        <x unit="Pm">-122.74</x>
+        <y unit="Pm">52.698</y>
+        <z unit="Pm">-0.009</z>
+        <q type="Mulliken" unit="e" temperature="0">-0.148</q>
+      </atom>
+      <atom name="H" obtype="hc" atomid="6">
+        <x unit="Pm">-121.688</x>
+        <y unit="Pm">118.447</y>
+        <z unit="Pm">87.436</z>
+        <q type="Mulliken" unit="e" temperature="0">0.162</q>
+      </atom>
+      <atom name="H" obtype="hc" atomid="7">
+        <x unit="Pm">-121.678</x>
+        <y unit="Pm">118.431</y>
+        <z unit="Pm">-87.465</z>
+        <q type="Mulliken" unit="e" temperature="0">0.162</q>
+      </atom>
+      <atom name="C" obtype="c3" atomid="8">
+        <x unit="Pm">3.217</x>
+        <y unit="Pm">-33.999</y>
+        <z unit="Pm">-0.003</z>
+        <q type="Mulliken" unit="e" temperature="0">-0.087</q>
+      </atom>
+      <atom name="H" obtype="hc" atomid="9">
+        <x unit="Pm">3.573</x>
+        <y unit="Pm">-99.338</y>
+        <z unit="Pm">-87.647</z>
+        <q type="Mulliken" unit="e" temperature="0">0.180</q>
+      </atom>
+      <atom name="H" obtype="hc" atomid="10">
+        <x unit="Pm">3.562</x>
+        <y unit="Pm">-99.346</y>
+        <z unit="Pm">87.648</z>
+        <q type="Mulliken" unit="e" temperature="0">0.181</q>
+      </atom>
+      <atom name="C" obtype="c3" atomid="11">
+        <x unit="Pm">131.153</x>
+        <y unit="Pm">47.631</y>
+        <z unit="Pm">0.006</z>
+        <q type="Mulliken" unit="e" temperature="0">-0.160</q>
+      </atom>
+      <atom name="H" obtype="h1" atomid="12">
+        <x unit="Pm">134.417</x>
+        <y unit="Pm">112.194</y>
+        <z unit="Pm">88.573</z>
+        <q type="Mulliken" unit="e" temperature="0">0.164</q>
+      </atom>
+      <atom name="H" obtype="h1" atomid="13">
+        <x unit="Pm">134.419</x>
+        <y unit="Pm">112.209</y>
+        <z unit="Pm">-88.550</z>
+        <q type="Mulliken" unit="e" temperature="0">0.164</q>
+      </atom>
+      <atom name="O" obtype="oh" atomid="14">
+        <x unit="Pm">242.167</x>
+        <y unit="Pm">-42.428</y>
+        <z unit="Pm">-0.012</z>
+        <q type="Mulliken" unit="e" temperature="0">-0.510</q>
+      </atom>
+      <atom name="H" obtype="ho" atomid="15">
+        <x unit="Pm">323.807</x>
+        <y unit="Pm">8.270</y>
+        <z unit="Pm">0.072</z>
+        <q type="Mulliken" unit="e" temperature="0">0.096</q>
+      </atom>
+    </calculation>
+    <category catname="Primary carbon"/>
+    <category catname="Secondary carbon"/>
+    <category catname="Alcohol"/>
+    <category catname="Primary alcohol"/>
+  </molecule>
+</molecules>

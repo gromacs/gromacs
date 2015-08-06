@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molecule name">unknown</String>
+  <String Name="formula">C4H10O</String>
+</ReferenceData>
