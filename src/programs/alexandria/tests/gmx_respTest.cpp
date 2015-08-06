@@ -60,79 +60,81 @@
 class RespTest : public ::testing::Test
 {
 
-protected:
-  gmx::test::TestReferenceData                     refData_;
-  gmx::test::TestReferenceChecker                  checker_;
-  static alexandria::Resp *resp;
-  static const int nrAtoms = 16;
-  //init sett tolecrance
-  RespTest ( )
-    :refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
-  {
+    protected:
+        gmx::test::TestReferenceData                     refData_;
+        gmx::test::TestReferenceChecker                  checker_;
+        static alexandria::Resp *resp;
+        static const int         nrAtoms = 16;
+        //init sett tolecrance
+        RespTest ( )
+            : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
+        {
 #ifdef GMX_DOUBLE
-    checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
+            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
 #else
-    checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-3));
+            checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-3));
 #endif
-  }
+        }
 
-  // Static initiation, only run once every test.
-  static void SetUpTestCase()
-  {
+        // Static initiation, only run once every test.
+        static void SetUpTestCase()
+        {
 
-    alexandria::MyMol mp;
-    gmx_atomprop_t aps = gmx_atomprop_init();
-    ChargeDistributionModel iChargeDistributionModel = eqdAXp;
+            alexandria::MyMol       mp;
+            gmx_atomprop_t          aps = gmx_atomprop_init();
+            ChargeDistributionModel iChargeDistributionModel = eqdAXp;
 
-    //needed for ReadGauss
-    char * molnm = (char *)"XXX";
-    char * iupac = (char *)"";
-    char * conf = (char *)"minimum";
-    char * basis = (char *)"";
-    int maxpot = 0;
-    int nsymm = 0;
-    int nexcl = 2;
-    const char               *dihopt[] = { NULL, "No", "Single", "All", NULL };
-    eDih                      edih = (eDih) get_option(dihopt);
+            //needed for ReadGauss
+            char                    * molnm    = (char *)"XXX";
+            char                    * iupac    = (char *)"";
+            char                    * conf     = (char *)"minimum";
+            char                    * basis    = (char *)"";
+            int                       maxpot   = 0;
+            int                       nsymm    = 0;
+            int                       nexcl    = 2;
+            const char               *dihopt[] = { NULL, "No", "Single", "All", NULL };
+            eDih                      edih     = (eDih) get_option(dihopt);
 
-    //Needed for GenerateCharges
-    real hfac = 0;
-    real epsr = 1;
-    const char *lot = "B3LYP/aug-cc-pVTZ";
-    char *symm_string = (char *)"";
+            //Needed for GenerateCharges
+            real        hfac        = 0;
+            real        epsr        = 1;
+            const char *lot         = "B3LYP/aug-cc-pVTZ";
+            char       *symm_string = (char *)"";
 
 
-    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) eqgRESP;  
+            ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) eqgRESP;
 
-    //read input file for poldata
-    std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
-    alexandria::Poldata *pd = alexandria::PoldataXml::read(dataName.c_str(), aps);
-    
-    //Read input file for molprop
-    dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
-    ReadGauss(dataName.c_str(), mp, molnm, iupac, conf, basis,
-	      maxpot, nsymm, pd->getForceField().c_str());
+            //read input file for poldata
+            std::string          dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
+            alexandria::Poldata *pd       = alexandria::PoldataXml::read(dataName.c_str(), aps);
 
-    //Generate charges and topology
-    mp.GenerateTopology(aps,pd,lot,iChargeDistributionModel, nexcl, false,false,edih);
-    mp.gr_ = new alexandria::Resp(iChargeDistributionModel, mp.getCharge());
-    mp.GenerateCharges(pd,aps,iChargeDistributionModel,iChargeGenerationAlgorithm,hfac,epsr,lot,true,symm_string);
-    resp = mp.gr_;
-  }
+            //Read input file for molprop
+            dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
+            ReadGauss(dataName.c_str(), mp, molnm, iupac, conf, basis,
+                      maxpot, nsymm, pd->getForceField().c_str());
 
-  static void TearDownTestCase(){
-  }
+            //Generate charges and topology
+            mp.GenerateTopology(aps, pd, lot, iChargeDistributionModel, nexcl, false, false, edih);
+            mp.gr_ = new alexandria::Resp(iChargeDistributionModel, mp.getCharge());
+            mp.GenerateCharges(pd, aps, iChargeDistributionModel, iChargeGenerationAlgorithm, hfac, epsr, lot, true, symm_string);
+            resp = mp.gr_;
+        }
+
+        static void TearDownTestCase()
+        {
+        }
 
 };
 
 alexandria::Resp *RespTest::resp;
-const int RespTest::nrAtoms;
+const int         RespTest::nrAtoms;
 
 
 
 TEST_F (RespTest, test)
 {
-  for (int i = 0; i < nrAtoms; i++){
-    double value = resp->getQtot(0);
-  }
+    for (int i = 0; i < nrAtoms; i++)
+    {
+        double value = resp->getQtot(0);
+    }
 }

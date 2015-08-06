@@ -36,187 +36,195 @@
 
 
 enum eParm {
-  eparmQ, eparmZ, eparmNR
+    eparmQ, eparmZ, eparmNR
 };
 
 
 namespace alexandria
 {
-  class Resp
-  {
-  public:
-    Resp(){}
+class Resp
+{
+    public:
+        Resp(){}
 
         Resp(ChargeDistributionModel iDistributionModel, real qtot);
-    /*
-    Resp(ChargeDistributionModel iDistributionModel,
-	 bool bAXpRESP, real qfac, real b_hyper, real qtot,
-	 real zmin, real zmax, real deltaZ, bool bZatyp,
-	 real watoms, real rDecrZeta,
-	 bool bRandZeta, bool bRandQ, real penaltyFac, bool bFitZeta,
-	 bool bEntropy, const std::string dzatoms,
-	 unsigned int seed);
+        /*
+           Resp(ChargeDistributionModel iDistributionModel,
+           bool bAXpRESP, real qfac, real b_hyper, real qtot,
+           real zmin, real zmax, real deltaZ, bool bZatyp,
+           real watoms, real rDecrZeta,
+           bool bRandZeta, bool bRandQ, real penaltyFac, bool bFitZeta,
+           bool bEntropy, const std::string dzatoms,
+           unsigned int seed);
 
 
-    //Constructor with defult values 
-    Resp(ChargeDistributionModel iDistributionModel,real qtot){
-      
-
-      //Defult values from gentop.ccp 31-07-2015
-      return Resp(ChargeDistributionModel iDistributionModel,
-		  FALSE, 1e-3, 0.1, qtot,
-		  5, 100, -1, TRUE,
-		  0, -1,
-		  FALSE, TRUE,1, TRUE,
-		  FALSE, "",
-		  0);
-    }
-    
-    */
-    ~Resp();
+           //Constructor with defult values
+           Resp(ChargeDistributionModel iDistributionModel,real qtot){
 
 
-    int atomicnumber2row(int elem);
+           //Defult values from gentop.ccp 31-07-2015
+           return Resp(ChargeDistributionModel iDistributionModel,
+              FALSE, 1e-3, 0.1, qtot,
+              5, 100, -1, TRUE,
+              0, -1,
+              FALSE, TRUE,1, TRUE,
+              FALSE, "",
+              0);
+           }
+
+         */
+        ~Resp();
+
+
+        int atomicnumber2row(int elem);
 
 
 
-    void statistics( int len, char buf[]);
+        void statistics( int len, char buf[]);
 
-    void summary(FILE *gp, 
-		 std::vector<int> &symmetricAtoms);
+        void summary(FILE             *gp,
+                     std::vector<int> &symmetricAtoms);
 
-    void updateAtomtypes( t_atoms *atoms);
+        void updateAtomtypes( t_atoms *atoms);
 
-    void fillZeta( alexandria::Poldata * pd);
+        void fillZeta( alexandria::Poldata * pd);
 
-    void fillQ( t_atoms *atoms);
+        void fillQ( t_atoms *atoms);
 
-    void addAtomCoords( rvec *x);
+        void addAtomCoords( rvec *x);
 
-    bool addAtomInfo( t_atoms *atoms,
-			alexandria::Poldata * pd);
+        bool addAtomInfo( t_atoms              *atoms,
+                          alexandria::Poldata * pd);
 
-    void getAtomInfo( t_atoms *atoms,
-			t_symtab *symtab, rvec **x);
+        void getAtomInfo( t_atoms *atoms,
+                          t_symtab *symtab, rvec **x);
 
-    const std::string getStoichiometry();
+        const std::string getStoichiometry();
 
-    void addAtomSymmetry(std::vector<int> &symmetricAtoms);
+        void addAtomSymmetry(std::vector<int> &symmetricAtoms);
 
-    void addPoint( double x, double y,
-		    double z, double V);
+        void addPoint( double x, double y,
+                       double z, double V);
 
-    void makeGrid( real spacing, matrix box, rvec x[]);
+        void makeGrid( real spacing, matrix box, rvec x[]);
 
-    void copyGrid(Resp * src);
+        void copyGrid(Resp * src);
 
-    Resp * copy();
+        Resp * copy();
 
-    void calcRms();
+        void calcRms();
 
-    double getRms( real *wtot);
+        double getRms( real *wtot);
 
-    void potLsq( gmx_stats_t lsq);
+        void potLsq( gmx_stats_t lsq);
 
-    void calcRho();
+        void calcRho();
 
-    void calcPot();
+        void calcPot();
 
-    void readCube( const std::string fn, bool bESPonly);
+        void readCube( const std::string fn, bool bESPonly);
 
-    void writeCube( const std::string fn, std::string title);
+        void writeCube( const std::string fn, std::string title);
 
-    void writeRho( const std::string fn, std::string  title);
+        void writeRho( const std::string fn, std::string  title);
 
-    void writeDiffCube(Resp * src,
-		       const std::string cubeFn, const std::string histFn,
-		       std::string title, output_env_t oenv, int rho);
+        void writeDiffCube(Resp * src,
+                           const std::string cubeFn, const std::string histFn,
+                           std::string title, output_env_t oenv, int rho);
 
-    void writeHisto(const std::string fn,
-		    std::string title, output_env_t oenv);
+        void writeHisto(const std::string fn,
+                        std::string title, output_env_t oenv);
 
-    int  optimizeCharges(FILE *fp,  int maxiter,
-			  real toler, real *rms);
+        int  optimizeCharges(FILE *fp,  int maxiter,
+                             real toler, real *rms);
 
-    void potcomp(const std::string potcomp,
-		 const std::string pdbdiff, output_env_t oenv);
+        void potcomp(const std::string potcomp,
+                     const std::string pdbdiff, output_env_t oenv);
 
-    double getQtot( int atom);
+        double getQtot( int atom);
 
-    double getQ( int atom, int zz);
+        double getQ( int atom, int zz);
 
-    double getZeta( int atom, int zz);
+        double getZeta( int atom, int zz);
 
-    void setQ( int atom, int zz, double q);
+        void setQ( int atom, int zz, double q);
 
-    void setZeta( int atom, int zz, double zeta);
+        void setZeta( int atom, int zz, double zeta);
 
-    void setBAXpRESP(bool bAXpRESP){
-      _bAXpRESP = bAXpRESP;
-    }
+        void setBAXpRESP(bool bAXpRESP)
+        {
+            _bAXpRESP = bAXpRESP;
+        }
 
-    void setZmin(real zmin){ 
-      _zmin = zmin;
-    }
+        void setZmin(real zmin)
+        {
+            _zmin = zmin;
+        }
 
-    void setDeltaZ(real detlaZ){
-      _deltaZ = detlaZ;
-    }
-    
-    void setWatoms(double watoms){
-      _watoms = watoms;
-    }
-    void setRDecrZeta(real rDecrZeta){
-      _rDecrZeta = rDecrZeta;
-    }
+        void setDeltaZ(real detlaZ)
+        {
+            _deltaZ = detlaZ;
+        }
 
-    void setBRandZeta(bool bRandZeta){
-      _bRandZeta = bRandZeta;
-    }
+        void setWatoms(double watoms)
+        {
+            _watoms = watoms;
+        }
+        void setRDecrZeta(real rDecrZeta)
+        {
+            _rDecrZeta = rDecrZeta;
+        }
 
-    void setSeed(unsigned int seed){ 
-      _seed = seed;
-    }
-    
-    void setBEntropy(bool bEntropy){
-      _bEntropy  = bEntropy;
-    }
+        void setBRandZeta(bool bRandZeta)
+        {
+            _bRandZeta = bRandZeta;
+        }
 
-  private:
-    ChargeDistributionModel _iDistributionModel;
-    int                     _nesp, _natom, _natype;
-    double                  _qtot, _qsum, _watoms;
-    double                  _rms, _rrms, _penalty, _pfac, _entropy, _wtot;
-    dvec                    _origin, _space;
-    bool                    _bZatype, _bFitZeta, _bEntropy;
-    bool                    _bRandZeta, _bRandQ;
-    bool                    _bAXpRESP;
-    ivec                    _nxyz;
-    real                    _qfac, _bHyper, _zmin, _zmax, _deltaZ, _qmin, _qmax, _rDecrZeta;
-    unsigned int            _seed;
-    int                     _nparam; /* Total number of parameters */
-    std::vector<Ra *>                 _ra;
-    std::vector<std::string>                  _dzatoms;
-    const std::string             _stoichiometry;
-    std::vector<double>                 _pot, _potCalc, _rho;
-    rvec                   *_x, *_esp;
+        void setSeed(unsigned int seed)
+        {
+            _seed = seed;
+        }
 
-    
-    void warning(const std::string fn, int line);
+        void setBEntropy(bool bEntropy)
+        {
+            _bEntropy  = bEntropy;
+        }
 
-    void getSetVector(bool         bSet,
-			bool         bRandQ,
-			bool         bRandZeta,
-			unsigned int seed,
-		        double    *  nmx);
+    private:
+        ChargeDistributionModel                   _iDistributionModel;
+        int                                       _nesp, _natom, _natype;
+        double                                    _qtot, _qsum, _watoms;
+        double                                    _rms, _rrms, _penalty, _pfac, _entropy, _wtot;
+        dvec                                      _origin, _space;
+        bool                                      _bZatype, _bFitZeta, _bEntropy;
+        bool                                      _bRandZeta, _bRandQ;
+        bool                                      _bAXpRESP;
+        ivec                                      _nxyz;
+        real                                      _qfac, _bHyper, _zmin, _zmax, _deltaZ, _qmin, _qmax, _rDecrZeta;
+        unsigned int                              _seed;
+        int                                       _nparam; /* Total number of parameters */
+        std::vector<Ra *>                         _ra;
+        std::vector<std::string>                  _dzatoms;
+        const std::string                         _stoichiometry;
+        std::vector<double>                       _pot, _potCalc, _rho;
+        rvec                                     *_x, *_esp;
 
-    real myWeight(int iatom);
 
-    void calcPenalty();
+        void warning(const std::string fn, int line);
 
-    void addParam( int atom, eParm eparm, int zz);
+        void getSetVector(bool         bSet,
+                          bool         bRandQ,
+                          bool         bRandZeta,
+                          unsigned int seed,
+                          double    *  nmx);
 
-    static double chargeFunction(void * gr, double v[]);
+        real myWeight(int iatom);
+
+        void calcPenalty();
+
+        void addParam( int atom, eParm eparm, int zz);
+
+        static double chargeFunction(void * gr, double v[]);
 
 };
 }

@@ -578,22 +578,22 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
                 {
                     if (immOK == imm)
                     {
-		      /*mpnew.gr_ = new Resp(_iChargeDistributionModel,
-                                                  TRUE, 0.001, 0.1,
-                                                  mpnew.getCharge(),
-                                                  1, 100, 5,
-                                                  TRUE, watoms, 5, TRUE, TRUE,
-                                                  1, TRUE,
-                                                  TRUE, NULL, seed);*/
-		      mpnew.gr_ = new Resp(_iChargeDistributionModel, mpnew.getCharge());
-		      mpnew.gr_->setBAXpRESP(true);
-		      mpnew.gr_->setZmin(1);
-		      mpnew.gr_->setDeltaZ(5);
-		      mpnew.gr_->setWatoms(watoms);
-		      mpnew.gr_->setRDecrZeta(5);
-		      mpnew.gr_->setBRandZeta(true);
-		      mpnew.gr_->setBEntropy(true);
-		      mpnew.gr_->setSeed(seed);
+                        /*mpnew.gr_ = new Resp(_iChargeDistributionModel,
+                                                            TRUE, 0.001, 0.1,
+                                                            mpnew.getCharge(),
+                                                            1, 100, 5,
+                                                            TRUE, watoms, 5, TRUE, TRUE,
+                                                            1, TRUE,
+                                                            TRUE, NULL, seed);*/
+                        mpnew.gr_ = new Resp(_iChargeDistributionModel, mpnew.getCharge());
+                        mpnew.gr_->setBAXpRESP(true);
+                        mpnew.gr_->setZmin(1);
+                        mpnew.gr_->setDeltaZ(5);
+                        mpnew.gr_->setWatoms(watoms);
+                        mpnew.gr_->setRDecrZeta(5);
+                        mpnew.gr_->setBRandZeta(true);
+                        mpnew.gr_->setBEntropy(true);
+                        mpnew.gr_->setSeed(seed);
                         if (NULL == mpnew.gr_)
                         {
                             imm = immRespInit;
@@ -720,21 +720,21 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
 
             if (immOK == imm)
             {
-              /*  mpnew.gr_ = new  Resp(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.getCharge(),
-                                          1, 100, 5,
-                                          TRUE, watoms, 5, TRUE, TRUE,
-                                          1, TRUE,
-                                          TRUE, NULL, seed);*/
+                /*  mpnew.gr_ = new  Resp(_iChargeDistributionModel, TRUE, 0.001, 0.1, mpnew.getCharge(),
+                                            1, 100, 5,
+                                            TRUE, watoms, 5, TRUE, TRUE,
+                                            1, TRUE,
+                                            TRUE, NULL, seed);*/
 
-	      mpnew.gr_ = new  Resp(_iChargeDistributionModel, mpnew.getCharge());
-		      mpnew.gr_->setBAXpRESP(true);
-		      mpnew.gr_->setZmin(1);
-		      mpnew.gr_->setDeltaZ(5);
-		      mpnew.gr_->setWatoms(watoms);
-		      mpnew.gr_->setRDecrZeta(5);
-		      mpnew.gr_->setBRandZeta(true);
-		      mpnew.gr_->setBEntropy(true);
-		      mpnew.gr_->setSeed(seed);
+                mpnew.gr_ = new  Resp(_iChargeDistributionModel, mpnew.getCharge());
+                mpnew.gr_->setBAXpRESP(true);
+                mpnew.gr_->setZmin(1);
+                mpnew.gr_->setDeltaZ(5);
+                mpnew.gr_->setWatoms(watoms);
+                mpnew.gr_->setRDecrZeta(5);
+                mpnew.gr_->setBRandZeta(true);
+                mpnew.gr_->setBEntropy(true);
+                mpnew.gr_->setSeed(seed);
                 if (NULL == mpnew.gr_)
                 {
                     imm = immRespInit;
@@ -774,7 +774,7 @@ void MolDip::Read(FILE *fp, const char *fn, const char *pd_fn,
             gmx_send_int(_cr, 0, imm);
         }
     }
-    int  nnn = nmol_cpu;
+    int  nnn     = nmol_cpu;
     int *nmolpar = NULL;
 
     if (PAR(_cr))
@@ -918,7 +918,7 @@ void MolDip::CalcDeviation()
     }
     if (PAR(_cr))
     {
-    _pd->commEemprops(_cr);
+        _pd->commEemprops(_cr);
     }
     init_nrnb(&my_nrnb);
     snew(epot, 1);
@@ -944,17 +944,17 @@ void MolDip::CalcDeviation()
             {
                 mymol->qgen_ = new
                     GentopQgen(_pd, &(mymol->topology_->atoms), _atomprop,
-                                     mymol->x_, _iChargeDistributionModel,
-                                     _iChargeGenerationAlgorithm,
-                                     _hfac,
-                                     mymol->getCharge(), _epsr);
+                               mymol->x_, _iChargeDistributionModel,
+                               _iChargeGenerationAlgorithm,
+                               _hfac,
+                               mymol->getCharge(), _epsr);
             }
             /*if (strcmp(mymol->molname,"1-butene") == 0)
                fprintf(stderr,"Ready for %s\n",mymol->molname);*/
             eQ = mymol->qgen_->generateChargesSm(debug,
-                                     _pd, &(mymol->topology_->atoms),
-                                     1e-4, 100, _atomprop,
-                                     &(mymol->chieq));
+                                                 _pd, &(mymol->topology_->atoms),
+                                                 1e-4, 100, _atomprop,
+                                                 &(mymol->chieq));
             if (eQ != eQGEN_OK)
             {
                 char buf[STRLEN];

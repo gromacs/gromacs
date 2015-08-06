@@ -59,7 +59,7 @@ enum DihedralType {
 
 
 
-
+ 
 namespace alexandria
 {
   class Ptype {

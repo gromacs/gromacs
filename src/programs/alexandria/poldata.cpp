@@ -34,7 +34,7 @@
 #include "poldata.h"
 #include "gmx_simple_comm.h"
 #include "stringutil.h"
-
+ 
 #define assignStr(dst, src) if (dst != NULL) *dst = src;
 
 #define assignScal(dst, src) if (dst) *dst = src
