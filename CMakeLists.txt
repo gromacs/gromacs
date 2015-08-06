@@ -887,6 +887,13 @@ if (BUILD_TESTING)
     add_custom_target(check DEPENDS run-ctest)
 endif()
 
+set(_file_system_is_reliable ON)
+if(GMX_TARGET_BGQ)
+    set(_file_system_is_reliable OFF)
+endif()
+gmx_dependent_option(GMX_ASSUME_RELIABLE_FILE_SYSTEM "Whether the file system is reliable enough for all kinds of testing" ${_file_system_is_reliable} BUILD_TESTING)
+mark_as_advanced(GMX_ASSUME_RELIABLE_FILE_SYSTEM)
+
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(docs)
     add_subdirectory(share)

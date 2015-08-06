@@ -52,14 +52,15 @@ if (UNIX)
 endif()
 
 gmx_add_unit_test(CommandLineUnitTests commandline-test
-                  cmdlinehelpmodule.cpp
                   cmdlinehelpwriter.cpp
-                  cmdlinemodulemanager.cpp
-                  cmdlinemodulemanagertest.cpp
                   cmdlineparser.cpp
                   cmdlineprogramcontext.cpp
-                  pargs.cpp
-                  $<TARGET_OBJECTS:onlinehelp-test-shared>)
+                  $<TARGET_OBJECTS:onlinehelp-test-shared>
+                  FOLLOWING_TESTS_NEED_RELIABLE_FILE_SYSTEM
+                  cmdlinehelpmodule.cpp
+                  cmdlinemodulemanager.cpp
+                  cmdlinemodulemanagertest.cpp
+                  pargs.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
     # This suppression stops a very verbose cascade of messages about the

@@ -43,8 +43,25 @@ endfunction ()
 
 function (gmx_build_unit_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+        # identify the set of test files in ${ARGN} that should be
+        # compiled into the test executable
+        unset(_test_files)
+        set(_need_reliable_file_system FALSE)
+        foreach(_test_file ${ARGN})
+            if (_test_file STREQUAL "FOLLOWING_TESTS_NEED_RELIABLE_FILE_SYSTEM")
+                set(_need_reliable_file_system TRUE)
+                # and skip this ARGN element, since it is not actually a test file
+            else()
+                if(NOT _need_reliable_file_system OR GMX_ASSUME_RELIABLE_FILE_SYSTEM)
+                    list(APPEND _test_files ${_test_file})
+                endif()
+            endif()
+        endforeach()
+        # Note that it is OK if _test_files is an empty list, then we
+        # just build a unit test executable that doesn't run any tests
+
         include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
-        add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
+        add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS} ${_test_files} ${TESTUTILS_DIR}/unittest_main.cpp)
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
         target_link_libraries(${EXENAME} ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
