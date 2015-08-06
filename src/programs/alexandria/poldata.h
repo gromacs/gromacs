@@ -41,953 +41,1023 @@
  * \ingroup module_alexandria
  */
 enum ChargeDistributionModel {
-  eqdAXp,
-  eqdAXg,
-  eqdAXs,
-  eqdYang,
-  eqdBultinck,
-  eqdRappe,
-  eqdNR
+    eqdAXp,
+    eqdAXg,
+    eqdAXs,
+    eqdYang,
+    eqdBultinck,
+    eqdRappe,
+    eqdNR
 };
 
 enum DihedralType {
-  egdPDIHS,
-  egdIDIHS,
-  egdNR
+    egdPDIHS,
+    egdIDIHS,
+    egdNR
 };
 
 
 
 
- 
+
 namespace alexandria
 {
-  class Ptype {
-  public:
-    std::string type;
-    std::string miller; 
-    std::string bosque;
-    double polarizability;
-    double sigPol;
-    
-    
-  Ptype(std::string ptype, std::string miller, std::string bosque,
-	double polarizability, double sigPol)
-    :
-    type(ptype),
-      miller(miller),
-      bosque(bosque), 
-      polarizability(polarizability),
-      sigPol(sigPol)
-      {
-      }
-
-  }; 
-  typedef std::vector<Ptype>::iterator PtypeIterator;
-
-  class Ffatype {
-  public:
-    std::string desc;
-    std::string type;
-    std::string ptype;
-    std::string btype;
-    std::string elem; 
-    std::string vdwparams;
-    double  refEnthalpy;
-
-  Ffatype(std::string desc,
-	  std::string type,
-	  std::string ptype,
-	  std::string btype,
-	  std::string elem, 
-	  std::string vdwparams,
-	  double  refEnthalpy):
-    desc(desc),
-      type(type),
-      ptype(ptype),
-      btype(btype),
-      elem(elem),
-      vdwparams(vdwparams),
-      refEnthalpy(refEnthalpy)
-      {
-      }
-    
-  };
-  typedef std::vector<Ffatype>::iterator FfatypeIterator;
+class Ptype
+{
+    public:
+        std::string type;
+        std::string miller;
+        std::string bosque;
+        double      polarizability;
+        double      sigPol;
 
 
-  class Brule {
-  public:
-    std::string elem;
-    std::string rule;
-    std::string type;
-    std::string neighbors;
-    std::string geometry;
-    int                      numbonds;
-    int iAromatic;
-    double                   valence;
-    std::vector<std::string> nb;
+        Ptype(std::string ptype, std::string miller, std::string bosque,
+              double polarizability, double sigPol)
+            :
+              type(ptype),
+              miller(miller),
+              bosque(bosque),
+              polarizability(polarizability),
+              sigPol(sigPol)
+        {
+        }
 
-  Brule(std::string elem,
-	std::string rule,
-	std::string type,
-	std::string neighbors,
-	std::string geometry,
-	int                      numbonds,
-	int iAromatic,
-	double                   valence,
-	std::vector<std::string> nb):
-    elem(elem),
-      rule(rule),
-      type(type),
-      neighbors(neighbors),
-      geometry(geometry),
-      numbonds(numbonds),
-      iAromatic(iAromatic),
-      valence(valence),
-      nb(nb)
-      {
-      }
-  }; 
-  typedef std::vector<Brule>::iterator BruleIterator;
+};
+typedef std::vector<Ptype>::iterator PtypeIterator;
 
-  class  GtBond {
-  public:
-    std::string atom1;
-    std::string atom2;
-    std::string params;
-    std::string elem1, elem2;
-    double  length;
-    double sigma;
-    double bondorder;
-    int     ntrain;
+class Ffatype
+{
+    public:
+        std::string desc;
+        std::string type;
+        std::string ptype;
+        std::string btype;
+        std::string elem;
+        std::string vdwparams;
+        double      refEnthalpy;
 
-  GtBond(std::string atom1,
-	 std::string atom2,
-	 std::string params,
-	 std::string elem1,
-	 std::string elem2,
-	 double  length,
-	 double sigma,
-	 double bondorder,
-	 int     ntrain)
-    :
-    atom1(atom1),
-      atom2(atom2),
-      params(params),
-      elem1(elem1),
-      elem2(elem2),
-      length(length),
-      sigma(sigma),
-      bondorder(bondorder),
-      ntrain(ntrain)
-      {
-      }
+        Ffatype(std::string desc,
+                std::string type,
+                std::string ptype,
+                std::string btype,
+                std::string elem,
+                std::string vdwparams,
+                double      refEnthalpy) :
+            desc(desc),
+            type(type),
+            ptype(ptype),
+            btype(btype),
+            elem(elem),
+            vdwparams(vdwparams),
+            refEnthalpy(refEnthalpy)
+        {
+        }
 
-    GtBond(){
-    }
-
-  };
-  typedef std::vector<GtBond>::iterator GtBondIterator;
-
-  class GtAngle {
-  public:
-    std::string atom1;
-    std::string atom2;
-    std::string atom3; 
-    std::string params;
-    double  angle;
-    double  sigma;
-    int     ntrain;
-  GtAngle(std::string atom1,
-	  std::string atom2,
-	  std::string atom3, 
-	  std::string params,
-	  double  angle,
-	  double  sigma,
-	  int     ntrain)
-    :
-    atom1(atom1),
-      atom2(atom2),
-      atom3(atom3),
-      params(params),
-      angle(angle),
-      sigma(sigma),
-      ntrain(ntrain)
-      {
-      }
-
-    GtAngle(){
-    }
-    
-  };
-  typedef std::vector<GtAngle>::iterator GtAngleIterator;
-
-  class GtDihedral {
-  public:
-    std::string atom1; 
-    std::string atom2;
-    std::string atom3;
-    std::string atom4;
-    std::string params;
-    double  dihedral;
-    double  sigma;
-    int     ntrain;
-
-  GtDihedral(std::string atom1, 
-	     std::string atom2,
-	     std::string atom3,
-	     std::string atom4,
-	     std::string params,
-	     double  dihedral,
-	     double  sigma,
-	     int     ntrain)
-    :
-      atom1(atom1),
-      atom2(atom2),
-      atom3(atom3),
-      atom4(atom4),
-      params(params),
-      dihedral(dihedral),
-      sigma(sigma),
-      ntrain(ntrain)
-      {
-      }
-
-    GtDihedral(){
-    }
-  };
-  typedef std::vector<GtDihedral>::iterator DihedralIterator;
-
-  class Bosque {
-  public:
-    std::string bosque;
-    double  polarizability;
-
-  Bosque(std::string bosque,
-	 double  polarizability)
-    :
-    bosque(bosque),
-      polarizability(polarizability)
-      {
-      }
-    
-  };
-  typedef std::vector<Bosque>::iterator BosqueIterator;
-
-  class Miller {
-  public:
-    std::string miller;
-    int     atomnumber;
-    double  tauAhc;
-    double alphaAhp;
-
-  Miller(std::string miller,
-	 int     atomnumber,
-	 double  tauAhc,
-	 double alphaAhp)
-    :
-    miller(miller),
-      atomnumber(atomnumber),
-      tauAhc(tauAhc),
-      alphaAhp(alphaAhp)
-      {
-      }
-  };
-  typedef std::vector<Miller>::iterator MillerIterator;
-  
-  class Symcharges {
-  public:
-    std::string central;
-    std::string attached;
-    int   numattach;
-
-  Symcharges(std::string central,
-	     std::string attached,
-	     int   numattach):
-    central(central),
-      attached(attached),
-      numattach(numattach)
-      {
-      }
-  };
-  typedef std::vector<Symcharges>::iterator SymchargesIterator;
-  
-  class Epref {
-  public:
-    ChargeDistributionModel eqdModel;
-    std::string epref;
-
-  Epref(ChargeDistributionModel eqdModel,
-	std::string epref)
-    :
-    eqdModel(eqdModel),
-      epref(epref)
-      {
-      }
-
-  };
-  typedef std::vector<Epref>::iterator EprefIterator;
+};
+typedef std::vector<Ffatype>::iterator FfatypeIterator;
 
 
-  class EempropsData{
-  public:
-    double q;
-    double zeta;
-    int row;
+class Brule
+{
+    public:
+        std::string              elem;
+        std::string              rule;
+        std::string              type;
+        std::string              neighbors;
+        std::string              geometry;
+        int                      numbonds;
+        int iAromatic;
+        double                   valence;
+        std::vector<std::string> nb;
 
-  EempropsData(double q,
-	       double zeta,
-	       int row)
-    :
-    q(q),
-      zeta(zeta),
-      row(row)
-      {
-      }
-    
-    EempropsData(){
-    }
-  };
+        Brule(std::string              elem,
+              std::string              rule,
+              std::string              type,
+              std::string              neighbors,
+              std::string              geometry,
+              int                      numbonds,
+              int                      iAromatic,
+              double                   valence,
+              std::vector<std::string> nb) :
+            elem(elem),
+            rule(rule),
+            type(type),
+            neighbors(neighbors),
+            geometry(geometry),
+            numbonds(numbonds),
+            iAromatic(iAromatic),
+            valence(valence),
+            nb(nb)
+        {
+        }
+};
+typedef std::vector<Brule>::iterator BruleIterator;
 
-  //#define EEMBUFSIZE 256
+class GtBond
+{
+    public:
+        std::string atom1;
+        std::string atom2;
+        std::string params;
+        std::string elem1, elem2;
+        double      length;
+        double      sigma;
+        double      bondorder;
+        int         ntrain;
+
+        GtBond(std::string atom1,
+               std::string atom2,
+               std::string params,
+               std::string elem1,
+               std::string elem2,
+               double      length,
+               double      sigma,
+               double      bondorder,
+               int         ntrain)
+            :
+              atom1(atom1),
+              atom2(atom2),
+              params(params),
+              elem1(elem1),
+              elem2(elem2),
+              length(length),
+              sigma(sigma),
+              bondorder(bondorder),
+              ntrain(ntrain)
+        {
+        }
+
+        GtBond()
+        {
+        }
+
+};
+typedef std::vector<GtBond>::iterator GtBondIterator;
+
+class GtAngle
+{
+    public:
+        std::string atom1;
+        std::string atom2;
+        std::string atom3;
+        std::string params;
+        double      angle;
+        double      sigma;
+        int         ntrain;
+        GtAngle(std::string atom1,
+                std::string atom2,
+                std::string atom3,
+                std::string params,
+                double      angle,
+                double      sigma,
+                int         ntrain)
+            :
+              atom1(atom1),
+              atom2(atom2),
+              atom3(atom3),
+              params(params),
+              angle(angle),
+              sigma(sigma),
+              ntrain(ntrain)
+        {
+        }
+
+        GtAngle()
+        {
+        }
+
+};
+typedef std::vector<GtAngle>::iterator GtAngleIterator;
+
+class GtDihedral
+{
+    public:
+        std::string atom1;
+        std::string atom2;
+        std::string atom3;
+        std::string atom4;
+        std::string params;
+        double      dihedral;
+        double      sigma;
+        int         ntrain;
+
+        GtDihedral(std::string atom1,
+                   std::string atom2,
+                   std::string atom3,
+                   std::string atom4,
+                   std::string params,
+                   double      dihedral,
+                   double      sigma,
+                   int         ntrain)
+            :
+              atom1(atom1),
+              atom2(atom2),
+              atom3(atom3),
+              atom4(atom4),
+              params(params),
+              dihedral(dihedral),
+              sigma(sigma),
+              ntrain(ntrain)
+        {
+        }
+
+        GtDihedral()
+        {
+        }
+};
+typedef std::vector<GtDihedral>::iterator DihedralIterator;
+
+class Bosque
+{
+    public:
+        std::string bosque;
+        double      polarizability;
+
+        Bosque(std::string bosque,
+               double      polarizability)
+            :
+              bosque(bosque),
+              polarizability(polarizability)
+        {
+        }
+
+};
+typedef std::vector<Bosque>::iterator BosqueIterator;
+
+class Miller
+{
+    public:
+        std::string miller;
+        int         atomnumber;
+        double      tauAhc;
+        double      alphaAhp;
+
+        Miller(std::string miller,
+               int         atomnumber,
+               double      tauAhc,
+               double      alphaAhp)
+            :
+              miller(miller),
+              atomnumber(atomnumber),
+              tauAhc(tauAhc),
+              alphaAhp(alphaAhp)
+        {
+        }
+};
+typedef std::vector<Miller>::iterator MillerIterator;
+
+class Symcharges
+{
+    public:
+        std::string central;
+        std::string attached;
+        int         numattach;
+
+        Symcharges(std::string central,
+                   std::string attached,
+                   int         numattach) :
+            central(central),
+            attached(attached),
+            numattach(numattach)
+        {
+        }
+};
+typedef std::vector<Symcharges>::iterator SymchargesIterator;
+
+class Epref
+{
+    public:
+        ChargeDistributionModel eqdModel;
+        std::string             epref;
+
+        Epref(ChargeDistributionModel eqdModel,
+              std::string             epref)
+            :
+              eqdModel(eqdModel),
+              epref(epref)
+        {
+        }
+
+};
+typedef std::vector<Epref>::iterator EprefIterator;
+
+
+class EempropsData
+{
+    public:
+        double q;
+        double zeta;
+        int    row;
+
+        EempropsData(double q,
+                     double zeta,
+                     int    row)
+            :
+              q(q),
+              zeta(zeta),
+              row(row)
+        {
+        }
+
+        EempropsData()
+        {
+        }
+};
+
+//#define EEMBUFSIZE 256
 #define MAXZETA    12
-  class Eemprops {
-  public:
-    ChargeDistributionModel eqdModel;
-    int nzeta;
-    std::string name;
-    std::string zetastr;
-    std::string qstr;
-    std::string rowstr;
-    double J0;
-    double chi0;
-  
-  private: 
-    std::vector<EempropsData> data;
-    
-    
-
-  public:
-  Eemprops(ChargeDistributionModel eqdModel,
-	   int nzeta,
-	   std::string name,
-	   std::string zetastr,
-	   std::string qstr,
-	   std::string rowstr,
-	   double J0,
-	   double chi0)
-    :
-    eqdModel(eqdModel),
-      nzeta(nzeta),
-      name(name),
-      zetastr(zetastr),
-      qstr(qstr),
-      rowstr(rowstr),
-      J0(J0),
-      chi0(chi0),
-      data(MAXZETA)
-      {
-      }
-
-  Eemprops():
-    data(MAXZETA){
-    }
-
-    double getZeta(int index){
-      return data[index].zeta;
-    }
-
-    double getQ(int index){
-      return data[index].q;
-    }
-
-    int getRow(int index){
-      return data[index].row;
-    }
-
-    void setZeta(int index, double value){
-      data[index].zeta = value;
-    }
-
-    void setQ(int index, double value){
-      data[index].q = value;
-    }
-
-    void setRow(int index, int value){
-      data[index].row = value;
-    } 
-  };
-  typedef std::vector<Eemprops>::iterator EempropsIterator;
-
-
-  class Poldata
-  {
-  public:
-
-    Poldata(); //Constructor
-    ~Poldata(){}
-
-
-    void  setFilename(std::string fn2);  
-
-    void  addBondingRule(std::string gtBrule, std::string atype,
-			 std::string geometry, int numbonds,
-			 double valence, int iAromatic,
-			 std::string neighbors);
-
-    int  getBondingRule(std::string *gtBrule, std::string *atype,
-			std::string *geometry, int *numbonds,
-			double *valence, int *iAromatic,
-			std::string *neighbors);
-
-    void  addPtype(const std::string ptype,
-		   const std::string miller,
-		   const std::string bosque,
-		   double        polarizability,
-		   double        sigPol);
-
-    void  addAtype(const std::string elem,
-		   const std::string desc,
-		   const std::string atype,
-		   const std::string ptype,
-		   const std::string btype,
-		   const std::string vdwparams,
-		   double      ref_enthalpy);
+class Eemprops
+{
+    public:
+        ChargeDistributionModel eqdModel;
+        int                     nzeta;
+        std::string             name;
+        std::string             zetastr;
+        std::string             qstr;
+        std::string             rowstr;
+        double                  J0;
+        double                  chi0;
+
+    private:
+        std::vector<EempropsData> data;
+
+
+
+    public:
+        Eemprops(ChargeDistributionModel eqdModel,
+                 int                     nzeta,
+                 std::string             name,
+                 std::string             zetastr,
+                 std::string             qstr,
+                 std::string             rowstr,
+                 double                  J0,
+                 double                  chi0)
+            :
+              eqdModel(eqdModel),
+              nzeta(nzeta),
+              name(name),
+              zetastr(zetastr),
+              qstr(qstr),
+              rowstr(rowstr),
+              J0(J0),
+              chi0(chi0),
+              data(MAXZETA)
+        {
+        }
+
+        Eemprops() :
+            data(MAXZETA)
+        {
+        }
+
+        double getZeta(int index)
+        {
+            return data[index].zeta;
+        }
+
+        double getQ(int index)
+        {
+            return data[index].q;
+        }
+
+        int getRow(int index)
+        {
+            return data[index].row;
+        }
+
+        void setZeta(int index, double value)
+        {
+            data[index].zeta = value;
+        }
+
+        void setQ(int index, double value)
+        {
+            data[index].q = value;
+        }
+
+        void setRow(int index, int value)
+        {
+            data[index].row = value;
+        }
+};
+typedef std::vector<Eemprops>::iterator EempropsIterator;
+
+
+class Poldata
+{
+    public:
+
+        Poldata(); //Constructor
+        ~Poldata(){}
+
+
+        void  setFilename(std::string fn2);
+
+        void  addBondingRule(std::string gtBrule, std::string atype,
+                             std::string geometry, int numbonds,
+                             double valence, int iAromatic,
+                             std::string neighbors);
+
+        int  getBondingRule(std::string *gtBrule, std::string *atype,
+                            std::string *geometry, int *numbonds,
+                            double *valence, int *iAromatic,
+                            std::string *neighbors);
+
+        void  addPtype(const std::string ptype,
+                       const std::string miller,
+                       const std::string bosque,
+                       double            polarizability,
+                       double            sigPol);
 
-    void  setPtypePolarizability(  const std::string ptype,
-				   double polarizability, double sigPol);
+        void  addAtype(const std::string elem,
+                       const std::string desc,
+                       const std::string atype,
+                       const std::string ptype,
+                       const std::string btype,
+                       const std::string vdwparams,
+                       double            ref_enthalpy);
 
-   
+        void  setPtypePolarizability(  const std::string ptype,
+                                       double polarizability, double sigPol);
 
-    void setPolarUnit( const std::string polarUnit){
-      _alexandriaPolarUnit.assign(polarUnit);
 
-    }
 
-    void setPolarRef( const std::string polarRef){
-      _alexandriaPolarRef.assign(polarRef);
-    }
+        void setPolarUnit( const std::string polarUnit)
+        {
+            _alexandriaPolarUnit.assign(polarUnit);
 
-    std::string getForceField(){
-      return _alexandriaForcefield;
-    }
+        }
 
-    void setForceField( const std::string forcefield){
-      _alexandriaForcefield.assign(forcefield);
-    }
+        void setPolarRef( const std::string polarRef)
+        {
+            _alexandriaPolarRef.assign(polarRef);
+        }
 
-    void setLengthUnit( const std::string length_unit){
-      _gtLengthUnit.assign(length_unit);
-    }
+        std::string getForceField()
+        {
+            return _alexandriaForcefield;
+        }
 
-    void  setVdwFunction(  const std::string func);
+        void setForceField( const std::string forcefield)
+        {
+            _alexandriaForcefield.assign(forcefield);
+        }
 
-    int  getVdwFtype( );
+        void setLengthUnit( const std::string length_unit)
+        {
+            _gtLengthUnit.assign(length_unit);
+        }
 
-    void setNexcl( int nexcl){
-      _nexcl = nexcl;
-    }
+        void  setVdwFunction(  const std::string func);
 
-    int  getNexcl( );
+        int  getVdwFtype( );
 
+        void setNexcl( int nexcl)
+        {
+            _nexcl = nexcl;
+        }
 
-    void setFudgeQQ( double fudgeQQ){
-      _fudgeQQ = fudgeQQ;
-    }
+        int  getNexcl( );
 
-    int getNatypes(){
-      return _alexandria.size();
-    }
 
-    int getNptypes(){
-      return _ptype.size();
-    }
+        void setFudgeQQ( double fudgeQQ)
+        {
+            _fudgeQQ = fudgeQQ;
+        }
 
-    unsigned int getNgtBond(){
-      return _gtBond.size();
-    }
+        int getNatypes()
+        {
+            return _alexandria.size();
+        }
 
-    int getNgtAngle(){
-      return _gtAngle.size();
-    }
+        int getNptypes()
+        {
+            return _ptype.size();
+        }
 
-    int getNgtDihedral( int egd){
-      return _gtDihedral[egd].size();
-    }
+        unsigned int getNgtBond()
+        {
+            return _gtBond.size();
+        }
 
-    double  getFudgeQQ( );
+        int getNgtAngle()
+        {
+            return _gtAngle.size();
+        }
 
-    void setFudgeLJ(double fudgeLJ){
-      _fudgeLJ = fudgeLJ;
-    }
+        int getNgtDihedral( int egd)
+        {
+            return _gtDihedral[egd].size();
+        }
 
-    double  getFudgeLJ( );
+        double  getFudgeQQ( );
 
-    int getAtypeRefEnthalpy( const std::string atype,
-			     double     *Href);
+        void setFudgeLJ(double fudgeLJ)
+        {
+            _fudgeLJ = fudgeLJ;
+        }
 
-    void  setCombinationRule(  std::string func);
+        double  getFudgeLJ( );
 
-    std::string  getCombinationRule( );
+        int getAtypeRefEnthalpy( const std::string atype,
+                                 double           *Href);
 
-    int  getCombRule( );
+        void  setCombinationRule(  std::string func);
 
-    std::string  getLengthUnit( );
+        std::string  getCombinationRule( );
 
-    /* Return array of atomtypes compatible with the bonded neighbors.
-       The array should be freed, but not the contents of the elements.
-    */
-    std::string * getBondingRules(  std::string elem,
-				    int nbond, std::string neighbors[],
-				    const std::string geometry,
-				    int iAromatic);
+        int  getCombRule( );
 
-    std::string  getGeometry(  std::string gtBrule);
+        std::string  getLengthUnit( );
 
-    std::string  getDesc(  std::string atype);
+        /* Return array of atomtypes compatible with the bonded neighbors.
+           The array should be freed, but not the contents of the elements.
+         */
+        std::string * getBondingRules(  std::string elem,
+                                        int nbond, std::string neighbors[],
+                                        const std::string geometry,
+                                        int iAromatic);
 
-    /* Get the charge from the gentop.dat file */
-    std::string  getCharge(  std::string atype);
+        std::string  getGeometry(  std::string gtBrule);
 
-    /* Returns 1 if OK, 0 if last */
-    int  getAtype(
-		  std::string  *elem,
-		  std::string  *desc,
-		  std::string  *atype,
-		  std::string  *ptype,
-		  std::string  *btype,
-		  std::string  *vdwparams,
-		  double       *refEnthalpy);
+        std::string  getDesc(  std::string atype);
 
+        /* Get the charge from the gentop.dat file */
+        std::string  getCharge(  std::string atype);
 
-    FfatypeIterator getAtypeBegin(){
-      return _alexandria.begin();
-    }
+        /* Returns 1 if OK, 0 if last */
+        int  getAtype(
+            std::string  *elem,
+            std::string  *desc,
+            std::string  *atype,
+            std::string  *ptype,
+            std::string  *btype,
+            std::string  *vdwparams,
+            double       *refEnthalpy);
 
-    FfatypeIterator getAtypeEnd(){
-      return _alexandria.end();
-    }
 
-    int  getPtype(std::string  *ptype,
-		  std::string  *miller,
-		  std::string  *bosque,
-		  double       *polarizability,
-		  double       *sigPol);
+        FfatypeIterator getAtypeBegin()
+        {
+            return _alexandria.begin();
+        }
 
-    
-    PtypeIterator getPtypeBegin(){
-      return _ptype.begin();
-    }
+        FfatypeIterator getAtypeEnd()
+        {
+            return _alexandria.end();
+        }
 
-    PtypeIterator getPtypeEnd(){
-      return _ptype.end();
-    }
+        int  getPtype(std::string  *ptype,
+                      std::string  *miller,
+                      std::string  *bosque,
+                      double       *polarizability,
+                      double       *sigPol);
 
-    std::string  atypeToPtype(  const std::string atype);
 
-    std::string  atypeToBtype(  const std::string atype);
+        PtypeIterator getPtypeBegin()
+        {
+            return _ptype.begin();
+        }
 
-    /* Return 1 if OK, 0 if not found */
-    int  searchAtype(std::string   key,
-		     std::string  *elem,
-		     std::string  *desc,
-		     std::string  *atype,
-		     std::string  *ptype,
-		     std::string  *btype,
-		     std::string  *vdwparams);
+        PtypeIterator getPtypeEnd()
+        {
+            return _ptype.end();
+        }
 
-    /* Return 1 if OK, 0 if not found */
-    int  getPtypePol(  const std::string ptype,
-		       double *polarizability, double *sigPol);
-    int  getAtypePol(  const std::string atype,
-		       double *polarizability, double *sigPol);
+        std::string  atypeToPtype(  const std::string atype);
 
-    int getAtypeRefEnthalpy(Poldata * pd, const std::string atype,
-			    double *Href);
+        std::string  atypeToBtype(  const std::string atype);
 
-    /* Return 1 if OK, 0 if not found */
-    int  bondingRuleValence(  std::string gtBrule, double *valence);
+        /* Return 1 if OK, 0 if not found */
+        int  searchAtype(std::string   key,
+                         std::string  *elem,
+                         std::string  *desc,
+                         std::string  *atype,
+                         std::string  *ptype,
+                         std::string  *btype,
+                         std::string  *vdwparams);
 
-    void  addMiller(std::string   miller,
-		    int           atomnumber,
-		    double        tauAhc,
-		    double        alphaAhp);
+        /* Return 1 if OK, 0 if not found */
+        int  getPtypePol(  const std::string ptype,
+                           double *polarizability, double *sigPol);
+        int  getAtypePol(  const std::string atype,
+                           double *polarizability, double *sigPol);
 
-    /* Return 1 if "miller" was found */
-    int  getMillerPol(std::string   miller,
-		      int          *atomnumber,
-		      double       *tauAhc,
-		      double       *alphaAhp);
+        int getAtypeRefEnthalpy(Poldata * pd, const std::string atype,
+                                double *Href);
 
-    int  getMiller( std::string  *miller,
-		    int          *atomnumber,
-		    double       *tauAhc,
-		    double       *alphaAhp);
+        /* Return 1 if OK, 0 if not found */
+        int  bondingRuleValence(  std::string gtBrule, double *valence);
 
+        void  addMiller(std::string   miller,
+                        int           atomnumber,
+                        double        tauAhc,
+                        double        alphaAhp);
 
-    MillerIterator getMillerBegin(){
-      return _miller.begin();
-    }
+        /* Return 1 if "miller" was found */
+        int  getMillerPol(std::string   miller,
+                          int          *atomnumber,
+                          double       *tauAhc,
+                          double       *alphaAhp);
 
-    MillerIterator getMillerEnd(){
-      return _miller.end();
-    }
-    
-    
+        int  getMiller( std::string  *miller,
+                        int          *atomnumber,
+                        double       *tauAhc,
+                        double       *alphaAhp);
 
-    void  setMillerUnits(  std::string tauUnit,
-			   std::string ahpUnit);
 
-    void  getMillerUnits(  std::string *tauUnit,
-			   std::string *ahpUnit);
+        MillerIterator getMillerBegin()
+        {
+            return _miller.begin();
+        }
 
-    /* Returns miller name or NULL if not found */
-    std::string  ptypeToMiller(  const std::string ptype);
+        MillerIterator getMillerEnd()
+        {
+            return _miller.end();
+        }
 
-    void  addBosque(std::string   bosque,
-		    double        polarizability);
 
-    int  getBosque(std::string  *bosque,
-		   double       *polarizability);
 
-    BosqueIterator getBosqueBegin(){
-      return _bosque.begin();
-    }
+        void  setMillerUnits(  std::string tauUnit,
+                               std::string ahpUnit);
 
-    BosqueIterator getBosqueEnd(){
-      return _bosque.end();
-    }
+        void  getMillerUnits(  std::string *tauUnit,
+                               std::string *ahpUnit);
 
-    void setBosqueUnit( std::string polarUnit){
-      _bosquePolarUnit.assign(polarUnit);
-    }
+        /* Returns miller name or NULL if not found */
+        std::string  ptypeToMiller(  const std::string ptype);
 
-    std::string getBosqueUnit(){
-      return _bosquePolarUnit;
-    }
+        void  addBosque(std::string   bosque,
+                        double        polarizability);
 
+        int  getBosque(std::string  *bosque,
+                       double       *polarizability);
 
+        BosqueIterator getBosqueBegin()
+        {
+            return _bosque.begin();
+        }
 
-    /* Returns bosque name or NULL if not found */
-    std::string  ptypeToBosque(  const std::string ptype);
+        BosqueIterator getBosqueEnd()
+        {
+            return _bosque.end();
+        }
 
-    int  getBosquePol(  std::string bosque, double *polarizability);
+        void setBosqueUnit( std::string polarUnit)
+        {
+            _bosquePolarUnit.assign(polarUnit);
+        }
 
-    /* Return 1 on success or 0 otherwise */
-    int  addBond(  std::string atom1, std::string atom2,
-		   double length, double sigma, int ntrain,
-		   double bondorder, std::string params);
+        std::string getBosqueUnit()
+        {
+            return _bosquePolarUnit;
+        }
 
-    int  setBondParams(  std::string atom1, std::string atom2,
-			 double length, double sigma, int ntrain,
-			 double bondorder, std::string params);
 
-    /* Return bond-index 1-N or 0 if not found */
-    int  getBond(  std::string *atom1, std::string *atom2,
-		   double *length, double *sigma, int *ntrain,
-		   double *bondorder, std::string *params);
 
+        /* Returns bosque name or NULL if not found */
+        std::string  ptypeToBosque(  const std::string ptype);
 
-    GtBondIterator getBondBegin(){
-      return _gtBond.begin();
-    }
+        int  getBosquePol(  std::string bosque, double *polarizability);
 
-    GtBondIterator getBondEnd(){
-      return _gtBond.end();
-    }
+        /* Return 1 on success or 0 otherwise */
+        int  addBond(  std::string atom1, std::string atom2,
+                       double length, double sigma, int ntrain,
+                       double bondorder, std::string params);
 
-    void  setBondFunction(  std::string fn);
+        int  setBondParams(  std::string atom1, std::string atom2,
+                             double length, double sigma, int ntrain,
+                             double bondorder, std::string params);
 
-    std::string getBondFunction(){
-      return _gtBondFunction;
-    }
+        /* Return bond-index 1-N or 0 if not found */
+        int  getBond(  std::string *atom1, std::string *atom2,
+                       double *length, double *sigma, int *ntrain,
+                       double *bondorder, std::string *params);
 
-    /* Return bond-index 1-N or 0 if not found */
-    int  searchBond(  std::string atom1, std::string atom2,
-		      double *length, double *sigma, int *ntrain,
-		      double *bondorder, std::string *params);
 
-    /* Returns 1 if there is a bond, 0 if not. Toler is absolute in length-units. */
-    int  elemIsBond(  std::string elem1, std::string elem2,
-		      double distance, double toler);
+        GtBondIterator getBondBegin()
+        {
+            return _gtBond.begin();
+        }
 
-    /* Return maximal valence for a give element */
-    double  elemGetMaxValence(  std::string elem);
+        GtBondIterator getBondEnd()
+        {
+            return _gtBond.end();
+        }
 
-    /* Return NULL-terminated array of potential bondorders */
-    double * elemGetBondorders(  std::string elem1, std::string elem2,
-				 double distance, double toler);
-    /* Returns the bondorder. Toler is absolute in length-units. */
-    double  atypeBondorder(  std::string atype1, std::string atype2,
-			     double distance, double toler);
+        void  setBondFunction(  std::string fn);
 
-    void  setAngleFunction(  std::string fn);
+        std::string getBondFunction()
+        {
+            return _gtBondFunction;
+        }
 
-    std::string getAngleFunction() {
-      return _gtAngleFunction;
-    }
+        /* Return bond-index 1-N or 0 if not found */
+        int  searchBond(  std::string atom1, std::string atom2,
+                          double *length, double *sigma, int *ntrain,
+                          double *bondorder, std::string *params);
 
-    int getBondFtype() {
-      return _gtBondFtype;
-    }
+        /* Returns 1 if there is a bond, 0 if not. Toler is absolute in length-units. */
+        int  elemIsBond(  std::string elem1, std::string elem2,
+                          double distance, double toler);
 
-    int getAngleFtype() {
-      return _gtAngleFtype;
-    }
+        /* Return maximal valence for a give element */
+        double  elemGetMaxValence(  std::string elem);
 
-    int getDihedralFtype( int egd){
-      return _gtDihedralFtype[egd];
-    }
+        /* Return NULL-terminated array of potential bondorders */
+        double * elemGetBondorders(  std::string elem1, std::string elem2,
+                                     double distance, double toler);
+        /* Returns the bondorder. Toler is absolute in length-units. */
+        double  atypeBondorder(  std::string atype1, std::string atype2,
+                                 double distance, double toler);
 
-    std::string getVdwFunction(){
-      return _gtVdwFunction;
-    }
+        void  setAngleFunction(  std::string fn);
 
-    std::string getPolarUnit(){
-      return _alexandriaPolarUnit;
-    }
+        std::string getAngleFunction()
+        {
+            return _gtAngleFunction;
+        }
 
-    std::string getPolarRef(){
-      return _alexandriaPolarRef;
-    }
+        int getBondFtype()
+        {
+            return _gtBondFtype;
+        }
 
-    /* Return 1 on success, 0 otherwise */
-    int  addAngle(
-		  std::string atom1, std::string atom2,
-		  std::string atom3, double angle, double sigma,
-		  int ntrain, std::string params);
+        int getAngleFtype()
+        {
+            return _gtAngleFtype;
+        }
 
-    int  setAngleParams(  std::string atom1, std::string atom2,
-			  std::string atom3,
-			  double angle, double sigma, int ntrain, std::string params);
+        int getDihedralFtype( int egd)
+        {
+            return _gtDihedralFtype[egd];
+        }
 
-    /* Return angle-index 1-N or 0 if not found */
-    int  getAngle(  std::string *atom1, std::string *atom2,
-		    std::string *atom3, double *angle, double *sigma,
-		    int *ntrain, std::string *params);
+        std::string getVdwFunction()
+        {
+            return _gtVdwFunction;
+        }
 
+        std::string getPolarUnit()
+        {
+            return _alexandriaPolarUnit;
+        }
 
-    GtAngleIterator getAngleBegin(){
-      return _gtAngle.begin();
-    }
+        std::string getPolarRef()
+        {
+            return _alexandriaPolarRef;
+        }
 
-    GtAngleIterator getAngleEnd(){
-      return _gtAngle.end();
-    }
+        /* Return 1 on success, 0 otherwise */
+        int  addAngle(
+            std::string atom1, std::string atom2,
+            std::string atom3, double angle, double sigma,
+            int ntrain, std::string params);
 
-    /* Return angle-index 1-N or 0 if not found */
-    int  searchAngle(  std::string atom1, std::string atom2,
-		       std::string atom3, double *angle, double *sigma,
-		       int *ntrain, std::string *params);
+        int  setAngleParams(  std::string atom1, std::string atom2,
+                              std::string atom3,
+                              double angle, double sigma, int ntrain, std::string params);
 
-    void setAngleUnit( std::string angleUnit){
-      _gtAngleUnit.assign(angleUnit);
-    }
+        /* Return angle-index 1-N or 0 if not found */
+        int  getAngle(  std::string *atom1, std::string *atom2,
+                        std::string *atom3, double *angle, double *sigma,
+                        int *ntrain, std::string *params);
 
-    std::string getAngleUnit(){
-      return _gtAngleUnit;
-    }
 
+        GtAngleIterator getAngleBegin()
+        {
+            return _gtAngle.begin();
+        }
 
-    void  setDihedralFunction(  int egd, std::string fn);
+        GtAngleIterator getAngleEnd()
+        {
+            return _gtAngle.end();
+        }
 
-    std::string getDihedralFunction( int egd){
-      return _gtDihedralFunction[egd];
-    }
+        /* Return angle-index 1-N or 0 if not found */
+        int  searchAngle(  std::string atom1, std::string atom2,
+                           std::string atom3, double *angle, double *sigma,
+                           int *ntrain, std::string *params);
 
-    /* Return 1 on success or 0 otherwise */
-    int  addDihedral(  int egd, std::string atom1, std::string atom2,
-		       std::string atom3, std::string atom4,
-		       double dihedral, double sigma,
-		       int ntrain, std::string params);
+        void setAngleUnit( std::string angleUnit)
+        {
+            _gtAngleUnit.assign(angleUnit);
+        }
 
-    int  setDihedralParams(  int egd,
-			     std::string atom1, std::string atom2,
-			     std::string atom3, std::string atom4,
-			     double angle, double sigma,
-			     int ntrain, std::string params);
+        std::string getAngleUnit()
+        {
+            return _gtAngleUnit;
+        }
 
-    /* Return dihedral-index 1-N or 0 if not found */
-    int  getDihedral(  int egd,
-		       std::string *atom1, std::string *atom2,
-		       std::string *atom3, std::string *atom4,
-		       double *dihedral, double *sigma,
-		       int *ntrain, std::string *params);
 
-    
-    DihedralIterator getDihedralBegin(int egd){
-      return _gtDihedral[egd].begin();
-    }
+        void  setDihedralFunction(  int egd, std::string fn);
 
-    DihedralIterator getDihedralEnd(int egd){
-      return _gtDihedral[egd].end();
-    }
+        std::string getDihedralFunction( int egd)
+        {
+            return _gtDihedralFunction[egd];
+        }
 
-    /* Return dihedral-index 1-N or 0 if not found */
-    int  searchDihedral(  int egd,
-			  std::string atom1, std::string atom2,
-			  std::string atom3, std::string atom4,
-			  double *dihedral, double *sigma,
-			  int *ntrain, std::string *params);
+        /* Return 1 on success or 0 otherwise */
+        int  addDihedral(  int egd, std::string atom1, std::string atom2,
+                           std::string atom3, std::string atom4,
+                           double dihedral, double sigma,
+                           int ntrain, std::string params);
 
-    void  setDihedralUnit(  int   egd,
-			    std::string dihedralUnit);
+        int  setDihedralParams(  int egd,
+                                 std::string atom1, std::string atom2,
+                                 std::string atom3, std::string atom4,
+                                 double angle, double sigma,
+                                 int ntrain, std::string params);
 
-    std::string  getDihedralUnit(  int egd);
+        /* Return dihedral-index 1-N or 0 if not found */
+        int  getDihedral(  int egd,
+                           std::string *atom1, std::string *atom2,
+                           std::string *atom3, std::string *atom4,
+                           double *dihedral, double *sigma,
+                           int *ntrain, std::string *params);
 
-    void  addSymcharges(  std::string central,
-			  std::string attached, int numattach);
 
-    int  getSymcharges(  std::string *central,
-			 std::string *attached, int *numattach);
+        DihedralIterator getDihedralBegin(int egd)
+        {
+            return _gtDihedral[egd].begin();
+        }
 
-    SymchargesIterator getSymchargesBegin(){
-      return _symcharges.begin();
-    }
+        DihedralIterator getDihedralEnd(int egd)
+        {
+            return _gtDihedral[egd].end();
+        }
 
-    SymchargesIterator getSymchargesEnd(){
-      return _symcharges.end();
-    }
+        /* Return dihedral-index 1-N or 0 if not found */
+        int  searchDihedral(  int egd,
+                              std::string atom1, std::string atom2,
+                              std::string atom3, std::string atom4,
+                              double *dihedral, double *sigma,
+                              int *ntrain, std::string *params);
 
-    int  searchSymcharges(  std::string central,
-			    std::string attached, int numattach);
+        void  setDihedralUnit(  int         egd,
+                                std::string dihedralUnit);
 
-    static ChargeDistributionModel name2eemtype(const std::string name);
+        std::string  getDihedralUnit(  int egd);
 
-    static  std::string getEemtypeName(ChargeDistributionModel eem);
+        void  addSymcharges(  std::string central,
+                              std::string attached, int numattach);
 
-    std::string  getEemref(  ChargeDistributionModel eqdModel);
+        int  getSymcharges(  std::string *central,
+                             std::string *attached, int *numattach);
 
-    int  getNumprops(  ChargeDistributionModel eqdModel);
+        SymchargesIterator getSymchargesBegin()
+        {
+            return _symcharges.begin();
+        }
 
-    int  havePolSupport(  const std::string atype);
+        SymchargesIterator getSymchargesEnd()
+        {
+            return _symcharges.end();
+        }
 
-    int  haveEemSupport(  ChargeDistributionModel eqdModel,
-			  const std::string       name,
-			  gmx_bool                bAllowZeroParameters);
+        int  searchSymcharges(  std::string central,
+                                std::string attached, int numattach);
 
-    double  getJ00(  ChargeDistributionModel eqdModel,const std::string name);
+        static ChargeDistributionModel name2eemtype(const std::string name);
 
-    int  getNzeta(  ChargeDistributionModel eqdModel,const std::string name);
+        static  std::string getEemtypeName(ChargeDistributionModel eem);
 
-    double  getZeta(  ChargeDistributionModel eqdModel,const std::string name, int zz);
+        std::string  getEemref(  ChargeDistributionModel eqdModel);
 
-    std::string  getQstr(  ChargeDistributionModel eqdModel, std::string name);
-    
-    std::string  getRowstr(  ChargeDistributionModel eqdModel, std::string name);
+        int  getNumprops(  ChargeDistributionModel eqdModel);
 
-    double  getQ(  ChargeDistributionModel eqdModel,const std::string name, int zz);
+        int  havePolSupport(  const std::string atype);
 
-    int  getRow(  ChargeDistributionModel eqdModel,const std::string name, int zz);
+        int  haveEemSupport(  ChargeDistributionModel eqdModel,
+                              const std::string       name,
+                              gmx_bool                bAllowZeroParameters);
 
-    double  getChi0(  ChargeDistributionModel eqdModel,const std::string name);
+        double  getJ00(  ChargeDistributionModel eqdModel, const std::string name);
 
-    std::string  getOpts(  ChargeDistributionModel eqdModel, std::string name);
+        int  getNzeta(  ChargeDistributionModel eqdModel, const std::string name);
 
-    void  setEemprops(ChargeDistributionModel eqdModel,const std::string name,
-		      double J0, double chi0,
-		      const std::string zeta,const  std::string q, const std::string row);
+        double  getZeta(  ChargeDistributionModel eqdModel, const std::string name, int zz);
 
-    int  getEemprops(
-		     ChargeDistributionModel *eqdModel, std::string *name,
-		     double *J0, double *chi0,
-		     std::string *zeta, std::string *q, std::string *row);
+        std::string  getQstr(  ChargeDistributionModel eqdModel, std::string name);
 
+        std::string  getRowstr(  ChargeDistributionModel eqdModel, std::string name);
 
-    EempropsIterator getEempropsBegin(){
-      return _eep.begin();
-    }
+        double  getQ(  ChargeDistributionModel eqdModel, const std::string name, int zz);
 
-    EempropsIterator getEempropsEnd(){
-      return _eep.end();
-    }
+        int  getRow(  ChargeDistributionModel eqdModel, const std::string name, int zz);
 
-    void  setEpref(  ChargeDistributionModel eqdModel, std::string epref);
+        double  getChi0(  ChargeDistributionModel eqdModel, const std::string name);
 
-    std::string  getEpref(ChargeDistributionModel eqdModel);
+        std::string  getOpts(  ChargeDistributionModel eqdModel, std::string name);
 
+        void  setEemprops(ChargeDistributionModel eqdModel, const std::string name,
+                          double J0, double chi0,
+                          const std::string zeta, const  std::string q, const std::string row);
 
-    EprefIterator getEprefBegin(){
-      return _epr.begin();
-    }
+        int  getEemprops(
+            ChargeDistributionModel *eqdModel, std::string *name,
+            double *J0, double *chi0,
+            std::string *zeta, std::string *q, std::string *row);
 
-    EprefIterator getEprefEnd(){
-      return _epr.end();
-    }
 
-    int listEpref(  ChargeDistributionModel *eqdModel, std::string *epref);
+        EempropsIterator getEempropsBegin()
+        {
+            return _eep.begin();
+        }
 
-    void  commEemprops(  t_commrec *cr);
+        EempropsIterator getEempropsEnd()
+        {
+            return _eep.end();
+        }
 
-    void  commForceParameters( t_commrec *cr);
+        void  setEpref(  ChargeDistributionModel eqdModel, std::string epref);
 
+        std::string  getEpref(ChargeDistributionModel eqdModel);
 
-  private:
-    std::string          _filename;
-    unsigned int            _nptypeC;
-    std::vector<Ptype>       _ptype;
-    unsigned int            _nalexandriaC;
-    std::vector<Ffatype>  _alexandria;
-    std::vector<std::string>         _btype;
-    unsigned int            _nbruleC;
-    std::vector<Brule> _brule;
-    std::string          _alexandriaPolarUnit;
-    std::string          _alexandriaPolarRef;
-    std::string          _alexandriaForcefield;
-    int            _nexcl;
-    double         _fudgeQQ, _fudgeLJ;
-    std::string          _gtVdwFunction, _gtCombinationRule;
-    int            _gtVdwFtype, _gtCombRule;
-    std::string          _gtBondFunction;
-    unsigned int            _ngtBondC, _gtBondFtype;
-    std::string          _gtLengthUnit;
-    std::vector<GtBond>  _gtBond;
-    std::string          _gtAngleFunction;
-    unsigned int            _ngtAngleC, _gtAngleFtype;
-    std::string          _gtAngleUnit;
-    std::vector<GtAngle>     _gtAngle;
-    std::vector<std::string>          _gtDihedralFunction;
-    std::vector<unsigned int>             _ngtDihedralC, _gtDihedralFtype;
-    std::vector<std::vector<GtDihedral> > _gtDihedral;
-    unsigned int            _nmillerC;
-    std::vector<Miller>   _miller;
-    std::string          _millerTauUnit, _millerAhpUnit;
-    unsigned int             _nbosqueC;
-    std::vector<Bosque>     _bosque;
-    std::string          _bosquePolarUnit;
-    unsigned int              _nsymchargesC;
-    std::vector<Symcharges>  _symcharges;
-    unsigned int            _nepC;
-    std::vector<Eemprops>  _eep;
-    unsigned int             _nerC;
-    std::vector<Epref>   _epr;
 
-    void addBtype(const std::string btype);
+        EprefIterator getEprefBegin()
+        {
+            return _epr.begin();
+        }
 
-    gmx_bool strcasestrStart(std::string needle, std::string haystack);
+        EprefIterator getEprefEnd()
+        {
+            return _epr.end();
+        }
 
-    int countNeighbors(Brule *brule, int nbond, std::string nbhybrid[], int *score);
+        int listEpref(  ChargeDistributionModel *eqdModel, std::string *epref);
 
-    GtBond *searchBond(  std::string atom1, std::string atom2,
-			 double bondorder);
+        void  commEemprops(  t_commrec *cr);
 
-    int searchBondtype(  std::string atom);
+        void  commForceParameters( t_commrec *cr);
 
-    Eemprops *getEep(ChargeDistributionModel eqdModel,
-		     const std::string             name);
 
-    GtDihedral *searchDihedral( int egd, std::string atom1, std::string atom2,
-				std::string atom3, std::string atom4);
+    private:
+        std::string                           _filename;
+        unsigned int                          _nptypeC;
+        std::vector<Ptype>                    _ptype;
+        unsigned int                          _nalexandriaC;
+        std::vector<Ffatype>                  _alexandria;
+        std::vector<std::string>              _btype;
+        unsigned int                          _nbruleC;
+        std::vector<Brule>                    _brule;
+        std::string                           _alexandriaPolarUnit;
+        std::string                           _alexandriaPolarRef;
+        std::string                           _alexandriaForcefield;
+        int                                   _nexcl;
+        double                                _fudgeQQ, _fudgeLJ;
+        std::string                           _gtVdwFunction, _gtCombinationRule;
+        int                                   _gtVdwFtype, _gtCombRule;
+        std::string                           _gtBondFunction;
+        unsigned int                          _ngtBondC, _gtBondFtype;
+        std::string                           _gtLengthUnit;
+        std::vector<GtBond>                   _gtBond;
+        std::string                           _gtAngleFunction;
+        unsigned int                          _ngtAngleC, _gtAngleFtype;
+        std::string                           _gtAngleUnit;
+        std::vector<GtAngle>                  _gtAngle;
+        std::vector<std::string>              _gtDihedralFunction;
+        std::vector<unsigned int>             _ngtDihedralC, _gtDihedralFtype;
+        std::vector<std::vector<GtDihedral> > _gtDihedral;
+        unsigned int                          _nmillerC;
+        std::vector<Miller>                   _miller;
+        std::string                           _millerTauUnit, _millerAhpUnit;
+        unsigned int                          _nbosqueC;
+        std::vector<Bosque>                   _bosque;
+        std::string                           _bosquePolarUnit;
+        unsigned int                          _nsymchargesC;
+        std::vector<Symcharges>               _symcharges;
+        unsigned int                          _nepC;
+        std::vector<Eemprops>                 _eep;
+        unsigned int                          _nerC;
+        std::vector<Epref>                    _epr;
 
-    static int gtbComp(const void *a, const void *b);
+        void addBtype(const std::string btype);
 
-    static int gtdComp(const void *a, const void *b);
+        gmx_bool strcasestrStart(std::string needle, std::string haystack);
 
-    template<class Type>
-      int indexOfPointInVector(Type * pointer, std::vector<Type> vector){
-      return (pointer - &(vector[0]));
-    }
-  };
+        int countNeighbors(Brule *brule, int nbond, std::string nbhybrid[], int *score);
+
+        GtBond *searchBond(  std::string atom1, std::string atom2,
+                             double bondorder);
+
+        int searchBondtype(  std::string atom);
+
+        Eemprops *getEep(ChargeDistributionModel       eqdModel,
+                         const std::string             name);
+
+        GtDihedral *searchDihedral( int egd, std::string atom1, std::string atom2,
+                                    std::string atom3, std::string atom4);
+
+        static int gtbComp(const void *a, const void *b);
+
+        static int gtdComp(const void *a, const void *b);
+
+        template<class Type>
+        int indexOfPointInVector(Type * pointer, std::vector<Type> vector)
+        {
+            return (pointer - &(vector[0]));
+        }
+};
 }
 #endif
