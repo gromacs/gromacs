@@ -206,9 +206,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_ekindata_t   *ekind;
     gmx_shellfc_t     shellfc;
     int               count, nconverged = 0;
-    double            tcount                 = 0;
-    gmx_bool          bConverged             = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bResetCountersHalfMaxH = FALSE;
+    double            tcount                  = 0;
+    gmx_bool          bConverged              = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool          bResetCountersHalfMaxH  = FALSE;
+    gmx_bool          bResetCounters          = FALSE;
+    gmx_bool          bResetCountersLater     = FALSE;
     gmx_bool          bVV, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
     real              dvdl_constr;
@@ -229,7 +231,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                                                           simulation stops. If equal to zero, don't
                                                                           communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
-    pme_load_balancing_t *pme_loadbal;
+    pme_load_balancing_t *pme_loadbal      = NULL;
     gmx_bool              bPMETune         = FALSE;
     gmx_bool              bPMETunePrinting = FALSE;
 
@@ -1333,6 +1335,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bResetCountersHalfMaxH && MASTER(cr) &&
             elapsed_time > max_hours*60.0*60.0*0.495)
         {
+            /* If mdrun -maxh -resethway was active, it can only trigger once */
+            bResetCountersHalfMaxH    = FALSE;
+            /* Communicate the signal to all ranks in the simulation */
             gs.sig[eglsRESETCOUNTERS] = 1;
         }
 
@@ -1747,22 +1752,47 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             step_rel++;
         }
 
+        /* TODO make a counter-reset module */
+        /* If it is time to reset counters, set a flag that remains
+           true until counters actually get reset */
         if (step_rel == wcycle_get_reset_counters(wcycle) ||
             gs.set[eglsRESETCOUNTERS] != 0)
         {
-            /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
-                               use_GPU(fr->nbv) ? fr->nbv : NULL);
-            wcycle_set_reset_counters(wcycle, -1);
-            if (!(cr->duty & DUTY_PME))
-            {
-                /* Tell our PME node to reset its counters */
-                gmx_pme_send_resetcounters(cr, step);
-            }
-            /* Correct max_hours for the elapsed time */
-            max_hours                -= elapsed_time/(60.0*60.0);
-            bResetCountersHalfMaxH    = FALSE;
+            bResetCounters            = TRUE;
+            /* Reset can only happen once, so clear the triggering flag. */
             gs.set[eglsRESETCOUNTERS] = 0;
+        }
+        if (bResetCounters)
+        {
+            /* Do not permit counter reset while PME load balancing is
+               active. The only purpose for resetting counters is to
+               measure reliable performance data, and that can't be
+               done before balancing completes. */
+            if (pme_loadbal_is_active(pme_loadbal))
+            {
+                bResetCountersLater = TRUE;
+            }
+            else
+            {
+                /* Reset all the counters related to performance over the run */
+                if (bResetCountersLater)
+                {
+                    md_print_warn(cr, fplog, "PME load balancing was active when mdrun counter "
+                                  "reset was requested. Counter reset was delayed until step %"
+                                  GMX_PRId64 "\n", step);
+                }
+                reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
+                                   use_GPU(fr->nbv) ? fr->nbv : NULL);
+                wcycle_set_reset_counters(wcycle, -1);
+                if (!(cr->duty & DUTY_PME))
+                {
+                    /* Tell our PME node to reset its counters */
+                    gmx_pme_send_resetcounters(cr, step);
+                }
+                /* Correct max_hours for the elapsed time */
+                max_hours                -= elapsed_time/(60.0*60.0);
+                bResetCounters            = FALSE;
+            }
         }
 
         /* If bIMD is TRUE, the master updates the IMD energy record and sends positions to VMD client */
