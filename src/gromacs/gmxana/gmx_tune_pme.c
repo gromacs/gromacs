@@ -596,7 +596,6 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
     char      *cp;
     FILE      *fp;
     const char def_mpirun[]   = "mpirun";
-    const char def_mdrun[]    = "mdrun";
 
     const char empty_mpirun[] = "";
 
@@ -617,13 +616,19 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
         *cmd_mpirun = gmx_strdup(empty_mpirun);
     }
 
-    if ( (cp = getenv("MDRUN" )) != NULL)
+    if (*cmd_mdrun == NULL)
     {
-        *cmd_mdrun  = gmx_strdup(cp);
-    }
-    else
-    {
-        *cmd_mdrun  = gmx_strdup(def_mdrun);
+        /* The use of MDRUN is deprecated, but made available in 5.1
+           for backward compatibility. It may be removed in a future
+           version. */
+        if ( (cp = getenv("MDRUN" )) != NULL)
+        {
+            *cmd_mdrun = gmx_strdup(cp);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "The way to call mdrun must be set in the -mdrun command-line flag.");
+        }
     }
 }
 
@@ -2133,14 +2138,20 @@ int gmx_tune_pme(int argc, char *argv[])
         "part of the Ewald sum. ",
         "Simply pass your [REF].tpr[ref] file to [THISMODULE] together with other options",
         "for [gmx-mdrun] as needed.[PAR]",
-        "Which executables are used can be set in the environment variables",
-        "MPIRUN and MDRUN. If these are not present, 'mpirun' and 'mdrun'",
-        "will be used as defaults. Note that for certain MPI frameworks you",
-        "need to provide a machine- or hostfile. This can also be passed",
+        "[THISMODULE] needs to call [gmx-mdrun] and so requires that you",
+        "specify how to call mdrun with the argument to the [TT]-mdrun[tt]",
+        "parameter. Depending how you have built GROMACS, values such as",
+        "'gmx mdrun', 'gmx_d mdrun', or 'mdrun_mpi' might be needed.[PAR]",
+        "The program that runs MPI programs can be set in the environment variable",
+        "MPIRUN (defaults to 'mpirun'). Note that for certain MPI frameworks,",
+        "you need to provide a machine- or hostfile. This can also be passed",
         "via the MPIRUN variable, e.g.[PAR]",
-        "[TT]export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"[tt][PAR]",
+        "[TT]export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"[tt]",
+        "Note that in such cases it is normally necessary to compile",
+        "and/or run [THISMODULE] without MPI support, so that it can call",
+        "the MPIRUN program.[PAR]",
         "Before doing the actual benchmark runs, [THISMODULE] will do a quick",
-        "check whether mdrun works as expected with the provided parallel settings",
+        "check whether [gmx-mdrun] works as expected with the provided parallel settings",
         "if the [TT]-check[tt] option is activated (the default).",
         "Please call [THISMODULE] with the normal options you would pass to",
         "[gmx-mdrun] and add [TT]-np[tt] for the number of ranks to perform the",
@@ -2308,6 +2319,8 @@ int gmx_tune_pme(int argc, char *argv[])
         /***********************/
         /* g_tune_pme options: */
         /***********************/
+        { "-mdrun",    FALSE, etSTR,  {&cmd_mdrun},
+          "Command line to run a simulation, e.g. 'gmx mdrun' or 'mdrun_mpi'" },
         { "-np",       FALSE, etINT,  {&nnodes},
           "Number of ranks to run the tests on (must be > 2 for separate PME ranks)" },
         { "-npstring", FALSE, etENUM, {procstring},
