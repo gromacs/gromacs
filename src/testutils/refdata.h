@@ -86,6 +86,13 @@ enum ReferenceDataMode
      */
     erefdataCreateMissing,
     /*! \brief
+     * Update reference data that does not pass comparison.
+     *
+     * Tests utilizing reference data should always pass in this mode unless
+     * there is an I/O error.
+     */
+    erefdataUpdateChanged,
+    /*! \brief
      * Update reference data, overwriting old data.
      *
      * Tests utilizing reference data should always pass in this mode unless
@@ -188,9 +195,6 @@ class TestReferenceData
          */
         ~TestReferenceData();
 
-        //! Returns true if reference data is currently being written.
-        bool isWriteMode() const;
-
         /*! \brief
          * Returns a root-level checker object for comparisons.
          *
@@ -237,9 +241,6 @@ class TestReferenceChecker
         //! Assigns a test reference checker.
         TestReferenceChecker &operator=(const TestReferenceChecker &other);
 
-        //! Returns true if reference data is currently being written.
-        bool isWriteMode() const;
-
         /*! \brief
          * Sets the tolerance for floating-point comparisons.
          *
@@ -263,7 +264,7 @@ class TestReferenceChecker
          * present, otherwise checks that the data item is absent.
          * If the check fails, a non-fatal Google Test assertion is generated.
          *
-         * If isWriteMode() returns true, the check always succeeds and the
+         * If reference data is being written, the check always succeeds and the
          * return value is \p bPresent.
          *
          * The main use of this method is to assign meaning for missing
