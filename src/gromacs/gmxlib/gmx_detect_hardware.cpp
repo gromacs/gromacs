@@ -629,10 +629,17 @@ static int get_ncores(gmx_cpuid_t cpuid)
  * reported to be online by the OS at the time of the call. The
  * definition of "processor" is according to an old POSIX standard.
  *
+ * On e.g. Arm, the Linux kernel can use advanced power saving features where
+ * processors are brought online/offline dynamically. This will cause
+ * _SC_NPROCESSORS_ONLN to report 1 at the beginning of the run. For this
+ * reason we now first try to use the number of configured processors, but
+ * also warn if they mismatch.
+ *
  * Note that the number of hardware threads is generally greater than
  * the number of cores (e.g. x86 hyper-threading, Power). Managing the
  * mapping of software threads to hardware threads is managed
- * elsewhere. */
+ * elsewhere.
+ */
 static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
 {
     int ret = 0;
@@ -646,16 +653,28 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
     /* We are probably on Unix.
      * Now check if we have the argument to use before executing the call
      */
-#if defined(_SC_NPROCESSORS_ONLN)
+#if defined(_SC_NPROCESSORS_CONF)
+    ret = sysconf(_SC_NPROCESSORS_CONF);
+#    if defined(_SC_NPROCESSORS_ONLN)
+    if (ret != sysconf(_SC_NPROCESSORS_ONLN))
+    {
+        md_print_warn(cr, fplog,
+                      "%d CPUs configured, but only %d of them are online.\n"
+                      "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
+                      "off to save power, and will turn them back on later when the load increases.\n"
+                      "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
+                      "will likely see much better performance by forcing all cores to be online, and\n"
+                      "making sure they run at their full clock frequency.", ret, sysconf(_SC_NPROCESSORS_ONLN));
+    }
+#    endif
+#elif defined(_SC_NPROC_CONF)
+    ret = sysconf(_SC_NPROC_CONF);
+#elif defined(_SC_NPROCESSORS_ONLN)
     ret = sysconf(_SC_NPROCESSORS_ONLN);
 #elif defined(_SC_NPROC_ONLN)
     ret = sysconf(_SC_NPROC_ONLN);
-#elif defined(_SC_NPROCESSORS_CONF)
-    ret = sysconf(_SC_NPROCESSORS_CONF);
-#elif defined(_SC_NPROC_CONF)
-    ret = sysconf(_SC_NPROC_CONF);
 #else
-#warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
+#    warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
 #endif /* End of check for sysconf argument values */
 
 #else
