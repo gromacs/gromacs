@@ -206,6 +206,10 @@ void readEntry(xmlNodePtr element, ReferenceDataEntry *entry)
     {
         readChildEntries(element, entry);
     }
+    else if (hasCDataContent(element))
+    {
+        entry->setTextBlockValue(getValueFromLeafElement(element));
+    }
     else
     {
         entry->setValue(getValueFromLeafElement(element));

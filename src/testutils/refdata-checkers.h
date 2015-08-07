@@ -73,6 +73,17 @@ class IReferenceDataEntryChecker
         virtual ~IReferenceDataEntryChecker() {}
 };
 
+class NullChecker : public IReferenceDataEntryChecker
+{
+    public:
+        virtual void fillEntry(ReferenceDataEntry *) const {}
+        virtual ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &, const std::string &) const
+        {
+            return ::testing::AssertionSuccess();
+        }
+};
+
 class ExactStringChecker : public IReferenceDataEntryChecker
 {
     public:

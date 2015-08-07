@@ -51,15 +51,15 @@
 namespace
 {
 
+using gmx::test::TestReferenceData;
+using gmx::test::TestReferenceChecker;
+
 TEST(ReferenceDataTest, HandlesSimpleData)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
-
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkBoolean(true, "int");
+        checker.checkBoolean(true, "bool");
         checker.checkInteger(1, "int");
         checker.checkInt64(1ULL<<42, "int64");
         checker.checkUInt64(1ULL<<42, "uint64");
@@ -69,7 +69,7 @@ TEST(ReferenceDataTest, HandlesSimpleData)
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkBoolean(true, "int");
+        checker.checkBoolean(true, "bool");
         checker.checkInteger(1, "int");
         checker.checkInt64(1ULL<<42, "int64");
         checker.checkUInt64(1ULL<<42, "uint64");
@@ -80,8 +80,6 @@ TEST(ReferenceDataTest, HandlesSimpleData)
 
 TEST(ReferenceDataTest, HandlesFloatingPointData)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
     const float  floatValue  = 4.0f/3.0f;
     const double doubleValue = 4.0/3.0;
 
@@ -104,9 +102,6 @@ TEST(ReferenceDataTest, HandlesFloatingPointData)
 
 TEST(ReferenceDataTest, HandlesPresenceChecks)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
-
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
@@ -132,9 +127,6 @@ TEST(ReferenceDataTest, HandlesPresenceChecks)
 
 TEST(ReferenceDataTest, HandlesStringBlockData)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
-
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
@@ -153,8 +145,6 @@ TEST(ReferenceDataTest, HandlesStringBlockData)
 
 TEST(ReferenceDataTest, HandlesVectorData)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
     int    veci[3] = { -1, 3, 5 };
     float  vecf[3] = { -2.3f, 1.43f, 2.5f };
     double vecd[3] = { -2.3, 1.43, 2.5 };
@@ -178,8 +168,6 @@ TEST(ReferenceDataTest, HandlesVectorData)
 
 TEST(ReferenceDataTest, HandlesSequenceData)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
     const int seq[5] = { -1, 3, 5, 2, 4 };
 
     {
@@ -197,8 +185,6 @@ TEST(ReferenceDataTest, HandlesSequenceData)
 
 TEST(ReferenceDataTest, HandlesIncorrectData)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
     int seq[5] = { -1, 3, 5, 2, 4 };
 
     {
@@ -224,8 +210,6 @@ TEST(ReferenceDataTest, HandlesIncorrectData)
 
 TEST(ReferenceDataTest, HandlesMissingData)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
     const int seq[5] = { -1, 3, 5, 2, 4 };
 
     {
@@ -245,8 +229,6 @@ TEST(ReferenceDataTest, HandlesMissingData)
 
 TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
     const int seq[5] = { -1, 3, 5, 2, 4 };
 
     EXPECT_NONFATAL_FAILURE({
@@ -262,9 +244,6 @@ TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
 
 TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
-
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
@@ -283,8 +262,6 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
 
 TEST(ReferenceDataTest, HandlesSequenceItemIndices)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
     int seq[5] = { -1, 3, 5, 2, 4 };
 
     {
@@ -308,9 +285,6 @@ TEST(ReferenceDataTest, HandlesSequenceItemIndices)
 
 TEST(ReferenceDataTest, HandlesMultipleChecksAgainstSameData)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
-
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
@@ -332,9 +306,6 @@ TEST(ReferenceDataTest, HandlesMultipleChecksAgainstSameData)
 
 TEST(ReferenceDataTest, HandlesMultipleNullIds)
 {
-    using gmx::test::TestReferenceData;
-    using gmx::test::TestReferenceChecker;
-
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
@@ -347,6 +318,104 @@ TEST(ReferenceDataTest, HandlesMultipleNullIds)
         checker.checkString("Test", NULL);
         checker.checkString("Test2", NULL);
         EXPECT_NONFATAL_FAILURE(checker.checkString("Test", NULL), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesUpdateChangedWithoutChanges)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkString("Test", "string");
+        TestReferenceChecker compound(checker.checkCompound("Compound", "Compound"));
+        compound.checkInteger(2, "int");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateChanged);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkString("Test", "string");
+        TestReferenceChecker compound(checker.checkCompound("Compound", "Compound"));
+        compound.checkInteger(2, "int");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkString("Test", "string");
+        TestReferenceChecker compound(checker.checkCompound("Compound", "Compound"));
+        compound.checkInteger(2, "int");
+    }
+}
+
+TEST(ReferenceDataTest, HandlesUpdateChangedWithValueChanges)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateChanged);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(2, "int");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(2, "int");
+        checker.checkString("Test", "string");
+    }
+}
+
+TEST(ReferenceDataTest, HandlesUpdateChangedWithTypeChanges)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "foo");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateChanged);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("foo", "foo");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("foo", "foo");
+        checker.checkString("Test", "string");
+    }
+}
+
+TEST(ReferenceDataTest, HandlesUpdateChangedWithCompoundChanges)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "1");
+        TestReferenceChecker compound(checker.checkCompound("Compound", "2"));
+        compound.checkInteger(2, "int");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateChanged);
+        TestReferenceChecker checker(data.rootChecker());
+        TestReferenceChecker compound(checker.checkCompound("Compound", "1"));
+        compound.checkInteger(2, "int");
+        checker.checkString("Test", "2");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        TestReferenceChecker compound(checker.checkCompound("Compound", "1"));
+        compound.checkInteger(2, "int");
+        checker.checkString("Test", "2");
     }
 }
 
