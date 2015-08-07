@@ -923,8 +923,17 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
     /* Sanity check, we expect nstlist cycle counts */
     if (pme_lb->cycles_n - n_prev != ir->nstlist)
     {
-        /* We could return here, but it's safer to issue and error and quit */
-        gmx_incons("pme_loadbal_do called at an interval != nstlist");
+        /* TODO It would nice to have the following sanity check here,
+         * but currently counter reset can happen while PME load
+         * balancing is still active, and that breaks the assumption
+         * that cycles_* are strictly increasing over time. Using the
+         * sanity check caused problems (see Redmine #1781).
+         *
+         * It doesn't make sense to permit counter reset to happen
+         * while PME load balancing is active, but fixing that
+         * requires reworking the way we do mdrun benchmarking. */
+        /*gmx_incons("pme_loadbal_do called at an interval != nstlist");*/
+        return;
     }
 
     /* PME grid + cut-off optimization with GPUs or PME ranks */
