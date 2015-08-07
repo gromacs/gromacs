@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="program">Gaussian 03, Revision D.01</String>
+  <String Name="basisset">gen</String>
+  <String Name="method">B3LYP</String>
+  <Real Name="Polarizability XX">10.265000000000001</Real>
+  <Real Name="Polarizability YY">8.2289999999999992</Real>
+  <Real Name="Polarizability ZZ">7.5910000000000002</Real>
+  <Real Name="Polarizability XY">0.098000000000000004</Real>
+  <Real Name="Polarizability XZ">0</Real>
+  <Real Name="Polarizability YZ">-0</Real>
+  <Real Name="Dipole X">-0.051999999999999998</Real>
+  <Real Name="Dipole Y">1.556</Real>
+  <Real Name="Dipole Z">0.001</Real>
+</ReferenceData>
