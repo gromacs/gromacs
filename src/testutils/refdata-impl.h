@@ -66,7 +66,8 @@ class ReferenceDataEntry
         }
 
         ReferenceDataEntry(const char *type, const char *id)
-            : type_(type), id_(id != NULL ? id : ""), isTextBlock_(false)
+            : type_(type), id_(id != NULL ? id : ""), isTextBlock_(false),
+              correspondingOutputEntry_(NULL)
         {
         }
 
@@ -76,6 +77,69 @@ class ReferenceDataEntry
         bool isTextBlock() const { return isTextBlock_; }
         const std::string &value() const { return value_; }
         const ChildList &children() const { return children_; }
+        ReferenceDataEntry *correspondingOutputEntry() const
+        {
+            return correspondingOutputEntry_;
+        }
+
+        bool idMatches(const char *id) const
+        {
+            return (id == NULL && id_.empty()) || (id != NULL && id_ == id);
+        }
+
+        ChildIterator findChild(const char *id, const ChildIterator &prev) const
+        {
+            if (children_.empty())
+            {
+                return children_.end();
+            }
+            ChildIterator  child          = prev;
+            bool           wrappingSearch = true;
+            if (child != children_.end())
+            {
+                if (id == NULL && (*child)->id().empty())
+                {
+                    wrappingSearch = false;
+                    ++child;
+                    if (child == children_.end())
+                    {
+                        return children_.end();
+                    }
+                }
+            }
+            else
+            {
+                child          = children_.begin();
+                wrappingSearch = false;
+            }
+            do
+            {
+                if ((*child)->idMatches(id))
+                {
+                    return child;
+                }
+                ++child;
+                if (wrappingSearch && child == children_.end())
+                {
+                    child = children_.begin();
+                }
+            }
+            while (child != children_.end() && child != prev);
+            return children_.end();
+        }
+        bool isValidChild(const ChildIterator &prev) const
+        {
+            return prev != children_.end();
+        }
+
+        EntryPointer cloneToOutputEntry()
+        {
+            EntryPointer entry(new ReferenceDataEntry(type_.c_str(), id_.c_str()));
+            setCorrespondingOutputEntry(entry.get());
+            entry->setValue(value());
+            entry->isTextBlock_ = isTextBlock_;
+            return move(entry);
+        }
 
         void setValue(const std::string &value)
         {
@@ -90,6 +154,18 @@ class ReferenceDataEntry
             value_       = value;
             isTextBlock_ = true;
         }
+        void makeCompound(const char *type)
+        {
+            type_.assign(type);
+            value_.clear();
+            isTextBlock_ = false;
+        }
+        void setCorrespondingOutputEntry(ReferenceDataEntry *entry)
+        {
+            GMX_RELEASE_ASSERT(correspondingOutputEntry_ == NULL,
+                               "Output entry already exists");
+            correspondingOutputEntry_ = entry;
+        }
         ChildIterator addChild(EntryPointer child)
         {
             GMX_RELEASE_ASSERT(isCompound() || value_.empty(),
@@ -98,11 +174,12 @@ class ReferenceDataEntry
         }
 
     private:
-        std::string  type_;
-        std::string  id_;
-        std::string  value_;
-        bool         isTextBlock_;
-        ChildList    children_;
+        std::string         type_;
+        std::string         id_;
+        std::string         value_;
+        bool                isTextBlock_;
+        ChildList           children_;
+        ReferenceDataEntry *correspondingOutputEntry_;
 };
 
 } // namespace test
