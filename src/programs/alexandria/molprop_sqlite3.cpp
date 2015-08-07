@@ -83,7 +83,7 @@ void ReadSqlite3(const char                       *sqlite_file,
     sqlite3                    *db   = NULL;
     sqlite3_stmt               *stmt = NULL, *stmt2 = NULL;
     char sql_str[1024];
-    const char                 *iupac, *cas, *csid, *prop, *unit, *ref, *classification, *source;
+    const char                 *iupac, *cas, *csid, *prop, *unit, *source;
     double                      value, error, temperature;
     int                         cidx, rc, nbind, nexp_prop, theory;
     t_synonym                  *syn  = NULL, key, *keyptr;
@@ -146,7 +146,7 @@ void ReadSqlite3(const char                       *sqlite_file,
 
     /* Now present a query statement */
     nexp_prop = 0;
-    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,mol.classification,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error,ref.ref,ds.theory,ds.source FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,reference as ref,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (ref.refid=gp.refid) AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
+    sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error,ds.theory,ds.source FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
     check_sqlite3(db, "Preparing sqlite3 statement",
                   sqlite3_prepare_v2(db, sql_str, 1+strlen(sql_str), &stmt, NULL));
 
@@ -204,13 +204,11 @@ void ReadSqlite3(const char                       *sqlite_file,
                         }
                         cas            = (char *)sqlite3_column_text(stmt, cidx++);
                         csid           = (char *)sqlite3_column_text(stmt, cidx++);
-                        classification = (char *)sqlite3_column_text(stmt, cidx++);
                         prop           = (char *)sqlite3_column_text(stmt, cidx++);
                         unit           = (char *)sqlite3_column_text(stmt, cidx++);
                         temperature    = sqlite3_column_double(stmt, cidx++);
                         value          = sqlite3_column_double(stmt, cidx++);
                         error          = sqlite3_column_double(stmt, cidx++);
-                        ref            = (char *)sqlite3_column_text(stmt, cidx++);
                         theory         = sqlite3_column_int(stmt, cidx++);
                         source         = (char *)sqlite3_column_text(stmt, cidx++);
 
@@ -223,7 +221,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                         //      source, prop, value, (int) bExp);
                         if (bExp)
                         {
-                            alexandria::Experiment exper(ref, "minimum");
+                            alexandria::Experiment exper("unknown", "minimum");
                             if (strcasecmp(prop, "Polarizability") == 0)
                             {
                                 exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0));
@@ -247,7 +245,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                         else
                         {
                             alexandria::Calculation calc("gentop", source,
-                                                         "-", ref, "minimum",
+                                                         "-", "unknown", "minimum",
                                                          "unknown" );
                             if (strcasecmp(prop, "Polarizability") == 0)
                             {
@@ -271,7 +269,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                             mpi->AddCalculation(calc);
                         }
                         //mpi->Stats();
-
+                        /*
                         if (0 && (strlen(classification) > 0))
                         {
                             std::vector<std::string> class_ptr = split(classification, ';');
@@ -280,7 +278,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                             {
                                 mpi->AddCategory(cp->c_str());
                             }
-                        }
+                            }*/
                         if (strlen(cas) > 0)
                         {
                             cas2 = mpi->getCas();

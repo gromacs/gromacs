@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="molecule 1 number of experiments">10</Int>
+  <String Name="molecule 1 exper 1 energy 1">DeltaHform -274.9 +/- 0 kJ/mol</String>
+  <String Name="molecule 1 exper 6 energy 1">cp 108.03 +/- 0 J/mol K</String>
+  <String Name="molecule 1 exper 7 energy 1">S0 361.7 +/- 0 J/mol K</String>
+  <String Name="molecule 1 exper 8 energy 1">DeltaGform -150.7 +/- 0 kJ/mol</String>
+  <String Name="molecule 1 exper 9 energy 1">DeltaSform -417.24 +/- 0 J/mol K</String>
+  <String Name="molecule 1 exper 10 energy 1">cv 88.904 +/- 0 J/mol K</String>
+  <Int Name="molecule 2 number of experiments">10</Int>
+  <String Name="molecule 2 exper 1 energy 1">DeltaHform -217.1 +/- 0 kJ/mol</String>
+  <String Name="molecule 2 exper 2 energy 1">DeltaGform -152.7 +/- 0 kJ/mol</String>
+  <String Name="molecule 2 exper 3 energy 1">S0 295.3 +/- 0 J/mol K</String>
+  <String Name="molecule 2 exper 4 energy 1">cp 74.5 +/- 0 J/mol K</String>
+  <String Name="molecule 2 exper 9 energy 1">DeltaSform -215.999 +/- 0 J/mol K</String>
+  <String Name="molecule 2 exper 10 energy 1">cv 64.978 +/- 0 J/mol K</String>
+  <Int Name="molecule 3 number of experiments">10</Int>
+  <String Name="molecule 3 exper 1 energy 1">DeltaHform -241.8 +/- 0 kJ/mol</String>
+  <String Name="molecule 3 exper 2 energy 1">DeltaGform -228.6 +/- 0 kJ/mol</String>
+  <String Name="molecule 3 exper 3 energy 1">S0 188.8 +/- 0 J/mol K</String>
+  <String Name="molecule 3 exper 4 energy 1">cp 33.6 +/- 0 J/mol K</String>
+  <String Name="molecule 3 exper 9 energy 1">DeltaSform -44.427 +/- 0 J/mol K</String>
+  <String Name="molecule 3 exper 10 energy 1">cv 24.666 +/- 0 J/mol K</String>
+</ReferenceData>

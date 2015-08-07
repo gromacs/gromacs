@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molecule 1 name">1-butanol</String>
+  <String Name="molecule 1 formula">C4H10O</String>
+  <Int Name="molecule 1 number of bonds">14</Int>
+  <String Name="molecule 1 bond 1">atoms 13 11 order 1</String>
+  <String Name="molecule 1 bond 2">atoms 3 1 order 1</String>
+  <String Name="molecule 1 bond 3">atoms 9 8 order 1</String>
+  <String Name="molecule 1 bond 4">atoms 7 5 order 1</String>
+  <String Name="molecule 1 bond 5">atoms 14 11 order 1</String>
+  <String Name="molecule 1 bond 6">atoms 14 15 order 1</String>
+  <String Name="molecule 1 bond 7">atoms 5 8 order 1</String>
+  <String Name="molecule 1 bond 8">atoms 5 1 order 1</String>
+  <String Name="molecule 1 bond 9">atoms 5 6 order 1</String>
+  <String Name="molecule 1 bond 10">atoms 8 11 order 1</String>
+  <String Name="molecule 1 bond 11">atoms 8 10 order 1</String>
+  <String Name="molecule 1 bond 12">atoms 2 1 order 1</String>
+  <String Name="molecule 1 bond 13">atoms 11 12 order 1</String>
+  <String Name="molecule 1 bond 14">atoms 1 4 order 1</String>
+  <String Name="molecule 2 name">acetone</String>
+  <String Name="molecule 2 formula">C3H6O</String>
+  <Int Name="molecule 2 number of bonds">9</Int>
+  <String Name="molecule 2 bond 1">atoms 6 2 order 1</String>
+  <String Name="molecule 2 bond 2">atoms 9 3 order 1</String>
+  <String Name="molecule 2 bond 3">atoms 7 2 order 1</String>
+  <String Name="molecule 2 bond 4">atoms 10 3 order 1</String>
+  <String Name="molecule 2 bond 5">atoms 3 8 order 1</String>
+  <String Name="molecule 2 bond 6">atoms 3 1 order 1</String>
+  <String Name="molecule 2 bond 7">atoms 2 5 order 1</String>
+  <String Name="molecule 2 bond 8">atoms 2 1 order 1</String>
+  <String Name="molecule 2 bond 9">atoms 1 4 order 2</String>
+  <String Name="molecule 3 name">water</String>
+  <String Name="molecule 3 formula">H2O</String>
+  <Int Name="molecule 3 number of bonds">2</Int>
+  <String Name="molecule 3 bond 1">atoms 1 2 order 1</String>
+  <String Name="molecule 3 bond 2">atoms 3 2 order 1</String>
+</ReferenceData>
