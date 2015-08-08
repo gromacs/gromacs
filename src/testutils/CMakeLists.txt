@@ -47,6 +47,7 @@ set(TESTUTILS_SOURCES
     testfileredirector.cpp
     testinit.cpp
     testoptions.cpp
+    textblockmatchers.cpp
     xvgtest.cpp)
 
 add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})

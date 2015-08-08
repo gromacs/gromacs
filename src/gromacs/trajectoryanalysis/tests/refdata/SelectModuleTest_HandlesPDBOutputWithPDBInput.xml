@@ -97,7 +97,8 @@
     </AnalysisData>
   </OutputData>
   <OutputFiles Name="Files">
-    <String Name="-ofpdb"><![CDATA[
+    <File Name="-ofpdb">
+      <String Name="Contents"><![CDATA[
 TITLE     frame t= 0.000
 REMARK    THIS IS A SIMULATION BOX
 CRYST1  100.000  100.000  100.000  90.00  90.00  90.00 P 1           1
@@ -120,5 +121,6 @@ ATOM     15  S2 A RD B   2      40.000  30.000   0.000  0.00  0.00
 TER
 ENDMDL
 ]]></String>
+    </File>
   </OutputFiles>
 </ReferenceData>

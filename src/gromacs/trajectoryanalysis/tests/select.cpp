@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include <gtest/gtest.h>
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/textblockmatchers.h"
 
 #include "moduletest.h"
 
@@ -61,6 +62,7 @@ namespace
 {
 
 using gmx::test::CommandLine;
+using gmx::test::ExactTextMatch;
 
 /********************************************************************
  * Tests for gmx::analysismodules::Select.
@@ -78,8 +80,8 @@ TEST_F(SelectModuleTest, BasicTest)
     };
     setTopology("simple.gro");
     setTrajectory("simple.gro");
-    setOutputFile("-oi", "index.dat");
-    setOutputFile("-on", "index.ndx");
+    setOutputFile("-oi", "index.dat", ExactTextMatch());
+    setOutputFile("-on", "index.ndx", ExactTextMatch());
     excludeDataset("cfrac");
     runTest(CommandLine(cmdline));
 }
@@ -93,7 +95,7 @@ TEST_F(SelectModuleTest, HandlesPDBOutputWithNonPDBInput)
     setTopology("simple.gro");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
-    setOutputFile("-ofpdb", "occupancy.pdb");
+    setOutputFile("-ofpdb", "occupancy.pdb", ExactTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -106,7 +108,7 @@ TEST_F(SelectModuleTest, HandlesPDBOutputWithPDBInput)
     setTopology("simple.pdb");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
-    setOutputFile("-ofpdb", "occupancy.pdb");
+    setOutputFile("-ofpdb", "occupancy.pdb", ExactTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -120,7 +122,7 @@ TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
     setTopology("simple.pdb");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
-    setOutputFile("-ofpdb", "occupancy.pdb");
+    setOutputFile("-ofpdb", "occupancy.pdb", ExactTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -134,7 +136,7 @@ TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
     setTopology("simple.pdb");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
-    setOutputFile("-ofpdb", "occupancy.pdb");
+    setOutputFile("-ofpdb", "occupancy.pdb", ExactTextMatch());
     runTest(CommandLine(cmdline));
 }
 
