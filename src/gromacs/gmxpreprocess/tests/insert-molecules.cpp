@@ -45,18 +45,20 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
+#include "testutils/textblockmatchers.h"
 
 namespace
 {
 
 using gmx::test::CommandLine;
+using gmx::test::ExactTextMatch;
 
 class InsertMoleculesTest : public gmx::test::CommandLineTestBase
 {
     public:
         InsertMoleculesTest()
         {
-            setOutputFile("-o", "out.gro");
+            setOutputFile("-o", "out.gro", ExactTextMatch());
         }
 
         void runTest(const CommandLine &args)

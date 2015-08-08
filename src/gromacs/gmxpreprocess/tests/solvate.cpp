@@ -48,18 +48,20 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/textblockmatchers.h"
 
 namespace
 {
 
 using gmx::test::CommandLine;
+using gmx::test::NoTextMatch;
 
 class SolvateTest : public gmx::test::CommandLineTestBase
 {
     public:
         SolvateTest()
         {
-            setOutputFile("-o", "out.gro");
+            setOutputFile("-o", "out.gro", NoTextMatch());
         }
 
         void runTest(const CommandLine &args)

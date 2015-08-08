@@ -37,6 +37,7 @@
  * Implements routine to check the content of xvg files.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
 #include "gmxpre.h"
@@ -54,16 +55,43 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 
 namespace gmx
 {
-
 namespace test
 {
 
-void checkXvgFile(TextInputStream      *input,
-                  TestReferenceChecker *checker)
+namespace
 {
+
+class XvgMatcher : public ITextBlockMatcher
+{
+    public:
+        explicit XvgMatcher(const XvgMatchSettings &settings)
+            : settings_(settings)
+        {
+        }
+
+        virtual void checkStream(TextInputStream      *stream,
+                                 TestReferenceChecker *checker)
+        {
+            checkXvgFile(stream, checker, settings_);
+        }
+
+    private:
+        XvgMatchSettings  settings_;
+};
+
+} // namespace
+
+void checkXvgFile(TextInputStream        *input,
+                  TestReferenceChecker   *checker,
+                  const XvgMatchSettings &settings)
+{
+    TestReferenceChecker dataChecker(checker->checkCompound("XvgData", "Data"));
+    dataChecker.setDefaultTolerance(settings.tolerance);
+
     std::string line;
     int         nrow = 0;
 
@@ -95,13 +123,17 @@ void checkXvgFile(TextInputStream      *input,
                 row.push_back(dval);
             }
             std::string buf = formatString("Row%d", nrow++);
-            checker->checkSequence(row.begin(), row.end(), buf.c_str());
+            dataChecker.checkSequence(row.begin(), row.end(), buf.c_str());
         }
     }
     std::string buf = formatString("Row%d", nrow++);
-    checker->checkPresent(false, buf.c_str());
+    dataChecker.checkPresent(false, buf.c_str());
+}
+
+TextBlockMatcherPointer XvgMatch::createMatcher() const
+{
+    return TextBlockMatcherPointer(new XvgMatcher(settings_));
 }
 
 } // namespace test
-
 } // namespace gmx
