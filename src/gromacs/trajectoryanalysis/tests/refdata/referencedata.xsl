@@ -20,14 +20,4 @@
     <xsl:apply-imports />
 </xsl:template>
 
-<xsl:template match="OutputFiles">
-    <h2>Output Files</h2>
-    <xsl:for-each select="*">
-        <h3><xsl:value-of select="@Name"/></h3>
-        <pre>
-            <xsl:value-of select="."/>
-        </pre>
-    </xsl:for-each>
-</xsl:template>
-
 </xsl:stylesheet>
