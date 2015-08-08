@@ -1154,4 +1154,10 @@
       </DataFrame>
     </AnalysisData>
   </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o"/>
+    <File Name="-or"/>
+    <File Name="-oa"/>
+    <File Name="-tv"/>
+  </OutputFiles>
 </ReferenceData>

@@ -104,7 +104,7 @@ void StringTestBase::checkText(TestReferenceChecker *checker,
     }
     else
     {
-        checker->checkStringBlock(text, id);
+        checker->checkTextBlock(text, id);
     }
 }
 

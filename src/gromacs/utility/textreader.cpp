@@ -53,13 +53,8 @@ namespace gmx
 // static
 std::string TextReader::readFileToString(const char *filename)
 {
-    std::string result;
     TextReader  reader(filename);
-    std::string line;
-    while (reader.readLine(&line))
-    {
-        result.append(line);
-    }
+    std::string result(reader.readAll());
     reader.close();
     return result;
 }
@@ -117,6 +112,17 @@ bool TextReader::readLineTrimmed(std::string *line)
         line->resize(endPos + 1);
     }
     return true;
+}
+
+std::string TextReader::readAll()
+{
+    std::string result;
+    std::string line;
+    while (readLine(&line))
+    {
+        result.append(line);
+    }
+    return result;
 }
 
 void TextReader::close()

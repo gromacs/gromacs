@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 
 #include "moduletest.h"
 
@@ -62,6 +63,7 @@ namespace
 {
 
 using gmx::test::CommandLine;
+using gmx::test::NoTextMatch;
 
 /********************************************************************
  * Tests for gmx::analysismodules::Rdf.
@@ -80,7 +82,7 @@ TEST_F(RdfModuleTest, BasicTest)
         "-sel", "name OW", "not name OW"
     };
     setTopology("spc216.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     excludeDataset("pairdist");
     runTest(CommandLine(cmdline));
 }
@@ -94,7 +96,7 @@ TEST_F(RdfModuleTest, CalculatesSurf)
         "-sel", "name OW", "not name OW"
     };
     setTopology("spc216.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     excludeDataset("pairdist");
     runTest(CommandLine(cmdline));
 }
@@ -108,7 +110,7 @@ TEST_F(RdfModuleTest, CalculatesXY)
         "-sel", "name OW", "not name OW"
     };
     setTopology("spc216.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     excludeDataset("pairdist");
     // TODO: Consider if it is possible to get a more reproducible result
     // and/or a stricter tolerance (e.g., by checking that the sum of
