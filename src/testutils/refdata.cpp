@@ -742,8 +742,8 @@ void TestReferenceChecker::checkString(const std::string &value, const char *id)
 }
 
 
-void TestReferenceChecker::checkStringBlock(const std::string &value,
-                                            const char        *id)
+void TestReferenceChecker::checkTextBlock(const std::string &value,
+                                          const char        *id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
                                     ExactStringBlockChecker(value)));

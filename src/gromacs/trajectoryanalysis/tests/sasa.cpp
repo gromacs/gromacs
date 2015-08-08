@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 
 #include "moduletest.h"
 
@@ -66,6 +67,8 @@ namespace
 {
 
 using gmx::test::CommandLine;
+using gmx::test::ExactTextMatch;
+using gmx::test::NoTextMatch;
 
 /********************************************************************
  * Tests for gmx::analysismodules::Sasa.
@@ -83,10 +86,10 @@ TEST_F(SasaModuleTest, BasicTest)
         "-output", "name N CA C O H"
     };
     setTopology("lysozyme.gro");
-    setOutputFileNoTest("-o", "xvg");
-    setOutputFileNoTest("-or", "xvg");
-    setOutputFileNoTest("-oa", "xvg");
-    setOutputFileNoTest("-tv", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
+    setOutputFile("-or", ".xvg", NoTextMatch());
+    setOutputFile("-oa", ".xvg", NoTextMatch());
+    setOutputFile("-tv", ".xvg", NoTextMatch());
     excludeDataset("dgsolv");
     setDatasetTolerance("area", gmx::test::ulpTolerance(8));
     setDatasetTolerance("volume", gmx::test::ulpTolerance(8));
@@ -100,8 +103,8 @@ TEST_F(SasaModuleTest, WritesConnollySurfaceWithSolute)
         "-surface", "atomnr 1"
     };
     setTopology("lysozyme.gro");
-    setOutputFileNoTest("-o", "xvg");
-    setOutputFile("-q", "connolly.pdb");
+    setOutputFile("-o", ".xvg", NoTextMatch());
+    setOutputFile("-q", "connolly.pdb", ExactTextMatch());
     includeDataset("area");
     runTest(CommandLine(cmdline));
 }
@@ -135,9 +138,9 @@ TEST_F(SasaModuleTest, HandlesDynamicOutputGroup)
         "-output", "y > 1.5"
     };
     setTopology("lysozyme.gro");
-    setOutputFileNoTest("-o", "xvg");
-    setOutputFileNoTest("-or", "xvg");
-    setOutputFileNoTest("-oa", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
+    setOutputFile("-or", ".xvg", NoTextMatch());
+    setOutputFile("-oa", ".xvg", NoTextMatch());
     excludeDataset("volume");
     excludeDataset("dgsolv");
     setDatasetTolerance("area", gmx::test::ulpTolerance(8));
@@ -152,9 +155,9 @@ TEST_F(SasaModuleTest, HandlesDynamicCalculationGroup)
         "-output", "y > 1.5 and z > 0"
     };
     setTopology("lysozyme.gro");
-    setOutputFileNoTest("-o", "xvg");
-    setOutputFileNoTest("-or", "xvg");
-    setOutputFileNoTest("-oa", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
+    setOutputFile("-or", ".xvg", NoTextMatch());
+    setOutputFile("-oa", ".xvg", NoTextMatch());
     excludeDataset("volume");
     excludeDataset("dgsolv");
     setDatasetTolerance("area", gmx::test::ulpTolerance(8));

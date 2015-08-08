@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 
 #include "moduletest.h"
 
@@ -64,6 +65,7 @@ namespace
 {
 
 using gmx::test::CommandLine;
+using gmx::test::NoTextMatch;
 
 /********************************************************************
  * Tests for gmx::analysismodules::PairDistance.
@@ -81,7 +83,7 @@ TEST_F(PairDistanceModuleTest, ComputesAllDistances)
         "-sel", "resindex 3", "-selgrouping", "none"
     };
     setTopology("simple.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -94,7 +96,7 @@ TEST_F(PairDistanceModuleTest, ComputesAllDistancesWithCutoff)
         "-cutoff", "1.5"
     };
     setTopology("simple.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -107,7 +109,7 @@ TEST_F(PairDistanceModuleTest, ComputesMinDistanceWithCutoff)
         "-cutoff", "1.5"
     };
     setTopology("simple.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -120,7 +122,7 @@ TEST_F(PairDistanceModuleTest, ComputesMaxDistance)
         "-type", "max"
     };
     setTopology("simple.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -133,7 +135,7 @@ TEST_F(PairDistanceModuleTest, ComputesMaxDistanceWithCutoff)
         "-cutoff", "1.5", "-type", "max"
     };
     setTopology("simple.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -146,7 +148,7 @@ TEST_F(PairDistanceModuleTest, ComputesGroupedMinDistanceWithCutoff)
         "-cutoff", "2.5"
     };
     setTopology("simple.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     runTest(CommandLine(cmdline));
 }
 
@@ -159,7 +161,7 @@ TEST_F(PairDistanceModuleTest, ComputesGroupedMaxDistanceWithCutoff)
         "-cutoff", "3.5", "-type", "max"
     };
     setTopology("simple.gro");
-    setOutputFileNoTest("-o", "xvg");
+    setOutputFile("-o", ".xvg", NoTextMatch());
     runTest(CommandLine(cmdline));
 }
 

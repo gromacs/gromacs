@@ -306,7 +306,7 @@ class TestReferenceChecker
          * formatted output, and attempts to make the output XML such that it
          * is easier to edit by hand to set the desired output formatting.
          */
-        void checkStringBlock(const std::string &value, const char *id);
+        void checkTextBlock(const std::string &value, const char *id);
         //! Check a single integer value.
         void checkInteger(int value, const char *id);
         //! Check a single int64 value.
