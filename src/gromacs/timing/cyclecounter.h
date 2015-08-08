@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,6 +79,11 @@ typedef unsigned long long
 
 #elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
 /* 64-bit ARM cycle counters with GCC inline assembly */
+typedef unsigned long long
+    gmx_cycles_t;
+
+#elif defined(__ARM_ARCH_7A__) && defined(__GNUC__)
+/* Armv7A can provide 64-bit cycles by returning two registers */
 typedef unsigned long long
     gmx_cycles_t;
 
@@ -186,144 +191,6 @@ typedef long
 
 #endif
 
-/*! \brief Check if high-resolution cycle counters are available
- *
- *  Not all architectures provide any way to read timestep counters
- *  in the CPU, and on some it is broken. Although we refer to it
- *  as cycle counters, it is not necessarily given in units of
- *  cycles.
- *
- *  If you notice that system is missing, implement support for it,
- *  find out how to detect the system during preprocessing, and send us a
- *  patch.
- *
- *  \return 1 if cycle counters are available, 0 if not.
- *
- * \note This functions not need to be in the header for performance
- *       reasons, but it is very important that we get exactly the
- *       same detection as for gmx_cycles_read() routines. If you
- *       compile the library with one compiler, and then use a different
- *       one when later linking to the library it might happen that the
- *       library supports cyclecounters but not the headers, or vice versa.
- */
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
-    (defined(__i386__) || defined(__x86_64__)))
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* x86 or x86-64 with GCC inline assembly - pentium TSC register */
-    return 1;
-}
-#elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
-static __inline int gmx_cycles_have_counter(void)
-{
-    /* 64-bit ARM cycle counters with GCC inline assembly */
-    return 1;
-}
-#elif (defined(_MSC_VER))
-static __inline int gmx_cycles_have_counter(void)
-{
-    return 1;
-}
-#elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
-static inline int gmx_cycles_have_counter(void)
-{
-    /* HP compiler on ia64, use special instruction to read ITC */
-    return 1;
-}
-#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* Intel compiler on ia64, use special instruction to read ITC */
-    return 1;
-}
-#elif defined(__GNUC__) && defined(__ia64__)
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* AMD64 with GCC inline assembly - TSC register */
-    return 1;
-}
-#elif ((defined(__hppa__) || defined(__hppa)) && defined (__GNUC__))
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* HP PA-RISC, inline asm with gcc */
-    return 1;
-}
-#elif ((defined(__hppa__) || defined(__hppa)) && defined (__hpux))
-static inline int gmx_cycles_have_counter(void)
-{
-    /* HP PA-RISC, instruction when using HP compiler */
-    return 1;
-}
-#elif defined(__GNUC__) && defined(__s390__)
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* S390, taken from FFTW who got it from James Treacy */
-    return 1;
-}
-#elif defined(__GNUC__) && defined(__alpha__)
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* gcc inline assembly on alpha CPUs */
-    return 1;
-}
-#elif defined(__GNUC__) && defined(__sparc_v9__)
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* gcc inline assembly on sparc v9 */
-    return 1;
-}
-#elif defined(__DECC) && defined(__alpha)
-static __inline int gmx_cycles_have_counter(void)
-{
-    /* Digital GEM C compiler on alpha */
-    return 1;
-}
-#elif (defined(__sgi) && defined(CLOCK_SGI_CYCLE))
-static __inline int gmx_cycles_have_counter(void)
-{
-    /* Irix compilers on SGI hardware */
-    return 1;
-}
-#elif (defined(__SVR4) && defined (__SUNPRO_CC))
-static inline int gmx_cycles_have_counter(void)
-{
-    /* Solaris high-resolution timers */
-    return 1;
-}
-#elif defined(__xlC__) && defined (_AIX)
-static inline int gmx_cycles_have_counter(void)
-{
-    /* AIX compilers */
-    return 1;
-}
-#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
-    ( defined(__powerpc__) || defined(__ppc__) ) )
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* PowerPC using gcc inline assembly (and xlc>=7.0 with -qasm=gcc) */
-    return 1;
-}
-#elif (defined(__MWERKS__) && (defined(MAC) || defined(macintosh)))
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* Metrowerks on macintosh */
-    return 1;
-}
-#elif defined(__sun) && defined(__sparcv9)
-
-static __inline__ int gmx_cycles_have_counter(void)
-{
-    /* Solaris on SPARC*/
-    return 1;
-}
-#else
-static int gmx_cycles_have_counter(void)
-{
-    /* No cycle counter that we know of on this system */
-    return 0;
-}
-#endif
-
 /*! \brief Read CPU cycle counter
  *
  *  This routine returns an abstract datatype containing a
@@ -368,7 +235,13 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 
     return cycle;
 }
-
+#elif defined(__ARM_ARCH_7A__) && defined(__GNUC__)
+static __inline__ gmx_cycles_t gmx_cycles_read(void)
+{
+    unsigned int cycles_lo, cycles_hi;
+    asm volatile("mrrc p15, 1, %0, %1, c14" : "=r" (cycles_lo), "=r" (cycles_hi));
+    return ((gmx_cycles_t)cycles_lo) | (((gmx_cycles_t)cycles_hi) << 32);
+}
 #elif defined(_MSC_VER)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 {
@@ -543,6 +416,161 @@ static gmx_cycles_t gmx_cycles_read(void)
     return 0;
 }
 #endif
+
+
+/*! \brief Check if high-resolution cycle counters are available
+ *
+ *  Not all architectures provide any way to read timestep counters
+ *  in the CPU, and on some it is broken. Although we refer to it
+ *  as cycle counters, it is not necessarily given in units of
+ *  cycles.
+ *
+ *  If you notice that system is missing, implement support for it,
+ *  find out how to detect the system during preprocessing, and send us a
+ *  patch.
+ *
+ *  \return 1 if cycle counters are available, 0 if not.
+ *
+ * \note This functions not need to be in the header for performance
+ *       reasons, but it is very important that we get exactly the
+ *       same detection as for gmx_cycles_read() routines. If you
+ *       compile the library with one compiler, and then use a different
+ *       one when later linking to the library it might happen that the
+ *       library supports cyclecounters but not the headers, or vice versa.
+ */
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
+    (defined(__i386__) || defined(__x86_64__)))
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* x86 or x86-64 with GCC inline assembly - pentium TSC register */
+    return 1;
+}
+#elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
+static __inline int gmx_cycles_have_counter(void)
+{
+    /* 64-bit ARM cycle counters with GCC inline assembly */
+    return 1;
+}
+#elif defined(__ARM_ARCH_7A__) && defined(__GNUC__)
+static __inline int gmx_cycles_have_counter(void)
+{
+    /* Armv7A can provide 64-bit cycles by returning two registers. However, it will not work unless
+     * the performance registers have been made available from user space by a kernel module -
+     * otherwise it returns 0.
+     */
+    gmx_cycles_t c0, c1;
+
+    c0 = gmx_cycles_read();
+    c1 = gmx_cycles_read();
+
+    /* if both counters return 0, support is not present */
+    return (c0 != 0 || c1 != 0);
+}
+#elif (defined(_MSC_VER))
+static __inline int gmx_cycles_have_counter(void)
+{
+    return 1;
+}
+#elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
+static inline int gmx_cycles_have_counter(void)
+{
+    /* HP compiler on ia64, use special instruction to read ITC */
+    return 1;
+}
+#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* Intel compiler on ia64, use special instruction to read ITC */
+    return 1;
+}
+#elif defined(__GNUC__) && defined(__ia64__)
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* AMD64 with GCC inline assembly - TSC register */
+    return 1;
+}
+#elif ((defined(__hppa__) || defined(__hppa)) && defined (__GNUC__))
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* HP PA-RISC, inline asm with gcc */
+    return 1;
+}
+#elif ((defined(__hppa__) || defined(__hppa)) && defined (__hpux))
+static inline int gmx_cycles_have_counter(void)
+{
+    /* HP PA-RISC, instruction when using HP compiler */
+    return 1;
+}
+#elif defined(__GNUC__) && defined(__s390__)
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* S390, taken from FFTW who got it from James Treacy */
+    return 1;
+}
+#elif defined(__GNUC__) && defined(__alpha__)
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* gcc inline assembly on alpha CPUs */
+    return 1;
+}
+#elif defined(__GNUC__) && defined(__sparc_v9__)
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* gcc inline assembly on sparc v9 */
+    return 1;
+}
+#elif defined(__DECC) && defined(__alpha)
+static __inline int gmx_cycles_have_counter(void)
+{
+    /* Digital GEM C compiler on alpha */
+    return 1;
+}
+#elif (defined(__sgi) && defined(CLOCK_SGI_CYCLE))
+static __inline int gmx_cycles_have_counter(void)
+{
+    /* Irix compilers on SGI hardware */
+    return 1;
+}
+#elif (defined(__SVR4) && defined (__SUNPRO_CC))
+static inline int gmx_cycles_have_counter(void)
+{
+    /* Solaris high-resolution timers */
+    return 1;
+}
+#elif defined(__xlC__) && defined (_AIX)
+static inline int gmx_cycles_have_counter(void)
+{
+    /* AIX compilers */
+    return 1;
+}
+#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
+    ( defined(__powerpc__) || defined(__ppc__) ) )
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* PowerPC using gcc inline assembly (and xlc>=7.0 with -qasm=gcc) */
+    return 1;
+}
+#elif (defined(__MWERKS__) && (defined(MAC) || defined(macintosh)))
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* Metrowerks on macintosh */
+    return 1;
+}
+#elif defined(__sun) && defined(__sparcv9)
+
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    /* Solaris on SPARC*/
+    return 1;
+}
+#else
+static int gmx_cycles_have_counter(void)
+{
+    /* No cycle counter that we know of on this system */
+    return 0;
+}
+#endif
+
 
 /*! \brief Calculate number of seconds per cycle tick on host
  *
