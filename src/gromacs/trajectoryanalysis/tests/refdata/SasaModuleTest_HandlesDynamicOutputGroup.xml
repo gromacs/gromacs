@@ -1087,4 +1087,9 @@
       </DataFrame>
     </AnalysisData>
   </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o"/>
+    <File Name="-or"/>
+    <File Name="-oa"/>
+  </OutputFiles>
 </ReferenceData>

@@ -150,6 +150,14 @@ class TextReader
         bool readLineTrimmed(std::string *line);
 
         /*! \brief
+         * Reads all remaining lines from the stream as a single string.
+         *
+         * \returns   Full contents of the stream (from the current point to
+         *     the end).
+         */
+        std::string readAll();
+
+        /*! \brief
          * Closes the underlying stream.
          */
         void close();
