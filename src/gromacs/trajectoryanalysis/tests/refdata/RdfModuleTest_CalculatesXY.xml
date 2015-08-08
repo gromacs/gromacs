@@ -256,4 +256,7 @@
       </DataFrame>
     </AnalysisData>
   </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o"/>
+  </OutputFiles>
 </ReferenceData>
