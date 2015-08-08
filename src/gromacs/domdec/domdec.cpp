@@ -6584,8 +6584,11 @@ static int check_dlb_support(FILE *fplog, t_commrec *cr,
 
     if (!bRecordLoad)
     {
+#if defined(__ARM_ARCH_7A__) && defined(__GNUC__)
+        dd_warning(cr, fplog, "NOTE: Cycle counters on ARMv7a not enabled in linux kernel, will not use dynamic load balancing\n");
+#else
         dd_warning(cr, fplog, "NOTE: Cycle counting is not supported on this architecture, will not use dynamic load balancing\n");
-
+#endif
         return edlbsOffForever;
     }
 
