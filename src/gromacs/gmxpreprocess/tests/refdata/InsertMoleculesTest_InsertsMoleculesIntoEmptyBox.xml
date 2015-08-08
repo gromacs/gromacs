@@ -3,7 +3,8 @@
 <ReferenceData>
   <String Name="CommandLine">insert-molecules -box 4 -nmol 5</String>
   <OutputFiles Name="Files">
-    <String Name="-o"><![CDATA[
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
 test two-residue molecule for insertion
    10
     1X       X1    1   3.071   2.691   0.351
@@ -18,5 +19,6 @@ test two-residue molecule for insertion
    10Y       Y1   10   3.845   1.125   0.921
    4.00000   4.00000   4.00000
 ]]></String>
+    </File>
   </OutputFiles>
 </ReferenceData>

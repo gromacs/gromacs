@@ -32,83 +32,68 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * Declares function to add the content of an xvg file to a checker.
+ * Implements classes from textblockmatchers.h.
  *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
  * \ingroup module_testutils
  */
-#ifndef GMX_TESTUTILS_XVGTESTS_H
-#define GMX_TESTUTILS_XVGTESTS_H
+#include "gmxpre.h"
 
-#include <string>
+#include "textblockmatchers.h"
 
-#include "testutils/testasserts.h"
-#include "testutils/textblockmatchers.h"
+#include "gromacs/utility/textreader.h"
+
+#include "testutils/refdata.h"
 
 namespace gmx
 {
-
-class TextInputStream;
-
 namespace test
 {
 
-class TestReferenceChecker;
-
-struct XvgMatchSettings
+namespace
 {
-    XvgMatchSettings() : tolerance(defaultRealTolerance()) {}
 
-    FloatingPointTolerance  tolerance;
-};
-
-/*! \brief
- * Adds content of xvg file to TestReferenceChecker object.
- *
- * A stream of strings is parsed. The columns
- * are analyzed with a relative tolerance provided by the input.
- * Xmgrace formatting is ignored and only multi-column data is
- * understood.
- *
- * \param[in] input       Object returning the lines of the file/data
- *                        one by one.
- * \param[in,out] checker The checker object.
- * \param[in] settings    Settings to use for matching.
- */
-void checkXvgFile(TextInputStream        *input,
-                  TestReferenceChecker   *checker,
-                  const XvgMatchSettings &settings);
-
-/*! \libinternal \brief
- * Match the contents as an xvg file.
- *
- * \see checkXvgFile()
- *
- * \inlibraryapi
- * \ingroup module_testutils
- */
-class XvgMatch : public ITextBlockMatcherSettings
+class ExactTextMatcher : public ITextBlockMatcher
 {
     public:
-        //! Sets the tolerance for matching data point values.
-        XvgMatch &tolerance(const FloatingPointTolerance &tolerance)
+        virtual void checkStream(TextInputStream      *stream,
+                                 TestReferenceChecker *checker)
         {
-            settings_.tolerance = tolerance;
-            return *this;
+            TextReader reader(stream);
+            checker->checkTextBlock(reader.readAll(), "Contents");
         }
-
-        virtual TextBlockMatcherPointer createMatcher() const;
-
-    private:
-        XvgMatchSettings  settings_;
 };
 
+class NoTextMatcher : public ITextBlockMatcher
+{
+    public:
+        virtual void checkStream(TextInputStream      * /*stream*/,
+                                 TestReferenceChecker * /*checker*/)
+        {
+        }
+};
+
+}       // namespace
+
+ITextBlockMatcher::~ITextBlockMatcher()
+{
+}
+
+ITextBlockMatcherSettings::~ITextBlockMatcherSettings()
+{
+}
+
+TextBlockMatcherPointer ExactTextMatch::createMatcher() const
+{
+    return TextBlockMatcherPointer(new ExactTextMatcher());
+}
+
+TextBlockMatcherPointer NoTextMatch::createMatcher() const
+{
+    return TextBlockMatcherPointer(new NoTextMatcher());
+}
+
 } // namespace test
-
 } // namespace gmx
-
-#endif
