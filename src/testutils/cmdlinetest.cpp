@@ -63,7 +63,7 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
-#include "testutils/xvgtest.h"
+#include "testutils/textblockmatchers.h"
 
 namespace gmx
 {
@@ -240,15 +240,15 @@ class CommandLineTestHelper::Impl
     public:
         struct OutputFileInfo
         {
-            OutputFileInfo(const char *option, const std::string &path)
-                : option(option), path(path)
+            OutputFileInfo(const char *option, const std::string &path,
+                           TextBlockMatcherPointer matcher)
+                : option(option), path(path), matcher(move(matcher))
             {
-                xvg = endsWith(path, ".xvg");
             }
 
-            std::string         option;
-            std::string         path;
-            bool                xvg;
+            std::string              option;
+            std::string              path;
+            TextBlockMatcherPointer  matcher;
         };
 
         typedef std::vector<OutputFileInfo>        OutputFileList;
@@ -324,19 +324,18 @@ void CommandLineTestHelper::setInputFileContents(
 }
 
 void CommandLineTestHelper::setOutputFile(
-        CommandLine *args, const char *option, const char *filename)
+        CommandLine *args, const char *option, const char *filename,
+        const ITextBlockMatcherSettings &matcher)
 {
+    std::string suffix(filename);
+    if (startsWith(filename, "."))
+    {
+        suffix = formatString("%d.%s", args->argc(), filename);
+    }
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(filename);
     args->addOption(option, fullFilename);
-    impl_->outputFiles_.push_back(Impl::OutputFileInfo(option, fullFilename));
-}
-
-void CommandLineTestHelper::setOutputFileNoTest(
-        CommandLine *args, const char *option, const char *extension)
-{
-    std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
-                formatString("%d.%s", args->argc(), extension));
-    args->addOption(option, fullFilename);
+    impl_->outputFiles_.push_back(
+            Impl::OutputFileInfo(option, fullFilename, matcher.createMatcher()));
 }
 
 void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
@@ -350,18 +349,11 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
              outfile != impl_->outputFiles_.end();
              ++outfile)
         {
-            if (outfile->xvg)
-            {
-                TestReferenceChecker testChecker = checker.checkCompound("File",
-                                                                         outfile->option.c_str());
-                TextInputFile        sis(outfile->path);
-                checkXvgFile(&sis, &testChecker);
-            }
-            else
-            {
-                std::string output = TextReader::readFileToString(outfile->path);
-                outputChecker.checkStringBlock(output, outfile->option.c_str());
-            }
+            TestReferenceChecker fileChecker(
+                    outputChecker.checkCompound("File", outfile->option.c_str()));
+            TextInputFile        stream(outfile->path);
+            outfile->matcher->checkStream(&stream, &fileChecker);
+            stream.close();
         }
     }
 }
@@ -419,15 +411,10 @@ void CommandLineTestBase::setInputFileContents(
 }
 
 void CommandLineTestBase::setOutputFile(
-        const char *option, const char *filename)
+        const char *option, const char *filename,
+        const ITextBlockMatcherSettings &matcher)
 {
-    impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename);
-}
-
-void CommandLineTestBase::setOutputFileNoTest(
-        const char *option, const char *extension)
-{
-    impl_->helper_.setOutputFileNoTest(&impl_->cmdline_, option, extension);
+    impl_->helper_.setOutputFile(&impl_->cmdline_, option, filename, matcher);
 }
 
 CommandLine &CommandLineTestBase::commandLine()

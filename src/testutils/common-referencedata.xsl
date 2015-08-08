@@ -68,6 +68,26 @@ and use the copy_xsl.sh script to copy it to relevant locations.
     <xsl:value-of select="."/>
 </xsl:template>
 
+<xsl:template match="OutputFiles">
+    <xsl:if test="*/*">
+        <h2>Output Files</h2>
+        <xsl:apply-templates />
+    </xsl:if>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File">
+    <xsl:if test="*">
+        <h3><xsl:value-of select="@Name"/></h3>
+        <xsl:apply-templates />
+    </xsl:if>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/String[@Name='Contents']">
+    <pre>
+        <xsl:value-of select="substring(.,2)"/>
+    </pre>
+</xsl:template>
+
 <xsl:template match="InteractiveSession">
     <pre>
         <xsl:for-each select="*">
