@@ -138,15 +138,15 @@ TEST(ReferenceDataTest, HandlesStringBlockData)
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkStringBlock("Line1\nLine2\n", "block");
+        checker.checkTextBlock("Line1\nLine2\n", "block");
         checker.checkString("Test", "string");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkStringBlock("Line1\nLine2\n", "block");
+        checker.checkTextBlock("Line1\nLine2\n", "block");
         checker.checkString("Line1\nLine2\n", "block");
-        checker.checkStringBlock("Test", "string");
+        checker.checkTextBlock("Test", "string");
     }
 }
 
@@ -270,13 +270,13 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("\"<'>\n \r &\\/;", "string");
         // \r is not handled correctly
-        checker.checkStringBlock("\"<'>\n ]]> &\\/;", "stringblock");
+        checker.checkTextBlock("\"<'>\n ]]> &\\/;", "stringblock");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("\"<'>\n \r &\\/;", "string");
-        checker.checkStringBlock("\"<'>\n ]]> &\\/;", "stringblock");
+        checker.checkTextBlock("\"<'>\n ]]> &\\/;", "stringblock");
     }
 }
 
@@ -316,16 +316,16 @@ TEST(ReferenceDataTest, HandlesMultipleChecksAgainstSameData)
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("Test", "string");
         EXPECT_NONFATAL_FAILURE(checker.checkString("Test2", "string"), "");
-        checker.checkStringBlock("TestString", "stringblock");
-        EXPECT_NONFATAL_FAILURE(checker.checkStringBlock("TestString2", "stringblock"), "");
+        checker.checkTextBlock("TestString", "stringblock");
+        EXPECT_NONFATAL_FAILURE(checker.checkTextBlock("TestString2", "stringblock"), "");
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkString("Test", "string");
         EXPECT_NONFATAL_FAILURE(checker.checkString("Test2", "string"), "");
-        checker.checkStringBlock("TestString", "stringblock");
-        EXPECT_NONFATAL_FAILURE(checker.checkStringBlock("TestString2", "stringblock"), "");
+        checker.checkTextBlock("TestString", "stringblock");
+        EXPECT_NONFATAL_FAILURE(checker.checkTextBlock("TestString2", "stringblock"), "");
     }
 }
 

@@ -56,6 +56,10 @@
 
 namespace
 {
+
+using gmx::test::checkXvgFile;
+using gmx::test::XvgMatchSettings;
+
 //! Input testing data - an inline xvg file.
 const char * const input[] = {
     "0     2905.86    -410.199",
@@ -74,7 +78,7 @@ TEST(XvgTests, CreateFile)
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream          sis(input);
-        gmx::test::checkXvgFile(&sis, &checker);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
         // Now read it back
@@ -82,7 +86,7 @@ TEST(XvgTests, CreateFile)
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream          sis(input);
-        gmx::test::checkXvgFile(&sis, &checker);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
 }
 
@@ -94,7 +98,7 @@ TEST(XvgTests, CheckMissing)
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream          sis(input);
-        gmx::test::checkXvgFile(&sis, &checker);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
         const char * const              input[] = {
@@ -106,7 +110,7 @@ TEST(XvgTests, CheckMissing)
         gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         gmx::StringInputStream          sis(input);
-        EXPECT_NONFATAL_FAILURE(gmx::test::checkXvgFile(&sis, &checker), "absent");
+        EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "absent");
     }
 }
 
@@ -118,7 +122,7 @@ TEST(XvgTests, CheckExtra)
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream          sis(input);
-        gmx::test::checkXvgFile(&sis, &checker);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
         const char * const              input[] = {
@@ -134,7 +138,7 @@ TEST(XvgTests, CheckExtra)
         gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         gmx::StringInputStream          sis(input);
-        EXPECT_NONFATAL_FAILURE(gmx::test::checkXvgFile(&sis, &checker), "Row6");
+        EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "Row6");
     }
 }
 
@@ -146,7 +150,7 @@ TEST(XvgTests, ReadIncorrect)
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream          sis(input);
-        gmx::test::checkXvgFile(&sis, &checker);
+        checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
         const char * const              input[] = {
@@ -161,7 +165,7 @@ TEST(XvgTests, ReadIncorrect)
         gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
         gmx::test::TestReferenceChecker checker(data.rootChecker());
         gmx::StringInputStream          sis(input);
-        EXPECT_NONFATAL_FAILURE(gmx::test::checkXvgFile(&sis, &checker), "-411");
+        EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "-411");
     }
 }
 
