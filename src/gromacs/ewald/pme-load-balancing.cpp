@@ -251,6 +251,11 @@ void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
     pme_lb->cycles_n = 0;
     pme_lb->cycles_c = 0;
 
+    if (!wallcycle_have_counter())
+    {
+        dd_warning(cr, fplog, "NOTE: Cycle counters unsupported or not enabled in kernel. Cannot not use PME-PP balancing.\n");
+    }
+
     /* Tune with GPUs and/or separate PME ranks.
      * When running only on a CPU without PME ranks, PME tuning will only help
      * with small numbers of atoms in the cut-off sphere.
