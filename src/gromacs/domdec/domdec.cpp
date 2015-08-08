@@ -6584,8 +6584,7 @@ static int check_dlb_support(FILE *fplog, t_commrec *cr,
 
     if (!bRecordLoad)
     {
-        dd_warning(cr, fplog, "NOTE: Cycle counting is not supported on this architecture, will not use dynamic load balancing\n");
-
+        dd_warning(cr, fplog, "NOTE: Cycle counters unsupported or not enabled in kernel. Cannot use dynamic load balancing.\n");
         return edlbsOffForever;
     }
 
