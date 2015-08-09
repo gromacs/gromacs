@@ -288,9 +288,9 @@ class BasePair
             if (NULL == positionPtr_)
             {
                 snew(positionPtr_, atomPos_.size());
-                for(unsigned int i = 0; (i<atomPos_.size()); i++)
+                for (unsigned int i = 0; (i < atomPos_.size()); i++)
                 {
-                    for(int m=0; (m<DIM); m++)
+                    for (int m = 0; (m < DIM); m++)
                     {
                         positionPtr_[i][m] = atomPos_[DIM*i+m];
                     }
@@ -418,7 +418,7 @@ class BasePair
         }
 
     private:
-        real                     dist;
+        real                      dist;
         Nucleotide                type[2];
         std::vector <std::string> atomName_;
         std::vector <int>         atomNumber_;
@@ -427,14 +427,14 @@ class BasePair
         rvec                     *positionPtr_;
         Isomerism                 iso;
         BondType                  bondtype[2];
-        bool               hydrogenRmsd_;
-        bool               sugarRmsd_;
-        bool               phosphateRmsd_;
+        bool                      hydrogenRmsd_;
+        bool                      sugarRmsd_;
+        bool                      phosphateRmsd_;
         std::vector <bondAtom>    bondAtoms;
         matrix                    box;
         int                       ePBC;
         int                       resId[2];
-        real                     templateRMSD;
+        real                      templateRMSD;
 
         // Return type of atom
         char atomType(const char name[]);
@@ -464,23 +464,23 @@ RnaAnalysis::RnaAnalysis()
     // Tell the analysis framework that this component exists
     registerAnalysisDataset(&data_, "rnaAnalysis");
 
-    offsetAtom    = 0;
-    nrTemplates   = 0;
-    nrResidues    = 0;
+    offsetAtom         = 0;
+    nrTemplates        = 0;
+    nrResidues         = 0;
     hydrogenRmsd_      = false;
     sugarRmsd_         = false;
     phosphateRmsd_     = false;
-    everyBPList   = false;
-    statistic     = false;
-    oneBPList     = true;
-    Xpm           = false;
-    extraOffset   = 0.0;
-    maxRMSD       = 0.0;
-    Info          = false;
-    iAtoms        = NULL;
-    bondDist      = 0.0;
-    atomprop      = gmx_atomprop_init();
-    rnaLog        = NULL;
+    everyBPList        = false;
+    statistic          = false;
+    oneBPList          = true;
+    Xpm                = false;
+    extraOffset        = 0.0;
+    maxRMSD            = 0.0;
+    Info               = false;
+    iAtoms             = NULL;
+    bondDist           = 0.0;
+    atomprop           = gmx_atomprop_init();
+    rnaLog             = NULL;
 }
 
 // Destructor
@@ -519,7 +519,7 @@ RnaAnalysis::initOptions(IOptionsContainer          *options,
     options->addOption(FileNameOption("g").filetype(eftGenericData).outputFile()
                            .store(&rnaLogFile).defaultBasename("result")
                            .description("log file" ).required());
- 
+
     // Add option for optional output file
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
                            .store(&rnaAnalysis).defaultBasename("result")
@@ -594,7 +594,7 @@ void
 RnaAnalysis::initAnalysis(const TrajectoryAnalysisSettings &settings,
                           const TopologyInformation        &top)
 {
-    // Store all file names of RNA base pair templates within input directory 
+    // Store all file names of RNA base pair templates within input directory
     // in vector pdbTemplates
     nrTemplates = 0;
 
@@ -603,7 +603,7 @@ RnaAnalysis::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     // Open log file
     rnaLog = gmx_fio_fopen(rnaLogFile.c_str(), "w");
-    
+
     // Add the module that will contain the averaging and the time series
     // for our calculation
     data_.addModule(adata_);
@@ -699,7 +699,7 @@ RnaAnalysis::initAnalysis(const TrajectoryAnalysisSettings &settings,
     gmx_residuetype_destroy(rt);
 
     // Set path and load file pointer
-    real     maxDist = 0;
+    real      maxDist = 0;
     char      line[100];
     FILE    * file;
 
@@ -778,7 +778,7 @@ RnaAnalysis::initAnalysis(const TrajectoryAnalysisSettings &settings,
                 maxDist = bp->maximumDistance();
             }
             dataBase_.push_back(std::move(bp));
-            bp = NULL;
+            bp           = NULL;
             nrTemplates += 1;
         }
     }
@@ -797,7 +797,7 @@ RnaAnalysis::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                           TrajectoryAnalysisModuleData *pdata)
 {
     // When a base pair is found
-    real                RMSD           = 0;
+    real                 RMSD           = 0;
     //int                  minIndex       = -1;
     bool                 dimReset       = false;
     bool                 bRMSD          = true;
@@ -878,10 +878,10 @@ RnaAnalysis::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 continue;
             }
 
-            real       x, y, z;
+            real        x, y, z;
             int         atomId1, atomId2;
-            real       max       = 1.0;
-            int minIndex   = -1;
+            real        max        = 1.0;
+            int         minIndex   = -1;
             adjustment = 0;
 
             int totalSize = nucleotideInfo[base1].size + nucleotideInfo[base2].size;
@@ -955,7 +955,7 @@ RnaAnalysis::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             int  base1_swap = 0;
             int  base2_swap = 0;
 
-            for (std::vector<BasePair *>::iterator bpi=dataBase_.begin();
+            for (std::vector<BasePair *>::iterator bpi = dataBase_.begin();
                  (bpi < dataBase_.end()); ++bpi)
             {
 
@@ -1052,20 +1052,20 @@ RnaAnalysis::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                             {
                                 if (nucleotideInfo[base1_swap].resNr <= nucleotideInfo[base2_swap].resNr)
                                 {
-                                    fprintf(rnaLog, "base pair %c%i - %c%i", 
-                                            nucleotideInfo[base1_swap].type, 
-                                            nucleotideInfo[base1_swap].resNr, 
-                                            nucleotideInfo[base2_swap].type, 
+                                    fprintf(rnaLog, "base pair %c%i - %c%i",
+                                            nucleotideInfo[base1_swap].type,
+                                            nucleotideInfo[base1_swap].resNr,
+                                            nucleotideInfo[base2_swap].type,
                                             nucleotideInfo[base2_swap].resNr);
 
                                     if ((DB == "bps") && (dataBase_[minIndex]->getIso() == Cis))
                                     {
-                                        fprintf(rnaLog, "\t\t%s cis", 
+                                        fprintf(rnaLog, "\t\t%s cis",
                                                 dataBase_[minIndex]->getBondName(dataBase_[minIndex]->getBondType()).c_str());
                                     }
                                     if ((DB == "bps") && (dataBase_[minIndex]->getIso() == Trans))
                                     {
-                                        fprintf(rnaLog, "\t\t%s trans", 
+                                        fprintf(rnaLog, "\t\t%s trans",
                                                 dataBase_[minIndex]->getBondName(dataBase_[minIndex]->getBondType()).c_str());
                                     }
                                     if (Info)
@@ -1135,10 +1135,10 @@ RnaAnalysis::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 {
                     if (nucleotideInfo[base1_swap].resNr <= nucleotideInfo[base2_swap].resNr)
                     {
-                        fprintf(rnaLog, "base pair %c%i - %c%i", 
-                                nucleotideInfo[base1_swap].type, 
-                                nucleotideInfo[base1_swap].resNr, 
-                                nucleotideInfo[base2_swap].type, 
+                        fprintf(rnaLog, "base pair %c%i - %c%i",
+                                nucleotideInfo[base1_swap].type,
+                                nucleotideInfo[base1_swap].resNr,
+                                nucleotideInfo[base2_swap].type,
                                 nucleotideInfo[base2_swap].resNr);
 
                         if ((DB == "bps") && (dataBase_[minIndex]->getIso() == Cis))
@@ -1147,7 +1147,7 @@ RnaAnalysis::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                         }
                         if ((DB == "bps") && (dataBase_[minIndex]->getIso() == Trans))
                         {
-                            fprintf(rnaLog, "\t\t%s trans", 
+                            fprintf(rnaLog, "\t\t%s trans",
                                     dataBase_[minIndex]->getBondName(dataBase_[minIndex]->getBondType()).c_str());
                         }
                         if (Info)
@@ -1157,15 +1157,15 @@ RnaAnalysis::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     }
                     else
                     {
-                        fprintf(rnaLog, "base pair %c%i - %c%i", 
-                                nucleotideInfo[base2_swap].type, 
-                                nucleotideInfo[base2_swap].resNr, 
-                                nucleotideInfo[base1_swap].type, 
+                        fprintf(rnaLog, "base pair %c%i - %c%i",
+                                nucleotideInfo[base2_swap].type,
+                                nucleotideInfo[base2_swap].resNr,
+                                nucleotideInfo[base1_swap].type,
                                 nucleotideInfo[base1_swap].resNr);
 
                         if ((DB == "bps") && (dataBase_[minIndex]->getIso() == Cis))
                         {
-                            fprintf(rnaLog, "\t\t%s cis", 
+                            fprintf(rnaLog, "\t\t%s cis",
                                     dataBase_[minIndex]->getBondName(dataBase_[minIndex]->getBondType()).c_str());
                         }
                         if ((DB == "bps") && (dataBase_[minIndex]->getIso() == Trans))
@@ -1281,7 +1281,7 @@ RnaAnalysis::writeOutput()
 
         if (statistic)
         {
-            for (std::vector<BasePair *>::iterator bpi=dataBase_.begin();
+            for (std::vector<BasePair *>::iterator bpi = dataBase_.begin();
                  (bpi < dataBase_.end()); ++bpi)
             {
                 char temp[256] = "";
@@ -1551,7 +1551,7 @@ BasePair::BasePair(bool hydrogenRmsd, bool sugarRmsd, bool phosphateRmsd)
     hydrogenRmsd_     = hydrogenRmsd;
     sugarRmsd_        = sugarRmsd;
     phosphateRmsd_    = phosphateRmsd;
-    positionPtr_  = NULL;
+    positionPtr_      = NULL;
 }
 
 // Destructor
@@ -1583,7 +1583,7 @@ BasePair::addAtom(rvec x, int atomnum, std::string atomname, real m)
 
         // convert coordinates from Ångström to nanometer
         // set the new atom position and mass
-        for(unsigned int m=0; (m<DIM); m++)
+        for (unsigned int m = 0; (m < DIM); m++)
         {
             atomPos_.push_back(x[m]*0.1);
         }
@@ -1601,8 +1601,8 @@ BasePair::checkAtom(const std::string &name)
     for (int i = 0; i < size; ++i)
     {
         // If there is an invalid atom type
-        if ((!hydrogenRmsd_ && name[i] == 'H') || 
-            (!phosphateRmsd_ && name[i] == 'P') || 
+        if ((!hydrogenRmsd_ && name[i] == 'H') ||
+            (!phosphateRmsd_ && name[i] == 'P') ||
             (!sugarRmsd_ && name[i] == '\''))
         {
             return false;
@@ -1738,7 +1738,7 @@ BasePair::getBondIndex(int bond, int pair)
 void
 BasePair::setAtomDist(int offsetAtom)
 {
-    real temp;
+    real  temp;
     rvec *x = atomPosition();
     dist = 0;
     for (unsigned int i = 0; i < atomName_.size(); i++)
@@ -1875,8 +1875,8 @@ BasePair::getC1distance(int tempId1, int tempId2, Selection s)
 bool
 BasePair::getHBondDistance(int tempId1, int tempId2, real dist, Selection s)
 {
-    std::vector<real> distances;
-    real              currentDist   = 0;
+    std::vector<real>  distances;
+    real               currentDist   = 0;
     int                maxBondNumber = this->getNrBondAtoms();
 
     for  (int con = 0; con < maxBondNumber; con++)
