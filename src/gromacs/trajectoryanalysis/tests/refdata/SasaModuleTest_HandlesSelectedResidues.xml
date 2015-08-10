@@ -1,0 +1,706 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">sasa -surface 'resnr 2 4 to 5 8'</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="area">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">8.5078138240304089</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="atomarea">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">66</Int>
+          <DataValue>
+            <Real Name="Value">0.23922246309382034</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.13273228961416877</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.10618583169133503</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.11321514525374221</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.21237166338267005</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.10618583169133503</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.11321514525374221</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.15927874753700255</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.15927874753700255</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.18869190875623704</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.40179713402352024</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.034174637584831476</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.2389181213055038</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075476763502494812</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.21237166338267005</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075476763502494812</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.034174637584831476</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.13273228961416877</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.13273228961416877</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.10618583169133503</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639373768501276</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.053092915845667513</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.10618583169133503</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.13273228961416877</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.15927874753700255</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.034174637584831476</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639373768501276</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075476763502494812</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.10252391275449443</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.15927874753700255</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.29201103715117133</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.17087318792415737</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.21237166338267005</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.29201103715117133</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.22643029050748442</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1674154725098001</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.27339710067865181</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.10618583169133503</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639373768501276</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639373768501276</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.075476763502494812</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.079639373768501276</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.15927874753700255</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.15095352700498962</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.1858252054598363</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.26416867225873186</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.43528022852548026</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="resarea">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">4</Int>
+          <DataValue>
+            <Real Name="Value">2.4896505242140847</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.82224315473783116</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2.7489603307349588</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">2.4469598143435354</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Solvent Accessible Surface"
+xaxis  label "Time (ps)"
+yaxis  label "Area (nm\S2\N)"
+TYPE xy
+s0 legend "Total"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data"/>
+    </File>
+    <File Name="-or">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Area per residue over the trajectory"
+xaxis  label "Residue"
+yaxis  label "Area (nm\S2\N)"
+TYPE xy
+s0 legend "Average (nm\S2\N)"
+s1 legend "Standard deviation (nm\S2\N)"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">3</Int>
+          <Real>2</Real>
+          <Real>2.490</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">3</Int>
+          <Real>4</Real>
+          <Real>0.822</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">3</Int>
+          <Real>5</Real>
+          <Real>2.749</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">3</Int>
+          <Real>8</Real>
+          <Real>2.447</Real>
+          <Real>0.000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-oa">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Area per atom over the trajectory"
+xaxis  label "Atom"
+yaxis  label "Area (nm\S2\N)"
+TYPE xy
+s0 legend "Average (nm\S2\N)"
+s1 legend "Standard deviation (nm\S2\N)"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">3</Int>
+          <Real>25</Real>
+          <Real>0.239</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">3</Int>
+          <Real>26</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">3</Int>
+          <Real>27</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">3</Int>
+          <Real>28</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">3</Int>
+          <Real>29</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">3</Int>
+          <Real>30</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">3</Int>
+          <Real>31</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">3</Int>
+          <Real>32</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">3</Int>
+          <Real>33</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">3</Int>
+          <Real>34</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">3</Int>
+          <Real>35</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">3</Int>
+          <Real>36</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row12">
+          <Int Name="Length">3</Int>
+          <Real>37</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row13">
+          <Int Name="Length">3</Int>
+          <Real>38</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row14">
+          <Int Name="Length">3</Int>
+          <Real>39</Real>
+          <Real>0.189</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row15">
+          <Int Name="Length">3</Int>
+          <Real>40</Real>
+          <Real>0.402</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row16">
+          <Int Name="Length">3</Int>
+          <Real>61</Real>
+          <Real>0.034</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row17">
+          <Int Name="Length">3</Int>
+          <Real>62</Real>
+          <Real>0.239</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row18">
+          <Int Name="Length">3</Int>
+          <Real>63</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row19">
+          <Int Name="Length">3</Int>
+          <Real>64</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row20">
+          <Int Name="Length">3</Int>
+          <Real>65</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row21">
+          <Int Name="Length">3</Int>
+          <Real>66</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row22">
+          <Int Name="Length">3</Int>
+          <Real>67</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row23">
+          <Int Name="Length">3</Int>
+          <Real>68</Real>
+          <Real>0.034</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row24">
+          <Int Name="Length">3</Int>
+          <Real>69</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row25">
+          <Int Name="Length">3</Int>
+          <Real>70</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row26">
+          <Int Name="Length">3</Int>
+          <Real>71</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row27">
+          <Int Name="Length">3</Int>
+          <Real>72</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row28">
+          <Int Name="Length">3</Int>
+          <Real>73</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row29">
+          <Int Name="Length">3</Int>
+          <Real>74</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row30">
+          <Int Name="Length">3</Int>
+          <Real>75</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row31">
+          <Int Name="Length">3</Int>
+          <Real>76</Real>
+          <Real>0.053</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row32">
+          <Int Name="Length">3</Int>
+          <Real>77</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row33">
+          <Int Name="Length">3</Int>
+          <Real>78</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row34">
+          <Int Name="Length">3</Int>
+          <Real>79</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row35">
+          <Int Name="Length">3</Int>
+          <Real>80</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row36">
+          <Int Name="Length">3</Int>
+          <Real>81</Real>
+          <Real>0.034</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row37">
+          <Int Name="Length">3</Int>
+          <Real>82</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row38">
+          <Int Name="Length">3</Int>
+          <Real>83</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row39">
+          <Int Name="Length">3</Int>
+          <Real>84</Real>
+          <Real>0.103</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row40">
+          <Int Name="Length">3</Int>
+          <Real>85</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row41">
+          <Int Name="Length">3</Int>
+          <Real>86</Real>
+          <Real>0.292</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row42">
+          <Int Name="Length">3</Int>
+          <Real>87</Real>
+          <Real>0.171</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row43">
+          <Int Name="Length">3</Int>
+          <Real>88</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row44">
+          <Int Name="Length">3</Int>
+          <Real>89</Real>
+          <Real>0.292</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row45">
+          <Int Name="Length">3</Int>
+          <Real>90</Real>
+          <Real>0.226</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row46">
+          <Int Name="Length">3</Int>
+          <Real>91</Real>
+          <Real>0.167</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row47">
+          <Int Name="Length">3</Int>
+          <Real>117</Real>
+          <Real>0.273</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row48">
+          <Int Name="Length">3</Int>
+          <Real>118</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row49">
+          <Int Name="Length">3</Int>
+          <Real>119</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row50">
+          <Int Name="Length">3</Int>
+          <Real>120</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row51">
+          <Int Name="Length">3</Int>
+          <Real>121</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row52">
+          <Int Name="Length">3</Int>
+          <Real>122</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row53">
+          <Int Name="Length">3</Int>
+          <Real>123</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row54">
+          <Int Name="Length">3</Int>
+          <Real>124</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row55">
+          <Int Name="Length">3</Int>
+          <Real>125</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row56">
+          <Int Name="Length">3</Int>
+          <Real>126</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row57">
+          <Int Name="Length">3</Int>
+          <Real>127</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row58">
+          <Int Name="Length">3</Int>
+          <Real>128</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row59">
+          <Int Name="Length">3</Int>
+          <Real>129</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row60">
+          <Int Name="Length">3</Int>
+          <Real>130</Real>
+          <Real>0.151</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row61">
+          <Int Name="Length">3</Int>
+          <Real>131</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row62">
+          <Int Name="Length">3</Int>
+          <Real>132</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row63">
+          <Int Name="Length">3</Int>
+          <Real>133</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row64">
+          <Int Name="Length">3</Int>
+          <Real>134</Real>
+          <Real>0.264</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row65">
+          <Int Name="Length">3</Int>
+          <Real>135</Real>
+          <Real>0.435</Real>
+          <Real>0.000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>

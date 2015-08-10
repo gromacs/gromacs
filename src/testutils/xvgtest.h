@@ -61,23 +61,28 @@ class TestReferenceChecker;
 
 struct XvgMatchSettings
 {
-    XvgMatchSettings() : tolerance(defaultRealTolerance()) {}
+    XvgMatchSettings() : tolerance(defaultRealTolerance()), testData(true)
+    {
+    }
 
     FloatingPointTolerance  tolerance;
+    bool                    testData;
 };
 
 /*! \brief
  * Adds content of xvg file to TestReferenceChecker object.
  *
- * A stream of strings is parsed. The columns
- * are analyzed with a relative tolerance provided by the input.
- * Xmgrace formatting is ignored and only multi-column data is
- * understood.
- *
- * \param[in] input       Object returning the lines of the file/data
- *                        one by one.
- * \param[in,out] checker The checker object.
+ * \param[in] input       Stream that provides the xvg content.
+ * \param[in,out] checker Checker to use.
  * \param[in] settings    Settings to use for matching.
+ *
+ * Parses an xvg file from the input stream, and checks the contents against
+ * reference data.  \p settings can be used to customize the matching.
+ * Only a single data set is supported (but multiple columns work).
+ * A subset of xmgrace formatting is also checked; static content that is
+ * nearly always the same is skipped.
+ *
+ * \see XvgMatch
  */
 void checkXvgFile(TextInputStream        *input,
                   TestReferenceChecker   *checker,
@@ -98,6 +103,17 @@ class XvgMatch : public ITextBlockMatcherSettings
         XvgMatch &tolerance(const FloatingPointTolerance &tolerance)
         {
             settings_.tolerance = tolerance;
+            return *this;
+        }
+        /*! \brief
+         * Sets whether the actual data is checked.
+         *
+         * If set to `false`, only the legends are checked.  Use this if the
+         * data is already tested using different means.
+         */
+        XvgMatch &testData(bool test)
+        {
+            settings_.testData = test;
             return *this;
         }
 
