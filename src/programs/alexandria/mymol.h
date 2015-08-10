@@ -90,9 +90,9 @@ class MyMol : public MolProp
         bool IsSymmetric(real toler);
 
         //! Generate Atoms based on quantum calculation with specified level of theory
-        immStatus GenerateAtoms(gmx_atomprop_t          ap,
-                                const char             *lot,
-                                ChargeDistributionModel iModel);
+        immStatus GenerateAtoms(gmx_atomprop_t            ap,
+                                const char               *lot,
+                                ChargeDistributionModel   iModel);
 
         //! Generate angles, dihedrals, exclusions etc.
         void MakeAngles(bool bPairs, bool bDihs);

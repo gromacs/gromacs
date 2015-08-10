@@ -430,7 +430,8 @@ int alex_gentop(int argc, char *argv[])
     mymol.Merge(*mpi);
     mymol.SetForceField(forcefield);
 
-    imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel, nexcl,
+    imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
+                                 nexcl,
                                  bGenVSites, bPairs, edih);
 
     if ((immOK == imm)  && (eqgRESP == iChargeGenerationAlgorithm))
@@ -445,7 +446,7 @@ int alex_gentop(int argc, char *argv[])
                                   penalty_fac, bFitZeta,
                                   bEntropy, dzatoms, seed);*/
 
-	mymol.gr_ = new Resp(iChargeDistributionModel, mymol.getCharge());
+        mymol.gr_ = new Resp(iChargeDistributionModel, mymol.getCharge());
  
         if (NULL == mymol.gr_)
         {

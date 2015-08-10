@@ -801,9 +801,9 @@ MyMol::~MyMol()
     }
 }
 
-immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
-                               const char             *lot,
-                               ChargeDistributionModel iChargeDistributionModel)
+immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
+                               const char               *lot,
+                               ChargeDistributionModel   iChargeDistributionModel)
 {
     int                 myunit;
     double              xx, yy, zz;
@@ -838,8 +838,9 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
             double q = 0;
             for (AtomicChargeIterator qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
-                ChargeDistributionModel qtp = Poldata::name2eemtype(qi->getType().c_str());
-                if (qtp == iChargeDistributionModel)
+                // TODO Clean up this mess.
+                if ((qi->getType().compare("ESP") == 0) ||
+                    (Poldata::name2eemtype(qi->getType().c_str()) == iChargeDistributionModel))
                 {
                     myunit = string2unit((char *)qi->getUnit().c_str());
                     q      = convert2gmx(qi->getQ(), myunit);
