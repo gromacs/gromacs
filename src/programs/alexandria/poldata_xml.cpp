@@ -473,15 +473,15 @@ void PoldataXml::processTree(FILE *fp, xmlNodePtr tree, int indent,
     }
 }
 
-  Poldata * PoldataXml::read(std::string fn, gmx_atomprop_t aps)
+  Poldata * PoldataXml::read(const char *fn, gmx_atomprop_t aps)
 {
     xmlDocPtr     doc;
     Poldata * pd;
-    std::string         fn2 = "";
+    std::string         fn2;
 
-    if (0 != fn.size())
+    if (NULL != fn)
     {
-      fn2 = gmxlibfn(fn.c_str());
+      fn2 = gmxlibfn(fn);
     }
     if (0 == fn2.size())
     {

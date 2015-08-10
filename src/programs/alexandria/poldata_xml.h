@@ -43,7 +43,7 @@ namespace alexandria
     static void write(const std::string fn, Poldata * pd,
 		      gmx_bool bCompress);
 
-    static Poldata * read(std::string fn, gmx_atomprop_t aps);
+    static Poldata * read(const char *fn, gmx_atomprop_t aps);
 
   private:
     static void sp(int n, char buf[], int maxindent);
