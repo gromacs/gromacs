@@ -37,14 +37,9 @@
  * Tests for functionality of the "sasa" trajectory analysis module.
  *
  * These tests test the basic functionality of the tool itself, but currently
- * the following are missing:
- *  - Tests related to -odg output.  This would require a full tpr file, and
- *    some investigation on what kind of tpr it should be to produce reasonable
- *    output.
- *  - Tests for the X axes in the area per atom/residue plots.  These could be
- *    added once better X axes are implemented.
- *  - Tests for XVG labels.  This is a limitation of the current testing
- *    framework.
+ * the tests related to -odg output are missing.  This would require a full tpr
+ * file, and some investigation on what kind of tpr it should be to produce
+ * reasonable output.
  *
  * The actual surface area algorithm is tested separately in surfacearea.cpp.
  *
@@ -60,6 +55,7 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
+#include "testutils/xvgtest.h"
 
 #include "moduletest.h"
 
@@ -69,6 +65,7 @@ namespace
 using gmx::test::CommandLine;
 using gmx::test::ExactTextMatch;
 using gmx::test::NoTextMatch;
+using gmx::test::XvgMatch;
 
 /********************************************************************
  * Tests for gmx::analysismodules::Sasa.
@@ -86,13 +83,29 @@ TEST_F(SasaModuleTest, BasicTest)
         "-output", "name N CA C O H"
     };
     setTopology("lysozyme.gro");
-    setOutputFile("-o", ".xvg", NoTextMatch());
-    setOutputFile("-or", ".xvg", NoTextMatch());
-    setOutputFile("-oa", ".xvg", NoTextMatch());
-    setOutputFile("-tv", ".xvg", NoTextMatch());
+    setOutputFile("-o", ".xvg", XvgMatch().testData(false));
+    setOutputFile("-or", ".xvg", XvgMatch());
+    setOutputFile("-oa", ".xvg", XvgMatch());
+    setOutputFile("-tv", ".xvg", XvgMatch().testData(false));
     excludeDataset("dgsolv");
     setDatasetTolerance("area", gmx::test::ulpTolerance(8));
     setDatasetTolerance("volume", gmx::test::ulpTolerance(8));
+    runTest(CommandLine(cmdline));
+}
+
+TEST_F(SasaModuleTest, HandlesSelectedResidues)
+{
+    const char *const cmdline[] = {
+        "sasa",
+        "-surface", "resnr 2 4 to 5 8"
+    };
+    setTopology("lysozyme.gro");
+    setOutputFile("-o", ".xvg", XvgMatch().testData(false));
+    setOutputFile("-or", ".xvg", XvgMatch());
+    setOutputFile("-oa", ".xvg", XvgMatch());
+    excludeDataset("dgsolv");
+    excludeDataset("volume");
+    setDatasetTolerance("area", gmx::test::ulpTolerance(8));
     runTest(CommandLine(cmdline));
 }
 

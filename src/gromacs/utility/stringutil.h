@@ -101,6 +101,20 @@ static inline bool endsWith(const std::string &str, const char *suffix)
     return endsWith(str.c_str(), suffix);
 }
 
+/*! \brief
+ * Tests whether a string contains another as a substring.
+ *
+ * \param[in] str    String to process.
+ * \param[in] substr Substring to find.
+ * \returns   true if \p str contains \p substr.
+ *
+ * Does not throw.
+ */
+static inline bool contains(const std::string &str, const char *substr)
+{
+    return str.find(substr) != std::string::npos;
+}
+
 /*!\brief Returns number of space-separated words in zero-terminated char ptr
  *
  * \param s Character pointer to zero-terminated, which will not be changed.
