@@ -51,6 +51,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata-impl.h"
@@ -142,6 +143,34 @@ class ExactStringBlockChecker : public IReferenceDataEntryChecker
         std::string  value_;
 };
 
+//! Helper function to parse a floating-point value.
+// TODO: Move this into src/gromacs/utility/, and consolidate with similar code
+// elsewhere.
+double convertDouble(const std::string &value)
+{
+    char   *endptr;
+    double  convertedValue = std::strtod(value.c_str(), &endptr);
+    // TODO: Check for overflow
+    if (*endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid floating-point value: " + value));
+    }
+    return convertedValue;
+}
+
+//! Helper function to parse a floating-point reference data value.
+double convertDoubleReferenceValue(const std::string &value)
+{
+    try
+    {
+        return convertDouble(value);
+    }
+    catch (const InvalidInputError &ex)
+    {
+        GMX_THROW_WRAPPER_TESTEXCEPTION(ex);
+    }
+}
+
 template <typename FloatType>
 class FloatingPointChecker : public IReferenceDataEntryChecker
 {
@@ -159,12 +188,7 @@ class FloatingPointChecker : public IReferenceDataEntryChecker
         virtual ::testing::AssertionResult
         checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
         {
-            char      *endptr;
-            FloatType  refValue = static_cast<FloatType>(std::strtod(entry.value().c_str(), &endptr));
-            if (*endptr != '\0')
-            {
-                GMX_THROW(TestException("Invalid floating-point reference value: " + entry.value()));
-            }
+            FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
             FloatingPointDifference diff(refValue, value_);
             if (tolerance_.isWithin(diff))
             {
@@ -180,6 +204,43 @@ class FloatingPointChecker : public IReferenceDataEntryChecker
 
     private:
         FloatType               value_;
+        FloatingPointTolerance  tolerance_;
+};
+
+template <typename FloatType>
+class FloatingPointFromStringChecker : public IReferenceDataEntryChecker
+{
+    public:
+        FloatingPointFromStringChecker(
+            const std::string &value, const FloatingPointTolerance &tolerance)
+            : value_(value), tolerance_(tolerance)
+        {
+        }
+
+        virtual void fillEntry(ReferenceDataEntry *entry) const
+        {
+            entry->setValue(value_);
+        }
+        virtual ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        {
+            FloatType               value    = static_cast<FloatType>(convertDouble(value_));
+            FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
+            FloatingPointDifference diff(refValue, value);
+            if (tolerance_.isWithin(diff))
+            {
+                return ::testing::AssertionSuccess();
+            }
+            return ::testing::AssertionFailure()
+                   << "   In item: " << fullId << std::endl
+                   << "    Actual: " << value << std::endl
+                   << " Reference: " << entry.value() << std::endl
+                   << "Difference: " << diff.toString() << std::endl
+                   << " Tolerance: " << tolerance_.toString(diff);
+        }
+
+    private:
+        std::string             value_;
         FloatingPointTolerance  tolerance_;
 };
 

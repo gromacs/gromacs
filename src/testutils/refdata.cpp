@@ -55,6 +55,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata-checkers.h"
@@ -770,6 +771,13 @@ void TestReferenceChecker::checkReal(float value, const char *id)
 void TestReferenceChecker::checkReal(double value, const char *id)
 {
     checkDouble(value, id);
+}
+
+
+void TestReferenceChecker::checkRealFromString(const std::string &value, const char *id)
+{
+    FloatingPointFromStringChecker<real> checker(value, impl_->defaultTolerance_);
+    EXPECT_PLAIN(impl_->processItem(Impl::cRealNodeName, id, checker));
 }
 
 

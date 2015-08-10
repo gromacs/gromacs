@@ -88,6 +88,33 @@ and use the copy_xsl.sh script to copy it to relevant locations.
     </pre>
 </xsl:template>
 
+<xsl:template match="OutputFiles/File/XvgLegend/String[@Name='XvgLegend']">
+    <pre>
+        <xsl:value-of select="substring(.,2)"/>
+    </pre>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/XvgData">
+    <xsl:choose>
+        <xsl:when test="*">
+            <table>
+                <xsl:apply-templates />
+            </table>
+        </xsl:when>
+        <xsl:otherwise>Data omitted</xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/XvgData/Sequence">
+    <tr>
+        <xsl:apply-templates select="Real"/>
+    </tr>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/XvgData/Sequence/Real">
+    <td><xsl:value-of select="."/></td>
+</xsl:template>
+
 <xsl:template match="InteractiveSession">
     <pre>
         <xsl:for-each select="*">
