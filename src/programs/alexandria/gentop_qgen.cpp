@@ -105,14 +105,14 @@ namespace alexandria
     /* Special case for chi_eq */
     _nZeta[_natom] = 1;
    
-    _q[_natom].resize(_natom);
+    _q[_natom].resize( _nZeta[_natom]);
 
     for (i = j = 0; (i < atoms->nr) && bSup; i++)
       {
         if (atoms->atom[i].ptype == eptAtom)
 	  {
             
-	    _Jab[_natom].resize(_natom+1);
+	    _Jab[j].resize(_natom+1);
             atm = atoms->atom[i].atomnumber;
             if (atm == NOTSET)
 	      {
