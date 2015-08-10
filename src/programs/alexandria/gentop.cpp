@@ -447,7 +447,7 @@ int alex_gentop(int argc, char *argv[])
                                   bEntropy, dzatoms, seed);*/
 
         mymol.gr_ = new Resp(iChargeDistributionModel, mymol.getCharge());
- 
+        mymol.gr_->setBAXpRESP(bAXpRESP);
         if (NULL == mymol.gr_)
         {
             imm = immRespInit;

@@ -652,7 +652,7 @@ namespace alexandria
       {
         _nesp = _nxyz[XX]*_nxyz[YY]*_nxyz[ZZ];
         _pot.resize(_nesp);
-	snew(_esp,_nesp);
+	srenew(_esp,_nesp);
         for (ix = m = 0; ix < _nxyz[XX]; ix++)
 	  {
             for (iy = 0; iy < _nxyz[YY]; iy++)
@@ -703,7 +703,7 @@ namespace alexandria
         _nxyz[m]   = src->_nxyz[m];
       }
     _nesp = src->_nesp;
-    snew(_esp, _nesp);
+    srenew(_esp, _nesp);
     _pot.resize(_nesp);
     _potCalc.resize(_nesp);
     for (m = 0; (m < _nesp); m++)
@@ -748,7 +748,7 @@ namespace alexandria
         _nesp    *= _nxyz[m];
       }
     n = 0;
-    snew(_esp, _nesp);
+    srenew(_esp, _nesp);
     _potCalc.resize(_nesp);
     for (i = 0; (i < _nxyz[XX]); i++)
       {
@@ -1144,7 +1144,7 @@ namespace alexandria
     int i;
 
     i = _nesp++;
-    snew(_esp,_nesp);
+    srenew(_esp,_nesp);
     _pot.resize(_nesp);
     _potCalc.resize(_nesp);
     _esp[i][XX]  = x;
@@ -1257,13 +1257,13 @@ namespace alexandria
   }
 
   //Writen in c stile, needed as an function argument
-  double Resp::chargeFunction(void * gr,double v[])
+  double chargeFunction(void * gr,double v[])
   {
     Resp * resp = (Resp *)gr;
     double     rms = 0;
     real       wtot;
 
-    resp->getSetVector( false, false, false, resp->_seed, v);
+    resp->getSetVector( false, false, false, resp->seed(), v);
     resp->calcPot();
     resp->calcPenalty();
     rms = resp->getRms( &wtot);

@@ -189,7 +189,13 @@ class Resp
         {
             _bEntropy  = bEntropy;
         }
-
+        void calcPenalty();
+        unsigned int seed() { return _seed; }
+        void getSetVector(bool         bSet,
+                          bool         bRandQ,
+                          bool         bRandZeta,
+                          unsigned int seed,
+                          double    *  nmx);
     private:
         ChargeDistributionModel                   _iDistributionModel;
         int                                       _nesp, _natom, _natype;
@@ -212,19 +218,13 @@ class Resp
 
         void warning(const std::string fn, int line);
 
-        void getSetVector(bool         bSet,
-                          bool         bRandQ,
-                          bool         bRandZeta,
-                          unsigned int seed,
-                          double    *  nmx);
 
         real myWeight(int iatom);
 
-        void calcPenalty();
 
         void addParam( int atom, eParm eparm, int zz);
 
-        static double chargeFunction(void * gr, double v[]);
+        //        static double chargeFunction(void * gr, double v[]);
 
 };
 }

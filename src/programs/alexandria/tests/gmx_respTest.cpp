@@ -63,7 +63,7 @@ class RespTest : public ::testing::Test
     protected:
         gmx::test::TestReferenceData                     refData_;
         gmx::test::TestReferenceChecker                  checker_;
-  static std::vector<alexandria::Resp *> resp;
+        static std::vector<alexandria::Resp *>           resp;
         static const int         nrAtoms = 15;
 
 
@@ -81,12 +81,12 @@ class RespTest : public ::testing::Test
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-	  std::vector<ChargeDistributionModel> iChargeDistributionModel;
-	  iChargeDistributionModel.push_back(eqdAXp);
-	  //iChargeDistributionModel.push_back(eqdAXg);
-	  //	  iChargeDistributionModel.push_back(eqdAXs);
-          alexandria::MyMol       mp;
-          gmx_atomprop_t          aps = gmx_atomprop_init();
+            std::vector<ChargeDistributionModel> iChargeDistributionModel;
+            iChargeDistributionModel.push_back(eqdAXp);
+            //iChargeDistributionModel.push_back(eqdAXg);
+            //	  iChargeDistributionModel.push_back(eqdAXs);
+            alexandria::MyMol       mp;
+            gmx_atomprop_t          aps = gmx_atomprop_init();
 
             //needed for ReadGauss
             char                    * molnm    = (char *)"XXX";
@@ -116,40 +116,43 @@ class RespTest : public ::testing::Test
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             ReadGauss(dataName.c_str(), mp, molnm, iupac, conf, basis,
                       maxpot, nsymm, pd->getForceField().c_str());
-	    for (unsigned int i = 0; i < iChargeDistributionModel.size(); i++){
-	      //Generate charges and topology
-	      mp.GenerateTopology(aps, pd, lot, iChargeDistributionModel[i], nexcl, false, false, edih);
-	      mp.gr_ = new alexandria::Resp(iChargeDistributionModel[i], mp.getCharge());
-	      mp.GenerateCharges(pd, aps, iChargeDistributionModel[i], iChargeGenerationAlgorithm, hfac, epsr, lot, true, symm_string);
-	      resp.push_back(mp.gr_);
-	    }
+            for (unsigned int i = 0; i < iChargeDistributionModel.size(); i++)
+            {
+                //Generate charges and topology
+                mp.GenerateTopology(aps, pd, lot, iChargeDistributionModel[i], nexcl, false, false, edih);
+                mp.gr_ = new alexandria::Resp(iChargeDistributionModel[i], mp.getCharge());
+                mp.GenerateCharges(pd, aps, iChargeDistributionModel[i], iChargeGenerationAlgorithm, hfac, epsr, lot, true, symm_string);
+                resp.push_back(mp.gr_);
+            }
         }
 
         static void TearDownTestCase()
         {
-	  for (unsigned int i = 0; i < resp.size(); i++){
-	    delete resp[i];
-	  }
+            for (unsigned int i = 0; i < resp.size(); i++)
+            {
+                delete resp[i];
+            }
         }
 
 };
 
 std::vector<alexandria::Resp *> RespTest::resp;
-const int         RespTest::nrAtoms;
+const int                       RespTest::nrAtoms;
 
 
 
 TEST_F (RespTest, qtotValues)
 {
     std::vector<double> qtotValues(nrAtoms);
-    for (unsigned int i = 0; i < resp.size(); i++){
-      for (int atom = 0; atom < nrAtoms; atom++)
-	{
-	  qtotValues[atom] = resp[i]->getQtot(atom);
-	}
-      std::stringstream sstm;
-      sstm << "qtotValuesEqdModel" << i;
-      std::string testName  = sstm.str();
-      checker_.checkSequence(qtotValues.begin(), qtotValues.end(), testName.c_str());
+    for (unsigned int i = 0; i < resp.size(); i++)
+    {
+        for (int atom = 0; atom < nrAtoms; atom++)
+        {
+            qtotValues[atom] = resp[i]->getQtot(atom);
+        }
+        std::stringstream sstm;
+        sstm << "qtotValuesEqdModel" << i;
+        std::string       testName  = sstm.str();
+        checker_.checkSequence(qtotValues.begin(), qtotValues.end(), testName.c_str());
     }
 }
