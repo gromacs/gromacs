@@ -838,7 +838,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t          ap,
             double q = 0;
             for (AtomicChargeIterator qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
-	      ChargeDistributionModel qtp = Poldata::name2eemtype(qi->getType().c_str());
+                ChargeDistributionModel qtp = Poldata::name2eemtype(qi->getType().c_str());
                 if (qtp == iChargeDistributionModel)
                 {
                     myunit = string2unit((char *)qi->getUnit().c_str());
