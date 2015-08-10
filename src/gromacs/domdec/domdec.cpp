@@ -127,329 +127,9 @@ typedef struct gmx_domdec_master
     rvec  *vbuf;   /* Buffer for state scattering and gathering */
 } gmx_domdec_master_t;
 
-typedef struct
-{
-    /* The numbers of charge groups to send and receive for each cell
-     * that requires communication, the last entry contains the total
-     * number of atoms that needs to be communicated.
-     */
-    int  nsend[DD_MAXIZONE+2];
-    int  nrecv[DD_MAXIZONE+2];
-    /* The charge groups to send */
-    int *index;
-    int  nalloc;
-    /* The atom range for non-in-place communication */
-    int  cell2at0[DD_MAXIZONE];
-    int  cell2at1[DD_MAXIZONE];
-} gmx_domdec_ind_t;
-
-typedef struct
-{
-    int               np;       /* Number of grid pulses in this dimension */
-    int               np_dlb;   /* For dlb, for use with edlbAUTO          */
-    gmx_domdec_ind_t *ind;      /* The indices to communicate, size np     */
-    int               np_nalloc;
-    gmx_bool          bInPlace; /* Can we communicate in place?            */
-} gmx_domdec_comm_dim_t;
-
-typedef struct
-{
-    gmx_bool *bCellMin;    /* Temp. var.: is this cell size at the limit     */
-    real     *cell_f;      /* State var.: cell boundaries, box relative      */
-    real     *old_cell_f;  /* Temp. var.: old cell size                      */
-    real     *cell_f_max0; /* State var.: max lower boundary, incl neighbors */
-    real     *cell_f_min1; /* State var.: min upper boundary, incl neighbors */
-    real     *bound_min;   /* Temp. var.: lower limit for cell boundary      */
-    real     *bound_max;   /* Temp. var.: upper limit for cell boundary      */
-    gmx_bool  bLimited;    /* State var.: is DLB limited in this dim and row */
-    real     *buf_ncd;     /* Temp. var.                                     */
-} gmx_domdec_root_t;
-
 #define DD_NLOAD_MAX 9
 
-/* Here floats are accurate enough, since these variables
- * only influence the load balancing, not the actual MD results.
- */
-typedef struct
-{
-    int    nload;
-    float *load;
-    float  sum;
-    float  max;
-    float  sum_m;
-    float  cvol_min;
-    float  mdf;
-    float  pme;
-    int    flags;
-} gmx_domdec_load_t;
-
-typedef struct
-{
-    int  nsc;
-    int  ind_gl;
-    int  ind;
-} gmx_cgsort_t;
-
-typedef struct
-{
-    gmx_cgsort_t *sort;
-    gmx_cgsort_t *sort2;
-    int           sort_nalloc;
-    gmx_cgsort_t *sort_new;
-    int           sort_new_nalloc;
-    int          *ibuf;
-    int           ibuf_nalloc;
-} gmx_domdec_sort_t;
-
-typedef struct
-{
-    rvec *v;
-    int   nalloc;
-} vec_rvec_t;
-
-/* This enum determines the order of the coordinates.
- * ddnatHOME and ddnatZONE should be first and second,
- * the others can be ordered as wanted.
- */
-enum {
-    ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR
-};
-
-enum {
-    edlbsOffForever,           /* DLB is off and will never be turned on */
-    edlbsOffCanTurnOn,         /* DLB is off and will turn on with imbalance */
-    edlbsOffTemporarilyLocked, /* DLB is off and temporarily can not turn on */
-    edlbsOn,                   /* DLB is on and will stay on forever */
-    edlbsNR
-};
-/* Allowed DLB state transitions:
- *   edlbsOffCanTurnOn         -> edlbsOn
- *   edlbsOffCanTurnOn         -> edlbsOffForever
- *   edlbsOffCanTurnOn         -> edlbsOffTemporarilyLocked
- *   edlbsOffTemporarilyLocked -> edlbsOffCanTurnOn
- */
-
 const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on" };
-
-typedef struct
-{
-    int      dim;       /* The dimension                                          */
-    gmx_bool dim_match; /* Tells if DD and PME dims match                         */
-    int      nslab;     /* The number of PME slabs in this dimension              */
-    real    *slb_dim_f; /* Cell sizes for determining the PME comm. with SLB    */
-    int     *pp_min;    /* The minimum pp node location, size nslab               */
-    int     *pp_max;    /* The maximum pp node location,size nslab                */
-    int      maxshift;  /* The maximum shift for coordinate redistribution in PME */
-} gmx_ddpme_t;
-
-typedef struct
-{
-    real min0;    /* The minimum bottom of this zone                        */
-    real max1;    /* The maximum top of this zone                           */
-    real min1;    /* The minimum top of this zone                           */
-    real mch0;    /* The maximum bottom communicaton height for this zone   */
-    real mch1;    /* The maximum top communicaton height for this zone      */
-    real p1_0;    /* The bottom value of the first cell in this zone        */
-    real p1_1;    /* The top value of the first cell in this zone           */
-} gmx_ddzone_t;
-
-typedef struct
-{
-    gmx_domdec_ind_t ind;
-    int             *ibuf;
-    int              ibuf_nalloc;
-    vec_rvec_t       vbuf;
-    int              nsend;
-    int              nat;
-    int              nsend_zone;
-} dd_comm_setup_work_t;
-
-typedef struct gmx_domdec_comm
-{
-    /* All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
-     * unless stated otherwise.
-     */
-
-    /* The number of decomposition dimensions for PME, 0: no PME */
-    int         npmedecompdim;
-    /* The number of nodes doing PME (PP/PME or only PME) */
-    int         npmenodes;
-    int         npmenodes_x;
-    int         npmenodes_y;
-    /* The communication setup including the PME only nodes */
-    gmx_bool    bCartesianPP_PME;
-    ivec        ntot;
-    int         cartpmedim;
-    int        *pmenodes;          /* size npmenodes                         */
-    int        *ddindex2simnodeid; /* size npmenodes, only with bCartesianPP
-                                    * but with bCartesianPP_PME              */
-    gmx_ddpme_t ddpme[2];
-
-    /* The DD particle-particle nodes only */
-    gmx_bool bCartesianPP;
-    int     *ddindex2ddnodeid; /* size npmenode, only with bCartesianPP_PME */
-
-    /* The global charge groups */
-    t_block cgs_gl;
-
-    /* Should we sort the cgs */
-    int                nstSortCG;
-    gmx_domdec_sort_t *sort;
-
-    /* Are there charge groups? */
-    gmx_bool bCGs;
-
-    /* Are there bonded and multi-body interactions between charge groups? */
-    gmx_bool bInterCGBondeds;
-    gmx_bool bInterCGMultiBody;
-
-    /* Data for the optional bonded interaction atom communication range */
-    gmx_bool  bBondComm;
-    t_blocka *cglink;
-    char     *bLocalCG;
-
-    /* The DLB state, possible values are defined above */
-    int      dlbState;
-    /* With dlbState=edlbsOffCanTurnOn, should we check if to DLB on at the next DD? */
-    gmx_bool bCheckWhetherToTurnDlbOn;
-
-    /* Cell sizes for static load balancing, first index cartesian */
-    real **slb_frac;
-
-    /* The width of the communicated boundaries */
-    real     cutoff_mbody;
-    real     cutoff;
-    /* The minimum cell size (including triclinic correction) */
-    rvec     cellsize_min;
-    /* For dlb, for use with edlbAUTO */
-    rvec     cellsize_min_dlb;
-    /* The lower limit for the DD cell size with DLB */
-    real     cellsize_limit;
-    /* Effectively no NB cut-off limit with DLB for systems without PBC? */
-    gmx_bool bVacDLBNoLimit;
-
-    /* With PME load balancing we set limits on DLB */
-    gmx_bool bPMELoadBalDLBLimits;
-    /* DLB needs to take into account that we want to allow this maximum
-     * cut-off (for PME load balancing), this could limit cell boundaries.
-     */
-    real PMELoadBal_max_cutoff;
-
-    /* tric_dir is only stored here because dd_get_ns_ranges needs it */
-    ivec tric_dir;
-    /* box0 and box_size are required with dim's without pbc and -gcom */
-    rvec box0;
-    rvec box_size;
-
-    /* The cell boundaries */
-    rvec cell_x0;
-    rvec cell_x1;
-
-    /* The old location of the cell boundaries, to check cg displacements */
-    rvec old_cell_x0;
-    rvec old_cell_x1;
-
-    /* The communication setup and charge group boundaries for the zones */
-    gmx_domdec_zones_t zones;
-
-    /* The zone limits for DD dimensions 1 and 2 (not 0), determined from
-     * cell boundaries of neighboring cells for dynamic load balancing.
-     */
-    gmx_ddzone_t zone_d1[2];
-    gmx_ddzone_t zone_d2[2][2];
-
-    /* The coordinate/force communication setup and indices */
-    gmx_domdec_comm_dim_t cd[DIM];
-    /* The maximum number of cells to communicate with in one dimension */
-    int                   maxpulse;
-
-    /* Which cg distribution is stored on the master node */
-    int master_cg_ddp_count;
-
-    /* The number of cg's received from the direct neighbors */
-    int  zone_ncg1[DD_MAXZONE];
-
-    /* The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
-    int  nat[ddnatNR];
-
-    /* Array for signalling if atoms have moved to another domain */
-    int  *moved;
-    int   moved_nalloc;
-
-    /* Communication buffer for general use */
-    int  *buf_int;
-    int   nalloc_int;
-
-    /* Communication buffer for general use */
-    vec_rvec_t vbuf;
-
-    /* Temporary storage for thread parallel communication setup */
-    int                   nth;
-    dd_comm_setup_work_t *dth;
-
-    /* Communication buffers only used with multiple grid pulses */
-    int       *buf_int2;
-    int        nalloc_int2;
-    vec_rvec_t vbuf2;
-
-    /* Communication buffers for local redistribution */
-    int  **cggl_flag;
-    int    cggl_flag_nalloc[DIM*2];
-    rvec **cgcm_state;
-    int    cgcm_state_nalloc[DIM*2];
-
-    /* Cell sizes for dynamic load balancing */
-    gmx_domdec_root_t **root;
-    real               *cell_f_row;
-    real                cell_f0[DIM];
-    real                cell_f1[DIM];
-    real                cell_f_max0[DIM];
-    real                cell_f_min1[DIM];
-
-    /* Stuff for load communication */
-    gmx_bool           bRecordLoad;
-    gmx_domdec_load_t *load;
-    int                nrank_gpu_shared;
-#ifdef GMX_MPI
-    MPI_Comm          *mpi_comm_load;
-    MPI_Comm           mpi_comm_gpu_shared;
-#endif
-
-    /* Maximum DLB scaling per load balancing step in percent */
-    int dlb_scale_lim;
-
-    /* Cycle counters */
-    float  cycl[ddCyclNr];
-    int    cycl_n[ddCyclNr];
-    float  cycl_max[ddCyclNr];
-    /* Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise */
-    int    eFlop;
-    double flop;
-    int    flop_n;
-    /* How many times have did we have load measurements */
-    int    n_load_have;
-    /* How many times have we collected the load measurements */
-    int    n_load_collect;
-
-    /* Statistics */
-    double sum_nat[ddnatNR-ddnatZONE];
-    int    ndecomp;
-    int    nload;
-    double load_step;
-    double load_sum;
-    double load_max;
-    ivec   load_lim;
-    double load_mdf;
-    double load_pme;
-
-    /* The last partition step */
-    gmx_int64_t partition_step;
-
-    /* Debugging */
-    int  nstDDDump;
-    int  nstDDDumpGrid;
-    int  DD_debug;
-} gmx_domdec_comm_t;
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
@@ -458,15 +138,6 @@ typedef struct gmx_domdec_comm
 #define DD_FLAG_NRCG  65535
 #define DD_FLAG_FW(d) (1<<(16+(d)*2))
 #define DD_FLAG_BW(d) (1<<(16+(d)*2+1))
-
-/* Zone permutation required to obtain consecutive charge groups
- * for neighbor searching.
- */
-static const int zone_perm[3][4] = { {0, 0, 0, 0}, {1, 0, 0, 0}, {3, 0, 1, 2} };
-
-/* dd_zo and dd_zp3/dd_zp2 are set up such that i zones with non-zero
- * components see only j zones with that component 0.
- */
 
 /* The DD zone order */
 static const ivec dd_zo[DD_MAXZONE] =
@@ -3246,7 +2917,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
 
 
 static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
-                                                  int d, int dim, gmx_domdec_root_t *root,
+                                                  int d, int dim, domdec_root_t *root,
                                                   gmx_ddbox_t *ddbox,
                                                   gmx_bool bUniform, gmx_int64_t step, real cellsize_limit_f, int range[])
 {
@@ -3457,7 +3128,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
 
 
 static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
-                                       int d, int dim, gmx_domdec_root_t *root,
+                                       int d, int dim, domdec_root_t *root,
                                        gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
                                        gmx_bool bUniform, gmx_int64_t step)
 {
@@ -5279,8 +4950,8 @@ static void clear_dd_cycle_counts(gmx_domdec_t *dd)
 static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm;
-    gmx_domdec_load_t *load;
-    gmx_domdec_root_t *root = NULL;
+    domdec_load_t     *load;
+    domdec_root_t     *root = NULL;
     int                d, dim, i, pos;
     float              cell_frac = 0, sbuf[DD_NLOAD_MAX];
     gmx_bool           bSepPME;
@@ -5664,7 +5335,7 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
     MPI_Comm           c_row;
     int                dim, i, rank;
     ivec               loc_c;
-    gmx_domdec_root_t *root;
+    domdec_root_t     *root;
     gmx_bool           bPartOfGroup = FALSE;
 
     dim = dd->dim[dim_ind];
