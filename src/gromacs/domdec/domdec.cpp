@@ -87,7 +87,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -9160,7 +9160,8 @@ static int dd_sort_order(gmx_domdec_t *dd, t_forcerec *fr, int ncg_home_old)
 static int dd_sort_order_nbnxn(gmx_domdec_t *dd, t_forcerec *fr)
 {
     gmx_cgsort_t *sort;
-    int           ncg_new, i, *a, na;
+    int           ncg_new, i, na;
+    const int    *a;
 
     sort = dd->comm->sort->sort;
 

@@ -43,12 +43,6 @@
 extern "C" {
 #endif
 
-/* Returns the i-cluster size for kernel of type nb_kernel_type */
-int nbnxn_kernel_to_ci_size(int nb_kernel_type);
-
-/* Returns the j-cluster size for kernel of type nb_kernel_type */
-int nbnxn_kernel_to_cj_size(int nb_kernel_type);
-
 /* Tells if the pair-list corresponding to nb_kernel_type is simple.
  * Returns FALSE for super-sub type pair-list.
  */
@@ -65,51 +59,6 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
                        gmx_domdec_zones_t *zones,
                        gmx_bool            bFEP,
                        int                 nthread_max);
-
-/* Put the atoms on the pair search grid.
- * Only atoms a0 to a1 in x are put on the grid.
- * The atom_density is used to determine the grid size.
- * When atom_density<=0, the density is determined from a1-a0 and the corners.
- * With domain decomposition part of the n particles might have migrated,
- * but have not been removed yet. This count is given by nmoved.
- * When move[i] < 0 particle i has migrated and will not be put on the grid.
- * Without domain decomposition move will be NULL.
- */
-void nbnxn_put_on_grid(nbnxn_search_t nbs,
-                       int ePBC, matrix box,
-                       int dd_zone,
-                       rvec corner0, rvec corner1,
-                       int a0, int a1,
-                       real atom_density,
-                       const int *atinfo,
-                       rvec *x,
-                       int nmoved, int *move,
-                       int nb_kernel_type,
-                       nbnxn_atomdata_t *nbat);
-
-/* As nbnxn_put_on_grid, but for the non-local atoms
- * with domain decomposition. Should be called after calling
- * nbnxn_search_put_on_grid for the local atoms / home zone.
- */
-void nbnxn_put_on_grid_nonlocal(nbnxn_search_t            nbs,
-                                const gmx_domdec_zones_t *zones,
-                                const int                *atinfo,
-                                rvec                     *x,
-                                int                       nb_kernel_type,
-                                nbnxn_atomdata_t         *nbat);
-
-/* Add simple grid type information to the local super/sub grid */
-void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
-                           nbnxn_atomdata_t *nbat);
-
-/* Return the number of x and y cells in the local grid */
-void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy);
-
-/* Return the order indices *a of the atoms on the ns grid, size n */
-void nbnxn_get_atomorder(nbnxn_search_t nbs, int **a, int *n);
-
-/* Renumber the atom indices on the grid to consecutive order */
-void nbnxn_set_atomorder(nbnxn_search_t nbs);
 
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
