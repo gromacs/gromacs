@@ -328,6 +328,8 @@ class TestReferenceChecker
         void checkVector(const float value[3], const char *id);
         //! Check a vector of three double-precision floating point values.
         void checkVector(const double value[3], const char *id);
+        //! Check a single floating-point value from a string.
+        void checkRealFromString(const std::string &value, const char *id);
 
         /*! \name Overloaded versions of simple checker methods
          *

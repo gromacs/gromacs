@@ -672,17 +672,18 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         {
             AnalysisDataAverageModulePointer avem(new AnalysisDataAverageModule);
-            int prevResind = -1;
-            int row        = 0;
+            int nextRow = 0;
             for (int i = 0; i < surfaceSel_.posCount(); ++i)
             {
-                const int atomIndex     = surfaceSel_.position(i).atomIndices()[0];
-                const int residueIndex  = atoms.atom[atomIndex].resind;
-                if (residueIndex != prevResind)
+                const int residueGroup = surfaceSel_.position(i).mappedId();
+                if (residueGroup >= nextRow)
                 {
-                    avem->setXAxisValue(row, atoms.resinfo[residueIndex].nr);
-                    prevResind = residueIndex;
-                    ++row;
+                    GMX_ASSERT(residueGroup == nextRow,
+                               "Inconsistent (non-uniformly increasing) residue grouping");
+                    const int atomIndex    = surfaceSel_.position(i).atomIndices()[0];
+                    const int residueIndex = atoms.atom[atomIndex].resind;
+                    avem->setXAxisValue(nextRow, atoms.resinfo[residueIndex].nr);
+                    ++nextRow;
                 }
             }
             residueArea_.addModule(avem);
