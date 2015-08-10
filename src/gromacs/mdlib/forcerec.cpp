@@ -76,6 +76,7 @@
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
+#include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
@@ -1742,8 +1743,8 @@ static void pick_nbnxn_kernel(FILE                *fp,
     {
         fprintf(fp, "\nUsing %s %dx%d non-bonded kernels\n\n",
                 lookup_nbnxn_kernel_name(*kernel_type),
-                nbnxn_kernel_to_ci_size(*kernel_type),
-                nbnxn_kernel_to_cj_size(*kernel_type));
+                nbnxn_kernel_to_cluster_i_size(*kernel_type),
+                nbnxn_kernel_to_cluster_j_size(*kernel_type));
 
         if (nbnxnk4x4_PlainC == *kernel_type ||
             nbnxnk8x8x8_PlainC == *kernel_type)
