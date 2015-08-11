@@ -166,7 +166,6 @@ rst_epilog += """
 .. _Jenkins: http://jenkins-ci.org
 .. _webpage: http://www.gromacs.org
 .. _ftp site: ftp://ftp.gromacs.org/pub/gromacs/
-.. _tutorials: http://www.gromacs.org/Documentation/Tutorials
 .. _download: ../download.html
 """.format(gmx_version_string=gmx_version_string, regressiontest_version=regressiontest_version)
 

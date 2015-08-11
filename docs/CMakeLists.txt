@@ -125,6 +125,7 @@ if (SPHINX_FOUND)
         user-guide/cmdline.rst
         user-guide/environment-variables.rst
         user-guide/plotje.gif
+        user-guide/tutorials.rst
         user-guide/xvgr.gif
         conf.py
         links.dat
