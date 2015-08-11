@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-find_program(SPHINX_EXECUTABLE NAMES sphinx-build
+find_program(SPHINX_EXECUTABLE NAMES sphinx-build sphinx-build2
     HINTS
     $ENV{SPHINX_DIR}
     PATH_SUFFIXES bin

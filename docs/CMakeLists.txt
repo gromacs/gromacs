@@ -58,7 +58,7 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
-find_package(PythonInterp)
+find_package(PythonInterp 2.7)
 find_package(Sphinx 1.2.3 QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
