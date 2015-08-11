@@ -152,7 +152,7 @@ rst_epilog += """
 .. _OpenCL: https://www.khronos.org/opencl/
 .. _OpenMPI: http://www.open-mpi.org
 .. _MPICH: http://www.mpich.org
-.. _LAMMPI: http://www.lam-mpi.org
+.. _LAM-MPI: http://www.lam-mpi.org
 .. _OpenMP: http://en.wikipedia.org/wiki/OpenMP
 .. _CMake installation page: http://www.cmake.org/install/
 .. _running CMake: http://www.cmake.org/runningcmake/
