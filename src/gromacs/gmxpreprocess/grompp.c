@@ -337,7 +337,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
                 w_a2+1, *w_moltype->atoms.atomname[w_a2],
                 sqrt(w_period2), bWarn ? min_steps_warn : min_steps_note, dt,
                 bWater ?
-                "Maybe you asked for fexible water." :
+                "Maybe you asked for flexible water." :
                 "Maybe you forgot to change the constraints mdp option.");
         if (bWarn)
         {
