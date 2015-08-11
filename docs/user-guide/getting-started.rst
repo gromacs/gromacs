@@ -115,7 +115,7 @@ checkpoint file (:ref:`cpt` file).
 
 Tutorial material
 -----------------
-There are many tutorials_ available that cover aspects of using |Gromacs|.
+There are many `tutorials`_ available that cover aspects of using |Gromacs|.
 
 Background reading
 ------------------
@@ -131,3 +131,5 @@ Background reading
     Soc. **113**, 9446.
 *   Stryer, L. (1988).     Biochemistry vol. 1, p. 211. New York: Freeman, 3
     edition.
+
+.. _tutorials: tutorials.html
