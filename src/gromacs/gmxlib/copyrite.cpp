@@ -190,6 +190,7 @@ static void printCopyright(FILE *fp)
         "Vincent Hindriksen",
         "Dimitrios Karkoulis",
         "Peter Kasson",
+        "Jiri Kraus",
         "Carsten Kutzner",
         "Per Larsson",
         "Justin A. Lemkul",
