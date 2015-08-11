@@ -115,7 +115,7 @@ checkpoint file (:ref:`cpt` file).
 
 Tutorial material
 -----------------
-There are many tutorials_ available that cover aspects of using |Gromacs|.
+There are many :doc:`tutorials <tutorials>` available that cover aspects of using |Gromacs|.
 
 Background reading
 ------------------
