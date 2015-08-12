@@ -1,17 +1,17 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">insert-molecules -box 4</String>
+  <String Name="CommandLine">insert-molecules -box 4 -seed 1997</String>
   <OutputFiles Name="Files">
     <String Name="-o"><![CDATA[
 test molecule for insertion at origin
     6
     1X       X1    1   0.000   0.000   0.000
-    1X       X2    2   0.027  -0.081  -0.104
+    1X       X2    2  -0.102   0.087  -0.015
     2X       X1    3   1.000   2.000   3.000
-    2X       X2    4   1.019   2.063   3.118
+    2X       X2    4   1.104   1.914   3.001
     3X       X1    5   2.000   1.000   2.000
-    3X       X2    6   1.893   1.048   1.933
+    3X       X2    6   2.024   0.870   1.973
    4.00000   4.00000   4.00000
 ]]></String>
   </OutputFiles>

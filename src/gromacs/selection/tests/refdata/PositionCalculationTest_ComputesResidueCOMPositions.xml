@@ -81,12 +81,12 @@
         </Sequence>
         <Int Name="RefId">1</Int>
         <Vector Name="Coordinates">
-          <Real Name="X">3.333333333333333</Real>
+          <Real Name="X">3.3333335</Real>
           <Real Name="Y">1</Real>
           <Real Name="Z">0</Real>
         </Vector>
         <Vector Name="Velocity">
-          <Real Name="X">3.333333333333333</Real>
+          <Real Name="X">3.3333335</Real>
           <Real Name="Y">1</Real>
           <Real Name="Z">1</Real>
         </Vector>

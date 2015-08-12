@@ -9,7 +9,7 @@
         <DataValues>
           <Int Name="Count">1</Int>
           <DataValue>
-            <Real Name="Value">3.1622776601683795</Real>
+            <Real Name="Value">3.1622777</Real>
           </DataValue>
         </DataValues>
       </DataFrame>

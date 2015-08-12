@@ -70,7 +70,7 @@
         <Vector Name="Force">
           <Real Name="X">4</Real>
           <Real Name="Y">0</Real>
-          <Real Name="Z">-3.333333333333333</Real>
+          <Real Name="Z">-3.3333335</Real>
         </Vector>
       </Position>
       <Position>

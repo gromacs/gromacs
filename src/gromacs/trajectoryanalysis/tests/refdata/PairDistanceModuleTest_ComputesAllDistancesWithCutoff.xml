@@ -12,7 +12,7 @@
             <Real Name="Value">1.5</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1.4142135623730951</Real>
+            <Real Name="Value">1.4142135</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1</Real>
@@ -24,7 +24,7 @@
             <Real Name="Value">1.5</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">1.4142135623730951</Real>
+            <Real Name="Value">1.4142135</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">1.5</Real>

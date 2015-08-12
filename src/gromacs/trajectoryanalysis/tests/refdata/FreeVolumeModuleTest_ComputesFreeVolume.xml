@@ -9,10 +9,10 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">37.19911202681331</Real>
+            <Real Name="Value">37.786743</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">68.921500176686038</Real>
+            <Real Name="Value">68.921501</Real>
           </DataValue>
         </DataValues>
       </DataFrame>

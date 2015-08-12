@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ThreeFry4x64Faster">
+    <Int Name="Length">4</Int>
+    <UInt64>4643768388535750149</UInt64>
+    <UInt64>210878716998098018</UInt64>
+    <UInt64>4139671954667838793</UInt64>
+    <UInt64>16290244168997938364</UInt64>
+  </Sequence>
+</ReferenceData>

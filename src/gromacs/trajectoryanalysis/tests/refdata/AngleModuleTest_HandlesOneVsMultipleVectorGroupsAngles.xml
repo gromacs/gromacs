@@ -48,7 +48,7 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">0.0083333333333333332</Real>
+            <Real Name="Value">0.0083333338</Real>
             <Real Name="Error">0</Real>
           </DataValue>
           <DataValue>
@@ -66,7 +66,7 @@
             <Real Name="Error">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.0083333333333333332</Real>
+            <Real Name="Value">0.0083333338</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
@@ -76,11 +76,11 @@
         <DataValues>
           <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">0.0083333333333333332</Real>
+            <Real Name="Value">0.0083333338</Real>
             <Real Name="Error">0</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">0.0083333333333333332</Real>
+            <Real Name="Value">0.0083333338</Real>
             <Real Name="Error">0</Real>
           </DataValue>
         </DataValues>
