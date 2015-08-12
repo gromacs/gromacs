@@ -68,7 +68,8 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/tabulatednormaldistribution.h"
+#include "gromacs/random/threefry.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -593,6 +594,10 @@ static void do_update_sd1(gmx_stochd_t *sd,
     real            ism;
     int             n, d;
 
+    // Even 0 bits internal counter gives 2x64 ints (more than enough for three table lookups)
+    gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
+    gmx::TabulatedNormalDistribution<real, 14> dist;
+
     sdc = sd->sdc;
     sig = sd->sdsig;
 
@@ -600,10 +605,13 @@ static void do_update_sd1(gmx_stochd_t *sd,
     {
         for (n = start; n < nrend; n++)
         {
-            real rnd[3];
             int  ng = gatindex ? gatindex[n] : n;
 
+            rng.restart(step, ng);
+            dist.reset();
+
             ism = std::sqrt(invmass[n]);
+
             if (cFREEZE)
             {
                 gf  = cFREEZE[n];
@@ -617,15 +625,13 @@ static void do_update_sd1(gmx_stochd_t *sd,
                 gt  = cTC[n];
             }
 
-            gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
-
             for (d = 0; d < DIM; d++)
             {
                 if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
                 {
                     real sd_V, vn;
 
-                    sd_V         = ism*sig[gt].V*rnd[d];
+                    sd_V         = ism*sig[gt].V*dist(rng);
                     vn           = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
                     v[n][d]      = vn*sdc[gt].em + sd_V;
                     /* Here we include half of the friction+noise
@@ -682,10 +688,13 @@ static void do_update_sd1(gmx_stochd_t *sd,
             /* Update friction and noise only */
             for (n = start; n < nrend; n++)
             {
-                real rnd[3];
                 int  ng = gatindex ? gatindex[n] : n;
 
+                rng.restart(step, ng);
+                dist.reset();
+
                 ism = std::sqrt(invmass[n]);
+
                 if (cFREEZE)
                 {
                     gf  = cFREEZE[n];
@@ -695,15 +704,13 @@ static void do_update_sd1(gmx_stochd_t *sd,
                     gt  = cTC[n];
                 }
 
-                gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
-
                 for (d = 0; d < DIM; d++)
                 {
                     if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
                     {
                         real sd_V, vn;
 
-                        sd_V         = ism*sig[gt].V*rnd[d];
+                        sd_V         = ism*sig[gt].V*dist(rng);
                         vn           = v[n][d];
                         v[n][d]      = vn*sdc[gt].em + sd_V;
                         /* Add the friction and noise contribution only */
@@ -729,6 +736,10 @@ static void do_update_bd(int start, int nrend, double dt,
     real   vn;
     real   invfr = 0;
     int    n, d;
+    // Use 1 bit of internal counters to give us 2*2 64-bits values per stream
+    // Each 64-bit value is enough for 4 normal distribution table numbers.
+    gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
+    gmx::TabulatedNormalDistribution<real, 14> dist;
 
     if (friction_coefficient != 0)
     {
@@ -737,8 +748,10 @@ static void do_update_bd(int start, int nrend, double dt,
 
     for (n = start; (n < nrend); n++)
     {
-        real rnd[3];
         int  ng  = gatindex ? gatindex[n] : n;
+
+        rng.restart(step, ng);
+        dist.reset();
 
         if (cFREEZE)
         {
@@ -748,20 +761,19 @@ static void do_update_bd(int start, int nrend, double dt,
         {
             gt = cTC[n];
         }
-        gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
         for (d = 0; (d < DIM); d++)
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
                 if (friction_coefficient != 0)
                 {
-                    vn = invfr*f[n][d] + rf[gt]*rnd[d];
+                    vn = invfr*f[n][d] + rf[gt]*dist(rng);
                 }
                 else
                 {
                     /* NOTE: invmass = 2/(mass*friction_constant*dt) */
                     vn = 0.5*invmass[n]*f[n][d]*dt
-                        + std::sqrt(0.5*invmass[n])*rf[gt]*rnd[d];
+                        + std::sqrt(0.5*invmass[n])*rf[gt]*dist(rng);
                 }
 
                 v[n][d]      = vn;
