@@ -40,6 +40,7 @@ gmx_install_headers(
     calculate-ewald-splitting-coefficient.h
     do_fit.h
     gmxcomplex.h
+    random.h
     units.h
     utilities.h
     vec.h
