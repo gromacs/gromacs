@@ -48,7 +48,8 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -69,13 +70,13 @@ int gmx_nmens(int argc, char *argv[])
         "By default the starting eigenvector is set to 7, since the first six",
         "normal modes are the translational and rotational degrees of freedom."
     };
-    static int  nstruct = 100, first = 7, last = -1, seed = -1;
+    static int  nstruct = 100, first = 7, last = -1, seed = 0;
     static real temp    = 300.0;
     t_pargs     pa[]    = {
         { "-temp",  FALSE, etREAL, {&temp},
           "Temperature in Kelvin" },
         { "-seed", FALSE, etINT, {&seed},
-          "Random seed, -1 generates a seed from time and pid" },
+          "Random seed (0 means generate)" },
         { "-num", FALSE, etINT, {&nstruct},
           "Number of structures to generate" },
         { "-first", FALSE, etINT, {&first},
@@ -103,7 +104,6 @@ int gmx_nmens(int argc, char *argv[])
     int                *index;
     real                rfac, rhalf, jr;
     gmx_output_env_t   *oenv;
-    gmx_rng_t           rng;
     int                 jran;
     const unsigned long im = 0xffff;
     const unsigned long ia = 1093;
@@ -211,22 +211,24 @@ int gmx_nmens(int argc, char *argv[])
 
     fprintf(stderr, "%d eigenvectors selected for output\n", noutvec);
 
-    if (seed == -1)
+
+    if (seed == 0)
     {
-        seed = static_cast<int>(gmx_rng_make_seed());
-        rng  = gmx_rng_init(seed);
+        // Make do with 32 bits for now to avoid changing user input to hex
+        seed = static_cast<int>(gmx::makeRandomSeed());
     }
-    else
-    {
-        rng = gmx_rng_init(seed);
-    }
-    fprintf(stderr, "Using seed %d and a temperature of %g K\n", seed, temp);
+
+    gmx::DefaultRandomEngine rng(seed);
+
+    fprintf(stderr, "Using random seed %d and a temperature of %g K.\n", seed, temp);
+
+    gmx::UniformIntDistribution<int> dist(0, im-1);
+    jran = dist(rng);
 
     snew(xout1, natoms);
     snew(xout2, atoms->nr);
     out  = open_trx(ftp2fn(efTRO, NFILE, fnm), "w");
-    jran = static_cast<int>(im*gmx_rng_uniform_real(rng));
-    gmx_rng_destroy(rng);
+
     for (s = 0; s < nstruct; s++)
     {
         for (i = 0; i < natoms; i++)

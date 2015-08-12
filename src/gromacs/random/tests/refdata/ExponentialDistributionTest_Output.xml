@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ExponentialDistribution">
+    <Int Name="Length">10</Int>
+    <Real>0.92549379561501188</Real>
+    <Real>0.013168495762002016</Real>
+    <Real>0.022251099130735842</Real>
+    <Real>0.23759859566034716</Real>
+    <Real>0.038665674736610124</Real>
+    <Real>0.016541807278810619</Real>
+    <Real>0.18103781021478368</Real>
+    <Real>0.17955342905619712</Real>
+    <Real>0.18197374957106757</Real>
+    <Real>0.14540022394339377</Real>
+  </Sequence>
+</ReferenceData>

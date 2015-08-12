@@ -40,6 +40,10 @@
 #include <limits.h>
 #include <math.h>
 
+#ifdef __cplusplus
+#include <cstdio>
+#endif
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 

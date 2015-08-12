@@ -228,6 +228,26 @@ typedef uint64_t gmx_uint64_t;
 #endif
 #endif
 
+/*! \def gmx_constexpr
+ * \brief C++11 constexpr everywhere except MSVC 2013, where it is empty.
+ *
+ * Support for constexpr was not added until MSVC 2015.
+ * Since interacting with parts of libc++ and libstdc++ depend on it
+ * (for instance the min/max calls in our random engines), we need to specify it
+ * for other compilers.
+ */
+#ifndef gmx_constexpr
+#if (!defined(_MSC_VER) || (defined(_MSC_FULL_VER) && _MSC_FULL_VER >= 190023026))
+#    define gmx_constexpr constexpr
+#else
+#    define gmx_constexpr
+#endif
+#endif
+
+/*! \def GMX_ALIGNMENT
+ * \brief
+ * Supports aligned variables */
+
 /*! \def GMX_ALIGNED(type, alignment)
  * \brief
  * Declare variable with data alignment

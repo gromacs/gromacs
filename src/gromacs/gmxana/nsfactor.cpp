@@ -42,7 +42,8 @@
 #include <cstring>
 
 #include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -201,17 +202,17 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         unsigned int seed)
 {
     gmx_radial_distribution_histogram_t    *pr = NULL;
-    rvec              dist;
-    double            rmax;
-    int               i, j;
+    rvec                                    dist;
+    double                                  rmax;
+    int                                     i, j;
 #if GMX_OPENMP
-    double          **tgr;
-    int               tid;
-    int               nthreads;
-    gmx_rng_t        *trng = NULL;
+    double                                **tgr;
+    int                                     tid;
+    int                                     nthreads;
+    gmx::DefaultRandomEngine               *trng = NULL;
 #endif
-    gmx_int64_t       mc  = 0, mc_max;
-    gmx_rng_t         rng = NULL;
+    gmx_int64_t                             mc  = 0, mc_max;
+    gmx::DefaultRandomEngine                rng(seed);
 
     /* allocate memory for pr */
     snew(pr, 1);
@@ -242,18 +243,18 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         {
             mc_max = static_cast<gmx_int64_t>(std::floor(0.5*mcover*isize*(isize-1)));
         }
-        rng = gmx_rng_init(seed);
 #if GMX_OPENMP
         nthreads = gmx_omp_get_max_threads();
         snew(tgr, nthreads);
-        snew(trng, nthreads);
+        trng = new gmx::DefaultRandomEngine[nthreads];
         for (i = 0; i < nthreads; i++)
         {
             snew(tgr[i], pr->grn);
-            trng[i] = gmx_rng_init(gmx_rng_uniform_uint32(rng));
+            trng[i].seed(rng());
         }
         #pragma omp parallel shared(tgr,trng,mc) private(tid,i,j)
         {
+            gmx::UniformIntDistribution<int> tdist(0, isize-1);
             tid = gmx_omp_get_thread_num();
             /* now starting parallel threads */
             #pragma omp for
@@ -261,8 +262,8 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
             {
                 try
                 {
-                    i = static_cast<int>(std::floor(gmx_rng_uniform_real(trng[tid])*isize));
-                    j = static_cast<int>(std::floor(gmx_rng_uniform_real(trng[tid])*isize));
+                    i = tdist(trng[tid]); // [0,isize-1]
+                    j = tdist(trng[tid]); // [0,isize-1]
                     if (i != j)
                     {
                         tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
@@ -283,22 +284,21 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         for (i = 0; i < nthreads; i++)
         {
             sfree(tgr[i]);
-            gmx_rng_destroy(trng[i]);
         }
         sfree(tgr);
-        sfree(trng);
+        delete[] trng;
 #else
+        gmx::UniformIntDistribution<int> dist(0, isize-1);
         for (mc = 0; mc < mc_max; mc++)
         {
-            i = static_cast<int>(std::floor(gmx_rng_uniform_real(rng)*isize));
-            j = static_cast<int>(std::floor(gmx_rng_uniform_real(rng)*isize));
+            i = dist(rng); // [0,isize-1]
+            j = dist(rng); // [0,isize-1]
             if (i != j)
             {
                 pr->gr[static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
             }
         }
 #endif
-        gmx_rng_destroy(rng);
     }
     else
     {

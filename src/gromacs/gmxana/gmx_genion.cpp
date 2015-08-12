@@ -50,7 +50,8 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -64,12 +65,14 @@ static void insert_ion(int nsa, int *nwater,
                        rvec x[], t_pbc *pbc,
                        int sign, int q, const char *ionname,
                        t_atoms *atoms,
-                       real rmin, gmx_rng_t rng)
+                       real rmin,
+                       gmx::DefaultRandomEngine * rng)
 {
-    int             i, ei, nw;
-    real            rmin2;
-    rvec            dx;
-    gmx_int64_t     maxrand;
+    int                                i, ei, nw;
+    real                               rmin2;
+    rvec                               dx;
+    gmx_int64_t                        maxrand;
+    gmx::UniformIntDistribution<int>   dist(0, *nwater-1);
 
     nw       = *nwater;
     maxrand  = nw;
@@ -77,7 +80,7 @@ static void insert_ion(int nsa, int *nwater,
 
     do
     {
-        ei = static_cast<int>(nw*gmx_rng_uniform_real(rng));
+        ei = dist(*rng);
         maxrand--;
     }
     while (bSet[ei] && (maxrand > 0));
@@ -365,7 +368,7 @@ int gmx_genion(int argc, char *argv[])
     static int         p_num    = 0, n_num = 0, p_q = 1, n_q = -1;
     static const char *p_name   = "NA", *n_name = "CL";
     static real        rmin     = 0.6, conc = 0;
-    static int         seed     = 1993;
+    static int         seed     = 0;
     static gmx_bool    bNeutral = FALSE;
     static t_pargs     pa[]     = {
         { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
@@ -375,7 +378,7 @@ int gmx_genion(int argc, char *argv[])
         { "-nname", FALSE, etSTR,  {&n_name}, "Name of the negative ion"      },
         { "-nq",    FALSE, etINT,  {&n_q},   "Charge of the negative ion"    },
         { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
-        { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" },
+        { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator (0 means generate)" },
         { "-conc",  FALSE, etREAL, {&conc},
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [REF].tpr[ref] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
         { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
@@ -392,7 +395,6 @@ int gmx_genion(int argc, char *argv[])
     gmx_bool          *bSet;
     int                i, nw, nwa, nsa, nsalt, iqtot;
     gmx_output_env_t  *oenv;
-    gmx_rng_t          rng;
     t_filenm           fnm[] = {
         { efTPR, NULL,  NULL,      ffREAD  },
         { efNDX, NULL,  NULL,      ffOPTRD },
@@ -518,26 +520,27 @@ int gmx_genion(int argc, char *argv[])
 
         set_pbc(&pbc, ePBC, box);
 
+
         if (seed == 0)
         {
-            rng = gmx_rng_init(gmx_rng_make_seed());
+            // For now we make do with 32 bits to avoid changing the user input to 64 bit hex
+            seed = static_cast<int>(gmx::makeRandomSeed());
         }
-        else
-        {
-            rng = gmx_rng_init(seed);
-        }
+        fprintf(stderr, "Using random seed %d.\n", seed);
+
+        gmx::DefaultRandomEngine rng(seed);
+
         /* Now loop over the ions that have to be placed */
         while (p_num-- > 0)
         {
             insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                       1, p_q, p_name, &atoms, rmin, rng);
+                       1, p_q, p_name, &atoms, rmin, &rng);
         }
         while (n_num-- > 0)
         {
             insert_ion(nsa, &nw, bSet, repl, index, x, &pbc,
-                       -1, n_q, n_name, &atoms, rmin, rng);
+                       -1, n_q, n_name, &atoms, rmin, &rng);
         }
-        gmx_rng_destroy(rng);
         fprintf(stderr, "\n");
 
         if (nw)
