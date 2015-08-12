@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="TabulatedNormalDistribution14">
+    <Int Name="Length">10</Int>
+    <Real>6.2040744</Real>
+    <Real>-5.0443349</Real>
+    <Real>-3.8484411</Real>
+    <Real>-3.5752203</Real>
+    <Real>1.8067989</Real>
+    <Real>6.2412276</Real>
+    <Real>-1.5439517</Real>
+    <Real>-8.951438</Real>
+    <Real>-2.3151355</Real>
+    <Real>2.7598448</Real>
+  </Sequence>
+</ReferenceData>
