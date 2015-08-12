@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,8 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -118,8 +119,7 @@ class NeighborhoodSearchTestData
 
         typedef std::vector<TestPosition> TestPositionList;
 
-        NeighborhoodSearchTestData(int seed, real cutoff);
-        ~NeighborhoodSearchTestData();
+        NeighborhoodSearchTestData(gmx_uint64_t seed, real cutoff);
 
         gmx::AnalysisNeighborhoodPositions refPositions() const
         {
@@ -149,7 +149,7 @@ class NeighborhoodSearchTestData
             testPositions_.push_back(TestPosition(x));
         }
         gmx::RVec generateRandomPosition();
-        std::vector<int> generateIndex(int count) const;
+        std::vector<int> generateIndex(int count, gmx_uint64_t seed) const;
         void generateRandomRefPositions(int count);
         void generateRandomTestPositions(int count);
         void computeReferences(t_pbc *pbc)
@@ -173,7 +173,18 @@ class NeighborhoodSearchTestData
             return true;
         }
 
-        gmx_rng_t                        rng_;
+        // Return a tolerance that accounts for the magnitudes of the coordinates
+        // when doing subtractions, so that we set the ULP tolerance relative to the
+        // coordinate values rather than their difference.
+        // i.e., 10.0-9.9999999 will achieve a few ULP accuracy relative
+        // to 10.0, but a much larger error relative to the difference.
+        gmx::test::FloatingPointTolerance relativeTolerance() const
+        {
+            real magnitude = std::max(box_[XX][XX], std::max(box_[YY][YY], box_[ZZ][ZZ]));
+            return gmx::test::relativeToleranceAsUlp(magnitude, 4);
+        }
+
+        gmx::DefaultRandomEngine         rng_;
         real                             cutoff_;
         matrix                           box_;
         t_pbc                            pbc_;
@@ -190,43 +201,37 @@ class NeighborhoodSearchTestData
 //! Shorthand for a collection of reference pairs.
 typedef std::vector<NeighborhoodSearchTestData::RefPair> RefPairList;
 
-NeighborhoodSearchTestData::NeighborhoodSearchTestData(int seed, real cutoff)
-    : rng_(NULL), cutoff_(cutoff), refPosCount_(0)
+NeighborhoodSearchTestData::NeighborhoodSearchTestData(gmx_uint64_t seed, real cutoff)
+    : rng_(seed), cutoff_(cutoff), refPosCount_(0)
 {
-    // TODO: Handle errors.
-    rng_ = gmx_rng_init(seed);
     clear_mat(box_);
     set_pbc(&pbc_, epbcNONE, box_);
 }
 
-NeighborhoodSearchTestData::~NeighborhoodSearchTestData()
-{
-    if (rng_ != NULL)
-    {
-        gmx_rng_destroy(rng_);
-    }
-}
-
 gmx::RVec NeighborhoodSearchTestData::generateRandomPosition()
 {
+    gmx::UniformRealDistribution<real>  dist;
     rvec fx, x;
-    fx[XX] = gmx_rng_uniform_real(rng_);
-    fx[YY] = gmx_rng_uniform_real(rng_);
-    fx[ZZ] = gmx_rng_uniform_real(rng_);
+    fx[XX] = dist(rng_);
+    fx[YY] = dist(rng_);
+    fx[ZZ] = dist(rng_);
     mvmul(box_, fx, x);
     // Add a small displacement to allow positions outside the box
-    x[XX] += 0.2 * gmx_rng_uniform_real(rng_) - 0.1;
-    x[YY] += 0.2 * gmx_rng_uniform_real(rng_) - 0.1;
-    x[ZZ] += 0.2 * gmx_rng_uniform_real(rng_) - 0.1;
+    x[XX] += 0.2 * dist(rng_) - 0.1;
+    x[YY] += 0.2 * dist(rng_) - 0.1;
+    x[ZZ] += 0.2 * dist(rng_) - 0.1;
     return x;
 }
 
-std::vector<int> NeighborhoodSearchTestData::generateIndex(int count) const
+std::vector<int> NeighborhoodSearchTestData::generateIndex(int count, gmx_uint64_t seed) const
 {
-    std::vector<int> result;
+    gmx::DefaultRandomEngine             rngIndex(seed);
+    gmx::UniformRealDistribution<real>   dist;
+    std::vector<int>                     result;
+
     for (int i = 0; i < count; ++i)
     {
-        if (gmx_rng_uniform_real(rng_) > 0.5)
+        if (dist(rngIndex) > 0.5)
         {
             result.push_back(i);
         }
@@ -413,7 +418,8 @@ class NeighborhoodSearchTest : public ::testing::Test
         void testPairSearch(gmx::AnalysisNeighborhoodSearch  *search,
                             const NeighborhoodSearchTestData &data);
         void testPairSearchIndexed(gmx::AnalysisNeighborhood        *nb,
-                                   const NeighborhoodSearchTestData &data);
+                                   const NeighborhoodSearchTestData &data,
+                                   gmx_uint64_t                      seed);
         void testPairSearchFull(gmx::AnalysisNeighborhoodSearch          *search,
                                 const NeighborhoodSearchTestData         &data,
                                 const gmx::AnalysisNeighborhoodPositions &pos,
@@ -442,11 +448,11 @@ void NeighborhoodSearchTest::testMinimumDistance(
         const NeighborhoodSearchTestData &data)
 {
     NeighborhoodSearchTestData::TestPositionList::const_iterator i;
+
     for (i = data.testPositions_.begin(); i != data.testPositions_.end(); ++i)
     {
         const real refDist = i->refMinDist;
-        EXPECT_REAL_EQ_TOL(refDist, search->minimumDistance(i->x),
-                           gmx::test::ulpTolerance(20));
+        EXPECT_REAL_EQ_TOL(refDist, search->minimumDistance(i->x), data.relativeTolerance());
     }
 }
 
@@ -462,8 +468,7 @@ void NeighborhoodSearchTest::testNearestPoint(
         {
             EXPECT_EQ(i->refNearestPoint, pair.refIndex());
             EXPECT_EQ(0, pair.testIndex());
-            EXPECT_REAL_EQ_TOL(i->refMinDist, std::sqrt(pair.distance2()),
-                               gmx::test::ulpTolerance(64));
+            EXPECT_REAL_EQ_TOL(i->refMinDist, std::sqrt(pair.distance2()), data.relativeTolerance());
         }
         else
         {
@@ -519,10 +524,11 @@ void NeighborhoodSearchTest::testPairSearch(
 
 void NeighborhoodSearchTest::testPairSearchIndexed(
         gmx::AnalysisNeighborhood        *nb,
-        const NeighborhoodSearchTestData &data)
+        const NeighborhoodSearchTestData &data,
+        gmx_uint64_t                      seed)
 {
-    std::vector<int>                refIndices(data.generateIndex(data.refPos_.size()));
-    std::vector<int>                testIndices(data.generateIndex(data.testPositions_.size()));
+    std::vector<int>                refIndices(data.generateIndex(data.refPos_.size(), seed++));
+    std::vector<int>                testIndices(data.generateIndex(data.testPositions_.size(), seed++));
     gmx::AnalysisNeighborhoodSearch search =
         nb->initSearch(&data.pbc_,
                        data.refPositions().indexed(refIndices));
@@ -554,6 +560,7 @@ void NeighborhoodSearchTest::testPairSearchFull(
         remainingTestPositions.insert(testIndices.begin(), testIndices.end());
         posCopy.indexed(testIndices);
     }
+
     gmx::AnalysisNeighborhoodPairSearch pairSearch
         = search->startPairSearch(posCopy);
     gmx::AnalysisNeighborhoodPair       pair;
@@ -651,16 +658,37 @@ void NeighborhoodSearchTest::testPairSearchFull(
         else
         {
             foundRefPair->bFound = true;
-            EXPECT_REAL_EQ_TOL(foundRefPair->distance, searchPair.distance,
-                               gmx::test::ulpTolerance(64))
+
+            EXPECT_REAL_EQ_TOL(foundRefPair->distance, searchPair.distance, data.relativeTolerance())
             << "Distance computed by the neighborhood search does not match.";
         }
     }
+
     checkAllPairsFound(refPairs, data.refPos_, prevTestPos,
                        data.testPositions_[prevTestPos].x);
+
+    std::set<int> refPositions(refIndices.begin(), refIndices.end());
+
     for (std::set<int>::const_iterator i = remainingTestPositions.begin();
          i != remainingTestPositions.end(); ++i)
     {
+        // Account for the case where the i particle is listed in the testIndex,
+        // but none of its ref neighbours were listed in the refIndex.
+        if (!refIndices.empty())
+        {
+            RefPairList::const_iterator refPair;
+            bool foundAnyRefInIndex = false;
+
+            for (refPair = data.testPositions_[*i].refPairs.begin();
+                 refPair != data.testPositions_[*i].refPairs.end() && !foundAnyRefInIndex; ++refPair)
+            {
+                foundAnyRefInIndex = (refPositions.count(refPair->refIndex) > 0);
+            }
+            if (!foundAnyRefInIndex)
+            {
+                continue;
+            }
+        }
         if (!data.testPositions_[*i].refPairs.empty())
         {
             ADD_FAILURE()
@@ -686,9 +714,11 @@ class TrivialTestData
 
         TrivialTestData() : data_(12345, 1.0)
         {
-            data_.box_[XX][XX] = 5.0;
-            data_.box_[YY][YY] = 5.0;
-            data_.box_[ZZ][ZZ] = 5.0;
+            // Make the box so small we are virtually guaranteed to have
+            // several neighbors for the five test positions
+            data_.box_[XX][XX] = 3.0;
+            data_.box_[YY][YY] = 3.0;
+            data_.box_[ZZ][ZZ] = 3.0;
             data_.generateRandomRefPositions(10);
             data_.generateRandomTestPositions(5);
             set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
@@ -872,7 +902,7 @@ TEST_F(NeighborhoodSearchTest, SimpleSearch)
     testPairSearch(&search, data);
 
     search.reset();
-    testPairSearchIndexed(&nb_, data);
+    testPairSearchIndexed(&nb_, data, 123);
 }
 
 TEST_F(NeighborhoodSearchTest, SimpleSearchXY)
@@ -908,7 +938,7 @@ TEST_F(NeighborhoodSearchTest, GridSearchBox)
     testPairSearch(&search, data);
 
     search.reset();
-    testPairSearchIndexed(&nb_, data);
+    testPairSearchIndexed(&nb_, data, 456);
 }
 
 TEST_F(NeighborhoodSearchTest, GridSearchTriclinic)
@@ -980,10 +1010,13 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
     gmx::AnalysisNeighborhoodSearch search2 =
         nb_.initSearch(&data.pbc_, data.refPositions());
 
+    // These checks are fragile, and unfortunately depend on the random
+    // engine used to create the test positions. There is no particular reason
+    // why exactly particles 0 & 2 should have neighbors, but in this case they do.
     gmx::AnalysisNeighborhoodPairSearch pairSearch1 =
         search1.startPairSearch(data.testPosition(0));
     gmx::AnalysisNeighborhoodPairSearch pairSearch2 =
-        search1.startPairSearch(data.testPosition(1));
+        search1.startPairSearch(data.testPosition(2));
 
     testPairSearch(&search2, data);
 
@@ -997,11 +1030,11 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
     }
 
     ASSERT_TRUE(pairSearch2.findNextPair(&pair))
-    << "Test data did not contain any pairs for position 1 (problem in the test).";
-    EXPECT_EQ(1, pair.testIndex());
+    << "Test data did not contain any pairs for position 2 (problem in the test).";
+    EXPECT_EQ(2, pair.testIndex());
     {
         NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), std::sqrt(pair.distance2()));
-        EXPECT_TRUE(data.containsPair(1, searchPair));
+        EXPECT_TRUE(data.containsPair(2, searchPair));
     }
 }
 

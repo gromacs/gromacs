@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,20 +43,22 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/tabulatednormaldistribution.h"
+#include "gromacs/random/threefry.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 static void low_mspeed(real tempi,
-                       gmx_mtop_t *mtop, rvec v[], gmx_rng_t rng)
+                       gmx_mtop_t *mtop, rvec v[], gmx::ThreeFry2x64<> * rng)
 {
-    int                     i, m, nrdf;
-    real                    boltz, sd;
-    real                    ekin, temp, mass, scal;
-    gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
+    int                                     i, m, nrdf;
+    real                                    boltz, sd;
+    real                                    ekin, temp, mass, scal;
+    gmx_mtop_atomloop_all_t                 aloop;
+    t_atom                                 *atom;
+    gmx::TabulatedNormalDistribution<real>  normalDist;
 
     boltz = BOLTZ*tempi;
     ekin  = 0.0;
@@ -67,10 +69,11 @@ static void low_mspeed(real tempi,
         mass = atom->m;
         if (mass > 0)
         {
+            rng->restart(i, 0);
             sd = std::sqrt(boltz/mass);
             for (m = 0; (m < DIM); m++)
             {
-                v[i][m] = sd*gmx_rng_gaussian_real(rng);
+                v[i][m] = sd*normalDist(*rng);
                 ekin   += 0.5*mass*v[i][m]*v[i][m];
             }
             nrdf += DIM;
@@ -101,19 +104,15 @@ static void low_mspeed(real tempi,
 
 void maxwell_speed(real tempi, unsigned int seed, gmx_mtop_t *mtop, rvec v[])
 {
-    gmx_rng_t rng;
 
     if (seed == 0)
     {
-        seed = gmx_rng_make_seed();
+        seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Using random seed %u for generating velocities\n", seed);
     }
+    gmx::ThreeFry2x64<>  rng(seed, gmx::RandomDomain::MaxwellVelocities);
 
-    rng = gmx_rng_init(seed);
-
-    low_mspeed(tempi, mtop, v, rng);
-
-    gmx_rng_destroy(rng);
+    low_mspeed(tempi, mtop, v, &rng);
 }
 
 static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],

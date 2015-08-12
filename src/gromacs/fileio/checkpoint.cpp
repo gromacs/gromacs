@@ -412,6 +412,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
         if (useDouble)
         {
             // This branch is not reached unless vp is already double *.
+            // cppcheck-suppress invalidPointerCast
             vd = reinterpret_cast<double *>(vp);
         }
         else

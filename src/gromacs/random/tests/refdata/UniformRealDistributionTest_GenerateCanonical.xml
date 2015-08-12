@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="GenerateCanonical">
+    <Int Name="Length">10</Int>
+    <Real>0.9902205201172749</Real>
+    <Real>0.063721663645969207</Real>
+    <Real>0.10528987482419813</Real>
+    <Real>0.69516754412279158</Real>
+    <Real>0.17578871959656689</Real>
+    <Real>0.079381025129182742</Real>
+    <Real>0.59553458674603454</Real>
+    <Real>0.59252151501626416</Real>
+    <Real>0.59742294033136178</Real>
+    <Real>0.51664365340146001</Real>
+  </Sequence>
+</ReferenceData>
