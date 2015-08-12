@@ -66,7 +66,8 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/tabulatednormaldistribution.h"
+#include "gromacs/random/threefry.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -593,6 +594,10 @@ static void do_update_sd1(gmx_stochd_t *sd,
     real            ism;
     int             n, d;
 
+    // Even 0 bits internal counter gives 2x64 ints (more than enough for three table lookups)
+    gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
+    gmx::TabulatedNormalDistribution<real, 14> dist;
+
     sdc = sd->sdc;
     sig = sd->sdsig;
 
@@ -607,8 +612,10 @@ static void do_update_sd1(gmx_stochd_t *sd,
     {
         for (n = start; n < nrend; n++)
         {
-            real rnd[3];
             int  ng = gatindex ? gatindex[n] : n;
+
+            rng.restart(step, ng);
+            dist.reset();
 
             ism = sqrt(invmass[n]);
             if (cFREEZE)
@@ -624,15 +631,13 @@ static void do_update_sd1(gmx_stochd_t *sd,
                 gt  = cTC[n];
             }
 
-            gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
-
             for (d = 0; d < DIM; d++)
             {
                 if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
                 {
                     real sd_V, vn;
 
-                    sd_V         = ism*sig[gt].V*rnd[d];
+                    sd_V         = ism*sig[gt].V*dist(rng);
                     vn           = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
                     v[n][d]      = vn*sdc[gt].em + sd_V;
                     /* Here we include half of the friction+noise
@@ -689,8 +694,10 @@ static void do_update_sd1(gmx_stochd_t *sd,
             /* Update friction and noise only */
             for (n = start; n < nrend; n++)
             {
-                real rnd[3];
                 int  ng = gatindex ? gatindex[n] : n;
+
+                rng.restart(step, ng);
+                dist.reset();
 
                 ism = sqrt(invmass[n]);
                 if (cFREEZE)
@@ -702,15 +709,13 @@ static void do_update_sd1(gmx_stochd_t *sd,
                     gt  = cTC[n];
                 }
 
-                gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
-
                 for (d = 0; d < DIM; d++)
                 {
                     if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
                     {
                         real sd_V, vn;
 
-                        sd_V         = ism*sig[gt].V*rnd[d];
+                        sd_V         = ism*sig[gt].V*dist(rng);
                         vn           = v[n][d];
                         v[n][d]      = vn*sdc[gt].em + sd_V;
                         /* Add the friction and noise contribution only */
@@ -774,11 +779,17 @@ static void do_update_sd2(gmx_stochd_t *sd,
     /* The random part of the velocity update, generated in the first
      * half of the update, needs to be remembered for the second half.
      */
-    rvec  *sd_V;
-    int    gf = 0, ga = 0, gt = 0;
-    real   vn = 0, Vmh, Xmh;
-    real   ism;
-    int    n, d, ng;
+    rvec        *sd_V;
+    int          gf = 0, ga = 0, gt = 0;
+    real         vn = 0, Vmh, Xmh;
+    real         ism;
+    int          n, d, ng;
+
+    // Use 1 bit of internal counters to give us 2*2 64-bits values per stream
+    // Each 64-bit value is enough for 4 normal distribution table numbers.
+    gmx::ThreeFry2x64<1> rng(seed, bFirstHalf ? gmx::RandomDomain::UpdateCoordinates : gmx::RandomDomain::UpdateConstraints);
+
+    gmx::TabulatedNormalDistribution<real, 14> dist;
 
     sdc  = sd->sdc;
     sig  = sd->sdsig;
@@ -786,7 +797,6 @@ static void do_update_sd2(gmx_stochd_t *sd,
 
     for (n = start; n < nrend; n++)
     {
-        real rnd[6], rndi[3];
         ng  = gatindex ? gatindex[n] : n;
         ism = sqrt(invmass[n]);
         if (cFREEZE)
@@ -802,11 +812,9 @@ static void do_update_sd2(gmx_stochd_t *sd,
             gt  = cTC[n];
         }
 
-        gmx_rng_cycle_6gaussian_table(step*2+(bFirstHalf ? 1 : 2), ng, seed, RND_SEED_UPDATE, rnd);
-        if (bInitStep)
-        {
-            gmx_rng_cycle_3gaussian_table(step*2, ng, seed, RND_SEED_UPDATE, rndi);
-        }
+        rng.restart(step, ng);
+        dist.reset();
+
         for (d = 0; d < DIM; d++)
         {
             if (bFirstHalf)
@@ -819,11 +827,11 @@ static void do_update_sd2(gmx_stochd_t *sd,
                 {
                     if (bInitStep)
                     {
-                        sd_X[n][d] = ism*sig[gt].X*rndi[d];
+                        sd_X[n][d] = ism*sig[gt].X*dist(rng);
                     }
                     Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c)
-                        + ism*sig[gt].Yv*rnd[d*2];
-                    sd_V[n][d] = ism*sig[gt].V*rnd[d*2+1];
+                        + ism*sig[gt].Yv*dist(rng);
+                    sd_V[n][d] = ism*sig[gt].V*dist(rng);
 
                     v[n][d] = vn*sdc[gt].em
                         + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
@@ -841,8 +849,8 @@ static void do_update_sd2(gmx_stochd_t *sd,
                         (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));
 
                     Xmh = sd_V[n][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1)
-                        + ism*sig[gt].Yx*rnd[d*2];
-                    sd_X[n][d] = ism*sig[gt].X*rnd[d*2+1];
+                        + ism*sig[gt].Yx*dist(rng);
+                    sd_X[n][d] = ism*sig[gt].X*dist(rng);
 
                     xprime[n][d] += sd_X[n][d] - Xmh;
 
@@ -897,6 +905,10 @@ static void do_update_bd(int start, int nrend, double dt,
     real   vn;
     real   invfr = 0;
     int    n, d;
+    // Use 1 bit of internal counters to give us 2*2 64-bits values per stream
+    // Each 64-bit value is enough for 4 normal distribution table numbers.
+    gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
+    gmx::TabulatedNormalDistribution<real, 14> dist;
 
     if (friction_coefficient != 0)
     {
@@ -905,8 +917,10 @@ static void do_update_bd(int start, int nrend, double dt,
 
     for (n = start; (n < nrend); n++)
     {
-        real rnd[3];
         int  ng  = gatindex ? gatindex[n] : n;
+
+        rng.restart(step, ng);
+        dist.reset();
 
         if (cFREEZE)
         {
@@ -916,20 +930,19 @@ static void do_update_bd(int start, int nrend, double dt,
         {
             gt = cTC[n];
         }
-        gmx_rng_cycle_3gaussian_table(step, ng, seed, RND_SEED_UPDATE, rnd);
         for (d = 0; (d < DIM); d++)
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
                 if (friction_coefficient != 0)
                 {
-                    vn = invfr*f[n][d] + rf[gt]*rnd[d];
+                    vn = invfr*f[n][d] + rf[gt]*dist(rng);
                 }
                 else
                 {
                     /* NOTE: invmass = 2/(mass*friction_constant*dt) */
                     vn = 0.5*invmass[n]*f[n][d]*dt
-                        + sqrt(0.5*invmass[n])*rf[gt]*rnd[d];
+                        + sqrt(0.5*invmass[n])*rf[gt]*dist(rng);
                 }
 
                 v[n][d]      = vn;

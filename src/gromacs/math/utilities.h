@@ -40,6 +40,10 @@
 #include <limits.h>
 #include <math.h>
 
+#ifdef __cplusplus
+#include <cstdio>
+#endif
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -126,6 +130,13 @@ gmx_numzero(double a);
 unsigned int
 gmx_log2i(unsigned int x);
 
+/*! \brief Compute floor of logarithm to base 2, 64-bit version
+ *
+ * \return log2(x)
+ */
+unsigned int
+gmx_log2i_64(gmx_uint64_t x);
+
 /*! \brief Multiply two large ints
  *
  * \return False iff overflow occured
@@ -162,6 +173,50 @@ real max_cutoff(real cutoff1, real cutoff2);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+/*! \brief Evaluate log2(n) for integer n at compile time.
+ *
+ * Use as staticLog2<n>::value, where n must be a positive integer.
+ * Negative n will be reinterpreted as the corresponding unsigned integer,
+ * and you will get a compile-time error if n==0.
+ * The calculation is done by recursively dividing n by 2 (until it is 1),
+ * and incrementing the result by 1 in each step.
+ *
+ * \tparam n Value to recursively calculate log2(n) for
+ */
+template<std::size_t n>
+struct StaticLog2
+{
+    static const int value = StaticLog2<n/2>::value+1; //!< Variable value used for recursive static calculation of Log2(int)
+};
+
+/*! \brief Specialization of StaticLog2<n> for n==1.
+ *
+ *  This specialization provides the final value in the recursion; never
+ *  call it directly, but use StaticLog2<n>::value.
+ */
+template<>
+struct StaticLog2<1>
+{
+    static const int value = 0; //!< Base value for recursive static calculation of Log2(int)
+};
+
+/*! \brief Specialization of StaticLog2<n> for n==0.
+ *
+ *  This specialization should never actually be used since log2(0) is
+ *  negative infinity. However, since Log2() is often used to calculate the number
+ *  of bits needed for a number, we might be using the value 0 with a conditional
+ *  statement around the logarithm. Depending on the compiler the expansion of
+ *  the template can occur before the conditional statement, so to avoid infinite
+ *  recursion we need a specialization for the case n==0.
+ */
+template<>
+struct StaticLog2<0>
+{
+    static const int value = -1; //!< Base value for recursive static calculation of Log2(int)
+};
 #endif
 
 #endif
