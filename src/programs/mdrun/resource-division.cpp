@@ -603,11 +603,19 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
 }
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
-void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
-                               gmx_bool      bIsSimMaster)
+void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
+                               const t_commrec *cr)
 {
-    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp, bIsSimMaster);
+    /* Currently hw_opt only contains default settings or settings supplied
+     * by the user on the command line.
+     * Check for OpenMP settings stored in environment variables, which can
+     * potentially be different on different MPI ranks.
+     */
+    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp, SIMMASTER(cr));
 
+    /* Check restrictions on the user supplied options before modifying them.
+     * TODO: Put the user values in a const struct and preserve them.
+     */
 #ifndef GMX_THREAD_MPI
     if (hw_opt->nthreads_tot > 0)
     {
@@ -619,18 +627,41 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (!bOMP)
+    if (bOMP)
     {
-        if (hw_opt->nthreads_omp > 1)
+        /* Check restrictions on PME thread related options set by the user */
+
+        if (hw_opt->nthreads_omp_pme > 0 && hw_opt->nthreads_omp <= 0)
+        {
+            gmx_fatal(FARGS, "You need to specify -ntomp in addition to -ntomp_pme");
+        }
+
+        if (hw_opt->nthreads_omp_pme >= 1 &&
+            hw_opt->nthreads_omp_pme != hw_opt->nthreads_omp &&
+            cr->npmenodes <= 0)
+        {
+            /* This can result in a fatal error on many MPI ranks,
+             * but since the thread count can differ per rank,
+             * we can't easily avoid this.
+             */
+            gmx_fatal(FARGS, "You need to explicitly specify the number of PME ranks (-npme) when using different number of OpenMP threads for PP and PME ranks");
+        }
+    }
+    else
+    {
+        /* GROMACS was configured without OpenMP support */
+
+        if (hw_opt->nthreads_omp > 1 || hw_opt->nthreads_omp_pme > 1)
         {
             gmx_fatal(FARGS, "More than 1 OpenMP thread requested, but GROMACS was compiled without OpenMP support");
         }
-        hw_opt->nthreads_omp = 1;
+        hw_opt->nthreads_omp     = 1;
+        hw_opt->nthreads_omp_pme = 1;
     }
 
     if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp_pme <= 0)
     {
-        /* We have the same number of OpenMP threads for PP and PME processes,
+        /* We have the same number of OpenMP threads for PP and PME ranks,
          * thus we can perform several consistency checks.
          */
         if (hw_opt->nthreads_tmpi > 0 &&
@@ -654,22 +685,6 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
             gmx_fatal(FARGS, "The total number of threads requested (%d) is not divisible by the number of OpenMP threads requested (%d)",
                       hw_opt->nthreads_tot, hw_opt->nthreads_omp);
         }
-
-        if (hw_opt->nthreads_tmpi > 0 &&
-            hw_opt->nthreads_omp <= 0)
-        {
-            hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
-        }
-    }
-
-    if (!bOMP && hw_opt->nthreads_omp > 1)
-    {
-        gmx_fatal(FARGS, "OpenMP threads are requested, but GROMACS was compiled without OpenMP support");
-    }
-
-    if (hw_opt->nthreads_omp_pme > 0 && hw_opt->nthreads_omp <= 0)
-    {
-        gmx_fatal(FARGS, "You need to specify -ntomp in addition to -ntomp_pme");
     }
 
     if (hw_opt->nthreads_tot == 1)
@@ -681,12 +696,8 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
             gmx_fatal(FARGS, "You requested %d OpenMP threads with %d total threads",
                       hw_opt->nthreads_tmpi, hw_opt->nthreads_tot);
         }
-        hw_opt->nthreads_omp = 1;
-    }
-
-    if (hw_opt->nthreads_omp_pme <= 0 && hw_opt->nthreads_omp > 0)
-    {
-        hw_opt->nthreads_omp_pme = hw_opt->nthreads_omp;
+        hw_opt->nthreads_omp     = 1;
+        hw_opt->nthreads_omp_pme = 1;
     }
 
     /* Parse GPU IDs, if provided.
@@ -716,6 +727,12 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
     {
         print_hw_opt(debug, hw_opt);
     }
+
+    /* At this point the PME thread count should only be set when the normal
+     * thread count is also set. This simplifies the hardware resource
+     * division later on.
+     */
+    assert(!(hw_opt->nthreads_omp_pme >= 1 && hw_opt->nthreads_omp <= 0));
 }
 
 /* Checks we can do when we know the cut-off scheme */
@@ -733,7 +750,31 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
         }
         hw_opt->nthreads_omp = 1;
     }
+}
 
+/* Checks we can do when we know the thread-MPI rank count */
+void check_and_update_hw_opt_3(gmx_hw_opt_t gmx_unused *hw_opt)
+{
+#ifdef GMX_THREAD_MPI
+    assert(hw_opt->nthreads_tmpi >= 1);
+
+    /* If the user set the total number of threads on the command line
+     * and did not specify the number of OpenMP threads, set the latter here.
+     */
+    if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp <= 0)
+    {
+        hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
+
+        if (!bOMP && hw_opt->nthreads_omp > 1)
+        {
+            gmx_fatal(FARGS, "You (indirectly) asked for OpenMP threads by setting -nt > -ntmpi, but GROMACS was compiled without OpenMP support");
+        }
+    }
+#endif
+
+    assert(bOMP || hw_opt->nthreads_omp == 1);
+
+    /* We are done with updating nthreads_omp, we can set nthreads_omp_pme */
     if (hw_opt->nthreads_omp_pme <= 0 && hw_opt->nthreads_omp > 0)
     {
         hw_opt->nthreads_omp_pme = hw_opt->nthreads_omp;
