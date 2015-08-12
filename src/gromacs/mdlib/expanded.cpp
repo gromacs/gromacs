@@ -39,6 +39,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <random>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/confio.h"
@@ -59,9 +60,9 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/update.h"
+#include "gromacs/math/random.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -737,11 +738,13 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 {
     /* Choose new lambda value, and update transition matrix */
 
-    int      i, ifep, minfep, maxfep, lamnew, lamtrial, starting_fep_state;
-    real     r1, r2, de, trialprob, tprob = 0;
-    double  *propose, *accept, *remainder;
-    double   pks;
-    real     pnorm;
+    int                                  i, ifep, minfep, maxfep, lamnew, lamtrial, starting_fep_state;
+    real                                 r1, r2, de, trialprob, tprob = 0;
+    double                              *propose, *accept, *remainder;
+    double                               pks;
+    real                                 pnorm;
+    gmx::ThreeFry2x64<0>                 rng(seed, gmx::RandomDomain::ExpandedEnsemble); // We only draw once, so zero bits internal counter is fine
+    std::uniform_real_distribution<real> dist;
 
     starting_fep_state = fep_state;
     lamnew             = fep_state; /* so that there is a default setting -- stays the same */
@@ -777,9 +780,8 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
 
     for (i = 0; i < expand->lmc_repeats; i++)
     {
-        double rnd[2];
-
-        gmx_rng_cycle_2uniform(step, i, seed, RND_SEED_EXPANDED, rnd);
+        rng.restart(step, i);
+        dist.reset();
 
         for (ifep = 0; ifep < nlim; ifep++)
         {
@@ -819,7 +821,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                     accept[ifep]  = 1.0;
                 }
                 /* Gibbs sampling */
-                r1 = rnd[0];
+                r1 = dist(rng);
                 for (lamnew = minfep; lamnew <= maxfep; lamnew++)
                 {
                     if (r1 <= p_k[lamnew])
@@ -860,7 +862,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                         }
                     }
 
-                    r1 = rnd[0];
+                    r1 = dist(rng);
                     for (lamtrial = minfep; lamtrial <= maxfep; lamtrial++)
                     {
                         pnorm = p_k[lamtrial]/remainder[fep_state];
@@ -882,7 +884,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                     {
                         tprob = trialprob;
                     }
-                    r2 = rnd[1];
+                    r2 = dist(rng);
                     if (r2 < tprob)
                     {
                         lamnew = lamtrial;
@@ -943,7 +945,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
         else if ((expand->elmcmove == elmcmoveMETROPOLIS) || (expand->elmcmove == elmcmoveBARKER))
         {
             /* use the metropolis sampler with trial +/- 1 */
-            r1 = rnd[0];
+            r1 = dist(rng);
             if (r1 < 0.5)
             {
                 if (fep_state == 0)
@@ -992,7 +994,7 @@ static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, i
                 accept[lamtrial]   = 1.0;
             }
 
-            r2 = rnd[1];
+            r2 = dist(rng);
             if (r2 < tprob)
             {
                 lamnew = lamtrial;
