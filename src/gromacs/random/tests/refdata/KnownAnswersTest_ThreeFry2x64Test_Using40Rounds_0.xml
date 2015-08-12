@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="ThreeFry2x64Using40Rounds">
+    <Int Name="Length">2</Int>
+    <UInt64>1069270490034673125</UInt64>
+    <UInt64>10164787723027002621</UInt64>
+  </Sequence>
+</ReferenceData>
