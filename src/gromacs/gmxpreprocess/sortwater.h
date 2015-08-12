@@ -39,10 +39,10 @@
 #define _sortwater_h
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
 
 void randwater(int astart, int nwater, int nwatom,
-               rvec x[], rvec v[], gmx_rng_t rng);
+               rvec x[], rvec v[], gmx::DefaultRandomEngine * rng);
 /* Randomize the order of nwater molecules of length nwatom, the
  * first atom of which is at astart.
  * If v is not NULL it will be shuffled along
