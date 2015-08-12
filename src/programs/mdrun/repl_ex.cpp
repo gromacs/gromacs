@@ -43,6 +43,8 @@
 
 #include <math.h>
 
+#include <random>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
@@ -51,10 +53,13 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformintdistribution.h"
+#include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+
 
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
@@ -89,7 +94,6 @@ typedef struct gmx_repl_ex
     real     *prob_sum;    /* sum of probabilities */
     int     **nmoves;      /* number of moves between replicas i and j */
     int      *nexchange;   /* i-th element of the array is the number of exchanges between replica i-1 and i */
-    gmx_rng_t rng;         /* random number generator */
 
     /* these are helper arrays for replica exchange; allocated here so they
        don't have to be allocated each time */
@@ -371,7 +375,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     {
         if (MASTERSIM(ms))
         {
-            re->seed = (int)gmx_rng_make_seed();
+            re->seed = static_cast<int>(gmx::makeRandomSeed());
         }
         else
         {
@@ -385,7 +389,6 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     }
     fprintf(fplog, "\nReplica exchange interval: %d\n", re->nst);
     fprintf(fplog, "\nReplica random seed: %d\n", re->seed);
-    re->rng = gmx_rng_init(re->seed);
 
     re->nattempt[0] = 0;
     re->nattempt[1] = 0;
@@ -870,15 +873,18 @@ test_for_replica_exchange(FILE                 *fplog,
                           gmx_int64_t           step,
                           real                  time)
 {
-    int       m, i, j, a, b, ap, bp, i0, i1, tmp;
-    real      delta = 0;
-    gmx_bool  bPrint, bMultiEx;
-    gmx_bool *bEx      = re->bEx;
-    real     *prob     = re->prob;
-    int      *pind     = re->destinations; /* permuted index */
-    gmx_bool  bEpot    = FALSE;
-    gmx_bool  bDLambda = FALSE;
-    gmx_bool  bVol     = FALSE;
+    int                                  m, i, j, a, b, ap, bp, i0, i1, tmp;
+    real                                 delta = 0;
+    gmx_bool                             bPrint, bMultiEx;
+    gmx_bool                            *bEx      = re->bEx;
+    real                                *prob     = re->prob;
+    int                                 *pind     = re->destinations; /* permuted index */
+    gmx_bool                             bEpot    = FALSE;
+    gmx_bool                             bDLambda = FALSE;
+    gmx_bool                             bVol     = FALSE;
+    gmx::ThreeFry2x64<64>                rng(re->seed, gmx::RandomDomain::ReplicaExchange);
+    gmx::UniformRealDistribution<real>   uniformRealDist;
+    gmx::UniformIntDistribution<int>     uniformNreplDist(0, re->nrepl-1);
 
     bMultiEx = (re->nex > 1);  /* multiple exchanges at each state */
     fprintf(fplog, "Replica exchange at step %" GMX_PRId64 " time %.5f\n", step, time);
@@ -959,18 +965,18 @@ test_for_replica_exchange(FILE                 *fplog,
     {
         /* multiple random switch exchange */
         int nself = 0;
+
+        rng.restart( step, 0 );
+
         for (i = 0; i < re->nex + nself; i++)
         {
-            double rnd[2];
-
-            gmx_rng_cycle_2uniform(step, i*2, re->seed, RND_SEED_REPLEX, rnd);
             /* randomly select a pair  */
             /* in theory, could reduce this by identifying only which switches had a nonneglibible
                probability of occurring (log p > -100) and only operate on those switches */
             /* find out which state it is from, and what label that state currently has. Likely
                more work that useful. */
-            i0 = (int)(re->nrepl*rnd[0]);
-            i1 = (int)(re->nrepl*rnd[1]);
+            i0 = uniformNreplDist(rng);
+            i1 = uniformNreplDist(rng);
             if (i0 == i1)
             {
                 nself++;
@@ -1009,8 +1015,7 @@ test_for_replica_exchange(FILE                 *fplog,
                     prob[0] = exp(-delta);
                 }
                 /* roll a number to determine if accepted */
-                gmx_rng_cycle_2uniform(step, i*2+1, re->seed, RND_SEED_REPLEX, rnd);
-                bEx[0] = rnd[0] < prob[0];
+                bEx[0] = uniformRealDist(rng) < prob[0];
             }
             re->prob_sum[0] += prob[0];
 
@@ -1047,8 +1052,6 @@ test_for_replica_exchange(FILE                 *fplog,
                 }
                 else
                 {
-                    double rnd[2];
-
                     if (delta > PROBABILITYCUTOFF)
                     {
                         prob[i] = 0;
@@ -1058,8 +1061,7 @@ test_for_replica_exchange(FILE                 *fplog,
                         prob[i] = exp(-delta);
                     }
                     /* roll a number to determine if accepted */
-                    gmx_rng_cycle_2uniform(step, i, re->seed, RND_SEED_REPLEX, rnd);
-                    bEx[i] = rnd[0] < prob[i];
+                    bEx[i] = uniformRealDist(rng) < prob[i];
                 }
                 re->prob_sum[i] += prob[i];
 

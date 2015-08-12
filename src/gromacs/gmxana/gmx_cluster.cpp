@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformintdistribution.h"
+#include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -155,8 +157,13 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
     FILE      *fp = NULL;
     real       ecur, enext, emin, prob, enorm;
     int        i, j, iswap, jswap, nn, nuphill = 0;
-    gmx_rng_t  rng;
     t_mat     *minimum;
+
+    if (seed == 0)
+    {
+        seed = static_cast<int>(gmx::makeRandomSeed());
+    }
+    gmx::DefaultRandomEngine rng(seed);
 
     if (m->n1 != m->nn)
     {
@@ -166,6 +173,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
     printf("\nDoing Monte Carlo optimization to find the smoothest trajectory\n");
     printf("by reordering the frames to minimize the path between the two structures\n");
     printf("that have the largest pairwise RMSD.\n");
+    printf("Using random seed %d.\n", seed);
 
     iswap = jswap = -1;
     enorm = m->mat[0][0];
@@ -192,7 +200,6 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
     printf("Largest distance %g between %d and %d. Energy: %g.\n",
            enorm, iswap, jswap, emin);
 
-    rng = gmx_rng_init(seed);
     nn  = m->nn;
 
     /* Initiate and store global minimum */
@@ -205,13 +212,17 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
         fp = xvgropen(conv, "Convergence of the MC optimization",
                       "Energy", "Step", oenv);
     }
+
+    gmx::UniformIntDistribution<int>     intDistNN(1, nn-2); // [1,nn-2]
+    gmx::UniformRealDistribution<real>   realDistOne;        // [0,1)
+
     for (i = 0; (i < maxiter); i++)
     {
         /* Generate new swapping candidates */
         do
         {
-            iswap = static_cast<int>(1+(nn-2)*gmx_rng_uniform_real(rng));
-            jswap = static_cast<int>(1+(nn-2)*gmx_rng_uniform_real(rng));
+            iswap = intDistNN(rng);
+            jswap = intDistNN(rng);
         }
         while ((iswap == jswap) || (iswap >= nn-1) || (jswap >= nn-1));
 
@@ -237,7 +248,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
             prob = std::exp(-(enext-ecur)/(enorm*kT));
         }
 
-        if ((prob == 1) || (gmx_rng_uniform_real(rng) < prob))
+        if (prob == 1 || realDistOne(rng) < prob)
         {
             if (enext > ecur)
             {
@@ -1444,7 +1455,7 @@ int gmx_cluster(int argc, char *argv[])
     static int        nlevels  = 40, skip = 1;
     static real       scalemax = -1.0, rmsdcut = 0.1, rmsmin = 0.0;
     gmx_bool          bRMSdist = FALSE, bBinary = FALSE, bAverage = FALSE, bFit = TRUE;
-    static int        niter    = 10000, nrandom = 0, seed = 1993, write_ncl = 0, write_nst = 1, minstruct = 1;
+    static int        niter    = 10000, nrandom = 0, seed = 0, write_ncl = 0, write_nst = 1, minstruct = 1;
     static real       kT       = 1e-3;
     static int        M        = 10, P = 3;
     gmx_output_env_t *oenv;
@@ -1484,7 +1495,7 @@ int gmx_cluster(int argc, char *argv[])
         { "-P",     FALSE, etINT,  {&P},
           "Number of identical nearest neighbors required to form a cluster" },
         { "-seed",  FALSE, etINT,  {&seed},
-          "Random number seed for Monte Carlo clustering algorithm: <= 0 means generate" },
+          "Random number seed for Monte Carlo clustering algorithm (0 means generate)" },
         { "-niter", FALSE, etINT,  {&niter},
           "Number of iterations for MC" },
         { "-nrandom", FALSE, etINT,  {&nrandom},

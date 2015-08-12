@@ -63,7 +63,10 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/tabulatednormaldistribution.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformintdistribution.h"
+#include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -305,11 +308,12 @@ typedef struct
      * \name tabulated umbrella potential stuff
      */
     /*!\{*/
-    gmx_bool  bTab;
-    double   *tabX, *tabY, tabMin, tabMax, tabDz;
-    int       tabNbins;
+    gmx_bool                           bTab;
+    double                            *tabX, *tabY, tabMin, tabMax, tabDz;
+    int                                tabNbins;
     /*!\}*/
-    gmx_rng_t rng;                  //!< gromacs random number generator
+    gmx::DefaultRandomEngine           rng;                 //!< gromacs random number generator
+    gmx::TabulatedNormalDistribution<> normalDistribution;  //!< Uses default: real output, 14-bit table
 } t_UmbrellaOptions;
 
 //! Make an umbrella window (may contain several histograms)
@@ -1193,8 +1197,10 @@ void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
 }
 
 //! Make an array of random integers (used for bootstrapping)
-void getRandomIntArray(int nPull, int blockLength, int* randomArray, gmx_rng_t rng)
+void getRandomIntArray(int nPull, int blockLength, int* randomArray, gmx::DefaultRandomEngine * rng)
 {
+    gmx::UniformIntDistribution<int> dist(0, blockLength-1);
+
     int ipull, blockBase, nr, ipullRandom;
 
     if (blockLength == 0)
@@ -1206,8 +1212,8 @@ void getRandomIntArray(int nPull, int blockLength, int* randomArray, gmx_rng_t r
     {
         blockBase = (ipull/blockLength)*blockLength;
         do
-        {      /* make sure nothing bad happens in the last block */
-            nr          = static_cast<int>(gmx_rng_uniform_real(rng)*blockLength);
+        {                             /* make sure nothing bad happens in the last block */
+            nr          = dist(*rng); // [0,blockLength-1]
             ipullRandom = blockBase + nr;
         }
         while (ipullRandom >= nPull);
@@ -1423,14 +1429,14 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
     invsqrt2 = 1.0/std::sqrt(2.0);
 
     /* init random sequence */
-    x = gmx_rng_gaussian_table(opt->rng);
+    x = opt->normalDistribution(opt->rng);
 
     if (opt->bsMethod == bsMethod_traj)
     {
         /* bootstrap points from the umbrella histograms */
         for (i = 0; i < N; i++)
         {
-            y = gmx_rng_gaussian_table(opt->rng);
+            y = opt->normalDistribution(opt->rng);
             x = a*x+ap*y;
             /* get flat distribution in [0,1] using cumulative distribution function of Gauusian
                Note: CDF(Gaussian) = 0.5*{1+erf[x/sqrt(2)]}
@@ -1450,7 +1456,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
         i = 0;
         while (i < N)
         {
-            y    = gmx_rng_gaussian_table(opt->rng);
+            y    = opt->normalDistribution(opt->rng);
             x    = a*x+ap*y;
             z    = x*sig+mu;
             ibin = static_cast<int> (std::floor((z-opt->min)/opt->dz));
@@ -1561,13 +1567,14 @@ void setRandomBsWeights(t_UmbrellaWindow *synthwin, int nAllPull, t_UmbrellaOpti
 {
     int     i;
     double *r;
+    gmx::UniformRealDistribution<real> dist(0, nAllPull);
 
     snew(r, nAllPull);
 
     /* generate ordered random numbers between 0 and nAllPull  */
     for (i = 0; i < nAllPull-1; i++)
     {
-        r[i] = gmx_rng_uniform_real(opt->rng) * nAllPull;
+        r[i] = dist(opt->rng);
     }
     qsort((void *)r, nAllPull-1, sizeof(double), &func_wham_is_larger);
     r[nAllPull-1] = 1.0*nAllPull;
@@ -1603,14 +1610,11 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
     gmx_bool           bExact = FALSE;
 
     /* init random generator */
-    if (opt->bsSeed == -1)
+    if (opt->bsSeed == 0)
     {
-        opt->rng = gmx_rng_init(gmx_rng_make_seed());
+        opt->bsSeed = static_cast<int>(gmx::makeRandomSeed());
     }
-    else
-    {
-        opt->rng = gmx_rng_init(opt->bsSeed);
-    }
+    opt->rng.seed(opt->bsSeed);
 
     snew(bsProfile,     opt->bins);
     snew(bsProfiles_av, opt->bins);
@@ -1694,7 +1698,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
         {
             case bsMethod_hist:
                 /* bootstrap complete histograms from given histograms */
-                getRandomIntArray(nAllPull, opt->histBootStrapBlockLength, randomArray, opt->rng);
+                getRandomIntArray(nAllPull, opt->histBootStrapBlockLength, randomArray, &opt->rng);
                 for (i = 0; i < nAllPull; i++)
                 {
                     winid  = allPull_winId [randomArray[i]];
