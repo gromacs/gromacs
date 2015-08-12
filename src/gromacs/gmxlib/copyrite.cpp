@@ -46,6 +46,7 @@
 #include <ctime>
 
 #include <algorithm>
+#include <random>
 
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
@@ -62,7 +63,6 @@
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -92,16 +92,17 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
     FILE     *fp;
     char    **help;
     int       i, nhlp;
-    gmx_rng_t rng;
 
     if (be_cool() && ((fp = low_libopen(db, FALSE)) != NULL))
     {
         nhlp = fget_lines(fp, &help);
         /* for libraries we can use the low-level close routines */
         gmx_ffclose(fp);
-        rng    = gmx_rng_init(gmx_rng_make_seed());
-        *cqnum = static_cast<int>(nhlp*gmx_rng_uniform_real(rng));
-        gmx_rng_destroy(rng);
+
+        std::random_device                 rd;
+        std::uniform_int_distribution<int> dist(0, nhlp-1);
+        *cqnum = dist(rd);
+
         if (std::strlen(help[*cqnum]) >= STRLEN)
         {
             help[*cqnum][STRLEN-1] = '\0';
