@@ -185,7 +185,7 @@ get_thread_affinity_layout(FILE *fplog,
 void
 gmx_set_thread_affinity(FILE                *fplog,
                         const t_commrec     *cr,
-                        gmx_hw_opt_t        *hw_opt,
+                        const gmx_hw_opt_t  *hw_opt,
                         const gmx_hw_info_t *hwinfo)
 {
     int        nth_affinity_set, thread0_id_node,
@@ -270,9 +270,10 @@ gmx_set_thread_affinity(FILE                *fplog,
         md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
     }
 
+    int core_pinning_stride = hw_opt->core_pinning_stride;
     rc = get_thread_affinity_layout(fplog, cr, hwinfo,
                                     nthread_node,
-                                    offset, &hw_opt->core_pinning_stride,
+                                    offset, &core_pinning_stride,
                                     &locality_order);
 
     if (rc != 0)
@@ -300,7 +301,7 @@ gmx_set_thread_affinity(FILE                *fplog,
 
         thread_id      = gmx_omp_get_thread_num();
         thread_id_node = thread0_id_node + thread_id;
-        index          = offset + thread_id_node*hw_opt->core_pinning_stride;
+        index          = offset + thread_id_node*core_pinning_stride;
         if (locality_order != NULL)
         {
             core = locality_order[index];
