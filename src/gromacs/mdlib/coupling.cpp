@@ -39,6 +39,7 @@
 #include <assert.h>
 
 #include <algorithm>
+#include <random>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/names.h"
@@ -49,12 +50,12 @@
 #include "gromacs/legacyheaders/types/energy.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/math/random.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
-#include "gromacs/random/random.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -745,9 +746,12 @@ void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
 void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
                      const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac)
 {
-    const int *gatindex = (DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-    int        i;
-    int        gc = 0;
+    const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+    int                                        i;
+    int                                        gc = 0;
+    gmx::ThreeFry2x64<0>                       rng(ir->andersen_seed, gmx::RandomDomain::Thermostat);
+    std::uniform_real_distribution<real>       uniformDist;
+    gmx::TabulatedNormalDistribution<real, 14> normalDist;
 
     /* randomize the velocities of the selected particles */
 
@@ -755,6 +759,8 @@ void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
     {
         int      ng = gatindex ? gatindex[i] : i;
         gmx_bool bRandomize;
+
+        rng.restart(step, ng);
 
         if (md->cTC)
         {
@@ -770,21 +776,21 @@ void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
             else
             {
                 /* Randomize particle probabilistically */
-                double uniform[2];
-
-                gmx_rng_cycle_2uniform(step*2, ng, ir->andersen_seed, RND_SEED_ANDERSEN, uniform);
-                bRandomize = (uniform[0] < rate);
+                uniformDist.reset();
+                bRandomize = uniformDist(rng) < rate;
             }
             if (bRandomize)
             {
-                real scal, gauss[3];
+                real scal;
                 int  d;
 
                 scal = sqrt(boltzfac[gc]*md->invmass[i]);
-                gmx_rng_cycle_3gaussian_table(step*2+1, ng, ir->andersen_seed, RND_SEED_ANDERSEN, gauss);
+
+                normalDist.reset();
+
                 for (d = 0; d < DIM; d++)
                 {
-                    state->v[i][d] = scal*gauss[d];
+                    state->v[i][d] = scal*normalDist(rng);
                 }
             }
         }
@@ -1366,77 +1372,22 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
     return ener_npt;
 }
 
-static real vrescale_gamdev(real ia,
-                            gmx_int64_t step, gmx_int64_t *count,
-                            gmx_int64_t seed1, gmx_int64_t seed2)
-/* Gamma distribution, adapted from numerical recipes */
-{
-    real   am, e, s, v1, v2, x, y;
-    double rnd[2];
 
-    assert(ia > 1);
-
-    do
-    {
-        do
-        {
-            do
-            {
-                gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
-                v1 = rnd[0];
-                v2 = 2.0*rnd[1] - 1.0;
-            }
-            while (v1*v1 + v2*v2 > 1.0 ||
-                   v1*v1*GMX_REAL_MAX < 3.0*ia);
-            /* The last check above ensures that both x (3.0 > 2.0 in s)
-             * and the pre-factor for e do not go out of range.
-             */
-            y  = v2/v1;
-            am = ia - 1;
-            s  = sqrt(2.0*am + 1.0);
-            x  = s*y + am;
-        }
-        while (x <= 0.0);
-
-        e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
-
-        gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
-    }
-    while (rnd[0] > e);
-
-    return x;
-}
-
-static real gaussian_count(gmx_int64_t step, gmx_int64_t *count,
-                           gmx_int64_t seed1, gmx_int64_t seed2)
-{
-    double rnd[2], x, y, r;
-
-    do
-    {
-        gmx_rng_cycle_2uniform(step, (*count)++, seed1, seed2, rnd);
-        x = 2.0*rnd[0] - 1.0;
-        y = 2.0*rnd[1] - 1.0;
-        r = x*x + y*y;
-    }
-    while (r > 1.0 || r == 0.0);
-
-    r = sqrt(-2.0*log(r)/r);
-
-    return x*r;
-}
-
-static real vrescale_sumnoises(real nn,
-                               gmx_int64_t step, gmx_int64_t *count,
-                               gmx_int64_t seed1, gmx_int64_t seed2)
+static real vrescale_sumnoises(real                            nn,
+                               gmx_int64_t                     step,
+                               gmx::ThreeFry2x64<>            *rng,
+                               std::normal_distribution<real> *normalDist)
 {
 /*
  * Returns the sum of nn independent gaussian noises squared
  * (i.e. equivalent to summing the square of the return values
- * of nn calls to gmx_rng_gaussian_real).
+ * of nn calls to a normal distribution).
  */
-    const real ndeg_tol = 0.0001;
-    real       r;
+    const real                     ndeg_tol = 0.0001;
+    real                           r;
+    gmx::GammaDistribution<real>   gammaDist(0.5*nn, 1.0);
+
+    rng->restart(step, 0);
 
     if (nn < 2 + ndeg_tol)
     {
@@ -1453,15 +1404,14 @@ static real vrescale_sumnoises(real nn,
         r = 0;
         for (i = 0; i < nn_int; i++)
         {
-            gauss = gaussian_count(step, count, seed1, seed2);
-
-            r += gauss*gauss;
+            gauss = (*normalDist)(*rng);
+            r    += gauss*gauss;
         }
     }
     else
     {
         /* Use a gamma distribution for any real nn > 2 */
-        r = 2.0*vrescale_gamdev(0.5*nn, step, count, seed1, seed2);
+        r = 2.0*gammaDist(*rng);
     }
 
     return r;
@@ -1478,11 +1428,9 @@ static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
  * ndeg:  number of degrees of freedom of the atoms to be thermalized
  * taut:  relaxation time of the thermostat, in units of 'how often this routine is called'
  */
-    /* rnd_count tracks the step-local state for the cycle random
-     * number generator.
-     */
-    gmx_int64_t rnd_count = 0;
-    real        factor, rr, ekin_new;
+    real                           factor, rr, ekin_new;
+    gmx::ThreeFry2x64<64>          rng(seed, gmx::RandomDomain::Thermostat);
+    std::normal_distribution<real> normalDist;
 
     if (taut > 0.1)
     {
@@ -1493,11 +1441,11 @@ static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
         factor = 0.0;
     }
 
-    rr = gaussian_count(step, &rnd_count, seed, RND_SEED_VRESCALE);
+    rr = normalDist(rng);
 
     ekin_new =
         kk +
-        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, step, &rnd_count, seed, RND_SEED_VRESCALE) + rr*rr)/ndeg - kk) +
+        (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, step, &rng, &normalDist) + rr*rr)/ndeg - kk) +
         2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
 
     return ekin_new;
