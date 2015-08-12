@@ -48,7 +48,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/seed.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
@@ -468,7 +468,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         if (EI_SD(ir->eI) || ir->eI == eiBD)
         {
             fprintf(stderr, "\nChanging ld-seed from %" GMX_PRId64 " ", ir->ld_seed);
-            ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+            ir->ld_seed = static_cast<int>(gmx::makeRandomSeed());
             fprintf(stderr, "to %" GMX_PRId64 "\n\n", ir->ld_seed);
         }
 

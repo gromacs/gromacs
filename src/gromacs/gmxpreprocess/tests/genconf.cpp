@@ -61,7 +61,7 @@ class GenconfTest : public gmx::test::CommandLineTestBase
         {
             std::string confFileName = fileManager().getInputFilePath("spc-and-methanol.gro");
             commandLine().addOption("-f", confFileName);
-            commandLine().addOption("-seed", "1997"); // make random operations reproducible
+            commandLine().addOption("-seed", "1993"); // make random operations reproducible
             setOutputFile("-o", "out.gro", ExactTextMatch());
         }
 
