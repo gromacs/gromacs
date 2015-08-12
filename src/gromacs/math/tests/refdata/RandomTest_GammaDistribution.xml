@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="GammaDistribution">
+    <Int Name="Length">10</Int>
+    <Real>7.2300576785074835</Real>
+    <Real>7.2758594071167826</Real>
+    <Real>5.2014783979537693</Real>
+    <Real>17.065501715812729</Real>
+    <Real>32.066124987428772</Real>
+    <Real>5.4208824941016109</Real>
+    <Real>3.9078264858447538</Real>
+    <Real>3.1450042317477274</Real>
+    <Real>9.3517746645342825</Real>
+    <Real>3.2296141721313592</Real>
+  </Sequence>
+</ReferenceData>
