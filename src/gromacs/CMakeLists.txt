@@ -99,10 +99,10 @@ add_subdirectory(fft)
 add_subdirectory(linearalgebra)
 add_subdirectory(math)
 add_subdirectory(mdrunutility)
-add_subdirectory(random)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
 add_subdirectory(pbcutil)
+add_subdirectory(random)
 add_subdirectory(tables)
 add_subdirectory(timing)
 add_subdirectory(topology)
@@ -142,6 +142,7 @@ gmx_install_headers(
     analysisdata.h
     commandline.h
     options.h
+    random.h
     selection.h
     trajectoryanalysis.h
     utility.h

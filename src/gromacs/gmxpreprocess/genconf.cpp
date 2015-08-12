@@ -48,19 +48,21 @@
 #include "gromacs/math/3dtransforms.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
-                     gmx_rng_t rng, rvec max_rot)
+                     gmx::DefaultRandomEngine * rng, rvec max_rot)
 {
     mat4 mt1, mt2, mr[DIM], mtemp1, mtemp2, mtemp3, mxtot, mvtot;
     rvec xcm;
     real phi;
     int  i, m;
+    gmx::UniformRealDistribution<real> dist(-1.0, 1.0);
 
     clear_rvec(xcm);
     for (i = 0; (i < natoms); i++)
@@ -76,7 +78,7 @@ static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
     gmx_mat4_init_translation(-xcm[XX], -xcm[YY], -xcm[ZZ], mt1);
     for (m = 0; (m < DIM); m++)
     {
-        phi = M_PI*max_rot[m]*(2*gmx_rng_uniform_real(rng) - 1)/180;
+        phi = M_PI*max_rot[m]*dist(*rng)/180;
         gmx_mat4_init_rotation(m, phi, mr[m]);
     }
     gmx_mat4_init_translation(xcm[XX], xcm[YY], xcm[ZZ], mt2);
@@ -158,7 +160,6 @@ int gmx_genconf(int argc, char *argv[])
     t_trxstatus      *status;
     gmx_bool          bTRX;
     gmx_output_env_t *oenv;
-    gmx_rng_t         rng;
 
     t_filenm          fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
@@ -180,7 +181,7 @@ int gmx_genconf(int argc, char *argv[])
         { "-nbox",   FALSE, etRVEC, {nrbox},   "Number of boxes" },
         { "-dist",   FALSE, etRVEC, {dist},    "Distance between boxes" },
         { "-seed",   FALSE, etINT,  {&seed},
-          "Random generator seed, if 0 generated from the time" },
+          "Random generator seed (0 means generate)" },
         { "-rot",    FALSE, etBOOL, {&bRandom}, "Randomly rotate conformations" },
         { "-shuffle", FALSE, etBOOL, {&bShuffle}, "Random shuffling of molecules" },
         { "-sort",   FALSE, etBOOL, {&bSort},   "Sort molecules on X coord" },
@@ -201,12 +202,9 @@ int gmx_genconf(int argc, char *argv[])
 
     if (seed == 0)
     {
-        rng = gmx_rng_init(gmx_rng_make_seed());
+        seed = static_cast<int>(gmx::makeRandomSeed());
     }
-    else
-    {
-        rng = gmx_rng_init(seed);
-    }
+    gmx::DefaultRandomEngine rng(seed);
 
     bTRX = ftp2bSet(efTRX, NFILE, fnm);
     nx   = (int)(nrbox[XX]+0.5);
@@ -273,7 +271,7 @@ int gmx_genconf(int argc, char *argv[])
                 /* Random rotation on input coords */
                 if (bRandom)
                 {
-                    rand_rot(natoms, xx, v, xrot, vrot, rng, max_rot);
+                    rand_rot(natoms, xx, v, xrot, vrot, &rng, max_rot);
                 }
 
                 for (l = 0; (l < natoms); l++)
@@ -363,7 +361,7 @@ int gmx_genconf(int argc, char *argv[])
 
     if (bShuffle)
     {
-        randwater(0, atoms->nr/nmolat, nmolat, x, v, rng);
+        randwater(0, atoms->nr/nmolat, nmolat, x, v, &rng);
     }
     else if (bSort)
     {
@@ -373,7 +371,6 @@ int gmx_genconf(int argc, char *argv[])
     {
         mkcompact(0, atoms->nr/nmolat, nmolat, x, v, nblock, box);
     }
-    gmx_rng_destroy(rng);
 
     write_sto_conf(opt2fn("-o", NFILE, fnm), *top->name, atoms, x, v, ePBC, box);
 

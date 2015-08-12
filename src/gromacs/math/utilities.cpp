@@ -55,6 +55,10 @@
 #include <fenv.h>
 #endif
 
+#include <limits>
+
+#include "gromacs/utility/basedefinitions.h"
+
 int gmx_nint(real a)
 {
     const real half = .5;
@@ -753,6 +757,8 @@ gmx_numzero(double a)
     return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
 }
 
+
+
 unsigned int
 gmx_log2i(unsigned int n)
 {
@@ -793,6 +799,41 @@ gmx_log2i(unsigned int n)
     return r;
 #endif
 }
+
+
+unsigned int
+gmx_log2i_64(gmx_uint64_t n)
+{
+    /* A bunch of platforms have some sort of optional built-in intrinsics
+     * to do 64-bit bit scans, but it is not entirely clear exactly when
+     * they are present. Until we have added checks to CMake, we stick to
+     * our portable way of doing a 64-bit log2 by splitting it into high and
+     * low 32-bit parts.
+     *
+     * In the future, these are the intrinsics to use:
+     * gcc: __builtin_clzll()
+     * msvc: _BitScanReverse64()
+     * xlc: __cntlz8()
+     */
+    gmx_uint32_t highN = n >> std::numeric_limits<gmx_uint32_t>::digits;
+    gmx_uint32_t lowN  = static_cast<gmx_uint32_t>(n);
+
+    unsigned int r;
+
+    r  = gmx_log2i(highN);
+    r += ((highN >> r) > 0);
+
+    if (r)
+    {
+        r += std::numeric_limits<gmx_uint32_t>::digits;
+    }
+    else
+    {
+        r  = gmx_log2i(lowN);
+    }
+    return r;
+}
+
 
 gmx_bool
 check_int_multiply_for_overflow(gmx_int64_t  a,
