@@ -79,7 +79,7 @@ class InsertMoleculesTest : public gmx::test::CommandLineTestBase
 TEST_F(InsertMoleculesTest, InsertsMoleculesIntoExistingConfiguration)
 {
     const char *const cmdline[] = {
-        "insert-molecules", "-nmol", "1"
+        "insert-molecules", "-nmol", "1", "-seed", "1997"
     };
     setInputFile("-f", "spc-and-methanol.gro");
     setInputFile("-ci", "x2.gro");
@@ -89,7 +89,7 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoExistingConfiguration)
 TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEmptyBox)
 {
     const char *const cmdline[] = {
-        "insert-molecules", "-box", "4", "-nmol", "5"
+        "insert-molecules", "-box", "4", "-nmol", "5", "-seed", "1997"
     };
     setInputFile("-ci", "x2.gro");
     runTest(CommandLine(cmdline));
@@ -98,7 +98,7 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEmptyBox)
 TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEnlargedBox)
 {
     const char *const cmdline[] = {
-        "insert-molecules", "-box", "4", "-nmol", "2"
+        "insert-molecules", "-box", "4", "-nmol", "2", "-seed", "1997"
     };
     setInputFile("-f", "spc-and-methanol.gro");
     setInputFile("-ci", "x.gro");
@@ -108,7 +108,7 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEnlargedBox)
 TEST_F(InsertMoleculesTest, InsertsMoleculesIntoFixedPositions)
 {
     const char *const cmdline[] = {
-        "insert-molecules", "-box", "4"
+        "insert-molecules", "-box", "4", "-seed", "1997"
     };
     const char *const positions[] = {
         "0.0  0.0  0.0",
