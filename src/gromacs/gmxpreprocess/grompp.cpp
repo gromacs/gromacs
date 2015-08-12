@@ -73,12 +73,12 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/random.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
@@ -648,7 +648,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         real                   *mass;
         gmx_mtop_atomloop_all_t aloop;
         t_atom                 *atom;
-        unsigned int            useed;
 
         snew(mass, state->natoms);
         aloop = gmx_mtop_atomloop_all_init(sys);
@@ -657,13 +656,12 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             mass[i] = atom->m;
         }
 
-        useed = opts->seed;
-        if (opts->seed == -1)
+        if (opts->seed == 0)
         {
-            useed = (int)gmx_rng_make_seed();
-            fprintf(stderr, "Setting gen_seed to %u\n", useed);
+            opts->seed = static_cast<int>(gmx::makeRandomSeed());
+            fprintf(stderr, "Setting gen_seed to %d\n", opts->seed);
         }
-        maxwell_speed(opts->tempi, useed, sys, state->v);
+        maxwell_speed(opts->tempi, opts->seed, sys, state->v);
 
         stop_cm(stdout, state->natoms, mass, state->x, state->v);
         sfree(mass);
@@ -1588,15 +1586,15 @@ int gmx_grompp(int argc, char *argv[])
     }
     check_ir(mdparin, ir, opts, wi);
 
-    if (ir->ld_seed == -1)
+    if (ir->ld_seed == 0)
     {
-        ir->ld_seed = (gmx_int64_t)gmx_rng_make_seed();
+        ir->ld_seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the LD random seed to %" GMX_PRId64 "\n", ir->ld_seed);
     }
 
-    if (ir->expandedvals->lmc_seed == -1)
+    if (ir->expandedvals->lmc_seed == 0)
     {
-        ir->expandedvals->lmc_seed = (int)gmx_rng_make_seed();
+        ir->expandedvals->lmc_seed = static_cast<int>(gmx::makeRandomSeed());
         fprintf(stderr, "Setting the lambda MC random seed to %d\n", ir->expandedvals->lmc_seed);
     }
 

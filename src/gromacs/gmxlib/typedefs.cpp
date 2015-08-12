@@ -45,7 +45,6 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
