@@ -395,7 +395,8 @@ Output control
 
 .. mdp:: energygrps
 
-   group(s) to write to energy file
+   group(s) for which to write to write short-ranged non-bonded
+   potential energies to the energy file (not supported on GPUs)
 
 
 Neighbor searching
