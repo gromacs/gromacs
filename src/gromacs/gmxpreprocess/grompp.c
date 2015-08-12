@@ -1914,24 +1914,26 @@ int gmx_grompp(int argc, char *argv[])
             else
             {
                 /* We warn for NVE simulations with >1(.1)% drift tolerance */
-                const real drift_tol = 0.01;
-                real       ener_runtime;
-
-                /* We use 2 DOF per atom = 2kT pot+kin energy, to be on
-                 * the safe side with constraints (without constraints: 3 DOF).
-                 */
-                ener_runtime = 2*BOLTZ*buffer_temp/(ir->nsteps*ir->delta_t);
-
                 if (EI_MD(ir->eI) && ir->etc == etcNO && ir->nstlist > 1 &&
-                    ir->nsteps > 0 &&
-                    ir->verletbuf_tol > 1.1*drift_tol*ener_runtime)
+                    ir->nsteps > 0)
                 {
-                    sprintf(warn_buf, "You are using a Verlet buffer tolerance of %g kJ/mol/ps for an NVE simulation of length %g ps, which can give a final drift of %d%%. For conserving energy to %d%%, you might need to set verlet-buffer-tolerance to %.1e.",
-                            ir->verletbuf_tol, ir->nsteps*ir->delta_t,
-                            (int)(ir->verletbuf_tol/ener_runtime*100 + 0.5),
-                            (int)(100*drift_tol + 0.5),
-                            drift_tol*ener_runtime);
-                    warning_note(wi, warn_buf);
+                    const real driftTolerance = 0.01;
+                    /* We use 2 DOF per atom = 2kT pot+kin energy, to
+                     * be on the safe side with constraints. For a
+                     * simulation without constraints, we might use 3
+                     * DOF per atom.
+                     */
+                    const real totalEnergyDriftPerAtomPerPicosecond = 2*BOLTZ*buffer_temp/(ir->nsteps*ir->delta_t);
+
+                    if (ir->verletbuf_tol > 1.1*driftTolerance*totalEnergyDriftPerAtomPerPicosecond)
+                    {
+                        sprintf(warn_buf, "You are using a Verlet buffer tolerance of %g kJ/mol/ps for an NVE simulation of length %g ps, which can give a final drift of %d%%. For conserving energy to %d%% when using constraints, you might need to set verlet-buffer-tolerance to %.1e.",
+                                ir->verletbuf_tol, ir->nsteps*ir->delta_t,
+                                (int)(ir->verletbuf_tol/totalEnergyDriftPerAtomPerPicosecond*100 + 0.5),
+                                (int)(100*driftTolerance + 0.5),
+                                driftTolerance*totalEnergyDriftPerAtomPerPicosecond);
+                        warning_note(wi, warn_buf);
+                    }
                 }
 
                 set_verlet_buffer(sys, ir, buffer_temp, state->box, wi);
