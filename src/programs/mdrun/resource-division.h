@@ -76,4 +76,7 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
 void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
                                int           cutoff_scheme);
 
+/* Checks we can do when we know the thread-MPI rank count */
+void check_and_update_hw_opt_3(gmx_hw_opt_t *hw_opt);
+
 #endif /* GMX_RESOURCE_DIVISION_H */

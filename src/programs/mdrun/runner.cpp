@@ -760,6 +760,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 #endif
 
         if (hw_opt->nthreads_omp_pme != hw_opt->nthreads_omp &&
+            /* We should require that values to be >=0 so this code can go */
+            !(hw_opt->nthreads_omp_pme <= 0 && hw_opt->nthreads_omp <= 0) &&
             cr->npmenodes <= 0)
         {
             gmx_fatal(FARGS, "You need to explicitly specify the number of PME ranks (-npme) when using different number of OpenMP threads for PP and PME ranks");
@@ -1041,6 +1043,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Check and update hw_opt for the cut-off scheme */
     check_and_update_hw_opt_2(hw_opt, inputrec->cutoff_scheme);
+
+    /* Check and update hw_opt for the number of MPI ranks */
+    check_and_update_hw_opt_3(hw_opt);
 
     gmx_omp_nthreads_init(fplog, cr,
                           hwinfo->nthreads_hw_avail,

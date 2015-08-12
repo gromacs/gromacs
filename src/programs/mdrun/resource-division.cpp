@@ -654,12 +654,6 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
             gmx_fatal(FARGS, "The total number of threads requested (%d) is not divisible by the number of OpenMP threads requested (%d)",
                       hw_opt->nthreads_tot, hw_opt->nthreads_omp);
         }
-
-        if (hw_opt->nthreads_tmpi > 0 &&
-            hw_opt->nthreads_omp <= 0)
-        {
-            hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
-        }
     }
 
     if (!bOMP && hw_opt->nthreads_omp > 1)
@@ -682,11 +676,6 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
                       hw_opt->nthreads_tmpi, hw_opt->nthreads_tot);
         }
         hw_opt->nthreads_omp = 1;
-    }
-
-    if (hw_opt->nthreads_omp_pme <= 0 && hw_opt->nthreads_omp > 0)
-    {
-        hw_opt->nthreads_omp_pme = hw_opt->nthreads_omp;
     }
 
     /* Parse GPU IDs, if provided.
@@ -732,6 +721,27 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
                       ecutscheme_names[ecutsVERLET]);
         }
         hw_opt->nthreads_omp = 1;
+    }
+}
+
+/* Checks we can do when we know the thread-MPI rank count */
+void check_and_update_hw_opt_3(gmx_hw_opt_t gmx_unused *hw_opt)
+{
+#ifdef GMX_THREAD_MPI
+    assert(hw_opt->nthreads_tmpi >= 1);
+
+    /* If the user set the total number of threads on the command line
+     * and did not specify the number of OpenMP threads, set the latter here.
+     */
+    if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp <= 0)
+    {
+        hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
+    }
+#endif
+
+    if (!bOMP && hw_opt->nthreads_omp > 1)
+    {
+        gmx_fatal(FARGS, "OpenMP threads are requested, but GROMACS was compiled without OpenMP support");
     }
 
     if (hw_opt->nthreads_omp_pme <= 0 && hw_opt->nthreads_omp > 0)
