@@ -744,31 +744,20 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* Check and update the hardware options for internal consistency */
-    check_and_update_hw_opt_1(hw_opt, SIMMASTER(cr));
+    check_and_update_hw_opt_1(hw_opt, cr);
 
     /* Early check for externally set process affinity. */
     gmx_check_thread_affinity_set(fplog, cr,
                                   hw_opt, hwinfo->nthreads_hw_avail, FALSE);
-    if (SIMMASTER(cr))
-    {
 
 #ifdef GMX_THREAD_MPI
+    if (SIMMASTER(cr))
+    {
         if (cr->npmenodes > 0 && hw_opt->nthreads_tmpi <= 0)
         {
             gmx_fatal(FARGS, "You need to explicitly specify the number of MPI threads (-ntmpi) when using separate PME ranks");
         }
-#endif
 
-        if (hw_opt->nthreads_omp_pme != hw_opt->nthreads_omp &&
-            cr->npmenodes <= 0)
-        {
-            gmx_fatal(FARGS, "You need to explicitly specify the number of PME ranks (-npme) when using different number of OpenMP threads for PP and PME ranks");
-        }
-    }
-
-#ifdef GMX_THREAD_MPI
-    if (SIMMASTER(cr))
-    {
         /* Since the master knows the cut-off scheme, update hw_opt for this.
          * This is done later for normal MPI and also once more with tMPI
          * for all tMPI ranks.
@@ -1041,6 +1030,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Check and update hw_opt for the cut-off scheme */
     check_and_update_hw_opt_2(hw_opt, inputrec->cutoff_scheme);
+
+    /* Check and update hw_opt for the number of MPI ranks */
+    check_and_update_hw_opt_3(hw_opt);
 
     gmx_omp_nthreads_init(fplog, cr,
                           hwinfo->nthreads_hw_avail,
