@@ -86,12 +86,17 @@ static const char *gpu_implementation       = "OpenCL";
 /* Our current OpenCL implementation only supports using exactly one
  * GPU per PP rank, so sharing is impossible */
 static const bool bGpuSharingSupported      = false;
-/* Our current OpenCL implementation is not known to handle
- * concurrency correctly (at context creation, JIT compilation, or JIT
- * cache-management stages). OpenCL runtimes need not support it
- * either; library MPI segfaults when creating OpenCL contexts;
- * thread-MPI seems to work but is not yet known to be safe. */
+/* Our current OpenCL implementation seems to handle concurrency
+ * correctly with thread-MPI. The AMD OpenCL runtime does not seem to
+ * support creating a context from more than one real MPI rank on the
+ * same node (it segfaults when you try).
+ */
+#    ifdef GMX_THREAD_MPI
+static const bool bMultiGpuPerNodeSupported = true;
+#    else /* GMX_THREAD_MPI */
+/* Real MPI and no MPI */
 static const bool bMultiGpuPerNodeSupported = false;
+#    endif
 
 #  else /* GMX_USE_OPENCL */
 
