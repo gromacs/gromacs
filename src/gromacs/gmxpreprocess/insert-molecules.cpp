@@ -39,6 +39,7 @@
 #include "insert-molecules.h"
 
 #include <algorithm>
+#include <random>
 #include <string>
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -47,13 +48,13 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/gmxpreprocess/read-conformation.h"
+#include "gromacs/math/random.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/random/random.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
@@ -82,9 +83,11 @@ static void center_molecule(int atomCount, rvec x[])
 }
 
 static void generate_trial_conf(int atomCount, const rvec xin[],
-                                const rvec offset, int enum_rot, gmx_rng_t rng,
+                                const rvec offset, int enum_rot, gmx::DefaultRandomEngine * rng,
                                 rvec xout[])
 {
+    std::uniform_real_distribution<real> dist(0, 2.0*M_PI);
+
     for (int i = 0; i < atomCount; ++i)
     {
         copy_rvec(xin[i], xout[i]);
@@ -93,13 +96,13 @@ static void generate_trial_conf(int atomCount, const rvec xin[],
     switch (enum_rot)
     {
         case en_rotXYZ:
-            alfa  = 2*M_PI * gmx_rng_uniform_real(rng);
-            beta  = 2*M_PI * gmx_rng_uniform_real(rng);
-            gamma = 2*M_PI * gmx_rng_uniform_real(rng);
+            alfa  = dist(*rng);
+            beta  = dist(*rng);
+            gamma = dist(*rng);
             break;
         case en_rotZ:
             alfa  = beta = 0.;
-            gamma = 2*M_PI * gmx_rng_uniform_real(rng);
+            gamma = dist(*rng);
             break;
         case en_rotNone:
             alfa = beta = gamma = 0.;
@@ -194,7 +197,13 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     gmx::AnalysisNeighborhood nb;
     nb.setCutoff(maxInsertRadius + maxRadius);
 
-    gmx_rng_t        rng = gmx_rng_init(seed);
+    if (seed == 0)
+    {
+        seed = static_cast<int>(gmx::makeRandomSeed());
+    }
+    fprintf(stderr, "Using random seed %d\n", seed);
+
+    gmx::DefaultRandomEngine rng(seed);
     set_pbc(&pbc, ePBC, box);
 
     snew(x_n, atoms_insrt->nr);
@@ -228,15 +237,18 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     int trial      = 0;
     int firstTrial = 0;
     int failed     = 0;
+
+    std::uniform_real_distribution<real> dist;
+
     while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt))
     {
         rvec offset_x;
         if (posfn.empty())
         {
             // Insert at random positions.
-            offset_x[XX] = box[XX][XX] * gmx_rng_uniform_real(rng);
-            offset_x[YY] = box[YY][YY] * gmx_rng_uniform_real(rng);
-            offset_x[ZZ] = box[ZZ][ZZ] * gmx_rng_uniform_real(rng);
+            offset_x[XX] = box[XX][XX] * dist(rng);
+            offset_x[YY] = box[YY][YY] * dist(rng);
+            offset_x[ZZ] = box[ZZ][ZZ] * dist(rng);
         }
         else
         {
@@ -249,12 +261,12 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                 ++failed;
             }
             // Insert at positions taken from option -ip file.
-            offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2 * gmx_rng_uniform_real(rng)-1);
-            offset_x[YY] = rpos[YY][mol] + deltaR[YY]*(2 * gmx_rng_uniform_real(rng)-1);
-            offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2 * gmx_rng_uniform_real(rng)-1);
+            offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2 * dist(rng)-1);
+            offset_x[YY] = rpos[YY][mol] + deltaR[YY]*(2 * dist(rng)-1);
+            offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2 * dist(rng)-1);
         }
         fprintf(stderr, "\rTry %d", ++trial);
-        generate_trial_conf(atoms_insrt->nr, x_insrt, offset_x, enum_rot, rng,
+        generate_trial_conf(atoms_insrt->nr, x_insrt, offset_x, enum_rot, &rng,
                             x_n);
         gmx::AnalysisNeighborhoodPositions pos(*x, atoms->nr);
         gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
@@ -273,7 +285,6 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             fprintf(stderr, " success (now %d atoms)!\n", atoms->nr);
         }
     }
-    gmx_rng_destroy(rng);
     srenew(atoms->resinfo,  atoms->nres);
     srenew(atoms->atomname, atoms->nr);
     srenew(atoms->atom,     atoms->nr);
@@ -307,7 +318,7 @@ class InsertMolecules : public ICommandLineOptionsModule
 {
     public:
         InsertMolecules()
-            : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(1997),
+            : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
               defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ)
         {
             clear_rvec(newBox_);
@@ -413,7 +424,7 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
                            .description("Try inserting [TT]-nmol[tt] times [TT]-try[tt] times"));
     options->addOption(IntegerOption("seed")
                            .store(&seed_)
-                           .description("Random generator seed"));
+                           .description("Random generator seed (0 means generate)"));
     options->addOption(RealOption("radius")
                            .store(&defaultDistance_)
                            .description("Default van der Waals distance"));
