@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="UniformRealDistribution">
+    <Int Name="Length">10</Int>
+    <Real>9.9119846810554737</Real>
+    <Real>1.5734949728137229</Real>
+    <Real>1.9476088734177832</Real>
+    <Real>7.2565078971051244</Real>
+    <Real>2.5820984763691017</Real>
+    <Real>1.7144292261626446</Real>
+    <Real>6.359811280714311</Real>
+    <Real>6.3326936351463772</Real>
+    <Real>6.3768064629822563</Real>
+    <Real>5.6497928806131403</Real>
+  </Sequence>
+</ReferenceData>
