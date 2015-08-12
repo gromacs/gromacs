@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="NormalDistribution">
+    <Int Name="Length">10</Int>
+    <Real>-1.1957091691864985</Real>
+    <Real>3.5801436813991621</Real>
+    <Real>10.266616394425856</Real>
+    <Real>10.005895026309037</Real>
+    <Real>14.550652533167714</Real>
+    <Real>4.1441429504561507</Real>
+    <Real>-2.3808567945947017</Real>
+    <Real>2.079897489233129</Real>
+    <Real>2.5282003135332376</Real>
+    <Real>12.317670822361183</Real>
+  </Sequence>
+</ReferenceData>

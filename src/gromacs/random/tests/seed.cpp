@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,58 +33,39 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief
- * Tests utilities for random number generation.
+ * \brief Tests for random seed functions
  *
- * \author Roland Schulz <roland@utk.edu>
+ * \author Erik Lindahl <erik.lindahl@gmail.com>
  * \ingroup module_random
  */
 #include "gmxpre.h"
 
-#include <vector>
+#include "gromacs/random/seed.h"
 
 #include <gtest/gtest.h>
 
-#include "external/Random123-1.08/include/Random123/threefry.h"
-
-#include "testutils/refdata.h"
+namespace gmx
+{
 
 namespace
 {
 
-class Threefry : public ::testing::TestWithParam<std::pair<threefry2x64_ctr_t,
-                                                           threefry2x64_key_t> >
+// Test the random device call
+TEST(SeedTest, makeRandomSeed)
 {
-};
+    // Unlike Sony, we do not use "4" as a constant random value, so the only
+    // thing we can check for the random device is that multiple calls to
+    // it produce different results.
+    // We choose to ignore the 2^-64 probability this will happen by chance;
+    // if you execute the unit tests once per second you might have to run them
+    // an extra time rougly once per 300 billion years - apologies in advance!
 
-TEST_P(Threefry, 2x64)
-{
-    gmx::test::TestReferenceData    data;
+    gmx_uint64_t i0 = makeRandomSeed();
+    gmx_uint64_t i1 = makeRandomSeed();
 
-    gmx::test::TestReferenceChecker checker(data.rootChecker());
-
-    const std::pair<threefry2x64_ctr_t, threefry2x64_key_t> input = GetParam();
-
-    threefry2x64_ctr_t rand = threefry2x64(input.first, input.second);
-
-    checker.checkSequenceArray(2, rand.v, "Threefry2x64");
+    EXPECT_NE(i0, i1);
 }
 
-//The input values are the same as the ones used by Known Answer Tests (kat) in
-//Random123. Reference values agree with those in kat_vectors
-/** input value: zero */
-const threefry2x64_ctr_t tf_zero = {{0, 0}};
-/** input value: max unit64 */
-const threefry2x64_ctr_t tf_max  = {{std::numeric_limits<gmx_uint64_t>::max(),
-                                     std::numeric_limits<gmx_uint64_t>::max()}};
-/** input value: Pi */
-const threefry2x64_ctr_t tf_pi1  = {{0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL}};
-/** input value: More Pi */
-const threefry2x64_ctr_t tf_pi2  = {{0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL}};
+}      // namespace anonymous
 
-INSTANTIATE_TEST_CASE_P(0_ff_pi, Threefry,
-                            ::testing::Values(std::make_pair(tf_zero, tf_zero),
-                                              std::make_pair(tf_max, tf_max),
-                                              std::make_pair(tf_pi1, tf_pi2)));
-
-} // namespace
+}      // namespace gmx
