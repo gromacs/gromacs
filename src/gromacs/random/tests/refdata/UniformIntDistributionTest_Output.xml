@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="UniformIntDistribution">
+    <Int Name="Length">10</Int>
+    <Int>522</Int>
+    <Int>489</Int>
+    <Int>950</Int>
+    <Int>567</Int>
+    <Int>792</Int>
+    <Int>864</Int>
+    <Int>35</Int>
+    <Int>605</Int>
+    <Int>640</Int>
+    <Int>118</Int>
+  </Sequence>
+</ReferenceData>
