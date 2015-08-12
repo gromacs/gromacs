@@ -744,3 +744,19 @@ void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
         print_hw_opt(debug, hw_opt);
     }
 }
+
+/* Checks we can do when we know the thread-MPI rank count */
+void check_and_update_hw_opt_3(gmx_hw_opt_t gmx_unused *hw_opt)
+{
+#ifdef GMX_THREAD_MPI
+    assert(hw_opt->nthreads_tmpi >= 1);
+
+    /* If the user set the total number of threads on the command line
+     * and did not specify the number of OpenMP threads, set the latter here.
+     */
+    if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp <= 0)
+    {
+        hw_opt->nthreads_omp = hw_opt->nthreads_tot/hw_opt->nthreads_tmpi;
+    }
+#endif
+}
