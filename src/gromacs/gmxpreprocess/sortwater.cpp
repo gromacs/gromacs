@@ -42,7 +42,8 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/random/random.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -52,10 +53,11 @@ static matrix  BOX;
 static ivec    NBOX;
 
 void randwater(int astart, int nwater, int nwatom, rvec x[], rvec v[],
-               gmx_rng_t rng)
+               gmx::DefaultRandomEngine * rng)
 {
     int  i, j, wi, wj, *tab;
     rvec buf;
+    gmx::UniformIntDistribution<int> dist(0, nwater-1);
 
     snew(tab, nwater);
     for (i = 0; (i < nwater); i++)
@@ -64,10 +66,10 @@ void randwater(int astart, int nwater, int nwatom, rvec x[], rvec v[],
     }
     for (j = 0; (j < 23*nwater); j++)
     {
-        wi = (int) (nwater*gmx_rng_uniform_real(rng)) % nwater;
+        wi = dist(*rng); // [0,nwater-1]
         do
         {
-            wj = (int) (nwater*gmx_rng_uniform_real(rng)) % nwater;
+            wj = dist(*rng); // [0,nwater-1]
         }
         while (wi == wj);
         wi = astart+wi*nwatom;
