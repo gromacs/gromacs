@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -330,6 +330,8 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
         "analysis programs to calculate more complex things.",
+        "For detailed help on the selection syntax, please use",
+        "[TT]gmx help selections[tt].[PAR]",
         "Any combination of the output options is possible, but note",
         "that [TT]-om[tt] only operates on the first selection.",
         "Also note that if you provide no output options, no output is",
