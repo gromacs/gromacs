@@ -107,6 +107,9 @@ Special topics
 The information in these topics is also accessible through
 :samp:`gmx help {topic}` on the command line.
 
+Selection syntax and usage
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. toctree::
 
    /onlinehelp/selections
