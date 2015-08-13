@@ -3226,6 +3226,7 @@ void do_index(const char* mdparin, const char *ndx,
     gmx_bool      bExcl, bTable, bSetTCpar, bAnneal, bRest;
     int           nQMmethod, nQMbasis, nQMg;
     char          warn_buf[STRLEN];
+    char*         endptr;
 
     if (bVerbose)
     {
@@ -3296,7 +3297,11 @@ void do_index(const char* mdparin, const char *ndx,
         tau_min = 1e20;
         for (i = 0; (i < nr); i++)
         {
-            ir->opts.tau_t[i] = strtod(ptr1[i], NULL);
+            ir->opts.tau_t[i] = strtod(ptr1[i], &endptr);
+            if (*endptr != ' ' && *endptr != 0)
+            {
+                gmx_fatal(FARGS, "Invalid value for tau-t. tau-t should only consist of real numbers separated by spaces.");
+            }
             if ((ir->eI == eiBD || ir->eI == eiSD2) && ir->opts.tau_t[i] <= 0)
             {
                 sprintf(warn_buf, "With integrator %s tau-t should be larger than 0", ei_names[ir->eI]);
@@ -3361,7 +3366,11 @@ void do_index(const char* mdparin, const char *ndx,
         }
         for (i = 0; (i < nr); i++)
         {
-            ir->opts.ref_t[i] = strtod(ptr2[i], NULL);
+            ir->opts.ref_t[i] = strtod(ptr2[i], &endptr);
+            if (*endptr != ' ' && *endptr != 0)
+            {
+                gmx_fatal(FARGS, "Invalid value for ref-t. ref-t should only consist of real numbers separated by spaces.");
+            }
             if (ir->opts.ref_t[i] < 0)
             {
                 gmx_fatal(FARGS, "ref-t for group %d negative", i);
@@ -3454,8 +3463,16 @@ void do_index(const char* mdparin, const char *ndx,
 
                     for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
                     {
-                        ir->opts.anneal_time[i][j] = strtod(ptr1[k], NULL);
-                        ir->opts.anneal_temp[i][j] = strtod(ptr2[k], NULL);
+                        ir->opts.anneal_time[i][j] = strtod(ptr1[k], &endptr);
+                        if (*endptr != ' ' && *endptr != 0)
+                        {
+                            gmx_fatal(FARGS, "Invalid value for anneal-time. anneal-time should only consist of real numbers separated by spaces.");
+                        }
+                        ir->opts.anneal_temp[i][j] = strtod(ptr2[k], &endptr);
+                        if (*endptr != ' ' && *endptr != 0)
+                        {
+                            gmx_fatal(FARGS, "Invalid value for anneal-temp. anneal-temp should only consist of real numbers separated by spaces.");
+                        }
                         if (j == 0)
                         {
                             if (ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
@@ -3555,7 +3572,11 @@ void do_index(const char* mdparin, const char *ndx,
     {
         for (j = 0; (j < DIM); j++, k++)
         {
-            ir->opts.acc[i][j] = strtod(ptr1[k], NULL);
+            ir->opts.acc[i][j] = strtod(ptr1[k], &endptr);
+            if (*endptr != ' ' && *endptr != 0)
+            {
+                gmx_fatal(FARGS, "Invalid value for 'accelerate'. 'accelerate' should only consist of real numbers separated by spaces.");
+            }
         }
     }
     for (; (i < nr); i++)
@@ -3704,9 +3725,21 @@ void do_index(const char* mdparin, const char *ndx,
 
     for (i = 0; i < nr; i++)
     {
-        ir->opts.SAon[i]    = strtod(ptr1[i], NULL);
-        ir->opts.SAoff[i]   = strtod(ptr2[i], NULL);
-        ir->opts.SAsteps[i] = strtol(ptr3[i], NULL, 10);
+        ir->opts.SAon[i]    = strtod(ptr1[i], &endptr);
+        if (*endptr != ' ' && *endptr != 0)
+        {
+            gmx_fatal(FARGS, "Invalid value for SAon. SAon should only consist of real numbers separated by spaces.");
+        }
+        ir->opts.SAoff[i]   = strtod(ptr2[i], &endptr);
+        if (*endptr != ' ' && *endptr != 0)
+        {
+            gmx_fatal(FARGS, "Invalid value for SAoff. SAoff should only consist of real numbers separated by spaces.");
+        }
+        ir->opts.SAsteps[i] = strtol(ptr3[i], &endptr, 10);
+        if (*endptr != ' ' && *endptr != 0)
+        {
+            gmx_fatal(FARGS, "Invalid value for SAsteps. SAsteps should only consist of real numbers separated by spaces.");
+        }
     }
     /* end of QMMM input */
 
