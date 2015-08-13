@@ -157,4 +157,7 @@ void make_rotation_groups(t_rot *rot, char **rotgnames,
 void set_reference_positions(t_rot *rot, rvec *x, matrix box,
                              const char *fn, gmx_bool bSet, warninp_t wi);
 
+bool str_numcheck(const char *str);
+/* Check that a string only consists of numbers, decimals, or spaces */
+
 #endif

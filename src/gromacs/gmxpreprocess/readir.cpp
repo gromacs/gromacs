@@ -1449,6 +1449,23 @@ nd %s",
     }
 }
 
+/* Validate that all characters in this C string are numbers, spaces, or
+ * decimals. Returns true if all characters satisfy this requirement. */
+bool str_numcheck(const char *str)
+{
+    int ascii;
+    int str_length = strlen(str);
+    for (int i =0; i < str_length; i++)
+    {
+        ascii = (int) str[i]; 
+        if (!((ascii < 58 && ascii > 47) || (ascii == 32) || (ascii == 46)))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 /* count the number of text elemets separated by whitespace in a string.
     str = the input string
     maxptr = the maximum number of allowed elements
@@ -3264,6 +3281,18 @@ void do_index(const char* mdparin, const char *ndx,
 
     set_warning_line(wi, mdparin, -1);
 
+    if (!str_numcheck(is->tau_t))
+    {
+        gmx_fatal(FARGS, "Invalid input for tau_t: %s\ntau_t should consist of "
+                "one real number for each temperature coupling group, separated "
+                "by spaces.",is->tau_t); 
+    }
+    if (!str_numcheck(is->ref_t))
+    {
+        gmx_fatal(FARGS, "Invalid input for ref_t: %s\nref_t should consist of "
+                "one real number for each temperature coupling group, separated "
+                "by spaces.",is->ref_t); 
+    }
     ntau_t = str_nelem(is->tau_t, MAXPTR, ptr1);
     nref_t = str_nelem(is->ref_t, MAXPTR, ptr2);
     ntcg   = str_nelem(is->tcgrps, MAXPTR, ptr3);
