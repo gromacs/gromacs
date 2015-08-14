@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/symtab.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -55,8 +56,9 @@ namespace gmx
  * AtomsBuilder
  */
 
-AtomsBuilder::AtomsBuilder(t_atoms *atoms)
-    : atoms_(atoms), nrAlloc_(atoms->nr), nresAlloc_(atoms->nres),
+AtomsBuilder::AtomsBuilder(t_atoms *atoms, t_symtab *symtab)
+    : atoms_(atoms), symtab_(symtab),
+      nrAlloc_(atoms->nr), nresAlloc_(atoms->nres),
       currentResidueIndex_(atoms->nres), nextResidueNumber_(-1)
 {
     if (atoms->nres > 0)
@@ -67,6 +69,15 @@ AtomsBuilder::AtomsBuilder(t_atoms *atoms)
 
 AtomsBuilder::~AtomsBuilder()
 {
+}
+
+char **AtomsBuilder::symtabString(char **source)
+{
+    if (symtab_ != NULL)
+    {
+        return put_symtab(symtab_, *source);
+    }
+    return source;
 }
 
 void AtomsBuilder::reserve(int atomCount, int residueCount)
@@ -100,7 +111,7 @@ void AtomsBuilder::addAtom(const t_atoms &atoms, int i)
 {
     const int index = atoms_->nr;
     atoms_->atom[index]        = atoms.atom[i];
-    atoms_->atomname[index]    = atoms.atomname[i];
+    atoms_->atomname[index]    = symtabString(atoms.atomname[i]);
     atoms_->atom[index].resind = currentResidueIndex_;
     ++atoms_->nr;
 }
@@ -112,8 +123,9 @@ void AtomsBuilder::startResidue(const t_resinfo &resinfo)
         nextResidueNumber_ = resinfo.nr;
     }
     const int index = atoms_->nres;
-    atoms_->resinfo[index]    = resinfo;
-    atoms_->resinfo[index].nr = nextResidueNumber_;
+    atoms_->resinfo[index]      = resinfo;
+    atoms_->resinfo[index].nr   = nextResidueNumber_;
+    atoms_->resinfo[index].name = symtabString(resinfo.name);
     ++nextResidueNumber_;
     currentResidueIndex_      = index;
     ++atoms_->nres;
@@ -126,8 +138,9 @@ void AtomsBuilder::finishResidue(const t_resinfo &resinfo)
         nextResidueNumber_ = resinfo.nr;
     }
     const int index = currentResidueIndex_;
-    atoms_->resinfo[index]    = resinfo;
-    atoms_->resinfo[index].nr = nextResidueNumber_;
+    atoms_->resinfo[index]      = resinfo;
+    atoms_->resinfo[index].nr   = nextResidueNumber_;
+    atoms_->resinfo[index].name = symtabString(resinfo.name);
     ++nextResidueNumber_;
     currentResidueIndex_      = index + 1;
     if (index >= atoms_->nres)
@@ -226,7 +239,7 @@ void AtomsRemover::removeMarkedValues(real array[]) const
 void AtomsRemover::removeMarkedAtoms(t_atoms *atoms) const
 {
     const int    originalAtomCount = atoms->nr;
-    AtomsBuilder builder(atoms);
+    AtomsBuilder builder(atoms, NULL);
     if (atoms->nr > 0)
     {
         builder.setNextResidueNumber(atoms->resinfo[0].nr);

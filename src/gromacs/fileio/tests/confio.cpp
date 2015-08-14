@@ -93,7 +93,6 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         {
             if (testTop_ != NULL)
             {
-                free_t_atoms(&testTop_->atoms, TRUE);
                 done_top(testTop_);
                 sfree(testTop_);
             }

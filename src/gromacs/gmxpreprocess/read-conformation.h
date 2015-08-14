@@ -39,6 +39,7 @@
 
 struct gmx_atomprop;
 struct t_atoms;
+struct t_topology;
 
 /*! \brief Allocate and fill an array of inter-atomic half distances
  *
@@ -52,9 +53,9 @@ real *makeExclusionDistances(const struct t_atoms *a, struct gmx_atomprop *aps,
 /*! \brief Read a conformation from a file, allocate and fill data structures.
  *
  * Used by solvate and insert-molecules. The returned pointers *x and
- * *v should be freed by the caller. atoms should have its destructor
+ * *v should be freed by the caller. top should have its destructor
  * called. */
-char *readConformation(const char *confin, struct t_atoms *atoms, rvec **x, rvec **v,
+char *readConformation(const char *confin, struct t_topology *top, rvec **x, rvec **v,
                        int *ePBC, matrix box, const char *statusTitle);
 
 #endif
