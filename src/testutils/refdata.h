@@ -36,6 +36,8 @@
  * \brief
  * Functionality for writing tests that can produce their own reference data.
  *
+ * See \ref page_refdata for more details.
+ *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_testutils
@@ -123,6 +125,8 @@ class TestReferenceDataImpl;
 
 /*! \libinternal \brief
  * Handles creation of and comparison to test reference data.
+ *
+ * See \ref page_refdata for an overview of the functionality.
  *
  * This class provides functionality to use the same code to generate reference
  * data and then on later runs compare the results of the code against that

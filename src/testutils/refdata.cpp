@@ -680,7 +680,8 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
         return TestReferenceChecker(new Impl());
     }
     std::string         fullId = impl_->appendPath(id);
-    ReferenceDataEntry *entry  = impl_->findOrCreateEntry(type, id, NullChecker());
+    NullChecker         checker;
+    ReferenceDataEntry *entry  = impl_->findOrCreateEntry(type, id, checker);
     if (entry == NULL)
     {
         ADD_FAILURE() << "Reference data item " << fullId << " not found";
@@ -689,6 +690,15 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
     if (impl_->updateMismatchingEntries_)
     {
         entry->makeCompound(type);
+    }
+    else
+    {
+        ::testing::AssertionResult result(impl_->checkEntry(*entry, fullId, type, checker));
+        EXPECT_PLAIN(result);
+        if (!result)
+        {
+            return TestReferenceChecker(new Impl());
+        }
     }
     if (impl_->outputRootEntry_ != NULL && entry->correspondingOutputEntry() == NULL)
     {
