@@ -464,8 +464,20 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
 
     /* GENERAL INTEGRATOR STUFF */
-    if (!(ir->eI == eiMD || EI_VV(ir->eI)))
+    if (!EI_MD(ir->eI))
     {
+        if (ir->etc != etcNO)
+        {
+            if (EI_RANDOM(ir->eI))
+            {
+                sprintf(warn_buf, "Setting tcoupl from '%s' to 'no'. %s handles temperature coupling implicitly. See the documentation for more information on which parameters affect temperature for %s.", etcoupl_names[ir->etc], ei_names[ir->eI], ei_names[ir->eI]);
+            }
+            else
+            {
+                sprintf(warn_buf, "Setting tcoupl from '%s' to 'no'. Temperature coupling does not apply to %s.", etcoupl_names[ir->etc], ei_names[ir->eI]);
+            }
+            warning_note(wi, warn_buf);
+        }
         ir->etc = etcNO;
     }
     if (ir->eI == eiVVAK)
@@ -475,6 +487,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
     if (!EI_DYNAMICS(ir->eI))
     {
+        if (ir->epc != epcNO)
+        {
+            sprintf(warn_buf, "Setting pcoupl from '%s' to 'no'. Pressure coupling does not apply to %s.", epcoupl_names[ir->epc], ei_names[ir->eI]);
+            warning_note(wi, warn_buf);
+        }
         ir->epc = epcNO;
     }
     if (EI_DYNAMICS(ir->eI))
