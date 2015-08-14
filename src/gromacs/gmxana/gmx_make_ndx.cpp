@@ -1585,13 +1585,15 @@ int gmx_make_ndx(int argc, char *argv[])
 
     if (stxfile)
     {
-        snew(atoms, 1);
-        get_stx_coordnum(stxfile, &(atoms->nr));
-        init_t_atoms(atoms, atoms->nr, TRUE);
-        snew(x, atoms->nr);
-        snew(v, atoms->nr);
+        t_topology *top;
+        snew(top, 1);
         fprintf(stderr, "\nReading structure file\n");
-        read_stx_conf(stxfile, title, atoms, x, v, &ePBC, box);
+        read_tps_conf(stxfile, title, top, &ePBC, &x, &v, box, FALSE);
+        atoms = &top->atoms;
+        if (atoms->pdbinfo == NULL)
+        {
+            snew(atoms->pdbinfo, atoms->nr);
+        }
         natoms  = atoms->nr;
         bNatoms = TRUE;
     }

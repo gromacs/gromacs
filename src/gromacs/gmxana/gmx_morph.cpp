@@ -46,6 +46,7 @@
 #include "gromacs/math/do_fit.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -115,8 +116,7 @@ int gmx_morph(int argc, char *argv[])
     int              i, isize, is_lsq, nat1, nat2;
     t_trxstatus     *status;
     atom_id         *index, *index_lsq, *index_all, *dummy;
-    t_atoms          atoms;
-    rvec            *x1, *x2, *xx, *v;
+    rvec            *x1, *x2, *xx;
     matrix           box;
     real             rms1, rms2, fac, *mass;
     char             title[STRLEN], *grpname;
@@ -129,22 +129,20 @@ int gmx_morph(int argc, char *argv[])
     {
         return 0;
     }
-    get_stx_coordnum (opt2fn("-f1", NFILE, fnm), &nat1);
-    get_stx_coordnum (opt2fn("-f2", NFILE, fnm), &nat2);
+
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(opt2fn("-f1", NFILE, fnm), title, top, NULL, &x1, NULL, box, FALSE);
+    nat1 = top->atoms.nr;
+    read_tps_conf(opt2fn("-f2", NFILE, fnm), title, top, NULL, &x2, NULL, box, FALSE);
+    nat2 = top->atoms.nr;
     if (nat1 != nat2)
     {
         gmx_fatal(FARGS, "Number of atoms in first structure is %d, in second %d",
                   nat1, nat2);
     }
-
-    init_t_atoms(&atoms, nat1, TRUE);
-    snew(x1, nat1);
-    snew(x2, nat1);
     snew(xx, nat1);
-    snew(v, nat1);
-
-    read_stx_conf(opt2fn("-f1", NFILE, fnm), title, &atoms, x1, v, NULL, box);
-    read_stx_conf(opt2fn("-f2", NFILE, fnm), title, &atoms, x2, v, NULL, box);
+    t_atoms  &atoms = top->atoms;
 
     snew(mass, nat1);
     snew(index_all, nat1);

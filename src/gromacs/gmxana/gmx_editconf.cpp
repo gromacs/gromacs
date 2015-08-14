@@ -703,7 +703,6 @@ int gmx_editconf(int argc, char *argv[])
     double        *bfac    = NULL, c6, c12;
     int           *bfac_nr = NULL;
     t_topology    *top     = NULL;
-    t_atoms        atoms;
     char          *grpname, *sgrpname, *agrpname;
     int            isize, ssize, asize;
     atom_id       *index, *sindex, *aindex;
@@ -790,11 +789,15 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead option\n");
     }
 
-    get_stx_coordnum(infile, &natom);
-    init_t_atoms(&atoms, natom, TRUE);
-    snew(x, natom);
-    snew(v, natom);
-    read_stx_conf(infile, title, &atoms, x, v, &ePBC, box);
+    t_topology *top_tmp;
+    snew(top_tmp, 1);
+    read_tps_conf(infile, title, top_tmp, &ePBC, &x, &v, box, FALSE);
+    t_atoms  &atoms = top_tmp->atoms;
+    natom = atoms.nr;
+    if (atoms.pdbinfo == NULL)
+    {
+        snew(atoms.pdbinfo, atoms.nr);
+    }
     if (fn2ftp(infile) == efPDB)
     {
         get_pdb_atomnumber(&atoms, aps);

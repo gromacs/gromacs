@@ -394,25 +394,14 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
     write_t_edx(fp, edpars->sori, "NORIGIN, XORIGIN");
 }
 
-int read_conffile(const char *confin, char *title, rvec *x[])
+int read_conffile(const char *confin, char *title, rvec **x)
 {
-/* read coordinates out of STX file  */
-    int      natoms;
-    t_atoms  confat;
-    matrix   box;
+    t_topology  top;
+    matrix      box;
     printf("read coordnumber from file %s\n", confin);
-    get_stx_coordnum(confin, &natoms);
-    printf("number of coordinates in file %d\n", natoms);
-/*  if (natoms != ncoords)
-     gmx_fatal(FARGS,"number of coordinates in coordinate file (%s, %d)\n"
-           "             does not match topology (= %d)",
-           confin,natoms,ncoords);
-   else {*/
-    /* make space for coordinates and velocities */
-    init_t_atoms(&confat, natoms, FALSE);
-    snew(*x, natoms);
-    read_stx_conf(confin, title, &confat, *x, NULL, NULL, box);
-    return natoms;
+    read_tps_conf(confin, title, &top, NULL, x, NULL, box, FALSE);
+    printf("number of coordinates in file %d\n", top.atoms.nr);
+    return top.atoms.nr;
 }
 
 

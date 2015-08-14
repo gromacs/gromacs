@@ -311,15 +311,17 @@ int gmx_rmsf(int argc, char *argv[])
 
     if (bReadPDB)
     {
-        get_stx_coordnum(opt2fn("-q", NFILE, fnm), &npdbatoms);
-        snew(pdbatoms, 1);
-        snew(refatoms, 1);
-        init_t_atoms(pdbatoms, npdbatoms, TRUE);
-        init_t_atoms(refatoms, npdbatoms, TRUE);
-        snew(pdbx, npdbatoms);
+        t_topology *top_pdb;
+        snew(top_pdb, 1);
         /* Read coordinates twice */
-        read_stx_conf(opt2fn("-q", NFILE, fnm), title, pdbatoms, pdbx, NULL, NULL, pdbbox);
-        read_stx_conf(opt2fn("-q", NFILE, fnm), title, refatoms, pdbx, NULL, NULL, pdbbox);
+        read_tps_conf(opt2fn("-q", NFILE, fnm), title, top_pdb, NULL, NULL, NULL, pdbbox, FALSE);
+        snew(pdbatoms, 1);
+        *pdbatoms = top_pdb->atoms;
+        read_tps_conf(opt2fn("-q", NFILE, fnm), title, top_pdb, NULL, &pdbx, NULL, pdbbox, FALSE);
+        snew(refatoms, 1);
+        *refatoms = top_pdb->atoms;
+        npdbatoms = pdbatoms->nr;
+        sfree(top_pdb);
     }
     else
     {

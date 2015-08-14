@@ -70,15 +70,13 @@ static t_pdbfile *read_pdbf(const char *fn)
     t_pdbfile *pdbf;
     double     e;
     char       buf[256], *ptr;
-    int        natoms;
     FILE      *fp;
 
     snew(pdbf, 1);
-    get_stx_coordnum (fn, &natoms);
-    init_t_atoms(&(pdbf->atoms), natoms, FALSE);
-    snew(pdbf->x, natoms);
-    read_stx_conf(fn, buf, &pdbf->atoms, pdbf->x, NULL, &pdbf->ePBC, pdbf->box);
-    fp = gmx_ffopen(fn, "r");
+    t_topology top;
+    read_tps_conf(fn, buf, &top, &pdbf->ePBC, &pdbf->x, NULL, pdbf->box, FALSE);
+    pdbf->atoms = top.atoms;
+    fp          = gmx_ffopen(fn, "r");
     do
     {
         ptr = fgets2(buf, 255, fp);
