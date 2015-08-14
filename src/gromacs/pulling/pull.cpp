@@ -517,7 +517,7 @@ static void low_get_pull_coord_dr(const struct pull_t *pull,
     {
         gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f).\nYou might want to consider using \"pull-geometry = direction-periodic\" instead.\n",
                   pcrd->params.group[0], pcrd->params.group[1],
-                  sqrt(dr2), sqrt(max_dist2));
+                  sqrt(dr2), sqrt(0.98*0.98*max_dist2));
     }
 
     if (pcrd->params.eGeom == epullgDIRPBC)
