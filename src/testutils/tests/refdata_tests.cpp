@@ -207,6 +207,22 @@ TEST(ReferenceDataTest, HandlesIncorrectData)
     }
 }
 
+TEST(ReferenceDataTest, HandlesIncorrectDataType)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkCompound("Compound", "compound");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkString("1", "int"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkCompound("OtherCompound", "compound"), "");
+    }
+}
+
 
 TEST(ReferenceDataTest, HandlesMissingData)
 {
@@ -318,6 +334,36 @@ TEST(ReferenceDataTest, HandlesMultipleNullIds)
         checker.checkString("Test", NULL);
         checker.checkString("Test2", NULL);
         EXPECT_NONFATAL_FAILURE(checker.checkString("Test", NULL), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesMultipleComparisonsAgainstNullIds)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int1");
+        checker.checkString("Test", NULL);
+        checker.checkString("Test2", NULL);
+        checker.checkInteger(2, "int2");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", NULL), "");
+        checker.checkString("Test2", NULL);
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int1");
+        checker.checkString("Test", NULL);
+        checker.checkString("Test2", NULL);
+        checker.checkInteger(2, "int2");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", NULL), "");
+        checker.checkInteger(1, "int1");
+        checker.checkString("Test", NULL);
+        checker.checkString("Test2", NULL);
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test", NULL), "");
+        checker.checkInteger(2, "int2");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", NULL), "");
     }
 }
 
