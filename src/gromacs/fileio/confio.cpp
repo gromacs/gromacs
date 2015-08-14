@@ -204,7 +204,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
 static void get_stx_coordnum(const char *infile, int *natoms)
 {
     FILE      *in;
-    int        ftp, tpxver, tpxgen;
+    int        ftp;
     t_trxframe fr;
     char       g96_line[STRLEN+1];
 
@@ -216,6 +216,7 @@ static void get_stx_coordnum(const char *infile, int *natoms)
             get_coordnum(infile, natoms);
             break;
         case efG96:
+        {
             in        = gmx_fio_fopen(infile, "r");
             fr.title  = NULL;
             fr.natoms = -1;
@@ -223,9 +224,11 @@ static void get_stx_coordnum(const char *infile, int *natoms)
             fr.x      = NULL;
             fr.v      = NULL;
             fr.f      = NULL;
-            *natoms   = read_g96_conf(in, infile, &fr, g96_line);
+            *natoms   = read_g96_conf(in, infile, &fr, NULL, g96_line);
+            sfree(const_cast<char *>(fr.title));
             gmx_fio_fclose(in);
             break;
+        }
         case efPDB:
         case efBRK:
         case efENT:
@@ -236,14 +239,6 @@ static void get_stx_coordnum(const char *infile, int *natoms)
         case efESP:
             *natoms = get_espresso_coordnum(infile);
             break;
-        case efTPR:
-        {
-            t_tpxheader tpx;
-
-            read_tpxheader(infile, &tpx, TRUE, &tpxver, &tpxgen);
-            *natoms = tpx.natoms;
-            break;
-        }
         default:
             gmx_fatal(FARGS, "File type %s not supported in get_stx_coordnum",
                       ftp2ext(ftp));
@@ -294,21 +289,19 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-static void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
+static void read_stx_conf(const char *infile, char *title, t_topology *top,
                           rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
-    gmx_mtop_t *mtop;
-    t_topology  top;
     t_trxframe  fr;
-    int         i, ftp, natoms;
+    int         ftp;
     char        g96_line[STRLEN+1];
 
-    if (atoms->nr == 0)
+    if (top->atoms.nr == 0)
     {
         fprintf(stderr, "Warning: Number of atoms in %s is 0\n", infile);
     }
-    else if (atoms->atom == NULL)
+    else if (top->atoms.atom == NULL)
     {
         gmx_mem("Uninitialized array atom");
     }
@@ -322,17 +315,17 @@ static void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
     switch (ftp)
     {
         case efGRO:
-            read_whole_conf(infile, title, atoms, x, v, box);
+            gmx_gro_read_conf(infile, title, top, x, v, box);
             break;
         case efG96:
             fr.title  = NULL;
-            fr.natoms = atoms->nr;
-            fr.atoms  = atoms;
+            fr.natoms = top->atoms.nr;
+            fr.atoms  = &top->atoms;
             fr.x      = x;
             fr.v      = v;
             fr.f      = NULL;
             in        = gmx_fio_fopen(infile, "r");
-            read_g96_conf(in, infile, &fr, g96_line);
+            read_g96_conf(in, infile, &fr, &top->symtab, g96_line);
             gmx_fio_fclose(in);
             copy_mat(fr.box, box);
             std::strncpy(title, fr.title, STRLEN);
@@ -340,36 +333,10 @@ static void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
         case efPDB:
         case efBRK:
         case efENT:
-            read_pdb_conf(infile, title, atoms, x, ePBC, box, TRUE, NULL);
+            gmx_pdb_read_conf(infile, title, top, x, ePBC, box);
             break;
         case efESP:
-            read_espresso_conf(infile, title, atoms, x, v, box);
-            break;
-        case efTPR:
-            snew(mtop, 1);
-            i = read_tpx(infile, NULL, box, &natoms, x, v, NULL, mtop);
-            if (ePBC)
-            {
-                *ePBC = i;
-            }
-
-            strcpy(title, *(mtop->name));
-
-            /* Free possibly allocated memory */
-            done_atom(atoms);
-
-            *atoms = gmx_mtop_global_atoms(mtop);
-            top    = gmx_mtop_t_to_t_topology(mtop);
-            tpx_make_chain_identifiers(atoms, &top.mols);
-
-            sfree(mtop);
-            /* The strings in the symtab are still in use in the returned t_atoms
-             * structure, so we should not free them. But there is no place to put the
-             * symbols; the only choice is to leak the memory...
-             * So we clear the symbol table before freeing the topology structure. */
-            free_symtab(&top.symtab);
-            done_top(&top);
-
+            gmx_espresso_read_conf(infile, title, top, x, v, box);
             break;
         default:
             gmx_incons("Not supported in read_stx_conf");
@@ -439,6 +406,7 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
     }
     else
     {
+        open_symtab(&top->symtab);
         get_stx_coordnum(infile, &natoms);
         init_t_atoms(&top->atoms, natoms, (fn2ftp(infile) == efPDB));
         if (x == NULL)
@@ -451,7 +419,7 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
         {
             snew(*v, natoms);
         }
-        read_stx_conf(infile, title, &top->atoms, *x, (v == NULL) ? NULL : *v, ePBC, box);
+        read_stx_conf(infile, title, top, *x, (v == NULL) ? NULL : *v, ePBC, box);
         if (bXNULL)
         {
             sfree(*x);
