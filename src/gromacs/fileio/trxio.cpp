@@ -698,6 +698,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
 static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
 {
     t_atoms   atoms;
+    t_symtab *symtab;
     matrix    boxpdb;
     int       ePBC, model_nr, na;
     char      title[STRLEN], *time;
@@ -708,7 +709,11 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     atoms.pdbinfo = NULL;
     /* the other pointers in atoms should not be accessed if these are NULL */
     model_nr = NOTSET;
-    na       = read_pdbfile(fp, title, &model_nr, &atoms, fr->x, &ePBC, boxpdb, TRUE, NULL);
+    snew(symtab, 1);
+    open_symtab(symtab);
+    na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, NULL);
+    free_symtab(symtab);
+    sfree(symtab);
     set_trxframe_ePBC(fr, ePBC);
     if (nframes_read(status) == 0)
     {
@@ -816,10 +821,16 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                 /* Checkpoint files can not contain mulitple frames */
                 break;
             case efG96:
+            {
+                t_symtab *symtab;
+                snew(symtab, 1);
+                open_symtab(symtab);
                 read_g96_conf(gmx_fio_getfp(status->fio), NULL, fr,
-                              status->persistent_line);
+                              symtab, status->persistent_line);
+                free_symtab(symtab);
                 bRet = (fr->natoms > 0);
                 break;
+            }
             case efXTC:
                 /* B. Hess 2005-4-20
                  * Sometimes is off by one frame
@@ -947,13 +958,18 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             bFirst = FALSE;
             break;
         case efG96:
+        {
             /* Can not rewind a compressed file, so open it twice */
             if (!(*status)->persistent_line)
             {
                 /* allocate the persistent line */
                 snew((*status)->persistent_line, STRLEN+1);
             }
-            read_g96_conf(gmx_fio_getfp(fio), fn, fr, (*status)->persistent_line);
+            t_symtab *symtab;
+            snew(symtab, 1);
+            open_symtab(symtab);
+            read_g96_conf(gmx_fio_getfp(fio), fn, fr, symtab, (*status)->persistent_line);
+            free_symtab(symtab);
             gmx_fio_close(fio);
             clear_trxframe(fr, FALSE);
             if (flags & (TRX_READ_X | TRX_NEED_X))
@@ -966,6 +982,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             }
             (*status)->fio = gmx_fio_open(fn, "r");
             break;
+        }
         case efXTC:
             if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
                                &fr->prec, &bOK) == 0)

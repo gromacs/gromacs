@@ -57,6 +57,7 @@
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -445,19 +446,18 @@ int InsertMolecules::run()
                   "a box size (-box) must be specified");
     }
 
-    char    *title = NULL;
-    t_atoms *atoms;
-    rvec    *x = NULL;
-    matrix   box;
-    int      ePBC = -1;
-    snew(atoms, 1);
-    init_t_atoms(atoms, 0, FALSE);
+    char       *title = NULL;
+    t_topology *top;
+    rvec       *x = NULL;
+    matrix      box;
+    int         ePBC = -1;
+    snew(top, 1);
     if (bProt)
     {
         /* Generate a solute configuration */
-        title = readConformation(inputConfFile_.c_str(), atoms, &x, NULL,
+        title = readConformation(inputConfFile_.c_str(), top, &x, NULL,
                                  &ePBC, box, "solute");
-        if (atoms->nr == 0)
+        if (top->atoms.nr == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", inputConfFile_.c_str());
             sfree(title);
@@ -478,17 +478,16 @@ int InsertMolecules::run()
                   "or give explicit -box command line option");
     }
 
-    t_atoms *atoms_insrt;
-    rvec    *x_insrt = NULL;
-    snew(atoms_insrt, 1);
-    init_t_atoms(atoms_insrt, 0, FALSE);
+    t_topology *top_insrt;
+    rvec       *x_insrt = NULL;
+    snew(top_insrt, 1);
     {
         int         ePBC_dummy;
         matrix      box_dummy;
         char       *title_ins
-            = readConformation(insertConfFile_.c_str(), atoms_insrt, &x_insrt,
+            = readConformation(insertConfFile_.c_str(), top_insrt, &x_insrt,
                                NULL, &ePBC_dummy, box_dummy, "molecule");
-        if (atoms_insrt->nr == 0)
+        if (top_insrt->atoms.nr == 0)
         {
             gmx_fatal(FARGS, "No molecule in %s, please check your input",
                       insertConfFile_.c_str());
@@ -503,31 +502,31 @@ int InsertMolecules::run()
         }
         if (positionFile_.empty())
         {
-            center_molecule(atoms_insrt->nr, x_insrt);
+            center_molecule(top_insrt->atoms.nr, x_insrt);
         }
     }
 
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                atoms, &x, atoms_insrt, x_insrt,
+                &top->atoms, &x, &top_insrt->atoms, x_insrt,
                 ePBC, box, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), title, atoms, x, NULL, ePBC, box);
+    write_sto_conf(outputConfFile_.c_str(), title, &top->atoms, x, NULL, ePBC, box);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
-            atoms->nr, atoms->nres);
+            top->atoms.nr, top->atoms.nres);
 
     sfree(x);
     sfree(x_insrt);
-    done_atom(atoms);
-    done_atom(atoms_insrt);
-    sfree(atoms);
-    sfree(atoms_insrt);
+    done_top(top);
+    sfree(top);
+    done_top(top_insrt);
+    sfree(top_insrt);
     sfree(title);
 
     return 0;

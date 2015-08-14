@@ -837,11 +837,10 @@ void gmx_conect_add(gmx_conect conect, int ai, int aj)
 }
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,
-                 t_atoms *atoms, rvec x[], int *ePBC, matrix box, gmx_bool bChange,
-                 gmx_conect conect)
+                 t_atoms *atoms, t_symtab *symtab, rvec x[], int *ePBC,
+                 matrix box, gmx_bool bChange, gmx_conect conect)
 {
     gmx_conect_t *gc = conect;
-    t_symtab      symtab;
     gmx_bool      bCOMPND;
     gmx_bool      bConnWarn = FALSE;
     char          line[STRLEN+1];
@@ -860,8 +859,6 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         clear_mat(box);
     }
 
-    open_symtab(&symtab);
-
     bCOMPND  = FALSE;
     title[0] = '\0';
     natom    = 0;
@@ -874,7 +871,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         {
             case epdbATOM:
             case epdbHETATM:
-                natom = read_atom(&symtab, line, line_type, natom, atoms, x, chainnum, bChange);
+                natom = read_atom(symtab, line, line_type, natom, atoms, x, chainnum, bChange);
                 break;
 
             case epdbANISOU:
@@ -988,7 +985,6 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         }
     }
 
-    free_symtab(&symtab);
     return natom;
 }
 
@@ -1010,14 +1006,11 @@ void get_pdb_coordnum(FILE *in, int *natoms)
     }
 }
 
-void read_pdb_conf(const char *infile, char *title,
-                   t_atoms *atoms, rvec x[], int *ePBC, matrix box, gmx_bool bChange,
-                   gmx_conect conect)
+void gmx_pdb_read_conf(const char *infile, char *title,
+                       t_topology *top, rvec x[], int *ePBC, matrix box)
 {
-    FILE *in;
-
-    in = gmx_fio_fopen(infile, "r");
-    read_pdbfile(in, title, NULL, atoms, x, ePBC, box, bChange, conect);
+    FILE *in = gmx_fio_fopen(infile, "r");
+    read_pdbfile(in, title, NULL, &top->atoms, &top->symtab, x, ePBC, box, TRUE, NULL);
     gmx_fio_fclose(in);
 }
 

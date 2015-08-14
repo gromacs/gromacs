@@ -270,7 +270,7 @@ void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *at
         aaa.nr = ndots;
         write_sto_conf(fn, title, &aaa, xnew, NULL, ePBC, const_cast<rvec *>(box));
         do_conect(fn, ndots, xnew);
-        free_t_atoms(&aaa, FALSE);
+        done_atom(&aaa);
     }
     sfree(xnew);
 }

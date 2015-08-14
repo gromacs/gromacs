@@ -191,7 +191,6 @@ TopologyInformation::~TopologyInformation()
 {
     if (top_)
     {
-        free_t_atoms(&top_->atoms, TRUE);
         done_top(top_);
         sfree(top_);
     }

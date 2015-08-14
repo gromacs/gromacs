@@ -71,7 +71,6 @@ TopologyManager::~TopologyManager()
 {
     if (top_ != NULL)
     {
-        free_t_atoms(&top_->atoms, TRUE);
         done_top(top_);
         sfree(top_);
     }
