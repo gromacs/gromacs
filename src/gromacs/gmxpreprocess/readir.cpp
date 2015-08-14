@@ -3239,7 +3239,7 @@ void do_index(const char* mdparin, const char *ndx,
         snew(gnames, 1);
         atoms_all = gmx_mtop_global_atoms(mtop);
         analyse(&atoms_all, grps, &gnames, FALSE, TRUE);
-        free_t_atoms(&atoms_all, FALSE);
+        done_atom(&atoms_all);
     }
     else
     {

@@ -51,8 +51,8 @@ struct t_topology;
 struct t_trxframe;
 
 void get_coordnum(const char *infile, int *natoms);
-void read_whole_conf(const char *infile, char *title,
-                     struct t_atoms *atoms, rvec x[], rvec *v, matrix box);
+void gmx_gro_read_conf(const char *infile, char *title,
+                       struct t_topology *top, rvec x[], rvec *v, matrix box);
 
 gmx_bool gro_next_x_or_v(FILE *status, struct t_trxframe *fr);
 int gro_first_x_or_v(FILE *status, struct t_trxframe *fr);

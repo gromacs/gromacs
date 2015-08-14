@@ -215,9 +215,9 @@ static int read_g96_vel(char line[], FILE *fp, const char *infile,
     return natoms;
 }
 
-int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line)
+int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
+                  t_symtab *symtab, char *line)
 {
-    t_symtab  *symtab = NULL;
     gmx_bool   bAtStart, bTime, bAtoms, bPos, bVel, bBox, bEnd, bFinished;
     int        natoms, nbp;
     double     db1, db2, db3, db4, db5, db6, db7, db8, db9;
@@ -225,12 +225,6 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line)
     bAtStart = (ftell(fp) == 0);
 
     clear_trxframe(fr, FALSE);
-
-    if (!symtab)
-    {
-        snew(symtab, 1);
-        open_symtab(symtab);
-    }
 
     natoms = 0;
 
@@ -336,8 +330,6 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr, char *line)
         }
     }
     while (!bFinished && fgets2(line, STRLEN, fp));
-
-    free_symtab(symtab);
 
     fr->natoms = natoms;
 
