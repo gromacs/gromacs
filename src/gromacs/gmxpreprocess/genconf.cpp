@@ -226,21 +226,18 @@ int gmx_genconf(int argc, char *argv[])
 
     vol = nx*ny*nz; /* calculate volume in grid points (= nr. molecules) */
 
-    get_stx_coordnum(opt2fn("-f", NFILE, fnm), &natoms);
-    snew(atoms, 1);
+    t_topology *top;
+    snew(top, 1);
+    atoms = &top->atoms;
+    read_tps_conf(opt2fn("-f", NFILE, fnm), title, top, &ePBC, &x, &v, box, FALSE);
+    natoms = atoms->nr;
+    nres   = atoms->nres;          /* nr of residues in one element? */
     /* make space for all the atoms */
-    init_t_atoms(atoms, natoms*vol, FALSE);
-    snew(x, natoms*vol);           /* get space for coordinates of all atoms */
+    add_t_atoms(atoms, natoms*(vol-1), nres*(vol-1));
+    srenew(x, natoms*vol);         /* get space for coordinates of all atoms */
+    srenew(v, natoms*vol);         /* velocities. not really needed? */
     snew(xrot, natoms);            /* get space for rotation matrix? */
-    snew(v, natoms*vol);           /* velocities. not really needed? */
     snew(vrot, natoms);
-    /* set atoms->nr to the number in one box *
-     * to avoid complaints in read_stx_conf   *
-     */
-    atoms->nr = natoms;
-    read_stx_conf(opt2fn("-f", NFILE, fnm), title, atoms, x, v, &ePBC, box);
-
-    nres = atoms->nres;            /* nr of residues in one element? */
 
     if (bTRX)
     {

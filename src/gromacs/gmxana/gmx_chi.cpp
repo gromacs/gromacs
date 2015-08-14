@@ -1351,8 +1351,7 @@ int gmx_chi(int argc, char *argv[])
     };
 
     FILE              *log;
-    int                natoms, nlist, idum, nbin;
-    t_atoms            atoms;
+    int                nlist, idum, nbin;
     rvec              *x;
     int                ePBC;
     matrix             box;
@@ -1443,10 +1442,14 @@ int gmx_chi(int argc, char *argv[])
     nbin     = 360/ndeg;
 
     /* Find the chi angles using atoms struct and a list of amino acids */
-    get_stx_coordnum(ftp2fn(efSTX, NFILE, fnm), &natoms);
-    init_t_atoms(&atoms, natoms, TRUE);
-    snew(x, natoms);
-    read_stx_conf(ftp2fn(efSTX, NFILE, fnm), title, &atoms, x, NULL, &ePBC, box);
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(ftp2fn(efSTX, NFILE, fnm), title, top, &ePBC, &x, NULL, box, FALSE);
+    t_atoms    &atoms = top->atoms;
+    if (atoms.pdbinfo == NULL)
+    {
+        snew(atoms.pdbinfo, atoms.nr);
+    }
     fprintf(log, "Title: %s\n", title);
 
     gmx_residuetype_init(&rt);

@@ -538,10 +538,16 @@ static int read_pdball(const char *inf, const char *outf, char *title,
 
     /* READ IT */
     printf("Reading %s...\n", inf);
-    get_stx_coordnum(inf, &natom);
-    init_t_atoms(atoms, natom, TRUE);
-    snew(*x, natom);
-    read_stx_conf(inf, title, atoms, *x, NULL, ePBC, box);
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(inf, title, top, ePBC, x, NULL, box, FALSE);
+    *atoms = top->atoms;
+    sfree(top);
+    natom = atoms->nr;
+    if (atoms->pdbinfo == NULL)
+    {
+        snew(atoms->pdbinfo, atoms->nr);
+    }
     if (fn2ftp(inf) == efPDB)
     {
         get_pdb_atomnumber(atoms, aps);

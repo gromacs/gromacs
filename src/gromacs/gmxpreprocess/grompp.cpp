@@ -509,7 +509,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     t_molinfo      *molinfo = NULL;
     int             nmolblock;
     gmx_molblock_t *molblock, *molbs;
-    t_atoms        *confat;
     int             mb, i, nrmols, nmismatch;
     char            buf[STRLEN];
     gmx_bool        bGB = FALSE;
@@ -600,51 +599,47 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "processing coordinates...\n");
     }
 
-    get_stx_coordnum(confin, &state->natoms);
+    char        title[STRLEN];
+    t_topology *conftop;
+    snew(conftop, 1);
+    init_state(state, 0, 0, 0, 0, 0);
+    read_tps_conf(confin, title, conftop, NULL, &state->x, &state->v, state->box, FALSE);
+    state->natoms = state->nalloc = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
         gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
                   "             does not match topology (%s, %d)",
                   confin, state->natoms, topfile, sys->natoms);
     }
-    else
+    /* This call fixes the box shape for runs with pressure scaling */
+    set_box_rel(ir, state);
+
+    nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
+    done_top(conftop);
+    sfree(conftop);
+
+    if (nmismatch)
     {
-        /* make space for coordinates and velocities */
-        char title[STRLEN];
-        snew(confat, 1);
-        init_t_atoms(confat, state->natoms, FALSE);
-        init_state(state, state->natoms, 0, 0, 0, 0);
-        read_stx_conf(confin, title, confat, state->x, state->v, NULL, state->box);
-        /* This call fixes the box shape for runs with pressure scaling */
-        set_box_rel(ir, state);
+        sprintf(buf, "%d non-matching atom name%s\n"
+                "atom names from %s will be used\n"
+                "atom names from %s will be ignored\n",
+                nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
+        warning(wi, buf);
+    }
 
-        nmismatch = check_atom_names(topfile, confin, sys, confat);
-        free_t_atoms(confat, TRUE);
-        sfree(confat);
-
-        if (nmismatch)
-        {
-            sprintf(buf, "%d non-matching atom name%s\n"
-                    "atom names from %s will be used\n"
-                    "atom names from %s will be ignored\n",
-                    nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
-            warning(wi, buf);
-        }
-
-        /* Do more checks, mostly related to constraints */
-        if (bVerbose)
-        {
-            fprintf(stderr, "double-checking input for internal consistency...\n");
-        }
-        {
-            int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
-                                             nint_ftype(sys, molinfo, F_CONSTRNC));
-            int bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
-            double_check(ir, state->box,
-                         bHasNormalConstraints,
-                         bHasAnyConstraints,
-                         wi);
-        }
+    /* Do more checks, mostly related to constraints */
+    if (bVerbose)
+    {
+        fprintf(stderr, "double-checking input for internal consistency...\n");
+    }
+    {
+        int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
+                                         nint_ftype(sys, molinfo, F_CONSTRNC));
+        int bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
+        double_check(ir, state->box,
+                     bHasNormalConstraints,
+                     bHasAnyConstraints,
+                     wi);
     }
 
     if (bGenVel)
@@ -816,7 +811,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     rvec           *x, *v, *xp;
     dvec            sum;
     double          totmass;
-    t_atoms         dumat;
+    t_topology     *top;
     matrix          box, invbox;
     int             natoms, npbcdim = 0;
     char            warn_buf[STRLEN], title[STRLEN];
@@ -825,16 +820,16 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     t_params       *pr, *prfb;
     t_atom         *atom;
 
-    get_stx_coordnum(fn, &natoms);
+    snew(top, 1);
+    read_tps_conf(fn, title, top, NULL, &x, &v, box, FALSE);
+    natoms = top->atoms.nr;
+    done_top(top);
+    sfree(top);
     if (natoms != mtop->natoms)
     {
         sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn, natoms, mtop->natoms, std::min(mtop->natoms, natoms), fn);
         warning(wi, warn_buf);
     }
-    snew(x, natoms);
-    snew(v, natoms);
-    init_t_atoms(&dumat, natoms, FALSE);
-    read_stx_conf(fn, title, &dumat, x, v, NULL, box);
 
     npbcdim = ePBC2npbcdim(ePBC);
     clear_rvec(com);
@@ -983,7 +978,6 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
         }
     }
 
-    free_t_atoms(&dumat, TRUE);
     sfree(x);
     sfree(v);
     sfree(hadAtom);

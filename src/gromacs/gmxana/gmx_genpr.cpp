@@ -158,13 +158,15 @@ int gmx_genpr(int argc, char *argv[])
 
     if (xfn != NULL)
     {
-        snew(atoms, 1);
-        get_stx_coordnum(xfn, &(atoms->nr));
-        init_t_atoms(atoms, atoms->nr, TRUE);
-        snew(x, atoms->nr);
-        snew(v, atoms->nr);
         fprintf(stderr, "\nReading structure file\n");
-        read_stx_conf(xfn, title, atoms, x, v, NULL, box);
+        t_topology *top;
+        snew(top, 1);
+        read_tps_conf(xfn, title, top, NULL, &x, &v, box, FALSE);
+        atoms = &top->atoms;
+        if (atoms->pdbinfo == NULL)
+        {
+            snew(atoms->pdbinfo, atoms->nr);
+        }
     }
 
     if (bFreeze)

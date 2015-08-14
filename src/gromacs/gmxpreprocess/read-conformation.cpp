@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,25 +72,18 @@ real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
 char *readConformation(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
                        int *ePBC, matrix box, const char *statusTitle)
 {
-    char *title;
-    int   natoms;
+    t_topology *top;
+    char       *title;
 
+    snew(top, 1);
     snew(title, STRLEN);
-    get_stx_coordnum(confin, &natoms);
 
-    /* allocate memory for atom coordinates of configuration */
-    snew(*x, natoms);
-    if (v)
-    {
-        snew(*v, natoms);
-    }
-    init_t_atoms(atoms, natoms, FALSE);
-
-    /* read residue number, residue names, atomnames, coordinates etc. */
     fprintf(stderr, "Reading %s configuration%s\n", statusTitle, v ? " and velocities" : "");
-    read_stx_conf(confin, title, atoms, *x, v ? *v : NULL, ePBC, box);
+    read_tps_conf(confin, title, top, ePBC, x, v, box, FALSE);
+    *atoms = top->atoms;
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
             title, atoms->nr, atoms->nres);
+    sfree(top);
 
     return title;
 }
