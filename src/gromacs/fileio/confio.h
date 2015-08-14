@@ -69,16 +69,6 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
                          rvec x[], rvec *v, int ePBC, matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 
-void get_stx_coordnum (const char *infile, int *natoms);
-/* read the number of atoms from an STX file */
-
-void read_stx_conf(const char *infile, char *title,
-                   struct t_atoms *atoms,
-                   rvec x[], rvec *v, int *ePBC, matrix box);
-/* Read atoms, x, v and box from an STX file.
- * If ePBC!=NULL return the type of pbc in *ePBC or -1 if unknown.
- */
-
 gmx_bool read_tps_conf(const char *infile, char *title, struct t_topology *top,
                        int *ePBC, rvec **x, rvec **v, matrix box, gmx_bool bMass);
 /* Read title, top.atoms, x, v (if not NULL) and box from an STX file,

@@ -439,7 +439,6 @@ int gmx_x2top(int argc, char *argv[])
     FILE              *fp;
     t_params           plist[F_NRE];
     t_excls           *excls;
-    t_atoms           *atoms; /* list with all atoms */
     gpp_atomtype_t     atype;
     t_nextnb           nnb;
     t_nm2type         *nm2t;
@@ -542,14 +541,15 @@ int gmx_x2top(int argc, char *argv[])
     init_plist(plist);
 
     /* Read coordinates */
-    get_stx_coordnum(opt2fn("-f", NFILE, fnm), &natoms);
-    snew(atoms, 1);
-
-    /* make space for all the atoms */
-    init_t_atoms(atoms, natoms, TRUE);
-    snew(x, natoms);
-
-    read_stx_conf(opt2fn("-f", NFILE, fnm), title, atoms, x, NULL, &epbc, box);
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), title, top, &epbc, &x, NULL, box, FALSE);
+    t_atoms  *atoms = &top->atoms;
+    natoms = atoms->nr;
+    if (atoms->pdbinfo == NULL)
+    {
+        snew(atoms->pdbinfo, natoms);
+    }
 
     sprintf(n2t, "%s", ffdir);
     nm2t = rd_nm2type(n2t, &nnm);

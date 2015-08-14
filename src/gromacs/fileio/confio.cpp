@@ -201,7 +201,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
     }
 }
 
-void get_stx_coordnum(const char *infile, int *natoms)
+static void get_stx_coordnum(const char *infile, int *natoms)
 {
     FILE      *in;
     int        ftp, tpxver, tpxgen;
@@ -294,8 +294,8 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
-                   rvec x[], rvec *v, int *ePBC, matrix box)
+static void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
+                          rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
     gmx_mtop_t *mtop;
@@ -407,7 +407,10 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
     gmx_atomprop_t   aps;
 
     bTop  = fn2bTPX(infile);
-    *ePBC = -1;
+    if (ePBC != NULL)
+    {
+        *ePBC = -1;
+    }
     if (bTop)
     {
         read_tpxheader(infile, &header, TRUE, &version, &generation);
@@ -420,8 +423,13 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
             snew(*v, header.natoms);
         }
         snew(mtop, 1);
-        *ePBC = read_tpx(infile, NULL, box, &natoms,
-                         (x == NULL) ? NULL : *x, (v == NULL) ? NULL : *v, NULL, mtop);
+        int ePBC_tmp
+            = read_tpx(infile, NULL, box, &natoms,
+                       (x == NULL) ? NULL : *x, (v == NULL) ? NULL : *v, NULL, mtop);
+        if (ePBC != NULL)
+        {
+            *ePBC = ePBC_tmp;
+        }
         *top = gmx_mtop_t_to_t_topology(mtop);
         /* In this case we need to throw away the group data too */
         done_gmx_groups_t(&mtop->groups);

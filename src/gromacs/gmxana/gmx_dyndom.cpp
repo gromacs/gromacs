@@ -48,6 +48,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -191,7 +192,6 @@ int gmx_dyndom(int argc, char *argv[])
     t_trxstatus *status;
     atom_id     *index = NULL, *index_all;
     char         title[256], *grpname;
-    t_atoms      atoms;
     real         angle, trans;
     rvec        *x, *v, *xout, *vout;
     matrix       box;
@@ -215,11 +215,15 @@ int gmx_dyndom(int argc, char *argv[])
         gmx_fatal(FARGS, "maxangle not given");
     }
 
-    get_stx_coordnum (opt2fn("-f", NFILE, fnm), &natoms);
-    init_t_atoms(&atoms, natoms, TRUE);
-    snew(x, natoms);
-    snew(v, natoms);
-    read_stx_conf(opt2fn("-f", NFILE, fnm), title, &atoms, x, v, NULL, box);
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), title, top, NULL, &x, &v, box, FALSE);
+    t_atoms  &atoms = top->atoms;
+    if (atoms.pdbinfo == NULL)
+    {
+        snew(atoms.pdbinfo, atoms.nr);
+    }
+    natoms = atoms.nr;
     snew(xout, natoms);
     snew(vout, natoms);
 
