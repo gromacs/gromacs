@@ -54,6 +54,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/atomsbuilder.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -323,7 +324,7 @@ static void replicateSolventBox(t_atoms *atoms, rvec **x, rvec **v, real **r,
     // but not in all).
     t_atoms           newAtoms;
     init_t_atoms(&newAtoms, 0, FALSE);
-    gmx::AtomsBuilder builder(&newAtoms);
+    gmx::AtomsBuilder builder(&newAtoms, NULL);
     builder.reserve(atoms->nr * nmol, atoms->nres * nmol);
     rvec             *newX;
     rvec             *newV = NULL;
@@ -611,21 +612,22 @@ static void removeExtraSolventMolecules(t_atoms *atoms, rvec *x, rvec *v,
     remover.removeMarkedAtoms(atoms);
 }
 
-static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v,
+static void add_solv(const char *fn, t_topology *top, rvec **x, rvec **v,
                      int ePBC, matrix box, gmx_atomprop_t aps,
                      real defaultDistance, real scaleFactor,
                      real rshell, int max_sol)
 {
-    t_atoms *atoms_solvt;
-    rvec    *x_solvt, *v_solvt = NULL;
-    int      ePBC_solvt;
-    matrix   box_solvt;
+    t_topology *top_solvt;
+    rvec       *x_solvt, *v_solvt = NULL;
+    int         ePBC_solvt;
+    matrix      box_solvt;
 
-    char    *filename = gmxlibfn(fn);
-    snew(atoms_solvt, 1);
-    char    *title_solvt
-        = readConformation(filename, atoms_solvt, &x_solvt, &v_solvt,
+    char       *filename = gmxlibfn(fn);
+    snew(top_solvt, 1);
+    char       *title_solvt
+        = readConformation(filename, top_solvt, &x_solvt, &v_solvt,
                            &ePBC_solvt, box_solvt, "solvent");
+    t_atoms *atoms_solvt = &top_solvt->atoms;
     sfree(title_solvt);
     if (0 == atoms_solvt->nr)
     {
@@ -640,7 +642,7 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v,
     /* initialise distance arrays for solvent configuration */
     fprintf(stderr, "Initialising inter-atomic distances...\n");
     real *exclusionDistances
-        = makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor);
+        = makeExclusionDistances(&top->atoms, aps, defaultDistance, scaleFactor);
     real *exclusionDistances_solvt
         = makeExclusionDistances(atoms_solvt, aps, defaultDistance, scaleFactor);
 
@@ -654,10 +656,10 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v,
     {
         removeSolventBoxOverlap(atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, pbc);
     }
-    if (atoms->nr > 0)
+    if (top->atoms.nr > 0)
     {
         removeSoluteOverlap(atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, pbc,
-                            atoms->nr, *x, exclusionDistances, rshell);
+                            top->atoms.nr, *x, exclusionDistances, rshell);
     }
 
     if (max_sol > 0 && atoms_solvt->nres > max_sol)
@@ -670,14 +672,14 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v,
     sort_molecule(&atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt);
 
     // Merge the two configurations.
-    srenew(*x, atoms->nr + atoms_solvt->nr);
+    srenew(*x, top->atoms.nr + atoms_solvt->nr);
     if (v != NULL)
     {
-        srenew(*v, atoms->nr + atoms_solvt->nr);
+        srenew(*v, top->atoms.nr + atoms_solvt->nr);
     }
     for (int i = 0; i < atoms_solvt->nr; ++i)
     {
-        const int index = atoms->nr + i;
+        const int index = top->atoms.nr + i;
         copy_rvec(x_solvt[i], (*x)[index]);
         if (v != NULL)
         {
@@ -685,7 +687,7 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v,
         }
     }
     {
-        gmx::AtomsBuilder builder(atoms);
+        gmx::AtomsBuilder builder(&top->atoms, &top->symtab);
         builder.mergeAtoms(*atoms_solvt);
     }
     fprintf(stderr, "Generated solvent containing %d atoms in %d residues\n",
@@ -695,8 +697,8 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v,
     sfree(v_solvt);
     sfree(exclusionDistances);
     sfree(exclusionDistances_solvt);
-    done_atom(atoms_solvt);
-    sfree(atoms_solvt);
+    done_top(top_solvt);
+    sfree(top_solvt);
 }
 
 static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
@@ -893,14 +895,14 @@ int gmx_solvate(int argc, char *argv[])
     const char    *conf_prot, *confout;
     gmx_atomprop_t aps;
 
-    /* protein configuration data */
-    char    *title = NULL;
-    t_atoms *atoms;
-    rvec    *x    = NULL, *v = NULL;
-    int      ePBC = -1;
-    matrix   box;
+    /* solute configuration data */
+    char       *title = NULL;
+    t_topology *top;
+    rvec       *x    = NULL, *v = NULL;
+    int         ePBC = -1;
+    matrix      box;
 
-    t_filenm fnm[] = {
+    t_filenm    fnm[] = {
         { efSTX, "-cp", "protein", ffOPTRD },
         { efSTX, "-cs", "spc216",  ffLIBRD},
         { efSTO, NULL,  NULL,      ffWRITE},
@@ -947,19 +949,18 @@ int gmx_solvate(int argc, char *argv[])
 
     aps = gmx_atomprop_init();
 
-    snew(atoms, 1);
-    init_t_atoms(atoms, 0, FALSE);
+    snew(top, 1);
     if (bProt)
     {
         /* Generate a solute configuration */
         conf_prot = opt2fn("-cp", NFILE, fnm);
-        title     = readConformation(conf_prot, atoms, &x,
+        title     = readConformation(conf_prot, top, &x,
                                      bReadV ? &v : NULL, &ePBC, box, "solute");
         if (bReadV && !v)
         {
             fprintf(stderr, "Note: no velocities found\n");
         }
-        if (atoms->nr == 0)
+        if (top->atoms.nr == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", conf_prot);
             bProt = FALSE;
@@ -979,7 +980,7 @@ int gmx_solvate(int argc, char *argv[])
                   "or give explicit -box command line option");
     }
 
-    add_solv(solventFileName, atoms, &x, v ? &v : NULL, ePBC, box,
+    add_solv(solventFileName, top, &x, v ? &v : NULL, ePBC, box,
              aps, defaultDistance, scaleFactor, r_shell, max_sol);
 
     /* write new configuration 1 to file confout */
@@ -987,23 +988,23 @@ int gmx_solvate(int argc, char *argv[])
     fprintf(stderr, "Writing generated configuration to %s\n", confout);
     if (bProt)
     {
-        write_sto_conf(confout, title, atoms, x, v, ePBC, box);
+        write_sto_conf(confout, title, &top->atoms, x, v, ePBC, box);
     }
     else
     {
-        write_sto_conf(confout, "Generated by gmx solvate", atoms, x, v, ePBC, box);
+        write_sto_conf(confout, "Generated by gmx solvate", &top->atoms, x, v, ePBC, box);
     }
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
-            atoms->nr, atoms->nres);
-    update_top(atoms, box, NFILE, fnm, aps);
+            top->atoms.nr, top->atoms.nres);
+    update_top(&top->atoms, box, NFILE, fnm, aps);
 
     gmx_atomprop_destroy(aps);
     sfree(x);
     sfree(v);
-    done_atom(atoms);
-    sfree(atoms);
+    done_top(top);
+    sfree(top);
     sfree(title);
     output_env_done(oenv);
     done_filenms(NFILE, fnm);

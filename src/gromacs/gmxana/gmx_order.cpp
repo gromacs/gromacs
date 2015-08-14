@@ -888,7 +888,7 @@ void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int n
     write_sto_conf(opt2fn("-ob", nfile, fnm), "Order parameters", &useatoms, frout.x, NULL, frout.ePBC, frout.box);
 
     sfree(frout.x);
-    free_t_atoms(&useatoms, FALSE);
+    done_atom(&useatoms);
 }
 
 int gmx_order(int argc, char *argv[])

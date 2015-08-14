@@ -783,7 +783,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         {
             write_sto_conf(threedplotfile, str, &atoms, x, NULL, ePBC, box);
         }
-        free_t_atoms(&atoms, FALSE);
+        done_atom(&atoms);
     }
 
     if (extremefile)
