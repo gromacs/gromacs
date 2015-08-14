@@ -69,11 +69,14 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         FILE                *fplog);
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
-void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
-                               gmx_bool      bIsSimMaster);
+void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
+                               const t_commrec *cr);
 
 /* Checks we can do when we know the cut-off scheme */
 void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
                                int           cutoff_scheme);
+
+/* Checks we can do when we know the thread-MPI rank count */
+void check_and_update_hw_opt_3(gmx_hw_opt_t *hw_opt);
 
 #endif /* GMX_RESOURCE_DIVISION_H */

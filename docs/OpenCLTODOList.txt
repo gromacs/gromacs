@@ -14,7 +14,8 @@ TABLE OF CONTENTS
 - Sharing an OpenCL GPU between two MPI ranks is not supported.
   See also Issue #91 - https://github.com/StreamComputing/gromacs/issues/91
 
-- Using more than one OpenCL GPU on a node is not known to work in all cases.
+- Using more than one OpenCL GPU on a node is thought to work with thread-MPI,
+  and is known to segfault with AMD OpenCL and OpenMPI on x86 and Linux.
 
 2. CODE IMPROVEMENTS
    =================
@@ -32,12 +33,6 @@ TABLE OF CONTENTS
   once in the host code, once in the device code. They must be moved to a single
   file and shared between the host and the device.
   See also Issue #16 - https://github.com/StreamComputing/gromacs/issues/16
-
-- Generating binary cache has a potential race condition in Multiple GPU runs
-  See also Issue #71 - https://github.com/StreamComputing/gromacs/issues/71
-
-- Caching for OpenCL builds should detect when a rebuild is necessary
-  See also Issue #72 - https://github.com/StreamComputing/gromacs/issues/72
 
 - Quite a few error conditions are unhandled, noted with TODOs in several files
 
@@ -57,6 +52,11 @@ TABLE OF CONTENTS
 
 - Have one OpenCL program object per OpenCL kernel
   See also Issue #86 - https://github.com/StreamComputing/gromacs/issues/86
+
+- Consider parallelising JIT of programs over CPU cores to improve startup
+  time
+
+- Re-consider caching JIT artefacts to improve startup time
 
 4. OPTIMIZATIONS
    =============

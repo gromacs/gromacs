@@ -413,7 +413,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
 #endif
     }
 
-#ifdef HAVE_SCHED_GETAFFINITY
+#ifdef HAVE_SCHED_AFFINITY
     int       ret;
     cpu_set_t mask_current;
 

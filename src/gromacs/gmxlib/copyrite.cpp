@@ -190,6 +190,7 @@ static void printCopyright(FILE *fp)
         "Vincent Hindriksen",
         "Dimitrios Karkoulis",
         "Peter Kasson",
+        "Jiri Kraus",
         "Carsten Kutzner",
         "Per Larsson",
         "Justin A. Lemkul",
@@ -609,7 +610,7 @@ void please_cite(FILE *fp, const char *key)
           "S. Páll, M. J. Abraham, C. Kutzner, B. Hess, E. Lindahl",
           "Tackling Exascale Software Challenges in Molecular Dynamics Simulations with GROMACS",
           "In S. Markidis & E. Laure (Eds.), Solving Software Challenges for Exascale",
-          8759, 2015, "3–27" }
+          8759, 2015, "3-27" }
     };
 #define NSTR (int)asize(citedb)
 

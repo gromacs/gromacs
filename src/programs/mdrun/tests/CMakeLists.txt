@@ -39,6 +39,7 @@ gmx_build_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    grompp.cpp
     rerun.cpp
     trajectory_writing.cpp
     compressed_x_output.cpp

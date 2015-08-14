@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -91,15 +91,26 @@ if( CMAKE_SYSTEM_NAME STREQUAL "Windows"  )
     list(APPEND NVML_INC_PATHS "${GPU_DEPLOYMENT_KIT_ROOT_DIR}/nvml/include")
   endif()
 else()
+  # The Linux installer for the GPU Deployment Kit adds a "usr"
+  # suffix to a custom path if one is used, so a user could
+  # reasonably set GPU_DEPLOYMENT_KIT_ROOT_DIR to the value they
+  # passed to the installer, or the root where they later found the
+  # kit to be installed. Below, we cater for both possibilities.
   set( NVML_LIB_PATHS /usr/lib64 )
   if(GPU_DEPLOYMENT_KIT_ROOT_DIR)
-    list(APPEND NVML_LIB_PATHS "${GPU_DEPLOYMENT_KIT_ROOT_DIR}/src/gdk/nvml/lib")
+      list(APPEND NVML_LIB_PATHS
+          "${GPU_DEPLOYMENT_KIT_ROOT_DIR}/src/gdk/nvml/lib"
+          "${GPU_DEPLOYMENT_KIT_ROOT_DIR}/usr/src/gdk/nvml/lib"
+          )
   endif()
   set(NVML_NAMES nvidia-ml)
   
   set( NVML_INC_PATHS /usr/include/nvidia/gdk/ /usr/include )
   if(GPU_DEPLOYMENT_KIT_ROOT_DIR)
-    list(APPEND NVML_INC_PATHS "${GPU_DEPLOYMENT_KIT_ROOT_DIR}/include/nvidia/gdk")
+      list(APPEND NVML_INC_PATHS
+          "${GPU_DEPLOYMENT_KIT_ROOT_DIR}/include/nvidia/gdk"
+          "${GPU_DEPLOYMENT_KIT_ROOT_DIR}/usr/include/nvidia/gdk"
+          )
   endif()
 endif()
 

@@ -836,6 +836,11 @@ nbnxn_gpu_clear_outputs(gmx_nbnxn_ocl_t   *nb,
     {
         nbnxn_ocl_clear_e_fshift(nb);
     }
+
+    /* kick off buffer clearing kernel to ensure concurrency with constraints/update */
+    cl_int gmx_unused cl_error;
+    cl_error = clFlush(nb->stream[eintLocal]);
+    assert(CL_SUCCESS == cl_error);
 }
 
 //! This function is documented in the header file
@@ -957,6 +962,10 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t               *nb,
 
     ocl_copy_H2D_async(d_atdat->atom_types, nbat->type, 0,
                        natoms*sizeof(int), ls, bDoTime ? &(timers->atdat) : NULL);
+
+    /* kick off the tasks enqueued above to ensure concurrency with the search */
+    cl_error = clFlush(ls);
+    assert(CL_SUCCESS == cl_error);
 }
 
 /*! \brief Releases an OpenCL kernel pointer */
