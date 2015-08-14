@@ -69,10 +69,8 @@
  *    assertions.
  *  - gmx::test::TestReferenceData and related classes (in refdata.h) provide
  *    utilities to write regression-style tests that check that the test
- *    produces the same results as an earlier run of the same test.  The
- *    reference data is stored as XML files.  For certain types of tests, the
- *    XML can also be easier to inspect manually for correctness than writing
- *    the checks in C++, providing an alternative method to write assertions.
+ *    produces the same results as an earlier run of the same test.
+ *    See \ref page_refdata for more details.
  *  - gmx::test::CommandLine and related classes (in cmdlinetest.h) provide
  *    utilities for constructing command line argument arrays for use in tests
  *    that invoke actual commands.
