@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,12 +141,6 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
                          int chainnum, char chainid);
 /* Set the residue name, number, insertion code and chain identifier
  * of atom index atom_ind.
- */
-
-void free_t_atoms(t_atoms *atoms, gmx_bool bFreeNames);
-/* Free all the arrays and set the nr and nres to 0.
- * bFreeNames tells if to free the atom and residue name strings,
- * don't free them if they still need to be used in e.g. the topology struct.
  */
 
 #ifdef __cplusplus

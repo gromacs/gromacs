@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@ extern "C" {
 
 struct gmx_atomprop;
 struct t_atoms;
+struct t_symtab;
 struct t_topology;
 
 typedef struct gmx_conect_t *gmx_conect;
@@ -123,19 +124,18 @@ void get_pdb_atomnumber(struct t_atoms *atoms, struct gmx_atomprop *aps);
 /* Routine to extract atomic numbers from the atom names */
 
 int read_pdbfile(FILE *in, char *title, int *model_nr,
-                 struct t_atoms *atoms, rvec x[], int *ePBC, matrix box,
+                 struct t_atoms *atoms, struct t_symtab *symtab,
+                 rvec x[], int *ePBC, matrix box,
                  gmx_bool bChange, gmx_conect conect);
 /* Function returns number of atoms found.
  * ePBC and gmx_conect structure may be NULL.
  */
 
-void read_pdb_conf(const char *infile, char *title,
-                   struct t_atoms *atoms, rvec x[], int *ePBC, matrix box,
-                   gmx_bool bChange, gmx_conect conect);
+void gmx_pdb_read_conf(const char *infile, char *title,
+                       struct t_topology *top, rvec x[], int *ePBC, matrix box);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.
- * Change atom names according to protein conventions if wanted.
- * ePBC and gmx_conect structure may be NULL.
+ * ePBC may be NULL.
  */
 
 void get_pdb_coordnum(FILE *in, int *natoms);
