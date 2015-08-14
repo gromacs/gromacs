@@ -1010,14 +1010,11 @@ void get_pdb_coordnum(FILE *in, int *natoms)
     }
 }
 
-void read_pdb_conf(const char *infile, char *title,
-                   t_atoms *atoms, rvec x[], int *ePBC, matrix box, gmx_bool bChange,
-                   gmx_conect conect)
+void gmx_pdb_read_conf(const char *infile, char *title,
+                       t_topology *top, rvec x[], int *ePBC, matrix box)
 {
-    FILE *in;
-
-    in = gmx_fio_fopen(infile, "r");
-    read_pdbfile(in, title, NULL, atoms, x, ePBC, box, bChange, conect);
+    FILE *in = gmx_fio_fopen(infile, "r");
+    read_pdbfile(in, title, NULL, &top->atoms, x, ePBC, box, TRUE, NULL);
     gmx_fio_fclose(in);
 }
 

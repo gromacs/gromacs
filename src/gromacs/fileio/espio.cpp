@@ -46,6 +46,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -162,10 +163,10 @@ static const char *const esp_prop[espNR] = {
     "molecule"
 };
 
-void read_espresso_conf(const char *infile, char *title,
-                        t_atoms *atoms, rvec x[], rvec *v, matrix box)
+void gmx_espresso_read_conf(const char *infile, char *title,
+                            t_topology *top, rvec x[], rvec *v, matrix box)
 {
-    t_symtab *symtab = NULL;
+    t_atoms  *atoms = &top->atoms;
     FILE     *fp;
     char      word[STRLEN], buf[STRLEN];
     int       level, r, nprop, p, i, m, molnr;
@@ -173,11 +174,6 @@ void read_espresso_conf(const char *infile, char *title,
     double    d;
     gmx_bool  bFoundParticles, bFoundProp, bFoundVariable, bMol;
 
-    if (!symtab)
-    {
-        snew(symtab, 1);
-        open_symtab(symtab);
-    }
     // TODO: The code does not understand titles it writes...
     title[0] = '\0';
 
@@ -297,13 +293,13 @@ void read_espresso_conf(const char *infile, char *title,
                     }
                     /* Generate an atom name from the particle type */
                     sprintf(buf, "T%d", atoms->atom[i].type);
-                    atoms->atomname[i] = put_symtab(symtab, buf);
+                    atoms->atomname[i] = put_symtab(&top->symtab, buf);
                     if (bMol)
                     {
                         if (i == 0 || atoms->atom[i].resind != atoms->atom[i-1].resind)
                         {
                             atoms->resinfo[atoms->atom[i].resind].name =
-                                put_symtab(symtab, "MOL");
+                                put_symtab(&top->symtab, "MOL");
                         }
                     }
                     else
@@ -320,7 +316,7 @@ void read_espresso_conf(const char *infile, char *title,
                             sprintf(buf, "T%c%c",
                                     'A'+atoms->atom[i].type/26, 'A'+atoms->atom[i].type%26);
                         }
-                        t_atoms_set_resinfo(atoms, i, symtab, buf, i, ' ', 0, ' ');
+                        t_atoms_set_resinfo(atoms, i, &top->symtab, buf, i, ' ', 0, ' ');
                     }
 
                     if (r == 3)

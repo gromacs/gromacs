@@ -45,9 +45,11 @@
 extern "C" {
 #endif
 
+struct t_symtab;
 struct t_trxframe;
 
-int read_g96_conf(FILE *fp, const char *infile, struct t_trxframe *fr, char *line);
+int read_g96_conf(FILE *fp, const char *infile, struct t_trxframe *fr,
+                  struct t_symtab *symtab, char *line);
 /* read a Gromos96 coordinate or trajectory file,                       *
  * returns the number of atoms                                          *
  * sets what's in the frame in info                                     *

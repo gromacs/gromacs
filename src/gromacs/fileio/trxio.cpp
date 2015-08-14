@@ -816,10 +816,16 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                 /* Checkpoint files can not contain mulitple frames */
                 break;
             case efG96:
+            {
+                t_symtab *symtab;
+                snew(symtab, 1);
+                open_symtab(symtab);
                 read_g96_conf(gmx_fio_getfp(status->fio), NULL, fr,
-                              status->persistent_line);
+                              symtab, status->persistent_line);
+                free_symtab(symtab);
                 bRet = (fr->natoms > 0);
                 break;
+            }
             case efXTC:
                 /* B. Hess 2005-4-20
                  * Sometimes is off by one frame
@@ -947,13 +953,18 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             bFirst = FALSE;
             break;
         case efG96:
+        {
             /* Can not rewind a compressed file, so open it twice */
             if (!(*status)->persistent_line)
             {
                 /* allocate the persistent line */
                 snew((*status)->persistent_line, STRLEN+1);
             }
-            read_g96_conf(gmx_fio_getfp(fio), fn, fr, (*status)->persistent_line);
+            t_symtab *symtab;
+            snew(symtab, 1);
+            open_symtab(symtab);
+            read_g96_conf(gmx_fio_getfp(fio), fn, fr, symtab, (*status)->persistent_line);
+            free_symtab(symtab);
             gmx_fio_close(fio);
             clear_trxframe(fr, FALSE);
             if (flags & (TRX_READ_X | TRX_NEED_X))
@@ -966,6 +977,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             }
             (*status)->fio = gmx_fio_open(fn, "r");
             break;
+        }
         case efXTC:
             if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
                                &fr->prec, &bOK) == 0)

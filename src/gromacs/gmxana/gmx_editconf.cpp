@@ -361,7 +361,7 @@ void visualize_images(const char *fn, int ePBC, matrix box)
 
     write_sto_conf(fn, "Images", &atoms, img, NULL, ePBC, box);
 
-    free_t_atoms(&atoms, FALSE);
+    done_atom(&atoms);
     sfree(img);
 }
 
