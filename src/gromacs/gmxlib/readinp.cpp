@@ -46,11 +46,14 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxlib/warninp.h"
+#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -258,6 +261,15 @@ void write_inpfile(const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUn
     sort_inp(ninp, inp);
     out = gmx_fio_fopen(fn, "w");
     nice_header(out, fn);
+    try
+    {
+        gmx::BinaryInformationSettings settings;
+        settings.generatedByHeader(true);
+        settings.linePrefix(";\t");
+        gmx::printBinaryInformation(out, gmx::getProgramContext(), settings);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+
     for (i = 0; (i < ninp); i++)
     {
         if (inp[i].bSet)
