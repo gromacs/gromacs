@@ -333,6 +333,8 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
         "analysis programs to calculate more complex things.",
+        "For detailed help on the selection syntax, please use",
+        "[TT]gmx help selections[tt].[PAR]",
         "Any combination of the output options is possible, but note",
         "that [TT]-om[tt] only operates on the first selection.",
         "Also note that if you provide no output options, no output is",

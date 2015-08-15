@@ -143,6 +143,13 @@ struct pme_load_balancing_t {
     double       cycles_c;           /**< step cycle counter cummulative cycles */
 };
 
+/* TODO The code in this file should call this getter, rather than
+ * read bActive anywhere */
+bool pme_loadbal_is_active(const pme_load_balancing_t *pme_lb)
+{
+    return pme_lb != NULL && pme_lb->bActive;
+}
+
 void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       t_commrec                 *cr,
                       FILE                      *fp_log,

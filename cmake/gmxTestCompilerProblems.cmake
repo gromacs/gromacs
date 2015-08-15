@@ -77,7 +77,7 @@ macro(gmx_test_compiler_problems)
     endif()
 
     if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
-        message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to  compile GROMACS. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
+        message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC, ICC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
     endif()
 
     if(CMAKE_COMPILER_IS_GNUCC AND
