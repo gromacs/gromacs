@@ -731,7 +731,7 @@ static void gmx_print_version_info(FILE *fp)
     /* A preprocessor trick to avoid duplicating logic from vec.h */
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
-    fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
+    fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt_impl(x)));
     fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP
