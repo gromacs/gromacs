@@ -174,30 +174,36 @@ static gmx_inline real gmx_software_invsqrt(real x)
     return y;                   /* 5  Flops */
 #endif
 }
-#define gmx_invsqrt(x) gmx_software_invsqrt(x)
+
+#define gmx_invsqrt_impl(x) gmx_software_invsqrt(x)
 #define INVSQRT_DONE
 #endif /* gmx_invsqrt */
 
 #ifndef INVSQRT_DONE
 #    ifdef GMX_DOUBLE
 #        ifdef HAVE_RSQRT
-#            define gmx_invsqrt(x)     rsqrt(x)
+#            define gmx_invsqrt_impl(x)     rsqrt(x)
 #        else
-#            define gmx_invsqrt(x)     (1.0/sqrt(x))
+#            define gmx_invsqrt_impl(x)     (1.0/sqrt(x))
 #        endif
 #    else /* single */
 #        ifdef HAVE_RSQRTF
-#            define gmx_invsqrt(x)     rsqrtf(x)
+#            define gmx_invsqrt_impl(x)     rsqrtf(x)
 #        elif defined HAVE_RSQRT
-#            define gmx_invsqrt(x)     rsqrt(x)
+#            define gmx_invsqrt_impl(x)     rsqrt(x)
 #        elif defined HAVE_SQRTF
-#            define gmx_invsqrt(x)     (1.0/sqrtf(x))
+#            define gmx_invsqrt_impl(x)     (1.0/sqrtf(x))
 #        else
-#            define gmx_invsqrt(x)     (1.0/sqrt(x))
+#            define gmx_invsqrt_impl(x)     (1.0/sqrt(x))
 #        endif
 #    endif
 #endif
 
+#ifdef NDEBUG
+#    define gmx_invsqrt(x) gmx_invsqrt_impl(x)
+#else
+#    define gmx_invsqrt(x) ( (x > 0) ? gmx_invsqrt_impl(x) : 0.0 )
+#endif
 
 static gmx_inline real sqr(real x)
 {
