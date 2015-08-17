@@ -146,19 +146,10 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
         ht = 1+(gmx->filter->grps->nr+1)*2+3;
     }
     std::strcpy(tmpfile, "filterXXXXXX");
-    gmx_tmpnam(tmpfile);
+    tmp = gmx_fopen_temporary(tmpfile);
 #ifdef DEBUG
     std::fprintf(stderr, "file: %s\n", tmpfile);
 #endif
-    if ((tmp = std::fopen(tmpfile, "w")) == NULL)
-    {
-        std::sprintf(tmpfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(tmpfile);
-        if ((tmp = std::fopen(tmpfile, "w")) == NULL)
-        {
-            gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile);
-        }
-    }
     tlen = 1+ncol*(1+len);
     std::fprintf(tmp, "grid %d %d {\n\n", tlen, ht);
 
@@ -183,7 +174,7 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     std::fprintf(tmp, "simple 1 %d %d 2 {\n", ht-3, tlen-2);
     std::fprintf(tmp, "defbutton %s %s %s %s %s\n", ok, ok, dummy, dummy, dummy);
     std::fprintf(tmp, "}\n\n}\n");
-    std::fclose(tmp);
+    gmx_ffclose(tmp);
 
     dlg = ReadDlg(x11, gmx->wd->self, title, tmpfile,
                   0, 0, true, false, FilterCB, gmx);

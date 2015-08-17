@@ -85,25 +85,11 @@ static void shell_comm(const char *title, const char *script, int nsleep)
     char  tmp[32];
 
     std::strcpy(tmp, "dialogXXXXXX");
-    gmx_tmpnam(tmp);
+    tfil = gmx_fopen_temporary(tmp);
 
-    if ((tfil = std::fopen(tmp, "w")) == NULL)
-    {
-        std::sprintf(tmp, "%ctmp%cdialogXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(tmp);
-    }
-    else
-    {
-        std::fclose(tfil);
-    }
-    if ((tfil = std::fopen(tmp, "w")) == NULL)
-    {
-        gmx_fatal(FARGS, "Can not open tmp file %s", tmp);
-    }
-
-    std::fprintf(tfil, "%s\n", script);
-    std::fprintf(tfil, "sleep %d\n", nsleep);
-    std::fclose(tfil);
+    fprintf(tfil, "%s\n", script);
+    fprintf(tfil, "sleep %d\n", nsleep);
+    gmx_ffclose(tfil);
 
     std::sprintf(command, "xterm -title %s -e sh %s", title, tmp);
 #ifdef DEBUG
