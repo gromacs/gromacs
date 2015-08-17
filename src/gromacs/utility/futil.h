@@ -182,7 +182,7 @@ FILE *low_libopen(const char *file, gmx_bool bFatal);
  *
  * \p buf should be at least 7 bytes long
  */
-void gmx_tmpnam(char *buf);
+FILE *gmx_tmpnam(char *buf);
 
 /*! \brief
  * OS-independent rename().

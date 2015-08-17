@@ -82,25 +82,11 @@ static void shell_comm(const char *title, const char *script, int nsleep)
     char  tmp[32];
 
     strcpy(tmp, "dialogXXXXXX");
-    gmx_tmpnam(tmp);
-
-    if ((tfil = fopen(tmp, "w")) == NULL)
-    {
-        sprintf(tmp, "%ctmp%cdialogXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(tmp);
-    }
-    else
-    {
-        fclose(tfil);
-    }
-    if ((tfil = fopen(tmp, "w")) == NULL)
-    {
-        gmx_fatal(FARGS, "Can not open tmp file %s", tmp);
-    }
+    tfil = gmx_fopentmp(tmp);
 
     fprintf(tfil, "%s\n", script);
     fprintf(tfil, "sleep %d\n", nsleep);
-    fclose(tfil);
+    gmx_ffclose(tfil);
 
     sprintf(command, "xterm -title %s -e sh %s", title, tmp);
 #ifdef DEBUG
