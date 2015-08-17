@@ -241,8 +241,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     printf("\nProcessing topology\n");
     fpin  = gmx_ffopen(topinout, "r");
     std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
-    gmx_tmpnam(temporary_filename);
-    fpout = gmx_ffopen(temporary_filename, "w");
+    fpout = gmx_fopen_temporary(temporary_filename);
 
     line       = 0;
     bMolecules = FALSE;
@@ -335,10 +334,8 @@ static void update_topol(const char *topinout, int p_num, int n_num,
         }
     }
     gmx_ffclose(fpout);
-    /* use gmx_ffopen to generate backup of topinout */
-    fpout = gmx_ffopen(topinout, "w");
-    gmx_ffclose(fpout);
-    rename(temporary_filename, topinout);
+    make_backup(topinout);
+    gmx_file_rename(temporary_filename, topinout);
 }
 
 int gmx_genion(int argc, char *argv[])
