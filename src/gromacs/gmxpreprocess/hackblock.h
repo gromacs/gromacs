@@ -130,28 +130,6 @@ typedef struct {
     t_rbondeds rb[ebtsNR];
 } t_hackblock;
 
-/* all libraries and other data to protonate a structure or trajectory */
-typedef struct {
-    gmx_bool        bInit; /* true after init; set false by init_t_protonate */
-    /* force field name: */
-    char            FF[10];
-    /* libarary data: */
-    int            *nab;
-    t_hack        **ab;
-    t_hackblock    *ah, *ntdb, *ctdb;
-    t_hackblock   **sel_ntdb, **sel_ctdb;
-    int             nah;
-    t_symtab        tab;
-    /* residue indices (not numbers!) of the N and C termini */
-    int            *rN, *rC;
-    gpp_atomtype_t  atype;
-    /* protonated topology: */
-    t_atoms        *patoms;
-    /* unprotonated topology: */
-    t_atoms        *upatoms;
-
-} t_protonate;
-
 typedef struct {
     char *res1, *res2;
     char *atom1, *atom2;
@@ -196,8 +174,5 @@ void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
 
 void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
-
-void init_t_protonate(t_protonate *protonate);
-/* initialize t_protein struct */
 
 #endif

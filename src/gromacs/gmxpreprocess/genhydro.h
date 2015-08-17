@@ -60,16 +60,4 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
  * return the New total number of atoms
  */
 
-int protonate(t_atoms **atoms, rvec **x, t_protonate *protdata);
-/* Protonate molecule according to oplsaa.ff/aminoacids.hdb
- * when called the first time, new atoms are added to atoms,
- * second time only coordinates are generated
- * return the new total number of atoms
- */
-
-void deprotonate(t_atoms *atoms, rvec *x);
-/* Deprotonate any molecule: all atoms whose name begins with H will be
- * removed
- */
-
 #endif
