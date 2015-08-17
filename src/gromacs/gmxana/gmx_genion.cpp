@@ -242,7 +242,10 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     fpin  = gmx_ffopen(topinout, "r");
     std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
     gmx_tmpnam(temporary_filename);
-    fpout = gmx_ffopen(temporary_filename, "w");
+    if ((fpout = fopen(temporary_filename, "w")) == NULL)
+    {
+		gmx_fatal(FARGS, "Cannot open tmp file %s", temporary_filename);
+    }
 
     line       = 0;
     bMolecules = FALSE;

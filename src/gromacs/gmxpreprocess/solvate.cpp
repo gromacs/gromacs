@@ -747,7 +747,10 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
         fprintf(stderr, "Processing topology\n");
         fpin    = gmx_ffopen(topinout, "r");
         gmx_tmpnam(temporary_filename);
-        fpout   = gmx_ffopen(temporary_filename, "w");
+        if ((fpout = fopen(temporary_filename, "w")) == NULL)
+        {
+            gmx_fatal(FARGS, "Cannot open tmp file %s", temporary_filename);
+        }
         line    = 0;
         bSystem = bMolecules = FALSE;
         while (fgets(buf, STRLEN, fpin))
