@@ -584,17 +584,71 @@ void gmx_tmpnam(char *buf)
      */
 #ifdef GMX_NATIVE_WINDOWS
     _mktemp(buf);
+    if (buf == NULL)
+    {
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
+                  strerror(errno));
+    }
 #else
     int fd = mkstemp(buf);
 
     if (fd < 0)
     {
-        gmx_fatal(FARGS, "Creating temporary file %s: %s", buf,
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
                   strerror(errno));
     }
     close(fd);
+
 #endif
-    /* name in Buf should now be OK */
+
+    /* name in Buf should now be OK and file is CLOSED */
+
+    return;
+}
+
+FILE *gmx_fopen_temporary(char *buf)
+{
+    int   i, len;
+    FILE *fpout = NULL;
+
+    if ((len = strlen(buf)) < 7)
+    {
+        gmx_fatal(FARGS, "Buf passed to gmx_fopentmp must be at least 7 bytes long");
+    }
+    for (i = len-6; (i < len); i++)
+    {
+        buf[i] = 'X';
+    }
+    /* mktemp is dangerous and we should use mkstemp instead, but
+     * since windows doesnt support it we have to separate the cases.
+     * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
+     */
+#ifdef GMX_NATIVE_WINDOWS
+    _mktemp(buf);
+    if (buf == NULL)
+    {
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
+                  strerror(errno));
+    }
+    if ((fpout = fopen(buf, "w")) == NULL)
+    {
+        gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
+    }
+#else
+    int fd = mkstemp(buf);
+    if (fd < 0)
+    {
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
+                  strerror(errno));
+    }
+    if ((fpout = fdopen(fd, "w")) == NULL)
+    {
+        gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
+    }
+#endif
+    /* name in Buf should now be OK and file is open */
+
+    return fpout;
 }
 
 int gmx_file_rename(const char *oldname, const char *newname)

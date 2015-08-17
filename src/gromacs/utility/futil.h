@@ -178,6 +178,13 @@ FILE *low_libopen(const char *file, gmx_bool bFatal);
 
 
 /*! \brief
+ * Creates unique name for temp file (wrapper around mkstemp) and opens it.
+ *
+ * \p buf should be at least 7 bytes long
+ */
+FILE *gmx_fopen_temporary(char *buf);
+
+/*! \brief
  * Creates unique name for temp file (wrapper around mkstemp).
  *
  * \p buf should be at least 7 bytes long
