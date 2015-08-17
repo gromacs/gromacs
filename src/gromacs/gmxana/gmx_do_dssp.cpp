@@ -557,36 +557,12 @@ int gmx_do_dssp(int argc, char *argv[])
     fprintf(stderr, "There are %d residues in your selected group\n", nres);
 
     std::strcpy(pdbfile, "ddXXXXXX");
-    gmx_tmpnam(pdbfile);
-    if ((tmpf = fopen(pdbfile, "w")) == NULL)
-    {
-        sprintf(pdbfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(pdbfile);
-        if ((tmpf = fopen(pdbfile, "w")) == NULL)
-        {
-            gmx_fatal(FARGS, "Can not open tmp file %s", pdbfile);
-        }
-    }
-    else
-    {
-        fclose(tmpf);
-    }
+    tmpf = gmx_tmpnam(pdbfile);
+    gmx_ffclose(tmpf);
 
     std::strcpy(tmpfile, "ddXXXXXX");
-    gmx_tmpnam(tmpfile);
-    if ((tmpf = fopen(tmpfile, "w")) == NULL)
-    {
-        sprintf(tmpfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
-        gmx_tmpnam(tmpfile);
-        if ((tmpf = fopen(tmpfile, "w")) == NULL)
-        {
-            gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile);
-        }
-    }
-    else
-    {
-        fclose(tmpf);
-    }
+    tmpf = gmx_tmpnam(tmpfile);
+    gmx_ffclose(tmpf);
 
     if ((dptr = getenv("DSSP")) == NULL)
     {

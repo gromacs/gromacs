@@ -566,9 +566,10 @@ FILE *libopen(const char *file)
     return low_libopen(file, TRUE);
 }
 
-void gmx_tmpnam(char *buf)
+FILE *gmx_tmpnam(char *buf)
 {
     int i, len;
+	FILE *fpout = NULL;
 
     if ((len = strlen(buf)) < 7)
     {
@@ -584,6 +585,10 @@ void gmx_tmpnam(char *buf)
      */
 #ifdef GMX_NATIVE_WINDOWS
     _mktemp(buf);
+    if ((fpout = fopen(buf, "w")) == NULL)
+    {
+		gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
+    }
 #else
     int fd = mkstemp(buf);
 
@@ -592,9 +597,14 @@ void gmx_tmpnam(char *buf)
         gmx_fatal(FARGS, "Creating temporary file %s: %s", buf,
                   strerror(errno));
     }
-    close(fd);
+    if ((fpout = fdopen(fd, "w")) == NULL)
+    {
+		gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
+    }
 #endif
-    /* name in Buf should now be OK */
+    /* name in Buf should now be OK and file is open */
+
+	return fpout;
 }
 
 int gmx_file_rename(const char *oldname, const char *newname)

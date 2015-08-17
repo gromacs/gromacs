@@ -746,8 +746,7 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
 
         fprintf(stderr, "Processing topology\n");
         fpin    = gmx_ffopen(topinout, "r");
-        gmx_tmpnam(temporary_filename);
-        fpout   = gmx_ffopen(temporary_filename, "w");
+        fpout   = gmx_tmpnam(temporary_filename);
         line    = 0;
         bSystem = bMolecules = FALSE;
         while (fgets(buf, STRLEN, fpin))
@@ -824,10 +823,8 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
             fprintf(fpout, "%-15s %5d\n", "SOL", nsol);
         }
         gmx_ffclose(fpout);
-        /* use gmx_ffopen to generate backup of topinout */
-        fpout = gmx_ffopen(topinout, "w");
-        gmx_ffclose(fpout);
-        rename(temporary_filename, topinout);
+        make_backup(topinout);
+        gmx_file_rename(temporary_filename,topinout);
     }
 }
 
