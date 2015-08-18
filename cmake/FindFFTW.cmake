@@ -125,7 +125,7 @@ if (${FFTW}_FOUND)
   endforeach()
 
   # Check for FFTW3 with 128-bit AVX compiled with --enable-avx
-  foreach(AVX_128_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_128)
+  foreach(AVX_128_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx)
     if (FFTW_LIBRARY_CHANGED)
       unset(${FFTW}_HAVE_${AVX_128_FUNCTION} CACHE)
     endif()
