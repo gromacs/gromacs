@@ -613,7 +613,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     nstfep = ir->fepvals->nstdhdl;
     if (ir->bExpanded)
     {
-        nstfep = gmx_greatest_common_divisor(ir->fepvals->nstdhdl,nstfep);
+        nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded,nstfep);
     }
     if (repl_ex_nst > 0)
     {
