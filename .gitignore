@@ -15,3 +15,12 @@ lib*.pc
 CMakeLists.txt.user
 /VersionInfo*.cmake
 Testing
+/build
+/*-build
+/build-*
+/*-build-*
+/*_build
+/build_*
+/*_build_*
+/*-build_*
+/*_build-*
