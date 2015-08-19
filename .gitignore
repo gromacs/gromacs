@@ -15,3 +15,7 @@ lib*.pc
 CMakeLists.txt.user
 /VersionInfo*.cmake
 Testing
+/[Bb][Uu][Ii][Ll][Dd]
+/*[-_][Bb][Uu][Ii][Ll][Dd]
+/[Bb][Uu][Ii][Ll][Dd][-_]*
+/*[-_][Bb][Uu][Ii][Ll][Dd][-_]*
