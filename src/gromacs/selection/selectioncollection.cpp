@@ -519,10 +519,8 @@ SelectionCollection::initOptions(IOptionsContainer   *options,
     }
     GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,
                        "Debug level out of range");
-    options->addOption(StringOption("seldebug").hidden(impl_->debugLevel_ == 0)
-                           .enumValue(debug_levels)
-                           .defaultValue(debug_levels[impl_->debugLevel_])
-                           .storeEnumIndex(&impl_->debugLevel_)
+    options->addOption(EnumIntOption("seldebug").hidden(impl_->debugLevel_ == 0)
+                           .enumValue(debug_levels).store(&impl_->debugLevel_)
                            .description("Print out selection trees for debugging"));
 }
 

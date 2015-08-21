@@ -167,9 +167,8 @@ void TimeUnitBehavior::setTimeUnitFromEnvironment()
 
 void TimeUnitBehavior::addTimeUnitOption(IOptionsContainer *options, const char *name)
 {
-    options->addOption(StringOption(name).enumValue(g_timeUnits)
-                           .defaultValue(g_timeUnits[timeUnit()])
-                           .storeEnumIndex(&timeUnit_)
+    options->addOption(EnumIntOption(name).enumValue(g_timeUnits)
+                           .store(&timeUnit_)
                            .description("Unit for time values"));
 }
 
