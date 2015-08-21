@@ -540,8 +540,10 @@ static int read_pdball(const char *inf, const char *outf, char *title,
     printf("Reading %s...\n", inf);
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(inf, title, top, ePBC, x, NULL, box, FALSE);
-    *atoms = top->atoms;
+    read_tps_conf(inf, top, ePBC, x, NULL, box, FALSE);
+    strncpy(title, *top->name, STRLEN);
+    title[STRLEN-1] = '\0';
+    *atoms          = top->atoms;
     sfree(top);
     natom = atoms->nr;
     if (atoms->pdbinfo == NULL)
@@ -571,7 +573,7 @@ static int read_pdball(const char *inf, const char *outf, char *title,
     }
 
     printf("Read");
-    if (title && title[0])
+    if (title[0])
     {
         printf(" '%s',", title);
     }

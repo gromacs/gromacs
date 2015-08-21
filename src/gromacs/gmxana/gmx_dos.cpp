@@ -271,7 +271,6 @@ int gmx_dos(int argc, char *argv[])
     t_trxframe          fr;
     matrix              box;
     int                 gnx;
-    char                title[256];
     real                t0, t1;
     t_trxstatus        *status;
     int                 nV, nframes, n_alloc, i, j, fftcode, Nmol, Natom;
@@ -338,7 +337,7 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, NULL, NULL, box, TRUE);
 
     /* Handle index groups */
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
@@ -524,7 +523,7 @@ int gmx_dos(int argc, char *argv[])
     rho   = (tmass*AMU)/(V*NANO*NANO*NANO);
     sigHS = std::pow(6*y*V/(M_PI*Natom), 1.0/3.0);
 
-    fprintf(fplog, "System = \"%s\"\n", title);
+    fprintf(fplog, "System = \"%s\"\n", *top.name);
     fprintf(fplog, "Nmol = %d\n", Nmol);
     fprintf(fplog, "Natom = %d\n", Natom);
     fprintf(fplog, "dt = %g ps\n", dt);

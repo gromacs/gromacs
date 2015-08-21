@@ -231,7 +231,7 @@ int gmx_bundle(int argc, char *argv[])
     t_trxframe      fr;
     t_atoms         outatoms;
     real            t, comp;
-    char           *grpname[MAX_ENDS], title[256];
+    char           *grpname[MAX_ENDS];
     /* FIXME: The constness should not be cast away */
     char           *anm = (char *)"CA", *rnm = (char *)"GLY";
     int             i, gnx[MAX_ENDS];
@@ -266,7 +266,7 @@ int gmx_bundle(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, TRUE);
 
     bKink = opt2bSet("-ok", NFILE, fnm) || opt2bSet("-okr", NFILE, fnm)
         || opt2bSet("-okl", NFILE, fnm);

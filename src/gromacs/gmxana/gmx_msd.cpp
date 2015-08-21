@@ -1116,7 +1116,6 @@ int gmx_msd(int argc, char *argv[])
     t_topology      top;
     int             ePBC;
     matrix          box;
-    char            title[256];
     const char     *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
     rvec           *xdum;
     gmx_bool        bTop;
@@ -1190,7 +1189,7 @@ int gmx_msd(int argc, char *argv[])
         gmx_fatal(FARGS, "Can only calculate the full tensor for 3D msd");
     }
 
-    bTop = read_tps_conf(tps_file, title, &top, &ePBC, &xdum, NULL, box, bMW || bRmCOMM);
+    bTop = read_tps_conf(tps_file, &top, &ePBC, &xdum, NULL, box, bMW || bRmCOMM);
     if (mol_file && !bTop)
     {
         gmx_fatal(FARGS,

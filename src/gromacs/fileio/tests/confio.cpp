@@ -112,10 +112,8 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         {
             snew(testTop_, 1);
             int  ePBC = -2;
-            char title[STRLEN];
-            read_tps_conf(referenceFilename_.c_str(), title, testTop_,
+            read_tps_conf(referenceFilename_.c_str(), testTop_,
                           &ePBC, &testX_, NULL, testBox_, FALSE);
-            testTop_->name = put_symtab(&testTop_->symtab, title);
         }
 
         void testTopologies()

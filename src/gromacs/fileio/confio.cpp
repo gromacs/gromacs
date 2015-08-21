@@ -289,7 +289,7 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-static void read_stx_conf(const char *infile, char *title, t_topology *top,
+static void read_stx_conf(const char *infile, t_topology *top,
                           rvec x[], rvec *v, int *ePBC, matrix box)
 {
     FILE       *in;
@@ -315,7 +315,7 @@ static void read_stx_conf(const char *infile, char *title, t_topology *top,
     switch (ftp)
     {
         case efGRO:
-            gmx_gro_read_conf(infile, title, top, x, v, box);
+            gmx_gro_read_conf(infile, top, x, v, box);
             break;
         case efG96:
             fr.title  = NULL;
@@ -328,16 +328,16 @@ static void read_stx_conf(const char *infile, char *title, t_topology *top,
             read_g96_conf(in, infile, &fr, &top->symtab, g96_line);
             gmx_fio_fclose(in);
             copy_mat(fr.box, box);
-            std::strncpy(title, fr.title, STRLEN);
+            top->name = put_symtab(&top->symtab, fr.title);
             sfree(const_cast<char *>(fr.title));
             break;
         case efPDB:
         case efBRK:
         case efENT:
-            gmx_pdb_read_conf(infile, title, top, x, ePBC, box);
+            gmx_pdb_read_conf(infile, top, x, ePBC, box);
             break;
         case efESP:
-            gmx_espresso_read_conf(infile, title, top, x, v, box);
+            gmx_espresso_read_conf(infile, top, x, v, box);
             break;
         default:
             gmx_incons("Not supported in read_stx_conf");
@@ -365,7 +365,7 @@ static void done_gmx_groups_t(gmx_groups_t *g)
     sfree(g->grpname);
 }
 
-gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *ePBC,
+gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
                        rvec **x, rvec **v, matrix box, gmx_bool bMass)
 {
     t_tpxheader      header;
@@ -402,7 +402,6 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
         /* In this case we need to throw away the group data too */
         done_gmx_groups_t(&mtop->groups);
         sfree(mtop);
-        std::strcpy(title, *top->name);
         tpx_make_chain_identifiers(&top->atoms, &top->mols);
     }
     else
@@ -420,7 +419,7 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
         {
             snew(*v, natoms);
         }
-        read_stx_conf(infile, title, top, *x, (v == NULL) ? NULL : *v, ePBC, box);
+        read_stx_conf(infile, top, *x, (v == NULL) ? NULL : *v, ePBC, box);
         if (bXNULL)
         {
             sfree(*x);

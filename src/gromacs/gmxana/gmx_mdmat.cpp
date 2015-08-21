@@ -215,7 +215,7 @@ int gmx_mdmat(int argc, char *argv[])
     t_trxstatus   *status;
     gmx_bool       bCalcN, bFrames;
     real           t, ratio;
-    char           title[256], label[234];
+    char           label[234];
     t_rgb          rlo, rhi;
     rvec          *x;
     real         **mdmat, *resnr, **totmdmat;
@@ -240,7 +240,7 @@ int gmx_mdmat(int argc, char *argv[])
         fprintf(stderr, "Will calculate number of different contacts\n");
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x, NULL, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box, FALSE);
 
     fprintf(stderr, "Select group for analysis\n");
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);

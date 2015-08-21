@@ -110,7 +110,6 @@ int gmx_nmtraj(int argc, char *argv[])
     real        *     eigval;
     int        *      dummy;
     real        *     invsqrtm;
-    char              title[STRLEN];
     real              fraction;
     int              *out_eigidx;
     rvec        *     this_eigvec;
@@ -141,7 +140,7 @@ int gmx_nmtraj(int argc, char *argv[])
     read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit,
                       &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, bDMA);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, bDMA);
 
     /* Find vectors and phases */
 

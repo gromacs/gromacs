@@ -163,7 +163,7 @@ static const char *const esp_prop[espNR] = {
     "molecule"
 };
 
-void gmx_espresso_read_conf(const char *infile, char *title,
+void gmx_espresso_read_conf(const char *infile,
                             t_topology *top, rvec x[], rvec *v, matrix box)
 {
     t_atoms  *atoms = &top->atoms;
@@ -175,7 +175,7 @@ void gmx_espresso_read_conf(const char *infile, char *title,
     gmx_bool  bFoundParticles, bFoundProp, bFoundVariable, bMol;
 
     // TODO: The code does not understand titles it writes...
-    title[0] = '\0';
+    top->name = put_symtab(&top->symtab, "");
 
     clear_mat(box);
 

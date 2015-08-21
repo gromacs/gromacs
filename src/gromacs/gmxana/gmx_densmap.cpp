@@ -138,7 +138,7 @@ int gmx_densmap(int argc, char *argv[])
     real               t, m, mtot;
     t_pbc              pbc;
     int                cav = 0, c1 = 0, c2 = 0;
-    char             **grpname, title[256], buf[STRLEN];
+    char             **grpname, buf[STRLEN];
     const char        *unit;
     int                i, j, k, l, ngrps, anagrp, *gnx = NULL, nindex, nradial = 0, nfr, nmpower;
     atom_id          **ind = NULL, *index;
@@ -197,7 +197,7 @@ int gmx_densmap(int argc, char *argv[])
 
     if (ftp2bSet(efTPS, NFILE, fnm) || !ftp2bSet(efNDX, NFILE, fnm))
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x, NULL, box,
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box,
                       bRadial);
     }
     if (!bRadial)

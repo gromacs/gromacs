@@ -169,7 +169,7 @@ int gmx_covar(int argc, char *argv[])
     xpmfile    = opt2fn_null("-xpm", NFILE, fnm);
     xpmafile   = opt2fn_null("-xpma", NFILE, fnm);
 
-    read_tps_conf(fitfile, str, &top, &ePBC, &xref, NULL, box, TRUE);
+    read_tps_conf(fitfile, &top, &ePBC, &xref, NULL, box, TRUE);
     atoms = &top.atoms;
 
     if (bFit)

@@ -127,7 +127,6 @@ int gmx_sans(int argc, char *argv[])
     gmx_bool                              bMC  = FALSE;
     int                                   ePBC = -1;
     matrix                                box;
-    char                                  title[STRLEN];
     rvec                                 *x;
     int                                   natoms;
     real                                  t;
@@ -227,7 +226,7 @@ int gmx_sans(int argc, char *argv[])
     snew(grpname, 1);
     snew(index, 1);
 
-    read_tps_conf(fnTPX, title, top, &ePBC, &x, NULL, box, TRUE);
+    read_tps_conf(fnTPX, top, &ePBC, &x, NULL, box, TRUE);
 
     printf("\nPlease select group for SANS spectra calculation:\n");
     get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);

@@ -388,7 +388,7 @@ int gmx_genion(int argc, char *argv[])
     t_pbc              pbc;
     int               *repl, ePBC;
     atom_id           *index;
-    char              *grpname, title[STRLEN];
+    char              *grpname;
     gmx_bool          *bSet;
     int                i, nw, nwa, nsa, nsalt, iqtot;
     output_env_t       oenv;
@@ -419,7 +419,7 @@ int gmx_genion(int argc, char *argv[])
     }
 
     /* Read atom positions and charges */
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), title, &top, &ePBC, &x, &v, box, FALSE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, &x, &v, box, FALSE);
     atoms = top.atoms;
 
     /* Compute total charge */

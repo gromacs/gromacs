@@ -455,13 +455,15 @@ int InsertMolecules::run()
     if (bProt)
     {
         /* Generate a solute configuration */
-        title = readConformation(inputConfFile_.c_str(), top, &x, NULL,
-                                 &ePBC, box, "solute");
+        readConformation(inputConfFile_.c_str(), top, &x, NULL,
+                         &ePBC, box, "solute");
         if (top->atoms.nr == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", inputConfFile_.c_str());
-            sfree(title);
-            title = NULL;
+        }
+        else
+        {
+            title = *top->name;
         }
     }
     if (bBox_)
@@ -484,9 +486,8 @@ int InsertMolecules::run()
     {
         int         ePBC_dummy;
         matrix      box_dummy;
-        char       *title_ins
-            = readConformation(insertConfFile_.c_str(), top_insrt, &x_insrt,
-                               NULL, &ePBC_dummy, box_dummy, "molecule");
+        readConformation(insertConfFile_.c_str(), top_insrt, &x_insrt,
+                         NULL, &ePBC_dummy, box_dummy, "molecule");
         if (top_insrt->atoms.nr == 0)
         {
             gmx_fatal(FARGS, "No molecule in %s, please check your input",
@@ -494,11 +495,7 @@ int InsertMolecules::run()
         }
         if (title == NULL)
         {
-            title = title_ins;
-        }
-        else
-        {
-            sfree(title_ins);
+            title = *top_insrt->name;
         }
         if (positionFile_.empty())
         {
@@ -527,7 +524,6 @@ int InsertMolecules::run()
     sfree(top);
     done_top(top_insrt);
     sfree(top_insrt);
-    sfree(title);
 
     return 0;
 }

@@ -146,7 +146,6 @@ int gmx_genconf(int argc, char *argv[])
 
     int             vol;
     t_atoms        *atoms;      /* list with all atoms */
-    char            title[STRLEN];
     rvec           *x, *xx, *v; /* coordinates? */
     real            t;
     vec4           *xrot, *vrot;
@@ -229,7 +228,7 @@ int gmx_genconf(int argc, char *argv[])
     t_topology *top;
     snew(top, 1);
     atoms = &top->atoms;
-    read_tps_conf(opt2fn("-f", NFILE, fnm), title, top, &ePBC, &x, &v, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &ePBC, &x, &v, box, FALSE);
     natoms = atoms->nr;
     nres   = atoms->nres;          /* nr of residues in one element? */
     /* make space for all the atoms */
@@ -376,7 +375,7 @@ int gmx_genconf(int argc, char *argv[])
     }
     gmx_rng_destroy(rng);
 
-    write_sto_conf(opt2fn("-o", NFILE, fnm), title, atoms, x, v, ePBC, box);
+    write_sto_conf(opt2fn("-o", NFILE, fnm), *top->name, atoms, x, v, ePBC, box);
 
     return 0;
 }

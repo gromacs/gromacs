@@ -446,7 +446,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 {
     int                     i, *isize, flags = TRX_READ_X, **index_atp;
     t_trxstatus            *status;
-    char                  **grpname, title[STRLEN];
+    char                  **grpname;
     atom_id               **index;
     t_topology              top;
     int                     ePBC;
@@ -473,7 +473,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     sf->energy = energy;
 
     /* Read the topology informations */
-    read_tps_conf (fnTPS, title, &top, &ePBC, &xtop, NULL, box, TRUE);
+    read_tps_conf (fnTPS, &top, &ePBC, &xtop, NULL, box, TRUE);
     sfree (xtop);
 
     /* groups stuff... */

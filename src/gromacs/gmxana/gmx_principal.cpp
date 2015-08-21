@@ -93,7 +93,7 @@ int gmx_principal(int argc, char *argv[])
     rvec      *     x;
 
     int             natoms;
-    char           *grpname, title[256];
+    char           *grpname;
     int             i, gnx;
     atom_id        *index;
     rvec            moi;
@@ -157,7 +157,7 @@ int gmx_principal(int argc, char *argv[])
     }
     sfree(legend);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box, TRUE);
 
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 

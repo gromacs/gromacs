@@ -55,7 +55,7 @@ real *makeExclusionDistances(const struct t_atoms *a, struct gmx_atomprop *aps,
  * Used by solvate and insert-molecules. The returned pointers *x and
  * *v should be freed by the caller. top should have its destructor
  * called. */
-char *readConformation(const char *confin, struct t_topology *top, rvec **x, rvec **v,
-                       int *ePBC, matrix box, const char *statusTitle);
+void readConformation(const char *confin, struct t_topology *top, rvec **x, rvec **v,
+                      int *ePBC, matrix box, const char *statusTitle);
 
 #endif

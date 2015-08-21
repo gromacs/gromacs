@@ -131,7 +131,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
  * ePBC and gmx_conect structure may be NULL.
  */
 
-void gmx_pdb_read_conf(const char *infile, char *title,
+void gmx_pdb_read_conf(const char *infile,
                        struct t_topology *top, rvec x[], int *ePBC, matrix box);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.

@@ -216,7 +216,7 @@ int gmx_gyrate(int argc, char *argv[])
     rvec            d, d1; /* eigenvalues of inertia tensor */
     real            t, t0, tm, gyro;
     int             natoms;
-    char           *grpname, title[256];
+    char           *grpname;
     int             j, m, gnx, nam, mol;
     atom_id        *index;
     output_env_t    oenv;
@@ -268,7 +268,7 @@ int gmx_gyrate(int argc, char *argv[])
         printf("Will print radius normalised by charge\n");
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box, TRUE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     if (nmol > gnx || gnx % nmol != 0)
