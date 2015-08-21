@@ -62,9 +62,10 @@
 #include "gromacs/utility/smalloc.h"
 
 /* enum for random rotations of inserted solutes */
-enum {
+enum RotationType {
     en_rotXYZ, en_rotZ, en_rotNone
 };
+const char *const cRotationEnum[] = {"xyz", "z", "none"};
 
 static void center_molecule(int atomCount, rvec x[])
 {
@@ -82,8 +83,8 @@ static void center_molecule(int atomCount, rvec x[])
 }
 
 static void generate_trial_conf(int atomCount, const rvec xin[],
-                                const rvec offset, int enum_rot, gmx_rng_t rng,
-                                rvec xout[])
+                                const rvec offset, RotationType enum_rot,
+                                gmx_rng_t rng, rvec xout[])
 {
     for (int i = 0; i < atomCount; ++i)
     {
@@ -105,7 +106,7 @@ static void generate_trial_conf(int atomCount, const rvec xin[],
             alfa = beta = gamma = 0.;
             break;
     }
-    if (enum_rot == en_rotXYZ || (enum_rot == en_rotZ))
+    if (enum_rot == en_rotXYZ || enum_rot == en_rotZ)
     {
         rotate_conf(atomCount, xout, NULL, alfa, beta, gamma);
     }
@@ -165,7 +166,8 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                         t_atoms *atoms, rvec **x,
                         const t_atoms *atoms_insrt, const rvec *x_insrt,
                         int ePBC, matrix box,
-                        const std::string &posfn, const rvec deltaR, int enum_rot)
+                        const std::string &posfn, const rvec deltaR,
+                        RotationType enum_rot)
 {
     t_pbc            pbc;
     rvec            *x_n;
@@ -325,19 +327,19 @@ class InsertMolecules : public ICommandLineOptionsModule
         virtual int run();
 
     private:
-        std::string inputConfFile_;
-        std::string insertConfFile_;
-        std::string positionFile_;
-        std::string outputConfFile_;
-        rvec        newBox_;
-        bool        bBox_;
-        int         nmolIns_;
-        int         nmolTry_;
-        int         seed_;
-        real        defaultDistance_;
-        real        scaleFactor_;
-        rvec        deltaR_;
-        int         enumRot_;
+        std::string   inputConfFile_;
+        std::string   insertConfFile_;
+        std::string   positionFile_;
+        std::string   outputConfFile_;
+        rvec          newBox_;
+        bool          bBox_;
+        int           nmolIns_;
+        int           nmolTry_;
+        int           seed_;
+        real          defaultDistance_;
+        real          scaleFactor_;
+        rvec          deltaR_;
+        RotationType  enumRot_;
 };
 
 void InsertMolecules::initOptions(IOptionsContainer                 *options,
@@ -423,8 +425,7 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
     options->addOption(RealOption("dr").vector()
                            .store(deltaR_)
                            .description("Allowed displacement in x/y/z from positions in [TT]-ip[tt] file"));
-    const char *const cRotationEnum[] = {"xyz", "z", "none"};
-    options->addOption(EnumIntOption("rot").enumValue(cRotationEnum)
+    options->addOption(EnumOption<RotationType>("rot").enumValue(cRotationEnum)
                            .store(&enumRot_)
                            .description("Rotate inserted molecules randomly"));
 }

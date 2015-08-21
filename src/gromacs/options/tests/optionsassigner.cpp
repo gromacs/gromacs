@@ -849,7 +849,7 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValueFromVector)
  * Tests for enum options
  */
 
-//! Enum type for EnumIntOption tests.
+//! Enum type for EnumOption tests.
 enum TestEnum
 {
     etestNone,
@@ -861,10 +861,10 @@ enum TestEnum
 TEST(OptionsAssignerEnumTest, StoresSingleValue)
 {
     gmx::Options           options(NULL, NULL);
-    int                    value     = etestNone;
-    using gmx::EnumIntOption;
+    TestEnum               value     = etestNone;
+    using gmx::EnumOption;
     ASSERT_NO_THROW(options.addOption(
-                            EnumIntOption("p").store(&value)
+                            EnumOption<TestEnum>("p").store(&value)
                                 .enumValue(c_allowed)));
     EXPECT_EQ(etestNone, value);
 
@@ -882,10 +882,10 @@ TEST(OptionsAssignerEnumTest, StoresSingleValue)
 TEST(OptionsAssignerEnumTest, StoresVectorValues)
 {
     gmx::Options           options(NULL, NULL);
-    std::vector<int>       values;
-    using gmx::EnumIntOption;
+    std::vector<TestEnum>  values;
+    using gmx::EnumOption;
     ASSERT_NO_THROW(options.addOption(
-                            EnumIntOption("p").storeVector(&values)
+                            EnumOption<TestEnum>("p").storeVector(&values)
                                 .multiValue().enumValue(c_allowed)));
     EXPECT_TRUE(values.empty());
 
@@ -906,10 +906,10 @@ TEST(OptionsAssignerEnumTest, StoresVectorValues)
 TEST(OptionsAssignerEnumTest, HandlesInitialValueOutOfRange)
 {
     gmx::Options           options(NULL, NULL);
-    int                    value     = etestNR;
-    using gmx::EnumIntOption;
+    TestEnum               value     = etestNR;
+    using gmx::EnumOption;
     ASSERT_NO_THROW(options.addOption(
-                            EnumIntOption("p").store(&value)
+                            EnumOption<TestEnum>("p").store(&value)
                                 .enumValue(c_allowed)));
     EXPECT_EQ(etestNR, value);
 
@@ -924,10 +924,10 @@ TEST(OptionsAssignerEnumTest, HandlesInitialValueOutOfRange)
 TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValue)
 {
     gmx::Options           options(NULL, NULL);
-    int                    value     = etestNone;
-    using gmx::EnumIntOption;
+    TestEnum               value     = etestNone;
+    using gmx::EnumOption;
     ASSERT_NO_THROW(options.addOption(
-                            EnumIntOption("p").store(&value)
+                            EnumOption<TestEnum>("p").store(&value)
                                 .enumValue(c_allowed).defaultValue(etestTest)));
     EXPECT_EQ(etestTest, value);
 
@@ -942,10 +942,10 @@ TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValue)
 TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValueFromVariable)
 {
     gmx::Options           options(NULL, NULL);
-    int                    value     = etestTest;
-    using gmx::EnumIntOption;
+    TestEnum               value     = etestTest;
+    using gmx::EnumOption;
     ASSERT_NO_THROW(options.addOption(
-                            EnumIntOption("p").store(&value)
+                            EnumOption<TestEnum>("p").store(&value)
                                 .enumValue(c_allowed)));
     EXPECT_EQ(etestTest, value);
 
@@ -960,12 +960,12 @@ TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValueFromVariable)
 TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValueFromVector)
 {
     gmx::Options             options(NULL, NULL);
-    std::vector<int>         value;
+    std::vector<TestEnum>    value;
     value.push_back(etestNone);
     value.push_back(etestTest);
-    using gmx::EnumIntOption;
+    using gmx::EnumOption;
     ASSERT_NO_THROW(options.addOption(
-                            EnumIntOption("p").storeVector(&value).valueCount(2)
+                            EnumOption<TestEnum>("p").storeVector(&value).valueCount(2)
                                 .enumValue(c_allowed)));
     ASSERT_EQ(2U, value.size());
     EXPECT_EQ(etestNone, value[0]);
