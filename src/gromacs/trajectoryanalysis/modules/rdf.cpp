@@ -126,7 +126,7 @@ class Rdf : public TrajectoryAnalysisModule
     private:
         std::string                               fnRdf_;
         std::string                               fnCumulative_;
-        int                                       surface_;
+        SurfaceType                               surface_;
         AnalysisDataPlotSettings                  plotSettings_;
 
         /*! \brief
@@ -275,7 +275,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
     options->addOption(DoubleOption("rmax").store(&rmax_)
                            .description("Largest distance (nm) to calculate"));
 
-    options->addOption(EnumIntOption("surf").enumValue(cSurfaceEnum)
+    options->addOption(EnumOption<SurfaceType>("surf").enumValue(cSurfaceEnum)
                            .store(&surface_)
                            .description("RDF with respect to the surface of the reference"));
 
