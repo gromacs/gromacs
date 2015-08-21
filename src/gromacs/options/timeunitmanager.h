@@ -188,10 +188,7 @@ class TimeUnitBehavior : public IOptionsBehavior
         virtual void optionsFinished() {}
 
     private:
-        // Type is int to make it possible to use it with
-        // StringOption::storeEnumIndex(), but it should always one of the
-        // allowed values for TimeUnit.
-        int              timeUnit_;
+        TimeUnit         timeUnit_;
         TimeUnit        *timeUnitStore_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TimeUnitBehavior);
