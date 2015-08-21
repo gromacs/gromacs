@@ -183,9 +183,9 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
     options.addOption(StringOption("str").description("String option")
                           .storeVector(&svalues).multiValue());
 
-    int               evalue    = eBar;
+    TestEnum          evalue    = eBar;
     const char *const allowed[] = { "foo", "bar" };
-    options.addOption(EnumIntOption("enum").description("Enum option")
+    options.addOption(EnumOption<TestEnum>("enum").description("Enum option")
                           .enumValue(allowed).store(&evalue));
 
     CommandLineHelpWriter writer(options);

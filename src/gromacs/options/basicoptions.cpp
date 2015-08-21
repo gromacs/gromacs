@@ -47,6 +47,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <algorithm>
 #include <limits>
 #include <string>
 #include <vector>
@@ -613,42 +614,51 @@ StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
  * EnumOptionStorage
  */
 
-EnumOptionStorage::EnumOptionStorage(const EnumIntOption &settings)
-    : MyBase(settings), info_(this)
+EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
+                                     const char *const *enumValues, int count,
+                                     int defaultValue, int defaultValueIfSet,
+                                     EnumIndexStorePointer store)
+    : MyBase(settings), info_(this), store_(move(store))
 {
-    if (settings.enumValues_ == NULL)
+    if (enumValues == NULL)
     {
-        GMX_THROW(APIError("Allowed values must be provided to EnumIntOption"));
+        GMX_THROW(APIError("Allowed values must be provided to EnumOption"));
     }
 
-    int count = settings.enumValuesCount_;
     if (count < 0)
     {
         count = 0;
-        while (settings.enumValues_[count] != NULL)
+        while (enumValues[count] != NULL)
         {
             ++count;
         }
     }
     for (int i = 0; i < count; ++i)
     {
-        if (settings.enumValues_[i] == NULL)
+        if (enumValues[i] == NULL)
         {
             GMX_THROW(APIError("Enumeration value cannot be NULL"));
         }
-        allowed_.push_back(settings.enumValues_[i]);
+        allowed_.push_back(enumValues[i]);
     }
 
-    const int *const defaultValue = settings.defaultValue();
-    if (defaultValue != NULL)
+    GMX_ASSERT(defaultValue < count, "Default enumeration value is out of range");
+    GMX_ASSERT(defaultValueIfSet < count, "Default enumeration value is out of range");
+    setFlag(efOption_HasDefaultValue);
+    if (defaultValue >= 0)
     {
-        GMX_ASSERT(*defaultValue < count, "Default enumeration value is out of range");
+        setDefaultValue(defaultValue);
     }
-    const int *const defaultValueIfSet = settings.defaultValueIfSet();
-    if (defaultValueIfSet != NULL)
+    if (defaultValueIfSet >= 0)
     {
-        GMX_ASSERT(*defaultValueIfSet < count, "Default enumeration value is out of range");
+        setDefaultValueIfSet(defaultValueIfSet);
     }
+
+    if (values().empty())
+    {
+        values() = store_->initialValues();
+    }
+    refreshEnumIndexStore();
 }
 
 std::string EnumOptionStorage::formatExtraDescription() const
@@ -674,6 +684,24 @@ void EnumOptionStorage::convertValue(const std::string &value)
     addValue(match - allowed_.begin());
 }
 
+void EnumOptionStorage::processSetValues(ValueList *values)
+{
+    const size_t newSize = (hasFlag(efOption_ClearOnNextSet) ? 0 : valueCount())
+        + std::max<size_t>(values->size(), 1);
+    store_->reserveSpace(newSize);
+}
+
+void EnumOptionStorage::refreshValues()
+{
+    MyBase::refreshValues();
+    refreshEnumIndexStore();
+}
+
+void EnumOptionStorage::refreshEnumIndexStore()
+{
+    store_->refreshValues(values());
+}
+
 /********************************************************************
  * EnumOptionInfo
  */
@@ -694,13 +722,29 @@ const std::vector<std::string> &EnumOptionInfo::allowedValues() const
 }
 
 /********************************************************************
- * EnumIntOption
+ * EnumOption helpers
  */
 
-AbstractOptionStorage *
-EnumIntOption::createStorage(const OptionManagerContainer & /*managers*/) const
+namespace internal
 {
-    return new EnumOptionStorage(*this);
+
+EnumIndexStoreInterface::~EnumIndexStoreInterface()
+{
 }
+
+//! \cond internal
+AbstractOptionStorage *
+createEnumOptionStorage(const AbstractOption &option,
+                        const char *const *enumValues, int count,
+                        int defaultValue, int defaultValueIfSet,
+                        EnumIndexStoreInterface *store)
+{
+    EnumOptionStorage::EnumIndexStorePointer storePtr(store);
+    return new EnumOptionStorage(option, enumValues, count, defaultValue,
+                                 defaultValueIfSet, move(storePtr));
+}
+//! \endcond
+
+} // namespace internal
 
 } // namespace gmx

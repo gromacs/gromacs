@@ -147,9 +147,9 @@ class PairDistance : public TrajectoryAnalysisModule
         std::string             fnDist_;
 
         double                  cutoff_;
-        int                     distanceType_;
-        int                     refGroupType_;
-        int                     selGroupType_;
+        DistanceType            distanceType_;
+        GroupType               refGroupType_;
+        GroupType               selGroupType_;
 
         //! Number of groups in `refSel_`.
         int                     refGroupCount_;
@@ -221,13 +221,13 @@ PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings
 
     options->addOption(DoubleOption("cutoff").store(&cutoff_)
                            .description("Maximum distance to consider"));
-    options->addOption(EnumIntOption("type").store(&distanceType_)
+    options->addOption(EnumOption<DistanceType>("type").store(&distanceType_)
                            .enumValue(c_distanceTypes)
                            .description("Type of distances to calculate"));
-    options->addOption(EnumIntOption("refgrouping").store(&refGroupType_)
+    options->addOption(EnumOption<GroupType>("refgrouping").store(&refGroupType_)
                            .enumValue(c_groupTypes)
                            .description("Grouping of -ref positions to compute the min/max over"));
-    options->addOption(EnumIntOption("selgrouping").store(&selGroupType_)
+    options->addOption(EnumOption<GroupType>("selgrouping").store(&selGroupType_)
                            .enumValue(c_groupTypes)
                            .description("Grouping of -sel positions to compute the min/max over"));
 
