@@ -135,15 +135,14 @@ void TimeUnitManager::setTimeUnitFromEnvironment()
                         value, joinStrings(timeUnits, ", ").c_str());
             GMX_THROW(InvalidInputError(message));
         }
-        timeUnit_ = i - timeUnits.begin();
+        setTimeUnit(static_cast<TimeUnit>(i - timeUnits.begin()));
     }
 }
 
 void TimeUnitManager::addTimeUnitOption(IOptionsContainer *options, const char *name)
 {
-    options->addOption(StringOption(name).enumValue(g_timeUnits)
-                           .defaultValue(g_timeUnits[timeUnit()])
-                           .storeEnumIndex(&timeUnit_)
+    options->addOption(EnumIntOption(name).enumValue(g_timeUnits)
+                           .store(&timeUnit_)
                            .description("Unit for time values"));
 }
 

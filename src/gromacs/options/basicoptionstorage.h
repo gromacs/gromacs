@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,13 +204,33 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
 
     private:
         virtual void convertValue(const std::string &value);
-        virtual void refreshValues();
-
-        void refreshEnumIndexStore();
 
         StringOptionInfo        info_;
         ValueList               allowed_;
-        int                    *enumIndexStore_;
+};
+
+/*! \internal \brief
+ * Converts, validates, and stores enum values.
+ */
+class EnumOptionStorage : public OptionStorageTemplate<int>
+{
+    public:
+        //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
+        explicit EnumOptionStorage(const EnumIntOption &settings);
+
+        virtual OptionInfo &optionInfo() { return info_; }
+        virtual std::string typeString() const { return "enum"; }
+        virtual std::string formatExtraDescription() const;
+        virtual std::string formatSingleValue(const int &value) const;
+
+        //! \copydoc EnumOptionInfo::allowedValues()
+        const std::vector<std::string> &allowedValues() const { return allowed_; }
+
+    private:
+        virtual void convertValue(const std::string &value);
+
+        EnumOptionInfo            info_;
+        std::vector<std::string>  allowed_;
 };
 
 /*!\}*/

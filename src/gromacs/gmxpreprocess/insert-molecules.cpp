@@ -425,8 +425,8 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
                            .store(deltaR_)
                            .description("Allowed displacement in x/y/z from positions in [TT]-ip[tt] file"));
     const char *const cRotationEnum[] = {"xyz", "z", "none"};
-    options->addOption(StringOption("rot").enumValue(cRotationEnum)
-                           .storeEnumIndex(&enumRot_)
+    options->addOption(EnumIntOption("rot").enumValue(cRotationEnum)
+                           .store(&enumRot_)
                            .description("Rotate inserted molecules randomly"));
 }
 

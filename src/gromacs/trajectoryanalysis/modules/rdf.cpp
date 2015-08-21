@@ -88,6 +88,16 @@ namespace
  * Actual analysis module
  */
 
+//! Whether to compute RDF wrt. surface of the reference group.
+enum SurfaceType
+{
+    SurfaceType_None,
+    SurfaceType_Molecule,
+    SurfaceType_Residue
+};
+//! String values corresponding to SurfaceType.
+const char *const cSurfaceEnum[] = { "no", "mol", "res" };
+
 /*! \brief
  * Implements `gmx rdf` trajectory analysis module.
  */
@@ -116,7 +126,7 @@ class Rdf : public TrajectoryAnalysisModule
     private:
         std::string                               fnRdf_;
         std::string                               fnCumulative_;
-        std::string                               surface_;
+        int                                       surface_;
         AnalysisDataPlotSettings                  plotSettings_;
 
         /*! \brief
@@ -184,6 +194,7 @@ class Rdf : public TrajectoryAnalysisModule
 
 Rdf::Rdf()
     : TrajectoryAnalysisModule(RdfInfo::name, RdfInfo::shortDescription),
+      surface_(SurfaceType_None),
       pairCounts_(new AnalysisDataSimpleHistogramModule()),
       normAve_(new AnalysisDataAverageModule()),
       binwidth_(0.002), cutoff_(0.0), rmax_(0.0),
@@ -264,9 +275,8 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
     options->addOption(DoubleOption("rmax").store(&rmax_)
                            .description("Largest distance (nm) to calculate"));
 
-    const char *const cSurfaceEnum[] = { "no", "mol", "res" };
-    options->addOption(StringOption("surf").enumValue(cSurfaceEnum)
-                           .defaultEnumIndex(0).store(&surface_)
+    options->addOption(EnumIntOption("surf").enumValue(cSurfaceEnum)
+                           .store(&surface_)
                            .description("RDF with respect to the surface of the reference"));
 
     options->addOption(SelectionOption("ref").store(&refSel_).required()
@@ -279,7 +289,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
 void
 Rdf::optionsFinished(TrajectoryAnalysisSettings *settings)
 {
-    if (surface_ != "no")
+    if (surface_ != SurfaceType_None)
     {
         settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 
@@ -317,14 +327,14 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     normFactors_.setColumnCount(0, sel_.size() + 1);
 
-    const bool bSurface = (surface_ != "no");
+    const bool bSurface = (surface_ != SurfaceType_None);
     if (bSurface)
     {
         if (!refSel_.hasOnlyAtoms())
         {
             GMX_THROW(InconsistentInputError("-surf only works with -refsel that consists of atoms"));
         }
-        const e_index_t type = (surface_ == "mol" ? INDEX_MOL : INDEX_RES);
+        const e_index_t type = (surface_ == SurfaceType_Molecule ? INDEX_MOL : INDEX_RES);
         surfaceGroupCount_ = refSel_.initOriginalIdsToGroup(top.topology(), type);
     }
 

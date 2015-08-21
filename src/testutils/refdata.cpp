@@ -134,7 +134,7 @@ typedef boost::shared_ptr<internal::TestReferenceDataImpl>
  */
 TestReferenceDataImplPointer g_referenceData;
 //! Global reference data mode set with setReferenceDataMode().
-// TODO: Make this a real enum; requires solving a TODO in StringOption.
+// TODO: Make this a real enum (requires solving a TODO in EnumIntOption).
 int                          g_referenceDataMode = erefdataCompare;
 
 //! Returns the global reference data mode.
@@ -192,9 +192,8 @@ void initReferenceData(IOptionsContainer *options)
     // Needs to correspond to the enum order in refdata.h.
     const char *const refDataEnum[] = { "check", "create", "update" };
     options->addOption(
-            StringOption("ref-data").enumValue(refDataEnum)
-                .defaultEnumIndex(0)
-                .storeEnumIndex(&g_referenceDataMode)
+            EnumIntOption("ref-data")
+                .enumValue(refDataEnum).store(&g_referenceDataMode)
                 .description("Operation mode for tests that use reference data"));
     ::testing::UnitTest::GetInstance()->listeners().Append(
             new ReferenceDataTestEventListener);
