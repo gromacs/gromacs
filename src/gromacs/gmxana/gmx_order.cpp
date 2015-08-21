@@ -258,7 +258,6 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     FILE        *fpsg = NULL, *fpsk = NULL;
     t_topology   top;
     int          ePBC;
-    char         title[STRLEN];
     t_trxstatus *status;
     int          natoms;
     real         t;
@@ -272,7 +271,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     gmx_rmpbc_t  gpbc = NULL;
 
 
-    read_tps_conf(fnTPS, title, &top, &ePBC, &xtop, NULL, box, FALSE);
+    read_tps_conf(fnTPS, &top, &ePBC, &xtop, NULL, box, FALSE);
 
     snew(sg_slice, nslice);
     snew(sk_slice, nslice);

@@ -1355,7 +1355,7 @@ int gmx_chi(int argc, char *argv[])
     rvec              *x;
     int                ePBC;
     matrix             box;
-    char               title[256], grpname[256];
+    char               grpname[256];
     t_dlist           *dlist;
     gmx_bool           bChi, bCorr, bSSHisto;
     gmx_bool           bDo_rt, bDo_oh, bDo_ot, bDo_jc;
@@ -1444,13 +1444,13 @@ int gmx_chi(int argc, char *argv[])
     /* Find the chi angles using atoms struct and a list of amino acids */
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(ftp2fn(efSTX, NFILE, fnm), title, top, &ePBC, &x, NULL, box, FALSE);
+    read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &ePBC, &x, NULL, box, FALSE);
     t_atoms    &atoms = top->atoms;
     if (atoms.pdbinfo == NULL)
     {
         snew(atoms.pdbinfo, atoms.nr);
     }
-    fprintf(log, "Title: %s\n", title);
+    fprintf(log, "Title: %s\n", *top->name);
 
     gmx_residuetype_init(&rt);
     dlist = mk_dlist(log, &atoms, &nlist, bPhi, bPsi, bChi, bHChi, maxchi, r0, rt);

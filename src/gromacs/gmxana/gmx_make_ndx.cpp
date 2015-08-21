@@ -1540,7 +1540,6 @@ int gmx_make_ndx(int argc, char *argv[])
 #define NPA asize(pa)
 
     output_env_t oenv;
-    char         title[STRLEN];
     int          nndxin;
     const char  *stxfile;
     char       **ndxinfiles;
@@ -1588,7 +1587,7 @@ int gmx_make_ndx(int argc, char *argv[])
         t_topology *top;
         snew(top, 1);
         fprintf(stderr, "\nReading structure file\n");
-        read_tps_conf(stxfile, title, top, &ePBC, &x, &v, box, FALSE);
+        read_tps_conf(stxfile, top, &ePBC, &x, &v, box, FALSE);
         atoms = &top->atoms;
         if (atoms->pdbinfo == NULL)
         {

@@ -293,12 +293,14 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     return bVel;
 }
 
-void gmx_gro_read_conf(const char *infile, char *title,
+void gmx_gro_read_conf(const char *infile,
                        t_topology *top, rvec x[], rvec *v, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");
     int   ndec;
+    char  title[STRLEN];
     get_w_conf(in, infile, title, &top->symtab, &top->atoms, &ndec, x, v, box);
+    top->name = put_symtab(&top->symtab, title);
     gmx_fio_fclose(in);
 }
 

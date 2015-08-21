@@ -233,7 +233,6 @@ int gmx_rmsf(int argc, char *argv[])
     rvec            *x, *pdbx, *xref;
     t_trxstatus     *status;
     const char      *label;
-    char             title[STRLEN];
 
     FILE            *fp;          /* the graphics file */
     const char      *devfn, *dirfn;
@@ -283,7 +282,8 @@ int gmx_rmsf(int argc, char *argv[])
     devfn    = opt2fn_null("-od", NFILE, fnm);
     dirfn    = opt2fn_null("-dir", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xref, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, NULL, box, TRUE);
+    const char *title = *top.name;
     snew(w_rls, top.atoms.nr);
 
     fprintf(stderr, "Select group(s) for root mean square calculation\n");
@@ -313,10 +313,11 @@ int gmx_rmsf(int argc, char *argv[])
         t_topology *top_pdb;
         snew(top_pdb, 1);
         /* Read coordinates twice */
-        read_tps_conf(opt2fn("-q", NFILE, fnm), title, top_pdb, NULL, NULL, NULL, pdbbox, FALSE);
+        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, NULL, NULL, NULL, pdbbox, FALSE);
         snew(pdbatoms, 1);
         *pdbatoms = top_pdb->atoms;
-        read_tps_conf(opt2fn("-q", NFILE, fnm), title, top_pdb, NULL, &pdbx, NULL, pdbbox, FALSE);
+        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, NULL, &pdbx, NULL, pdbbox, FALSE);
+        title = *top_pdb->name;
         snew(refatoms, 1);
         *refatoms = top_pdb->atoms;
         sfree(top_pdb);

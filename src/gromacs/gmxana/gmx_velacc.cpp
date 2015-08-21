@@ -209,7 +209,6 @@ int gmx_velacc(int argc, char *argv[])
     int             gnx;
     atom_id        *index;
     char           *grpname;
-    char            title[256];
     /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.
      */
@@ -250,7 +249,7 @@ int gmx_velacc(int argc, char *argv[])
 
     if (bTPS)
     {
-        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
+        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box,
                              TRUE);
         get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
     }

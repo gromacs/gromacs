@@ -119,7 +119,7 @@ int gmx_morph(int argc, char *argv[])
     rvec            *x1, *x2, *xx;
     matrix           box;
     real             rms1, rms2, fac, *mass;
-    char             title[STRLEN], *grpname;
+    char            *grpname;
     gmx_bool         bRMS;
     output_env_t     oenv;
 
@@ -132,9 +132,9 @@ int gmx_morph(int argc, char *argv[])
 
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f1", NFILE, fnm), title, top, NULL, &x1, NULL, box, FALSE);
+    read_tps_conf(opt2fn("-f1", NFILE, fnm), top, NULL, &x1, NULL, box, FALSE);
     nat1 = top->atoms.nr;
-    read_tps_conf(opt2fn("-f2", NFILE, fnm), title, top, NULL, &x2, NULL, box, FALSE);
+    read_tps_conf(opt2fn("-f2", NFILE, fnm), top, NULL, &x2, NULL, box, FALSE);
     nat2 = top->atoms.nr;
     if (nat1 != nat2)
     {

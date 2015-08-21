@@ -698,7 +698,6 @@ int gmx_editconf(int argc, char *argv[])
 
     FILE          *out;
     const char    *infile, *outfile;
-    char           title[STRLEN];
     int            outftp, inftp, natom, i, j, n_bfac, itype, ntype;
     double        *bfac    = NULL, c6, c12;
     int           *bfac_nr = NULL;
@@ -791,7 +790,7 @@ int gmx_editconf(int argc, char *argv[])
 
     t_topology *top_tmp;
     snew(top_tmp, 1);
-    read_tps_conf(infile, title, top_tmp, &ePBC, &x, &v, box, FALSE);
+    read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
     t_atoms  &atoms = top_tmp->atoms;
     natom = atoms.nr;
     if (atoms.pdbinfo == NULL)
@@ -1260,12 +1259,12 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, title, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE);
+            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, title, &atoms, x, bHaveV ? v : NULL, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : NULL, ePBC, box, isize, index);
         }
     }
     else
@@ -1306,7 +1305,7 @@ int gmx_editconf(int argc, char *argv[])
                     atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
                 }
             }
-            write_pdbfile(out, title, &atoms, x, ePBC, box, ' ', -1, conect, TRUE);
+            write_pdbfile(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, conect, TRUE);
             if (bLegend)
             {
                 pdb_legend(out, atoms.nr, atoms.nres, &atoms, x);
@@ -1320,7 +1319,7 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf(outfile, title, &atoms, x, bHaveV ? v : NULL, ePBC, box);
+            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : NULL, ePBC, box);
         }
     }
     gmx_atomprop_destroy(aps);

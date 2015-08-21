@@ -658,7 +658,6 @@ int gmx_traj(int argc, char *argv[])
     t_topology      top;
     int             ePBC;
     real           *mass, time;
-    char            title[STRLEN];
     const char     *indexfn;
     t_trxframe      fr, frout;
     int             flags, nvhisto = 0, *vhisto = NULL;
@@ -745,7 +744,7 @@ int gmx_traj(int argc, char *argv[])
     }
     sprintf(sffmt6, "%s%s%s%s%s%s", sffmt, sffmt, sffmt, sffmt, sffmt, sffmt);
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC,
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
                          &xtop, NULL, topbox,
                          bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
     sfree(xtop);

@@ -524,7 +524,7 @@ int gmx_confrms(int argc, char *argv[])
     /* the two structure files */
     const char  *conf1file, *conf2file, *matchndxfile, *outfile;
     FILE        *fp;
-    char         title1[STRLEN], title2[STRLEN], *name1, *name2;
+    char        *name1, *name2;
     t_topology  *top1, *top2;
     int          ePBC1, ePBC2;
     t_atoms     *atoms1, *atoms2;
@@ -562,10 +562,10 @@ int gmx_confrms(int argc, char *argv[])
     /* reading reference structure from first structure file */
     fprintf(stderr, "\nReading first structure file\n");
     snew(top1, 1);
-    read_tps_conf(conf1file, title1, top1, &ePBC1, &x1, &v1, box1, TRUE);
+    read_tps_conf(conf1file, top1, &ePBC1, &x1, &v1, box1, TRUE);
     atoms1 = &(top1->atoms);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
-            title1, atoms1->nr, atoms1->nres);
+            *top1->name, atoms1->nr, atoms1->nres);
 
     if (bRmpbc)
     {
@@ -585,10 +585,10 @@ int gmx_confrms(int argc, char *argv[])
     /* reading second structure file */
     fprintf(stderr, "\nReading second structure file\n");
     snew(top2, 1);
-    read_tps_conf(conf2file, title2, top2, &ePBC2, &x2, &v2, box2, TRUE);
+    read_tps_conf(conf2file, top2, &ePBC2, &x2, &v2, box2, TRUE);
     atoms2 = &(top2->atoms);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
-            title2, atoms2->nr, atoms2->nres);
+            *top2->name, atoms2->nr, atoms2->nres);
 
     if (bRmpbc)
     {
@@ -796,9 +796,9 @@ int gmx_confrms(int argc, char *argv[])
             fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
-                write_pdbfile(fp, title1, atoms1, x1, ePBC1, box1, ' ', 1, NULL, TRUE);
+                write_pdbfile(fp, *top1->name, atoms1, x1, ePBC1, box1, ' ', 1, NULL, TRUE);
             }
-            write_pdbfile(fp, title2, atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, NULL, TRUE);
+            write_pdbfile(fp, *top2->name, atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, NULL, TRUE);
             gmx_ffclose(fp);
             break;
         case efGRO:
@@ -809,9 +809,9 @@ int gmx_confrms(int argc, char *argv[])
             fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
-                write_hconf_p(fp, title1, atoms1, 3, x1, v1, box1);
+                write_hconf_p(fp, *top1->name, atoms1, 3, x1, v1, box1);
             }
-            write_hconf_p(fp, title2, atoms2, 3, x2, v2, box2);
+            write_hconf_p(fp, *top2->name, atoms2, 3, x2, v2, box2);
             gmx_ffclose(fp);
             break;
         default:
@@ -826,7 +826,7 @@ int gmx_confrms(int argc, char *argv[])
                         "WARNING: cannot write the reference structure to %s file\n",
                         ftp2ext(fn2ftp(outfile)));
             }
-            write_sto_conf(outfile, title2, atoms2, x2, v2, ePBC2, box2);
+            write_sto_conf(outfile, *top2->name, atoms2, x2, v2, ePBC2, box2);
             break;
     }
 

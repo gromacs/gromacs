@@ -1079,7 +1079,6 @@ int gmx_anaeig(int argc, char *argv[])
     int            natoms;
     char          *grpname;
     const char    *indexfile;
-    char           title[STRLEN];
     int            i, j, d;
     int            nout, *iout, noutvec, *outvec, nfit;
     atom_id       *index = NULL, *ifit = NULL;
@@ -1259,7 +1258,7 @@ int gmx_anaeig(int argc, char *argv[])
     else
     {
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                             title, &top, &ePBC, &xtop, NULL, topbox, bM);
+                             &top, &ePBC, &xtop, NULL, topbox, bM);
         atoms = &top.atoms;
         gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
         gmx_rmpbc(gpbc, atoms->nr, topbox, xtop);

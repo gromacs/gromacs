@@ -804,12 +804,10 @@ int gmx_current(int argc, char *argv[])
 
     output_env_t           oenv;
     t_topology             top;
-    char                   title[STRLEN];
     char                 **grpname = NULL;
     const char            *indexfn;
     t_trxframe             fr;
     real                  *mass2 = NULL;
-    rvec                  *xtop, *vtop;
     matrix                 box;
     atom_id               *index0;
     int                   *indexm = NULL;
@@ -889,12 +887,8 @@ int gmx_current(int argc, char *argv[])
     bACF = opt2bSet("-caf", NFILE, fnm);
     bINT = opt2bSet("-mc", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, &vtop, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box, TRUE);
 
-
-
-    sfree(xtop);
-    sfree(vtop);
     indexfn = ftp2fn_null(efNDX, NFILE, fnm);
     snew(grpname, 1);
 

@@ -1095,9 +1095,11 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bTPS)
         {
-            read_tps_conf(top_file, top_title, &top, &ePBC, &xp, NULL, top_box,
+            read_tps_conf(top_file, &top, &ePBC, &xp, NULL, top_box,
                           bReset || bPBCcomRes);
-            atoms = &top.atoms;
+            std::strncpy(top_title, *top.name, 255);
+            top_title[255] = '\0';
+            atoms          = &top.atoms;
 
             if (0 == top.mols.nr && (bCluster || bPBCcomMol))
             {

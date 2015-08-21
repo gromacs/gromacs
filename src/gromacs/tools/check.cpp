@@ -411,7 +411,6 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
 void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
 {
     int            natom, i, j, k;
-    char           title[STRLEN];
     t_topology     top;
     int            ePBC;
     t_atoms       *atoms;
@@ -425,7 +424,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     gmx_atomprop_t aps;
 
     fprintf(stderr, "Checking coordinate file %s\n", fn);
-    read_tps_conf(fn, title, &top, &ePBC, &x, &v, box, TRUE);
+    read_tps_conf(fn, &top, &ePBC, &x, &v, box, TRUE);
     atoms = &top.atoms;
     natom = atoms->nr;
     fprintf(stderr, "%d atoms in file\n", atoms->nr);

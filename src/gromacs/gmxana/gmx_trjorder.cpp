@@ -134,7 +134,7 @@ int gmx_trjorder(int argc, char *argv[])
     gmx_rmpbc_t     gpbc;
     real            t, totmass, mass, rcut2 = 0, n2;
     int             natoms, nwat, ncut;
-    char          **grpname, title[256];
+    char          **grpname;
     int             i, j, d, *isize, isize_ref = 0, isize_sol;
     atom_id         sa, sr, *swi, **index, *ind_ref = NULL, *ind_sol;
     output_env_t    oenv;
@@ -153,7 +153,7 @@ int gmx_trjorder(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box, TRUE);
     sfree(x);
 
     /* get index groups */

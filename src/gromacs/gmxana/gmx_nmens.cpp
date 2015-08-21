@@ -96,7 +96,7 @@ int gmx_nmens(int argc, char *argv[])
     matrix              box;
     real               *eigval, *invsqrtm, t, disp;
     int                 natoms;
-    char               *grpname, title[STRLEN];
+    char               *grpname;
     const char         *indexfile;
     int                 i, j, d, s, v;
     int                 nout, *iout, noutvec, *outvec;
@@ -130,7 +130,7 @@ int gmx_nmens(int argc, char *argv[])
     read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit,
                       &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, bDMA);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, bDMA);
     atoms = &top.atoms;
 
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", natoms);

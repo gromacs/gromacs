@@ -279,7 +279,6 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     FILE         *fpsg   = NULL, *fpsk = NULL;
     t_topology    top;
     int           ePBC;
-    char          title[STRLEN];
     t_trxstatus  *status;
     int           natoms;
     real          t;
@@ -298,7 +297,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
      * i.e 1D Row-major order in (t,x,y) */
 
 
-    read_tps_conf(fnTPS, title, &top, &ePBC, &xtop, NULL, box, FALSE);
+    read_tps_conf(fnTPS, &top, &ePBC, &xtop, NULL, box, FALSE);
 
     *nslicex = static_cast<int>(box[XX][XX]/binw + onehalf); /*Calculate slicenr from binwidth*/
     *nslicey = static_cast<int>(box[YY][YY]/binw + onehalf);

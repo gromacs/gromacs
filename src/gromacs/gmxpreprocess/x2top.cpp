@@ -444,7 +444,7 @@ int gmx_x2top(int argc, char *argv[])
     t_nm2type         *nm2t;
     t_mols             mymol;
     int                nnm;
-    char               title[STRLEN], forcefield[32], ffdir[STRLEN];
+    char               forcefield[32], ffdir[STRLEN];
     rvec              *x; /* coordinates? */
     int               *nbonds, *cgnr;
     int                bts[] = { 1, 1, 1, 2 };
@@ -543,7 +543,7 @@ int gmx_x2top(int argc, char *argv[])
     /* Read coordinates */
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), title, top, &epbc, &x, NULL, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, NULL, box, FALSE);
     t_atoms  *atoms = &top->atoms;
     natoms = atoms->nr;
     if (atoms->pdbinfo == NULL)

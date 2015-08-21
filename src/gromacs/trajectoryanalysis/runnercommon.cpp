@@ -315,10 +315,8 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
     // Load the topology if requested.
     if (!impl_->topfile_.empty())
     {
-        char  title[STRLEN];
-
         snew(impl_->topInfo_.top_, 1);
-        impl_->topInfo_.bTop_ = read_tps_conf(impl_->topfile_.c_str(), title,
+        impl_->topInfo_.bTop_ = read_tps_conf(impl_->topfile_.c_str(),
                                               impl_->topInfo_.top_, &impl_->topInfo_.ePBC_,
                                               &impl_->topInfo_.xtop_, NULL, impl_->topInfo_.boxtop_, TRUE);
         if (hasTrajectory()

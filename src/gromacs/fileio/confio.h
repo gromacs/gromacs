@@ -69,7 +69,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
                          rvec x[], rvec *v, int ePBC, matrix box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 
-gmx_bool read_tps_conf(const char *infile, char *title, struct t_topology *top,
+gmx_bool read_tps_conf(const char *infile, struct t_topology *top,
                        int *ePBC, rvec **x, rvec **v, matrix box, gmx_bool bMass);
 /* Read title, top.atoms, x, v (if not NULL) and box from an STX file,
  * memory for atoms, x and v will be allocated.

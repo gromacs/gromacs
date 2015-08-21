@@ -1623,7 +1623,7 @@ int gmx_cluster(int argc, char *argv[])
     if (bReadTraj)
     {
         /* don't read mass-database as masses (and top) are not used */
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), buf, &top, &ePBC, &xtps, NULL, box,
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtps, NULL, box,
                       TRUE);
         if (bPBC)
         {

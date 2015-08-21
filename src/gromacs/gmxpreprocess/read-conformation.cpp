@@ -69,17 +69,11 @@ real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
     return exclusionDistances;
 }
 
-char *readConformation(const char *confin, t_topology *top, rvec **x, rvec **v,
-                       int *ePBC, matrix box, const char *statusTitle)
+void readConformation(const char *confin, t_topology *top, rvec **x, rvec **v,
+                      int *ePBC, matrix box, const char *statusTitle)
 {
-    char       *title;
-
-    snew(title, STRLEN);
-
     fprintf(stderr, "Reading %s configuration%s\n", statusTitle, v ? " and velocities" : "");
-    read_tps_conf(confin, title, top, ePBC, x, v, box, FALSE);
+    read_tps_conf(confin, top, ePBC, x, v, box, FALSE);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
-            title, top->atoms.nr, top->atoms.nres);
-
-    return title;
+            *top->name, top->atoms.nr, top->atoms.nres);
 }

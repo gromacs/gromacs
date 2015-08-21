@@ -599,11 +599,10 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "processing coordinates...\n");
     }
 
-    char        title[STRLEN];
     t_topology *conftop;
     snew(conftop, 1);
     init_state(state, 0, 0, 0, 0, 0);
-    read_tps_conf(confin, title, conftop, NULL, &state->x, &state->v, state->box, FALSE);
+    read_tps_conf(confin, conftop, NULL, &state->x, &state->v, state->box, FALSE);
     state->natoms = state->nalloc = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
@@ -814,14 +813,14 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     t_topology     *top;
     matrix          box, invbox;
     int             natoms, npbcdim = 0;
-    char            warn_buf[STRLEN], title[STRLEN];
+    char            warn_buf[STRLEN];
     int             a, i, ai, j, k, mb, nat_molb;
     gmx_molblock_t *molb;
     t_params       *pr, *prfb;
     t_atom         *atom;
 
     snew(top, 1);
-    read_tps_conf(fn, title, top, NULL, &x, &v, box, FALSE);
+    read_tps_conf(fn, top, NULL, &x, &v, box, FALSE);
     natoms = top->atoms.nr;
     done_top(top);
     sfree(top);
