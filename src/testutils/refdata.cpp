@@ -81,13 +81,12 @@ class TestReferenceDataEnvironment : public ::testing::Environment
 };
 
 //! Global reference data mode set with gmx::test::setReferenceDataMode().
-// TODO: Make this a real enum; requires solving a TODO in StringOption.
-int g_referenceDataMode = gmx::test::erefdataCompare;
+gmx::test::ReferenceDataMode g_referenceDataMode = gmx::test::erefdataCompare;
 
 //! Returns the global reference data mode.
 gmx::test::ReferenceDataMode getReferenceDataMode()
 {
-    return static_cast<gmx::test::ReferenceDataMode>(g_referenceDataMode);
+    return g_referenceDataMode;
 }
 
 } // namespace
@@ -102,9 +101,8 @@ void initReferenceData(IOptionsContainer *options)
     // Needs to correspond to the enum order in refdata.h.
     const char *const refDataEnum[] = { "check", "create", "update" };
     options->addOption(
-            StringOption("ref-data").enumValue(refDataEnum)
-                .defaultEnumIndex(0)
-                .storeEnumIndex(&g_referenceDataMode)
+            EnumOption<gmx::test::ReferenceDataMode>("ref-data")
+                .enumValue(refDataEnum).store(&g_referenceDataMode)
                 .description("Operation mode for tests that use reference data"));
     ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
 }

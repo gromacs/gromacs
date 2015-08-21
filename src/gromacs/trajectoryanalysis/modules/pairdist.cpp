@@ -222,14 +222,14 @@ PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings
 
     options->addOption(DoubleOption("cutoff").store(&cutoff_)
                            .description("Maximum distance to consider"));
-    options->addOption(StringOption("type").storeEnumIndex(&distanceType_)
-                           .defaultEnumIndex(0).enumValue(c_distanceTypes)
+    options->addOption(EnumOption<int>("type").store(&distanceType_)
+                           .defaultValue(0).enumValue(c_distanceTypes)
                            .description("Type of distances to calculate"));
-    options->addOption(StringOption("refgrouping").storeEnumIndex(&refGroupType_)
-                           .defaultEnumIndex(0).enumValue(c_groupTypes)
+    options->addOption(EnumOption<int>("refgrouping").store(&refGroupType_)
+                           .defaultValue(0).enumValue(c_groupTypes)
                            .description("Grouping of -ref positions to compute the min/max over"));
-    options->addOption(StringOption("selgrouping").storeEnumIndex(&selGroupType_)
-                           .defaultEnumIndex(0).enumValue(c_groupTypes)
+    options->addOption(EnumOption<int>("selgrouping").store(&selGroupType_)
+                           .defaultValue(0).enumValue(c_groupTypes)
                            .description("Grouping of -sel positions to compute the min/max over"));
 
     options->addOption(SelectionOption("ref").store(&refSel_).required()
