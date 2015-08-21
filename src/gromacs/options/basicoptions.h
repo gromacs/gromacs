@@ -369,19 +369,150 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         friend class StringOptionStorage;
 };
 
+//! \}
+
+namespace internal
+{
+
+/*! \internal
+ * \brief
+ * Interface for handling storage of the enum indexes.
+ *
+ * This interface acts as a proxy between the EnumOptionStorage class (that
+ * operates on `int` values), and the actual enum variable that receives the
+ * values.  The implementation of this interface takes care of conversion of
+ * the values and writing them out into the actual enum variables.
+ *
+ * \ingroup module_options
+ */
+class EnumIndexStoreInterface
+{
+    public:
+        virtual ~EnumIndexStoreInterface();
+
+        //! Returns initial values from the actual enum variables.
+        virtual std::vector<int> initialValues() const = 0;
+        //! Reserves space for storage in the actual enum variables.
+        virtual void reserveSpace(size_t count) = 0;
+        //! Updates values in the actual enum variables based on option values.
+        virtual void refreshValues(const std::vector<int> &values) = 0;
+};
+
+/*! \internal
+ * \brief
+ * Type-specific implementation for EnumIndexStoreInterface.
+ *
+ * This class is instantiated for each enum type for which EnumOption is used,
+ * and takes care of managing the `int`-to-`enum` conversions as described in
+ * EnumIndexStoreInterface.  Having this as a template in the header allows the
+ * actual storage implementation to not be in the header, which would require
+ * exposing all the internals through this one header...
+ *
+ * \ingroup module_options
+ */
+template <typename EnumType>
+class EnumIndexStore : public EnumIndexStoreInterface
+{
+    public:
+        //! Initializes the storage for the given actual enum variables.
+        EnumIndexStore(EnumType *store, std::vector<EnumType> *storeVector)
+            : store_(store), storeVector_(storeVector)
+        {
+        }
+
+        virtual std::vector<int> initialValues() const
+        {
+            std::vector<int> result;
+            if (storeVector_ != NULL)
+            {
+                typename std::vector<EnumType>::const_iterator i;
+                for (i = storeVector_->begin(); i != storeVector_->end(); ++i)
+                {
+                    result.push_back(*i);
+                }
+            }
+            else if (store_ != NULL)
+            {
+                // TODO: Copy more than one value if that would make sense.
+                result.push_back(store_[0]);
+            }
+            return result;
+        }
+        virtual void reserveSpace(size_t count)
+        {
+            if (storeVector_ != NULL)
+            {
+                storeVector_->reserve(count);
+            }
+        }
+        virtual void refreshValues(const std::vector<int> &values)
+        {
+            if (store_ != NULL)
+            {
+                for (size_t i = 0; i < values.size(); ++i)
+                {
+                    store_[i] = static_cast<EnumType>(values[i]);
+                }
+            }
+            if (storeVector_ != NULL)
+            {
+                GMX_ASSERT(storeVector_->capacity() >= values.size(),
+                           "reserveSpace() should have been called earlier");
+                storeVector_->resize(values.size());
+                for (size_t i = 0; i < values.size(); ++i)
+                {
+                    (*storeVector_)[i] = static_cast<EnumType>(values[i]);
+                }
+            }
+        }
+
+    private:
+        EnumType              *store_;
+        std::vector<EnumType> *storeVector_;
+};
+
+//! \cond internal
+/*! \internal
+ * \brief
+ * Helper to create EnumOptionStorage instances.
+ *
+ * This function works as a proxy between EnumOption::createStorage() and the
+ * EnumOptionStorage constructor, such that the latter does not need to be
+ * exposed in the header.
+ *
+ * \ingroup module_options
+ */
+AbstractOptionStorage *
+createEnumOptionStorage(const AbstractOption &option,
+                        const char *const *enumValues, int count,
+                        int defaultValue, int defaultValueIfSet,
+                        EnumIndexStoreInterface *store);
+//! \endcond
+
+}   // namespace internal
+
+//! \addtogroup module_options
+//! \{
+
 /*! \brief
  * Specifies an option that accepts enumerated string values and writes the
- * selected index into an integer variable.
+ * selected index into an `enum` variable.
+ *
+ * \tparam EnumType  Type of the variable that receives the values
+ *     (can also be `int`).
  *
  * Examples:
  * \code
    enum MyEnum { eAtom, eRes, eMol };
-   using gmx::EnumIntOption;
+   using gmx::EnumOption;
    const char * const  allowed[] = { "atom", "residue", "molecule" };
-   int          value = eAtom; // default value
-   options.addOption(EnumIntOption("type").enumValue(allowed).store(&value));
+   MyEnum       value = eAtom; // default value
+   options.addOption(EnumOption<MyEnum>("type").enumValue(allowed).store(&value));
  * \endcode
  *
+ * storeCount() is not currently implemented for this option type, and
+ * providing multiple default values through an array passed to store() does
+ * not work consistently in all cases.
  * In the current implementation, the values of the enum type should correspond
  * to indices in the array passed to enumValue(), i.e., be consencutive
  * starting from zero.  Only values corresponding to valid indices are accepted
@@ -391,19 +522,22 @@ class StringOption : public OptionTemplate<std::string, StringOption>
  *
  * Public methods in this class do not throw.
  *
- * \todo
- * Implement a variant that accepts proper enum types.
- *
  * \inpublicapi
  */
-class EnumIntOption : public OptionTemplate<int, EnumIntOption>
+template <typename EnumType>
+class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
 {
     public:
         //! OptionInfo subclass corresponding to this option type.
         typedef EnumOptionInfo InfoType;
 
+        // This needs to be duplicated from OptionTemplate because this class
+        // is a template.
+        //! Short-hand for the base class.
+        typedef OptionTemplate<EnumType, EnumOption<EnumType> > MyBase;
+
         //! Initializes an option with the given name.
-        explicit EnumIntOption(const char *name)
+        explicit EnumOption(const char *name)
             : MyBase(name), enumValues_(NULL), enumValuesCount_(0)
         {
         }
@@ -420,7 +554,7 @@ class EnumIntOption : public OptionTemplate<int, EnumIntOption>
          * The strings are copied once the option is created.
          */
         template <size_t count>
-        EnumIntOption &enumValue(const char *const (&values)[count])
+        EnumOption &enumValue(const char *const (&values)[count])
         {
             GMX_ASSERT(enumValues_ == NULL,
                        "Multiple sets of enumerated values specified");
@@ -440,7 +574,7 @@ class EnumIntOption : public OptionTemplate<int, EnumIntOption>
          *
          * \see enumValue()
          */
-        EnumIntOption &enumValueFromNullTerminatedArray(const char *const *values)
+        EnumOption &enumValueFromNullTerminatedArray(const char *const *values)
         {
             GMX_ASSERT(enumValues_ == NULL,
                        "Multiple sets of enumerated values specified");
@@ -450,9 +584,24 @@ class EnumIntOption : public OptionTemplate<int, EnumIntOption>
         }
 
     private:
+        //! Helper function to convert default values for storate initialization.
+        static int convertToInt(const EnumType *defaultValue)
+        {
+            return defaultValue != NULL ? static_cast<int>(*defaultValue) : -1;
+        }
+
         //! Creates a EnumOptionStorage object.
         virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer & /*managers*/) const;
+            const OptionManagerContainer & /*managers*/) const
+        {
+            // TODO: Implement storeCount() if necessary.
+            return internal::createEnumOptionStorage(
+                    *this, enumValues_, enumValuesCount_,
+                    convertToInt(MyBase::defaultValue()),
+                    convertToInt(MyBase::defaultValueIfSet()),
+                    new internal::EnumIndexStore<EnumType>(
+                            MyBase::store(), MyBase::storeVector()));
+        }
 
         const char *const      *enumValues_;
         int                     enumValuesCount_;
@@ -463,6 +612,9 @@ class EnumIntOption : public OptionTemplate<int, EnumIntOption>
          */
         friend class EnumOptionStorage;
 };
+
+//! Shorthand for an enumerated option that stores into an `int` variable.
+typedef EnumOption<int> EnumIntOption;
 
 /*! \brief
  * Wrapper class for accessing boolean option information.

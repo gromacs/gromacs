@@ -307,8 +307,8 @@ class Select : public TrajectoryAnalysisModule
         bool                                bFracNorm_;
         bool                                bResInd_;
         bool                                bCumulativeLifetimes_;
-        int                                 resNumberType_;
-        int                                 pdbAtoms_;
+        ResidueNumbering                    resNumberType_;
+        PdbAtomsSelection                   pdbAtoms_;
 
         const TopologyInformation          *top_;
         std::vector<int>                    totsize_;
@@ -444,10 +444,10 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
                            .description("Normalize by total number of positions with -os"));
     options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
                            .description("Normalize by covered fraction with -os"));
-    options->addOption(EnumIntOption("resnr").store(&resNumberType_)
+    options->addOption(EnumOption<ResidueNumbering>("resnr").store(&resNumberType_)
                            .enumValue(cResNumberEnum)
                            .description("Residue number output type with -oi and -on"));
-    options->addOption(EnumIntOption("pdbatoms").store(&pdbAtoms_)
+    options->addOption(EnumOption<PdbAtomsSelection>("pdbatoms").store(&pdbAtoms_)
                            .enumValue(cPDBAtomsEnum)
                            .description("Atoms to write with -ofpdb"));
     options->addOption(BooleanOption("cumlt").store(&bCumulativeLifetimes_)

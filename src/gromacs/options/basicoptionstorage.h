@@ -42,6 +42,7 @@
 #ifndef GMX_OPTIONS_BASICOPTIONSTORAGE_H
 #define GMX_OPTIONS_BASICOPTIONSTORAGE_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -215,8 +216,30 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
 class EnumOptionStorage : public OptionStorageTemplate<int>
 {
     public:
-        //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
-        explicit EnumOptionStorage(const EnumIntOption &settings);
+        //! Shorthand for the enum index storage interface.
+        typedef std::unique_ptr<internal::EnumIndexStoreInterface>
+            EnumIndexStorePointer;
+
+        /*! \brief
+         * Initializes the storage from option settings.
+         *
+         * \param[in] settings      Basic storage settings.
+         * \param[in] enumValues    Allowed values.
+         * \param[in] count         Number of elements in \p enumValues,
+         *     or -1 if \p enumValues is `NULL`-terminated.
+         * \param[in] defaultValue  Default value, or -1 if no default.
+         * \param[in] defaultValueIfSet  Default value if set, or -1 if none.
+         * \param[in] store         Storage to convert the values to/from `int`.
+         *
+         * This constructor takes more parameters than other storage parameters
+         * because the front-end option type is a template, and as such cannot
+         * be passed here without exposing also this header as an installed
+         * header.
+         */
+        EnumOptionStorage(const AbstractOption &settings,
+                          const char *const *enumValues, int count,
+                          int defaultValue, int defaultValueIfSet,
+                          EnumIndexStorePointer store);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "enum"; }
@@ -228,9 +251,14 @@ class EnumOptionStorage : public OptionStorageTemplate<int>
 
     private:
         virtual void convertValue(const std::string &value);
+        virtual void processSetValues(ValueList *values);
+        virtual void refreshValues();
+
+        void refreshEnumIndexStore();
 
         EnumOptionInfo            info_;
         std::vector<std::string>  allowed_;
+        EnumIndexStorePointer     store_;
 };
 
 /*!\}*/

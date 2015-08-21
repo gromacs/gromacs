@@ -296,8 +296,8 @@ class Angle : public TrajectoryAnalysisModule
         std::string                              fnAll_;
         std::string                              fnHistogram_;
 
-        int                                      g1type_;
-        int                                      g2type_;
+        Group1Type                               g1type_;
+        Group2Type                               g2type_;
         double                                   binWidth_;
 
         AnalysisData                             angles_;
@@ -392,10 +392,10 @@ Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setti
                            .store(&fnHistogram_).defaultBasename("anghist")
                            .description("Histogram of the angles"));
 
-    options->addOption(EnumIntOption("g1").enumValue(cGroup1TypeEnum)
+    options->addOption(EnumOption<Group1Type>("g1").enumValue(cGroup1TypeEnum)
                            .store(&g1type_)
                            .description("Type of analysis/first vector group"));
-    options->addOption(EnumIntOption("g2").enumValue(cGroup2TypeEnum)
+    options->addOption(EnumOption<Group2Type>("g2").enumValue(cGroup2TypeEnum)
                            .store(&g2type_)
                            .description("Type of second vector group"));
     options->addOption(DoubleOption("binw").store(&binWidth_)

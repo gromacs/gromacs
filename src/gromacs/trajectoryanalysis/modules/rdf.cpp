@@ -135,7 +135,7 @@ class Rdf : public TrajectoryAnalysisModule
     private:
         std::string                               fnRdf_;
         std::string                               fnCumulative_;
-        int                                       surface_;
+        SurfaceType                               surface_;
         AnalysisDataPlotSettings                  plotSettings_;
 
         /*! \brief
@@ -188,7 +188,7 @@ class Rdf : public TrajectoryAnalysisModule
         double                                    binwidth_;
         double                                    cutoff_;
         double                                    rmax_;
-        int                                       normalization_;
+        Normalization                             normalization_;
         bool                                      bNormalizationSet_;
         bool                                      bXY_;
         bool                                      bExclusions_;
@@ -284,7 +284,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
 
     options->addOption(DoubleOption("bin").store(&binwidth_)
                            .description("Bin width (nm)"));
-    options->addOption(EnumIntOption("norm").enumValue(c_NormalizationEnum)
+    options->addOption(EnumOption<Normalization>("norm").enumValue(c_NormalizationEnum)
                            .store(&normalization_)
                            .storeIsSet(&bNormalizationSet_)
                            .description("Normalization"));
@@ -297,7 +297,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
     options->addOption(DoubleOption("rmax").store(&rmax_)
                            .description("Largest distance (nm) to calculate"));
 
-    options->addOption(EnumIntOption("surf").enumValue(c_SurfaceEnum)
+    options->addOption(EnumOption<SurfaceType>("surf").enumValue(c_SurfaceEnum)
                            .store(&surface_)
                            .description("RDF with respect to the surface of the reference"));
 
