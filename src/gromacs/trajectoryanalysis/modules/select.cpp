@@ -256,6 +256,24 @@ void IndexFileWriterModule::dataFinished()
  * Select
  */
 
+//! How to identify residues in output files.
+enum ResidueNumbering
+{
+    ResidueNumbering_ByNumber,
+    ResidueNumbering_ByIndex
+};
+//! Which atoms to write out to PDB files.
+enum PdbAtomsSelection
+{
+    PdbAtomsSelection_All,
+    PdbAtomsSelection_MaxSelection,
+    PdbAtomsSelection_Selected
+};
+//! String values corresponding to ResidueNumbering.
+const char *const     cResNumberEnum[] = { "number", "index" };
+//! String values corresponding to PdbAtomsSelection.
+const char *const     cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
+
 class Select : public TrajectoryAnalysisModule
 {
     public:
@@ -289,8 +307,8 @@ class Select : public TrajectoryAnalysisModule
         bool                                bFracNorm_;
         bool                                bResInd_;
         bool                                bCumulativeLifetimes_;
-        std::string                         resNumberType_;
-        std::string                         pdbAtoms_;
+        int                                 resNumberType_;
+        int                                 pdbAtoms_;
 
         const TopologyInformation          *top_;
         std::vector<int>                    totsize_;
@@ -306,7 +324,8 @@ Select::Select()
     : TrajectoryAnalysisModule(SelectInfo::name, SelectInfo::shortDescription),
       selOpt_(NULL),
       bTotNorm_(false), bFracNorm_(false), bResInd_(false),
-      bCumulativeLifetimes_(true), top_(NULL),
+      bCumulativeLifetimes_(true), resNumberType_(ResidueNumbering_ByNumber),
+      pdbAtoms_(PdbAtomsSelection_All), top_(NULL),
       occupancyModule_(new AnalysisDataAverageModule()),
       lifetimeModule_(new AnalysisDataLifetimeModule())
 {
@@ -427,13 +446,11 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
                            .description("Normalize by total number of positions with -os"));
     options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
                            .description("Normalize by covered fraction with -os"));
-    const char *const cResNumberEnum[] = { "number", "index" };
-    options->addOption(StringOption("resnr").store(&resNumberType_)
-                           .enumValue(cResNumberEnum).defaultEnumIndex(0)
+    options->addOption(EnumIntOption("resnr").store(&resNumberType_)
+                           .enumValue(cResNumberEnum)
                            .description("Residue number output type with -oi and -on"));
-    const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
-    options->addOption(StringOption("pdbatoms").store(&pdbAtoms_)
-                           .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
+    options->addOption(EnumIntOption("pdbatoms").store(&pdbAtoms_)
+                           .enumValue(cPDBAtomsEnum)
                            .description("Atoms to write with -ofpdb"));
     options->addOption(BooleanOption("cumlt").store(&bCumulativeLifetimes_)
                            .description("Cumulate subintervals of longer intervals in -olt"));
@@ -453,7 +470,7 @@ void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
                      const TopologyInformation        &top)
 {
-    bResInd_ = (resNumberType_ == "index");
+    bResInd_ = (resNumberType_ == ResidueNumbering_ByIndex);
 
     for (SelectionList::iterator i = sel_.begin(); i != sel_.end(); ++i)
     {
@@ -688,45 +705,49 @@ Select::writeOutput()
         fr.bBox   = TRUE;
         top_->getTopologyConf(&fr.x, fr.box);
 
-        if (pdbAtoms_ == "all")
+        switch (pdbAtoms_)
         {
-            t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
-            write_trxframe(status, &fr, NULL);
-            close_trx(status);
-        }
-        else if (pdbAtoms_ == "maxsel")
-        {
-            std::set<int> atomIndicesSet;
-            for (size_t g = 0; g < sel_.size(); ++g)
+            case PdbAtomsSelection_All:
             {
-                ConstArrayRef<int> atomIndices = sel_[g].atomIndices();
-                atomIndicesSet.insert(atomIndices.begin(), atomIndices.end());
+                t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+                write_trxframe(status, &fr, NULL);
+                close_trx(status);
+                break;
             }
-            std::vector<int>  allAtomIndices(atomIndicesSet.begin(),
-                                             atomIndicesSet.end());
-            t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
-            write_trxframe_indexed(status, &fr, allAtomIndices.size(),
-                                   &allAtomIndices[0], NULL);
-            close_trx(status);
-        }
-        else if (pdbAtoms_ == "selected")
-        {
-            std::vector<int> indices;
-            for (int i = 0; i < atoms.nr; ++i)
+            case PdbAtomsSelection_MaxSelection:
             {
-                if (pdbinfo[i].occup > 0.0)
+                std::set<int> atomIndicesSet;
+                for (size_t g = 0; g < sel_.size(); ++g)
                 {
-                    indices.push_back(i);
+                    ConstArrayRef<int> atomIndices = sel_[g].atomIndices();
+                    atomIndicesSet.insert(atomIndices.begin(), atomIndices.end());
                 }
+                std::vector<int>  allAtomIndices(atomIndicesSet.begin(),
+                                                 atomIndicesSet.end());
+                t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
+                write_trxframe_indexed(status, &fr, allAtomIndices.size(),
+                                       &allAtomIndices[0], NULL);
+                close_trx(status);
+                break;
             }
-            t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
-            write_trxframe_indexed(status, &fr, indices.size(), &indices[0], NULL);
-            close_trx(status);
-        }
-        else
-        {
-            GMX_RELEASE_ASSERT(false,
-                               "Mismatch between -pdbatoms enum values and implementation");
+            case PdbAtomsSelection_Selected:
+            {
+                std::vector<int> indices;
+                for (int i = 0; i < atoms.nr; ++i)
+                {
+                    if (pdbinfo[i].occup > 0.0)
+                    {
+                        indices.push_back(i);
+                    }
+                }
+                t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+                write_trxframe_indexed(status, &fr, indices.size(), &indices[0], NULL);
+                close_trx(status);
+                break;
+            }
+            default:
+                GMX_RELEASE_ASSERT(false,
+                                   "Mismatch between -pdbatoms enum values and implementation");
         }
     }
 }

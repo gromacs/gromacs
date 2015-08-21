@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,18 +65,6 @@ TEST(OptionsTest, FailsOnNonsafeStorage)
     using gmx::IntegerOption;
     ASSERT_THROW_GMX(options.addOption(IntegerOption("name").store(&value)
                                            .multiValue()),
-                     gmx::APIError);
-}
-
-TEST(OptionsTest, FailsOnIncorrectEnumDefaultValue)
-{
-    gmx::Options                options(NULL, NULL);
-    std::string                 value;
-    const char * const          allowed[] = { "none", "test", "value" };
-    using gmx::StringOption;
-    ASSERT_THROW_GMX(options.addOption(StringOption("name").store(&value)
-                                           .enumValue(allowed)
-                                           .defaultValue("unknown")),
                      gmx::APIError);
 }
 
