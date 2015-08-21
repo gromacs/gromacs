@@ -673,7 +673,6 @@ int gmx_rmsdist(int argc, char *argv[])
     t_noe_gr       *noe_gr = NULL;
     t_noe         **noe    = NULL;
     t_rgb           rlo, rhi;
-    char            buf[255];
     gmx_bool        bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
 
     static int      nlevels  = 40;
@@ -733,7 +732,7 @@ int gmx_rmsdist(int argc, char *argv[])
     }
 
     /* get topology and index */
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), buf, &top, &ePBC, &x, NULL, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box, FALSE);
 
     if (!bPBC)
     {

@@ -96,7 +96,7 @@ int gmx_filter(int argc, char *argv[])
     int             ePBC = -1;
     rvec           *xtop;
     matrix          topbox, *box, boxf;
-    char            title[256], *grpname;
+    char           *grpname;
     int             isize;
     atom_id        *index;
     real           *w_rls = NULL;
@@ -138,7 +138,7 @@ int gmx_filter(int argc, char *argv[])
     }
     if (topfile)
     {
-        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC,
+        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
                              &xtop, NULL, topbox, TRUE);
         if (bTop)
         {

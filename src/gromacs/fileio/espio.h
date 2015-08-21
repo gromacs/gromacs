@@ -44,7 +44,7 @@
 struct t_atoms;
 struct t_topology;
 
-void gmx_espresso_read_conf(const char *infile, char *title,
+void gmx_espresso_read_conf(const char *infile,
                             t_topology *top, rvec x[], rvec *v, matrix box);
 
 int get_espresso_coordnum(const char *infile);

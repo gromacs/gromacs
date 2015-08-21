@@ -692,7 +692,6 @@ int gmx_mindist(int argc, char *argv[])
     output_env_t    oenv;
     t_topology     *top  = NULL;
     int             ePBC = -1;
-    char            title[256];
     rvec           *x;
     matrix          box;
     gmx_bool        bTop = FALSE;
@@ -760,7 +759,7 @@ int gmx_mindist(int argc, char *argv[])
     if (tpsfnm || resfnm || !ndxfnm)
     {
         snew(top, 1);
-        bTop = read_tps_conf(tpsfnm, title, top, &ePBC, &x, NULL, box, FALSE);
+        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, NULL, box, FALSE);
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");

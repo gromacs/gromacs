@@ -115,7 +115,6 @@ int gmx_sorient(int argc, char *argv[])
 {
     t_topology      top;
     int             ePBC = -1;
-    char            title[STRLEN];
     t_trxstatus    *status;
     int             natoms;
     real            t;
@@ -206,7 +205,7 @@ int gmx_sorient(int argc, char *argv[])
     bTPS = (opt2bSet("-s", NFILE, fnm) || !opt2bSet("-n", NFILE, fnm) || bCom);
     if (bTPS)
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box,
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box,
                       bCom);
     }
 

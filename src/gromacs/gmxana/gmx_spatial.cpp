@@ -131,7 +131,6 @@ int gmx_spatial(int argc, char *argv[])
     double          MAXBIN[3];
     t_topology      top;
     int             ePBC;
-    char            title[STRLEN];
     t_trxframe      fr;
     rvec           *xtop;
     matrix          box, box_pbc;
@@ -171,7 +170,7 @@ int gmx_spatial(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, TRUE);
     sfree(xtop);
 
     atoms = &(top.atoms);

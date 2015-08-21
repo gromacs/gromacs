@@ -191,7 +191,7 @@ int gmx_dyndom(int argc, char *argv[])
     int          i, j, natoms, isize;
     t_trxstatus *status;
     atom_id     *index = NULL, *index_all;
-    char         title[256], *grpname;
+    char        *grpname;
     real         angle, trans;
     rvec        *x, *v, *xout, *vout;
     matrix       box;
@@ -217,7 +217,7 @@ int gmx_dyndom(int argc, char *argv[])
 
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), title, top, NULL, &x, &v, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, NULL, &x, &v, box, FALSE);
     t_atoms  &atoms = top->atoms;
     if (atoms.pdbinfo == NULL)
     {

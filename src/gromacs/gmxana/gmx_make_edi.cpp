@@ -394,12 +394,12 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
     write_t_edx(fp, edpars->sori, "NORIGIN, XORIGIN");
 }
 
-int read_conffile(const char *confin, char *title, rvec **x)
+int read_conffile(const char *confin, rvec **x)
 {
     t_topology  top;
     matrix      box;
     printf("read coordnumber from file %s\n", confin);
-    read_tps_conf(confin, title, &top, NULL, x, NULL, box, FALSE);
+    read_tps_conf(confin, &top, NULL, x, NULL, box, FALSE);
     printf("number of coordinates in file %d\n", top.atoms.nr);
     return top.atoms.nr;
 }
@@ -526,11 +526,10 @@ void get_structure(t_atoms *atoms, const char *IndexFile,
     int      ngro;
     int      ntar;
     rvec    *xtar;
-    char     title[STRLEN];
     char   * grpname;
 
 
-    ntar = read_conffile(StructureFile, title, &xtar);
+    ntar = read_conffile(StructureFile, &xtar);
     printf("Select an index group of %d elements that corresponds to the atoms in the structure file %s\n",
            ntar, StructureFile);
     get_index(atoms, IndexFile, 1, &ngro, &igro, &grpname);
@@ -748,7 +747,6 @@ int gmx_make_edi(int argc, char *argv[])
     /*to read topology file*/
     t_topology  top;
     int         ePBC;
-    char        title[STRLEN];
     matrix      topbox;
     rvec       *xtop;
     gmx_bool    bFit1;
@@ -849,7 +847,7 @@ int gmx_make_edi(int argc, char *argv[])
                       &xref1, &edi_params.fitmas, &xav1, &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                  title, &top, &ePBC, &xtop, NULL, topbox, 0);
+                  &top, &ePBC, &xtop, NULL, topbox, 0);
     atoms = &top.atoms;
 
 

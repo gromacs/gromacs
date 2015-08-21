@@ -506,7 +506,7 @@ int gmx_do_dssp(int argc, char *argv[])
     rvec              *xp, *x;
     int               *average_area;
     real             **accr, *accr_ptr = NULL, *av_area, *norm_av_area;
-    char               pdbfile[32], tmpfile[32], title[256];
+    char               pdbfile[32], tmpfile[32];
     char               dssp[256];
     const char        *dptr;
     output_env_t       oenv;
@@ -538,7 +538,7 @@ int gmx_do_dssp(int argc, char *argv[])
     fnAArea    = opt2fn_null("-aa", NFILE, fnm);
     bDoAccSurf = (fnArea || fnTArea || fnAArea);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xp, NULL, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, NULL, box, FALSE);
     atoms = &(top.atoms);
     check_oo(atoms);
     bPhbres = bPhobics(atoms);

@@ -624,11 +624,9 @@ static void add_solv(const char *fn, t_topology *top, rvec **x, rvec **v,
 
     char       *filename = gmxlibfn(fn);
     snew(top_solvt, 1);
-    char       *title_solvt
-        = readConformation(filename, top_solvt, &x_solvt, &v_solvt,
-                           &ePBC_solvt, box_solvt, "solvent");
+    readConformation(filename, top_solvt, &x_solvt, &v_solvt,
+                     &ePBC_solvt, box_solvt, "solvent");
     t_atoms *atoms_solvt = &top_solvt->atoms;
-    sfree(title_solvt);
     if (0 == atoms_solvt->nr)
     {
         gmx_fatal(FARGS, "No solvent in %s, please check your input\n", filename);
@@ -896,7 +894,6 @@ int gmx_solvate(int argc, char *argv[])
     gmx_atomprop_t aps;
 
     /* solute configuration data */
-    char       *title = NULL;
     t_topology *top;
     rvec       *x    = NULL, *v = NULL;
     int         ePBC = -1;
@@ -954,8 +951,8 @@ int gmx_solvate(int argc, char *argv[])
     {
         /* Generate a solute configuration */
         conf_prot = opt2fn("-cp", NFILE, fnm);
-        title     = readConformation(conf_prot, top, &x,
-                                     bReadV ? &v : NULL, &ePBC, box, "solute");
+        readConformation(conf_prot, top, &x,
+                         bReadV ? &v : NULL, &ePBC, box, "solute");
         if (bReadV && !v)
         {
             fprintf(stderr, "Note: no velocities found\n");
@@ -988,7 +985,7 @@ int gmx_solvate(int argc, char *argv[])
     fprintf(stderr, "Writing generated configuration to %s\n", confout);
     if (bProt)
     {
-        write_sto_conf(confout, title, &top->atoms, x, v, ePBC, box);
+        write_sto_conf(confout, *top->name, &top->atoms, x, v, ePBC, box);
     }
     else
     {
@@ -1005,7 +1002,6 @@ int gmx_solvate(int argc, char *argv[])
     sfree(v);
     done_top(top);
     sfree(top);
-    sfree(title);
     output_env_done(oenv);
     done_filenms(NFILE, fnm);
 

@@ -130,7 +130,6 @@ int gmx_vanhove(int argc, char *argv[])
 
     output_env_t oenv;
     const char  *matfile, *otfile, *orfile;
-    char         title[256];
     t_topology   top;
     int          ePBC;
     matrix       boxtop, box, *sbox, avbox, corr;
@@ -179,7 +178,7 @@ int gmx_vanhove(int argc, char *argv[])
         exit(0);
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, boxtop,
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, boxtop,
                   FALSE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 

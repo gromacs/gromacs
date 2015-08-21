@@ -118,7 +118,6 @@ int gmx_genpr(int argc, char *argv[])
     atom_id         *ind_grp;
     const char      *xfn, *nfn;
     char            *gn_grp;
-    char             title[STRLEN];
     matrix           box;
     gmx_bool         bFreeze;
     rvec             dx, *x = NULL, *v = NULL;
@@ -156,12 +155,14 @@ int gmx_genpr(int argc, char *argv[])
         gmx_fatal(FARGS, "disre_dist should be >= 0");
     }
 
+    const char *title = "";
     if (xfn != NULL)
     {
         fprintf(stderr, "\nReading structure file\n");
-        t_topology *top;
+        t_topology *top = NULL;
         snew(top, 1);
-        read_tps_conf(xfn, title, top, NULL, &x, &v, box, FALSE);
+        read_tps_conf(xfn, top, NULL, &x, &v, box, FALSE);
+        title = *top->name;
         atoms = &top->atoms;
         if (atoms->pdbinfo == NULL)
         {

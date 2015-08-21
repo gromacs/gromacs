@@ -222,7 +222,7 @@ int gmx_rotmat(int argc, char *argv[])
     matrix          box, R;
     real            t;
     int             natoms, i;
-    char           *grpname, title[256];
+    char           *grpname;
     int             gnx;
     gmx_rmpbc_t     gpbc = NULL;
     atom_id        *index;
@@ -244,7 +244,7 @@ int gmx_rotmat(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x_ref, NULL, box, bMW);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x_ref, NULL, box, bMW);
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
 

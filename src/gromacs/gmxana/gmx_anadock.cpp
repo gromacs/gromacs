@@ -69,34 +69,29 @@ static t_pdbfile *read_pdbf(const char *fn)
 {
     t_pdbfile *pdbf;
     double     e;
-    char       buf[256], *ptr;
     FILE      *fp;
 
     snew(pdbf, 1);
     t_topology top;
-    read_tps_conf(fn, buf, &top, &pdbf->ePBC, &pdbf->x, NULL, pdbf->box, FALSE);
+    read_tps_conf(fn, &top, &pdbf->ePBC, &pdbf->x, NULL, pdbf->box, FALSE);
     pdbf->atoms = top.atoms;
     fp          = gmx_ffopen(fn, "r");
-    do
+    char       buf[256], *ptr;
+    while ((ptr = fgets2(buf, 255, fp)) != NULL)
     {
-        ptr = fgets2(buf, 255, fp);
-        if (ptr)
+        if (std::strstr(buf, "Intermolecular") != NULL)
         {
-            if (std::strstr(buf, "Intermolecular") != NULL)
-            {
-                ptr = std::strchr(buf, '=');
-                sscanf(ptr+1, "%lf", &e);
-                pdbf->edocked = e;
-            }
-            else if (std::strstr(buf, "Estimated Free") != NULL)
-            {
-                ptr = std::strchr(buf, '=');
-                sscanf(ptr+1, "%lf", &e);
-                pdbf->efree = e;
-            }
+            ptr = std::strchr(buf, '=');
+            sscanf(ptr+1, "%lf", &e);
+            pdbf->edocked = e;
+        }
+        else if (std::strstr(buf, "Estimated Free") != NULL)
+        {
+            ptr = std::strchr(buf, '=');
+            sscanf(ptr+1, "%lf", &e);
+            pdbf->efree = e;
         }
     }
-    while (ptr != NULL);
     gmx_ffclose(fp);
 
     return pdbf;

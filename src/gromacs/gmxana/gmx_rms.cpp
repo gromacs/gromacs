@@ -355,7 +355,7 @@ int gmx_rms(int argc, char *argv[])
         }
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), buf, &top, &ePBC, &xp,
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp,
                          NULL, box, TRUE);
     snew(w_rls, top.atoms.nr);
     snew(w_rms, top.atoms.nr);
