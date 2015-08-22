@@ -32,6 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(CMakeParseArguments)
+
 function (gmx_add_unit_test_object_library NAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
@@ -41,26 +43,43 @@ function (gmx_add_unit_test_object_library NAME)
     endif()
 endfunction ()
 
-function (gmx_build_unit_test NAME EXENAME)
+function (gmx_add_gtest_executable EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
-        add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
-        set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-        set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-        target_link_libraries(${EXENAME} ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+        set(_options MPI)
+        cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
+        set(_source_files ${ARG_UNPARSED_ARGUMENTS})
+
         file(RELATIVE_PATH _input_files_path ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
         set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
         file(MAKE_DIRECTORY ${_temporary_files_path})
         # Note that the quotation marks in the next line form part of
         # the defined symbol, so that the macro replacement in the
         # source file is as a string.
+        # These are only needed for unittest_main.cpp, but for simplicity used
+        # for the whole target (since there may be multiple executables in the
+        # same directory, it is not straightforward to use a source file
+        # property).
         set(EXTRA_COMPILE_DEFINITIONS
             TEST_DATA_PATH="${_input_files_path}"
             TEST_TEMP_PATH="${_temporary_files_path}")
+        if (ARG_MPI)
+            list(APPEND EXTRA_COMPILE_DEFINITIONS
+                 TEST_USES_MPI=true)
+        endif()
 
-        set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+        include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
+        add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
+            ${_source_files} ${TESTUTILS_DIR}/unittest_main.cpp)
+        target_link_libraries(${EXENAME}
+            ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+        set_property(TARGET ${EXENAME}
+            APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
+        set_property(TARGET ${EXENAME}
+            APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
+        set_property(TARGET ${EXENAME}
+            APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
     endif()
-endfunction ()
+endfunction()
 
 function (gmx_register_unit_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
@@ -143,6 +162,6 @@ function (gmx_register_mpi_integration_test NAME EXENAME NUMPROC)
 endfunction ()
 
 function (gmx_add_unit_test NAME EXENAME)
-    gmx_build_unit_test(${NAME} ${EXENAME} ${ARGN})
+    gmx_add_gtest_executable(${EXENAME} ${ARGN})
     gmx_register_unit_test(${NAME} ${EXENAME})
 endfunction()
