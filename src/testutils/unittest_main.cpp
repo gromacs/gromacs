@@ -55,13 +55,19 @@
 #define TEST_TEMP_PATH 0
 #endif
 
+#ifndef TEST_USES_MPI
+//! Whether the test expects/supports running with multiple MPI ranks.
+#define TEST_USES_MPI false
+#endif
+
 /*! \brief
  * Initializes unit testing for \ref module_testutils.
  */
 int main(int argc, char *argv[])
 {
     // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, &argc, &argv);
+    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, TEST_USES_MPI,
+                               &argc, &argv);
     int errcode = RUN_ALL_TESTS();
     ::gmx::test::finalizeTestUtils();
     return errcode;

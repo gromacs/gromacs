@@ -60,7 +60,8 @@ namespace test
  *
  * \ingroup module_testutils
  */
-void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv);
+void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
+                   int *argc, char ***argv);
 
 /*! \internal
  * \brief

@@ -58,6 +58,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
@@ -154,7 +155,8 @@ boost::scoped_ptr<TestProgramContext> g_testContext;
 }       // namespace
 
 //! \cond internal
-void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
+void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
+                   int *argc, char ***argv)
 {
 #ifndef NDEBUG
     gmx_feenableexcept();
@@ -162,6 +164,21 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
     const CommandLineProgramContext &context = initForCommandLine(argc, argv);
     try
     {
+        if (!usesMpi && gmx_node_num() > 1)
+        {
+            if (gmx_node_rank() == 0)
+            {
+                fprintf(stderr, "NOTE: You are running %s on %d MPI ranks, "
+                        "but it is does not contain MPI-enabled tests. "
+                        "Rank 0 will run the tests, other ranks will exit.",
+                        context.programName(), gmx_node_num());
+            }
+            else
+            {
+                finalizeForCommandLine();
+                std::exit(0);
+            }
+        }
         g_testContext.reset(new TestProgramContext(context));
         setProgramContext(g_testContext.get());
         // Use the default finder that does not respect GMXLIB, since the tests
@@ -214,7 +231,10 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
                     Path::join(sourceRoot, dataPath));
         }
         setFatalErrorHandler(NULL);
-        initMPIOutput();
+        if (usesMpi)
+        {
+            initMPIOutput();
+        }
     }
     catch (const std::exception &ex)
     {
