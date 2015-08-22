@@ -35,8 +35,7 @@
 set(testname "MdrunTests")
 set(exename "mdrun-test")
 
-gmx_build_unit_test(
-    ${testname}
+gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     energyreader.cpp
@@ -61,9 +60,8 @@ gmx_register_integration_test(
 set(testname "MdrunMpiTests")
 set(exename "mdrun-mpi-test")
 
-gmx_build_unit_test(
-    ${testname}
-    ${exename}
+gmx_add_gtest_executable(
+    ${exename} MPI
     # files with code for tests
     multisim.cpp
     multisimtest.cpp

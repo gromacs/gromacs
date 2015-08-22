@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/futil.h"
@@ -156,7 +157,8 @@ std::unique_ptr<TestProgramContext> g_testContext;
 }       // namespace
 
 //! \cond internal
-void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
+void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
+                   int *argc, char ***argv)
 {
 #ifndef NDEBUG
     gmx_feenableexcept();
@@ -164,6 +166,21 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
     const CommandLineProgramContext &context = initForCommandLine(argc, argv);
     try
     {
+        if (!usesMpi && gmx_node_num() > 1)
+        {
+            if (gmx_node_rank() == 0)
+            {
+                fprintf(stderr, "NOTE: You are running %s on %d MPI ranks, "
+                        "but it is does not contain MPI-enabled tests. "
+                        "Rank 0 will run the tests, other ranks will exit.",
+                        context.programName(), gmx_node_num());
+            }
+            else
+            {
+                finalizeForCommandLine();
+                std::exit(0);
+            }
+        }
         g_testContext.reset(new TestProgramContext(context));
         setProgramContext(g_testContext.get());
         // Use the default finder that does not respect GMXLIB, since the tests
@@ -197,7 +214,10 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
         // before other event listeners that may generate test failures
         // (currently, such an event listener is used by the reference data
         // framework).
-        initMPIOutput();
+        if (usesMpi)
+        {
+            initMPIOutput();
+        }
         // TODO: Consider removing this option from test binaries that do not need it.
         initReferenceData(&options);
         initTestOptions(&options);

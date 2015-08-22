@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,8 +35,7 @@
 set(testname "LegacyToolsTests")
 set(exename "legacy-tools-test")
 
-gmx_build_unit_test(
-    ${testname}
+gmx_add_gtest_executable(
     ${exename}
     # files with code for test fixtures
     gmx_traj_tests.cpp
@@ -44,8 +43,4 @@ gmx_build_unit_test(
 gmx_register_integration_test(
     ${testname}
     ${exename}
-    # Command line arguments specifying the execution context for the
-    # call to the program under test.
-#    -nt 1
-#    -ntomp 1
     )
