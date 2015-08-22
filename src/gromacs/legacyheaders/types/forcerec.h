@@ -97,6 +97,29 @@ typedef struct
     t_nblist nlist_lr[eNL_NR];
 } t_nblists;
 
+
+typedef struct
+{
+	enum gmx_table_format        format;
+	enum gmx_table_interaction   interaction;
+	int         			     n;
+    real      			      maxr;
+    real        		     scale;
+	real 						*F;
+	real 						*V;
+} t_genericTable;
+
+
+typedef struct
+{
+    t_genericTable   table_elec;
+    t_genericTable   table_vdw_LJ6;
+    t_genericTable   table_vdw_LJ12;
+	t_genericTable   table_GENERIC;
+
+} t_tablesVerlet;
+
+
 /* macros for the cginfo data in forcerec
  *
  * Since the tpx format support max 256 energy groups, we do the same here.
@@ -265,9 +288,17 @@ typedef struct {
     /* Fudge factors */
     real fudgeQQ;
 
-    /* Table stuff */
+    /* Table stuff GROUP SCHEME*/
     gmx_bool     bcoultab;
     gmx_bool     bvdwtab;
+
+    /* Table stuff VERLET SCHEME*/
+    gmx_bool     bcoultabVerlet;
+    gmx_bool     bvdwtabVerlet;
+    
+    const char*  nocoeffsPLEASE; /* Avoid scale factors and other coefficients. 
+                                     Bring the table values as pure as possible to the GPU. */
+
     /* The normal tables are in the nblists struct(s) below */
     t_forcetable tab14; /* for 1-4 interactions only */
 
@@ -312,6 +343,10 @@ typedef struct {
     int                        nnblists;
     int                       *gid2nblists;
     t_nblists                 *nblists;
+
+    /* The Verlet cut-off scheme tables */
+    int                        ntables;
+    t_tablesVerlet            *tablesVerlet;
 
     int                        cutoff_scheme; /* group- or Verlet-style cutoff */
     gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */

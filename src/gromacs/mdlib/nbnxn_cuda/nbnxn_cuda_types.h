@@ -61,6 +61,11 @@ typedef int cudaTextureObject_t;
 extern "C" {
 #endif
 
+/* Important limits for tables stored in 1D Texture object **/
+#define CUDA_1DTEXTURE_LIMIT 65536
+#define CUDA_TAB_SIZE_LIMIT  2048
+#define CUDA_NTABS_SIZE_LIMIT 32
+
 /*! \brief Electrostatic CUDA kernel flavors.
  *
  *  Types of electrostatics implementations available in the CUDA non-bonded
@@ -76,7 +81,15 @@ extern "C" {
  *  should match the order of enumerated types below.
  */
 enum eelCu {
-    eelCuCUT, eelCuRF, eelCuEWALD_TAB, eelCuEWALD_TAB_TWIN, eelCuEWALD_ANA, eelCuEWALD_ANA_TWIN, eelCuNR
+             eelCuCUT,
+             eelCuRF,
+             eelCuEWALD_TAB,
+             eelCuEWALD_TAB_TWIN,
+             eelCuEWALD_ANA,
+             eelCuEWALD_ANA_TWIN,
+             eelCuUSER,
+             eelCuNONE, /* Electrostatics are set to zero */
+             eelCuNR
 };
 
 /*! \brief VdW CUDA kernel flavors.
@@ -89,7 +102,13 @@ enum eelCu {
  * should match the order of enumerated types below.
  */
 enum evdwCu {
-    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
+              evdwCuCUT,
+              evdwCuFSWITCH,
+              evdwCuPSWITCH,
+              evdwCuEWALDGEOM,
+              evdwCuEWALDLB,
+              evdwCuUSER, /* tabulated non-bonded VdWLJ CUDA type */
+              evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
@@ -101,7 +120,6 @@ typedef struct cu_nbparam   cu_nbparam_t;
 typedef struct cu_timers    cu_timers_t;
 typedef struct nb_staging   nb_staging_t;
 /*! \endcond */
-
 
 /** \internal
  * \brief Staging area for temporary data downloaded from the GPU.
@@ -178,6 +196,18 @@ struct cu_nbparam
     float                coulomb_tab_scale;  /**< table scale/spacing                        */
     float               *coulomb_tab;        /**< pointer to the table in the device memory  */
     cudaTextureObject_t  coulomb_tab_texobj; /**< texture object bound to coulomb_tab        */
+
+    /* Non-Bonded Table data - accessed through texture memory */
+
+    int                  nb_tab_size;    /**< table size (s.t. it fits in texture cache)           */
+    int                  nb_tab_stride;  /**< tables array stride                                  */
+    int                  nb_ntabs;       /**< amount of tables                                     */ 
+    float                nb_tab_scale;   /**< table scale/spacing                                  */
+    float               *nb_Ftab;        /**< pointer to the force tables in the device memory     */
+    float               *nb_Vtab;        /**< pointer to the potential tables in the device memory */
+    cudaTextureObject_t  nb_Ftab_texobj; /**< texture object bound to nb_Ftab                      */
+    cudaTextureObject_t  nb_Vtab_texobj; /**< texture object bound to nb_Vtab                      */
+
 };
 
 /** \internal

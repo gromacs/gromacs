@@ -113,6 +113,19 @@ typedef struct {
     /* Force/energy interpolation tables, linear in force, quadratic in V */
     real  tabq_scale;
     int   tabq_size;
+
+    /* Additional table variables */
+    /* Only the simplest case at the moment!
+    int   ntabs;
+    int   tabstride;
+    * 
+    */
+    real *tabq_nbtab_F;
+    real *tabq_nbtab_V;
+
+    /* For future use */
+    real *tabq_nbtab_FDV0;
+
     /* Coulomb force table, size of array is tabq_size (when used) */
     real *tabq_coul_F;
     /* Coulomb energy table, size of array is tabq_size (when used) */

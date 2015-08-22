@@ -928,6 +928,10 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                 gmx_incons("Unimplemented VdW modifier");
         }
     }
+    else if (ir->vdwtype == evdwUSER)
+    {
+        printf("vdwtype = evdwUSER. In course of implementation!\n\n");
+    }
     else if (EVDW_PME(ir->vdwtype))
     {
         real b, r, br, br2, br4, br6;
@@ -990,6 +994,14 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         br     = b*rc;
         md1_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
         d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
+    }
+    else if (ir->coulombtype == eelNONE)
+    {
+        printf("ir->coulombtype = eelNONE selected.\n");
+    }
+    else if (ir->coulombtype == eelUSER)
+    {
+        printf("ir->coulombtype = eelUSER selected.\n");
     }
     else
     {
