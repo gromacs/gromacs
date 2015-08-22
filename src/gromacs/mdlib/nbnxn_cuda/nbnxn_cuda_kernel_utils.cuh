@@ -335,6 +335,60 @@ float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
 }
 #endif
 
+/*! Generic table linear interpolation */
+static inline __device__
+float interpolate_nb_Ftab(float r, float scale)
+{
+    float   normalized = scale * r;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
+
+    return fract1 * tex1Dfetch(nb_Ftab_texref, index)
+           + fract2 * tex1Dfetch(nb_Ftab_texref, index + 1);
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+float interpolate_nb_Ftab(cudaTextureObject_t texobj_nb_Ftab,
+                                  float r, float scale)
+{
+    float   normalized = scale * r;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
+
+    return fract1 * tex1Dfetch<float>(texobj_nb_Ftab, index) +
+           fract2 * tex1Dfetch<float>(texobj_nb_Ftab, index + 1);
+}
+#endif
+
+static inline __device__
+float interpolate_nb_Vtab(float r, float scale)
+{
+    float   normalized = scale * r;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
+
+    return fract1 * tex1Dfetch(nb_Vtab_texref, index)
+           + fract2 * tex1Dfetch(nb_Vtab_texref, index + 1);
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+float interpolate_nb_Vtab(cudaTextureObject_t texobj_nb_Vtab,
+                                  float r, float scale)
+{
+    float   normalized = scale * r;
+    int     index      = (int) normalized;
+    float   fract2     = normalized - index;
+    float   fract1     = 1.0f - fract2;
+
+    return fract1 * tex1Dfetch<float>(texobj_nb_Vtab, index) +
+           fract2 * tex1Dfetch<float>(texobj_nb_Vtab, index + 1);
+}
+#endif
 
 /*! Calculate analytical Ewald correction term. */
 static inline __device__

@@ -196,6 +196,7 @@ static void printCopyright(FILE *fp)
         "Magnus Lundborg",
         "Pieter Meulenhoff",
         "Erik Marklund",
+        "Alfredo Metere",
         "Teemu Murtola",
         "Szilard Pall",
         "Sander Pronk",
