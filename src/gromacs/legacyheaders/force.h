@@ -94,16 +94,25 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
 
 t_forcerec *mk_forcerec(void);
 
-#define GMX_MAKETABLES_FORCEUSER  (1<<0)
-#define GMX_MAKETABLES_14ONLY     (1<<1)
+#define GMX_MAKETABLES_FORCEUSER     (1<<0)
+#define GMX_MAKETABLES_14ONLY        (1<<1)
+#define GMX_MAKETABLES_USER          (1<<2)
+#define GMX_MAKETABLES_USER_ELEC     (1<<3)
+#define GMX_MAKETABLES_USER_VDW_LJ6  (1<<4)
+#define GMX_MAKETABLES_USER_VDW_LJ12 (1<<5)
+
 
 t_forcetable make_tables(FILE *fp, const output_env_t oenv,
                          const t_forcerec *fr, gmx_bool bVerbose,
                          const char *fn, real rtab, int flags);
+
+t_genericTable make_tables_Verlet(FILE *fp, const output_env_t oenv,
+                                const t_forcerec *fr, gmx_bool bVerbose,
+                                const char *fn, real rtab, int flags);
 /* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */
-
+ 
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
 /* Return a table for bonded interactions,
  * angle should be: bonds 0, angles 1, dihedrals 2
