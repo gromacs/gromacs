@@ -85,15 +85,15 @@ typedef struct t_inputrec_strings
          couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
          wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN],
          imd_grp[STRLEN];
-    char   fep_lambda[efptNR][STRLEN];
-    char   lambda_weights[STRLEN];
+    char fep_lambda[efptNR][STRLEN];
+    char lambda_weights[STRLEN];
     char **pull_grp;
     char **rot_grp;
-    char   anneal[STRLEN], anneal_npoints[STRLEN],
-           anneal_time[STRLEN], anneal_temp[STRLEN];
-    char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
-           bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
-           SAoff[STRLEN], SAsteps[STRLEN], bTS[STRLEN], bOPT[STRLEN];
+    char anneal[STRLEN], anneal_npoints[STRLEN],
+         anneal_time[STRLEN], anneal_temp[STRLEN];
+    char QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
+         bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
+         SAoff[STRLEN], SAsteps[STRLEN], bTS[STRLEN], bOPT[STRLEN];
     char efield_x[STRLEN], efield_xt[STRLEN], efield_y[STRLEN],
          efield_yt[STRLEN], efield_z[STRLEN], efield_zt[STRLEN];
 
@@ -248,9 +248,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
      * counter.
      */
 #define CHECK(b) _low_check(b, err_buf, wi)
-    char        err_buf[256], warn_buf[STRLEN];
-    int         i, j;
-    real        dt_pcoupl;
+    char err_buf[256], warn_buf[STRLEN];
+    int i, j;
+    real dt_pcoupl;
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
 
@@ -332,7 +332,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists only full pbc or pbc=xy with walls is supported");
         }
-        if (ir->rcoulomb != ir->rvdw)
+        if (ir->rcoulomb != ir->rvdw && (ir->coulombtype != eelNONE && ir->coulombtype != eelUSER))
         {
             warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported");
         }
@@ -355,12 +355,16 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
         }
 
-        if (!(ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME))
+        if (!(ir->vdwtype == evdwCUT  ||
+              ir->vdwtype == evdwPME  ||
+              ir->vdwtype == evdwUSER ))
         {
-            warning_error(wi, "With Verlet lists only cut-off and PME LJ interactions are supported");
+            warning_error(wi, "With Verlet lists only cut-off, PME LJ and USER table interactions are supported");
         }
-        if (!(ir->coulombtype == eelCUT ||
-              (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
+        if (!(ir->coulombtype == eelCUT  ||
+              ir->coulombtype == eelUSER ||
+              ir->coulombtype == eelNONE ||
+              (EEL_RF(ir->coulombtype)  && ir->coulombtype != eelRF_NEC) ||
               EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
             warning_error(wi, "With Verlet lists only cut-off, reaction-field, PME and Ewald electrostatics are supported");
@@ -386,6 +390,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_note(wi, "With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note that with the Verlet scheme, nstlist has no effect on the accuracy of your simulation.");
         }
+
+        printf ("readir.cpp (394): ir->rvdw=%10.4f - ir->rcoulomb=%10.4f\n\n", ir->rvdw, ir->rcoulomb);
 
         rc_max = std::max(ir->rvdw, ir->rcoulomb);
 
@@ -505,7 +511,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             const char *nsten    = "nstenergy";
             const char *nstdh    = "nstdhdl";
             const char *min_name = nsten;
-            int         min_nst  = ir->nstenergy;
+            int min_nst  = ir->nstenergy;
 
             /* find the smallest of ( nstenergy, nstdhdl ) */
             if (ir->efep != efepNO && ir->fepvals->nstdhdl > 0 &&
@@ -1456,7 +1462,7 @@ nd %s",
     returns: the number of elements. */
 int str_nelem(const char *str, int maxptr, char *ptr[])
 {
-    int   np = 0;
+    int np = 0;
     char *copy0, *copy;
 
     copy0 = gmx_strdup(str);
@@ -1501,7 +1507,7 @@ int str_nelem(const char *str, int maxptr, char *ptr[])
 static void parse_n_real(char *str, int *n, real **r)
 {
     char *ptr[MAXPTR];
-    int   i;
+    int i;
 
     *n = str_nelem(str, MAXPTR, ptr);
 
@@ -1515,11 +1521,11 @@ static void parse_n_real(char *str, int *n, real **r)
 static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weights[STRLEN])
 {
 
-    int         i, j, max_n_lambda, nweights, nfep[efptNR];
+    int i, j, max_n_lambda, nweights, nfep[efptNR];
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
     real      **count_fep_lambdas;
-    gmx_bool    bOneLambda = TRUE;
+    gmx_bool bOneLambda = TRUE;
 
     snew(count_fep_lambdas, efptNR);
 
@@ -1691,7 +1697,7 @@ static void do_wall_params(t_inputrec *ir,
                            char *wall_atomtype, char *wall_density,
                            t_gromppopts *opts)
 {
-    int    nstr, i;
+    int nstr, i;
     char  *names[MAXPTR];
     double dbl;
 
@@ -1738,9 +1744,9 @@ static void do_wall_params(t_inputrec *ir,
 
 static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
 {
-    int     i;
+    int i;
     t_grps *grps;
-    char    str[STRLEN];
+    char str[STRLEN];
 
     if (nwall > 0)
     {
@@ -1759,7 +1765,7 @@ static void add_wall_energrps(gmx_groups_t *groups, int nwall, t_symtab *symtab)
 void read_expandedparams(int *ninp_p, t_inpfile **inp_p,
                          t_expanded *expand, warninp_t wi)
 {
-    int        ninp;
+    int ninp;
     t_inpfile *inp;
 
     ninp   = *ninp_p;
@@ -1814,11 +1820,11 @@ void get_ir(const char *mdparin, const char *mdparout,
             warninp_t wi)
 {
     char       *dumstr[2];
-    double      dumdub[2][6];
+    double dumdub[2][6];
     t_inpfile  *inp;
     const char *tmp;
-    int         i, j, m, ninp;
-    char        warn_buf[STRLEN];
+    int i, j, m, ninp;
+    char warn_buf[STRLEN];
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
 
@@ -2321,33 +2327,33 @@ void get_ir(const char *mdparin, const char *mdparout,
         {
             switch (ir->epct)
             {
-                case epctISOTROPIC:
-                    if (sscanf(dumstr[m], "%lf", &(dumdub[m][XX])) != 1)
-                    {
-                        warning_error(wi, "Pressure coupling not enough values (I need 1)");
-                    }
-                    dumdub[m][YY] = dumdub[m][ZZ] = dumdub[m][XX];
-                    break;
-                case epctSEMIISOTROPIC:
-                case epctSURFACETENSION:
-                    if (sscanf(dumstr[m], "%lf%lf",
-                               &(dumdub[m][XX]), &(dumdub[m][ZZ])) != 2)
-                    {
-                        warning_error(wi, "Pressure coupling not enough values (I need 2)");
-                    }
-                    dumdub[m][YY] = dumdub[m][XX];
-                    break;
-                case epctANISOTROPIC:
-                    if (sscanf(dumstr[m], "%lf%lf%lf%lf%lf%lf",
-                               &(dumdub[m][XX]), &(dumdub[m][YY]), &(dumdub[m][ZZ]),
-                               &(dumdub[m][3]), &(dumdub[m][4]), &(dumdub[m][5])) != 6)
-                    {
-                        warning_error(wi, "Pressure coupling not enough values (I need 6)");
-                    }
-                    break;
-                default:
-                    gmx_fatal(FARGS, "Pressure coupling type %s not implemented yet",
-                              epcoupltype_names[ir->epct]);
+            case epctISOTROPIC:
+                if (sscanf(dumstr[m], "%lf", &(dumdub[m][XX])) != 1)
+                {
+                    warning_error(wi, "Pressure coupling not enough values (I need 1)");
+                }
+                dumdub[m][YY] = dumdub[m][ZZ] = dumdub[m][XX];
+                break;
+            case epctSEMIISOTROPIC:
+            case epctSURFACETENSION:
+                if (sscanf(dumstr[m], "%lf%lf",
+                           &(dumdub[m][XX]), &(dumdub[m][ZZ])) != 2)
+                {
+                    warning_error(wi, "Pressure coupling not enough values (I need 2)");
+                }
+                dumdub[m][YY] = dumdub[m][XX];
+                break;
+            case epctANISOTROPIC:
+                if (sscanf(dumstr[m], "%lf%lf%lf%lf%lf%lf",
+                           &(dumdub[m][XX]), &(dumdub[m][YY]), &(dumdub[m][ZZ]),
+                           &(dumdub[m][3]), &(dumdub[m][4]), &(dumdub[m][5])) != 6)
+                {
+                    warning_error(wi, "Pressure coupling not enough values (I need 6)");
+                }
+                break;
+            default:
+                gmx_fatal(FARGS, "Pressure coupling type %s not implemented yet",
+                          epcoupltype_names[ir->epct]);
             }
         }
     }
@@ -2601,10 +2607,10 @@ static gmx_bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptr
 {
     unsigned short *cbuf;
     t_grps         *grps = &(groups->grps[gtype]);
-    int             i, j, gid, aj, ognr, ntot = 0;
+    int i, j, gid, aj, ognr, ntot = 0;
     const char     *title;
-    gmx_bool        bRest;
-    char            warn_buf[STRLEN];
+    gmx_bool bRest;
+    char warn_buf[STRLEN];
 
     if (debug)
     {
@@ -2741,13 +2747,13 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     t_grpopts              *opts;
     gmx_groups_t           *groups;
     pull_params_t          *pull;
-    int                     natoms, ai, aj, i, j, d, g, imin, jmin;
+    int natoms, ai, aj, i, j, d, g, imin, jmin;
     t_iatom                *ia;
     int                    *nrdf2, *na_vcm, na_tot;
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, n_sub = 0;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
-    int                     mb, mol, ftype, as;
+    int mb, mol, ftype, as;
     gmx_molblock_t         *molb;
     gmx_moltype_t          *molt;
 
@@ -2929,14 +2935,14 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
          */
         switch (ir->comm_mode)
         {
-            case ecmLINEAR:
-                n_sub = ndof_com(ir);
-                break;
-            case ecmANGULAR:
-                n_sub = 6;
-                break;
-            default:
-                gmx_incons("Checking comm_mode");
+        case ecmLINEAR:
+            n_sub = ndof_com(ir);
+            break;
+        case ecmANGULAR:
+            n_sub = 6;
+            break;
+        default:
+            gmx_incons("Checking comm_mode");
         }
 
         for (i = 0; i < groups->grps[egcTC].nr; i++)
@@ -2970,7 +2976,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
                 if (nrdf_vcm[j] > n_sub)
                 {
                     nrdf_tc[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
-                        (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
+                                  (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
                 }
                 if (debug)
                 {
@@ -3001,9 +3007,9 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 static void decode_cos(char *s, t_cosines *cosine)
 {
     char   *t;
-    char    format[STRLEN], f1[STRLEN];
-    double  a, phi;
-    int     i;
+    char format[STRLEN], f1[STRLEN];
+    double a, phi;
+    int i;
 
     t = gmx_strdup(s);
     trim(t);
@@ -3049,7 +3055,7 @@ static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
      * The real maximum is the number of names that fit in a string: STRLEN/2.
      */
 #define EGP_MAX (STRLEN/2)
-    int      nelem, i, j, k, nr;
+    int nelem, i, j, k, nr;
     char    *names[EGP_MAX];
     char  ***gnames;
     gmx_bool bSet;
@@ -3100,15 +3106,15 @@ static gmx_bool do_egp_flag(t_inputrec *ir, gmx_groups_t *groups,
 
 
 static void make_swap_groups(
-        t_swapcoords *swap,
-        char         *swapgname,
-        char         *splitg0name,
-        char         *splitg1name,
-        char         *solgname,
-        t_blocka     *grps,
-        char        **gnames)
+    t_swapcoords *swap,
+    char         *swapgname,
+    char         *splitg0name,
+    char         *splitg1name,
+    char         *solgname,
+    t_blocka     *grps,
+    char        **gnames)
 {
-    int   ig = -1, i = 0, j;
+    int ig = -1, i = 0, j;
     char *splitg;
 
 
@@ -3186,7 +3192,7 @@ static void make_swap_groups(
 
 void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
 {
-    int      ig, i;
+    int ig, i;
 
 
     ig            = search_string(IMDgname, grps->nr, gnames);
@@ -3213,19 +3219,19 @@ void do_index(const char* mdparin, const char *ndx,
 {
     t_blocka     *grps;
     gmx_groups_t *groups;
-    int           natoms;
+    int natoms;
     t_symtab     *symtab;
-    t_atoms       atoms_all;
-    char          warnbuf[STRLEN], **gnames;
-    int           nr, ntcg, ntau_t, nref_t, nacc, nofg, nSA, nSA_points, nSA_time, nSA_temp;
-    real          tau_min;
-    int           nstcmin;
-    int           nacg, nfreeze, nfrdim, nenergy, nvcm, nuser;
+    t_atoms atoms_all;
+    char warnbuf[STRLEN], **gnames;
+    int nr, ntcg, ntau_t, nref_t, nacc, nofg, nSA, nSA_points, nSA_time, nSA_temp;
+    real tau_min;
+    int nstcmin;
+    int nacg, nfreeze, nfrdim, nenergy, nvcm, nuser;
     char         *ptr1[MAXPTR], *ptr2[MAXPTR], *ptr3[MAXPTR];
-    int           i, j, k, restnm;
-    gmx_bool      bExcl, bTable, bSetTCpar, bAnneal, bRest;
-    int           nQMmethod, nQMbasis, nQMg;
-    char          warn_buf[STRLEN];
+    int i, j, k, restnm;
+    gmx_bool bExcl, bTable, bSetTCpar, bAnneal, bRest;
+    int nQMmethod, nQMbasis, nQMg;
+    char warn_buf[STRLEN];
 
     if (bVerbose)
     {
@@ -3773,8 +3779,8 @@ static void check_disre(gmx_mtop_t *mtop)
     gmx_ffparams_t *ffparams;
     t_functype     *functype;
     t_iparams      *ip;
-    int             i, ndouble, ftype;
-    int             label, old_label;
+    int i, ndouble, ftype;
+    int label, old_label;
 
     if (gmx_mtop_ftype_count(mtop, F_DISRES) > 0)
     {
@@ -3810,10 +3816,10 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                                    gmx_bool posres_only,
                                    ivec AbsRef)
 {
-    int                  d, g, i;
+    int d, g, i;
     gmx_mtop_ilistloop_t iloop;
     t_ilist             *ilist;
-    int                  nmol;
+    int nmol;
     t_iparams           *pr;
 
     clear_ivec(AbsRef);
@@ -3864,30 +3870,30 @@ static gmx_bool absolute_reference(t_inputrec *ir, gmx_mtop_t *sys,
                 {
                     switch (pr->fbposres.geom)
                     {
-                        case efbposresSPHERE:
-                            AbsRef[XX] = AbsRef[YY] = AbsRef[ZZ] = 1;
-                            break;
-                        case efbposresCYLINDERX:
-                            AbsRef[YY] = AbsRef[ZZ] = 1;
-                            break;
-                        case efbposresCYLINDERY:
-                            AbsRef[XX] = AbsRef[ZZ] = 1;
-                            break;
-                        case efbposresCYLINDER:
-                        /* efbposres is a synonym for efbposresCYLINDERZ for backwards compatibility */
-                        case efbposresCYLINDERZ:
-                            AbsRef[XX] = AbsRef[YY] = 1;
-                            break;
-                        case efbposresX: /* d=XX */
-                        case efbposresY: /* d=YY */
-                        case efbposresZ: /* d=ZZ */
-                            d         = pr->fbposres.geom - efbposresX;
-                            AbsRef[d] = 1;
-                            break;
-                        default:
-                            gmx_fatal(FARGS, " Invalid geometry for flat-bottom position restraint.\n"
-                                      "Expected nr between 1 and %d. Found %d\n", efbposresNR-1,
-                                      pr->fbposres.geom);
+                    case efbposresSPHERE:
+                        AbsRef[XX] = AbsRef[YY] = AbsRef[ZZ] = 1;
+                        break;
+                    case efbposresCYLINDERX:
+                        AbsRef[YY] = AbsRef[ZZ] = 1;
+                        break;
+                    case efbposresCYLINDERY:
+                        AbsRef[XX] = AbsRef[ZZ] = 1;
+                        break;
+                    case efbposresCYLINDER:
+                    /* efbposres is a synonym for efbposresCYLINDERZ for backwards compatibility */
+                    case efbposresCYLINDERZ:
+                        AbsRef[XX] = AbsRef[YY] = 1;
+                        break;
+                    case efbposresX:     /* d=XX */
+                    case efbposresY:     /* d=YY */
+                    case efbposresZ:     /* d=ZZ */
+                        d         = pr->fbposres.geom - efbposresX;
+                        AbsRef[d] = 1;
+                        break;
+                    default:
+                        gmx_fatal(FARGS, " Invalid geometry for flat-bottom position restraint.\n"
+                                  "Expected nr between 1 and %d. Found %d\n", efbposresNR-1,
+                                  pr->fbposres.geom);
                     }
                 }
             }
@@ -3903,13 +3909,13 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
                                    gmx_bool *bC6ParametersWorkWithLBRules,
                                    gmx_bool *bLBRulesPossible)
 {
-    int           ntypes, tpi, tpj;
+    int ntypes, tpi, tpj;
     int          *typecount;
-    real          tol;
-    double        c6i, c6j, c12i, c12j;
-    double        c6, c6_geometric, c6_LB;
-    double        sigmai, sigmaj, epsi, epsj;
-    gmx_bool      bCanDoLBRules, bCanDoGeometricRules;
+    real tol;
+    double c6i, c6j, c12i, c12j;
+    double c6, c6_geometric, c6_LB;
+    double sigmai, sigmaj, epsi, epsj;
+    gmx_bool bCanDoLBRules, bCanDoGeometricRules;
     const char   *ptr;
 
     /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
@@ -4024,16 +4030,16 @@ check_combination_rules(const t_inputrec *ir, const gmx_mtop_t *mtop,
 void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                   warninp_t wi)
 {
-    char                      err_buf[STRLEN];
-    int                       i, m, c, nmol;
-    gmx_bool                  bCharge, bAcc;
+    char err_buf[STRLEN];
+    int i, m, c, nmol;
+    gmx_bool bCharge, bAcc;
     real                     *mgrp, mt;
-    rvec                      acc;
+    rvec acc;
     gmx_mtop_atomloop_block_t aloopb;
-    gmx_mtop_atomloop_all_t   aloop;
+    gmx_mtop_atomloop_all_t aloop;
     t_atom                   *atom;
-    ivec                      AbsRef;
-    char                      warn_buf[STRLEN];
+    ivec AbsRef;
+    char warn_buf[STRLEN];
 
     set_warning_line(wi, mdparin, -1);
 
@@ -4051,8 +4057,8 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         const real T_error_suggest = 0.001;
         /* For safety: 2 DOF per atom (typical with constraints) */
         const real nrdf_at         = 2;
-        real       T, tau, max_T_error;
-        int        i;
+        real T, tau, max_T_error;
+        int i;
 
         T   = 0;
         tau = 0;
@@ -4296,9 +4302,9 @@ void double_check(t_inputrec *ir, matrix box,
                   gmx_bool bHasAnyConstraints,
                   warninp_t wi)
 {
-    real        min_size;
-    gmx_bool    bTWIN;
-    char        warn_buf[STRLEN];
+    real min_size;
+    gmx_bool bTWIN;
+    char warn_buf[STRLEN];
     const char *ptr;
 
     ptr = check_box(ir->ePBC, box);

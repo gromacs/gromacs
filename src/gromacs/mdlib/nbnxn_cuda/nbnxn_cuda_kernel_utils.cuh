@@ -61,11 +61,11 @@
 
 /*! Apply force switch,  force + energy version. */
 static inline __device__
-void calculate_force_switch_F(const  cu_nbparam_t nbparam,
-                              float               c6,
-                              float               c12,
-                              float               inv_r,
-                              float               r2,
+void calculate_force_switch_F(const cu_nbparam_t nbparam,
+                              float c6,
+                              float c12,
+                              float inv_r,
+                              float r2,
                               float              *F_invr)
 {
     float r, r_switch;
@@ -87,11 +87,11 @@ void calculate_force_switch_F(const  cu_nbparam_t nbparam,
 
 /*! Apply force switch, force-only version. */
 static inline __device__
-void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
-                                float               c6,
-                                float               c12,
-                                float               inv_r,
-                                float               r2,
+void calculate_force_switch_F_E(const cu_nbparam_t nbparam,
+                                float c6,
+                                float c12,
+                                float inv_r,
+                                float r2,
                                 float              *F_invr,
                                 float              *E_lj)
 {
@@ -122,11 +122,11 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
 
 /*! Apply potential switch, force-only version. */
 static inline __device__
-void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
-                                  float               c6,
-                                  float               c12,
-                                  float               inv_r,
-                                  float               r2,
+void calculate_potential_switch_F(const cu_nbparam_t nbparam,
+                                  float c6,
+                                  float c12,
+                                  float inv_r,
+                                  float r2,
                                   float              *F_invr,
                                   float              *E_lj)
 {
@@ -156,11 +156,11 @@ void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
 
 /*! Apply potential switch, force + energy version. */
 static inline __device__
-void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
-                                    float               c6,
-                                    float               c12,
-                                    float               inv_r,
-                                    float               r2,
+void calculate_potential_switch_F_E(const cu_nbparam_t nbparam,
+                                    float c6,
+                                    float c12,
+                                    float inv_r,
+                                    float r2,
                                     float              *F_invr,
                                     float              *E_lj)
 {
@@ -192,12 +192,12 @@ void calculate_potential_switch_F_E(const  cu_nbparam_t nbparam,
  */
 static inline __device__
 void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
-                                    int                typei,
-                                    int                typej,
-                                    float              r2,
-                                    float              inv_r2,
-                                    float              lje_coeff2,
-                                    float              lje_coeff6_6,
+                                    int typei,
+                                    int typej,
+                                    float r2,
+                                    float inv_r2,
+                                    float lje_coeff2,
+                                    float lje_coeff6_6,
                                     float             *F_invr)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
@@ -223,13 +223,13 @@ void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
  */
 static inline __device__
 void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
-                                      int                typei,
-                                      int                typej,
-                                      float              r2,
-                                      float              inv_r2,
-                                      float              lje_coeff2,
-                                      float              lje_coeff6_6,
-                                      float              int_bit,
+                                      int typei,
+                                      int typej,
+                                      float r2,
+                                      float inv_r2,
+                                      float lje_coeff2,
+                                      float lje_coeff6_6,
+                                      float int_bit,
                                       float             *F_invr,
                                       float             *E_lj)
 {
@@ -262,13 +262,13 @@ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
  */
 static inline __device__
 void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
-                                    int                typei,
-                                    int                typej,
-                                    float              r2,
-                                    float              inv_r2,
-                                    float              lje_coeff2,
-                                    float              lje_coeff6_6,
-                                    float              int_bit,
+                                    int typei,
+                                    int typej,
+                                    float r2,
+                                    float inv_r2,
+                                    float lje_coeff2,
+                                    float lje_coeff6_6,
+                                    float int_bit,
                                     float             *F_invr,
                                     float             *E_lj)
 {
@@ -311,10 +311,10 @@ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
 static inline __device__
 float interpolate_coulomb_force_r(float r, float scale)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float normalized = scale * r;
+    int index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
 
     return fract1 * tex1Dfetch(coulomb_tab_texref, index)
            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
@@ -325,16 +325,70 @@ static inline __device__
 float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float normalized = scale * r;
+    int index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
 
     return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
            fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
 }
 #endif
 
+/*! Generic table linear interpolation */
+static inline __device__
+float interpolate_nb_Ftab(float r, float scale)
+{
+    float normalized = scale * r;
+    int index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+
+    return fract1 * tex1Dfetch(nb_Ftab_texref, index)
+           + fract2 * tex1Dfetch(nb_Ftab_texref, index + 1);
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+float interpolate_nb_Ftab(cudaTextureObject_t texobj_nb_Ftab,
+                          float r, float scale)
+{
+    float normalized = scale * r;
+    int index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+
+    return fract1 * tex1Dfetch<float>(texobj_nb_Ftab, index) +
+           fract2 * tex1Dfetch<float>(texobj_nb_Ftab, index + 1);
+}
+#endif
+
+static inline __device__
+float interpolate_nb_Vtab(float r, float scale)
+{
+    float normalized = scale * r;
+    int index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+
+    return fract1 * tex1Dfetch(nb_Vtab_texref, index)
+           + fract2 * tex1Dfetch(nb_Vtab_texref, index + 1);
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+float interpolate_nb_Vtab(cudaTextureObject_t texobj_nb_Vtab,
+                          float r, float scale)
+{
+    float normalized = scale * r;
+    int index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+
+    return fract1 * tex1Dfetch<float>(texobj_nb_Vtab, index) +
+           fract2 * tex1Dfetch<float>(texobj_nb_Vtab, index + 1);
+}
+#endif
 
 /*! Calculate analytical Ewald correction term. */
 static inline __device__
@@ -354,8 +408,8 @@ float pmecorrF(float z2)
     const float FD1 = 0.50736591960530292870f;
     const float FD0 = 1.0f;
 
-    float       z4;
-    float       polyFN0, polyFN1, polyFD0, polyFD1;
+    float z4;
+    float polyFN0, polyFN1, polyFD0, polyFD1;
 
     z4          = z2*z2;
 
@@ -463,8 +517,8 @@ void reduce_force_i_pow2(volatile float *f_buf, float3 *fout,
                          float *fshift_buf, bool bCalcFshift,
                          int tidxi, int tidxj, int aidx)
 {
-    int     i, j;
-    float   f;
+    int i, j;
+    float f;
 
     /* Reduce the initial CL_SIZE values for each i atom to half
      * every step by using CL_SIZE * i threads.
@@ -566,8 +620,8 @@ void reduce_energy_pow2(volatile float *buf,
                         float *e_lj, float *e_el,
                         unsigned int tidx)
 {
-    int     i, j;
-    float   e1, e2;
+    int i, j;
+    float e1, e2;
 
     i = WARP_SIZE/2;
 

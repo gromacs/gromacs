@@ -48,7 +48,8 @@ extern "C" {
  * potential = r^-p + c2/3*rsw^3 + c3/4*rsw^4 + cpot
  * With a constant potential shift c2 and c3 are both 0.
  */
-typedef struct {
+typedef struct
+{
     real c2;
     real c3;
     real cpot;
@@ -61,22 +62,24 @@ typedef struct {
  * force      = force*dsw - potential*sw
  * potential *= sw
  */
-typedef struct {
+typedef struct
+{
     real c3;
     real c4;
     real c5;
 } switch_consts_t;
 
-typedef struct {
-    int             cutoff_scheme;
+typedef struct
+{
+    int cutoff_scheme;
 
     /* VdW */
-    int             vdwtype;
-    int             vdw_modifier;
-    real            rvdw;
-    real            rvdw_switch;
-    shift_consts_t  dispersion_shift;
-    shift_consts_t  repulsion_shift;
+    int vdwtype;
+    int vdw_modifier;
+    real rvdw;
+    real rvdw_switch;
+    shift_consts_t dispersion_shift;
+    shift_consts_t repulsion_shift;
     switch_consts_t vdw_switch;
     /* TODO: remove this variable, used for not modyfing the group kernels,
      * it is equal to -dispersion_shift->cpot
@@ -84,8 +87,8 @@ typedef struct {
     real sh_invrc6;
 
     /* type of electrostatics (defined in enums.h) */
-    int  eeltype;
-    int  coulomb_modifier;
+    int eeltype;
+    int coulomb_modifier;
 
     /* Coulomb */
     real rcoulomb;
@@ -97,7 +100,7 @@ typedef struct {
     /* PME/Ewald */
     real ewaldcoeff_q;
     real ewaldcoeff_lj;
-    int  ljpme_comb_rule; /* LJ combination rule for the LJ PME mesh part */
+    int ljpme_comb_rule;  /* LJ combination rule for the LJ PME mesh part */
     real sh_ewald;        /* -sh_ewald is added to the direct space potential */
     real sh_lj_ewald;     /* sh_lj_ewald is added to the correction potential */
 
@@ -111,8 +114,21 @@ typedef struct {
     real c_rf;
 
     /* Force/energy interpolation tables, linear in force, quadratic in V */
-    real  tabq_scale;
-    int   tabq_size;
+    real tabq_scale;
+    int tabq_size;
+
+    /* Additional table variables */
+    /* Only the simplest case at the moment!
+    int   ntabs;
+    int   tabstride;
+    *
+    */
+    real *tabq_nbtab_F;
+    real *tabq_nbtab_V;
+
+    /* For future use */
+    real *tabq_nbtab_FDV0;
+
     /* Coulomb force table, size of array is tabq_size (when used) */
     real *tabq_coul_F;
     /* Coulomb energy table, size of array is tabq_size (when used) */

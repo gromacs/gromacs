@@ -91,12 +91,12 @@
  */
 typedef struct
 {
-    real     mass;     /* mass */
-    int      type;     /* type (used for LJ parameters) */
-    real     q;        /* charge */
+    real mass;         /* mass */
+    int type;          /* type (used for LJ parameters) */
+    real q;            /* charge */
     gmx_bool bConstr;  /* constrained, if TRUE, use #DOF=2 iso 3 */
-    real     con_mass; /* mass of heaviest atom connected by constraints */
-    real     con_len;  /* constraint length to the heaviest atom */
+    real con_mass;     /* mass of heaviest atom connected by constraints */
+    real con_len;      /* constraint length to the heaviest atom */
 } atom_nonbonded_kinetic_prop_t;
 
 /* Struct for unique atom type for calculating the energy drift.
@@ -106,11 +106,11 @@ typedef struct
 typedef struct
 {
     atom_nonbonded_kinetic_prop_t prop; /* non-bonded and kinetic atom prop. */
-    int                           n;    /* #atoms of this type in the system */
+    int n;                              /* #atoms of this type in the system */
 } verletbuf_atomtype_t;
 
-void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
-                              gmx_bool                bGPU,
+void verletbuf_get_list_setup(gmx_bool gmx_unused bSIMD,
+                              gmx_bool bGPU,
                               verletbuf_list_setup_t *list_setup)
 {
     /* When calling this function we often don't know which kernel type we
@@ -167,7 +167,7 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
                    int nmol)
 {
     verletbuf_atomtype_t   *att;
-    int                     natt, i;
+    int natt, i;
 
     if (prop->mass == 0)
     {
@@ -202,7 +202,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                              real                 *vsite_m,
                              int                  *n_nonlin_vsite)
 {
-    int            ft, i;
+    int ft, i;
     const t_ilist *il;
 
     *n_nonlin_vsite = 0;
@@ -217,8 +217,8 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
             for (i = 0; i < il->nr; i += 1+NRAL(ft))
             {
                 const t_iparams *ip;
-                real             inv_mass, coeff, m_aj;
-                int              a1, aj;
+                real inv_mass, coeff, m_aj;
+                int a1, aj;
 
                 ip = &ffparams->iparams[il->iatoms[i]];
 
@@ -228,9 +228,9 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                 {
                     /* Only vsiten can have more than four
                        constructing atoms, so NRAL(ft) <= 5 */
-                    int        j;
+                    int j;
                     real      *cam;
-                    const int  maxj = NRAL(ft);
+                    const int maxj = NRAL(ft);
 
                     snew(cam, maxj);
                     assert(maxj <= 5);
@@ -252,37 +252,37 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 
                     switch (ft)
                     {
-                        case F_VSITE2:
-                            /* Exact */
-                            vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a));
-                            break;
-                        case F_VSITE3:
-                            /* Exact */
-                            vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b));
-                            break;
-                        case F_VSITEN:
-                            gmx_incons("Invalid vsite type");
-                            break;
-                        default:
-                            /* Use the mass of the lightest constructing atom.
-                             * This is an approximation.
-                             * If the distance of the virtual site to the
-                             * constructing atom is less than all distances
-                             * between constructing atoms, this is a safe
-                             * over-estimate of the displacement of the vsite.
-                             * This condition holds for all H mass replacement
-                             * vsite constructions, except for SP2/3 groups.
-                             * In SP3 groups one H will have a F_VSITE3
-                             * construction, so even there the total drift
-                             * estimate shouldn't be far off.
-                             */
-                            vsite_m[a1] = cam[1];
-                            for (j = 2; j < maxj; j++)
-                            {
-                                vsite_m[a1] = min(vsite_m[a1], cam[j]);
-                            }
-                            (*n_nonlin_vsite)++;
-                            break;
+                    case F_VSITE2:
+                        /* Exact */
+                        vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a));
+                        break;
+                    case F_VSITE3:
+                        /* Exact */
+                        vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b));
+                        break;
+                    case F_VSITEN:
+                        gmx_incons("Invalid vsite type");
+                        break;
+                    default:
+                        /* Use the mass of the lightest constructing atom.
+                         * This is an approximation.
+                         * If the distance of the virtual site to the
+                         * constructing atom is less than all distances
+                         * between constructing atoms, this is a safe
+                         * over-estimate of the displacement of the vsite.
+                         * This condition holds for all H mass replacement
+                         * vsite constructions, except for SP2/3 groups.
+                         * In SP3 groups one H will have a F_VSITE3
+                         * construction, so even there the total drift
+                         * estimate shouldn't be far off.
+                         */
+                        vsite_m[a1] = cam[1];
+                        for (j = 2; j < maxj; j++)
+                        {
+                            vsite_m[a1] = min(vsite_m[a1], cam[j]);
+                        }
+                        (*n_nonlin_vsite)++;
+                        break;
                     }
                     sfree(cam);
                 }
@@ -330,14 +330,14 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
                                         int                   *n_nonlin_vsite)
 {
     verletbuf_atomtype_t          *att;
-    int                            natt;
-    int                            mb, nmol, ft, i, a1, a2, a3, a;
+    int natt;
+    int mb, nmol, ft, i, a1, a2, a3, a;
     const t_atoms                 *atoms;
     const t_ilist                 *il;
     const t_iparams               *ip;
     atom_nonbonded_kinetic_prop_t *prop;
     real                          *vsite_m;
-    int                            n_nonlin_vsite_mol;
+    int n_nonlin_vsite_mol;
 
     att  = NULL;
     natt = 0;
@@ -467,7 +467,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
  * into account. If an atom has multiple constraints, this will result in
  * an overestimate of the displacement, which gives a larger drift and buffer.
  */
-static void constrained_atom_sigma2(real                                 kT_fac,
+static void constrained_atom_sigma2(real kT_fac,
                                     const atom_nonbonded_kinetic_prop_t *prop,
                                     real                                *sigma2_2d,
                                     real                                *sigma2_3d)
@@ -532,7 +532,7 @@ static void constrained_atom_sigma2(real                                 kT_fac,
     *sigma2_3d = kT_fac/(prop->mass + prop->con_mass);
 }
 
-static void get_atom_sigma2(real                                 kT_fac,
+static void get_atom_sigma2(real kT_fac,
                             const atom_nonbonded_kinetic_prop_t *prop,
                             real                                *sigma2_2d,
                             real                                *sigma2_3d)
@@ -583,13 +583,13 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
      */
     const real erfc_arg_max = 8.0;
 
-    double     drift_tot, pot1, pot2, pot3, pot;
-    int        i, j;
-    real       s2i_2d, s2i_3d, s2j_2d, s2j_3d, s2, s;
-    int        ti, tj;
-    real       md1, d2, md3;
-    real       sc_fac, rsh, rsh2;
-    double     c_exp, c_erfc;
+    double drift_tot, pot1, pot2, pot3, pot;
+    int i, j;
+    real s2i_2d, s2i_3d, s2j_2d, s2j_3d, s2, s;
+    int ti, tj;
+    real md1, d2, md3;
+    real sc_fac, rsh, rsh2;
+    double c_exp, c_erfc;
 
     drift_tot = 0;
 
@@ -683,11 +683,11 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             rsh2   = rsh*rsh;
 
             pot1 = sc_fac*
-                md1/2*((rsh2 + s2)*c_erfc - rsh*s*c_exp);
+                   md1/2*((rsh2 + s2)*c_erfc - rsh*s*c_exp);
             pot2 = sc_fac*
-                d2/6*(s*(rsh2 + 2*s2)*c_exp - rsh*(rsh2 + 3*s2)*c_erfc);
+                   d2/6*(s*(rsh2 + 2*s2)*c_exp - rsh*(rsh2 + 3*s2)*c_erfc);
             pot3 = sc_fac*
-                md3/24*((rsh2*rsh2 + 6*rsh2*s2 + 3*s2*s2)*c_erfc - rsh*s*(rsh2 + 5*s2)*c_exp);
+                   md3/24*((rsh2*rsh2 + 6*rsh2*s2 + 3*s2*s2)*c_erfc - rsh*s*(rsh2 + 5*s2)*c_exp);
             pot = pot1 + pot2 + pot3;
 
             if (gmx_debug_at)
@@ -747,28 +747,28 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
      */
     switch (cluster_size)
     {
-        case 1:
-            /* One particle: trivial */
-            area_rel = 1.0;
-            break;
-        case 2:
-            /* Two particles: two spheres at fractional distance 2*a */
-            area_rel = 1.0 + d;
-            break;
-        case 4:
-            /* We assume a perfect, symmetric tetrahedron geometry.
-             * The surface around a tetrahedron is too complex for a full
-             * analytical solution, so we use a Taylor expansion.
-             */
-            area_rel = (1.0 + 1/M_PI*(6*acos(1/sqrt(3))*d +
-                                      sqrt(3)*d*d*(1.0 +
-                                                   5.0/18.0*d*d +
-                                                   7.0/45.0*d*d*d*d +
-                                                   83.0/756.0*d*d*d*d*d*d)));
-            break;
-        default:
-            gmx_incons("surface_frac called with unsupported cluster_size");
-            area_rel = 1.0;
+    case 1:
+        /* One particle: trivial */
+        area_rel = 1.0;
+        break;
+    case 2:
+        /* Two particles: two spheres at fractional distance 2*a */
+        area_rel = 1.0 + d;
+        break;
+    case 4:
+        /* We assume a perfect, symmetric tetrahedron geometry.
+         * The surface around a tetrahedron is too complex for a full
+         * analytical solution, so we use a Taylor expansion.
+         */
+        area_rel = (1.0 + 1/M_PI*(6*acos(1/sqrt(3))*d +
+                                  sqrt(3)*d*d*(1.0 +
+                                               5.0/18.0*d*d +
+                                               7.0/45.0*d*d*d*d +
+                                               83.0/756.0*d*d*d*d*d*d)));
+        break;
+    default:
+        gmx_incons("surface_frac called with unsupported cluster_size");
+        area_rel = 1.0;
     }
 
     return area_rel/cluster_size;
@@ -801,23 +801,23 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              int *n_nonlin_vsite,
                              real *rlist)
 {
-    double                resolution;
+    double resolution;
     char                 *env;
 
-    real                  particle_distance;
-    real                  nb_clust_frac_pairs_not_in_list_at_cutoff;
+    real particle_distance;
+    real nb_clust_frac_pairs_not_in_list_at_cutoff;
 
     verletbuf_atomtype_t *att  = NULL;
-    int                   natt = -1, i;
-    double                reppow;
-    real                  md1_ljd, d2_ljd, md3_ljd;
-    real                  md1_ljr, d2_ljr, md3_ljr;
-    real                  md1_el,  d2_el;
-    real                  elfac;
-    real                  kT_fac, mass_min;
-    int                   ib0, ib1, ib;
-    real                  rb, rl;
-    real                  drift;
+    int natt = -1, i;
+    double reppow;
+    real md1_ljd, d2_ljd, md3_ljd;
+    real md1_ljr, d2_ljr, md3_ljr;
+    real md1_el,  d2_el;
+    real elfac;
+    real kT_fac, mass_min;
+    int ib0, ib1, ib;
+    real rb, rl;
+    real drift;
 
     if (reference_temperature < 0)
     {
@@ -901,32 +901,36 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
         switch (ir->vdw_modifier)
         {
-            case eintmodNONE:
-            case eintmodPOTSHIFT:
-                /* -dV/dr of -r^-6 and r^-reppow */
-                md1_ljd =     -6*pow(ir->rvdw, -7.0);
-                md1_ljr = reppow*pow(ir->rvdw, -(reppow+1));
-                /* The contribution of the higher derivatives is negligible */
-                break;
-            case eintmodFORCESWITCH:
-                /* At the cut-off: V=V'=V''=0, so we use only V''' */
-                md3_ljd  = -md3_force_switch(6.0,    ir->rvdw_switch, ir->rvdw);
-                md3_ljr  =  md3_force_switch(reppow, ir->rvdw_switch, ir->rvdw);
-                break;
-            case eintmodPOTSWITCH:
-                /* At the cut-off: V=V'=V''=0.
-                 * V''' is given by the original potential times
-                 * the third derivative of the switch function.
-                 */
-                sw_range  = ir->rvdw - ir->rvdw_switch;
-                md3_pswf  = 60.0*pow(sw_range, -3.0);
+        case eintmodNONE:
+        case eintmodPOTSHIFT:
+            /* -dV/dr of -r^-6 and r^-reppow */
+            md1_ljd =     -6*pow(ir->rvdw, -7.0);
+            md1_ljr = reppow*pow(ir->rvdw, -(reppow+1));
+            /* The contribution of the higher derivatives is negligible */
+            break;
+        case eintmodFORCESWITCH:
+            /* At the cut-off: V=V'=V''=0, so we use only V''' */
+            md3_ljd  = -md3_force_switch(6.0,    ir->rvdw_switch, ir->rvdw);
+            md3_ljr  =  md3_force_switch(reppow, ir->rvdw_switch, ir->rvdw);
+            break;
+        case eintmodPOTSWITCH:
+            /* At the cut-off: V=V'=V''=0.
+             * V''' is given by the original potential times
+             * the third derivative of the switch function.
+             */
+            sw_range  = ir->rvdw - ir->rvdw_switch;
+            md3_pswf  = 60.0*pow(sw_range, -3.0);
 
-                md3_ljd   = -pow(ir->rvdw, -6.0   )*md3_pswf;
-                md3_ljr   =  pow(ir->rvdw, -reppow)*md3_pswf;
-                break;
-            default:
-                gmx_incons("Unimplemented VdW modifier");
+            md3_ljd   = -pow(ir->rvdw, -6.0   )*md3_pswf;
+            md3_ljr   =  pow(ir->rvdw, -reppow)*md3_pswf;
+            break;
+        default:
+            gmx_incons("Unimplemented VdW modifier");
         }
+    }
+    else if (ir->vdwtype == evdwUSER)
+    {
+        printf("vdwtype = evdwUSER. In course of implementation!\n\n");
     }
     else if (EVDW_PME(ir->vdwtype))
     {
@@ -990,6 +994,14 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         br     = b*rc;
         md1_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
         d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
+    }
+    else if (ir->coulombtype == eelNONE)
+    {
+        printf("ir->coulombtype = eelNONE selected.\n");
+    }
+    else if (ir->coulombtype == eelUSER)
+    {
+        printf("ir->coulombtype = eelUSER selected.\n");
     }
     else
     {

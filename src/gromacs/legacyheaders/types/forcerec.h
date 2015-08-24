@@ -65,13 +65,13 @@ struct bonded_threading_t;
 /* Structure describing the data in a single table */
 typedef struct
 {
-    enum gmx_table_interaction  interaction; /* Types of interactions stored in this table */
-    enum gmx_table_format       format;      /* Interpolation type and data format */
+    enum gmx_table_interaction interaction;  /* Types of interactions stored in this table */
+    enum gmx_table_format format;            /* Interpolation type and data format */
 
-    real                        r;           /* range of the table */
-    int                         n;           /* n+1 is the number of table points */
-    real                        scale;       /* distance (nm) between two table points */
-    real                        scale_exp;   /* distance for exponential part of VdW table, not always used */
+    real r;                                  /* range of the table */
+    int n;                                   /* n+1 is the number of table points */
+    real scale;                              /* distance (nm) between two table points */
+    real scale_exp;                          /* distance for exponential part of VdW table, not always used */
     real *                      data;        /* the actual table data */
 
     /* Some information about the table layout. This can also be derived from the interpolation
@@ -79,16 +79,16 @@ typedef struct
      * much easier to access the tables in the nonbonded kernels when we can set the data from variables.
      * It is always true that stride = formatsize*ninteractions
      */
-    int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
-    int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
-    int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
+    int formatsize;                            /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
+    int ninteractions;                         /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
+    int stride;                                /* Distance to next table point (number of fp variables per table point in total) */
 } t_forcetable;
 
 typedef struct
 {
-    t_forcetable   table_elec;
-    t_forcetable   table_vdw;
-    t_forcetable   table_elec_vdw;
+    t_forcetable table_elec;
+    t_forcetable table_vdw;
+    t_forcetable table_elec_vdw;
 
     /* The actual neighbor lists, short and long range, see enum above
      * for definition of neighborlist indices.
@@ -96,6 +96,29 @@ typedef struct
     t_nblist nlist_sr[eNL_NR];
     t_nblist nlist_lr[eNL_NR];
 } t_nblists;
+
+
+typedef struct
+{
+    enum gmx_table_format format;
+    enum gmx_table_interaction interaction;
+    int n;
+    real maxr;
+    real scale;
+    real                                            *F;
+    real                                            *V;
+} t_genericTable;
+
+
+typedef struct
+{
+    t_genericTable table_elec;
+    t_genericTable table_vdw_LJ6;
+    t_genericTable table_vdw_LJ12;
+    t_genericTable table_GENERIC;
+
+} t_tablesVerlet;
+
 
 /* macros for the cginfo data in forcerec
  *
@@ -153,20 +176,22 @@ enum {
     egCOUL14, egLJ14, egGB, egNR
 };
 
-typedef struct {
-    int   nener;      /* The number of energy group pairs     */
+typedef struct
+{
+    int nener;        /* The number of energy group pairs     */
     real *ener[egNR]; /* Energy terms for each pair of groups */
 } gmx_grppairener_t;
 
-typedef struct {
-    real              term[F_NRE];         /* The energies for all different interaction types */
+typedef struct
+{
+    real term[F_NRE];                      /* The energies for all different interaction types */
     gmx_grppairener_t grpp;
-    double            dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
-    double            dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
-    int               n_lambda;
-    int               fep_state;           /*current fep state -- just for printing */
+    double dvdl_lin[efptNR];               /* Contributions to dvdl with linear lam-dependence */
+    double dvdl_nonlin[efptNR];            /* Idem, but non-linear dependence                  */
+    int n_lambda;
+    int fep_state;                         /*current fep state -- just for printing */
     double           *enerpart_lambda;     /* Partial energy for lambda and flambda[] */
-    real              foreign_term[F_NRE]; /* alternate array for storing foreign lambda energies */
+    real foreign_term[F_NRE];              /* alternate array for storing foreign lambda energies */
     gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
 } gmx_enerdata_t;
 /* The idea is that dvdl terms with linear lambda dependence will be added
@@ -175,10 +200,11 @@ typedef struct {
  * when n_lambda > 0.
  */
 
-typedef struct {
-    int  cg_start;
-    int  cg_end;
-    int  cg_mod;
+typedef struct
+{
+    int cg_start;
+    int cg_end;
+    int cg_mod;
     int *cginfo;
 } cginfo_mb_t;
 
@@ -188,22 +214,23 @@ struct gmx_ewald_tab_t;
 
 typedef struct ewald_corr_thread_t ewald_corr_thread_t;
 
-typedef struct {
+typedef struct
+{
     interaction_const_t *ic;
 
     /* Domain Decomposition */
     gmx_bool bDomDec;
 
     /* PBC stuff */
-    int                  ePBC;
-    gmx_bool             bMolPBC;
-    int                  rc_scaling;
-    rvec                 posres_com;
-    rvec                 posres_comB;
+    int ePBC;
+    gmx_bool bMolPBC;
+    int rc_scaling;
+    rvec posres_com;
+    rvec posres_comB;
 
     const gmx_hw_info_t *hwinfo;
     const gmx_gpu_opt_t *gpu_opt;
-    gmx_bool             use_simd_kernels;
+    gmx_bool use_simd_kernels;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
      * the electrostatics settings in the inputrecord, but the difference is that
@@ -241,10 +268,10 @@ typedef struct {
     double qsum[2];
     double q2sum[2];
     double c6sum[2];
-    rvec   mu_tot[2];
+    rvec mu_tot[2];
 
     /* Dispersion correction stuff */
-    int  eDispCorr;
+    int eDispCorr;
 
     /* The shift of the shift or user potentials */
     real enershiftsix;
@@ -265,60 +292,72 @@ typedef struct {
     /* Fudge factors */
     real fudgeQQ;
 
-    /* Table stuff */
-    gmx_bool     bcoultab;
-    gmx_bool     bvdwtab;
+    /* Table stuff GROUP SCHEME*/
+    gmx_bool bcoultab;
+    gmx_bool bvdwtab;
+
+    /* Table stuff VERLET SCHEME*/
+    gmx_bool bcoultabVerlet;
+    gmx_bool bvdwtabVerlet;
+
+    const char*  nocoeffsPLEASE; /* Avoid scale factors and other coefficients.
+                                     Bring the table values as pure as possible to the GPU. */
+
     /* The normal tables are in the nblists struct(s) below */
     t_forcetable tab14; /* for 1-4 interactions only */
 
     /* PPPM & Shifting stuff */
-    int   coulomb_modifier;
-    real  rcoulomb_switch, rcoulomb;
+    int coulomb_modifier;
+    real rcoulomb_switch, rcoulomb;
     real *phi;
 
     /* VdW stuff */
-    int    vdw_modifier;
+    int vdw_modifier;
     double reppow;
-    real   rvdw_switch, rvdw;
-    real   bham_b_max;
+    real rvdw_switch, rvdw;
+    real bham_b_max;
 
     /* Free energy */
-    int      efep;
-    real     sc_alphavdw;
-    real     sc_alphacoul;
-    int      sc_power;
-    real     sc_r_power;
-    real     sc_sigma6_def;
-    real     sc_sigma6_min;
+    int efep;
+    real sc_alphavdw;
+    real sc_alphacoul;
+    int sc_power;
+    real sc_r_power;
+    real sc_sigma6_def;
+    real sc_sigma6_min;
 
     /* NS Stuff */
-    int  eeltype;
-    int  vdwtype;
-    int  cg0, hcg;
+    int eeltype;
+    int vdwtype;
+    int cg0, hcg;
     /* solvent_opt contains the enum for the most common solvent
      * in the system, which will be optimized.
      * It can be set to esolNO to disable all water optimization */
-    int          solvent_opt;
-    int          nWatMol;
-    gmx_bool     bGrid;
-    gmx_bool     bExcl_IntraCGAll_InterCGNone;
+    int solvent_opt;
+    int nWatMol;
+    gmx_bool bGrid;
+    gmx_bool bExcl_IntraCGAll_InterCGNone;
     cginfo_mb_t *cginfo_mb;
     int         *cginfo;
     rvec        *cg_cm;
-    int          cg_nalloc;
+    int cg_nalloc;
     rvec        *shift_vec;
 
     /* The neighborlists including tables */
-    int                        nnblists;
+    int nnblists;
     int                       *gid2nblists;
     t_nblists                 *nblists;
 
-    int                        cutoff_scheme; /* group- or Verlet-style cutoff */
-    gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
+    /* The Verlet cut-off scheme tables */
+    int ntables;
+    t_tablesVerlet            *tablesVerlet;
+
+    int cutoff_scheme;                        /* group- or Verlet-style cutoff */
+    gmx_bool bNonbonded;                      /* true if nonbonded calculations are *not* turned off */
     struct nonbonded_verlet_t *nbv;
 
     /* The wall tables (if used) */
-    int            nwall;
+    int nwall;
     t_forcetable **wall_tab;
 
     /* The number of charge groups participating in do_force_lowlevel */
@@ -332,17 +371,17 @@ typedef struct {
 
     /* Twin Range stuff, f_twin has size natoms_force */
     gmx_bool bTwinRange;
-    int      nlr;
+    int nlr;
     rvec    *f_twin;
     /* Constraint virial correction for multiple time stepping */
-    tensor   vir_twin_constr;
+    tensor vir_twin_constr;
 
     /* Forces that should not enter into the virial summation:
      * PPPM/PME/Ewald/posres
      */
     gmx_bool bF_NoVirSum;
-    int      f_novirsum_n;
-    int      f_novirsum_nalloc;
+    int f_novirsum_n;
+    int f_novirsum_nalloc;
     rvec    *f_novirsum_alloc;
     /* Pointer that points to f_novirsum_alloc when pressure is calcaluted,
      * points to the normal force vectors wen pressure is not requested.
@@ -351,23 +390,23 @@ typedef struct {
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
     struct gmx_pme_t *pmedata;
-    int               ljpme_combination_rule;
-    tensor            vir_el_recip;
-    tensor            vir_lj_recip;
+    int ljpme_combination_rule;
+    tensor vir_el_recip;
+    tensor vir_lj_recip;
 
     /* PME/Ewald stuff */
-    gmx_bool                bEwald;
-    real                    ewaldcoeff_q;
-    real                    ewaldcoeff_lj;
+    gmx_bool bEwald;
+    real ewaldcoeff_q;
+    real ewaldcoeff_lj;
     struct gmx_ewald_tab_t *ewald_table;
 
     /* Virial Stuff */
     rvec *fshift;
-    rvec  vir_diag_posres;
-    dvec  vir_wall_z;
+    rvec vir_diag_posres;
+    dvec vir_wall_z;
 
     /* Non bonded Parameter lists */
-    int      ntype; /* Number of atom types */
+    int ntype;      /* Number of atom types */
     gmx_bool bBHAM;
     real    *nbfp;
     real    *ljpme_c6grid; /* C6-values used on grid in LJPME */
@@ -379,11 +418,11 @@ typedef struct {
     real fc_stepsize;
 
     /* Generalized born implicit solvent */
-    gmx_bool       bGB;
+    gmx_bool bGB;
     /* Generalized born stuff */
-    real           gb_epsilon_solvent;
+    real gb_epsilon_solvent;
     /* Table data for GB */
-    t_forcetable   gbtab;
+    t_forcetable gbtab;
     /* VdW radius for each atomtype (dim is thus ntype) */
     real          *atype_radius;
     /* Effective radius (derived from effective volume) for each type */
@@ -416,7 +455,7 @@ typedef struct {
     /* Derivatives of the Born radii with respect to coordinates */
     real *dadx;
     real *dadx_rawptr;
-    int   nalloc_dadx; /* Allocated size of dadx */
+    int nalloc_dadx;   /* Allocated size of dadx */
 
     /* If > 0 signals Test Particle Insertion,
      * the value is the number of atoms of the molecule to insert
@@ -429,7 +468,7 @@ typedef struct {
     gmx_ns_t ns;
 
     /* QMMM stuff */
-    gmx_bool         bQMMM;
+    gmx_bool bQMMM;
     t_QMMMrec       *qr;
 
     /* QM-MM neighborlists */
@@ -441,29 +480,29 @@ typedef struct {
     /* coarse load balancing time measurement */
     double t_fnbf;
     double t_wait;
-    int    timesteps;
+    int timesteps;
 
     /* parameter needed for AdResS simulation */
-    int             adress_type;
-    gmx_bool        badress_tf_full_box;
-    real            adress_const_wf;
-    real            adress_ex_width;
-    real            adress_hy_width;
-    int             adress_icor;
-    int             adress_site;
-    rvec            adress_refs;
-    int             n_adress_tf_grps;
+    int adress_type;
+    gmx_bool badress_tf_full_box;
+    real adress_const_wf;
+    real adress_ex_width;
+    real adress_hy_width;
+    int adress_icor;
+    int adress_site;
+    rvec adress_refs;
+    int n_adress_tf_grps;
     int           * adress_tf_table_index;
     int            *adress_group_explicit;
     t_forcetable *  atf_tabs;
-    real            adress_ex_forcecap;
-    gmx_bool        adress_do_hybridpairs;
+    real adress_ex_forcecap;
+    gmx_bool adress_do_hybridpairs;
 
     /* User determined parameters, copied from the inputrec */
-    int  userint1;
-    int  userint2;
-    int  userint3;
-    int  userint4;
+    int userint1;
+    int userint2;
+    int userint3;
+    int userint4;
     real userreal1;
     real userreal2;
     real userreal3;
@@ -473,7 +512,7 @@ typedef struct {
     struct bonded_threading_t *bonded_threading;
 
     /* Ewald correction thread local virial and energy data */
-    int                  nthread_ewc;
+    int nthread_ewc;
     ewald_corr_thread_t *ewc_t;
     /* Ewald charge correction load distribution over the threads */
     int                 *excl_load;

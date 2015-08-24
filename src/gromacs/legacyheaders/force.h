@@ -94,12 +94,21 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
 
 t_forcerec *mk_forcerec(void);
 
-#define GMX_MAKETABLES_FORCEUSER  (1<<0)
-#define GMX_MAKETABLES_14ONLY     (1<<1)
+#define GMX_MAKETABLES_FORCEUSER     (1<<0)
+#define GMX_MAKETABLES_14ONLY        (1<<1)
+#define GMX_MAKETABLES_USER          (1<<2)
+#define GMX_MAKETABLES_USER_ELEC     (1<<3)
+#define GMX_MAKETABLES_USER_VDW_LJ6  (1<<4)
+#define GMX_MAKETABLES_USER_VDW_LJ12 (1<<5)
+
 
 t_forcetable make_tables(FILE *fp, const output_env_t oenv,
                          const t_forcerec *fr, gmx_bool bVerbose,
                          const char *fn, real rtab, int flags);
+
+t_genericTable make_tables_Verlet(FILE *fp, const output_env_t oenv,
+                                  const t_forcerec *fr, gmx_bool bVerbose,
+                                  const char *fn, real rtab, int flags);
 /* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */
@@ -139,23 +148,23 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
 gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
                                       const t_commrec  *cr,
                                       const t_inputrec *ir,
-                                      gmx_bool          bGPU);
+                                      gmx_bool bGPU);
 /* Return if GPU/CPU-SIMD acceleration is supported with the given inputrec
  * with bGPU TRUE/FALSE.
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
  * message to fplog/stderr.
  */
 
-gmx_bool uses_simple_tables(int                        cutoff_scheme,
+gmx_bool uses_simple_tables(int cutoff_scheme,
                             struct nonbonded_verlet_t *nbv,
-                            int                        group);
+                            int group);
 /* Returns whether simple tables (i.e. not for use with GPUs) are used
  * with the type of kernel indicated.
  */
 
 void init_interaction_const_tables(FILE                *fp,
                                    interaction_const_t *ic,
-                                   real                 rtab);
+                                   real rtab);
 /* Initializes the tables in the interaction constant data structure. */
 
 void init_forcerec(FILE              *fplog,
@@ -165,14 +174,14 @@ void init_forcerec(FILE              *fplog,
                    const t_inputrec  *ir,
                    const gmx_mtop_t  *mtop,
                    const t_commrec   *cr,
-                   matrix             box,
+                   matrix box,
                    const char        *tabfn,
                    const char        *tabafn,
                    const char        *tabpfn,
                    const char        *tabbfn,
                    const char        *nbpu_opt,
-                   gmx_bool           bNoSolvOpt,
-                   real               print_force);
+                   gmx_bool bNoSolvOpt,
+                   real print_force);
 /* The Force rec struct must be created with mk_forcerec
  * The gmx_booleans have the following meaning:
  * bSetQ:    Copy the charges [ only necessary when they change ]
@@ -239,14 +248,14 @@ extern void do_force(FILE *log, t_commrec *cr,
 
 void ns(FILE              *fplog,
         t_forcerec        *fr,
-        matrix             box,
+        matrix box,
         gmx_groups_t      *groups,
         gmx_localtop_t    *top,
         t_mdatoms         *md,
         t_commrec         *cr,
         t_nrnb            *nrnb,
-        gmx_bool           bFillGrid,
-        gmx_bool           bDoLongRangeNS);
+        gmx_bool bFillGrid,
+        gmx_bool bDoLongRangeNS);
 /* Call the neighborsearcher */
 
 extern void do_force_lowlevel(t_forcerec   *fr,
@@ -256,22 +265,22 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               t_nrnb       *nrnb,
                               gmx_wallcycle_t wcycle,
                               t_mdatoms    *md,
-                              rvec         x[],
+                              rvec x[],
                               history_t    *hist,
-                              rvec         f_shortrange[],
-                              rvec         f_longrange[],
+                              rvec f_shortrange[],
+                              rvec f_longrange[],
                               gmx_enerdata_t *enerd,
                               t_fcdata     *fcd,
                               gmx_localtop_t *top,
                               gmx_genborn_t *born,
-                              gmx_bool         bBornRadii,
-                              matrix       box,
+                              gmx_bool bBornRadii,
+                              matrix box,
                               t_lambda     *fepvals,
                               real         *lambda,
                               struct t_graph      *graph,
                               t_blocka     *excl,
-                              rvec         mu_tot[2],
-                              int          flags,
+                              rvec mu_tot[2],
+                              int flags,
                               float        *cycles_pme);
 /* Call all the force routines */
 
