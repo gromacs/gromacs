@@ -33,35 +33,23 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # Custom build type "TSAN", to be used for compiling GROMACS 
-# with clang 3.4 or gcc 4.8 (currently pre-release) with ThreadSanitizer
+# with clang 3.4+ or gcc 4.8+ with ThreadSanitizer
 # (aka "TSan") turned on, so that the tests can be run to detect data races.
+#
+# With gcc, a static libtsan.a is required for linking, which is built
+# by gcc by default (found e.g. on Ubuntu in the corresponding
+# libgcc-*-dev package). It's not clear why this is needed. The
+# GROMACS compiler and link invocations are correct by the
+# ThreadSanitizer documentation, and have been working fine in Jenkins
+# with gcc 4.9.0 (built manually, with --disable-linux-futex), but
+# don't work with standard Ubuntu gcc-4.9 packages. This may be
+# related to the gcc linker driver using --as-needed on Ubuntu, which
+# interacts poorly with the way TSAN link lines must be constructed.
 #
 # The main advantage of the clang version is that there can be a
 # suppressions file that acts at compile time, though there is no use of 
 # that yet. The main advantage of the gcc version is that it can be used
 # with a OpenMP (if gomp is compiled with --disable-linux-futex).
-#
-# Unfortunately, out of the box Thread-MPI provokes several false
-# positives. One example is that tMPI_Event_t contains an atomic int
-# field "sync" that is initialized before thread spawn. During a
-# collective, this is atomically updated by the source thread, and the
-# update is observed by sink threads in tMPI_Event_wait, which do a
-# yield wait when no change has occured. This means the read can
-# happen before the write (by design, whether or not the read is
-# atomic), but the surrounding logic prevents action until the write
-# has happened. There is no way for the sink thread(s) to avoid
-# reading until the write has happened - that is the point of the
-# implementation.
-#
-# This ought to be able to be suppressed, but my attempts to apply
-# suppressions on individual functions don't suppress reporting of the
-# race event. Applying the suppression to the whole thread-MPI library
-# might work, but seems to defeat the point. We want to be able to
-# detect mis-use of the primitives provided by thread-MPI.
-#
-# This means there needs to be a way for this build type to trigger
-# the use of the generic mutex-based fallback implementation within
-# thread-MPI.
 #
 # Later, if a blacklist is needed, use something like
 # "-fsanitize-blacklist=${CMAKE_SOURCE_DIR}/cmake/thread-sanitizer.supp"
@@ -74,14 +62,37 @@ foreach(_language C CXX)
 
     if (CMAKE_${_language}_COMPILER_ID MATCHES "GNU")
         set(CMAKE_${_language}_FLAGS_TSAN "${_flags} -pie -fPIE" CACHE STRING "${_human_readable_language} flags for thread sanitizer")
+        set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} "-static-libtsan")
     else()
         set(CMAKE_${_language}_FLAGS_TSAN ${_flags} CACHE STRING "${_human_readable_language} flags for thread sanitizer")
     endif()
     mark_as_advanced(CMAKE_${_language}_FLAGS_TSAN)
     string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
     if (_cmake_build_type STREQUAL TSAN)
+        # Unfortunately, out of the box Thread-MPI provokes several false
+        # positives. One example is that tMPI_Event_t contains an atomic int
+        # field "sync" that is initialized before thread spawn. During a
+        # collective, this is atomically updated by the source thread, and the
+        # update is observed by sink threads in tMPI_Event_wait, which do a
+        # yield wait when no change has occured. This means the read can
+        # happen before the write (by design, whether or not the read is
+        # atomic), but the surrounding logic prevents action until the write
+        # has happened. There is no way for the sink thread(s) to avoid
+        # reading until the write has happened - that is the point of the
+        # implementation.
+        #
+        # This ought to be able to be suppressed, but my attempts to apply
+        # suppressions on individual functions don't suppress reporting of the
+        # race event. Applying the suppression to the whole thread-MPI library
+        # might work, but seems to defeat the point. We want to be able to
+        # detect mis-use of the primitives provided by thread-MPI.
+        #
+        # This means there needs to be a way for this build type to trigger
+        # the use of the generic mutex-based fallback implementation within
+        # thread-MPI.
         set(TMPI_ATOMICS_DISABLED 1)
         set(TMPI_ATOMICS 0)
+        # Don't permit cmake to succeed if the build can't work
         if (NOT((CMAKE_${_language}_COMPILER_ID MATCHES "Clang" AND
                     CMAKE_${_language}_COMPILER_VERSION VERSION_GREATER 3.2.999)
              OR (CMAKE_${_language}_COMPILER_ID MATCHES "GNU" AND
