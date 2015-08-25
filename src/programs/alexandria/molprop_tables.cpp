@@ -658,9 +658,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
                                              char                            *exp_type)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
-    double                                     ahc, ahp, bos_pol, alexandria_pol, sig_pol;
-    std::string                                      ptype;
-    std::string                                      miller, bosque;
+    double                                     ahc, ahp, bos_pol;
     char                                       longbuf[STRLEN];
     MolPropObservable                          mpo = MPO_POLARIZABILITY;
     alexandria::LongTable                      lt(fp, false, NULL);
@@ -675,13 +673,10 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
      * do not need to have the same sets of types,
      * as we check for the type name.
      */
-    while (1 == pd->getPtype(&ptype,
-                                      &miller,
-                                      &bosque,
-                                      &alexandria_pol,
-                                      &sig_pol))
-    {
-        if (alexandria_pol > 0)
+    for (PtypeIterator pType = pd->getPtypeBegin();
+	 pType != pd->getPtypeEnd(); pType++)
+      {
+        if (pType->getPolarizability() > 0)
         {
             int atomnumber;
             int nexp   = 0;
@@ -702,7 +697,7 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
                     {
 		      std::string pt =
                             pd->atypeToPtype(ani->getAtom());
-		      if ((0 != pt.size()) && (strcasecmp(pt.c_str(), ptype.c_str()) == 0))
+		      if ((0 != pt.size()) && (strcasecmp(pt.c_str(), pType->getType().c_str()) == 0))
                         {
                             bFound = true;
                         }
@@ -724,12 +719,12 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
 
             /* Determine Miller and Bosque polarizabilities for this Alexandria element */
             ahc = ahp = bos_pol = 0;
-            if (1 == pd->getMillerPol(miller,
+            if (1 == pd->getMillerPol(pType->getMiller(),
                                                 &atomnumber, &ahc, &ahp))
             {
                 ahc = (4.0/atomnumber)*sqr(ahc);
             }
-            if (0 == pd->getBosquePol(bosque, &bos_pol))
+            if (0 == pd->getBosquePol(pType->getBosque(), &bos_pol))
             {
                 bos_pol = 0;
             }
@@ -740,11 +735,11 @@ static void gmx_molprop_atomtype_polar_table(FILE                            *fp
             /* strncpy(group,smlsq[j].bosque,sizeof(group));*/
 
             snprintf(longbuf, STRLEN, "%s & %s & %s & %s (%s) & %s & %s & %s",
-                     ptype.c_str(),
+                     pType->getType().c_str(),
                      (nexp > 0)     ? gmx_itoa(nexp).c_str()     : "",
                      (nqm > 0)      ? gmx_itoa(nqm).c_str()      : "",
-                     (alexandria_pol > 0)  ? gmx_ftoa(alexandria_pol).c_str()  : "",
-                     (sig_pol > 0)  ? gmx_ftoa(sig_pol).c_str() : "-",
+                     (pType->getPolarizability() > 0)  ? gmx_ftoa(pType->getPolarizability()).c_str()  : "",
+                     (pType->getSigPol() > 0)  ? gmx_ftoa(pType->getSigPol()).c_str() : "-",
                      (ahc > 0)         ? gmx_ftoa(ahc).c_str()         : "",
                      (ahp > 0)         ? gmx_ftoa(ahp).c_str()         : "",
                      (bos_pol > 0)     ? gmx_ftoa(bos_pol).c_str()     : "");
@@ -759,8 +754,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
 {
     int     i, k, m, cur = 0;
     std::string gt_type[2] = { "", "" };
-    std::string   spref, desc, ptype, btype;
-    std::string elem;
+
 
 
 
@@ -771,7 +765,6 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
     int                     npcol[NEQG]  = { 2, 3, 3 };
     const char             *clab[3]      = { "$J_0$", "$\\chi_0$", "$\\zeta$" };
     int                     ncol;
-    double                  ref_enthalpy;
     alexandria::LongTable   lt(fp, true, NULL);
 
     ncol = 1;
@@ -804,33 +797,29 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp, Poldata * pd)
     lt.addHeadLine(longbuf);
     lt.printHeader();
 
-    while (1 == pd->getAtype(&elem,
-                                      &desc,
-                                      &(gt_type[cur]),
-                                      &ptype,
-                                      &btype,
-                                      &spref,
-                                      &ref_enthalpy))
+    for (FfatypeIterator aType = pd->getAtypeBegin();
+	   aType != pd->getAtypeEnd(); aType++)
     {
-      if (((0 == gt_type[prev].size()) || (strcmp(gt_type[cur].c_str(),gt_type[prev].c_str()) != 0)))
+      gt_type[cur] = aType->getType();
+      if (((0 == gt_type[prev].size()) || (strcmp(gt_type[cur].c_str(),gt_type[cur].c_str()) != 0)))
         {
 	  snprintf(longbuf, STRLEN, "%s\n", gt_type[cur].c_str());
             for (k = 0; (k < NEQG); k++)
             {
                 if (pd->haveEemSupport(eqgcol[k], gt_type[cur], false))
                 {
-                    snprintf(buf, 256, " & %.3f", pd->getJ00(eqgcol[k], gt_type[cur]));
+		  snprintf(buf, 256, " & %.3f", pd->getJ00(eqgcol[k], gt_type[cur]));
                     strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     snprintf(buf, 256, " & %.3f", pd->getChi0(eqgcol[k], gt_type[cur]));
                     strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     if (npcol[k] == 3)
                     {
-                        snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 1));
+		      snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 1));
                         strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     }
                     if (npcol[k] == 4)
                     {
-                        snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 2));
+		      snprintf(buf, 256, " & %.3f", pd->getZeta(eqgcol[k], gt_type[cur], 2));
                         strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                     }
                 }

@@ -1,3 +1,4 @@
+
 /*
  * This source file is part of the Aleandria project.
  *
@@ -104,8 +105,8 @@ namespace alexandria
     
     /* Special case for chi_eq */
     _nZeta[_natom] = 1;
-   
-    _q[_natom].resize( _nZeta[_natom]);
+    _q[_natom].resize(_nZeta[_natom]);
+
 
     for (i = j = 0; (i < atoms->nr) && bSup; i++)
       {

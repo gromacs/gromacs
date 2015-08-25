@@ -519,17 +519,15 @@ void PoldataXml::processTree(FILE *fp, xmlNodePtr tree, int indent,
 
 void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
 {
-    xmlNodePtr              child, grandchild;
-    int                     i, atomnumber, numbonds, nexcl,
-                            numattach, bAromatic, ntrain;
-    ChargeDistributionModel model;
-    std::string                   elem, geometry, name, atype, vdwparams, btype,
-    atom1, atom2, atom3, atom4, central, attached, tau_unit, ahp_unit,
+  xmlNodePtr              child, grandchild;
+  int                     i, nexcl;
+  ChargeDistributionModel model;
+  std::string                   geometry, name, 
+    acentral, attached, tau_unit, ahp_unit,
     epref, desc, params;
-    std::string  neighbors, zeta, qstr, rowstr;
-   double polarizability, sig_pol, length, tau_ahc, alpha_ahp, angle, J0, chi0,
-        bondorder, sigma, fudgeQQ, fudgeLJ, valence, ref_enthalpy;
-    std::string tmp, func,blu;
+  std::string  neighbors, zeta, qstr, rowstr;
+  double  fudgeQQ, fudgeLJ;
+  std::string tmp, func,blu;
     child = add_xml_child(parent, exml_names[exmlATOMTYPES]);
     tmp   = pd->getForceField();
     if (0 != tmp.size())
@@ -553,24 +551,17 @@ void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
     fudgeLJ = pd->getFudgeLJ();
     add_xml_double(child, exml_names[exmlFUDGELJ], fudgeLJ);
     {
-      std::string ptype;
-        while (1 == pd->getAtype( &elem, &desc, &atype, &ptype, &btype,
-                                          &vdwparams, &ref_enthalpy))
+      for (FfatypeIterator aType = pd->getAtypeBegin();
+	   aType != pd->getAtypeEnd(); aType++)
         {
             grandchild = add_xml_child(child, exml_names[exmlATOMTYPE]);
-            add_xml_char(grandchild, exml_names[exmlELEM], elem.c_str());
-            add_xml_char(grandchild, exml_names[exmlDESC], desc.c_str());
-            add_xml_char(grandchild, exml_names[exmlATYPE], atype.c_str());
-            add_xml_char(grandchild, exml_names[exmlPTYPE], ptype.c_str());
-            add_xml_char(grandchild, exml_names[exmlBTYPE], btype.c_str());
-            add_xml_char(grandchild, exml_names[exmlVDWPARAMS], vdwparams.c_str());
-            add_xml_double(grandchild, exml_names[exmlEREF], ref_enthalpy);
-	    /* sfree(elem);
-            sfree(desc);
-            sfree(atype);
-            sfree(ptype);
-            sfree(btype);
-            sfree(vdwparams);*/
+            add_xml_char(grandchild, exml_names[exmlELEM], aType->getElem().c_str());
+            add_xml_char(grandchild, exml_names[exmlDESC], aType->getDesc().c_str());
+            add_xml_char(grandchild, exml_names[exmlATYPE], aType->getType().c_str());
+            add_xml_char(grandchild, exml_names[exmlPTYPE], aType->getPtype().c_str());
+            add_xml_char(grandchild, exml_names[exmlBTYPE], aType->getBtype().c_str());
+            add_xml_char(grandchild, exml_names[exmlVDWPARAMS], aType->getVdwparams().c_str());
+            add_xml_double(grandchild, exml_names[exmlEREF], aType->getRefEnthalpy());
         }
     }
     child = add_xml_child(parent, exml_names[exmlPOLTYPES]);
@@ -585,37 +576,30 @@ void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
         add_xml_char(child, exml_names[exmlREFERENCE], tmp.c_str());
     }
     {
-      std::string miller, bosque, ptype;
-        while (1 == pd->getPtype( &ptype, &miller, &bosque, &polarizability, &sig_pol))
+      for (PtypeIterator pType = pd->getPtypeBegin();
+	   pType != pd->getPtypeEnd(); pType++)
         {
             grandchild = add_xml_child(child, exml_names[exmlPOLTYPE]);
-            add_xml_char(grandchild, exml_names[exmlPTYPE], ptype.c_str());
-            add_xml_char(grandchild, exml_names[exmlMILLER], miller.c_str());
-            add_xml_char(grandchild, exml_names[exmlBOSQUE], bosque.c_str());
-            add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], polarizability);
-            add_xml_double(grandchild, exml_names[exmlSIGPOL], sig_pol);
-            /*sfree(ptype);
-            sfree(miller);
-            sfree(bosque);*/
+            add_xml_char(grandchild, exml_names[exmlPTYPE], pType->getType().c_str());
+            add_xml_char(grandchild, exml_names[exmlMILLER], pType->getMiller().c_str());
+            add_xml_char(grandchild, exml_names[exmlBOSQUE], pType->getBosque().c_str());
+            add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], pType->getPolarizability());
+            add_xml_double(grandchild, exml_names[exmlSIGPOL], pType->getSigPol());
         }
     }
 
     child = add_xml_child(parent, exml_names[exmlBONDING_RULES]);
-    while (1 == pd->getBondingRule( &name, &atype, &geometry,
-                                             &numbonds, &valence, &bAromatic, &neighbors))
+for (BruleIterator brule = pd->getBruleBegin();
+	   brule != pd->getBruleEnd(); brule++)
     {
         grandchild = add_xml_child(child, exml_names[exmlBONDING_RULE]);
-        add_xml_char(grandchild, exml_names[exmlNAME], name.c_str());
-        add_xml_char(grandchild, exml_names[exmlATYPE], atype.c_str());
-        add_xml_char(grandchild, exml_names[exmlGEOMETRY], geometry.c_str());
-        add_xml_int(grandchild, exml_names[exmlNUMBONDS], numbonds);
-        add_xml_double(grandchild, exml_names[exmlVALENCE], valence);
-        add_xml_int(grandchild, exml_names[exmlAROMATIC], bAromatic);
-        add_xml_char(grandchild, exml_names[exmlNEIGHBORS], neighbors.c_str());
-        /*sfree(name);
-        sfree(atype);
-        sfree(geometry);
-        sfree(neighbors);*/
+        add_xml_char(grandchild, exml_names[exmlNAME], brule->getRule().c_str());
+        add_xml_char(grandchild, exml_names[exmlATYPE], brule->getType().c_str());
+        add_xml_char(grandchild, exml_names[exmlGEOMETRY], brule->getGeometry().c_str());
+        add_xml_int(grandchild, exml_names[exmlNUMBONDS], brule->getNumbonds());
+        add_xml_double(grandchild, exml_names[exmlVALENCE], brule->getValence());
+        add_xml_int(grandchild, exml_names[exmlAROMATIC], brule->getIAromatic());
+        add_xml_char(grandchild, exml_names[exmlNEIGHBORS], brule->getNeighbors().c_str());
     }
 
     child = add_xml_child(parent, exml_names[exmlGT_BONDS]);
@@ -629,21 +613,18 @@ void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
       {
         add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
       }
-    while (pd->getBond( &atom1, &atom2, &length, &sigma,
-			&ntrain, &bondorder, &params) > 0)
-    {
-        grandchild = add_xml_child(child, exml_names[exmlGT_BOND]);
-        add_xml_char(grandchild, exml_names[exmlATOM1], atom1.c_str());
-        add_xml_char(grandchild, exml_names[exmlATOM2], atom2.c_str());
-        add_xml_double(grandchild, exml_names[exmlLENGTH], length);
-        add_xml_double(grandchild, exml_names[exmlSIGMA], sigma);
-        add_xml_int(grandchild, exml_names[exmlNTRAIN], ntrain);
-        add_xml_double(grandchild, exml_names[exmlBONDORDER], bondorder);
-        add_xml_char(grandchild, exml_names[exmlPARAMS], params.c_str());
-        /*sfree(atom1);
-        sfree(atom2);
-        sfree(params);*/
-    }
+for (GtBondIterator bond = pd->getBondBegin();
+	   bond != pd->getBondEnd(); bond++)
+  {
+    grandchild = add_xml_child(child, exml_names[exmlGT_BOND]);
+    add_xml_char(grandchild, exml_names[exmlATOM1], bond->getAtom1().c_str());
+    add_xml_char(grandchild, exml_names[exmlATOM2], bond->getAtom2().c_str());
+    add_xml_double(grandchild, exml_names[exmlLENGTH], bond->getLength());
+    add_xml_double(grandchild, exml_names[exmlSIGMA], bond->getSigma());
+    add_xml_int(grandchild, exml_names[exmlNTRAIN], bond->getNtrain());
+    add_xml_double(grandchild, exml_names[exmlBONDORDER], bond->getBondorder());
+    add_xml_char(grandchild, exml_names[exmlPARAMS], bond->getParams().c_str());
+        }
 
     child = add_xml_child(parent, exml_names[exmlGT_ANGLES]);
     blu = pd->getAngleUnit();
@@ -656,21 +637,17 @@ void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
     {
         add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
     }
-    while (pd->getAngle( &atom1, &atom2, &atom3, &angle, &sigma,
-                                 &ntrain, &params) > 0)
+    for (GtAngleIterator angle = pd->getAngleBegin();
+	 angle != pd->getAngleEnd(); angle++)
     {
         grandchild = add_xml_child(child, exml_names[exmlGT_ANGLE]);
-        add_xml_char(grandchild, exml_names[exmlATOM1], atom1.c_str());
-        add_xml_char(grandchild, exml_names[exmlATOM2], atom2.c_str());
-        add_xml_char(grandchild, exml_names[exmlATOM3], atom3.c_str());
-        add_xml_double(grandchild, exml_names[exmlANGLE], angle);
-        add_xml_double(grandchild, exml_names[exmlSIGMA], sigma);
-        add_xml_int(grandchild, exml_names[exmlNTRAIN], ntrain);
+        add_xml_char(grandchild, exml_names[exmlATOM1], angle->getAtom1().c_str());
+        add_xml_char(grandchild, exml_names[exmlATOM2], angle->getAtom2().c_str());
+        add_xml_char(grandchild, exml_names[exmlATOM3], angle->getAtom3().c_str());
+        add_xml_double(grandchild, exml_names[exmlANGLE], angle->getAngle());
+        add_xml_double(grandchild, exml_names[exmlSIGMA], angle->getSigma());
+        add_xml_int(grandchild, exml_names[exmlNTRAIN], angle->getNtrain());
         add_xml_char(grandchild, exml_names[exmlPARAMS], params.c_str());
-	/* sfree(atom1);
-        sfree(atom2);
-        sfree(atom3);
-        sfree(params);*/
     }
 
     for (i = 0; (i < egdNR); i++)
@@ -689,23 +666,18 @@ void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
         {
             add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
         }
-        while (pd->getDihedral( i, &atom1, &atom2, &atom3, &atom4,
-                                        &angle, &sigma, &ntrain, &params) > 0)
+   for (DihedralIterator dihydral = pd->getDihedralBegin(i);
+	 dihydral != pd->getDihedralEnd(i); dihydral++)
         {
             grandchild = add_xml_child(child, exml_names[ex[i]]);
-            add_xml_char(grandchild, exml_names[exmlATOM1], atom1.c_str());
-            add_xml_char(grandchild, exml_names[exmlATOM2], atom2.c_str());
-            add_xml_char(grandchild, exml_names[exmlATOM3], atom3.c_str());
-            add_xml_char(grandchild, exml_names[exmlATOM4], atom4.c_str());
-            add_xml_double(grandchild, exml_names[exmlANGLE], angle);
-            add_xml_double(grandchild, exml_names[exmlSIGMA], sigma);
-            add_xml_int(grandchild, exml_names[exmlNTRAIN], ntrain);
-            add_xml_char(grandchild, exml_names[exmlPARAMS], params.c_str());
-            /*sfree(atom1);
-            sfree(atom2);
-            sfree(atom3);
-            sfree(atom4);
-            sfree(params);*/
+            add_xml_char(grandchild, exml_names[exmlATOM1], dihydral->getAtom1().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM2], dihydral->getAtom2().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM3], dihydral->getAtom3().c_str());
+            add_xml_char(grandchild, exml_names[exmlATOM4], dihydral->getAtom4().c_str());
+            add_xml_double(grandchild, exml_names[exmlANGLE], dihydral->getDihedral());
+            add_xml_double(grandchild, exml_names[exmlSIGMA], dihydral->getSigma());
+            add_xml_int(grandchild, exml_names[exmlNTRAIN], dihydral->getNtrain());
+            add_xml_char(grandchild, exml_names[exmlPARAMS], dihydral->getParams().c_str());
         }
     }
     child = add_xml_child(parent, exml_names[exmlBSATOMS]);
@@ -714,70 +686,63 @@ void PoldataXml::addXmlPoldata(xmlNodePtr parent, Poldata * pd)
     {
         add_xml_char(child, exml_names[exmlPOLAR_UNIT], tmp.c_str());
     }
-
-    while (1 == pd->getBosque( &name, &polarizability))
+   for (BosqueIterator bosque = pd->getBosqueBegin();
+	 bosque != pd->getBosqueEnd(); bosque++)
     {
         grandchild = add_xml_child(child, exml_names[exmlBSATOM]);
-        add_xml_char(grandchild, exml_names[exmlELEM], name.c_str());
-        add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], polarizability);
+        add_xml_char(grandchild, exml_names[exmlELEM], bosque->getBosque().c_str());
+        add_xml_double(grandchild, exml_names[exmlPOLARIZABILITY], bosque->getPolarizability());
     }
     child = add_xml_child(parent, exml_names[exmlMILATOMS]);
     pd->getMillerUnits( &tau_unit, &ahp_unit);
     if (tau_unit.size() != 0)
     {
         add_xml_char(child, exml_names[exmlTAU_UNIT], tau_unit.c_str());
-        //sfree(tau_unit);
-    }
+        }
     if (ahp_unit.size() != 0)
     {
         add_xml_char(child, exml_names[exmlAHP_UNIT], ahp_unit.c_str());
-        //sfree(ahp_unit);
     }
-
-    while (1 == pd->getMiller( &name, &atomnumber, &tau_ahc, &alpha_ahp))
+   for (MillerIterator miller = pd->getMillerBegin();
+	 miller != pd->getMillerEnd(); miller++)
     {
         grandchild = add_xml_child(child, exml_names[exmlMILATOM]);
-        add_xml_char(grandchild, exml_names[exmlMILNAME], name.c_str());
-        add_xml_int(grandchild, exml_names[exmlATOMNUMBER], atomnumber);
-        add_xml_double(grandchild, exml_names[exmlTAU_AHC], tau_ahc);
-        add_xml_double(grandchild, exml_names[exmlALPHA_AHP], alpha_ahp);
-        //sfree(name);
+        add_xml_char(grandchild, exml_names[exmlMILNAME], miller->getMiller().c_str());
+        add_xml_int(grandchild, exml_names[exmlATOMNUMBER], miller->getAtomnumber());
+        add_xml_double(grandchild, exml_names[exmlTAU_AHC], miller->getTauAhc());
+        add_xml_double(grandchild, exml_names[exmlALPHA_AHP], miller->getAlphaAhp());
     }
 
     child = add_xml_child(parent, exml_names[exmlSYMMETRIC_CHARGES]);
-
-    while (pd->getSymcharges( &central, &attached, &numattach) == 1)
-    {
+   for (SymchargesIterator symcharges = pd->getSymchargesBegin();
+	 symcharges != pd->getSymchargesEnd(); symcharges++)
+     {
         grandchild = add_xml_child(child, exml_names[exmlSYM_CHARGE]);
-        add_xml_char(grandchild, exml_names[exmlCENTRAL], central.c_str());
-        add_xml_char(grandchild, exml_names[exmlATTACHED], attached.c_str());
-        add_xml_int(grandchild, exml_names[exmlNUMATTACH], numattach);
-        /*sfree(central);
-	  sfree(attached);*******/
+   add_xml_char(grandchild, exml_names[exmlCENTRAL], symcharges->getCentral().c_str());
+   add_xml_char(grandchild, exml_names[exmlATTACHED], symcharges->getAttached().c_str());
+   add_xml_int(grandchild, exml_names[exmlNUMATTACH], symcharges->getNumattach());
     }
 
     child = add_xml_child(parent, exml_names[exmlEEMPROPS]);
-    while (pd->getEemprops( &model, &name, &J0, &chi0, &zeta, &qstr, &rowstr) == 1)
+
+ for (EempropsIterator eep = pd->getEempropsBegin();
+	 eep != pd->getEempropsEnd(); eep++)
     {
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP]);
         add_xml_char(grandchild, exml_names[exmlMODEL],
                      pd->getEemtypeName(model).c_str());
-        add_xml_char(grandchild, exml_names[exmlNAME], name.c_str());
-        add_xml_double(grandchild, exml_names[exmlJ0], J0);
-        add_xml_double(grandchild, exml_names[exmlCHI0], chi0);
-        add_xml_char(grandchild, exml_names[exmlZETA], zeta.c_str());
-        add_xml_char(grandchild, exml_names[exmlCHARGES], qstr.c_str());
-        add_xml_char(grandchild, exml_names[exmlROW], rowstr.c_str());
-	/* sfree(zeta);
-        sfree(qstr);
-        sfree(rowstr);*/
-    }
+        add_xml_char(grandchild, exml_names[exmlNAME], eep->getName().c_str());
+        add_xml_double(grandchild, exml_names[exmlJ0], eep->getJ0());
+        add_xml_double(grandchild, exml_names[exmlCHI0], eep->getChi0());
+        add_xml_char(grandchild, exml_names[exmlZETA], eep->getZetastr().c_str());
+        add_xml_char(grandchild, exml_names[exmlCHARGES], eep->getQstr().c_str());
+        add_xml_char(grandchild, exml_names[exmlROW], eep->getRowstr().c_str());
+  }
     while (pd->listEpref( &model, &epref) == 1)
     {
         grandchild = add_xml_child(child, exml_names[exmlEEMPROP_REF]);
         add_xml_char(grandchild, exml_names[exmlMODEL], pd->getEemtypeName(model).c_str());
         add_xml_char(grandchild, exml_names[exmlEPREF], epref.c_str());
-        //sfree(epref);
     }
 }
 

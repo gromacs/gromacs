@@ -762,10 +762,8 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                        opt_mask_t *omt, real factor)
 {
   std::string ai[4];
-  std::string params;
     int     gt, i, n = 0, maxfc = 0;
     double *fc = NULL;
-    double  bondorder;
 
     for (i = 0; (i < ebtsNR); i++)
     {
@@ -774,12 +772,15 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     *nparam = 0;
     if (bOpt[ebtsBONDS])
     {
-        while ((gt = _pd->getBond(&(ai[0]), &(ai[1]),
-                                          NULL, NULL, NULL, &bondorder, &params)) > 0)
+      GtBondIterator bond;
+      for ( bond = _pd->getBondBegin(), gt = 1;
+	   bond != _pd->getBondEnd(); bond++, gt++)
         {
+	  ai[0] = bond->getAtom1();
+	  ai[1] = bond->getAtom2();
             if (omt->ngtb[ebtsBONDS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(params, ' ');
+	      std::vector<std::string> ptr = split(bond->getParams(), ' ');
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -799,19 +800,24 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
                 {
                     fc[1] = beta0;
                 }
-                Add(ebtsBONDS, 2, ai, n, fc, bondorder, gt);
+                Add(ebtsBONDS, 2, ai, n, fc, bond->getBondorder(), gt);
                 *nparam += n;
             }
         }
     }
     if (bOpt[ebtsANGLES])
     {
-        while ((gt = _pd->getAngle(&(ai[0]), &(ai[1]), &(ai[2]),
-                                           NULL, NULL, NULL, &params)) > 0)
-        {
+      GtAngleIterator angle;
+      for (angle = _pd->getAngleBegin(), gt = 1;
+	   angle != _pd->getAngleEnd(); angle++, gt++)
+	{
+	  ai[0] = angle->getAtom1();
+	  ai[1] = angle->getAtom2();
+	  ai[2] = angle->getAtom3();
+ 
             if (omt->ngtb[ebtsANGLES][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(params, ' ');
+	      std::vector<std::string> ptr = split(angle->getParams(), ' ');
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -830,13 +836,17 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     }
     if (bOpt[ebtsPDIHS])
     {
-        while ((gt = _pd->getDihedral(egdPDIHS,
-                                              &(ai[0]), &(ai[1]), &(ai[2]), &(ai[3]),
-                                              NULL, NULL, NULL, &params)) > 0)
+      DihedralIterator dihydral;
+      for (dihydral = _pd->getDihedralBegin(egdPDIHS), gt = 1;
+	   dihydral != _pd->getDihedralEnd(egdPDIHS); dihydral++, gt++)
         {
+	  ai[0]  = dihydral->getAtom1();
+	  ai[1] = dihydral->getAtom2();
+	  ai[2] = dihydral->getAtom3();
+	  ai[3] = dihydral->getAtom4();
             if (omt->ngtb[ebtsPDIHS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(params, ' ');
+	      std::vector<std::string> ptr = split(dihydral->getParams().c_str(), ' ');
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)
@@ -855,13 +865,18 @@ void OptParam::InitOpt(FILE *fplog, int *nparam,
     }
     if (bOpt[ebtsIDIHS])
     {
-        while ((gt = _pd->getDihedral( egdIDIHS,
-                                              &(ai[0]), &(ai[1]), &(ai[2]), &(ai[3]),
-                                              NULL, NULL, NULL, &params)) > 0)
+      DihedralIterator dihydral;
+      for (dihydral = _pd->getDihedralBegin(egdIDIHS), gt = 1;
+	   dihydral != _pd->getDihedralEnd(egdIDIHS); dihydral++, gt++)
         {
+	  ai[0]  = dihydral->getAtom1();
+	  ai[1] = dihydral->getAtom2();
+	  ai[2] = dihydral->getAtom3();
+	  ai[3] = dihydral->getAtom4();
+	  
             if (omt->ngtb[ebtsIDIHS][gt-1] > 0)
             {
-                std::vector<std::string> ptr = split(params, ' ');
+	      std::vector<std::string> ptr = split(dihydral->getParams(), ' ');
                 for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
                 {
                     if (pi->length() > 0)

@@ -255,12 +255,13 @@ static int decompose_frag(FILE *fplog,
     // Copy all atom types into array. Set usage array.
     {
       std::string ptype;
-        while (1 == pd->getPtype( &ptype, NULL, NULL, NULL, NULL))
+for (PtypeIterator ptype = pd->getPtypeBegin();
+	   ptype != pd->getPtypeEnd(); ptype++)
         {
 
-	  if (!bZeroPol(ptype.c_str(), zeropol))
+	  if (!bZeroPol(ptype->getType().c_str(), zeropol))
             {
-	      ptypes.push_back(pType(ptype.c_str(), false, 0));
+	      ptypes.push_back(pType(ptype->getType().c_str(), false, 0));
             }
         }
     }

@@ -1421,10 +1421,9 @@ static void print_top_header2(FILE *fp, Poldata * pd,
                               std::vector<std::string> commercials,
                               bool bItp)
 {
-  std::string  elem, desc, gt_type, ptype, btype, gt_old;
-  std::string vdwparams;
-    int    atomnumber;
-    double ref_enthalpy;
+  std::string   gt_old, gt_type;
+  std::string btype;
+  int atomnumber;
     real   mass;
 
     fprintf(fp, ";\n");
@@ -1456,18 +1455,15 @@ static void print_top_header2(FILE *fp, Poldata * pd,
                 "Van_der_Waals", "Ref_Enthalpy");
         
         gt_old = "";
-        while (1 == pd->getAtype(
-                                          &elem,
-                                          &desc,
-                                          &gt_type,
-                                          &ptype,
-                                          &btype,
-                                          &vdwparams,
-                                          &ref_enthalpy))
-        {
-            if (gmx_atomprop_query(aps, epropMass, "", elem.c_str(), &mass))
+
+    for (FfatypeIterator aType = pd->getAtypeBegin();
+	   aType != pd->getAtypeEnd(); aType++)
+      {
+	gt_type = aType->getType();
+	btype = aType->getBtype();
+	  if (gmx_atomprop_query(aps, epropMass, "", aType->getElem().c_str(), &mass))
             {
-	      atomnumber = gmx_atomprop_atomnumber(aps, elem.c_str());
+	      atomnumber = gmx_atomprop_atomnumber(aps, aType->getElem().c_str());
                 if ((0 ==  gt_old.size()) || (gt_old.compare(gt_type) != 0))
                 {
                     char sgt_type[32];
@@ -1477,8 +1473,8 @@ static void print_top_header2(FILE *fp, Poldata * pd,
                         btype = gt_type;
                     }
                     fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  A     %-s  %f\n",
-                            gt_type.c_str(), btype.c_str(), atomnumber, mass, 0.0, vdwparams.c_str(),
-                            ref_enthalpy);
+                            gt_type.c_str(), aType->getBtype().c_str(), atomnumber, mass, 0.0, aType->getVdwparams().c_str(),
+                            aType->getRefEnthalpy());
                     if (bPol)
                     {
                         fprintf(fp, "%-6s %-6s %6d  %12.6f  %10.4f  S     0  0\n",

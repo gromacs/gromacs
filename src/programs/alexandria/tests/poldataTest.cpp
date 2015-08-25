@@ -66,7 +66,9 @@ class PoldataTest : public ::testing::Test
 
         //init sett tolecrance
         PoldataTest ( )
-            : refData_(gmx::test::erefdataCompare), checker_(refData_.rootChecker())
+	  //gmx::test::erefdataCreateMissing
+	  //gmx::test::erefdataCompare
+            : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
         {
 
 
@@ -88,10 +90,10 @@ class PoldataTest : public ::testing::Test
             pd = alexandria::PoldataXml::read(dataName.c_str(), aps);
 
             alexandria::FfatypeIterator iter = pd->getAtypeBegin();
-            atomName = iter->type;
+            atomName = iter->getType();
             for (; iter != pd->getAtypeEnd(); iter++)
             {
-                atomNames.push_back(iter->type);
+	      atomNames.push_back(iter->getType());
             }
 
         }
@@ -112,37 +114,26 @@ std::string              PoldataTest::atomName;
 TEST_F (PoldataTest, getAtype){
     alexandria::FfatypeIterator aType =  pd->getAtypeBegin();
 
-    checker_.checkString(aType->elem, "elem");
-    checker_.checkString(aType->desc, "desc");
-    checker_.checkString(aType->type, "type");
-    checker_.checkString(aType->ptype, "ptype");
-    checker_.checkString(aType->btype, "btype");
-    checker_.checkString(aType->vdwparams, "vdwparams");
-    checker_.checkDouble(aType->refEnthalpy, "refEnthalpy");
+    checker_.checkString(aType->getElem(), "elem");
+    checker_.checkString(aType->getDesc(), "desc");
+    checker_.checkString(aType->getType(), "type");
+    checker_.checkString(aType->getPtype(), "ptype");
+    checker_.checkString(aType->getBtype(), "btype");
+    checker_.checkString(aType->getVdwparams(), "vdwparams");
+    checker_.checkDouble(aType->getRefEnthalpy(), "refEnthalpy");
 }
 
 
 TEST_F(PoldataTest, searchAtype){
-    std::string        elem;
-    std::string        desc;
-    std::string        atype;
-    std::string        ptype;
-    std::string        btype;
-    std::string        vdwparams;
-    pd->searchAtype(atomName,
-                    &elem,
-                    &desc,
-                    &atype,
-                    &ptype,
-                    &btype,
-                    &vdwparams);
+  alexandria::Ffatype  type;
+    pd->searchAtype(atomName,&type);
 
-    checker_.checkString(elem, "elem");
-    checker_.checkString(desc, "desc");
-    checker_.checkString(ptype, "ptype");
-    checker_.checkString(btype, "btype");
-    checker_.checkString(vdwparams, "vdwparams");
-    assert(atomName.compare(atype) == 0);
+    checker_.checkString(type.getElem(), "elem");
+    checker_.checkString(type.getDesc(), "desc");
+    checker_.checkString(type.getPtype(), "ptype");
+    checker_.checkString(type.getBtype(), "btype");
+    checker_.checkString(type.getVdwparams(), "vdwparams");
+    checker_.checkBoolean(type.getType().compare(atomName) == 0, "Same type");
 }
 
 TEST_F(PoldataTest, addAtype){
@@ -160,6 +151,8 @@ TEST_F(PoldataTest, addAtype){
     std::string              newPtype;
     std::string              newBtype;
     std::string              newVdwparams;
+    alexandria::Ffatype  fatype;
+
 
     pd->addAtype( elem,
                   desc,
@@ -169,23 +162,17 @@ TEST_F(PoldataTest, addAtype){
                   vdwparams,
                   ref_enthalpy);
 
-    int valid = pd->searchAtype(atype,
-                                &newElem,
-                                &newDesc,
-                                &newAtype,
-                                &newPtype,
-                                &newBtype,
-                                &newVdwparams);
+    int valid = pd->searchAtype(atype, &fatype);
     //will faill if the seartch failed
-    assert(valid == 1);
+    checker_.checkBoolean(valid == 1,"search valid");
 
     //test if the extraction where corect
-    assert(newElem.compare(elem) == 0);
-    assert(newDesc.compare(desc) == 0);
-    assert(newAtype.compare(atype) == 0);
-    assert(newPtype.compare(ptype) == 0);
-    assert(newBtype.compare(btype) == 0);
-    assert(newVdwparams.compare(vdwparams) == 0);
+    checker_.checkBoolean(fatype.getElem().compare(elem) == 0,"elem");
+     checker_.checkBoolean(fatype.getDesc().compare(desc) == 0,"desc");
+     checker_.checkBoolean(fatype.getType().compare(atype) == 0,"atype");
+     checker_.checkBoolean(fatype.getPtype().compare(ptype) == 0,"ptype");
+     checker_.checkBoolean(fatype.getBtype().compare(btype) == 0,"btype");
+     checker_.checkBoolean(fatype.getVdwparams().compare(vdwparams) == 0,"vdwparams" );
 }
 
 
@@ -193,43 +180,28 @@ TEST_F(PoldataTest, addAtype){
 TEST_F (PoldataTest, Ptype)
 {
     alexandria::PtypeIterator ptype = pd->getPtypeBegin();
-    checker_.checkString(ptype->type, "type");
-    checker_.checkString(ptype->miller, "miller");
-    checker_.checkString(ptype->bosque, "bosque");
-    checker_.checkDouble(ptype->polarizability, "polarizability");
-    checker_.checkDouble(ptype->sigPol, "sigPol");
+    checker_.checkString(ptype->getType(), "type");
+    checker_.checkString(ptype->getMiller(), "miller");
+    checker_.checkString(ptype->getBosque(), "bosque");
+    checker_.checkDouble(ptype->getPolarizability(), "polarizability");
+    checker_.checkDouble(ptype->getSigPol(), "sigPol");
 }
 
 TEST_F (PoldataTest, Miller)
 {
     alexandria::MillerIterator miller = pd->getMillerBegin();
-    checker_.checkInteger(miller->atomnumber, "atomnumber");
-    checker_.checkDouble(miller->tauAhc, "tauAhc");
-    checker_.checkDouble(miller->alphaAhp, "alphaAhp");
+    checker_.checkInteger(miller->getAtomnumber(), "atomnumber");
+    checker_.checkDouble(miller->getTauAhc(), "tauAhc");
+    checker_.checkDouble(miller->getAlphaAhp(), "alphaAhp");
 }
 
 
 TEST_F (PoldataTest, Bosque)
 {
     alexandria::BosqueIterator bosque = pd->getBosqueBegin();
-    checker_.checkString(bosque->bosque, "bosque");
-    checker_.checkDouble(bosque->polarizability, "polarizability");
+    checker_.checkString(bosque->getBosque(), "bosque");
+    checker_.checkDouble(bosque->getPolarizability(), "polarizability");
 }
-
-/*
-   TEST_F (PoldataTest, Dihedral)
-   {
-   alexandria::DihedralIterator dihedral = pd->getDihedralBegin(0);
-   checker_.checkString(dihedral->atom1,"atom1");
-   checker_.checkString(dihedral->atom2,"atom2");
-   checker_.checkString(dihedral->atom3,"atom3");
-   checker_.checkString(dihedral->atom4,"atom4");
-   checker_.checkString(dihedral->params,"params");
-   checker_.checkDouble(dihedral->dihedral,"dihedral");
-   checker_.checkDouble(dihedral->sigma,"sigma");
-   checker_.checkInteger(dihedral->ntrain,"ntrain");
-   }*/
-
 
 TEST_F (PoldataTest, chi)
 {

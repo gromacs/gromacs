@@ -69,7 +69,7 @@ class RespTest : public ::testing::Test
 
         //init sett tolecrance
         RespTest ( )
-            : refData_(gmx::test::erefdataCreateMissing), checker_(refData_.rootChecker())
+            : refData_(gmx::test::erefdataCompare), checker_(refData_.rootChecker())
         {
 #ifdef GMX_DOUBLE
             checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-6));
@@ -81,12 +81,13 @@ class RespTest : public ::testing::Test
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            std::vector<ChargeDistributionModel> iChargeDistributionModel;
-            iChargeDistributionModel.push_back(eqdAXp);
-            //iChargeDistributionModel.push_back(eqdAXg);
-            //	  iChargeDistributionModel.push_back(eqdAXs);
-            alexandria::MyMol       mp;
-            gmx_atomprop_t          aps = gmx_atomprop_init();
+	  std::vector<ChargeDistributionModel> iChargeDistributionModel;
+	  iChargeDistributionModel.push_back(eqdAXp);
+	  iChargeDistributionModel.push_back(eqdAXg);
+	  //	  	  iChargeDistributionModel.push_back(eqdAXs);
+          alexandria::MyMol       mp;
+          gmx_atomprop_t          aps = gmx_atomprop_init();
+
 
             //needed for ReadGauss
             char                    * molnm    = (char *)"XXX";

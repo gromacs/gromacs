@@ -294,9 +294,8 @@ static int check_data_sufficiency(FILE *fp,
     int                                        j, nremove, nsupported;
     gmx_mtop_atomloop_all_t                    aloop;
     t_atom                                    *atom;
-    std::string                                myname;
     int                                        k, at_global;
-    ChargeDistributionModel                    mymodel;
+
 
     /* Parse opt_elem list to test which elements to optimize */
     if (NULL != const_elem)
@@ -309,13 +308,14 @@ static int check_data_sufficiency(FILE *fp,
     }
     else
     {
-        while (pd->getEemprops(&mymodel, &myname, NULL, NULL, NULL, NULL, NULL) != 0)
-        {
-            if ((mymodel == iDistributionModel) &&
-                !const_index_count(ic, (char *)myname.c_str()) &&
-                pd->haveEemSupport( iDistributionModel, myname, FALSE))
-            {
-                add_index_count(ic, (char *)myname.c_str(), FALSE);
+for (EempropsIterator eep = pd->getEempropsBegin();
+	 eep != pd->getEempropsEnd(); eep++)
+  {
+    if ((eep->getEqdModel() == iDistributionModel) &&
+	!const_index_count(ic, (char *)eep->getName().c_str()) &&
+	pd->haveEemSupport( iDistributionModel, eep->getName(), FALSE))
+      {
+	add_index_count(ic, (char *)eep->getName().c_str(), FALSE);
             }
         }
     }

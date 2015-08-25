@@ -932,18 +932,22 @@ static void gen_alexandria_rho(Poldata * pd, const char *fn,
 {
     FILE                   *fp;
     int                     j, n, nmax;
-    ChargeDistributionModel eqg_model;
+    ChargeDistributionModel eqd_model;
     std::string                   name;
-    double                  rho, rr, J0, *A, chi0, *zeta, *q, qtot;
+    double                  rho, rr, *A, *zeta, *q, qtot;
     int                    *row, nzeta;
     char                    buf[STRLEN];
 
     nmax = 1+(int)(rcut/spacing);
-    while (1 == pd->getEemprops( &eqg_model, &name, &J0, &chi0, NULL, NULL, NULL))
+
+ for (EempropsIterator eep = pd->getEempropsBegin();
+	 eep != pd->getEempropsEnd(); eep++)
     {
-        if (eqg_model == iDistributionModel)
+      eqd_model = eep->getEqdModel();
+      name = eep->getName();
+        if (eqd_model == iDistributionModel)
         {
-            nzeta = pd->getNzeta( iDistributionModel, name);
+	  nzeta = pd->getNzeta( iDistributionModel, name);
             snew(zeta, nzeta);
             snew(q, nzeta);
             snew(row, nzeta);
@@ -1017,7 +1021,7 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
     ChargeDistributionModel    eqg_model;
     gmx_bool                  *bSplit;
     std::string                     *name;
-    double                     dV, V, dVp, Vp, rr, *J0, *chi0, **zeta, **q, qij, qkl, vc, vd, fd, fc, vr, fr;
+    double                     dV, V, dVp, Vp, rr, **zeta, **q, qij, qkl, vc, vd, fd, fc, vr, fr;
     int                      **row, *nzeta;
     int                        natypemax = 32, natype = 0;
     int                        nzi0, nzi1, nzk0, nzk1;
@@ -1026,15 +1030,15 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
 
     gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv);
     snew(name, natypemax);
-    snew(J0, natypemax);
-    snew(chi0, natypemax);
     snew(zeta, natypemax);
     snew(q, natypemax);
     snew(row, natypemax);
-    while (1 == pd->getEemprops( &eqg_model, &name[natype],
-                                  &J0[natype], &chi0[natype],
-                                  NULL, NULL, NULL))
-    {
+     for (EempropsIterator eep = pd->getEempropsBegin();
+	 eep != pd->getEempropsEnd(); eep++)
+      {
+	eqg_model = eep->getEqdModel();
+	name[natype] = eep->getName();
+	
         if (eqg_model == iDistributionModel)
         {
             natype++;
@@ -1043,8 +1047,6 @@ static void gen_alexandria_tables(Poldata * pd, const char *fn, ChargeDistributi
         {
             natypemax += 32;
             srenew(name, natypemax);
-            srenew(J0, natypemax);
-            srenew(chi0, natypemax);
             srenew(zeta, natypemax);
             srenew(q, natypemax);
             srenew(row, natypemax);
