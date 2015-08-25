@@ -1069,7 +1069,7 @@ immStatus MyMol::GenerateCharges(Poldata * pd,
                                                             NULL);
                     if (ci != EndCalculation())
                     {
-                        //printf("There are %d potential points\n",ci->NPotential());
+                        printf("There are %d potential points\n",ci->NPotential());
                         for (ElectrostaticPotentialIterator epi = ci->BeginPotential(); (epi < ci->EndPotential()); ++epi)
                         {
                             /* Maybe not convert to gmx ? */
@@ -1699,7 +1699,7 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-void MyMol::AddShells(Poldata * pd, ePolar epol)
+  void MyMol::AddShells(Poldata * pd, ePolar epol, ChargeDistributionModel iModel)
 {
     int              i, j, k, iat, shell, ns = 0;
     std::vector<int> renum, inv_renum;
@@ -1805,7 +1805,7 @@ void MyMol::AddShells(Poldata * pd, ePolar epol)
             for (j = iat+1; (j < renum[i+1]); j++)
             {
                 newa->atom[j]            = topology_->atoms.atom[i];
-                newa->atom[iat].q        = 0;
+                newa->atom[iat].q        = pd->getQ(iModel, *topology_->atoms.atomtype[i], 0);
                 newa->atom[iat].qB       = 0;
                 newa->atom[j].m          = 0;
                 newa->atom[j].mB         = 0;
@@ -1818,8 +1818,9 @@ void MyMol::AddShells(Poldata * pd, ePolar epol)
                 newa->atom[j].type      = shell;
                 newa->atom[j].typeB     = shell;
                 newa->atomtype[j]       =
-                    newa->atomtypeB[j]  = put_symtab(symtab_, buf);
+                newa->atomtypeB[j]      = put_symtab(symtab_, buf);
                 newa->atom[j].ptype     = eptShell;
+		newa->atom[j].q         = newa->atom[j].q - newa->atom[iat].q;
                 newa->atom[j].resind    = topology_->atoms.atom[i].resind;
                 sprintf(buf, "%ss", *(topology_->atoms.atomname[i]));
                 newa->atomname[j] = put_symtab(symtab_, buf);

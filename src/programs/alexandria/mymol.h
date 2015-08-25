@@ -122,7 +122,7 @@ class MyMol : public MolProp
         t_inputrec               *inputrec_;
         gmx_shellfc_t             shell_;
         gmx_enerdata_t            enerd_;
-        Resp *                gr_;
+        Resp *                    gr_;
         t_mdatoms                *md_;
         t_topology               *topology_;
 
@@ -179,7 +179,7 @@ class MyMol : public MolProp
 
         void CalcMultipoles();
 
-        void AddShells(Poldata *pd, ePolar epol);
+        void AddShells(Poldata *pd, ePolar epol, ChargeDistributionModel iModel);
 
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
