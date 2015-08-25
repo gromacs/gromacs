@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="qtotValuesEqdModel0">
+    <Int Name="Length">15</Int>
+    <Real>-0.34581568837165833</Real>
+    <Real>0.0097627043724060059</Real>
+    <Real>0.0097627043724060059</Real>
+    <Real>0.0097627043724060059</Real>
+    <Real>0.018568921834230423</Real>
+    <Real>0.043037869036197662</Real>
+    <Real>0.06885315477848053</Real>
+    <Real>0.020552670583128929</Real>
+    <Real>0.07158912718296051</Real>
+    <Real>0.0089766383171081543</Real>
+    <Real>0.069450341165065765</Real>
+    <Real>-0.015269041061401367</Real>
+    <Real>0.024712741374969482</Real>
+    <Real>0.029178822413086891</Real>
+    <Real>-0.023123657330870628</Real>
+  </Sequence>
+  <Sequence Name="qtotValuesEqdModel1">
+    <Int Name="Length">15</Int>
+    <Real>-1.4194239377975464</Real>
+    <Real>0.30558204650878906</Real>
+    <Real>0.30558204650878906</Real>
+    <Real>0.30558204650878906</Real>
+    <Real>-0.033946417272090912</Real>
+    <Real>0.10092122852802277</Real>
+    <Real>0.097386538982391357</Real>
+    <Real>-0.20050804316997528</Real>
+    <Real>0.0040777069516479969</Real>
+    <Real>-0.027168851345777512</Real>
+    <Real>0.037522017955780029</Real>
+    <Real>0.057792913168668747</Real>
+    <Real>0.07417258620262146</Real>
+    <Real>0.13055570423603058</Real>
+    <Real>0.26187244057655334</Real>
+  </Sequence>
+</ReferenceData>
