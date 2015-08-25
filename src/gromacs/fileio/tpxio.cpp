@@ -72,8 +72,7 @@
  * formats around which cannot be distinguished, while not causing
  * problems rebasing the feature branch onto upstream changes. When
  * merging with mainstream GROMACS, set this tag string back to
- * TPX_TAG_RELEASE, and instead add an element to tpxv and set
- * tpx_version to that.
+ * TPX_TAG_RELEASE, and instead add an element to tpxv.
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
@@ -82,10 +81,10 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  *
  * The enum helps the code be more self-documenting and ensure merges
  * do not silently resolve when two patches make the same bump. When
- * adding new functionality, add a new element to the end of this
- * enumeration, change the definition of tpx_version, and write code
- * below that does the right thing according to the value of
- * file_version. */
+ * adding new functionality, add a new element just above tpxv_Count
+ * in this enumeration, and write code below that does the right thing
+ * according to the value of file_version.
+ */
 enum tpxv {
     tpxv_ComputationalElectrophysiology = 96,                /**< support for ion/water position swaps (computational electrophysiology) */
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
@@ -94,21 +93,22 @@ enum tpxv {
     tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
     tpxv_PullCoordTypeGeom,                                  /**< add pull type and geometry per group and flat-bottom */
     tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
-    tpxv_IntermolecularBondeds                               /**< permit inter-molecular bonded interactions in the topology */
+    tpxv_IntermolecularBondeds,                              /**< permit inter-molecular bonded interactions in the topology */
+    tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
 /*! \brief Version number of the file format written to run input
  * files by this version of the code.
  *
- * The tpx_version number should be increased whenever the file format
- * in the main development branch changes, generally to the highest
- * value present in tpxv. Backward compatibility for reading old run
- * input files is maintained by checking this version number against
- * that of the file and then using the correct code path.
+ * The tpx_version increases whenever the file format in the main
+ * development branch changes, due to an extension of the tpxv enum above.
+ * Backward compatibility for reading old run input files is maintained
+ * by checking this version number against that of the file and then using
+ * the correct code path.
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_IntermolecularBondeds;
+static const int tpx_version = tpxv_Count - 1;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
