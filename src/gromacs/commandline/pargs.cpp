@@ -50,6 +50,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/options/basicoptions.h"
+#include "gromacs/options/behaviorcollection.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/filenameoptionmanager.h"
 #include "gromacs/options/options.h"
@@ -488,14 +489,14 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     try
     {
-        double                     tbegin        = 0.0, tend = 0.0, tdelta = 0.0;
-        bool                       bBeginTimeSet = false, bEndTimeSet = false, bDtSet = false;
-        bool                       bView         = false;
-        int                        xvgFormat     = 0;
-        gmx::TimeUnitManager       timeUnitManager;
-        gmx::OptionsAdapter        adapter(*argc, argv);
-        gmx::Options               options(NULL, NULL);
-        gmx::FileNameOptionManager fileOptManager;
+        double                          tbegin        = 0.0, tend = 0.0, tdelta = 0.0;
+        bool                            bBeginTimeSet = false, bEndTimeSet = false, bDtSet = false;
+        bool                            bView         = false;
+        int                             xvgFormat     = 0;
+        gmx::OptionsAdapter             adapter(*argc, argv);
+        gmx::Options                    options(NULL, NULL);
+        gmx::OptionsBehaviorCollection  behaviors(&options);
+        gmx::FileNameOptionManager      fileOptManager;
 
         fileOptManager.disableInputOptionChecking(
                 FF(PCA_NOT_READ_NODE) || FF(PCA_DISABLE_INPUT_FILE_CHECKING));
@@ -526,10 +527,15 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                         .store(&tdelta).storeIsSet(&bDtSet).timeValue()
                         .description("Only use frame when t MOD dt = first time (%t)"));
         }
+        gmx::TimeUnit  timeUnit = gmx::TimeUnit_Default;
         if (FF(PCA_TIME_UNIT))
         {
-            timeUnitManager.setTimeUnitFromEnvironment();
-            timeUnitManager.addTimeUnitOption(&options, "tu");
+            boost::shared_ptr<gmx::TimeUnitBehavior> timeUnitBehavior(
+                    new gmx::TimeUnitBehavior());
+            timeUnitBehavior->setTimeUnitStore(&timeUnit);
+            timeUnitBehavior->setTimeUnitFromEnvironment();
+            timeUnitBehavior->addTimeUnitOption(&options, "tu");
+            behaviors.addBehavior(timeUnitBehavior);
         }
         if (FF(PCA_CAN_VIEW))
         {
@@ -572,7 +578,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                                "only get called only on the master rank");
             gmx::CommandLineHelpWriter(options)
                 .setHelpText(gmx::constArrayRefFromArray<const char *>(desc, ndesc))
-                .setTimeUnitString(timeUnitManager.timeUnitAsString())
                 .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))
                 .writeHelp(*context);
             return FALSE;
@@ -581,14 +586,13 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         /* Now parse all the command-line options */
         gmx::CommandLineParser(&options).skipUnknown(FF(PCA_NOEXIT_ON_ARGS))
             .parse(argc, argv);
+        behaviors.optionsFinishing();
         options.finish();
 
         /* set program name, command line, and default values for output options */
         output_env_init(oenv, gmx::getProgramContext(),
-                        (time_unit_t)(timeUnitManager.timeUnit() + 1), bView,
+                        (time_unit_t)(timeUnit + 1), bView,
                         (xvg_format_t)(xvgFormat + 1), 0);
-
-        timeUnitManager.scaleTimeOptions(&options);
 
         /* Extract Time info from arguments */
         if (bBeginTimeSet)

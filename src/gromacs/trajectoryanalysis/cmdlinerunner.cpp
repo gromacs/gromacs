@@ -110,6 +110,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 {
     FileNameOptionManager  fileoptManager;
     SelectionOptionManager seloptManager(selections);
+    TimeUnitBehavior       timeUnitBehavior;
     Options                options(NULL, NULL);
 
     options.addManager(&fileoptManager);
@@ -118,7 +119,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
     IOptionsContainer &moduleOptions = options.addGroup();
 
     module_->initOptions(&moduleOptions, settings);
-    common->initOptions(&commonOptions);
+    common->initOptions(&commonOptions, &timeUnitBehavior);
     selections->initOptions(&commonOptions);
 
     {
@@ -126,7 +127,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
         // TODO: Print the help if user provides an invalid option?
         // Or just add a message advising the user to invoke the help?
         parser.parse(argc, argv);
-        common->scaleTimeOptions(&options);
+        timeUnitBehavior.optionsFinishing(&options);
         options.finish();
     }
 
@@ -254,6 +255,7 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
     SelectionOptionManager          seloptManager(&selections);
+    TimeUnitBehavior                timeUnitBehavior;
     Options                         options(NULL, NULL);
 
     options.addManager(&seloptManager);
@@ -261,12 +263,11 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
     IOptionsContainer &moduleOptions = options.addGroup();
 
     impl_->module_->initOptions(&moduleOptions, &settings);
-    common.initOptions(&commonOptions);
+    common.initOptions(&commonOptions, &timeUnitBehavior);
     selections.initOptions(&commonOptions);
 
     CommandLineHelpWriter(options)
         .setHelpText(settings.helpText())
-        .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
         .writeHelp(context);
 }
 
