@@ -163,9 +163,9 @@ int runCommandLineModule(int argc, char *argv[],
     return CommandLineModuleManager::runAsMainSingleModule(argc, argv, module);
 }
 
-int runCommandLineModule(int argc, char *argv[],
-                         const char *name, const char *description,
-                         ICommandLineOptionsModule *(*factory)())
+int runCommandLineModule(
+        int argc, char *argv[], const char *name, const char *description,
+        std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory)
 {
     return ICommandLineOptionsModule::runAsMain(
             argc, argv, name, description, factory);
