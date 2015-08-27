@@ -538,9 +538,9 @@ int InsertMolecules::run()
 const char InsertMoleculesInfo::name[]             = "insert-molecules";
 const char InsertMoleculesInfo::shortDescription[] =
     "Insert molecules into existing vacancies";
-ICommandLineOptionsModule *InsertMoleculesInfo::create()
+ICommandLineOptionsModulePointer InsertMoleculesInfo::create()
 {
-    return new InsertMolecules();
+    return ICommandLineOptionsModulePointer(new InsertMolecules());
 }
 
 } // namespace gmx

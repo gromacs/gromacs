@@ -107,9 +107,9 @@ class CommandLineOptionsModule : public ICommandLineModule
         {
         }
         CommandLineOptionsModule(const char *name, const char *description,
-                                 ICommandLineOptionsModule *module)
+                                 ICommandLineOptionsModulePointer module)
             : name_(name), description_(description), factory_(NULL),
-              module_(module)
+              module_(std::move(module))
         {
         }
         virtual const char *name() const { return name_; }
@@ -122,10 +122,10 @@ class CommandLineOptionsModule : public ICommandLineModule
     private:
         void parseOptions(int argc, char *argv[]);
 
-        const char    *name_;
-        const char    *description_;
-        FactoryMethod  factory_;
-        boost::scoped_ptr<ICommandLineOptionsModule> module_;
+        const char                       *name_;
+        const char                       *description_;
+        FactoryMethod                     factory_;
+        ICommandLineOptionsModulePointer  module_;
 };
 
 void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
@@ -133,7 +133,7 @@ void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
     if (!module_)
     {
         GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
-        module_.reset(factory_());
+        module_ = factory_();
     }
     module_->init(settings);
 }
@@ -147,13 +147,13 @@ int CommandLineOptionsModule::run(int argc, char *argv[])
 
 void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) const
 {
-    boost::scoped_ptr<ICommandLineOptionsModule> moduleGuard;
-    ICommandLineOptionsModule                   *module = module_.get();
+    ICommandLineOptionsModulePointer  moduleGuard;
+    ICommandLineOptionsModule        *module = module_.get();
     if (!module)
     {
         GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
-        moduleGuard.reset(factory_());
-        module = moduleGuard.get();
+        moduleGuard = factory_();
+        module      = moduleGuard.get();
     }
     Options                          options(name(), shortDescription());
     OptionsBehaviorCollection        behaviors(&options);
@@ -204,9 +204,10 @@ ICommandLineOptionsModule::~ICommandLineOptionsModule()
 // static
 ICommandLineModule *
 ICommandLineOptionsModule::createModule(
-        const char *name, const char *description, FactoryMethod factory)
+        const char *name, const char *description,
+        ICommandLineOptionsModulePointer module)
 {
-    return new CommandLineOptionsModule(name, description, factory);
+    return new CommandLineOptionsModule(name, description, std::move(module));
 }
 
 // static
@@ -223,17 +224,18 @@ void ICommandLineOptionsModule::registerModule(
         CommandLineModuleManager *manager, const char *name,
         const char *description, FactoryMethod factory)
 {
-    CommandLineModulePointer module(createModule(name, description, factory));
+    CommandLineModulePointer module(
+            new CommandLineOptionsModule(name, description, factory));
     manager->addModule(move(module));
 }
 
 // static
 void ICommandLineOptionsModule::registerModule(
         CommandLineModuleManager *manager, const char *name,
-        const char *description, ICommandLineOptionsModule *module)
+        const char *description, ICommandLineOptionsModulePointer module)
 {
     CommandLineModulePointer wrapperModule(
-            new CommandLineOptionsModule(name, description, module));
+            createModule(name, description, std::move(module)));
     manager->addModule(move(wrapperModule));
 }
 

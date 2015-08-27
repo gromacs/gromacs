@@ -45,6 +45,9 @@
 
 #ifdef __cplusplus
 
+#include <functional>
+#include <memory>
+
 // Forward declaration of class CommandLineProgramContext is not sufficient for
 // MSVC if the return value of initForCommandLine() is ignored(!)
 #include "gromacs/commandline/cmdlineprogramcontext.h"
@@ -175,7 +178,7 @@ int runCommandLineModule(int argc, char *argv[],
  */
 int runCommandLineModule(int argc, char *argv[],
                          const char *name, const char *description,
-                         ICommandLineOptionsModule *(*factory)());
+                         std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory);
 
 } // namespace gmx
 

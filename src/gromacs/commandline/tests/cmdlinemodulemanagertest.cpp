@@ -43,6 +43,7 @@
 
 #include "cmdlinemodulemanagertest.h"
 
+#include <memory>
 #include <string>
 
 #include <boost/scoped_ptr.hpp>
@@ -168,9 +169,10 @@ CommandLineModuleManagerTestBase::addModule(const char *name, const char *descri
 MockOptionsModule &
 CommandLineModuleManagerTestBase::addOptionsModule(const char *name, const char *description)
 {
-    MockOptionsModule *module = new MockOptionsModule();
+    std::unique_ptr<MockOptionsModule>  modulePtr(new MockOptionsModule());
+    MockOptionsModule                  *module = modulePtr.get();
     gmx::ICommandLineOptionsModule::registerModule(
-            &manager(), name, description, module);
+            &manager(), name, description, std::move(modulePtr));
     return *module;
 }
 
