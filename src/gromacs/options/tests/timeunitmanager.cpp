@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,8 @@
  */
 /*! \internal \file
  * \brief
- * Tests handling of time units with gmx::TimeUnitManager.
+ * Tests handling of time units with gmx::TimeUnitManager and
+ * gmx::TimeUnitBehavior.
  *
  * Also related functionality in gmx::DoubleOptionStorage is tested.
  *
@@ -59,24 +60,24 @@ namespace
 TEST(TimeUnitManagerTest, BasicOperations)
 {
     gmx::TimeUnitManager manager;
-    EXPECT_EQ(gmx::eTimeUnit_ps, manager.timeUnit());
+    EXPECT_EQ(gmx::TimeUnit_ps, manager.timeUnit());
     EXPECT_DOUBLE_EQ(1.0, manager.timeScaleFactor());
-    manager.setTimeUnit(gmx::eTimeUnit_ns);
-    EXPECT_EQ(gmx::eTimeUnit_ns, manager.timeUnit());
+    manager.setTimeUnit(gmx::TimeUnit_ns);
+    EXPECT_EQ(gmx::TimeUnit_ns, manager.timeUnit());
     EXPECT_DOUBLE_EQ(1e3, manager.timeScaleFactor());
     EXPECT_DOUBLE_EQ(1e-3, manager.inverseTimeScaleFactor());
 }
 
-TEST(TimeUnitManagerTest, ScalesAssignedOptionValue)
+TEST(TimeUnitBehaviorTest, ScalesAssignedOptionValue)
 {
-    gmx::TimeUnitManager manager;
+    gmx::TimeUnitBehavior  behavior;
 
-    gmx::Options         options(NULL, NULL);
-    double               value = 0.0;
+    gmx::Options           options(NULL, NULL);
+    double                 value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
-    gmx::OptionsAssigner assigner(&options);
+    gmx::OptionsAssigner   assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());
     ASSERT_NO_THROW_GMX(assigner.startOption("p"));
     ASSERT_NO_THROW_GMX(assigner.appendValue("1.5"));
@@ -84,31 +85,31 @@ TEST(TimeUnitManagerTest, ScalesAssignedOptionValue)
     EXPECT_NO_THROW_GMX(assigner.finish());
 
     EXPECT_DOUBLE_EQ(1.5, value);
-    manager.setTimeUnit(gmx::eTimeUnit_ns);
-    manager.scaleTimeOptions(&options);
+    behavior.setTimeUnit(gmx::TimeUnit_ns);
+    behavior.optionsFinishing(&options);
     EXPECT_DOUBLE_EQ(1500, value);
 
     EXPECT_NO_THROW_GMX(options.finish());
 
-    manager.setTimeUnit(gmx::eTimeUnit_us);
-    manager.scaleTimeOptions(&options);
+    behavior.setTimeUnit(gmx::TimeUnit_us);
+    behavior.optionsFinishing(&options);
     EXPECT_DOUBLE_EQ(1500000, value);
 
-    manager.setTimeUnit(gmx::eTimeUnit_fs);
-    manager.scaleTimeOptions(&options);
+    behavior.setTimeUnit(gmx::TimeUnit_fs);
+    behavior.optionsFinishing(&options);
     EXPECT_DOUBLE_EQ(0.0015, value);
 
-    manager.setTimeUnit(gmx::eTimeUnit_ps);
-    manager.scaleTimeOptions(&options);
+    behavior.setTimeUnit(gmx::TimeUnit_ps);
+    behavior.optionsFinishing(&options);
     EXPECT_DOUBLE_EQ(1.5, value);
 }
 
-TEST(TimeUnitManagerTest, DoesNotScaleDefaultValues)
+TEST(TimeUnitBehaviorTest, DoesNotScaleDefaultValues)
 {
-    gmx::TimeUnitManager manager;
+    gmx::TimeUnitBehavior behavior;
 
-    gmx::Options         options(NULL, NULL);
-    double               value = 1.5, value2 = 0.0;
+    gmx::Options          options(NULL, NULL);
+    double                value = 1.5, value2 = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("q").store(&value2).timeValue()
@@ -122,18 +123,18 @@ TEST(TimeUnitManagerTest, DoesNotScaleDefaultValues)
     EXPECT_NO_THROW_GMX(options.finish());
 
     EXPECT_DOUBLE_EQ(2.5, value2);
-    manager.setTimeUnit(gmx::eTimeUnit_ns);
-    manager.scaleTimeOptions(&options);
+    behavior.setTimeUnit(gmx::TimeUnit_ns);
+    behavior.optionsFinishing(&options);
     EXPECT_DOUBLE_EQ(1.5, value);
     EXPECT_DOUBLE_EQ(2.5, value2);
 }
 
-TEST(TimeUnitManagerTest, ScalesUserInputWithMultipleSources)
+TEST(TimeUnitBehaviorTest, ScalesUserInputWithMultipleSources)
 {
-    gmx::TimeUnitManager manager;
+    gmx::TimeUnitBehavior behavior;
 
-    gmx::Options         options(NULL, NULL);
-    double               value = 0.0;
+    gmx::Options          options(NULL, NULL);
+    double                value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
@@ -149,20 +150,20 @@ TEST(TimeUnitManagerTest, ScalesUserInputWithMultipleSources)
     EXPECT_NO_THROW_GMX(options.finish());
 
     EXPECT_DOUBLE_EQ(1.5, value);
-    manager.setTimeUnit(gmx::eTimeUnit_ns);
-    manager.scaleTimeOptions(&options);
+    behavior.setTimeUnit(gmx::TimeUnit_ns);
+    behavior.optionsFinishing(&options);
     EXPECT_DOUBLE_EQ(1500, value);
 }
 
-TEST(TimeUnitManagerTest, TimeUnitOptionWorks)
+TEST(TimeUnitBehaviorTest, TimeUnitOptionWorks)
 {
-    gmx::TimeUnitManager manager;
+    gmx::TimeUnitBehavior behavior;
 
-    gmx::Options         options(NULL, NULL);
-    double               value = 0.0;
+    gmx::Options          options(NULL, NULL);
+    double                value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
-    ASSERT_NO_THROW_GMX(manager.addTimeUnitOption(&options, "tu"));
+    ASSERT_NO_THROW_GMX(behavior.addTimeUnitOption(&options, "tu"));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -175,8 +176,8 @@ TEST(TimeUnitManagerTest, TimeUnitOptionWorks)
     EXPECT_NO_THROW_GMX(assigner.finish());
 
     EXPECT_DOUBLE_EQ(1.5, value);
-    EXPECT_EQ(gmx::eTimeUnit_ns, manager.timeUnit());
-    manager.scaleTimeOptions(&options);
+    EXPECT_EQ(gmx::TimeUnit_ns, behavior.timeUnit());
+    behavior.optionsFinishing(&options);
     EXPECT_DOUBLE_EQ(1500, value);
 
     EXPECT_NO_THROW_GMX(options.finish());

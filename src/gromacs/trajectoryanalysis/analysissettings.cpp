@@ -73,10 +73,10 @@ TrajectoryAnalysisSettings::~TrajectoryAnalysisSettings()
 }
 
 
-const TimeUnitManager &
-TrajectoryAnalysisSettings::timeUnitManager() const
+TimeUnit
+TrajectoryAnalysisSettings::timeUnit() const
 {
-    return impl_->timeUnitManager;
+    return impl_->timeUnit;
 }
 
 

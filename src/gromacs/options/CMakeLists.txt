@@ -40,6 +40,7 @@ gmx_install_headers(
     basicoptions.h
     filenameoption.h
     filenameoptionmanager.h
+    ioptionsbehavior.h
     ioptionscontainer.h
     optionfiletype.h
     optionflags.h

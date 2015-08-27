@@ -50,8 +50,8 @@ namespace gmx
 {
 
 class IOptionsContainer;
-class Options;
 class SelectionCollection;
+class TimeUnitBehavior;
 class TopologyInformation;
 class TrajectoryAnalysisSettings;
 
@@ -79,10 +79,10 @@ class TrajectoryAnalysisRunnerCommon
          * Initializes common options for trajectory analysis.
          *
          * \param[in,out] options  Options object to add the options to.
+         * \param[in,out] timeUnitBehavior  Time unit behavior to use for adding
+         *    and handling the `-tu` option.
          */
-        void initOptions(IOptionsContainer *options);
-        //! Scales time option values according to the time unit set.
-        void scaleTimeOptions(Options *options);
+        void initOptions(IOptionsContainer *options, TimeUnitBehavior *timeUnitBehavior);
         //! Processes common option values after they have been parsed.
         void optionsFinished();
         //! Initialize index groups for selections.

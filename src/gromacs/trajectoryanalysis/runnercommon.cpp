@@ -172,7 +172,8 @@ TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
 
 
 void
-TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options)
+TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
+                                            TimeUnitBehavior  *timeUnitBehavior)
 {
     TrajectoryAnalysisSettings &settings = impl_->settings_;
 
@@ -208,7 +209,9 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options)
                            .description("Only use frame if t MOD dt == first time (%t)"));
 
     // Add time unit option.
-    settings.impl_->timeUnitManager.addTimeUnitOption(options, "tu");
+    timeUnitBehavior->setTimeUnitFromEnvironment();
+    timeUnitBehavior->addTimeUnitOption(options, "tu");
+    timeUnitBehavior->setTimeUnitStore(&impl_->settings_.impl_->timeUnit);
 
     // Add plot options.
     settings.impl_->plotSettings.initOptions(options);
@@ -230,17 +233,9 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options)
 
 
 void
-TrajectoryAnalysisRunnerCommon::scaleTimeOptions(Options *options)
-{
-    impl_->settings_.impl_->timeUnitManager.scaleTimeOptions(options);
-}
-
-
-void
 TrajectoryAnalysisRunnerCommon::optionsFinished()
 {
-    impl_->settings_.impl_->plotSettings.setTimeUnit(
-            impl_->settings_.impl_->timeUnitManager.timeUnit());
+    impl_->settings_.impl_->plotSettings.setTimeUnit(impl_->settings_.timeUnit());
 
     if (impl_->trjfile_.empty() && impl_->topfile_.empty())
     {

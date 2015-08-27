@@ -48,7 +48,9 @@
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/options/behaviorcollection.h"
 #include "gromacs/options/filenameoptionmanager.h"
+#include "gromacs/options/ioptionsbehavior.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
@@ -67,15 +69,26 @@ namespace
 class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSettings
 {
     public:
+        explicit CommandLineOptionsModuleSettings(
+            OptionsBehaviorCollection *behaviors)
+            : behaviors_(*behaviors)
+        {
+        }
+
         const std::string &helpText() const { return helpText_; }
 
         virtual void setHelpText(const ConstArrayRef<const char *> &help)
         {
             helpText_ = joinStrings(help, "\n");
         }
+        virtual void addOptionsBehavior(const OptionsBehaviorPointer &behavior)
+        {
+            behaviors_.addBehavior(behavior);
+        }
 
     private:
-        std::string helpText_;
+        std::string                helpText_;
+        OptionsBehaviorCollection &behaviors_;
 };
 
 /********************************************************************
@@ -143,7 +156,8 @@ void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) 
         module = moduleGuard.get();
     }
     Options                          options(name(), shortDescription());
-    CommandLineOptionsModuleSettings settings;
+    OptionsBehaviorCollection        behaviors(&options);
+    CommandLineOptionsModuleSettings settings(&behaviors);
     module->initOptions(&options, &settings);
     CommandLineHelpWriter(options)
         .setHelpText(settings.helpText())
@@ -157,11 +171,13 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
 
     options.addManager(&fileoptManager);
 
-    CommandLineOptionsModuleSettings settings;
+    OptionsBehaviorCollection        behaviors(&options);
+    CommandLineOptionsModuleSettings settings(&behaviors);
     module_->initOptions(&options, &settings);
     {
         CommandLineParser parser(&options);
         parser.parse(&argc, argv);
+        behaviors.optionsFinishing();
         options.finish();
     }
     module_->optionsFinished();

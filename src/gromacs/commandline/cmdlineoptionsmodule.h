@@ -43,6 +43,8 @@
 #ifndef GMX_COMMANDLINE_CMDLINEOPTIONSMODULE_H
 #define GMX_COMMANDLINE_CMDLINEOPTIONSMODULE_H
 
+#include <boost/shared_ptr.hpp>
+
 #include "gromacs/commandline/cmdlinemodule.h"
 
 namespace gmx
@@ -52,8 +54,8 @@ template <typename T> class ConstArrayRef;
 
 class CommandLineModuleManager;
 class ICommandLineModule;
+class IOptionsBehavior;
 class IOptionsContainer;
-class Options;
 
 /*! \brief
  * Settings to pass information between a CommandLineOptionsModule and generic
@@ -84,6 +86,16 @@ class ICommandLineOptionsModuleSettings
            \endcode
          */
         virtual void setHelpText(const ConstArrayRef<const char *> &help) = 0;
+        /*! \brief
+         * Adds an option behavior that performs actions before
+         * ICommandLineOptionsModule::run() is called.
+         *
+         * For now, this takes a shared_ptr to make it easier for the caller to
+         * keep a reference to the behavior, but the behavior should be treated
+         * as owned by the options module after this call.
+         */
+        virtual void addOptionsBehavior(
+            const boost::shared_ptr<IOptionsBehavior> &behavior) = 0;
 
     protected:
         // Disallow deletion through the interface.
