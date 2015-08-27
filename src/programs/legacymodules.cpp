@@ -233,7 +233,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerModuleNoNice(manager, &gmx_mdrun, "mdrun",
                          "Perform a simulation, do a normal mode analysis or an energy minimization");
 
-    gmx::ICommandLineOptionsModule::registerModule(
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
             manager, gmx::InsertMoleculesInfo::name,
             gmx::InsertMoleculesInfo::shortDescription,
             &gmx::InsertMoleculesInfo::create);
