@@ -1678,22 +1678,25 @@ t_genericTable make_tables_Verlet(FILE *out, const output_env_t oenv,
     {
         printf("Entering flags & GMX_MAKETABLES_USER\n");
 
-        tabsel[etiCOUL] = etabUSER;
-        tabsel[etiLJ6]  = etabUSER;
-        tabsel[etiLJ12] = etabUSER;
+        // tabsel[etiCOUL] = etabUSER;
+        // tabsel[etiLJ6]  = etabUSER;
+        // tabsel[etiLJ12] = etabUSER;
 
         tabsel[etiUSER] = etabUSER;
     }
     else if (flags & GMX_MAKETABLES_USER_ELEC)
     {
+		printf("Entering flags & GMX_MAKETABLES_USER_ELEC\n");
         tabsel[etiCOUL] = etabUSER;
     }
     else if (flags & GMX_MAKETABLES_USER_VDW_LJ6)
     {
+		printf("Entering flags & GMX_MAKETABLES_USER_VDW_LJ6\n");
         tabsel[etiLJ6] = etabUSER;
     }
     else if (flags & GMX_MAKETABLES_USER_VDW_LJ12)
     {
+		printf("Entering flags & GMX_MAKETABLES_USER_VDW_LJ12\n");
         tabsel[etiLJ12] = etabUSER;
     }
     else
@@ -1877,29 +1880,6 @@ if (out)
             }
             xvgrclose(fp);
         }
-
-
-/*
-        if (bDebugMode() && bVerbose)
-        {
-            if (b14only)
-            {
-                fp = xvgropen(fns14[k], fns14[k], "r", "V", oenv);
-            }
-            else
-            {
-                fp = xvgropen(fns[k], fns[k], "r", "V", oenv);
-            }
-            // plot the output 5 times denser than the table data
-            for (i = 5*((nx0+1)/2); i < 5*table.n; i++)
-            {
-                x0 = i*table.maxr/(5*(table.n-1));
-                evaluate_table(table.V, table.F, table.n, table.scale, x0, &y0, &yp);
-                fprintf(fp, "%15.10e  %15.10e  %15.10e\n", x0, y0, yp);
-            }
-            xvgrclose(fp);
-        }
- */
 
         done_tabledata(&(td[k]));
     }

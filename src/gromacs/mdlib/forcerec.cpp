@@ -1364,10 +1364,29 @@ static void make_nbf_tables_Verlet(FILE *fp,
     sprintf(buf, "%s", tabfn);
 
     // fr->bnocoeffsPLEASE = NULL;
+    fr->gmx_no_table_coeffs = 0;
+    
     printf ("For generic tables please set GMX_NO_TABLE_COEFFS environment variable\n");
+    
     fr->nocoeffsPLEASE = getenv("GMX_NO_TABLE_COEFFS");
+    
+    if (fr->nocoeffsPLEASE != NULL)
+    {
+		fr->gmx_no_table_coeffs = 1;
+	}
+	
+	// fr->ic->gmx_no_table_coeffs = fr->gmx_no_table_coeffs;
 
-    if (fr->bvdwtabVerlet && fr->nocoeffsPLEASE == NULL)
+    if (fr->bvdwtabVerlet && fr->gmx_no_table_coeffs == 1)
+    {
+        printf("fr->bvdwtabVerlet && fr->bcoultabVerlet && fr->nocoeffsPLEASE != NULL Verified\n");
+        tverlet->table_GENERIC  = make_tables_Verlet(fp, oenv, fr, MASTER(cr), buf, rtab, GMX_MAKETABLES_USER);
+        tverlet->table_GENERIC.format       = GMX_TABLE_FORMAT_LINEAR_VERLET;
+        tverlet->table_GENERIC.interaction  = GMX_TABLE_INTERACTION_USER;
+        tverlet->table_GENERIC.maxr         = rtab;
+    }
+	
+    if (fr->bvdwtabVerlet && fr->gmx_no_table_coeffs == 0)
     {
         printf("fr->bvdwtabVerlet && fr->nocoeffsPLEASE == NULL Verified\n");
         tverlet->table_vdw_LJ6  = make_tables_Verlet(fp, oenv, fr, MASTER(cr), buf, rtab, GMX_MAKETABLES_USER_VDW_LJ6);
@@ -1378,28 +1397,22 @@ static void make_nbf_tables_Verlet(FILE *fp,
 
         tverlet->table_vdw_LJ6.format       = GMX_TABLE_FORMAT_LINEAR_VERLET;
         tverlet->table_vdw_LJ12.format      = GMX_TABLE_FORMAT_LINEAR_VERLET;
+        tverlet->table_vdw_LJ6.maxr         = rtab;
+        tverlet->table_vdw_LJ12.maxr        = rtab;
     }
-    if (fr->bcoultabVerlet && fr->nocoeffsPLEASE == NULL)
+    if (fr->bcoultabVerlet && fr->gmx_no_table_coeffs == 0)
     {
         printf("fr->bcoultabVerlet && fr->nocoeffsPLEASE == NULL Verified\n");
         tverlet->table_elec                 = make_tables_Verlet(fp, oenv, fr, MASTER(cr), buf, rtab, GMX_MAKETABLES_USER_ELEC);
-
         tverlet->table_elec.interaction     = GMX_TABLE_INTERACTION_USER;
-
         tverlet->table_elec.format          = GMX_TABLE_FORMAT_LINEAR_VERLET;
-    }
-    if ((fr->bvdwtabVerlet || fr->bcoultabVerlet) && fr->nocoeffsPLEASE != NULL)
-    {
-        printf("fr->bvdwtabVerlet && fr->bcoultabVerlet && fr->nocoeffsPLEASE != NULL Verified\n");
-        tverlet->table_GENERIC  = make_tables_Verlet(fp, oenv, fr, MASTER(cr), buf, rtab, GMX_MAKETABLES_USER);
-        tverlet->table_GENERIC.format       = GMX_TABLE_FORMAT_LINEAR_VERLET;
-        tverlet->table_GENERIC.interaction  = GMX_TABLE_INTERACTION_USER;
+        tverlet->table_elec.maxr            = rtab;
     }
 
-    tverlet->table_elec.maxr     = rtab;
-    tverlet->table_vdw_LJ6.maxr  = rtab;
-    tverlet->table_vdw_LJ12.maxr = rtab;
-    tverlet->table_GENERIC.maxr  = rtab;
+
+    
+
+    
 
 }
 
@@ -1969,13 +1982,14 @@ static void init_tables_Verlet(FILE*             fp,
     fr->ic->tabq_size  = static_cast<int>(maxr*fr->ic->tabq_scale) + 2;
     */
 
+	fr->ic->gmx_no_table_coeffs = fr->gmx_no_table_coeffs;
     fr->ic->tabq_scale = 1000.0;
     fr->ic->tabq_size  = static_cast<int>(maxr*fr->ic->tabq_scale);
 
     printf(" init_f_tableVerlet(): ic->tabq_scale: %10.4f\n", fr->ic->tabq_scale);
 
 
-    if (fr->nocoeffsPLEASE)
+    if (fr->ic->vdwtype == evdwUSER && fr->gmx_no_table_coeffs == 1)
     {
         printf ("Generic Tables requested.\n");
 
@@ -1988,7 +2002,6 @@ static void init_tables_Verlet(FILE*             fp,
         //snew_aligned(fr->ic->tabq_nbtab_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
         snew_aligned(fr->ic->tabq_nbtab_F, fr->ic->tabq_size*sizeof(real), 32);
         snew_aligned(fr->ic->tabq_nbtab_V, fr->ic->tabq_size*sizeof(real), 32);
-
 
         /*
         table_spline3_fill_Verlet(fr->ic->tabq_nbtab_F,
@@ -2018,31 +2031,71 @@ static void init_tables_Verlet(FILE*             fp,
             fprintf (fpGeneric, "%12.10e, %12.10e, %12.10e\n", i/fr->ic->tabq_scale, fr->ic->tabq_nbtab_V[i], fr->ic->tabq_nbtab_F[i]);
         }
         fclose(fpGeneric);
-
-
     }
-    else
+    
+    if (fr->ic->vdwtype == evdwUSER && fr->gmx_no_table_coeffs == 0)
+	{
+		printf ("init_tables_Verlet: Entering evdwtype == evdwUSER\n");
+		maxr = fr->ic->rvdw;
+		
+		printf ("init_tables_Verlet: maxr = %10.4f\n", maxr);
+		
+				
+		// sfree_aligned(fr->ic->tabq_vdw_FDV0);
+        sfree_aligned(fr->ic->tabq_vdw_F);
+        sfree_aligned(fr->ic->tabq_vdw_V);
+        
+        // snew_aligned(fr->ic->tabq_vdw_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_vdw_F, fr->ic->tabq_size*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_vdw_V, fr->ic->tabq_size*sizeof(real), 32);
+        
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+			fr->ic->tabq_vdw_F[i] = fr->tablesVerlet->table_vdw_LJ6.F[i] + fr->tablesVerlet->table_vdw_LJ12.F[i];
+            fr->ic->tabq_vdw_V[i] = fr->tablesVerlet->table_vdw_LJ6.V[i] + fr->tablesVerlet->table_vdw_LJ12.V[i];
+        }
+
+		
+		FILE *fpVdw;
+        fpVdw = fopen ("fpVdw.csv", "w");
+
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+            fprintf (fpVdw, "%12.10e, %12.10e, %12.10e\n", i/fr->ic->tabq_scale, fr->ic->tabq_vdw_V[i], fr->ic->tabq_vdw_F[i]);
+        }
+        fclose(fpVdw);
+	}
+    
+    if (fr->ic->eeltype == eelUSER && fr->gmx_no_table_coeffs == 0)
     {
-
-        if (fr->ic->cutoff_scheme == ecutsVERLET)
-        {
-            maxr = fr->ic->rcoulomb;
-        }
-        else
-        {
-            maxr = std::max(fr->ic->rcoulomb, rtab);
-        }
-
+		printf ("init_tables_Verlet: Entering eeltype == eelUSER\n");
+        maxr = fr->ic->rcoulomb;
+        
         printf ("init_tables_Verlet: maxr = %10.4f\n", maxr);
 
-
-        sfree_aligned(fr->ic->tabq_coul_FDV0);
+        // sfree_aligned(fr->ic->tabq_coul_FDV0);
         sfree_aligned(fr->ic->tabq_coul_F);
         sfree_aligned(fr->ic->tabq_coul_V);
 
-        sfree_aligned(fr->ic->tabq_vdw_FDV0);
-        sfree_aligned(fr->ic->tabq_vdw_F);
-        sfree_aligned(fr->ic->tabq_vdw_V);
+		// snew_aligned(fr->ic->tabq_coul_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
+		snew_aligned(fr->ic->tabq_coul_F, fr->ic->tabq_size*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_coul_V, fr->ic->tabq_size*sizeof(real), 32);
+        
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+			fr->ic->tabq_coul_F[i] = fr->tablesVerlet->table_elec.F[i];
+            fr->ic->tabq_coul_V[i] = fr->tablesVerlet->table_elec.V[i];
+        }
+
+		
+		FILE *fpElec;
+        fpElec = fopen ("fpElec.csv", "w");
+
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+            fprintf (fpElec, "%12.10e, %12.10e, %12.10e\n", i/fr->ic->tabq_scale, fr->ic->tabq_coul_V[i], fr->ic->tabq_coul_F[i]);
+        }
+        fclose(fpElec);
     }
 
     if (fr->ic->eeltype == eelEWALD || EEL_PME(fr->ic->eeltype))
@@ -2060,197 +2113,7 @@ static void init_tables_Verlet(FILE*             fp,
                                     v_q_ewald_lr);
 
     }
-///////////////////////////////
-///////////////////////////////
-    if (fr->ic->eeltype == eelUSER)
-    {
-        printf("init_f_tableVerlet: ic->eeltype == eelUSER\n");
 
-        snew_aligned(fr->ic->tabq_coul_FDV0, fr->ic->tabq_size*4, 32);
-        snew_aligned(fr->ic->tabq_coul_F, fr->ic->tabq_size, 32);
-        snew_aligned(fr->ic->tabq_coul_V, fr->ic->tabq_size, 32);
-
-
-        /*
-        table_spline3_fill_Verlet(ic->tabq_coul_F, ic->tabq_coul_V, ic->tabq_coul_FDV0,
-                                    ic->tabq_size, 1/ic->tabq_scale, 1.0, v_q_ewald_lr);
-
-
-                                    */
-    }
-
-    if (fr->ic->vdwtype == evdwUSER)
-    {
-        snew_aligned(fr->ic->tabq_vdw_FDV0, fr->ic->tabq_size*4, 32);
-        snew_aligned(fr->ic->tabq_vdw_F,    fr->ic->tabq_size, 32);
-        snew_aligned(fr->ic->tabq_vdw_V,    fr->ic->tabq_size, 32);
-/*
-                double   m = 12.0,
-                                a0 = 265.85,
-                                a1 = 0.8,
-                                b1 = 1.5,
-                                c1 = 1.45,
-                                a2 = 2.5,
-                                b2 = 0.19,
-                                c2 = 3.0;
-
-                double r, F, V, v1, v2, f1, f2;
-
-                printf("tabq_size %d - tabq_scale %12.10f\n",ic->tabq_size, ic->tabq_scale);
-
-                r = 0;
-
-                for (int i = 0; i<=ic->tabq_size; i++)
-        {
-                                r += 1/ic->tabq_scale; // / ic->tabq_scale;
-
-                                // printf ("r = %12.10f\n",r);
-                if (r < c1)
-                {
-                        v1 = a0 * (pow(r,-m) - a1) * exp(b1/(r-c1));
-                        f1 = ( a0 * exp(b1/(r-c1)) ) * (m/pow(r,m+1) + b1 * (pow(r,-m)-a1) / ((r-c1)*(r-c1)));
-                }
-                if (r < c2)
-                {
-                        f2 = a2 * b2 * expf(b2/(r-c2)) / ((r-c2)*(r-c2));
-                        v2 = a2 * exp(b2/(r-c2));
-                }
-
-                V = (v1 + v2);
-                F = -(f1 + f2);
-
-                if (r<0.04)
-                {
-                                                ic->tabq_vdw_F[i] = 0;
-                                                ic->tabq_vdw_V[i] = 0;
-                }
-                else
-                {
-                                                ic->tabq_vdw_F[i] = F;
-                                                ic->tabq_vdw_V[i] = V;
-                }
-
-                } */
-
-        /*
-        FILE *fp_ic_vdw_F, *fp_ic_vdw_V, *fp_elec, *fp_vdw_LJ6, *fp_vdw_LJ12, *fp_GENERIC;
-        fp_ic_vdw_F = fopen("bFtable.csv","w");
-        fp_ic_vdw_V = fopen("bVtable.csv","w");
-
-        for (int i = 0; i < fr->ic->tabq_size; i++)
-        {
-                fprintf(fp_ic_vdw_F,"%d,%12.10f\n",i,fr->ic->tabq_vdw_F[i]);
-                fprintf(fp_ic_vdw_V,"%d,%12.10f\n",i,fr->ic->tabq_vdw_V[i]);
-        }
-        printf ("forcerec.cpp (2070): CSV files created\n");
-        fclose(fp_ic_vdw_F);
-        fclose(fp_ic_vdw_V);
-
-        fp_elec     = fopen(   "elec_tablesVerlet.csv", "w");
-        fp_vdw_LJ6  = fopen( "vdwLJ6_tablesVerlet.csv", "w");
-        fp_vdw_LJ12 = fopen("vdwLJ12_tablesVerlet.csv", "w");
-        fp_GENERIC  = fopen("GENERIC_tablesVerlet.csv", "w");
-
-
-        real            *totalTable_V;
-        real            *totalTable_F;
-
-
-
-
-        snew_aligned(totalTable_V, ic->tabq_size, 32);
-        snew_aligned(totalTable_F, ic->tabq_size, 32);
-
-        for (int i = 0; i < ic->tabq_size;
-
-        if (fr->tablesVerlet->table_elec.V != NULL)
-        {
-                printf("table_elec is not NULL\n");
-                for (int i = 0; i <= fr->tablesVerlet->table_elec.n; i+=2)
-                {
-                        fprintf(fp_elec, "i: %d\telec data: V: %12.10e\tF: %12.10e\n", i,fr->tablesVerlet->table_elec.V[i],
-                                                                                                                                                 fr->tablesVerlet->table_elec.F[i]);
-
-                        outputTable.V[i] += fr->tablesVerlet->table_elec.V[i];
-                        outputTable.F[i] += fr->tablesVerlet->table_elec.F[i];
-                }
-        }
-
-        if (fr->tablesVerlet->table_vdw_LJ6.V != NULL)
-        {
-                printf("table_vdw_LJ6 is not NULL\n");
-                for (int i = 0; i <= fr->tablesVerlet->table_vdw_LJ6.n; i++)
-                {
-                        fprintf(fp_vdw_LJ6, "i: %d\tvdwLJ6 data: V: %12.10e\tF: %12.10g\n", i,fr->tablesVerlet->table_vdw_LJ6.V[i],
-                                                                                                                                                             fr->tablesVerlet->table_vdw_LJ6.F[i]);
-                }
-        }
-
-        if (fr->tablesVerlet->table_vdw_LJ12.V != NULL)
-        {
-                printf("table_vdw_LJ12 is not NULL\n");
-                for (int i = 0; i <= fr->tablesVerlet->table_vdw_LJ12.n; i++)
-                {
-                        fprintf(fp_vdw_LJ12, "i: %d\tvdwLJ12 data: V: %12.10e\tF: %12.10e\n", i,fr->tablesVerlet->table_vdw_LJ12.V[i],
-                                                                                                                                                                   fr->tablesVerlet->table_vdw_LJ12.F[i]);
-                }
-        }
-
-        if (fr->tablesVerlet->table_GENERIC.V != NULL)
-        {
-                printf("table_GENERIC is not NULL\n");
-                for (int i = 0; i <= fr->tablesVerlet->table_GENERIC.n; i++)
-                {
-                        fprintf(fp_GENERIC, "i: %d\tGENERIC data: V: %12.10e\tF: %12.10e\n", i,fr->tablesVerlet->table_GENERIC.V[i],
-                                                                                                                                                                   fr->tablesVerlet->table_GENERIC.F[i]);
-                }
-
-        }
-
-
-
-
-
-
-
-
-        fclose(fp_elec);
-        fclose(fp_vdw_LJ6);
-        fclose(fp_vdw_LJ12);
-        fclose(fp_GENERIC);
-        *
-        */
-
-        /*
-        table_spline3_fill_Verlet(ic->tabq_vdw_F,
-                                                                  ic->tabq_vdw_V,
-                                                                  ic->tabq_vdw_FDV0,
-                                  ic->tabq_size,
-                                  1/ic->tabq_scale,
-                                  fr->tablesVerlet->table_vdw.data,
-                                  fr->tablesVerlet->table_vdw.);
-
-                FILE *fippo, *fappo;
-                fippo = fopen("aFtable.csv","w");
-                fappo = fopen("aVtable.csv","w");
-
-                for (int i = 0; i < ic->tabq_size; i++)
-                {
-                        fprintf(fippo,"%d,%12.10f\n",i,ic->tabq_vdw_F[i]);
-                        fprintf(fappo,"%d,%12.10f\n",i,ic->tabq_vdw_V[i]);
-                }
-                printf ("forcerec.cpp (2087): CSV files created\n");
-                fclose(fappo);
-                fclose(fippo);
-                //exit(0);
-                *
-                */
-
-    }
-
-
-/////////////////////////////////
-/////////////////////////////////
     if (EVDW_PME(fr->ic->vdwtype))
     {
         snew_aligned(fr->ic->tabq_vdw_FDV0, fr->ic->tabq_size*4, 32);
@@ -2984,6 +2847,9 @@ void init_forcerec(FILE              *fp,
     case eelSWITCH:
     case eelSHIFT:
     case eelUSER:
+		fr->bcoultabVerlet = TRUE;
+		fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
+		break;
     case eelENCADSHIFT:
     case eelPMESWITCH:
     case eelPMEUSER:
@@ -3025,6 +2891,9 @@ void init_forcerec(FILE              *fp,
     case evdwSWITCH:
     case evdwSHIFT:
     case evdwUSER:
+		fr->bvdwtabVerlet = TRUE;
+		fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
+		break;
     case evdwENCADSHIFT:
         fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
         break;
