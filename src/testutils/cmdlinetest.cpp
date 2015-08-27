@@ -277,13 +277,20 @@ int CommandLineTestHelper::runModule(
 
 // static
 int CommandLineTestHelper::runModule(
+        ICommandLineOptionsModulePointer module, CommandLine *commandLine)
+{
+    // The name and description are not used in the tests, so they can be NULL.
+    boost::scoped_ptr<ICommandLineModule> wrapperModule(
+            ICommandLineOptionsModule::createModule(NULL, NULL, std::move(module)));
+    return runModule(wrapperModule.get(), commandLine);
+}
+
+// static
+int CommandLineTestHelper::runModule(
         ICommandLineOptionsModule::FactoryMethod          factory,
         CommandLine                                      *commandLine)
 {
-    // The name and description are not used in the tests, so they can be NULL.
-    boost::scoped_ptr<ICommandLineModule> module(
-            ICommandLineOptionsModule::createModule(NULL, NULL, factory));
-    return runModule(module.get(), commandLine);
+    return runModule(factory(), commandLine);
 }
 
 CommandLineTestHelper::CommandLineTestHelper(TestFileManager *fileManager)

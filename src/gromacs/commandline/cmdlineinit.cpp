@@ -165,7 +165,7 @@ int runCommandLineModule(int argc, char *argv[],
 
 int runCommandLineModule(int argc, char *argv[],
                          const char *name, const char *description,
-                         ICommandLineOptionsModule *(*factory)())
+                         ICommandLineOptionsModule::FactoryMethod factory)
 {
     return ICommandLineOptionsModule::runAsMain(
             argc, argv, name, description, factory);

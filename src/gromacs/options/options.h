@@ -158,20 +158,8 @@ class Options : public IOptionsContainer
          */
         void addSubSection(Options *section);
 
-        /*! \brief
-         * Creates a subgroup of options within the current options.
-         *
-         * To add options to the group, use the returned interface.
-         *
-         * Currently, this is only used to influence the order of options:
-         * all options in a group appear before options in a group added after
-         * it, no matter in which order the options are added to the groups.
-         * In the future, the groups could also be used to influence the help
-         * output.
-         */
-        IOptionsContainer &addGroup();
-
         // From IOptionsContainer
+        virtual IOptionsContainer &addGroup();
         virtual OptionInfo *addOption(const AbstractOption &settings);
         using IOptionsContainer::addOption;
 
