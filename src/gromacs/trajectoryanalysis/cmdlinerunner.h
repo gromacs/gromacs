@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,9 @@
 #ifndef GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 
+#include <functional>
+
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -50,32 +53,34 @@ namespace gmx
 {
 
 class CommandLineModuleManager;
-class CommandLineHelpContext;
 
 /*! \brief
  * Runner class for command-line analysis tools.
  *
  * This class implements a command-line analysis program, given a
- * TrajectoryAnalysisModule object.  It takes care of converting command-line
- * parameters to a form understood by the module, as well as parsing common
- * options, initializing and evaluating selections, and looping over trajectory
- * frames.
+ * TrajectoryAnalysisModule object.  It takes care of common command-line
+ * parameters, initializing and evaluating selections, and looping over
+ * trajectory frames.
+ *
+ * Ideally, this would only provide static methods, and the inheritance from
+ * ICommandLineOptionsModule would be internal to the source file, but
+ * currently the tests still require access to setUseDefaultGroups().
  *
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
  */
-class TrajectoryAnalysisCommandLineRunner
+class TrajectoryAnalysisCommandLineRunner : public ICommandLineOptionsModule
 {
     public:
         /*! \brief
          * Factory method type for creating a trajectory analysis module.
          *
-         * This method allows the module creation to be postponed to be inside
-         * the try/catch block in runAsMain()/registerModule() implementation
-         * methods and still keep the implementation out of the header, making
-         * the ABI more stable.
+         * This method allows the module creation to be postponed to the point
+         * where the module is needed, reducing initialization costs in, e.g.,
+         * the `gmx` binary, and simplifying exception handling.
          */
-        typedef TrajectoryAnalysisModulePointer (*ModuleFactoryMethod)();
+        typedef std::function<TrajectoryAnalysisModulePointer()>
+            ModuleFactoryMethod;
 
         /*! \brief
          * Implements a main() method that runs a given module.
@@ -142,11 +147,8 @@ class TrajectoryAnalysisCommandLineRunner
          *
          * \param  module  Analysis module to run using the runner.
          * \throws std::bad_alloc if out of memory.
-         *
-         * The caller should ensure that the provided module is not destroyed
-         * while the runner exists.
          */
-        TrajectoryAnalysisCommandLineRunner(TrajectoryAnalysisModule *module);
+        explicit TrajectoryAnalysisCommandLineRunner(TrajectoryAnalysisModulePointer module);
         ~TrajectoryAnalysisCommandLineRunner();
 
         /*! \brief
@@ -159,33 +161,12 @@ class TrajectoryAnalysisCommandLineRunner
          * Does not throw.
          */
         void setUseDefaultGroups(bool bUseDefaults);
-        /*! \brief
-         * Sets the default debugging level for selections.
-         *
-         * \param[in] debuglevel  Level of debugging verbosity.
-         *
-         * This is intended only for use by internal debugging tools.
-         *
-         * Does not throw.
-         *
-         * \see SelectionCollection::setDebugLevel()
-         */
-        void setSelectionDebugLevel(int debuglevel);
-        /*! \brief
-         * Parses options from the given command line and runs the analysis.
-         *
-         * \throws  multiple  Exceptions are used to indicate errors.
-         * \returns Zero on success.
-         */
-        int run(int argc, char *argv[]);
-        /*! \brief
-         * Prints help for the module, including common options from the runner.
-         *
-         * \param[in] context  Context object for writing the help.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         */
-        void writeHelp(const CommandLineHelpContext &context);
+
+        virtual void init(CommandLineModuleSettings *settings);
+        virtual void initOptions(IOptionsContainer                 *options,
+                                 ICommandLineOptionsModuleSettings *settings);
+        virtual void optionsFinished();
+        virtual int run();
 
     private:
         /*! \brief

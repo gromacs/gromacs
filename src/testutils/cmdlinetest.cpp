@@ -272,7 +272,7 @@ class CommandLineTestHelper::Impl
  */
 
 // static
-int CommandLineTestHelper::runModule(
+int CommandLineTestHelper::runModuleDirect(
         ICommandLineModule *module, CommandLine *commandLine)
 {
     CommandLineModuleSettings settings;
@@ -281,14 +281,21 @@ int CommandLineTestHelper::runModule(
 }
 
 // static
-int CommandLineTestHelper::runModule(
-        ICommandLineOptionsModule::FactoryMethod          factory,
-        CommandLine                                      *commandLine)
+int CommandLineTestHelper::runModuleDirect(
+        std::unique_ptr<ICommandLineOptionsModule> module, CommandLine *commandLine)
 {
     // The name and description are not used in the tests, so they can be NULL.
-    boost::scoped_ptr<ICommandLineModule> module(
-            ICommandLineOptionsModule::createModule(NULL, NULL, factory));
-    return runModule(module.get(), commandLine);
+    boost::scoped_ptr<ICommandLineModule> wrapperModule(
+            ICommandLineOptionsModule::createModule(NULL, NULL, std::move(module)));
+    return runModuleDirect(wrapperModule.get(), commandLine);
+}
+
+// static
+int CommandLineTestHelper::runModuleFactory(
+        std::function<std::unique_ptr<ICommandLineOptionsModule>()>  factory,
+        CommandLine                                                 *commandLine)
+{
+    return runModuleDirect(factory(), commandLine);
 }
 
 CommandLineTestHelper::CommandLineTestHelper(TestFileManager *fileManager)
