@@ -83,7 +83,7 @@ namespace gmx
  */
 
 AnalysisDataPlotSettings::AnalysisDataPlotSettings()
-    : selections_(NULL), timeUnit_(eTimeUnit_ps), plotFormat_(1)
+    : selections_(NULL), timeUnit_(TimeUnit_Default), plotFormat_(1)
 {
 }
 
