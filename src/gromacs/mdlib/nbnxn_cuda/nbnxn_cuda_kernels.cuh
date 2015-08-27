@@ -81,8 +81,14 @@
 
 #define VDW_USER
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_Vdw_USER ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_nbtab.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_CUTOFF
@@ -123,8 +129,14 @@
 
 #define VDW_USER
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_Vdw_USER ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_nbtab.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_RF
@@ -165,8 +177,14 @@
 
 #define VDW_USER
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_Vdw_USER ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_nbtab.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_ANA
@@ -208,8 +226,14 @@
 
 #define VDW_USER
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_Vdw_USER ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_nbtab.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_ANA
@@ -250,8 +274,14 @@
 
 #define VDW_USER
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_Vdw_USER ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_nbtab.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_TAB
@@ -292,12 +322,19 @@
 
 #define VDW_USER
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_Vdw_USER ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_nbtab.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_TAB
 #undef VDW_CUTOFF_CHECK
+
 
 
 /* Non-Bonded Tabulated pair potential kernels
@@ -335,12 +372,17 @@
 
 #define VDW_USER
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_Vdw_USER ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_nbtab.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef VDW_USER
 #undef NB_KERNEL_FUNC_NAME
 
-#undef EL_NONE
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
+#undef NB_KERNEL_FUNC_NAME
 
+#undef EL_NONE
 
 #define EL_USER
 
@@ -374,8 +416,16 @@
 
 #define VDW_USER
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_Vdw_USER ## __VA_ARGS__
-#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_nbtab.cuh"
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef VDW_USER
 #undef NB_KERNEL_FUNC_NAME
 
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
+#undef NB_KERNEL_FUNC_NAME
+
 #undef EL_USER
+
+
