@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,58 +32,69 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Declares private implementation class for gmx::TrajectoryAnalysisSettings.
+ * Declares gmx::OptionsBehaviorCollection.
  *
- * \ingroup module_trajectoryanalysis
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_options
  */
-#ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
-#define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
+#ifndef GMX_OPTIONS_BEHAVIORCOLLECTION_H
+#define GMX_OPTIONS_BEHAVIORCOLLECTION_H
 
-#include <string>
+#include <vector>
 
-#include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/options/timeunitmanager.h"
-#include "gromacs/trajectoryanalysis/analysissettings.h"
+#include <boost/shared_ptr.hpp>
+
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
 
-/*! \internal \brief
- * Private implementation class for TrajectoryAnalysisSettings.
+class IOptionsBehavior;
+class Options;
+
+//! Smart pointer for behaviors stored in OptionsBehaviorCollection.
+typedef boost::shared_ptr<IOptionsBehavior> OptionsBehaviorPointer;
+
+/*! \libinternal \brief
+ * Container for IOptionsBehavior objects.
  *
- * \ingroup module_trajectoryanalysis
+ * This class provides a container to keep IOptionsBehavior objects, and to
+ * call the IOptionsBehavior methods for the contained objects.
+ *
+ * IOptionsBehavior methods are called for the contained objects in the same
+ * order as in which the behaviors were inserted.
+ *
+ * \inlibraryapi
+ * \ingroup module_options
  */
-class TrajectoryAnalysisSettings::Impl
+class OptionsBehaviorCollection
 {
     public:
-        //! Initializes the default values for the settings object.
-        Impl()
-            : timeUnit(TimeUnit_Default), flags(0), frflags(0),
-              bRmPBC(true), bPBC(true)
-        {
-        }
+        /*! \brief
+         * Constructs a container for storing behaviors associated with given
+         * Options.
+         *
+         * Caller needs to ensure that provided Options remains in existence
+         * while the container exists.
+         */
+        explicit OptionsBehaviorCollection(Options *options);
+        ~OptionsBehaviorCollection();
 
-        //! Global time unit setting for the analysis module.
-        TimeUnit                 timeUnit;
-        //! Global plotting settings for the analysis module.
-        AnalysisDataPlotSettings plotSettings;
-        //! Flags for the analysis module.
-        unsigned long            flags;
-        //! Frame reading flags for the analysis module.
-        int                      frflags;
+        //! Adds a behavior to the collection.
+        void addBehavior(const OptionsBehaviorPointer &behavior);
+        //! Calls IOptionsBehavior::optionsFinishing() on all behaviors.
+        void optionsFinishing();
 
-        //! Whether to make molecules whole for each frame.
-        bool                 bRmPBC;
-        //! Whether to pass PBC information to the analysis module.
-        bool                 bPBC;
+    private:
+        Options                             *options_;
+        std::vector<OptionsBehaviorPointer>  behaviors_;
 
-        //! Help text for the module.
-        std::string          helpText_;
+        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsBehaviorCollection);
 };
 
-} // namespace gmx
+} // namespace
 
 #endif

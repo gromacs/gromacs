@@ -73,17 +73,6 @@ class CommandLineHelpWriter
         ~CommandLineHelpWriter();
 
         /*! \brief
-         * Sets time unit to show in descriptions.
-         *
-         * \param[in] timeUnit  Time unit to show in descriptions.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * For each time parameter, any "%t" in the description is replaced
-         * with \p timeunit.
-         * If not called, uses a default "ps".
-         */
-        CommandLineHelpWriter &setTimeUnitString(const char *timeUnit);
-        /*! \brief
          * Sets the help text to print as description.
          *
          * \param[in] help  Help text to show.

@@ -508,7 +508,10 @@ class CommandLineHelpWriter::Impl
 {
     public:
         //! Sets the Options object to use for generating help.
-        explicit Impl(const Options &options);
+        explicit Impl(const Options &options)
+            : options_(options)
+        {
+        }
 
         //! Format the list of known issues.
         void formatBugs(const HelpWriterContext &context);
@@ -519,14 +522,7 @@ class CommandLineHelpWriter::Impl
         std::string                  helpText_;
         //! List of bugs/knows issues.
         ConstArrayRef<const char *>  bugs_;
-        //! Time unit to show in descriptions.
-        std::string                  timeUnit_;
 };
-
-CommandLineHelpWriter::Impl::Impl(const Options &options)
-    : options_(options), timeUnit_(TimeUnitManager().timeUnitAsString())
-{
-}
 
 void CommandLineHelpWriter::Impl::formatBugs(const HelpWriterContext &context)
 {
@@ -555,13 +551,6 @@ CommandLineHelpWriter::CommandLineHelpWriter(const Options &options)
 
 CommandLineHelpWriter::~CommandLineHelpWriter()
 {
-}
-
-CommandLineHelpWriter &
-CommandLineHelpWriter::setTimeUnitString(const char *timeUnit)
-{
-    impl_->timeUnit_ = timeUnit;
-    return *this;
 }
 
 CommandLineHelpWriter &
@@ -618,7 +607,7 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
         writerContext.writeTextBlock(impl_->helpText_);
         writerContext.outputFile().writeLine();
     }
-    CommonFormatterData    common(impl_->timeUnit_.c_str());
+    CommonFormatterData    common(TimeUnitManager().timeUnitAsString());
     OptionsListFormatter   formatter(writerContext, common, "Options");
     formatter.startSection("Options to specify input files:");
     filter.formatSelected(OptionsFilter::eSelectInputFileOptions,

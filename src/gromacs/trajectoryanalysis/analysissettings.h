@@ -125,10 +125,8 @@ class TrajectoryAnalysisSettings
         TrajectoryAnalysisSettings();
         ~TrajectoryAnalysisSettings();
 
-        //! Returns the time unit manager with time unit timeUnit().
-        const TimeUnitManager &timeUnitManager() const;
         //! Returns the time unit the user has requested.
-        TimeUnit timeUnit() { return timeUnitManager().timeUnit(); }
+        TimeUnit timeUnit() const;
         //! Returns common settings for analysis data plot modules.
         const AnalysisDataPlotSettings &plotSettings() const;
 
