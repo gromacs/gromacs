@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,56 +34,46 @@
  */
 /*! \internal \file
  * \brief
- * Declares private implementation class for gmx::TrajectoryAnalysisSettings.
+ * Implements gmx::OptionsBehaviorCollection.
  *
- * \ingroup module_trajectoryanalysis
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \ingroup module_options
  */
-#ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
-#define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
+#include "gmxpre.h"
 
-#include <string>
+#include "behaviorcollection.h"
 
-#include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/options/timeunitmanager.h"
-#include "gromacs/trajectoryanalysis/analysissettings.h"
+#include "gromacs/options/ioptionsbehavior.h"
 
 namespace gmx
 {
 
-/*! \internal \brief
- * Private implementation class for TrajectoryAnalysisSettings.
- *
- * \ingroup module_trajectoryanalysis
- */
-class TrajectoryAnalysisSettings::Impl
+IOptionsBehavior::~IOptionsBehavior()
 {
-    public:
-        //! Initializes the default values for the settings object.
-        Impl()
-            : timeUnit(TimeUnit_Default), flags(0), frflags(0),
-              bRmPBC(true), bPBC(true)
-        {
-        }
+}
 
-        //! Global time unit setting for the analysis module.
-        TimeUnit                 timeUnit;
-        //! Global plotting settings for the analysis module.
-        AnalysisDataPlotSettings plotSettings;
-        //! Flags for the analysis module.
-        unsigned long            flags;
-        //! Frame reading flags for the analysis module.
-        int                      frflags;
+OptionsBehaviorCollection::OptionsBehaviorCollection(Options *options)
+    : options_(options)
+{
+}
 
-        //! Whether to make molecules whole for each frame.
-        bool                 bRmPBC;
-        //! Whether to pass PBC information to the analysis module.
-        bool                 bPBC;
+OptionsBehaviorCollection::~OptionsBehaviorCollection()
+{
+}
 
-        //! Help text for the module.
-        std::string          helpText_;
-};
+void OptionsBehaviorCollection::addBehavior(const OptionsBehaviorPointer &behavior)
+{
+    behaviors_.reserve(behaviors_.size() + 1);
+    behavior->initOptions(options_);
+    behaviors_.push_back(behavior);
+}
+
+void OptionsBehaviorCollection::optionsFinishing()
+{
+    for (const OptionsBehaviorPointer &behavior : behaviors_)
+    {
+        behavior->optionsFinishing(options_);
+    }
+}
 
 } // namespace gmx
-
-#endif

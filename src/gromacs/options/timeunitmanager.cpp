@@ -82,7 +82,7 @@ namespace gmx
 {
 
 TimeUnitManager::TimeUnitManager()
-    : timeUnit_(eTimeUnit_ps)
+    : timeUnit_(TimeUnit_Default)
 {
 }
 
@@ -93,14 +93,14 @@ TimeUnitManager::TimeUnitManager(TimeUnit unit)
 
 void TimeUnitManager::setTimeUnit(TimeUnit unit)
 {
-    GMX_RELEASE_ASSERT(unit >= 0 && unit <= eTimeUnit_s,
+    GMX_RELEASE_ASSERT(unit >= 0 && unit <= TimeUnit_s,
                        "Invalid time unit");
     timeUnit_ = unit;
 }
 
 const char *TimeUnitManager::timeUnitAsString() const
 {
-    GMX_RELEASE_ASSERT(timeUnit_ >= 0 && timeUnit_ <= eTimeUnit_s,
+    GMX_RELEASE_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
                        "Invalid time unit");
     return g_timeUnits[timeUnit_];
 }
@@ -118,7 +118,33 @@ double TimeUnitManager::inverseTimeScaleFactor() const
     return 1.0 / timeScaleFactor();
 }
 
-void TimeUnitManager::setTimeUnitFromEnvironment()
+/********************************************************************
+ * TimeUnitBehavior
+ */
+
+TimeUnitBehavior::TimeUnitBehavior()
+    : timeUnit_(TimeUnit_Default), timeUnitStore_(NULL)
+{
+}
+
+void TimeUnitBehavior::setTimeUnit(TimeUnit timeUnit)
+{
+    GMX_RELEASE_ASSERT(timeUnit >= 0 && timeUnit <= TimeUnit_s,
+                       "Invalid time unit");
+    timeUnit_ = timeUnit;
+    if (timeUnitStore_ != NULL)
+    {
+        *timeUnitStore_ = timeUnit;
+    }
+}
+
+void TimeUnitBehavior::setTimeUnitStore(TimeUnit *store)
+{
+    timeUnitStore_ = store;
+    *store         = timeUnit();
+}
+
+void TimeUnitBehavior::setTimeUnitFromEnvironment()
 {
     const char *const value = std::getenv("GMXTIMEUNIT");
     if (value != NULL)
@@ -135,11 +161,11 @@ void TimeUnitManager::setTimeUnitFromEnvironment()
                         value, joinStrings(timeUnits, ", ").c_str());
             GMX_THROW(InvalidInputError(message));
         }
-        timeUnit_ = i - timeUnits.begin();
+        setTimeUnit(static_cast<TimeUnit>(i - timeUnits.begin()));
     }
 }
 
-void TimeUnitManager::addTimeUnitOption(IOptionsContainer *options, const char *name)
+void TimeUnitBehavior::addTimeUnitOption(IOptionsContainer *options, const char *name)
 {
     options->addOption(StringOption(name).enumValue(g_timeUnits)
                            .defaultValue(g_timeUnits[timeUnit()])
@@ -186,11 +212,15 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionI
 
 }   // namespace
 
-void TimeUnitManager::scaleTimeOptions(Options *options) const
+void TimeUnitBehavior::optionsFinishing(Options *options)
 {
-    double factor = timeScaleFactor();
+    double factor = TimeUnitManager(timeUnit()).timeScaleFactor();
     TimeOptionScaler<DoubleOptionInfo>(factor).visitSubSection(options);
     TimeOptionScaler<FloatOptionInfo>(factor).visitSubSection(options);
+    if (timeUnitStore_ != NULL)
+    {
+        *timeUnitStore_ = static_cast<TimeUnit>(timeUnit_);
+    }
 }
 
 } // namespace gmx

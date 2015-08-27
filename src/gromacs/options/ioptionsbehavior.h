@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,58 +32,61 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \file
  * \brief
- * Declares private implementation class for gmx::TrajectoryAnalysisSettings.
+ * Declares gmx::IOptionsBehavior.
  *
- * \ingroup module_trajectoryanalysis
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inpublicapi
+ * \ingroup module_options
  */
-#ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
-#define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
-
-#include <string>
-
-#include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/options/timeunitmanager.h"
-#include "gromacs/trajectoryanalysis/analysissettings.h"
+#ifndef GMX_OPTIONS_IOPTIONSBEHAVIOR_H
+#define GMX_OPTIONS_IOPTIONSBEHAVIOR_H
 
 namespace gmx
 {
 
-/*! \internal \brief
- * Private implementation class for TrajectoryAnalysisSettings.
+class Options;
+
+/*! \brief
+ * Interface to provide extension points for options parsing.
  *
- * \ingroup module_trajectoryanalysis
+ * Currently, this is only used in the context of ICommandLineOptionsModule and
+ * some other command-line handling, but it is declared in the options module
+ * for the lack of a better place: most implementations of the interface are in
+ * modules that do not otherwise depend on the commandline module.
+ *
+ * \if libapi
+ * Any code that wants to support these extension points needs to use
+ * OptionsBehaviorCollection and call the methods there at appropriate points.
+ * This is not (at least, not currently) integrated in any automatic way to the
+ * actual Options object.
+ * \endif
+ *
+ * \inpublicapi
+ * \ingroup module_options
  */
-class TrajectoryAnalysisSettings::Impl
+class IOptionsBehavior
 {
     public:
-        //! Initializes the default values for the settings object.
-        Impl()
-            : timeUnit(TimeUnit_Default), flags(0), frflags(0),
-              bRmPBC(true), bPBC(true)
-        {
-        }
+        virtual ~IOptionsBehavior();
 
-        //! Global time unit setting for the analysis module.
-        TimeUnit                 timeUnit;
-        //! Global plotting settings for the analysis module.
-        AnalysisDataPlotSettings plotSettings;
-        //! Flags for the analysis module.
-        unsigned long            flags;
-        //! Frame reading flags for the analysis module.
-        int                      frflags;
-
-        //! Whether to make molecules whole for each frame.
-        bool                 bRmPBC;
-        //! Whether to pass PBC information to the analysis module.
-        bool                 bPBC;
-
-        //! Help text for the module.
-        std::string          helpText_;
+        /*! \brief
+         * Called when the behavior is associated with an options object.
+         *
+         * This method can, e.g., use Options::addManager() to associate
+         * managers with the options object.
+         */
+        virtual void initOptions(Options *options)      = 0;
+        /*! \brief
+         * Called when all option values have been assigned.
+         *
+         * This is called just before Options::finish(), and can, e.g., do
+         * operations that still influence the option values.
+         */
+        virtual void optionsFinishing(Options *options) = 0;
 };
 
-} // namespace gmx
+} // namespace
 
 #endif
