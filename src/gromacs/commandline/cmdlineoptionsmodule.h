@@ -43,6 +43,9 @@
 #ifndef GMX_COMMANDLINE_CMDLINEOPTIONSMODULE_H
 #define GMX_COMMANDLINE_CMDLINEOPTIONSMODULE_H
 
+#include <functional>
+#include <memory>
+
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/commandline/cmdlinemodule.h"
@@ -54,8 +57,13 @@ template <typename T> class ConstArrayRef;
 
 class CommandLineModuleManager;
 class ICommandLineModule;
+class ICommandLineOptionsModule;
 class IOptionsBehavior;
 class IOptionsContainer;
+
+//! Smart pointer to manage an ICommandLineOptionsModule.
+typedef std::unique_ptr<ICommandLineOptionsModule>
+    ICommandLineOptionsModulePointer;
 
 /*! \brief
  * Settings to pass information between a CommandLineOptionsModule and generic
@@ -142,29 +150,24 @@ class ICommandLineOptionsModule
          * Function pointer to a factory method that returns an interface of
          * this type.
          *
-         * \returns Module to run (should be allocated with `new`).
+         * \returns Module to run.
          * \throws  std::bad_alloc if out of memory.
-         *
-         * The caller takes responsibility to `delete` the returned pointer.
          */
-        typedef ICommandLineOptionsModule *(*FactoryMethod)();
+        typedef std::function<ICommandLineOptionsModulePointer()> FactoryMethod;
 
         /*! \brief
          * Creates a ICommandLineModule to run the specified module.
          *
          * \param[in] name        Name for the module.
          * \param[in] description Short description for the module.
-         * \param[in] factory     Factory that returns the module to run.
-         * \returns ICommandLineModule object that runs the module
-         *     returned by \p factory.  Caller must `delete` the object.
+         * \param[in] module      Module to run.
+         * \returns ICommandLineModule object that runs \p module module.
+         *     Caller must `delete` the object.
          * \throws  std::bad_alloc if out of memory.
-         *
-         * This is mainly used by tests that want to bypass
-         * CommandLineModuleManager.
          */
         static ICommandLineModule *
         createModule(const char *name, const char *description,
-                     FactoryMethod factory);
+                     ICommandLineOptionsModulePointer module);
         /*! \brief
          * Implements a main() method that runs a single module.
          *
@@ -200,9 +203,9 @@ class ICommandLineOptionsModule
          * calls.
          */
         static void
-        registerModule(CommandLineModuleManager *manager,
-                       const char *name, const char *description,
-                       FactoryMethod factory);
+        registerModuleFactory(CommandLineModuleManager *manager,
+                              const char *name, const char *description,
+                              FactoryMethod factory);
         /*! \brief
          * Registers a module to this manager.
          *
@@ -210,7 +213,6 @@ class ICommandLineOptionsModule
          * \param[in] name        Name for the module.
          * \param[in] description Short description for the module.
          * \param[in] module      Module to register.
-         *     The method takes ownership (must have been allocated with `new`).
          * \throws  std::bad_alloc if out of memory.
          *
          * This method internally creates a ICommandLineModule module
@@ -221,9 +223,9 @@ class ICommandLineOptionsModule
          * the ICommandLineOptionsModule instance (e.g., for mocking).
          */
         static void
-        registerModule(CommandLineModuleManager *manager,
-                       const char *name, const char *description,
-                       ICommandLineOptionsModule *module);
+        registerModuleDirect(CommandLineModuleManager *manager,
+                             const char *name, const char *description,
+                             ICommandLineOptionsModulePointer module);
 
         virtual ~ICommandLineOptionsModule();
 
