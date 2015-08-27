@@ -105,7 +105,7 @@ class GroupedSorter(object):
             'time.h']
     _std_c_cpp_headers = ['c' + x[:-2] for x in _std_c_headers]
     _std_cpp_headers = ['algorithm', 'deque', 'exception', 'fstream',
-            'iomanip', 'ios', 'iosfwd', 'iostream', 'istream', 'iterator',
+            'functional', 'iomanip', 'ios', 'iosfwd', 'iostream', 'istream', 'iterator',
             'limits', 'list', 'map', 'memory', 'new', 'numeric', 'ostream',
             'regex', 'set', 'sstream', 'stdexcept', 'streambuf', 'string', 'strstream',
             'typeinfo', 'vector', 'utility']

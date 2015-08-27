@@ -43,6 +43,8 @@
 #ifndef GMX_TESTUTILS_CMDLINETEST_H
 #define GMX_TESTUTILS_CMDLINETEST_H
 
+#include <functional>
+#include <memory>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -216,7 +218,20 @@ class CommandLineTestHelper
          * \throws  unspecified  Any exception thrown by the module.
          */
         static int
-        runModule(ICommandLineModule *module, CommandLine *commandLine);
+        runModuleDirect(ICommandLineModule *module, CommandLine *commandLine);
+        /*! \brief
+         * Runs a command-line program that implements
+         * ICommandLineOptionsModule.
+         *
+         * \param[in,out] module       Module to run.
+         * \param[in,out] commandLine  Command line parameters to pass.
+         *     This is only modified if \p module modifies it.
+         * \returns The return value of the module.
+         * \throws  unspecified  Any exception thrown by the module.
+         */
+        static int
+        runModuleDirect(std::unique_ptr<ICommandLineOptionsModule> module,
+                        CommandLine                               *commandLine);
         /*! \brief
          * Runs a command-line program that implements
          * ICommandLineOptionsModule.
@@ -229,8 +244,8 @@ class CommandLineTestHelper
          *     module.
          */
         static int
-        runModule(ICommandLineOptionsModule         *(*factory)(),
-                  CommandLine                      *commandLine);
+        runModuleFactory(std::function<std::unique_ptr<ICommandLineOptionsModule>(void)>  factory,
+                         CommandLine                                                     *commandLine);
 
         /*! \brief
          * Initializes an instance.
