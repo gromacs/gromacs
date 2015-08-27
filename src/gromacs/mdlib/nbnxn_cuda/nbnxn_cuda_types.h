@@ -87,8 +87,8 @@ enum eelCu {
     eelCuEWALD_TAB_TWIN,
     eelCuEWALD_ANA,
     eelCuEWALD_ANA_TWIN,
-    eelCuUSER,
-    eelCuNONE,          /* Electrostatics are set to zero */
+    eelCuNONE,
+    eelCuUSER,          /* Electrostatics are set to zero */
     eelCuNR
 };
 
@@ -108,6 +108,7 @@ enum evdwCu {
     evdwCuEWALDGEOM,
     evdwCuEWALDLB,
     evdwCuUSER,           /* tabulated non-bonded VdWLJ CUDA type */
+    evdwCuUSER_GENERIC,
     evdwCuNR
 };
 
@@ -197,17 +198,35 @@ struct cu_nbparam
     float               *coulomb_tab;        /**< pointer to the table in the device memory  */
     cudaTextureObject_t coulomb_tab_texobj;  /**< texture object bound to coulomb_tab        */
 
-    /* Non-Bonded Table data - accessed through texture memory */
+    /* Non-Bonded GENERIC Table data - accessed through texture memory */
 
-    int nb_tab_size;                     /**< table size (s.t. it fits in texture cache)           */
-    int nb_tab_stride;                   /**< tables array stride                                  */
-    int nb_ntabs;                        /**< amount of tables                                     */
-    float nb_tab_scale;                  /**< table scale/spacing                                  */
-    float               *nb_Ftab;        /**< pointer to the force tables in the device memory     */
-    float               *nb_Vtab;        /**< pointer to the potential tables in the device memory */
-    cudaTextureObject_t nb_Ftab_texobj;  /**< texture object bound to nb_Ftab                      */
-    cudaTextureObject_t nb_Vtab_texobj;  /**< texture object bound to nb_Vtab                      */
+	int gmx_no_table_coeffs;
 
+    int                  nb_generic_ntabs;        /**< amount of tables                                     */	
+    int                  nb_generic_tab_size;     /**< table size (s.t. it fits in texture cache)           */
+    float                nb_generic_tab_scale;    /**< table scale/spacing                                  */
+    float               *nb_generic_Ftab;         /**< pointer to the force tables in the device memory     */
+    float               *nb_generic_Vtab;         /**< pointer to the potential tables in the device memory */
+    cudaTextureObject_t  nb_generic_Ftab_texobj;  /**< texture object bound to nb_Ftab                      */
+    cudaTextureObject_t  nb_generic_Vtab_texobj;  /**< texture object bound to nb_Vtab                      */
+
+	/* User Coulomb Table data */
+	int    nb_coul_ntabs;
+	int    nb_coul_tab_size;
+	float  nb_coul_tab_scale;
+	float *nb_coul_Ftab;
+	float *nb_coul_Vtab;
+	cudaTextureObject_t nb_coul_Ftab_texobj;
+	cudaTextureObject_t nb_coul_Vtab_texobj;
+
+	/* User Vdw Table data */
+	int    nb_vdw_ntabs;
+	int    nb_vdw_tab_size;
+	float  nb_vdw_tab_scale;
+	float *nb_vdw_Ftab;
+	float *nb_vdw_Vtab;
+	cudaTextureObject_t nb_vdw_Ftab_texobj;
+	cudaTextureObject_t nb_vdw_Vtab_texobj;
 };
 
 /** \internal

@@ -113,16 +113,23 @@ typedef struct
     real k_rf;
     real c_rf;
 
+	/* Table business below */
+	int gmx_no_table_coeffs;
+
     /* Force/energy interpolation tables, linear in force, quadratic in V */
     real tabq_scale;
     int tabq_size;
 
     /* Additional table variables */
     /* Only the simplest case at the moment!
-    int   ntabs;
+    
     int   tabstride;
     *
     */
+    int   nb_generic_ntabs;
+    int   nb_coul_ntabs;
+    int   nb_vdw_ntabs;
+    
     real *tabq_nbtab_F;
     real *tabq_nbtab_V;
 
