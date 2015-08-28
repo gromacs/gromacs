@@ -2599,7 +2599,7 @@ int gmx_hbond(int argc, char *argv[])
     hb = mk_hbdata(bHBmap, opt2bSet("-dan", NFILE, fnm), bMerge || bContact);
 
     /* get topology */
-    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), &ir, box, &natoms, NULL, NULL, NULL, &top);
+    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), &ir, box, &natoms, NULL, NULL, &top);
 
     snew(grpnames, grNR);
     snew(index, grNR);

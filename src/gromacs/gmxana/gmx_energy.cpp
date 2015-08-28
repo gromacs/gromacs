@@ -360,7 +360,7 @@ static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
     matrix      box;
 
     /* all we need is the ir to be able to write the label */
-    read_tpx(topnm, ir, box, &natoms, NULL, NULL, NULL, &mtop);
+    read_tpx(topnm, ir, box, &natoms, NULL, NULL, &mtop);
 }
 
 static void get_orires_parms(const char *topnm,
@@ -375,7 +375,7 @@ static void get_orires_parms(const char *topnm,
     int             nb;
     matrix          box;
 
-    read_tpx(topnm, &ir, box, &natoms, NULL, NULL, NULL, &mtop);
+    read_tpx(topnm, &ir, box, &natoms, NULL, NULL, &mtop);
     top = gmx_mtop_generate_local_top(&mtop, &ir);
 
     ip       = top->idef.iparams;
@@ -420,7 +420,7 @@ static int get_bounds(const char *topnm,
     int             nb, label1;
     matrix          box;
 
-    read_tpx(topnm, ir, box, &natoms, NULL, NULL, NULL, mtop);
+    read_tpx(topnm, ir, box, &natoms, NULL, NULL, mtop);
     snew(*ltop, 1);
     top   = gmx_mtop_generate_local_top(mtop, ir);
     *ltop = top;

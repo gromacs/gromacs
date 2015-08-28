@@ -863,7 +863,7 @@ static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_
 /* Read in the tpr file and save information we need later in info */
 static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *state, gmx_mtop_t *mtop, t_inputrec *ir, real user_beta, real fracself)
 {
-    read_tpx_state(fn_sim_tpr, ir, state, NULL, mtop);
+    read_tpx_state(fn_sim_tpr, ir, state, mtop);
 
     /* The values of the original tpr input file are save in the first
      * place [0] of the arrays */

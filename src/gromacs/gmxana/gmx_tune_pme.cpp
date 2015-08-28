@@ -877,7 +877,7 @@ static void modify_PMEsettings(
     char          buf[200];
 
     snew(ir, 1);
-    read_tpx_state(fn_best_tpr, ir, &state, NULL, &mtop);
+    read_tpx_state(fn_best_tpr, ir, &state, &mtop);
 
     /* Reset nsteps and init_step to the value of the input .tpr file */
     ir->nsteps    = simsteps;
@@ -941,7 +941,7 @@ static void make_benchmark_tprs(
 
 
     snew(ir, 1);
-    read_tpx_state(fn_sim_tpr, ir, &state, NULL, &mtop);
+    read_tpx_state(fn_sim_tpr, ir, &state, &mtop);
 
     /* Check if some kind of PME was chosen */
     if (EEL_PME(ir->coulombtype) == FALSE)
@@ -2063,7 +2063,7 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
 
 
     /* Check tpr file for options that trigger extra output files */
-    read_tpx_state(opt2fn("-s", nfile, fnm), &ir, &state, NULL, &mtop);
+    read_tpx_state(opt2fn("-s", nfile, fnm), &ir, &state, &mtop);
     bFree = (efepNO  != ir.efep );
     bNM   = (eiNM    == ir.eI   );
     bSwap = (eswapNO != ir.eSwapCoords);

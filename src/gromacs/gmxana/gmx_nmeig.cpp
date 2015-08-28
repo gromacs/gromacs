@@ -362,7 +362,7 @@ int gmx_nmeig(int argc, char *argv[])
     snew(top_x, tpx.natoms);
 
     read_tpx(ftp2fn(efTPR, NFILE, fnm), NULL, box, &natoms,
-             top_x, NULL, NULL, &mtop);
+             top_x, NULL, &mtop);
     if (bCons)
     {
         nharm = get_nharm(&mtop, &nvsite);

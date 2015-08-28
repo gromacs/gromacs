@@ -147,7 +147,7 @@ static void tpx2methods(const char *tpx, const char *tex)
     t_state       state;
     gmx_mtop_t    mtop;
 
-    read_tpx_state(tpx, &ir, &state, NULL, &mtop);
+    read_tpx_state(tpx, &ir, &state, &mtop);
     fp = gmx_fio_fopen(tex, "w");
     fprintf(fp, "\\section{Methods}\n");
     tpx2system(fp, &mtop);
@@ -288,7 +288,7 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
 
     if (tpr)
     {
-        read_tpx_state(tpr, &ir, &state, NULL, &mtop);
+        read_tpx_state(tpr, &ir, &state, &mtop);
         top = gmx_mtop_generate_local_top(&mtop, &ir);
     }
     new_natoms = -1;

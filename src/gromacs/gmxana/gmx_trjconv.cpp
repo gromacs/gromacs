@@ -577,7 +577,7 @@ static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
         int temp_natoms = -1;
         snew(mtop, 1);
         read_tpx(tps_file, NULL, NULL, &temp_natoms,
-                 NULL, NULL, NULL, mtop);
+                 NULL, NULL, mtop);
     }
 
     return mtop;

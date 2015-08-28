@@ -982,7 +982,7 @@ void comp_tpx(const char *fn1, const char *fn2,
     ff[1] = fn2;
     for (i = 0; i < (fn2 ? 2 : 1); i++)
     {
-        read_tpx_state(ff[i], &(ir[i]), &state[i], NULL, &(mtop[i]));
+        read_tpx_state(ff[i], &(ir[i]), &state[i], &(mtop[i]));
     }
     if (fn2)
     {

@@ -121,7 +121,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!",
                       tpxh.natoms, natoms);
         }
-        ePBC = read_tpx(tpr, NULL, NULL, &natoms, NULL, NULL, NULL, mtop);
+        ePBC = read_tpx(tpr, NULL, NULL, &natoms, NULL, NULL, mtop);
     }
     if (ndf <= -1)
     {
