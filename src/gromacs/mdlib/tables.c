@@ -1686,17 +1686,17 @@ t_genericTable make_tables_Verlet(FILE *out, const output_env_t oenv,
     }
     else if (flags & GMX_MAKETABLES_USER_ELEC)
     {
-		printf("Entering flags & GMX_MAKETABLES_USER_ELEC\n");
+        printf("Entering flags & GMX_MAKETABLES_USER_ELEC\n");
         tabsel[etiCOUL] = etabUSER;
     }
     else if (flags & GMX_MAKETABLES_USER_VDW_LJ6)
     {
-		printf("Entering flags & GMX_MAKETABLES_USER_VDW_LJ6\n");
+        printf("Entering flags & GMX_MAKETABLES_USER_VDW_LJ6\n");
         tabsel[etiLJ6] = etabUSER;
     }
     else if (flags & GMX_MAKETABLES_USER_VDW_LJ12)
     {
-		printf("Entering flags & GMX_MAKETABLES_USER_VDW_LJ12\n");
+        printf("Entering flags & GMX_MAKETABLES_USER_VDW_LJ12\n");
         tabsel[etiLJ12] = etabUSER;
     }
     else

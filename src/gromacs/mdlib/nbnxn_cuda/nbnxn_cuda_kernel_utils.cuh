@@ -347,7 +347,7 @@ float interpolate_nb_generic_Ftab(float r, float scale)
     float fract2     = normalized - index;
     float fract1     = 1.0f - fract2;
 
-    return   fract1 * tex1Dfetch(nb_generic_Ftab_texref, index)
+    return fract1 * tex1Dfetch(nb_generic_Ftab_texref, index)
            + fract2 * tex1Dfetch(nb_generic_Ftab_texref, index + 1);
 }
 
@@ -374,14 +374,14 @@ float interpolate_nb_vdw_Ftab(float r, float scale)
     float fract2     = normalized - index;
     float fract1     = 1.0f - fract2;
 
-    return   fract1 * tex1Dfetch(nb_vdw_Ftab_texref, index)
+    return fract1 * tex1Dfetch(nb_vdw_Ftab_texref, index)
            + fract2 * tex1Dfetch(nb_vdw_Ftab_texref, index + 1);
 }
 
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static inline __device__
 float interpolate_nb_vdw_Ftab(cudaTextureObject_t texobj_nb_Ftab,
-                                  float r, float scale)
+                              float r, float scale)
 {
     float normalized = scale * r;
     int index      = (int) normalized;
@@ -401,14 +401,14 @@ float interpolate_nb_coul_Ftab(float r, float scale)
     float fract2     = normalized - index;
     float fract1     = 1.0f - fract2;
 
-    return   fract1 * tex1Dfetch(nb_coul_Ftab_texref, index)
+    return fract1 * tex1Dfetch(nb_coul_Ftab_texref, index)
            + fract2 * tex1Dfetch(nb_coul_Ftab_texref, index + 1);
 }
 
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static inline __device__
 float interpolate_nb_coul_Ftab(cudaTextureObject_t texobj_nb_Ftab,
-                                  float r, float scale)
+                               float r, float scale)
 {
     float normalized = scale * r;
     int index      = (int) normalized;
@@ -436,7 +436,7 @@ float interpolate_nb_generic_Vtab(float r, float scale)
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static inline __device__
 float interpolate_nb_generic_Vtab(cudaTextureObject_t texobj_nb_Vtab,
-                          float r, float scale)
+                                  float r, float scale)
 {
     float normalized = scale * r;
     int index      = (int) normalized;
@@ -462,7 +462,7 @@ float interpolate_nb_vdw_Vtab(float r, float scale)
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static inline __device__
 float interpolate_nb_vdw_Vtab(cudaTextureObject_t texobj_nb_Vtab,
-                          float r, float scale)
+                              float r, float scale)
 {
     float normalized = scale * r;
     int index      = (int) normalized;
@@ -489,7 +489,7 @@ float interpolate_nb_coul_Vtab(float r, float scale)
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static inline __device__
 float interpolate_nb_coul_Vtab(cudaTextureObject_t texobj_nb_Vtab,
-                          float r, float scale)
+                               float r, float scale)
 {
     float normalized = scale * r;
     int index      = (int) normalized;

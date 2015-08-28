@@ -1365,17 +1365,17 @@ static void make_nbf_tables_Verlet(FILE *fp,
 
     // fr->bnocoeffsPLEASE = NULL;
     fr->gmx_no_table_coeffs = 0;
-    
+
     printf ("For generic tables please set GMX_NO_TABLE_COEFFS environment variable\n");
-    
+
     fr->nocoeffsPLEASE = getenv("GMX_NO_TABLE_COEFFS");
-    
+
     if (fr->nocoeffsPLEASE != NULL)
     {
-		fr->gmx_no_table_coeffs = 1;
-	}
-	
-	// fr->ic->gmx_no_table_coeffs = fr->gmx_no_table_coeffs;
+        fr->gmx_no_table_coeffs = 1;
+    }
+
+    // fr->ic->gmx_no_table_coeffs = fr->gmx_no_table_coeffs;
 
     if (fr->bvdwtabVerlet && fr->gmx_no_table_coeffs == 1)
     {
@@ -1385,7 +1385,7 @@ static void make_nbf_tables_Verlet(FILE *fp,
         tverlet->table_GENERIC.interaction  = GMX_TABLE_INTERACTION_USER;
         tverlet->table_GENERIC.maxr         = rtab;
     }
-	
+
     if (fr->bvdwtabVerlet && fr->gmx_no_table_coeffs == 0)
     {
         printf("fr->bvdwtabVerlet && fr->nocoeffsPLEASE == NULL Verified\n");
@@ -1410,9 +1410,9 @@ static void make_nbf_tables_Verlet(FILE *fp,
     }
 
 
-    
 
-    
+
+
 
 }
 
@@ -1982,7 +1982,7 @@ static void init_tables_Verlet(FILE*             fp,
     fr->ic->tabq_size  = static_cast<int>(maxr*fr->ic->tabq_scale) + 2;
     */
 
-	fr->ic->gmx_no_table_coeffs = fr->gmx_no_table_coeffs;
+    fr->ic->gmx_no_table_coeffs = fr->gmx_no_table_coeffs;
     fr->ic->tabq_scale = 1000.0;
     fr->ic->tabq_size  = static_cast<int>(maxr*fr->ic->tabq_scale);
 
@@ -2032,31 +2032,31 @@ static void init_tables_Verlet(FILE*             fp,
         }
         fclose(fpGeneric);
     }
-    
+
     if (fr->ic->vdwtype == evdwUSER && fr->gmx_no_table_coeffs == 0)
-	{
-		printf ("init_tables_Verlet: Entering evdwtype == evdwUSER\n");
-		maxr = fr->ic->rvdw;
-		
-		printf ("init_tables_Verlet: maxr = %10.4f\n", maxr);
-		
-				
-		// sfree_aligned(fr->ic->tabq_vdw_FDV0);
+    {
+        printf ("init_tables_Verlet: Entering evdwtype == evdwUSER\n");
+        maxr = fr->ic->rvdw;
+
+        printf ("init_tables_Verlet: maxr = %10.4f\n", maxr);
+
+
+        // sfree_aligned(fr->ic->tabq_vdw_FDV0);
         sfree_aligned(fr->ic->tabq_vdw_F);
         sfree_aligned(fr->ic->tabq_vdw_V);
-        
+
         // snew_aligned(fr->ic->tabq_vdw_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
         snew_aligned(fr->ic->tabq_vdw_F, fr->ic->tabq_size*sizeof(real), 32);
         snew_aligned(fr->ic->tabq_vdw_V, fr->ic->tabq_size*sizeof(real), 32);
-        
+
         for (int i = 0; i < fr->ic->tabq_size; i++)
         {
-			fr->ic->tabq_vdw_F[i] = fr->tablesVerlet->table_vdw_LJ6.F[i] + fr->tablesVerlet->table_vdw_LJ12.F[i];
+            fr->ic->tabq_vdw_F[i] = fr->tablesVerlet->table_vdw_LJ6.F[i] + fr->tablesVerlet->table_vdw_LJ12.F[i];
             fr->ic->tabq_vdw_V[i] = fr->tablesVerlet->table_vdw_LJ6.V[i] + fr->tablesVerlet->table_vdw_LJ12.V[i];
         }
 
-		
-		FILE *fpVdw;
+
+        FILE *fpVdw;
         fpVdw = fopen ("fpVdw.csv", "w");
 
         for (int i = 0; i < fr->ic->tabq_size; i++)
@@ -2064,31 +2064,31 @@ static void init_tables_Verlet(FILE*             fp,
             fprintf (fpVdw, "%12.10e, %12.10e, %12.10e\n", i/fr->ic->tabq_scale, fr->ic->tabq_vdw_V[i], fr->ic->tabq_vdw_F[i]);
         }
         fclose(fpVdw);
-	}
-    
+    }
+
     if (fr->ic->eeltype == eelUSER && fr->gmx_no_table_coeffs == 0)
     {
-		printf ("init_tables_Verlet: Entering eeltype == eelUSER\n");
+        printf ("init_tables_Verlet: Entering eeltype == eelUSER\n");
         maxr = fr->ic->rcoulomb;
-        
+
         printf ("init_tables_Verlet: maxr = %10.4f\n", maxr);
 
         // sfree_aligned(fr->ic->tabq_coul_FDV0);
         sfree_aligned(fr->ic->tabq_coul_F);
         sfree_aligned(fr->ic->tabq_coul_V);
 
-		// snew_aligned(fr->ic->tabq_coul_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
-		snew_aligned(fr->ic->tabq_coul_F, fr->ic->tabq_size*sizeof(real), 32);
+        // snew_aligned(fr->ic->tabq_coul_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_coul_F, fr->ic->tabq_size*sizeof(real), 32);
         snew_aligned(fr->ic->tabq_coul_V, fr->ic->tabq_size*sizeof(real), 32);
-        
+
         for (int i = 0; i < fr->ic->tabq_size; i++)
         {
-			fr->ic->tabq_coul_F[i] = fr->tablesVerlet->table_elec.F[i];
+            fr->ic->tabq_coul_F[i] = fr->tablesVerlet->table_elec.F[i];
             fr->ic->tabq_coul_V[i] = fr->tablesVerlet->table_elec.V[i];
         }
 
-		
-		FILE *fpElec;
+
+        FILE *fpElec;
         fpElec = fopen ("fpElec.csv", "w");
 
         for (int i = 0; i < fr->ic->tabq_size; i++)
@@ -2847,9 +2847,9 @@ void init_forcerec(FILE              *fp,
     case eelSWITCH:
     case eelSHIFT:
     case eelUSER:
-		fr->bcoultabVerlet = TRUE;
-		fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
-		break;
+        fr->bcoultabVerlet = TRUE;
+        fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
+        break;
     case eelENCADSHIFT:
     case eelPMESWITCH:
     case eelPMEUSER:
@@ -2891,9 +2891,9 @@ void init_forcerec(FILE              *fp,
     case evdwSWITCH:
     case evdwSHIFT:
     case evdwUSER:
-		fr->bvdwtabVerlet = TRUE;
-		fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
-		break;
+        fr->bvdwtabVerlet = TRUE;
+        fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
+        break;
     case evdwENCADSHIFT:
         fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
         break;
@@ -3457,17 +3457,17 @@ void init_forcerec(FILE              *fp,
                 fprintf(fp, "Generating Verlet Scheme tables\n");
             }
 
-	/* The following instructions initialize as many table data structures (tablesVerlet) as needed in the fr data strcucture.
-	 
-	 */
+            /* The following instructions initialize as many table data structures (tablesVerlet) as needed in the fr data strcucture.
+
+             */
             snew(fr->tablesVerlet, fr->ntables);
 
             for (int i = 0; i < fr->ntables; i++)
             {
                 make_nbf_tables_Verlet(fp, oenv, fr, rtab, cr, tabfn, &fr->tablesVerlet[i]);
             }
-	/* End of tables initialization */
-	
+            /* End of tables initialization */
+
         }
     }
 

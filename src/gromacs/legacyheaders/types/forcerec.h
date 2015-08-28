@@ -300,7 +300,7 @@ typedef struct
     gmx_bool bcoultabVerlet;
     gmx_bool bvdwtabVerlet;
 
-	int gmx_no_table_coeffs;
+    int gmx_no_table_coeffs;
     const char*  nocoeffsPLEASE; /* Avoid scale factors and other coefficients.
                                      Bring the table values as pure as possible to the GPU. */
 

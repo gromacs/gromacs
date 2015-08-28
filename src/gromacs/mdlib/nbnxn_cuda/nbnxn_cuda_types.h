@@ -200,33 +200,33 @@ struct cu_nbparam
 
     /* Non-Bonded GENERIC Table data - accessed through texture memory */
 
-	int gmx_no_table_coeffs;
+    int gmx_no_table_coeffs;
 
-    int                  nb_generic_ntabs;        /**< amount of tables                                     */	
-    int                  nb_generic_tab_size;     /**< table size (s.t. it fits in texture cache)           */
-    float                nb_generic_tab_scale;    /**< table scale/spacing                                  */
+    int nb_generic_ntabs;                         /**< amount of tables                                     */
+    int nb_generic_tab_size;                      /**< table size (s.t. it fits in texture cache)           */
+    float nb_generic_tab_scale;                   /**< table scale/spacing                                  */
     float               *nb_generic_Ftab;         /**< pointer to the force tables in the device memory     */
     float               *nb_generic_Vtab;         /**< pointer to the potential tables in the device memory */
-    cudaTextureObject_t  nb_generic_Ftab_texobj;  /**< texture object bound to nb_Ftab                      */
-    cudaTextureObject_t  nb_generic_Vtab_texobj;  /**< texture object bound to nb_Vtab                      */
+    cudaTextureObject_t nb_generic_Ftab_texobj;   /**< texture object bound to nb_Ftab                      */
+    cudaTextureObject_t nb_generic_Vtab_texobj;   /**< texture object bound to nb_Vtab                      */
 
-	/* User Coulomb Table data */
-	int    nb_coul_ntabs;
-	int    nb_coul_tab_size;
-	float  nb_coul_tab_scale;
-	float *nb_coul_Ftab;
-	float *nb_coul_Vtab;
-	cudaTextureObject_t nb_coul_Ftab_texobj;
-	cudaTextureObject_t nb_coul_Vtab_texobj;
+    /* User Coulomb Table data */
+    int nb_coul_ntabs;
+    int nb_coul_tab_size;
+    float nb_coul_tab_scale;
+    float *nb_coul_Ftab;
+    float *nb_coul_Vtab;
+    cudaTextureObject_t nb_coul_Ftab_texobj;
+    cudaTextureObject_t nb_coul_Vtab_texobj;
 
-	/* User Vdw Table data */
-	int    nb_vdw_ntabs;
-	int    nb_vdw_tab_size;
-	float  nb_vdw_tab_scale;
-	float *nb_vdw_Ftab;
-	float *nb_vdw_Vtab;
-	cudaTextureObject_t nb_vdw_Ftab_texobj;
-	cudaTextureObject_t nb_vdw_Vtab_texobj;
+    /* User Vdw Table data */
+    int nb_vdw_ntabs;
+    int nb_vdw_tab_size;
+    float nb_vdw_tab_scale;
+    float *nb_vdw_Ftab;
+    float *nb_vdw_Vtab;
+    cudaTextureObject_t nb_vdw_Ftab_texobj;
+    cudaTextureObject_t nb_vdw_Vtab_texobj;
 };
 
 /** \internal

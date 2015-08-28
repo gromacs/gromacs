@@ -740,9 +740,9 @@ static void init_nbparam(cu_nbparam_t              *nbp,
 
     set_cutoff_parameters(nbp, ic);
 
-	nbp->gmx_no_table_coeffs = ic->gmx_no_table_coeffs;
-	
-	printf("nbp->gmx_no_table_coeffs = %d\n",nbp->gmx_no_table_coeffs);
+    nbp->gmx_no_table_coeffs = ic->gmx_no_table_coeffs;
+
+    printf("nbp->gmx_no_table_coeffs = %d\n", nbp->gmx_no_table_coeffs);
 
     if (ic->vdwtype == evdwCUT)
     {
@@ -778,13 +778,13 @@ static void init_nbparam(cu_nbparam_t              *nbp,
     }
     else if (ic->vdwtype == evdwUSER)
     {
-		if (ic->gmx_no_table_coeffs == 0)
-		{
-			nbp->vdwtype = evdwCuUSER;
-			printf("evdwCuUSER chosen\n");
-		}
-		if (ic->gmx_no_table_coeffs == 1)
-		{
+        if (ic->gmx_no_table_coeffs == 0)
+        {
+            nbp->vdwtype = evdwCuUSER;
+            printf("evdwCuUSER chosen\n");
+        }
+        if (ic->gmx_no_table_coeffs == 1)
+        {
             nbp->vdwtype = evdwCuUSER_GENERIC;
             printf("evdwCuUSER_GENERIC chosen\n");
         }
@@ -826,13 +826,13 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         printf("eeltype = eelCuUSER selected!\n");
         if (ic->gmx_no_table_coeffs == 0)
         {
-			nbp->eeltype = eelCuUSER;
-		}
-		if (ic->gmx_no_table_coeffs == 1)
-		{
-			nbp->eeltype = eelCuNONE;
-		}	
-	
+            nbp->eeltype = eelCuUSER;
+        }
+        if (ic->gmx_no_table_coeffs == 1)
+        {
+            nbp->eeltype = eelCuNONE;
+        }
+
         break;
 
     default:
@@ -840,32 +840,32 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         gmx_incons("The requested electrostatics type is not implemented in the CUDA GPU accelerated kernels!");
     }
 
-        
-    
+
+
     if (nbp->eeltype == eelCuUSER)
     {
-		nbp->nb_coul_Ftab = NULL;
-		nbp->nb_coul_Vtab = NULL;
-		printf ("nbnxn_cuda_data_mgmt.cu: Selected Coulomb user tables\n");
-		init_nb_coul_Ftables(ic, nbp, dev_info);
-		init_nb_coul_Vtables(ic, nbp, dev_info);
-	}
-    
-	if (nbp->vdwtype == evdwUSER && nbp->gmx_no_table_coeffs == 0)
-	{
-		nbp->nb_vdw_Ftab = NULL;
-		nbp->nb_vdw_Vtab = NULL;
-		printf ("nbnxn_cuda_data_mgmt.cu: Selected VDW user tables\n");
-		init_nb_vdw_Ftables(ic, nbp, dev_info);
-		init_nb_vdw_Vtables(ic, nbp, dev_info);
-	}
+        nbp->nb_coul_Ftab = NULL;
+        nbp->nb_coul_Vtab = NULL;
+        printf ("nbnxn_cuda_data_mgmt.cu: Selected Coulomb user tables\n");
+        init_nb_coul_Ftables(ic, nbp, dev_info);
+        init_nb_coul_Vtables(ic, nbp, dev_info);
+    }
+
+    if (nbp->vdwtype == evdwUSER && nbp->gmx_no_table_coeffs == 0)
+    {
+        nbp->nb_vdw_Ftab = NULL;
+        nbp->nb_vdw_Vtab = NULL;
+        printf ("nbnxn_cuda_data_mgmt.cu: Selected VDW user tables\n");
+        init_nb_vdw_Ftables(ic, nbp, dev_info);
+        init_nb_vdw_Vtables(ic, nbp, dev_info);
+    }
 
     if (nbp->vdwtype == evdwCuUSER && nbp->gmx_no_table_coeffs == 1)
     {
-		/* generate table for VdwLJ */
-		nbp->nb_generic_Ftab = NULL;
-		nbp->nb_generic_Vtab = NULL;
-		printf ("nbnxn_cuda_data_mgmt.cu: Selected vdw USER tables\n");
+        /* generate table for VdwLJ */
+        nbp->nb_generic_Ftab = NULL;
+        nbp->nb_generic_Vtab = NULL;
+        printf ("nbnxn_cuda_data_mgmt.cu: Selected vdw USER tables\n");
         init_nb_generic_Ftables(ic, nbp, dev_info);
         init_nb_generic_Vtables(ic, nbp, dev_info);
     }
@@ -1470,7 +1470,7 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
 
     if (nbparam->eeltype == eelCuUSER)
     {
-		#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+                #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (use_texobj(dev_info))
         {
@@ -1493,9 +1493,9 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
         cu_free_buffered(nbparam->nb_coul_Ftab, &nbparam->nb_coul_tab_size);
         cu_free_buffered(nbparam->nb_coul_Vtab, &nbparam->nb_coul_tab_size);
     }
-	
-	
-	if (nbparam->vdwtype == evdwUSER && nbparam->gmx_no_table_coeffs == 0)
+
+
+    if (nbparam->vdwtype == evdwUSER && nbparam->gmx_no_table_coeffs == 0)
     {
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
@@ -1520,7 +1520,7 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
         cu_free_buffered(nbparam->nb_vdw_Ftab, &nbparam->nb_vdw_tab_size);
         cu_free_buffered(nbparam->nb_vdw_Vtab, &nbparam->nb_vdw_tab_size);
     }
-    
+
     if (nbparam->vdwtype == evdwUSER && nbparam->gmx_no_table_coeffs == 1)
     {
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
@@ -1554,9 +1554,9 @@ static void nbnxn_cuda_free_nbparam_nbtable(cu_nbparam_t            *nbparam,
 {
     cudaError_t stat;
 
-        if (nbparam->eeltype == eelCuUSER)
+    if (nbparam->eeltype == eelCuUSER)
     {
-		#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+                #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (use_texobj(dev_info))
         {
@@ -1579,9 +1579,9 @@ static void nbnxn_cuda_free_nbparam_nbtable(cu_nbparam_t            *nbparam,
         cu_free_buffered(nbparam->nb_coul_Ftab, &nbparam->nb_coul_tab_size);
         cu_free_buffered(nbparam->nb_coul_Vtab, &nbparam->nb_coul_tab_size);
     }
-	
-	
-	if (nbparam->vdwtype == evdwUSER && nbparam->gmx_no_table_coeffs == 0)
+
+
+    if (nbparam->vdwtype == evdwUSER && nbparam->gmx_no_table_coeffs == 0)
     {
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
@@ -1606,7 +1606,7 @@ static void nbnxn_cuda_free_nbparam_nbtable(cu_nbparam_t            *nbparam,
         cu_free_buffered(nbparam->nb_vdw_Ftab, &nbparam->nb_vdw_tab_size);
         cu_free_buffered(nbparam->nb_vdw_Vtab, &nbparam->nb_vdw_tab_size);
     }
-    
+
     if (nbparam->vdwtype == evdwUSER && nbparam->gmx_no_table_coeffs == 1)
     {
 #ifdef HAVE_CUDA_TEXOBJ_SUPPORT

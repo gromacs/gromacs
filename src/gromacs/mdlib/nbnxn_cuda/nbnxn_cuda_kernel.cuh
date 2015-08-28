@@ -167,15 +167,15 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
 #ifdef EL_USER
-	float nb_coul_tab_scale = nbparam.nb_coul_tab_scale;
+    float nb_coul_tab_scale = nbparam.nb_coul_tab_scale;
 #endif /* EL_USER */
 
 #ifdef VDW_USER
-	float nb_vdw_tab_scale = nbparam.nb_vdw_tab_scale;
+    float nb_vdw_tab_scale = nbparam.nb_vdw_tab_scale;
 #endif /* VDW_USER */
 
 #ifdef VDW_USER_GENERIC
-	float nb_generic_tab_scale = nbparam.nb_generic_tab_scale;
+    float nb_generic_tab_scale = nbparam.nb_generic_tab_scale;
 #endif /* VDW_USER_GENERIC */
 
 #ifdef EL_EWALD_ANA
@@ -220,15 +220,15 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     int typei, typej;
 #endif
 
-       int  i, jm, j4, wexcl_idx;
-       
-       
+    int i, jm, j4, wexcl_idx;
+
+
 #ifdef EL_NONE
 #else
     float qi, qj_f;
 #endif
     float r2, inv_r;
-    
+
 #if defined VDW_USER_GENERIC
 #else
     float inv_r2;
@@ -236,7 +236,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #if defined VDW_USER_GENERIC
 #else
-float      inv_r6, c6, c12;
+    float inv_r6, c6, c12;
 #endif
 
 
@@ -286,7 +286,7 @@ float      inv_r6, c6, c12;
 #ifdef IATYPE_SHMEM
         /* Pre-load the i-atom types into shared memory */
 #ifdef VDW_USER_GENERIC
-		atib[tidxj * CL_SIZE + tidxi] = 1;
+        atib[tidxj * CL_SIZE + tidxi] = 1;
 #else
         atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
 #endif /* VDW_USER_GENERIC */
@@ -396,7 +396,7 @@ float      inv_r6, c6, c12;
                     /* load j atom data */
                     xqbuf   = xq[aj];
                     xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
-#ifdef EL_NONE 
+#ifdef EL_NONE
 #else
                     qj_f    = nbparam.epsfac * xqbuf.w;
 #endif
@@ -615,14 +615,14 @@ float      inv_r6, c6, c12;
 
 
 #ifdef EL_NONE
-								F_invr += 0.0f;
+                                F_invr += 0.0f;
 #ifdef CALC_ENERGIES
-                                   E_el = 0.0f;
+                                E_el = 0.0f;
 #endif /* CALC_ENERGIES */
 #endif /* EL_NONE */
 
 #ifdef EL_USER
-								F_invr += qi * qj_f * int_bit *
+                                F_invr += qi * qj_f * int_bit *
 #ifdef USE_TEXOBJ
                                           interpolate_nb_coul_Ftab(nbparam.nb_coul_Ftab_texobj, r2*inv_r, nb_coul_tab_scale);
 #else
