@@ -2036,7 +2036,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     static int  first = 1;
 
     /* printf("Reading %s \n",fn); */
-    read_tpx_state(fn, &ir, &state, NULL, NULL);
+    read_tpx_state(fn, &ir, &state, NULL);
 
     if (!ir.bPull)
     {

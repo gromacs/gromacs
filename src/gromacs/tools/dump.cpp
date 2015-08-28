@@ -69,7 +69,6 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
     t_state       state;
-    rvec         *f = NULL;
     t_inputrec    ir;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
@@ -80,7 +79,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
 
     read_tpx_state(fn,
                    tpx.bIr  ? &ir : NULL,
-                   &state, tpx.bF ? f : NULL,
+                   &state,
                    tpx.bTop ? &mtop : NULL);
 
     if (mdpfn && tpx.bIr)
@@ -126,10 +125,6 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
             /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
             pr_rvecs(stdout, indent, "x", tpx.bX ? state.x : NULL, state.natoms);
             pr_rvecs(stdout, indent, "v", tpx.bV ? state.v : NULL, state.natoms);
-            if (tpx.bF)
-            {
-                pr_rvecs(stdout, indent, "f", f, state.natoms);
-            }
         }
 
         groups = &mtop.groups;
@@ -163,7 +158,6 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
         sfree(gcount);
     }
     done_state(&state);
-    sfree(f);
 }
 
 static void list_top(const char *fn)

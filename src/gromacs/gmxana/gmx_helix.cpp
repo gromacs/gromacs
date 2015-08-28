@@ -208,7 +208,7 @@ int gmx_helix(int argc, char *argv[])
     /* Read reference frame from tpx file to compute helix length */
     snew(xref, top->atoms.nr);
     read_tpx(ftp2fn(efTPR, NFILE, fnm),
-             NULL, NULL, &natoms, xref, NULL, NULL, NULL);
+             NULL, NULL, &natoms, xref, NULL, NULL);
     calc_hxprops(nres, bb, xref);
     do_start_end(nres, bb, &nbb, bbindex, &nca, caindex, bRange, rStart, rEnd);
     sfree(xref);

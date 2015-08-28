@@ -1144,7 +1144,7 @@ t_topology *read_top(const char *fn, int *ePBC)
     t_topology *top;
 
     snew(top, 1);
-    epbc = read_tpx_top(fn, NULL, NULL, &natoms, NULL, NULL, NULL, top);
+    epbc = read_tpx_top(fn, NULL, NULL, &natoms, NULL, NULL, top);
     if (ePBC)
     {
         *ePBC = epbc;

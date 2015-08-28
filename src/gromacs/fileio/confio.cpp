@@ -393,7 +393,7 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
         snew(mtop, 1);
         int ePBC_tmp
             = read_tpx(infile, NULL, box, &natoms,
-                       (x == NULL) ? NULL : *x, (v == NULL) ? NULL : *v, NULL, mtop);
+                       (x == NULL) ? NULL : *x, (v == NULL) ? NULL : *v, mtop);
         if (ePBC != NULL)
         {
             *ePBC = ePBC_tmp;

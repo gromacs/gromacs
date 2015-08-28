@@ -1666,7 +1666,7 @@ int gmx_dipoles(int argc, char *argv[])
 
     snew(top, 1);
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), NULL, box,
-                        &natoms, NULL, NULL, NULL, top);
+                        &natoms, NULL, NULL, top);
 
     snew(gnx, ncos);
     snew(grpname, ncos);

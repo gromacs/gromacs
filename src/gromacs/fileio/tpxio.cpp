@@ -3279,7 +3279,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
 }
 
 static int do_tpx(t_fileio *fio, gmx_bool bRead,
-                  t_inputrec *ir, t_state *state, rvec *f, gmx_mtop_t *mtop,
+                  t_inputrec *ir, t_state *state, gmx_mtop_t *mtop,
                   gmx_bool bXVallocated)
 {
     t_tpxheader     tpx;
@@ -3301,7 +3301,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         tpx.bTop      = (mtop     != NULL);
         tpx.bX        = (state->x != NULL);
         tpx.bV        = (state->v != NULL);
-        tpx.bF        = (f        != NULL);
+        tpx.bF        = FALSE;
         tpx.bBox      = TRUE;
     }
 
@@ -3437,10 +3437,13 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         gmx_fio_ndo_rvec(fio, state->v, state->natoms);
     }
 
-    do_test(fio, tpx.bF, f);
+    do_test(fio, tpx.bF, NULL);
     if (tpx.bF)
     {
-        gmx_fio_ndo_rvec(fio, f, state->natoms);
+        rvec *dummyForces;
+        snew(dummyForces, state->natoms);
+        gmx_fio_ndo_rvec(fio, dummyForces, state->natoms);
+        sfree(dummyForces);
     }
 
     /* Starting with tpx version 26, we have the inputrec
@@ -3582,23 +3585,23 @@ void write_tpx_state(const char *fn,
     t_fileio *fio;
 
     fio = open_tpx(fn, "w");
-    do_tpx(fio, FALSE, ir, state, NULL, mtop, FALSE);
+    do_tpx(fio, FALSE, ir, state, mtop, FALSE);
     close_tpx(fio);
 }
 
 void read_tpx_state(const char *fn,
-                    t_inputrec *ir, t_state *state, rvec *f, gmx_mtop_t *mtop)
+                    t_inputrec *ir, t_state *state, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
 
     fio = open_tpx(fn, "r");
-    do_tpx(fio, TRUE, ir, state, f, mtop, FALSE);
+    do_tpx(fio, TRUE, ir, state, mtop, FALSE);
     close_tpx(fio);
 }
 
 int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,
-             rvec *x, rvec *v, rvec *f, gmx_mtop_t *mtop)
+             rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
     t_state   state;
@@ -3607,7 +3610,7 @@ int read_tpx(const char *fn,
     state.x = x;
     state.v = v;
     fio     = open_tpx(fn, "r");
-    ePBC    = do_tpx(fio, TRUE, ir, &state, f, mtop, TRUE);
+    ePBC    = do_tpx(fio, TRUE, ir, &state, mtop, TRUE);
     close_tpx(fio);
     *natoms = state.natoms;
     if (box)
@@ -3623,12 +3626,12 @@ int read_tpx(const char *fn,
 
 int read_tpx_top(const char *fn,
                  t_inputrec *ir, matrix box, int *natoms,
-                 rvec *x, rvec *v, rvec *f, t_topology *top)
+                 rvec *x, rvec *v, t_topology *top)
 {
     gmx_mtop_t  mtop;
     int         ePBC;
 
-    ePBC = read_tpx(fn, ir, box, natoms, x, v, f, &mtop);
+    ePBC = read_tpx(fn, ir, box, natoms, x, v, &mtop);
 
     *top = gmx_mtop_t_to_t_topology(&mtop);
 

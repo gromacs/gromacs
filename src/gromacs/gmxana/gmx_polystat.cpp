@@ -187,7 +187,7 @@ int gmx_polystat(int argc, char *argv[])
 
     snew(top, 1);
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
-                        NULL, box, &natoms, NULL, NULL, NULL, top);
+                        NULL, box, &natoms, NULL, NULL, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm),
