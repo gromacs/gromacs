@@ -252,10 +252,10 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
 
 typedef struct
 {
-    int    model;
-    int    count;
-    int    vdwtype[4];
-    real   charge[4];
+    int  model;
+    int  count;
+    int  vdwtype[4];
+    real charge[4];
 } solvent_parameters_t;
 
 static void
@@ -1291,6 +1291,7 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
     }
 
     sprintf(buf, "%s", tabfn);
+
     if (eg1 && eg2)
     {
         /* Append the two energy group names */
@@ -1339,6 +1340,82 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
         }
     }
 }
+
+static void make_nbf_tables_Verlet(FILE              *fp,
+                                   const output_env_t oenv,
+                                   t_forcerec        *fr,
+                                   real               rtab,
+                                   const t_commrec   *cr,
+                                   const char        *tabfn,
+                                   t_tablesVerlet    *tverlet)
+{
+    char buf[STRLEN];
+    // int  i, j;
+
+    if (tabfn == NULL)
+    {
+        if (debug)
+        {
+            fprintf(debug, "make_nbf_tables_Verlet: No table file name passed, can not read table, can not do non-bonded interactions\n");
+        }
+        return;
+    }
+
+    sprintf(buf, "%s", tabfn);
+
+    // fr->bnocoeffsPLEASE = NULL;
+    fr->gmx_no_table_coeffs = 0;
+
+    printf ("For generic tables please set GMX_NO_TABLE_COEFFS environment variable\n");
+
+    fr->nocoeffsPLEASE = getenv("GMX_NO_TABLE_COEFFS");
+
+    if (fr->nocoeffsPLEASE != NULL)
+    {
+        fr->gmx_no_table_coeffs = 1;
+    }
+
+    // fr->ic->gmx_no_table_coeffs = fr->gmx_no_table_coeffs;
+
+    if (fr->bvdwtabVerlet && fr->gmx_no_table_coeffs == 1)
+    {
+        printf("fr->bvdwtabVerlet && fr->bcoultabVerlet && fr->nocoeffsPLEASE != NULL Verified\n");
+        tverlet->table_GENERIC              = make_tables_Verlet(fp, oenv, fr, MASTER(cr), buf, rtab, GMX_MAKETABLES_USER);
+        tverlet->table_GENERIC.format       = GMX_TABLE_FORMAT_LINEAR_VERLET;
+        tverlet->table_GENERIC.interaction  = GMX_TABLE_INTERACTION_USER;
+        tverlet->table_GENERIC.maxr         = rtab;
+    }
+
+    if (fr->bvdwtabVerlet && fr->gmx_no_table_coeffs == 0)
+    {
+        printf("fr->bvdwtabVerlet && fr->nocoeffsPLEASE == NULL Verified\n");
+        tverlet->table_vdw_LJ6  = make_tables_Verlet(fp, oenv, fr, MASTER(cr), buf, rtab, GMX_MAKETABLES_USER_VDW_LJ6);
+        tverlet->table_vdw_LJ12 = make_tables_Verlet(fp, oenv, fr, MASTER(cr), buf, rtab, GMX_MAKETABLES_USER_VDW_LJ12);
+
+        tverlet->table_vdw_LJ6.interaction  = GMX_TABLE_INTERACTION_USER;
+        tverlet->table_vdw_LJ12.interaction = GMX_TABLE_INTERACTION_USER;
+
+        tverlet->table_vdw_LJ6.format       = GMX_TABLE_FORMAT_LINEAR_VERLET;
+        tverlet->table_vdw_LJ12.format      = GMX_TABLE_FORMAT_LINEAR_VERLET;
+        tverlet->table_vdw_LJ6.maxr         = rtab;
+        tverlet->table_vdw_LJ12.maxr        = rtab;
+    }
+    if (fr->bcoultabVerlet && fr->gmx_no_table_coeffs == 0)
+    {
+        printf("fr->bcoultabVerlet && fr->nocoeffsPLEASE == NULL Verified\n");
+        tverlet->table_elec                 = make_tables_Verlet(fp, oenv, fr, MASTER(cr), buf, rtab, GMX_MAKETABLES_USER_ELEC);
+        tverlet->table_elec.interaction     = GMX_TABLE_INTERACTION_USER;
+        tverlet->table_elec.format          = GMX_TABLE_FORMAT_LINEAR_VERLET;
+        tverlet->table_elec.maxr            = rtab;
+    }
+
+
+
+
+
+
+}
+
 
 static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
                          int *ncount, int **count)
@@ -1466,7 +1543,7 @@ static real cutoff_inf(real cutoff)
 static void make_adress_tf_tables(FILE *fp, const output_env_t oenv,
                                   t_forcerec *fr, const t_inputrec *ir,
                                   const char *tabfn, const gmx_mtop_t *mtop,
-                                  matrix     box)
+                                  matrix box)
 {
     char buf[STRLEN];
     int  i, j;
@@ -1631,7 +1708,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * On BlueGene/Q, this is faster regardless of precision.
          * In single precision, this is faster on Bulldozer.
          */
-#if GMX_SIMD_REAL_WIDTH >= 8 || \
+#if GMX_SIMD_REAL_WIDTH >= 8 ||                                                           \
         (GMX_SIMD_REAL_WIDTH >= 4 && defined GMX_SIMD_HAVE_FMA && !defined GMX_DOUBLE) || \
         defined GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
@@ -1882,9 +1959,180 @@ static void init_ewald_f_table(interaction_const_t *ic,
     }
 }
 
+static void init_tables_Verlet(FILE*             fp,
+                               const t_forcerec *fr,
+                               real              rtab)
+{
+    real maxr;
+    maxr = rtab;
+    /* Get the Ewald table spacing based on Coulomb and/or LJ
+     * Ewald coefficients and rtol.
+     */
+    printf ("Entering init_tables_Verlet\n");
+
+    if (fp)
+    {
+        fprintf (fp, "Entering init_tables_Verlet\n");
+    }
+
+    printf ("init_f_tableVerlet: rtab = %10.4f\n", rtab);
+
+    /*
+       fr->ic->tabq_scale = nb_spline3_table_scale(fr->ic, rtab);
+       fr->ic->tabq_size  = static_cast<int>(maxr*fr->ic->tabq_scale) + 2;
+     */
+
+    fr->ic->gmx_no_table_coeffs = fr->gmx_no_table_coeffs;
+    fr->ic->tabq_scale          = 1000.0;
+    fr->ic->tabq_size           = static_cast<int>(maxr*fr->ic->tabq_scale);
+
+    printf(" init_f_tableVerlet(): ic->tabq_scale: %10.4f\n", fr->ic->tabq_scale);
+
+
+    if (fr->ic->vdwtype == evdwUSER && fr->gmx_no_table_coeffs == 1)
+    {
+        printf ("Generic Tables requested.\n");
+
+        /* Needed for aligned allocation */
+
+        //sfree_aligned(fr->ic->tabq_nbtab_FDV0);
+        sfree_aligned(fr->ic->tabq_nbtab_F);
+        sfree_aligned(fr->ic->tabq_nbtab_V);
+
+        //snew_aligned(fr->ic->tabq_nbtab_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_nbtab_F, fr->ic->tabq_size*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_nbtab_V, fr->ic->tabq_size*sizeof(real), 32);
+
+        /*
+           table_spline3_fill_Verlet(fr->ic->tabq_nbtab_F,
+                                                          fr->ic->tabq_nbtab_V,
+                                                          fr->ic->tabq_nbtab_FDV0,
+                                                          fr->ic->tabq_size,
+                                                          1/fr->ic->tabq_scale,
+                                                          fr->tablesVerlet->table_GENERIC.F,
+                                                          fr->tablesVerlet->table_GENERIC.V,
+                                                          fr->tablesVerlet->table_GENERIC.n);
+         *
+         */
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+            fr->ic->tabq_nbtab_F[i] = fr->tablesVerlet->table_GENERIC.F[i];
+            fr->ic->tabq_nbtab_V[i] = fr->tablesVerlet->table_GENERIC.V[i];
+        }
+
+
+        // if (debug) {
+        FILE *fpGeneric;
+
+        fpGeneric = fopen ("fpGeneric.csv", "w");
+
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+            fprintf (fpGeneric, "%12.10e, %12.10e, %12.10e\n", i/fr->ic->tabq_scale, fr->ic->tabq_nbtab_V[i], fr->ic->tabq_nbtab_F[i]);
+        }
+        fclose(fpGeneric);
+    }
+
+    if (fr->ic->vdwtype == evdwUSER && fr->gmx_no_table_coeffs == 0)
+    {
+        printf ("init_tables_Verlet: Entering evdwtype == evdwUSER\n");
+        maxr = fr->ic->rvdw;
+
+        printf ("init_tables_Verlet: maxr = %10.4f\n", maxr);
+
+
+        // sfree_aligned(fr->ic->tabq_vdw_FDV0);
+        sfree_aligned(fr->ic->tabq_vdw_F);
+        sfree_aligned(fr->ic->tabq_vdw_V);
+
+        // snew_aligned(fr->ic->tabq_vdw_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_vdw_F, fr->ic->tabq_size*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_vdw_V, fr->ic->tabq_size*sizeof(real), 32);
+
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+            fr->ic->tabq_vdw_F[i] = fr->tablesVerlet->table_vdw_LJ6.F[i] + fr->tablesVerlet->table_vdw_LJ12.F[i];
+            fr->ic->tabq_vdw_V[i] = fr->tablesVerlet->table_vdw_LJ6.V[i] + fr->tablesVerlet->table_vdw_LJ12.V[i];
+        }
+
+
+        FILE *fpVdw;
+        fpVdw = fopen ("fpVdw.csv", "w");
+
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+            fprintf (fpVdw, "%12.10e, %12.10e, %12.10e\n", i/fr->ic->tabq_scale, fr->ic->tabq_vdw_V[i], fr->ic->tabq_vdw_F[i]);
+        }
+        fclose(fpVdw);
+    }
+
+    if (fr->ic->eeltype == eelUSER && fr->gmx_no_table_coeffs == 0)
+    {
+        printf ("init_tables_Verlet: Entering eeltype == eelUSER\n");
+        maxr = fr->ic->rcoulomb;
+
+        printf ("init_tables_Verlet: maxr = %10.4f\n", maxr);
+
+        // sfree_aligned(fr->ic->tabq_coul_FDV0);
+        sfree_aligned(fr->ic->tabq_coul_F);
+        sfree_aligned(fr->ic->tabq_coul_V);
+
+        // snew_aligned(fr->ic->tabq_coul_FDV0, fr->ic->tabq_size*4*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_coul_F, fr->ic->tabq_size*sizeof(real), 32);
+        snew_aligned(fr->ic->tabq_coul_V, fr->ic->tabq_size*sizeof(real), 32);
+
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+            fr->ic->tabq_coul_F[i] = fr->tablesVerlet->table_elec.F[i];
+            fr->ic->tabq_coul_V[i] = fr->tablesVerlet->table_elec.V[i];
+        }
+
+
+        FILE *fpElec;
+        fpElec = fopen ("fpElec.csv", "w");
+
+        for (int i = 0; i < fr->ic->tabq_size; i++)
+        {
+            fprintf (fpElec, "%12.10e, %12.10e, %12.10e\n", i/fr->ic->tabq_scale, fr->ic->tabq_coul_V[i], fr->ic->tabq_coul_F[i]);
+        }
+        fclose(fpElec);
+    }
+
+    if (fr->ic->eeltype == eelEWALD || EEL_PME(fr->ic->eeltype))
+    {
+        /* Create the original table data in FDV0 */
+        snew_aligned(fr->ic->tabq_coul_FDV0, fr->ic->tabq_size*4, 32);
+        snew_aligned(fr->ic->tabq_coul_F, fr->ic->tabq_size, 32);
+        snew_aligned(fr->ic->tabq_coul_V, fr->ic->tabq_size, 32);
+        table_spline3_fill_ewald_lr(fr->ic->tabq_coul_F,
+                                    fr->ic->tabq_coul_V,
+                                    fr->ic->tabq_coul_FDV0,
+                                    fr->ic->tabq_size,
+                                    1/fr->ic->tabq_scale,
+                                    fr->ic->ewaldcoeff_q,
+                                    v_q_ewald_lr);
+
+    }
+
+    if (EVDW_PME(fr->ic->vdwtype))
+    {
+        snew_aligned(fr->ic->tabq_vdw_FDV0, fr->ic->tabq_size*4, 32);
+        snew_aligned(fr->ic->tabq_vdw_F,    fr->ic->tabq_size, 32);
+        snew_aligned(fr->ic->tabq_vdw_V,    fr->ic->tabq_size, 32);
+        table_spline3_fill_ewald_lr(fr->ic->tabq_vdw_F,
+                                    fr->ic->tabq_vdw_V,
+                                    fr->ic->tabq_vdw_FDV0,
+                                    fr->ic->tabq_size,
+                                    1/fr->ic->tabq_scale,
+                                    fr->ic->ewaldcoeff_lj,
+                                    v_lj_ewald_lr);
+    }
+}
+
 void init_interaction_const_tables(FILE                *fp,
                                    interaction_const_t *ic,
                                    real                 rtab)
+
 {
     if (ic->eeltype == eelEWALD || EEL_PME(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
@@ -1896,6 +2144,7 @@ void init_interaction_const_tables(FILE                *fp,
                     1/ic->tabq_scale, ic->tabq_size);
         }
     }
+
 }
 
 static void clear_force_switch_constants(shift_consts_t *sc)
@@ -2296,7 +2545,11 @@ void init_forcerec(FILE              *fp,
     double         dbl;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
-    gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
+    gmx_bool       bMakeTables,
+                   bMakeTablesVerlet,
+                   bMakeSeparate14Table,
+                   bSomeNormalNbListsAreInUse;
+
     gmx_bool       bFEP_NonBonded;
     int           *nm_ind, egp_flags;
 
@@ -2594,11 +2847,18 @@ void init_forcerec(FILE              *fp,
         case eelSWITCH:
         case eelSHIFT:
         case eelUSER:
+            fr->bcoultabVerlet            = TRUE;
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
+            break;
         case eelENCADSHIFT:
         case eelPMESWITCH:
         case eelPMEUSER:
         case eelPMEUSERSWITCH:
             fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
+            break;
+
+        case eelNONE:
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_NONE;
             break;
 
         case eelPME:
@@ -2631,6 +2891,9 @@ void init_forcerec(FILE              *fp,
         case evdwSWITCH:
         case evdwSHIFT:
         case evdwUSER:
+            fr->bvdwtabVerlet            = TRUE;
+            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
+            break;
         case evdwENCADSHIFT:
             fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
             break;
@@ -2727,13 +2990,43 @@ void init_forcerec(FILE              *fp,
 
     if (ir->cutoff_scheme == ecutsVERLET)
     {
-        if (!gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS))
+
+        fr->bvdwtab  = FALSE;
+        fr->bcoultab = FALSE;
+        fr->ntables  = 0;
+
+        if (fr->vdwtype == evdwUSER)
+        {
+            fr->bvdwtabVerlet = TRUE;
+            fr->ntables++;
+        }
+        else if (fr->eeltype == eelUSER)
+        {
+            fr->bcoultabVerlet = TRUE;
+            fr->ntables++;
+        }
+        else if (!gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS))
         {
             gmx_fatal(FARGS, "Cut-off scheme %S only supports LJ repulsion power 12", ecutscheme_names[ir->cutoff_scheme]);
         }
-        fr->bvdwtab  = FALSE;
-        fr->bcoultab = FALSE;
+
+        if (fr->bvdwtabVerlet == TRUE)
+        {
+            fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_CUBICSPLINETABLE;
+            fr->nbkernel_vdw_modifier    = eintmodNONE;
+        }
+        if (fr->bcoultabVerlet == TRUE)
+        {
+            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_CUBICSPLINETABLE;
+            fr->nbkernel_elec_modifier    = eintmodNONE;
+        }
+
+        bMakeTablesVerlet = fr->bvdwtabVerlet || fr->bcoultabVerlet;
+
     }
+
+
+
 
     /* Tables are used for direct ewald sum */
     if (fr->bEwald)
@@ -2974,56 +3267,64 @@ void init_forcerec(FILE              *fp,
      * A little unnecessary to make both vdw and coul tables sometimes,
      * but what the heck... */
 
-    bMakeTables = fr->bcoultab || fr->bvdwtab || fr->bEwald ||
-        (ir->eDispCorr != edispcNO && ir_vdw_switched(ir));
-
-    bMakeSeparate14Table = ((!bMakeTables || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
-                             fr->coulomb_modifier != eintmodNONE ||
-                             fr->vdw_modifier != eintmodNONE ||
-                             fr->bBHAM || fr->bEwald) &&
-                            (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
-                             gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
-                             gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0));
-
-    negp_pp   = ir->opts.ngener - ir->nwall;
-    negptable = 0;
-    if (!bMakeTables)
+    if (fr->cutoff_scheme == ecutsGROUP)
     {
-        bSomeNormalNbListsAreInUse = TRUE;
-        fr->nnblists               = 1;
-    }
-    else
-    {
-        bSomeNormalNbListsAreInUse = (ir->eDispCorr != edispcNO);
-        for (egi = 0; egi < negp_pp; egi++)
+
+        bMakeTables = fr->bcoultab || fr->bvdwtab || fr->bEwald ||
+            (ir->eDispCorr != edispcNO && ir_vdw_switched(ir));
+
+
+        bMakeSeparate14Table = ((!bMakeTables || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
+                                 fr->coulomb_modifier != eintmodNONE ||
+                                 fr->vdw_modifier != eintmodNONE ||
+                                 fr->bBHAM || fr->bEwald) &&
+                                (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
+                                 gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
+                                 gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0));
+
+
+        negp_pp   = ir->opts.ngener - ir->nwall;
+        negptable = 0;
+        if (!bMakeTables)
         {
-            for (egj = egi; egj < negp_pp; egj++)
-            {
-                egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
-                if (!(egp_flags & EGP_EXCL))
-                {
-                    if (egp_flags & EGP_TABLE)
-                    {
-                        negptable++;
-                    }
-                    else
-                    {
-                        bSomeNormalNbListsAreInUse = TRUE;
-                    }
-                }
-            }
-        }
-        if (bSomeNormalNbListsAreInUse)
-        {
-            fr->nnblists = negptable + 1;
+            bSomeNormalNbListsAreInUse = TRUE;
+            fr->nnblists               = 1;
         }
         else
         {
-            fr->nnblists = negptable;
-        }
-        if (fr->nnblists > 1)
-        {
-            snew(fr->gid2nblists, ir->opts.ngener*ir->opts.ngener);
+            bSomeNormalNbListsAreInUse = (ir->eDispCorr != edispcNO);
+            for (egi = 0; egi < negp_pp; egi++)
+            {
+                for (egj = egi; egj < negp_pp; egj++)
+                {
+                    egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
+                    if (!(egp_flags & EGP_EXCL))
+                    {
+                        if (egp_flags & EGP_TABLE)
+                        {
+                            negptable++;
+                        }
+                        else
+                        {
+                            bSomeNormalNbListsAreInUse = TRUE;
+                        }
+                    }
+                }
+            }
+            if (bSomeNormalNbListsAreInUse)
+            {
+                fr->nnblists = negptable + 1;
+            }
+            else
+            {
+                fr->nnblists = negptable;
+            }
+
+
+            if (fr->nnblists > 1)
+            {
+                snew(fr->gid2nblists, ir->opts.ngener*ir->opts.ngener);
+            }
         }
     }
 
@@ -3038,82 +3339,138 @@ void init_forcerec(FILE              *fp,
      * in that case grompp should already have checked that we do not need
      * normal tables and we only generate tables for 1-4 interactions.
      */
-    rtab = ir->rlistlong + ir->tabext;
 
-    if (bMakeTables)
+    printf("forcerec.cpp (3240): ir->rlistlong=%10.4f - ir_tabext=%10.4f\n", ir->rlistlong, ir->tabext);
+
+    if (fr->cutoff_scheme == ecutsGROUP)
     {
-        /* make tables for ordinary interactions */
-        if (bSomeNormalNbListsAreInUse)
+        rtab = ir->rlistlong + ir->tabext;
+    }
+
+    if (fr->cutoff_scheme == ecutsVERLET)
+    {
+        rtab = ir->rvdw;
+    }
+
+    printf ("forcerec.cpp (3252): rtab=%10.4f\n", rtab);
+
+    if (fr->cutoff_scheme == ecutsGROUP)
+    {
+        if (bMakeTables)
         {
-            make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
-            if (ir->adress)
+            printf("\n\n\n\n bMakeTables verified!\n\n\n\n\n");
+            /* make tables for ordinary interactions */
+            if (bSomeNormalNbListsAreInUse)
             {
-                make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
-            }
-            if (!bMakeSeparate14Table)
-            {
-                fr->tab14 = fr->nblists[0].table_elec_vdw;
-            }
-            m = 1;
-        }
-        else
-        {
-            m = 0;
-        }
-        if (negptable > 0)
-        {
-            /* Read the special tables for certain energy group pairs */
-            nm_ind = mtop->groups.grps[egcENER].nm_ind;
-            for (egi = 0; egi < negp_pp; egi++)
-            {
-                for (egj = egi; egj < negp_pp; egj++)
+                make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+                if (ir->adress)
                 {
-                    egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
-                    if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL))
+                    make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
+                }
+                if (!bMakeSeparate14Table)
+                {
+                    fr->tab14 = fr->nblists[0].table_elec_vdw;
+                }
+                m = 1;
+            }
+            else
+            {
+                m = 0;
+            }
+            if (negptable > 0)
+            {
+                /* Read the special tables for certain energy group pairs */
+                nm_ind = mtop->groups.grps[egcENER].nm_ind;
+                for (egi = 0; egi < negp_pp; egi++)
+                {
+                    for (egj = egi; egj < negp_pp; egj++)
                     {
-                        if (fr->nnblists > 1)
+                        egp_flags = ir->opts.egp_flags[GID(egi, egj, ir->opts.ngener)];
+                        if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL))
                         {
-                            fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = m;
-                        }
-                        /* Read the table file with the two energy groups names appended */
-                        make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn,
-                                        *mtop->groups.grpname[nm_ind[egi]],
-                                        *mtop->groups.grpname[nm_ind[egj]],
-                                        &fr->nblists[m]);
-                        if (ir->adress)
-                        {
+                            if (fr->nnblists > 1)
+                            {
+                                fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = m;
+                            }
+                            /* Read the table file with the two energy groups names appended */
                             make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn,
                                             *mtop->groups.grpname[nm_ind[egi]],
                                             *mtop->groups.grpname[nm_ind[egj]],
-                                            &fr->nblists[fr->nnblists/2+m]);
+                                            &fr->nblists[m]);
+                            if (ir->adress)
+                            {
+                                make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn,
+                                                *mtop->groups.grpname[nm_ind[egi]],
+                                                *mtop->groups.grpname[nm_ind[egj]],
+                                                &fr->nblists[fr->nnblists/2+m]);
+                            }
+                            m++;
                         }
-                        m++;
-                    }
-                    else if (fr->nnblists > 1)
-                    {
-                        fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = 0;
+                        else if (fr->nnblists > 1)
+                        {
+                            fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = 0;
+                        }
                     }
                 }
             }
         }
-    }
-    else if ((fr->eDispCorr != edispcNO) &&
-             ((fr->vdw_modifier == eintmodPOTSWITCH) ||
-              (fr->vdw_modifier == eintmodFORCESWITCH) ||
-              (fr->vdw_modifier == eintmodPOTSHIFT)))
-    {
-        /* Tables might not be used for the potential modifier interactions per se, but
-         * we still need them to evaluate switch/shift dispersion corrections in this case.
-         */
-        make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+        else if ((fr->eDispCorr != edispcNO) &&
+                 ((fr->vdw_modifier == eintmodPOTSWITCH) ||
+                  (fr->vdw_modifier == eintmodFORCESWITCH) ||
+                  (fr->vdw_modifier == eintmodPOTSHIFT)))
+        {
+            /* Tables might not be used for the potential modifier interactions per se, but
+             * we still need them to evaluate switch/shift dispersion corrections in this case.
+             */
+            make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+        }
+
+        if (bMakeSeparate14Table)
+        {
+            /* generate extra tables with plain Coulomb for 1-4 interactions only */
+            fr->tab14 = make_tables(fp, oenv, fr, MASTER(cr), tabpfn, rtab,
+                                    GMX_MAKETABLES_14ONLY);
+        }
     }
 
-    if (bMakeSeparate14Table)
+    if (fr->cutoff_scheme == ecutsVERLET)
     {
-        /* generate extra tables with plain Coulomb for 1-4 interactions only */
-        fr->tab14 = make_tables(fp, oenv, fr, MASTER(cr), tabpfn, rtab,
-                                GMX_MAKETABLES_14ONLY);
+        if (bMakeTablesVerlet)         //&& MASTER(cr))
+        {
+            if (ir->coulombtype == eelUSER && ir->rcoulomb == 1.0)
+            {
+                if (MASTER(cr))
+                {
+                    printf ("Using Verlet tables for Coulomb interactions from file:\t %s \n", tabfn);
+                }
+            }
+            if (ir->vdwtype == evdwUSER && ir->rvdw == 1.0)
+            {
+                if (MASTER(cr))
+                {
+                    printf ("Using Verlet tables for Van der Waals interactions from file:\t %s \n", tabfn);
+                }
+            }
+
+            if (fp)
+            {
+                fprintf(fp, "Generating Verlet Scheme tables\n");
+            }
+
+            /* The following instructions initialize as many table data structures (tablesVerlet) as needed in the fr data strcucture.
+
+             */
+            snew(fr->tablesVerlet, fr->ntables);
+
+            for (int i = 0; i < fr->ntables; i++)
+            {
+                make_nbf_tables_Verlet(fp, oenv, fr, rtab, cr, tabfn, &fr->tablesVerlet[i]);
+            }
+            /* End of tables initialization */
+
+        }
     }
+
 
     /* Read AdResS Thermo Force table if needed */
     if (fr->adress_icor == eAdressICThermoForce)
@@ -3223,14 +3580,28 @@ void init_forcerec(FILE              *fp,
     init_interaction_const(fp, &fr->ic, fr);
     init_interaction_const_tables(fp, fr->ic, rtab);
 
+
+
+
     if (fr->cutoff_scheme == ecutsVERLET)
     {
-        if (ir->rcoulomb != ir->rvdw)
+        printf ("Entering Verlet cut-off scheme.\n");
+
+
+        if (ir->rcoulomb != ir->rvdw &&
+            ir->coulombtype != eelNONE)
         {
             gmx_fatal(FARGS, "With Verlet lists rcoulomb and rvdw should be identical");
         }
 
+        if (ir->vdwtype == evdwUSER || ir->coulombtype == eelUSER)
+        {
+            printf ("Filling Verlet Scheme tables with data from table file.\n");
+            init_tables_Verlet(fp, fr, rtab);
+        }
+
         init_nb_verlet(fp, &fr->nbv, bFEP_NonBonded, ir, fr, cr, nbpu_opt);
+
     }
 
     if (ir->eDispCorr != edispcNO)

@@ -79,6 +79,18 @@
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
+#define VDW_USER
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_Vdw_USER ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecCut_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
+#undef NB_KERNEL_FUNC_NAME
+
 #undef EL_CUTOFF
 
 
@@ -115,6 +127,18 @@
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
+#define VDW_USER
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_Vdw_USER ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecRF_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
+#undef NB_KERNEL_FUNC_NAME
+
 #undef EL_RF
 
 
@@ -149,6 +173,18 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_VdwLJPsw ## __VA_ARGS__
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_Vdw_USER ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEw_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_ANA
@@ -188,6 +224,18 @@
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
+#define VDW_USER
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_Vdw_USER ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwTwinCut_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
+#undef NB_KERNEL_FUNC_NAME
+
 #undef EL_EWALD_ANA
 #undef VDW_CUTOFF_CHECK
 
@@ -222,6 +270,18 @@
 #define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_VdwLJPsw ## __VA_ARGS__
 #include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
 #undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_Vdw_USER ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTab_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
 #undef NB_KERNEL_FUNC_NAME
 
 #undef EL_EWALD_TAB
@@ -260,5 +320,110 @@
 #undef LJ_POT_SWITCH
 #undef NB_KERNEL_FUNC_NAME
 
+#define VDW_USER
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_Vdw_USER ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecEwQSTabTwinCut_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
+#undef NB_KERNEL_FUNC_NAME
+
 #undef EL_EWALD_TAB
 #undef VDW_CUTOFF_CHECK
+
+
+
+/* Non-Bonded Tabulated pair potential kernels
+ */
+
+#define EL_NONE
+
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJ ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w geometric combination rules */
+#define LJ_EWALD_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJEwCombGeom ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_EWALD_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w LB combination rules */
+#define LJ_EWALD_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJEwCombLB ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_EWALD_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* F switch LJ */
+#define LJ_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJFsw ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch LJ */
+#define LJ_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_VdwLJPsw ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_Vdw_USER ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecNone_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
+#undef NB_KERNEL_FUNC_NAME
+
+#undef EL_NONE
+
+#define EL_USER
+
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_VdwLJ ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w geometric combination rules */
+#define LJ_EWALD_COMB_GEOM
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_VdwLJEwCombGeom ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_EWALD_COMB_GEOM
+#undef NB_KERNEL_FUNC_NAME
+/* LJ-Ewald w LB combination rules */
+#define LJ_EWALD_COMB_LB
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_VdwLJEwCombLB ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_EWALD_COMB_LB
+#undef NB_KERNEL_FUNC_NAME
+/* F switch LJ */
+#define LJ_FORCE_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_VdwLJFsw ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_FORCE_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+/* V switch LJ */
+#define LJ_POT_SWITCH
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_VdwLJPsw ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef LJ_POT_SWITCH
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_Vdw_USER ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER
+#undef NB_KERNEL_FUNC_NAME
+
+#define VDW_USER_GENERIC
+#define NB_KERNEL_FUNC_NAME(x, ...) x ## _ElecUSER_Vdw_USER_GENERIC ## __VA_ARGS__
+#include "gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh"
+#undef VDW_USER_GENERIC
+#undef NB_KERNEL_FUNC_NAME
+
+#undef EL_USER
