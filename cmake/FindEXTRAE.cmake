@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,57 +41,96 @@
 find_path(EXTRAE_INCLUDE_DIR extrae_user_events.h)
 
 # EXTRAE libraries have different names depending on the supported features,
-# and in extrae-2.5.0 the following combinations are supported:
+# and in extrae-3.1.0 the following combinations are supported:
 
 # seqtrace:        seq code
 # mpitrace:        MPI
-# omptrace:        OpenMP
-# ompitrace:       MPI + OpenMP
-# pttrace:         pthreads
 # ptmpitrace       pthreads + MPI (unsupported combination in Gromacs)
-# cudatrace:       CUDA
+# ompitrace:       OPENMP + MPI
+# oclmpitrace:     OpenCL + MPI
 # cudampitrace:    CUDA + MPI
-# cudaompitrace:   CUDA+OPENMP+MPI (in the dev version)
+# cudaompitrace:   CUDA+OPENMP+MPI
+# omptrace:        OpenMP
+# pttrace:         pthreads
+# cudatrace:       CUDA
+# ocltrace:        OpenCL
 
-# TODO: Add support for the following combinations when available in a future release:
+option(EXTRAE_LIB_MANUAL "Custom Extrae library to use for profiling" OFF)
+mark_as_advanced(EXTRAE_LIB_MANUAL)
 
-# cudaomptrace:    CUDA + OPENMP
-# cudapttrace:        CUDA + pthreads
-# cudaptmpitrace:    CUDA + pthreads + MPI (unsupported combination in Gromacs)
+if (EXTRAE_LIB_MANUAL)
+    set (extraelib "${EXTRAE_LIB_MANUAL}")
+else()
+    set (extraelib "trace")
 
-set (extraelib "trace")
+    # Checks for what features we have enabled in Gromacs
+    # The order of the prefix seems to be: [ocl|cuda]pt[omp|mpi|ompi]
+    # default sequential code is "seq"
 
-# libs with MPI support
-if (GMX_MPI)
-  if (GMX_OPENMP)
-    set (extraelib "ompi${extraelib}")
-  else()
-    set (extraelib "mpi${extraelib}")
-  endif()
-  if (GMX_GPU)
-    set (extraelib "cuda${extraelib}")
-  endif()
+    # first check for MPI variants
+    if (GMX_MPI)
+        if (GMX_OPENMP)
+            if(GMX_GPU)
+                if(GMX_USE_OPENCL)
+                    message(FATAL_ERROR "Extrae doesn't have currently support for MPI + OPENMP + OPENCL code")
+                else()
+                    set (extraelib "cudaompi${extraelib}")
+                endif()
+            else()
+                set (extraelib "ompi${extraelib}")
+            endif()
+        elseif(GMX_GPU)
+            if (GMX_USE_OPENCL)
+                set (extraelib "oclmpi${extraelib}")
+            else()
+                set (extraelib "cudampi${extraelib}")
+            endif()
+        else()
+            set (extraelib "mpi${extraelib}")
+        endif()
 
-# other libs with OpenMP support
-elseif (GMX_OPENMP)
-  set (extraelib "omp${extraelib}")
-    if (GMX_GPU)
-      set (extraelib "cuda${extraelib}")
+    # check for OpenMP only support
+    elseif (GMX_OPENMP AND NOT GMX_GPU)
+        if (GMX_THREAD_MPI)
+            message(FATAL_ERROR "Extrae doesn't have currently support for OPENMP + PT code")
+        else()
+            set (extraelib "omp${extraelib}")
+        endif()
+
+    # check for pthreads only support
+    elseif (GMX_THREAD_MPI)
+        if (GMX_OPENMP)
+            message(FATAL_ERROR "Extrae doesn't have currently support for PT + OPENMP code")
+        else()
+            set (extraelib "pt${extraelib}")
+        endif()
+
+    # check for cuda/opencl support
+    # libcudatrace and libocltrace have the same name whether or not they have OpenMP support
+    elseif (GMX_GPU)
+        if (GMX_THREAD_MPI)
+            message(FATAL_ERROR "Extrae doesn't have currently support for CUDA/OPENCL + PT code")
+        elseif(GMX_USE_OPENCL)
+            set (extraelib "ocl${extraelib}")
+        else ()
+            set (extraelib "cuda${extraelib}")
+        endif()
+
+    # default sequential code
+    else()
+      set (extraelib "seq${extraelib}")
     endif()
 
-# library with CUDA only support
-elseif (GMX_GPU)
-    set (extraelib "cuda${extraelib}")
-
-# library with PThreads support
-elseif (GMX_THREAD_MPI)
-    set (extraelib "pt${extraelib}")
-
-else()
-  set (extraelib "seq${extraelib}")
 endif()
 
-find_library(EXTRAE_LIBRARY NAMES  ${extraelib})
+gmx_check_if_changed (EXTRAE_LIBNAME_CHANGED extraelib)
+
+if(EXTRAE_LIBNAME_CHANGED)
+    message (STATUS, "Extrae support: will use lib${extraelib} for tracing")
+    unset (EXTRAE_LIBRARY)
+endif()
+
+find_library(EXTRAE_LIBRARY NAMES ${extraelib})
 
 set(EXTRAE_LIBRARIES ${EXTRAE_LIBRARY} )
 set(EXTRAE_INCLUDE_DIRS ${EXTRAE_INCLUDE_DIR} )
@@ -103,4 +142,3 @@ find_package_handle_standard_args(EXTRAE  DEFAULT_MSG
                                   EXTRAE_LIBRARY EXTRAE_INCLUDE_DIR)
 
 mark_as_advanced(EXTRAE_INCLUDE_DIR EXTRAE_LIBRARY )
-
