@@ -79,16 +79,16 @@ typedef struct
      * much easier to access the tables in the nonbonded kernels when we can set the data from variables.
      * It is always true that stride = formatsize*ninteractions
      */
-    int                         formatsize;    /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
-    int                         ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
-    int                         stride;        /* Distance to next table point (number of fp variables per table point in total) */
+    int formatsize;                            /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
+    int ninteractions;                         /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
+    int stride;                                /* Distance to next table point (number of fp variables per table point in total) */
 } t_forcetable;
 
 typedef struct
 {
-    t_forcetable   table_elec;
-    t_forcetable   table_vdw;
-    t_forcetable   table_elec_vdw;
+    t_forcetable table_elec;
+    t_forcetable table_vdw;
+    t_forcetable table_elec_vdw;
 
     /* The actual neighbor lists, short and long range, see enum above
      * for definition of neighborlist indices.
@@ -96,6 +96,30 @@ typedef struct
     t_nblist nlist_sr[eNL_NR];
     t_nblist nlist_lr[eNL_NR];
 } t_nblists;
+
+
+typedef struct
+{
+    enum gmx_table_format                            format;
+    enum gmx_table_interaction                       interaction;
+    int                                              n;
+    int                                              size;
+    real                                             maxr;
+    real                                             scale;
+    real                                            *F;
+    real                                            *V;
+} t_genericTable;
+
+
+typedef struct
+{
+    t_genericTable table_elec;
+    t_genericTable table_vdw_LJ6;
+    t_genericTable table_vdw_LJ12;
+    t_genericTable table_GENERIC;
+
+} t_tablesVerlet;
+
 
 /* macros for the cginfo data in forcerec
  *
@@ -153,12 +177,14 @@ enum {
     egCOUL14, egLJ14, egGB, egNR
 };
 
-typedef struct {
+typedef struct
+{
     int   nener;      /* The number of energy group pairs     */
     real *ener[egNR]; /* Energy terms for each pair of groups */
 } gmx_grppairener_t;
 
-typedef struct {
+typedef struct
+{
     real              term[F_NRE];         /* The energies for all different interaction types */
     gmx_grppairener_t grpp;
     double            dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
@@ -175,7 +201,8 @@ typedef struct {
  * when n_lambda > 0.
  */
 
-typedef struct {
+typedef struct
+{
     int  cg_start;
     int  cg_end;
     int  cg_mod;
@@ -188,7 +215,8 @@ struct gmx_ewald_tab_t;
 
 typedef struct ewald_corr_thread_t ewald_corr_thread_t;
 
-typedef struct {
+typedef struct
+{
     interaction_const_t *ic;
 
     /* Domain Decomposition */
@@ -244,7 +272,7 @@ typedef struct {
     rvec   mu_tot[2];
 
     /* Dispersion correction stuff */
-    int  eDispCorr;
+    int eDispCorr;
 
     /* The shift of the shift or user potentials */
     real enershiftsix;
@@ -265,9 +293,18 @@ typedef struct {
     /* Fudge factors */
     real fudgeQQ;
 
-    /* Table stuff */
-    gmx_bool     bcoultab;
-    gmx_bool     bvdwtab;
+    /* Table stuff GROUP SCHEME*/
+    gmx_bool bcoultab;
+    gmx_bool bvdwtab;
+
+    /* Table stuff VERLET SCHEME*/
+    gmx_bool     bcoultabVerlet;
+    gmx_bool     bvdwtabVerlet;
+
+    int          gmx_no_table_coeffs;
+    const char*  nocoeffsPLEASE; /* Avoid scale factors and other coefficients.
+                                     Bring the table values as pure as possible to the GPU. */
+
     /* The normal tables are in the nblists struct(s) below */
     t_forcetable tab14; /* for 1-4 interactions only */
 
@@ -283,18 +320,18 @@ typedef struct {
     real   bham_b_max;
 
     /* Free energy */
-    int      efep;
-    real     sc_alphavdw;
-    real     sc_alphacoul;
-    int      sc_power;
-    real     sc_r_power;
-    real     sc_sigma6_def;
-    real     sc_sigma6_min;
+    int  efep;
+    real sc_alphavdw;
+    real sc_alphacoul;
+    int  sc_power;
+    real sc_r_power;
+    real sc_sigma6_def;
+    real sc_sigma6_min;
 
     /* NS Stuff */
-    int  eeltype;
-    int  vdwtype;
-    int  cg0, hcg;
+    int eeltype;
+    int vdwtype;
+    int cg0, hcg;
     /* solvent_opt contains the enum for the most common solvent
      * in the system, which will be optimized.
      * It can be set to esolNO to disable all water optimization */
@@ -312,6 +349,10 @@ typedef struct {
     int                        nnblists;
     int                       *gid2nblists;
     t_nblists                 *nblists;
+
+    /* The Verlet cut-off scheme tables */
+    int                        ntables;
+    t_tablesVerlet            *tablesVerlet;
 
     int                        cutoff_scheme; /* group- or Verlet-style cutoff */
     gmx_bool                   bNonbonded;    /* true if nonbonded calculations are *not* turned off */
