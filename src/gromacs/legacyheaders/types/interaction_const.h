@@ -48,7 +48,8 @@ extern "C" {
  * potential = r^-p + c2/3*rsw^3 + c3/4*rsw^4 + cpot
  * With a constant potential shift c2 and c3 are both 0.
  */
-typedef struct {
+typedef struct
+{
     real c2;
     real c3;
     real cpot;
@@ -61,14 +62,16 @@ typedef struct {
  * force      = force*dsw - potential*sw
  * potential *= sw
  */
-typedef struct {
+typedef struct
+{
     real c3;
     real c4;
     real c5;
 } switch_consts_t;
 
-typedef struct {
-    int             cutoff_scheme;
+typedef struct
+{
+    int cutoff_scheme;
 
     /* VdW */
     int             vdwtype;
@@ -84,8 +87,8 @@ typedef struct {
     real sh_invrc6;
 
     /* type of electrostatics (defined in enums.h) */
-    int  eeltype;
-    int  coulomb_modifier;
+    int eeltype;
+    int coulomb_modifier;
 
     /* Coulomb */
     real rcoulomb;
@@ -110,9 +113,29 @@ typedef struct {
     real k_rf;
     real c_rf;
 
+    /* Table business below */
+    int gmx_no_table_coeffs;
+
     /* Force/energy interpolation tables, linear in force, quadratic in V */
-    real  tabq_scale;
-    int   tabq_size;
+    real tabq_scale;
+    int  tabq_size;
+
+    /* Additional table variables */
+    /* Only the simplest case at the moment!
+
+       int   tabstride;
+     *
+     */
+    int   nb_generic_ntabs;
+    int   nb_coul_ntabs;
+    int   nb_vdw_ntabs;
+
+    real *tabq_nbtab_F;
+    real *tabq_nbtab_V;
+
+    /* For future use */
+    real *tabq_nbtab_FDV0;
+
     /* Coulomb force table, size of array is tabq_size (when used) */
     real *tabq_coul_F;
     /* Coulomb energy table, size of array is tabq_size (when used) */
