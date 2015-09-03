@@ -226,7 +226,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     snew(man->szLab, sh.natoms);
     snew(man->bHydro, sh.natoms);
     snew(bB, sh.natoms);
-    read_tpx_top(status, NULL, man->box, &man->natom, NULL, NULL, NULL, &man->top);
+    read_tpx_top(status, NULL, man->box, &man->natom, NULL, NULL, &man->top);
     man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
 
     man->natom =
