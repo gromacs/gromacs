@@ -3437,7 +3437,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         gmx_fio_ndo_rvec(fio, state->v, state->natoms);
     }
 
-    do_test(fio, tpx.bF, NULL);
+    // No need to run do_test when the last argument is NULL
     if (tpx.bF)
     {
         rvec *dummyForces;
