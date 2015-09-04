@@ -45,14 +45,12 @@
 
 #include <string>
 
-#include "gromacs/options/ioptionsbehavior.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
 
-class Options;
 class SelectionCollection;
 class SelectionOptionStorage;
 
@@ -209,35 +207,6 @@ class SelectionOptionManager : public IOptionManager
          * Needed for handling delayed selection parsing requests.
          */
         friend class SelectionOptionStorage;
-};
-
-/*! \brief
- * Options behavior to allow using SelectionOptions.
- *
- * The behavior needs to be added before any options are created.
- *
- * The current implementation is a minimal version that just makes it possible
- * to use SelectionOptions in an ICommandLineOptionsModule.  In the future, the
- * plan is to expand it to make it also handle interactive prompting and other
- * selection initialization automatically, so that the module would not need to
- * explicitly use SelectionOptionManager.
- *
- * \inpublicapi
- * \ingroup module_selection
- */
-class SelectionOptionBehavior : public IOptionsBehavior
-{
-    public:
-        //! Creates a behavior to use a selected manager.
-        explicit SelectionOptionBehavior(SelectionOptionManager *manager);
-
-        virtual void initOptions(Options *options);
-        virtual void optionsFinishing(Options * /*options*/) {}
-
-    private:
-        SelectionOptionManager &manager_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(SelectionOptionBehavior);
 };
 
 } // namespace gmx

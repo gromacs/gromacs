@@ -87,6 +87,8 @@ class OptionsBehaviorCollection
         void addBehavior(const OptionsBehaviorPointer &behavior);
         //! Calls IOptionsBehavior::optionsFinishing() on all behaviors.
         void optionsFinishing();
+        //! Calls IOptionsBehavior::optionsFinished() on all behaviors.
+        void optionsFinished();
 
     private:
         Options                             *options_;
