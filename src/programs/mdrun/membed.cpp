@@ -156,7 +156,7 @@ static int get_tpr_version(const char *infile)
  * share common molecule types. If so, membed will stop with an error. */
 static int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
 {
-    int      i, j, nr, mol_id;
+    int      i, j, nr;
     int      type = 0, block = 0;
     gmx_bool bNEW;
 
@@ -165,7 +165,7 @@ static int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
     for (i = 0; i < at->nr; i++)
     {
         bNEW   = TRUE;
-        mol_id = get_mol_id(at->index[i], mtop, &type, &block);
+        get_mol_id(at->index[i], mtop, &type, &block);
         for (j = 0; j < nr; j++)
         {
             if (tlist->index[j] == type)
@@ -1014,7 +1014,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
 {
     char                     *ins, **gnames;
     int                       i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
-    int                       ng, j, max_lip_rm, ins_grp_id, ins_nat, mem_nat, ntype, lip_rm, tpr_version;
+    int                       ng, j, max_lip_rm, ins_grp_id, ntype, lip_rm, tpr_version;
     real                      prot_area;
     rvec                     *r_ins = NULL;
     t_block                  *ins_at, *rest_at;
@@ -1215,11 +1215,11 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
 
         /* Obtain the maximum and minimum coordinates of the group to be embedded */
         snew(rest_at, 1);
-        ins_nat = init_ins_at(ins_at, rest_at, state, pos_ins, groups, ins_grp_id, xy_max);
+        init_ins_at(ins_at, rest_at, state, pos_ins, groups, ins_grp_id, xy_max);
         /* Check that moleculetypes in insertion group are not part of the rest of the system */
         check_types(ins_at, rest_at, mtop);
 
-        mem_nat = init_mem_at(mem_p, mtop, state->x, state->box, pos_ins);
+        init_mem_at(mem_p, mtop, state->x, state->box, pos_ins);
 
         prot_area = est_prot_area(pos_ins, state->x, ins_at, mem_p);
         if ( (prot_area > prot_vs_box) && ( (state->box[XX][XX]*state->box[YY][YY]-state->box[XX][YY]*state->box[YY][XX]) < box_vs_prot) )
