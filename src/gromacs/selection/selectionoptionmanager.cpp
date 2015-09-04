@@ -47,7 +47,6 @@
 
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionfileoption.h"
 #include "gromacs/selection/selectionoption.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -330,21 +329,6 @@ SelectionOptionManager::parseRequestedFromString(const std::string &str)
 {
     SelectionList selections = impl_->collection_.parseFromString(str);
     impl_->placeSelectionsInRequests(selections);
-}
-
-/********************************************************************
- * SelectionOptionBehavior
- */
-
-SelectionOptionBehavior::SelectionOptionBehavior(SelectionOptionManager *manager)
-    : manager_(*manager)
-{
-}
-
-void
-SelectionOptionBehavior::initOptions(Options *options)
-{
-    options->addManager(&manager_);
 }
 
 } // namespace gmx

@@ -182,8 +182,10 @@ class TimeUnitBehavior : public IOptionsBehavior
          */
         void addTimeUnitOption(IOptionsContainer *options, const char *name);
 
-        virtual void initOptions(Options * /*options*/) {}
+        // From IOptionsBehavior
+        virtual void initBehavior(Options * /*options*/) {}
         virtual void optionsFinishing(Options *options);
+        virtual void optionsFinished() {}
 
     private:
         // Type is int to make it possible to use it with
