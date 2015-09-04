@@ -111,7 +111,7 @@ real rhodev(int natoms, real mass[], rvec x[], rvec xp[])
 
 void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x, matrix R)
 {
-    int      c, r, n, j, m, i, irot, s;
+    int      c, r, n, j, i, irot, s;
     double **omega, **om;
     double   d[2*DIM], xnr, xpc;
     matrix   vh, vk, u;
@@ -260,7 +260,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x, matrix R)
 
 void do_fit_ndim(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x)
 {
-    int    i, j, m, r, c;
+    int    j, m, r, c;
     matrix R;
     rvec   x_old;
 
