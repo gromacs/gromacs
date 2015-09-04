@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,7 @@ real rhodev(int natoms, real mass[], rvec x[], rvec xp[])
 
 void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x, matrix R)
 {
-    int      c, r, n, j, m, i, irot, s;
+    int      c, r, n, j, i, irot, s;
     double **omega, **om;
     double   d[2*DIM], xnr, xpc;
     matrix   vh, vk, u;
@@ -260,7 +260,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x, matrix R)
 
 void do_fit_ndim(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x)
 {
-    int    i, j, m, r, c;
+    int    j, m, r, c;
     matrix R;
     rvec   x_old;
 

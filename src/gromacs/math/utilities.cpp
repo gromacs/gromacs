@@ -42,7 +42,7 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <math.h>
+#include <cmath>
 
 #ifdef HAVE__FINITE
 #include <float.h>
@@ -64,11 +64,11 @@ real cuberoot(real x)
 {
     if (x < 0)
     {
-        return (-pow(-x, 1.0/3.0));
+        return (-std::pow(-x, 1.0/3.0));
     }
     else
     {
-        return (pow(x, 1.0/3.0));
+        return (std::pow(x, 1.0/3.0));
     }
 }
 
@@ -322,7 +322,6 @@ double gmx_erfcd(double x)
     if (ix < 0x3feb0000)
     {
         /* |x|<0.84375 */
-        double r1, r2, s1, s2, s3, z2, z4;
         if (ix < 0x3c700000)     /* |x|<2**-56 */
         {
             return one-x;
@@ -734,7 +733,7 @@ gmx_bool gmx_isfinite(real gmx_unused x)
 #ifdef HAVE__FINITE
     returnval = _finite(x);
 #elif defined HAVE_ISFINITE
-    returnval = isfinite(x);
+    returnval = std::isfinite(x);
 #elif defined HAVE__ISFINITE
     returnval = _isfinite(x);
 #else
