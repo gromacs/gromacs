@@ -42,7 +42,10 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <math.h>
+#include <cmath>
+#ifdef GMX_NATIVE_WINDOWS
+#include <intrin.h>
+#endif
 
 #ifdef HAVE__FINITE
 #include <float.h>
@@ -64,11 +67,11 @@ real cuberoot(real x)
 {
     if (x < 0)
     {
-        return (-pow(-x, 1.0/3.0));
+        return (-std::pow(-x, 1.0/3.0));
     }
     else
     {
-        return (pow(x, 1.0/3.0));
+        return (std::pow(x, 1.0/3.0));
     }
 }
 
@@ -322,7 +325,6 @@ double gmx_erfcd(double x)
     if (ix < 0x3feb0000)
     {
         /* |x|<0.84375 */
-        double r1, r2, s1, s2, s3, z2, z4;
         if (ix < 0x3c700000)     /* |x|<2**-56 */
         {
             return one-x;
@@ -494,28 +496,6 @@ static const float
     sb5f =  2.5530502930e+03,  /* 0x451f90ce */
     sb6f =  4.7452853394e+02,  /* 0x43ed43a7 */
     sb7f = -2.2440952301e+01;  /* 0xc1b38712 */
-
-
-typedef union
-{
-    float         value;
-    gmx_uint32_t  word;
-} ieee_float_shape_type;
-
-#define GET_FLOAT_WORD(i, d)                 \
-    do {                                \
-        ieee_float_shape_type gf_u;                   \
-        gf_u.value = (d);                     \
-        (i)        = gf_u.word;                      \
-    } while (0)
-
-
-#define SET_FLOAT_WORD(d, i)                 \
-    do {                                \
-        ieee_float_shape_type sf_u;                   \
-        sf_u.word = (i);                      \
-        (d)       = sf_u.value;                     \
-    } while (0)
 
 
 float gmx_erff(float x)
@@ -734,7 +714,7 @@ gmx_bool gmx_isfinite(real gmx_unused x)
 #ifdef HAVE__FINITE
     returnval = _finite(x);
 #elif defined HAVE_ISFINITE
-    returnval = isfinite(x);
+    returnval = std::isfinite(x);
 #elif defined HAVE__ISFINITE
     returnval = _isfinite(x);
 #else
