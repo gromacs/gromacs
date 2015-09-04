@@ -92,8 +92,6 @@ void make_wall_tables(FILE *fplog, const output_env_t oenv,
 real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
               rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
 
-t_forcerec *mk_forcerec(void);
-
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
@@ -118,15 +116,6 @@ extern t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
                                    const t_forcerec *fr,
                                    const char *fn,
                                    matrix box);
-
-void pr_forcerec(FILE *fplog, t_forcerec *fr);
-
-void
-forcerec_set_ranges(t_forcerec *fr,
-                    int ncg_home, int ncg_force,
-                    int natoms_force,
-                    int natoms_force_constr, int natoms_f_novirsum);
-/* Set the number of cg's and atoms for the force calculation */
 
 gmx_bool can_use_allvsall(const t_inputrec *ir,
                           gmx_bool bPrintNote, t_commrec *cr, FILE *fp);
@@ -153,37 +142,6 @@ gmx_bool uses_simple_tables(int                        cutoff_scheme,
  * with the type of kernel indicated.
  */
 
-void init_interaction_const_tables(FILE                *fp,
-                                   interaction_const_t *ic,
-                                   real                 rtab);
-/* Initializes the tables in the interaction constant data structure. */
-
-void init_forcerec(FILE              *fplog,
-                   const output_env_t oenv,
-                   t_forcerec        *fr,
-                   t_fcdata          *fcd,
-                   const t_inputrec  *ir,
-                   const gmx_mtop_t  *mtop,
-                   const t_commrec   *cr,
-                   matrix             box,
-                   const char        *tabfn,
-                   const char        *tabafn,
-                   const char        *tabpfn,
-                   const char        *tabbfn,
-                   const char        *nbpu_opt,
-                   gmx_bool           bNoSolvOpt,
-                   real               print_force);
-/* The Force rec struct must be created with mk_forcerec
- * The gmx_booleans have the following meaning:
- * bSetQ:    Copy the charges [ only necessary when they change ]
- * bMolEpot: Use the free energy stuff per molecule
- * print_force >= 0: print forces for atoms with force >= print_force
- */
-
-void forcerec_set_excl_load(t_forcerec           *fr,
-                            const gmx_localtop_t *top);
-/* Set the exclusion load for the local exclusions and possibly threads */
-
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
 
@@ -203,9 +161,6 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot);
 
 void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals);
 /* Sum the free energy contributions */
-
-void update_forcerec(t_forcerec *fr, matrix box);
-/* Updates parameters in the forcerec that are time dependent */
 
 /* Compute the average C6 and C12 params for LJ corrections */
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,

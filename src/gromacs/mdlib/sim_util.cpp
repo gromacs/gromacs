@@ -74,6 +74,7 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
