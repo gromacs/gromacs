@@ -607,7 +607,12 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
             }
             if (j == surfaceSel_.posCount() || outputIndices[i] != atomIndices[j])
             {
-                GMX_THROW(InconsistentInputError("Output selection is not a subset of the input selection"));
+                const std::string message
+                    = formatString("Output selection '%s' is not a subset of "
+                                   "the surface selection (atom %d is the first "
+                                   "atom not in the surface selection)",
+                                   outputSel_[g].name(), outputIndices[i] + 1);
+                GMX_THROW(InconsistentInputError(message));
             }
             outputSel_[g].setOriginalId(i, j);
         }
