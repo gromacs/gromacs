@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,11 @@ extern "C" {
 #if 0
 }
 #endif
+
+/* Index in the tables that says which function to use */
+enum {
+    etiCOUL, etiLJ6, etiLJ12, etiNR
+};
 
 typedef double (*real_space_grid_contribution_computer)(double, double);
 /* Function pointer used to tell table_spline3_fill_ewald_lr whether it

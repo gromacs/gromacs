@@ -40,6 +40,7 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -54,6 +55,7 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
@@ -377,6 +379,15 @@ void do_nonbonded(t_forcerec *fr,
     for (n = n0; (n < n1); n++)
     {
         nblists = &fr->nblists[n];
+
+        /* Tabulated kernels hard-code a lot of assumptions about the
+         * structure of these tables, but that's not worth fixing with
+         * the group scheme due for removal soon. As a token
+         * improvement, this assertion will stop code segfaulting if
+         * someone assumes that extending the group-scheme table-type
+         * enumeration is something that GROMACS supports. */
+        /* cppcheck-suppress duplicateExpression */
+        assert(etiNR == 3);
 
         kernel_data.table_elec              = &nblists->table_elec;
         kernel_data.table_vdw               = &nblists->table_vdw;
