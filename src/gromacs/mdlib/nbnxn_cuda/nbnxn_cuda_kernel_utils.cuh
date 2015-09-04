@@ -61,7 +61,7 @@
 
 /*! Apply force switch,  force + energy version. */
 static inline __device__
-void calculate_force_switch_F(const  cu_nbparam_t nbparam,
+void calculate_force_switch_F(const cu_nbparam_t  nbparam,
                               float               c6,
                               float               c12,
                               float               inv_r,
@@ -87,7 +87,7 @@ void calculate_force_switch_F(const  cu_nbparam_t nbparam,
 
 /*! Apply force switch, force-only version. */
 static inline __device__
-void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
+void calculate_force_switch_F_E(const cu_nbparam_t  nbparam,
                                 float               c6,
                                 float               c12,
                                 float               inv_r,
@@ -122,7 +122,7 @@ void calculate_force_switch_F_E(const  cu_nbparam_t nbparam,
 
 /*! Apply potential switch, force-only version. */
 static inline __device__
-void calculate_potential_switch_F(const  cu_nbparam_t nbparam,
+void calculate_potential_switch_F(const cu_nbparam_t  nbparam,
                                   float               c6,
                                   float               c12,
                                   float               inv_r,
@@ -334,6 +334,285 @@ float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
            fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
 }
 #endif
+/* *******************************************************************************
+ * *******************************************************************************/
+/*! FORCE LINEAR INTERPOLATION FUNCTIONS */
+/* ----------------- VDW_USER_GENERIC */
+static inline __device__
+// float
+nb_F_retval_t interpolate_nb_generic_Ftab(float r, float scale)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+
+    nb_F_retval_t generic_retval_Ftab;
+    
+    generic_retval_Ftab.F_x0 = tex1Dfetch(nb_generic_Ftab_texref, index);
+    generic_retval_Ftab.F_r  = fract1 * generic_retval_Ftab.F_x0 +
+                               fract2 * tex1Dfetch(nb_generic_Ftab_texref, index+1);
+    
+    return generic_retval_Ftab;
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+//float
+nb_F_retval_t interpolate_nb_generic_Ftab(cudaTextureObject_t texobj_nb_generic_Ftab,
+                                  float r, float scale)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+    
+    nb_F_retval_t generic_retval_Ftab;
+    
+    generic_retval_Ftab.F_x0 = tex1Dfetch<float>(texobj_nb_generic_Ftab, index);
+    generic_retval_Ftab.F_r  = fract1 * generic_retval_Ftab.F_x0 + 
+                               fract2 * tex1Dfetch<float>(texobj_nb_generic_Ftab, index + 1);    
+
+    return generic_retval_Ftab;
+    
+}
+#endif
+
+/* ----------------- VDW_USER */
+static inline __device__
+nb_F_retval_t interpolate_nb_vdw_Ftab(float r, float scale)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+
+    nb_F_retval_t vdw_retval_Ftab;
+    
+    vdw_retval_Ftab.F_x0 = tex1Dfetch(nb_vdw_Ftab_texref, index);
+    vdw_retval_Ftab.F_r  = fract1 * vdw_retval_Ftab.F_x0 +
+                           fract2 * tex1Dfetch(nb_vdw_Ftab_texref, index+1);
+    
+    return vdw_retval_Ftab;
+           
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+nb_F_retval_t interpolate_nb_vdw_Ftab(cudaTextureObject_t texobj_nb_vdw_Ftab,
+                              float r, float scale)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+    
+    nb_F_retval_t vdw_retval_Ftab;
+    
+    vdw_retval_Ftab.F_x0 = tex1Dfetch<float>(texobj_nb_vdw_Ftab, index);
+    vdw_retval_Ftab.F_r  = fract1 * vdw_retval_Ftab.F_x0 + 
+                           fract2 * tex1Dfetch<float>(texobj_nb_vdw_Ftab, index + 1);    
+
+    return vdw_retval_Ftab;
+}
+#endif
+
+/* ----------------- EL_USER */
+static inline __device__
+nb_F_retval_t interpolate_nb_coul_Ftab(float r, float scale)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+
+    nb_F_retval_t coul_retval_Ftab;
+    
+    coul_retval_Ftab.F_x0 = tex1Dfetch(nb_coul_Ftab_texref, index);
+    coul_retval_Ftab.F_r  = fract1 * coul_retval_Ftab.F_x0 +
+                            fract2 * tex1Dfetch(nb_coul_Ftab_texref, index+1);
+    
+    return coul_retval_Ftab;
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+nb_F_retval_t interpolate_nb_coul_Ftab(cudaTextureObject_t texobj_nb_coul_Ftab,
+                               float r, float scale)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
+
+    nb_F_retval_t coul_retval_Ftab;
+    
+    coul_retval_Ftab.F_x0 = tex1Dfetch<float>(texobj_nb_coul_Ftab, index);
+    coul_retval_Ftab.F_r  = fract1 * coul_retval_Ftab.F_x0 + 
+                        fract2 * tex1Dfetch<float>(texobj_nb_coul_Ftab, index + 1);    
+
+    return coul_retval_Ftab;
+}
+#endif
+
+/* ENERGIES QUADRATIC SPLINE INTERPOLATION FUNCTIONS */
+/* VDW_USER_GENERIC Quadratic spline interpolation on Potential energy */
+static inline __device__
+float interpolate2_nb_generic_Vtab(float r, float scale, float F)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+
+    float x0 = floor(normalized); //(float) index;
+    x0 /= scale;
+    float x1 = floor(normalized) + 1.0; // (float) (index+1);
+    x1 /= scale;
+
+    float y0 = tex1Dfetch(nb_generic_Vtab_texref, index);
+    float y1 = tex1Dfetch(nb_generic_Vtab_texref, index+1);
+
+    float x1x0 = x1-x0;
+    float y1y0 = y1-y0;
+
+    float a = y1y0/x1x0*x1x0 + F/x1x0;
+    float b = F - 2*a*x0;
+    float c = y0 - a*x0*x0 - b*x0;
+
+    return a * r * r + b * r + c;
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+float interpolate2_nb_generic_Vtab(cudaTextureObject_t texobj_nb_generic_Vtab,
+                                   float r, float scale, float F)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+
+    float x0 = floor(normalized); //(float) index;
+    x0 /= scale;
+    float x1 = floor(normalized) + 1.0; //(float) (index+1);
+    x1 /= scale;
+
+    float y0 = tex1Dfetch<float>(texobj_nb_generic_Vtab, index);
+    float y1 = tex1Dfetch<float>(texobj_nb_generic_Vtab, index+1);
+
+    float x1x0 = x1-x0;
+    float y1y0 = y1-y0;
+
+    float a = y1y0/x1x0*x1x0 + F/x1x0;
+    float b = F - 2*a*x0;
+    float c = y0 - a*x0*x0 - b*x0;
+
+    return a * r * r + b * r + c;
+}
+#endif
+
+/* EL_USER Quadratic spline interpolation on Potential energy */
+static inline __device__
+float interpolate2_nb_coul_Vtab(float r, float scale, float F)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+
+    float x0 = (float) index;
+    x0 /= scale;
+    float x1 = (float) (index+1);
+    x1 /= scale;
+
+    float y0 = tex1Dfetch(nb_coul_Vtab_texref, index);
+    float y1 = tex1Dfetch(nb_coul_Vtab_texref, index+1);
+
+    float x1x0 = x1-x0;
+    float y1y0 = y1-y0;
+
+    float a = y1y0/x1x0*x1x0 + F/x1x0;
+    float b = F - 2*a*x0;
+    float c = y0 - a*x0*x0 - b*x0;
+
+    return a * r * r + b * r + c;
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+float interpolate2_nb_coul_Vtab(cudaTextureObject_t texobj_nb_coul_Vtab,
+                                float r, float scale, float F)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+
+    float x0 = (float) index;
+    x0 /= scale;
+    float x1 = (float) (index+1);
+    x1 /= scale;
+
+    float y0 = tex1Dfetch<float>(texobj_nb_coul_Vtab, index);
+    float y1 = tex1Dfetch<float>(texobj_nb_coul_Vtab, index+1);
+
+    float x1x0 = x1-x0;
+    float y1y0 = y1-y0;
+
+    float a = y1y0/x1x0*x1x0 + F/x1x0;
+    float b = F - 2*a*x0;
+    float c = y0 - a*x0*x0 - b*x0;
+
+    return a * r * r + b * r + c;
+}
+#endif
+
+/* VDW_USER Quadratic spline interpolation on Potential energy */
+static inline __device__
+float interpolate2_nb_vdw_Vtab(float r, float scale, float F)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+
+    float x0 = (float) index;
+    x0 /= scale;
+    float x1 = (float) (index+1);
+    x1 /= scale;
+
+    float y0 = tex1Dfetch(nb_vdw_Vtab_texref, index);
+    float y1 = tex1Dfetch(nb_vdw_Vtab_texref, index+1);
+
+    float x1x0 = x1-x0;
+    float y1y0 = y1-y0;
+
+    float a = y1y0/x1x0*x1x0 + F/x1x0;
+    float b = F - 2*a*x0;
+    float c = y0 - a*x0*x0 - b*x0;
+
+    return a * r * r + b * r + c;
+}
+
+#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
+static inline __device__
+float interpolate2_nb_vdw_Vtab(cudaTextureObject_t texobj_nb_vdw_Vtab,
+                               float r, float scale, float F)
+{
+    float normalized = scale * r;
+    int   index      = (int) normalized;
+
+    float x0 = (float) index;
+    x0 /= scale;
+    float x1 = (float) (index+1);
+    x1 /= scale;
+
+    float y0 = tex1Dfetch<float>(texobj_nb_vdw_Vtab, index);
+    float y1 = tex1Dfetch<float>(texobj_nb_vdw_Vtab, index+1);
+
+    float x1x0 = x1-x0;
+    float y1y0 = y1-y0;
+
+    float a = y1y0/x1x0*x1x0 + F/x1x0;
+    float b = F - 2*a*x0;
+    float c = y0 - a*x0*x0 - b*x0;
+
+    return a * r * r + b * r + c;
+}
+#endif
+
+
 
 
 /*! Calculate analytical Ewald correction term. */
