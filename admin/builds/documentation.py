@@ -113,5 +113,6 @@ def do_build(context):
     ignore_urls = ['html-full', 'html-user', 'html-lib', '.tar.gz', '_sources']
     cmd = ['linkchecker', 'docs/html/index.html', '-f',
             context.workspace.get_project_dir(Project.GROMACS) + '/docs/linkcheckerrc']
-    cmd.extend(['--ignore-url ' + x for x in ignore_urls])
+    for url in ignore_urls:
+        cmd.extend(['--ignore-url', url])
     context.run_cmd(cmd, ignore_failure=True)
