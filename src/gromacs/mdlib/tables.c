@@ -115,11 +115,6 @@ static const t_tab_props tprops[etabNR] = {
     { "USER", FALSE },
 };
 
-/* Index in the table that says which function to use */
-enum {
-    etiCOUL, etiLJ6, etiLJ12, etiNR
-};
-
 typedef struct {
     int     nx, nx0;
     double  tabscale;
@@ -1411,7 +1406,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
     table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
     table.formatsize    = 4;
-    table.ninteractions = 3;
+    table.ninteractions = etiNR;
     table.stride        = table.formatsize*table.ninteractions;
 
     /* Check whether we have to read or generate */
@@ -1475,9 +1470,9 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
 
     /* Each table type (e.g. coul,lj6,lj12) requires four
      * numbers per nx+1 data points. For performance reasons we want
-     * the table data to be aligned to 16-byte.
+     * the table data to be aligned to a 32-byte boundary.
      */
-    snew_aligned(table.data, 12*(nx+1)*sizeof(real), 32);
+    snew_aligned(table.data, table.stride*(nx+1)*sizeof(real), 32);
 
     for (k = 0; (k < etiNR); k++)
     {
@@ -1516,7 +1511,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
             scalefactor = 1.0;
         }
 
-        copy2table(table.n, k*4, 12, td[k].x, td[k].v, td[k].f, scalefactor, table.data);
+        copy2table(table.n, k*table.formatsize, table.stride, td[k].x, td[k].v, td[k].f, scalefactor, table.data);
 
         if (bDebugMode() && bVerbose)
         {
@@ -1532,7 +1527,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
             for (i = 5*((nx0+1)/2); i < 5*table.n; i++)
             {
                 x0 = i*table.r/(5*(table.n-1));
-                evaluate_table(table.data, 4*k, 12, table.scale, x0, &y0, &yp);
+                evaluate_table(table.data, k*table.formatsize, table.stride, table.scale, x0, &y0, &yp);
                 fprintf(fp, "%15.10e  %15.10e  %15.10e\n", x0, y0, yp);
             }
             xvgrclose(fp);
@@ -1594,16 +1589,14 @@ t_forcetable make_gb_table(const output_env_t oenv,
     bReadTab = FALSE;
     bGenTab  = TRUE;
 
-    /* Each table type (e.g. coul,lj6,lj12) requires four
-     * numbers per datapoint. For performance reasons we want
-     * the table data to be aligned to 16-byte. This is accomplished
-     * by allocating 16 bytes extra to a temporary pointer, and then
-     * calculating an aligned pointer. This new pointer must not be
+    /* Each table type (e.g. coul,lj6,lj12) requires four numbers per
+     * datapoint. For performance reasons we want the table data to be
+     * aligned on a 32-byte boundary. This new pointer must not be
      * used in a free() call, but thankfully we're sloppy enough not
      * to do this :-)
      */
 
-    snew_aligned(table.data, 4*nx, 32);
+    snew_aligned(table.data, table.stride*nx, 32);
 
     init_table(nx, nx0, table.scale, &(td[0]), !bReadTab);
 
@@ -1630,7 +1623,7 @@ t_forcetable make_gb_table(const output_env_t oenv,
 
     }
 
-    copy2table(table.n, 0, 4, td[0].x, td[0].v, td[0].f, 1.0, table.data);
+    copy2table(table.n, 0, table.stride, td[0].x, td[0].v, td[0].f, 1.0, table.data);
 
     if (bDebugMode())
     {
@@ -1641,7 +1634,7 @@ t_forcetable make_gb_table(const output_env_t oenv,
         {
             /* x0=i*table.r/(5*table.n); */
             x0 = i*table.r/table.n;
-            evaluate_table(table.data, 0, 4, table.scale, x0, &y0, &yp);
+            evaluate_table(table.data, 0, table.stride, table.scale, x0, &y0, &yp);
             fprintf(fp, "%15.10e  %15.10e  %15.10e\n", x0, y0, yp);
 
         }
@@ -1757,18 +1750,22 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
     table.scale = td[0].tabscale;
     nx0         = td[0].nx0;
 
-    /* Each table type (e.g. coul,lj6,lj12) requires four
-     * numbers per datapoint. For performance reasons we want
-     * the table data to be aligned to 16-byte. This is accomplished
-     * by allocating 16 bytes extra to a temporary pointer, and then
-     * calculating an aligned pointer. This new pointer must not be
+    table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
+    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+    table.formatsize    = 4;
+    table.ninteractions = 1;
+    table.stride        = table.formatsize*table.ninteractions;
+
+    /* Each table type (e.g. coul,lj6,lj12) requires four numbers per
+     * datapoint. For performance reasons we want the table data to be
+     * aligned to a 32-byte boundary. This new pointer must not be
      * used in a free() call, but thankfully we're sloppy enough not
      * to do this :-)
      */
 
-    snew_aligned(table.data, 4*nx, 32);
+    snew_aligned(table.data, table.stride*nx, 32);
 
-    copy2table(table.n, 0, 4, td[0].x, td[0].v, td[0].f, 1.0, table.data);
+    copy2table(table.n, 0, table.stride, td[0].x, td[0].v, td[0].f, 1.0, table.data);
 
     if (bDebugMode())
     {
@@ -1780,7 +1777,7 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
         {
             /* x0=i*table.r/(5*table.n); */
             x0 = i*table.r/(5*(table.n-1));
-            evaluate_table(table.data, 0, 4, table.scale, x0, &y0, &yp);
+            evaluate_table(table.data, 0, table.stride, table.scale, x0, &y0, &yp);
             fprintf(fp, "%15.10e  %15.10e  %15.10e\n", x0, y0, yp);
 
         }
@@ -1789,13 +1786,6 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
 
     done_tabledata(&(td[0]));
     sfree(td);
-
-    table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
-    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
-    table.formatsize    = 4;
-    table.ninteractions = 3;
-    table.stride        = table.formatsize*table.ninteractions;
-
 
     return table;
 }
@@ -1806,6 +1796,7 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
     double        start;
     int           i;
     bondedtable_t tab;
+    int           stride = 4;
 
     if (angle < 2)
     {
@@ -1828,8 +1819,8 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
     }
     tab.n     = td.nx;
     tab.scale = td.tabscale;
-    snew(tab.data, tab.n*4);
-    copy2table(tab.n, 0, 4, td.x, td.v, td.f, 1.0, tab.data);
+    snew(tab.data, tab.n*stride);
+    copy2table(tab.n, 0, stride, td.x, td.v, td.f, 1.0, tab.data);
     done_tabledata(&td);
 
     return tab;
