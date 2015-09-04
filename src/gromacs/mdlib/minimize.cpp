@@ -73,6 +73,7 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"

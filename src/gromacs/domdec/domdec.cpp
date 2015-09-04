@@ -86,6 +86,7 @@
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/pbcutil/ishift.h"
