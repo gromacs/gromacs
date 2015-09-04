@@ -165,6 +165,7 @@ static int get_mtype_list(t_block *at, gmx_mtop_t *mtop, t_block *tlist)
     {
         bNEW   = TRUE;
         mol_id = get_mol_id(at->index[i], mtop, &type, &block);
+        GMX_IGNORE_RETURN_VALUE(mol_id);
         for (j = 0; j < nr; j++)
         {
             if (tlist->index[j] == type)
@@ -1215,10 +1216,12 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         /* Obtain the maximum and minimum coordinates of the group to be embedded */
         snew(rest_at, 1);
         ins_nat = init_ins_at(ins_at, rest_at, state, pos_ins, groups, ins_grp_id, xy_max);
+        GMX_IGNORE_RETURN_VALUE(ins_nat);
         /* Check that moleculetypes in insertion group are not part of the rest of the system */
         check_types(ins_at, rest_at, mtop);
 
         mem_nat = init_mem_at(mem_p, mtop, state->x, state->box, pos_ins);
+        GMX_IGNORE_RETURN_VALUE(mem_nat);
 
         prot_area = est_prot_area(pos_ins, state->x, ins_at, mem_p);
         if ( (prot_area > prot_vs_box) && ( (state->box[XX][XX]*state->box[YY][YY]-state->box[XX][YY]*state->box[YY][XX]) < box_vs_prot) )
