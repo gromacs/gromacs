@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,10 +135,12 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
             bPert = FALSE;
             gmx_fatal(FARGS, "Function type %s does not support currentely free energy calculations",
                       interaction_function[ftype].longname);
+            break;
         default:
             bPert = FALSE;
             gmx_fatal(FARGS, "Function type %s not implemented in ip_pert",
                       interaction_function[ftype].longname);
+            break;
     }
 
     return bPert;
@@ -206,7 +208,6 @@ void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
     t_iparams *iparams;
     t_ilist   *ilist;
     t_iatom   *iatoms;
-    gmx_bool   bPert;
     t_iatom   *iabuf;
     int        iabuf_nalloc;
 
