@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "forcerec.h"
+
 #include "config.h"
 
 #include <assert.h>
