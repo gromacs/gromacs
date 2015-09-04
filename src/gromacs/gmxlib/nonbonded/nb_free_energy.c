@@ -335,7 +335,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         tabscale         = kernel_data->table_elec_vdw->scale;
         VFtab            = kernel_data->table_elec_vdw->data;
         /* we always use the combined table here */
-        tab_elemsize     = 12;
+        tab_elemsize     = kernel_data->table_elec_vdw->stride;
     }
 
     for (n = 0; (n < nri); n++)

@@ -93,6 +93,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
@@ -2227,6 +2228,11 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                           "for vdw-type = %s", evdw_names[fr->vdwtype]);
             }
 
+            /* TODO This code depends on the logic in tables.c that
+               constructs the table layout, which should be made
+               explicit in future cleanup. */
+            GMX_ASSERT(fr->nblists[0].table_vdw.interaction == GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+                       "Dispersion-correction code needs a table with both repulsion and dispersion terms");
             scale  = fr->nblists[0].table_vdw.scale;
             vdwtab = fr->nblists[0].table_vdw.data;
 
