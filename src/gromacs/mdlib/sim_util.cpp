@@ -2228,6 +2228,9 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                           "for vdw-type = %s", evdw_names[fr->vdwtype]);
             }
 
+            /* TODO This code depends on the logic in tables.c that
+               constructs the table layout, which should be made
+               explicit in future cleanup. */
             scale  = fr->nblists[0].table_vdw.scale;
             vdwtab = fr->nblists[0].table_vdw.data;
 
