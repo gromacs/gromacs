@@ -107,6 +107,15 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         MyClass &onlyAtoms()
         { selectionFlags_.set(efSelection_OnlyAtoms); return me(); }
         /*! \brief
+         * Only accept selections that evaluate to atom positions in sorted order.
+         */
+        MyClass &onlySortedAtoms()
+        {
+            selectionFlags_.set(efSelection_OnlyAtoms);
+            selectionFlags_.set(efSelection_OnlySorted);
+            return me();
+        }
+        /*! \brief
          * Only accept static selections for this option.
          */
         MyClass &onlyStatic()

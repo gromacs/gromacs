@@ -790,6 +790,18 @@ SelectionCollection::compile()
                             sel.selectionText());
                 GMX_THROW(InvalidInputError(message));
             }
+            if (sel.hasFlag(efSelection_OnlySorted))
+            {
+                if (!sel.hasSortedAtomIndices())
+                {
+                    const std::string message = formatString(
+                                "Selection '%s' does not evaluate to atoms in an "
+                                "ascending (sorted) order. "
+                                "This is not allowed in this context.",
+                                sel.selectionText());
+                    GMX_THROW(InvalidInputError(message));
+                }
+            }
         }
         if (sel.hasFlag(efSelection_DisallowEmpty))
         {

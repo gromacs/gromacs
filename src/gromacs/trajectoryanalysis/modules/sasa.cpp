@@ -485,10 +485,10 @@ Sasa::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settin
     // The calculation group uses dynamicMask() so that the coordinates
     // match a static array of VdW radii.
     options->addOption(SelectionOption("surface").store(&surfaceSel_)
-                           .required().onlyAtoms().dynamicMask()
+                           .required().onlySortedAtoms().dynamicMask()
                            .description("Surface calculation selection"));
     options->addOption(SelectionOption("output").storeVector(&outputSel_)
-                           .onlyAtoms().multiValue()
+                           .onlySortedAtoms().multiValue()
                            .description("Output selection(s)"));
 
     // Atom names etc. are required for the VdW radii lookup.

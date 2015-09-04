@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,6 +151,26 @@ TEST_F(SelectionOptionTest, HandlesNonAtomicSelectionWhenAtomsRequired)
     EXPECT_NO_THROW_GMX(assigner.start());
     ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
     EXPECT_NO_THROW_GMX(assigner.appendValue("res_cog of resname RA RB"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_THROW_GMX(sc_.compile(), gmx::InvalidInputError);
+}
+
+
+TEST_F(SelectionOptionTest, ChecksForSortedAtomsWhenRequired)
+{
+    gmx::Selection sel;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").store(&sel).onlySortedAtoms()));
+
+    gmx::OptionsAssigner assigner(&options_);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resnr 1 2 permute 2 1"));
     EXPECT_NO_THROW_GMX(assigner.finishOption());
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options_.finish());
