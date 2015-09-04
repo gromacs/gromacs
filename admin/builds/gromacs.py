@@ -95,8 +95,8 @@ def do_build(context):
     os.environ['GMX_NO_TERM'] = '1'
 
     context.run_cmake(cmake_opts)
-    context.build_target(target=None)
-    context.build_target(target='tests')
+    context.build_target(target=None, keep_going=True)
+    context.build_target(target='tests', keep_going=True)
 
     if not context.params.memcheck:
         context.run_ctest(args=['--output-on-failure'])
