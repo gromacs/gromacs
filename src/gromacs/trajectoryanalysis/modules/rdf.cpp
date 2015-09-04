@@ -355,7 +355,7 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
     {
         if (!refSel_.hasOnlyAtoms())
         {
-            GMX_THROW(InconsistentInputError("-surf only works with -refsel that consists of atoms"));
+            GMX_THROW(InconsistentInputError("-surf only works with -ref that consists of atoms"));
         }
         const e_index_t type = (surface_ == SurfaceType_Molecule ? INDEX_MOL : INDEX_RES);
         surfaceGroupCount_ = refSel_.initOriginalIdsToGroup(top.topology(), type);
@@ -363,9 +363,9 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     if (bExclusions_)
     {
-        if (!refSel_.hasOnlyAtoms())
+        if (!refSel_.hasOnlyAtoms() || !refSel_.hasSortedAtomIndices())
         {
-            GMX_THROW(InconsistentInputError("-excl only works with selections that consist of atoms"));
+            GMX_THROW(InconsistentInputError("-excl only works with a -ref selection that consist of atoms in ascending (sorted) order"));
         }
         for (size_t i = 0; i < sel_.size(); ++i)
         {
