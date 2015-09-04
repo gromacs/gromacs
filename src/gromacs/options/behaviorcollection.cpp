@@ -64,7 +64,7 @@ OptionsBehaviorCollection::~OptionsBehaviorCollection()
 void OptionsBehaviorCollection::addBehavior(const OptionsBehaviorPointer &behavior)
 {
     behaviors_.reserve(behaviors_.size() + 1);
-    behavior->initOptions(options_);
+    behavior->initBehavior(options_);
     behaviors_.push_back(behavior);
 }
 
@@ -73,6 +73,14 @@ void OptionsBehaviorCollection::optionsFinishing()
     for (const OptionsBehaviorPointer &behavior : behaviors_)
     {
         behavior->optionsFinishing(options_);
+    }
+}
+
+void OptionsBehaviorCollection::optionsFinished()
+{
+    for (const OptionsBehaviorPointer &behavior : behaviors_)
+    {
+        behavior->optionsFinished();
     }
 }
 
