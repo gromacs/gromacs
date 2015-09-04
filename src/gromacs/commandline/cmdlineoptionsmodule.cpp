@@ -180,6 +180,7 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
         options.finish();
     }
     module_->optionsFinished();
+    behaviors.optionsFinished();
 }
 
 }   // namespace

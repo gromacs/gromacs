@@ -77,7 +77,7 @@ class IOptionsBehavior
          * This method can, e.g., use Options::addManager() to associate
          * managers with the options object.
          */
-        virtual void initOptions(Options *options)      = 0;
+        virtual void initBehavior(Options *options) = 0;
         /*! \brief
          * Called when all option values have been assigned.
          *
@@ -85,6 +85,15 @@ class IOptionsBehavior
          * operations that still influence the option values.
          */
         virtual void optionsFinishing(Options *options) = 0;
+        /*! \brief
+         * Called when all option values have been processed.
+         *
+         * This is called after Options::finish() (and typically after
+         * higher-level optionsFinished() methods, such as that in
+         * ICommandLineOptionsModule).  This can add behavior that performs
+         * tasks based on the option values provided.
+         */
+        virtual void optionsFinished() = 0;
 };
 
 } // namespace
