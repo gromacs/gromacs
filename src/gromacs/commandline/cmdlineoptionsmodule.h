@@ -252,9 +252,6 @@ class ICommandLineOptionsModule
          *
          * When running the module, this method is called after all
          * command-line arguments have been parsed.
-         *
-         * \todo
-         * Remove if no real need materializes.
          */
         virtual void optionsFinished() = 0;
 

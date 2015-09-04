@@ -50,6 +50,7 @@ namespace gmx
 {
 
 class IOptionsContainer;
+class ITopologyProvider;
 class SelectionCollection;
 class TimeUnitBehavior;
 class TopologyInformation;
@@ -75,6 +76,9 @@ class TrajectoryAnalysisRunnerCommon
         explicit TrajectoryAnalysisRunnerCommon(TrajectoryAnalysisSettings *settings);
         ~TrajectoryAnalysisRunnerCommon();
 
+        //! Returns a topology provider for SelectionOptionBehavior.
+        ITopologyProvider *topologyProvider();
+
         /*! \brief
          * Initializes common options for trajectory analysis.
          *
@@ -85,13 +89,8 @@ class TrajectoryAnalysisRunnerCommon
         void initOptions(IOptionsContainer *options, TimeUnitBehavior *timeUnitBehavior);
         //! Processes common option values after they have been parsed.
         void optionsFinished();
-        //! Initialize index groups for selections.
-        void initIndexGroups(SelectionCollection *selections,
-                             bool                 bUseDefaults);
-        //! Free memory allocated for index groups.
-        void doneIndexGroups(SelectionCollection *selections);
         //! Load topology information if provided and/or required.
-        void initTopology(SelectionCollection *selections);
+        void initTopology();
         /*! \brief
          * Reads the first frame from the trajectory.
          *

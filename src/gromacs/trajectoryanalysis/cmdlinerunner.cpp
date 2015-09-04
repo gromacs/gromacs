@@ -51,7 +51,7 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selectioncollection.h"
-#include "gromacs/selection/selectionoptionmanager.h"
+#include "gromacs/selection/selectionoptionbehavior.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
@@ -72,7 +72,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl
     public:
         explicit Impl(TrajectoryAnalysisModulePointer module)
             : module_(module), common_(&settings_),
-              seloptManager_(&selections_), bUseDefaultGroups_(true)
+              bUseDefaultGroups_(true)
         {
         }
 
@@ -80,7 +80,6 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         TrajectoryAnalysisSettings      settings_;
         TrajectoryAnalysisRunnerCommon  common_;
         SelectionCollection             selections_;
-        SelectionOptionManager          seloptManager_;
         bool                            bUseDefaultGroups_;
 };
 
@@ -119,7 +118,9 @@ TrajectoryAnalysisCommandLineRunner::initOptions(
     boost::shared_ptr<TimeUnitBehavior>        timeUnitBehavior(
             new TimeUnitBehavior());
     boost::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
-            new SelectionOptionBehavior(&impl_->seloptManager_));
+            new SelectionOptionBehavior(&impl_->selections_,
+                                        impl_->common_.topologyProvider(),
+                                        impl_->bUseDefaultGroups_));
     settings->addOptionsBehavior(timeUnitBehavior);
     settings->addOptionsBehavior(selectionOptionBehavior);
     IOptionsContainer &commonOptions = options->addGroup();
@@ -127,26 +128,13 @@ TrajectoryAnalysisCommandLineRunner::initOptions(
 
     impl_->module_->initOptions(&moduleOptions, &impl_->settings_);
     impl_->common_.initOptions(&commonOptions, timeUnitBehavior.get());
-    impl_->selections_.initOptions(&commonOptions);
+    selectionOptionBehavior->initOptions(&commonOptions);
 }
 
 void TrajectoryAnalysisCommandLineRunner::optionsFinished()
 {
-    TrajectoryAnalysisSettings     &settings   = impl_->settings_;
-    TrajectoryAnalysisRunnerCommon &common     = impl_->common_;
-    SelectionCollection            &selections = impl_->selections_;
-
-    common.optionsFinished();
-    impl_->module_->optionsFinished(&settings);
-
-    common.initIndexGroups(&selections, impl_->bUseDefaultGroups_);
-
-    const bool bInteractive = StandardInputStream::instance().isInteractive();
-    impl_->seloptManager_.parseRequestedFromStdin(bInteractive);
-    common.doneIndexGroups(&selections);
-
-    common.initTopology(&selections);
-    selections.compile();
+    impl_->common_.optionsFinished();
+    impl_->module_->optionsFinished(&impl_->settings_);
 }
 
 int
@@ -157,6 +145,7 @@ TrajectoryAnalysisCommandLineRunner::run()
     TrajectoryAnalysisRunnerCommon &common     = impl_->common_;
     SelectionCollection            &selections = impl_->selections_;
 
+    common.initTopology();
     const TopologyInformation      &topology = common.topologyInformation();
     module->initAnalysis(settings, topology);
 
