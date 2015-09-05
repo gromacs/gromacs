@@ -361,6 +361,24 @@ void SelectionTreeElement::checkUnsortedAtoms(
     }
 }
 
+bool SelectionTreeElement::requiresIndexGroups() const
+{
+    if (type == SEL_GROUPREF)
+    {
+        return true;
+    }
+    SelectionTreeElementPointer child = this->child;
+    while (child)
+    {
+        if (child->requiresIndexGroups())
+        {
+            return true;
+        }
+        child = child->next;
+    }
+    return false;
+}
+
 void SelectionTreeElement::resolveIndexGroupReference(
         gmx_ana_indexgrps_t *grps, int natoms)
 {

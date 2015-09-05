@@ -668,6 +668,23 @@ SelectionCollection::requiresTopology() const
     return false;
 }
 
+
+bool
+SelectionCollection::requiresIndexGroups() const
+{
+    SelectionTreeElementPointer sel = impl_->sc_.root;
+    while (sel)
+    {
+        if (sel->requiresIndexGroups())
+        {
+            return true;
+        }
+        sel = sel->next;
+    }
+    return false;
+}
+
+
 SelectionList
 SelectionCollection::parseFromStdin(int count, bool bInteractive,
                                     const std::string &context)

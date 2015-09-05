@@ -288,6 +288,12 @@ SelectionOptionManager::requestOptionDelayedParsing(
     impl_->requests_.push_back(Impl::SelectionRequest(storage));
 }
 
+bool
+SelectionOptionManager::hasRequestedSelections() const
+{
+    return !impl_->requests_.empty();
+}
+
 void
 SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
 {

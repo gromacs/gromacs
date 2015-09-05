@@ -71,8 +71,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl
 {
     public:
         explicit Impl(TrajectoryAnalysisModulePointer module)
-            : module_(module), common_(&settings_),
-              bUseDefaultGroups_(true)
+            : module_(module), common_(&settings_)
         {
         }
 
@@ -80,7 +79,6 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         TrajectoryAnalysisSettings      settings_;
         TrajectoryAnalysisRunnerCommon  common_;
         SelectionCollection             selections_;
-        bool                            bUseDefaultGroups_;
 };
 
 /********************************************************************
@@ -99,13 +97,6 @@ TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 }
 
 
-void
-TrajectoryAnalysisCommandLineRunner::setUseDefaultGroups(bool bUseDefaults)
-{
-    impl_->bUseDefaultGroups_ = bUseDefaults;
-}
-
-
 void TrajectoryAnalysisCommandLineRunner::init(
         CommandLineModuleSettings * /*settings*/)
 {
@@ -119,8 +110,7 @@ TrajectoryAnalysisCommandLineRunner::initOptions(
             new TimeUnitBehavior());
     boost::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
             new SelectionOptionBehavior(&impl_->selections_,
-                                        impl_->common_.topologyProvider(),
-                                        impl_->bUseDefaultGroups_));
+                                        impl_->common_.topologyProvider()));
     settings->addOptionsBehavior(timeUnitBehavior);
     settings->addOptionsBehavior(selectionOptionBehavior);
     IOptionsContainer &commonOptions = options->addGroup();
