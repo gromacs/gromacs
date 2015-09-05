@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,18 +45,27 @@ extern "C" {
 }
 #endif
 
-typedef double (*real_space_grid_contribution_computer)(double, double);
+typedef double (*interaction_potential_function)(const double *, double);
 /* Function pointer used to tell table_spline3_fill_ewald_lr whether it
  * should calculate the grid contribution for electrostatics or LJ.
  */
 
-void table_spline3_fill_ewald_lr(real                                 *table_F,
-                                 real                                 *table_V,
-                                 real                                 *table_FDV0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr);
+void table_spline3_fill_ewald_lr(real                           *table_F,
+                                 real                           *table_V,
+                                 real                           *table_FDV0,
+                                 int                             ntab,
+                                 double                          dx,
+                                 real                            beta,
+                                 interaction_potential_function  v_lr);
+
+void table_spline3_fill_Verlet(real                               *table_F,
+                               real                               *table_V,
+                               real                               *table_FDV0,
+                               int                                 ntab,
+                               double                              dx,
+                               real                               *table_in_f,
+                               real                               *table_in_v,
+                               int                                 table_in_size);
 /* Fill tables of ntab points with spacing dr with the ewald long-range
  * (mesh) force.
  * There are three separate tables with format FDV0, F, and V.
@@ -65,14 +74,34 @@ void table_spline3_fill_ewald_lr(real                                 *table_F,
  * The force can then be interpolated linearly.
  */
 
+
+static void table_spline3_fill(real                           *table_f,
+                               real                           *table_v,
+                               real                           *table_fdv0,
+                               int                             ntab,
+                               double                          dx,
+                               interaction_potential_function  v_ana,
+                               const double                   *params,
+                               const double                   *table_in_f,
+                               const double                   *table_in_v,
+                               int                             table_in_size,
+                               int                             stride);
+
+
 real ewald_spline3_table_scale(const interaction_const_t *ic);
 /* Return the scaling for the Ewald quadratic spline tables. */
 
-double v_q_ewald_lr(double beta, double r);
+real nb_spline3_table_scale(const interaction_const_t *i, real rtab);
+/* Generic scaling function for User quadratic spline tables */
+
+double v_q_ewald_lr(const double *beta, double r);
 /* Return the real space grid contribution for Ewald*/
 
-double v_lj_ewald_lr(double beta, double r);
+double v_lj_ewald_lr(const double *beta, double r);
 /* Return the real space grid contribution for LJ-Ewald*/
+
+double v_user(const double *beta, double r);
+
 
 #ifdef __cplusplus
 }
