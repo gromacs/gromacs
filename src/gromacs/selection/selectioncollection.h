@@ -98,6 +98,8 @@ class TextOutputStream;
  *
  * At any point, requiresTopology() can be called to see whether the
  * information provided so far requires loading the topology.
+ * Similarly, requiresIndexGroups() tells whether external index groups are
+ * requires.
  * printTree() can be used to print the internal representation of the
  * selections (mostly useful for debugging).
  *
@@ -197,6 +199,16 @@ class SelectionCollection
          * Does not throw.
          */
         bool requiresTopology() const;
+        /*! \brief
+         * Returns true if the collection requires external index groups.
+         *
+         * \returns true if any selection has an unresolved index group reference.
+         *
+         * The return value is `false` after setIndexGroups() has been called.
+         *
+         * Does not throw.
+         */
+        bool requiresIndexGroups() const;
         /*! \brief
          * Sets the topology for the collection.
          *

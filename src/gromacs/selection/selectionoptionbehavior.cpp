@@ -43,6 +43,8 @@
 
 #include "selectionoptionbehavior.h"
 
+#include <cstdio>
+
 #include <string>
 
 #include "gromacs/options/filenameoption.h"
@@ -73,10 +75,9 @@ class SelectionOptionBehavior::Impl
 {
     public:
         Impl(SelectionCollection *selections,
-             ITopologyProvider   *topologyProvider,
-             bool                 useDefaultGroups)
+             ITopologyProvider   *topologyProvider)
             : selections_(*selections), topologyProvider_(*topologyProvider),
-              manager_(selections), grps_(NULL), useDefaultGroups_(useDefaultGroups)
+              manager_(selections), grps_(NULL)
         {
         }
         ~Impl()
@@ -96,19 +97,27 @@ class SelectionOptionBehavior::Impl
         }
         void initIndexGroups()
         {
-            t_topology *top = NULL;
+            if (!selections_.requiresIndexGroups()
+                && !manager_.hasRequestedSelections())
+            {
+                if (!ndxfile_.empty())
+                {
+                    std::fprintf(stderr, "NOTE: You provided an index file\n"
+                                 "  %s\n(with -n), but it was not used by any selection.\n",
+                                 ndxfile_.c_str());
+                }
+                selections_.setIndexGroups(NULL);
+                return;
+            }
             if (ndxfile_.empty())
             {
-                if (!useDefaultGroups_)
-                {
-                    selections_.setIndexGroups(NULL);
-                    return;
-                }
-                top = topologyProvider_.getTopology(false);
+                t_topology *top = topologyProvider_.getTopology(false);
+                gmx_ana_indexgrps_init(&grps_, top, NULL);
             }
-            const char *const ndxfile
-                = (!ndxfile_.empty() ? ndxfile_.c_str() : NULL);
-            gmx_ana_indexgrps_init(&grps_, top, ndxfile);
+            else
+            {
+                gmx_ana_indexgrps_init(&grps_, NULL, ndxfile_.c_str());
+            }
             selections_.setIndexGroups(grps_);
         }
         void doneIndexGroups()
@@ -139,14 +148,12 @@ class SelectionOptionBehavior::Impl
         //! Name of the index file (empty if no index file provided).
         std::string             ndxfile_;
         gmx_ana_indexgrps_t    *grps_;
-        bool                    useDefaultGroups_;
 };
 
 SelectionOptionBehavior::SelectionOptionBehavior(
         SelectionCollection *selections,
-        ITopologyProvider   *topologyProvider,
-        bool                 useDefaultGroups)
-    : impl_(new Impl(selections, topologyProvider, useDefaultGroups))
+        ITopologyProvider   *topologyProvider)
+    : impl_(new Impl(selections, topologyProvider))
 {
 }
 
