@@ -332,7 +332,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists only full pbc or pbc=xy with walls is supported");
         }
-        if (ir->rcoulomb != ir->rvdw)
+        if (ir->rcoulomb != ir->rvdw && (ir->coulombtype != eelNONE && ir->coulombtype != eelUSER))
         {
             warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported");
         }
@@ -355,12 +355,16 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
         }
 
-        if (!(ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME))
+        if (!(ir->vdwtype == evdwCUT  ||
+              ir->vdwtype == evdwPME  ||
+              ir->vdwtype == evdwUSER ))
         {
-            warning_error(wi, "With Verlet lists only cut-off and PME LJ interactions are supported");
+            warning_error(wi, "With Verlet lists only cut-off, PME LJ and USER table interactions are supported");
         }
-        if (!(ir->coulombtype == eelCUT ||
-              (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
+        if (!(ir->coulombtype == eelCUT  ||
+              ir->coulombtype == eelUSER ||
+              ir->coulombtype == eelNONE ||
+              (EEL_RF(ir->coulombtype)  && ir->coulombtype != eelRF_NEC) ||
               EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
             warning_error(wi, "With Verlet lists only cut-off, reaction-field, PME and Ewald electrostatics are supported");
@@ -386,6 +390,8 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_note(wi, "With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note that with the Verlet scheme, nstlist has no effect on the accuracy of your simulation.");
         }
+
+        printf ("readir.cpp (394): ir->rvdw=%10.4f - ir->rcoulomb=%10.4f\n\n", ir->rvdw, ir->rcoulomb);
 
         rc_max = std::max(ir->rvdw, ir->rcoulomb);
 
@@ -3193,7 +3199,7 @@ static void make_swap_groups(
 
 void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
 {
-    int      ig, i;
+    int ig, i;
 
 
     ig            = search_string(IMDgname, grps->nr, gnames);
