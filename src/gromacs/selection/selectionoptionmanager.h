@@ -135,6 +135,12 @@ class SelectionOptionManager : public IOptionManager
         void requestOptionDelayedParsing(SelectionOptionStorage *storage);
 
         /*! \brief
+         * Returns whether there are requested selections that need input from
+         * parseRequestedFrom*().
+         */
+        bool hasRequestedSelections() const;
+
+        /*! \brief
          * Parses selection(s) from standard input for options not yet
          * provided.
          *

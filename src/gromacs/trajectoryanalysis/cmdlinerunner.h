@@ -63,8 +63,7 @@ class CommandLineModuleManager;
  * trajectory frames.
  *
  * Ideally, this would only provide static methods, and the inheritance from
- * ICommandLineOptionsModule would be internal to the source file, but
- * currently the tests still require access to setUseDefaultGroups().
+ * ICommandLineOptionsModule would be internal to the source file.
  *
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
@@ -150,17 +149,6 @@ class TrajectoryAnalysisCommandLineRunner : public ICommandLineOptionsModule
          */
         explicit TrajectoryAnalysisCommandLineRunner(TrajectoryAnalysisModulePointer module);
         ~TrajectoryAnalysisCommandLineRunner();
-
-        /*! \brief
-         * Sets whether default index groups are initialized.
-         *
-         * This is intended only for internal unit testing purposes to avoid
-         * repeated, unnecessary initialization of the default groups, which
-         * can be expensive under, e.g., valgrind.
-         *
-         * Does not throw.
-         */
-        void setUseDefaultGroups(bool bUseDefaults);
 
         virtual void init(CommandLineModuleSettings *settings);
         virtual void initOptions(IOptionsContainer                 *options,

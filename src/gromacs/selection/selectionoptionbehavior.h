@@ -149,16 +149,13 @@ class SelectionOptionBehavior : public IOptionsBehavior
          * \param[in,out] selections  Selection collection to use.
          * \param[in]     topologyProvider  Callback to load/provide topology
          *     information to selections when required.
-         * \param[in]     useDefaultGroups  Whether default index groups
-         *     should be initialized if nothing else is provided.
          *
          * The methods in \p topologyProvider are called after all options have
          * been parsed and finished, so the caller can, e.g., load the topology
          * from a file specified by a file option.
          */
         SelectionOptionBehavior(SelectionCollection *selections,
-                                ITopologyProvider   *topologyProvider,
-                                bool                 useDefaultGroups);
+                                ITopologyProvider   *topologyProvider);
         ~SelectionOptionBehavior();
 
         /*! \brief

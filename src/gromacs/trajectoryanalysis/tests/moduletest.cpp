@@ -228,9 +228,8 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
         }
     }
 
-    std::unique_ptr<TrajectoryAnalysisCommandLineRunner> runner(
+    ICommandLineOptionsModulePointer runner(
             new TrajectoryAnalysisCommandLineRunner(impl_->module_));
-    runner->setUseDefaultGroups(false);
     int rc = 0;
     EXPECT_NO_THROW_GMX(rc = CommandLineTestHelper::runModule(std::move(runner), &cmdline));
     EXPECT_EQ(0, rc);
