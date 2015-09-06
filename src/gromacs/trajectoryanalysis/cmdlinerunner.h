@@ -44,31 +44,28 @@
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 
 #include <functional>
+#include <memory>
 
-#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/trajectoryanalysis/analysismodule.h"
-#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
 
 class CommandLineModuleManager;
+class ICommandLineOptionsModule;
 
 /*! \brief
- * Runner class for command-line analysis tools.
+ * Runner for command-line trajectory analysis tools.
  *
- * This class implements a command-line analysis program, given a
- * TrajectoryAnalysisModule object.  It takes care of common command-line
- * parameters, initializing and evaluating selections, and looping over
- * trajectory frames.
- *
- * Ideally, this would only provide static methods, and the inheritance from
- * ICommandLineOptionsModule would be internal to the source file.
+ * This class provides static methods to implement a command-line analysis
+ * program, given a TrajectoryAnalysisModule object (or a factory of such).
+ * It takes care of common command-line parameters, initializing and evaluating
+ * selections, and looping over trajectory frames.
  *
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
  */
-class TrajectoryAnalysisCommandLineRunner : public ICommandLineOptionsModule
+class TrajectoryAnalysisCommandLineRunner
 {
     public:
         /*! \brief
@@ -140,23 +137,24 @@ class TrajectoryAnalysisCommandLineRunner : public ICommandLineOptionsModule
         static void registerModule(CommandLineModuleManager *manager,
                                    const char *name, const char *description,
                                    ModuleFactoryMethod factory);
-
         /*! \brief
-         * Create a new runner with the provided module.
+         * Create a command-line module that runs the provided analysis module.
          *
-         * \param  module  Analysis module to run using the runner.
+         * \param[in]  module     Module to run.
+         * \returns    Command-line module that runs the provided analysis
+         *      module.
          * \throws std::bad_alloc if out of memory.
+         *
+         * This is mainly provided for testing purposes that want to bypass
+         * CommandLineModuleManager.
          */
-        explicit TrajectoryAnalysisCommandLineRunner(TrajectoryAnalysisModulePointer module);
-        ~TrajectoryAnalysisCommandLineRunner();
-
-        virtual void init(CommandLineModuleSettings *settings);
-        virtual void initOptions(IOptionsContainer                 *options,
-                                 ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished();
-        virtual int run();
+        static std::unique_ptr<ICommandLineOptionsModule>
+        createModule(TrajectoryAnalysisModulePointer module);
 
     private:
+        // Prevent instantiation.
+        TrajectoryAnalysisCommandLineRunner() {}
+
         /*! \brief
          * Creates a trajectory analysis module of a given type.
          *
@@ -171,10 +169,6 @@ class TrajectoryAnalysisCommandLineRunner : public ICommandLineOptionsModule
         //! Implements the template runAsMain() method.
         static int runAsMain(int argc, char *argv[],
                              ModuleFactoryMethod factory);
-
-        class Impl;
-
-        PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx
