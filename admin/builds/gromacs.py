@@ -92,7 +92,7 @@ def do_build(context):
     if context.params.mdrun_only:
         cmake_opts['GMX_BUILD_MDRUN_ONLY'] = 'ON'
 
-    os.environ['GMX_NO_TERM'] = '1'
+    context.env.add_env_var('GMX_NO_TERM', '1')
 
     context.run_cmake(cmake_opts)
     context.build_target(target=None, keep_going=True)
@@ -105,8 +105,7 @@ def do_build(context):
         context.run_ctest(args=['-L', 'GTest', '--output-on-failure'], memcheck=True)
 
     if not context.params.mdrun_only:
-        gromacs_dir = context.workspace.get_project_dir(Project.GROMACS)
-        os.environ['PATH'] += os.path.pathsep + os.path.join(gromacs_dir, 'bin')
+        context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
         os.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
 
         if not context.params.mpi and context.params.thread_mpi is not False:
