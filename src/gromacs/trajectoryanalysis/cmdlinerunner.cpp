@@ -63,17 +63,26 @@
 namespace gmx
 {
 
+namespace
+{
+
 /********************************************************************
- * TrajectoryAnalysisCommandLineRunner::Impl
+ * RunnerModule
  */
 
-class TrajectoryAnalysisCommandLineRunner::Impl
+class RunnerModule : public ICommandLineOptionsModule
 {
     public:
-        explicit Impl(TrajectoryAnalysisModulePointer module)
+        explicit RunnerModule(TrajectoryAnalysisModulePointer module)
             : module_(module), common_(&settings_)
         {
         }
+
+        virtual void init(CommandLineModuleSettings * /*settings*/) {}
+        virtual void initOptions(IOptionsContainer                 *options,
+                                 ICommandLineOptionsModuleSettings *settings);
+        virtual void optionsFinished();
+        virtual int run();
 
         TrajectoryAnalysisModulePointer module_;
         TrajectoryAnalysisSettings      settings_;
@@ -81,102 +90,74 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         SelectionCollection             selections_;
 };
 
-/********************************************************************
- * TrajectoryAnalysisCommandLineRunner
- */
-
-TrajectoryAnalysisCommandLineRunner::TrajectoryAnalysisCommandLineRunner(
-        TrajectoryAnalysisModulePointer module)
-    : impl_(new Impl(module))
-{
-}
-
-
-TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
-{
-}
-
-
-void TrajectoryAnalysisCommandLineRunner::init(
-        CommandLineModuleSettings * /*settings*/)
-{
-}
-
-void
-TrajectoryAnalysisCommandLineRunner::initOptions(
+void RunnerModule::initOptions(
         IOptionsContainer *options, ICommandLineOptionsModuleSettings *settings)
 {
     boost::shared_ptr<TimeUnitBehavior>        timeUnitBehavior(
             new TimeUnitBehavior());
     boost::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
-            new SelectionOptionBehavior(&impl_->selections_,
-                                        impl_->common_.topologyProvider()));
+            new SelectionOptionBehavior(&selections_,
+                                        common_.topologyProvider()));
     settings->addOptionsBehavior(timeUnitBehavior);
     settings->addOptionsBehavior(selectionOptionBehavior);
     IOptionsContainer &commonOptions = options->addGroup();
     IOptionsContainer &moduleOptions = options->addGroup();
 
-    impl_->module_->initOptions(&moduleOptions, &impl_->settings_);
-    impl_->common_.initOptions(&commonOptions, timeUnitBehavior.get());
+    module_->initOptions(&moduleOptions, &settings_);
+    common_.initOptions(&commonOptions, timeUnitBehavior.get());
     selectionOptionBehavior->initOptions(&commonOptions);
 }
 
-void TrajectoryAnalysisCommandLineRunner::optionsFinished()
+void RunnerModule::optionsFinished()
 {
-    impl_->common_.optionsFinished();
-    impl_->module_->optionsFinished(&impl_->settings_);
+    common_.optionsFinished();
+    module_->optionsFinished(&settings_);
 }
 
-int
-TrajectoryAnalysisCommandLineRunner::run()
+int RunnerModule::run()
 {
-    TrajectoryAnalysisModule       *module     = impl_->module_.get();
-    TrajectoryAnalysisSettings     &settings   = impl_->settings_;
-    TrajectoryAnalysisRunnerCommon &common     = impl_->common_;
-    SelectionCollection            &selections = impl_->selections_;
-
-    common.initTopology();
-    const TopologyInformation      &topology = common.topologyInformation();
-    module->initAnalysis(settings, topology);
+    common_.initTopology();
+    const TopologyInformation &topology = common_.topologyInformation();
+    module_->initAnalysis(settings_, topology);
 
     // Load first frame.
-    common.initFirstFrame();
-    module->initAfterFirstFrame(settings, common.frame());
+    common_.initFirstFrame();
+    module_->initAfterFirstFrame(settings_, common_.frame());
 
     t_pbc  pbc;
-    t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
+    t_pbc *ppbc = settings_.hasPBC() ? &pbc : NULL;
 
     int    nframes = 0;
     AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
-            module->startFrames(dataOptions, selections));
+            module_->startFrames(dataOptions, selections_));
     do
     {
-        common.initFrame();
-        t_trxframe &frame = common.frame();
+        common_.initFrame();
+        t_trxframe &frame = common_.frame();
         if (ppbc != NULL)
         {
             set_pbc(ppbc, topology.ePBC(), frame.box);
         }
 
-        selections.evaluate(&frame, ppbc);
-        module->analyzeFrame(nframes, frame, ppbc, pdata.get());
-        module->finishFrameSerial(nframes);
+        selections_.evaluate(&frame, ppbc);
+        module_->analyzeFrame(nframes, frame, ppbc, pdata.get());
+        module_->finishFrameSerial(nframes);
 
         ++nframes;
     }
-    while (common.readNextFrame());
-    module->finishFrames(pdata.get());
+    while (common_.readNextFrame());
+    module_->finishFrames(pdata.get());
     if (pdata.get() != NULL)
     {
         pdata->finish();
     }
     pdata.reset();
 
-    if (common.hasTrajectory())
+    if (common_.hasTrajectory())
     {
         fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
-                nframes, common.frame().time);
+                nframes, common_.frame().time);
     }
     else
     {
@@ -184,13 +165,19 @@ TrajectoryAnalysisCommandLineRunner::run()
     }
 
     // Restore the maximal groups for dynamic selections.
-    selections.evaluateFinal(nframes);
+    selections_.evaluateFinal(nframes);
 
-    module->finishAnalysis(nframes);
-    module->writeOutput();
+    module_->finishAnalysis(nframes);
+    module_->writeOutput();
 
     return 0;
 }
+
+}   // namespace
+
+/********************************************************************
+ * TrajectoryAnalysisCommandLineRunner
+ */
 
 // static
 int
@@ -199,8 +186,7 @@ TrajectoryAnalysisCommandLineRunner::runAsMain(
 {
     auto runnerFactory = [factory]
     {
-        return ICommandLineOptionsModulePointer(
-                new TrajectoryAnalysisCommandLineRunner(factory()));
+        return createModule(factory());
     };
     return ICommandLineOptionsModule::runAsMain(argc, argv, NULL, NULL, runnerFactory);
 }
@@ -213,11 +199,18 @@ TrajectoryAnalysisCommandLineRunner::registerModule(
 {
     auto runnerFactory = [factory]
     {
-        return ICommandLineOptionsModulePointer(
-                new TrajectoryAnalysisCommandLineRunner(factory()));
+        return createModule(factory());
     };
     ICommandLineOptionsModule::registerModuleFactory(
             manager, name, description, runnerFactory);
+}
+
+// static
+std::unique_ptr<ICommandLineOptionsModule>
+TrajectoryAnalysisCommandLineRunner::createModule(
+        TrajectoryAnalysisModulePointer module)
+{
+    return ICommandLineOptionsModulePointer(new RunnerModule(module));
 }
 
 } // namespace gmx
