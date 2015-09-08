@@ -277,10 +277,6 @@ Performance and Run Control
 ``GMX_NO_PULLVIR``
         when set, do not add virial contribution to COM pull forces.
 
-``GMX_NOCHARGEGROUPS``
-        disables multi-atom charge groups, i.e. each atom
-        in all non-solvent molecules is assigned its own charge group.
-
 ``GMX_NOPREDICT``
         shell positions are not predicted.
 
