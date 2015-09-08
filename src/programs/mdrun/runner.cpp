@@ -34,8 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \internal \file
+ *
+ * \brief Implements the MD runner routine calling all integrators.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_mdlib
+ */
 #include "gmxpre.h"
+
+#include "runner.h"
 
 #include "config.h"
 
@@ -77,7 +85,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/integrator.h"
+#include "gromacs/mdlib/minimize.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/tpi.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
@@ -90,6 +101,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"
+#include "md.h"
 #include "membed.h"
 #include "repl_ex.h"
 #include "resource-division.h"
@@ -98,17 +110,9 @@
 #include "corewrap.h"
 #endif
 
-typedef struct {
-    gmx_integrator_t *func;
-} gmx_intp_t;
-
-/* The array should match the eI array in include/types/enums.h */
-const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
-
 gmx_int64_t         deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
 
 #ifdef GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
@@ -177,15 +181,15 @@ static void mdrunner_start_fn(void *arg)
         fplog = mc.fplog;
     }
 
-    mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-             mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
-             mc.ddxyz, mc.dd_node_order, mc.rdd,
-             mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
-             mc.ddcsx, mc.ddcsy, mc.ddcsz,
-             mc.nbpu_opt, mc.nstlist_cmdline,
-             mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
-             mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
-             mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
+    gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
+                  mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
+                  mc.ddxyz, mc.dd_node_order, mc.rdd,
+                  mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
+                  mc.ddcsx, mc.ddcsy, mc.ddcsz,
+                  mc.nbpu_opt, mc.nstlist_cmdline,
+                  mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
+                  mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
+                  mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including
@@ -592,6 +596,21 @@ static void override_nsteps_cmdline(FILE            *fplog,
     /* Do nothing if nsteps_cmdline == -2 */
 }
 
+namespace gmx
+{
+
+//! Structure holding a function pointer.
+typedef struct {
+    //! The actual integrator function.
+    integrator_t *func;
+} gmx_intp_t;
+
+/*! \brief Array of integrator functions
+ *
+ * Should match the eI array in include/types/enums.h
+ */
+static const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
+
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
@@ -633,7 +652,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_membed_t              membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU      = FALSE;
+    gmx_bool                  bUseGPU            = FALSE;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -1359,3 +1378,5 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     return rc;
 }
+
+} // namespace gmx

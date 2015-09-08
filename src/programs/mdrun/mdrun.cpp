@@ -70,6 +70,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "mdrun_main.h"
+#include "runner.h"
 
 /*! \brief Return whether either of the command-line parameters that
  *  will trigger a multi-simulation is set */
@@ -534,13 +535,13 @@ int gmx_mdrun(int argc, char *argv[])
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-    rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
-                  nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
-                  dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                  nbpu_opt[0], nstlist,
-                  nsteps, nstepout, resetstep,
-                  nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
-                  pforce, cpt_period, max_hours, imdport, Flags);
+    rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
+                       nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
+                       dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
+                       nbpu_opt[0], nstlist,
+                       nsteps, nstepout, resetstep,
+                       nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
+                       pforce, cpt_period, max_hours, imdport, Flags);
 
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
