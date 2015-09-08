@@ -64,6 +64,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"

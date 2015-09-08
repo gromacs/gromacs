@@ -41,6 +41,7 @@
 #include <cmath>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 

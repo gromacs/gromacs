@@ -56,6 +56,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
 
 struct gmx_wallcycle;
 

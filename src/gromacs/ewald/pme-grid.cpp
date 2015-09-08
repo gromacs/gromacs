@@ -46,6 +46,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/cyclecounter.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef DEBUG_PME
