@@ -110,6 +110,7 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 

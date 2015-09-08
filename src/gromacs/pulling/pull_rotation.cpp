@@ -64,6 +64,7 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"

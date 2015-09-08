@@ -49,7 +49,6 @@
 
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
-#include "gromacs/utility/fatalerror.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -56,6 +56,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 

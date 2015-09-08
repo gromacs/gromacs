@@ -92,6 +92,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"

@@ -58,6 +58,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 

@@ -47,6 +47,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
 
 /* There's nothing special to do here if just masses are perturbed,
  * but if either charge or type is perturbed then the implementation
