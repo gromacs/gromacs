@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,8 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _gmx_hash_h
-#define _gmx_hash_h
+/*! \internal \file
+ *
+ * \brief This file declares functions for a simple hash used by this
+ * module. It is limited to integer keys and integer values. The
+ * purpose is highest efficiency and lowest memory usage possible.
+ * Thus the code is in a header, so it can be inlined where it is
+ * used.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_domdec
+ */
+
+#ifndef GMX_DOMDEC_HASH_H
+#define GMX_DOMDEC_HASH_H
 
 #include <stdio.h>
 
@@ -41,35 +53,39 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/*! \internal \brief Hashing key-generation helper struct */
+struct gmx_hash_e_t
+{
+    public:
+        //! TODO
+        int  key;
+        //! TODO
+        int  val;
+        //! TODO
+        int  next;
+};
 
-/* This include file implements the simplest hash table possible.
- * It is limited to integer keys and integer values.
- * The purpose is highest efficiency and lowest memory usage possible.
- *
- * The type definition is placed in types/commrec.h, as it is used there:
- * typedef struct gmx_hash *gmx_hash_t
- */
+/*! \internal \brief Hashing helper struct */
+struct gmx_hash
+{
+    public:
+        //! TODO
+        int           mod;
+        //! TODO
+        int           mask;
+        //! TODO
+        int           nalloc;
+        //! TODO
+        int          *direct;
+        //! TODO
+        gmx_hash_e_t *hash;
+        //! TODO
+        int           nkey;
+        //! TODO
+        int           start_space_search;
+};
 
-typedef struct {
-    int  key;
-    int  val;
-    int  next;
-} gmx_hash_e_t;
-
-typedef struct gmx_hash {
-    int           mod;
-    int           mask;
-    int           nalloc;
-    int          *direct;
-    gmx_hash_e_t *hash;
-    int           nkey;
-    int           start_space_search;
-} t_gmx_hash;
-
-/* Clear all the entries in the hash table */
+/*! \brief Clear all the entries in the hash table */
 static void gmx_hash_clear(gmx_hash_t hash)
 {
     int i;
@@ -84,6 +100,7 @@ static void gmx_hash_clear(gmx_hash_t hash)
     hash->nkey = 0;
 }
 
+/*! \brief Reallocate hash table data structures */
 static void gmx_hash_realloc(gmx_hash_t hash, int nkey_used_estimate)
 {
     /* Memory requirements:
@@ -114,9 +131,10 @@ static void gmx_hash_realloc(gmx_hash_t hash, int nkey_used_estimate)
     }
 }
 
-/* Clear all the entries in the hash table.
- * With the current number of keys check if the table size is still good,
- * if not optimize it with the currenr number of keys.
+/*! \brief Clear all the entries in the hash table.
+ *
+ * With the current number of keys check if the table size is still
+ * good, if not optimize it with the current number of keys.
  */
 static void gmx_hash_clear_and_optimize(gmx_hash_t hash)
 {
@@ -135,6 +153,7 @@ static void gmx_hash_clear_and_optimize(gmx_hash_t hash)
     gmx_hash_clear(hash);
 }
 
+/*! \brief Initialize hash table */
 static gmx_hash_t gmx_hash_init(int nkey_used_estimate)
 {
     gmx_hash_t hash;
@@ -149,7 +168,7 @@ static gmx_hash_t gmx_hash_init(int nkey_used_estimate)
     return hash;
 }
 
-/* Set the hash entry for global atom a_gl to local atom a_loc and cell. */
+/*! \brief Set the hash entry for global atom a_gl to local atom a_loc and cell. */
 static void gmx_hash_set(gmx_hash_t hash, int key, int value)
 {
     int ind, ind_prev, i;
@@ -191,7 +210,7 @@ static void gmx_hash_set(gmx_hash_t hash, int key, int value)
     hash->nkey++;
 }
 
-/* Delete the hash entry for key */
+/*! \brief Delete the hash entry for key */
 static void gmx_hash_del(gmx_hash_t hash, int key)
 {
     int ind, ind_prev;
@@ -230,7 +249,7 @@ static void gmx_hash_del(gmx_hash_t hash, int key)
     return;
 }
 
-/* Change the value for present hash entry for key */
+/*! \brief Change the value for present hash entry for key */
 static void gmx_hash_change_value(gmx_hash_t hash, int key, int value)
 {
     int ind;
@@ -251,7 +270,7 @@ static void gmx_hash_change_value(gmx_hash_t hash, int key, int value)
     return;
 }
 
-/* Change the hash value if already set, otherwise set the hash value */
+/*! \brief Change the hash value if already set, otherwise set the hash value */
 static void gmx_hash_change_or_set(gmx_hash_t hash, int key, int value)
 {
     int ind;
@@ -274,7 +293,7 @@ static void gmx_hash_change_or_set(gmx_hash_t hash, int key, int value)
     return;
 }
 
-/* Returns if the key is present, if the key is present *value is set */
+/*! \brief Returns if the key is present, if the key is present *value is set */
 static gmx_bool gmx_hash_get(const gmx_hash_t hash, int key, int *value)
 {
     int ind;
@@ -295,7 +314,7 @@ static gmx_bool gmx_hash_get(const gmx_hash_t hash, int key, int *value)
     return FALSE;
 }
 
-/* Returns the value or -1 if the key is not present */
+/*! \brief Returns the value or -1 if the key is not present */
 static int gmx_hash_get_minone(const gmx_hash_t hash, int key)
 {
     int ind;
@@ -314,8 +333,4 @@ static int gmx_hash_get_minone(const gmx_hash_t hash, int key)
     return -1;
 }
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif /* _gmx_hash_h */
