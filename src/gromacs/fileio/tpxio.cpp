@@ -51,7 +51,6 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
@@ -2153,11 +2152,6 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
         gmx_fio_do_int(fio, idum);
     }
     gmx_fio_do_int(fio, ffparams->ntypes);
-    if (bRead && debug)
-    {
-        fprintf(debug, "ffparams->atnr = %d, ntypes = %d\n",
-                ffparams->atnr, ffparams->ntypes);
-    }
     if (bRead)
     {
         snew(ffparams->functype, ffparams->ntypes);
@@ -2165,10 +2159,6 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
     }
     /* Read/write all the function types */
     gmx_fio_ndo_int(fio, ffparams->functype, ffparams->ntypes);
-    if (bRead && debug)
-    {
-        pr_ivec(debug, 0, "functype", ffparams->functype, ffparams->ntypes, TRUE);
-    }
 
     if (file_version >= 66)
     {
@@ -2200,23 +2190,12 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
                     (ffparams->functype[i] >= ftupd[k].ftype))
                 {
                     ffparams->functype[i] += 1;
-                    if (debug)
-                    {
-                        fprintf(debug, "Incrementing function type %d to %d (due to %s)\n",
-                                i, ffparams->functype[i],
-                                interaction_function[ftupd[k].ftype].longname);
-                        fflush(debug);
-                    }
                 }
             }
         }
 
         do_iparams(fio, ffparams->functype[i], &ffparams->iparams[i], bRead,
                    file_version);
-        if (bRead && debug)
-        {
-            pr_iparams(debug, ffparams->functype[i], &ffparams->iparams[i]);
-        }
     }
 }
 
@@ -2269,11 +2248,6 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
                 add_settle_atoms(&ilist[j]);
             }
         }
-        /*
-           if (bRead && gmx_debug_at)
-           pr_ilist(debug,0,interaction_function[j].longname,
-               functype,&ilist[j],TRUE);
-         */
     }
 }
 
@@ -2757,20 +2731,11 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
 
     do_atoms(fio, &molt->atoms, bRead, symtab, file_version, groups);
 
-    if (bRead && gmx_debug_at)
-    {
-        pr_atoms(debug, 0, "atoms", &molt->atoms, TRUE);
-    }
-
     if (file_version >= 57)
     {
         do_ilists(fio, molt->ilist, bRead, file_version);
 
         do_block(fio, &molt->cgs, bRead, file_version);
-        if (bRead && gmx_debug_at)
-        {
-            pr_block(debug, 0, "cgs", &molt->cgs, TRUE);
-        }
     }
 
     /* This used to be in the atoms struct */
@@ -2963,10 +2928,6 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         init_mtop(mtop);
     }
     do_symtab(fio, &(mtop->symtab), bRead);
-    if (bRead && debug)
-    {
-        pr_symtab(debug, 0, "symtab", &mtop->symtab);
-    }
 
     do_symstr(fio, &(mtop->name), bRead, &(mtop->symtab));
 
@@ -3041,14 +3002,9 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     }
 
     do_atomtypes (fio, &(mtop->atomtypes), bRead, file_version);
-    if (bRead && debug)
-    {
-        pr_atomtypes(debug, 0, "atomtypes", &mtop->atomtypes, TRUE);
-    }
 
     if (file_version < 57)
     {
-        /* Debug statements are inside do_idef */
         do_idef (fio, &mtop->ffparams, &mtop->moltype[0], bRead, file_version);
         mtop->natoms = mtop->moltype[0].atoms.nr;
     }
@@ -3072,10 +3028,6 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     if (file_version < 57)
     {
         do_block(fio, &mtop->moltype[0].cgs, bRead, file_version);
-        if (bRead && gmx_debug_at)
-        {
-            pr_block(debug, 0, "cgs", &mtop->moltype[0].cgs, TRUE);
-        }
         do_block(fio, &mtop->mols, bRead, file_version);
         /* Add the posres coordinates to the molblock */
         add_posres_molblock(mtop);
@@ -3086,10 +3038,6 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         {
             done_block(&mtop->mols);
             mtop->mols = mtop_mols(mtop);
-        }
-        if (gmx_debug_at)
-        {
-            pr_block(debug, 0, "mols", &mtop->mols, TRUE);
         }
     }
 
@@ -3254,11 +3202,6 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
         gmx_fio_do_int(fio, idum);
         gmx_fio_do_real(fio, rdum);
     }
-    /*a better decision will eventually (5.0 or later) need to be made
-       on how to treat the alchemical state of the system, which can now
-       vary through a simulation, and cannot be completely described
-       though a single lambda variable, or even a single state
-       index. Eventually, should probably be a vector. MRS*/
     if (fver >= 79)
     {
         gmx_fio_do_int(fio, tpx->fep_state);
@@ -3294,7 +3237,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (!bRead)
     {
         tpx.natoms    = state->natoms;
-        tpx.ngtc      = state->ngtc; /* need to add nnhpres here? */
+        tpx.ngtc      = state->ngtc;
         tpx.fep_state = state->fep_state;
         tpx.lambda    = state->lambda[efptFEP];
         tpx.bIr       = (ir       != NULL);
@@ -3312,13 +3255,11 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (bRead)
     {
         state->flags  = 0;
-        /* state->lambda = tpx.lambda;*/ /*remove this eventually? */
-        /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
         if (bXVallocated)
         {
             xptr = state->x;
             vptr = state->v;
-            init_state(state, 0, tpx.ngtc, 0, 0, 0); /* nose-hoover chains */ /* eventually, need to add nnhpres here? */
+            init_state(state, 0, tpx.ngtc, 0, 0, 0);
             state->natoms = tpx.natoms;
             state->nalloc = tpx.natoms;
             state->x      = xptr;
@@ -3326,7 +3267,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
         else
         {
-            init_state(state, tpx.natoms, tpx.ngtc, 0, 0, 0); /* nose-hoover chains */
+            init_state(state, tpx.natoms, tpx.ngtc, 0, 0, 0);
         }
     }
 
@@ -3359,9 +3300,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (state->ngtc > 0 && file_version >= 28)
     {
         real *dumv;
-        /*ndo_double(state->nosehoover_xi,state->ngtc,bDum);*/
-        /*ndo_double(state->nosehoover_vxi,state->ngtc,bDum);*/
-        /*ndo_double(state->therm_integral,state->ngtc,bDum);*/
         snew(dumv, state->ngtc);
         if (file_version < 69)
         {
@@ -3385,19 +3323,11 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             {
                 do_inputrec(fio, ir, bRead, file_version,
                             mtop ? &mtop->ffparams.fudgeQQ : NULL);
-                if (bRead && debug)
-                {
-                    pr_inputrec(debug, 0, "inputrec", ir, FALSE);
-                }
             }
             else
             {
                 do_inputrec(fio, &dum_ir, bRead, file_version,
                             mtop ? &mtop->ffparams.fudgeQQ : NULL);
-                if (bRead && debug)
-                {
-                    pr_inputrec(debug, 0, "inputrec", &dum_ir, FALSE);
-                }
                 done_inputrec(&dum_ir);
             }
 
@@ -3474,10 +3404,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             if (file_generation <= tpx_generation && ir)
             {
                 do_inputrec(fio, ir, bRead, file_version, mtop ? &mtop->ffparams.fudgeQQ : NULL);
-                if (bRead && debug)
-                {
-                    pr_inputrec(debug, 0, "inputrec", ir, FALSE);
-                }
                 if (file_version < 51)
                 {
                     set_box_rel(ir, state);
