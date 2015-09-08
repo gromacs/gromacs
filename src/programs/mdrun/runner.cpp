@@ -34,8 +34,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \internal \file
+ *
+ * \brief Implements the MD runner routine calling all integrators.
+ *
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \ingroup module_mdlib
+ */
 #include "gmxpre.h"
+
+#include "runner.h"
 
 #include "config.h"
 
@@ -77,7 +85,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/integrator.h"
+#include "gromacs/mdlib/minimize.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/tpi.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
@@ -90,6 +101,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "deform.h"
+#include "md.h"
 #include "membed.h"
 #include "repl_ex.h"
 #include "resource-division.h"
@@ -98,17 +110,12 @@
 #include "corewrap.h"
 #endif
 
-typedef struct {
-    gmx_integrator_t *func;
-} gmx_intp_t;
-
-/* The array should match the eI array in include/types/enums.h */
-const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
-
+//! First step used in pressure scaling
 gmx_int64_t         deform_init_init_step_tpx;
+//! Initial box for pressure scaling
 matrix              deform_init_box_tpx;
+//! MPI variable for use in pressure scaling
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-
 
 #ifdef GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
@@ -177,15 +184,15 @@ static void mdrunner_start_fn(void *arg)
         fplog = mc.fplog;
     }
 
-    mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-             mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
-             mc.ddxyz, mc.dd_node_order, mc.rdd,
-             mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
-             mc.ddcsx, mc.ddcsy, mc.ddcsz,
-             mc.nbpu_opt, mc.nstlist_cmdline,
-             mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
-             mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
-             mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
+    gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
+                  mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
+                  mc.ddxyz, mc.dd_node_order, mc.rdd,
+                  mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
+                  mc.ddcsx, mc.ddcsy, mc.ddcsz,
+                  mc.nbpu_opt, mc.nstlist_cmdline,
+                  mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
+                  mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
+                  mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
 }
 
 /* called by mdrunner() to start a specific number of threads (including
@@ -273,11 +280,13 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
 #endif /* GMX_THREAD_MPI */
 
 
-/* We determine the extra cost of the non-bonded kernels compared to
+/*! \brief Cost of non-bonded kernels
+ *
+ * We determine the extra cost of the non-bonded kernels compared to
  * a reference nstlist value of 10 (which is the default in grompp).
  */
 static const int    nbnxnReferenceNstlist = 10;
-/* The values to try when switching  */
+//! The values to try when switching
 const int           nstlist_try[] = { 20, 25, 40 };
 #define NNSTL  sizeof(nstlist_try)/sizeof(nstlist_try[0])
 /* Increase nstlist until the non-bonded cost increases more than listfac_ok,
@@ -290,13 +299,17 @@ const int           nstlist_try[] = { 20, 25, 40 };
  * nstlist will not be increased enough to reach optimal performance.
  */
 /* CPU: pair-search is about a factor 1.5 slower than the non-bonded kernel */
+//! Max OK performance ratio beween force calc and neighbor searching
 static const float  nbnxn_cpu_listfac_ok    = 1.05;
+//! Too high performance ratio beween force calc and neighbor searching
 static const float  nbnxn_cpu_listfac_max   = 1.09;
 /* GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel */
+//! Max OK performance ratio beween force calc and neighbor searching
 static const float  nbnxn_gpu_listfac_ok    = 1.20;
+//! Too high performance ratio beween force calc and neighbor searching
 static const float  nbnxn_gpu_listfac_max   = 1.30;
 
-/* Try to increase nstlist when using the Verlet cut-off scheme */
+/*! \brief Try to increase nstlist when using the Verlet cut-off scheme */
 static void increase_nstlist(FILE *fp, t_commrec *cr,
                              t_inputrec *ir, int nstlist_cmdline,
                              const gmx_mtop_t *mtop, matrix box,
@@ -505,6 +518,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     }
 }
 
+/*! \brief Initialize variables for Verlet scheme simulation */
 static void prepare_verlet_scheme(FILE                           *fplog,
                                   t_commrec                      *cr,
                                   t_inputrec                     *ir,
@@ -554,7 +568,10 @@ static void prepare_verlet_scheme(FILE                           *fplog,
     }
 }
 
-/* Override the value in inputrec with value passed on the command line (if any) */
+/*! \brief Override the nslist value in inputrec
+ *
+ * with value passed on the command line (if any)
+ */
 static void override_nsteps_cmdline(FILE            *fplog,
                                     gmx_int64_t      nsteps_cmdline,
                                     t_inputrec      *ir,
@@ -591,6 +608,21 @@ static void override_nsteps_cmdline(FILE            *fplog,
     }
     /* Do nothing if nsteps_cmdline == -2 */
 }
+
+namespace gmx
+{
+
+//! Structure holding a function pointer.
+typedef struct {
+    //! The actual integrator function.
+    integrator_t *func;
+} gmx_intp_t;
+
+/*! \brief Array of integrator functions
+ *
+ * Should match the eI array in include/types/enums.h
+ */
+static const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md}, {do_md}};
 
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
@@ -633,7 +665,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_membed_t              membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU      = FALSE;
+    gmx_bool                  bUseGPU            = FALSE;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -1359,3 +1391,5 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     return rc;
 }
+
+} // namespace gmx
