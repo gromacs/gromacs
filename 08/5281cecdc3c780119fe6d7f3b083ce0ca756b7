@@ -1,0 +1,8 @@
+Code-Review+1: Roland Schulz <roland@rschulz.eu>
+Code-Review+2: David van der Spoel <davidvanderspoel@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Tue, 08 Sep 2015 14:14:21 +0200
+Reviewed-on: https://gerrit.gromacs.org/4941
+Project: gromacs
+Branch: refs/heads/master
