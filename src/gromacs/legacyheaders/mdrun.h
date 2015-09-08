@@ -84,50 +84,6 @@ enum {
     ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
-typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
-                                 int nfile, const t_filenm fnm[],
-                                 const output_env_t oenv, gmx_bool bVerbose,
-                                 gmx_bool bCompact, int nstglobalcomm,
-                                 gmx_vsite_t *vsite, struct gmx_constr *constr,
-                                 int stepout,
-                                 t_inputrec *inputrec,
-                                 gmx_mtop_t *mtop, t_fcdata *fcd,
-                                 t_state *state,
-                                 t_mdatoms *mdatoms,
-                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                                 struct gmx_edsam *ed,
-                                 t_forcerec *fr,
-                                 int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                                 gmx_membed_t membed,
-                                 real cpt_period, real max_hours,
-                                 int imdport,
-                                 unsigned long Flags,
-                                 gmx_walltime_accounting_t walltime_accounting);
-
-/* ROUTINES from md.c */
-
-gmx_integrator_t do_md;
-
-
-/* ROUTINES from minimize.c */
-
-gmx_integrator_t do_steep;
-/* Do steepest descents EM */
-
-gmx_integrator_t do_cg;
-/* Do conjugate gradient EM */
-
-gmx_integrator_t do_lbfgs;
-/* Do conjugate gradient L-BFGS */
-
-gmx_integrator_t do_nm;
-/* Do normal mode analysis */
-
-/* ROUTINES from tpi.c */
-
-gmx_integrator_t do_tpi;
-/* Do test particle insertion */
-
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
 void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, df_history_t *dfhist);
@@ -150,19 +106,6 @@ void set_state_entries(t_state *state, const t_inputrec *ir);
 /* Broadcast the data for a simulation, and allocate node-specific settings */
 void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop);
-
-int mdrunner(gmx_hw_opt_t *hw_opt,
-             FILE *fplog, t_commrec *cr, int nfile,
-             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm, ivec ddxyz, int dd_node_order,
-             real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
-             const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt, int nstlist_cmdline,
-             gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
-             int nmultisim, int repl_ex_nst, int repl_ex_nex,
-             int repl_ex_seed, real pforce, real cpt_period, real max_hours,
-             int imdport, unsigned long Flags);
-/* Driver routine, that calls the different methods */
 
 void bcast_state(const struct t_commrec *cr, t_state *state);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
