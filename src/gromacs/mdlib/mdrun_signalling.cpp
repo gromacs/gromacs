@@ -56,6 +56,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
 void init_global_signals(struct gmx_signalling_t *gs, const t_commrec *cr,

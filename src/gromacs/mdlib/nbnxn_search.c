@@ -57,6 +57,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 #ifdef NBNXN_SEARCH_BB_SIMD4

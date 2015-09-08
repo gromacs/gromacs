@@ -119,7 +119,6 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
@@ -738,51 +737,9 @@ static gmx_inline void msmul(gmx_cxx_const matrix m1, real r1, matrix dest)
     dest[ZZ][ZZ] = r1*m1[ZZ][ZZ];
 }
 
-static gmx_inline void m_inv_ur0(gmx_cxx_const matrix src, matrix dest)
-{
-    double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
-    if (fabs(tmp) <= 100*GMX_REAL_MIN)
-    {
-        gmx_fatal(FARGS, "Can not invert matrix, determinant is zero");
-    }
-
-    dest[XX][XX] = 1/src[XX][XX];
-    dest[YY][YY] = 1/src[YY][YY];
-    dest[ZZ][ZZ] = 1/src[ZZ][ZZ];
-    dest[ZZ][XX] = (src[YY][XX]*src[ZZ][YY]*dest[YY][YY]
-                    - src[ZZ][XX])*dest[XX][XX]*dest[ZZ][ZZ];
-    dest[YY][XX] = -src[YY][XX]*dest[XX][XX]*dest[YY][YY];
-    dest[ZZ][YY] = -src[ZZ][YY]*dest[YY][YY]*dest[ZZ][ZZ];
-    dest[XX][YY] = 0.0;
-    dest[XX][ZZ] = 0.0;
-    dest[YY][ZZ] = 0.0;
-}
-
-static gmx_inline void m_inv(gmx_cxx_const matrix src, matrix dest)
-{
-    const real smallreal = (real)1.0e-24;
-    const real largereal = (real)1.0e24;
-    real       deter, c, fc;
-
-    deter = det(src);
-    c     = (real)1.0/deter;
-    fc    = (real)fabs(c);
-
-    if ((fc <= smallreal) || (fc >= largereal))
-    {
-        gmx_fatal(FARGS, "Can not invert matrix, determinant = %e", deter);
-    }
-
-    dest[XX][XX] = c*(src[YY][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[YY][ZZ]);
-    dest[XX][YY] = -c*(src[XX][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[XX][ZZ]);
-    dest[XX][ZZ] = c*(src[XX][YY]*src[YY][ZZ]-src[YY][YY]*src[XX][ZZ]);
-    dest[YY][XX] = -c*(src[YY][XX]*src[ZZ][ZZ]-src[ZZ][XX]*src[YY][ZZ]);
-    dest[YY][YY] = c*(src[XX][XX]*src[ZZ][ZZ]-src[ZZ][XX]*src[XX][ZZ]);
-    dest[YY][ZZ] = -c*(src[XX][XX]*src[YY][ZZ]-src[YY][XX]*src[XX][ZZ]);
-    dest[ZZ][XX] = c*(src[YY][XX]*src[ZZ][YY]-src[ZZ][XX]*src[YY][YY]);
-    dest[ZZ][YY] = -c*(src[XX][XX]*src[ZZ][YY]-src[ZZ][XX]*src[XX][YY]);
-    dest[ZZ][ZZ] = c*(src[XX][XX]*src[YY][YY]-src[YY][XX]*src[XX][YY]);
-}
+/* Routines defined in invertmatrix.cpp */
+void m_inv_ur0(gmx_cxx_const matrix src, matrix dest);
+void m_inv(gmx_cxx_const matrix src, matrix dest);
 
 static gmx_inline void mvmul(gmx_cxx_const matrix a, const rvec src, rvec dest)
 {
@@ -838,24 +795,6 @@ static gmx_inline real trace(gmx_cxx_const matrix m)
     return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
 
-static gmx_inline real _divide_err(real a, real b, const char *file, int line)
-{
-    if (fabs(b) <= GMX_REAL_MIN)
-    {
-        gmx_fatal(FARGS, "Dividing by zero, file %s, line %d", file, line);
-    }
-    return a/b;
-}
-
-static gmx_inline int _mod(int a, int b, const char *file, int line)
-{
-    if (b == 0)
-    {
-        gmx_fatal(FARGS, "Modulo zero, file %s, line %d", file, line);
-    }
-    return a % b;
-}
-
 /* Operations on multidimensional rvecs, used e.g. in edsam.c */
 static gmx_inline void m_rveccopy(int dim, gmx_cxx_const rvec *a, rvec *b)
 {
@@ -881,9 +820,6 @@ static gmx_inline void matrix_convert(matrix box, const rvec vec, rvec angle)
     box[ZZ][ZZ] = sqrt(sqr(vec[ZZ])
                        -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
 }
-
-#define divide_err(a, b) _divide_err((a), (b), __FILE__, __LINE__)
-#define mod(a, b)    _mod((a), (b), __FILE__, __LINE__)
 
 #ifdef __cplusplus
 }

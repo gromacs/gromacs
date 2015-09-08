@@ -56,6 +56,7 @@
 #include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 

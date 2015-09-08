@@ -46,6 +46,7 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"

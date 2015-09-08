@@ -44,6 +44,7 @@
 
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 

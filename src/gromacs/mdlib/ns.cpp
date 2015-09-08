@@ -1768,7 +1768,11 @@ static int ns_simple_core(t_forcerec *fr,
     {
         for (m = 0; (m < DIM); m++)
         {
-            b_inv[m] = divide_err(1.0, box_size[m]);
+            if (gmx_numzero(box_size[m]))
+            {
+                gmx_fatal(FARGS, "Dividing by zero box size!");
+            }
+            b_inv[m] = 1.0/box_size[m];
         }
         bTriclinic = TRICLINIC(box);
     }

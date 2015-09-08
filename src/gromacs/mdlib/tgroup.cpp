@@ -48,6 +48,7 @@
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
