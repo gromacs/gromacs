@@ -259,14 +259,6 @@ struct t_atoms
 gmx_mtop_global_atoms(const struct gmx_mtop_t *mtop);
 
 
-/* Make all charge groups the size of one atom.
- * When bKeepSingleMolCG==TRUE keep charge groups for molecules
- * that consist of a single charge group.
- */
-void
-gmx_mtop_make_atomic_charge_groups(struct gmx_mtop_t *mtop, gmx_bool bKeepSingleMolCG);
-
-
 /* Generate a 'local' topology for the whole system.
  * When ir!=NULL the free energy interactions will be sorted to the end.
  */
