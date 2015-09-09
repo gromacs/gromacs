@@ -35,10 +35,28 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _constr_h
-#define _constr_h
+#ifndef GMX_MBLIB_CONSTR_H
+#define GMX_MBLIB_CONSTR_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/real.h"
+
+/* Abstract type for LINCS that is defined only in the file that uses it */
+typedef struct gmx_lincsdata *gmx_lincsdata_t;
+
+/* Abstract type for SHAKE that is defined only in the file that uses it */
+typedef struct gmx_shakedata *gmx_shakedata_t;
+
+/* Abstract type for SETTLE that is defined only in the file that uses it */
+typedef struct gmx_settledata *gmx_settledata_t;
+
+/* Abstract type for constraints */
+typedef struct gmx_constr *gmx_constr_t;
 
 #ifdef __cplusplus
 extern "C" {
