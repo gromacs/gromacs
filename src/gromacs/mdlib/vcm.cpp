@@ -41,6 +41,7 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -278,7 +279,7 @@ static void get_minv(tensor A, tensor B)
             tmp[m][n] *= fac;
         }
     }
-    m_inv(tmp, B);
+    gmx::invertMatrix(tmp, B);
     for (m = 0; (m < DIM); m++)
     {
         for (n = 0; (n < DIM); n++)
