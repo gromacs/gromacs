@@ -39,6 +39,7 @@
 #define _checkpoint_h
 
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
 #ifdef __cplusplus

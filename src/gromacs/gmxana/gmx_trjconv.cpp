@@ -51,6 +51,7 @@
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"

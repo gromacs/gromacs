@@ -50,6 +50,7 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/constr.h"

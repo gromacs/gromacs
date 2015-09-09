@@ -45,6 +45,7 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/strdb.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/macros.h"
