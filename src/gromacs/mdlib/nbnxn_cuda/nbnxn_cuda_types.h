@@ -46,16 +46,9 @@
 #ifndef NBNXN_CUDA_TYPES_H
 #define NBNXN_CUDA_TYPES_H
 
-#include "config.h"
-
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
-
-#ifndef HAVE_CUDA_TEXOBJ_SUPPORT
-/** This typedef allows us to define only one version of struct cu_nbparam */
-typedef int cudaTextureObject_t;
-#endif
 
 #ifdef __cplusplus
 extern "C" {

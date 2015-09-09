@@ -123,13 +123,11 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
 
 
 
-#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static bool use_texobj(const gmx_device_info_t *dev_info)
 {
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     return (dev_info->prop.major >= 3);
 }
-#endif
 
 /*! Tabulates the Ewald Coulomb force and initializes the size/scale
     and the table GPU array. If called with an already allocated table,
@@ -152,7 +150,6 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
 
     nbp->coulomb_tab = coul_tab;
 
-#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     if (use_texobj(dev_info))
     {
@@ -171,7 +168,6 @@ static void init_ewald_coulomb_force_table(const interaction_const_t *ic,
         CU_RET_ERR(stat, "cudaCreateTextureObject on coulomb_tab_texobj failed");
     }
     else
-#endif  /* HAVE_CUDA_TEXOBJ_SUPPORT */
     {
         GMX_UNUSED_VALUE(dev_info);
         cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
@@ -383,7 +379,6 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         cu_copy_H2D(nbp->nbfp_comb, nbat->nbfp_comb, nnbfp_comb*sizeof(*nbp->nbfp_comb));
     }
 
-#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     if (use_texobj(dev_info))
     {
@@ -418,7 +413,6 @@ static void init_nbparam(cu_nbparam_t              *nbp,
         }
     }
     else
-#endif /* HAVE_CUDA_TEXOBJ_SUPPORT */
     {
         cudaChannelFormatDesc cd = cudaCreateChannelDesc<float>();
         stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
@@ -939,7 +933,6 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
 
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
-#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (use_texobj(dev_info))
         {
@@ -947,7 +940,6 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t            *nbparam,
             CU_RET_ERR(stat, "cudaDestroyTextureObject on coulomb_tab_texobj failed");
         }
         else
-#endif
         {
             GMX_UNUSED_VALUE(dev_info);
             stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
@@ -1026,7 +1018,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
         }
     }
 
-#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
     /* Only device CC >= 3.0 (Kepler and later) support texture objects */
     if (use_texobj(nb->dev_info))
     {
@@ -1034,7 +1025,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
         CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_texobj failed");
     }
     else
-#endif
     {
         stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_texref());
         CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_texref failed");
@@ -1043,7 +1033,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
 
     if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
     {
-#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
         /* Only device CC >= 3.0 (Kepler and later) support texture objects */
         if (use_texobj(nb->dev_info))
         {
@@ -1051,7 +1040,6 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
             CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_comb_texobj failed");
         }
         else
-#endif
         {
             stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_comb_texref());
             CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_comb_texref failed");
