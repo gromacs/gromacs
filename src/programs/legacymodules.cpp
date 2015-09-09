@@ -195,7 +195,7 @@ void registerModuleNoNice(gmx::CommandLineModuleManager                *manager,
 {
     gmx::CommandLineModulePointer module(
             new NoNiceModule(name, shortDescription, mainFunction));
-    manager->addModule(move(module));
+    manager->addModule(std::move(module));
 }
 
 /*! \brief
@@ -208,7 +208,7 @@ void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
                           const char                    *name)
 {
     gmx::CommandLineModulePointer module(new ObsoleteToolModule(name));
-    manager->addModule(move(module));
+    manager->addModule(std::move(module));
 }
 
 } // namespace

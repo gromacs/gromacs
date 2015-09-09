@@ -43,10 +43,10 @@
 #define GMX_TESTUTILS_REFDATA_IMPL_H
 
 #include <list>
+#include <memory>
 #include <string>
 
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -56,7 +56,7 @@ namespace test
 class ReferenceDataEntry
 {
     public:
-        typedef gmx_unique_ptr<ReferenceDataEntry>::type EntryPointer;
+        typedef std::unique_ptr<ReferenceDataEntry> EntryPointer;
         typedef std::list<EntryPointer> ChildList;
         typedef ChildList::const_iterator ChildIterator;
 

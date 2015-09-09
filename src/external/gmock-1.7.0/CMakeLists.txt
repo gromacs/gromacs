@@ -59,15 +59,18 @@ if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5")
     endif()
 endif()
 
-include(gmxGetGmockTupleWorkaround)
-get_gmock_tuple_workaround(GMOCK_COMPILE_DEFINITIONS)
-
 # GTest/GMock suggest linking with pthreads when available for thread safety
 set(CMAKE_THREAD_PREFER_PTHREAD 1)
 find_package(Threads)
 set(PTHREADS_LIBRARIES)
 if (CMAKE_USE_PTHREADS_INIT)
     set(PTHREADS_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+# Skip variadic implementation of matchers if using GCC < 4.7 due to
+# GCC Bug 35722 -[C++0x] Variadic templates expansion into non-variadic class template
+if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7")
+    list(APPEND GMOCK_COMPILE_DEFINITIONS "GTEST_LANG_CXX11=0")
 endif()
 
 set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR})

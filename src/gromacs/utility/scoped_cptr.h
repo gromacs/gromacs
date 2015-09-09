@@ -43,8 +43,6 @@
 #ifndef GMX_UTILITY_SCOPED_PTR_SFREE_H
 #define GMX_UTILITY_SCOPED_PTR_SFREE_H
 
-#include "config.h"
-
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -89,10 +87,7 @@ class scoped_cptr
         //! Returns the stored pointer.
         T *get() const { return ptr_; }
         //! Check for non-null pointer in boolean context.
-#if GMX_CXX11
-        explicit
-#endif
-        operator bool () const { return ptr_ != 0; }
+        explicit operator bool () const { return ptr_ != 0; }
         //! Sets the pointer and frees previous pointer if necessary.
         void reset(T *ptr) { D(ptr_); ptr_ = ptr; }
         //! Clears the pointer without freeing the memory, and returns the old value.

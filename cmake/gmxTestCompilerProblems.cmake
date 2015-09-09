@@ -44,13 +44,6 @@ macro(gmx_test_compiler_problems)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
-    # gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
-    # Detect here whether applying a workaround is needed and will apply it later
-    # on the affected files. This test must come after gmx_c_flags(), since we
-    # only want to enable the workaround when using the -O3 flag.
-    include(gmxGCC44O3BugWorkaround)
-    gmx_check_gcc44_bug_workaround_needed(GMX_USE_GCC44_BUG_WORKAROUND)
-
     # clang 3.0 is buggy for some unknown reason detected during adding
     # the SSE2 group kernels for GROMACS 4.6. If we ever work out what
     # that is, we should replace these tests with a compiler feature test,
@@ -94,10 +87,6 @@ macro(gmx_test_compiler_problems)
         if(CMAKE_C_COMPILER_VERSION VERSION_LESS 3.5.0)
             message(WARNING "Clang on Windows requires clang 3.5.0")
         endif()
-    endif()
-
-    if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_LESS "12.0.0")
-        message(WARNING "Intel compilers before 12.0.0 are not routinely tested, so there may be problems. Version 11.1 with SSE4.1 is known to produce incorrect results. It is highly recommended to use a more up-to-date compiler. If you choose to use this version, make sure you run the regressiontests.")
     endif()
 
 endmacro(gmx_test_compiler_problems)
