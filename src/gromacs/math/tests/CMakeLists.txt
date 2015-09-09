@@ -34,5 +34,6 @@
 
 gmx_add_unit_test(MathUnitTests math-test
                   functions.cpp
+                  invertmatrix.cpp
                   vectypes.cpp
                   )

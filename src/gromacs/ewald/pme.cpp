@@ -86,6 +86,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -959,7 +960,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         atc->f = f;
     }
 
-    m_inv_ur0(box, pme->recipbox);
+    gmx::invertBoxMatrix(box, pme->recipbox);
     bFirst = TRUE;
 
     /* For simplicity, we construct the splines for all particles if
