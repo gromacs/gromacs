@@ -38,7 +38,7 @@
 #ifndef _force_h
 #define _force_h
 
-
+#include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/tgroup.h"

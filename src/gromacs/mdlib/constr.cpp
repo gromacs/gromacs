@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/constr.h"
+#include "constr.h"
 
 #include <assert.h>
 #include <stdlib.h>
