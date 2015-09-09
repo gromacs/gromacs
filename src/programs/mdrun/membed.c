@@ -40,7 +40,6 @@
 #include <stdlib.h>
 
 #include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/fileio/tpxio.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/readinp.h"
@@ -137,16 +136,6 @@ static int get_molblock(int mol_id, int nmblock, gmx_molblock_t *mblock)
     gmx_fatal(FARGS, "mol_id %d larger than total number of molecules %d.\n", mol_id, nmol);
 
     return -1;
-}
-
-static int get_tpr_version(const char *infile)
-{
-    t_tpxheader  header;
-    int          version, generation;
-
-    read_tpxheader(infile, &header, TRUE, &version, &generation);
-
-    return version;
 }
 
 /* Get a list of all the molecule types that are present in a group of atoms. *
@@ -1014,7 +1003,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
 {
     char                     *ins, **gnames;
     int                       i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
-    int                       ng, j, max_lip_rm, ins_grp_id, ins_nat, mem_nat, ntype, lip_rm, tpr_version;
+    int                       ng, j, max_lip_rm, ins_grp_id, ins_nat, mem_nat, ntype, lip_rm;
     real                      prot_area;
     rvec                     *r_ins = NULL;
     t_block                  *ins_at, *rest_at;
@@ -1043,7 +1032,6 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
     gmx_bool    bALLOW_ASYMMETRY = FALSE;
 
     /* sanity check constants */         /* Issue a warning when: */
-    const int  membed_version = 58;        /* tpr version is smaller */
     const real min_probe_rad  = 0.2199999; /* A probe radius for overlap between embedded molecule *
                                             * and rest smaller than this value is probably too small */
     const real min_xy_init    = 0.0999999; /* the initial shrinking of the molecule to embed is smaller */
@@ -1062,13 +1050,6 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         membed_input = opt2fn("-membed", nfile, fnm);
         get_input(membed_input, &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
                   &maxwarn, &pieces, &bALLOW_ASYMMETRY);
-
-        tpr_version = get_tpr_version(ftp2fn(efTPR, nfile, fnm));
-        if (tpr_version < membed_version)
-        {
-            gmx_fatal(FARGS, "Version of *.tpr file to old (%d). "
-                      "Rerun grompp with GROMACS version 4.0.3 or newer.\n", tpr_version);
-        }
 
         if (!EI_DYNAMICS(inputrec->eI) )
         {
