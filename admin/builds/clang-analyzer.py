@@ -35,6 +35,8 @@
 def do_build(context):
     cmake_opts = {
             'CMAKE_BUILD_TYPE': 'Debug',
+            # Build tests as part of the all target.
+            'GMX_DEVELOPER_BUILD': 'ON',
             'GMX_GPU': 'OFF',
             'GMX_OPENMP': 'OFF',
             'GMX_SIMD': 'None',
@@ -44,8 +46,5 @@ def do_build(context):
     output_dir = context.workspace.get_log_dir(category='scan_html')
     context.env.init_clang_analyzer(clang_version='3.4', html_output_dir=output_dir)
     context.run_cmake(cmake_opts)
-    # This does not build the tests, so they are not analyzed.
-    # But since this has been the case for at least a year, we probably need to
-    # fix a few issues before turning it back on...
     context.build_target(target=None)
     context.process_clang_analyzer_results(output_dir)
