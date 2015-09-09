@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,16 +36,8 @@
 # versions before trying to detect OpenMP with the standard find-package-module,
 # and then does some additional tests for flags afterwards.
 
-# First exclude compilers known to not work with OpenMP although claim to support it:
-# gcc 4.2.1 and gcc-llvm 4.2.1 (also claims to be 4.2.1) on Mac OS X
-# This fixes redmine 900 and needs to run before OpenMP flags are set below.
 if(GMX_OPENMP)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND
-        (CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.3))
-        message(STATUS "OpenMP multithreading not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled")
-        set(GMX_OPENMP OFF CACHE BOOL
-            "OpenMP multithreading not not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled!" FORCE)
-    elseif(CMAKE_C_COMPILER_ID MATCHES "Cray" AND CMAKE_VERSION VERSION_LESS 3)
+    if(CMAKE_C_COMPILER_ID MATCHES "Cray" AND CMAKE_VERSION VERSION_LESS 3)
         message(STATUS "OpenMP multithreading is not detected correctly for the Cray compiler with CMake before version 3.0 (see http://public.kitware.com/Bug/view.php?id=14567)")
         set(GMX_OPENMP OFF CACHE BOOL
             "OpenMP multithreading is not detected correctly for the Cray compiler with CMake before version 3.0 (see http://public.kitware.com/Bug/view.php?id=14567)" FORCE)

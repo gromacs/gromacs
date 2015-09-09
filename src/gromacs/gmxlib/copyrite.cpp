@@ -739,11 +739,6 @@ static void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "RDTSCP usage:       disabled\n");
 #endif
-#if GMX_CXX11
-    fprintf(fp, "C++11 compilation:  enabled\n");
-#else
-    fprintf(fp, "C++11 compilation:  disabled\n");
-#endif
 #ifdef GMX_USE_TNG
     fprintf(fp, "TNG support:        enabled\n");
 #else

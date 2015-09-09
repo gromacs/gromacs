@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,12 +43,13 @@
 
 #include "analysisdata.h"
 
+#include <memory>
+
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -95,7 +96,7 @@ class AnalysisData::Impl
 {
     public:
         //! Smart pointer type to manage a data handle implementation.
-        typedef gmx_unique_ptr<internal::AnalysisDataHandleImpl>::type
+        typedef std::unique_ptr<internal::AnalysisDataHandleImpl>
             HandlePointer;
         //! Shorthand for a list of data handles.
         typedef std::vector<HandlePointer> HandleList;
@@ -171,7 +172,7 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
     }
 
     Impl::HandlePointer handle(new internal::AnalysisDataHandleImpl(this));
-    impl_->handles_.push_back(move(handle));
+    impl_->handles_.push_back(std::move(handle));
     return AnalysisDataHandle(impl_->handles_.back().get());
 }
 

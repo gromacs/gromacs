@@ -105,6 +105,7 @@ if (SPHINX_FOUND)
         dev-manual/gmxtree.rst
         dev-manual/includestyle.rst
         dev-manual/jenkins.rst
+        dev-manual/language-features.rst
         dev-manual/naming.rst
         dev-manual/overview.rst
         dev-manual/relocatable-binaries.rst

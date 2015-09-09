@@ -158,14 +158,6 @@ gmx_configure_version_file(
     REMOTE_HASH SOURCE_FILE)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
-# apply gcc 4.4.x bug workaround
-if(GMX_USE_GCC44_BUG_WORKAROUND)
-   include(gmxGCC44O3BugWorkaround)
-   gmx_apply_gcc44_bug_workaround("listed-forces/bonded.cpp")
-   gmx_apply_gcc44_bug_workaround("mdlib/force.c")
-   gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
-endif()
-
 if (GMX_GPU AND NOT GMX_USE_OPENCL)
     GMX_SET_CUDA_NVCC_FLAGS()
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES}
