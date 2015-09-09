@@ -96,7 +96,7 @@ TEST(OptionsAssignerTest, HandlesInvalidMultipleParameter)
 {
     gmx::Options     options(NULL, NULL);
     std::vector<int> values;
-    bool             bIsSet;
+    bool             bIsSet = false;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                             IntegerOption("p")
@@ -121,7 +121,7 @@ TEST(OptionsAssignerTest, HandlesMultipleParameter)
 {
     gmx::Options     options(NULL, NULL);
     std::vector<int> values;
-    bool             bIsSet;
+    bool             bIsSet = false;
     using gmx::IntegerOption;
     ASSERT_NO_THROW(options.addOption(
                             IntegerOption("p")
