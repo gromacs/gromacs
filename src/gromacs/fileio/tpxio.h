@@ -78,16 +78,12 @@ struct t_tpxheader
  * but double and single precision can be read by either.
  */
 
-void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
-                    int *version, int *generation);
+void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK);
 /* Read the header from a tpx file and then close it again.
  * By setting TopOnlyOK to true, it is possible to read future
  * versions too (we skip the changed inputrec), provided we havent
  * changed the topology description. If it is possible to read
  * the inputrec it will still be done even if TopOnlyOK is TRUE.
- *
- * The version and generation if the topology (see top of tpxio.c)
- * are returned in the two last arguments.
  */
 
 void write_tpx_state(const char *fn,
