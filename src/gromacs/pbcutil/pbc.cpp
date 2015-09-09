@@ -335,12 +335,8 @@ int ndof_com(t_inputrec *ir)
 //! Do the real arithmetic for filling the pbc struct
 static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
 {
-    int         order[5] = {0, -1, 1, -2, 2};
-    int         ii, jj, kk, i, j, k, d, dd, jc, kc, npbcdim, shift;
+    int         order[3] = { 0, -1, 1 };
     ivec        bPBC;
-    real        d2old, d2new, d2new_c;
-    rvec        trial, pos;
-    gmx_bool    bUse;
     const char *ptr;
 
     pbc->ePBC      = ePBC;
@@ -351,7 +347,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     pbc->dim            = -1;
     pbc->ntric_vec      = 0;
 
-    for (i = 0; (i < DIM); i++)
+    for (int i = 0; (i < DIM); i++)
     {
         pbc->fbox_diag[i]  =  box[i][i];
         pbc->hbox_diag[i]  =  pbc->fbox_diag[i]*0.5;
@@ -378,8 +374,8 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
             gmx_incons("low_set_pbc called with screw pbc and dd_nc != NULL");
         }
 
-        npbcdim = 0;
-        for (i = 0; i < DIM; i++)
+        int npbcdim = 0;
+        for (int i = 0; i < DIM; i++)
         {
             if ((dd_nc && (*dd_nc)[i] > 1) || (ePBC == epbcXY && i == ZZ))
             {
@@ -398,7 +394,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                  * with single shifts.
                  */
                 pbc->ePBCDX = epbcdx1D_RECT;
-                for (i = 0; i < DIM; i++)
+                for (int i = 0; i < DIM; i++)
                 {
                     if (bPBC[i])
                     {
@@ -406,7 +402,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                     }
                 }
                 GMX_ASSERT(pbc->dim < DIM, "Dimension for PBC incorrect");
-                for (i = 0; i < pbc->dim; i++)
+                for (int i = 0; i < pbc->dim; i++)
                 {
                     if (pbc->box[pbc->dim][i] != 0)
                     {
@@ -416,18 +412,18 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                 break;
             case 2:
                 pbc->ePBCDX = epbcdx2D_RECT;
-                for (i = 0; i < DIM; i++)
+                for (int i = 0; i < DIM; i++)
                 {
                     if (!bPBC[i])
                     {
                         pbc->dim = i;
                     }
                 }
-                for (i = 0; i < DIM; i++)
+                for (int i = 0; i < DIM; i++)
                 {
                     if (bPBC[i])
                     {
-                        for (j = 0; j < i; j++)
+                        for (int j = 0; j < i; j++)
                         {
                             if (pbc->box[i][j] != 0)
                             {
@@ -476,27 +472,24 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                 pr_rvecs(debug, 0, "Box", box, DIM);
                 fprintf(debug, "max cutoff %.3f\n", sqrt(pbc->max_cutoff2));
             }
-            /* We will only use single shifts, but we will check a few
-             * more shifts to see if there is a limiting distance
-             * above which we can not be sure of the correct distance.
-             */
-            for (kk = 0; kk < 5; kk++)
+            /* We will only need single shifts here */
+            for (int kk = 0; kk < 3; kk++)
             {
-                k = order[kk];
+                int k = order[kk];
                 if (!bPBC[ZZ] && k != 0)
                 {
                     continue;
                 }
-                for (jj = 0; jj < 5; jj++)
+                for (int jj = 0; jj < 3; jj++)
                 {
-                    j = order[jj];
+                    int j = order[jj];
                     if (!bPBC[YY] && j != 0)
                     {
                         continue;
                     }
-                    for (ii = 0; ii < 3; ii++)
+                    for (int ii = 0; ii < 3; ii++)
                     {
-                        i = order[ii];
+                        int i = order[ii];
                         if (!bPBC[XX] && i != 0)
                         {
                             continue;
@@ -504,9 +497,12 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                         /* A shift is only useful when it is trilinic */
                         if (j != 0 || k != 0)
                         {
-                            d2old = 0;
-                            d2new = 0;
-                            for (d = 0; d < DIM; d++)
+                            rvec trial;
+                            rvec pos;
+                            real d2old = 0;
+                            real d2new = 0;
+
+                            for (int d = 0; d < DIM; d++)
                             {
                                 trial[d] = i*box[XX][d] + j*box[YY][d] + k*box[ZZ][d];
                                 /* Choose the vector within the brick around 0,0,0 that
@@ -533,85 +529,48 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
                             }
                             if (BOX_MARGIN*d2new < d2old)
                             {
-                                if (j < -1 || j > 1 || k < -1 || k > 1)
+                                /* Check if shifts with one box vector less do better */
+                                gmx_bool bUse = TRUE;
+                                for (int dd = 0; dd < DIM; dd++)
                                 {
-                                    /* Check if there is a single shift vector
-                                     * that decreases this distance even more.
-                                     * This code can probably be removed, as
-                                     * our unit-cell restrictions checked
-                                     * before in check_box should avoid this.
-                                     * But because we have historically had
-                                     * some issues with triclinic boxes, we'll
-                                     * keep this check for now.
-                                     */
-                                    jc = 0;
-                                    kc = 0;
-                                    if (j < -1 || j > 1)
+                                    int shift = (dd == 0 ? i : (dd == 1 ? j : k));
+                                    if (shift)
                                     {
-                                        jc = j/2;
+                                        real d2new_c = 0;
+                                        for (int d = 0; d < DIM; d++)
+                                        {
+                                            d2new_c += sqr(pos[d] + trial[d] - shift*box[dd][d]);
+                                        }
+                                        if (d2new_c <= BOX_MARGIN*d2new)
+                                        {
+                                            bUse = FALSE;
+                                        }
                                     }
-                                    if (k < -1 || k > 1)
-                                    {
-                                        kc = k/2;
-                                    }
-                                    d2new_c = 0;
-                                    for (d = 0; d < DIM; d++)
-                                    {
-                                        d2new_c += sqr(pos[d] + trial[d]
-                                                       - jc*box[YY][d] - kc*box[ZZ][d]);
-                                    }
-                                    /* This should never happen, but if it does
-                                     * there might be no limit on the number
-                                     * of triclinic shift vectors.
-                                     */
-                                    GMX_RELEASE_ASSERT(d2new_c <= BOX_MARGIN*d2new, "Invalid triclinic box, but passed check_box()");
-                                    gmx_incons("ai");
                                 }
-                                else
+                                if (bUse)
                                 {
-                                    /* Check if shifts with one box vector less do better */
-                                    bUse = TRUE;
-                                    for (dd = 0; dd < DIM; dd++)
+                                    /* Accept this shift vector. */
+                                    if (pbc->ntric_vec >= MAX_NTRICVEC)
                                     {
-                                        shift = (dd == 0 ? i : (dd == 1 ? j : k));
-                                        if (shift)
-                                        {
-                                            d2new_c = 0;
-                                            for (d = 0; d < DIM; d++)
-                                            {
-                                                d2new_c += sqr(pos[d] + trial[d] - shift*box[dd][d]);
-                                            }
-                                            if (d2new_c <= BOX_MARGIN*d2new)
-                                            {
-                                                bUse = FALSE;
-                                            }
-                                        }
+                                        fprintf(stderr, "\nWARNING: Found more than %d triclinic correction vectors, ignoring some.\n"
+                                                "  There is probably something wrong with your box.\n", MAX_NTRICVEC);
+                                        pr_rvecs(stderr, 0, "         Box", box, DIM);
                                     }
-                                    if (bUse)
+                                    else
                                     {
-                                        /* Accept this shift vector. */
-                                        if (pbc->ntric_vec >= MAX_NTRICVEC)
-                                        {
-                                            fprintf(stderr, "\nWARNING: Found more than %d triclinic correction vectors, ignoring some.\n"
-                                                    "  There is probably something wrong with your box.\n", MAX_NTRICVEC);
-                                            pr_rvecs(stderr, 0, "         Box", box, DIM);
-                                        }
-                                        else
-                                        {
-                                            copy_rvec(trial, pbc->tric_vec[pbc->ntric_vec]);
-                                            pbc->tric_shift[pbc->ntric_vec][XX] = i;
-                                            pbc->tric_shift[pbc->ntric_vec][YY] = j;
-                                            pbc->tric_shift[pbc->ntric_vec][ZZ] = k;
-                                            pbc->ntric_vec++;
+                                        copy_rvec(trial, pbc->tric_vec[pbc->ntric_vec]);
+                                        pbc->tric_shift[pbc->ntric_vec][XX] = i;
+                                        pbc->tric_shift[pbc->ntric_vec][YY] = j;
+                                        pbc->tric_shift[pbc->ntric_vec][ZZ] = k;
+                                        pbc->ntric_vec++;
 
-                                            if (debug)
-                                            {
-                                                fprintf(debug, "  tricvec %2d = %2d %2d %2d  %5.2f %5.2f  %5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
-                                                        pbc->ntric_vec, i, j, k,
-                                                        sqrt(d2old), sqrt(d2new),
-                                                        trial[XX], trial[YY], trial[ZZ],
-                                                        pos[XX], pos[YY], pos[ZZ]);
-                                            }
+                                        if (debug)
+                                        {
+                                            fprintf(debug, "  tricvec %2d = %2d %2d %2d  %5.2f %5.2f  %5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
+                                                    pbc->ntric_vec, i, j, k,
+                                                    sqrt(d2old), sqrt(d2new),
+                                                    trial[XX], trial[YY], trial[ZZ],
+                                                    pos[XX], pos[YY], pos[ZZ]);
                                         }
                                     }
                                 }
