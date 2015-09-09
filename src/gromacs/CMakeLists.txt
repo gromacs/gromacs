@@ -167,6 +167,7 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
 endif()
 
 if (GMX_GPU AND NOT GMX_USE_OPENCL)
+    GMX_SET_CUDA_NVCC_FLAGS()
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES}
             OPTIONS
             RELWITHDEBINFO -g
