@@ -59,19 +59,22 @@ struct t_topology;
 
 typedef struct
 {
-    int   bIr;       /* Non zero if input_rec is present		*/
-    int   bBox;      /* Non zero if a box is present			*/
-    int   bTop;      /* Non zero if a topology is present		*/
-    int   bX;        /* Non zero if coordinates are present		*/
-    int   bV;        /* Non zero if velocities are present		*/
-    int   bF;        /* Non zero if forces are present (no longer
-                        supported, but retained so old .tpr can be read) */
+    int   bIr;            /* Non zero if input_rec is present		*/
+    int   bBox;           /* Non zero if a box is present			*/
+    int   bTop;           /* Non zero if a topology is present		*/
+    int   bX;             /* Non zero if coordinates are present		*/
+    int   bV;             /* Non zero if velocities are present		*/
+    int   bF;             /* Non zero if forces are present (no longer
+                             supported, but retained so old .tpr can be read) */
 
-    int   natoms;    /* The total number of atoms			*/
-    int   ngtc;      /* The number of temperature coupling groups    */
-    real  lambda;    /* Current value of lambda			*/
-    int   fep_state; /* Current value of the alchemical state --
-                      * not yet printed out.  */
+    int   fileVersion;    /* Version number of the code that wrote the file */
+    int   fileGeneration; /* Generation version number of the code that wrote the file */
+
+    int   natoms;         /* The total number of atoms			*/
+    int   ngtc;           /* The number of temperature coupling groups    */
+    real  lambda;         /* Current value of lambda			*/
+    int   fep_state;      /* Current value of the alchemical state --
+                           * not yet printed out.  */
     /*a better decision will eventually (5.0 or later) need to be made
        on how to treat the alchemical state of the system, which can now
        vary through a simulation, and cannot be completely described
@@ -88,16 +91,12 @@ typedef struct
  * but double and single precision can be read by either.
  */
 
-void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
-                    int *version, int *generation);
+void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK);
 /* Read the header from a tpx file and then close it again.
  * By setting TopOnlyOK to true, it is possible to read future
  * versions too (we skip the changed inputrec), provided we havent
  * changed the topology description. If it is possible to read
  * the inputrec it will still be done even if TopOnlyOK is TRUE.
- *
- * The version and generation if the topology (see top of tpxio.c)
- * are returned in the two last arguments.
  */
 
 void write_tpx_state(const char *fn,
