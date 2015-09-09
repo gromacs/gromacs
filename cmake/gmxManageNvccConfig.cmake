@@ -213,4 +213,30 @@ endif()
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 
 # finally set the damn flags
-set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS}" CACHE STRING "Compiler flags for nvcc." FORCE)
+# NOTE: The flags are set as local variables which shadow the cache variables. The cache variables
+# (can be set by the user) are appended.
+if(CUDA_PROPAGATE_HOST_FLAGS)
+    set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+
+    # When CUDA 6.5 is required we should use C++11 also for CUDA and also propagate
+    # the C++11 flag to CUDA. Then we can use the solution implemented in FindCUDA
+    # (starting with 3.3 - can be backported). For now we need to remove the C++11
+    # flag which means we need to manually propagate all other flags.
+    string(REGEX REPLACE "[-]+std=c\\+\\+0x" "" _CMAKE_CXX_FLAGS_NOCXX11 "${CMAKE_CXX_FLAGS}")
+
+    string(REPLACE " " "," _flags "${_CMAKE_CXX_FLAGS_NOCXX11}")
+    set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS};-Xcompiler;${_flags}")
+
+    # Create list of all possible configurations. For multi-configuration this is CMAKE_CONFIGURATION_TYPES
+    # and for single configuration CMAKE_BUILD_TYPE. Not sure why to add the default ones, but FindCUDA
+    # claims one should.
+    set(CUDA_configuration_types ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE} Debug MinSizeRel Release RelWithDebInfo)
+    list(REMOVE_DUPLICATES CUDA_configuration_types)
+
+    foreach(_config ${CUDA_configuration_types})
+        string(REPLACE " " "," _flags "${CMAKE_CXX_FLAGS_${_config}}")
+        set(CUDA_NVCC_FLAGS_${_config} "${CUDA_NVCC_FLAGS_${_config}};-Xcompiler;${_flags}")
+    endforeach()
+else()
+    set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS}")
+endif()
