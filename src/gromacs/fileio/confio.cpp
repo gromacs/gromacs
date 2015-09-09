@@ -384,7 +384,7 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
                        rvec **x, rvec **v, matrix box, gmx_bool bMass)
 {
     t_tpxheader      header;
-    int              natoms, i, version, generation;
+    int              natoms, i;
     gmx_bool         bTop, bXNULL = FALSE;
     gmx_mtop_t      *mtop;
     gmx_atomprop_t   aps;
@@ -396,7 +396,7 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
     }
     if (bTop)
     {
-        read_tpxheader(infile, &header, TRUE, &version, &generation);
+        read_tpxheader(infile, &header, TRUE);
         if (x)
         {
             snew(*x, header.natoms);

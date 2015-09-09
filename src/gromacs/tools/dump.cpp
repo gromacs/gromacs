@@ -82,7 +82,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     gmx_groups_t *groups;
     t_topology    top;
 
-    read_tpxheader(fn, &tpx, TRUE, NULL, NULL);
+    read_tpxheader(fn, &tpx, TRUE);
 
     read_tpx_state(fn,
                    tpx.bIr  ? &ir : NULL,

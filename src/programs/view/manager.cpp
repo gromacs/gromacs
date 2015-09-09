@@ -211,7 +211,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     bool             *bB;
     int               i;
 
-    read_tpxheader(status, &sh, true, NULL, NULL);
+    read_tpxheader(status, &sh, true);
     snew(man->ix, sh.natoms);
     snew(man->zz, sh.natoms);
     snew(man->col, sh.natoms);
