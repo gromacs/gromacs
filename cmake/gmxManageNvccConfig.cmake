@@ -212,5 +212,15 @@ if (CMAKE_VERSION VERSION_LESS "2.8.10")
 endif()
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 
+# When CUDA 6.5 is required we should use C++11 also for CUDA and also propagate
+# the C++11 flag to CUDA. Then we can use the solution implemented in FindCUDA
+# (starting with 3.3 - can be backported). For now we need to remove the C++11
+# flag which means we need to manually propagate all other flags.
+string(REGEX REPLACE "[-]+std=c\\+\\+0x" "" _CMAKE_CXX_FLAGS_NOCXX11 "${CMAKE_CXX_FLAGS}")
+
 # finally set the damn flags
-set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS}" CACHE STRING "Compiler flags for nvcc." FORCE)
+set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};-Xcompiler;\"${_CMAKE_CXX_FLAGS_NOCXX11}\"" CACHE STRING "Compiler flags for nvcc." FORCE)
+foreach(config ${CMAKE_CONFIGURATION_TYPES})
+    set(CUDA_NVCC_FLAGS_${config} "-Xcompiler;\"${CMAKE_CXX_FLAGS_${config}}\"")
+endforeach()
