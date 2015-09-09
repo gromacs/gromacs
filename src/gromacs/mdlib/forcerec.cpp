@@ -49,6 +49,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/ewald.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/force.h"

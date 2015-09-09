@@ -42,6 +42,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/mdrun.h"

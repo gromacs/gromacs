@@ -47,6 +47,7 @@ extern "C" {
 
 struct gmx_file_position_t;
 struct t_fileio;
+struct t_trxframe;
 
 /* the name of the environment variable to disable fsync failure checks with */
 #define GMX_IGNORE_FSYNC_FAILURE_ENV "GMX_IGNORE_FSYNC_FAILURE"

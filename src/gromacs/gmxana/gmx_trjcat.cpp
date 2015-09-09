@@ -48,6 +48,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"

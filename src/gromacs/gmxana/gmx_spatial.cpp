@@ -39,6 +39,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/macros.h"
