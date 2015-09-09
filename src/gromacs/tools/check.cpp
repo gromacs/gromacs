@@ -45,6 +45,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/legacyheaders/macros.h"

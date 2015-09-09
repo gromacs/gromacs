@@ -48,6 +48,7 @@ extern "C" {
 #endif
 
 struct gmx_signalling_t;
+struct t_trxframe;
 
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.

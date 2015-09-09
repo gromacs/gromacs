@@ -44,6 +44,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
