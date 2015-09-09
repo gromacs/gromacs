@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 #define GMX_DOMDEC_DOMDEC_CONSTRAINTS_H
 
 #include "gromacs/legacyheaders/types/commrec_fwd.h"
-#include "gromacs/legacyheaders/types/constr.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
 

@@ -47,6 +47,7 @@
 extern "C" {
 #endif
 
+struct gmx_constr;
 struct gmx_signalling_t;
 struct t_trxframe;
 
@@ -118,7 +119,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      t_state *state, t_state *state_global, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, gmx_constr_t constr,
+                     tensor pres, rvec mu_tot, struct gmx_constr *constr,
                      struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
                      matrix box, gmx_mtop_t *top_global, gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
