@@ -44,7 +44,6 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
@@ -59,6 +58,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"

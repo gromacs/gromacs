@@ -38,7 +38,6 @@
 #ifndef _force_h
 #define _force_h
 
-
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/tgroup.h"
@@ -53,6 +52,7 @@ extern "C" {
 
 struct t_graph;
 struct t_pbc;
+struct gmx_edsam;
 
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box);
@@ -179,7 +179,7 @@ extern void do_force(FILE *log, t_commrec *cr,
                      real *lambda, struct t_graph *graph,
                      t_forcerec *fr,
                      gmx_vsite_t *vsite, rvec mu_tot,
-                     double t, FILE *field, gmx_edsam_t ed,
+                     double t, FILE *field, struct gmx_edsam *ed,
                      gmx_bool bBornRadii,
                      int flags);
 
