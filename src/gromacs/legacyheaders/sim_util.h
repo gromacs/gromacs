@@ -47,6 +47,8 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
+struct gmx_constr;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -76,7 +78,7 @@ void global_stat(FILE *log, gmx_global_stat_t gs,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
-                 gmx_constr_t constr, t_vcm *vcm,
+                 struct gmx_constr *constr, t_vcm *vcm,
                  int nsig, real *sig,
                  gmx_mtop_t *top_global, t_state *state_local,
                  gmx_bool bSumEkinhOld, int flags);
@@ -121,7 +123,7 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
 
 void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, real *lambda, double *lam0);
 
-void do_constrain_first(FILE *log, gmx_constr_t constr,
+void do_constrain_first(FILE *log, struct gmx_constr *constr,
                         t_inputrec *inputrec, t_mdatoms *md,
                         t_state *state, t_commrec *cr, t_nrnb *nrnb,
                         t_forcerec *fr, gmx_localtop_t *top);

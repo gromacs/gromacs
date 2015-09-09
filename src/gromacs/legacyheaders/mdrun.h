@@ -53,6 +53,9 @@
 #include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct gmx_constr;
+struct gmx_edsam;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -85,14 +88,14 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  int nfile, const t_filenm fnm[],
                                  const output_env_t oenv, gmx_bool bVerbose,
                                  gmx_bool bCompact, int nstglobalcomm,
-                                 gmx_vsite_t *vsite, gmx_constr_t constr,
+                                 gmx_vsite_t *vsite, struct gmx_constr *constr,
                                  int stepout,
                                  t_inputrec *inputrec,
                                  gmx_mtop_t *mtop, t_fcdata *fcd,
                                  t_state *state,
                                  t_mdatoms *mdatoms,
                                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                                 gmx_edsam_t ed,
+                                 struct gmx_edsam *ed,
                                  t_forcerec *fr,
                                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                  gmx_membed_t membed,
