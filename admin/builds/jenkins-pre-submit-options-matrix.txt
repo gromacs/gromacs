@@ -1,0 +1,7 @@
+gcc-4.6 gpu cuda-5.0 mpi openmp x11 cmake-2.8.8 host=bs_nix1204
+gcc-4.8 gpu cuda-7.0 openmp release host=bs_nix1310
+gcc-4.9 tsan fftpack simd=avx2_256 host=bs_nix1310
+gcc-5.1 double mpi host=bs_nix1404
+clang-3.4 double no-openmp fftpack asan host=bs_centos63
+clang-3.6 double no-openmp fftpack mdrun-only host=bs_nix1204
+msvc-2013 openmp release host=bs-win2012r2
