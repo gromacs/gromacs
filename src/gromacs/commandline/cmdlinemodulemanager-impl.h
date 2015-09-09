@@ -43,6 +43,7 @@
 #define GMX_COMMANDLINE_CMDLINEMODULEMANAGER_IMPL_H
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -52,7 +53,6 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/uniqueptr.h"
 
 namespace gmx
 {
@@ -127,7 +127,7 @@ class CommandLineModuleGroupData
 };
 
 //! Smart pointer type for managing a CommandLineModuleGroup.
-typedef gmx_unique_ptr<CommandLineModuleGroupData>::type
+typedef std::unique_ptr<CommandLineModuleGroupData>
     CommandLineModuleGroupDataPointer;
 //! Container type for keeping a list of module groups.
 typedef std::vector<CommandLineModuleGroupDataPointer>

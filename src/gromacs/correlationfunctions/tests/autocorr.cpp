@@ -46,13 +46,14 @@
 
 #include <cmath>
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/uniqueptr.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -66,7 +67,7 @@ namespace
 {
 
 //! Definition of pointer to class containing test data.
-typedef gmx_unique_ptr<CorrelationDataSet>::type CorrelationDataSetPointer;
+typedef std::unique_ptr<CorrelationDataSet> CorrelationDataSetPointer;
 
 class AutocorrTest : public ::testing::Test
 {
