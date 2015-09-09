@@ -37,15 +37,13 @@
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
  */
-#include "config.h"
-
 #include "gromacs/gmxlib/cuda_tools/vectype_ops.cuh"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
 #define NBNXN_CUDA_KERNEL_UTILS_CUH
 
 
-#if defined HAVE_CUDA_TEXOBJ_SUPPORT && __CUDA_ARCH__ >= 300
+#if __CUDA_ARCH__ >= 300
 /* Note: convenience macro, needs to be undef-ed at the end of the file. */
 #define USE_TEXOBJ
 #endif
@@ -320,7 +318,6 @@ float interpolate_coulomb_force_r(float r, float scale)
            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
 }
 
-#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 static inline __device__
 float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
                                   float r, float scale)
@@ -333,8 +330,6 @@ float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
     return fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
            fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
 }
-#endif
-
 
 /*! Calculate analytical Ewald correction term. */
 static inline __device__
