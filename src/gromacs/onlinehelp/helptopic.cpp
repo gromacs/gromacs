@@ -208,7 +208,7 @@ void AbstractCompositeHelpTopic::addSubTopic(HelpTopicPointer topic)
     const IHelpTopic *topicPtr = topic.get();
     impl_->subTopics_.reserve(impl_->subTopics_.size() + 1);
     impl_->subTopicMap_.insert(std::make_pair(std::string(topicPtr->name()), topicPtr));
-    impl_->subTopics_.push_back(move(topic));
+    impl_->subTopics_.push_back(std::move(topic));
 }
 
 } // namespace gmx
