@@ -167,10 +167,7 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
 endif()
 
 if (GMX_GPU AND NOT GMX_USE_OPENCL)
-    cuda_add_library(libgromacs ${LIBGROMACS_SOURCES}
-            OPTIONS
-            RELWITHDEBINFO -g
-            DEBUG -g -D_DEBUG_=1)
+    cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
