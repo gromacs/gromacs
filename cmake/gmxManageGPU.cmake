@@ -79,10 +79,12 @@ if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
     # The IBM xlc compiler chokes if we use both altivec and Cuda. Solve
     # this by not propagating the flags in this case, but add -O3
     # to make sure we don't turn off optimization.
-    if(CMAKE_CXX_COMPILER_ID MATCHES "XL")
+    #
+    # TODO: Implement permanent solution after solution is decided for #1390. For now temporary disable all propagation.
+    #if(CMAKE_CXX_COMPILER_ID MATCHES "XL")
         set(CUDA_PROPAGATE_HOST_FLAGS OFF)
         list(APPEND CUDA_NVCC_FLAGS "-O3")
-    endif()
+    #endif()
 
     # Cmake 2.8.12 (and CMake 3.0) introduced a new bug where the cuda
     # library dir is added twice as an rpath on APPLE, which in turn causes

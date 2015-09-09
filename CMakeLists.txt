@@ -525,14 +525,22 @@ if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
     find_package(Boost 1.44.0)
     if(Boost_FOUND AND Boost_VERSION VERSION_LESS "104400")
         set(Boost_FOUND FALSE)
+        set(Boost_Reason "Boost >= 1.44 not found.")
+    endif()
+    # clang with some older versions of boost fail to work with C++11
+    if(CMAKE_CXX_COMPILER_ID MATCHES Clang AND
+        (Boost_VERSION VERSION_EQUAL 104601 OR Boost_VERSION VERSION_EQUAL 104700))
+        set(Boost_FOUND FALSE)
+        set(Boost_Reason "Boost 1.46.1 and 1.47.0 do not work with Clang.")
     endif()
     # Print the notification only on first run, when determining the default
     if(NOT DEFINED GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
-        message("Boost >= 1.44 not found. Using minimal internal version. "
+        message("${Boost_Reason} Using minimal internal version. "
                 "This may cause trouble if you plan on compiling/linking other "
                 "software that uses Boost against GROMACS.")
     endif()
 endif()
+
 option(GMX_EXTERNAL_BOOST "Use external Boost instead of minimal built-in version"
        ${Boost_FOUND})
 if(GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
@@ -610,21 +618,10 @@ gmx_test__finite(HAVE__FINITE)
 
 include(gmxTestCXX11)
 gmx_test_cxx11(GMX_CXX11_SUPPORTED GMX_CXX11_FLAGS)
-include(CMakeDependentOption)
-# clang with some older versions of boost fail to work with C++11
-if(CMAKE_CXX_COMPILER_ID MATCHES Clang AND
-    (Boost_VERSION VERSION_EQUAL 104601 OR Boost_VERSION VERSION_EQUAL 104700))
-    set(CLANG_AND_OLD_EXTERNAL_BOOST TRUE)
+if(NOT GMX_CXX11_SUPPORTED)
+    message(FATAL_ERROR "This version of GROMACS requires C++11. Please use a newer compiler or use the GROMACS 5.1.x release. Note it might be sufficient to instruct the compiler to use a newer STL version. See the installation guide for details.")
 endif()
-# nvcc does not support C++11 flags, so with GPUs we prefer to skip C++11 flags
-# entirely to keep the compilation environment uniform.
-cmake_dependent_option(GMX_CXX11
-    "Use C++11 features"
-    ON "GMX_CXX11_SUPPORTED AND NOT GMX_GPU AND NOT CLANG_AND_OLD_EXTERNAL_BOOST" OFF)
-mark_as_advanced(GMX_CXX11)
-if(GMX_CXX11)
-    set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
-endif()
+set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
 
 # Now we can test for CXX11_REGEX include file
 check_include_file_cxx(regex     HAVE_CXX11_REGEX)
