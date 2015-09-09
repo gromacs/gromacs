@@ -98,8 +98,8 @@
    void m_add(matrix a,matrix b,matrix dest)        dest = a + b
    void m_sub(matrix a,matrix b,matrix dest)        dest = a - b
    void msmul(matrix m1,real r1,matrix dest)        dest = r1 * m1
-   void m_inv_ur0(matrix src,matrix dest)           dest = src^-1
-   void m_inv(matrix src,matrix dest)            !  dest = src^-1
+   void invertMatrixBox(matrix src,matrix dest)     dest = src^-1
+   void invertMatrix(matrix src,matrix dest)     !  dest = src^-1
    void mvmul(matrix a,rvec src,rvec dest)       !  dest = a . src
    void mvmul_ur0(matrix a,rvec src,rvec dest)      dest = a . src
    void tmvmul_ur0(matrix a,rvec src,rvec dest)     dest = a* . src
@@ -736,10 +736,6 @@ static gmx_inline void msmul(gmx_cxx_const matrix m1, real r1, matrix dest)
     dest[ZZ][YY] = r1*m1[ZZ][YY];
     dest[ZZ][ZZ] = r1*m1[ZZ][ZZ];
 }
-
-/* Routines defined in invertmatrix.cpp */
-void m_inv_ur0(gmx_cxx_const matrix src, matrix dest);
-void m_inv(gmx_cxx_const matrix src, matrix dest);
 
 static gmx_inline void mvmul(gmx_cxx_const matrix a, const rvec src, rvec dest)
 {

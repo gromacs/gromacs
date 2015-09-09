@@ -57,6 +57,7 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -1282,7 +1283,7 @@ static void deform(gmx_update_t upd,
             }
         }
     }
-    m_inv_ur0(box, invbox);
+    gmx::invertBoxMatrix(box, invbox);
     copy_mat(bnew, box);
     mmul_ur0(box, invbox, mu);
 
