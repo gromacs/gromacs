@@ -43,6 +43,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -375,7 +376,7 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
 
     real   maxl;
 
-    m_inv_ur0(box, invbox);
+    gmx::invertBoxMatrix(box, invbox);
 
     if (!bFirstStep)
     {
