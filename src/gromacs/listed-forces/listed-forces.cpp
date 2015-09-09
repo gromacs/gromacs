@@ -260,13 +260,7 @@ calc_one_bond(int thread,
               int *global_atom_index)
 {
 #ifdef GMX_SIMD_HAVE_REAL
-    gmx_bool bUseSIMD;
-    /* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
-#if defined _MSC_VER && _MSC_VER < 1700 && !defined(__ICL)
-    bUseSIMD = FALSE;
-#else
-    bUseSIMD = fr->use_simd_kernels;
-#endif
+    gmx_bool bUseSIMD = fr->use_simd_kernels;
 #endif
 
     int      nat1, nbonds, efptFTYPE;

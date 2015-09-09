@@ -150,7 +150,7 @@ extern int _gmx_sel_yydebug;
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2690,7 +2690,7 @@ yyreduce:
                  BEGIN_ACTION;
                  SelectionParserParameterListPointer list(get((yyvsp[(1) - (2)].plist)));
                  list->push_back(get((yyvsp[(2) - (2)].param)));
-                 set((yyval.plist), move(list));
+                 set((yyval.plist), std::move(list));
                  END_ACTION;
              }
     break;
@@ -2735,7 +2735,7 @@ yyreduce:
                  BEGIN_ACTION;
                  SelectionParserValueListPointer list(get((yyvsp[(1) - (2)].vlist)));
                  list->push_back(get((yyvsp[(2) - (2)].val)));
-                 set((yyval.vlist), move(list));
+                 set((yyval.vlist), std::move(list));
                  END_ACTION;
              }
     break;
@@ -2747,7 +2747,7 @@ yyreduce:
                  BEGIN_ACTION;
                  SelectionParserValueListPointer list(get((yyvsp[(1) - (3)].vlist)));
                  list->push_back(get((yyvsp[(3) - (3)].val)));
-                 set((yyval.vlist), move(list));
+                 set((yyval.vlist), std::move(list));
                  END_ACTION;
              }
     break;
@@ -2781,7 +2781,7 @@ yyreduce:
                  BEGIN_ACTION;
                  SelectionParserValueListPointer list(get((yyvsp[(1) - (2)].vlist)));
                  list->push_back(get((yyvsp[(2) - (2)].val)));
-                 set((yyval.vlist), move(list));
+                 set((yyval.vlist), std::move(list));
                  END_ACTION;
              }
     break;
@@ -2793,7 +2793,7 @@ yyreduce:
                  BEGIN_ACTION;
                  SelectionParserValueListPointer list(get((yyvsp[(1) - (3)].vlist)));
                  list->push_back(get((yyvsp[(3) - (3)].val)));
-                 set((yyval.vlist), move(list));
+                 set((yyval.vlist), std::move(list));
                  END_ACTION;
              }
     break;
