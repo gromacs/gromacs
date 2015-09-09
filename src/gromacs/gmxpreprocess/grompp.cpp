@@ -73,6 +73,7 @@
 #include "gromacs/legacyheaders/splitter.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
@@ -840,7 +841,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             clear_rvec(invbox[j]);
             invbox[j][j] = 1;
         }
-        m_inv_ur0(invbox, invbox);
+        gmx::invertBoxMatrix(invbox, invbox);
     }
 
     /* Copy the reference coordinates to mtop */

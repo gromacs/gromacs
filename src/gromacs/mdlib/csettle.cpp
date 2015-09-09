@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/constr.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -82,7 +83,7 @@ static void init_proj_matrix(settleparam_t *p,
     p->imH = invmH;
     /* We normalize the inverse masses with imO for the matrix inversion.
      * so we can keep using masses of almost zero for frozen particles,
-     * without running out of the float range in m_inv.
+     * without running out of the float range in invertMatrix.
      */
     imOn = 1;
     imHn = p->imH/p->imO;
@@ -98,7 +99,7 @@ static void init_proj_matrix(settleparam_t *p,
     mat[2][0] = mat[0][2];
     mat[2][1] = mat[1][2];
 
-    m_inv(mat, p->invmat);
+    gmx::invertMatrix(mat, p->invmat);
 
     msmul(p->invmat, 1/p->imO, p->invmat);
 

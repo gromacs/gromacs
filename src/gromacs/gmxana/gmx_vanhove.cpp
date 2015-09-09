@@ -50,6 +50,7 @@
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
@@ -295,7 +296,7 @@ int gmx_vanhove(int argc, char *argv[])
             fprintf(stderr, "\rProcessing frame %d", f);
         }
         /* Scale all the configuration to the average box */
-        m_inv_ur0(sbox[f], corr);
+        gmx::invertBoxMatrix(sbox[f], corr);
         mmul_ur0(avbox, corr, corr);
         for (i = 0; i < isize; i++)
         {

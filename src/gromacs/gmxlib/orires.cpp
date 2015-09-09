@@ -47,6 +47,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
