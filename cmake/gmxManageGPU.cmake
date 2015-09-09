@@ -93,7 +93,7 @@ if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
     # reasonably future-proof, since newer versions of CMake appear to handle
     # the rpath automatically based on the provided library path, meaning
     # the explicit rpath specification is no longer needed.
-    if(APPLE AND (CMAKE_VERSION VERSION_GREATER 2.8.11))
+    if(APPLE)
         foreach(elem ${CUDA_LIBRARIES})
             if(elem MATCHES "-Wl,.*")
                 list(REMOVE_ITEM CUDA_LIBRARIES ${elem})

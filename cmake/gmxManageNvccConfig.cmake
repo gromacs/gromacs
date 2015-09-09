@@ -34,80 +34,15 @@
 
 # Manage CUDA nvcc compilation configuration, try to be smart to ease the users'
 # pain as much as possible:
-# - use the CUDA_HOST_COMPILER if defined by the user, otherwise
-# - auto-detect compatible nvcc host compiler and set nvcc -ccbin (if not MPI wrapper)
 # - set icc compatibility mode to gcc 4.4/4.5 (CUDA 4.0 is not compatible with gcc >v4.4)
 # - (advanced) variables set:
-#   * CUDA_HOST_COMPILER            - the host compiler for nvcc (only with cmake <2.8.10)
 #   * CUDA_HOST_COMPILER_OPTIONS    - the full host-compiler related option list passed to nvcc
 #
-# Note that from CMake 2.8.10 FindCUDA defines CUDA_HOST_COMPILER internally,
-# so we won't set it ourselves, but hope that the module does a good job.
 
 gmx_check_if_changed(CUDA_HOST_COMPILER_CHANGED CUDA_HOST_COMPILER)
 
-# CUDA_HOST_COMPILER changed hence it is not auto-set anymore
-if (CUDA_HOST_COMPILER_CHANGED AND CUDA_HOST_COMPILER_AUTOSET)
-    unset(CUDA_HOST_COMPILER_AUTOSET CACHE)
-endif()
-
-# Explicitly set the host compiler for nvcc if the current compiler is
-# supported and it's not an MPI compiler wrapper, otherwise warn the user.
-#
-# Note that even though nvcc compiles host code as C++, we use the
-# CMAKE_C_COMPILER as host compiler. We do this because CUDA versions
-# preceding 5.0 only recognize icc, but not icpc. However, both gcc and icc
-# (i.e. all supported compilers) happily compile C++ code.
-#
-# Also note that with MSVC nvcc sets the -compiler-bindir option behind the
-# scenes; to avoid conflicts we don't set -ccbin automatically.
-#
-# This will be executed only with cmake <v2.8.10 as later versions set the
-# host compiler in FindCUDA.
-if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
-    if (NOT CMAKE_COMPILER_IS_GNUCC AND
-        NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND UNIX AND NOT APPLE))
-        message(WARNING "
-        Will not set the nvcc host compiler because the current C compiler is not
-        compatible with nvcc:
-        ${CMAKE_C_COMPILER} (ID: ${CMAKE_C_COMPILER_ID})
-        Compatible compilers are: gcc on Linux and Mac OS X, the Intel Compiler on 64-bit
-        Linux and MSVC on Windows. Note that with newer CUDA releases this might change,
-        for up-to-date compatibility information check the NVIDIA documentation.
-        If nothing specified, nvcc will automatically pick the platform-default compiler;
-        Note that mixing compilers can cause errors.
-        To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-        setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
-        ")
-    else()
-        # do not use MPI compiler wrappers, as these are prone to brake nvcc
-        if (GMX_MPI AND NOT "${MPI_C_FOUND}") # FindMPI-based detection
-            message(WARNING "
-        Will not set the nvcc host compiler because the current C compiler is an MPI
-        compiler wrapper: ${CMAKE_C_COMPILER}
-        MPI compiler wrappers are prone to not work with nvcc. You might get lucky,
-        but the safest is to use the C compiler that the MPI compiler wrapper uses
-        (if this is compatible).
-        To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-        setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
-        ")
-        else()
-            set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
-            set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
-                "True if CUDA_HOST_COMPILER is automatically set")
-        endif()
-    endif()
-endif()
-
 # set up host compiler and its options
 if(CUDA_HOST_COMPILER_CHANGED)
-    # FindCUDA in CMake 2.8.10 sets the host compiler internally
-    if (CMAKE_VERSION VERSION_LESS "2.8.10")
-        message(STATUS "Setting the nvcc host compiler to: ${CUDA_HOST_COMPILER}")
-        set(CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER}
-            CACHE PATH "Host compiler for nvcc")
-    endif()
-
     # On *nix force icc in gcc 4.4 compatibility mode with CUDA 3.2/4.0 and
     # gcc 4.5 compatibility mode with later CUDA versions. This is needed
     # as even with icc used as host compiler, when icc's gcc compatibility
@@ -116,7 +51,7 @@ if(CUDA_HOST_COMPILER_CHANGED)
     set(CUDA_HOST_COMPILER_OPTIONS "")
     if (UNIX AND
             ((CMAKE_C_COMPILER_ID MATCHES "Intel" AND
-              (CUDA_HOST_COMPILER_AUTOSET OR CMAKE_C_COMPILER STREQUAL CUDA_HOST_COMPILER)) OR
+              CMAKE_C_COMPILER STREQUAL CUDA_HOST_COMPILER) OR
             (CMAKE_CXX_COMPILER_ID MATCHES "Intel" AND CMAKE_CXX_COMPILER STREQUAL CUDA_HOST_COMPILER))
         )
         if (CUDA_VERSION VERSION_LESS "4.1")
@@ -137,7 +72,7 @@ if(CUDA_HOST_COMPILER_CHANGED)
     set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Options for nvcc host compiler (do not edit!).")
 
-    mark_as_advanced(CUDA_HOST_COMPILER CUDA_HOST_COMPILER_OPTIONS)
+    mark_as_advanced(CUDA_HOST_COMPILER_OPTIONS)
 endif()
 
 # the legacy CUDA kernels have been dropped, warn with CUDA 4.0
@@ -206,10 +141,6 @@ list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 list(APPEND GMX_CUDA_NVCC_FLAGS "-use_fast_math")
 
 # assemble the CUDA host compiler flags
-# with CMake <2.8.10 the host compiler needs to be set on the nvcc command line
-if (CMAKE_VERSION VERSION_LESS "2.8.10")
-    list(APPEND GMX_CUDA_NVCC_FLAGS "-ccbin=${CUDA_HOST_COMPILER}")
-endif()
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 
 # finally set the damn flags

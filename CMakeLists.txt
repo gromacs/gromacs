@@ -41,6 +41,9 @@ set(GMX_CMAKE_MINIMUM_REQUIRED_VERSION "2.8.8")
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
+if(CMAKE_VERSION VERSION_LESS "3.3")
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/backport/3.3)
+endif()
 
 project(Gromacs)
 
