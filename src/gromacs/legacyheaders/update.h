@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,8 @@
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/timing/wallcycle.h"
+
+struct gmx_constr;
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,49 +85,49 @@ void update_pcouple(FILE             *fplog,
                     matrix            M,
                     gmx_bool          bInitStep);
 
-void update_coords(FILE             *fplog,
-                   gmx_int64_t       step,
-                   t_inputrec       *inputrec, /* input record and box stuff	*/
-                   t_mdatoms        *md,
-                   t_state          *state,
-                   gmx_bool          bMolPBC,
-                   rvec             *f, /* forces on home particles */
-                   gmx_bool          bDoLR,
-                   rvec             *f_lr,
-                   tensor           *vir_lr_constr,
-                   t_fcdata         *fcd,
-                   gmx_ekindata_t   *ekind,
-                   matrix            M,
-                   gmx_update_t      upd,
-                   gmx_bool          bInitStep,
-                   int               bUpdatePart,
-                   t_commrec        *cr, /* these shouldn't be here -- need to think about it */
-                   t_nrnb           *nrnb,
-                   gmx_constr_t      constr,
-                   t_idef           *idef);
+void update_coords(FILE              *fplog,
+                   gmx_int64_t        step,
+                   t_inputrec        *inputrec, /* input record and box stuff	*/
+                   t_mdatoms         *md,
+                   t_state           *state,
+                   gmx_bool           bMolPBC,
+                   rvec              *f, /* forces on home particles */
+                   gmx_bool           bDoLR,
+                   rvec              *f_lr,
+                   tensor            *vir_lr_constr,
+                   t_fcdata          *fcd,
+                   gmx_ekindata_t    *ekind,
+                   matrix             M,
+                   gmx_update_t       upd,
+                   gmx_bool           bInitStep,
+                   int                bUpdatePart,
+                   t_commrec         *cr, /* these shouldn't be here -- need to think about it */
+                   t_nrnb            *nrnb,
+                   struct gmx_constr *constr,
+                   t_idef            *idef);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr_t constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, struct gmx_constr *constr);
 
-void update_constraints(FILE             *fplog,
-                        gmx_int64_t       step,
-                        real             *dvdlambda, /* FEP stuff */
-                        t_inputrec       *inputrec,  /* input record and box stuff	*/
-                        t_mdatoms        *md,
-                        t_state          *state,
-                        gmx_bool          bMolPBC,
-                        struct t_graph   *graph,
-                        rvec              force[], /* forces on home particles */
-                        t_idef           *idef,
-                        tensor            vir_part,
-                        t_commrec        *cr,
-                        t_nrnb           *nrnb,
-                        gmx_wallcycle_t   wcycle,
-                        gmx_update_t      upd,
-                        gmx_constr_t      constr,
-                        gmx_bool          bFirstHalf,
-                        gmx_bool          bCalcVir);
+void update_constraints(FILE              *fplog,
+                        gmx_int64_t        step,
+                        real              *dvdlambda, /* FEP stuff */
+                        t_inputrec        *inputrec,  /* input record and box stuff	*/
+                        t_mdatoms         *md,
+                        t_state           *state,
+                        gmx_bool           bMolPBC,
+                        struct t_graph    *graph,
+                        rvec               force[], /* forces on home particles */
+                        t_idef            *idef,
+                        tensor             vir_part,
+                        t_commrec         *cr,
+                        t_nrnb            *nrnb,
+                        gmx_wallcycle_t    wcycle,
+                        gmx_update_t       upd,
+                        struct gmx_constr *constr,
+                        gmx_bool           bFirstHalf,
+                        gmx_bool           bCalcVir);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 

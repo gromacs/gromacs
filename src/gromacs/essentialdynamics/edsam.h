@@ -51,6 +51,12 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+/*! \brief Abstract type for essential dynamics
+ *
+ * The main type is defined only in edsam.c
+ */
+typedef struct gmx_edsam *gmx_edsam_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

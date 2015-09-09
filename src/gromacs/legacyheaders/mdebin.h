@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 #include "gromacs/legacyheaders/ebin.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/state.h"
+
+struct gmx_constr;
 
 #ifdef __cplusplus
 extern "C" {
@@ -124,23 +126,23 @@ FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 
 /* update the averaging structures. Called every time
    the energies are evaluated. */
-void upd_mdebin(t_mdebin       *md,
-                gmx_bool        bDoDHDL,
-                gmx_bool        bSum,
-                double          time,
-                real            tmass,
-                gmx_enerdata_t *enerd,
-                t_state        *state,
-                t_lambda       *fep,
-                t_expanded     *expand,
-                matrix          lastbox,
-                tensor          svir,
-                tensor          fvir,
-                tensor          vir,
-                tensor          pres,
-                gmx_ekindata_t *ekind,
-                rvec            mu_tot,
-                gmx_constr_t    constr);
+void upd_mdebin(t_mdebin          *md,
+                gmx_bool           bDoDHDL,
+                gmx_bool           bSum,
+                double             time,
+                real               tmass,
+                gmx_enerdata_t    *enerd,
+                t_state           *state,
+                t_lambda          *fep,
+                t_expanded        *expand,
+                matrix             lastbox,
+                tensor             svir,
+                tensor             fvir,
+                tensor             vir,
+                tensor             pres,
+                gmx_ekindata_t    *ekind,
+                rvec               mu_tot,
+                struct gmx_constr *constr);
 
 void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
