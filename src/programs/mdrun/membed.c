@@ -141,11 +141,10 @@ static int get_molblock(int mol_id, int nmblock, gmx_molblock_t *mblock)
 static int get_tpr_version(const char *infile)
 {
     t_tpxheader  header;
-    int          version, generation;
 
-    read_tpxheader(infile, &header, TRUE, &version, &generation);
+    read_tpxheader(infile, &header, TRUE);
 
-    return version;
+    return header.fileVersion;
 }
 
 /* Get a list of all the molecule types that are present in a group of atoms. *

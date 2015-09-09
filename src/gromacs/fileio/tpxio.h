@@ -67,6 +67,9 @@ typedef struct
     int   bF;        /* Non zero if forces are present (no longer
                         supported, but retained so old .tpr can be read) */
 
+    int   fileVersion;    /* Version number of the code that wrote the file */
+    int   fileGeneration; /* Generation version number of the code that wrote the file */
+
     int   natoms;    /* The total number of atoms			*/
     int   ngtc;      /* The number of temperature coupling groups    */
     real  lambda;    /* Current value of lambda			*/
@@ -88,8 +91,7 @@ typedef struct
  * but double and single precision can be read by either.
  */
 
-void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK,
-                    int *version, int *generation);
+void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK);
 /* Read the header from a tpx file and then close it again.
  * By setting TopOnlyOK to true, it is possible to read future
  * versions too (we skip the changed inputrec), provided we havent
