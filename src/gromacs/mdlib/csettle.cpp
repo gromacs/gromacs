@@ -40,6 +40,7 @@
 #include <stdio.h>
 
 #include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -83,7 +84,7 @@ static void init_proj_matrix(settleparam_t *p,
     p->imH = invmH;
     /* We normalize the inverse masses with imO for the matrix inversion.
      * so we can keep using masses of almost zero for frozen particles,
-     * without running out of the float range in m_inv.
+     * without running out of the float range in invertMatrix.
      */
     imOn = 1;
     imHn = p->imH/p->imO;
@@ -99,7 +100,7 @@ static void init_proj_matrix(settleparam_t *p,
     mat[2][0] = mat[0][2];
     mat[2][1] = mat[1][2];
 
-    m_inv(mat, p->invmat);
+    gmx::invertMatrix(mat, p->invmat);
 
     msmul(p->invmat, 1/p->imO, p->invmat);
 

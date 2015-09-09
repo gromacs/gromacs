@@ -50,6 +50,7 @@
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -1292,7 +1293,7 @@ static void deform(gmx_update_t upd,
             }
         }
     }
-    m_inv_ur0(box, invbox);
+    gmx::invertBoxMatrix(box, invbox);
     copy_mat(bnew, box);
     mmul_ur0(box, invbox, mu);
 
