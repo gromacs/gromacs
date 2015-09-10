@@ -37,7 +37,8 @@
 #define GMX_RESOURCE_DIVISION_H
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
+
+typedef struct t_commrec t_commrec;
 
 /* Return the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,

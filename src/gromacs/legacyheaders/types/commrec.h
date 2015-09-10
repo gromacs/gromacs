@@ -39,7 +39,6 @@
 
 #include <stddef.h>
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h" // IWYU pragma: export
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"

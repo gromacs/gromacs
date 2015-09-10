@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,9 +44,10 @@
 #ifndef GMX_DOMDEC_DOMDEC_VSITE_H
 #define GMX_DOMDEC_DOMDEC_VSITE_H
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
+
+struct gmx_domdec_t;
 
 /*! \brief Clears the local indices for the virtual site communication setup */
 void dd_clear_local_vsite_indices(gmx_domdec_t *dd);

@@ -234,11 +234,11 @@ static void nbnxn_init_pairlist_fep(t_nblist *nl)
 
 }
 
-void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
-                       ivec               *n_dd_cells,
-                       gmx_domdec_zones_t *zones,
-                       gmx_bool            bFEP,
-                       int                 nthread_max)
+void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
+                       ivec                      *n_dd_cells,
+                       struct gmx_domdec_zones_t *zones,
+                       gmx_bool                   bFEP,
+                       int                        nthread_max)
 {
     nbnxn_search_t nbs;
     int            ngrid, d, t;
@@ -313,6 +313,293 @@ static void init_buffer_flags(nbnxn_buffer_flags_t *flags,
     for (b = 0; b < flags->nflag; b++)
     {
         bitmask_clear(&(flags->flag[b]));
+    }
+}
+
+/* Sets up a grid and puts the atoms on the grid.
+ * This function only operates on one domain of the domain decompostion.
+ * Note that without domain decomposition there is only one domain.
+ */
+void nbnxn_put_on_grid(nbnxn_search_t nbs,
+                       int ePBC, matrix box,
+                       int dd_zone,
+                       rvec corner0, rvec corner1,
+                       int a0, int a1,
+                       real atom_density,
+                       const int *atinfo,
+                       rvec *x,
+                       int nmoved, int *move,
+                       int nb_kernel_type,
+                       nbnxn_atomdata_t *nbat)
+{
+    nbnxn_grid_t *grid;
+    int           n;
+    int           nc_max_grid, nc_max;
+
+    grid = &nbs->grid[dd_zone];
+
+    nbs_cycle_start(&nbs->cc[enbsCCgrid]);
+
+    grid->bSimple = nbnxn_kernel_pairlist_simple(nb_kernel_type);
+
+    grid->na_c      = nbnxn_kernel_to_ci_size(nb_kernel_type);
+    grid->na_cj     = nbnxn_kernel_to_cj_size(nb_kernel_type);
+    grid->na_sc     = (grid->bSimple ? 1 : GPU_NSUBCELL)*grid->na_c;
+    grid->na_c_2log = get_2log(grid->na_c);
+
+    nbat->na_c = grid->na_c;
+
+    if (dd_zone == 0)
+    {
+        grid->cell0 = 0;
+    }
+    else
+    {
+        grid->cell0 =
+            (nbs->grid[dd_zone-1].cell0 + nbs->grid[dd_zone-1].nc)*
+            nbs->grid[dd_zone-1].na_sc/grid->na_sc;
+    }
+
+    n = a1 - a0;
+
+    if (dd_zone == 0)
+    {
+        nbs->ePBC = ePBC;
+        copy_mat(box, nbs->box);
+
+        /* Avoid zero density */
+        if (atom_density > 0)
+        {
+            grid->atom_density = atom_density;
+        }
+        else
+        {
+            grid->atom_density = grid_atom_density(n-nmoved, corner0, corner1);
+        }
+
+        grid->cell0 = 0;
+
+        nbs->natoms_local    = a1 - nmoved;
+        /* We assume that nbnxn_put_on_grid is called first
+         * for the local atoms (dd_zone=0).
+         */
+        nbs->natoms_nonlocal = a1 - nmoved;
+
+        if (debug)
+        {
+            fprintf(debug, "natoms_local = %5d atom_density = %5.1f\n",
+                    nbs->natoms_local, grid->atom_density);
+        }
+    }
+    else
+    {
+        nbs->natoms_nonlocal = max(nbs->natoms_nonlocal, a1);
+    }
+
+    /* We always use the home zone (grid[0]) for setting the cell size,
+     * since determining densities for non-local zones is difficult.
+     */
+    nc_max_grid = set_grid_size_xy(nbs, grid,
+                                   dd_zone, n-nmoved, corner0, corner1,
+                                   nbs->grid[0].atom_density);
+
+    nc_max = grid->cell0 + nc_max_grid;
+
+    if (a1 > nbs->cell_nalloc)
+    {
+        nbs->cell_nalloc = over_alloc_large(a1);
+        srenew(nbs->cell, nbs->cell_nalloc);
+    }
+
+    /* To avoid conditionals we store the moved particles at the end of a,
+     * make sure we have enough space.
+     */
+    if (nc_max*grid->na_sc + nmoved > nbs->a_nalloc)
+    {
+        nbs->a_nalloc = over_alloc_large(nc_max*grid->na_sc + nmoved);
+        srenew(nbs->a, nbs->a_nalloc);
+    }
+
+    /* We need padding up to a multiple of the buffer flag size: simply add */
+    if (nc_max*grid->na_sc + NBNXN_BUFFERFLAG_SIZE > nbat->nalloc)
+    {
+        nbnxn_atomdata_realloc(nbat, nc_max*grid->na_sc+NBNXN_BUFFERFLAG_SIZE);
+    }
+
+    calc_cell_indices(nbs, dd_zone, grid, a0, a1, atinfo, x, move, nbat);
+
+    if (dd_zone == 0)
+    {
+        nbat->natoms_local = nbat->natoms;
+    }
+
+    nbs_cycle_stop(&nbs->cc[enbsCCgrid]);
+}
+
+/* Calls nbnxn_put_on_grid for all non-local domains */
+void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
+                                const struct gmx_domdec_zones_t *zones,
+                                const int                       *atinfo,
+                                rvec                            *x,
+                                int                              nb_kernel_type,
+                                nbnxn_atomdata_t                *nbat)
+{
+    int  zone, d;
+    rvec c0, c1;
+
+    for (zone = 1; zone < zones->n; zone++)
+    {
+        for (d = 0; d < DIM; d++)
+        {
+            c0[d] = zones->size[zone].bb_x0[d];
+            c1[d] = zones->size[zone].bb_x1[d];
+        }
+
+        nbnxn_put_on_grid(nbs, nbs->ePBC, NULL,
+                          zone, c0, c1,
+                          zones->cg_range[zone],
+                          zones->cg_range[zone+1],
+                          -1,
+                          atinfo,
+                          x,
+                          0, NULL,
+                          nb_kernel_type,
+                          nbat);
+    }
+}
+
+/* Add simple grid type information to the local super/sub grid */
+void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
+                           nbnxn_atomdata_t *nbat)
+{
+    nbnxn_grid_t *grid;
+    float        *bbcz;
+    nbnxn_bb_t   *bb;
+    int           ncd, sc;
+    int           nthreads gmx_unused;
+
+    grid = &nbs->grid[0];
+
+    if (grid->bSimple)
+    {
+        gmx_incons("nbnxn_grid_simple called with a simple grid");
+    }
+
+    ncd = grid->na_sc/NBNXN_CPU_CLUSTER_I_SIZE;
+
+    if (grid->nc*ncd > grid->nc_nalloc_simple)
+    {
+        grid->nc_nalloc_simple = over_alloc_large(grid->nc*ncd);
+        srenew(grid->bbcz_simple, grid->nc_nalloc_simple*NNBSBB_D);
+        srenew(grid->bb_simple, grid->nc_nalloc_simple);
+        srenew(grid->flags_simple, grid->nc_nalloc_simple);
+        if (nbat->XFormat)
+        {
+            sfree_aligned(grid->bbj);
+            snew_aligned(grid->bbj, grid->nc_nalloc_simple/2, 16);
+        }
+    }
+
+    bbcz = grid->bbcz_simple;
+    bb   = grid->bb_simple;
+
+    nthreads = gmx_omp_nthreads_get(emntPairsearch);
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+    for (sc = 0; sc < grid->nc; sc++)
+    {
+        int c, tx, na;
+
+        for (c = 0; c < ncd; c++)
+        {
+            tx = sc*ncd + c;
+
+            na = NBNXN_CPU_CLUSTER_I_SIZE;
+            while (na > 0 &&
+                   nbat->type[tx*NBNXN_CPU_CLUSTER_I_SIZE+na-1] == nbat->ntype-1)
+            {
+                na--;
+            }
+
+            if (na > 0)
+            {
+                switch (nbat->XFormat)
+                {
+                    case nbatX4:
+                        /* PACK_X4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
+                        calc_bounding_box_x_x4(na, nbat->x+tx*STRIDE_P4,
+                                               bb+tx);
+                        break;
+                    case nbatX8:
+                        /* PACK_X8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
+                        calc_bounding_box_x_x8(na, nbat->x+X8_IND_A(tx*NBNXN_CPU_CLUSTER_I_SIZE),
+                                               bb+tx);
+                        break;
+                    default:
+                        calc_bounding_box(na, nbat->xstride,
+                                          nbat->x+tx*NBNXN_CPU_CLUSTER_I_SIZE*nbat->xstride,
+                                          bb+tx);
+                        break;
+                }
+                bbcz[tx*NNBSBB_D+0] = bb[tx].lower[BB_Z];
+                bbcz[tx*NNBSBB_D+1] = bb[tx].upper[BB_Z];
+
+                /* No interaction optimization yet here */
+                grid->flags_simple[tx] = NBNXN_CI_DO_LJ(0) | NBNXN_CI_DO_COUL(0);
+            }
+            else
+            {
+                grid->flags_simple[tx] = 0;
+            }
+        }
+    }
+
+    if (grid->bSimple && nbat->XFormat == nbatX8)
+    {
+        combine_bounding_box_pairs(grid, grid->bb_simple);
+    }
+}
+
+void nbnxn_get_ncells(nbnxn_search_t nbs, int *ncx, int *ncy)
+{
+    *ncx = nbs->grid[0].ncx;
+    *ncy = nbs->grid[0].ncy;
+}
+
+void nbnxn_get_atomorder(nbnxn_search_t nbs, int **a, int *n)
+{
+    const nbnxn_grid_t *grid;
+
+    grid = &nbs->grid[0];
+
+    /* Return the atom order for the home cell (index 0) */
+    *a  = nbs->a;
+
+    *n = grid->cxy_ind[grid->ncx*grid->ncy]*grid->na_sc;
+}
+
+void nbnxn_set_atomorder(nbnxn_search_t nbs)
+{
+    nbnxn_grid_t *grid;
+    int           ao, cx, cy, cxy, cz, j;
+
+    /* Set the atom order for the home cell (index 0) */
+    grid = &nbs->grid[0];
+
+    ao = 0;
+    for (cx = 0; cx < grid->ncx; cx++)
+    {
+        for (cy = 0; cy < grid->ncy; cy++)
+        {
+            cxy = cx*grid->ncy + cy;
+            j   = grid->cxy_ind[cxy]*grid->na_sc;
+            for (cz = 0; cz < grid->cxy_na[cxy]; cz++)
+            {
+                nbs->a[j]     = ao;
+                nbs->cell[ao] = j;
+                ao++;
+                j++;
+            }
+        }
     }
 }
 
@@ -2562,7 +2849,7 @@ real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
-static real nonlocal_vol2(const gmx_domdec_zones_t *zones, rvec ls, real r)
+static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, rvec ls, real r)
 {
     int  z, d;
     real cl, ca, za;
