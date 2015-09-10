@@ -44,7 +44,6 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"

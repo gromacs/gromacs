@@ -33,11 +33,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _nbnxn_search_h
-#define _nbnxn_search_h
+#ifndef GMX_MDLIB_NBNXN_SEARCH_H
+#define GMX_MDLIB_NBNXN_SEARCH_H
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+
+struct gmx_domdec_zones_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,11 +62,11 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
 real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density);
 
 /* Allocates and initializes a pair search data structure */
-void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
-                       ivec               *n_dd_cells,
-                       gmx_domdec_zones_t *zones,
-                       gmx_bool            bFEP,
-                       int                 nthread_max);
+void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
+                       ivec                      *n_dd_cells,
+                       struct gmx_domdec_zones_t *zones,
+                       gmx_bool                   bFEP,
+                       int                        nthread_max);
 
 /* Put the atoms on the pair search grid.
  * Only atoms a0 to a1 in x are put on the grid.
@@ -91,12 +93,12 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
  * with domain decomposition. Should be called after calling
  * nbnxn_search_put_on_grid for the local atoms / home zone.
  */
-void nbnxn_put_on_grid_nonlocal(nbnxn_search_t            nbs,
-                                const gmx_domdec_zones_t *zones,
-                                const int                *atinfo,
-                                rvec                     *x,
-                                int                       nb_kernel_type,
-                                nbnxn_atomdata_t         *nbat);
+void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
+                                const struct gmx_domdec_zones_t *zones,
+                                const int                       *atinfo,
+                                rvec                            *x,
+                                int                              nb_kernel_type,
+                                nbnxn_atomdata_t                *nbat);
 
 /* Add simple grid type information to the local super/sub grid */
 void nbnxn_grid_add_simple(nbnxn_search_t    nbs,

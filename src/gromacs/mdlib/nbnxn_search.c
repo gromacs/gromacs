@@ -345,11 +345,11 @@ static void nbnxn_init_pairlist_fep(t_nblist *nl)
 
 }
 
-void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
-                       ivec               *n_dd_cells,
-                       gmx_domdec_zones_t *zones,
-                       gmx_bool            bFEP,
-                       int                 nthread_max)
+void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
+                       ivec                      *n_dd_cells,
+                       struct gmx_domdec_zones_t *zones,
+                       gmx_bool                   bFEP,
+                       int                        nthread_max)
 {
     nbnxn_search_t nbs;
     int            d, g, t;
@@ -1892,12 +1892,12 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 }
 
 /* Calls nbnxn_put_on_grid for all non-local domains */
-void nbnxn_put_on_grid_nonlocal(nbnxn_search_t            nbs,
-                                const gmx_domdec_zones_t *zones,
-                                const int                *atinfo,
-                                rvec                     *x,
-                                int                       nb_kernel_type,
-                                nbnxn_atomdata_t         *nbat)
+void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
+                                const struct gmx_domdec_zones_t *zones,
+                                const int                       *atinfo,
+                                rvec                            *x,
+                                int                              nb_kernel_type,
+                                nbnxn_atomdata_t                *nbat)
 {
     int  zone, d;
     rvec c0, c1;
@@ -4304,7 +4304,7 @@ real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
-static real nonlocal_vol2(const gmx_domdec_zones_t *zones, rvec ls, real r)
+static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, rvec ls, real r)
 {
     int  z, d;
     real cl, ca, za;

@@ -43,6 +43,8 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/pbcutil/ishift.h"
 
+struct t_commrec;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -73,7 +75,7 @@ void construct_vsites(const gmx_vsite_t *vsite,
                       real dt, rvec v[],
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
-                      t_commrec *cr, matrix box);
+                      struct t_commrec *cr, matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the local system.
  * If v is passed, the velocities of the vsites will be calculated
@@ -96,7 +98,7 @@ void spread_vsite_f(gmx_vsite_t *vsite,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, struct t_graph *g, matrix box,
-                    t_commrec *cr);
+                    struct t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
  * If VirCorr=TRUE add the virial correction for non-linear vsite constructs
@@ -105,7 +107,7 @@ void spread_vsite_f(gmx_vsite_t *vsite,
  * as for instance for the PME mesh contribution.
  */
 
-gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
+gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, struct t_commrec *cr,
                         gmx_bool bSerial_NoPBC);
 /* Initialize the virtual site struct,
  * returns NULL when there are no virtual sites.
@@ -124,7 +126,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
  */
 
 void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
-                   t_commrec *cr);
+                   struct t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.
  */

@@ -43,6 +43,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/cyclecounter.h"
 
+struct gmx_domdec_zones_t;
 
 /* Bounding box calculations are (currently) always in single precision, so
  * we only need to check for single precision support here.
@@ -243,24 +244,24 @@ typedef struct {
 
 /* Main pair-search struct, contains the grid(s), not the pair-list(s) */
 typedef struct nbnxn_search {
-    gmx_bool            bFEP;            /* Do we have perturbed atoms? */
-    int                 ePBC;            /* PBC type enum                              */
-    matrix              box;             /* The periodic unit-cell                     */
+    gmx_bool                   bFEP;            /* Do we have perturbed atoms? */
+    int                        ePBC;            /* PBC type enum                              */
+    matrix                     box;             /* The periodic unit-cell                     */
 
-    gmx_bool            DomDec;          /* Are we doing domain decomposition?         */
-    ivec                dd_dim;          /* Are we doing DD in x,y,z?                  */
-    gmx_domdec_zones_t *zones;           /* The domain decomposition zones        */
+    gmx_bool                   DomDec;          /* Are we doing domain decomposition?         */
+    ivec                       dd_dim;          /* Are we doing DD in x,y,z?                  */
+    struct gmx_domdec_zones_t *zones;           /* The domain decomposition zones        */
 
-    int                 ngrid;           /* The number of grids, equal to #DD-zones    */
-    nbnxn_grid_t       *grid;            /* Array of grids, size ngrid                 */
-    int                *cell;            /* Actual allocated cell array for all grids  */
-    int                 cell_nalloc;     /* Allocation size of cell                    */
-    int                *a;               /* Atom index for grid, the inverse of cell   */
-    int                 a_nalloc;        /* Allocation size of a                       */
+    int                        ngrid;           /* The number of grids, equal to #DD-zones    */
+    nbnxn_grid_t              *grid;            /* Array of grids, size ngrid                 */
+    int                       *cell;            /* Actual allocated cell array for all grids  */
+    int                        cell_nalloc;     /* Allocation size of cell                    */
+    int                       *a;               /* Atom index for grid, the inverse of cell   */
+    int                        a_nalloc;        /* Allocation size of a                       */
 
-    int                 natoms_local;    /* The local atoms run from 0 to natoms_local */
-    int                 natoms_nonlocal; /* The non-local atoms run from natoms_local
-                                          * to natoms_nonlocal */
+    int                        natoms_local;    /* The local atoms run from 0 to natoms_local */
+    int                        natoms_nonlocal; /* The non-local atoms run from natoms_local
+                                                 * to natoms_nonlocal */
 
     gmx_bool             print_cycles;
     int                  search_count;

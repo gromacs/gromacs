@@ -56,6 +56,7 @@
  * The main type is defined only in edsam.c
  */
 typedef struct gmx_edsam *gmx_edsam_t;
+struct gmx_domdec_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,7 +73,7 @@ extern "C" {
  * \param ed                The essential dynamics data.
  */
 void do_edsam(const t_inputrec *ir, gmx_int64_t step,
-              t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam_t ed);
+              struct t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam_t ed);
 
 
 /*! \brief Reads in the .edi file containing the essential dynamics and flooding data.
@@ -94,7 +95,7 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
  * \returns                 Pointer to the initialized essential dynamics / flooding data.
  */
 gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm fnm[],
-                    unsigned long Flags, const output_env_t oenv, t_commrec *cr);
+                    unsigned long Flags, const output_env_t oenv, struct t_commrec *cr);
 
 
 /*! \brief Initializes the essential dynamics and flooding module.
@@ -107,7 +108,7 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm
  * \param box               The simulation box.
  * \param EDstate           ED data stored in the checkpoint file.
  */
-void init_edsam(const gmx_mtop_t *mtop, const t_inputrec *ir, t_commrec *cr,
+void init_edsam(const gmx_mtop_t *mtop, const t_inputrec *ir, struct t_commrec *cr,
                 gmx_edsam_t ed, rvec x[], matrix box, edsamstate_t *EDstate);
 
 
@@ -118,7 +119,7 @@ void init_edsam(const gmx_mtop_t *mtop, const t_inputrec *ir, t_commrec *cr,
  * \param dd                Domain decomposition data.
  * \param ed                Essential dynamics and flooding data.
  */
-void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
+void dd_make_local_ed_indices(struct gmx_domdec_t *dd, gmx_edsam_t ed);
 
 
 /*! \brief Evaluate the flooding potential(s) and forces as requested in the .edi input file.
@@ -132,7 +133,7 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
  * \param step              Number of the time step.
  * \param bNS               Are we in a neighbor searching step?
  */
-void do_flood(t_commrec *cr, const t_inputrec *ir, rvec x[], rvec force[], gmx_edsam_t ed,
+void do_flood(struct t_commrec *cr, const t_inputrec *ir, rvec x[], rvec force[], gmx_edsam_t ed,
               matrix box, gmx_int64_t step, gmx_bool bNS);
 
 /*! \brief Clean up
