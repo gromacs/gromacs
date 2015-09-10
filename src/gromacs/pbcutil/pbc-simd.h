@@ -50,6 +50,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
+struct gmx_domdec_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

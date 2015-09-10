@@ -38,6 +38,8 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct t_commrec;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

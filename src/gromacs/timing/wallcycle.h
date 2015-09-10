@@ -42,7 +42,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -50,7 +49,8 @@ extern "C" {
 #endif
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
-struct gmx_wallclock_gpu_t;
+typedef struct gmx_wallclock_gpu_t gmx_wallclock_gpu_t;
+struct t_commrec;
 
 enum {
     ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
@@ -83,7 +83,7 @@ enum {
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr,
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr,
                                int nthreads_pp, int nthreads_pme);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
@@ -104,11 +104,11 @@ void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c);
 void wallcycle_reset_all(gmx_wallcycle_t wc);
 /* Resets all cycle counters to zero */
 
-void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc);
+void wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-                     gmx_wallcycle_t wc, struct gmx_wallclock_gpu_t *gpu_t);
+                     gmx_wallcycle_t wc, gmx_wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
