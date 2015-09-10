@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,6 +71,8 @@
 #define NOFLAGS 0
 #endif
 
+struct gmx_domdec_t;
+struct gmx_mtop_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -93,7 +95,7 @@ static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with t
  * \param fnm     Filename struct.
  */
 extern void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
-                                   gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
+                                   struct gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
 
 
 /*! \brief Make a selection of the home atoms for the IMD group.
@@ -109,7 +111,7 @@ extern void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state
  * \param dd      Structure containing domain decomposition data.
  * \param imd     The IMD group of atoms.
  */
-extern void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
+extern void dd_make_local_IMD_atoms(gmx_bool bIMD, struct gmx_domdec_t *dd, t_IMD *imd);
 
 
 /*! \brief Initializes (or disables) IMD.
@@ -153,7 +155,8 @@ extern void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
  *
  * \returns            Whether or not we have to do IMD communication at this step.
  */
-extern gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, t_commrec *cr, gmx_bool bNS,
+extern gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, struct t_commrec *cr,
+                       gmx_bool bNS,
                        matrix box, rvec x[], t_inputrec *ir, double t,
                        gmx_wallcycle_t wcycle);
 
@@ -175,7 +178,8 @@ extern int IMD_get_step(t_gmx_IMD IMDsetup);
  * \param f            The forces.
  * \param wcycle       Count wallcycles of IMD routines for diagnostic output.
  */
-extern void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, t_commrec *cr, rvec *f,
+extern void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
+                             struct t_commrec *cr, rvec *f,
                              gmx_wallcycle_t wcycle);
 
 

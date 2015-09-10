@@ -38,8 +38,9 @@
 #ifndef GMX_FILEIO_FILENM_H
 #define GMX_FILEIO_FILENM_H
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/utility/basedefinitions.h"
+
+struct t_commrec;
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,7 +128,7 @@ const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
  * no such option. */
 
 const char *opt2fn_master(const char *opt, int nfile,
-                          const t_filenm fnm[], t_commrec *cr);
+                          const t_filenm fnm[], struct t_commrec *cr);
 /* Return the filename belonging to cmd-line option opt, or NULL when
  * no such option or not running on master */
 

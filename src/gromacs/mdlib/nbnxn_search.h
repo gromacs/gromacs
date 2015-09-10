@@ -33,11 +33,13 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _nbnxn_search_h
-#define _nbnxn_search_h
+#ifndef GMX_MDLIB_NBNXN_SEARCH_H
+#define GMX_MDLIB_NBNXN_SEARCH_H
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
+
+struct gmx_domdec_zones_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,11 +56,11 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
 real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density);
 
 /* Allocates and initializes a pair search data structure */
-void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
-                       ivec               *n_dd_cells,
-                       gmx_domdec_zones_t *zones,
-                       gmx_bool            bFEP,
-                       int                 nthread_max);
+void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
+                       ivec                      *n_dd_cells,
+                       struct gmx_domdec_zones_t *zones,
+                       gmx_bool                   bFEP,
+                       int                        nthread_max);
 
 /* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
