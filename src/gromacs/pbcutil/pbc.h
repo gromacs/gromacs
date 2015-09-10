@@ -39,11 +39,12 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+struct gmx_domdec_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -130,7 +131,7 @@ void set_pbc(t_pbc *pbc, int ePBC, matrix box);
  */
 
 t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
-                  gmx_domdec_t *dd, gmx_bool bSingleDir, matrix box);
+                  struct gmx_domdec_t *dd, gmx_bool bSingleDir, matrix box);
 /* As set_pbc, but additionally sets that correct distances can
  * be obtained using (combinations of) single box-vector shifts.
  * Should be used with pbc_dx_aiuc.

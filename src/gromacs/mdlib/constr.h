@@ -153,7 +153,7 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_constr_t constr,
                    t_idef *idef,
                    t_inputrec *ir,
-                   t_commrec *cr,
+                   struct t_commrec *cr,
                    gmx_int64_t step, int delta_step,
                    real step_scaling,
                    t_mdatoms *md,
@@ -196,14 +196,14 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
 gmx_constr_t init_constraints(FILE *log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               gmx_edsam_t ed, t_state *state,
-                              t_commrec *cr);
+                              struct t_commrec *cr);
 /* Initialize constraints stuff */
 
-void set_constraints(gmx_constr_t      constr,
-                     gmx_localtop_t   *top,
-                     const t_inputrec *ir,
-                     const t_mdatoms  *md,
-                     t_commrec        *cr);
+void set_constraints(gmx_constr_t             constr,
+                     gmx_localtop_t          *top,
+                     const t_inputrec        *ir,
+                     const t_mdatoms         *md,
+                     struct t_commrec        *cr);
 /* Set up all the local constraints for the node */
 
 /* The at2con t_blocka struct returned by the routines below
@@ -255,7 +255,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
 /* Initializes and returns the lincs data struct */
 
 void set_lincs(const t_idef *idef, const t_mdatoms *md,
-               gmx_bool bDynamics, t_commrec *cr,
+               gmx_bool bDynamics, struct t_commrec *cr,
                gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
@@ -272,7 +272,7 @@ constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
                 t_inputrec *ir,
                 gmx_int64_t step,
                 gmx_lincsdata_t lincsd, t_mdatoms *md,
-                t_commrec *cr,
+                struct t_commrec *cr,
                 rvec *x, rvec *xprime, rvec *min_proj,
                 matrix box, struct t_pbc *pbc,
                 real lambda, real *dvdlambda,
