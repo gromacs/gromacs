@@ -45,7 +45,6 @@
 #include <cstdio>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/math/vec.h"

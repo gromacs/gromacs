@@ -392,8 +392,8 @@ ftype_is_bonded_potential(int ftype)
         (ftype < F_GB12 || ftype > F_GB14);
 }
 
-void calc_listed(const gmx_multisim_t *ms,
-                 gmx_wallcycle        *wcycle,
+void calc_listed(const struct gmx_multisim_t *ms,
+                 struct gmx_wallcycle        *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
                  rvec f[], t_forcerec *fr,
@@ -632,24 +632,24 @@ void calc_listed_lambda(const t_idef *idef,
 }
 
 void
-do_force_listed(gmx_wallcycle        *wcycle,
-                matrix                box,
-                const t_lambda       *fepvals,
-                const gmx_multisim_t *ms,
-                const t_idef         *idef,
-                const rvec            x[],
-                history_t            *hist,
-                rvec                  f[],
-                t_forcerec           *fr,
-                const struct t_pbc   *pbc,
-                const struct t_graph *graph,
-                gmx_enerdata_t       *enerd,
-                t_nrnb               *nrnb,
-                real                 *lambda,
-                const t_mdatoms      *md,
-                t_fcdata             *fcd,
-                int                  *global_atom_index,
-                int                   flags)
+do_force_listed(struct gmx_wallcycle        *wcycle,
+                matrix                       box,
+                const t_lambda              *fepvals,
+                const struct gmx_multisim_t *ms,
+                const t_idef                *idef,
+                const rvec                   x[],
+                history_t                   *hist,
+                rvec                         f[],
+                t_forcerec                  *fr,
+                const struct t_pbc          *pbc,
+                const struct t_graph        *graph,
+                gmx_enerdata_t              *enerd,
+                t_nrnb                      *nrnb,
+                real                        *lambda,
+                const t_mdatoms             *md,
+                t_fcdata                    *fcd,
+                int                         *global_atom_index,
+                int                          flags)
 {
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
 

@@ -44,7 +44,6 @@
 #ifndef GMX_DOMDEC_DOMDEC_CONSTRAINTS_H
 #define GMX_DOMDEC_DOMDEC_CONSTRAINTS_H
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
