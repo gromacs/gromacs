@@ -42,7 +42,6 @@
 /* DEPRECATED! value for signaling unitialized variables */
 #define NOTSET -12345
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/legacyheaders/types/energy.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/fcdata.h"

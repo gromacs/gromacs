@@ -233,11 +233,11 @@ static void nbnxn_init_pairlist_fep(t_nblist *nl)
 
 }
 
-void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
-                       ivec               *n_dd_cells,
-                       gmx_domdec_zones_t *zones,
-                       gmx_bool            bFEP,
-                       int                 nthread_max)
+void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
+                       ivec                      *n_dd_cells,
+                       struct gmx_domdec_zones_t *zones,
+                       gmx_bool                   bFEP,
+                       int                        nthread_max)
 {
     nbnxn_search_t nbs;
     int            ngrid;
@@ -2519,7 +2519,7 @@ real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
-static real nonlocal_vol2(const gmx_domdec_zones_t *zones, rvec ls, real r)
+static real nonlocal_vol2(const struct gmx_domdec_zones_t *zones, rvec ls, real r)
 {
     real cl, ca, za;
     real vold_est;

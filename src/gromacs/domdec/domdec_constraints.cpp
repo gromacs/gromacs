@@ -453,7 +453,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
 }
 
 int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
-                              const gmx_mtop_t *mtop,
+                              const struct gmx_mtop_t *mtop,
                               const int *cginfo,
                               gmx_constr_t constr, int nrec,
                               t_ilist *il_local)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,8 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct t_commrec;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,7 +67,7 @@ int init_gb(gmx_genborn_t **p_born,
 
 
 /* Born radii calculations, both with and without SSE acceleration */
-int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
+int calc_gb_rad(struct t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
 
 
 
@@ -80,18 +82,18 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
 
 /* Functions for calculating adjustments due to ie chain rule terms */
 void
-calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top,
+calc_gb_forces(struct t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top,
                rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
                const struct t_pbc *pbc, const struct t_graph *graph, gmx_enerdata_t *enerd);
 
 
 int
-make_gb_nblist(t_commrec *cr, int gb_algorithm,
+make_gb_nblist(struct t_commrec *cr, int gb_algorithm,
                rvec x[], matrix box,
                t_forcerec *fr, t_idef *idef, struct t_graph *graph, gmx_genborn_t *born);
 
 void
-make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
+make_local_gb(const struct t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
 
 #ifdef __cplusplus
 }

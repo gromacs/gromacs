@@ -50,7 +50,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
@@ -61,6 +60,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct t_commrec;
+
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
 };
@@ -69,7 +70,7 @@ enum {
  *
  * Return value 0 indicates all well, non zero is an error code.
  */
-int gmx_pme_init(struct gmx_pme_t **pmedata, t_commrec *cr,
+int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
                  t_inputrec *ir, int homenr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
@@ -127,7 +128,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
 /*! \brief Called on the nodes that do PME exclusively (as slaves) */
 int gmx_pmeonly(struct gmx_pme_t *pme,
-                t_commrec *cr,     t_nrnb *mynrnb,
+                struct t_commrec *cr,     t_nrnb *mynrnb,
                 gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff_q, real ewaldcoeff_lj,
@@ -144,7 +145,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V);
 
 /*! \brief Send the charges and maxshift to out PME-only node. */
-void gmx_pme_send_parameters(t_commrec *cr,
+void gmx_pme_send_parameters(struct t_commrec *cr,
                              const interaction_const_t *ic,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
@@ -153,20 +154,20 @@ void gmx_pme_send_parameters(t_commrec *cr,
                              int maxshift_x, int maxshift_y);
 
 /*! \brief Send the coordinates to our PME-only node and request a PME calculation */
-void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
+void gmx_pme_send_coordinates(struct t_commrec *cr, matrix box, rvec *x,
                               gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                               real lambda_q, real lambda_lj,
                               gmx_bool bEnerVir, int pme_flags,
                               gmx_int64_t step);
 
 /*! \brief Tell our PME-only node to finish */
-void gmx_pme_send_finish(t_commrec *cr);
+void gmx_pme_send_finish(struct t_commrec *cr);
 
 /*! \brief Tell our PME-only node to reset all cycle and flop counters */
-void gmx_pme_send_resetcounters(t_commrec *cr, gmx_int64_t step);
+void gmx_pme_send_resetcounters(struct t_commrec *cr, gmx_int64_t step);
 
 /*! \brief PP nodes receive the long range forces from the PME nodes */
-void gmx_pme_receive_f(t_commrec *cr,
+void gmx_pme_receive_f(struct t_commrec *cr,
                        rvec f[], matrix vir_q, real *energy_q,
                        matrix vir_lj, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,

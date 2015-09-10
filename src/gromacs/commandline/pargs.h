@@ -51,6 +51,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct t_commrec;
+
 #ifdef __cplusplus
 extern "C"
 {

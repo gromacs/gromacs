@@ -45,12 +45,13 @@
 #include <cstdio>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+struct t_commrec;
 
 namespace gmx
 {
@@ -93,7 +94,7 @@ namespace gmx
  * \param[in] Flags         More command line options
  */
 int mdrunner(gmx_hw_opt_t *hw_opt,
-             FILE *fplog, t_commrec *cr, int nfile,
+             FILE *fplog, struct t_commrec *cr, int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
              gmx_bool bCompact, int nstglobalcomm, ivec ddxyz, int dd_node_order,
              real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,

@@ -40,6 +40,7 @@
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_internal.h"
 
+struct gmx_domdec_zones_t;
 
 /* Allocate and initialize ngrid pair search grids in nbs */
 void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
@@ -69,12 +70,12 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
  * with domain decomposition. Should be called after calling
  * nbnxn_search_put_on_grid for the local atoms / home zone.
  */
-void nbnxn_put_on_grid_nonlocal(nbnxn_search_t            nbs,
-                                const gmx_domdec_zones_t *zones,
-                                const int                *atinfo,
-                                rvec                     *x,
-                                int                       nb_kernel_type,
-                                nbnxn_atomdata_t         *nbat);
+void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
+                                const struct gmx_domdec_zones_t *zones,
+                                const int                       *atinfo,
+                                rvec                            *x,
+                                int                              nb_kernel_type,
+                                nbnxn_atomdata_t                *nbat);
 
 /* Add simple grid type information to the local super/sub grid */
 void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
@@ -88,6 +89,5 @@ void nbnxn_get_atomorder(const nbnxn_search_t nbs, const int **a, int *n);
 
 /* Renumber the atom indices on the grid to consecutive order */
 void nbnxn_set_atomorder(nbnxn_search_t nbs);
-
 
 #endif

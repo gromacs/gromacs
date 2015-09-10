@@ -61,6 +61,7 @@
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/utility/smalloc.h"
 
+struct gmx_domdec_zones_t;
 
 static void nbnxn_grid_init(nbnxn_grid_t * grid)
 {
@@ -1538,12 +1539,12 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 }
 
 /* Calls nbnxn_put_on_grid for all non-local domains */
-void nbnxn_put_on_grid_nonlocal(nbnxn_search_t            nbs,
-                                const gmx_domdec_zones_t *zones,
-                                const int                *atinfo,
-                                rvec                     *x,
-                                int                       nb_kernel_type,
-                                nbnxn_atomdata_t         *nbat)
+void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
+                                const struct gmx_domdec_zones_t *zones,
+                                const int                       *atinfo,
+                                rvec                            *x,
+                                int                              nb_kernel_type,
+                                nbnxn_atomdata_t                *nbat)
 {
     rvec c0, c1;
 
