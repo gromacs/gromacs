@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,10 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/mdoutf.h"
 #include "gromacs/legacyheaders/mdebin.h"
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
 #include "gromacs/timing/wallcycle.h"
+
+struct gmx_mtop_t;
+struct t_commrec;
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,29 +57,29 @@ extern "C" {
  * This routine does communication (e.g. collecting distributed coordinates)
  */
 void
-do_md_trajectory_writing(FILE           *fplog,
-                         t_commrec      *cr,
-                         int             nfile,
-                         const t_filenm  fnm[],
-                         gmx_int64_t     step,
-                         gmx_int64_t     step_rel,
-                         double          t,
-                         t_inputrec     *ir,
-                         t_state        *state,
-                         t_state        *state_global,
-                         gmx_mtop_t     *top_global,
-                         t_forcerec     *fr,
-                         gmx_mdoutf_t    outf,
-                         t_mdebin       *mdebin,
-                         gmx_ekindata_t *ekind,
-                         rvec           *f,
-                         rvec           *f_global,
-                         int            *nchkpt,
-                         gmx_bool        bCPT,
-                         gmx_bool        bRerunMD,
-                         gmx_bool        bLastStep,
-                         gmx_bool        bDoConfOut,
-                         gmx_bool        bSumEkinhOld
+do_md_trajectory_writing(FILE              *fplog,
+                         struct t_commrec  *cr,
+                         int                nfile,
+                         const t_filenm     fnm[],
+                         gmx_int64_t        step,
+                         gmx_int64_t        step_rel,
+                         double             t,
+                         t_inputrec        *ir,
+                         t_state           *state,
+                         t_state           *state_global,
+                         struct gmx_mtop_t *top_global,
+                         t_forcerec        *fr,
+                         gmx_mdoutf_t       outf,
+                         t_mdebin          *mdebin,
+                         gmx_ekindata_t    *ekind,
+                         rvec              *f,
+                         rvec              *f_global,
+                         int               *nchkpt,
+                         gmx_bool           bCPT,
+                         gmx_bool           bRerunMD,
+                         gmx_bool           bLastStep,
+                         gmx_bool           bDoConfOut,
+                         gmx_bool           bSumEkinhOld
                          );
 
 

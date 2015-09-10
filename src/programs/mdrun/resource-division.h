@@ -37,7 +37,9 @@
 #define GMX_RESOURCE_DIVISION_H
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
+
+struct gmx_mtop_t;
+struct t_commrec;
 
 /* Return the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
@@ -47,12 +49,12 @@
  * with the hardware, except that ntmpi could be larger than #GPU.
  * If necessary, this function will modify hw_opt->nthreads_omp.
  */
-int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
-                     gmx_hw_opt_t        *hw_opt,
-                     const t_inputrec    *inputrec,
-                     const gmx_mtop_t    *mtop,
-                     const t_commrec     *cr,
-                     FILE                *fplog);
+int get_nthreads_mpi(const gmx_hw_info_t     *hwinfo,
+                     gmx_hw_opt_t            *hw_opt,
+                     const t_inputrec        *inputrec,
+                     const struct gmx_mtop_t *mtop,
+                     const struct t_commrec  *cr,
+                     FILE                    *fplog);
 
 /* Check if the number of OpenMP threads is within reasonable range
  * considering the hardware used. This is a crude check, but mainly
@@ -65,7 +67,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
                                         gmx_bool             bNtOmpOptionSet,
-                                        t_commrec           *cr,
+                                        struct t_commrec    *cr,
                                         FILE                *fplog);
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
