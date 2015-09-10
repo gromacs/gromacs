@@ -64,7 +64,8 @@ typedef struct t_pbc {
     /*! \brief Determines how to compute distance vectors.
      *
      *  Indicator of how to compute distance vectors, depending
-     *  on PBC type (ePBC) and the shape of the box.
+     *  on PBC type (depends on ePBC and dimensions with(out) DD)
+     *  and the box angles.
      */
     int        ePBCDX;
     /*! \brief Used for selecting which dimensions to use in PBC.
@@ -132,7 +133,7 @@ int inputrec2nboundeddim(const t_inputrec *ir);
 
 /*! \brief Dump the contents of the pbc structure to the file
  *
- * \param[in] fp The file pointer to write to
+ * \param[in] fp  The file pointer to write to
  * \param[in] pbc The periodic boundary condition information structure
  */
 void dump_pbc(FILE *fp, t_pbc *pbc);
@@ -140,7 +141,7 @@ void dump_pbc(FILE *fp, t_pbc *pbc);
 /*! \brief Check the box for consistency
  *
  * \param[in] ePBC The pbc identifier
- * \param[in] box The box matrix
+ * \param[in] box  The box matrix
  * \return NULL if the box is supported by Gromacs.
  * Otherwise returns a string with the problem.
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
@@ -153,7 +154,7 @@ const char *check_box(int ePBC, matrix box);
  * taking into account that the grid neighborsearch code and pbc_dx
  * only check combinations of single box-vector shifts.
  * \param[in] ePBC The pbc identifier
- * \param[in] box The box matrix
+ * \param[in] box  The box matrix
  * \return the maximum cut-off.
  */
 real max_cutoff2(int ePBC, matrix box);
@@ -161,7 +162,7 @@ real max_cutoff2(int ePBC, matrix box);
 /*! \brief Guess PBC typr
  *
  * Guesses the type of periodic boundary conditions using the box
- * \param[in] box The box matrix
+ * \param[in] box  The box matrix
  * \return The pbc identifier
  */
 int guess_ePBC(matrix box);
@@ -171,8 +172,8 @@ int guess_ePBC(matrix box);
  * Checks for un-allowed box angles and corrects the box
  * and the integer shift vectors in the graph (if graph!=NULL) if necessary.
  * \param[in] fplog File for debug output
- * \param[in] step The MD step number
- * \param[in] box The simulation cell
+ * \param[in] step  The MD step number
+ * \param[in] box   The simulation cell
  * \param[in] graph Information about molecular connectivity
  * \return TRUE when the box was corrected.
  */
@@ -191,8 +192,8 @@ int ndof_com(t_inputrec *ir);
  * when one or more of the diagonal elements of box are zero.
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
  * \param[inout] pbc The pbc information structure
- * \param[in] ePBC the PBC identifier
- * \param[in] box The box tensor
+ * \param[in] ePBC The PBC identifier
+ * \param[in] box  The box tensor
  */
 void set_pbc(t_pbc *pbc, int ePBC, matrix box);
 
@@ -205,10 +206,10 @@ void set_pbc(t_pbc *pbc, int ePBC, matrix box);
  * with dd->nc[i]==1 with bSingleDir==TRUE or
  * with dd->nc[i]<=2 with bSingleDir==FALSE.
  * \param[inout] pbc The pbc information structure
- * \param[in] ePBC the PBC identifier
- * \param[in] dd UNKNOWN
- * \param[in] bSingleDir UNKNOWN
- * \param[in] box The box tensor
+ * \param[in] ePBC       The PBC identifier
+ * \param[in] dd         The domain decomposition struct
+ * \param[in] bSingleDir TRUE if DD communicates only in one direction along dimensions
+ * \param[in] box        The box tensor
  * \return the pbc structure when pbc operations are required, NULL otherwise.
  */
 t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
@@ -219,17 +220,12 @@ t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
  * Calculate the correct distance vector from x2 to x1 and put it in dx.
  * set_pbc must be called before ever calling this routine.
  *
- * For triclinic boxes pbc_dx does not necessarily return the shortest
- * distance vector. If pbc->bLimitDistance=TRUE an atom pair with
- * distance vector dx with norm2(dx) > pbc->limit_distance2 could
- * have a shorter distance, but not shorter than sqrt(pbc->limit_distance2).
- * pbc->limit_distance2 is always larger than max_cutoff2(box).
- * For the standard rhombic dodecahedron and truncated octahedron
- * pbc->bLimitDistance=FALSE and thus all distances are correct.
+ * Note that for triclinic boxes that do not obey the GROMACS unit-cell
+ * restrictions, pbc_dx and pbc_dx_aiuc will not correct for PBC.
  * \param[inout] pbc The pbc information structure
- * \param[in] x1 Coordinates for particle 1
- * \param[in] x2 Coordinates for particle 2
- * \param[out] dx Distance vector
+ * \param[in]    x1  Coordinates for particle 1
+ * \param[in]    x2  Coordinates for particle 2
+ * \param[out]   dx  Distance vector
  */
 void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
 
@@ -240,9 +236,9 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
  * or triclinic unit-cell.
  * set_pbc_dd or set_pbc must be called before ever calling this routine.
  * \param[inout] pbc The pbc information structure
- * \param[in] x1 Coordinates for particle 1
- * \param[in] x2 Coordinates for particle 2
- * \param[out] dx Distance vector
+ * \param[in]    x1  Coordinates for particle 1
+ * \param[in]    x2  Coordinates for particle 2
+ * \param[out]   dx  Distance vector
  * \return the ishift required to shift x1 at closest distance to x2;
  * i.e. if 0<=ishift<SHIFTS then x1 - x2 + shift_vec[ishift] = dx
  * (see calc_shifts below on how to obtain shift_vec)
@@ -254,21 +250,21 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
  * As pbc_dx, but for double precision vectors.
  * set_pbc must be called before ever calling this routine.
  * \param[inout] pbc The pbc information structure
- * \param[in] x1 Coordinates for particle 1
- * \param[in] x2 Coordinates for particle 2
- * \param[out] dx Distance vector
+ * \param[in]    x1  Coordinates for particle 1
+ * \param[in]    x2  Coordinates for particle 2
+ * \param[out]   dx  Distance vector
  */
 void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx);
 
 /*! \brief Calculate the distance between xi and xj for a rectangular box.
  *
  * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
- * \param[in] xi box index
- * \param[in] xj box index
- * \param[in] box The box of grid cells
- * \param[in] rlong2 cutoff squared
- * \param[out] shift the shift code
- * \param[out] r2 the distance (squared???)
+ * \param[in]  xi     Box index
+ * \param[in]  xj     Box index
+ * \param[in]  box    The box of grid cells
+ * \param[in]  rlong2 Cutoff squared
+ * \param[out] shift  The shift code
+ * \param[out] r2     The distance (squared???)
  * \return TRUE when the distance is SMALLER than rlong2
  */
 gmx_bool image_rect(ivec xi, ivec xj, imatrix box,
@@ -277,12 +273,12 @@ gmx_bool image_rect(ivec xi, ivec xj, imatrix box,
 /*! \brief Calculate the distance between xi and xj for a triclinic box.
  *
  * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
- * \param[in] xi box index
- * \param[in] xj box index
- * \param[in] box matrix of box grid cells
- * \param[in] rlong2 cutoff squared
- * \param[out] shift the shift code
- * \param[out] r2 the distance (squared???)
+ * \param[in]  xi     Box index
+ * \param[in]  xj     Box index
+ * \param[in]  box    Matrix of box grid cells
+ * \param[in]  rlong2 Cutoff squared
+ * \param[out] shift  The shift code
+ * \param[out] r2     The distance (squared???)
  * \return TRUE when the distance is SMALLER than rlong2
  */
 gmx_bool image_tri(ivec xi, ivec xj, imatrix box,
@@ -293,12 +289,12 @@ gmx_bool image_tri(ivec xi, ivec xj, imatrix box,
  * Calculate the distance between xi and xj for a rectangular box
  * using a cylindric cutoff for long-range only.
  * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
- * \param[in] xi box index
- * \param[in] xj box index
- * \param[in] box_size number of box grid cells
- * \param[in] rlong2 cutoff squared
- * \param[out] shift the shift code
- * \param[out] r2 the distance (squared???)
+ * \param[in]  xi       Box index
+ * \param[in]  xj       Box index
+ * \param[in]  box_size Number of box grid cells
+ * \param[in]  rlong2   Cutoff squared
+ * \param[out] shift    The shift code
+ * \param[out] r2       The distance (squared???)
  * \return TRUE when the distance is SMALLER than rlong2 (in X and Y dir)
  */
 gmx_bool image_cylindric(ivec xi, ivec xj, ivec box_size, real rlong2,
@@ -308,32 +304,32 @@ gmx_bool image_cylindric(ivec xi, ivec xj, ivec box_size, real rlong2,
  *
  * This routine calculates ths shift vectors necessary to use the
  * neighbor searching routine.
- * \param[in] box The simulation box
- * \param[out] shift_vec the shifting vectors
+ * \param[in]  box       The simulation box
+ * \param[out] shift_vec The shifting vectors
  */
 void calc_shifts(matrix box, rvec shift_vec[]);
 
 /*! \brief Calculates the center of the box.
  *
  * See the description for the enum ecenter above.
- * \param[in] ecenter Description of center type
- * \param[in] box The simulation box
+ * \param[in]  ecenter    Description of center type
+ * \param[in]  box        The simulation box
  * \param[out] box_center The center of the box
  */
 void calc_box_center(int ecenter, matrix box, rvec box_center);
 
 /*! \brief Calculates the NTRICIMG box images
  *
- * \param[in] box The simulation box
+ * \param[in]  box The simulation box
  * \param[out] img The triclinic box images
  */
 void calc_triclinic_images(matrix box, rvec img[]);
 
 /*! \brief Calculates the NCUCVERT vertices of a compact unitcell
  *
- * \param[in] ecenter The center type
- * \param[in] box The simulation box
- * \param[out] vert The vertices
+ * \param[in]  ecenter The center type
+ * \param[in]  box     The simulation box
+ * \param[out] vert    The vertices
  */
 void calc_compact_unitcell_vertices(int ecenter, matrix box,
                                     rvec vert[]);
@@ -352,10 +348,10 @@ int *compact_unitcell_edges(void);
  * This wrapper function around put_atoms_in_box() with the ugly manual
  * workload splitting is needed to avoid silently introducing multithreading
  * in tools.
- * \param[in] ePBC the pbc type
- * \param[in] box The simulation box
- * \param[in] natoms the number of atoms
- * \param[inout] x the coordinates of the atoms
+ * \param[in]    ePBC   The pbc type
+ * \param[in]    box    The simulation box
+ * \param[in]    natoms The number of atoms
+ * \param[inout] x      The coordinates of the atoms
  */
 void put_atoms_in_box_omp(int ePBC, matrix box, int natoms, rvec x[]);
 
@@ -365,10 +361,10 @@ void put_atoms_in_box_omp(int ePBC, matrix box, int natoms, rvec x[]);
  * These routines puts ONE or ALL atoms in the box, not caring
  * about charge groups!
  * Also works for triclinic cells.
- * \param[in] ePBC the pbc type
- * \param[in] box The simulation box
- * \param[in] natoms the number of atoms
- * \param[inout] x the coordinates of the atoms
+ * \param[in]    ePBC   The pbc type
+ * \param[in]    box    The simulation box
+ * \param[in]    natoms The number of atoms
+ * \param[inout] x      The coordinates of the atoms
  */
 void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[]);
 
@@ -376,10 +372,10 @@ void put_atoms_in_box(int ePBC, matrix box, int natoms, rvec x[]);
  *
  * This puts ALL atoms in the triclinic unit cell, centered around the
  * box center as calculated by calc_box_center.
- * \param[in] ecenter the pbc center type
- * \param[in] box The simulation box
- * \param[in] natoms the number of atoms
- * \param[inout] x the coordinates of the atoms
+ * \param[in]    ecenter The pbc center type
+ * \param[in]    box     The simulation box
+ * \param[in]    natoms  The number of atoms
+ * \param[inout] x       The coordinates of the atoms
  */
 void put_atoms_in_triclinic_unitcell(int ecenter, matrix box,
                                      int natoms, rvec x[]);
@@ -389,11 +385,11 @@ void put_atoms_in_triclinic_unitcell(int ecenter, matrix box,
  * This puts ALL atoms at the closest distance for the center of the box
  * as calculated by calc_box_center.
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
- * \param[in] ePBC the pbc type
- * \param[in] ecenter the pbc center type
- * \param[in] box The simulation box
- * \param[in] natoms the number of atoms
- * \param[inout] x the coordinates of the atoms
+ * \param[in]    ePBC    The pbc type
+ * \param[in]    ecenter The pbc center type
+ * \param[in]    box     The simulation box
+ * \param[in]    natoms  The number of atoms
+ * \param[inout] x       The coordinates of the atoms
  */
 void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
                                    matrix box,
