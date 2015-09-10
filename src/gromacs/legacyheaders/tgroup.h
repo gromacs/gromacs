@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,8 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct t_commrec;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,10 +54,10 @@ void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
 void done_ekindata(gmx_ekindata_t *ekind);
 /* Free the memory */
 
-void accumulate_u(t_commrec *cr, t_grpopts *opts,
+void accumulate_u(struct t_commrec *cr, t_grpopts *opts,
                   gmx_ekindata_t *ekind);
 
-/*extern void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps);*/
+/*extern void accumulate_ekin(struct t_commrec *cr,t_grpopts *opts,t_groups *grps);*/
 /* Communicate subsystem - group velocities and subsystem ekin respectively
  * and sum them up. Return them in grps.
  */

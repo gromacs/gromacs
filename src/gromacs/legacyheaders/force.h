@@ -46,13 +46,14 @@
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/timing/wallcycle.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+struct t_commrec;
 struct t_graph;
 struct t_pbc;
 struct gmx_edsam;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box);
@@ -118,17 +119,17 @@ extern t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
                                    matrix box);
 
 gmx_bool can_use_allvsall(const t_inputrec *ir,
-                          gmx_bool bPrintNote, t_commrec *cr, FILE *fp);
+                          gmx_bool bPrintNote, struct t_commrec *cr, FILE *fp);
 /* Returns if we can use all-vs-all loops.
  * If bPrintNote==TRUE, prints a note, if necessary, to stderr
  * and fp (if !=NULL) on the master node.
  */
 
 
-gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
-                                      const t_commrec  *cr,
-                                      const t_inputrec *ir,
-                                      gmx_bool          bGPU);
+gmx_bool nbnxn_acceleration_supported(FILE                    *fplog,
+                                      const struct t_commrec  *cr,
+                                      const t_inputrec        *ir,
+                                      gmx_bool                 bGPU);
 /* Return if GPU/CPU-SIMD acceleration is supported with the given inputrec
  * with bGPU TRUE/FALSE.
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
@@ -166,7 +167,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals);
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
 
-extern void do_force(FILE *log, t_commrec *cr,
+extern void do_force(FILE *log, struct t_commrec *cr,
                      t_inputrec *inputrec,
                      gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                      gmx_localtop_t *top,
@@ -192,22 +193,22 @@ extern void do_force(FILE *log, t_commrec *cr,
  * f is always required.
  */
 
-void ns(FILE              *fplog,
-        t_forcerec        *fr,
-        matrix             box,
-        gmx_groups_t      *groups,
-        gmx_localtop_t    *top,
-        t_mdatoms         *md,
-        t_commrec         *cr,
-        t_nrnb            *nrnb,
-        gmx_bool           bFillGrid,
-        gmx_bool           bDoLongRangeNS);
+void ns(FILE                     *fplog,
+        t_forcerec               *fr,
+        matrix                    box,
+        gmx_groups_t             *groups,
+        gmx_localtop_t           *top,
+        t_mdatoms                *md,
+        struct t_commrec         *cr,
+        t_nrnb                   *nrnb,
+        gmx_bool                  bFillGrid,
+        gmx_bool                  bDoLongRangeNS);
 /* Call the neighborsearcher */
 
 extern void do_force_lowlevel(t_forcerec   *fr,
                               t_inputrec   *ir,
                               t_idef       *idef,
-                              t_commrec    *cr,
+                              struct t_commrec    *cr,
                               t_nrnb       *nrnb,
                               gmx_wallcycle_t wcycle,
                               t_mdatoms    *md,
@@ -230,10 +231,10 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               float        *cycles_pme);
 /* Call all the force routines */
 
-void free_gpu_resources(const t_forcerec            *fr,
-                        const t_commrec             *cr,
-                        const struct gmx_gpu_info_t *gpu_info,
-                        const gmx_gpu_opt_t         *gpu_opt);
+void free_gpu_resources(const t_forcerec                   *fr,
+                        const struct t_commrec             *cr,
+                        const struct gmx_gpu_info_t        *gpu_info,
+                        const gmx_gpu_opt_t                *gpu_opt);
 
 #ifdef __cplusplus
 }

@@ -38,6 +38,8 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct t_commrec;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -62,31 +64,31 @@ gmx_bool gmx_gpu_sharing_supported();
 #ifndef __CUDACC__
 /* Construct the global hwinfo structure and return a pointer to
    it. Caller is responsible for freeing this pointer. */
-gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
+gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const struct t_commrec *cr,
                                    gmx_bool bDetectGPUs);
 
 /* Print information about the detected hardware to fplog (if != NULL)
  * and to stderr the master rank.
  */
-void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
+void gmx_print_detected_hardware(FILE *fplog, const struct t_commrec *cr,
                                  const gmx_hw_info_t *hwinfo);
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
-void gmx_select_gpu_ids(FILE *fplog, const t_commrec *cr,
+void gmx_select_gpu_ids(FILE *fplog, const struct t_commrec *cr,
                         const gmx_gpu_info_t *gpu_info,
                         gmx_bool bForceUseGPU,
                         gmx_gpu_opt_t *gpu_opt);
 
 /* Check the consistency of hw_opt with hwinfo.
    This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(FILE                *fplog,
-                                      const gmx_hw_info_t *hwinfo,
-                                      const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool             bUseGPU);
+void gmx_check_hw_runconf_consistency(FILE                   *fplog,
+                                      const gmx_hw_info_t    *hwinfo,
+                                      const struct t_commrec *cr,
+                                      const gmx_hw_opt_t     *hw_opt,
+                                      gmx_bool                bUseGPU);
 #endif
 
 

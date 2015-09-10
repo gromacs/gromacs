@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,22 +42,25 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct t_pbc;
+struct t_commrec;
+struct gmx_multisim_t;
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec x[],
                  const t_inputrec *ir,
-                 const t_commrec *cr, t_oriresdata *od,
+                 const struct t_commrec *cr, t_oriresdata *od,
                  t_state *state);
 /* Decides whether orientation restraints can work, and initializes
    all the orientation restraint stuff in *od (and assumes *od is
    already allocated. */
 
-real calc_orires_dev(const gmx_multisim_t *ms,
+real calc_orires_dev(const struct gmx_multisim_t *ms,
                      int nfa, const t_iatom fa[], const t_iparams ip[],
                      const t_mdatoms *md, const rvec x[],
                      const struct t_pbc *pbc, t_fcdata *fcd, history_t *hist);
