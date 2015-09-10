@@ -635,7 +635,7 @@ void set_pbc(t_pbc *pbc, int ePBC, matrix box)
 }
 
 t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
-                  gmx_domdec_t *dd, gmx_bool bSingleDir, matrix box)
+                  struct gmx_domdec_t *dd, gmx_bool bSingleDir, matrix box)
 {
     ivec nc2;
     int  npbcdim, i;

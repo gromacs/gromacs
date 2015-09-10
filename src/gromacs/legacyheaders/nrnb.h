@@ -40,6 +40,8 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct t_commrec;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,7 +73,7 @@ void print_perf(FILE *out, double nodetime, double realtime,
                 double nbfs, double mflop);
 /* Prints the performance, nbfs and mflop come from print_flop */
 
-void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[]);
+void pr_load(FILE *log, struct t_commrec *cr, t_nrnb nrnb[]);
 /* Print detailed load balancing info */
 
 int cost_nrnb(int enr);
