@@ -2345,6 +2345,11 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
     if (mtop->bIntermolecularInteractions)
     {
+        if (ncg_mtop(mtop) < mtop->natoms)
+        {
+            gmx_fatal(FARGS, "The combination of intermolecular interactions, charge groups and domain decomposition is not supported. Use cutoff-scheme=Verlet (which removes the charge groups) or run without domain decomposition.");
+        }
+
         t_atoms atoms;
 
         atoms.nr   = mtop->natoms;
@@ -2423,7 +2428,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop, gmx_domdec_t *dd,
                     if (mtop->bIntermolecularInteractions)
                     {
                         i = ril_intermol.index[a];
-                        while (i < ril.index[a+1])
+                        while (i < ril_intermol.index[a+1])
                         {
                             ftype = ril_intermol.il[i++];
                             nral  = NRAL(ftype);
@@ -2431,11 +2436,11 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop, gmx_domdec_t *dd,
                             i++;
                             for (j = 0; j < nral; j++)
                             {
+                                /* Here we assume we have no charge groups;
+                                 * this has been checked above.
+                                 */
                                 aj = ril_intermol.il[i+j];
-                                if (a2c[aj] != cg_offset + cg)
-                                {
-                                    check_link(link, cg_gl, a2c[aj]);
-                                }
+                                check_link(link, cg_gl, aj);
                             }
                             i += nral_rt(ftype);
                         }
