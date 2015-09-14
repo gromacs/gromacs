@@ -5200,6 +5200,16 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 
 void dd_cycles_add(gmx_domdec_t *dd, float cycles, int ddCycl)
 {
+    /* Note that the cycles value can be incorrect, either 0 or some
+     * extremely large value, when our thread migrated to another core
+     * with an unsynchronized cycle counter. If this happens less often
+     * that once per nstlist steps, this will not cause issues, since
+     * we later subtract the maximum value from the sum over nstlist steps.
+     * A zero count will slightly lower the total, but that's a small effect.
+     * Note that the main purpose of the subtraction of the maximum value
+     * is to avoid throwing off the load balancing when stalls occur due
+     * e.g. system activity or network congestion.
+     */
     dd->comm->cycl[ddCycl] += cycles;
     dd->comm->cycl_n[ddCycl]++;
     if (cycles > dd->comm->cycl_max[ddCycl])
@@ -5465,7 +5475,7 @@ static float dd_force_imb_perf_loss(gmx_domdec_t *dd)
     /* Return the relative performance loss on the total run time
      * due to the force calculation load imbalance.
      */
-    if (dd->comm->nload > 0)
+    if (dd->comm->nload > 0 && dd->comm->load_step > 0)
     {
         return
             (dd->comm->load_max*dd->nnodes - dd->comm->load_sum)/
@@ -5491,7 +5501,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         npp    = dd->nnodes;
         npme   = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
         nnodes = npp + npme;
-        if (dd->nnodes > 1)
+        if (dd->nnodes > 1 && comm->load_sum > 0)
         {
             imbal  = comm->load_max*npp/comm->load_sum - 1;
             lossf  = dd_force_imb_perf_loss(dd);
@@ -5520,10 +5530,10 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
             fprintf(fplog, "%s", buf);
             fprintf(stderr, "%s", buf);
         }
-        if (npme > 0)
+        if (npme > 0 && comm->load_mdf > 0 && comm->load_step > 0)
         {
             pme_f_ratio = comm->load_pme/comm->load_mdf;
-            lossp       = (comm->load_pme -comm->load_mdf)/comm->load_step;
+            lossp       = (comm->load_pme - comm->load_mdf)/comm->load_step;
             if (lossp <= 0)
             {
                 lossp *= (float)npme/(float)nnodes;
@@ -5587,7 +5597,15 @@ static gmx_bool dd_load_flags(gmx_domdec_t *dd)
 
 static float dd_f_imbal(gmx_domdec_t *dd)
 {
-    return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1;
+    if (dd->comm->load[0].sum > 0)
+    {
+        return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1.0f;
+    }
+    else
+    {
+        /* Something is wrong in the cycle counting, report no load imbalance */
+        return 0.0f;
+    }
 }
 
 float dd_pme_f_ratio(gmx_domdec_t *dd)
