@@ -73,6 +73,8 @@ typedef struct
 typedef struct gmx_wallcycle
 {
     wallcc_t        *wcc;
+    /* did we detect one or more invalid cycle counts */
+    gmx_bool         haveInvalidCount;
     /* variables for testing/debugging */
     gmx_bool         wc_barrier;
     wallcc_t        *wcc_all;
@@ -143,6 +145,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
 
     snew(wc, 1);
 
+    wc->haveInvalidCount    = FALSE;
     wc->wc_barrier          = FALSE;
     wc->wcc_all             = NULL;
     wc->wc_depth            = 0;
@@ -321,9 +324,25 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
     debug_stop_check(wc, ewc);
 #endif
 
-    cycle           = gmx_cycles_read();
-    last            = cycle - wc->wcc[ewc].start;
-    wc->wcc[ewc].c += last;
+    /* When processes or threads migrate between cores, the cycle counting
+     * can get messed up if the cycle counter on different cores are not
+     * synchronized. When this happens we expect both large negative and
+     * positive cycle differences. We can detect negative cycle differences.
+     * Detecting too large positive counts if difficult, since count can be
+     * large, especially for ewcRUN. If we detect a negative count,
+     * we will not print the cycle accounting table.
+     */
+    cycle                    = gmx_cycles_read();
+    if (cycle >= wc->wcc[ewc].start)
+    {
+        last                 = cycle - wc->wcc[ewc].start;
+    }
+    else
+    {
+        last                 = 0;
+        wc->haveInvalidCount = TRUE;
+    }
+    wc->wcc[ewc].c          += last;
     wc->wcc[ewc].n++;
     if (wc->wcc_all)
     {
@@ -361,6 +380,8 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
         wc->wcc[i].n = 0;
         wc->wcc[i].c = 0;
     }
+    wc->haveInvalidCount = TRUE;
+
     if (wc->wcc_all)
     {
         for (i = 0; i < ewcNR*ewcNR; i++)
@@ -393,9 +414,15 @@ static void subtract_cycles(wallcc_t *wcc, int ewc_main, int ewc_sub)
 {
     if (wcc[ewc_sub].n > 0)
     {
-        assert(wcc[ewc_main].c >= wcc[ewc_sub].c);
-
-        wcc[ewc_main].c -= wcc[ewc_sub].c;
+        if (wcc[ewc_main].c >= wcc[ewc_sub].c)
+        {
+            wcc[ewc_main].c -= wcc[ewc_sub].c;
+        }
+        else
+        {
+            /* Something is wrong with the cycle counting */
+            wcc[ewc_main].c  = 0;
+        }
     }
 }
 
@@ -403,7 +430,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 {
     wallcc_t *wcc;
     double    cycles[ewcNR+ewcsNR];
-    double    cycles_n[ewcNR+ewcsNR], buf[ewcNR+ewcsNR], *cyc_all, *buf_all;
+    double    cycles_n[ewcNR+ewcsNR+1], buf[ewcNR+ewcsNR], *cyc_all, *buf_all;
     int       i, j;
     int       nsum;
 
@@ -491,12 +518,14 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 #ifdef GMX_MPI
     if (cr->nnodes > 1)
     {
-        MPI_Allreduce(cycles_n, buf, nsum, MPI_DOUBLE, MPI_MAX,
+        cycles_n[nsum] = (wc->haveInvalidCount > 0 ? 1 : 0);
+        MPI_Allreduce(cycles_n, buf, nsum + 1, MPI_DOUBLE, MPI_MAX,
                       cr->mpi_comm_mysim);
         for (i = 0; i < ewcNR; i++)
         {
             wcc[i].n = (int)(buf[i] + 0.5);
         }
+        wc->haveInvalidCount = (buf[nsum] > 0);
 #ifdef GMX_CYCLE_SUBCOUNTERS
         for (i = 0; i < ewcsNR; i++)
         {
@@ -691,6 +720,14 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         md_print_warn(NULL, fplog, "WARNING: A total of %f CPU cycles was recorded, so mdrun cannot print a time accounting\n", tot);
         return;
     }
+
+    if (wc->haveInvalidCount)
+    {
+        md_print_warn(NULL, fplog, "%s\n",
+                      "NOTE: Detected invalid cycle counts, probably because threads moved between CPU cores that do not have synchronized cycle counters. Will not print the cycle accounting.");
+        return;
+    }
+
 
     /* Conversion factor from cycles to seconds */
     c2t     = realtime/tot;
