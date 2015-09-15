@@ -603,7 +603,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              int imdport, unsigned long Flags)
 {
-    gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD, bCantUseGPU;
+    gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
     t_inputrec               *inputrec;
     t_state                  *state = NULL;
     matrix                    box;
@@ -646,17 +646,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     bRerunMD     = (Flags & MD_RERUN);
     bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
-    /* Rerun execution time is dominated by I/O and pair search, so
-     * GPUs are not very useful, plus they do not support more than
-     * one energy group. Don't select them when they can't be used,
-     * unless the user requested it, then fatal_error is called later.
-     *
-     * TODO it would be nice to notify the user that if this check
-     * causes GPUs not to be used that this is what is happening, and
-     * why, but that will be easier to do after some future
-     * cleanup. */
-    bCantUseGPU = bRerunMD && (inputrec->opts.ngener > 1);
-    bTryUseGPU  = bTryUseGPU && !(bCantUseGPU && !bForceUseGPU);
 
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
@@ -693,7 +682,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              * update the message text and the content of nbnxn_acceleration_supported.
              */
             if (bUseGPU &&
-                !nbnxn_acceleration_supported(fplog, cr, inputrec, bUseGPU))
+                !nbnxn_gpu_acceleration_supported(fplog, cr, inputrec, bRerunMD))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
                 if (bForceUseGPU)
@@ -768,7 +757,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
-                                                 cr, fplog);
+                                                 cr, fplog, bUseGPU);
 
         if (hw_opt->nthreads_tmpi > 1)
         {

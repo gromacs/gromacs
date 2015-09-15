@@ -136,12 +136,20 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
  */
 
 
-gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
-                                      const t_commrec  *cr,
-                                      const t_inputrec *ir,
-                                      gmx_bool          bGPU);
-/* Return if GPU/CPU-SIMD acceleration is supported with the given inputrec
- * with bGPU TRUE/FALSE.
+gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
+                                          const t_commrec  *cr,
+                                          const t_inputrec *ir,
+                                          gmx_bool          bRerunMD);
+/* Return if GPU acceleration is supported with the given settings.
+ *
+ * If the return value is FALSE and fplog/cr != NULL, prints a fallback
+ * message to fplog/stderr.
+ */
+
+gmx_bool nbnxn_simd_supported(FILE             *fplog,
+                              const t_commrec  *cr,
+                              const t_inputrec *ir);
+/* Return if CPU SIMD support exists for the given inputrec
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
  * message to fplog/stderr.
  */
