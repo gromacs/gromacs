@@ -637,6 +637,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
        cr doesn't reflect the final parallel state right now */
     snew(inputrec, 1);
     snew(mtop, 1);
+    snew(state, 1);
+    if (SIMMASTER(cr))
+    {
+        /* Read (nearly) all data required for the simulation */
+        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, NULL, mtop);
+    }
 
     if (Flags & MD_APPENDFILES)
     {
@@ -675,12 +681,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         please_cite(fplog, "Berendsen95a");
     }
 
-    snew(state, 1);
     if (SIMMASTER(cr))
     {
-        /* Read (nearly) all data required for the simulation */
-        read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, NULL, mtop);
-
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             /* Here the master rank decides if all ranks will use GPUs */
