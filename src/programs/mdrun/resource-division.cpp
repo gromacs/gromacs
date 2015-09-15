@@ -241,12 +241,14 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
 }
 
 
-static int getMaxGpuUsable(FILE *fplog, const t_commrec *cr, const gmx_hw_info_t *hwinfo, int cutoff_scheme)
+static int getMaxGpuUsable(FILE *fplog, const t_commrec *cr, const gmx_hw_info_t *hwinfo,
+                           int cutoff_scheme, gmx_bool bUseGpu)
 {
     /* This code relies on the fact that GPU are not detected when GPU
      * acceleration was disabled at run time by the user.
      */
     if (cutoff_scheme == ecutsVERLET &&
+        bUseGpu &&
         hwinfo->gpu_info.n_dev_compatible > 0)
     {
         if (gmx_multiple_gpu_per_node_supported())
@@ -282,7 +284,8 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      const t_inputrec    *inputrec,
                      const gmx_mtop_t    *mtop,
                      const t_commrec     *cr,
-                     FILE                *fplog)
+                     FILE                *fplog,
+                     gmx_bool             bUseGpu)
 {
     int      nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int      min_atoms_per_mpi_rank;
@@ -324,7 +327,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         nthreads_tot_max = nthreads_hw;
     }
 
-    ngpu = getMaxGpuUsable(fplog, cr, hwinfo, inputrec->cutoff_scheme);
+    ngpu = getMaxGpuUsable(fplog, cr, hwinfo, inputrec->cutoff_scheme, bUseGpu);
 
     if (inputrec->cutoff_scheme == ecutsGROUP)
     {
