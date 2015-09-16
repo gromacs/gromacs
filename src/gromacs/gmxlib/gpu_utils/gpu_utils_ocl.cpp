@@ -110,7 +110,7 @@ runningOnWorkingOSXVersionForAmd()
     // Kernel 14.4 corresponds to OS X 10.10.4
     return (major > 14 || (major == 14 && minor >= 4));
 #else
-    return false;
+    return true;
 #endif
 }
 
