@@ -61,7 +61,6 @@
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/mdebin.h"
 #include "gromacs/legacyheaders/mdrun.h"

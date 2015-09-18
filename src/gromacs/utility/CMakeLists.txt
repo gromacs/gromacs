@@ -37,6 +37,7 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
 gmx_install_headers(
     arrayref.h
+    arraysize.h
     basedefinitions.h
     classhelpers.h
     cstringutil.h

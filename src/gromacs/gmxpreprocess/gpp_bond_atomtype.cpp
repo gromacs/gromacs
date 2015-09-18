@@ -40,7 +40,6 @@
 
 #include <string.h>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"

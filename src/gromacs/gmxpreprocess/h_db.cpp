@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/rbin.h"
 #include "gromacs/legacyheaders/update.h"
