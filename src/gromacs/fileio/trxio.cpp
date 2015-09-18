@@ -59,6 +59,7 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/fatalerror.h"
@@ -171,7 +172,7 @@ int nframes_read(t_trxstatus *status)
     return status->__frame;
 }
 
-static void printcount_(t_trxstatus *status, const output_env_t oenv,
+static void printcount_(t_trxstatus *status, const gmx_output_env_t *oenv,
                         const char *l, real t)
 {
     if ((status->__frame < 2*SKIP1 || status->__frame % SKIP1 == 0) &&
@@ -183,14 +184,14 @@ static void printcount_(t_trxstatus *status, const output_env_t oenv,
     }
 }
 
-static void printcount(t_trxstatus *status, const output_env_t oenv, real t,
+static void printcount(t_trxstatus *status, const gmx_output_env_t *oenv, real t,
                        gmx_bool bSkip)
 {
     status->__frame++;
     printcount_(status, oenv, bSkip ? "Skipping frame" : "Reading frame", t);
 }
 
-static void printlast(t_trxstatus *status, const output_env_t oenv, real t)
+static void printlast(t_trxstatus *status, const gmx_output_env_t *oenv, real t)
 {
     printcount_(status, oenv, "Last frame", t);
     fprintf(stderr, "\n");
@@ -787,7 +788,7 @@ static int pdb_first_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     return fr->natoms;
 }
 
-gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxframe *fr)
+gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxframe *fr)
 {
     real     pt;
     int      ct;
@@ -922,7 +923,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
     return bRet;
 }
 
-int read_first_frame(const output_env_t oenv, t_trxstatus **status,
+int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                      const char *fn, t_trxframe *fr, int flags)
 {
     t_fileio      *fio;
@@ -1083,7 +1084,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
 
 /***** C O O R D I N A T E   S T U F F *****/
 
-int read_first_x(const output_env_t oenv, t_trxstatus **status, const char *fn,
+int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status, const char *fn,
                  real *t, rvec **x, matrix box)
 {
     t_trxframe fr;
@@ -1100,7 +1101,7 @@ int read_first_x(const output_env_t oenv, t_trxstatus **status, const char *fn,
     return (*status)->xframe->natoms;
 }
 
-gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
+gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
                      rvec x[], matrix box)
 {
     gmx_bool bRet;

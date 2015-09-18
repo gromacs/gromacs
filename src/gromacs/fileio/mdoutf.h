@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,6 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -52,6 +51,7 @@ extern "C" {
 #endif
 
 struct gmx_mtop_t;
+struct gmx_output_env_t;
 
 typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
@@ -60,15 +60,15 @@ typedef struct gmx_mdoutf *gmx_mdoutf_t;
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(FILE              *fplog,
-                         int                nfile,
-                         const t_filenm     fnm[],
-                         int                mdrun_flags,
-                         const t_commrec   *cr,
-                         const t_inputrec  *ir,
-                         struct gmx_mtop_t *mtop,
-                         const output_env_t oenv,
-                         gmx_wallcycle_t    wcycle);
+gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
+                         int                     nfile,
+                         const t_filenm          fnm[],
+                         int                     mdrun_flags,
+                         const t_commrec        *cr,
+                         const t_inputrec       *ir,
+                         struct gmx_mtop_t      *mtop,
+                         const gmx_output_env_t *oenv,
+                         gmx_wallcycle_t         wcycle);
 
 /*! \brief Getter for file pointer */
 FILE *mdoutf_get_fp_field(gmx_mdoutf_t of);

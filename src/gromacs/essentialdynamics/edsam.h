@@ -51,6 +51,8 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_output_env_t;
+
 /*! \brief Abstract type for essential dynamics
  *
  * The main type is defined only in edsam.c
@@ -94,7 +96,7 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
  * \returns                 Pointer to the initialized essential dynamics / flooding data.
  */
 gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm fnm[],
-                    unsigned long Flags, const output_env_t oenv, t_commrec *cr);
+                    unsigned long Flags, const struct gmx_output_env_t *oenv, t_commrec *cr);
 
 
 /*! \brief Initializes the essential dynamics and flooding module.

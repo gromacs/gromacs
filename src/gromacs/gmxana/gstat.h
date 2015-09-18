@@ -38,8 +38,8 @@
 #define GMX_GMXANA_GSTAT_H
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/topology/index.h"
 
 #ifdef __cplusplus
