@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/oenv.h"
+#include "oenv.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programcontext.h"

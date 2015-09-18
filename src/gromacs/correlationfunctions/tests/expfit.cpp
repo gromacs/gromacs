@@ -48,8 +48,8 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"

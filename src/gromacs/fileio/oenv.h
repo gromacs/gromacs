@@ -34,9 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _oenv_h
-#define _oenv_h
+#ifndef GMX_FILEIO_OENV_H
+#define GMX_FILEIO_OENV_H
 
 #include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"

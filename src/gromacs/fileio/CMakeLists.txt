@@ -50,6 +50,7 @@ gmx_install_headers(
     matio.h
     mdoutf.h
     mtxio.h
+    oenv.h
     pdbio.h
     tpxio.h
     trajectory_writing.h

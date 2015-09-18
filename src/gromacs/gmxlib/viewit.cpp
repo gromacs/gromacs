@@ -43,7 +43,7 @@
 #include <cstring>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/oenv.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
