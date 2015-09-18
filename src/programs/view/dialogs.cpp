@@ -48,8 +48,8 @@
 #include <unistd.h> // for fork()
 #endif
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"

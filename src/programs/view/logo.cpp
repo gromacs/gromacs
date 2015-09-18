@@ -42,7 +42,7 @@
 #include <cstdlib>
 
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 

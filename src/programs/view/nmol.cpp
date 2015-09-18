@@ -42,7 +42,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"

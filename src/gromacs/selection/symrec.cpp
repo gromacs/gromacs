@@ -47,7 +47,7 @@
 #include <string>
 #include <utility>
 
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"

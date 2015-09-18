@@ -48,7 +48,6 @@
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

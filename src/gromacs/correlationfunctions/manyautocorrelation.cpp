@@ -51,7 +51,6 @@
 #include <algorithm>
 
 #include "gromacs/fft/fft.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 

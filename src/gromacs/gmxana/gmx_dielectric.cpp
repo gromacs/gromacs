@@ -50,18 +50,14 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/utilities.h"
-#include "gmx_ana.h"
 
 /* Determines at which point in the array the fit should start */
 int calc_nbegin(int nx, real x[], real tbegin)

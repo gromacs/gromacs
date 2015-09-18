@@ -43,7 +43,6 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"

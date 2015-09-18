@@ -40,7 +40,6 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
 
