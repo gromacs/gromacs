@@ -104,7 +104,7 @@ class TrajectoryAnalysisRunnerCommon::Impl
         gmx_rmpbc_t                 gpbc_;
         //! Used to store the status variable from read_first_frame().
         t_trxstatus                *status_;
-        output_env_t                oenv_;
+        gmx_output_env_t           *oenv_;
 };
 
 

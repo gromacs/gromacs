@@ -46,6 +46,7 @@
 #include "gromacs/legacyheaders/types/state.h"
 
 struct gmx_constr;
+struct gmx_output_env_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -121,7 +122,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 /* Initiate MD energy bin and write header to energy file. */
 
 FILE *open_dhdl(const char *filename, const t_inputrec *ir,
-                const output_env_t oenv);
+                const gmx_output_env_t *oenv);
 /* Open the dhdl file for output */
 
 /* update the averaging structures. Called every time

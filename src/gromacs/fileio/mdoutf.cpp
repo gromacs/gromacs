@@ -77,7 +77,7 @@ struct gmx_mdoutf {
 gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
                          int mdrun_flags, const t_commrec *cr,
                          const t_inputrec *ir, gmx_mtop_t *top_global,
-                         const output_env_t oenv, gmx_wallcycle_t wcycle)
+                         const gmx_output_env_t *oenv, gmx_wallcycle_t wcycle)
 {
     gmx_mdoutf_t  of;
     char          filemode[3];

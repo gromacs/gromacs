@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,19 +39,20 @@
 #define _viewit_h
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/types/oenv.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void do_view(const output_env_t oenv, const char *fn, const char *opts);
+struct gmx_output_env_t;
+
+void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts);
 /* forks off appropriate command to view file.
  * currently eps, xpm, xvg and pdb are supported
  * defaults are provided, can be overriden with environment vars
  */
 
-void view_all(const output_env_t oenv, int nf, t_filenm fnm[]);
+void view_all(const gmx_output_env_t *oenv, int nf, t_filenm fnm[]);
 /* calls do_view for all viewable output files in fnm[] */
 
 #ifdef __cplusplus

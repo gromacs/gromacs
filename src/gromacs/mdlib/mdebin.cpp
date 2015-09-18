@@ -739,7 +739,7 @@ static void print_lambda_vector(t_lambda *fep, int i,
 
 
 extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
-                       const output_env_t oenv)
+                       const gmx_output_env_t *oenv)
 {
     FILE       *fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
