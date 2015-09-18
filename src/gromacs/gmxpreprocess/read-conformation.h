@@ -35,7 +35,8 @@
 #ifndef GMX_GMXPREPROCESS_READ_CONFORMATION_H
 #define GMX_GMXPREPROCESS_READ_CONFORMATION_H
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_atomprop;
 struct t_atoms;

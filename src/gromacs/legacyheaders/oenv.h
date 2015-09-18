@@ -39,7 +39,9 @@
 #define _oenv_h
 
 #include "gromacs/legacyheaders/types/oenv.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
