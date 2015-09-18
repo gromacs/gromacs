@@ -41,7 +41,6 @@
 
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
