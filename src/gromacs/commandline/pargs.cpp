@@ -48,6 +48,7 @@
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/fileio/timecontrol.h"
+#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/filenameoptionmanager.h"

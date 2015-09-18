@@ -53,7 +53,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -846,22 +845,19 @@ SelectionCollection::printTree(FILE *fp, bool bValues) const
 
 
 void
-SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
+SelectionCollection::printXvgrInfo(FILE *out) const
 {
-    if (output_env_get_xvg_format(oenv) != exvgNONE)
+    const gmx_ana_selcollection_t &sc = impl_->sc_;
+    std::fprintf(out, "# Selections:\n");
+    for (int i = 0; i < sc.nvars; ++i)
     {
-        const gmx_ana_selcollection_t &sc = impl_->sc_;
-        std::fprintf(out, "# Selections:\n");
-        for (int i = 0; i < sc.nvars; ++i)
-        {
-            std::fprintf(out, "#   %s\n", sc.varstrs[i]);
-        }
-        for (size_t i = 0; i < sc.sel.size(); ++i)
-        {
-            std::fprintf(out, "#   %s\n", sc.sel[i]->selectionText());
-        }
-        std::fprintf(out, "#\n");
+        std::fprintf(out, "#   %s\n", sc.varstrs[i]);
     }
+    for (size_t i = 0; i < sc.sel.size(); ++i)
+    {
+        std::fprintf(out, "#   %s\n", sc.sel[i]->selectionText());
+    }
+    std::fprintf(out, "#\n");
 }
 
 } // namespace gmx

@@ -689,9 +689,8 @@ static void print_chi2_params(FILE        *fp,
     fprintf(fp, "\n");
 }
 
-/*! \brief See description in header file. */
-real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
-              real begintimefit, real endtimefit, const output_env_t oenv,
+real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x0,
+              real begintimefit, real endtimefit, const gmx_output_env_t *oenv,
               gmx_bool bVerbose, int eFitFn, double fitparms[], int fix,
               const char *fn_fitted)
 {
@@ -837,8 +836,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real x0[],
     return integral;
 }
 
-/*! See description in header file. */
-real fit_acf(int ncorr, int fitfn, const output_env_t oenv, gmx_bool bVerbose,
+real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbose,
              real tbeginfit, real tendfit, real dt, real c1[], real *fit)
 {
     double      fitparm[3];

@@ -225,7 +225,7 @@ static real rmsd_from_structure(rvec *x, struct gmx_edx *s);
 static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms);
 static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamstate_t *EDstate);
 static void init_edsamstate(gmx_edsam_t ed, edsamstate_t *EDstate);
-static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv);
+static void write_edo_legend(gmx_edsam_t ed, int nED, const gmx_output_env_t *oenv);
 /* End function declarations */
 
 /* Define formats for the column width in the output file */
@@ -1177,7 +1177,7 @@ static void get_flood_energies(t_edpar *edi, real Vfl[], int nnames)
 #endif
 
 
-gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm fnm[], unsigned long Flags, const output_env_t oenv, t_commrec *cr)
+gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm fnm[], unsigned long Flags, const gmx_output_env_t *oenv, t_commrec *cr)
 {
     gmx_edsam_t ed;
     int         nED;
@@ -2466,7 +2466,7 @@ static void nice_legend_evec(const char ***setname, int *nsets, char **LegendStr
 
 
 /* Makes a legend for the xvg output file. Call on MASTER only! */
-static void write_edo_legend(gmx_edsam_t ed, int nED, const output_env_t oenv)
+static void write_edo_legend(gmx_edsam_t ed, int nED, const gmx_output_env_t *oenv)
 {
     t_edpar     *edi = NULL;
     int          i;

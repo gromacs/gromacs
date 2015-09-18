@@ -38,7 +38,6 @@
 #ifndef _oenv_h
 #define _oenv_h
 
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -46,10 +45,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if 0 /* avoid screwing up indentation */
-}
-#endif
 
+struct gmx_output_env_t;
 
 /* output_env member functions */
 
@@ -71,48 +68,48 @@ typedef enum {
 /* the xvg output formattings */
 
 
-void output_env_init_default(output_env_t *oenvp);
+void output_env_init_default(gmx_output_env_t **oenvp);
 /* initialize an output_env structure, with reasonable default settings.
     (the time unit is set to time_ps, which means no conversion).  */
 
-void output_env_done(output_env_t oenv);
+void output_env_done(gmx_output_env_t *oenv);
 /* free memory allocated for an output_env structure. */
 
 
-int output_env_get_verbosity(const output_env_t oenv);
+int output_env_get_verbosity(const gmx_output_env_t *oenv);
 /* return the verbosity */
 
-const char *output_env_get_time_unit(const output_env_t oenv);
+const char *output_env_get_time_unit(const gmx_output_env_t *oenv);
 /* return time unit (e.g. ps or ns) */
 
-const char *output_env_get_time_label(const output_env_t oenv);
+const char *output_env_get_time_label(const gmx_output_env_t *oenv);
 /* return time unit label (e.g. "Time (ps)") */
 
-const char *output_env_get_xvgr_tlabel(const output_env_t oenv);
+const char *output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv);
 /* retrun x-axis time label for xmgr */
 
-real output_env_get_time_factor(const output_env_t oenv);
+real output_env_get_time_factor(const gmx_output_env_t *oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
-real output_env_get_time_invfactor(const output_env_t oenv);
+real output_env_get_time_invfactor(const gmx_output_env_t *oenv);
 /* return inverse time conversion factor to ps (i.e. 1e3 for ns->ps) */
 
-real output_env_conv_time(const output_env_t oenv, real time);
+real output_env_conv_time(const gmx_output_env_t *oenv, real time);
 /* return converted time */
 
-void output_env_conv_times(const output_env_t oenv, int n, real *time);
+void output_env_conv_times(const gmx_output_env_t *oenv, int n, real *time);
 /* convert array of times */
 
-gmx_bool output_env_get_view(const output_env_t oenv);
+gmx_bool output_env_get_view(const gmx_output_env_t *oenv);
 /* Return TRUE when user requested viewing of the file */
 
-xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
+xvg_format_t output_env_get_xvg_format(const gmx_output_env_t *oenv);
 /* Returns enum (see above) for xvg output formatting */
 
 /*! \brief
  * Returns display name for the currently running program.
  */
-const char *output_env_get_program_display_name(const output_env_t oenv);
+const char *output_env_get_program_display_name(const gmx_output_env_t *oenv);
 
 #ifdef __cplusplus
 }
@@ -122,7 +119,7 @@ namespace gmx
 class IProgramContext;
 } // namespace gmx
 
-void output_env_init(output_env_t *oenvp,
+void output_env_init(gmx_output_env_t **oenvp,
                      const gmx::IProgramContext &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity);
@@ -135,7 +132,7 @@ void output_env_init(output_env_t *oenvp,
  * Returns gmx::IProgramContext from an output_env structure.
  */
 const gmx::IProgramContext &
-output_env_get_program_context(const output_env_t oenv);
+output_env_get_program_context(const gmx_output_env_t *oenv);
 
 #endif
 
