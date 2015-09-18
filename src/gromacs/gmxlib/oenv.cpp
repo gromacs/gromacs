@@ -42,9 +42,9 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 
-struct output_env
+struct gmx_output_env_t
 {
-    explicit output_env(const gmx::IProgramContext &context)
+    explicit gmx_output_env_t(const gmx::IProgramContext &context)
         : programContext(context)
     {
         time_unit   = time_ps;
@@ -90,14 +90,14 @@ static const char *time_units_xvgr[] = {
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
-void output_env_init(output_env_t *oenvp,
+void output_env_init(gmx_output_env_t **oenvp,
                      const gmx::IProgramContext &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity)
 {
     try
     {
-        output_env_t oenv = new output_env(context);
+        gmx_output_env_t *oenv = new gmx_output_env_t(context);
         *oenvp            = oenv;
         oenv->time_unit   = tmu;
         oenv->view        = view;
@@ -107,33 +107,33 @@ void output_env_init(output_env_t *oenvp,
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void output_env_init_default(output_env_t *oenvp)
+void output_env_init_default(gmx_output_env_t **oenvp)
 {
     try
     {
-        output_env_t oenv = new output_env(gmx::getProgramContext());
+        gmx_output_env_t *oenv = new gmx_output_env_t(gmx::getProgramContext());
         *oenvp = oenv;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void output_env_done(output_env_t oenv)
+void output_env_done(gmx_output_env_t *oenv)
 {
     delete oenv;
 }
 
 
-int output_env_get_verbosity(const output_env_t oenv)
+int output_env_get_verbosity(const gmx_output_env_t *oenv)
 {
     return oenv->verbosity;
 }
 
-const char *output_env_get_time_unit(const output_env_t oenv)
+const char *output_env_get_time_unit(const gmx_output_env_t *oenv)
 {
     return time_units_str[oenv->time_unit];
 }
 
-const char *output_env_get_time_label(const output_env_t oenv)
+const char *output_env_get_time_label(const gmx_output_env_t *oenv)
 {
     char *label;
     snew(label, 20);
@@ -144,7 +144,7 @@ const char *output_env_get_time_label(const output_env_t oenv)
     return label;
 }
 
-const char *output_env_get_xvgr_tlabel(const output_env_t oenv)
+const char *output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
 {
     char *label;
     snew(label, 20);
@@ -155,22 +155,22 @@ const char *output_env_get_xvgr_tlabel(const output_env_t oenv)
     return label;
 }
 
-real output_env_get_time_factor(const output_env_t oenv)
+real output_env_get_time_factor(const gmx_output_env_t *oenv)
 {
     return timefactors[oenv->time_unit];
 }
 
-real output_env_get_time_invfactor(const output_env_t oenv)
+real output_env_get_time_invfactor(const gmx_output_env_t *oenv)
 {
     return timeinvfactors[oenv->time_unit];
 }
 
-real output_env_conv_time(const output_env_t oenv, real time)
+real output_env_conv_time(const gmx_output_env_t *oenv, real time)
 {
     return time*timefactors[oenv->time_unit];
 }
 
-void output_env_conv_times(const output_env_t oenv, int n, real *time)
+void output_env_conv_times(const gmx_output_env_t *oenv, int n, real *time)
 {
     int    i;
     double fact = timefactors[oenv->time_unit];
@@ -184,17 +184,17 @@ void output_env_conv_times(const output_env_t oenv, int n, real *time)
     }
 }
 
-gmx_bool output_env_get_view(const output_env_t oenv)
+gmx_bool output_env_get_view(const gmx_output_env_t *oenv)
 {
     return oenv->view;
 }
 
-xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
+xvg_format_t output_env_get_xvg_format(const gmx_output_env_t *oenv)
 {
     return oenv->xvg_format;
 }
 
-const char *output_env_get_program_display_name(const output_env_t oenv)
+const char *output_env_get_program_display_name(const gmx_output_env_t *oenv)
 {
     const char *displayName = NULL;
 
@@ -208,7 +208,7 @@ const char *output_env_get_program_display_name(const output_env_t oenv)
 }
 
 const gmx::IProgramContext &
-output_env_get_program_context(const output_env_t oenv)
+output_env_get_program_context(const gmx_output_env_t *oenv)
 {
     return oenv->programContext;
 }

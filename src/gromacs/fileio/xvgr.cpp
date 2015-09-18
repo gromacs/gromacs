@@ -52,7 +52,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
-gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
+gmx_bool output_env_get_print_xvgr_codes(const gmx_output_env_t *oenv)
 {
     int xvg_format;
 
@@ -61,7 +61,7 @@ gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
     return (xvg_format == exvgXMGRACE || xvg_format == exvgXMGR);
 }
 
-static char *xvgrstr(const char *gmx, const output_env_t oenv,
+static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                      char *buf, int buflen)
 {
     /* Supported greek letter names and corresponding xmgrace/xmgr symbols */
@@ -229,7 +229,7 @@ static char *xvgrstr(const char *gmx, const output_env_t oenv,
 
 void xvgr_header(FILE *fp, const char *title, const char *xaxis,
                  const char *yaxis, int exvg_graph_type,
-                 const output_env_t oenv)
+                 const gmx_output_env_t *oenv)
 {
     char   pukestr[100], buf[STRLEN];
 
@@ -279,7 +279,7 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
 
 FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
                     const char *yaxis, int exvg_graph_type,
-                    const output_env_t oenv)
+                    const gmx_output_env_t *oenv)
 {
     FILE  *fp;
 
@@ -291,7 +291,7 @@ FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
 }
 
 FILE *xvgropen(const char *fn, const char *title, const char *xaxis,
-               const char *yaxis, const output_env_t oenv)
+               const char *yaxis, const gmx_output_env_t *oenv)
 {
     return xvgropen_type(fn, title, xaxis, yaxis, exvggtXNY, oenv);
 }
@@ -302,7 +302,7 @@ xvgrclose(FILE *fp)
     gmx_fio_fclose(fp);
 }
 
-void xvgr_subtitle(FILE *out, const char *subtitle, const output_env_t oenv)
+void xvgr_subtitle(FILE *out, const char *subtitle, const gmx_output_env_t *oenv)
 {
     char buf[STRLEN];
 
@@ -313,7 +313,7 @@ void xvgr_subtitle(FILE *out, const char *subtitle, const output_env_t oenv)
 }
 
 void xvgr_view(FILE *out, real xmin, real ymin, real xmax, real ymax,
-               const output_env_t oenv)
+               const gmx_output_env_t *oenv)
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -322,7 +322,7 @@ void xvgr_view(FILE *out, real xmin, real ymin, real xmax, real ymax,
 }
 
 void xvgr_world(FILE *out, real xmin, real ymin, real xmax, real ymax,
-                const output_env_t oenv)
+                const gmx_output_env_t *oenv)
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -334,7 +334,7 @@ void xvgr_world(FILE *out, real xmin, real ymin, real xmax, real ymax,
 }
 
 void xvgr_legend(FILE *out, int nsets, const char** setname,
-                 const output_env_t oenv)
+                 const gmx_output_env_t *oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -368,7 +368,7 @@ void xvgr_legend(FILE *out, int nsets, const char** setname,
 
 void xvgr_new_dataset(FILE *out, int nr_first, int nsets,
                       const char **setname,
-                      const output_env_t oenv)
+                      const gmx_output_env_t *oenv)
 {
     int  i;
     char buf[STRLEN];
@@ -400,7 +400,7 @@ void xvgr_new_dataset(FILE *out, int nr_first, int nsets,
 }
 
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor,
-                     const output_env_t oenv)
+                     const gmx_output_env_t *oenv)
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -417,7 +417,7 @@ void xvgr_box(FILE *out,
               int LocType,
               real xmin, real ymin, real xmax, real ymax,
               int LineStyle, int LineWidth, int LineColor,
-              int BoxFill, int BoxColor, int BoxPattern, const output_env_t oenv)
+              int BoxFill, int BoxColor, int BoxPattern, const gmx_output_env_t *oenv)
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
@@ -707,7 +707,7 @@ int read_xvg(const char *fn, double ***y, int *ny)
 }
 
 void write_xvg(const char *fn, const char *title, int nx, int ny, real **y,
-               const char **leg, const output_env_t oenv)
+               const char **leg, const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   i, j;
