@@ -48,7 +48,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
 #include "gromacs/utility/classhelpers.h"
 
@@ -375,11 +374,10 @@ class SelectionCollection
          * Prints the selection strings into an XVGR file as comments.
          *
          * \param[in] fp   Output file.
-         * \param[in] oenv Output options structure.
          *
          * Does not throw.
          */
-        void printXvgrInfo(FILE *fp, output_env_t oenv) const;
+        void printXvgrInfo(FILE *fp) const;
 
     private:
         class Impl;

@@ -73,7 +73,7 @@ static int can_view(int ftp)
     return 0;
 }
 
-void do_view(const output_env_t oenv, const char *fn, const char *opts)
+void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
 {
     char        buf[STRLEN], env[STRLEN];
     const char *cmd;
@@ -132,7 +132,7 @@ void do_view(const output_env_t oenv, const char *fn, const char *opts)
     }
 }
 
-void view_all(const output_env_t oenv, int nf, t_filenm fnm[])
+void view_all(const gmx_output_env_t *oenv, int nf, t_filenm fnm[])
 {
     int i;
 

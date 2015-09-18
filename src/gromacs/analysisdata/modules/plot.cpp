@@ -49,8 +49,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -63,6 +61,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace
@@ -344,17 +343,17 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                 = (impl_->settings_.plotFormat() > 0
                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
                    : exvgNONE);
-            output_env_t                  oenv;
+            gmx_output_env_t                              *oenv;
             output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
-            boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
+            scoped_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
                                   impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),
                                   oenv);
             const SelectionCollection *selections
                 = impl_->settings_.selectionCollection();
-            if (selections != NULL)
+            if (selections != NULL && output_env_get_xvg_format(oenv) != exvgNONE)
             {
-                selections->printXvgrInfo(impl_->fp_, oenv);
+                selections->printXvgrInfo(impl_->fp_);
             }
             if (!impl_->subtitle_.empty())
             {
