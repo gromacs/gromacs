@@ -40,9 +40,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include <sys/types.h>
+#include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
@@ -279,7 +278,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                             vsite_m[a1] = cam[1];
                             for (j = 2; j < maxj; j++)
                             {
-                                vsite_m[a1] = min(vsite_m[a1], cam[j]);
+                                vsite_m[a1] = std::min(vsite_m[a1], cam[j]);
                             }
                             (*n_nonlin_vsite)++;
                             break;
@@ -836,8 +835,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         {
             if (ir->opts.tau_t[i] >= 0)
             {
-                reference_temperature = max(reference_temperature,
-                                            ir->opts.ref_t[i]);
+                reference_temperature = std::max(reference_temperature,
+                                                 ir->opts.ref_t[i]);
             }
         }
     }
@@ -951,7 +950,6 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     /* Determine md=-dV/dr and dd=d^2V/dr^2 */
     md1_el = 0;
-    d2_el  = 0;
     if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype))
     {
         real eps_rf, k_rf;
@@ -1030,7 +1028,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             tau_t = ir->opts.tau_t[0];
             for (i = 1; i < ir->opts.ngtc; i++)
             {
-                tau_t = max(tau_t, ir->opts.tau_t[i]);
+                tau_t = std::max(tau_t, ir->opts.tau_t[i]);
             }
 
             kT_fac *= tau_t;
@@ -1045,7 +1043,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     mass_min = att[0].prop.mass;
     for (i = 1; i < natt; i++)
     {
-        mass_min = min(mass_min, att[i].prop.mass);
+        mass_min = std::min(mass_min, att[i].prop.mass);
     }
 
     if (debug)
@@ -1065,7 +1063,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     {
         ib = (ib0 + ib1)/2;
         rb = ib*resolution;
-        rl = max(ir->rvdw, ir->rcoulomb) + rb;
+        rl = std::max(ir->rvdw, ir->rcoulomb) + rb;
 
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
@@ -1083,9 +1081,9 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          */
         /* We don't have a formula for 8 (yet), use 4 which is conservative */
         nb_clust_frac_pairs_not_in_list_at_cutoff =
-            surface_frac(min(list_setup->cluster_size_i, 4),
+            surface_frac(std::min(list_setup->cluster_size_i, 4),
                          particle_distance, rl)*
-            surface_frac(min(list_setup->cluster_size_j, 4),
+            surface_frac(std::min(list_setup->cluster_size_j, 4),
                          particle_distance, rl);
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
@@ -1113,5 +1111,5 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
 
     sfree(att);
 
-    *rlist = max(ir->rvdw, ir->rcoulomb) + ib1*resolution;
+    *rlist = std::max(ir->rvdw, ir->rcoulomb) + ib1*resolution;
 }
