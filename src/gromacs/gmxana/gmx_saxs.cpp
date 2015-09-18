@@ -43,7 +43,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/sfactor.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
 int gmx_saxs(int argc, char *argv[])

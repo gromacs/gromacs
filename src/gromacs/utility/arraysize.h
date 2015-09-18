@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,23 +32,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ * \brief
+ * Provides asize() macro for calculating the static size of an array.
+ *
+ * \inpublicapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_ARRAYSIZE_H
+#define GMX_UTILITY_ARRAYSIZE_H
 
-#ifndef _macros_h
-#define _macros_h
+/*! \brief
+ * Calculates the static number of elements in an array.
+ *
+ * \ingroup module_utility
+ */
+#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
 
-/* no extern "C" for this header because it only defines Macros */
-
-#ifdef __cplusplus
-#error "This header should not be included in C++ code"
 #endif
-
-#include <stdlib.h>
-
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b) )
-#endif
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b) )
-#endif
-
-#endif  /* _macros_h */

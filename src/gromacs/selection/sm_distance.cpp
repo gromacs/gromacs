@@ -44,10 +44,10 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "selmethod.h"

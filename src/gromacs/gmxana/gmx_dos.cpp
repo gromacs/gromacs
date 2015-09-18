@@ -50,7 +50,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/viewit.h"
@@ -58,10 +57,10 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_ana.h"
 
 enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR

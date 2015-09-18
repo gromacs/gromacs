@@ -43,7 +43,6 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/utilities.h"

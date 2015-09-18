@@ -46,7 +46,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/xdrf.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"

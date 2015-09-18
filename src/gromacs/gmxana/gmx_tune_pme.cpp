@@ -53,7 +53,6 @@
 #include "gromacs/legacyheaders/calcgrid.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/perf_est.h"
 #include "gromacs/legacyheaders/readinp.h"
@@ -62,14 +61,13 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "gmx_ana.h"
 
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in

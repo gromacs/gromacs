@@ -62,7 +62,6 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/md_support.h"
 #include "gromacs/legacyheaders/mdatoms.h"

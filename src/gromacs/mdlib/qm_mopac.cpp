@@ -47,7 +47,6 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"

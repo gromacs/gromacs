@@ -50,7 +50,6 @@
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/topology/symtab.h"

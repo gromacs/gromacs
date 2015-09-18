@@ -43,7 +43,6 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"

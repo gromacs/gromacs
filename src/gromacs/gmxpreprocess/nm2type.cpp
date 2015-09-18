@@ -49,7 +49,6 @@
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toppush.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/txtdump.h"

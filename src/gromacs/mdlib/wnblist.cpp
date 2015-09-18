@@ -45,7 +45,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"

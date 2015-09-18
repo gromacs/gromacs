@@ -47,7 +47,6 @@
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

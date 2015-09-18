@@ -59,7 +59,6 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/network.h"
@@ -67,6 +66,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "mdrun_main.h"

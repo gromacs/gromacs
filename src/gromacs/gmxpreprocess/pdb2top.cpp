@@ -63,7 +63,6 @@
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"

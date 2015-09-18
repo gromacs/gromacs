@@ -39,7 +39,6 @@
 
 #include "gromacs/legacyheaders/vcm.h"
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"

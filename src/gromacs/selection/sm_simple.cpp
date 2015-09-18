@@ -43,9 +43,9 @@
 
 #include <cctype>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "selmethod.h"

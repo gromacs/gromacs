@@ -46,7 +46,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 
