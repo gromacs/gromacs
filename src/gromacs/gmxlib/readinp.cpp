@@ -45,7 +45,6 @@
 #include <algorithm>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/warninp.h"

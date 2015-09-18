@@ -39,7 +39,6 @@
 #include <cstdlib>
 
 #include "gromacs/fileio/writeps.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "3dview.h"

@@ -41,7 +41,6 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

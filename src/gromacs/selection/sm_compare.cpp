@@ -43,8 +43,8 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"

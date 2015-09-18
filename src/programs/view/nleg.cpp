@@ -42,8 +42,8 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/types/rgb.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "buttons.h"

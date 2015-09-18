@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-real calc_similar_ind(gmx_bool bRho, int nind, atom_id *index, real mass[],
+real calc_similar_ind(gmx_bool bRho, int nind, int *index, real mass[],
                       rvec x[], rvec xp[])
 {
     int  i, j, d;
@@ -89,7 +89,7 @@ real calc_similar_ind(gmx_bool bRho, int nind, atom_id *index, real mass[],
     }
 }
 
-real rmsdev_ind(int nind, atom_id index[], real mass[], rvec x[], rvec xp[])
+real rmsdev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[])
 {
     return calc_similar_ind(FALSE, nind, index, mass, x, xp);
 }
@@ -99,7 +99,7 @@ real rmsdev(int natoms, real mass[], rvec x[], rvec xp[])
     return calc_similar_ind(FALSE, natoms, NULL, mass, x, xp);
 }
 
-real rhodev_ind(int nind, atom_id index[], real mass[], rvec x[], rvec xp[])
+real rhodev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[])
 {
     return calc_similar_ind(TRUE, nind, index, mass, x, xp);
 }
@@ -290,8 +290,8 @@ void do_fit(int natoms, real *w_rls, rvec *xp, rvec *x)
     do_fit_ndim(3, natoms, w_rls, xp, x);
 }
 
-void reset_x_ndim(int ndim, int ncm, const atom_id *ind_cm,
-                  int nreset, const atom_id *ind_reset,
+void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
+                  int nreset, const int *ind_reset,
                   rvec x[], const real mass[])
 {
     int  i, m, ai;
@@ -350,8 +350,8 @@ void reset_x_ndim(int ndim, int ncm, const atom_id *ind_cm,
     }
 }
 
-void reset_x(int ncm, const atom_id *ind_cm,
-             int nreset, const atom_id *ind_reset,
+void reset_x(int ncm, const int *ind_cm,
+             int nreset, const int *ind_reset,
              rvec x[], const real mass[])
 {
     reset_x_ndim(3, ncm, ind_cm, nreset, ind_reset, x, mass);

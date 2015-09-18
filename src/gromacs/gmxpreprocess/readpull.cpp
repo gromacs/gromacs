@@ -40,7 +40,6 @@
 #include <string.h>
 
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/readinp.h"
