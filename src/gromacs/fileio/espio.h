@@ -38,8 +38,8 @@
 
 #include <cstdio>
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atom_id.h"
 
 struct t_atoms;
 struct t_topology;

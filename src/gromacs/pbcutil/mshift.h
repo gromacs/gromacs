@@ -39,8 +39,8 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus

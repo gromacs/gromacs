@@ -37,9 +37,9 @@
 #ifndef GMX_FILEIO_CONFIO_H
 #define GMX_FILEIO_CONFIO_H
 
-#include <stdio.h>
-
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/basedefinitions.h"
 
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.

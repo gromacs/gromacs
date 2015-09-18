@@ -37,9 +37,11 @@
 #ifndef GMX_TRAJECTORYANALYSIS_SURFACEAREA_H
 #define GMX_TRAJECTORYANALYSIS_SURFACEAREA_H
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atom_id.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/real.h"
 
 struct t_pbc;
 
