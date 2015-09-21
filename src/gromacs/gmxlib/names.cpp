@@ -223,7 +223,7 @@ const char *epull_names[epullNR+1] = {
 };
 
 const char *epullg_names[epullgNR+1] = {
-    "distance", "direction", "cylinder", "direction-periodic", "direction-relative", "angle", "dihedral", NULL
+    "distance", "direction", "cylinder", "direction-periodic", "direction-relative", "angle", "dihedral", "angle-axis", NULL
 };
 
 const char *erotg_names[erotgNR+1] = {
