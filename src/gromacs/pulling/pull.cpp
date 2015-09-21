@@ -109,7 +109,7 @@ static void pull_print_coord_dr(FILE *out, const pull_coord_work_t *pcrd,
     gmx_bool bAngle_coord;
     double   unit_factor;
 
-    bAngle_coord = (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL);
+    bAngle_coord = (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL || pcrd->params.eGeom == epullgANGLEAXIS);
     unit_factor  = bAngle_coord ? RAD2DEG : 1;
 
     fprintf(out, "\t%g", pcrd->value*unit_factor);
@@ -770,6 +770,9 @@ static void get_pull_coord_distance(struct pull_t *pull,
         case epullgDIHEDRAL:
             pcrd->value = get_dihedral_angle_coord(pcrd);
             break;
+        case epullgANGLEAXIS:
+            pcrd->value = gmx_dangle(pcrd->dr01, pcrd->vec);
+            break;
         default:
             gmx_incons("Unsupported pull type in get_pull_coord_distance");
     }
@@ -810,7 +813,7 @@ static double get_pull_coord_deviation(struct pull_t *pull,
             dev = 0;
         }
     }
-    else if (pcrd->params.eGeom == epullgANGLE)
+    else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgANGLEAXIS)
     {
         /* The reference value should be in (0,PI) which ensures that the deviation is in (-PI, PI) */
         if (pcrd->value_ref < 0 || pcrd->value_ref > M_PI)
@@ -1326,6 +1329,36 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
                 /* f_scal is here -dV/dtheta */
                 pcrd->f01[m] = pcrd->f_scal*(a01*pcrd->dr23[m] - b01*pcrd->dr01[m]);
                 pcrd->f23[m] = pcrd->f_scal*(a23*pcrd->dr01[m] - b23*pcrd->dr23[m]);
+            }
+        }
+    }
+    else if (pcrd->params.eGeom == epullgANGLEAXIS)
+    {
+
+        double cos_theta, cos_theta2;
+
+        cos_theta  = cos(pcrd->value);
+        cos_theta2 = dsqr(cos_theta);
+
+        /* the force at theta = 0, pi is undefined */
+        if (cos_theta2 < 1)
+        {
+            double invdr01 = 0;
+            double a, b, a01, b01;
+
+            /* The force is a sum of one vector along dr01 and one along dr23.
+             * Below are the coefficents.
+             */
+            invdr01 = 1./dnorm(pcrd->dr01);
+            a       = -gmx_invsqrt(1 - cos_theta2); /* comes from d/dx acos(x) */
+            b       = a*cos_theta;
+            a01     = a*invdr01;
+            b01     = b*invdr01*invdr01;
+
+            for (m = 0; m < DIM; m++)
+            {
+                /* f_scal is here -dV/dtheta */
+                pcrd->f01[m] = pcrd->f_scal*(a01*pcrd->vec[m] - b01*pcrd->dr01[m]);
             }
         }
     }
@@ -1931,7 +1964,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             case epullgDIR:
             case epullgDIRPBC:
             case epullgCYL:
-                copy_rvec(pull_params->coord[c].vec, pcrd->vec);
+            case epullgANGLEAXIS:
+                copy_rvec_dvec(pull_params->coord[c].vec, pcrd->vec);
                 break;
             default:
                 /* We allow reading of newer tpx files with new pull geometries,
@@ -1953,7 +1987,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             if (pcrd->params.eGeom == epullgCYL ||
                 pcrd->params.eGeom == epullgDIRRELATIVE ||
                 pcrd->params.eGeom == epullgANGLE ||
-                pcrd->params.eGeom == epullgDIHEDRAL)
+                pcrd->params.eGeom == epullgDIHEDRAL ||
+                pcrd->params.eGeom == epullgANGLEAXIS)
             {
                 gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
                           epull_names[pcrd->params.eType],
@@ -1972,7 +2007,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         {
             pull->bCylinder = TRUE;
         }
-        else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL)
+        else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL || pcrd->params.eGeom == epullgANGLEAXIS)
         {
             pull->bAngle = TRUE;
         }
