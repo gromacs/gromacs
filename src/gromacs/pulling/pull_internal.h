@@ -90,7 +90,7 @@ typedef struct
     dvec          dr01;       /* The direction vector of group 1 relative to group 0 */
     dvec          dr23;       /* The direction vector of group 3 relative to group 2 */
     dvec          dr45;       /* The direction vector of group 5 relative to group 4 */
-    rvec          vec;        /* The pull direction */
+    dvec          vec;        /* The pull direction */
     double        vec_len;    /* Length of vec for direction-relative */
     dvec          ffrad;      /* conversion factor from vec to radial force */
     double        cyl_dev;    /* The deviation from the reference position */

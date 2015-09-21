@@ -1700,6 +1700,11 @@ applicable pulling coordinate.
       the vector connecting the COM of the third group to the COM of
       the fourth group.
 
+   .. mdp-value:: angle-axis
+
+      As :mdp-value:`angle` but the second vector is given by :mdp:`pull-coord1-vec`.
+      Thus, only the two groups that define the first vector need to be given.
+
    .. mdp-value:: dihedral
 
       Pull along a dihedral angle defined by six groups. These pairwise
