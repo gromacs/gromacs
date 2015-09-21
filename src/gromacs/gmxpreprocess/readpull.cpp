@@ -125,9 +125,10 @@ static void process_pull_dim(char *dim_buf, ivec dim, const t_pull_coord *pcrd)
     {
         gmx_fatal(FARGS, "Pull geometry dihedral is only useful with pull-dim = Y Y Y");
     }
-    if ((pcrd->eGeom == epullgANGLE) && (ndim < 2))
+    if ((pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS ) && (ndim < 2))
     {
-        gmx_fatal(FARGS, "Pull geometry angle is only useful with pull-dim = Y for at least 2 dimensions");
+        gmx_fatal(FARGS, "Pull geometry %s is only useful with pull-dim = Y for at least 2 dimensions",
+                  EPULLGEOM(pcrd->eGeom));
     }
 }
 
@@ -143,6 +144,7 @@ static void init_pull_coord(t_pull_coord *pcrd,
     if (pcrd->eType == epullCONSTRAINT && (pcrd->eGeom == epullgCYL ||
                                            pcrd->eGeom == epullgDIRRELATIVE ||
                                            pcrd->eGeom == epullgANGLE ||
+                                           pcrd->eGeom == epullgANGLEAXIS ||
                                            pcrd->eGeom == epullgDIHEDRAL))
     {
         gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
@@ -159,7 +161,7 @@ static void init_pull_coord(t_pull_coord *pcrd,
         gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
 
-    clear_dvec(vec);
+    /* Check the giving initial reference distance and warn for dangerous values */
     if (pcrd->eGeom == epullgDIST)
     {
         if (pcrd->bStart && pcrd->init < 0)
@@ -171,7 +173,7 @@ static void init_pull_coord(t_pull_coord *pcrd,
             warning(wi, buf);
         }
     }
-    else if (pcrd->eGeom == epullgANGLE)
+    else if (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS)
     {
         if (pcrd->bStart && (pcrd->init < 0 || pcrd->init > 180))
         {
@@ -191,16 +193,21 @@ static void init_pull_coord(t_pull_coord *pcrd,
             warning(wi, buf);
         }
     }
-    else if (pcrd->eGeom != epullgDIRRELATIVE)
+
+    /* Check and set the pull vector */
+    clear_dvec(vec);
+
+    if (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL || pcrd->eGeom == epullgDIRPBC || pcrd->eGeom == epullgANGLEAXIS)
     {
-        /* Check and set the pull vector */
         string2dvec(vec_buf, vec);
         if (dnorm2(vec) == 0)
         {
             gmx_fatal(FARGS, "With pull geometry %s the pull vector can not be 0,0,0",
                       epullg_names[pcrd->eGeom]);
         }
-        if (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL)
+
+        /* Why is DIRPBC excluded here? */
+        if (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL || pcrd->eGeom == epullgANGLEAXIS)
         {
             /* Normalize the direction vector */
             dsvmul(1/dnorm(vec), vec, vec);
@@ -448,7 +455,8 @@ void make_pull_coords(pull_params_t *pull)
             }
         }
 
-        if ((pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL) &&
+        /* Why is DIRPBC excluded here? */
+        if ((pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL || pcrd->eGeom == epullgANGLEAXIS) &&
             norm2(pcrd->vec) == 0)
         {
             gmx_fatal(FARGS, "pull-group%d-vec can not be zero with geometry %s",
@@ -510,7 +518,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
         get_pull_coord_value(pull_work, c, &pbc, &value);
 
         /* Convert to degrees for output of angles */
-        bConvert_radians_to_degrees = (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgDIHEDRAL);
+        bConvert_radians_to_degrees = (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgDIHEDRAL || pcrd->eGeom == epullgANGLEAXIS);
 
         if (bConvert_radians_to_degrees)
         {
@@ -539,7 +547,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
              * generalization of the pull code makes pull dim available here.
              */
         }
-        else if (pcrd->eGeom == epullgANGLE)
+        else if (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS)
         {
             sprintf(errormsg,  "The initial pull reference angle (%g) is outside of the allowed range of 0 to 180 degrees.", pcrd->init);
             GMX_RELEASE_ASSERT((pcrd->init >= 0 && pcrd->init <= 180), errormsg);
