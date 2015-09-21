@@ -52,6 +52,8 @@
    void rvec_dec(rvec a,rvec b)                     a -= b
    void copy_rvec(const rvec a,rvec b)              b = a (reals)
    void copy_dvec(const dvec a,dvec b)              b = a (reals)
+   void copy_rvec_to_dvec(const rvec a,dvec b)         b = a (reals)
+   void copy_dvec_to_rvec(const rvec a,dvec b)         b = a (reals)
    void copy_ivec(const ivec a,ivec b)              b = a (integers)
    void ivec_sub(const ivec a,const ivec b,ivec c)  c = a - b
    void svmul(real a,rvec v1,rvec v2)               v2 = a * v1
@@ -208,6 +210,20 @@ static inline void rvec_dec(rvec a, const rvec b)
 }
 
 static inline void copy_rvec(const rvec a, rvec b)
+{
+    b[XX] = a[XX];
+    b[YY] = a[YY];
+    b[ZZ] = a[ZZ];
+}
+
+static inline void copy_rvec_to_dvec(const rvec a, dvec b)
+{
+    b[XX] = a[XX];
+    b[YY] = a[YY];
+    b[ZZ] = a[ZZ];
+}
+
+static inline void copy_dvec_to_rvec(const dvec a, rvec b)
 {
     b[XX] = a[XX];
     b[YY] = a[YY];
