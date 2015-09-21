@@ -243,7 +243,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
             pref  = &pull->group[pcrd->params.group[0]];
             pgrp  = &pull->group[pcrd->params.group[1]];
             pdyna = &pull->dyna[c];
-            copy_rvec(pcrd->vec, dir);
+            copy_dvec_to_rvec(pcrd->vec, dir);
             pdyna->nat_loc = 0;
 
             /* We calculate distances with respect to the reference location
