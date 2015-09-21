@@ -78,7 +78,8 @@
 static bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
 {
     return (pcrd->eGeom == epullgANGLE ||
-            pcrd->eGeom == epullgDIHEDRAL);
+            pcrd->eGeom == epullgDIHEDRAL ||
+            pcrd->eGeom == epullgANGLEAXIS);
 }
 
 const char *pull_coordinate_units(const t_pull_coord *pcrd)
@@ -724,7 +725,7 @@ static void low_set_pull_coord_reference_value(pull_coord_work_t *pcrd,
             gmx_fatal(FARGS, "Pull reference distance for coordinate %d (%f) needs to be non-negative", coord_ind + 1, value_ref);
         }
     }
-    else if (pcrd->params.eGeom == epullgANGLE)
+    else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgANGLEAXIS)
     {
         if (value_ref < 0 || value_ref > M_PI)
         {
@@ -807,6 +808,9 @@ static void get_pull_coord_distance(struct pull_t *pull,
             break;
         case epullgDIHEDRAL:
             pcrd->value = get_dihedral_angle_coord(pcrd);
+            break;
+        case epullgANGLEAXIS:
+            pcrd->value = gmx_angle_between_dvecs(pcrd->dr01, pcrd->vec);
             break;
         default:
             gmx_incons("Unsupported pull type in get_pull_coord_distance");
@@ -1356,6 +1360,36 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
         else
         {
             /* No forces to apply for ill-defined cases*/
+            clear_pull_forces_coord(pcrd);
+        }
+    }
+    else if (pcrd->params.eGeom == epullgANGLEAXIS)
+    {
+        double cos_theta, cos_theta2;
+
+        /* The angle-axis force is exactly the same as the angle force (above) except that in
+           this case the second vector (dr23) is replaced by the pull vector. */
+        cos_theta  = cos(pcrd->value);
+        cos_theta2 = gmx::square(cos_theta);
+
+        if (cos_theta2 < 1)
+        {
+            double a, b;
+            double invdr01;
+            dvec   normalized_dr01;
+
+            invdr01 = 1./dnorm(pcrd->dr01);
+            dsvmul(invdr01, pcrd->dr01, normalized_dr01);
+            a       = -gmx::invsqrt(1 - cos_theta2); /* comes from d/dx acos(x) */
+            b       = a*cos_theta;
+
+            for (m = 0; m < DIM; m++)
+            {
+                pcrd->f01[m] = pcrd->f_scal*invdr01*(a*pcrd->vec[m] - b*normalized_dr01[m]);
+            }
+        }
+        else
+        {
             clear_pull_forces_coord(pcrd);
         }
     }
@@ -1966,7 +2000,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             case epullgDIR:
             case epullgDIRPBC:
             case epullgCYL:
-                copy_rvec(pull_params->coord[c].vec, pcrd->vec);
+            case epullgANGLEAXIS:
+                copy_rvec_to_dvec(pull_params->coord[c].vec, pcrd->vec);
                 break;
             default:
                 /* We allow reading of newer tpx files with new pull geometries,
@@ -1988,7 +2023,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             if (pcrd->params.eGeom == epullgCYL ||
                 pcrd->params.eGeom == epullgDIRRELATIVE ||
                 pcrd->params.eGeom == epullgANGLE ||
-                pcrd->params.eGeom == epullgDIHEDRAL)
+                pcrd->params.eGeom == epullgDIHEDRAL ||
+                pcrd->params.eGeom == epullgANGLEAXIS)
             {
                 gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
                           epull_names[pcrd->params.eType],
@@ -2007,7 +2043,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         {
             pull->bCylinder = TRUE;
         }
-        else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL)
+        else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL || pcrd->params.eGeom == epullgANGLEAXIS)
         {
             pull->bAngle = TRUE;
         }

@@ -123,9 +123,10 @@ static void process_pull_dim(char *dim_buf, ivec dim, const t_pull_coord *pcrd)
     {
         gmx_fatal(FARGS, "Pull geometry dihedral is only useful with pull-dim = Y Y Y");
     }
-    if ((pcrd->eGeom == epullgANGLE) && (ndim < 2))
+    if ((pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS ) && (ndim < 2))
     {
-        gmx_fatal(FARGS, "Pull geometry angle is only useful with pull-dim = Y for at least 2 dimensions");
+        gmx_fatal(FARGS, "Pull geometry %s is only useful with pull-dim = Y for at least 2 dimensions",
+                  EPULLGEOM(pcrd->eGeom));
     }
 }
 
@@ -141,6 +142,7 @@ static void init_pull_coord(t_pull_coord *pcrd,
     if (pcrd->eType == epullCONSTRAINT && (pcrd->eGeom == epullgCYL ||
                                            pcrd->eGeom == epullgDIRRELATIVE ||
                                            pcrd->eGeom == epullgANGLE ||
+                                           pcrd->eGeom == epullgANGLEAXIS ||
                                            pcrd->eGeom == epullgDIHEDRAL))
     {
         gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
@@ -157,7 +159,7 @@ static void init_pull_coord(t_pull_coord *pcrd,
         gmx_fatal(FARGS, "The pull origin can only be set with an absolute reference");
     }
 
-    clear_dvec(vec);
+    /* Check the given initial reference value and warn for dangerous values */
     if (pcrd->eGeom == epullgDIST)
     {
         if (pcrd->bStart && pcrd->init < 0)
@@ -169,7 +171,7 @@ static void init_pull_coord(t_pull_coord *pcrd,
             warning(wi, buf);
         }
     }
-    else if (pcrd->eGeom == epullgANGLE)
+    else if (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS)
     {
         if (pcrd->bStart && (pcrd->init < 0 || pcrd->init > 180))
         {
@@ -190,19 +192,38 @@ static void init_pull_coord(t_pull_coord *pcrd,
             warning(wi, buf);
         }
     }
-    else if (pcrd->eGeom != epullgDIRRELATIVE)
+
+    /* Check and set the pull vector */
+    clear_dvec(vec);
+    string2dvec(vec_buf, vec);
+
+    if (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL || pcrd->eGeom == epullgDIRPBC || pcrd->eGeom == epullgANGLEAXIS)
     {
-        /* Check and set the pull vector */
-        string2dvec(vec_buf, vec);
         if (dnorm2(vec) == 0)
         {
             gmx_fatal(FARGS, "With pull geometry %s the pull vector can not be 0,0,0",
                       epullg_names[pcrd->eGeom]);
         }
-        if (pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL)
+        for (int d = 0; d < DIM; d++)
         {
-            /* Normalize the direction vector */
-            dsvmul(1/dnorm(vec), vec, vec);
+            if (vec[d] != 0 && pcrd->dim[d] == 0)
+            {
+                gmx_fatal(FARGS, "pull-coord-vec has non-zero %c-component while pull_dim for the %c-dimension is set to N", 'x'+d, 'x'+d);
+            }
+        }
+
+        /* Normalize the direction vector */
+        dsvmul(1/dnorm(vec), vec, vec);
+    }
+    else /* This case is for are all the geometries where the pull vector is not used */
+    {
+        if (dnorm2(vec) > 0)
+        {
+            sprintf(buf, "A pull vector is given (%g  %g  %g) but will not be used with geometry %s. If you really want to use this "
+                    "vector, consider using geometry %s instead.",
+                    vec[0], vec[1], vec[2], EPULLGEOM(pcrd->eGeom),
+                    pcrd->eGeom == epullgANGLE ? EPULLGEOM(epullgANGLEAXIS) : EPULLGEOM(epullgDIR));
+            warning(wi, buf);
         }
     }
     for (m = 0; m < DIM; m++)
@@ -410,7 +431,7 @@ void make_pull_groups(pull_params_t *pull,
 
 void make_pull_coords(pull_params_t *pull)
 {
-    int           c, d;
+    int           c;
     t_pull_coord *pcrd;
 
     for (c = 0; c < pull->ncoord; c++)
@@ -434,24 +455,6 @@ void make_pull_coords(pull_params_t *pull)
             {
                 gmx_fatal(FARGS, "Weights are not supported for the reference group with cylinder pulling");
             }
-        }
-
-        if (pcrd->eGeom != epullgDIST)
-        {
-            for (d = 0; d < DIM; d++)
-            {
-                if (pcrd->vec[d] != 0 && pcrd->dim[d] == 0)
-                {
-                    gmx_fatal(FARGS, "ERROR: pull-group%d-vec has non-zero %c-component while pull_dim for the %c-dimension is N\n", c+1, 'x'+d, 'x'+d);
-                }
-            }
-        }
-
-        if ((pcrd->eGeom == epullgDIR || pcrd->eGeom == epullgCYL) &&
-            norm2(pcrd->vec) == 0)
-        {
-            gmx_fatal(FARGS, "pull-group%d-vec can not be zero with geometry %s",
-                      c+1, EPULLGEOM(pcrd->eGeom));
         }
     }
 }
@@ -530,7 +533,7 @@ void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real l
              * generalization of the pull code makes pull dim available here.
              */
         }
-        else if (pcrd->eGeom == epullgANGLE)
+        else if (pcrd->eGeom == epullgANGLE || pcrd->eGeom == epullgANGLEAXIS)
         {
             if (pcrd->init < 0 || pcrd->init > 180)
             {
