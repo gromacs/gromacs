@@ -332,6 +332,7 @@ $i$ and $i+1$ define a vector connecting the COMs of groups $i$ and $i+1$. The a
 E.g., the {\tt .mdp} option {\tt pull-coord?-groups = 1 2 2 4} defines the angle between the vector from the COM of group 1 to the COM of group 2
 and the vector from the COM of group 2 to the COM of group 4.
 The angle takes values in the closed interval [0, 180] deg.
+For {\tt pull-coord?-geometry = angle-axis} the angle is defined with respect to a reference axis given by {\tt pull-coord?-vec} and only two groups need to be given.
 The dihedral geometry requires six pull groups. These pair up in the same way as described above and so define three vectors. The dihedral angle is defined as the angle between the two
 planes spanned by the two first and the two last vectors. Equivalently, the dihedral angle can be seen as the angle between the first and the third
 vector when these vectors are projected onto a plane normal to the second vector (the axis vector).
