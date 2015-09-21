@@ -331,6 +331,7 @@ Four pull groups are required for {\tt pull-coord?-geometry = angle}. In the sam
 $i$ and $i+1$ define a vector connecting groups $i$ and $i+1$. The angle is defined as the angle between the two resulting vectors.
 E.g., the {\tt .mdp} option {\tt pull-coord?-groups = 1 2 2 4} defines the angle between the vector from group 1 to 2 and the vector from group 2 to 4.
 The angle takes values in the interval (0, 180) deg.
+For {\tt pull-coord?-geometry = angle-axis} the angle is defined with respect to a reference axis given by {\tt pull-coord?-vec} and only two groups need to be given.
 The dihedral geometry requires six pull groups. These pair up in the same way as described above and define three vectors. The dihedral angle is defined as the angle between the two
 planes spanned by the two first and the two last vectors. Equivalently, the dihedral angle can be seen as the angle between the first and the third
 vector when these vectors are projected onto a plane normal to the second vector (the axis vector).
