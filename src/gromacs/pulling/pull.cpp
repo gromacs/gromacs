@@ -78,7 +78,8 @@
 static bool pull_coordinate_is_angletype(const t_pull_coord *pcrd)
 {
     return (pcrd->eGeom == epullgANGLE ||
-            pcrd->eGeom == epullgDIHEDRAL);
+            pcrd->eGeom == epullgDIHEDRAL ||
+            pcrd->eGeom == epullgANGLEAXIS);
 }
 
 const char *pull_coordinate_units(const t_pull_coord *pcrd)
@@ -721,7 +722,7 @@ static void low_set_pull_coord_reference_value(pull_coord_work_t *pcrd,
             gmx_fatal(FARGS, "Pull reference distance for coordinate %d (%f) needs to be non-negative", coord_ind + 1, value_ref);
         }
     }
-    else if (pcrd->params.eGeom == epullgANGLE)
+    else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgANGLEAXIS)
     {
         if (value_ref < 0 || value_ref > M_PI)
         {
@@ -803,6 +804,9 @@ static void get_pull_coord_distance(struct pull_t *pull,
             break;
         case epullgDIHEDRAL:
             pcrd->value = get_dihedral_angle_coord(pcrd);
+            break;
+        case epullgANGLEAXIS:
+            pcrd->value = gmx_angle_between_dvecs(pcrd->dr01, pcrd->vec);
             break;
         default:
             gmx_incons("Unsupported pull type in get_pull_coord_distance");
@@ -1336,9 +1340,39 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
 
             for (m = 0; m < DIM; m++)
             {
-                /* f_scal is here -dV/dtheta */
+                /* Here, f_scal is -dV/dtheta */
                 pcrd->f01[m] = pcrd->f_scal*(a01*pcrd->dr23[m] - b01*pcrd->dr01[m]);
                 pcrd->f23[m] = pcrd->f_scal*(a23*pcrd->dr01[m] - b23*pcrd->dr23[m]);
+            }
+        }
+    }
+    else if (pcrd->params.eGeom == epullgANGLEAXIS)
+    {
+
+        double cos_theta, cos_theta2;
+
+        cos_theta  = cos(pcrd->value);
+        cos_theta2 = gmx::square(cos_theta);
+
+        /* the force at theta = 0, pi is undefined */
+        if (cos_theta2 < 1)
+        {
+            double invdr01 = 0;
+            double a, b, a01, b01;
+
+            /* The force is a sum of one vector along dr01 and one along dr23.
+             * Below are the coefficents.
+             */
+            invdr01 = 1./dnorm(pcrd->dr01);
+            a       = -gmx::invsqrt(1 - cos_theta2); /* comes from d/dx acos(x) */
+            b       = a*cos_theta;
+            a01     = a*invdr01;
+            b01     = b*invdr01*invdr01;
+
+            for (m = 0; m < DIM; m++)
+            {
+                /* Here, f_scal is -dV/dtheta */
+                pcrd->f01[m] = pcrd->f_scal*(a01*pcrd->vec[m] - b01*pcrd->dr01[m]);
             }
         }
     }
@@ -1944,7 +1978,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             case epullgDIR:
             case epullgDIRPBC:
             case epullgCYL:
-                copy_rvec(pull_params->coord[c].vec, pcrd->vec);
+            case epullgANGLEAXIS:
+                copy_rvec_to_dvec(pull_params->coord[c].vec, pcrd->vec);
                 break;
             default:
                 /* We allow reading of newer tpx files with new pull geometries,
@@ -1966,7 +2001,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
             if (pcrd->params.eGeom == epullgCYL ||
                 pcrd->params.eGeom == epullgDIRRELATIVE ||
                 pcrd->params.eGeom == epullgANGLE ||
-                pcrd->params.eGeom == epullgDIHEDRAL)
+                pcrd->params.eGeom == epullgDIHEDRAL ||
+                pcrd->params.eGeom == epullgANGLEAXIS)
             {
                 gmx_fatal(FARGS, "Pulling of type %s can not be combined with geometry %s. Consider using pull type %s.",
                           epull_names[pcrd->params.eType],
@@ -1985,7 +2021,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         {
             pull->bCylinder = TRUE;
         }
-        else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL)
+        else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgDIHEDRAL || pcrd->params.eGeom == epullgANGLEAXIS)
         {
             pull->bAngle = TRUE;
         }
