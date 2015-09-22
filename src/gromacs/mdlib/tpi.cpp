@@ -74,6 +74,7 @@
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
