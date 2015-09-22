@@ -92,12 +92,22 @@ void make_wall_tables(FILE *fplog, const output_env_t oenv,
 real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
               rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
 
-#define GMX_MAKETABLES_FORCEUSER  (1<<0)
-#define GMX_MAKETABLES_14ONLY     (1<<1)
+// t_forcerec *mk_forcerec(void);
+
+#define GMX_MAKETABLES_FORCEUSER     (1<<0)
+#define GMX_MAKETABLES_14ONLY        (1<<1)
+#define GMX_MAKETABLES_USER          (1<<2)
+#define GMX_MAKETABLES_USER_ELEC     (1<<3)
+#define GMX_MAKETABLES_USER_VDW_LJ6  (1<<4)
+#define GMX_MAKETABLES_USER_VDW_LJ12 (1<<5)
 
 t_forcetable make_tables(FILE *fp, const output_env_t oenv,
                          const t_forcerec *fr, gmx_bool bVerbose,
                          const char *fn, real rtab, int flags);
+
+t_genericTable make_tables_Verlet(FILE *fp, // const output_env_t oenv,
+                                  const t_forcerec *fr, gmx_bool bVerbose,
+                                  const char *fn, real rtab, int flags);
 /* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */
@@ -211,22 +221,22 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               t_nrnb       *nrnb,
                               gmx_wallcycle_t wcycle,
                               t_mdatoms    *md,
-                              rvec         x[],
+                              rvec x[],
                               history_t    *hist,
-                              rvec         f_shortrange[],
-                              rvec         f_longrange[],
+                              rvec f_shortrange[],
+                              rvec f_longrange[],
                               gmx_enerdata_t *enerd,
                               t_fcdata     *fcd,
                               gmx_localtop_t *top,
                               gmx_genborn_t *born,
-                              gmx_bool         bBornRadii,
-                              matrix       box,
+                              gmx_bool bBornRadii,
+                              matrix box,
                               t_lambda     *fepvals,
                               real         *lambda,
                               struct t_graph      *graph,
                               t_blocka     *excl,
-                              rvec         mu_tot[2],
-                              int          flags,
+                              rvec mu_tot[2],
+                              int flags,
                               float        *cycles_pme);
 /* Call all the force routines */
 
