@@ -101,7 +101,7 @@ enum eintmod {
 enum {
     eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
     eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC, eelENCADSHIFT,
-    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
+    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNONE, eelNR
 };
 
 /* Ewald geometry */
@@ -329,7 +329,7 @@ enum {
 enum {
     eQMbasisSTO3G, eQMbasisSTO3G2, eQMbasis321G,
     eQMbasis321Gp, eQMbasis321dGp, eQMbasis621G,
-    eQMbasis631G, eQMbasis631Gp, eQMbasis631dGp,
+    eQMbasis631G,  eQMbasis631Gp,  eQMbasis631dGp,
     eQMbasis6311G, eQMbasisNR
 };
 
@@ -373,6 +373,7 @@ enum gmx_table_interaction
     GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
     GMX_TABLE_INTERACTION_ELEC_VDWEXPREP_VDWDISP,
     GMX_TABLE_INTERACTION_ELEC_VDWDISP,
+    GMX_TABLE_INTERACTION_USER,
     GMX_TABLE_INTERACTION_NR
 };
 
@@ -391,6 +392,7 @@ enum gmx_table_format
     GMX_TABLE_FORMAT_LINEAR_V,
     GMX_TABLE_FORMAT_LINEAR_F,
     GMX_TABLE_FORMAT_LINEAR_FDV0,
+    GMX_TABLE_FORMAT_LINEAR_VERLET,
     GMX_TABLE_FORMAT_NR
 };
 
