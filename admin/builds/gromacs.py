@@ -104,6 +104,8 @@ def do_build(context):
         context.run_ctest(args=['-LE', 'GTest', '--output-on-failure'])
         context.run_ctest(args=['-L', 'GTest', '--output-on-failure'], memcheck=True)
 
+    context.process_junit_xml_files('Testing/Temporary/*Tests.xml')
+
     if not context.params.mdrun_only:
         context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
         os.chdir(context.workspace.get_project_dir(Project.REGRESSIONTESTS))
@@ -143,3 +145,4 @@ def do_build(context):
             cmd += ' -double'
         cmd += ' ' + ' '.join(context.params.extra_gmxtest_args)
         context.run_cmd_with_env(cmd, shell=True, failure_message='Regression tests failed to execute')
+        context.process_junit_xml_files('gmxtest.xml')
