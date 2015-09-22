@@ -45,6 +45,7 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/rbin.h"
 #include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
