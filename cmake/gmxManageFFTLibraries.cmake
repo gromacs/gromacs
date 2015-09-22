@@ -94,9 +94,13 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     if ((${GMX_SIMD} MATCHES "SSE" OR ${GMX_SIMD} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
       message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
     else()
-      if(${GMX_SIMD} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2 OR ${FFTW}_HAVE_AVX_128 OR ${FFTW}_HAVE_AVX2_128))
-        # If we end up here we have an AVX Gromacs build, and FFTW with SIMD, but no 128-bit SIMD, this means AVX is enabled for FFTW.
-        message(WARNING "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with both SSE2 and AVX instruction support (use both --enable-sse2 and --enable-avx). The FFTW library will determine at runtime which SIMD instruction set is fastest for different parts of the FFTs.")
+      if(${GMX_SIMD} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2))
+        # If we end up here we have an AVX Gromacs build, and FFTW
+        # with SIMD. FFTW 3.3.5 will have the behaviour that
+        # configuring with AVX support also adds SSE support, which is
+        # what we want. There is no good way to detect the FFTW
+        # version, however.
+        message(WARNING "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with both SSE2 and AVX instruction support (use both --enable-sse2 and --enable-avx). More recent versions of FFTW compile support for such narrower SIMD by default.")
         endif()
     endif()
 
