@@ -50,6 +50,7 @@
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"

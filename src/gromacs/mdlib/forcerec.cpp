@@ -67,6 +67,7 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
@@ -1408,7 +1409,7 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
                 sprintf(tabfn, "%s", basefn);
                 sprintf(tabfn + strlen(basefn) - strlen(ftp2ext(efXVG)) - 1, "_%s%d.%s",
                         tabext, i, ftp2ext(efXVG));
-                tab[i] = make_bonded_table(fplog, tabfn, NRAL(ftype1)-2);
+                make_bonded_table(fplog, tabfn, NRAL(ftype1)-2, &(tab[i]));
             }
         }
         sfree(count);

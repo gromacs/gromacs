@@ -54,6 +54,7 @@
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"

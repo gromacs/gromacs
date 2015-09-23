@@ -45,6 +45,7 @@
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

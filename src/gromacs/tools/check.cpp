@@ -50,6 +50,7 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"

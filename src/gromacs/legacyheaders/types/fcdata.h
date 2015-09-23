@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@ extern "C" {
 typedef real rvec5[5];
 
 /* Distance restraining stuff */
-typedef struct {
+typedef struct t_disresdata {
     int      dr_weighting; /* Weighting of pairs in one restraint              */
     gmx_bool dr_bMixed;    /* Use sqrt of the instantaneous times              *
                             * the time averaged violation                      */
@@ -72,7 +72,7 @@ typedef struct {
 
 
 /* Orientation restraining stuff */
-typedef struct {
+typedef struct t_oriresdata {
     real      fc;            /* Force constant for the restraints                  */
     real      edt;           /* Multiplication factor for time averaging           */
     real      edt_1;         /* 1 - edt                                            */
@@ -102,7 +102,7 @@ typedef struct {
     double **v;
 } t_oriresdata;
 
-typedef struct {
+typedef struct bondedtable_t {
     int   n;      /* n+1 is the number of points */
     real  scale;  /* distance between two points */
     real *data;   /* the actual table data, per point there are 4 numbers */
@@ -115,7 +115,7 @@ typedef struct {
  * (for instance for time averaging in distance retraints)
  * or for storing output, since force routines only return the potential.
  */
-typedef struct {
+typedef struct t_fcdata {
     bondedtable_t *bondtab;
     bondedtable_t *angletab;
     bondedtable_t *dihtab;

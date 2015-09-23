@@ -58,6 +58,7 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"

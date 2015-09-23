@@ -46,6 +46,7 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -1800,12 +1801,12 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
     return table;
 }
 
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
+void make_bonded_table(FILE *fplog, char *fn,
+                       int angle, struct bondedtable_t *tab)
 {
-    t_tabledata   td;
-    double        start;
-    int           i;
-    bondedtable_t tab;
+    t_tabledata           td;
+    double                start;
+    int                   i;
 
     if (angle < 2)
     {
@@ -1826,11 +1827,9 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
         }
         td.tabscale *= RAD2DEG;
     }
-    tab.n     = td.nx;
-    tab.scale = td.tabscale;
-    snew(tab.data, tab.n*4);
-    copy2table(tab.n, 0, 4, td.x, td.v, td.f, 1.0, tab.data);
+    tab->n     = td.nx;
+    tab->scale = td.tabscale;
+    snew(tab->data, tab->n*4);
+    copy2table(tab->n, 0, 4, td.x, td.v, td.f, 1.0, tab->data);
     done_tabledata(&td);
-
-    return tab;
 }
