@@ -45,6 +45,7 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

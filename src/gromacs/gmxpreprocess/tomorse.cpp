@@ -49,6 +49,7 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

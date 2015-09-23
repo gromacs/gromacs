@@ -60,6 +60,7 @@
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"

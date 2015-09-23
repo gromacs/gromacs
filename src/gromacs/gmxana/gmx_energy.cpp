@@ -56,6 +56,7 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/mtop_util.h"

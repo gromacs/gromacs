@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,15 +39,15 @@
 #ifndef _ifunc_h
 #define _ifunc_h
 
-#include "gromacs/legacyheaders/types/fcdata.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/topology/idef.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct t_fcdata;
 struct t_graph;
+struct t_mdatoms;
 struct t_pbc;
 
 typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
@@ -55,7 +55,7 @@ typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
                       const rvec x[], rvec f[], rvec fshift[],
                       const struct t_pbc *pbc, const struct t_graph *g,
                       real lambda, real *dvdlambda,
-                      const t_mdatoms *md, t_fcdata *fcd,
+                      const struct t_mdatoms *md, struct t_fcdata *fcd,
                       int *ddgatindex);
 
 /*
