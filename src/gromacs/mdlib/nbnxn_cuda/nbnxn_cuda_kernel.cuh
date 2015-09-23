@@ -41,10 +41,9 @@
  *  NOTE: No include fence as it is meant to be included multiple times.
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \author Alfredo Metere <alfredometere2@gmail.com>
  *  \ingroup module_mdlib
  */
-#include "config.h"
-
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
 /* Note that floating-point constants in CUDA code should be suffixed
@@ -58,9 +57,7 @@
 /* On Kepler pre-loading i-atom types to shmem gives a few %,
    but on Fermi it does not */
 #define IATYPE_SHMEM
-#ifdef HAVE_CUDA_TEXOBJ_SUPPORT
 #define USE_TEXOBJ
-#endif
 #endif
 
 #if defined EL_EWALD_ANA || defined EL_EWALD_TAB
@@ -138,8 +135,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
     nbnxn_cj4_t        *pl_cj4      = plist.cj4;
     const nbnxn_excl_t *excl        = plist.excl;
-    const int          *atom_types  = atdat.atom_types;
-    int                 ntypes      = atdat.ntypes;
+
+    const int          *atom_types                  = atdat.atom_types;
+    int                 ntypes                      = atdat.ntypes;
+
     const float4       *xq          = atdat.xq;
     float3             *f           = atdat.f;
     const float3       *shift_vec   = atdat.shift_vec;
@@ -149,7 +148,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float               vdw_in_range;
 #endif
 #ifdef LJ_EWALD
-    float               lje_coeff2, lje_coeff6_6;
+    float lje_coeff2, lje_coeff6_6;
 #endif
 #ifdef EL_RF
     float two_k_rf              = nbparam.two_k_rf;
@@ -157,6 +156,32 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef EL_EWALD_TAB
     float coulomb_tab_scale     = nbparam.coulomb_tab_scale;
 #endif
+
+#ifdef EL_USER
+    float nb_coul_tab_scale = nbparam.nb_coul_tab_scale;
+	float coul_F;
+	#ifdef CALC_ENERGIES
+		float coul_V;
+	#endif
+#endif /* EL_USER */
+
+#ifdef VDW_USER
+    float nb_vdw_tab_scale = nbparam.nb_vdw_tab_scale;
+	float vdw_LJ6_F, vdw_LJ12_F;
+	#ifdef CALC_ENERGIES
+		float         vdw_LJ6_V, vdw_LJ12_V;
+	#endif
+#endif /* VDW_USER */
+
+#ifdef VDW_USER_GENERIC
+	float nb_generic_tab_scale = nbparam.nb_generic_tab_scale;
+    float generic_F;
+	#ifdef CALC_ENERGIES
+		float generic_V;
+	#endif
+#endif /* VDW_USER_GENERIC */
+
+
 #ifdef EL_EWALD_ANA
     float beta2                 = nbparam.ewald_beta*nbparam.ewald_beta;
     float beta3                 = nbparam.ewald_beta*nbparam.ewald_beta*nbparam.ewald_beta;
@@ -166,12 +191,15 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
 
 #ifdef CALC_ENERGIES
-#ifdef EL_EWALD_ANY
-    float  beta        = nbparam.ewald_beta;
-    float  ewald_shift = nbparam.sh_ewald;
+#if defined EL_NONE || defined EL_USER
 #else
-    float  c_rf        = nbparam.c_rf;
+#ifdef EL_EWALD_ANY
+    float beta        = nbparam.ewald_beta;
+    float ewald_shift = nbparam.sh_ewald;
+#else
+    float c_rf        = nbparam.c_rf;
 #endif /* EL_EWALD_ANY */
+#endif
     float *e_lj        = atdat.e_lj;
     float *e_el        = atdat.e_el;
 #endif /* CALC_ENERGIES */
@@ -190,19 +218,34 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
     int          sci, ci, cj, ci_offset,
                  ai, aj,
-                 cij4_start, cij4_end,
-                 typei, typej,
-                 i, jm, j4, wexcl_idx;
-    float        qi, qj_f,
-                 r2, inv_r, inv_r2, inv_r6,
-                 c6, c12,
-                 int_bit,
-                 F_invr;
+                 cij4_start, cij4_end;
+
+
+    int  typei, typej;
+
+    int  i, jm, j4, wexcl_idx;
+
+
+#ifdef EL_NONE
+#else
+    float qi, qj_f;
+#endif
+    float r2, inv_r;
+
+
+    float inv_r2;
+
+
+    float      inv_r6, c6, c12;
+
+
+    float int_bit,
+          F_invr;
 #ifdef CALC_ENERGIES
-    float        E_lj, E_el;
+    float E_lj, E_el;
 #endif
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    float        E_lj_p;
+    float        E_lj_p = 0.0f;
 #endif
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
@@ -211,9 +254,9 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     nbnxn_sci_t  nb_sci;
 
     /* shmem buffer for i x+q pre-loading */
-    extern __shared__  float4 xqib[];
+    extern __shared__ float4 xqib[];
     /* shmem buffer for cj, for each warp separately */
-    int *cjs     = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + tidxz * 2 * NBNXN_GPU_JGROUP_SIZE;
+    int                     *cjs     = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + tidxz * 2 * NBNXN_GPU_JGROUP_SIZE;
 #ifdef IATYPE_SHMEM
     /* shmem buffer for i atom-type pre-loading */
     int *atib    = ((int *)(xqib + NCL_PER_SUPERCL * CL_SIZE)) + NTHREAD_Z * 2 * NBNXN_GPU_JGROUP_SIZE;
@@ -239,11 +282,12 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         ci = sci * NCL_PER_SUPERCL + tidxj;
         ai = ci * CL_SIZE + tidxi;
         xqib[tidxj * CL_SIZE + tidxi] = xq[ai] + shift_vec[nb_sci.shift];
+
 #ifdef IATYPE_SHMEM
-        /* Pre-load the i-atom types into shared memory */
         atib[tidxj * CL_SIZE + tidxi] = atom_types[ai];
 #endif
     }
+
     __syncthreads();
 
     for (ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
@@ -328,9 +372,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
             /* Unrolling this loop
                - with pruning leads to register spilling;
                - on Kepler is much slower;
-               - doesn't work on CUDA <v4.1
                Tested with nvcc 3.2 - 5.0.7 */
-#if !defined PRUNE_NBL && __CUDA_ARCH__ < 300 && GMX_CUDA_VERSION >= 4010
+#if !defined PRUNE_NBL && __CUDA_ARCH__ < 300
 #pragma unroll 4
 #endif
             for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
@@ -348,13 +391,18 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     /* load j atom data */
                     xqbuf   = xq[aj];
                     xj      = make_float3(xqbuf.x, xqbuf.y, xqbuf.z);
+#ifdef EL_NONE
+#else
                     qj_f    = nbparam.epsfac * xqbuf.w;
+#endif
+
+
                     typej   = atom_types[aj];
+
 
                     fcj_buf = make_float3(0.0f);
 
-                    /* The PME and RF kernels don't unroll with CUDA <v4.1. */
-#if !defined PRUNE_NBL && !(GMX_CUDA_VERSION < 4010 && defined EXCLUSION_FORCES)
+#if !defined PRUNE_NBL
 #pragma unroll 8
 #endif
                     for (i = 0; i < NCL_PER_SUPERCL; i++)
@@ -394,13 +442,18 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                             if (r2 < rcoulomb_sq * int_bit)
 #endif
                             {
+#ifdef EL_NONE
+#else
                                 /* load the rest of the i-atom parameters */
                                 qi      = xqbuf.w;
+#endif                          /* EL_NONE */
+
 #ifdef IATYPE_SHMEM
                                 typei   = atib[i * CL_SIZE + tidxi];
 #else
                                 typei   = atom_types[ai];
 #endif
+
 
                                 /* LJ 6*C6 and 12*C12 */
 #ifdef USE_TEXOBJ
@@ -411,24 +464,29 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 c12     = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej) + 1);
 #endif                          /* USE_TEXOBJ */
 
-
                                 /* avoid NaN for excluded pairs at r=0 */
                                 r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
 
                                 inv_r   = rsqrt(r2);
+
                                 inv_r2  = inv_r * inv_r;
                                 inv_r6  = inv_r2 * inv_r2 * inv_r2;
+
 #if defined EXCLUSION_FORCES
                                 /* We could mask inv_r2, but with Ewald
                                  * masking both inv_r6 and F_invr is faster */
                                 inv_r6  *= int_bit;
 #endif                          /* EXCLUSION_FORCES */
 
+
                                 F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
+
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
                                 E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot)*ONE_TWELVETH_F -
                                                      c6 * (inv_r6 + nbparam.dispersion_shift.cpot)*ONE_SIXTH_F);
-#endif
+#endif                          /* CALC_ENERGIES ... */
+
+
 
 #ifdef LJ_FORCE_SWITCH
 #ifdef CALC_ENERGIES
@@ -476,9 +534,6 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif /* CALC_ENERGIES */
 #endif /* LJ_POT_SWITCH */
 
-#ifdef CALC_ENERGIES
-                                E_lj    += E_lj_p;
-#endif
 
 
 #ifdef EL_CUTOFF
@@ -488,13 +543,19 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 F_invr  += qi * qj_f * inv_r2 * inv_r;
 #endif
 #endif
+
+#ifdef EL_NONE
+#else
 #ifdef EL_RF
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
-#endif
+#endif /* EL_RF */
+#endif /* EL_NONE */
 #if defined EL_EWALD_ANA
+
                                 F_invr  += qi * qj_f * (int_bit*inv_r2*inv_r + pmecorrF(beta2*r2)*beta3);
 #elif defined EL_EWALD_TAB
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 -
+
 #ifdef USE_TEXOBJ
                                                         interpolate_coulomb_force_r(nbparam.coulomb_tab_texobj, r2 * inv_r, coulomb_tab_scale)
 #else
@@ -515,6 +576,91 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 E_el    += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
 #endif                          /* EL_EWALD_ANY */
 #endif
+
+
+
+#ifdef EL_NONE
+                                F_invr += 0.0f;
+#ifdef CALC_ENERGIES
+                                E_el = 0.0f;
+#endif /* CALC_ENERGIES */
+#endif /* EL_NONE */
+
+#ifdef EL_USER
+    #ifdef CALC_ENERGIES
+        #ifdef USE_TEXOBJ
+                                interpolate_nb_coul_VFtab(nbparam.nb_coul_Ftab_texobj,
+                                                             nbparam.nb_coul_Vtab_texobj,
+                                                             r2*inv_r, nb_coul_tab_scale, &coul_F, &coul_V);
+        #else
+                                interpolate_nb_coul_VFtab(r2*inv_r, nb_coul_tab_scale, &coul_F, &coul_V);
+        #endif
+                                E_lj_p = int_bit * qi * qj_f * coul_V;
+    #else
+        #ifdef USE_TEXOBJ
+                                interpolate_nb_coul_Ftab(nbparam.nb_coul_Ftab_texobj,
+                                                             r2*inv_r, nb_coul_tab_scale, &coul_F);
+        #else
+                                interpolate_nb_coul_Ftab(r2*inv_r, nb_coul_tab_scale, &coul_F);
+        #endif
+    #endif
+                                F_invr = int_bit * inv_r * qi * qj_f * coul_F;
+#endif /* EL_USER */
+
+#ifdef VDW_USER
+    #ifdef CALC_ENERGIES
+        #ifdef USE_TEXOBJ
+                                interpolate_nb_vdw_LJ6_VFtab(nbparam.nb_vdw_LJ6_Ftab_texobj,
+                                                             nbparam.nb_vdw_LJ6_Vtab_texobj,
+                                                             r2*inv_r, nb_vdw_tab_scale, &vdw_LJ6_F, &vdw_LJ6_V);
+                                interpolate_nb_vdw_LJ12_VFtab(nbparam.nb_vdw_LJ12_Ftab_texobj,
+                                                              nbparam.nb_vdw_LJ12_Vtab_texobj,
+                                                              r2*inv_r, nb_vdw_tab_scale, &vdw_LJ12_F, &vdw_LJ12_V);
+        #else
+                                interpolate_nb_vdw_LJ6_VFtab(r2*inv_r, nb_vdw_tab_scale, &vdw_LJ6_F, &vdw_LJ6_V);
+                                interpolate_nb_vdw_LJ12_VFtab(r2*inv_r, nb_vdw_tab_scale, &vdw_LJ12_F, &vdw_LJ12_V);
+        #endif
+                                E_lj_p = int_bit * (c6 * vdw_LJ6_V + c12 * vdw_LJ12_V);
+    #else
+        #ifdef USE_TEXOBJ
+                                interpolate_nb_vdw_LJ6_Ftab(nbparam.nb_vdw_LJ6_Ftab_texobj,
+                                                            r2*inv_r, nb_vdw_tab_scale, &vdw_LJ6_F);
+                                interpolate_nb_vdw_LJ12_Ftab(nbparam.nb_vdw_LJ12_Ftab_texobj,
+                                                            r2*inv_r, nb_vdw_tab_scale, &vdw_LJ12_F);
+        #else
+                                interpolate_nb_vdw_LJ6_Ftab(r2*inv_r, nb_vdw_tab_scale, &vdw_LJ6_F);
+                                interpolate_nb_vdw_LJ12_Ftab(r2*inv_r, nb_vdw_tab_scale, &vdw_LJ12_F);
+        #endif
+    #endif
+                                F_invr = int_bit * inv_r * (c12 * vdw_LJ12_F + c6 * vdw_LJ6_F);
+#endif                 // VDW_USER
+
+#ifdef VDW_USER_GENERIC
+    #ifdef CALC_ENERGIES
+        #ifdef USE_TEXOBJ
+                                interpolate_nb_generic_VFtab(nbparam.nb_generic_Ftab_texobj,
+                                                             nbparam.nb_generic_Vtab_texobj,
+                                                             r2*inv_r, nb_generic_tab_scale, &generic_F, &generic_V);
+        #else
+                                interpolate_nb_generic_VFtab(r2*inv_r, nb_generic_tab_scale, &generic_F, &generic_V);
+        #endif
+                                E_lj_p = int_bit * generic_V;
+    #else
+        #ifdef USE_TEXOBJ
+                                interpolate_nb_generic_Ftab(nbparam.nb_generic_Ftab_texobj,
+                                                             r2*inv_r, nb_generic_tab_scale, &generic_F);
+        #else
+                                interpolate_nb_generic_Ftab(r2*inv_r, nb_generic_tab_scale, &generic_F);
+        #endif
+    #endif
+                                F_invr = int_bit * inv_r * generic_F;
+#endif                          // VDW_USER_GENERIC
+
+
+#ifdef CALC_ENERGIES
+                                E_lj    += E_lj_p;
+#endif                          // CALC_ENERGIES
+
                                 f_ij    = rv * F_invr;
 
                                 /* accumulate j forces in registers */
