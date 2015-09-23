@@ -44,6 +44,7 @@
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
+struct t_fcdata;
 
 #ifdef __cplusplus
 extern "C" {

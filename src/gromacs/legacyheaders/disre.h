@@ -41,6 +41,7 @@
 #include <stdio.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 
 struct gmx_mtop_t;
 struct t_commrec;

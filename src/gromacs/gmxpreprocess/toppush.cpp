@@ -52,6 +52,7 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

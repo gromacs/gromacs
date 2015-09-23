@@ -52,6 +52,7 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
