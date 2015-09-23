@@ -53,6 +53,7 @@
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

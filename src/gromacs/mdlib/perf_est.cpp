@@ -41,6 +41,7 @@
 #include <cmath>
 
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_search.h"

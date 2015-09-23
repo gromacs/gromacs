@@ -73,6 +73,7 @@
 #include "gromacs/legacyheaders/splitter.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"

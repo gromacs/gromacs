@@ -45,6 +45,7 @@ struct gmx_constr;
 extern "C" {
 #endif
 
+struct t_fcdata;
 struct t_graph;
 
 /* Initialization function, also predicts the initial shell postions.
