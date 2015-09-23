@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #include "gromacs/gmxpreprocess/toputil.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 

@@ -46,7 +46,9 @@
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct bondedtable_t;
 struct t_commrec;
+struct t_fcdata;
 struct t_graph;
 struct t_pbc;
 struct gmx_edsam;
@@ -103,7 +105,7 @@ t_forcetable make_tables(FILE *fp, const output_env_t oenv,
  * to .xvg files
  */
 
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
+struct bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
 /* Return a table for bonded interactions,
  * angle should be: bonds 0, angles 1, dihedrals 2
  */
@@ -176,7 +178,7 @@ extern void do_force(FILE *log, struct t_commrec *cr,
                      rvec f[],
                      tensor vir_force,
                      t_mdatoms *mdatoms,
-                     gmx_enerdata_t *enerd, t_fcdata *fcd,
+                     gmx_enerdata_t *enerd, struct t_fcdata *fcd,
                      real *lambda, struct t_graph *graph,
                      t_forcerec *fr,
                      gmx_vsite_t *vsite, rvec mu_tot,
@@ -217,7 +219,7 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               rvec         f_shortrange[],
                               rvec         f_longrange[],
                               gmx_enerdata_t *enerd,
-                              t_fcdata     *fcd,
+                              struct t_fcdata     *fcd,
                               gmx_localtop_t *top,
                               gmx_genborn_t *born,
                               gmx_bool         bBornRadii,

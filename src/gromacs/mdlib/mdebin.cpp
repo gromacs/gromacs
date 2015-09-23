@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

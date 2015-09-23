@@ -39,6 +39,7 @@
 /* This file is completely threadsafe - please keep it that way! */
 
 #include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 
 #include <cstdio>
 #include <cstdlib>

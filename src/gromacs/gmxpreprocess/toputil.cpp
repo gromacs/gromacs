@@ -46,6 +46,7 @@
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"

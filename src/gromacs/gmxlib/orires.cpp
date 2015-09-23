@@ -37,6 +37,8 @@
 #include "gmxpre.h"
 
 #include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 
 #include <cmath>
 
