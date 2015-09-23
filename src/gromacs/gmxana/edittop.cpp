@@ -37,6 +37,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

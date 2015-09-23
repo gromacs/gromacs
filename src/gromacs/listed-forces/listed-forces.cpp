@@ -56,6 +56,7 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/orires.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/position-restraints.h"

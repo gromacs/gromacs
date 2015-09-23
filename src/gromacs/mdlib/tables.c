@@ -46,6 +46,7 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -1802,10 +1803,10 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
 
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
 {
-    t_tabledata   td;
-    double        start;
-    int           i;
-    bondedtable_t tab;
+    t_tabledata           td;
+    double                start;
+    int                   i;
+    bondedtable_t         tab;
 
     if (angle < 2)
     {

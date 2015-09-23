@@ -48,6 +48,7 @@
 struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_output_env_t;
+struct t_fcdata;
 
 #ifdef __cplusplus
 extern "C" {

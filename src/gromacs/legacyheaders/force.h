@@ -43,10 +43,12 @@
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct t_commrec;
+struct t_fcdata;
 struct t_graph;
 struct t_pbc;
 struct gmx_edsam;
@@ -104,7 +106,7 @@ t_forcetable make_tables(FILE *fp, const output_env_t oenv,
  */
 
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
-/* Return a table for bonded interactions,
+/* Fill a table for bonded interactions,
  * angle should be: bonds 0, angles 1, dihedrals 2
  */
 
@@ -113,10 +115,10 @@ t_forcetable make_gb_table(const output_env_t oenv,
                            const t_forcerec  *fr);
 
 /* Read a table for AdResS Thermo Force calculations */
-extern t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
-                                   const t_forcerec *fr,
-                                   const char *fn,
-                                   matrix box);
+t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
+                            const t_forcerec *fr,
+                            const char *fn,
+                            matrix box);
 
 gmx_bool can_use_allvsall(const t_inputrec *ir,
                           gmx_bool bPrintNote, struct t_commrec *cr, FILE *fp);
@@ -176,7 +178,7 @@ extern void do_force(FILE *log, struct t_commrec *cr,
                      rvec f[],
                      tensor vir_force,
                      t_mdatoms *mdatoms,
-                     gmx_enerdata_t *enerd, t_fcdata *fcd,
+                     gmx_enerdata_t *enerd, struct t_fcdata *fcd,
                      real *lambda, struct t_graph *graph,
                      t_forcerec *fr,
                      gmx_vsite_t *vsite, rvec mu_tot,
@@ -217,7 +219,7 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               rvec         f_shortrange[],
                               rvec         f_longrange[],
                               gmx_enerdata_t *enerd,
-                              t_fcdata     *fcd,
+                              struct t_fcdata     *fcd,
                               gmx_localtop_t *top,
                               gmx_genborn_t *born,
                               gmx_bool         bBornRadii,
