@@ -40,9 +40,10 @@
 
 #include <math.h>
 
+#include <algorithm>
+
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -148,14 +149,14 @@ double v_lj_ewald_lr(double beta, double r)
     double br, br2, br4, r6, factor;
     if (r == 0)
     {
-        return pow(beta, 6)/6;
+        return std::pow(beta, 6)/6;
     }
     else
     {
         br     = beta*r;
         br2    = br*br;
         br4    = br2*br2;
-        r6     = pow(r, 6.0);
+        r6     = std::pow(r, 6.0);
         factor = (1.0 - exp(-br2)*(1 + br2 + 0.5*br4))/r6;
         return factor;
     }
@@ -325,10 +326,10 @@ static double spline3_table_scale(double third_deriv_max,
     sc_deriv  = sqrt(third_deriv_max/(6*4*deriv_tol*x_scale))*x_scale;
 
     /* Don't try to be more accurate on energy than the precision */
-    func_tol  = max(func_tol, GMX_REAL_EPS);
-    sc_func   = pow(third_deriv_max/(6*12*sqrt(3)*func_tol), 1.0/3.0)*x_scale;
+    func_tol  = std::max(func_tol, GMX_REAL_EPS);
+    sc_func   = std::pow(third_deriv_max/(6*12*sqrt(3)*func_tol), 1.0/3.0)*x_scale;
 
-    return max(sc_deriv, sc_func);
+    return std::max(sc_deriv, sc_func);
 }
 
 /* The scale (1/spacing) for third order spline interpolation
@@ -365,7 +366,7 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
             fprintf(debug, "Ewald Coulomb quadratic spline table spacing: %f 1/nm\n", 1/sc_q);
         }
 
-        sc    = max(sc, sc_q);
+        sc    = std::max(sc, sc_q);
     }
 
     if (EVDW_PME(ic->vdwtype))
@@ -385,7 +386,7 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
             fprintf(debug, "Ewald LJ quadratic spline table spacing: %f 1/nm\n", 1/sc_lj);
         }
 
-        sc = max(sc, sc_lj);
+        sc = std::max(sc, sc_lj);
     }
 
     return sc;
@@ -793,8 +794,6 @@ static void read_tables(FILE *fp, const char *fn,
 
 static void done_tabledata(t_tabledata *td)
 {
-    int i;
-
     if (!td)
     {
         return;
@@ -892,9 +891,9 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
             p = reppow;
         }
 
-        A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc, p+2)*pow2(rc-r1));
-        B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc, p+2)*pow3(rc-r1));
-        C = 1.0/pow(rc, p)-A/3.0*pow3(rc-r1)-B/4.0*pow4(rc-r1);
+        A = p * ((p+1)*r1-(p+4)*rc)/(std::pow(rc, p+2)*pow2(rc-r1));
+        B = -p * ((p+1)*r1-(p+3)*rc)/(std::pow(rc, p+2)*pow3(rc-r1));
+        C = 1.0/std::pow(rc, p)-A/3.0*pow3(rc-r1)-B/4.0*pow4(rc-r1);
         if (tp == etabLJ6Shift)
         {
             A = -A;
@@ -923,7 +922,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         }
         else
         {
-            rc12 = pow(rc, -reppow);
+            rc12 = std::pow(rc, -reppow);
         }
 
         switch (tp)
@@ -975,7 +974,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         }
         else
         {
-            r12 = pow(r, -reppow);
+            r12 = std::pow(r, -reppow);
         }
         Vtab  = 0.0;
         Ftab  = 0.0;
@@ -1383,7 +1382,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     t_tabledata    *td;
     gmx_bool        b14only, bReadTab, bGenTab;
     real            x0, y0, yp;
-    int             i, j, k, nx, nx0, tabsel[etiNR];
+    int             i, k, nx, nx0, tabsel[etiNR];
     real            scalefactor;
 
     t_forcetable    table;
@@ -1548,28 +1547,14 @@ t_forcetable make_gb_table(const output_env_t oenv,
                            const t_forcerec  *fr)
 {
     const char     *fns[3]   = { "gbctab.xvg", "gbdtab.xvg", "gbrtab.xvg" };
-    const char     *fns14[3] = { "gbctab14.xvg", "gbdtab14.xvg", "gbrtab14.xvg" };
     FILE           *fp;
     t_tabledata    *td;
     gmx_bool        bReadTab, bGenTab;
     real            x0, y0, yp;
-    int             i, j, k, nx, nx0, tabsel[etiNR];
+    int             i, nx, nx0;
     double          r, r2, Vtab, Ftab, expterm;
 
     t_forcetable    table;
-
-    double          abs_error_r, abs_error_r2;
-    double          rel_error_r, rel_error_r2;
-    double          rel_error_r_old = 0, rel_error_r2_old = 0;
-    double          x0_r_error, x0_r2_error;
-
-
-    /* Only set a Coulomb table for GB */
-    /*
-       tabsel[0]=etabGB;
-       tabsel[1]=-1;
-       tabsel[2]=-1;
-     */
 
     /* Set the table dimensions for GB, not really necessary to
      * use etiNR (since we only have one table, but ...)
@@ -1648,44 +1633,6 @@ t_forcetable make_gb_table(const output_env_t oenv,
         xvgrclose(fp);
     }
 
-    /*
-       for(i=100*nx0;i<99.81*table.n;i++)
-       {
-       r = i*table.r/(100*table.n);
-       r2      = r*r;
-       expterm = exp(-0.25*r2);
-
-       Vtab = 1/sqrt(r2+expterm);
-       Ftab = (r-0.25*r*expterm)/((r2+expterm)*sqrt(r2+expterm));
-
-
-       evaluate_table(table.data,0,4,table.scale,r,&y0,&yp);
-       printf("gb: i=%d, x0=%g, y0=%15.15f, Vtab=%15.15f, yp=%15.15f, Ftab=%15.15f\n",i,r, y0, Vtab, yp, Ftab);
-
-       abs_error_r=fabs(y0-Vtab);
-       abs_error_r2=fabs(yp-(-1)*Ftab);
-
-       rel_error_r=abs_error_r/y0;
-       rel_error_r2=fabs(abs_error_r2/yp);
-
-
-       if(rel_error_r>rel_error_r_old)
-       {
-       rel_error_r_old=rel_error_r;
-       x0_r_error=x0;
-       }
-
-       if(rel_error_r2>rel_error_r2_old)
-       {
-       rel_error_r2_old=rel_error_r2;
-       x0_r2_error=x0;
-       }
-       }
-
-       printf("gb: MAX REL ERROR IN R=%15.15f, MAX REL ERROR IN R2=%15.15f\n",rel_error_r_old, rel_error_r2_old);
-       printf("gb: XO_R=%g, X0_R2=%g\n",x0_r_error, x0_r2_error);
-
-       exit(1); */
     done_tabledata(&(td[0]));
     sfree(td);
 
