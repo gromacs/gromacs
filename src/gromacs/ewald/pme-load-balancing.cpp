@@ -57,7 +57,6 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/gmxlib/calcgrid.h"
 #include "gromacs/gmxlib/md_logging.h"
-#include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/types/commrec.h"
