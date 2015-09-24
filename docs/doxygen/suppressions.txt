@@ -41,7 +41,7 @@ src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.c: warning: includes "confi
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.c: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: should include "config.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.c: warning: includes "config.h" unnecessarily
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.cpp: warning: includes "config.h" unnecessarily
 
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"
