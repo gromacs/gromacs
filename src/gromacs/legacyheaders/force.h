@@ -96,28 +96,6 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
-t_forcetable make_tables(FILE *fp, const output_env_t oenv,
-                         const t_forcerec *fr, gmx_bool bVerbose,
-                         const char *fn, real rtab, int flags);
-/* Return tables for inner loops. When bVerbose the tables are printed
- * to .xvg files
- */
-
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
-/* Return a table for bonded interactions,
- * angle should be: bonds 0, angles 1, dihedrals 2
- */
-
-/* Return a table for GB calculations */
-t_forcetable make_gb_table(const output_env_t oenv,
-                           const t_forcerec  *fr);
-
-/* Read a table for AdResS Thermo Force calculations */
-extern t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
-                                   const t_forcerec *fr,
-                                   const char *fn,
-                                   matrix box);
-
 gmx_bool can_use_allvsall(const t_inputrec *ir,
                           gmx_bool bPrintNote, struct t_commrec *cr, FILE *fp);
 /* Returns if we can use all-vs-all loops.

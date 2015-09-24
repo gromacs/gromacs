@@ -36,13 +36,14 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/tables.h"
+#include "forcetable.h"
 
-#include <math.h>
+#include <cmath>
+
+#include <algorithm>
 
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -325,10 +326,10 @@ static double spline3_table_scale(double third_deriv_max,
     sc_deriv  = sqrt(third_deriv_max/(6*4*deriv_tol*x_scale))*x_scale;
 
     /* Don't try to be more accurate on energy than the precision */
-    func_tol  = max(func_tol, GMX_REAL_EPS);
+    func_tol  = std::max(func_tol, static_cast<double>(GMX_REAL_EPS));
     sc_func   = pow(third_deriv_max/(6*12*sqrt(3)*func_tol), 1.0/3.0)*x_scale;
 
-    return max(sc_deriv, sc_func);
+    return std::max(sc_deriv, sc_func);
 }
 
 /* The scale (1/spacing) for third order spline interpolation
@@ -365,7 +366,7 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
             fprintf(debug, "Ewald Coulomb quadratic spline table spacing: %f 1/nm\n", 1/sc_q);
         }
 
-        sc    = max(sc, sc_q);
+        sc    = std::max(sc, sc_q);
     }
 
     if (EVDW_PME(ic->vdwtype))
@@ -385,7 +386,7 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
             fprintf(debug, "Ewald LJ quadratic spline table spacing: %f 1/nm\n", 1/sc_lj);
         }
 
-        sc = max(sc, sc_lj);
+        sc = std::max(sc, sc_lj);
     }
 
     return sc;
@@ -499,7 +500,6 @@ static void spline_forces(int nx, double h, double v[], gmx_bool bS3, gmx_bool b
     /* To make life easy we initially set the spacing to 1
      * and correct for this at the end.
      */
-    beta = 2;
     if (bS3)
     {
         /* Fit V''' at the start */
@@ -793,8 +793,6 @@ static void read_tables(FILE *fp, const char *fn,
 
 static void done_tabledata(t_tabledata *td)
 {
-    int i;
-
     if (!td)
     {
         return;
@@ -923,7 +921,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         }
         else
         {
-            rc12 = pow(rc, -reppow);
+            rc12 = std::pow(rc, -reppow);
         }
 
         switch (tp)
@@ -975,7 +973,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         }
         else
         {
-            r12 = pow(r, -reppow);
+            r12 = std::pow(r, -reppow);
         }
         Vtab  = 0.0;
         Ftab  = 0.0;
@@ -1372,7 +1370,7 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     }
 }
 
-t_forcetable make_tables(FILE *out, const output_env_t oenv,
+t_forcetable make_tables(FILE *out, const struct gmx_output_env_t *oenv,
                          const t_forcerec *fr,
                          gmx_bool bVerbose, const char *fn,
                          real rtab, int flags)
@@ -1383,7 +1381,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     t_tabledata    *td;
     gmx_bool        b14only, bReadTab, bGenTab;
     real            x0, y0, yp;
-    int             i, j, k, nx, nx0, tabsel[etiNR];
+    int             k, nx, nx0, tabsel[etiNR];
     real            scalefactor;
 
     t_forcetable    table;
@@ -1417,7 +1415,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     /* Check whether we have to read or generate */
     bReadTab = FALSE;
     bGenTab  = FALSE;
-    for (i = 0; (i < etiNR); i++)
+    for (unsigned int i = 0; (i < etiNR); i++)
     {
         if (ETAB_USER(tabsel[i]))
         {
@@ -1458,7 +1456,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
 #else
             table.scale = 500.0;
 #endif
-            nx = table.n = rtab*table.scale;
+            nx = table.n = static_cast<int>(rtab*table.scale);
         }
     }
     if (fr->bBHAM)
@@ -1529,7 +1527,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
                 fp = xvgropen(fns[k], fns[k], "r", "V", oenv);
             }
             /* plot the output 5 times denser than the table data */
-            for (i = 5*((nx0+1)/2); i < 5*table.n; i++)
+            for (int i = 5*((nx0+1)/2); i < 5*table.n; i++)
             {
                 x0 = i*table.r/(5*(table.n-1));
                 evaluate_table(table.data, 4*k, 12, table.scale, x0, &y0, &yp);
@@ -1544,32 +1542,18 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     return table;
 }
 
-t_forcetable make_gb_table(const output_env_t oenv,
-                           const t_forcerec  *fr)
+t_forcetable make_gb_table(const struct gmx_output_env_t *oenv,
+                           const t_forcerec              *fr)
 {
     const char     *fns[3]   = { "gbctab.xvg", "gbdtab.xvg", "gbrtab.xvg" };
-    const char     *fns14[3] = { "gbctab14.xvg", "gbdtab14.xvg", "gbrtab14.xvg" };
     FILE           *fp;
     t_tabledata    *td;
-    gmx_bool        bReadTab, bGenTab;
+    gmx_bool        bReadTab;
     real            x0, y0, yp;
-    int             i, j, k, nx, nx0, tabsel[etiNR];
+    int             i, nx, nx0;
     double          r, r2, Vtab, Ftab, expterm;
 
     t_forcetable    table;
-
-    double          abs_error_r, abs_error_r2;
-    double          rel_error_r, rel_error_r2;
-    double          rel_error_r_old = 0, rel_error_r2_old = 0;
-    double          x0_r_error, x0_r2_error;
-
-
-    /* Only set a Coulomb table for GB */
-    /*
-       tabsel[0]=etabGB;
-       tabsel[1]=-1;
-       tabsel[2]=-1;
-     */
 
     /* Set the table dimensions for GB, not really necessary to
      * use etiNR (since we only have one table, but ...)
@@ -1580,19 +1564,18 @@ t_forcetable make_gb_table(const output_env_t oenv,
     table.r             = fr->gbtabr;
     table.scale         = fr->gbtabscale;
     table.scale_exp     = 0;
-    table.n             = table.scale*table.r;
+    table.n             = static_cast<int>(table.scale*table.r);
     table.formatsize    = 4;
     table.ninteractions = 1;
     table.stride        = table.formatsize*table.ninteractions;
     nx0                 = 0;
-    nx                  = table.scale*table.r;
+    nx                  = table.n;
 
     /* Check whether we have to read or generate
      * We will always generate a table, so remove the read code
      * (Compare with original make_table function
      */
     bReadTab = FALSE;
-    bGenTab  = TRUE;
 
     /* Each table type (e.g. coul,lj6,lj12) requires four
      * numbers per datapoint. For performance reasons we want
@@ -1694,7 +1677,7 @@ t_forcetable make_gb_table(const output_env_t oenv,
 
 }
 
-t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
+t_forcetable make_atf_table(FILE *out, const struct gmx_output_env_t *oenv,
                             const t_forcerec *fr,
                             const char *fn,
                             matrix box)
@@ -1732,8 +1715,6 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
     table.scale     = 0;
     table.n         = 0;
     table.scale_exp = 0;
-    nx0             = 10;
-    nx              = 0;
 
     read_tables(out, fn, 1, 0, td);
     rtab      = td[0].x[td[0].nx-1];
@@ -1803,18 +1784,9 @@ t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle)
 {
     t_tabledata   td;
-    double        start;
     int           i;
     bondedtable_t tab;
 
-    if (angle < 2)
-    {
-        start = 0;
-    }
-    else
-    {
-        start = -180.0;
-    }
     read_tables(fplog, fn, 1, angle, &td);
     if (angle > 0)
     {

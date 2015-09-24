@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,18 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_TABLES_FORCETABLE_H
+#define GMX_TABLES_FORCETABLE_H
 
-#ifndef _tables_h
-#define _tables_h
+#include "gromacs/fileio/oenv.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/simple.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
 
 typedef double (*real_space_grid_contribution_computer)(double, double);
 /* Function pointer used to tell table_spline3_fill_ewald_lr whether it
@@ -74,8 +70,27 @@ double v_q_ewald_lr(double beta, double r);
 double v_lj_ewald_lr(double beta, double r);
 /* Return the real space grid contribution for LJ-Ewald*/
 
-#ifdef __cplusplus
-}
-#endif
+t_forcetable make_tables(FILE *fp, const struct gmx_output_env_t *oenv,
+                         const t_forcerec *fr, gmx_bool bVerbose,
+                         const char *fn, real rtab, int flags);
+/* Return tables for inner loops. When bVerbose the tables are printed
+ * to .xvg files
+ */
 
-#endif  /* _tables\_h */
+bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
+/* Return a table for bonded interactions,
+ * angle should be: bonds 0, angles 1, dihedrals 2
+ */
+
+/* Return a table for GB calculations */
+t_forcetable make_gb_table(const struct gmx_output_env_t *oenv,
+                           const t_forcerec              *fr);
+
+/* Read a table for AdResS Thermo Force calculations */
+t_forcetable make_atf_table(FILE                          *out,
+                            const struct gmx_output_env_t *oenv,
+                            const t_forcerec              *fr,
+                            const char                    *fn,
+                            matrix                         box);
+
+#endif  /* GMX_TABLES_FORCETABLE_H */
