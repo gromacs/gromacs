@@ -13,7 +13,7 @@ General information
 
 Default values are given in parentheses, or listed first among
 choices. The first option in the list is always the default
-option. Units are given in square brackets The difference between a
+option. Units are given in square brackets. The difference between a
 dash and an underscore is ignored.
 
 A :ref:`sample mdp file <mdp>` is available. This should be
@@ -2932,6 +2932,136 @@ Adaptive Resolution Simulation
    (0)
    Cap the force in the hybrid region, useful for big molecules. 0
    disables force capping.
+
+
+Computational Electrophysiology
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Use these options to switch on and control ion/water position exchanges in "Computational
+Electrophysiology" simulation setups. (See the `reference manual`_ for details).
+
+.. mdp:: swapcoords
+
+   .. mdp-value:: no
+
+      Do not enable ion/water position exchanges.
+
+   .. mdp-value:: X ; Y ; Z
+
+      Allow for ion/water position exchanges along the chosen direction.
+      In a typical setup with the membranes parallel to the x-y plane,
+      ion/water pairs need to be exchanged in Z direction to sustain the
+      requested ion concentrations in the compartments.
+
+.. mdp:: swap-frequency
+
+   (1) The swap attempt frequency, i.e. every how many time steps the ion counts
+   per compartment are determined and exchanges made if necessary.
+   Normally it is not necessary to check at every time step.
+   For typical Computational Electrophysiology setups, a value of about 100 is
+   sufficient and yields a negligible performance impact.
+
+.. mdp:: split-group0
+
+   Name of the index group of the membrane-embedded part of channel #0.
+   The center of mass of these atoms defines one of the compartment boundaries
+   and should be chosen such that it is near the center of the membrane.
+
+.. mdp:: split-group1
+
+   Channel #1 defines the position of the other compartment boundary.
+
+.. mdp:: massw-split0
+
+   (no) Defines whether or not mass-weighting is used to calculate the split group center.
+
+   .. mdp-value:: no
+
+      Use the geometrical center.
+
+   .. mdp-value:: yes
+
+      Use the center of mass.
+
+.. mdp:: massw-split1
+
+   (no) As above, but for split-group #1.
+
+.. mdp:: swap-group
+
+   Group name of the ions that can be swapped with solvent molecules.
+
+.. mdp:: solvent-group
+
+   Name of the index group of solvent molecules.
+
+.. mdp:: coupl-steps
+
+   (\10) Average the number of ions per compartment over these many swap attempt steps.
+   This can be used to prevent that ions near a compartment boundary
+   (diffusing through a channel, e.g.) lead to unwanted back and forth swaps.
+
+.. mdp:: anionsA
+
+   (-1) Requested (=reference) number of anions in compartment A.
+   The default value of -1 means: use the number of ions as found in time step 0
+   as reference value.
+
+.. mdp:: cationsA
+
+   (-1) Reference number of cations for compartment A.
+
+.. mdp:: anionsB
+
+   (-1) Reference number of anions for compartment B.
+
+.. mdp:: cationsB
+
+   (-1) Reference number of cations for compartment B.
+
+.. mdp:: bulk-offsetA
+
+   (0.0) Offset of the first swap layer from the compartment A midplane.
+   By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers
+   at maximum distance (= bulk concentration) to the split group layers. However,
+   an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0
+   towards one of the compartment-partitioning layers (at +/- 1.0).
+
+.. mdp:: bulk-offsetB
+
+   (0.0) Offset of the other swap layer from the compartment B midplane.
+
+
+.. mdp:: threshold
+
+   (\1) Only swap ions if threshold difference to requested count is reached.
+
+.. mdp:: cyl0-r
+
+   (2.0) \[nm\] Radius of the split cylinder #0.
+   Two split cylinders (mimicking the channel pores) can optionally be defined
+   relative to the center of the split group. With the help of these cylinders
+   it can be counted which ions have passed which channel. The split cylinder
+   definition has no impact on whether or not ion/water swaps are done.
+
+.. mdp:: cyl0-up
+
+   (1.0) \[nm\] Upper extension of the split cylinder #0.
+
+.. mdp:: cyl0-down
+
+   (1.0) \[nm\] Lower extension of the split cylinder #0.
+
+.. mdp:: cyl1-r
+
+   (2.0) \[nm\] Radius of the split cylinder #1.
+
+.. mdp:: cyl1-up
+
+   (1.0) \[nm\] Upper extension of the split cylinder #1.
+
+.. mdp:: cyl1-down
+
+   (1.0) \[nm\] Lower extension of the split cylinder #1.
 
 
 User defined thingies
