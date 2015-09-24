@@ -47,12 +47,12 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/tables/forcetable.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
