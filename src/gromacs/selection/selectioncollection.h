@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,13 +122,15 @@ class SelectionCollection
          * Initializes options for setting global properties on the collection.
          *
          * \param[in,out] options Options object to initialize.
+         * \param[in]     includeSelectionType
+         *     Whether to add option to influence setOutputPosType().
          * \throws        std::bad_alloc if out of memory.
          *
          * Adds options to \p options that can be used to set the default
          * position types (see setReferencePosType() and setOutputPosType())
          * and debugging flags.
          */
-        void initOptions(Options *options);
+        void initOptions(Options *options, bool includeSelectionType);
 
         /*! \brief
          * Sets the default reference position handling for a selection

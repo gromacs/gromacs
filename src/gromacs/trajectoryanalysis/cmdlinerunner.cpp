@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,7 +123,7 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
     module_->initOptions(&moduleOptions, settings);
     common->initOptions(&commonOptions);
-    selections->initOptions(&selectionOptions);
+    seloptManager.initOptions(&selectionOptions);
 
     {
         CommandLineParser  parser(&options);
@@ -270,7 +270,7 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &con
 
     impl_->module_->initOptions(&moduleOptions, &settings);
     common.initOptions(&commonOptions);
-    selections.initOptions(&selectionOptions);
+    seloptManager.initOptions(&selectionOptions);
 
     CommandLineHelpWriter(options)
         .setShowDescriptions(true)
