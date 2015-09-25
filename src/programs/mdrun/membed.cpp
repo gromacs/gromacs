@@ -67,7 +67,7 @@ typedef struct {
 } pos_ins_t;
 
 /* variables needed in do_md */
-struct membed {
+struct gmx_membed_t {
     int        it_xy;     /* number of iterations (steps) used to grow something in the xy-plane */
     int        it_z;      /* same, but for z */
     real       xy_step;   /* stepsize used during resize in xy-plane */
@@ -968,7 +968,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
     rename(temporary_filename, topfile);
 }
 
-void rescale_membed(int step_rel, gmx_membed_t membed, rvec *x)
+void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x)
 {
     /* Set new positions for the group to embed */
     if (step_rel <= membed->it_xy)
@@ -1009,8 +1009,8 @@ static int search_string(const char *s, int ng, char *gn[])
     return -1;
 }
 
-gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
-                         t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt)
+gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_t *mtop,
+                          t_inputrec *inputrec, t_state *state, t_commrec *cr, real *cpt)
 {
     char                     *ins, **gnames;
     int                       i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
@@ -1026,7 +1026,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
     t_atoms                   atoms;
     t_pbc                    *pbc;
     char                    **piecename = NULL;
-    gmx_membed_t              membed    = NULL;
+    gmx_membed_t             *membed    = NULL;
 
     /* input variables */
     const char *membed_input;
