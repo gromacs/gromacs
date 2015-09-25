@@ -38,6 +38,8 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_hw_info_t;
+struct gmx_hw_opt_t;
 struct gmx_mtop_t;
 struct t_commrec;
 

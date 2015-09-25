@@ -40,6 +40,7 @@
 struct gmx_domdec_t;
 struct gmx_domdec_zones_t;
 struct gmx_ddbox_t;
+struct t_forcerec;
 
 #ifdef __cplusplus
 extern "C" {

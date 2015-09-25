@@ -153,12 +153,12 @@ enum {
     egCOUL14, egLJ14, egGB, egNR
 };
 
-typedef struct {
+typedef struct gmx_grppairener_t {
     int   nener;      /* The number of energy group pairs     */
     real *ener[egNR]; /* Energy terms for each pair of groups */
 } gmx_grppairener_t;
 
-typedef struct {
+typedef struct gmx_enerdata_t {
     real              term[F_NRE];         /* The energies for all different interaction types */
     gmx_grppairener_t grpp;
     double            dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
@@ -188,7 +188,7 @@ struct gmx_ewald_tab_t;
 
 typedef struct ewald_corr_thread_t ewald_corr_thread_t;
 
-typedef struct {
+typedef struct t_forcerec {
     interaction_const_t *ic;
 
     /* Domain Decomposition */

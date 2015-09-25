@@ -37,7 +37,7 @@
  * kernel type 4xn.
  */
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
 #ifdef __cplusplus

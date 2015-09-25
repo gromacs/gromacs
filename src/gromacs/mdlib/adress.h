@@ -47,6 +47,7 @@ extern "C"
 {
 #endif
 
+struct t_forcerec;
 struct t_pbc;
 
 /** \brief calculates the AdResS weight of a particle
