@@ -1276,9 +1276,8 @@ static void set_bham_b_max(FILE *fplog, t_forcerec *fr,
     }
 }
 
-static void make_nbf_tables(FILE *fp, const output_env_t oenv,
+static void make_nbf_tables(FILE *fp,
                             t_forcerec *fr, real rtab,
-                            const t_commrec *cr,
                             const char *tabfn, char *eg1, char *eg2,
                             t_nblists *nbl)
 {
@@ -1301,7 +1300,7 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
         sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
                 eg1, eg2, ftp2ext(efXVG));
     }
-    nbl->table_elec_vdw = make_tables(fp, oenv, fr, MASTER(cr), buf, rtab, 0);
+    nbl->table_elec_vdw = make_tables(fp, fr, buf, rtab, 0);
     /* Copy the contents of the table to separate coulomb and LJ tables too,
      * to improve cache performance.
      */
@@ -1314,7 +1313,6 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
     nbl->table_elec.r             = nbl->table_elec_vdw.r;
     nbl->table_elec.n             = nbl->table_elec_vdw.n;
     nbl->table_elec.scale         = nbl->table_elec_vdw.scale;
-    nbl->table_elec.scale_exp     = nbl->table_elec_vdw.scale_exp;
     nbl->table_elec.formatsize    = nbl->table_elec_vdw.formatsize;
     nbl->table_elec.ninteractions = 1;
     nbl->table_elec.stride        = nbl->table_elec.formatsize * nbl->table_elec.ninteractions;
@@ -1325,7 +1323,6 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
     nbl->table_vdw.r             = nbl->table_elec_vdw.r;
     nbl->table_vdw.n             = nbl->table_elec_vdw.n;
     nbl->table_vdw.scale         = nbl->table_elec_vdw.scale;
-    nbl->table_vdw.scale_exp     = nbl->table_elec_vdw.scale_exp;
     nbl->table_vdw.formatsize    = nbl->table_elec_vdw.formatsize;
     nbl->table_vdw.ninteractions = 2;
     nbl->table_vdw.stride        = nbl->table_vdw.formatsize * nbl->table_vdw.ninteractions;
@@ -1467,7 +1464,7 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
-static void make_adress_tf_tables(FILE *fp, const output_env_t oenv,
+static void make_adress_tf_tables(FILE *fp,
                                   t_forcerec *fr, const t_inputrec *ir,
                                   const char *tabfn, const gmx_mtop_t *mtop,
                                   matrix     box)
@@ -1493,7 +1490,7 @@ static void make_adress_tf_tables(FILE *fp, const output_env_t oenv,
         {
             fprintf(fp, "loading tf table for energygrp index %d from %s\n", ir->adress->tf_table_index[i], buf);
         }
-        fr->atf_tabs[i] = make_atf_table(fp, oenv, fr, buf, box);
+        fr->atf_tabs[i] = make_atf_table(fp, fr, buf, box);
     }
 
 }
@@ -2279,7 +2276,6 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
 }
 
 void init_forcerec(FILE              *fp,
-                   const output_env_t oenv,
                    t_forcerec        *fr,
                    t_fcdata          *fcd,
                    const t_inputrec  *ir,
@@ -2935,7 +2931,7 @@ void init_forcerec(FILE              *fp,
 #endif
 
         fr->gbtabr = 100;
-        fr->gbtab  = make_gb_table(oenv, fr);
+        fr->gbtab  = make_gb_table(fr);
 
         init_gb(&fr->born, fr, ir, mtop, ir->gb_algorithm);
 
@@ -3049,10 +3045,10 @@ void init_forcerec(FILE              *fp,
         /* make tables for ordinary interactions */
         if (bSomeNormalNbListsAreInUse)
         {
-            make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+            make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
             if (ir->adress)
             {
-                make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
+                make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
             }
             if (!bMakeSeparate14Table)
             {
@@ -3080,13 +3076,13 @@ void init_forcerec(FILE              *fp,
                             fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = m;
                         }
                         /* Read the table file with the two energy groups names appended */
-                        make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn,
+                        make_nbf_tables(fp, fr, rtab, tabfn,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
                         if (ir->adress)
                         {
-                            make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn,
+                            make_nbf_tables(fp, fr, rtab, tabfn,
                                             *mtop->groups.grpname[nm_ind[egi]],
                                             *mtop->groups.grpname[nm_ind[egj]],
                                             &fr->nblists[fr->nnblists/2+m]);
@@ -3109,13 +3105,13 @@ void init_forcerec(FILE              *fp,
         /* Tables might not be used for the potential modifier interactions per se, but
          * we still need them to evaluate switch/shift dispersion corrections in this case.
          */
-        make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+        make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
     }
 
     if (bMakeSeparate14Table)
     {
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
-        fr->tab14 = make_tables(fp, oenv, fr, MASTER(cr), tabpfn, rtab,
+        fr->tab14 = make_tables(fp, fr, tabpfn, rtab,
                                 GMX_MAKETABLES_14ONLY);
     }
 
@@ -3126,14 +3122,14 @@ void init_forcerec(FILE              *fp,
 
         if (ir->adress->n_tf_grps > 0)
         {
-            make_adress_tf_tables(fp, oenv, fr, ir, tabfn, mtop, box);
+            make_adress_tf_tables(fp, fr, ir, tabfn, mtop, box);
 
         }
         else
         {
             /* load the default table */
             snew(fr->atf_tabs, 1);
-            fr->atf_tabs[DEFAULT_TF_TABLE] = make_atf_table(fp, oenv, fr, tabafn, box);
+            fr->atf_tabs[DEFAULT_TF_TABLE] = make_atf_table(fp, fr, tabafn, box);
         }
     }
 
@@ -3141,7 +3137,7 @@ void init_forcerec(FILE              *fp,
     fr->nwall = ir->nwall;
     if (ir->nwall && ir->wall_type == ewtTABLE)
     {
-        make_wall_tables(fp, oenv, ir, tabfn, &mtop->groups, fr);
+        make_wall_tables(fp, ir, tabfn, &mtop->groups, fr);
     }
 
     if (fcd && tabbfn)

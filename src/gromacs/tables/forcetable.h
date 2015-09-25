@@ -40,8 +40,6 @@
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/simple.h"
 
-struct gmx_output_env_t;
-
 /* Index in the tables that says which function to use */
 enum {
     etiCOUL, etiLJ6, etiLJ12, etiNR
@@ -76,12 +74,10 @@ double v_q_ewald_lr(double beta, double r);
 double v_lj_ewald_lr(double beta, double r);
 /* Return the real space grid contribution for LJ-Ewald*/
 
-t_forcetable make_tables(FILE *fp, const struct gmx_output_env_t *oenv,
-                         const t_forcerec *fr, gmx_bool bVerbose,
+t_forcetable make_tables(FILE *fp,
+                         const t_forcerec *fr,
                          const char *fn, real rtab, int flags);
-/* Return tables for inner loops. When bVerbose the tables are printed
- * to .xvg files
- */
+/* Return tables for inner loops. */
 
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
 /* Return a table for bonded interactions,
@@ -89,12 +85,10 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
  */
 
 /* Return a table for GB calculations */
-t_forcetable make_gb_table(const struct gmx_output_env_t *oenv,
-                           const t_forcerec              *fr);
+t_forcetable make_gb_table(const t_forcerec              *fr);
 
 /* Read a table for AdResS Thermo Force calculations */
 t_forcetable make_atf_table(FILE                          *out,
-                            const struct gmx_output_env_t *oenv,
                             const t_forcerec              *fr,
                             const char                    *fn,
                             matrix                         box);

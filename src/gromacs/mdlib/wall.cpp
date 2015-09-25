@@ -52,7 +52,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void make_wall_tables(FILE *fplog, const output_env_t oenv,
+void make_wall_tables(FILE *fplog,
                       const t_inputrec *ir, const char *tabfn,
                       const gmx_groups_t *groups,
                       t_forcerec *fr)
@@ -86,7 +86,7 @@ void make_wall_tables(FILE *fplog, const output_env_t oenv,
                         *groups->grpname[nm_ind[egp]],
                         *groups->grpname[nm_ind[negp_pp+w]],
                         ftp2ext(efXVG));
-                *tab = make_tables(fplog, oenv, fr, FALSE, buf, 0, GMX_MAKETABLES_FORCEUSER);
+                *tab = make_tables(fplog, fr, buf, 0, GMX_MAKETABLES_FORCEUSER);
                 /* Since wall have no charge, we can compress the table */
                 for (int i = 0; i <= tab->n; i++)
                 {
