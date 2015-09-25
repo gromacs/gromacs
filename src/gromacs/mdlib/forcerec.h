@@ -88,7 +88,6 @@ void init_interaction_const_tables(FILE                   *fp,
  *
  * The Force rec struct must be created with mk_forcerec.
  * \param[in]  fplog       File for printing
- * \param[in]  oenv        Output environment structure
  * \param[out] fr          The forcerec
  * \param[in]  fcd         Force constant data
  * \param[in]  ir          Inputrec structure
@@ -104,7 +103,6 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
 void init_forcerec(FILE                   *fplog,
-                   const output_env_t      oenv,
                    t_forcerec             *fr,
                    t_fcdata               *fcd,
                    const t_inputrec       *ir,
