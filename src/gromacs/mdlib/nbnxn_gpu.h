@@ -84,13 +84,12 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused              *nb,
  * transfers to finish.
  */
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused               *nb,
-                            const struct nbnxn_atomdata_t gmx_unused *nbatom,
-                            int                    gmx_unused         flags,
-                            int                    gmx_unused         aloc,
-                            real                   gmx_unused        *e_lj,
-                            real                   gmx_unused        *e_el,
-                            rvec                   gmx_unused        *fshift) GPU_FUNC_TERM
+void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
+                            int             gmx_unused  flags,
+                            int             gmx_unused  aloc,
+                            real            gmx_unused *e_lj,
+                            real            gmx_unused *e_el,
+                            rvec            gmx_unused *fshift) GPU_FUNC_TERM
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
 GPU_FUNC_QUALIFIER
