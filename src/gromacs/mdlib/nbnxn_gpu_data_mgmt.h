@@ -61,8 +61,7 @@ struct gmx_gpu_info_t;
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_init(FILE gmx_unused                        *fplog,
-                    gmx_nbnxn_gpu_t gmx_unused            **p_nb,
+void nbnxn_gpu_init(gmx_nbnxn_gpu_t gmx_unused            **p_nb,
                     const struct gmx_gpu_info_t gmx_unused *gpu_info,
                     const gmx_gpu_opt_t gmx_unused         *gpu_opt,
                     const interaction_const_t gmx_unused   *ic,
