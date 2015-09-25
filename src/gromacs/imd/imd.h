@@ -74,12 +74,7 @@
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
-
 
 /*! \brief Writes out the group of atoms selected for interactive manipulation.
  *
@@ -94,8 +89,8 @@ static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with t
  * \param nfile   Number of files.
  * \param fnm     Filename struct.
  */
-extern void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
-                                   struct gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
+void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
+                            gmx_mtop_t *sys, int nfile, const t_filenm fnm[]);
 
 
 /*! \brief Make a selection of the home atoms for the IMD group.
@@ -111,7 +106,7 @@ extern void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state
  * \param dd      Structure containing domain decomposition data.
  * \param imd     The IMD group of atoms.
  */
-extern void dd_make_local_IMD_atoms(gmx_bool bIMD, struct gmx_domdec_t *dd, t_IMD *imd);
+void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
 
 
 /*! \brief Initializes (or disables) IMD.
@@ -133,10 +128,10 @@ extern void dd_make_local_IMD_atoms(gmx_bool bIMD, struct gmx_domdec_t *dd, t_IM
  * \param Flags        Flags passed over from main, used to determine
  *                     whether or not we are appending.
  */
-extern void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
-                     FILE *fplog, int defnstimd, rvec x[],
-                     int nfile, const t_filenm fnm[], output_env_t oenv,
-                     int imdport, unsigned long  Flags);
+void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
+              FILE *fplog, int defnstimd, rvec x[],
+              int nfile, const t_filenm fnm[], output_env_t oenv,
+              int imdport, unsigned long  Flags);
 
 
 /*! \brief IMD required in this time step?
@@ -155,10 +150,10 @@ extern void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
  *
  * \returns            Whether or not we have to do IMD communication at this step.
  */
-extern gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, struct t_commrec *cr,
-                       gmx_bool bNS,
-                       matrix box, rvec x[], t_inputrec *ir, double t,
-                       gmx_wallcycle_t wcycle);
+gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, t_commrec *cr,
+                gmx_bool bNS,
+                matrix box, rvec x[], t_inputrec *ir, double t,
+                gmx_wallcycle_t wcycle);
 
 
 /*! \brief Get the IMD update frequency.
@@ -167,7 +162,7 @@ extern gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, struct t_commrec *cr,
  *
  * \returns            The current IMD update/communication frequency
  */
-extern int IMD_get_step(t_gmx_IMD IMDsetup);
+int IMD_get_step(t_gmx_IMD IMDsetup);
 
 
 /*! \brief Add external forces from a running interactive molecular dynamics session.
@@ -178,9 +173,9 @@ extern int IMD_get_step(t_gmx_IMD IMDsetup);
  * \param f            The forces.
  * \param wcycle       Count wallcycles of IMD routines for diagnostic output.
  */
-extern void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
-                             struct t_commrec *cr, rvec *f,
-                             gmx_wallcycle_t wcycle);
+void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
+                      t_commrec *cr, rvec *f,
+                      gmx_wallcycle_t wcycle);
 
 
 /*! \brief Copy energies and convert to float from enerdata to the IMD energy record.
@@ -194,15 +189,15 @@ extern void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd,
  * \param bHaveNewEnergies Only copy energies if we have done global summing of them before.
  *
  */
-extern void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
-                                   gmx_int64_t step, gmx_bool bHaveNewEnergies);
+void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
+                            gmx_int64_t step, gmx_bool bHaveNewEnergies);
 
 
 /*! \brief Send positions and energies to the client.
  *
  * \param imd              The IMD data structure.
  */
-extern void IMD_send_positions(t_IMD *imd);
+void IMD_send_positions(t_IMD *imd);
 
 
 /*! \brief Calls IMD_prepare_energies() and then IMD_send_positions().
@@ -216,10 +211,10 @@ extern void IMD_send_positions(t_IMD *imd);
  * \param wcycle           Count wallcycles of IMD routines for diagnostic output.
  *
  */
-extern void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
-                                             t_IMD *imd, gmx_enerdata_t *enerd,
-                                             gmx_int64_t step, gmx_bool bHaveNewEnergies,
-                                             gmx_wallcycle_t wcycle);
+void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
+                                      t_IMD *imd, gmx_enerdata_t *enerd,
+                                      gmx_int64_t step, gmx_bool bHaveNewEnergies,
+                                      gmx_wallcycle_t wcycle);
 
 /*! \brief Finalize IMD and do some cleaning up.
  *
@@ -228,11 +223,6 @@ extern void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
  * \param bIMD         Returns directly if bIMD is FALSE.
  * \param imd          The IMD data structure.
  */
-extern void IMD_finalize(gmx_bool bIMD, t_IMD *imd);
-
-
-#ifdef __cplusplus
-}
-#endif
+void IMD_finalize(gmx_bool bIMD, t_IMD *imd);
 
 #endif
