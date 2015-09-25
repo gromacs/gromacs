@@ -34,29 +34,35 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \file
+ * \brief
+ * Provides function to open output files automatically (with some X11
+ * programs).
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
 
-#ifndef _viewit_h
-#define _viewit_h
+#ifndef GMX_COMMANDLINE_VIEWIT_H
+#define GMX_COMMANDLINE_VIEWIT_H
 
 #include "gromacs/fileio/filenm.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_output_env_t;
 
-void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts);
-/* forks off appropriate command to view file.
- * currently eps, xpm, xvg and pdb are supported
- * defaults are provided, can be overriden with environment vars
+/*! \brief
+ * Executes an external (X11) command to view a file.
+ *
+ * Currently eps, xpm, xvg and pdb are supported.
+ * Default programs are provided, can be overriden with environment vars
+ * (but note that if the caller provides program-specific \p opts, setting the
+ * environment variable most likely breaks things).
  */
+void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts);
 
+/*! \brief
+ * Calls do_view() for all viewable output files.
+ */
 void view_all(const gmx_output_env_t *oenv, int nf, t_filenm fnm[]);
-/* calls do_view for all viewable output files in fnm[] */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

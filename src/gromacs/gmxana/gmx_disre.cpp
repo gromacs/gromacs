@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -59,7 +60,6 @@
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
