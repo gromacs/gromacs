@@ -1287,7 +1287,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                       nbv->grp[eintNonlocal].nbat,
                                        flags, eatNonlocal,
                                        enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                        fr->fshift);
@@ -1351,7 +1350,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   nbv->grp[eintLocal].nbat,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
@@ -1389,7 +1387,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   nbv->grp[eintLocal].nbat,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);

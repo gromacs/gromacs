@@ -1003,7 +1003,6 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
  * transfers to finish.
  */
 void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
-                            const nbnxn_atomdata_t gmx_unused *nbatom,
                             int flags, int aloc,
                             real *e_lj, real *e_el, rvec *fshift)
 {
