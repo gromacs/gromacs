@@ -37,7 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/viewit.h"
+#include "viewit.h"
 
 #include <cstdlib>
 #include <cstring>
