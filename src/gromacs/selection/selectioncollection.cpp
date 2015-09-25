@@ -500,28 +500,18 @@ SelectionCollection::~SelectionCollection()
 
 
 void
-SelectionCollection::initOptions(Options *options)
+SelectionCollection::initOptions(Options             *options,
+                                 SelectionTypeOption  selectionTypeOption)
 {
     const char * const debug_levels[]
         = { "no", "basic", "compile", "eval", "full" };
-
-    bool bAllowNonAtomOutput = false;
-    SelectionDataList::const_iterator iter;
-    for (iter = impl_->sc_.sel.begin(); iter != impl_->sc_.sel.end(); ++iter)
-    {
-        const internal::SelectionData &sel = **iter;
-        if (!sel.hasFlag(efSelection_OnlyAtoms))
-        {
-            bAllowNonAtomOutput = true;
-        }
-    }
 
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
     options->addOption(StringOption("selrpos")
                            .enumValueFromNullTerminatedArray(postypes)
                            .store(&impl_->rpost_).defaultValue(postypes[0])
                            .description("Selection reference positions"));
-    if (bAllowNonAtomOutput)
+    if (selectionTypeOption == IncludeSelectionTypeOption)
     {
         options->addOption(StringOption("seltype")
                                .enumValueFromNullTerminatedArray(postypes)

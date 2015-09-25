@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,6 +110,21 @@ class SelectionEvaluator;
 class SelectionCollection
 {
     public:
+        //! Flag for initOptions() to select how to behave with -seltype option.
+        enum SelectionTypeOption
+        {
+            /*! \brief
+             * Add the option for the user to select default value for
+             * setOutputPosType().
+             */
+            IncludeSelectionTypeOption,
+            /*! \brief
+             * Do not add the option, selections will always select atoms by
+             * default.
+             */
+            AlwaysAtomSelections
+        };
+
         /*! \brief
          * Creates an empty selection collection.
          *
@@ -122,13 +137,15 @@ class SelectionCollection
          * Initializes options for setting global properties on the collection.
          *
          * \param[in,out] options Options object to initialize.
+         * \param[in]     selectionTypeOption
+         *     Whether to add option to influence setOutputPosType().
          * \throws        std::bad_alloc if out of memory.
          *
          * Adds options to \p options that can be used to set the default
          * position types (see setReferencePosType() and setOutputPosType())
          * and debugging flags.
          */
-        void initOptions(Options *options);
+        void initOptions(Options *options, SelectionTypeOption selectionTypeOption);
 
         /*! \brief
          * Sets the default reference position handling for a selection
