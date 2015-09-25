@@ -79,34 +79,6 @@
  */
 static unsigned int gpu_min_ci_balanced_factor = 50;
 
-/*! \brief Helper function for warning output
- *
- * We should actually be using md_print_warn in md_logging.c,
- * but we can't include mpi.h in OpenCL code.
- */
-static void md_print_warn(FILE       *fplog,
-                          const char *fmt, ...)
-{
-    va_list ap;
-
-    if (fplog != NULL)
-    {
-        /* We should only print to stderr on the master node,
-         * in most cases fplog is only set on the master node, so this works.
-         */
-        va_start(ap, fmt);
-        fprintf(stderr, "\n");
-        vfprintf(stderr, fmt, ap);
-        fprintf(stderr, "\n");
-        va_end(ap);
-
-        va_start(ap, fmt);
-        fprintf(fplog, "\n");
-        vfprintf(fplog, fmt, ap);
-        fprintf(fplog, "\n");
-        va_end(ap);
-    }
-}
 
 /*! \brief Free device buffers
  *
