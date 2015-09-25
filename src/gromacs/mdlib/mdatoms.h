@@ -34,45 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDLIB_MDATOMS_H
+#define GMX_MDLIB_MDATOMS_H
 
-#ifndef _chargegroup_h
-#define _chargegroup_h
+#include <cstdio>
 
-#include <stdio.h>
-
-#include "gromacs/math/vectypes.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_mtop_t;
-struct t_block;
 
-void calc_chargegroup_radii(const struct gmx_mtop_t *mtop, rvec *x,
-                            real *rvdw1, real *rvdw2,
-                            real *rcoul1, real *rcoul2);
-/* This routine calculates the two largest charge group radii in x,
- * separately for VdW and Coulomb interactions.
+t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy);
+
+void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
+              int nindex, const int *index,
+              int homenr,
+              t_mdatoms *md);
+/* This routine copies the atoms->atom struct into md.
+ * If index!=NULL only the indexed atoms are copied.
  */
 
-void calc_cgcm(FILE *log, int cg0, int cg1, const struct t_block *cgs,
-               rvec pos[], rvec cg_cm[]);
-/* Routine to compute centers of geometry of charge groups. No periodicity
- * is used.
- */
+void update_mdatoms(t_mdatoms *md, real lambda);
+/* (Re)set all the mass parameters */
 
-void put_charge_groups_in_box (FILE *log, int cg0, int cg1,
-                               int ePBC, matrix box, struct t_block *cgs,
-                               rvec pos[],
-                               rvec cg_cm[]);
-/* This routine puts charge groups in the periodic box, keeping them
- * together.
- */
-
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _chargegroup_h */

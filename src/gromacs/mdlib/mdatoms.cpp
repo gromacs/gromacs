@@ -36,10 +36,11 @@
  */
 #include "gmxpre.h"
 
+#include "mdatoms.h"
+
 #include <math.h>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/topology/mtop_util.h"

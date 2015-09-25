@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
+ * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -34,33 +34,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _perf_est_h
-#define _perf_est_h
+#ifndef GMX_MDLIB_RBIN_H
+#define GMX_MDLIB_RBIN_H
 
-#include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
+struct t_commrec;
+
+typedef struct {
+    int     nreal;
+    int     maxreal;
+    double *rbuf;
+} t_bin;
+
+t_bin *mk_bin(void);
+/* Create a real bin */
+
+void destroy_bin(t_bin *b);
+/* Destroy the bin structure */
+
+void reset_bin(t_bin *b);
+/* Reset number of entries to zero */
+
+int add_binr(t_bin *b, int nr, real r[]);
+int add_bind(t_bin *b, int nr, double r[]);
+/* Add reals to the bin. Returns index */
+
+void sum_bin(t_bin *b, struct t_commrec *cr);
+/* Globally sum the reals in the bin */
+
+void extract_binr(t_bin *b, int index, int nr, real r[]);
+void extract_bind(t_bin *b, int index, int nr, double r[]);
+/* Extract values from the bin, starting from index (see add_bin) */
+
 #endif
-
-struct gmx_mtop_t;
-
-int n_bonded_dx(const struct gmx_mtop_t *mtop, gmx_bool bExcl);
-/* Returns the number of pbc_rvec_sub calls required for bonded interactions.
- * This number is also roughly proportional to the computational cost.
- */
-
-float pme_load_estimate(const struct gmx_mtop_t *mtop, const t_inputrec *ir,
-                        matrix box);
-/* Returns an estimate for the relative load of the PME mesh calculation
- * in the total force calculation.
- * This estimate is reasonable for recent Intel and AMD x86_64 CPUs.
- */
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  /* _perf_est_h */

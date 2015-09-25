@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,46 +34,36 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GMXLIB_CHARGEGROUP_H
+#define GMX_GMXLIB_CHARGEGROUP_H
 
-#ifndef _rbin_h
-#define _rbin_h
+#include <cstdio>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
+struct gmx_mtop_t;
+struct t_block;
+
+void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
+                            real *rvdw1, real *rvdw2,
+                            real *rcoul1, real *rcoul2);
+/* This routine calculates the two largest charge group radii in x,
+ * separately for VdW and Coulomb interactions.
+ */
+
+void calc_cgcm(FILE *log, int cg0, int cg1, const t_block *cgs,
+               rvec pos[], rvec cg_cm[]);
+/* Routine to compute centers of geometry of charge groups. No periodicity
+ * is used.
+ */
+
+void put_charge_groups_in_box (FILE *log, int cg0, int cg1,
+                               int ePBC, matrix box, t_block *cgs,
+                               rvec pos[],
+                               rvec cg_cm[]);
+/* This routine puts charge groups in the periodic box, keeping them
+ * together.
+ */
+
 #endif
-
-struct t_commrec;
-
-typedef struct {
-    int     nreal;
-    int     maxreal;
-    double *rbuf;
-} t_bin;
-
-t_bin *mk_bin(void);
-/* Create a real bin */
-
-void destroy_bin(t_bin *b);
-/* Destroy the bin structure */
-
-void reset_bin(t_bin *b);
-/* Reset number of entries to zero */
-
-int add_binr(t_bin *b, int nr, real r[]);
-int add_bind(t_bin *b, int nr, double r[]);
-/* Add reals to the bin. Returns index */
-
-void sum_bin(t_bin *b, struct t_commrec *cr);
-/* Globally sum the reals in the bin */
-
-void extract_binr(t_bin *b, int index, int nr, real r[]);
-void extract_bind(t_bin *b, int index, int nr, double r[]);
-/* Extract values from the bin, starting from index (see add_bin) */
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  /* _rbin_h */

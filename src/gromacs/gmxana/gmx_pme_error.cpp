@@ -47,7 +47,6 @@
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/main.h"
-#include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"

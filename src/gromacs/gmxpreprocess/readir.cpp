@@ -46,8 +46,8 @@
 
 #include <algorithm>
 
+#include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/inputrec.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"

@@ -44,9 +44,8 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/chargegroup.h"
+#include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
