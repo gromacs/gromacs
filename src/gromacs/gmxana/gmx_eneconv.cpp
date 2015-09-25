@@ -46,7 +46,7 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/gmxlib/disre.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"

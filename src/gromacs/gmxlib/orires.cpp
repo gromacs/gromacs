@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/orires.h"
+#include "orires.h"
 
 #include <cmath>
 

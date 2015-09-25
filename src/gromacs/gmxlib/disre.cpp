@@ -37,7 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/disre.h"
+#include "disre.h"
 
 #include "config.h"
 

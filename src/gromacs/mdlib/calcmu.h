@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,51 +34,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _disre_h
-#define _disre_h
+#ifndef GMX_MDLIB_CALCMU_H
+#define GMX_MDLIB_CALCMU_H
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/ifunc.h"
-
-struct gmx_mtop_t;
-struct t_commrec;
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct t_commrec;
-struct t_pbc;
+void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
+             int nChargePerturbed,
+             dvec mu, dvec mu_B);
 
-void init_disres(FILE *fplog, const struct gmx_mtop_t *mtop,
-                 t_inputrec *ir, const struct t_commrec *cr,
-                 t_fcdata *fcd, t_state *state, gmx_bool bIsREMD);
-/* Initiate *fcd data, must be called once, nbonds is the number
- * of iatoms in the ilist of the idef struct.
- * When time averaging is used, the history is initialized in state,
- * unless it was read before from a checkpoint file.
- * The implementation of distance restraints with -multi
- * must differ according to whether REMD is active.
- */
-
-void calc_disres_R_6(int nfa, const t_iatom *fa, const t_iparams ip[],
-                     const rvec *x, const struct t_pbc *pbc,
-                     t_fcdata *fcd, history_t *hist);
-/* Calculates r and r^-3 (inst. and time averaged) for all pairs
- * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
- */
-
-t_ifunc ta_disres;
-/* Calculate the distance restraint forces, return the potential */
-
-void update_disres_history(t_fcdata *fcd, history_t *hist);
-/* Copy the new time averages that have been calculated in calc_disres_R_6 */
+gmx_bool read_mu(FILE *fp, rvec mu, real *vol);
+/* Return true on succes */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _disre_h */
+#endif

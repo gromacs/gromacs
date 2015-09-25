@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDLIB_SHELLFC_H
+#define GMX_MDLIB_SHELLFC_H
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
@@ -75,3 +77,5 @@ int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_bool *bConverged,
                         gmx_vsite_t *vsite,
                         FILE *fp_field);
+
+#endif

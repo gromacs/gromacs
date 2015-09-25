@@ -44,13 +44,13 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/orires.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
