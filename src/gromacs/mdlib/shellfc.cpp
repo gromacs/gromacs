@@ -77,7 +77,7 @@ typedef struct {
     rvec    step;
 } t_shell;
 
-typedef struct gmx_shellfc {
+struct gmx_shellfc_t {
     int         nshell_gl;      /* The number of shells in the system       */
     t_shell    *shell_gl;       /* All the shells (for DD only)             */
     int        *shell_index_gl; /* Global shell index (for DD only)         */
@@ -97,7 +97,7 @@ typedef struct gmx_shellfc {
     rvec       *adir_xnold;     /* Work space for init_adir                 */
     rvec       *adir_xnew;      /* Work space for init_adir                 */
     int         adir_nalloc;    /* Work space for init_adir                 */
-} t_gmx_shellfc;
+};
 
 
 static void pr_shell(FILE *fplog, int ns, t_shell s[])
@@ -236,9 +236,9 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     }
 }
 
-gmx_shellfc_t init_shell_flexcon(FILE *fplog,
-                                 gmx_mtop_t *mtop, int nflexcon,
-                                 rvec *x)
+gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
+                                  gmx_mtop_t *mtop, int nflexcon,
+                                  rvec *x)
 {
     struct gmx_shellfc       *shfc;
     t_shell                  *shell;
@@ -841,7 +841,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
     }
 }
 
-static void init_adir(FILE *log, gmx_shellfc_t shfc,
+static void init_adir(FILE *log, gmx_shellfc_t *shfc,
                       gmx_constr_t constr, t_idef *idef, t_inputrec *ir,
                       t_commrec *cr, int dd_ac1,
                       gmx_int64_t step, t_mdatoms *md, int start, int end,

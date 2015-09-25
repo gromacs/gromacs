@@ -66,7 +66,6 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/shellfc.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
@@ -81,6 +80,7 @@ struct t_commrec;
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
+struct gmx_shellfc_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -274,7 +274,7 @@ void dd_partition_system(FILE                       *fplog,
                          gmx_localtop_t             *top_local,
                          t_forcerec                 *fr,
                          gmx_vsite_t                *vsite,
-                         gmx_shellfc_t               shellfc,
+                         gmx_shellfc_t              *shellfc,
                          gmx_constr_t                constr,
                          t_nrnb                     *nrnb,
                          gmx_wallcycle_t             wcycle,
