@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -287,6 +287,26 @@ SelectionOptionManager::requestOptionDelayedParsing(
         SelectionOptionStorage *storage)
 {
     impl_->requests_.push_back(Impl::SelectionRequest(storage));
+}
+
+void
+SelectionOptionManager::initOptions(Options *options)
+{
+    bool allowOnlyAtomOutput = true;
+    Impl::OptionList::const_iterator iter;
+    for (iter = impl_->options_.begin(); iter != impl_->options_.end(); ++iter)
+    {
+        if (!(*iter)->allowsOnlyAtoms())
+        {
+            allowOnlyAtomOutput = false;
+        }
+    }
+
+    SelectionCollection::SelectionTypeOption typeOption
+        = allowOnlyAtomOutput
+            ? SelectionCollection::AlwaysAtomSelections
+            : SelectionCollection::IncludeSelectionTypeOption;
+    impl_->collection_.initOptions(options, typeOption);
 }
 
 void
