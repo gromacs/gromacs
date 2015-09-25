@@ -1167,7 +1167,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr          = mk_forcerec();
         fr->hwinfo  = hwinfo;
         fr->gpu_opt = &hw_opt->gpu_opt;
-        init_forcerec(fplog, oenv, fr, fcd, inputrec, mtop, cr, box,
+        init_forcerec(fplog, fr, fcd, inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tabletf", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
@@ -1175,11 +1175,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                       nbpu_opt,
                       FALSE,
                       pforce);
-
-        /* version for PCA_NOT_READ_NODE (see md.c) */
-        /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
-           "nofile","nofile","nofile","nofile",FALSE,pforce);
-         */
 
         /* Initialize QM-MM */
         if (fr->bQMMM)
