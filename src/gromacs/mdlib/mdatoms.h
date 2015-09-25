@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,30 +34,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MDLIB_MDATOMS_H
+#define GMX_MDLIB_MDATOMS_H
 
-#ifndef _splitter_h
-#define _splitter_h
+#include <cstdio>
 
-#include <stdio.h>
-
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct gmx_mtop_t;
 
-struct t_blocka;
-struct t_idef;
+t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy);
 
-void gen_sblocks(FILE *fp, int at_start, int at_end,
-                 struct t_idef *idef, struct t_blocka *sblock,
-                 gmx_bool bSettle);
-/* Generate shake blocks from the constraint list. Set bSettle to yes for shake
- * blocks including settles. You normally do not want this.
+void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
+              int nindex, const int *index,
+              int homenr,
+              t_mdatoms *md);
+/* This routine copies the atoms->atom struct into md.
+ * If index!=NULL only the indexed atoms are copied.
  */
 
-#ifdef __cplusplus
-}
-#endif
+void update_mdatoms(t_mdatoms *md, real lambda);
+/* (Re)set all the mass parameters */
 
 #endif

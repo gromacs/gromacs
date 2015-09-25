@@ -37,7 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/rbin.h"
+#include "rbin.h"
 
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"

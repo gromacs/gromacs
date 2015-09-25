@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/splitter.h"
+#include "splitter.h"
 
 #include <cstdlib>
 #include <cstring>

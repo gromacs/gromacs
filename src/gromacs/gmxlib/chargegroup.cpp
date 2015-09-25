@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/chargegroup.h"
+#include "chargegroup.h"
 
 #include <cmath>
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,60 +34,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GMXLIB_SPLITTER_H
+#define GMX_GMXLIB_SPLITTER_H
 
-#ifndef _sighandler_h
-#define _sighandler_h
-
-#include <signal.h>
+#include <cstdio>
 
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
+struct t_blocka;
+struct t_idef;
+
+void gen_sblocks(FILE *fp, int at_start, int at_end,
+                 t_idef *idef, t_blocka *sblock,
+                 gmx_bool bSettle);
+/* Generate shake blocks from the constraint list. Set bSettle to yes for shake
+ * blocks including settles. You normally do not want this.
+ */
+
 #endif
-
-/* NOTE: the terminology is:
-   incoming signals (provided by the operating system, or transmitted from
-   other nodes) lead to stop conditions. These stop conditions should be
-   checked for and acted on by the outer loop of the simulation */
-
-/* the stop conditions. They are explicitly allowed to be compared against
-   each other. */
-typedef enum
-{
-    gmx_stop_cond_none = 0,
-    gmx_stop_cond_next_ns, /* stop a the next neighbour searching step */
-    gmx_stop_cond_next,    /* stop a the next step */
-    gmx_stop_cond_abort    /* stop now. (this should never be seen) */
-} gmx_stop_cond_t;
-
-/* Our names for the stop conditions.
-   These must match the number given in gmx_stop_cond_t.*/
-extern const char *gmx_stop_cond_name[];
-
-/* the externally visible functions: */
-
-/* install the signal handlers that can set the stop condition. */
-void signal_handler_install(void);
-
-/* get the current stop condition */
-gmx_stop_cond_t gmx_get_stop_condition(void);
-
-/* set the stop condition upon receiving a remote one */
-void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
-
-/* get the signal name that lead to the current stop condition. */
-const char *gmx_get_signal_name(void);
-
-/* check whether we received a USR1 signal.
-   The condition is reset once a TRUE value is returned, so this function
-   only returns TRUE once for a single signal. */
-gmx_bool gmx_got_usr_signal(void);
-
-
-#ifdef __cplusplus
-}
-#endif
-
-
-#endif  /* _sighandler_h */
