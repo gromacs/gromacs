@@ -86,33 +86,6 @@ extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_n
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_nbfp_comb_texref();
 extern const struct texture<float, 1, cudaReadModeElementType> &nbnxn_cuda_get_coulomb_tab_texref();
 
-/* We should actually be using md_print_warn in md_logging.c,
- * but we can't include mpi.h in CUDA code.
- */
-static void md_print_warn(FILE       *fplog,
-                          const char *fmt, ...)
-{
-    va_list ap;
-
-    if (fplog != NULL)
-    {
-        /* We should only print to stderr on the master node,
-         * in most cases fplog is only set on the master node, so this works.
-         */
-        va_start(ap, fmt);
-        fprintf(stderr, "\n");
-        vfprintf(stderr, fmt, ap);
-        fprintf(stderr, "\n");
-        va_end(ap);
-
-        va_start(ap, fmt);
-        fprintf(fplog, "\n");
-        vfprintf(fplog, fmt, ap);
-        fprintf(fplog, "\n");
-        va_end(ap);
-    }
-}
-
 
 /* Fw. decl. */
 static void nbnxn_cuda_clear_e_fshift(gmx_nbnxn_cuda_t *nb);
@@ -537,8 +510,7 @@ static void nbnxn_cuda_init_const(gmx_nbnxn_cuda_t               *nb,
     nbnxn_cuda_clear_e_fshift(nb);
 }
 
-void nbnxn_gpu_init(FILE                      *fplog,
-                    gmx_nbnxn_cuda_t         **p_nb,
+void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                     const gmx_gpu_info_t      *gpu_info,
                     const gmx_gpu_opt_t       *gpu_opt,
                     const interaction_const_t *ic,
@@ -549,9 +521,6 @@ void nbnxn_gpu_init(FILE                      *fplog,
 {
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
-    char              sbuf[STRLEN];
-    bool              bStreamSync, bNoStreamSync, bTMPIAtomics, bX86, bOldDriver;
-    int               cuda_drv_ver;
 
     assert(gpu_info);
 
@@ -619,118 +588,11 @@ void nbnxn_gpu_init(FILE                      *fplog,
     stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
 
-    /* On GPUs with ECC enabled, cudaStreamSynchronize shows a large overhead
-     * (which increases with shorter time/step) caused by a known CUDA driver bug.
-     * To work around the issue we'll use an (admittedly fragile) memory polling
-     * waiting to preserve performance. This requires support for atomic
-     * operations and only works on x86/x86_64.
-     * With polling wait event-timing also needs to be disabled.
-     *
-     * The overhead is greatly reduced in API v5.0 drivers and the improvement
-     * is independent of runtime version. Hence, with API v5.0 drivers and later
-     * we won't switch to polling.
-     *
-     * NOTE: Unfortunately, this is known to fail when GPUs are shared by (t)MPI,
-     * ranks so we will also disable it in that case.
-     */
-
-    bStreamSync    = getenv("GMX_CUDA_STREAMSYNC") != NULL;
-    bNoStreamSync  = getenv("GMX_NO_CUDA_STREAMSYNC") != NULL;
-
-#ifdef TMPI_ATOMICS
-    bTMPIAtomics = true;
-#else
-    bTMPIAtomics = false;
-#endif
-
-#ifdef GMX_TARGET_X86
-    bX86 = true;
-#else
-    bX86 = false;
-#endif
-
-    if (bStreamSync && bNoStreamSync)
-    {
-        gmx_fatal(FARGS, "Conflicting environment variables: both GMX_CUDA_STREAMSYNC and GMX_NO_CUDA_STREAMSYNC defined");
-    }
-
-    stat = cudaDriverGetVersion(&cuda_drv_ver);
-    CU_RET_ERR(stat, "cudaDriverGetVersion failed");
-
-    bOldDriver = (cuda_drv_ver < 5000);
-
-    if ((nb->dev_info->prop.ECCEnabled == 1) && bOldDriver)
-    {
-        /* Polling wait should be used instead of cudaStreamSynchronize only if:
-         *   - ECC is ON & driver is old (checked above),
-         *   - we're on x86/x86_64,
-         *   - atomics are available, and
-         *   - GPUs are not being shared.
-         */
-        bool bShouldUsePollSync = (bX86 && bTMPIAtomics &&
-                                   (gmx_count_gpu_dev_shared(gpu_opt) < 1));
-
-        if (bStreamSync)
-        {
-            nb->bUseStreamSync = true;
-
-            /* only warn if polling should be used */
-            if (bShouldUsePollSync)
-            {
-                md_print_warn(fplog,
-                              "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, but\n"
-                              "      cudaStreamSynchronize waiting is forced by the GMX_CUDA_STREAMSYNC env. var.\n");
-            }
-        }
-        else
-        {
-            nb->bUseStreamSync = !bShouldUsePollSync;
-
-            if (bShouldUsePollSync)
-            {
-                md_print_warn(fplog,
-                              "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, known to\n"
-                              "      cause performance loss. Switching to the alternative polling GPU wait.\n"
-                              "      If you encounter issues, switch back to standard GPU waiting by setting\n"
-                              "      the GMX_CUDA_STREAMSYNC environment variable.\n");
-            }
-            else
-            {
-                /* Tell the user that the ECC+old driver combination can be bad */
-                sprintf(sbuf,
-                        "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0.\n"
-                        "      A known bug in this driver version can cause performance loss.\n"
-                        "      However, the polling wait workaround can not be used because\n%s\n"
-                        "      Consider updating the driver or turning ECC off.",
-                        (bX86 && bTMPIAtomics) ?
-                        "      GPU(s) are being oversubscribed." :
-                        "      atomic operations are not supported by the platform/CPU+compiler.");
-                md_print_warn(fplog, sbuf);
-            }
-        }
-    }
-    else
-    {
-        if (bNoStreamSync)
-        {
-            nb->bUseStreamSync = false;
-
-            md_print_warn(fplog,
-                          "NOTE: Polling wait for GPU synchronization requested by GMX_NO_CUDA_STREAMSYNC\n");
-        }
-        else
-        {
-            /* no/off ECC, cudaStreamSynchronize not turned off by env. var. */
-            nb->bUseStreamSync = true;
-        }
-    }
-
     /* CUDA timing disabled as event timers don't work:
        - with multiple streams = domain-decomposition;
-       - with the polling waiting hack (without cudaStreamSynchronize);
        - when turned off by GMX_DISABLE_CUDA_TIMING.
      */
-    nb->bDoTime = (!nb->bUseTwoStreams && nb->bUseStreamSync &&
+    nb->bDoTime = (!nb->bUseTwoStreams &&
                    (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
 
     if (nb->bDoTime)
