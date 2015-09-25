@@ -2214,7 +2214,7 @@ static void init_nb_verlet(FILE                *fp,
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        nbnxn_gpu_init(fp, &nbv->gpu_nbv,
+        nbnxn_gpu_init(&nbv->gpu_nbv,
                        &fr->hwinfo->gpu_info,
                        fr->gpu_opt,
                        fr->ic,
