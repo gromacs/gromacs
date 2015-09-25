@@ -223,8 +223,6 @@ struct gmx_nbnxn_cuda_t
 {
     struct gmx_device_info_t *dev_info;       /**< CUDA device information                              */
     bool                      bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU    */
-    bool                      bUseStreamSync; /**< true if the standard cudaStreamSynchronize is used
-                                                   and not memory polling-based waiting                 */
     cu_atomdata_t            *atdat;          /**< atom data                                            */
     cu_nbparam_t             *nbparam;        /**< parameters required for the non-bonded calc.         */
     cu_plist_t               *plist[2];       /**< pair-list data structures (local and non-local)      */
