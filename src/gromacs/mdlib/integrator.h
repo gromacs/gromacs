@@ -48,7 +48,6 @@
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/legacyheaders/types/state.h"
@@ -60,6 +59,7 @@
 
 struct t_commrec;
 struct gmx_mtop_t;
+struct gmx_membed_t;
 
 namespace gmx
 {
@@ -109,7 +109,7 @@ typedef double integrator_t (FILE *fplog, struct t_commrec *cr,
                              gmx_edsam_t ed,
                              t_forcerec *fr,
                              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                             gmx_membed_t membed,
+                             gmx_membed_t *membed,
                              real cpt_period, real max_hours,
                              int imdport,
                              unsigned long Flags,

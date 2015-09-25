@@ -690,7 +690,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_edsam_t               ed           = NULL;
     int                       nthreads_pme = 1;
     int                       nthreads_pp  = 1;
-    gmx_membed_t              membed       = NULL;
+    gmx_membed_t             *membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
     gmx_bool                  bUseGPU            = FALSE;

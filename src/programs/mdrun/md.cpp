@@ -81,7 +81,6 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/legacyheaders/types/state.h"
@@ -169,7 +168,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                            gmx_edsam_t ed,
                            t_forcerec *fr,
                            int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                           gmx_membed_t membed,
+                           gmx_membed_t *membed,
                            real cpt_period, real max_hours,
                            int imdport,
                            unsigned long Flags,
@@ -186,7 +185,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   t_mdatoms *mdatoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                   gmx_edsam_t ed, t_forcerec *fr,
-                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t membed,
+                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t *membed,
                   real cpt_period, real max_hours,
                   int imdport,
                   unsigned long Flags,
