@@ -43,6 +43,7 @@
 
 #include <algorithm>
 
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fft/fft.h"
@@ -51,7 +52,6 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/arraysize.h"

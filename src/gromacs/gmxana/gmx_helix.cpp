@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -50,7 +51,6 @@
 #include "gromacs/gmxana/hxprops.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"

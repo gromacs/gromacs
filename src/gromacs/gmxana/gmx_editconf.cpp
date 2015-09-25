@@ -42,6 +42,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
@@ -52,7 +53,6 @@
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"

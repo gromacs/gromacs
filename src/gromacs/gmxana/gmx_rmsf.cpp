@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/trxio.h"
@@ -47,7 +48,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"

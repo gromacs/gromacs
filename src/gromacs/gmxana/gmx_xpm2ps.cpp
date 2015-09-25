@@ -44,12 +44,12 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/writeps.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fft/fft.h"
@@ -52,7 +53,6 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
