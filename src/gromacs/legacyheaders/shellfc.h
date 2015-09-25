@@ -40,13 +40,14 @@
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
+struct gmx_enerdata_t;
+struct t_fcdata;
+struct t_forcerec;
+struct t_graph;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct t_fcdata;
-struct t_graph;
 
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.

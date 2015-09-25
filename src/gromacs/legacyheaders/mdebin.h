@@ -42,11 +42,12 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/legacyheaders/ebin.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/state.h"
 
 struct gmx_constr;
 struct gmx_ekindata_t;
+struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_fcdata;
 

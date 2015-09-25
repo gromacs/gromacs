@@ -72,6 +72,7 @@
 #endif
 
 struct gmx_domdec_t;
+struct gmx_enerdata_t;
 struct gmx_mtop_t;
 
 static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */

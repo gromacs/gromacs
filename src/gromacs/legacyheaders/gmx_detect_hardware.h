@@ -38,6 +38,9 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_gpu_info_t;
+struct gmx_gpu_opt_t;
+struct gmx_hw_info_t;
 struct t_commrec;
 
 #ifdef __cplusplus
@@ -84,11 +87,11 @@ void gmx_select_gpu_ids(FILE *fplog, const struct t_commrec *cr,
 
 /* Check the consistency of hw_opt with hwinfo.
    This function should be called once on each MPI rank. */
-void gmx_check_hw_runconf_consistency(FILE                   *fplog,
-                                      const gmx_hw_info_t    *hwinfo,
-                                      const struct t_commrec *cr,
-                                      const gmx_hw_opt_t     *hw_opt,
-                                      gmx_bool                bUseGPU);
+void gmx_check_hw_runconf_consistency(FILE                       *fplog,
+                                      const struct gmx_hw_info_t *hwinfo,
+                                      const struct t_commrec     *cr,
+                                      const struct gmx_hw_opt_t  *hw_opt,
+                                      gmx_bool                    bUseGPU);
 #endif
 
 

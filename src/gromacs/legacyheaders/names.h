@@ -38,8 +38,9 @@
 #ifndef _names_h
 #define _names_h
 
-
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/topology.h"
 
 #ifdef __cplusplus
 extern "C" {
