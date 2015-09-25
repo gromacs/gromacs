@@ -44,6 +44,7 @@
 
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

@@ -41,21 +41,16 @@
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
-struct gmx_constr;
-struct gmx_shellfc_t;
-struct t_fcdata;
-struct t_graph;
-
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
-gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
-                                  gmx_mtop_t *mtop, int nflexcon,
-                                  rvec *x);
+struct gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
+                                         gmx_mtop_t *mtop, int nflexcon,
+                                         rvec *x);
 
 /* Get the local shell with domain decomposition */
 void make_local_shells(t_commrec *cr, t_mdatoms *md,
-                       gmx_shellfc_t *shfc);
+                       struct gmx_shellfc_t *shfc);
 
 /* Optimize shell positions */
 int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
@@ -63,15 +58,15 @@ int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_bool bDoNS, int force_flags,
                         gmx_localtop_t *top,
                         struct gmx_constr *constr,
-                        gmx_enerdata_t *enerd, t_fcdata *fcd,
+                        struct gmx_enerdata_t *enerd, struct t_fcdata *fcd,
                         t_state *state, rvec f[],
                         tensor force_vir,
                         t_mdatoms *md,
                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                         struct t_graph *graph,
                         gmx_groups_t *groups,
-                        gmx_shellfc_t *shfc,
-                        t_forcerec *fr,
+                        struct gmx_shellfc_t *shfc,
+                        struct t_forcerec *fr,
                         gmx_bool bBornRadii,
                         double t, rvec mu_tot,
                         gmx_bool *bConverged,

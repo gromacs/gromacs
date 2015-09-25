@@ -40,7 +40,7 @@
 
 #include <cmath>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/utilities.h"
