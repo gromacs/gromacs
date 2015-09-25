@@ -68,8 +68,11 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_enerdata_t;
+struct gmx_grppairener_t;
 struct gmx_multisim_t;
 struct t_fcdata;
+struct t_forcerec;
 
 #ifdef __cplusplus
 extern "C" {

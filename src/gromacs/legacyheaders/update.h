@@ -50,6 +50,7 @@ struct t_fcdata;
 extern "C" {
 #endif
 
+struct gmx_enerdata_t;
 struct t_graph;
 
 /* Abstract type for stochastic dynamics */

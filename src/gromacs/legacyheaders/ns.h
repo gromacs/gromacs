@@ -44,7 +44,9 @@
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_ns_t;
 struct t_commrec;
+struct t_forcerec;
 
 #ifdef __cplusplus
 extern "C" {
