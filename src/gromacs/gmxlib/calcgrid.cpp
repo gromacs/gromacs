@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/calcgrid.h"
+#include "calcgrid.h"
 
 #include <cmath>
 

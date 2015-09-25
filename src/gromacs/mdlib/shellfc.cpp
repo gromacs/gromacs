@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/shellfc.h"
+#include "shellfc.h"
 
 #include <stdlib.h>
 #include <string.h>

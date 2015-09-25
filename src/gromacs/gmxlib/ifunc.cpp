@@ -37,9 +37,9 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/orires.h"
 #include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/listed-forces/bonded.h"
 

@@ -51,11 +51,11 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/orires.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/position-restraints.h"

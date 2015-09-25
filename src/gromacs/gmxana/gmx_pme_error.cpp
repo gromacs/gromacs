@@ -43,7 +43,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/gmxlib/calcgrid.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/main.h"

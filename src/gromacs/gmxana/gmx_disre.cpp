@@ -51,7 +51,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/gmxlib/disre.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdatoms.h"

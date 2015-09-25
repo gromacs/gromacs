@@ -7,6 +7,7 @@ domdec -> ewald
 domdec -> mdlib
 domdec -> pulling
 domdec -> swap
+gmxlib -> listed-forces
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald

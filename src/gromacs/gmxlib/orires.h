@@ -2,8 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,43 +34,57 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GMXLIB_ORIRES_H
+#define GMX_GMXLIB_ORIRES_H
+
+#include <stdio.h>
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/vsite.h"
-#include "gromacs/timing/wallcycle.h"
 
-struct gmx_constr;
-struct gmx_shellfc_t;
-struct t_graph;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* Initialization function, also predicts the initial shell postions.
- * If x!=NULL, the shells are predict for the global coordinates x.
+struct t_pbc;
+struct t_commrec;
+struct gmx_multisim_t;
+
+void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
+                 rvec x[],
+                 const t_inputrec *ir,
+                 const struct t_commrec *cr, t_oriresdata *od,
+                 t_state *state);
+/* Decides whether orientation restraints can work, and initializes
+   all the orientation restraint stuff in *od (and assumes *od is
+   already allocated. */
+
+real calc_orires_dev(const struct gmx_multisim_t *ms,
+                     int nfa, const t_iatom fa[], const t_iparams ip[],
+                     const t_mdatoms *md, const rvec x[],
+                     const struct t_pbc *pbc, t_fcdata *fcd, history_t *hist);
+/*
+ * Calculates the time averaged D matrices, the S matrix for each experiment.
+ * Returns the weighted RMS deviation of the orientation restraints.
  */
-gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
-                                  gmx_mtop_t *mtop, int nflexcon,
-                                  rvec *x);
 
-/* Get the local shell with domain decomposition */
-void make_local_shells(t_commrec *cr, t_mdatoms *md,
-                       gmx_shellfc_t *shfc);
+void diagonalize_orires_tensors(t_oriresdata *od);
+/*
+ * Diagonalizes the order tensor(s) of the orienation restraints.
+ * For each experiment eig containts first 3 eigenvalues and then
+ * the 3 eigenvectors. The eigenvalues are ordered on magnitude.
+ */
 
-/* Optimize shell positions */
-int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
-                        gmx_int64_t mdstep, t_inputrec *inputrec,
-                        gmx_bool bDoNS, int force_flags,
-                        gmx_localtop_t *top,
-                        struct gmx_constr *constr,
-                        gmx_enerdata_t *enerd, t_fcdata *fcd,
-                        t_state *state, rvec f[],
-                        tensor force_vir,
-                        t_mdatoms *md,
-                        t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                        struct t_graph *graph,
-                        gmx_groups_t *groups,
-                        gmx_shellfc_t *shfc,
-                        t_forcerec *fr,
-                        gmx_bool bBornRadii,
-                        double t, rvec mu_tot,
-                        gmx_bool *bConverged,
-                        gmx_vsite_t *vsite,
-                        FILE *fp_field);
+void print_orires_log(FILE *log, t_oriresdata *od);
+/* Print order parameter, eigenvalues and eigenvectors to the log file */
+
+t_ifunc orires;
+/* Does only the orientation restraint force calculation */
+
+void update_orires_history(t_fcdata *fcd, history_t *hist);
+/* Copy the new time averages that have been calculated in calc_orires_dev */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  /* _orires_h */
