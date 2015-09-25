@@ -78,7 +78,6 @@
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/nsgrid.h"
-#include "gromacs/legacyheaders/types/shellfc.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
@@ -9447,7 +9446,7 @@ void dd_partition_system(FILE                *fplog,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
                          gmx_vsite_t         *vsite,
-                         gmx_shellfc_t        shellfc,
+                         gmx_shellfc_t       *shellfc,
                          gmx_constr_t         constr,
                          t_nrnb              *nrnb,
                          gmx_wallcycle_t      wcycle,

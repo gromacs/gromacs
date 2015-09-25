@@ -86,7 +86,6 @@
 #include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/oenv.h"
-#include "gromacs/legacyheaders/types/shellfc.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/utilities.h"
@@ -227,7 +226,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_signalling_t  gs;
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind;
-    gmx_shellfc_t     shellfc;
+    gmx_shellfc_t    *shellfc;
     int               count, nconverged = 0;
     double            tcount                 = 0;
     gmx_bool          bConverged             = TRUE, bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
