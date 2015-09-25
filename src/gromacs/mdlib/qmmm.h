@@ -42,6 +42,9 @@
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct t_forcerec;
+struct t_QMMMrec;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

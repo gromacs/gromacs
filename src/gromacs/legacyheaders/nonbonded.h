@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 #define _nonbonded_h
 
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,8 +49,8 @@ extern "C" {
 #endif
 
 void
-gmx_nonbonded_setup(t_forcerec *   fr,
-                    gmx_bool       bGenericKernelOnly);
+gmx_nonbonded_setup(struct t_forcerec *   fr,
+                    gmx_bool              bGenericKernelOnly);
 
 
 
@@ -70,7 +71,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
 #define GMX_NONBONDED_DO_SR             (1<<5)
 
 void
-do_nonbonded(t_forcerec *fr,
+do_nonbonded(struct t_forcerec *fr,
              rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *md, t_blocka *excl,
              gmx_grppairener_t *grppener,
              t_nrnb *nrnb, real *lambda, real dvdlambda[],

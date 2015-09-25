@@ -37,7 +37,7 @@
  * kernel type 2xnn.
  */
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
 /*! \brief Run-time dispatcher for nbnxn kernel functions. */

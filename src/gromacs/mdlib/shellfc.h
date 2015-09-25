@@ -42,7 +42,10 @@
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
+struct gmx_enerdata_t;
 struct gmx_shellfc_t;
+struct gmx_mtop_t;
+struct t_forcerec;
 struct t_fcdata;
 struct t_graph;
 
@@ -62,13 +65,13 @@ int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         gmx_int64_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
                         gmx_localtop_t *top,
-                        struct gmx_constr *constr,
+                        gmx_constr *constr,
                         gmx_enerdata_t *enerd, t_fcdata *fcd,
                         t_state *state, rvec f[],
                         tensor force_vir,
                         t_mdatoms *md,
                         t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                        struct t_graph *graph,
+                        t_graph *graph,
                         gmx_groups_t *groups,
                         gmx_shellfc_t *shfc,
                         t_forcerec *fr,
