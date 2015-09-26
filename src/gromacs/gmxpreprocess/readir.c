@@ -1111,11 +1111,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         /* reaction field (at the cut-off) */
 
-        if (ir->coulombtype == eelRF_ZERO)
+        if (ir->coulombtype == eelRF_ZERO && ir->epsilon_rf != 0)
         {
             sprintf(warn_buf, "With coulombtype = %s, epsilon-rf must be 0, assuming you meant epsilon_rf=0",
                     eel_names[ir->coulombtype]);
-            CHECK(ir->epsilon_rf != 0);
+            warning(wi, warn_buf);
             ir->epsilon_rf = 0.0;
         }
 
