@@ -64,7 +64,7 @@ typedef struct {
 #define EGP_EXCL  (1<<0)
 #define EGP_TABLE (1<<1)
 
-typedef struct {
+typedef struct t_grpopts {
     int       ngtc;           /* # T-Coupl groups                        */
     int       nhchainlength;  /* # of nose-hoover chains per group       */
     int       ngacc;          /* # Accelerate groups                     */
@@ -120,14 +120,14 @@ typedef struct {
     real        kB;         /* force constant for state B */
 } t_pull_coord;
 
-typedef struct {
+typedef struct t_simtemp {
     int   eSimTempScale; /* simulated temperature scaling; linear or exponential */
     real  simtemp_low;   /* the low temperature for simulated tempering  */
     real  simtemp_high;  /* the high temperature for simulated tempering */
     real *temperatures;  /* the range of temperatures used for simulated tempering */
 } t_simtemp;
 
-typedef struct {
+typedef struct t_lambda {
     int    nstdhdl;                 /* The frequency for calculating dhdl           */
     double init_lambda;             /* fractional value of lambda (usually will use
                                        init_fep_state, this will only be for slow growth,
@@ -160,7 +160,7 @@ typedef struct {
     double dh_hist_spacing;         /* The spacing for the dH histogram */
 } t_lambda;
 
-typedef struct {
+typedef struct t_expanded {
     int      nstexpanded;         /* The frequency of expanded ensemble state changes */
     int      elamstats;           /* which type of move updating do we use for lambda monte carlo (or no for none) */
     int      elmcmove;            /* what move set will be we using for state space moves */
@@ -189,7 +189,7 @@ typedef struct {
     real    *init_lambda_weights; /* user-specified initial weights to start with  */
 } t_expanded;
 
-typedef struct {
+typedef struct pull_params_t {
     int            ngroup;         /* number of pull groups */
     int            ncoord;         /* number of pull coordinates */
     real           cylinder_r;     /* radius of cylinder for dynamic COM */
@@ -237,7 +237,7 @@ typedef struct {
     gmx_enfrotgrp_t enfrotgrp;     /* Stores non-inputrec rotation data per group   */
 } t_rotgrp;
 
-typedef struct {
+typedef struct t_rot {
     int          ngrp;       /* Number of rotation groups                     */
     int          nstrout;    /* Output frequency for main rotation outfile    */
     int          nstsout;    /* Output frequency for per-slab data            */
@@ -246,18 +246,18 @@ typedef struct {
 } t_rot;
 
 /* Abstract type for IMD only defined in IMD.c */
-typedef struct gmx_IMD *t_gmx_IMD;
+struct t_gmx_IMD;
 
-typedef struct {
-    int         nat;         /* Number of interactive atoms                   */
-    atom_id    *ind;         /* The global indices of the interactive atoms   */
-    t_gmx_IMD   setup;       /* Stores non-inputrec IMD data                  */
+typedef struct t_IMD {
+    int               nat;   /* Number of interactive atoms                   */
+    atom_id          *ind;   /* The global indices of the interactive atoms   */
+    struct t_gmx_IMD *setup; /* Stores non-inputrec IMD data                  */
 } t_IMD;
 
 /* Abstract types for position swapping only defined in swapcoords.c */
 typedef struct t_swap *gmx_swapcoords_t;
 
-typedef struct {
+typedef struct t_swapcoords {
     int              nstswap;           /* Every how many steps a swap is attempted?    */
     int              nat;               /* Number of atoms in the ion group             */
     int              nat_split[2];      /* Number of atoms in the split group           */
@@ -280,7 +280,7 @@ typedef struct {
 } t_swapcoords;
 
 
-typedef struct {
+typedef struct t_adress {
     int      type;           /* type of AdResS simulation                    */
     gmx_bool bnew_wf;        /* enable new AdResS weighting function         */
     gmx_bool bchempot_dx;    /*true:interaction table format input is F=-dmu/dx   false: dmu_dwp  */
@@ -300,7 +300,7 @@ typedef struct {
     int      n_energy_grps;
 } t_adress;
 
-typedef struct {
+typedef struct t_inputrec {
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */

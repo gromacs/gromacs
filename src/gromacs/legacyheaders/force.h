@@ -48,6 +48,8 @@
 struct t_commrec;
 struct t_fcdata;
 struct t_graph;
+struct t_grpopts;
+struct t_lambda;
 struct t_pbc;
 struct gmx_edsam;
 
@@ -79,24 +81,24 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf,
 /* Determine the reaction-field constants */
 
 void init_generalized_rf(FILE *fplog,
-                         const gmx_mtop_t *mtop, const t_inputrec *ir,
+                         const gmx_mtop_t *mtop, const struct t_inputrec *ir,
                          t_forcerec *fr);
 /* Initialize the generalized reaction field parameters */
 
 
 /* In wall.c */
 void make_wall_tables(FILE *fplog,
-                      const t_inputrec *ir, const char *tabfn,
+                      const struct t_inputrec *ir, const char *tabfn,
                       const gmx_groups_t *groups,
                       t_forcerec *fr);
 
-real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
+real do_walls(struct t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
               rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
 
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
-gmx_bool can_use_allvsall(const t_inputrec *ir,
+gmx_bool can_use_allvsall(const struct t_inputrec *ir,
                           gmx_bool bPrintNote, struct t_commrec *cr, FILE *fp);
 /* Returns if we can use all-vs-all loops.
  * If bPrintNote==TRUE, prints a note, if necessary, to stderr
@@ -104,10 +106,10 @@ gmx_bool can_use_allvsall(const t_inputrec *ir,
  */
 
 
-gmx_bool nbnxn_acceleration_supported(FILE                    *fplog,
-                                      const struct t_commrec  *cr,
-                                      const t_inputrec        *ir,
-                                      gmx_bool                 bGPU);
+gmx_bool nbnxn_acceleration_supported(FILE                           *fplog,
+                                      const struct t_commrec         *cr,
+                                      const struct t_inputrec        *ir,
+                                      gmx_bool                        bGPU);
 /* Return if GPU/CPU-SIMD acceleration is supported with the given inputrec
  * with bGPU TRUE/FALSE.
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
@@ -138,7 +140,7 @@ void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
 void sum_epot(gmx_grppairener_t *grpp, real *epot);
 /* Locally sum the non-bonded potential energy terms */
 
-void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals);
+void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, struct t_lambda *fepvals);
 /* Sum the free energy contributions */
 
 /* Compute the average C6 and C12 params for LJ corrections */
@@ -146,7 +148,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
 
 extern void do_force(FILE *log, struct t_commrec *cr,
-                     t_inputrec *inputrec,
+                     struct t_inputrec *inputrec,
                      gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                      gmx_localtop_t *top,
                      gmx_groups_t *groups,
@@ -184,7 +186,7 @@ void ns(FILE                     *fplog,
 /* Call the neighborsearcher */
 
 extern void do_force_lowlevel(t_forcerec   *fr,
-                              t_inputrec   *ir,
+                              struct t_inputrec   *ir,
                               t_idef       *idef,
                               struct t_commrec    *cr,
                               t_nrnb       *nrnb,
@@ -200,7 +202,7 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               gmx_genborn_t *born,
                               gmx_bool         bBornRadii,
                               matrix       box,
-                              t_lambda     *fepvals,
+                              struct t_lambda     *fepvals,
                               real         *lambda,
                               struct t_graph      *graph,
                               t_blocka     *excl,

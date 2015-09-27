@@ -48,6 +48,9 @@
 struct gmx_constr;
 struct gmx_edsam;
 struct gmx_enerdata_t;
+struct t_expanded;
+struct t_lambda;
+struct t_simtemp;
 
 #ifdef __cplusplus
 extern "C" {

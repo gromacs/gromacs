@@ -44,7 +44,7 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/tables/forcetable.h"

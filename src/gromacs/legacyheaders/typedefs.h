@@ -42,7 +42,6 @@
 /* DEPRECATED! value for signaling unitialized variables */
 #define NOTSET -12345
 
-#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
@@ -51,6 +50,8 @@
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/topology/topology.h"
+
+struct t_inputrec;
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +68,6 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn);
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c
  */
-void init_inputrec(t_inputrec *ir);
 void init_energyhistory(energyhistory_t * enerhist);
 void done_energyhistory(energyhistory_t * enerhist);
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
@@ -76,13 +76,12 @@ t_state *serial_init_local_state(t_state *state_global);
 void init_df_history(df_history_t *dfhist, int nlambda);
 void done_df_history(df_history_t *dfhist);
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
-void done_inputrec(t_inputrec *ir);
 void done_state(t_state *state);
 
-void set_box_rel(t_inputrec *ir, t_state *state);
+void set_box_rel(struct t_inputrec *ir, t_state *state);
 /* Set state->box_rel used in mdrun to preserve the box shape */
 
-void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
+void preserve_box_shape(struct t_inputrec *ir, matrix box_rel, matrix b);
 /* Preserve the box shape, b can be box or boxv */
 
 real max_cutoff(real cutoff1, real cutoff2);

@@ -56,6 +56,8 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct t_swapcoords;
+
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
  * This routine does the memory allocation for various helper arrays, opens
