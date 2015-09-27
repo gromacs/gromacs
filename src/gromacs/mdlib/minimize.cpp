@@ -76,6 +76,7 @@
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"

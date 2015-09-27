@@ -69,6 +69,7 @@
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -136,7 +137,7 @@ typedef struct
  *
  * Contains private IMD data
  */
-typedef struct gmx_IMD
+typedef struct t_gmx_IMD
 {
     FILE      *outf;                 /**< Output file for IMD data, mainly forces.    */
 
@@ -426,9 +427,8 @@ static int imd_recv_mdcomm(IMDSocket *socket, gmx_int32_t nforces, gmx_int32_t *
 #endif
 
 /* GROMACS specific functions for the IMD implementation */
-
-extern void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
-                                   gmx_mtop_t *sys, int nfile, const t_filenm fnm[])
+void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state,
+                            gmx_mtop_t *sys, int nfile, const t_filenm fnm[])
 {
     t_atoms IMDatoms;
 
@@ -442,7 +442,7 @@ extern void write_IMDgroup_to_file(gmx_bool bIMD, t_inputrec *ir, t_state *state
 }
 
 
-extern void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd)
+void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd)
 {
     gmx_ga2la_t         ga2la;
     t_gmx_IMD_setup    *IMDsetup;
@@ -1058,7 +1058,7 @@ static FILE *open_imd_out(
 #endif
 
 
-extern void IMD_finalize(gmx_bool bIMD, t_IMD *imd)
+void IMD_finalize(gmx_bool bIMD, t_IMD *imd)
 {
     if (bIMD)
     {
@@ -1313,19 +1313,17 @@ static void imd_check_integrator_parallel(t_inputrec *ir, t_commrec *cr)
     }
 }
 
-
-extern void init_IMD(
-        t_inputrec    *ir,
-        t_commrec     *cr,
-        gmx_mtop_t    *top_global,
-        FILE          *fplog,
-        int            defnstimd,
-        rvec           x[],
-        int            nfile,
-        const t_filenm fnm[],
-        output_env_t   oenv,
-        int            imdport,
-        unsigned long  Flags)
+void init_IMD(t_inputrec    *ir,
+              t_commrec     *cr,
+              gmx_mtop_t    *top_global,
+              FILE          *fplog,
+              int            defnstimd,
+              rvec           x[],
+              int            nfile,
+              const t_filenm fnm[],
+              output_env_t   oenv,
+              int            imdport,
+              unsigned long  Flags)
 {
     int              i;
     int              nat_total;
@@ -1502,16 +1500,15 @@ extern void init_IMD(
 }
 
 
-extern gmx_bool do_IMD(
-        gmx_bool        bIMD,
-        gmx_int64_t     step,
-        t_commrec      *cr,
-        gmx_bool        bNS,
-        matrix          box,
-        rvec            x[],
-        t_inputrec     *ir,
-        double          t,
-        gmx_wallcycle_t wcycle)
+gmx_bool do_IMD(gmx_bool        bIMD,
+                gmx_int64_t     step,
+                t_commrec      *cr,
+                gmx_bool        bNS,
+                matrix          box,
+                rvec            x[],
+                t_inputrec     *ir,
+                double          t,
+                gmx_wallcycle_t wcycle)
 {
     gmx_bool         imdstep = FALSE;
     t_gmx_IMD_setup *IMDsetup;
@@ -1588,11 +1585,11 @@ extern gmx_bool do_IMD(
 }
 
 
-extern void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
-                                   gmx_int64_t step, gmx_bool bHaveNewEnergies)
+void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
+                            gmx_int64_t step, gmx_bool bHaveNewEnergies)
 {
     IMDEnergyBlock *ene;
-    t_gmx_IMD       IMDsetup;
+    t_gmx_IMD      *IMDsetup;
 
 
     if (bIMD)
@@ -1629,10 +1626,10 @@ extern void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *en
 }
 
 
-extern void IMD_send_positions(t_IMD *imd)
+void IMD_send_positions(t_IMD *imd)
 {
 #ifdef GMX_IMD
-    t_gmx_IMD IMDsetup;
+    t_gmx_IMD *IMDsetup;
 
 
     IMDsetup = imd->setup;
@@ -1656,10 +1653,10 @@ extern void IMD_send_positions(t_IMD *imd)
 }
 
 
-extern void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
-                                             t_IMD *imd, gmx_enerdata_t *enerd,
-                                             gmx_int64_t step, gmx_bool bHaveNewEnergies,
-                                             gmx_wallcycle_t wcycle)
+void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
+                                      t_IMD *imd, gmx_enerdata_t *enerd,
+                                      gmx_int64_t step, gmx_bool bHaveNewEnergies,
+                                      gmx_wallcycle_t wcycle)
 {
     if (bIMD)
     {
@@ -1682,15 +1679,13 @@ extern void IMD_prep_energies_send_positions(gmx_bool bIMD, gmx_bool bIMDstep,
     }
 }
 
-
-extern int IMD_get_step(t_gmx_IMD IMDsetup)
+int IMD_get_step(t_gmx_IMD *IMDsetup)
 {
     return IMDsetup->nstimd;
 }
 
-
-extern void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, t_commrec *cr, rvec *f,
-                             gmx_wallcycle_t wcycle)
+void IMD_apply_forces(gmx_bool bIMD, t_IMD *imd, t_commrec *cr, rvec *f,
+                      gmx_wallcycle_t wcycle)
 {
     int              i, j;
     int              locndx;

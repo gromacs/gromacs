@@ -38,11 +38,13 @@
 
 #include "gromacs/legacyheaders/inputrec.h"
 
+#include <cstring>
+
 #include <algorithm>
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/utility/fatalerror.h"
-
+#include "gromacs/utility/smalloc.h"
 
 /* The minimum number of integration steps required for reasonably accurate
  * integration of first and second order coupling algorithms.
@@ -236,4 +238,87 @@ gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir)
 gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
 {
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
+}
+
+void init_inputrec(t_inputrec *ir)
+{
+    std::memset(ir, 0, sizeof(*ir));
+    snew(ir->fepvals, 1);
+    snew(ir->expandedvals, 1);
+    snew(ir->simtempvals, 1);
+}
+
+static void done_pull_group(t_pull_group *pgrp)
+{
+    if (pgrp->nat > 0)
+    {
+        sfree(pgrp->ind);
+        sfree(pgrp->weight);
+    }
+}
+
+static void done_pull_params(pull_params_t *pull)
+{
+    int i;
+
+    for (i = 0; i < pull->ngroup+1; i++)
+    {
+        done_pull_group(pull->group);
+    }
+
+    sfree(pull->group);
+    sfree(pull->coord);
+}
+
+void done_inputrec(t_inputrec *ir)
+{
+    int m;
+
+    for (m = 0; (m < DIM); m++)
+    {
+        if (ir->ex[m].a)
+        {
+            sfree(ir->ex[m].a);
+        }
+        if (ir->ex[m].phi)
+        {
+            sfree(ir->ex[m].phi);
+        }
+        if (ir->et[m].a)
+        {
+            sfree(ir->et[m].a);
+        }
+        if (ir->et[m].phi)
+        {
+            sfree(ir->et[m].phi);
+        }
+    }
+
+    sfree(ir->opts.nrdf);
+    sfree(ir->opts.ref_t);
+    sfree(ir->opts.annealing);
+    sfree(ir->opts.anneal_npoints);
+    sfree(ir->opts.anneal_time);
+    sfree(ir->opts.anneal_temp);
+    sfree(ir->opts.tau_t);
+    sfree(ir->opts.acc);
+    sfree(ir->opts.nFreeze);
+    sfree(ir->opts.QMmethod);
+    sfree(ir->opts.QMbasis);
+    sfree(ir->opts.QMcharge);
+    sfree(ir->opts.QMmult);
+    sfree(ir->opts.bSH);
+    sfree(ir->opts.CASorbitals);
+    sfree(ir->opts.CASelectrons);
+    sfree(ir->opts.SAon);
+    sfree(ir->opts.SAoff);
+    sfree(ir->opts.SAsteps);
+    sfree(ir->opts.bOPT);
+    sfree(ir->opts.bTS);
+
+    if (ir->pull)
+    {
+        done_pull_params(ir->pull);
+        sfree(ir->pull);
+    }
 }

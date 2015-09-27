@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,6 +82,22 @@ gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir);
  * interactions, since these might be zero beyond rvdw.
  */
 gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir);
+
+/*! \brief Initiate input record structure
+ *
+ * Initialiazes all the arrays and pointers to NULL.
+ *
+ * \param[in] ir Inputrec must be pre-allocated
+ */
+void init_inputrec(t_inputrec *ir);
+
+/*! \brief Free memory from input record.
+ *
+ * All arrays and pointers will be freed.
+ *
+ * \param[in] ir The data structure
+ */
+void done_inputrec(t_inputrec *ir);
 
 #ifdef __cplusplus
 }

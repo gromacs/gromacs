@@ -57,6 +57,7 @@
 extern "C" {
 #endif
 
+struct pull_params_t;
 struct t_pbc;
 
 
