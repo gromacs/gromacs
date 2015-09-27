@@ -56,6 +56,7 @@
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
+#include "gromacs/listed-forces/pairs.h"
 #include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
@@ -74,7 +75,6 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "listed-internal.h"
-#include "pairs.h"
 
 namespace
 {
