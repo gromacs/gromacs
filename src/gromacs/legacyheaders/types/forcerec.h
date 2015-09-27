@@ -86,9 +86,9 @@ typedef struct
 
 typedef struct
 {
-    t_forcetable   table_elec;
-    t_forcetable   table_vdw;
-    t_forcetable   table_elec_vdw;
+    t_forcetable *table_elec;
+    t_forcetable *table_vdw;
+    t_forcetable *table_elec_vdw;
 
     /* The actual neighbor lists, short and long range, see enum above
      * for definition of neighborlist indices.
@@ -244,7 +244,8 @@ typedef struct t_forcerec {
     rvec   mu_tot[2];
 
     /* Dispersion correction stuff */
-    int  eDispCorr;
+    int           eDispCorr;
+    t_forcetable *dispersionCorrectionTable;
 
     /* The shift of the shift or user potentials */
     real enershiftsix;
@@ -269,7 +270,8 @@ typedef struct t_forcerec {
     gmx_bool     bcoultab;
     gmx_bool     bvdwtab;
     /* The normal tables are in the nblists struct(s) below */
-    t_forcetable tab14; /* for 1-4 interactions only */
+
+    t_forcetable *pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* PPPM & Shifting stuff */
     int   coulomb_modifier;
@@ -318,8 +320,8 @@ typedef struct t_forcerec {
     struct nonbonded_verlet_t *nbv;
 
     /* The wall tables (if used) */
-    int            nwall;
-    t_forcetable **wall_tab;
+    int             nwall;
+    t_forcetable ***wall_tab;
 
     /* The number of charge groups participating in do_force_lowlevel */
     int ncg_force;
