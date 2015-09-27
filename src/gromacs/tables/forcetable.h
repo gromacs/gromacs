@@ -74,9 +74,9 @@ double v_q_ewald_lr(double beta, double r);
 double v_lj_ewald_lr(double beta, double r);
 /* Return the real space grid contribution for LJ-Ewald*/
 
-t_forcetable make_tables(FILE *fp,
-                         const t_forcerec *fr,
-                         const char *fn, real rtab, int flags);
+t_forcetable *make_tables(FILE *fp,
+                          const t_forcerec *fr,
+                          const char *fn, real rtab, int flags);
 /* Return tables for inner loops. */
 
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);

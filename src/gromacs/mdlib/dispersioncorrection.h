@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,35 +34,29 @@
  */
 /*! \libinternal \file
  *
- * \brief This file declares functions for "pair" interactions
- * (i.e. listed non-bonded interactions, e.g. 1-4 interactions)
+ * \brief This file declares functions for implementing dispersion
+ * corrections
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
- * \ingroup module_listed-forces
+ * \ingroup module_mdlib
  */
-#ifndef GMX_LISTED_FORCES_PAIRS_H
-#define GMX_LISTED_FORCES_PAIRS_H
+#ifndef GMX_MDLIB_DISPERSIONCORRECTION_H
+#define GMX_MDLIB_DISPERSIONCORRECTION_H
+
+#include <cstdio>
 
 #include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct t_graph;
 struct t_pbc;
 
-/*! \brief Calculate VdW/charge listed pair interactions (usually 1-4
- * interactions).
+/*! \brief Construct and return tabulated dispersion and repulsion interactions
  *
- * global_atom_index is only passed for printing error messages.
- */
-real
-do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec f[], rvec fshift[],
-         const struct t_pbc *pbc, const struct t_graph *g,
-         real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
-         gmx_grppairener_t *grppener, int *global_atom_index);
+ * This table can be used to compute long-range dispersion corrections */
+t_forcetable *makeDispersionCorrectionTable(FILE *fp, t_forcerec *fr,
+                                            real rtab, const char *tabfn);
 
 #endif
