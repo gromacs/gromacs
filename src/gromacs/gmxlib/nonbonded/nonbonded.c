@@ -385,9 +385,9 @@ void do_nonbonded(t_forcerec *fr,
         /* cppcheck-suppress duplicateExpression */
         assert(etiNR == 3);
 
-        kernel_data.table_elec              = &nblists->table_elec;
-        kernel_data.table_vdw               = &nblists->table_vdw;
-        kernel_data.table_elec_vdw          = &nblists->table_elec_vdw;
+        kernel_data.table_elec              = nblists->table_elec;
+        kernel_data.table_vdw               = nblists->table_vdw;
+        kernel_data.table_elec_vdw          = nblists->table_elec_vdw;
 
         for (range = 0; range < 2; range++)
         {

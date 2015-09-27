@@ -55,6 +55,7 @@
 
 #include <algorithm>
 
+#include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -68,7 +69,6 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "listed-internal.h"
-#include "pairs.h"
 #include "restcbt.h"
 
 
