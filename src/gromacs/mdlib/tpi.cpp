@@ -67,6 +67,7 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
+#include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"

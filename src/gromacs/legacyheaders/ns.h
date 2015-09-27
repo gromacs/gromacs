@@ -40,8 +40,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
 struct gmx_ns_t;

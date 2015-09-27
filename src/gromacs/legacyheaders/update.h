@@ -38,20 +38,18 @@
 #ifndef _update_h
 #define _update_h
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
+struct gmx_ekindata_t;
+struct gmx_enerdata_t;
 struct t_fcdata;
+struct t_graph;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct gmx_enerdata_t;
-struct t_graph;
 
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_update *gmx_update_t;
