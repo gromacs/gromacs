@@ -1350,17 +1350,18 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     }
 }
 
-t_forcetable make_tables(FILE *out,
-                         const t_forcerec *fr,
-                         const char *fn,
-                         real rtab, int flags)
+t_forcetable *make_tables(FILE *out,
+                          const t_forcerec *fr,
+                          const char *fn,
+                          real rtab, int flags)
 {
     t_tabledata    *td;
     gmx_bool        b14only, useUserTable;
     int             nx0, tabsel[etiNR];
     real            scalefactor;
 
-    t_forcetable    table;
+    t_forcetable   *table;
+    snew(table, 1);
 
     b14only = (flags & GMX_MAKETABLES_14ONLY);
 
@@ -1375,15 +1376,15 @@ t_forcetable make_tables(FILE *out,
         set_table_type(tabsel, fr, b14only);
     }
     snew(td, etiNR);
-    table.r         = rtab;
-    table.scale     = 0;
-    table.n         = 0;
+    table->r         = rtab;
+    table->scale     = 0;
+    table->n         = 0;
 
-    table.interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
-    table.format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
-    table.formatsize    = 4;
-    table.ninteractions = etiNR;
-    table.stride        = table.formatsize*table.ninteractions;
+    table->interaction   = GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP;
+    table->format        = GMX_TABLE_FORMAT_CUBICSPLINE_YFGH;
+    table->formatsize    = 4;
+    table->ninteractions = etiNR;
+    table->stride        = table->formatsize*table->ninteractions;
 
     /* Check whether we have to read or generate */
     useUserTable = FALSE;
@@ -1399,7 +1400,7 @@ t_forcetable make_tables(FILE *out,
         read_tables(out, fn, etiNR, 0, td);
         if (rtab == 0 || (flags & GMX_MAKETABLES_14ONLY))
         {
-            table.n   = td[0].nx;
+            table->n = td[0].nx;
         }
         else
         {
@@ -1408,28 +1409,28 @@ t_forcetable make_tables(FILE *out,
                 gmx_fatal(FARGS, "Tables in file %s not long enough for cut-off:\n"
                           "\tshould be at least %f nm\n", fn, rtab);
             }
-            table.n = (int)(rtab*td[0].tabscale + 0.5);
+            table->n = (int)(rtab*td[0].tabscale + 0.5);
         }
-        table.scale = td[0].tabscale;
-        nx0         = td[0].nx0;
+        table->scale = td[0].tabscale;
+        nx0          = td[0].nx0;
     }
     else
     {
         // No tables are read
 #ifdef GMX_DOUBLE
-        table.scale = 2000.0;
+        table->scale = 2000.0;
 #else
-        table.scale = 500.0;
+        table->scale = 500.0;
 #endif
-        table.n = static_cast<int>(rtab*table.scale);
-        nx0     = 10;
+        table->n = static_cast<int>(rtab*table->scale);
+        nx0      = 10;
     }
 
     /* Each table type (e.g. coul,lj6,lj12) requires four
-     * numbers per table.n+1 data points. For performance reasons we want
+     * numbers per table->n+1 data points. For performance reasons we want
      * the table data to be aligned to a 32-byte boundary.
      */
-    snew_aligned(table.data, table.stride*(table.n+1)*sizeof(real), 32);
+    snew_aligned(table->data, table->stride*(table->n+1)*sizeof(real), 32);
 
     for (int k = 0; (k < etiNR); k++)
     {
@@ -1437,12 +1438,12 @@ t_forcetable make_tables(FILE *out,
            overwriting data that was read but should not be used) */
         if (!ETAB_USER(tabsel[k]))
         {
-            real scale = table.scale;
+            real scale = table->scale;
             if (fr->bBHAM && (fr->bham_b_max != 0) && tabsel[k] == etabEXPMIN)
             {
                 scale /= fr->bham_b_max;
             }
-            init_table(table.n, nx0, scale, &(td[k]), !useUserTable);
+            init_table(table->n, nx0, scale, &(td[k]), !useUserTable);
 
             fill_table(&(td[k]), tabsel[k], fr, b14only);
             if (out)
@@ -1473,7 +1474,7 @@ t_forcetable make_tables(FILE *out,
             scalefactor = 1.0;
         }
 
-        copy2table(table.n, k*table.formatsize, table.stride, td[k].x, td[k].v, td[k].f, scalefactor, table.data);
+        copy2table(table->n, k*table->formatsize, table->stride, td[k].x, td[k].v, td[k].f, scalefactor, table->data);
 
         done_tabledata(&(td[k]));
     }
