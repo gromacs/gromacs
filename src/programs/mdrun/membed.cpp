@@ -41,9 +41,9 @@
 
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"

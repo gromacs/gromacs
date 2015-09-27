@@ -38,8 +38,8 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
 enum {

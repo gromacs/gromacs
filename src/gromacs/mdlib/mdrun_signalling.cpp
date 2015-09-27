@@ -52,9 +52,9 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/md_support.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/mdlib/md_support.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"

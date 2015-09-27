@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/readinp.h"
+#include "readinp.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -45,9 +45,9 @@
 #include <algorithm>
 
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/gmxlib/warninp.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/warninp.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

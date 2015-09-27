@@ -38,11 +38,11 @@
 #ifndef GMX_GMXPREPROCESS_TOPPUSH_H
 #define GMX_GMXPREPROCESS_TOPPUSH_H
 
+#include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/warninp.h"
 
 typedef struct {
     int       nr;   /* The number of entries in the list            */

@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/warninp.h"
+#include "warninp.h"
 
 #include <cstring>
 

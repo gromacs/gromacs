@@ -59,10 +59,10 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/legacyheaders/main.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/mdrunutility/handlerestart.h"

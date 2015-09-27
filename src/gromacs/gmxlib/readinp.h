@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,18 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GMXLIB_READINP_H
+#define GMX_GMXLIB_READINP_H
 
-#ifndef _readinp_h
-#define _readinp_h
+#include <cstring>
 
-#include <string.h>
-
-#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/gmxlib/warninp.h"
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct {
     int      count;     /* sort order for output  */
@@ -103,7 +98,7 @@ int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs);
  */
 #define REM_TYPE(name)       replace_inp_entry(ninp, inp, name, NULL)
 #define REPL_TYPE(old, new)   replace_inp_entry(ninp, inp, old, new)
-#define STYPE(name, var, def)  if ((tmp = get_estr(&ninp, &inp, name, def)) != NULL) strcpy(var, tmp)
+#define STYPE(name, var, def)  if ((tmp = get_estr(&ninp, &inp, name, def)) != NULL) std::strcpy(var, tmp)
 #define STYPENC(name, def) get_estr(&ninp, &inp, name, def)
 #define ITYPE(name, var, def)  var    = get_eint(&ninp, &inp, name, def, wi)
 #define STEPTYPE(name, var, def)  var = get_eint64(&ninp, &inp, name, def, wi)
@@ -113,9 +108,5 @@ int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs);
 #define CCTYPE(s) STYPENC("\n; " s, NULL)
 #define CTYPE(s)  STYPENC("; " s, NULL)
 /* This last one prints a comment line where you can add some explanation */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
