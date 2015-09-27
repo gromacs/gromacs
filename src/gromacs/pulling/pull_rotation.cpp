@@ -54,6 +54,7 @@
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/utilities.h"

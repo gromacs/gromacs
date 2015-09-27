@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"

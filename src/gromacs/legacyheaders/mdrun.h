@@ -42,18 +42,12 @@
 #include <time.h>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/mdebin.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/sim_util.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/update.h"
-#include "gromacs/legacyheaders/vcm.h"
-#include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
 struct gmx_edsam;
+struct gmx_enerdata_t;
 
 #ifdef __cplusplus
 extern "C" {

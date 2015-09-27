@@ -47,6 +47,7 @@
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/types/commrec.h"

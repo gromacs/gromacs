@@ -57,6 +57,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
