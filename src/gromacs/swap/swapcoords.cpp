@@ -57,6 +57,7 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/pbcutil/pbc.h"

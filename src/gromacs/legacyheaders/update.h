@@ -46,6 +46,7 @@ struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct t_fcdata;
 struct t_graph;
+struct t_grpopts;
 
 #ifdef __cplusplus
 extern "C" {
