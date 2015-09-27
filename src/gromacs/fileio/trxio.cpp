@@ -42,6 +42,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/g96io.h"
@@ -734,7 +735,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
         fr->bStep = TRUE;
         fr->step  = model_nr;
     }
-    time = strstr(title, " t= ");
+    time = std::strstr(title, " t= ");
     if (time)
     {
         fr->bTime = TRUE;

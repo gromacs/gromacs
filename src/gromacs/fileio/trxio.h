@@ -40,7 +40,6 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/readinp.h"
 
 #ifdef __cplusplus
 extern "C" {

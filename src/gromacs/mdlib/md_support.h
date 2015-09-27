@@ -34,18 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _md_support_h
-#define _md_support_h
+#ifndef GMX_MDLIB_MD_SUPPORT_H
+#define GMX_MDLIB_MD_SUPPORT_H
 
 #include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/timing/wallcycle.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct gmx_constr;
 struct gmx_signalling_t;
@@ -119,13 +114,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      t_state *state, t_state *state_global, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                      gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, struct gmx_constr *constr,
-                     struct gmx_signalling_t *gs, gmx_bool bInterSimGS,
+                     tensor pres, rvec mu_tot, gmx_constr *constr,
+                     gmx_signalling_t *gs, gmx_bool bInterSimGS,
                      matrix box, gmx_mtop_t *top_global, gmx_bool *bSumEkinhOld, int flags);
 /* Compute global variables during integration */
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _md_support_h */

@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/qmmm.h"
+#include "qmmm.h"
 
 #include "config.h"
 

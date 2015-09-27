@@ -37,13 +37,13 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/md_support.h"
+#include "md_support.h"
 
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"

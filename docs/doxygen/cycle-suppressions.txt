@@ -15,6 +15,7 @@ mdlib -> pulling
 legacyheaders -> swap
 legacyheaders -> fileio
 timing -> legacyheaders
+timing -> gmxlib
 topology -> fileio
 topology -> legacyheaders
 pbcutil -> fileio

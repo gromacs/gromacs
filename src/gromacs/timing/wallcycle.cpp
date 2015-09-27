@@ -42,7 +42,7 @@
 
 #include <cstdlib>
 
-#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
