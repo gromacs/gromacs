@@ -106,7 +106,7 @@
     gmx_simd_real_t   invtsp_S;
     const real *      tab_coul_F;
 #ifndef TAB_FDV0
-    const real *      tab_coul_V;
+    const real gmx_unused *tab_coul_V;
 #endif
     /* Thread-local working buffers for force and potential lookups */
     int               ti0_array[2*GMX_SIMD_REAL_WIDTH], *ti0 = NULL;

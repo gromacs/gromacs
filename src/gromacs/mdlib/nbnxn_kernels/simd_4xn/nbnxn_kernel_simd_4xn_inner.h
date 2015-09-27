@@ -71,8 +71,9 @@
 #endif
 
 {
-    int        cj, aj, ajx, ajy, ajz;
-
+    int        cj, ajx, ajy, ajz;
+    int gmx_unused aj;
+    
 #ifdef ENERGY_GROUPS
     /* Energy group indices for two atoms packed into one int */
     int        egp_jj[UNROLLJ/2];
