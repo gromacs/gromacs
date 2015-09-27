@@ -80,13 +80,13 @@ void make_wall_tables(FILE *fplog,
             /* If the energy group pair is excluded, we don't need a table */
             if (!(fr->egp_flags[egp*ir->opts.ngener+negp_pp+w] & EGP_EXCL))
             {
-                tab = &fr->wall_tab[w][egp];
+                tab = fr->wall_tab[w][egp];
                 sprintf(buf, "%s", tabfn);
                 sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
                         *groups->grpname[nm_ind[egp]],
                         *groups->grpname[nm_ind[negp_pp+w]],
                         ftp2ext(efXVG));
-                *tab = make_tables(fplog, fr, buf, 0, GMX_MAKETABLES_FORCEUSER);
+                tab = make_tables(fplog, fr, buf, 0, GMX_MAKETABLES_FORCEUSER);
                 /* Since wall have no charge, we can compress the table */
                 for (int i = 0; i <= tab->n; i++)
                 {
@@ -206,7 +206,7 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                             {
                                 wall_error(i, x, r);
                             }
-                            tab      = &(fr->wall_tab[w][gid[i]]);
+                            tab      = fr->wall_tab[w][gid[i]];
                             tabscale = tab->scale;
                             VFtab    = tab->data;
 

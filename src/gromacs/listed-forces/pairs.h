@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,12 @@
 
 struct t_graph;
 struct t_pbc;
+
+/*! \brief Construct and return tabulated dispersion and repulsion interactions
+ *
+ * This table can be used to compute long-range dispersion corrections */
+t_forcetable *makeDispersionCorrectionTable(FILE *fp, t_forcerec *fr,
+                                            real rtab, const char *tabfn);
 
 /*! \brief Calculate VdW/charge listed pair interactions (usually 1-4
  * interactions).
