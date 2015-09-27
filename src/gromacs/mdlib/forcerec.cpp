@@ -58,6 +58,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -2272,7 +2273,7 @@ void init_forcerec(FILE              *fp,
     double         dbl;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
-    gmx_bool       bMakeTables, bMakeSeparate14Table, bSomeNormalNbListsAreInUse;
+    gmx_bool       needGroupSchemeTables, bSomeNormalNbListsAreInUse;
     gmx_bool       bFEP_NonBonded;
     int           *nm_ind, egp_flags;
 
@@ -2921,37 +2922,23 @@ void init_forcerec(FILE              *fp,
     /*This now calculates sum for q and c6*/
     set_chargesum(fp, fr, mtop);
 
-    /* if we are using LR electrostatics, and they are tabulated,
-     * the tables will contain modified coulomb interactions.
-     * Since we want to use the non-shifted ones for 1-4
-     * coulombic interactions, we must have an extra set of tables.
-     */
-
-    /* Construct tables.
-     * A little unnecessary to make both vdw and coul tables sometimes,
-     * but what the heck... */
-
-    bMakeTables = fr->bcoultab || fr->bvdwtab || fr->bEwald ||
-        (ir->eDispCorr != edispcNO && ir_vdw_switched(ir));
-
-    bMakeSeparate14Table = ((!bMakeTables || fr->eeltype != eelCUT || fr->vdwtype != evdwCUT ||
-                             fr->coulomb_modifier != eintmodNONE ||
-                             fr->vdw_modifier != eintmodNONE ||
-                             fr->bBHAM || fr->bEwald) &&
-                            (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
-                             gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
-                             gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0));
+    /* Construct tables for the group scheme. A little unnecessary to
+     * make both vdw and coul tables sometimes, but what the
+     * heck. Note that both cutoff schemes construct Ewald tables in
+     * init_interaction_const_tables. */
+    needGroupSchemeTables = (ir->cutoff_scheme == ecutsGROUP &&
+                             (fr->bcoultab || fr->bvdwtab));
 
     negp_pp   = ir->opts.ngener - ir->nwall;
     negptable = 0;
-    if (!bMakeTables)
+    if (!needGroupSchemeTables)
     {
         bSomeNormalNbListsAreInUse = TRUE;
         fr->nnblists               = 1;
     }
     else
     {
-        bSomeNormalNbListsAreInUse = (ir->eDispCorr != edispcNO);
+        bSomeNormalNbListsAreInUse = FALSE;
         for (egi = 0; egi < negp_pp; egi++)
         {
             for (egj = egi; egj < negp_pp; egj++)
@@ -2992,16 +2979,12 @@ void init_forcerec(FILE              *fp,
      */
     rtab = ir->rlist + ir->tabext;
 
-    if (bMakeTables)
+    if (needGroupSchemeTables)
     {
         /* make tables for ordinary interactions */
         if (bSomeNormalNbListsAreInUse)
         {
             make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
-            if (!bMakeSeparate14Table)
-            {
-                fr->tab14 = fr->nblists[0].table_elec_vdw;
-            }
             m = 1;
         }
         else
@@ -3038,22 +3021,24 @@ void init_forcerec(FILE              *fp,
             }
         }
     }
-    else if ((fr->eDispCorr != edispcNO) &&
-             ((fr->vdw_modifier == eintmodPOTSWITCH) ||
-              (fr->vdw_modifier == eintmodFORCESWITCH) ||
-              (fr->vdw_modifier == eintmodPOTSHIFT)))
+
+    /* Tables might not be used for the potential modifier
+     * interactions per se, but we still need them to evaluate
+     * switch/shift dispersion corrections in this case. */
+    if (fr->eDispCorr != edispcNO)
     {
-        /* Tables might not be used for the potential modifier interactions per se, but
-         * we still need them to evaluate switch/shift dispersion corrections in this case.
-         */
-        make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
+        fr->dispersionCorrectionTable = makeDispersionCorrectionTable(fp, fr, rtab, tabfn);
     }
 
-    if (bMakeSeparate14Table)
+    /* We want to use unmodified tables for 1-4 coulombic
+     * interactions, so we must in general have an extra set of
+     * tables. */
+    if (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 ||
+        gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0 ||
+        gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0)
     {
-        /* generate extra tables with plain Coulomb for 1-4 interactions only */
-        fr->tab14 = make_tables(fp, fr, tabpfn, rtab,
-                                GMX_MAKETABLES_14ONLY);
+        fr->pairsTable = make_tables(fp, fr, tabpfn, rtab,
+                                     GMX_MAKETABLES_14ONLY);
     }
 
     /* Wall stuff */

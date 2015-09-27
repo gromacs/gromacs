@@ -2139,10 +2139,10 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             /* TODO This code depends on the logic in tables.c that
                constructs the table layout, which should be made
                explicit in future cleanup. */
-            GMX_ASSERT(fr->nblists[0].table_vdw->interaction == GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+            GMX_ASSERT(fr->dispersionCorrectionTable->interaction == GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
                        "Dispersion-correction code needs a table with both repulsion and dispersion terms");
-            scale  = fr->nblists[0].table_vdw->scale;
-            vdwtab = fr->nblists[0].table_vdw->data;
+            scale  = fr->dispersionCorrectionTable->scale;
+            vdwtab = fr->dispersionCorrectionTable->data;
 
             /* Round the cut-offs to exact table values for precision */
             ri0  = static_cast<int>(floor(fr->rvdw_switch*scale));
