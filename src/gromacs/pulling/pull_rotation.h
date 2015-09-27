@@ -54,6 +54,7 @@
 
 struct gmx_domdec_t;
 struct t_commrec;
+struct t_rot;
 
 #ifdef __cplusplus
 extern "C" {

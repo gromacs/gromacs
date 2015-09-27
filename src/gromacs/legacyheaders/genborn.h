@@ -46,6 +46,7 @@ struct gmx_enerdata_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_graph;
+struct t_inputrec;
 struct t_pbc;
 
 #ifdef __cplusplus
@@ -65,12 +66,12 @@ extern "C" {
 
 /* Initialise GB stuff */
 int init_gb(struct gmx_genborn_t **p_born,
-            struct t_forcerec *fr, const t_inputrec *ir,
+            struct t_forcerec *fr, const struct t_inputrec *ir,
             const gmx_mtop_t *mtop, int gb_algorithm);
 
 
 /* Born radii calculations, both with and without SSE acceleration */
-int calc_gb_rad(struct t_commrec *cr, struct t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top, rvec x[], t_nblist *nl, struct gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
+int calc_gb_rad(struct t_commrec *cr, struct t_forcerec *fr, struct t_inputrec *ir, gmx_localtop_t *top, rvec x[], t_nblist *nl, struct gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
 
 
 
