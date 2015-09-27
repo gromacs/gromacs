@@ -50,6 +50,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

@@ -42,6 +42,11 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct pull_params_t;
+struct t_adress;
+struct t_grpopts;
+struct t_rot;
+
 enum {
     eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
 };

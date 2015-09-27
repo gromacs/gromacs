@@ -74,6 +74,8 @@
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
+struct t_gmx_IMD;
+struct t_IMD;
 
 static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
 
@@ -163,7 +165,7 @@ gmx_bool do_IMD(gmx_bool bIMD, gmx_int64_t step, t_commrec *cr,
  *
  * \returns            The current IMD update/communication frequency
  */
-int IMD_get_step(t_gmx_IMD IMDsetup);
+int IMD_get_step(t_gmx_IMD *IMDsetup);
 
 
 /*! \brief Add external forces from a running interactive molecular dynamics session.

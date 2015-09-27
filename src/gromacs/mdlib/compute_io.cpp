@@ -41,7 +41,7 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 
 static int div_nsteps(int nsteps, int nst)
 {
