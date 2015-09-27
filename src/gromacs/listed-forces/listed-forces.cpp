@@ -61,6 +61,7 @@
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/listed-forces/pairs.h"
 #include "gromacs/listed-forces/position-restraints.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -71,7 +72,6 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "listed-internal.h"
-#include "pairs.h"
 
 namespace
 {
