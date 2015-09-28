@@ -176,13 +176,14 @@ else()
     #   CUDA_VERSION does not contain patch version and having PTX 5.0 JIT-ed is
     #   equally fast as compiling with sm_5.2 anyway.
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_20,code=sm_20")
-    if(CUDA_VERSION VERSION_GREATER "4.1990") # >= 4.2
+
+    if(NOT CUDA_VERSION VERSION_LESS "4.2") # >= 4.2
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
     endif()
-    if(CUDA_VERSION VERSION_GREATER "4.999") # >= 5.0
+    if(NOT CUDA_VERSION VERSION_LESS "5.0") # >= 5.0
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=sm_35")
     endif()
-    if(CUDA_VERSION VERSION_GREATER "6.4999") # >= 6.5
+    if(NOT CUDA_VERSION VERSION_LESS "6.5") # >= 6.5
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_37,code=sm_37")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=sm_50")
     endif()
