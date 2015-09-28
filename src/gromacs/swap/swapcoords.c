@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1495,9 +1495,18 @@ extern void init_swapcoords(
         g->qc[i] = atom->q;
     }
 
+    /* Save a t_pbc struct on all nodes so that the molecules
+     * chosen for an exchange can be made whole. */
     snew(s->pbc, 1);
-    set_pbc(s->pbc, -1, box);
-
+    if (MASTER(cr))
+    {
+        /* So far the box is only known on the master node */
+        set_pbc(s->pbc, -1, box);
+    }
+    if (PAR(cr))
+    {
+        gmx_bcast(sizeof(s->pbc), &(s->pbc), cr);
+    }
 
     if (MASTER(cr))
     {
