@@ -100,8 +100,7 @@ void nbnxn_cuda_clear_outputs(nbnxn_cuda_ptr_t cu_nb,
 
 /*! Frees all GPU resources used for the nonbonded calculations. */
 FUNC_QUALIFIER
-void nbnxn_cuda_free(FILE            *fplog,
-                     nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
+void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
 
 /*! Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
 FUNC_QUALIFIER

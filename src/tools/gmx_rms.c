@@ -322,6 +322,8 @@ int gmx_rms(int argc, char *argv[])
     bPrev = (prev > 0);
     if (bPrev)
     {
+        fprintf(stderr, "WARNING: using option -prev with large trajectories will\n"
+                        "         require a lot of memory and could lead to crashes\n");
         prev = abs(prev);
         if (freq != 1)
         {
@@ -1135,9 +1137,9 @@ int gmx_rms(int argc, char *argv[])
     for (i = 0; (i < teller); i++)
     {
         if (bSplit && i > 0 &&
-            abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
+            fabs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
         {
-            fprintf(fp, "&\n");
+            fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(fp, "%12.7f", time[bPrev ? freq*i : i]);
         for (j = 0; (j < nrms); j++)
@@ -1177,9 +1179,9 @@ int gmx_rms(int argc, char *argv[])
         }
         for (i = 0; (i < teller); i++)
         {
-            if (bSplit && i > 0 && abs(time[i]) < 1e-5)
+            if (bSplit && i > 0 && fabs(time[i]) < 1e-5)
             {
-                fprintf(fp, "&\n");
+                fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
             fprintf(fp, "%12.7f", time[i]);
             for (j = 0; (j < nrms); j++)

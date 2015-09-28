@@ -64,6 +64,7 @@
 #include "pull_rotation.h"
 #include "gmx_sort.h"
 #include "copyrite.h"
+#include "maths.h"
 
 
 static char *RotStr = {"Enforced rotation:"};
@@ -1967,13 +1968,13 @@ static real do_flex2_lowlevel(
 
             /* Subtract the slab center from xj */
             rvec_sub(xj, xcn, tmpvec2);           /* tmpvec2 = xj - xcn       */
-            
+
             /* In rare cases, when an atom position coincides with a slab center
-             * (tmpvec2 == 0) we cannot compute the vector product for sjn. 
-             * However, since the atom is located directly on the pivot, this 
-             * slab's contribution to the force on that atom will be zero 
+             * (tmpvec2 == 0) we cannot compute the vector product for sjn.
+             * However, since the atom is located directly on the pivot, this
+             * slab's contribution to the force on that atom will be zero
              * anyway. Therefore, we directly move on to the next slab.       */
-            if ( 0 == norm(tmpvec2) )
+            if (gmx_numzero(norm(tmpvec2))) /* 0 == norm(xj - xcn) */
             {
                 continue;
             }
@@ -2201,21 +2202,21 @@ static real do_flex_lowlevel(
 
             rvec_sub(yj0, ycn, yj0_ycn); /* yj0_ycn = yj0 - ycn */
 
+            /* In rare cases, when an atom position coincides with a reference slab
+             * center (yj0_ycn == 0) we cannot compute the normal vector qjn.
+             * However, since the atom is located directly on the pivot, this
+             * slab's contribution to the force on that atom will be zero
+             * anyway. Therefore, we directly move on to the next slab.       */
+            if (gmx_numzero(norm(yj0_ycn))) /* 0 == norm(yj0 - ycn) */
+            {
+                continue;
+            }
+
             /* Rotate: */
             mvmul(erg->rotmat, yj0_ycn, tmpvec2); /* tmpvec2= Omega.(yj0-ycn) */
 
             /* Subtract the slab center from xj */
             rvec_sub(xj, xcn, xj_xcn);           /* xj_xcn = xj - xcn         */
-
-            /* In rare cases, when an atom position coincides with a slab center
-             * (xj_xcn == 0) we cannot compute the vector product for qjn. 
-             * However, since the atom is located directly on the pivot, this 
-             * slab's contribution to the force on that atom will be zero 
-             * anyway. Therefore, we directly move on to the next slab.       */
-            if ( 0 == norm(xj_xcn) )
-            {
-                continue;
-            }
 
             /* Calculate qjn */
             cprod(rotg->vec, tmpvec2, tmpvec); /* tmpvec= v x Omega.(yj0-ycn) */

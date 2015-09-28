@@ -58,20 +58,37 @@
 #include "rmpbc.h"
 #include "xtcio.h"
 #include "gmx_ana.h"
+#include "names.h"
 
 
-static void periodic_dist(matrix box, rvec x[], int n, atom_id index[],
+static void periodic_dist(int ePBC,
+                          matrix box, rvec x[], int n, atom_id index[],
                           real *rmin, real *rmax, int *min_ind)
 {
-#define NSHIFT 26
-    int  sx, sy, sz, i, j, s;
+#define NSHIFT_MAX 26
+    int  nsz, nshift, sx, sy, sz, i, j, s;
     real sqr_box, r2min, r2max, r2;
-    rvec shift[NSHIFT], d0, d;
+    rvec shift[NSHIFT_MAX], d0, d;
 
-    sqr_box = sqr(min(norm(box[XX]), min(norm(box[YY]), norm(box[ZZ]))));
+    sqr_box = min(norm2(box[XX]), norm2(box[YY]));
+    if (ePBC == epbcXYZ)
+    {
+        sqr_box = min(sqr_box, norm2(box[ZZ]));
+        nsz = 1;
+    }
+    else if (ePBC == epbcXY)
+    {
+        nsz = 0;
+    }
+    else
+    {
+        gmx_fatal(FARGS, "pbc = %s is not supported by g_mindist",
+                  epbc_names[ePBC]);
+        nsz = 0; /* Keep compilers quiet */
+    }
 
-    s = 0;
-    for (sz = -1; sz <= 1; sz++)
+    nshift = 0;
+    for (sz = -nsz; sz <= nsz; sz++)
     {
         for (sy = -1; sy <= 1; sy++)
         {
@@ -81,9 +98,10 @@ static void periodic_dist(matrix box, rvec x[], int n, atom_id index[],
                 {
                     for (i = 0; i < DIM; i++)
                     {
-                        shift[s][i] = sx*box[XX][i]+sy*box[YY][i]+sz*box[ZZ][i];
+                        shift[nshift][i] =
+                            sx*box[XX][i] + sy*box[YY][i] + sz*box[ZZ][i];
                     }
-                    s++;
+                    nshift++;
                 }
             }
         }
@@ -102,7 +120,7 @@ static void periodic_dist(matrix box, rvec x[], int n, atom_id index[],
             {
                 r2max = r2;
             }
-            for (s = 0; s < NSHIFT; s++)
+            for (s = 0; s < nshift; s++)
             {
                 rvec_add(d0, shift[s], d);
                 r2 = norm2(d);
@@ -164,7 +182,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
             gmx_rmpbc(gpbc, natoms, box, x);
         }
 
-        periodic_dist(box, x, n, index, &rmin, &rmax, ind_min);
+        periodic_dist(ePBC, box, x, n, index, &rmin, &rmax, ind_min);
         if (rmin < rmint)
         {
             rmint    = rmin;
@@ -172,9 +190,9 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
             ind_mini = ind_min[0];
             ind_minj = ind_min[1];
         }
-        if (bSplit && !bFirst && abs(t/output_env_get_time_factor(oenv)) < 1e-5)
+        if (bSplit && !bFirst && fabs(t/output_env_get_time_factor(oenv)) < 1e-5)
         {
-            fprintf(out, "&\n");
+            fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         fprintf(out, "\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n",
                 output_env_conv_time(oenv, t), rmin, rmax, norm(box[0]), norm(box[1]), norm(box[2]));
@@ -423,16 +441,16 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
     bFirst = TRUE;
     do
     {
-        if (bSplit && !bFirst && abs(t/output_env_get_time_factor(oenv)) < 1e-5)
+        if (bSplit && !bFirst && fabs(t/output_env_get_time_factor(oenv)) < 1e-5)
         {
-            fprintf(dist, "&\n");
+            fprintf(dist, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             if (num)
             {
-                fprintf(num, "&\n");
+                fprintf(num, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
             if (atm)
             {
-                fprintf(atm, "&\n");
+                fprintf(atm, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             }
         }
         fprintf(dist, "%12e", output_env_conv_time(oenv, t));

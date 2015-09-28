@@ -189,6 +189,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     rvec             *x_xtc    = NULL;
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
+    rvec             *x_for_confout = NULL;
     gmx_global_stat_t gstat;
     gmx_update_t      upd   = NULL;
     t_graph          *graph = NULL;
@@ -349,6 +350,25 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                  (ir->bContinuation ||
                                   (DOMAINDECOMP(cr) && !MASTER(cr))) ?
                                  NULL : state_global->x);
+    if (shellfc && ir->nstcalcenergy != 1)
+    {
+        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles.\nPlease make a new tpr file.", ir->nstcalcenergy);
+    }
+    if (shellfc && DOMAINDECOMP(cr))
+    {
+        gmx_fatal(FARGS, "In order to run parallel simulations with shells you need to use the -pd flag to mdrun.");
+    }
+    if (shellfc && ir->eI == eiNM)
+    {
+        /* Currently shells don't work with Normal Modes */
+        gmx_fatal(FARGS, "Normal Mode analysis is not supported with shells.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+    }
+
+    if (vsite && ir->eI == eiNM)
+    {
+        /* Currently virtual sites don't work with Normal Modes */
+        gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+    }
 
     if (DEFORM(*ir))
     {
@@ -595,16 +615,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     nstfep = ir->fepvals->nstdhdl;
     if (ir->bExpanded)
     {
-        nstfep = gmx_greatest_common_divisor(ir->fepvals->nstdhdl,nstfep);
+        nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded,nstfep);
     }
     if (repl_ex_nst > 0)
     {
         nstfep = gmx_greatest_common_divisor(repl_ex_nst,nstfep);
     }
 
-    /* I'm assuming we need global communication the first time! MRS */
+    /* Be REALLY careful about what flags you set here. You CANNOT assume
+     * this is the first step, since we might be restarting from a checkpoint,
+     * and in that case we should not do any modifications to the state.
+     */
+    bStopCM = (ir->comm_mode != ecmNO && !ir->bContinuation);
+
     cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
-                  | ((ir->comm_mode != ecmNO) ? CGLO_STOPCM : 0)
+                  | (bStopCM ? CGLO_STOPCM : 0)
                   | (bVV ? CGLO_PRESSURE : 0)
                   | (bVV ? CGLO_CONSTRAINT : 0)
                   | (bRerunMD ? CGLO_RERUNMD : 0)
@@ -715,14 +740,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         fprintf(fplog, "\n");
     }
 
-    /* Set and write start time */
+    print_start(fplog, cr, runtime, "mdrun");
     runtime_start(runtime);
-    print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
     wallcycle_start(wcycle, ewcRUN);
-    if (fplog)
-    {
-        fprintf(fplog, "\n");
-    }
 
     /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
 #ifdef GMX_FAHCORE
@@ -1224,11 +1244,15 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * step to combine the long-range forces on these steps.
              * For nstcalclr=1 this is not done, since the forces would have been added
              * directly to the short-range forces already.
+             *
+             * TODO Remove various aspects of VV+twin-range in master
+             * branch, because VV integrators did not ever support
+             * twin-range multiple time stepping with constraints.
              */
             bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
-                          f, bUpdateDoLR, fr->f_twin, fcd,
+                          f, bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                           ekind, M, wcycle, upd, bInitStep, etrtVELOCITY1,
                           cr, nrnb, constr, &top->idef);
 
@@ -1278,6 +1302,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        &top->idef, shake_vir, NULL,
                                        cr, nrnb, wcycle, upd, constr,
                                        bInitStep, TRUE, bCalcVir, vetanew);
+
+                    if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
+                    {
+                        /* Correct the virial for multiple time stepping */
+                        m_sub(shake_vir, fr->vir_twin_constr, shake_vir);
+                    }
 
                     if (!bOK && !bFFscan)
                     {
@@ -1463,6 +1493,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             fcReportProgress( ir->nsteps, step );
         }
 
+#if defined(__native_client__)
+        fcCheckin(MASTER(cr));
+#endif
+
         /* sync bCPT and fc record-keeping */
         if (bCPT && MASTER(cr))
         {
@@ -1509,6 +1543,25 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 (Flags & MD_CONFOUT) && MASTER(cr) &&
                 !bRerunMD && !bFFscan)
             {
+                if (fr->bMolPBC && state->x == state_global->x)
+                {
+                    /* This (single-rank) run needs to allocate a
+                       temporary array of size natoms so that any
+                       periodicity removal for mdrun -confout does not
+                       perturb the update and thus the final .edr
+                       output. This makes .cpt restarts look binary
+                       identical, and makes .edr restarts binary
+                       identical. */
+                    snew(x_for_confout, state_global->natoms);
+                    copy_rvecn(state_global->x, x_for_confout, 0, state_global->natoms);
+                }
+                else
+                {
+                    /* With DD, or no bMolPBC, it doesn't matter if
+                       we change state_global->x */
+                    x_for_confout = state_global->x;
+                }
+
                 /* x and v have been collected in write_traj,
                  * because a checkpoint file will always be written
                  * at the last step.
@@ -1517,12 +1570,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (fr->bMolPBC)
                 {
                     /* Make molecules whole only for confout writing */
-                    do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, state_global->x);
+                    do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, x_for_confout);
                 }
                 write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
                                     *top_global->name, top_global,
-                                    state_global->x, state_global->v,
+                                    x_for_confout, state_global->v,
                                     ir->ePBC, state->box);
+                if (fr->bMolPBC && state->x == state_global->x)
+                {
+                    sfree(x_for_confout);
+                }
                 debug_gmx();
             }
             wallcycle_stop(wcycle, ewcTRAJ);
@@ -1641,7 +1698,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
             {
                 gmx_bool bIfRandomize;
-                bIfRandomize = update_randomize_velocities(ir, step, mdatoms, state, upd, &top->idef, constr);
+                bIfRandomize = update_randomize_velocities(ir, step, mdatoms, state, upd, &top->idef, constr, DOMAINDECOMP(cr));
                 /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
                 if (constr && bIfRandomize)
                 {
@@ -1726,7 +1783,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     /* velocity half-step update */
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                                  bUpdateDoLR, fr->f_twin, fcd,
+                                  bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                                   ekind, M, wcycle, upd, FALSE, etrtVELOCITY2,
                                   cr, nrnb, constr, &top->idef);
                 }
@@ -1743,7 +1800,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                              bUpdateDoLR, fr->f_twin, fcd,
+                              bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                               ekind, M, wcycle, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1752,6 +1809,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                    &top->idef, shake_vir, force_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    bInitStep, FALSE, bCalcVir, state->veta);
+
+                if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
+                {
+                    /* Correct the virial for multiple time stepping */
+                    m_sub(shake_vir, fr->vir_twin_constr, shake_vir);
+                }
 
                 if (ir->eI == eiVVAK)
                 {
@@ -1771,7 +1834,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     bUpdateDoLR = (fr->bTwinRange && do_per_step(step, ir->nstcalclr));
 
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
-                                  bUpdateDoLR, fr->f_twin, fcd,
+                                  bUpdateDoLR, fr->f_twin, bCalcVir ? &fr->vir_twin_constr : NULL, fcd,
                                   ekind, M, wcycle, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                     wallcycle_stop(wcycle, ewcUPDATE);
 

@@ -803,7 +803,10 @@ static void dump_remd_parameters(FILE *gp, t_remd_data *d, const char *fn,
         for (j = 0; (j < d->nparams); j++)
         {
             /* Reset all parameters to optimized values */
-            fprintf(hp, "@type xy\n");
+            if(output_env_get_print_xvgr_codes(oenv))
+            {
+                fprintf(hp, "@type xy\n");
+            }
             for (i = 0; (i < d->nparams); i++)
             {
                 d->params[i] = params[i];
@@ -816,7 +819,7 @@ static void dump_remd_parameters(FILE *gp, t_remd_data *d, const char *fn,
                 fprintf(gp, "%s = %12g  d2 = %12g\n", epnm(np, j), d->params[j], d2[i]);
                 fprintf(hp, "%12g  %12g\n", fac[i], d2[i]);
             }
-            fprintf(hp, "&\n");
+            fprintf(hp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
         ffclose(hp);
         for (i = 0; (i < d->nparams); i++)

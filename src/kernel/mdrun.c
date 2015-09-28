@@ -100,10 +100,16 @@ int cmain(int argc, char *argv[])
         "With thread-MPI there are additional options [TT]-nt[tt], which sets",
         "the total number of threads, and [TT]-ntmpi[tt], which sets the number",
         "of thread-MPI threads.",
-        "Note that using combined MPI+OpenMP parallelization is almost always",
-        "slower than single parallelization, except at the scaling limit, where",
-        "especially OpenMP parallelization of PME reduces the communication cost.",
-        "OpenMP-only parallelization is much faster than MPI-only parallelization",
+        "The number of OpenMP threads used by [TT]mdrun[tt] can also be set with",
+        "the standard environment variable, [TT]OMP_NUM_THREADS[tt].",
+        "The [TT]GMX_PME_NUM_THREADS[tt] environment variable can be used to specify",
+        "the number of threads used by the PME-only processes.[PAR]",
+        "Note that combined MPI+OpenMP parallelization is in many cases",
+        "slower than either on its own. However, at high parallelization, using the",
+        "combination is often beneficial as it reduces the number of domains and/or",
+        "the number of MPI ranks. (Less and larger domains can improve scaling,",
+        "with separate PME processes fewer MPI ranks reduces communication cost.)",
+        "OpenMP-only parallelization is typically faster than MPI-only parallelization",
         "on a single CPU(-die). Since we currently don't have proper hardware",
         "topology detection, [TT]mdrun[tt] compiled with thread-MPI will only",
         "automatically use OpenMP-only parallelization when you use up to 4",
@@ -193,13 +199,16 @@ int cmain(int argc, char *argv[])
         "[PAR]",
         "When PME is used with domain decomposition, separate nodes can",
         "be assigned to do only the PME mesh calculation;",
-        "this is computationally more efficient starting at about 12 nodes.",
+        "this is computationally more efficient starting at about 12 nodes",
+        "or even fewer when OpenMP parallelization is used.",
         "The number of PME nodes is set with option [TT]-npme[tt],",
         "this can not be more than half of the nodes.",
         "By default [TT]mdrun[tt] makes a guess for the number of PME",
-        "nodes when the number of nodes is larger than 11 or performance wise",
-        "not compatible with the PME grid x dimension.",
-        "But the user should optimize npme. Performance statistics on this issue",
+        "nodes when the number of nodes is larger than 16. With GPUs,",
+        "PME nodes are not selected automatically, since the optimal setup",
+        "depends very much on the details of the hardware.",
+        "In all cases you might gain performance by optimizing [TT]-npme[tt].",
+        "Performance statistics on this issue",
         "are written at the end of the log file.",
         "For good load balancing at high parallelization, the PME grid x and y",
         "dimensions should be divisible by the number of PME nodes",
@@ -727,6 +736,8 @@ int cmain(int argc, char *argv[])
         gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
                      !bSepPot, Flags & MD_APPENDFILES, &fplog);
         CopyRight(fplog, argv[0]);
+        please_cite(fplog, "Pall2015");
+        please_cite(fplog, "Pronk2013");
         please_cite(fplog, "Hess2008b");
         please_cite(fplog, "Spoel2005a");
         please_cite(fplog, "Lindahl2001a");

@@ -143,12 +143,12 @@ static double v_ewald_lr(double beta, double r)
     }
 }
 
-void table_spline3_fill_ewald_lr(real *table_f,
-                                 real *table_v,
-                                 real *table_fdv0,
-                                 int   ntab,
-                                 real  dx,
-                                 real  beta)
+void table_spline3_fill_ewald_lr(real  *table_f,
+                                 real  *table_v,
+                                 real  *table_fdv0,
+                                 int    ntab,
+                                 double dx,
+                                 real   beta)
 {
     real     tab_max;
     int      i, i_inrange;
@@ -722,7 +722,8 @@ static void done_tabledata(t_tabledata *td)
     sfree(td->f);
 }
 
-static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
+static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
+                       gmx_bool b14only)
 {
     /* Fill the table according to the formulas in the manual.
      * In principle, we only need the potential and the second
@@ -740,21 +741,35 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
     int      i;
     double   reppow, p;
     double   r1, rc, r12, r13;
-    double   r, r2, r6, rc6;
+    double   r, r2, r6, rc2, rc6, rc12;
     double   expr, Vtab, Ftab;
     /* Parameters for David's function */
     double   A = 0, B = 0, C = 0, A_3 = 0, B_4 = 0;
     /* Parameters for the switching function */
     double   ksw, swi, swi1;
     /* Temporary parameters */
-    gmx_bool bSwitch, bShift;
+    gmx_bool bSwitch, bForceShift, bPotentialShift;
     double   ewc = fr->ewaldcoeff;
+    double   Vcut = 0;
 
-    bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) ||
-               (tp == etabCOULSwitch) ||
-               (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch));
-    bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) ||
-               (tp == etabShift));
+    if(b14only)
+    {
+        bSwitch         = FALSE;
+        bForceShift     = FALSE;
+        bPotentialShift = FALSE;
+    }
+    else
+    {
+        bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) ||
+                   (tp == etabCOULSwitch) ||
+                   (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch) ||
+                   (tprops[tp].bCoulomb && (fr->coulomb_modifier == eintmodPOTSWITCH)) ||
+                   (!tprops[tp].bCoulomb && (fr->vdw_modifier == eintmodPOTSWITCH)));
+        bForceShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) ||
+                        (tp == etabShift));
+        bPotentialShift = ((tprops[tp].bCoulomb && (fr->coulomb_modifier == eintmodPOTSHIFT)) ||
+                           (!tprops[tp].bCoulomb && (fr->vdw_modifier == eintmodPOTSHIFT)));
+    }
 
     reppow = fr->reppow;
 
@@ -776,7 +791,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
     {
         ksw  = 0.0;
     }
-    if (bShift)
+    if (bForceShift)
     {
         if (tp == etabShift)
         {
@@ -811,6 +826,54 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
 #ifdef DEBUG_SWITCH
     fp = xvgropen("switch.xvg", "switch", "r", "s");
 #endif
+
+    if(bPotentialShift)
+    {
+        rc2   = rc*rc;
+        rc6   = 1.0/(rc2*rc2*rc2);
+        if (gmx_within_tol(reppow, 12.0, 10*GMX_DOUBLE_EPS))
+        {
+            rc12 = rc6*rc6;
+        }
+        else
+        {
+            rc12 = pow(rc, -reppow);
+        }
+
+        switch (tp)
+        {
+            case etabLJ6:
+                /* Dispersion */
+                Vcut = -rc6;
+                break;
+            case etabLJ12:
+                /* Repulsion */
+                Vcut  = rc12;
+                break;
+            case etabCOUL:
+                Vcut  = 1.0/rc;
+                break;
+            case etabEwald:
+            case etabEwaldSwitch:
+                Vtab  = gmx_erfc(ewc*rc)/rc;
+                break;
+            case etabEwaldUser:
+                /* Only calculate minus the reciprocal space contribution */
+                Vtab  = -gmx_erf(ewc*rc)/rc;
+                break;
+            case etabRF:
+            case etabRF_ZERO:
+                /* No need for preventing the usage of modifiers with RF */
+                Vcut  = 0.0;
+                break;
+            case etabEXPMIN:
+                Vcut  = exp(-rc);
+                break;
+            default:
+                gmx_fatal(FARGS, "Cannot apply new potential-shift modifier to interaction type '%s' yet. (%s,%d)",
+                          tprops[tp].name, __FILE__, __LINE__);
+        }
+    }
 
     for (i = td->nx0; (i < td->nx); i++)
     {
@@ -974,7 +1037,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
                 gmx_fatal(FARGS, "Table type %d not implemented yet. (%s,%d)",
                           tp, __FILE__, __LINE__);
         }
-        if (bShift)
+        if (bForceShift)
         {
             /* Normal coulomb with cut-off correction for potential */
             if (r < rc)
@@ -989,6 +1052,10 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr)
                     Ftab  +=   A*r12 + B*r13;
                 }
             }
+        }
+        if (bPotentialShift)
+        {
+            Vtab -= Vcut;
         }
 
         if (ETAB_USER(tp))
@@ -1265,7 +1332,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
             init_table(out, nx, nx0,
                        (tabsel[k] == etabEXPMIN) ? table.scale_exp : table.scale,
                        &(td[k]), !bReadTab);
-            fill_table(&(td[k]), tabsel[k], fr);
+            fill_table(&(td[k]), tabsel[k], fr, b14only);
             if (out)
             {
                 fprintf(out, "%s table with %d data points for %s%s.\n"

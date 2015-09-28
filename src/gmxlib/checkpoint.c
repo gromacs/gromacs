@@ -70,6 +70,7 @@
 #include "network.h"
 #include "gmx_random.h"
 #include "checkpoint.h"
+#include "main.h"
 #include "futil.h"
 #include "string2.h"
 #include <fcntl.h>
@@ -845,14 +846,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     if (!bRead)
     {
         snew(fhost, 255);
-#ifdef HAVE_UNISTD_H
-        if (gethostname(fhost, 255) != 0)
-        {
-            sprintf(fhost, "unknown");
-        }
-#else
-        sprintf(fhost, "unknown");
-#endif
+        gmx_gethostname(fhost, 255);
     }
     do_cpt_string_err(xd, bRead, "GROMACS version", version, list);
     do_cpt_string_err(xd, bRead, "GROMACS build time", btime, list);
@@ -1021,7 +1015,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
 
     if (bRead) /* we need to allocate space for dfhist if we are reading */
     {
-        init_df_history(&state->dfhist,state->dfhist.nlambda);
+        init_df_history(&state->dfhist, state->dfhist.nlambda);
     }
 
     /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */
@@ -1598,6 +1592,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         npmenodes = 0;
     }
 
+#ifndef GMX_NO_RENAME
     /* make the new temporary filename */
     snew(fntemp, strlen(fn)+5+STEPSTRSIZE);
     strcpy(fntemp, fn);
@@ -1605,7 +1600,13 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     sprintf(suffix, "_%s%s", "step", gmx_step_str(step, sbuf));
     strcat(fntemp, suffix);
     strcat(fntemp, fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
-
+#else
+    /* if we can't rename, we just overwrite the cpt file.
+     * dangerous if interrupted.
+     */
+    snew(fntemp, strlen(fn));
+    strcpy(fntemp, fn);
+#endif
     time(&now);
     gmx_ctime_r(&now, timebuf, STRLEN);
 
@@ -1635,16 +1636,15 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     flags_enh = 0;
     if (state->enerhist.nsum > 0 || state->enerhist.nsum_sim > 0)
     {
-        flags_enh |= (1<<eenhENERGY_N);
+        flags_enh |= (1<<eenhENERGY_N) | (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSTEPS_SIM);
         if (state->enerhist.nsum > 0)
         {
             flags_enh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
-                          (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSUM));
+                          (1<<eenhENERGY_NSUM));
         }
         if (state->enerhist.nsum_sim > 0)
         {
-            flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSTEPS_SIM) |
-                          (1<<eenhENERGY_NSUM_SIM));
+            flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSUM_SIM));
         }
         if (state->enerhist.dht)
         {
@@ -1749,6 +1749,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     /* we don't move the checkpoint if the user specified they didn't want it,
        or if the fsyncs failed */
+#ifndef GMX_NO_RENAME
     if (!bNumberAndKeep && !ret)
     {
         if (gmx_fexist(fn))
@@ -1777,6 +1778,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
             gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");
         }
     }
+#endif  /* GMX_NO_RENAME */
 
     sfree(outputfiles);
     sfree(fntemp);
@@ -1848,11 +1850,26 @@ static void check_match(FILE *fplog,
                         ivec dd_nc, ivec dd_nc_f)
 {
     int      npp;
-    gmx_bool mm;
-
-    mm = FALSE;
+    gmx_bool mm                 = FALSE;
+    gmx_bool patchlevel_differs = FALSE;
+    gmx_bool version_differs    = FALSE;
 
     check_string(fplog, "Version", VERSION, version, &mm);
+    patchlevel_differs = mm;
+
+    if (patchlevel_differs)
+    {
+        /* Gromacs should be able to continue from checkpoints between
+         * different patch level versions, but we do not guarantee
+         * compatibility between different major/minor versions - check this.
+         */
+        int   gmx_major, gmx_minor;
+        int   cpt_major, cpt_minor;
+        sscanf(VERSION, "%d.%d", &gmx_major, &gmx_minor);
+        sscanf(version, "%d.%d", &cpt_major, &cpt_minor);
+        version_differs = (gmx_major != cpt_major || gmx_minor != cpt_minor);
+    }
+
     check_string(fplog, "Build time", BUILD_TIME, btime, &mm);
     check_string(fplog, "Build user", BUILD_USER, buser, &mm);
     check_string(fplog, "Build host", BUILD_HOST, bhost, &mm);
@@ -1885,16 +1902,39 @@ static void check_match(FILE *fplog,
 
     if (mm)
     {
-        fprintf(stderr,
-                "Gromacs binary or parallel settings not identical to previous run.\n"
-                "Continuation is exact, but is not guaranteed to be binary identical%s.\n\n",
-                fplog ? ",\n see the log file for details" : "");
+        const char msg_version_difference[] =
+            "The current Gromacs major & minor version are not identical to those that\n"
+            "generated the checkpoint file. In principle Gromacs does not support\n"
+            "continuation from checkpoints between different versions, so we advise\n"
+            "against this. If you still want to try your luck we recommend that you use\n"
+            "the -noappend flag to keep your output files from the two versions separate.\n"
+            "This might also work around errors where the output fields in the energy\n"
+            "file have changed between the different major & minor versions.\n";
 
-        if (fplog)
+        const char msg_mismatch_notice[] =
+            "Gromacs patchlevel, binary or parallel settings differ from previous run.\n"
+            "Continuation is exact, but not guaranteed to be binary identical.\n";
+
+        const char msg_logdetails[] =
+            "See the log file for details.\n";
+
+        if (version_differs)
         {
-            fprintf(fplog,
-                    "Gromacs binary or parallel settings not identical to previous run.\n"
-                    "Continuation is exact, but is not guaranteed to be binary identical.\n\n");
+            fprintf(stderr, "%s%s\n", msg_version_difference, fplog ? msg_logdetails : "");
+
+            if (fplog)
+            {
+                fprintf(fplog, "%s\n", msg_version_difference);
+            }
+        }
+        else
+        {
+            /* Major & minor versions match at least, but something is different. */
+            fprintf(stderr, "%s%s\n", msg_mismatch_notice, fplog ? msg_logdetails : "");
+            if (fplog)
+            {
+                fprintf(fplog, "%s\n", msg_mismatch_notice);
+            }
         }
     }
 }
@@ -1922,7 +1962,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     t_fileio            *chksum_file;
     FILE               * fplog = *pfplog;
     unsigned char        digest[16];
-#ifndef GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
     struct flock         fl; /* don't initialize here: the struct order is OS
                                 dependent! */
 #endif
@@ -1935,7 +1975,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
 
-#ifndef GMX_NATIVE_WINDOWS
+#if !defined __native_client__ && !defined GMX_NATIVE_WINDOWS
     fl.l_type   = F_WRLCK;
     fl.l_whence = SEEK_SET;
     fl.l_start  = 0;
@@ -2240,11 +2280,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                  * will succeed, but a second process can also lock the file.
                  * We should probably try to detect this.
                  */
-#ifndef GMX_NATIVE_WINDOWS
-                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
-                    == -1)
-#else
+#if defined __native_client__
+                errno = ENOSYS;
+                if (1)
+
+#elif defined GMX_NATIVE_WINDOWS
                 if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX) == -1)
+#else
+                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl) == -1)
 #endif
                 {
                     if (errno == ENOSYS)
@@ -2707,7 +2750,7 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
                     }
                     fprintf(stderr, "\n");
 
-                    gmx_fatal(FARGS, "File appending requested, but only %d of the %d output files are present", nexist, nfiles);
+                    gmx_fatal(FARGS, "File appending requested, but %d of the %d output files are not present or are named differently", nfiles-nexist, nfiles);
                 }
             }
 

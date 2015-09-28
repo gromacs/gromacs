@@ -87,6 +87,7 @@ typedef struct {
     int             *steps;
     int             *points;
     enerdat_t       *s;
+    gmx_bool         bHaveSums;
 } enerdata_t;
 
 static double mypow(double x, double y)
@@ -570,22 +571,16 @@ static void analyse_disre(const char *voutfn,    int nframes,
 }
 
 static void einstein_visco(const char *fn, const char *fni, int nsets,
-                           int nframes, real **sum,
-                           real V, real T, int nsteps, double time[],
+                           int nint, real **eneint,
+                           real V, real T, double dt,
                            const output_env_t oenv)
 {
     FILE  *fp0, *fp1;
     double av[4], avold[4];
-    double fac, dt, di;
+    double fac, di;
     int    i, j, m, nf4;
 
-    if (nframes < 1)
-    {
-        return;
-    }
-
-    dt  = (time[1]-time[0]);
-    nf4 = nframes/4+1;
+    nf4 = nint/4 + 1;
 
     for (i = 0; i <= nsets; i++)
     {
@@ -595,33 +590,32 @@ static void einstein_visco(const char *fn, const char *fni, int nsets,
                    "Time (ps)", "(kg m\\S-1\\N s\\S-1\\N ps)", oenv);
     fp1 = xvgropen(fn, "Shear viscosity using Einstein relation",
                    "Time (ps)", "(kg m\\S-1\\N s\\S-1\\N)", oenv);
-    for (i = 1; i < nf4; i++)
+    for (i = 0; i < nf4; i++)
     {
-        fac = dt*nframes/nsteps;
         for (m = 0; m <= nsets; m++)
         {
             av[m] = 0;
         }
-        for (j = 0; j < nframes-i; j++)
+        for (j = 0; j < nint - i; j++)
         {
             for (m = 0; m < nsets; m++)
             {
-                di   = sqr(fac*(sum[m][j+i]-sum[m][j]));
+                di   = sqr(eneint[m][j+i] - eneint[m][j]);
 
                 av[m]     += di;
                 av[nsets] += di/nsets;
             }
         }
         /* Convert to SI for the viscosity */
-        fac = (V*NANO*NANO*NANO*PICO*1e10)/(2*BOLTZMANN*T)/(nframes-i);
-        fprintf(fp0, "%10g", time[i]-time[0]);
+        fac = (V*NANO*NANO*NANO*PICO*1e10)/(2*BOLTZMANN*T)/(nint - i);
+        fprintf(fp0, "%10g", i*dt);
         for (m = 0; (m <= nsets); m++)
         {
             av[m] = fac*av[m];
             fprintf(fp0, "  %10g", av[m]);
         }
         fprintf(fp0, "\n");
-        fprintf(fp1, "%10g", 0.5*(time[i]+time[i-1])-time[0]);
+        fprintf(fp1, "%10g", (i + 0.5)*dt);
         for (m = 0; (m <= nsets); m++)
         {
             fprintf(fp1, "  %10g", (av[m]-avold[m])/dt);
@@ -710,7 +704,7 @@ static void calc_averages(int nset, enerdata_t *edat, int nbmin, int nbmax)
     {
         ed             = &edat->s[i];
         ed->bExactStat = FALSE;
-        if (edat->npoints > 0)
+        if (edat->bHaveSums)
         {
             /* All energy file sum entries 0 signals no exact sums.
              * But if all energy values are 0, we still have exact sums.
@@ -980,7 +974,7 @@ static void calc_fluctuation_props(FILE *fp,
                                    int nbmin, int nbmax)
 {
     int    i, j;
-    double vvhh, vv, v, h, hh2, vv2, varv, hh, varh, tt, cv, cp, alpha, kappa, dcp, et, varet;
+    double vv, v, h, varv, hh, varh, tt, cv, cp, alpha, kappa, dcp, et, varet;
     double NANO3;
     enum {
         eVol, eEnth, eTemp, eEtot, eNR
@@ -1010,7 +1004,7 @@ static void calc_fluctuation_props(FILE *fp,
             fprintf(fp,"Found %s data.\n",my_ener[i]);
  */ }
     /* Compute it all! */
-    vvhh = alpha = kappa = cp = dcp = cv = NOTSET;
+    alpha = kappa = cp = dcp = cv = NOTSET;
 
     /* Temperature */
     tt = NOTSET;
@@ -1048,16 +1042,21 @@ static void calc_fluctuation_props(FILE *fp,
     /* Alpha, dcp */
     if ((ii[eVol] < nset) && (ii[eEnth] < nset) && (ii[eTemp] < nset))
     {
-        vvhh = 0;
+        double v_sum, h_sum, vh_sum, v_aver, h_aver, vh_aver;
+        vh_sum = v_sum = h_sum = 0;
         for (j = 0; (j < edat->nframes); j++)
         {
-            v     = edat->s[ii[eVol]].ener[j]*NANO3;
-            h     = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
-            vvhh += (v*h);
+            v       = edat->s[ii[eVol]].ener[j]*NANO3;
+            h       = KILO*edat->s[ii[eEnth]].ener[j]/AVOGADRO;
+            v_sum  += v;
+            h_sum  += h;
+            vh_sum += (v*h);
         }
-        vvhh /= edat->nframes;
-        alpha = (vvhh-vv*hh)/(vv*BOLTZMANN*tt*tt);
-        dcp   = (vv*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
+        vh_aver = vh_sum / edat->nframes;
+        v_aver  = v_sum  / edat->nframes;
+        h_aver  = h_sum  / edat->nframes;
+        alpha = (vh_aver-v_aver*h_aver)/(v_aver*BOLTZMANN*tt*tt);
+        dcp   = (v_aver*AVOGADRO/nmol)*tt*sqr(alpha)/(kappa);
     }
 
     if (tt != NOTSET)
@@ -1079,10 +1078,6 @@ static void calc_fluctuation_props(FILE *fp,
             if (varv != NOTSET)
             {
                 fprintf(fp, "varv  =  %10g (m^6)\n", varv*AVOGADRO/nmol);
-            }
-            if (vvhh != NOTSET)
-            {
-                fprintf(fp, "vvhh  =  %10g (m^3 J)\n", vvhh);
             }
         }
         if (vv != NOTSET)
@@ -1178,7 +1173,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             esum = calc_sum(nset, edat, nbmin, nbmax);
         }
 
-        if (edat->npoints == 0)
+        if (!edat->bHaveSums)
         {
             nexact    = 0;
             nnotexact = nset;
@@ -1347,7 +1342,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             const char* leg[] = { "Shear", "Bulk" };
             real        factor;
             real      **eneset;
-            real      **enesum;
+            real      **eneint;
 
             /* Assume pressure tensor is in Pxx Pxy Pxz Pyx Pyy Pyz Pzx Pzy Pzz */
 
@@ -1359,11 +1354,6 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             {
                 snew(eneset[i], edat->nframes);
             }
-            snew(enesum, 3);
-            for (i = 0; i < 3; i++)
-            {
-                snew(enesum[i], edat->nframes);
-            }
             for (i = 0; (i < edat->nframes); i++)
             {
                 eneset[0][i] = 0.5*(edat->s[1].ener[i]+edat->s[3].ener[i]);
@@ -1374,13 +1364,32 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                     eneset[j][i] = edat->s[j].ener[i];
                 }
                 eneset[11][i] -= Pres;
-                enesum[0][i]   = 0.5*(edat->s[1].es[i].sum+edat->s[3].es[i].sum);
-                enesum[1][i]   = 0.5*(edat->s[2].es[i].sum+edat->s[6].es[i].sum);
-                enesum[2][i]   = 0.5*(edat->s[5].es[i].sum+edat->s[7].es[i].sum);
             }
 
+            /* Determine integrals of the off-diagonal pressure elements */
+            snew(eneint, 3);
+            for (i = 0; i < 3; i++)
+            {
+                snew(eneint[i], edat->nframes + 1);
+            }
+            eneint[0][0] = 0;
+            eneint[1][0] = 0;
+            eneint[2][0] = 0;
+            for (i = 0; i < edat->nframes; i++)
+            {
+                eneint[0][i+1] = eneint[0][i] + 0.5*(edat->s[1].es[i].sum + edat->s[3].es[i].sum)*Dt/edat->points[i];
+                eneint[1][i+1] = eneint[1][i] + 0.5*(edat->s[2].es[i].sum + edat->s[6].es[i].sum)*Dt/edat->points[i];
+                eneint[2][i+1] = eneint[2][i] + 0.5*(edat->s[5].es[i].sum + edat->s[7].es[i].sum)*Dt/edat->points[i];
+             }
+
             einstein_visco("evisco.xvg", "eviscoi.xvg",
-                           3, edat->nframes, enesum, Vaver, Temp, nsteps, time, oenv);
+                           3, edat->nframes+1, eneint, Vaver, Temp, Dt, oenv);
+
+            for (i = 0; i < 3; i++)
+            {
+                sfree(eneint[i]);
+            }
+            sfree(eneint);
 
             /*do_autocorr(corrfn,buf,nenergy,3,eneset,Dt,eacNormal,TRUE);*/
             /* Do it for shear viscosity */
@@ -1414,6 +1423,12 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                 fprintf(fp, "%10g  %10g  %10g\n", (i*Dt), integral, intBulk);
             }
             ffclose(fp);
+
+            for (i = 0; i < 12; i++)
+            {
+                sfree(eneset[i]);
+            }
+            sfree(eneset);
         }
         else if (bCorr)
         {
@@ -2239,7 +2254,7 @@ int gmx_energy(int argc, char *argv[])
                 {
                     fort = xvgropen(opt2fn("-ort", NFILE, fnm), "Calculated orientations",
                                     "Time (ps)", "", oenv);
-                    if (bOrinst)
+                    if (bOrinst && output_env_get_print_xvgr_codes(oenv))
                     {
                         fprintf(fort, "%s", orinst_sub);
                     }
@@ -2250,7 +2265,7 @@ int gmx_energy(int argc, char *argv[])
                     fodt = xvgropen(opt2fn("-odt", NFILE, fnm),
                                     "Orientation restraint deviation",
                                     "Time (ps)", "", oenv);
-                    if (bOrinst)
+                    if (bOrinst && output_env_get_print_xvgr_codes(oenv))
                     {
                         fprintf(fodt, "%s", orinst_sub);
                     }
@@ -2307,12 +2322,13 @@ int gmx_energy(int argc, char *argv[])
     }
 
     /* Initiate energies and set them to zero */
-    edat.nsteps  = 0;
-    edat.npoints = 0;
-    edat.nframes = 0;
-    edat.step    = NULL;
-    edat.steps   = NULL;
-    edat.points  = NULL;
+    edat.nsteps    = 0;
+    edat.npoints   = 0;
+    edat.nframes   = 0;
+    edat.step      = NULL;
+    edat.steps     = NULL;
+    edat.points    = NULL;
+    edat.bHaveSums = TRUE;
     snew(edat.s, nset);
 
     /* Initiate counters */
@@ -2390,41 +2406,43 @@ int gmx_energy(int argc, char *argv[])
                 else
                 {
                     edat.steps[nfr] = fr->nsteps;
+
+                    if (fr->nsum <= 1)
                     {
-                        if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
+                        /* mdrun only calculated the energy at energy output
+                         * steps. We don't need to check step intervals.
+                         */
+                        edat.points[nfr] = 1;
+                        for (i = 0; i < nset; i++)
                         {
-                            if (fr->nsum <= 1)
-                            {
-                                edat.points[nfr] = 1;
-                                for (i = 0; i < nset; i++)
-                                {
-                                    sss                    = set[i];
-                                    edat.s[i].es[nfr].sum  = fr->ener[sss].e;
-                                    edat.s[i].es[nfr].sum2 = 0;
-                                }
-                                edat.npoints += 1;
-                            }
-                            else
-                            {
-                                edat.points[nfr] = fr->nsum;
-                                for (i = 0; i < nset; i++)
-                                {
-                                    sss                    = set[i];
-                                    edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
-                                    edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
-                                }
-                                edat.npoints += fr->nsum;
-                            }
+                            sss                    = set[i];
+                            edat.s[i].es[nfr].sum  = fr->ener[sss].e;
+                            edat.s[i].es[nfr].sum2 = 0;
                         }
-                        else
-                        {
-                            /* The interval does not match fr->nsteps:
-                             * can not do exact averages.
-                             */
-                            edat.npoints = 0;
-                        }
-                        edat.nsteps = fr->step - start_step + 1;
+                        edat.npoints  += 1;
+                        edat.bHaveSums = FALSE;
                     }
+                    else if (fr->step - start_step + 1 == edat.nsteps + fr->nsteps)
+                    {
+                        /* We have statistics  to the previous frame */
+                        edat.points[nfr] = fr->nsum;
+                        for (i = 0; i < nset; i++)
+                        {
+                            sss                    = set[i];
+                            edat.s[i].es[nfr].sum  = fr->ener[sss].esum;
+                            edat.s[i].es[nfr].sum2 = fr->ener[sss].eav;
+                        }
+                        edat.npoints += fr->nsum;
+                    }
+                    else
+                    {
+                        /* The interval does not match fr->nsteps:
+                         * can not do exact averages.
+                         */
+                        edat.bHaveSums = FALSE;
+                    }
+
+                    edat.nsteps = fr->step - start_step + 1;
                 }
                 for (i = 0; i < nset; i++)
                 {
@@ -2716,7 +2734,7 @@ int gmx_energy(int argc, char *argv[])
         out = xvgropen(opt2fn("-ora", NFILE, fnm),
                        "Average calculated orientations",
                        "Restraint label", "", oenv);
-        if (bOrinst)
+        if (bOrinst && output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(out, "%s", orinst_sub);
         }
@@ -2731,7 +2749,7 @@ int gmx_energy(int argc, char *argv[])
         out = xvgropen(opt2fn("-oda", NFILE, fnm),
                        "Average restraint deviation",
                        "Restraint label", "", oenv);
-        if (bOrinst)
+        if (bOrinst && output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(out, "%s", orinst_sub);
         }
@@ -2746,7 +2764,7 @@ int gmx_energy(int argc, char *argv[])
         out = xvgropen(opt2fn("-odr", NFILE, fnm),
                        "RMS orientation restraint deviations",
                        "Restraint label", "", oenv);
-        if (bOrinst)
+        if (bOrinst && output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(out, "%s", orinst_sub);
         }

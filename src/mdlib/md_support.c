@@ -50,6 +50,7 @@
 #include "nrnb.h"
 #include "md_logging.h"
 #include "md_support.h"
+#include "names.h"
 
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
@@ -740,6 +741,11 @@ void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
             check_nst_param(fplog, cr, "nstcalcenergy", ir->nstcalcenergy,
                             "nstdhdl", &ir->fepvals->nstdhdl);
         }
+    }
+
+    if (EI_VV(ir->eI) && IR_TWINRANGE(*ir) && ir->nstlist > 1)
+    {
+        gmx_fatal(FARGS, "Twin-range multiple time stepping does not work with integrator %s.", ei_names[ir->eI]);
     }
 }
 

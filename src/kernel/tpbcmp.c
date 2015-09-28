@@ -1076,7 +1076,14 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
     }
     if (cmp_bool(fp, "bF", -1, fr1->bF, fr2->bF))
     {
-        cmp_rvecs_rmstol(fp, "f", min(fr1->natoms, fr2->natoms), fr1->f, fr2->f, ftol, abstol);
+        if (bRMSD)
+        {
+            cmp_rvecs(fp, "f", min(fr1->natoms, fr2->natoms), fr1->f, fr2->f, bRMSD, ftol, abstol);
+        }
+        else
+        {
+            cmp_rvecs_rmstol(fp, "f", min(fr1->natoms, fr2->natoms), fr1->f, fr2->f, ftol, abstol);
+        }
     }
     if (cmp_bool(fp, "bBox", -1, fr1->bBox, fr2->bBox))
     {

@@ -95,7 +95,7 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                     break;
 
                 case eCOMB_ARITHMETIC:
-                    /* c0 and c1 are epsilon and sigma */
+                    /* c0 and c1 are sigma and epsilon */
                     for (i = k = 0; (i < nr); i++)
                     {
                         for (j = 0; (j < nr); j++, k++)
@@ -104,14 +104,21 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             cj0                  = get_atomtype_nbparam(j, 0, atype);
                             ci1                  = get_atomtype_nbparam(i, 1, atype);
                             cj1                  = get_atomtype_nbparam(j, 1, atype);
-                            plist->param[k].c[0] = (ci0+cj0)*0.5;
+                            plist->param[k].c[0] = (fabs(ci0) + fabs(cj0))*0.5;
+                            /* Negative sigma signals that c6 should be set to zero later,
+                             * so we need to propagate that through the combination rules.
+                             */
+                            if (ci0 < 0 || cj0 < 0)
+                            {
+                                plist->param[k].c[0] *= -1;
+                            }
                             plist->param[k].c[1] = sqrt(ci1*cj1);
-                        }
+                         }
                     }
 
                     break;
                 case eCOMB_GEOM_SIG_EPS:
-                    /* c0 and c1 are epsilon and sigma */
+                    /* c0 and c1 are sigma and epsilon */
                     for (i = k = 0; (i < nr); i++)
                     {
                         for (j = 0; (j < nr); j++, k++)
@@ -120,7 +127,14 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                             cj0                  = get_atomtype_nbparam(j, 0, atype);
                             ci1                  = get_atomtype_nbparam(i, 1, atype);
                             cj1                  = get_atomtype_nbparam(j, 1, atype);
-                            plist->param[k].c[0] = sqrt(ci0*cj0);
+                            plist->param[k].c[0] = sqrt(fabs(ci0*cj0));
+                            /* Negative sigma signals that c6 should be set to zero later,
+                             * so we need to propagate that through the combination rules.
+                             */
+                            if (ci0 < 0 || cj0 < 0)
+                            {
+                                plist->param[k].c[0] *= -1;
+                            }
                             plist->param[k].c[1] = sqrt(ci1*cj1);
                         }
                     }
@@ -586,9 +600,11 @@ static void push_bondtype(t_params     *       bt,
                     {
                         sprintf(errbuf, "Overriding %s parameters.%s",
                                 interaction_function[ftype].longname,
-                                (ftype == F_PDIHS) ? "\nUse dihedraltype 4 to allow several multiplicity terms." : "");
+                                (ftype == F_PDIHS) ?
+                                "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
+                                : "");
                         warning(wi, errbuf);
-                        fprintf(stderr, "  old:");
+                        fprintf(stderr, "  old:                                         ");
                         for (j = 0; (j < nrfp); j++)
                         {
                             fprintf(stderr, " %g", bt->param[i].c[j]);

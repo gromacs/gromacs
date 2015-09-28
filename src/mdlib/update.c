@@ -1163,7 +1163,12 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
         }
         if (md->nPerturbed && md->bPerturbed[n])
         {
-            dekindl += 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
+            /* The minus sign here might be confusing.
+             * The kinetic contribution from dH/dl doesn't come from
+             * d m(l)/2 v^2 / dl, but rather from d p^2/2m(l) / dl,
+             * where p are the momenta. The difference is only a minus sign.
+             */
+            dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
         }
     }
     ekind->dekindl = dekindl;
@@ -1333,49 +1338,6 @@ static void deform(gmx_update_t upd,
     }
 }
 
-static void combine_forces(int nstcalclr,
-                           gmx_constr_t constr,
-                           t_inputrec *ir, t_mdatoms *md, t_idef *idef,
-                           t_commrec *cr,
-                           gmx_large_int_t step,
-                           t_state *state, gmx_bool bMolPBC,
-                           int start, int nrend,
-                           rvec f[], rvec f_lr[],
-                           t_nrnb *nrnb)
-{
-    int  i, d, nm1;
-
-    /* f contains the short-range forces + the long range forces
-     * which are stored separately in f_lr.
-     */
-
-    if (constr != NULL && !(ir->eConstrAlg == econtSHAKE && ir->epc == epcNO))
-    {
-        /* We need to constrain the LR forces separately,
-         * because due to the different pre-factor for the SR and LR
-         * forces in the update algorithm, we can not determine
-         * the constraint force for the coordinate constraining.
-         * Constrain only the additional LR part of the force.
-         */
-        /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
-        constrain(NULL, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
-                  state->x, f_lr, f_lr, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
-                  NULL, NULL, nrnb, econqForce, ir->epc == epcMTTK, state->veta, state->veta);
-    }
-
-    /* Add nstcalclr-1 times the LR force to the sum of both forces
-     * and store the result in forces_lr.
-     */
-    nm1 = nstcalclr - 1;
-    for (i = start; i < nrend; i++)
-    {
-        for (d = 0; d < DIM; d++)
-        {
-            f_lr[i][d] = f[i][d] + nm1*f_lr[i][d];
-        }
-    }
-}
-
 void update_tcouple(FILE             *fplog,
                     gmx_large_int_t   step,
                     t_inputrec       *inputrec,
@@ -1517,6 +1479,75 @@ static rvec *get_xprime(const t_state *state, gmx_update_t upd)
     }
 
     return upd->xp;
+}
+
+static void combine_forces(gmx_update_t upd,
+                           int nstcalclr,
+                           gmx_constr_t constr,
+                           t_inputrec *ir, t_mdatoms *md, t_idef *idef,
+                           t_commrec *cr,
+                           gmx_large_int_t step,
+                           t_state *state, gmx_bool bMolPBC,
+                           int start, int nrend,
+                           rvec f[], rvec f_lr[],
+                           tensor *vir_lr_constr,
+                           t_nrnb *nrnb)
+{
+    int  i, d;
+
+    /* f contains the short-range forces + the long range forces
+     * which are stored separately in f_lr.
+     */
+
+    if (constr != NULL && vir_lr_constr != NULL &&
+        !(ir->eConstrAlg == econtSHAKE && ir->epc == epcNO))
+    {
+        /* We need to constrain the LR forces separately,
+         * because due to the different pre-factor for the SR and LR
+         * forces in the update algorithm, we have to correct
+         * the constraint virial for the nstcalclr-1 extra f_lr.
+         * Constrain only the additional LR part of the force.
+         */
+        /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
+        rvec *xp;
+        real  fac;
+        int   gf = 0;
+
+        xp  = get_xprime(state, upd);
+
+        fac = (nstcalclr - 1)*ir->delta_t*ir->delta_t;
+
+        for (i = md->start; i < md->start + md->homenr; i++)
+        {
+            if (md->cFREEZE != NULL)
+            {
+                gf = md->cFREEZE[i];
+            }
+            for (d = 0; d < DIM; d++)
+            {
+                if ((md->ptype[i] != eptVSite) &&
+                    (md->ptype[i] != eptShell) &&
+                    !ir->opts.nFreeze[gf][d])
+                {
+                    xp[i][d] = state->x[i][d] + fac*f_lr[i][d]*md->invmass[i];
+                }
+            }
+        }
+        constrain(NULL, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
+                  state->x, xp, xp, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
+                  NULL, vir_lr_constr, nrnb, econqCoord, ir->epc == epcMTTK, state->veta, state->veta);
+    }
+
+    /* Add nstcalclr-1 times the LR force to the sum of both forces
+     * and store the result in forces_lr.
+     */
+    for (i = start; i < nrend; i++)
+    {
+        for (d = 0; d < DIM; d++)
+        {
+            f_lr[i][d] = f[i][d] + (nstcalclr - 1)*f_lr[i][d];
+        }
+    }
 }
 
 void update_constraints(FILE             *fplog,
@@ -1837,6 +1868,7 @@ void update_coords(FILE             *fplog,
                    rvec             *f,    /* forces on home particles */
                    gmx_bool          bDoLR,
                    rvec             *f_lr,
+                   tensor           *vir_lr_constr,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
@@ -1898,9 +1930,10 @@ void update_coords(FILE             *fplog,
          * to produce twin time stepping.
          */
         /* is this correct in the new construction? MRS */
-        combine_forces(inputrec->nstcalclr, constr, inputrec, md, idef, cr,
+        combine_forces(upd,
+                       inputrec->nstcalclr, constr, inputrec, md, idef, cr,
                        step, state, bMolPBC,
-                       start, nrend, f, f_lr, nrnb);
+                       start, nrend, f, f_lr, vir_lr_constr, nrnb);
         force = f_lr;
     }
     else
@@ -2083,11 +2116,17 @@ void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[]
             mv[XX], mv[YY], mv[ZZ]);
 }
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr)
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr, gmx_bool bIsDomainDecomposition)
 {
 
     int  i;
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
+
+    if (ir->etc == etcANDERSEN && constr && bIsDomainDecomposition)
+    {
+        gmx_fatal(FARGS, "Normal Andersen is currently not supported with constraints and domain decomposition. Please consider the massive Andersen thermostat.");
+    }
+
     /* proceed with andersen if 1) it's fixed probability per
        particle andersen or 2) it's massive andersen and it's tau_t/dt */
     if ((ir->etc == etcANDERSEN) || do_per_step(step, (int)(1.0/rate)))

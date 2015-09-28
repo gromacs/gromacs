@@ -736,7 +736,8 @@ real water_pol(int nbonds,
      * a shell connected to a dummy with spring constant that differ in the
      * three spatial dimensions in the molecular frame.
      */
-    int  i, m, aO, aH1, aH2, aD, aS, type, type0;
+    int  i, m, aO, aH1, aH2, aD, aS, type, type0, ki;
+    ivec dt;
     rvec dOH1, dOH2, dHH, dOD, dDS, nW, kk, dx, kdx, proj;
 #ifdef DEBUG
     rvec df;
@@ -779,11 +780,11 @@ real water_pol(int nbonds,
             aS   = forceatoms[i+5];
 
             /* Compute vectors describing the water frame */
-            rvec_sub(x[aH1], x[aO], dOH1);
-            rvec_sub(x[aH2], x[aO], dOH2);
-            rvec_sub(x[aH2], x[aH1], dHH);
-            rvec_sub(x[aD], x[aO], dOD);
-            rvec_sub(x[aS], x[aD], dDS);
+            pbc_rvec_sub(pbc, x[aH1], x[aO], dOH1);
+            pbc_rvec_sub(pbc, x[aH2], x[aO], dOH2);
+            pbc_rvec_sub(pbc, x[aH2], x[aH1], dHH);
+            pbc_rvec_sub(pbc, x[aD], x[aO], dOD);
+            ki = pbc_rvec_sub(pbc, x[aS], x[aD], dDS);
             cprod(dOH1, dOH2, nW);
 
             /* Compute inverse length of normal vector
@@ -838,6 +839,13 @@ real water_pol(int nbonds,
             kdx[YY] = kk[YY]*dx[YY];
             kdx[ZZ] = kk[ZZ]*dx[ZZ];
             vtot   += iprod(dx, kdx);
+
+            if (g)
+            {
+                ivec_sub(SHIFT_IVEC(g, aS), SHIFT_IVEC(g, aD), dt);
+                ki = IVEC2IS(dt);
+            }
+
             for (m = 0; (m < DIM); m++)
             {
                 /* This is a tensor operation but written out for speed */
@@ -848,8 +856,10 @@ real water_pol(int nbonds,
 #ifdef DEBUG
                 df[m] = fij;
 #endif
-                f[aS][m] += fij;
-                f[aD][m] -= fij;
+                f[aS][m]           += fij;
+                f[aD][m]           -= fij;
+                fshift[ki][m]      += fij;
+                fshift[CENTRAL][m] -= fij;
             }
 #ifdef DEBUG
             if (debug)
@@ -2287,7 +2297,7 @@ real posres(int nbonds,
             vtot       += 0.5*kk*dx[m]*dx[m];
             *dvdlambda +=
                 0.5*(pr->posres.fcB[m] - pr->posres.fcA[m])*dx[m]*dx[m]
-                -fm*dpdl[m];
+                + fm*dpdl[m];
 
             /* Here we correct for the pbc_dx which included rdist */
             if (bForceValid)

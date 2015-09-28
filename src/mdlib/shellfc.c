@@ -280,6 +280,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
 
     if (nshell == 0 && nflexcon == 0)
     {
+        /* We're not doing shells or flexible constraints */
         return NULL;
     }
 
@@ -526,6 +527,12 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,
             {
                 fprintf(fplog, "\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
             }
+            /* Prediction improves performance, so we should implement either:
+             * 1. communication for the atoms needed for prediction
+             * 2. prediction using the velocities of shells; currently the
+             *    shell velocities are zeroed, it's a bit tricky to keep
+             *    track of the shell displacements and thus the velocity.
+             */
             shfc->bPredict = FALSE;
         }
     }
@@ -994,34 +1001,38 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         force[i] = shfc->f[i];
     }
 
-    /* With particle decomposition this code only works
-     * when all particles involved with each shell are in the same cg.
-     */
-
     if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
     {
         /* This is the only time where the coordinates are used
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
-        if (PARTDECOMP(cr))
+        if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            pd_cg_range(cr, &cg0, &cg1);
+            put_atoms_in_box_omp(fr->ePBC, state->box, md->homenr, state->x);
         }
         else
         {
-            cg0 = 0;
-            cg1 = top->cgs.nr;
+            if (PARTDECOMP(cr))
+            {
+                pd_cg_range(cr, &cg0, &cg1);
+            }
+            else
+            {
+                cg0 = 0;
+                cg1 = top->cgs.nr;
+            }
+            put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
+                                     &(top->cgs), state->x, fr->cg_cm);
         }
-        put_charge_groups_in_box(fplog, cg0, cg1, fr->ePBC, state->box,
-                                 &(top->cgs), state->x, fr->cg_cm);
+
         if (graph)
         {
             mk_mshift(fplog, graph, fr->ePBC, state->box, state->x);
         }
     }
 
-    /* After this all coordinate arrays will contain whole molecules */
+    /* After this all coordinate arrays will contain whole charge groups */
     if (graph)
     {
         shift_self(graph, state->box, state->x);

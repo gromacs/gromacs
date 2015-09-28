@@ -95,7 +95,7 @@
  * This code does not assume any memory alignment for the grid.
  */
 {
-    real         fx_tmp[4], fy_tmp[4], fz_tmp[4];
+    real         tmp[8], *tmp_aligned;
 
     gmx_simd4_pr fx_S, fy_S, fz_S;
 
@@ -106,6 +106,8 @@
 
     gmx_simd4_pr fxy1_S;
     gmx_simd4_pr fz1_S;
+
+    tmp_aligned = gmx_simd4_align_real(tmp);
 
     fx_S = gmx_simd4_setzero_pr();
     fy_S = gmx_simd4_setzero_pr();
@@ -138,13 +140,14 @@
         }
     }
 
-    gmx_simd4_storeu_pr(fx_tmp, fx_S);
-    gmx_simd4_storeu_pr(fy_tmp, fy_S);
-    gmx_simd4_storeu_pr(fz_tmp, fz_S);
+    gmx_simd4_store_pr(tmp_aligned, fx_S);
+    fx += tmp_aligned[0]+tmp_aligned[1]+tmp_aligned[2]+tmp_aligned[3];
 
-    fx += fx_tmp[0]+fx_tmp[1]+fx_tmp[2]+fx_tmp[3];
-    fy += fy_tmp[0]+fy_tmp[1]+fy_tmp[2]+fy_tmp[3];
-    fz += fz_tmp[0]+fz_tmp[1]+fz_tmp[2]+fz_tmp[3];
+    gmx_simd4_store_pr(tmp_aligned, fy_S);
+    fy += tmp_aligned[0]+tmp_aligned[1]+tmp_aligned[2]+tmp_aligned[3];
+
+    gmx_simd4_store_pr(tmp_aligned, fz_S);
+    fz += tmp_aligned[0]+tmp_aligned[1]+tmp_aligned[2]+tmp_aligned[3];
 }
 #undef PME_GATHER_F_SIMD4_ORDER4
 #endif
@@ -265,8 +268,7 @@
  */
 {
     int    offset;
-
-    real         fx_tmp[4], fy_tmp[4], fz_tmp[4];
+    real   tmp[8], *tmp_aligned;
 
     gmx_simd4_pr fx_S, fy_S, fz_S;
 
@@ -282,6 +284,8 @@
     gmx_simd4_pr fz1_S1;
     gmx_simd4_pr fxy1_S;
     gmx_simd4_pr fz1_S;
+
+    tmp_aligned = gmx_simd4_align_real(tmp);
 
     offset = k0 & 3;
 
@@ -343,13 +347,14 @@
         }
     }
 
-    gmx_simd4_store_pr(fx_tmp, fx_S);
-    gmx_simd4_store_pr(fy_tmp, fy_S);
-    gmx_simd4_store_pr(fz_tmp, fz_S);
+    gmx_simd4_store_pr(tmp_aligned, fx_S);
+    fx += tmp_aligned[0]+tmp_aligned[1]+tmp_aligned[2]+tmp_aligned[3];
 
-    fx += fx_tmp[0]+fx_tmp[1]+fx_tmp[2]+fx_tmp[3];
-    fy += fy_tmp[0]+fy_tmp[1]+fy_tmp[2]+fy_tmp[3];
-    fz += fz_tmp[0]+fz_tmp[1]+fz_tmp[2]+fz_tmp[3];
+    gmx_simd4_store_pr(tmp_aligned, fy_S);
+    fy += tmp_aligned[0]+tmp_aligned[1]+tmp_aligned[2]+tmp_aligned[3];
+
+    gmx_simd4_store_pr(tmp_aligned, fz_S);
+    fz += tmp_aligned[0]+tmp_aligned[1]+tmp_aligned[2]+tmp_aligned[3];
 }
 #undef PME_ORDER
 #undef PME_GATHER_F_SIMD4_ALIGNED

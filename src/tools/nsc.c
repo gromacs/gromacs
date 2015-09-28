@@ -781,7 +781,6 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
         xmin   = coords[iat][XX]; xmax = xmin; xs = xmin;
         ymin   = coords[iat][YY]; ymax = ymin; ys = ymin;
         zmin   = coords[iat][ZZ]; zmax = zmin; zs = zmin;
-        ra2max = radius[iat];
 
         for (iat_xx = 1; (iat_xx < nat); iat_xx++)
         {

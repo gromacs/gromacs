@@ -288,6 +288,15 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
     }
 }
 
+void print_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
+                 const char *name)
+{
+    char buf[STRLEN];
+
+    sprintf(buf, "Started %s", name);
+    print_date_and_time(fplog, cr->nodeid, buf, runtime);
+}
+
 static void sum_forces(int start, int end, rvec f[], rvec flr[])
 {
     int i;
@@ -618,7 +627,7 @@ static void do_nb_verlet(t_forcerec *fr,
     int                        nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     char                      *env;
     nonbonded_verlet_group_t  *nbvg;
-    gmx_bool                  bCUDA;
+    gmx_bool                   bCUDA;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -1307,7 +1316,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
             /* skip the reduction if there was no non-local work to do */
-            if (nbv->grp[eintLocal].nbl_lists.nbl[0]->nsci > 0)
+            if (nbv->grp[eintNonlocal].nbl_lists.nbl[0]->nsci > 0)
             {
                 nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatNonlocal,
                                                nbv->grp[eintNonlocal].nbat, f);
@@ -1379,12 +1388,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
-        if (nbv->grp[eintLocal].nbl_lists.nbl[0]->nsci > 0)
-        {
-            /* skip the reduction if there was no non-local work to do */
-            nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
-                                           nbv->grp[eintLocal].nbat, f);
-        }
+        nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatLocal,
+                                       nbv->grp[eintLocal].nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
@@ -2130,11 +2135,11 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
 {
-    double eners[2], virs[2], enersum, virsum, y0, f, g, h;
-    double r0, r1, r, rc3, rc9, ea, eb, ec, pa, pb, pc, pd;
-    double invscale, invscale2, invscale3;
-    int    ri0, ri1, ri, i, offstart, offset;
-    real   scale, *vdwtab, tabfactor, tmp;
+    double   eners[2], virs[2], enersum, virsum, y0, f, g, h;
+    double   r0, r1, r, rc3, rc9, ea, eb, ec, pa, pb, pc, pd;
+    double   invscale, invscale2, invscale3;
+    int      ri0, ri1, ri, i, offstart, offset;
+    real     scale, *vdwtab, tabfactor, tmp;
 
     fr->enershiftsix    = 0;
     fr->enershifttwelve = 0;
@@ -2150,21 +2155,39 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if ((fr->vdwtype == evdwSWITCH) || (fr->vdwtype == evdwSHIFT))
+        if ((fr->vdw_modifier == eintmodPOTSHIFT) ||
+            (fr->vdw_modifier == eintmodPOTSWITCH) ||
+            (fr->vdwtype == evdwSHIFT) ||
+            (fr->vdwtype == evdwSWITCH))
         {
-            if (fr->rvdw_switch == 0)
+            if (((fr->vdw_modifier == eintmodPOTSWITCH) ||
+                 (fr->vdwtype == evdwSWITCH)) && fr->rvdw_switch == 0)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
                           "for vdw-type = %s", evdw_names[fr->vdwtype]);
             }
 
-            scale  = fr->nblists[0].table_elec_vdw.scale;
+            scale  = fr->nblists[0].table_vdw.scale;
             vdwtab = fr->nblists[0].table_vdw.data;
 
             /* Round the cut-offs to exact table values for precision */
             ri0  = floor(fr->rvdw_switch*scale);
             ri1  = ceil(fr->rvdw*scale);
+
+            /* The code below has some support for handling force-switching, i.e.
+             * when the force (instead of potential) is switched over a limited
+             * region. This leads to a constant shift in the potential inside the
+             * switching region, which we can handle by adding a constant energy
+             * term in the force-switch case just like when we do potential-shift.
+             *
+             * For now this is not enabled, but to keep the functionality in the
+             * code we check separately for switch and shift. When we do force-switch
+             * the shifting point is rvdw_switch, while it is the cutoff when we
+             * have a classical potential-shift.
+             */
+            ri0  = (fr->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
+
             r0   = ri0/scale;
             r1   = ri1/scale;
             rc3  = r0*r0*r0;
@@ -2179,6 +2202,12 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                 fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
                 fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
             }
+            else if (fr->vdw_modifier == eintmodPOTSHIFT)
+            {
+                fr->enershiftsix    = (real)(-1.0/(rc3*rc3));
+                fr->enershifttwelve = (real)( 1.0/(rc9*rc3));
+            }
+
             /* Add the constant part from 0 to rvdw_switch.
              * This integration from 0 to rvdw_switch overcounts the number
              * of interactions by 1, as it also counts the self interaction.

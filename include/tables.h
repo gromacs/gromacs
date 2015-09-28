@@ -48,12 +48,12 @@ extern "C" {
 #endif
 
 GMX_LIBMD_EXPORT
-void table_spline3_fill_ewald_lr(real *table_F,
-                                 real *table_V,
-                                 real *table_FDV0,
-                                 int   ntab,
-                                 real  dx,
-                                 real  beta);
+void table_spline3_fill_ewald_lr(real  *table_F,
+                                 real  *table_V,
+                                 real  *table_FDV0,
+                                 int    ntab,
+                                 double dx,
+                                 real   beta);
 /* Fill tables of ntab points with spacing dr with the ewald long-range
  * (mesh) force.
  * There are three separate tables with format FDV0, F, and V.

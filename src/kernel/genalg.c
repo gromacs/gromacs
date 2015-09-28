@@ -66,7 +66,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#ifdef HAVE_MEMORY_H
 #include <memory.h>
+#endif
 #include "typedefs.h"
 #include "smalloc.h"
 #include "futil.h"

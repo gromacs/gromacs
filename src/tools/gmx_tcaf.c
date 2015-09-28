@@ -185,20 +185,23 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
                 tcafc[kc][i] /= tcafc[kc][0];
                 fprintf(fp_cub, "%g %g\n", i*dt, tcafc[kc][i]);
             }
-            fprintf(fp_cub, "&\n");
+            fprintf(fp_cub, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             tcafc[kc][0] = 1.0;
         }
     }
 
     fp_vk = xvgropen(fn_vk, "Fits", "k (nm\\S-1\\N)",
                      "\\8h\\4 (10\\S-3\\N kg m\\S-1\\N s\\S-1\\N)", oenv);
-    fprintf(fp_vk, "@    s0 symbol 2\n");
-    fprintf(fp_vk, "@    s0 symbol color 1\n");
-    fprintf(fp_vk, "@    s0 linestyle 0\n");
-    if (fn_cub)
+    if(output_env_get_print_xvgr_codes(oenv))
     {
-        fprintf(fp_vk, "@    s1 symbol 3\n");
-        fprintf(fp_vk, "@    s1 symbol color 2\n");
+        fprintf(fp_vk, "@    s0 symbol 2\n");
+        fprintf(fp_vk, "@    s0 symbol color 1\n");
+        fprintf(fp_vk, "@    s0 linestyle 0\n");
+        if (fn_cub)
+        {
+            fprintf(fp_vk, "@    s1 symbol 3\n");
+            fprintf(fp_vk, "@    s1 symbol color 2\n");
+        }
     }
     fp = xvgropen(fn_tcf, "TCAF Fits", "Time (ps)", "", oenv);
     for (k = 0; k < nk; k++)
@@ -217,7 +220,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         {
             fprintf(fp, "%g %g\n", i*dt, fit_function(effnVAC, fitparms, i*dt));
         }
-        fprintf(fp, "&\n");
+        fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
     }
     ffclose(fp);
     do_view(oenv, fn_tcf, "-nxy");
@@ -225,7 +228,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
     if (fn_cub)
     {
         fprintf(stdout, "Averaged over k-vectors:\n");
-        fprintf(fp_vk, "&\n");
+        fprintf(fp_vk, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         for (k = 0; k < nkc; k++)
         {
             tcafc[k][0]  = 1.0;
@@ -243,9 +246,9 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             {
                 fprintf(fp_cub, "%g %g\n", i*dt, fit_function(effnVAC, fitparms, i*dt));
             }
-            fprintf(fp_cub, "&\n");
+            fprintf(fp_cub, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
-        fprintf(fp_vk, "&\n");
+        fprintf(fp_vk, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         ffclose(fp_cub);
         do_view(oenv, fn_cub, "-nxy");
     }

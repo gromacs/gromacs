@@ -193,7 +193,7 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
         }
     }
 
-    return (bPert ? ilsortFE_UNSORTED : ilsortNO_FE);
+    return bPert;
 }
 
 void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)

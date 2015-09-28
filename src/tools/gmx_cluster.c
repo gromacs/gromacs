@@ -1039,9 +1039,12 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (clustidfn)
     {
         fp = xvgropen(clustidfn, "Clusters", output_env_get_xvgr_tlabel(oenv), "Cluster #", oenv);
-        fprintf(fp, "@    s0 symbol 2\n");
-        fprintf(fp, "@    s0 symbol size 0.2\n");
-        fprintf(fp, "@    s0 linestyle 0\n");
+        if(output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@    s0 symbol 2\n");
+            fprintf(fp, "@    s0 symbol size 0.2\n");
+            fprintf(fp, "@    s0 linestyle 0\n");
+        }
         for (i = 0; i < nf; i++)
         {
             fprintf(fp, "%8g %8d\n", time[i], clust->cl[i]);
@@ -1051,7 +1054,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     if (sizefn)
     {
         fp = xvgropen(sizefn, "Cluster Sizes", "Cluster #", "# Structures", oenv);
-        fprintf(fp, "@g%d type %s\n", 0, "bar");
+        if(output_env_get_print_xvgr_codes(oenv))
+        {
+            fprintf(fp, "@g%d type %s\n", 0, "bar");
+        }
     }
     snew(structure, nf);
     fprintf(log, "\n%3s | %3s  %4s | %6s %4s | cluster members\n",

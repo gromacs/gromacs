@@ -47,7 +47,7 @@ extern "C" {
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
 GMX_LIBMD_EXPORT
-gmx_shellfc_t init_shell_flexcon(FILE *log,
+gmx_shellfc_t init_shell_flexcon(FILE *fplog,
                                  gmx_mtop_t *mtop, int nflexcon,
                                  rvec *x);
 

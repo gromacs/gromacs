@@ -458,7 +458,7 @@ static int pick_nbnxn_kernel_version(FILE            *fplog,
     }
 
     bCUDA32 = bCUDA40 = false;
-#if CUDA_VERSION == 3200
+#if CUDA_VERSION == 3020
     bCUDA32 = true;
     sprintf(sbuf, "3.2");
 #elif CUDA_VERSION == 4000
@@ -556,7 +556,7 @@ void nbnxn_cuda_init(FILE *fplog,
          * priorities, because we are querying the priority range which in this
          * case will be a single value.
          */
-#if CUDA_VERSION >= 5500
+#if CUDA_VERSION >= 5050
         {
             int highest_priority;
             stat = cudaDeviceGetStreamPriorityRange(NULL, &highest_priority);
@@ -576,8 +576,8 @@ void nbnxn_cuda_init(FILE *fplog,
     /* init events for sychronization (timing disabled for performance reasons!) */
     stat = cudaEventCreateWithFlags(&nb->nonlocal_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on nonlocal_done failed");
-    stat = cudaEventCreateWithFlags(&nb->misc_ops_done, cudaEventDisableTiming);
-    CU_RET_ERR(stat, "cudaEventCreate on misc_ops_one failed");
+    stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
+    CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
 
     /* On GPUs with ECC enabled, cudaStreamSynchronize shows a large overhead
      * (which increases with shorter time/step) caused by a known CUDA driver bug.
@@ -896,7 +896,7 @@ void nbnxn_cuda_init_atomdata(nbnxn_cuda_ptr_t cu_nb,
     }
 }
 
-void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
+void nbnxn_cuda_free(nbnxn_cuda_ptr_t cu_nb)
 {
     cudaError_t     stat;
     cu_atomdata_t   *atdat;
@@ -933,8 +933,8 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
 
     stat = cudaEventDestroy(cu_nb->nonlocal_done);
     CU_RET_ERR(stat, "cudaEventDestroy failed on timers->nonlocal_done");
-    stat = cudaEventDestroy(cu_nb->misc_ops_done);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_done");
+    stat = cudaEventDestroy(cu_nb->misc_ops_and_local_H2D_done);
+    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_and_local_H2D_done");
 
     if (cu_nb->bDoTime)
     {

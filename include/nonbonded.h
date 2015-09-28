@@ -67,7 +67,8 @@ gmx_nonbonded_setup(FILE *         fplog,
 GMX_LIBGMX_EXPORT
 void
 gmx_nonbonded_set_kernel_pointers(FILE *       fplog,
-                                  t_nblist *   nl);
+                                  t_nblist *   nl,
+                                  gmx_bool     bElecAndVdwSwitchDiffers);
 
 
 

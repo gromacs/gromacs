@@ -702,7 +702,7 @@ static void check_mdrun_works(gmx_bool bThreads,
             gmx_fatal(FARGS, "Need a threaded version of mdrun. This one\n"
                       "(%s)\n"
                       "seems to have been compiled with MPI instead.",
-                      *cmd_mdrun);
+                      cmd_mdrun);
         }
     }
     else
@@ -712,7 +712,7 @@ static void check_mdrun_works(gmx_bool bThreads,
             gmx_fatal(FARGS, "Need an MPI-enabled version of mdrun. This one\n"
                       "(%s)\n"
                       "seems to have been compiled without MPI support.",
-                      *cmd_mdrun);
+                      cmd_mdrun);
         }
     }
 
@@ -997,7 +997,7 @@ static void make_benchmark_tprs(
             ir->nkx = ir->nky = ir->nkz = 0;
             calc_grid(NULL, state.box, fourierspacing*fac, &ir->nkx, &ir->nky, &ir->nkz);
 
-            /* Adjust other radii since various conditions neet to be fulfilled */
+            /* Adjust other radii since various conditions need to be fulfilled */
             if (eelPME == ir->coulombtype)
             {
                 /* plain PME, rcoulomb must be equal to rlist */
@@ -1011,8 +1011,16 @@ static void make_benchmark_tprs(
 
             if (bScaleRvdw && evdwCUT == ir->vdwtype)
             {
-                /* For vdw cutoff, rvdw >= rlist */
-                ir->rvdw = max(info->rvdw[0], ir->rlist);
+                if ( ecutsVERLET == ir->cutoff_scheme)
+                {
+                    /* With Verlet, the van der Waals radius must always equal the Coulomb radius */
+                    ir->rvdw = ir->rcoulomb;
+                }
+                else
+                {
+                    /* For vdw cutoff, rvdw >= rlist */
+                    ir->rvdw = max(info->rvdw[0], ir->rlist);
+                }
             }
 
             ir->rlistlong = max_cutoff(ir->rlist, max_cutoff(ir->rvdw, ir->rcoulomb));

@@ -176,6 +176,10 @@ void print_date_and_time(FILE *log, int pid, const char *title,
                          const gmx_runtime_t *runtime);
 
 GMX_LIBMD_EXPORT
+void print_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
+                 const char *name);
+
+GMX_LIBMD_EXPORT
 void finish_run(FILE *log, t_commrec *cr, const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,

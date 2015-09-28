@@ -106,6 +106,7 @@ void update_coords(FILE             *fplog,
                    rvec             *f, /* forces on home particles */
                    gmx_bool          bDoLR,
                    rvec             *f_lr,
+                   tensor           *vir_lr_constr,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
@@ -121,7 +122,7 @@ void update_coords(FILE             *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 GMX_LIBMD_EXPORT
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step, t_mdatoms *md, t_state *state, gmx_update_t upd, t_idef *idef, gmx_constr_t constr, gmx_bool bIsDomainDecomposition);
 
 GMX_LIBMD_EXPORT
 void update_constraints(FILE             *fplog,

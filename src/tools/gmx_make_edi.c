@@ -686,7 +686,7 @@ int gmx_make_edi(int argc, char *argv[])
     static const char* evStepOptions[evStepNr] = {"-linstep", "-accdir", "-not_used", "-radstep"};
     static const char* ConstForceStr;
     static real      * evStepList[evStepNr];
-    static real        radfix   = 0.0;
+    static real        radstep  = 0.0;
     static real        deltaF0  = 150;
     static real        deltaF   = 0;
     static real        tau      = .1;
@@ -722,7 +722,7 @@ int gmx_make_edi(int argc, char *argv[])
           "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 -3.1\")"},
         { "-accdir", FALSE, etSTR, {&evParams[1]},
           "Directions for acceptance linear sampling - only sign counts! (put in quotes! \"-1 +1 -1.1\")"},
-        { "-radstep", FALSE, etREAL, {&radfix},
+        { "-radstep", FALSE, etREAL, {&radstep},
           "Stepsize (nm/step) for fixed increment radius expansion"},
         { "-maxedsteps", FALSE, etINT, {&edi_params.maxedsteps},
           "Maximum number of steps per cycle" },
@@ -826,12 +826,12 @@ int gmx_make_edi(int argc, char *argv[])
                     }
                 }
             }
-            else if (ev_class == evRADFIX && opt2parg_bSet(evStepOptions[ev_class], NPA, pa))
+            else if (ev_class == evRADFIX)
             {
                 snew(evStepList[ev_class], nvecs);
                 for (i = 0; i < nvecs; i++)
                 {
-                    evStepList[ev_class][i] = radfix;
+                    evStepList[ev_class][i] = radstep;
                 }
             }
             else if (ev_class == evFLOOD)

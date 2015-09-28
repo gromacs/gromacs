@@ -258,6 +258,10 @@ void make_pull_groups(t_pull *pull, char **pgnames, t_blocka *grps, char **gname
         {
             pgrp->nat = 0;
         }
+        else if (g != 0 && strcmp(pgnames[g], "") == 0)
+        {
+            gmx_fatal(FARGS, "Group pull_group%d required by grompp was undefined.",g);
+        }
         else
         {
             ig        = search_string(pgnames[g], grps->nr, gnames);

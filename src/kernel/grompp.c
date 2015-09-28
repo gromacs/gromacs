@@ -365,6 +365,41 @@ static void check_vel(gmx_mtop_t *mtop, rvec v[])
     }
 }
 
+static void check_shells_inputrec(gmx_mtop_t *mtop,
+                                  t_inputrec *ir,
+                                  warninp_t wi)
+{
+    gmx_mtop_atomloop_all_t aloop;
+    t_atom                 *atom;
+    int                     a, nshells = 0;
+    char                    warn_buf[STRLEN];
+
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
+    {
+        if (atom->ptype == eptShell ||
+            atom->ptype == eptBond)
+        {
+            nshells++;
+        }
+    }
+    if (IR_TWINRANGE(*ir) && (nshells > 0))
+    {
+        snprintf(warn_buf, STRLEN, 
+                 "The combination of using shells and a twin-range cut-off is not supported");
+        warning_error(wi, warn_buf);
+    }
+    if ((nshells > 0) && (ir->nstcalcenergy != 1))
+    {
+        set_warning_line(wi, "unknown", -1);
+        snprintf(warn_buf, STRLEN, 
+                 "There are %d shells, changing nstcalcenergy from %d to 1", 
+                 nshells, ir->nstcalcenergy);
+        ir->nstcalcenergy = 1;
+        warning(wi, warn_buf);
+    }
+}
+
 static gmx_bool nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
 {
     int nint, mb;
@@ -1547,6 +1582,11 @@ int cmain (int argc, char *argv[])
         }
     }
 
+    if (nvsite && ir->eI == eiNM)
+    {
+        gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+    }
+
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         fprintf(stderr, "Removing all charge groups because cutoff-scheme=%s\n",
@@ -1706,6 +1746,9 @@ int cmain (int argc, char *argv[])
     {
         check_vel(sys, state.v);
     }
+
+    /* check for shells and inpurecs */
+    check_shells_inputrec(sys, ir, wi);
 
     /* check masses */
     check_mol(sys, wi);

@@ -67,6 +67,7 @@
 #include "force.h"
 #include "mdrun.h"
 #include "md_support.h"
+#include "sim_util.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "trnio.h"
@@ -108,15 +109,11 @@ static void print_em_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
                            gmx_wallcycle_t wcycle,
                            const char *name)
 {
-    char buf[STRLEN];
-
     runtime_start(runtime);
-
-    sprintf(buf, "Started %s", name);
-    print_date_and_time(fplog, cr->nodeid, buf, NULL);
-
     wallcycle_start(wcycle, ewcRUN);
+    print_start(fplog, cr, runtime, name);
 }
+
 static void em_time_end(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
                         gmx_wallcycle_t wcycle)
 {

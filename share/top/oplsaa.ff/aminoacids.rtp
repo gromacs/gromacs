@@ -320,8 +320,8 @@
    HB1    opls_140    0.060     2
    HB2    opls_140    0.060     2
     CG    opls_267    0.520     3
-   OD1    opls_269   -0.530     3
-   OD2    opls_268   -0.440     4
+   OD1    opls_269   -0.440     3
+   OD2    opls_268   -0.530     4
    HD2    opls_270    0.450     4
      C    opls_235    0.500     5
      O    opls_236   -0.500     5

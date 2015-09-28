@@ -129,6 +129,7 @@ MNH3	0.0000 ; vsite (rigid tetrahedrical NH3 group)
 MNH2	0.0000 ; vsite
 MCH3	0.0000 ; vsite (rigid CH3 group connected to carbons)
 MCH3S	0.0000 ; vsite (rigid CH3 group connected to S)
+MW      0.0    ; Dummy mass in rigid tyrosine rings
 ; DNA and RNA section
 P       30.974 ;        Phosphorus  ### For DNA
 P2	30.974000 ;	pyrophosphate phosphorus (see toppar_all27_na_nad_ppi.str)  ### For DNA 

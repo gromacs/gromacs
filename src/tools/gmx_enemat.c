@@ -512,39 +512,55 @@ int gmx_enemat(int argc, char *argv[])
                        oenv);
         xvgr_legend(out, 0, NULL, oenv);
         j = 0;
-        for (m = 0; (m < egNR+egSP); m++)
+        if (output_env_get_print_xvgr_codes(oenv))
         {
-            if (egrp_use[m])
+            char str1[STRLEN],str2[STRLEN];
+            if(output_env_get_xvg_format(oenv) == exvgXMGR)
             {
-                fprintf(out, "@ legend string %d \"%s\"\n", j++, egrp_nm[m]);
+                sprintf(str1,"@ legend string ");
+                sprintf(str2," ");
             }
-        }
-        if (bFree)
-        {
-            fprintf(out, "@ legend string %d \"%s\"\n", j++, "Free");
-        }
-        if (bFree)
-        {
-            fprintf(out, "@ legend string %d \"%s\"\n", j++, "Diff");
-        }
-        fprintf(out, "@TYPE xy\n");
-        fprintf(out, "#%3s", "grp");
-        for (m = 0; (m < egNR+egSP); m++)
-        {
-            if (egrp_use[m])
+            else
             {
-                fprintf(out, " %9s", egrp_nm[m]);
+                sprintf(str1,"@ s");
+                sprintf(str2," legend ");
             }
+            
+            for (m = 0; (m < egNR+egSP); m++)
+            {
+                if (egrp_use[m])
+                {
+                    fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, egrp_nm[m]);
+                }
+            }
+            if (bFree)
+            {
+                fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Free");
+            }
+            if (bFree)
+            {
+                fprintf(out, "%s%d%s \"%s\"\n", str1, j++, str2, "Diff");
+            }
+            fprintf(out, "@TYPE xy\n");
+            fprintf(out, "#%3s", "grp");
+
+            for (m = 0; (m < egNR+egSP); m++)
+            {
+                if (egrp_use[m])
+                {
+                    fprintf(out, " %9s", egrp_nm[m]);
+                }
+            }
+            if (bFree)
+            {
+                fprintf(out, " %9s", "Free");
+            }
+            if (bFree)
+            {
+                fprintf(out, " %9s", "Diff");
+            }
+            fprintf(out, "\n");
         }
-        if (bFree)
-        {
-            fprintf(out, " %9s", "Free");
-        }
-        if (bFree)
-        {
-            fprintf(out, " %9s", "Diff");
-        }
-        fprintf(out, "\n");
         for (i = 0; (i < ngroups); i++)
         {
             fprintf(out, "%3.0f", groupnr[i]);

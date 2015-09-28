@@ -67,6 +67,7 @@
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "macros.h"
+#include "main.h"
 #include "string2.h"
 #include "futil.h"
 
@@ -94,7 +95,7 @@ int continuing(char *s)
 
 
 char *fgets2(char *line, int n, FILE *stream)
-/* This routine reads a string from stream of max length n
+/* This routine reads a string from stream of max length n, including \0
  * and zero terminated, without newlines
  * line should be long enough (>= n)
  */
@@ -243,7 +244,7 @@ void nice_header (FILE *out, const char *fn)
 #ifdef HAVE_PWD_H
     uid  = getuid();
     pw   = getpwuid(uid);
-    gh   = gethostname(buf, 255);
+    gh   = gmx_gethostname(buf, 255);
     /* pw returns null on error (e.g. compute nodes lack /etc/passwd) */
     user = pw ? pw->pw_name : unk;
 #else

@@ -56,12 +56,12 @@ mark_as_advanced(DART_ROOT)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-set(PROJECT_VERSION "4.6.5-dev")
+set(PROJECT_VERSION "4.6.8-dev")
 # The version number of the regressiontest tarball against which this
 # git branch can be tested. Normally, this will be the version of the
 # last patch release. Comment the next line out for branches leading
 # to a major/minor release.
-set(REGRESSIONTEST_VERSION "4.6.4")
+set(REGRESSIONTEST_VERSION "4.6.7")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -312,6 +312,18 @@ if (${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND C_COMPILER_VERSION VERSION_LESS "
     set(GMX_USE_CLANG_FMA_BUG_WORKAROUND TRUE)
 endif()
 
+# GMX_CPU_ACCELERATION will not be set automatically until the second
+# pass (which is not strictly guaranteed to occur), so putting this
+# check here among logically-related tests is inefficient, but the
+# potential loss is likely zero.
+if(GMX_CPU_ACCELERATION STREQUAL "AVX_256"
+        AND CMAKE_COMPILER_IS_GNUCC
+        AND (C_COMPILER_VERSION VERSION_EQUAL "4.6.1"
+            OR CXX_COMPILER_VERSION VERSION_EQUAL "4.6.1"))
+    message(FATAL_ERROR "gcc 4.6.1 has buggy support for AVX, and GROMACS mdrun will not work. If you want simulation performance, use a more recent compiler. Otherwise, use GMX_CPU_ACCELERATION=SSE4.1")
+    # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
+endif()
+
 if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
     message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
 endif()
@@ -431,7 +443,7 @@ include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
 
-if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD")
+if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU")
     # Maybe Solaris should be here? Patch this if you know!
     SET(SHARED_LIBS_DEFAULT ON)
 elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
@@ -610,10 +622,26 @@ gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
 include(gmxSetBuildInformation)
 gmx_set_build_information()
-if(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
+# Turn on RDTSCP if:
+# - the build system's CPU supports it
+# - the acceleration is set to AVX as all AVX-capable CPUs support AVX (which
+#   at this point means that the user set it).
+# Note: it's better to not use the later set value of GMX_CPU_ACCELERATION because
+# it reflects the system's capability of both compiling and running AVX code.
+# TODO: After merge with 5.0 one could implement a cache variable dependency
+# such that GMX_USE_RDTSCP can change if GMX_CPU_ACCELERATION is changed to AVX
+# after the first cmake pass.
+if (BUILD_CPU_FEATURES MATCHES "rdtscp" OR GMX_CPU_ACCELERATION MATCHES "AVX")
+    set(GMX_USE_RDTSCP_DEFAULT_VALUE ON)
+else()
+    set(GMX_USE_RDTSCP_DEFAULT_VALUE OFF)
+endif()
+option(GMX_USE_RDTSCP "Use RDTSCP for better CPU-based timers (available on recent x86 CPUs; might need to be off when compiling for heterogeneous environments)" ${GMX_USE_RDTSCP_DEFAULT_VALUE})
+mark_as_advanced(GMX_USE_RDTSCP)
+if(GMX_USE_RDTSCP)
     # The timestep counter headers do not include config.h
     add_definitions(-DHAVE_RDTSCP)
-endif(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
+endif()
 
 include(gmxTestFloatFormat)
 gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754 
@@ -1055,6 +1083,16 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
     endif()
 endif()
 
+
+option(GMX_NACL "Configure for Native Client builds" OFF)
+if (GMX_NACL)
+  list(APPEND GMX_EXTRA_LIBRARIES nosys)
+  set(GMX_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lnosys")
+  set(GMX_NO_NICE 1)
+  set(GMX_NO_RENAME 1)
+endif()
+mark_as_advanced(GMX_NACL)
+
 if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 
       "Path to swindirect.h")
@@ -1157,14 +1195,22 @@ else(GMX_DEFAULT_SUFFIX)
 endif(GMX_DEFAULT_SUFFIX)
 set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
-##################################################################
-# Shared library settings - Darwin uses INSTALL_NAME_DIR instead!
-##################################################################
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+################################################################
+# Shared library settings
+################################################################
+if((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
     set(CMAKE_SKIP_BUILD_RPATH  FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        set(CMAKE_INSTALL_RPATH "\\\$ORIGIN/../${GMXLIB}")
+    else()
+        set(CMAKE_INSTALL_RPATH "@executable_path/../${GMXLIB}")
+    endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    set(CMAKE_MACOSX_RPATH 1)
+else()
+    # We are on Darwin/OSX, and cmake cannot handle proper RPATHs
+    set(CMAKE_INSTALL_NAME_DIR "${LIB_INSTALL_DIR}")
 endif()
 
 #COPYING file: Only necessary for binary distributions.

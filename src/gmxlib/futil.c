@@ -124,10 +124,7 @@ void push_ps(FILE *fp)
 #ifdef ffclose
 #undef ffclose
 #endif
-#endif
-
-#ifndef GMX_FAHCORE
-#ifndef HAVE_PIPES
+#if (!defined(HAVE_PIPES) && !defined(__native_client__))
 static FILE *popen(const char *nm, const char *mode)
 {
     gmx_impl("Sorry no pipes...");
@@ -141,8 +138,8 @@ static int pclose(FILE *fp)
 
     return 0;
 }
-#endif
-#endif
+#endif /* !defined(HAVE_PIPES) && !defined(__native_client__) */
+#endif /* GMX_FAHCORE */
 
 int ffclose(FILE *fp)
 {

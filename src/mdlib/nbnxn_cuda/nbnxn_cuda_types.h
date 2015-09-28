@@ -199,7 +199,7 @@ struct nbnxn_cuda
     cudaStream_t     stream[2];      /* local and non-local GPU streams                      */
 
     /* events used for synchronization */
-    cudaEvent_t    nonlocal_done, misc_ops_done;
+    cudaEvent_t    nonlocal_done, misc_ops_and_local_H2D_done;
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.

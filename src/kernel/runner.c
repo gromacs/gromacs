@@ -979,7 +979,7 @@ static void free_gpu_resources(FILE             *fplog,
     if (bIsPPrankUsingGPU)
     {
         /* free nbnxn data in GPU memory */
-        nbnxn_cuda_free(fplog, fr->nbv->cu_nbv);
+        nbnxn_cuda_free(fr->nbv->cu_nbv);
 
         /* With tMPI we need to wait for all ranks to finish deallocation before
          * destroying the context in free_gpu() as some ranks may be sharing
@@ -1279,7 +1279,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
 #ifdef GMX_FAHCORE
-    fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
+    if (MASTER(cr))
+    {
+        fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
+    }
 #endif
 
     /* NMR restraints must be initialized before load_checkpoint,

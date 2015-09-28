@@ -2,12 +2,11 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -683,11 +682,11 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
 {
     /*1MB: large size important to catch almost identical files */
 #define CPT_CHK_LEN  1048576
-    md5_state_t   state;
-    unsigned char buf[CPT_CHK_LEN];
-    gmx_off_t     read_len;
-    gmx_off_t     seek_offset;
-    int           ret = -1;
+    md5_state_t    state;
+    unsigned char *buf;
+    gmx_off_t      read_len;
+    gmx_off_t      seek_offset;
+    int            ret = -1;
 
     seek_offset = offset - CPT_CHK_LEN;
     if (seek_offset < 0)
@@ -710,6 +709,7 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         return -1;
     }
 
+    snew(buf, CPT_CHK_LEN);
     /* the read puts the file position back to offset */
     if ((gmx_off_t)fread(buf, 1, read_len, fio->fp) != read_len)
     {
@@ -758,12 +758,10 @@ static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
         md5_init(&state);
         md5_append(&state, buf, read_len);
         md5_finish(&state, digest);
-        return read_len;
+        ret = read_len;
     }
-    else
-    {
-        return ret;
-    }
+    sfree(buf);
+    return ret;
 }
 
 

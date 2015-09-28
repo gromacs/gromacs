@@ -623,8 +623,17 @@ void please_cite(FILE *fp, const char *key)
           "C. Kutzner, H. Grubmuller, B. L. de Groot, and U. Zachariae",
           "Computational Electrophysiology: The Molecular Dynamics of Ion Channel Permeation and Selectivity in Atomistic Detail",
           "Biophys. J.",
-          101, 2011, "809-817"
-        }
+          101, 2011, "809-817" },
+        { "Pronk2013",
+          "S. Pronk, S. Páll, R. Schulz, P. Larsson, P. Bjelkmar, R. Apostolov, M. R. Shirts, J. C. Smith, P. M. Kasson, D. van der Spoel, B. Hess, and E. Lindahl",
+          "GROMACS 4.5: a high-throughput and highly parallel open source molecular simulation toolkit",
+          "Bioinformatics",
+          29, 2013, "845-54"},
+        { "Pall2015",
+          "S. Páll, M. J. Abraham, C. Kutzner, B. Hess, E. Lindahl",
+          "Tackling Exascale Software Challenges in Molecular Dynamics Simulations with GROMACS",
+          "In S. Markidis & E. Laure (Eds.), Solving Software Challenges for Exascale",
+          8759, 2015, "3–27" }
     };
 #define NSTR (int)asize(citedb)
 
@@ -699,7 +708,7 @@ void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "Precision:          single\n");
 #endif
-    fprintf(fp, "Memory model:       %lu bit\n", 8*sizeof(void *));
+    fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
 
 #ifdef GMX_THREAD_MPI
     fprintf(fp, "MPI library:        thread_mpi\n");
@@ -777,3 +786,15 @@ void gmx_print_version_info(FILE *fp)
     gmx_print_version_info_gpu(fp);
 #endif
 }
+
+#ifdef GMX_DOUBLE
+void gmx_is_double_precision()
+{
+    /* allow precision detection */
+}
+#else
+void gmx_is_single_precision()
+{
+    /* allow precision detection */
+}
+#endif

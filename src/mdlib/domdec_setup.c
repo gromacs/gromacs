@@ -361,8 +361,13 @@ static float comm_cost_est(gmx_domdec_t *dd, real limit, real cutoff,
     {
         bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
 
-        /* Without PBC there are no cell size limits with 2 cells */
+        /* Without PBC and with 2 cells, there are no lower limits on the cell size */
         if (!(i >= ddbox->npbcdim && nc[i] <= 2) && bt[i] < nc[i]*limit)
+        {
+            return -1;
+        }
+        /* With PBC, check if the cut-off fits in nc[i]-1 cells */
+        if (i < ddbox->npbcdim && nc[i] > 1 && (nc[i] - 1)*bt[i] < nc[i]*cutoff)
         {
             return -1;
         }
