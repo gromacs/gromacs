@@ -42,9 +42,13 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
-#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/block.h"
 
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.
