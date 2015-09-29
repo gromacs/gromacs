@@ -88,7 +88,7 @@ std::string findExistingExtension(const std::string                  &prefix,
     for (i = types.begin(); i != types.end(); ++i)
     {
         std::string testFilename(prefix + ftp2ext_with_dot(*i));
-        if (redirector->fileExists(testFilename))
+        if (redirector->fileExists(testFilename, File::throwOnError))
         {
             return testFilename;
         }
@@ -182,7 +182,8 @@ std::string FileNameOptionManager::completeFileName(
     const int fileType = fn2ftp(value.c_str());
     if (bInput && !impl_->bInputCheckingDisabled_)
     {
-        if (fileType == efNR && impl_->redirector_->fileExists(value))
+        if (fileType == efNR
+            && impl_->redirector_->fileExists(value, File::throwOnError))
         {
             ConstArrayRef<const char *>                 compressedExtensions(c_compressedExtensions);
             ConstArrayRef<const char *>::const_iterator ext;
@@ -239,14 +240,12 @@ std::string FileNameOptionManager::completeFileName(
             {
                 // TODO: Treat also library files.
             }
-            else if (!bAllowMissing && !impl_->redirector_->fileExists(value))
+            else if (!bAllowMissing)
             {
-                std::string message
-                    = formatString("File '%s' does not exist or is not accessible.",
-                                   value.c_str());
-                // TODO: Get actual errno value from the attempt to open the file
-                // to provide better feedback to the user.
-                GMX_THROW(InvalidInputError(message));
+                if (!impl_->redirector_->fileExists(value, File::throwOnNotFound))
+                {
+                    return std::string();
+                }
             }
             return value;
         }

@@ -392,8 +392,32 @@ std::string Path::resolveSymlinks(const std::string &path)
  * File
  */
 
+void File::returnFalseOnError(const NotFoundInfo & /*info*/)
+{
+}
+
+void File::throwOnError(const NotFoundInfo &info)
+{
+    if (info.wasError)
+    {
+        const std::string message
+            = formatString("Failed to access file '%s'.\n%s",
+                           info.filename, info.message);
+        GMX_THROW_WITH_ERRNO(FileIOError(message), info.call, info.err);
+    }
+}
+
+void File::throwOnNotFound(const NotFoundInfo &info)
+{
+    throwOnError(info);
+    const std::string message
+        = formatString("File '%s' does not exist or is not accessible.\n%s",
+                       info.filename, info.message);
+    GMX_THROW_WITH_ERRNO(InvalidInputError(message), info.call, info.err);
+}
+
 // static
-bool File::exists(const char *filename)
+bool File::exists(const char *filename, NotFoundHandler onNotFound)
 {
     if (filename == NULL)
     {
@@ -402,6 +426,10 @@ bool File::exists(const char *filename)
     FILE *test = std::fopen(filename, "r");
     if (test == NULL)
     {
+        const bool   wasError = (errno != ENOENT && errno != ENOTDIR);
+        NotFoundInfo info(filename, "The file could not be opened.",
+                          "fopen", wasError, errno);
+        onNotFound(info);
         return false;
     }
     else
@@ -412,8 +440,18 @@ bool File::exists(const char *filename)
 #ifndef GMX_NATIVE_WINDOWS
         struct stat st_buf;
         int         status = stat(filename, &st_buf);
-        if (status != 0 || !S_ISREG(st_buf.st_mode))
+        if (status != 0)
         {
+            NotFoundInfo info(filename, "File information could not be read.",
+                              "stat", true, errno);
+            onNotFound(info);
+            return false;
+        }
+        if (!S_ISREG(st_buf.st_mode))
+        {
+            NotFoundInfo info(filename, "The file is not a regular file.",
+                              NULL, true, 0);
+            onNotFound(info);
             return false;
         }
 #endif
@@ -422,9 +460,9 @@ bool File::exists(const char *filename)
 }
 
 // static
-bool File::exists(const std::string &filename)
+bool File::exists(const std::string &filename, NotFoundHandler onNotFound)
 {
-    return exists(filename.c_str());
+    return exists(filename.c_str(), onNotFound);
 }
 
 /********************************************************************

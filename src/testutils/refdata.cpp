@@ -221,7 +221,7 @@ TestReferenceDataImpl::TestReferenceDataImpl(
     bWrite_ = true;
     if (mode != erefdataUpdateAll)
     {
-        if (File::exists(fullFilename_))
+        if (File::exists(fullFilename_, File::throwOnError))
         {
             bWrite_ = false;
         }

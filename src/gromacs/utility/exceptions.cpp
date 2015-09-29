@@ -440,7 +440,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
 
         const int *errorNumber
             = boost::get_error_info<boost::errinfo_errno>(*boostEx);
-        if (errorNumber != NULL)
+        if (errorNumber != NULL && *errorNumber != 0)
         {
             const char * const *funcName
                 = boost::get_error_info<boost::errinfo_api_function>(*boostEx);
