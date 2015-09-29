@@ -812,7 +812,7 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
         {
             const std::string &newContents = contents_.toString();
             // TODO: Redirect these for unit tests.
-            if (File::exists(path_))
+            if (File::exists(path_, File::returnFalseOnError))
             {
                 const std::string originalContents_
                     = TextReader::readFileToString(path_);

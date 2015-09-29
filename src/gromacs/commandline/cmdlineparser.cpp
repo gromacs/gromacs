@@ -194,7 +194,9 @@ void CommandLineParser::parse(int *argc, char *argv[])
             {
                 impl_->assigner_.appendValue(arg);
             }
-            catch (UserInputError &ex)
+            // TODO: Consider if some types of exceptions would be better left
+            // unhandled.
+            catch (GromacsException &ex)
             {
                 ex.prependContext(currentContext);
                 errors.addCurrentExceptionAsNested();
