@@ -186,6 +186,9 @@ else()
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_37,code=sm_37")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=sm_50")
     endif()
+    if(CUDA_VERSION VERSION_GREATER "6.9.9") # >= 7.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=sm_52")
+    endif()
 
     if(CUDA_VERSION VERSION_LESS "4.2")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_20,code=compute_20")
@@ -193,8 +196,10 @@ else()
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=compute_30")
     elseif(CUDA_VERSION VERSION_LESS "6.5")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=compute_35")
-    else() # version >= 6.5
+    elseif(CUDA_VERSION VERSION_LESS "7.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=compute_50")
+    else() # version >= 7.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=compute_52")
     endif()
 endif()
 
