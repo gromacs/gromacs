@@ -239,13 +239,13 @@ TestReferenceDataImpl::TestReferenceDataImpl(
     switch (mode)
     {
         case erefdataCompare:
-            if (File::exists(fullFilename_))
+            if (File::exists(fullFilename_, File::throwOnError))
             {
                 compareRootEntry_ = readReferenceDataFile(fullFilename_);
             }
             break;
         case erefdataCreateMissing:
-            if (File::exists(fullFilename_))
+            if (File::exists(fullFilename_, File::throwOnError))
             {
                 compareRootEntry_ = readReferenceDataFile(fullFilename_);
             }
@@ -256,7 +256,7 @@ TestReferenceDataImpl::TestReferenceDataImpl(
             }
             break;
         case erefdataUpdateChanged:
-            if (File::exists(fullFilename_))
+            if (File::exists(fullFilename_, File::throwOnError))
             {
                 compareRootEntry_ = readReferenceDataFile(fullFilename_);
             }

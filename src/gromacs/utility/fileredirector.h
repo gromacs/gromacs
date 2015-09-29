@@ -45,6 +45,7 @@
 
 #include <string>
 
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/textstream.h"
 
 namespace gmx
@@ -74,13 +75,19 @@ class IFileInputRedirector
 
         /*! \brief
          * Checks whether the provided path exists (and is a file).
+         *
+         * The \p onNotFound can be used to influence the behavior on error
+         * conditions.  Functions to pass as this parameter are provided as
+         * members of gmx::File.
          */
-        virtual bool fileExists(const char *filename) const = 0;
+        virtual bool fileExists(const char            *filename,
+                                File::NotFoundHandler  onNotFound) const = 0;
 
         //! Convenience method to check file existence using an std::string path.
-        bool fileExists(const std::string &filename) const
+        bool fileExists(const std::string     &filename,
+                        File::NotFoundHandler  onNotFound) const
         {
-            return fileExists(filename.c_str());
+            return fileExists(filename.c_str(), onNotFound);
         }
 };
 
