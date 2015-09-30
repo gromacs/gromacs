@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
@@ -1197,4 +1198,77 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     sfree(mtop->molblock);
 
     return top;
+}
+
+void countPtypes(FILE        *fplog,
+                 gmx_mtop_t  *mtop,
+                 unsigned int nptype[eptNR])
+{
+    /* Count number of shells, and find their indices */
+    for (unsigned int i = 0; (i < eptNR); i++)
+    {
+        nptype[i] = 0;
+    }
+
+    gmx_mtop_atomloop_block_t aloopb = gmx_mtop_atomloop_block_init(mtop);
+    int nmol;
+    t_atom                   *atom;
+    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    {
+        switch (atom->ptype)
+        {
+            case eptAtom:
+            case eptVSite:
+            case eptShell:
+                nptype[atom->ptype] += nmol;
+                break;
+            default:
+                fprintf(stderr, "Warning unsupported particle type %d in countPtypes",
+                        static_cast<int>(atom->ptype));
+        }
+    }
+    if (fplog)
+    {
+        /* Print the number of each particle type */
+        for (unsigned i = 0; (i < eptNR); i++)
+        {
+            if (nptype[i] != 0)
+            {
+                fprintf(fplog, "There are: %d %ss\n", nptype[i], ptype_str[i]);
+            }
+        }
+    }
+}
+
+void get_atom_index(gmx_mtop_t                *mtop,
+                    std::vector<unsigned int> &atom_index,
+                    unsigned int              *nvsite,
+                    unsigned int              *nshell)
+{
+    *nshell = 0;
+    *nvsite = 0;
+
+    gmx_mtop_atomloop_block_t aloopb = gmx_mtop_atomloop_block_init(mtop);
+    int nmol;
+    t_atom                   *atom;
+    unsigned int              j = 0;
+    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    {
+        switch (atom->ptype)
+        {
+            case eptAtom:
+                atom_index.push_back(j);
+                break;
+            case eptVSite:
+                (*nvsite)++;
+                break;
+            case eptShell:
+                (*nshell)++;
+                break;
+            default:
+                fprintf(stderr, "Warning: unsupported atom type %d\n",
+                        static_cast<int>(atom->ptype));
+        }
+        j++;
+    }
 }
