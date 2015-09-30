@@ -37,6 +37,10 @@
 #ifndef GMX_TOPOLOGY_MTOP_UTIL_H
 #define GMX_TOPOLOGY_MTOP_UTIL_H
 
+#include <cstddef>
+
+#include <vector>
+
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_localtop_t;
@@ -261,5 +265,14 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsA
  */
 t_topology
 gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
+
+/*! \brief Get vector of atoms indices from topology
+ *
+ * This function returns the indices of all particles with type
+ * eptAtom, that is shells, vsites etc. are left out.
+ * \param[in]  mtop Molecular topology
+ * \returns Vector that will be filled with the atom indices
+ */
+std::vector<size_t> get_atom_index(gmx_mtop_t *mtop);
 
 #endif

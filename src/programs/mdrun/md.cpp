@@ -364,12 +364,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fplog,
                                  top_global, n_flexible_constraints(constr),
-                                 ir->nstcalcenergy, DOMAINDECOMP(cr), ir->eI == eiNM);
+                                 ir->nstcalcenergy, DOMAINDECOMP(cr));
 
-    if (vsite && ir->eI == eiNM)
+    if (shellfc && ir->nstcalcenergy != 1)
     {
-        /* Currently virtual sites don't work with Normal Modes */
-        gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
+        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combinations with shell particles.\nPlease make a new tpr file.", ir->nstcalcenergy);
+    }
+    if (shellfc && DOMAINDECOMP(cr))
+    {
+        gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
     }
 
     if (inputrecDeform(ir))
