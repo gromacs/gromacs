@@ -47,6 +47,7 @@ struct t_commrec;
 struct t_forcerec;
 struct t_mdatoms;
 struct t_nblist;
+struct t_nrnb;
 
 #ifdef __cplusplus
 extern "C" {

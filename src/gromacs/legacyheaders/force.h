@@ -51,6 +51,7 @@ struct t_graph;
 struct t_grpopts;
 struct t_lambda;
 struct t_mdatoms;
+struct t_nrnb;
 struct t_pbc;
 struct gmx_edsam;
 
@@ -94,7 +95,7 @@ void make_wall_tables(FILE *fplog,
                       t_forcerec *fr);
 
 real do_walls(struct t_inputrec *ir, t_forcerec *fr, matrix box, struct t_mdatoms *md,
-              rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
+              rvec x[], rvec f[], real lambda, real Vlj[], struct t_nrnb *nrnb);
 
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
@@ -150,7 +151,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
 
 extern void do_force(FILE *log, struct t_commrec *cr,
                      struct t_inputrec *inputrec,
-                     gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                     gmx_int64_t step, struct t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                      gmx_localtop_t *top,
                      gmx_groups_t *groups,
                      matrix box, rvec x[], history_t *hist,
@@ -181,7 +182,7 @@ void ns(FILE                     *fplog,
         gmx_localtop_t           *top,
         struct t_mdatoms         *md,
         struct t_commrec         *cr,
-        t_nrnb                   *nrnb,
+        struct t_nrnb            *nrnb,
         gmx_bool                  bFillGrid,
         gmx_bool                  bDoLongRangeNS);
 /* Call the neighborsearcher */
@@ -190,7 +191,7 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               struct t_inputrec   *ir,
                               t_idef       *idef,
                               struct t_commrec    *cr,
-                              t_nrnb       *nrnb,
+                              struct t_nrnb       *nrnb,
                               gmx_wallcycle_t wcycle,
                               struct t_mdatoms    *md,
                               rvec         x[],

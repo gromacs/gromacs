@@ -45,6 +45,7 @@
 
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/smalloc.h"
 
