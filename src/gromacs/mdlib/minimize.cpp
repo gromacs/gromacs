@@ -53,6 +53,7 @@
 #include <ctime>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
@@ -77,6 +78,7 @@
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/ns.h"
+#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
@@ -2760,8 +2762,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
 {
     const char          *NM = "Normal Mode Analysis";
     gmx_mdoutf_t         outf;
-    int                  natoms, atom, d;
-    int                  nnodes, node;
+    size_t               nnodes, node;
     rvec                *f_global;
     gmx_localtop_t      *top;
     gmx_enerdata_t      *enerd;
@@ -2772,16 +2773,17 @@ double do_nm(FILE *fplog, t_commrec *cr,
     rvec                 mu_tot;
     rvec                *fneg, *dfdx;
     gmx_bool             bSparse; /* use sparse matrix storage format */
-    size_t               sz = 0;
+    size_t               sz;
     gmx_sparsematrix_t * sparse_matrix           = NULL;
     real           *     full_matrix             = NULL;
     em_state_t       *   state_work;
 
     /* added with respect to mdrun */
-    int        i, j, k, row, col;
-    real       der_range = 10.0*sqrt(GMX_REAL_EPS);
-    real       x_min;
-    bool       bIsMaster = MASTER(cr);
+    int                       row, col;
+    real                      der_range = 10.0*sqrt(GMX_REAL_EPS);
+    real                      x_min;
+    bool                      bIsMaster = MASTER(cr);
+    std::vector<size_t>       atom_index;
 
     if (constr != NULL)
     {
@@ -2797,9 +2799,21 @@ double do_nm(FILE *fplog, t_commrec *cr,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
             nfile, fnm, &outf, NULL, imdport, Flags, wcycle);
 
-    natoms = top_global->natoms;
-    snew(fneg, natoms);
-    snew(dfdx, natoms);
+    gmx_shellfc_t *shellfc = init_shell_flexcon(stdout,
+                                                top_global, n_flexible_constraints(constr),
+                                                (inputrec->bContinuation ||
+                                                 (DOMAINDECOMP(cr) && !MASTER(cr))) ?
+                                                NULL : state_global->x);
+
+    if (shellfc)
+    {
+        make_local_shells(cr, mdatoms, shellfc);
+    }
+    int nshell = 0;
+    int nvsite = 0;
+    get_atom_index(top_global, atom_index, &nvsite, &nshell);
+    snew(fneg, atom_index.size());
+    snew(dfdx, atom_index.size());
 
 #ifndef GMX_DOUBLE
     if (bIsMaster)
@@ -2823,9 +2837,9 @@ double do_nm(FILE *fplog, t_commrec *cr,
         md_print_info(cr, fplog, "Non-cutoff electrostatics used, forcing full Hessian format.\n");
         bSparse = FALSE;
     }
-    else if (top_global->natoms < 1000)
+    else if (atom_index.size() < 1000)
     {
-        md_print_info(cr, fplog, "Small system size (N=%d), using full Hessian format.\n", top_global->natoms);
+        md_print_info(cr, fplog, "Small system size (N=%d), using full Hessian format.\n", atom_index.size());
         bSparse = FALSE;
     }
     else
@@ -2834,21 +2848,19 @@ double do_nm(FILE *fplog, t_commrec *cr,
         bSparse = TRUE;
     }
 
-    if (bIsMaster)
+    /* Count real atoms */
+    sz = DIM*atom_index.size();
+
+    fprintf(stderr, "Allocating Hessian memory...\n\n");
+
+    if (bSparse)
     {
-        sz = DIM*top_global->natoms;
-
-        fprintf(stderr, "Allocating Hessian memory...\n\n");
-
-        if (bSparse)
-        {
-            sparse_matrix = gmx_sparsematrix_init(sz);
-            sparse_matrix->compressed_symmetric = TRUE;
-        }
-        else
-        {
-            snew(full_matrix, sz*sz);
-        }
+        sparse_matrix = gmx_sparsematrix_init(sz);
+        sparse_matrix->compressed_symmetric = TRUE;
+    }
+    else
+    {
+        snew(full_matrix, sz*sz);
     }
 
     init_nrnb(nrnb);
@@ -2859,7 +2871,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     print_em_start(fplog, cr, walltime_accounting, wcycle, NM);
 
     /* fudge nr of steps to nr of atoms */
-    inputrec->nsteps = natoms*2;
+    inputrec->nsteps = atom_index.size()*2;
 
     if (bIsMaster)
     {
@@ -2901,46 +2913,76 @@ double do_nm(FILE *fplog, t_commrec *cr,
      ************************************************************/
 
     /* Steps are divided one by one over the nodes */
-    for (atom = cr->nodeid; atom < natoms; atom += nnodes)
+    bool bNS = true;
+    for (unsigned int aid = cr->nodeid; aid < atom_index.size(); aid += nnodes)
     {
-
-        for (d = 0; d < DIM; d++)
+        size_t atom = atom_index[aid];
+        for (size_t d = 0; d < DIM; d++)
         {
+            gmx_bool    bConverged;
+            gmx_bool    bBornRadii  = FALSE;
+            gmx_int64_t step        = 0;
+            int         force_flags = GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES;
+            double      t           = 0;
+
             x_min = state_work->s.x[atom][d];
 
-            state_work->s.x[atom][d] = x_min - der_range;
-
-            /* Make evaluate_energy do a single node force calculation */
-            cr->nnodes = 1;
-            evaluate_energy(fplog, cr,
-                            top_global, state_work, top,
-                            inputrec, nrnb, wcycle, gstat,
-                            vsite, constr, fcd, graph, mdatoms, fr,
-                            mu_tot, enerd, vir, pres, atom*2, FALSE);
-
-            for (i = 0; i < natoms; i++)
+            for (unsigned int dx = 0; (dx < 2); dx++)
             {
-                copy_rvec(state_work->f[i], fneg[i]);
+                if (dx == 0)
+                {
+                    state_work->s.x[atom][d] = x_min - der_range;
+                }
+                else
+                {
+                    state_work->s.x[atom][d] = x_min + der_range;
+                }
+
+                /* Make evaluate_energy do a single node force calculation */
+                cr->nnodes = 1;
+                if (shellfc)
+                {
+                    /* Now is the time to relax the shells */
+                    (void) relax_shell_flexcon(fplog, cr, bVerbose, step,
+                                               inputrec, bNS, force_flags,
+                                               top,
+                                               constr, enerd, fcd,
+                                               &(state_work->s), state_work->f, vir, mdatoms,
+                                               nrnb, wcycle, graph, &top_global->groups,
+                                               shellfc, fr, bBornRadii, t, mu_tot,
+                                               &bConverged, vsite, NULL);
+                    bNS = false;
+                    step++;
+                }
+                else
+                {
+                    evaluate_energy(fplog, cr,
+                                    top_global, state_work, top,
+                                    inputrec, nrnb, wcycle, gstat,
+                                    vsite, constr, fcd, graph, mdatoms, fr,
+                                    mu_tot, enerd, vir, pres, atom*2+dx, FALSE);
+                }
+
+                cr->nnodes = nnodes;
+
+                if (dx == 0)
+                {
+                    for (size_t i = 0; i < atom_index.size(); i++)
+                    {
+                        copy_rvec(state_work->f[atom_index[i]], fneg[i]);
+                    }
+                }
             }
-
-            state_work->s.x[atom][d] = x_min + der_range;
-
-            evaluate_energy(fplog, cr,
-                            top_global, state_work, top,
-                            inputrec, nrnb, wcycle, gstat,
-                            vsite, constr, fcd, graph, mdatoms, fr,
-                            mu_tot, enerd, vir, pres, atom*2+1, FALSE);
-            cr->nnodes = nnodes;
 
             /* x is restored to original */
             state_work->s.x[atom][d] = x_min;
 
-            for (j = 0; j < natoms; j++)
+            for (size_t j = 0; j < atom_index.size(); j++)
             {
-                for (k = 0; (k < DIM); k++)
+                for (size_t k = 0; (k < DIM); k++)
                 {
                     dfdx[j][k] =
-                        -(state_work->f[j][k] - fneg[j][k])/(2*der_range);
+                        -(state_work->f[atom_index[j]][k] - fneg[j][k])/(2*der_range);
                 }
             }
 
@@ -2952,19 +2994,19 @@ double do_nm(FILE *fplog, t_commrec *cr,
 #else
 #define mpi_type MPI_FLOAT
 #endif
-                MPI_Send(dfdx[0], natoms*DIM, mpi_type, MASTERNODE(cr), cr->nodeid,
+                MPI_Send(dfdx[0], atom_index.size()*DIM, mpi_type, MASTERNODE(cr), cr->nodeid,
                          cr->mpi_comm_mygroup);
 #endif
             }
             else
             {
-                for (node = 0; (node < nnodes && atom+node < natoms); node++)
+                for (node = 0; (node < nnodes && atom+node < atom_index.size()); node++)
                 {
                     if (node > 0)
                     {
 #ifdef GMX_MPI
                         MPI_Status stat;
-                        MPI_Recv(dfdx[0], natoms*DIM, mpi_type, node, node,
+                        MPI_Recv(dfdx[0], atom_index.size()*DIM, mpi_type, node, node,
                                  cr->mpi_comm_mygroup, &stat);
 #undef mpi_type
 #endif
@@ -2972,9 +3014,9 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
                     row = (atom + node)*DIM + d;
 
-                    for (j = 0; j < natoms; j++)
+                    for (size_t j = 0; j < atom_index.size(); j++)
                     {
-                        for (k = 0; k < DIM; k++)
+                        for (size_t k = 0; k < DIM; k++)
                         {
                             col = j*DIM + k;
 
@@ -3004,7 +3046,8 @@ double do_nm(FILE *fplog, t_commrec *cr,
         if (bIsMaster && bVerbose)
         {
             fprintf(stderr, "\rFinished step %d out of %d",
-                    std::min(atom+nnodes, natoms), natoms);
+                    static_cast<int>(std::min(atom+nnodes, atom_index.size())),
+                    static_cast<int>(atom_index.size()));
             fflush(stderr);
         }
     }
@@ -3017,7 +3060,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
     finish_em(cr, outf, walltime_accounting, wcycle);
 
-    walltime_accounting_set_nsteps_done(walltime_accounting, natoms*2);
+    walltime_accounting_set_nsteps_done(walltime_accounting, atom_index.size()*2);
 
     return 0;
 }
