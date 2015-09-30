@@ -40,8 +40,9 @@
 
 #include <math.h>
 
+#include <algorithm>
+
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
@@ -61,14 +62,14 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
 #define  STATE_A  0
 #define  STATE_B  1
 #define  NSTATES  2
-    int           i, j, n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid;
+    int           i, n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid;
     real          shX, shY, shZ;
     real          tx, ty, tz, Fscal;
     double        FscalC[NSTATES], FscalV[NSTATES];  /* Needs double for sc_power==48 */
     double        Vcoul[NSTATES], Vvdw[NSTATES];     /* Needs double for sc_power==48 */
-    real          rinv6, r, rt, rtC, rtV;
+    real          rinv6, r, rtC, rtV;
     real          iqA, iqB;
-    real          qq[NSTATES], vctot, krsq;
+    real          qq[NSTATES], vctot;
     int           ntiA, ntiB, tj[NSTATES];
     real          Vvdw6, Vvdw12, vvtot;
     real          ix, iy, iz, fix, fiy, fiz;
@@ -79,10 +80,10 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          lfac_coul[NSTATES], dlfac_coul[NSTATES], lfac_vdw[NSTATES], dlfac_vdw[NSTATES];
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
     double        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
-    real          sigma2[NSTATES], sigma_pow[NSTATES], sigma_powm2[NSTATES], rs, rs2;
+    real          sigma2[NSTATES], sigma_pow[NSTATES];
     int           do_tab, tab_elemsize;
     int           n0, n1C, n1V, nnn;
-    real          Y, F, G, H, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, VV, FF;
+    real          Y, F, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, VV, FF;
     int           icoul, ivdw;
     int           nri;
     const int *   iinr;
@@ -94,7 +95,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const int *   typeB;
     int           ntype;
     const real *  shiftvec;
-    real          dvdl_part;
     real *        fshift;
     real          tabscale = 0;
     const real *  VFtab    = NULL;
@@ -103,8 +103,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          facel, krf, crf;
     const real *  chargeA;
     const real *  chargeB;
-    real          sigma6_min, sigma6_def, lam_power, sc_power, sc_r_power;
-    real          alpha_coul, alpha_vdw, lambda_coul, lambda_vdw, ewc_lj;
+    real          sigma6_min, sigma6_def, lam_power, sc_r_power;
+    real          alpha_coul, alpha_vdw, lambda_coul, lambda_vdw;
     real          ewcljrsq, ewclj, ewclj2, exponent, poly, vvdw_disp, vvdw_rep, sh_lj_ewald;
     real          ewclj6;
     const real *  nbfp, *nbfp_grid;
@@ -163,7 +163,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     facel               = fr->epsfac;
     krf                 = fr->k_rf;
     crf                 = fr->c_rf;
-    ewc_lj              = fr->ewaldcoeff_lj;
     Vc                  = kernel_data->energygrp_elec;
     typeA               = mdatoms->typeA;
     typeB               = mdatoms->typeB;
@@ -261,7 +260,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     }
 
     bExactCutoffAll = (bExactElecCutoff && bExactVdwCutoff);
-    rcutoff_max2    = max(fr->rcoulomb, fr->rvdw);
+    rcutoff_max2    = std::max(fr->rcoulomb, fr->rvdw);
     rcutoff_max2    = rcutoff_max2*rcutoff_max2;
 
     bEwald          = (icoul == GMX_NBKERNEL_ELEC_EWALD);
@@ -295,7 +294,6 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     }
 
     /* fix compiler warnings */
-    nj1   = 0;
     n1C   = n1V   = 0;
     epsC  = epsV  = 0;
     eps2C = eps2V = 0;
@@ -456,19 +454,16 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     if (sc_r_power == six)
                     {
                         sigma_pow[i]    = sigma6[i];
-                        sigma_powm2[i]  = sigma6[i]/sigma2[i];
                     }
                     else if (sc_r_power == fourtyeight)
                     {
                         sigma_pow[i]    = sigma6[i]*sigma6[i];       /* sigma^12 */
                         sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
                         sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^48 */
-                        sigma_powm2[i]  = sigma_pow[i]/sigma2[i];
                     }
                     else
                     {    /* not really supported as input, but in here for testing the general case*/
                         sigma_pow[i]    = pow(sigma2[i], sc_r_power/2);
-                        sigma_powm2[i]  = sigma_pow[i]/(sigma2[i]);
                     }
                 }
 
