@@ -48,6 +48,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 
 struct gmx_constr;
+struct t_mdatoms;
 
 #ifdef __cplusplus
 extern "C" {

@@ -75,6 +75,7 @@ struct t_fcdata;
 struct t_forcerec;
 struct t_inputrec;
 struct t_lambda;
+struct t_mdatoms;
 
 #ifdef __cplusplus
 extern "C" {

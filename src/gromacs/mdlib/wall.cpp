@@ -45,6 +45,7 @@
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/tables/forcetable.h"

@@ -39,6 +39,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
+struct t_mdatoms;
 
 /* Default nbnxn allocation routine, allocates 32 byte aligned,
  * which works for plain C and aligned SSE and AVX loads/stores.

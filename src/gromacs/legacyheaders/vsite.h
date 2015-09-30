@@ -44,6 +44,7 @@
 #include "gromacs/pbcutil/ishift.h"
 
 struct t_commrec;
+struct t_mdatoms;
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,16 +117,16 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, struct t_commrec *cr,
  * this is useful for correction vsites of the initial configuration.
  */
 
-void split_vsites_over_threads(const t_ilist   *ilist,
-                               const t_iparams *ip,
-                               const t_mdatoms *mdatoms,
-                               gmx_bool         bLimitRange,
-                               gmx_vsite_t     *vsite);
+void split_vsites_over_threads(const t_ilist          *ilist,
+                               const t_iparams        *ip,
+                               const struct t_mdatoms *mdatoms,
+                               gmx_bool                bLimitRange,
+                               gmx_vsite_t            *vsite);
 /* Divide the vsite work-load over the threads.
  * Should be called at the end of the domain decomposition.
  */
 
-void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
+void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, struct t_mdatoms *md,
                    struct t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.

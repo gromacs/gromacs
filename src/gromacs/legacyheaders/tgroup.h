@@ -43,6 +43,7 @@
 struct gmx_ekindata_t;
 struct t_commrec;
 struct t_grpopts;
+struct t_mdatoms;
 
 #ifdef __cplusplus
 extern "C" {

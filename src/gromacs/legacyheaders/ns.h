@@ -45,6 +45,7 @@
 struct gmx_ns_t;
 struct t_commrec;
 struct t_forcerec;
+struct t_mdatoms;
 
 #ifdef __cplusplus
 extern "C" {

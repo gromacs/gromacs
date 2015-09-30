@@ -58,6 +58,7 @@ extern "C" {
 #endif
 
 struct pull_params_t;
+struct t_mdatoms;
 struct t_pbc;
 
 

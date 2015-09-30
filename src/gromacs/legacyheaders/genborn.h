@@ -47,6 +47,7 @@ struct t_commrec;
 struct t_forcerec;
 struct t_graph;
 struct t_inputrec;
+struct t_mdatoms;
 struct t_pbc;
 
 #ifdef __cplusplus
