@@ -60,6 +60,7 @@ struct gmx_enerdata_t;
 struct gmx_wallcycle;
 struct t_forcerec;
 struct t_lambda;
+struct t_nrnb;
 struct t_pbc;
 
 /*! \brief Helper function that wraps calls to posres */

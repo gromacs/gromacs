@@ -48,6 +48,7 @@ struct t_fcdata;
 struct t_graph;
 struct t_grpopts;
 struct t_mdatoms;
+struct t_nrnb;
 
 #ifdef __cplusplus
 extern "C" {

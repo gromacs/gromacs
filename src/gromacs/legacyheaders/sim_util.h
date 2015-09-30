@@ -49,6 +49,7 @@
 
 struct gmx_constr;
 struct t_mdatoms;
+struct t_nrnb;
 
 #ifdef __cplusplus
 extern "C" {

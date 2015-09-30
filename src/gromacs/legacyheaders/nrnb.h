@@ -41,6 +41,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 
 struct t_commrec;
+struct t_nrnb;
 
 #ifdef __cplusplus
 extern "C" {

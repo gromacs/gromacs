@@ -53,6 +53,7 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/update.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"

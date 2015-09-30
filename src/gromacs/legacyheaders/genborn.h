@@ -49,6 +49,7 @@ struct t_graph;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nblist;
+struct t_nrnb;
 struct t_pbc;
 
 #ifdef __cplusplus
