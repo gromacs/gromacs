@@ -41,6 +41,7 @@ struct gmx_domdec_t;
 struct gmx_domdec_zones_t;
 struct gmx_ddbox_t;
 struct t_forcerec;
+struct t_grid;
 
 #ifdef __cplusplus
 extern "C" {

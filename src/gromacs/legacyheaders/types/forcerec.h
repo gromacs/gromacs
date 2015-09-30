@@ -61,6 +61,7 @@ extern "C" {
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
+struct t_nblist;
 
 /* Structure describing the data in a single table */
 typedef struct

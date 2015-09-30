@@ -42,9 +42,7 @@
 /* DEPRECATED! value for signaling unitialized variables */
 #define NOTSET -12345
 
-#include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/nsgrid.h"
 #include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
