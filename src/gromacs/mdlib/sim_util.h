@@ -34,32 +34,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _sim_util_h
-#define _sim_util_h
+#ifndef GMX_MDLIB_SIM_UTIL_H
+#define GMX_MDLIB_SIM_UTIL_H
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/fileio/mdoutf.h"
 #include "gromacs/legacyheaders/mdebin.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
 struct gmx_constr;
-struct t_mdatoms;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+struct nonbonded_verlet_t;
 struct t_graph;
+struct t_mdatoms;
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
 void do_pbc_first(FILE *log, matrix box, t_forcerec *fr,
-                  struct t_graph *graph, rvec x[]);
+                  t_graph *graph, rvec x[]);
 
 void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
                        const gmx_mtop_t *mtop, rvec x[]);
@@ -79,7 +74,7 @@ void global_stat(FILE *log, gmx_global_stat_t gs,
                  tensor fvir, tensor svir, rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,
-                 struct gmx_constr *constr, t_vcm *vcm,
+                 gmx_constr *constr, t_vcm *vcm,
                  int nsig, real *sig,
                  gmx_mtop_t *top_global, t_state *state_local,
                  gmx_bool bSumEkinhOld, int flags);
@@ -112,7 +107,7 @@ void finish_run(FILE *log, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                struct nonbonded_verlet_t *nbv,
+                nonbonded_verlet_t *nbv,
                 gmx_bool bWriteStat);
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
@@ -124,7 +119,7 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
 
 void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, real *lambda, double *lam0);
 
-void do_constrain_first(FILE *log, struct gmx_constr *constr,
+void do_constrain_first(FILE *log, gmx_constr *constr,
                         t_inputrec *inputrec, t_mdatoms *md,
                         t_state *state, t_commrec *cr, t_nrnb *nrnb,
                         t_forcerec *fr, gmx_localtop_t *top);
@@ -143,10 +138,6 @@ void init_md(FILE *fplog,
              gmx_wallcycle_t wcycle);
 /* Routine in sim_util.c */
 
-gmx_bool use_GPU(const struct nonbonded_verlet_t *nbv);
+gmx_bool use_GPU(const nonbonded_verlet_t *nbv);
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _sim_util_h */

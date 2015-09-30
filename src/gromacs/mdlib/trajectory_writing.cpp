@@ -37,12 +37,12 @@
 #include "trajectory_writing.h"
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/mdoutf.h"
 #include "gromacs/legacyheaders/mdrun.h"
-#include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdoutf.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/smalloc.h"
 

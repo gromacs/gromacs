@@ -48,12 +48,10 @@ gmx_install_headers(
     filenm.h
     gmxfio.h
     matio.h
-    mdoutf.h
     mtxio.h
     oenv.h
     pdbio.h
     tpxio.h
-    trajectory_writing.h
     trrio.h
     trx.h
     trxio.h

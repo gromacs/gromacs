@@ -34,15 +34,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_FILEIO_TRAJECTORY_WRITING_H
-#define GMX_FILEIO_TRAJECTORY_WRITING_H
+#ifndef GMX_MDLIB_TRAJECTORY_WRITING_H
+#define GMX_MDLIB_TRAJECTORY_WRITING_H
 
 #include <stdio.h>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/mdoutf.h"
 #include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_ekindata_t;
@@ -88,4 +87,4 @@ do_md_trajectory_writing(FILE                     *fplog,
 }
 #endif
 
-#endif /* GMX_FILEIO_TRAJECTORY_WRITING_H */
+#endif

@@ -32,9 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_FILEIO_MDOUTF_H
-#define GMX_FILEIO_MDOUTF_H
+#ifndef GMX_MDLIB_MDOUTF_H
+#define GMX_MDLIB_MDOUTF_H
 
 #include <stdio.h>
 
@@ -117,4 +116,4 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
 }
 #endif
 
-#endif /* GMX_FILEIO_MDOUTF_H */
+#endif
