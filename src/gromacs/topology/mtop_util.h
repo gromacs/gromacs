@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,6 +36,10 @@
  */
 #ifndef GMX_TOPOLOGY_MTOP_UTIL_H
 #define GMX_TOPOLOGY_MTOP_UTIL_H
+
+#include <cstddef>
+
+#include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -261,5 +265,14 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsA
  */
 t_topology
 gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
+
+/*! \brief Get vector of atoms indices from topology
+ *
+ * This function returns the indices of all particles with type
+ * eptAtom, that is shells, vsites etc. are left out.
+ * \param[in]  mtop Molecular topology
+ * \returns Vector that will be filled with the atom indices
+ */
+std::vector<size_t> get_atom_index(gmx_mtop_t *mtop);
 
 #endif
