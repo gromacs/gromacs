@@ -40,6 +40,7 @@
 #include "gromacs/mdlib/nbnxn_pairlist.h"
 
 struct gmx_domdec_zones_t;
+struct t_nrnb;
 
 /* Tells if the pair-list corresponding to nb_kernel_type is simple.
  * Returns FALSE for super-sub type pair-list.

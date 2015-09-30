@@ -45,6 +45,7 @@
 
 struct t_commrec;
 struct t_mdatoms;
+struct t_nrnb;
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,7 +98,7 @@ void construct_vsites_mtop(gmx_vsite_t *vsite,
 void spread_vsite_f(gmx_vsite_t *vsite,
                     rvec x[], rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
-                    t_nrnb *nrnb, t_idef *idef,
+                    struct t_nrnb *nrnb, t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, struct t_graph *g, matrix box,
                     struct t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
