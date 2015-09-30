@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/sim_util.h"
+#include "sim_util.h"
 
 #include "config.h"
 
