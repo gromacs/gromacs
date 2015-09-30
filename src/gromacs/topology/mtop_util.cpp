@@ -1198,3 +1198,21 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
 
     return top;
 }
+
+std::vector<size_t> get_atom_index(gmx_mtop_t *mtop)
+{
+
+    std::vector<size_t>       atom_index;
+    gmx_mtop_atomloop_block_t aloopb = gmx_mtop_atomloop_block_init(mtop);
+    t_atom                   *atom;
+    int                       nmol, j = 0;
+    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    {
+        if (atom->ptype == eptAtom)
+        {
+            atom_index.push_back(j);
+        }
+        j++;
+    }
+    return atom_index;
+}
