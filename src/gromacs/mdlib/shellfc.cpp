@@ -243,44 +243,21 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
     t_atom                   *atom;
-    int                       n[eptNR], ns, nshell, nsi;
-    int                       i, j, nmol, type, mb, a_offset, cg, mol, ftype, nra;
+    unsigned int              n[eptNR];
+    int                       ns, nshell, nsi;
+    int                       i, j, type, mb, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
     t_iatom                  *ia;
-    gmx_mtop_atomloop_block_t aloopb;
     gmx_mtop_atomloop_all_t   aloop;
     gmx_ffparams_t           *ffparams;
     gmx_molblock_t           *molb;
     gmx_moltype_t            *molt;
     t_block                  *cgs;
 
-    /* Count number of shells, and find their indices */
-    for (i = 0; (i < eptNR); i++)
-    {
-        n[i] = 0;
-    }
-
-    aloopb = gmx_mtop_atomloop_block_init(mtop);
-    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
-    {
-        n[atom->ptype] += nmol;
-    }
-
-    if (fplog)
-    {
-        /* Print the number of each particle type */
-        for (i = 0; (i < eptNR); i++)
-        {
-            if (n[i] != 0)
-            {
-                fprintf(fplog, "There are: %d %ss\n", n[i], ptype_str[i]);
-            }
-        }
-    }
-
+    countPtypes(fplog, mtop, n);
     nshell = n[eptShell];
 
     if (nshell == 0 && nflexcon == 0)
