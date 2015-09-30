@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include <cstdint>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -249,54 +250,81 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     }
 }
 
+/*! \brief Count the different particle types in a system
+ *
+ * Routine prints a warning to stderr in case an unknown particle type
+ * is encountered.
+ * \param[in]  fplog Print what we have found if not NULL
+ * \param[in]  mtop  Molecular topology.
+ * \returns Array holding the number of particles of a type
+ */
+static std::array<int, eptNR> countPtypes(FILE       *fplog,
+                                          gmx_mtop_t *mtop)
+{
+    std::array<int, eptNR> nptype = { { 0 } };
+    /* Count number of shells, and find their indices */
+    for (int i = 0; (i < eptNR); i++)
+    {
+        nptype[i] = 0;
+    }
+
+    gmx_mtop_atomloop_block_t  aloopb = gmx_mtop_atomloop_block_init(mtop);
+    int                        nmol;
+    t_atom                    *atom;
+    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
+    {
+        switch (atom->ptype)
+        {
+            case eptAtom:
+            case eptVSite:
+            case eptShell:
+                nptype[atom->ptype] += nmol;
+                break;
+            default:
+                fprintf(stderr, "Warning unsupported particle type %d in countPtypes",
+                        static_cast<int>(atom->ptype));
+        }
+    }
+    if (fplog)
+    {
+        /* Print the number of each particle type */
+        int n = 0;
+        for (const auto &i : nptype)
+        {
+            if (i != 0)
+            {
+                fprintf(fplog, "There are: %d %ss\n", i, ptype_str[n]);
+            }
+            n++;
+        }
+    }
+    return nptype;
+}
+
 gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                   gmx_mtop_t *mtop, int nflexcon,
                                   int nstcalcenergy,
-                                  bool usingDomainDecomposition,
-                                  bool doingNormalModeAnalysis)
+                                  bool usingDomainDecomposition)
 {
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
     t_atom                   *atom;
-    int                       n[eptNR], ns, nshell, nsi;
-    int                       i, j, nmol, type, mb, a_offset, cg, mol, ftype, nra;
+
+    int                       ns, nshell, nsi;
+    int                       i, j, type, mb, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
     int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
     t_iatom                  *ia;
-    gmx_mtop_atomloop_block_t aloopb;
     gmx_mtop_atomloop_all_t   aloop;
     gmx_ffparams_t           *ffparams;
     gmx_molblock_t           *molb;
     gmx_moltype_t            *molt;
     t_block                  *cgs;
 
-    /* Count number of shells, and find their indices */
-    for (i = 0; (i < eptNR); i++)
-    {
-        n[i] = 0;
-    }
-
-    aloopb = gmx_mtop_atomloop_block_init(mtop);
-    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
-    {
-        n[atom->ptype] += nmol;
-    }
-
-    if (fplog)
-    {
-        /* Print the number of each particle type */
-        for (i = 0; (i < eptNR); i++)
-        {
-            if (n[i] != 0)
-            {
-                fprintf(fplog, "There are: %d %ss\n", n[i], ptype_str[i]);
-            }
-        }
-    }
-
+    std::array<int, eptNR>    n = countPtypes(fplog, mtop);
     nshell = n[eptShell];
 
     if (nshell == 0 && nflexcon == 0)
@@ -315,10 +343,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     if (usingDomainDecomposition)
     {
         gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
-    }
-    if (doingNormalModeAnalysis)
-    {
-        gmx_fatal(FARGS, "Normal Mode analysis is not supported with shells.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
     }
 
     if (nshell == 0)

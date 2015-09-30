@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
 
 #include <cmath>
 #include <cstring>
+
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/mtxio.h"
@@ -90,12 +92,12 @@ static double u_corr(double nu, double T)
     }
 }
 
-static int get_nharm_mt(gmx_moltype_t *mt)
+static size_t get_nharm_mt(gmx_moltype_t *mt)
 {
-    static int harm_func[] = { F_BONDS };
-    int        i, ft, nh;
+    static int   harm_func[] = { F_BONDS };
+    int          i, ft;
+    size_t       nh = 0;
 
-    nh = 0;
     for (i = 0; (i < asize(harm_func)); i++)
     {
         ft  = harm_func[i];
@@ -104,15 +106,14 @@ static int get_nharm_mt(gmx_moltype_t *mt)
     return nh;
 }
 
-static int get_nvsite_mt(gmx_moltype_t *mt)
+static size_t get_nvsite_mt(gmx_moltype_t *mt)
 {
-    static int vs_func[] = {
+    static int   vs_func[] = {
         F_VSITE2, F_VSITE3, F_VSITE3FD, F_VSITE3FAD,
         F_VSITE3OUT, F_VSITE4FD, F_VSITE4FDN, F_VSITEN
     };
-    int        i, ft, nh;
-
-    nh = 0;
+    int          i, ft;
+    size_t       nh = 0;
     for (i = 0; (i < asize(vs_func)); i++)
     {
         ft  = vs_func[i];
@@ -121,50 +122,45 @@ static int get_nvsite_mt(gmx_moltype_t *mt)
     return nh;
 }
 
-static int get_nharm(gmx_mtop_t *mtop, int *nvsites)
+static int get_nharm(gmx_mtop_t *mtop)
 {
-    int j, mt, nh, nv;
+    int nh = 0;
 
-    nh = 0;
-    nv = 0;
-    for (j = 0; (j < mtop->nmolblock); j++)
+    for (int j = 0; (j < mtop->nmolblock); j++)
     {
-        mt  = mtop->molblock[j].type;
+        int mt  = mtop->molblock[j].type;
         nh += mtop->molblock[j].nmol * get_nharm_mt(&(mtop->moltype[mt]));
-        nv += mtop->molblock[j].nmol * get_nvsite_mt(&(mtop->moltype[mt]));
     }
-    *nvsites = nv;
     return nh;
 }
 
 static void
-nma_full_hessian(real     *           hess,
-                 int                  ndim,
-                 gmx_bool             bM,
-                 t_topology     *     top,
-                 int                  begin,
-                 int                  end,
-                 real     *           eigenvalues,
-                 real     *           eigenvectors)
+nma_full_hessian(real                      *hess,
+                 int                        ndim,
+                 gmx_bool                   bM,
+                 t_topology                *top,
+                 const std::vector<size_t> &atom_index,
+                 int                        begin,
+                 int                        end,
+                 real                      *eigenvalues,
+                 real                      *eigenvectors)
 {
-    int  i, j, k, l;
     real mass_fac;
-    int  natoms;
-
-    natoms = top->atoms.nr;
 
     /* divide elements hess[i][j] by sqrt(mas[i])*sqrt(mas[j]) when required */
 
     if (bM)
     {
-        for (i = 0; (i < natoms); i++)
+        for (size_t i = 0; (i < atom_index.size()); i++)
         {
-            for (j = 0; (j < DIM); j++)
+            size_t ai = atom_index[i];
+            for (size_t j = 0; (j < DIM); j++)
             {
-                for (k = 0; (k < natoms); k++)
+                for (size_t k = 0; (k < atom_index.size()); k++)
                 {
-                    mass_fac = gmx::invsqrt(top->atoms.atom[i].m*top->atoms.atom[k].m);
-                    for (l = 0; (l < DIM); l++)
+                    size_t ak = atom_index[k];
+                    mass_fac = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
+                    for (size_t l = 0; (l < DIM); l++)
                     {
                         hess[(i*DIM+j)*ndim+k*DIM+l] *= mass_fac;
                     }
@@ -183,12 +179,13 @@ nma_full_hessian(real     *           hess,
     /* And scale the output eigenvectors */
     if (bM && eigenvectors != NULL)
     {
-        for (i = 0; i < (end-begin+1); i++)
+        for (int i = 0; i < (end-begin+1); i++)
         {
-            for (j = 0; j < natoms; j++)
+            for (size_t j = 0; j < atom_index.size(); j++)
             {
-                mass_fac = gmx::invsqrt(top->atoms.atom[j].m);
-                for (k = 0; (k < DIM); k++)
+                size_t aj = atom_index[j];
+                mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
+                for (size_t k = 0; (k < DIM); k++)
                 {
                     eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
                 }
@@ -200,22 +197,21 @@ nma_full_hessian(real     *           hess,
 
 
 static void
-nma_sparse_hessian(gmx_sparsematrix_t     *     sparse_hessian,
-                   gmx_bool                     bM,
-                   t_topology     *             top,
-                   int                          neig,
-                   real     *                   eigenvalues,
-                   real     *                   eigenvectors)
+nma_sparse_hessian(gmx_sparsematrix_t        *sparse_hessian,
+                   gmx_bool                   bM,
+                   t_topology                *top,
+                   const std::vector<size_t> &atom_index,
+                   int                        neig,
+                   real                      *eigenvalues,
+                   real                      *eigenvectors)
 {
-    int  i, j, k;
-    int  row, col;
-    real mass_fac;
-    int  iatom, katom;
-    int  natoms;
-    int  ndim;
+    int    i, k;
+    int    row, col;
+    real   mass_fac;
+    int    katom;
+    size_t ndim;
 
-    natoms = top->atoms.nr;
-    ndim   = DIM*natoms;
+    ndim = DIM*atom_index.size();
 
     /* Cannot check symmetry since we only store half matrix */
     /* divide elements hess[i][j] by sqrt(mas[i])*sqrt(mas[j]) when required */
@@ -224,16 +220,18 @@ nma_sparse_hessian(gmx_sparsematrix_t     *     sparse_hessian,
 
     if (bM)
     {
-        for (iatom = 0; (iatom < natoms); iatom++)
+        for (size_t iatom = 0; (iatom < atom_index.size()); iatom++)
         {
-            for (j = 0; (j < DIM); j++)
+            size_t ai = atom_index[iatom];
+            for (size_t j = 0; (j < DIM); j++)
             {
                 row = DIM*iatom+j;
                 for (k = 0; k < sparse_hessian->ndata[row]; k++)
                 {
-                    col      = sparse_hessian->data[row][k].col;
-                    katom    = col/3;
-                    mass_fac = gmx::invsqrt(top->atoms.atom[iatom].m*top->atoms.atom[katom].m);
+                    col       = sparse_hessian->data[row][k].col;
+                    katom     = col/3;
+                    size_t ak = atom_index[katom];
+                    mass_fac  = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
                     sparse_hessian->data[row][k].value *= mass_fac;
                 }
             }
@@ -249,9 +247,10 @@ nma_sparse_hessian(gmx_sparsematrix_t     *     sparse_hessian,
     {
         for (i = 0; i < neig; i++)
         {
-            for (j = 0; j < natoms; j++)
+            for (size_t j = 0; j < atom_index.size(); j++)
             {
-                mass_fac = gmx::invsqrt(top->atoms.atom[j].m);
+                size_t aj = atom_index[j];
+                mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
                 for (k = 0; (k < DIM); k++)
                 {
                     eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
@@ -324,9 +323,7 @@ int gmx_nmeig(int argc, char *argv[])
     real                  *eigenvalues;
     real                  *eigenvectors;
     real                   qcvtot, qutot, qcv, qu;
-    int                    natoms, ndim, nrow, ncol, nharm, nvsite;
     int                    i, j, k;
-    gmx_bool               bSuck;
     t_tpxheader            tpx;
     int                    version, generation;
     real                   value, omega, nu;
@@ -363,26 +360,25 @@ int gmx_nmeig(int argc, char *argv[])
     read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &tpx, TRUE, &version, &generation);
     snew(top_x, tpx.natoms);
 
-    read_tpx(ftp2fn(efTPR, NFILE, fnm), NULL, box, &natoms,
+    int natoms_tpx;
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), NULL, box, &natoms_tpx,
              top_x, NULL, &mtop);
+    int nharm = 0;
     if (bCons)
     {
-        nharm = get_nharm(&mtop, &nvsite);
+        nharm = get_nharm(&mtop);
     }
-    else
-    {
-        nharm  = 0;
-        nvsite = 0;
-    }
+    std::vector<size_t> atom_index = get_atom_index(&mtop);
+
     top = gmx_mtop_t_to_t_topology(&mtop);
 
-    bM   = TRUE;
-    ndim = DIM*natoms;
+    bM       = TRUE;
+    int ndim = DIM*atom_index.size();
 
     if (opt2bSet("-qc", NFILE, fnm))
     {
-        begin = 7+DIM*nvsite;
-        end   = DIM*natoms;
+        begin = 7;
+        end   = ndim;
     }
     if (begin < 1)
     {
@@ -395,6 +391,7 @@ int gmx_nmeig(int argc, char *argv[])
     printf("Using begin = %d and end = %d\n", begin, end);
 
     /*open Hessian matrix */
+    int nrow, ncol;
     gmx_mtxio_read(ftp2fn(efMTX, NFILE, fnm), &nrow, &ncol, &full_hessian, &sparse_hessian);
 
     /* Memory for eigenvalues and eigenvectors (begin..end) */
@@ -442,18 +439,18 @@ int gmx_nmeig(int argc, char *argv[])
     if (full_hessian != NULL)
     {
         /* Using full matrix storage */
-        nma_full_hessian(full_hessian, nrow, bM, &top, begin, end,
+        nma_full_hessian(full_hessian, nrow, bM, &top, atom_index, begin, end,
                          eigenvalues, eigenvectors);
     }
     else
     {
         /* Sparse memory storage, allocate memory for eigenvectors */
         snew(eigenvectors, ncol*end);
-        nma_sparse_hessian(sparse_hessian, bM, &top, end, eigenvalues, eigenvectors);
+        nma_sparse_hessian(sparse_hessian, bM, &top, atom_index, end, eigenvalues, eigenvectors);
     }
 
     /* check the output, first 6 eigenvalues should be reasonably small */
-    bSuck = FALSE;
+    gmx_bool bSuck = FALSE;
     for (i = begin-1; (i < 6); i++)
     {
         if (std::abs(eigenvalues[i]) > 1.0e-3)
@@ -591,8 +588,7 @@ int gmx_nmeig(int argc, char *argv[])
     {
         printf("Quantum corrections for harmonic degrees of freedom\n");
         printf("Use appropriate -first and -last options to get reliable results.\n");
-        printf("There were %d constraints and %d vsites in the simulation\n",
-               nharm, nvsite);
+        printf("There were %d constraints in the simulation\n", nharm);
         printf("Total correction to cV = %g J/mol K\n", qcvtot);
         printf("Total correction to  H = %g kJ/mol\n", qutot);
         xvgrclose(qc);
@@ -603,7 +599,7 @@ int gmx_nmeig(int argc, char *argv[])
      * nma_full_hessian() or nma_sparse_hessian() routines. Mass scaled vectors
      * will not be strictly orthogonal in plain cartesian scalar products.
      */
-    write_eigenvectors(opt2fn("-v", NFILE, fnm), natoms, eigenvectors, FALSE, begin, end,
+    write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectors, FALSE, begin, end,
                        eWXR_NO, NULL, FALSE, top_x, bM, eigenvalues);
 
     return 0;
