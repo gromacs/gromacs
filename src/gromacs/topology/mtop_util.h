@@ -37,7 +37,10 @@
 #ifndef GMX_TOPOLOGY_MTOP_UTIL_H
 #define GMX_TOPOLOGY_MTOP_UTIL_H
 
+#include <vector>
+
 #include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_localtop_t;
@@ -261,5 +264,29 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir);
  */
 t_topology
 gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
+
+/*! \brief Count the different particle types in a system
+ *
+ * Routine throws with an API Error in case an unknown particle type
+ * is encountered.
+ * \param[in]  fplog  File pointer to print information. May be NULL.
+ * \param[in]  mtop   Molecular topology.
+ * \param[out] nptype Array holding the number of particles of a type
+ */
+void countPtypes(FILE         *fplog,
+                 gmx_mtop_t   *mtop,
+                 unsigned int  nptype[eptNR]);
+
+/*! \brief Get vector of atoms (particle eptAtom) from topology
+ *
+ * \param[in] mtop The molecular topology
+ * \param[out] atom_index Vector that will be filled with the atom indices
+ * \param[out] nvsite Total number of virtual sites
+ * \param[out] nshell Total number of shells
+ */
+void get_atom_index(gmx_mtop_t                *mtop,
+                    std::vector<unsigned int> &atom_index,
+                    unsigned int              *nvsite,
+                    unsigned int              *nshell);
 
 #endif
