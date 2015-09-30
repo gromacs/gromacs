@@ -1854,7 +1854,7 @@ gmx_bool do_swapcoords(t_commrec        *cr,
 {
     t_swapcoords         *sc;
     t_swap               *s;
-    int                   j, ii, ic, ig, im, gmax, nswaps;
+    int                   j, ii, ic, ig, im, nswaps;
     gmx_bool              bSwap = FALSE;
     t_group              *g;
     real                  vacancy[eCompNR][eIonNR];
@@ -1869,32 +1869,23 @@ gmx_bool do_swapcoords(t_commrec        *cr,
     sc  = ir->swap;
     s   = sc->si_priv;
 
-    /* Assemble all the positions of the swap group (ig = 0), the split groups
-     * (ig = 1,2), and possibly the solvent group (ig = 3) */
-    gmax = eGrpNr;
+    /* Assemble the positions of the ions. Since we do not need to make these
+     * whole, we pass NULL as third argument. */
+    g = &(s->group[eGrpIons]);
+    communicate_group_positions(cr, g->xc, NULL, NULL, FALSE,
+                                x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, NULL, NULL);
 
-    for (ig = 0; ig < gmax; ig++)
+    /* Assemble the positions of the split groups, i.e. the channels.
+     * Here we also pass a shifts array to communicate_group_positions(), so that it can make
+     * the molecules whole even in cases where they span more than half of the box in
+     * any dimension */
+    for (ig = eGrpSplit0; ig <= eGrpSplit1; ig++)
     {
         g = &(s->group[ig]);
-        if (eGrpSplit0 == ig || eGrpSplit1 == ig)
-        {
-            /* The split groups, i.e. the channels. Here we need  the full
-             * communicate_group_positions(), so that we can make the molecules
-             * whole even in cases where they span more than half of the box in
-             * any dimension */
-            communicate_group_positions(cr, g->xc, g->xc_shifts, g->xc_eshifts, TRUE,
-                                        x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, g->xc_old, box);
+        communicate_group_positions(cr, g->xc, g->xc_shifts, g->xc_eshifts, TRUE,
+                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, g->xc_old, box);
 
-            get_center(g->xc, g->m, g->nat, g->center); /* center of split groups == channels */
-        }
-        else
-        {
-            /* Swap group (ions), and solvent group. These molecules are small
-             * and we can always make them whole with a simple distance check.
-             * Therefore we pass NULL as third argument. */
-            communicate_group_positions(cr, g->xc, NULL, NULL, FALSE,
-                                        x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, NULL, NULL);
-        }
+        get_center(g->xc, g->m, g->nat, g->center); /* center of split groups == channels */
     }
 
     /* Set up the compartments and get lists of atoms in each compartment,
@@ -1918,6 +1909,8 @@ gmx_bool do_swapcoords(t_commrec        *cr,
     bSwap = need_swap(sc);
     if (bSwap)
     {
+        /* Since we here know that we have to perform ion/water position exchanges,
+         * we now assemble the solvent positions */
         g = &(s->group[eGrpSolvent]);
         communicate_group_positions(cr, g->xc, NULL, NULL, FALSE,
                                     x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, NULL, NULL);
