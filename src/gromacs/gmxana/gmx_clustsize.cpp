@@ -68,7 +68,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                        const char *mcn, gmx_bool bMol, gmx_bool bPBC, const char *tpr,
                        real cut, int nskip, int nlevels,
                        t_rgb rmid, t_rgb rhi, int ndf,
-                       const output_env_t oenv)
+                       const gmx_output_env_t *oenv)
 {
     FILE                 *fp, *gp, *hp, *tp;
     atom_id              *index = NULL;
@@ -439,7 +439,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
 
 int gmx_clustsize(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes the size distributions of molecular/atomic clusters in",
         "the gas phase. The output is given in the form of an [REF].xpm[ref] file.",
         "The total number of clusters is written to an [REF].xvg[ref] file.[PAR]",
@@ -458,18 +458,18 @@ int gmx_clustsize(int argc, char *argv[])
         "atom numbers of the largest cluster."
     };
 
-    static real     cutoff   = 0.35;
-    static int      nskip    = 0;
-    static int      nlevels  = 20;
-    static int      ndf      = -1;
-    static gmx_bool bMol     = FALSE;
-    static gmx_bool bPBC     = TRUE;
-    static rvec     rlo      = { 1.0, 1.0, 0.0 };
-    static rvec     rhi      = { 0.0, 0.0, 1.0 };
+    static real       cutoff   = 0.35;
+    static int        nskip    = 0;
+    static int        nlevels  = 20;
+    static int        ndf      = -1;
+    static gmx_bool   bMol     = FALSE;
+    static gmx_bool   bPBC     = TRUE;
+    static rvec       rlo      = { 1.0, 1.0, 0.0 };
+    static rvec       rhi      = { 0.0, 0.0, 1.0 };
 
-    output_env_t    oenv;
+    gmx_output_env_t *oenv;
 
-    t_pargs         pa[] = {
+    t_pargs           pa[] = {
         { "-cut",      FALSE, etREAL, {&cutoff},
           "Largest distance (nm) to be considered in a cluster" },
         { "-mol",      FALSE, etBOOL, {&bMol},
@@ -488,10 +488,10 @@ int gmx_clustsize(int argc, char *argv[])
           "RGB values for the color of the highest occupied cluster size" }
     };
 #define NPA asize(pa)
-    const char     *fnNDX, *fnTPR;
-    t_rgb           rgblo, rgbhi;
+    const char       *fnNDX, *fnTPR;
+    t_rgb             rgblo, rgbhi;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",  NULL,         ffREAD  },
         { efTPR, NULL,  NULL,         ffOPTRD },
         { efNDX, NULL,  NULL,         ffOPTRD },

@@ -1509,7 +1509,7 @@ static void do_nhb_dist(FILE *fp, t_hbdata *hb, real t)
 }
 
 static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bContact,
-                      const output_env_t oenv)
+                      const gmx_output_env_t *oenv)
 {
     FILE          *fp;
     const char    *leg[] = { "p(t)", "t p(t)" };
@@ -1917,7 +1917,7 @@ static void normalizeACF(real *ct, real *gt, int nhb, int len)
 
 static void do_hbac(const char *fn, t_hbdata *hb,
                     int nDump, gmx_bool bMerge, gmx_bool bContact, real fit_start,
-                    real temp, gmx_bool R2, const output_env_t oenv,
+                    real temp, gmx_bool R2, const gmx_output_env_t *oenv,
                     int nThreads)
 {
     FILE          *fp;
@@ -2187,9 +2187,9 @@ static void init_hbframe(t_hbdata *hb, int nframes, real t)
     }
 }
 
-static FILE *open_donor_properties_file(const char        *fn,
-                                        t_hbdata          *hb,
-                                        const output_env_t oenv)
+static FILE *open_donor_properties_file(const char             *fn,
+                                        t_hbdata               *hb,
+                                        const gmx_output_env_t *oenv)
 {
     FILE       *fp    = NULL;
     const char *leg[] = { "Nbound", "Nfree" };
@@ -2543,7 +2543,7 @@ int gmx_hbond(int argc, char *argv[])
     t_ncell              *icell, *jcell;
     ivec                  ngrid;
     unsigned char        *datable;
-    output_env_t          oenv;
+    gmx_output_env_t     *oenv;
     int                   ii, hh, actual_nThreads;
     int                   threadNr = 0;
     gmx_bool              bParallel;

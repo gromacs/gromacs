@@ -391,7 +391,7 @@ int gmx_genion(int argc, char *argv[])
     char              *grpname;
     gmx_bool          *bSet;
     int                i, nw, nwa, nsa, nsalt, iqtot;
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     gmx_rng_t          rng;
     t_filenm           fnm[] = {
         { efTPR, NULL,  NULL,      ffREAD  },

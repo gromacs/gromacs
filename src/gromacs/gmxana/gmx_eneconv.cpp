@@ -494,7 +494,7 @@ static void update_ee_sum(int nre,
 
 int gmx_eneconv(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[PAR]",
         "Concatenates several energy files in sorted order.",
         "In the case of double time frames, the one",
@@ -511,34 +511,34 @@ int gmx_eneconv(int argc, char *argv[])
         "[TT]-settime[tt] is applied first, then [TT]-dt[tt]/[TT]-offset[tt]",
         "followed by [TT]-b[tt] and [TT]-e[tt] to select which frames to write."
     };
-    const char     *bugs[] = {
+    const char       *bugs[] = {
         "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
     };
-    ener_file_t     in  = NULL, out = NULL;
-    gmx_enxnm_t    *enm = NULL;
+    ener_file_t       in  = NULL, out = NULL;
+    gmx_enxnm_t      *enm = NULL;
 #if 0
-    ener_file_t     in, out = NULL;
-    gmx_enxnm_t    *enm = NULL;
+    ener_file_t       in, out = NULL;
+    gmx_enxnm_t      *enm = NULL;
 #endif
-    t_enxframe     *fr, *fro;
-    gmx_int64_t     ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
-    t_energy       *ee_sum;
-    gmx_int64_t     lastfilestep, laststep, startstep_file = 0;
-    int             noutfr;
-    int             nre, nremax, this_nre, nfile, f, i, kkk, nset, *set = NULL;
-    double          last_t;
-    char          **fnms;
-    real           *readtime, *settime, timestep, tadjust;
-    char            buf[22], buf2[22];
-    int            *cont_type;
-    gmx_bool        bNewFile, bFirst, bNewOutput;
-    output_env_t    oenv;
-    gmx_bool        warned_about_dh = FALSE;
-    t_enxblock     *blocks          = NULL;
-    int             nblocks         = 0;
-    int             nblocks_alloc   = 0;
+    t_enxframe       *fr, *fro;
+    gmx_int64_t       ee_sum_step = 0, ee_sum_nsteps, ee_sum_nsum;
+    t_energy         *ee_sum;
+    gmx_int64_t       lastfilestep, laststep, startstep_file = 0;
+    int               noutfr;
+    int               nre, nremax, this_nre, nfile, f, i, kkk, nset, *set = NULL;
+    double            last_t;
+    char            **fnms;
+    real             *readtime, *settime, timestep, tadjust;
+    char              buf[22], buf2[22];
+    int              *cont_type;
+    gmx_bool          bNewFile, bFirst, bNewOutput;
+    gmx_output_env_t *oenv;
+    gmx_bool          warned_about_dh = FALSE;
+    t_enxblock       *blocks          = NULL;
+    int               nblocks         = 0;
+    int               nblocks_alloc   = 0;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efEDR, "-f", NULL,    ffRDMULT },
         { efEDR, "-o", "fixed", ffWRITE  },
     };

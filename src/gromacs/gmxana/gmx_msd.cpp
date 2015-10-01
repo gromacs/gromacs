@@ -176,7 +176,7 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
                        const char *yaxis,
                        real msdtime, real beginfit, real endfit,
                        real *DD, real *SigmaD, char *grpname[],
-                       const output_env_t oenv)
+                       const gmx_output_env_t *oenv)
 {
     FILE *out;
     int   i, j;
@@ -546,7 +546,7 @@ static real calc1_mol(t_corr *curr, int nx, atom_id gmx_unused index[], int nx0,
 
 void printmol(t_corr *curr, const char *fn,
               const char *fn_pdb, int *molindex, t_topology *top,
-              rvec *x, int ePBC, matrix box, const output_env_t oenv)
+              rvec *x, int ePBC, matrix box, const gmx_output_env_t *oenv)
 {
 #define NDIST 100
     FILE       *out;
@@ -644,7 +644,7 @@ int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
               gmx_bool bMol, int gnx[], atom_id *index[],
               t_calc_func *calc1, gmx_bool bTen, int *gnx_com, atom_id *index_com[],
               real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
-              const output_env_t oenv)
+              const gmx_output_env_t *oenv)
 {
     rvec            *x[2];  /* the coordinates to read */
     rvec            *xa[2]; /* the coordinates to calculate displacements for */
@@ -877,7 +877,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
              int nrgrp, t_topology *top, int ePBC,
              gmx_bool bTen, gmx_bool bMW, gmx_bool bRmCOMM,
              int type, real dim_factor, int axis,
-             real dt, real beginfit, real endfit, const output_env_t oenv)
+             real dt, real beginfit, real endfit, const gmx_output_env_t *oenv)
 {
     t_corr        *msd;
     int           *gnx;   /* the selected groups' sizes */
@@ -1113,15 +1113,15 @@ int gmx_msd(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    t_topology      top;
-    int             ePBC;
-    matrix          box;
-    const char     *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
-    rvec           *xdum;
-    gmx_bool        bTop;
-    int             axis, type;
-    real            dim_factor;
-    output_env_t    oenv;
+    t_topology        top;
+    int               ePBC;
+    matrix            box;
+    const char       *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
+    rvec             *xdum;
+    gmx_bool          bTop;
+    int               axis, type;
+    real              dim_factor;
+    gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT,

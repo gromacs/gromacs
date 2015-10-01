@@ -49,7 +49,6 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/timing/wallcycle.h"
@@ -60,6 +59,7 @@
 struct t_commrec;
 struct gmx_mtop_t;
 struct gmx_membed_t;
+struct gmx_output_env_t;
 
 namespace gmx
 {
@@ -97,7 +97,7 @@ namespace gmx
  */
 typedef double integrator_t (FILE *fplog, struct t_commrec *cr,
                              int nfile, const t_filenm fnm[],
-                             const output_env_t oenv, gmx_bool bVerbose,
+                             const gmx_output_env_t *oenv, gmx_bool bVerbose,
                              gmx_bool bCompact, int nstglobalcomm,
                              gmx_vsite_t *vsite, gmx_constr_t constr,
                              int stepout,

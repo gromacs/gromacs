@@ -86,7 +86,7 @@ static real find_pdb_bfac(t_atoms *atoms, t_resinfo *ri, char *atomnm)
 }
 
 void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
-                     const output_env_t oenv)
+                     const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   i, j;
@@ -187,7 +187,7 @@ void print_dir(FILE *fp, real *Uaver)
 
 int gmx_rmsf(int argc, char *argv[])
 {
-    const char      *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes the root mean square fluctuation (RMSF, i.e. standard ",
         "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
         "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
@@ -212,8 +212,8 @@ int gmx_rmsf(int argc, char *argv[])
         "This shows the directions in which the atoms fluctuate the most and",
         "the least."
     };
-    static gmx_bool  bRes    = FALSE, bAniso = FALSE, bFit = TRUE;
-    t_pargs          pargs[] = {
+    static gmx_bool   bRes    = FALSE, bAniso = FALSE, bFit = TRUE;
+    t_pargs           pargs[] = {
         { "-res", FALSE, etBOOL, {&bRes},
           "Calculate averages for each residue" },
         { "-aniso", FALSE, etBOOL, {&bAniso},
@@ -221,43 +221,43 @@ int gmx_rmsf(int argc, char *argv[])
         { "-fit", FALSE, etBOOL, {&bFit},
           "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
     };
-    int              natom;
-    int              i, m, teller = 0;
-    real             t, *w_rls;
+    int               natom;
+    int               i, m, teller = 0;
+    real              t, *w_rls;
 
-    t_topology       top;
-    int              ePBC;
-    t_atoms         *pdbatoms, *refatoms;
+    t_topology        top;
+    int               ePBC;
+    t_atoms          *pdbatoms, *refatoms;
 
-    matrix           box, pdbbox;
-    rvec            *x, *pdbx, *xref;
-    t_trxstatus     *status;
-    const char      *label;
+    matrix            box, pdbbox;
+    rvec             *x, *pdbx, *xref;
+    t_trxstatus      *status;
+    const char       *label;
 
-    FILE            *fp;          /* the graphics file */
-    const char      *devfn, *dirfn;
-    int              resind;
+    FILE             *fp;         /* the graphics file */
+    const char       *devfn, *dirfn;
+    int               resind;
 
-    gmx_bool         bReadPDB;
-    atom_id         *index;
-    int              isize;
-    char            *grpnames;
+    gmx_bool          bReadPDB;
+    atom_id          *index;
+    int               isize;
+    char             *grpnames;
 
-    real             bfac, pdb_bfac, *Uaver;
-    double         **U, *xav;
-    atom_id          aid;
-    rvec            *rmsd_x = NULL;
-    double          *rmsf, invcount, totmass;
-    int              d;
-    real             count = 0;
-    rvec             xcm;
-    gmx_rmpbc_t      gpbc = NULL;
+    real              bfac, pdb_bfac, *Uaver;
+    double          **U, *xav;
+    atom_id           aid;
+    rvec             *rmsd_x = NULL;
+    double           *rmsf, invcount, totmass;
+    int               d;
+    real              count = 0;
+    rvec              xcm;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    output_env_t     oenv;
+    gmx_output_env_t *oenv;
 
-    const char      *leg[2] = { "MD", "X-Ray" };
+    const char       *leg[2] = { "MD", "X-Ray" };
 
-    t_filenm         fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",  NULL,     ffREAD  },
         { efTPS, NULL,  NULL,     ffREAD  },
         { efNDX, NULL,  NULL,     ffOPTRD },

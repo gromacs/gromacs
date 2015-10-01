@@ -109,20 +109,20 @@ int gmx_genpr(int argc, char *argv[])
     };
 #define npargs asize(pa)
 
-    output_env_t     oenv;
-    t_atoms         *atoms = NULL;
-    int              i, j, k;
-    FILE            *out;
-    int              igrp;
-    real             d, dd, lo, hi;
-    atom_id         *ind_grp;
-    const char      *xfn, *nfn;
-    char            *gn_grp;
-    matrix           box;
-    gmx_bool         bFreeze;
-    rvec             dx, *x = NULL, *v = NULL;
+    gmx_output_env_t *oenv;
+    t_atoms          *atoms = NULL;
+    int               i, j, k;
+    FILE             *out;
+    int               igrp;
+    real              d, dd, lo, hi;
+    atom_id          *ind_grp;
+    const char       *xfn, *nfn;
+    char             *gn_grp;
+    matrix            box;
+    gmx_bool          bFreeze;
+    rvec              dx, *x = NULL, *v = NULL;
 
-    t_filenm         fnm[] = {
+    t_filenm          fnm[] = {
         { efSTX, "-f",  NULL,    ffREAD },
         { efNDX, "-n",  NULL,    ffOPTRD },
         { efITP, "-o",  "posre", ffWRITE },

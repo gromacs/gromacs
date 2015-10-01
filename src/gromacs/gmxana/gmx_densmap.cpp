@@ -146,7 +146,7 @@ int gmx_densmap(int argc, char *argv[])
     real               invspa = 0, invspz = 0, axial, r, vol_old, vol, rowsum;
     int                nlev   = 51;
     t_rgb              rlo    = {1, 1, 1}, rhi = {0, 0, 0};
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     const char        *label[] = { "x (nm)", "y (nm)", "z (nm)" };
     t_filenm           fnm[]   = {
         { efTRX, "-f",   NULL,       ffREAD },

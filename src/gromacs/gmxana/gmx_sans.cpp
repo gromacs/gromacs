@@ -139,7 +139,7 @@ int gmx_sans(int argc, char *argv[])
     t_filenm                             *fnmdup         = NULL;
     gmx_radial_distribution_histogram_t  *prframecurrent = NULL, *pr = NULL;
     gmx_static_structurefactor_t         *sqframecurrent = NULL, *sq = NULL;
-    output_env_t                          oenv;
+    gmx_output_env_t                     *oenv;
 
 #define NFILE asize(fnm)
 

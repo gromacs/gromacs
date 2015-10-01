@@ -78,7 +78,6 @@
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/utilities.h"
@@ -156,7 +155,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
 /*! \libinternal
     \copydoc integrator_t (FILE *fplog, t_commrec *cr,
                            int nfile, const t_filenm fnm[],
-                           const output_env_t oenv, gmx_bool bVerbose,
+                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
                            gmx_bool bCompact, int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
@@ -175,7 +174,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                            gmx_walltime_accounting_t walltime_accounting)
  */
 double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
-                  const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
+                  const gmx_output_env_t *oenv, gmx_bool bVerbose, gmx_bool bCompact,
                   int nstglobalcomm,
                   gmx_vsite_t *vsite, gmx_constr_t constr,
                   int stepout, t_inputrec *ir,

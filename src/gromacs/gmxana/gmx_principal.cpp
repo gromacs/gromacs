@@ -73,7 +73,7 @@ calc_principal_axes(t_topology *   top,
 
 int gmx_principal(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] calculates the three principal axes of inertia for a group",
         "of atoms. NOTE: Old versions of GROMACS wrote the output data in a",
         "strange transposed way. As of GROMACS 5.0, the output file paxis1.dat",
@@ -81,32 +81,32 @@ int gmx_principal(int argc, char *argv[])
         "each frame, and similarly for the middle and minor axes in paxis2.dat",
         "and paxis3.dat."
     };
-    static gmx_bool foo = FALSE;
+    static gmx_bool   foo = FALSE;
 
-    t_pargs         pa[] = {
+    t_pargs           pa[] = {
         { "-foo",      FALSE, etBOOL, {&foo}, "Dummy option to avoid empty array" }
     };
-    t_trxstatus    *status;
-    t_topology      top;
-    int             ePBC;
-    real            t;
-    rvec      *     x;
+    t_trxstatus      *status;
+    t_topology        top;
+    int               ePBC;
+    real              t;
+    rvec        *     x;
 
-    int             natoms;
-    char           *grpname;
-    int             i, gnx;
-    atom_id        *index;
-    rvec            moi;
-    FILE      *     axis1;
-    FILE      *     axis2;
-    FILE      *     axis3;
-    FILE      *     fmoi;
-    matrix          axes, box;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc = NULL;
-    char **         legend;
+    int               natoms;
+    char             *grpname;
+    int               i, gnx;
+    atom_id          *index;
+    rvec              moi;
+    FILE        *     axis1;
+    FILE        *     axis2;
+    FILE        *     axis3;
+    FILE        *     fmoi;
+    matrix            axes, box;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
+    char   **         legend;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },

@@ -190,7 +190,7 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
 
 int gmx_bundle(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] analyzes bundles of axes. The axes can be for instance",
         "helix axes. The program reads two index groups and divides both",
         "of them in [TT]-na[tt] parts. The centers of mass of these parts",
@@ -213,35 +213,35 @@ int gmx_bundle(int argc, char *argv[])
         "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
         "display the reference axis."
     };
-    static int      n    = 0;
-    static gmx_bool bZ   = FALSE;
-    t_pargs         pa[] = {
+    static int        n    = 0;
+    static gmx_bool   bZ   = FALSE;
+    t_pargs           pa[] = {
         { "-na", FALSE, etINT, {&n},
           "Number of axes" },
         { "-z", FALSE, etBOOL, {&bZ},
           "Use the [IT]z[it]-axis as reference instead of the average axis" }
     };
-    FILE           *flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
-    FILE           *fkink = NULL, *fkinkr = NULL, *fkinkl = NULL;
-    t_trxstatus    *status;
-    t_trxstatus    *fpdb;
-    t_topology      top;
-    int             ePBC;
-    rvec           *xtop;
-    matrix          box;
-    t_trxframe      fr;
-    t_atoms         outatoms;
-    real            t, comp;
-    char           *grpname[MAX_ENDS];
+    FILE             *flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
+    FILE             *fkink = NULL, *fkinkr = NULL, *fkinkl = NULL;
+    t_trxstatus      *status;
+    t_trxstatus      *fpdb;
+    t_topology        top;
+    int               ePBC;
+    rvec             *xtop;
+    matrix            box;
+    t_trxframe        fr;
+    t_atoms           outatoms;
+    real              t, comp;
+    char             *grpname[MAX_ENDS];
     /* FIXME: The constness should not be cast away */
-    char           *anm = (char *)"CA", *rnm = (char *)"GLY";
-    int             i, gnx[MAX_ENDS];
-    atom_id        *index[MAX_ENDS];
-    t_bundle        bun;
-    gmx_bool        bKink;
-    rvec            va, vb, vc, vr, vl;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc = NULL;
+    char             *anm = (char *)"CA", *rnm = (char *)"GLY";
+    int               i, gnx[MAX_ENDS];
+    atom_id          *index[MAX_ENDS];
+    t_bundle          bun;
+    gmx_bool          bKink;
+    rvec              va, vb, vc, vr, vl;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
 #define NLEG asize(leg)
     t_filenm fnm[] = {

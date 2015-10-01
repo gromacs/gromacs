@@ -175,7 +175,7 @@ void calc_gyro_z(rvec x[], matrix box,
 
 int gmx_gyrate(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes the radius of gyration of a molecule",
         "and the radii of gyration about the [IT]x[it]-, [IT]y[it]- and [IT]z[it]-axes,",
         "as a function of time. The atoms are explicitly mass weighted.[PAR]",
@@ -188,9 +188,9 @@ int gmx_gyrate(int argc, char *argv[])
         "With the option [TT]-nz[tt] 2D radii of gyration in the [IT]x-y[it] plane",
         "of slices along the [IT]z[it]-axis are calculated."
     };
-    static int      nmol = 1, nz = 0;
-    static gmx_bool bQ   = FALSE, bRot = FALSE, bMOI = FALSE;
-    t_pargs         pa[] = {
+    static int        nmol = 1, nz = 0;
+    static gmx_bool   bQ   = FALSE, bRot = FALSE, bMOI = FALSE;
+    t_pargs           pa[] = {
         { "-nmol", FALSE, etINT, {&nmol},
           "The number of molecules to analyze" },
         { "-q", FALSE, etBOOL, {&bQ},
@@ -202,28 +202,28 @@ int gmx_gyrate(int argc, char *argv[])
         { "-nz", FALSE, etINT, {&nz},
           "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
     };
-    FILE           *out;
-    t_trxstatus    *status;
-    t_topology      top;
-    int             ePBC;
-    rvec           *x, *x_s;
-    rvec            xcm, gvec, gvec1;
-    matrix          box, trans;
-    gmx_bool        bACF;
-    real          **moi_trans = NULL;
-    int             max_moi   = 0, delta_moi = 100;
-    rvec            d, d1; /* eigenvalues of inertia tensor */
-    real            t, t0, tm, gyro;
-    int             natoms;
-    char           *grpname;
-    int             j, m, gnx, nam, mol;
-    atom_id        *index;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc   = NULL;
-    const char     *leg[]  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
-    const char     *legI[] = { "Itot", "I1", "I2", "I3" };
+    FILE             *out;
+    t_trxstatus      *status;
+    t_topology        top;
+    int               ePBC;
+    rvec             *x, *x_s;
+    rvec              xcm, gvec, gvec1;
+    matrix            box, trans;
+    gmx_bool          bACF;
+    real            **moi_trans = NULL;
+    int               max_moi   = 0, delta_moi = 100;
+    rvec              d, d1; /* eigenvalues of inertia tensor */
+    real              t, t0, tm, gyro;
+    int               natoms;
+    char             *grpname;
+    int               j, m, gnx, nam, mol;
+    atom_id          *index;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc   = NULL;
+    const char       *leg[]  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
+    const char       *legI[] = { "Itot", "I1", "I2", "I3" };
 #define NLEG asize(leg)
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },
@@ -231,8 +231,8 @@ int gmx_gyrate(int argc, char *argv[])
         { efXVG, "-acf", "moi-acf",  ffOPTWR },
     };
 #define NFILE asize(fnm)
-    int             npargs;
-    t_pargs        *ppa;
+    int               npargs;
+    t_pargs          *ppa;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);

@@ -137,7 +137,7 @@ static real cosine_content(int nhp, int n, real *y)
 }
 
 static void plot_coscont(const char *ccfile, int n, int nset, real **val,
-                         const output_env_t oenv)
+                         const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   s;
@@ -239,7 +239,7 @@ static void regression_analysis(int n, gmx_bool bXYdy,
 }
 
 void histogram(const char *distfile, real binwidth, int n, int nset, real **val,
-               const output_env_t oenv)
+               const gmx_output_env_t *oenv)
 {
     FILE          *fp;
     int            i, s;
@@ -413,7 +413,7 @@ static real optimal_error_estimate(double sigma, double fitparm[], real tTotal)
 static void estimate_error(const char *eefile, int nb_min, int resol, int n,
                            int nset, double *av, double *sig, real **val, real dt,
                            gmx_bool bFitAc, gmx_bool bSingleExpFit, gmx_bool bAllowNegLTCorr,
-                           const output_env_t oenv)
+                           const gmx_output_env_t *oenv)
 {
     FILE    *fp;
     int      bs, prev_bs, nbs, nb;
@@ -797,7 +797,7 @@ static void filter(real flen, int n, int nset, real **val, real dt)
 
 static void do_fit(FILE *out, int n, gmx_bool bYdy,
                    int ny, real *x0, real **val,
-                   int npargs, t_pargs *ppa, const output_env_t oenv,
+                   int npargs, t_pargs *ppa, const gmx_output_env_t *oenv,
                    const char *fn_fitted)
 {
     real   *c1 = NULL, *sig = NULL;
@@ -900,16 +900,16 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
     }
 }
 
-static void print_fitted_function(const char   *fitfile,
-                                  const char   *fn_fitted,
-                                  gmx_bool      bXYdy,
-                                  int           nset,
-                                  int           n,
-                                  real         *t,
-                                  real        **val,
-                                  int           npargs,
-                                  t_pargs      *ppa,
-                                  output_env_t  oenv)
+static void print_fitted_function(const char       *fitfile,
+                                  const char       *fn_fitted,
+                                  gmx_bool          bXYdy,
+                                  int               nset,
+                                  int               n,
+                                  real             *t,
+                                  real            **val,
+                                  int               npargs,
+                                  t_pargs          *ppa,
+                                  gmx_output_env_t *oenv)
 {
     FILE *out_fit = gmx_ffopen(fitfile, "w");
     if (bXYdy && nset >= 2)
@@ -1103,14 +1103,14 @@ int gmx_analyze(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE           *out;
-    int             n, nlast, s, nset, i, j = 0;
-    real          **val, *t, dt, tot, error;
-    double         *av, *sig, cum1, cum2, cum3, cum4, db;
-    const char     *acfile, *msdfile, *ccfile, *distfile, *avfile, *eefile, *fitfile;
-    output_env_t    oenv;
+    FILE             *out;
+    int               n, nlast, s, nset, i, j = 0;
+    real            **val, *t, dt, tot, error;
+    double           *av, *sig, cum1, cum2, cum3, cum4, db;
+    const char       *acfile, *msdfile, *ccfile, *distfile, *avfile, *eefile, *fitfile;
+    gmx_output_env_t *oenv;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efXVG, "-f",    "graph",    ffREAD   },
         { efXVG, "-ac",   "autocorr", ffOPTWR  },
         { efXVG, "-msd",  "msd",      ffOPTWR  },

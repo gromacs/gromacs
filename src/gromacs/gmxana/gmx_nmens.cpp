@@ -102,7 +102,7 @@ int gmx_nmens(int argc, char *argv[])
     int                 nout, *iout, noutvec, *outvec;
     atom_id            *index;
     real                rfac, rhalf, jr;
-    output_env_t        oenv;
+    gmx_output_env_t   *oenv;
     gmx_rng_t           rng;
     int                 jran;
     const unsigned long im = 0xffff;

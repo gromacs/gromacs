@@ -71,12 +71,12 @@ int gmx_dyecoupl(int argc, char *argv[])
         "The [TT]-norm[tt] option (area-) normalizes the histograms."
     };
 
-    static gmx_bool bPBCdist = FALSE, bNormHist = FALSE;
-    int             histbins = 50;
-    output_env_t    oenv;
-    real            R0 = -1;
+    static gmx_bool   bPBCdist = FALSE, bNormHist = FALSE;
+    int               histbins = 50;
+    gmx_output_env_t *oenv;
+    real              R0 = -1;
 
-    t_pargs         pa[] =
+    t_pargs           pa[] =
     {
         { "-pbcdist", FALSE, etBOOL, { &bPBCdist }, "Distance R based on PBC" },
         { "-norm", FALSE, etBOOL, { &bNormHist }, "Normalize histograms" },

@@ -266,46 +266,46 @@ int gmx_mdrun(int argc, char *argv[])
     const int     NFILE = asize(fnm);
 
     /* Command line options ! */
-    gmx_bool        bDDBondCheck  = TRUE;
-    gmx_bool        bDDBondComm   = TRUE;
-    gmx_bool        bTunePME      = TRUE;
-    gmx_bool        bVerbose      = FALSE;
-    gmx_bool        bCompact      = TRUE;
-    gmx_bool        bRerunVSite   = FALSE;
-    gmx_bool        bConfout      = TRUE;
-    gmx_bool        bReproducible = FALSE;
-    gmx_bool        bIMDwait      = FALSE;
-    gmx_bool        bIMDterm      = FALSE;
-    gmx_bool        bIMDpull      = FALSE;
+    gmx_bool          bDDBondCheck  = TRUE;
+    gmx_bool          bDDBondComm   = TRUE;
+    gmx_bool          bTunePME      = TRUE;
+    gmx_bool          bVerbose      = FALSE;
+    gmx_bool          bCompact      = TRUE;
+    gmx_bool          bRerunVSite   = FALSE;
+    gmx_bool          bConfout      = TRUE;
+    gmx_bool          bReproducible = FALSE;
+    gmx_bool          bIMDwait      = FALSE;
+    gmx_bool          bIMDterm      = FALSE;
+    gmx_bool          bIMDpull      = FALSE;
 
-    int             npme          = -1;
-    int             nstlist       = 0;
-    int             nmultisim     = 0;
-    int             nstglobalcomm = -1;
-    int             repl_ex_nst   = 0;
-    int             repl_ex_seed  = -1;
-    int             repl_ex_nex   = 0;
-    int             nstepout      = 100;
-    int             resetstep     = -1;
-    gmx_int64_t     nsteps        = -2;   /* the value -2 means that the mdp option will be used */
-    int             imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
+    int               npme          = -1;
+    int               nstlist       = 0;
+    int               nmultisim     = 0;
+    int               nstglobalcomm = -1;
+    int               repl_ex_nst   = 0;
+    int               repl_ex_seed  = -1;
+    int               repl_ex_nex   = 0;
+    int               nstepout      = 100;
+    int               resetstep     = -1;
+    gmx_int64_t       nsteps        = -2;   /* the value -2 means that the mdp option will be used */
+    int               imdport       = 8888; /* can be almost anything, 8888 is easy to remember */
 
-    rvec            realddxyz          = {0, 0, 0};
-    const char     *ddno_opt[ddnoNR+1] =
+    rvec              realddxyz          = {0, 0, 0};
+    const char       *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-    const char     *dddlb_opt[] =
+    const char       *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
-    const char     *thread_aff_opt[threadaffNR+1] =
+    const char       *thread_aff_opt[threadaffNR+1] =
     { NULL, "auto", "on", "off", NULL };
-    const char     *nbpu_opt[] =
+    const char       *nbpu_opt[] =
     { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
-    real            rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
-    char           *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
-    real            cpt_period            = 15.0, max_hours = -1;
-    gmx_bool        bTryToAppendFiles     = TRUE;
-    gmx_bool        bKeepAndNumCPT        = FALSE;
-    gmx_bool        bResetCountersHalfWay = FALSE;
-    output_env_t    oenv                  = NULL;
+    real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
+    char             *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
+    real              cpt_period            = 15.0, max_hours = -1;
+    gmx_bool          bTryToAppendFiles     = TRUE;
+    gmx_bool          bKeepAndNumCPT        = FALSE;
+    gmx_bool          bResetCountersHalfWay = FALSE;
+    gmx_output_env_t *oenv                  = NULL;
 
     /* Non transparent initialization of a complex gmx_hw_opt_t struct.
      * But unfortunately we are not allowed to call a function here,

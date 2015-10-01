@@ -62,7 +62,7 @@
 
 int gmx_covar(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] calculates and diagonalizes the (mass-weighted)",
         "covariance matrix.",
         "All structures are fitted to the structure in the structure file.",
@@ -95,9 +95,9 @@ int gmx_covar(int argc, char *argv[])
         "should consider carefully whether a reduced set of atoms will meet",
         "your needs for lower costs."
     };
-    static gmx_bool bFit = TRUE, bRef = FALSE, bM = FALSE, bPBC = TRUE;
-    static int      end  = -1;
-    t_pargs         pa[] = {
+    static gmx_bool   bFit = TRUE, bRef = FALSE, bM = FALSE, bPBC = TRUE;
+    static int        end  = -1;
+    t_pargs           pa[] = {
         { "-fit",  FALSE, etBOOL, {&bFit},
           "Fit to a reference structure"},
         { "-ref",  FALSE, etBOOL, {&bRef},
@@ -109,34 +109,34 @@ int gmx_covar(int argc, char *argv[])
         { "-pbc",  FALSE,  etBOOL, {&bPBC},
           "Apply corrections for periodic boundary conditions" }
     };
-    FILE           *out = NULL; /* initialization makes all compilers happy */
-    t_trxstatus    *status;
-    t_topology      top;
-    int             ePBC;
-    t_atoms        *atoms;
-    rvec           *x, *xread, *xref, *xav, *xproj;
-    matrix          box, zerobox;
-    real           *sqrtm, *mat, *eigenvalues, sum, trace, inv_nframes;
-    real            t, tstart, tend, **mat2;
-    real            xj, *w_rls = NULL;
-    real            min, max, *axis;
-    int             natoms, nat, nframes0, nframes, nlevels;
-    gmx_int64_t     ndim, i, j, k, l;
-    int             WriteXref;
-    const char     *fitfile, *trxfile, *ndxfile;
-    const char     *eigvalfile, *eigvecfile, *averfile, *logfile;
-    const char     *asciifile, *xpmfile, *xpmafile;
-    char            str[STRLEN], *fitname, *ananame;
-    int             d, dj, nfit;
-    atom_id        *index, *ifit;
-    gmx_bool        bDiffMass1, bDiffMass2;
-    char            timebuf[STRLEN];
-    t_rgb           rlo, rmi, rhi;
-    real           *eigenvectors;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc = NULL;
+    FILE             *out = NULL; /* initialization makes all compilers happy */
+    t_trxstatus      *status;
+    t_topology        top;
+    int               ePBC;
+    t_atoms          *atoms;
+    rvec             *x, *xread, *xref, *xav, *xproj;
+    matrix            box, zerobox;
+    real             *sqrtm, *mat, *eigenvalues, sum, trace, inv_nframes;
+    real              t, tstart, tend, **mat2;
+    real              xj, *w_rls = NULL;
+    real              min, max, *axis;
+    int               natoms, nat, nframes0, nframes, nlevels;
+    gmx_int64_t       ndim, i, j, k, l;
+    int               WriteXref;
+    const char       *fitfile, *trxfile, *ndxfile;
+    const char       *eigvalfile, *eigvecfile, *averfile, *logfile;
+    const char       *asciifile, *xpmfile, *xpmafile;
+    char              str[STRLEN], *fitname, *ananame;
+    int               d, dj, nfit;
+    atom_id          *index, *ifit;
+    gmx_bool          bDiffMass1, bDiffMass2;
+    char              timebuf[STRLEN];
+    t_rgb             rlo, rmi, rhi;
+    real             *eigenvectors;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",  NULL, ffREAD },
         { efTPS, NULL,  NULL, ffREAD },
         { efNDX, NULL,  NULL, ffOPTRD },

@@ -101,7 +101,7 @@ static void center_coords(t_atoms *atoms, matrix box, rvec x0[], int axis)
 }
 
 
-static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const output_env_t oenv)
+static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv)
 
 {
 /*
@@ -347,7 +347,7 @@ static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslice
 static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zslices,
                             int tblocks, real binwidth, int method,
                             real dens1, real dens2, t_interf ****intf1,
-                            t_interf ****intf2, const output_env_t oenv)
+                            t_interf ****intf2, const gmx_output_env_t *oenv)
 {
     /*Returns two pointers to 3D arrays of t_interf structs containing (position,thickness) of the interface(s)*/
     FILE         *xvg;
@@ -610,7 +610,7 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
 
 static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks,
                      int xbins, int ybins, char **fnms,
-                     const output_env_t oenv)
+                     const gmx_output_env_t *oenv)
 {
     FILE *raw1, *raw2;
     int   i, j, n;
@@ -665,7 +665,7 @@ int gmx_densorder(int argc, char *argv[])
      * options when running the program, without mentioning them here!
      */
 
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     t_topology        *top;
     char             **grpname;
     int                ePBC, *ngx;

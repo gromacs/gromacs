@@ -164,17 +164,17 @@ int gmx_lie(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE         *out;
-    int           nre, nframes = 0, ct = 0;
-    ener_file_t   fp;
-    t_liedata    *ld;
-    gmx_enxnm_t  *enm = NULL;
-    t_enxframe   *fr;
-    real          lie;
-    double        lieaver = 0, lieav2 = 0;
-    output_env_t  oenv;
+    FILE             *out;
+    int               nre, nframes = 0, ct = 0;
+    ener_file_t       fp;
+    t_liedata        *ld;
+    gmx_enxnm_t      *enm = NULL;
+    t_enxframe       *fr;
+    real              lie;
+    double            lieaver = 0, lieav2 = 0;
+    gmx_output_env_t *oenv;
 
-    t_filenm      fnm[] = {
+    t_filenm          fnm[] = {
         { efEDR, "-f",    "ener",     ffREAD   },
         { efXVG, "-o",    "lie",      ffWRITE  }
     };

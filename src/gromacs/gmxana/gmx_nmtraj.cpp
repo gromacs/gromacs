@@ -120,7 +120,7 @@ int gmx_nmtraj(int argc, char *argv[])
     real             *phases;
     const char       *p;
     char             *pe;
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
 
     t_filenm          fnm[] =
     {

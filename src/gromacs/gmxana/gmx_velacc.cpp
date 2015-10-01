@@ -122,7 +122,7 @@ static void precalc(t_topology top, real normm[])
 }
 
 static void calc_spectrum(int n, real c[], real dt, const char *fn,
-                          output_env_t oenv, gmx_bool bRecip)
+                          gmx_output_env_t *oenv, gmx_bool bRecip)
 {
     FILE     *fp;
     gmx_fft_t fft;
@@ -219,7 +219,7 @@ int gmx_velacc(int argc, char *argv[])
     /* Array for the correlation function */
     real            **c1;
     real             *normm = NULL;
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
 
 #define NHISTO 360
 

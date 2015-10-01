@@ -49,6 +49,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -113,38 +114,38 @@ static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
 
 int gmx_sorient(int argc, char *argv[])
 {
-    t_topology      top;
-    int             ePBC = -1;
-    t_trxstatus    *status;
-    int             natoms;
-    real            t;
-    rvec           *xtop, *x;
-    matrix          box;
+    t_topology        top;
+    int               ePBC = -1;
+    t_trxstatus      *status;
+    int               natoms;
+    real              t;
+    rvec             *xtop, *x;
+    matrix            box;
 
-    FILE           *fp;
-    int             i, p, sa0, sa1, sa2, n, ntot, nf, m, *hist1, *hist2, *histn, nbin1, nbin2, nrbin;
-    real           *histi1, *histi2, invbw, invrbw;
-    double          sum1, sum2;
-    int            *isize, nrefgrp, nrefat;
-    atom_id       **index;
-    char          **grpname;
-    real            inp, outp, nav, normfac, rmin2, rmax2, rcut, rcut2, r2, r;
-    real            c1, c2;
-    char            str[STRLEN];
-    gmx_bool        bTPS;
-    rvec            xref, dx, dxh1, dxh2, outer;
-    gmx_rmpbc_t     gpbc = NULL;
-    t_pbc           pbc;
-    const char     *legr[] = {
+    FILE             *fp;
+    int               i, p, sa0, sa1, sa2, n, ntot, nf, m, *hist1, *hist2, *histn, nbin1, nbin2, nrbin;
+    real             *histi1, *histi2, invbw, invrbw;
+    double            sum1, sum2;
+    int              *isize, nrefgrp, nrefat;
+    atom_id         **index;
+    char            **grpname;
+    real              inp, outp, nav, normfac, rmin2, rmax2, rcut, rcut2, r2, r;
+    real              c1, c2;
+    char              str[STRLEN];
+    gmx_bool          bTPS;
+    rvec              xref, dx, dxh1, dxh2, outer;
+    gmx_rmpbc_t       gpbc = NULL;
+    t_pbc             pbc;
+    const char       *legr[] = {
         "<cos(\\8q\\4\\s1\\N)>",
         "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>"
     };
-    const char     *legc[] = {
+    const char       *legc[] = {
         "cos(\\8q\\4\\s1\\N)",
         "3cos\\S2\\N(\\8q\\4\\s2\\N)-1"
     };
 
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] analyzes solvent orientation around solutes.",
         "It calculates two angles between the vector from one or more",
         "reference positions to the first atom of each solvent molecule:",
@@ -169,10 +170,10 @@ int gmx_sorient(int argc, char *argv[])
         "[TT]-rc[tt]: the distribution of the solvent molecules as a function of r"
     };
 
-    output_env_t    oenv;
-    static gmx_bool bCom = FALSE, bVec23 = FALSE, bPBC = FALSE;
-    static real     rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
-    t_pargs         pa[] = {
+    gmx_output_env_t *oenv;
+    static gmx_bool   bCom = FALSE, bVec23 = FALSE, bPBC = FALSE;
+    static real       rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
+    t_pargs           pa[] = {
         { "-com",  FALSE, etBOOL,  {&bCom},
           "Use the center of mass as the reference postion" },
         { "-v23",  FALSE, etBOOL,  {&bVec23},
@@ -184,7 +185,7 @@ int gmx_sorient(int argc, char *argv[])
         { "-pbc",   FALSE, etBOOL, {&bPBC}, "Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules." }
     };
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, NULL,  NULL,  ffREAD },
         { efTPS, NULL,  NULL,  ffREAD },
         { efNDX, NULL,  NULL,  ffOPTRD },

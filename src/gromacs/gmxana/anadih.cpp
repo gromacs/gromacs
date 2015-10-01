@@ -55,7 +55,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void print_one(const output_env_t oenv, const char *base, const char *name,
+void print_one(const gmx_output_env_t *oenv, const char *base, const char *name,
                const char *title, const char *ylabel, int nf, real time[],
                real data[])
 {
@@ -132,7 +132,7 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
 void ana_dih_trans(const char *fn_trans, const char *fn_histo,
                    real **dih, int nframes, int nangles,
                    const char *grpname, real *time, gmx_bool bRb,
-                   const output_env_t oenv)
+                   const gmx_output_env_t *oenv)
 {
     /* just a wrapper; declare extra args, then chuck away at end. */
     int      maxchi = 0;
@@ -161,7 +161,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
                        real **dih, int nlist, t_dlist dlist[], int nframes,
                        int nangles, const char *grpname, int multiplicity[],
                        real *time, gmx_bool bRb, real core_frac,
-                       const output_env_t oenv)
+                       const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int  *tr_f, *tr_h;
@@ -450,7 +450,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
                            int maxchi, t_dlist dlist[], real time[],
                            int **lookup, int *multiplicity, gmx_bool bRb, gmx_bool bNormalize,
                            real core_frac, gmx_bool bAll, const char *fnall,
-                           const output_env_t oenv)
+                           const gmx_output_env_t *oenv)
 {
 
     gmx_bool bRotZero, bHaveChi = FALSE;
@@ -814,7 +814,7 @@ void read_ang_dih(const char *trj_fn,
                   real **trans_frac,
                   real **aver_angle,
                   real *dih[],
-                  const output_env_t oenv)
+                  const gmx_output_env_t *oenv)
 {
     struct t_pbc *pbc;
     t_trxstatus  *status;

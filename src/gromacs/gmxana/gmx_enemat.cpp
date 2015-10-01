@@ -148,32 +148,32 @@ int gmx_enemat(int argc, char *argv[])
        egTotal (total energy) */
 #define egTotal egNR
 #define egSP 1
-    gmx_bool       egrp_use[egNR+egSP];
-    ener_file_t    in;
-    FILE          *out;
-    int            timecheck = 0;
-    gmx_enxnm_t   *enm       = NULL;
-    t_enxframe    *fr;
-    int            teller = 0;
-    real           sum;
-    gmx_bool       bCont, bRef;
-    gmx_bool       bCutmax, bCutmin;
-    real         **eneset, *time = NULL;
-    int           *set, i, j, k, prevk, m = 0, n, nre, nset, nenergy;
-    char         **groups = NULL;
-    char           groupname[255], fn[255];
-    int            ngroups;
-    t_rgb          rlo, rhi, rmid;
-    real           emax, emid, emin;
-    real        ***emat, **etot, *groupnr;
-    double         beta, expE, **e, *eaver, *efree = NULL, edum;
-    char           label[234];
-    char         **ereflines, **erefres = NULL;
-    real          *eref  = NULL, *edif = NULL;
-    int            neref = 0;
-    output_env_t   oenv;
+    gmx_bool          egrp_use[egNR+egSP];
+    ener_file_t       in;
+    FILE             *out;
+    int               timecheck = 0;
+    gmx_enxnm_t      *enm       = NULL;
+    t_enxframe       *fr;
+    int               teller = 0;
+    real              sum;
+    gmx_bool          bCont, bRef;
+    gmx_bool          bCutmax, bCutmin;
+    real            **eneset, *time = NULL;
+    int              *set, i, j, k, prevk, m = 0, n, nre, nset, nenergy;
+    char            **groups = NULL;
+    char              groupname[255], fn[255];
+    int               ngroups;
+    t_rgb             rlo, rhi, rmid;
+    real              emax, emid, emin;
+    real           ***emat, **etot, *groupnr;
+    double            beta, expE, **e, *eaver, *efree = NULL, edum;
+    char              label[234];
+    char            **ereflines, **erefres = NULL;
+    real             *eref  = NULL, *edif = NULL;
+    int               neref = 0;
+    gmx_output_env_t *oenv;
 
-    t_filenm       fnm[] = {
+    t_filenm          fnm[] = {
         { efEDR, "-f", NULL, ffOPTRD },
         { efDAT, "-groups", "groups", ffREAD },
         { efDAT, "-eref",   "eref",   ffOPTRD },

@@ -39,8 +39,10 @@
 #define GMX_GMXANA_NRAMA_H
 
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/oenv.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_output_env_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,22 +62,22 @@ typedef struct {
 } t_dih;
 
 typedef struct {
-    int          ndih;
-    t_dih       *dih;
-    int          npp;
-    t_phipsi    *pp;
-    t_trxstatus *traj;
-    int          natoms;
-    int          amin, amax;
-    real         t;
-    rvec        *x;
-    matrix       box;
-    t_idef      *idef;
-    int          ePBC;
-    output_env_t oenv;
+    int               ndih;
+    t_dih            *dih;
+    int               npp;
+    t_phipsi         *pp;
+    t_trxstatus      *traj;
+    int               natoms;
+    int               amin, amax;
+    real              t;
+    rvec             *x;
+    matrix            box;
+    t_idef           *idef;
+    int               ePBC;
+    gmx_output_env_t *oenv;
 } t_xrama;
 
-t_topology *init_rama(const output_env_t oenv, const char *infile,
+t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
                       const char *topfile, t_xrama *xr, int mult);
 
 gmx_bool new_data(t_xrama *xr);

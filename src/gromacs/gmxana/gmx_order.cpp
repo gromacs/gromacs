@@ -254,7 +254,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
                                   const char *skfn,
                                   int nslice, int slice_dim,
                                   const char *sgslfn, const char *skslfn,
-                                  const output_env_t oenv)
+                                  const gmx_output_env_t *oenv)
 {
     FILE        *fpsg = NULL, *fpsk = NULL;
     t_topology   top;
@@ -375,7 +375,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                 gmx_bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis,
                 gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
                 real ***distvals,
-                const output_env_t oenv)
+                const gmx_output_env_t *oenv)
 {
     /* if permolecule = TRUE, order parameters will be calculed per molecule
      * and stored in slOrder with #slices = # molecules */
@@ -754,7 +754,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 
 void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bfile,
                 const char *cfile, int ngrps, int nslices, real slWidth, gmx_bool bSzonly,
-                gmx_bool permolecule, real **distvals, const output_env_t oenv)
+                gmx_bool permolecule, real **distvals, const gmx_output_env_t *oenv)
 {
     FILE       *ord, *slOrd;      /* xvgr files with order parameters  */
     int         atom, slice;      /* atom corresponding to order para.*/
@@ -833,7 +833,7 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
     xvgrclose(slOrd);
 }
 
-void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, output_env_t oenv)
+void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, gmx_output_env_t *oenv)
 {
     /*function to write order parameters as B factors in PDB file using
           first frame of trajectory*/
@@ -947,12 +947,12 @@ int gmx_order(int argc, char *argv[])
     int                ngrps,                         /* nr. of groups              */
                        i,
                        axis = 0;                      /* normal axis                */
-    t_topology   *top;                                /* topology         */
-    int           ePBC;
-    atom_id      *index,                              /* indices for a              */
+    t_topology       *top;                            /* topology         */
+    int               ePBC;
+    atom_id          *index,                          /* indices for a              */
     *a;                                               /* atom numbers in each group */
-    t_blocka     *block;                              /* data from index file       */
-    t_filenm      fnm[] = {                           /* files for g_order    */
+    t_blocka         *block;                          /* data from index file       */
+    t_filenm          fnm[] = {                       /* files for g_order    */
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
         { efNDX, "-nr", NULL,  ffREAD },              /* index for radial axis calculation	  */
@@ -966,11 +966,11 @@ int gmx_order(int argc, char *argv[])
         { efXVG, "-Sgsl", "sg-ang-slice", ffOPTWR },  /* xvgr output file           */
         { efXVG, "-Sksl", "sk-dist-slice", ffOPTWR }, /* xvgr output file           */
     };
-    gmx_bool      bSliced = FALSE;                    /* True if box is sliced      */
+    gmx_bool          bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
-    real        **distvals = NULL;
-    const char   *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
-    output_env_t  oenv;
+    real            **distvals = NULL;
+    const char       *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
+    gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))

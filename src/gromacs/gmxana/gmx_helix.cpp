@@ -120,7 +120,7 @@ int gmx_helix(int argc, char *argv[])
         real        val;
     } t_xvgrfile;
 
-    t_xvgrfile     xf[efhNR] = {
+    t_xvgrfile        xf[efhNR] = {
         { NULL, NULL, TRUE,  "radius",  "Helix radius",               NULL, "r (nm)", 0.0 },
         { NULL, NULL, TRUE,  "twist",   "Twist per residue",          NULL, "Angle (deg)", 0.0 },
         { NULL, NULL, TRUE,  "rise",    "Rise per residue",           NULL, "Rise (nm)", 0.0 },
@@ -140,22 +140,22 @@ int gmx_helix(int argc, char *argv[])
         { NULL, NULL, FALSE,  "helicity", "Helicity per Residue",     "Residue", "% of time", 0.0 }
     };
 
-    output_env_t   oenv;
-    char           buf[54];
-    t_trxstatus   *status;
-    int            natoms, nres;
-    t_bb          *bb;
-    int            i, j, nall, nbb, nca, teller;
-    atom_id       *bbindex, *caindex, *allindex;
-    t_topology    *top;
-    int            ePBC;
-    rvec          *x, *xref;
-    real           t;
-    real           rms;
-    matrix         box;
-    gmx_rmpbc_t    gpbc = NULL;
-    gmx_bool       bRange;
-    t_filenm       fnm[] = {
+    gmx_output_env_t *oenv;
+    char              buf[54];
+    t_trxstatus      *status;
+    int               natoms, nres;
+    t_bb             *bb;
+    int               i, j, nall, nbb, nca, teller;
+    atom_id          *bbindex, *caindex, *allindex;
+    t_topology       *top;
+    int               ePBC;
+    rvec             *x, *xref;
+    real              t;
+    real              rms;
+    matrix            box;
+    gmx_rmpbc_t       gpbc = NULL;
+    gmx_bool          bRange;
+    t_filenm          fnm[] = {
         { efTPR, NULL,  NULL,   ffREAD  },
         { efNDX, NULL,  NULL,   ffREAD  },
         { efTRX, "-f",  NULL,   ffREAD  },

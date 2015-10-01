@@ -267,7 +267,7 @@ int gmx_mk_angndx(int argc, char *argv[])
           "Ignore angles with atoms with mass < 1.5 and magnitude of their charge less than this value" }
     };
 
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     FILE              *out;
     t_topology        *top;
     int                i, j, ntype;

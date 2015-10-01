@@ -522,19 +522,19 @@ int gmx_confrms(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* the two structure files */
-    const char  *conf1file, *conf2file, *matchndxfile, *outfile;
-    FILE        *fp;
-    char        *name1, *name2;
-    t_topology  *top1, *top2;
-    int          ePBC1, ePBC2;
-    t_atoms     *atoms1, *atoms2;
-    int          warn = 0;
-    atom_id      at;
-    real        *w_rls, mass, totmass;
-    rvec        *x1, *v1, *x2, *v2, *fit_x;
-    matrix       box1, box2;
+    const char       *conf1file, *conf2file, *matchndxfile, *outfile;
+    FILE             *fp;
+    char             *name1, *name2;
+    t_topology       *top1, *top2;
+    int               ePBC1, ePBC2;
+    t_atoms          *atoms1, *atoms2;
+    int               warn = 0;
+    atom_id           at;
+    real             *w_rls, mass, totmass;
+    rvec             *x1, *v1, *x2, *v2, *fit_x;
+    matrix            box1, box2;
 
-    output_env_t oenv;
+    gmx_output_env_t *oenv;
 
     /* counters */
     int     i, m;

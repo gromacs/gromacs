@@ -696,26 +696,26 @@ int gmx_editconf(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE          *out;
-    const char    *infile, *outfile;
-    int            outftp, inftp, natom, i, j, n_bfac, itype, ntype;
-    double        *bfac    = NULL, c6, c12;
-    int           *bfac_nr = NULL;
-    t_topology    *top     = NULL;
-    char          *grpname, *sgrpname, *agrpname;
-    int            isize, ssize, asize;
-    atom_id       *index, *sindex, *aindex;
-    rvec          *x, *v, gc, rmin, rmax, size;
-    int            ePBC;
-    matrix         box, rotmatrix, trans;
-    rvec           princd, tmpvec;
-    gmx_bool       bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
-    gmx_bool       bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
-    real           diam = 0, mass = 0, d, vdw;
-    gmx_atomprop_t aps;
-    gmx_conect     conect;
-    output_env_t   oenv;
-    t_filenm       fnm[] =
+    FILE             *out;
+    const char       *infile, *outfile;
+    int               outftp, inftp, natom, i, j, n_bfac, itype, ntype;
+    double           *bfac    = NULL, c6, c12;
+    int              *bfac_nr = NULL;
+    t_topology       *top     = NULL;
+    char             *grpname, *sgrpname, *agrpname;
+    int               isize, ssize, asize;
+    atom_id          *index, *sindex, *aindex;
+    rvec             *x, *v, gc, rmin, rmax, size;
+    int               ePBC;
+    matrix            box, rotmatrix, trans;
+    rvec              princd, tmpvec;
+    gmx_bool          bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
+    gmx_bool          bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
+    real              diam = 0, mass = 0, d, vdw;
+    gmx_atomprop_t    aps;
+    gmx_conect        conect;
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] =
     {
         { efSTX, "-f", NULL, ffREAD },
         { efNDX, "-n", NULL, ffOPTRD },

@@ -67,7 +67,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
                   real **slOrder, real *slWidth, int *nslices,
                   t_topology *top, int ePBC,
                   int axis, gmx_bool bMicel, atom_id micel[], int nmic,
-                  const output_env_t oenv)
+                  const gmx_output_env_t *oenv)
 {
     rvec *x0,            /* coordinates with pbc */
           dipole,        /* dipole moment due to one molecules */
@@ -233,7 +233,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 }
 
 void h2order_plot(rvec dipole[], real order[], const char *afile,
-                  int nslices, real slWidth, const output_env_t oenv)
+                  int nslices, real slWidth, const gmx_output_env_t *oenv)
 {
     FILE       *ord;              /* xvgr files with order parameters  */
     int         slice;            /* loop index     */
@@ -286,7 +286,7 @@ int gmx_h2order(int argc, char *argv[])
         "assigning molecules to slices is different."
     };
 
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     real              *slOrder,             /* av. cosine, per slice      */
                        slWidth = 0.0;       /* width of a slice           */
     rvec              *slDipole;

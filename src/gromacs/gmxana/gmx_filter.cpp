@@ -54,7 +54,7 @@
 
 int gmx_filter(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] performs frequency filtering on a trajectory.",
         "The filter shape is cos([GRK]pi[grk] t/A) + 1 from -A to +A, where A is given",
         "by the option [TT]-nf[tt] times the time step in the input trajectory.",
@@ -78,9 +78,9 @@ int gmx_filter(int argc, char *argv[])
         "the coordinates in the structure file."
     };
 
-    static int      nf      = 10;
-    static gmx_bool bNoJump = TRUE, bFit = FALSE, bLowAll = FALSE;
-    t_pargs         pa[]    = {
+    static int        nf      = 10;
+    static gmx_bool   bNoJump = TRUE, bFit = FALSE, bLowAll = FALSE;
+    t_pargs           pa[]    = {
         { "-nf", FALSE, etINT, {&nf},
           "Sets the filter length as well as the output interval for low-pass filtering" },
         { "-all", FALSE, etBOOL, {&bLowAll},
@@ -90,24 +90,24 @@ int gmx_filter(int argc, char *argv[])
         { "-fit", FALSE, etBOOL, {&bFit},
           "Fit all frames to a reference structure" }
     };
-    const char     *topfile, *lowfile, *highfile;
-    gmx_bool        bTop = FALSE;
-    t_topology      top;
-    int             ePBC = -1;
-    rvec           *xtop;
-    matrix          topbox, *box, boxf;
-    char           *grpname;
-    int             isize;
-    atom_id        *index;
-    real           *w_rls = NULL;
-    t_trxstatus    *in;
-    t_trxstatus    *outl, *outh;
-    int             nffr, i, fr, nat, j, d, m;
-    atom_id        *ind;
-    real            flen, *filt, sum, *t;
-    rvec            xcmtop, xcm, **x, *ptr, *xf, *xn, *xp, hbox;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc = NULL;
+    const char       *topfile, *lowfile, *highfile;
+    gmx_bool          bTop = FALSE;
+    t_topology        top;
+    int               ePBC = -1;
+    rvec             *xtop;
+    matrix            topbox, *box, boxf;
+    char             *grpname;
+    int               isize;
+    atom_id          *index;
+    real             *w_rls = NULL;
+    t_trxstatus      *in;
+    t_trxstatus      *outl, *outh;
+    int               nffr, i, fr, nat, j, d, m;
+    atom_id          *ind;
+    real              flen, *filt, sum, *t;
+    rvec              xcmtop, xcm, **x, *ptr, *xf, *xn, *xp, hbox;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
 #define NLEG asize(leg)
     t_filenm fnm[] = {

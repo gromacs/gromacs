@@ -905,7 +905,7 @@ int gmx_trjconv(int argc, char *argv[])
     char             *outf_base = NULL;
     const char       *outf_ext  = NULL;
     char              top_title[256], title[256], filemode[5];
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
         { efTRX, "-f",   NULL,      ffREAD  },

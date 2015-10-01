@@ -333,7 +333,7 @@ static void print_cmap(const char *cmap, t_gkrbin *gb, int *nlevels)
 
 static void print_gkrbin(const char *fn, t_gkrbin *gb,
                          int ngrp, int nframes, real volume,
-                         const output_env_t oenv)
+                         const gmx_output_env_t *oenv)
 {
     /* We compute Gk(r), gOO and hOO according to
      * Nymand & Linse, JCP 112 (2000) pp 6386-6395.
@@ -660,7 +660,7 @@ static void update_slab_dipoles(int k0, int k1, rvec x[], rvec mu,
 
 static void dump_slab_dipoles(const char *fn, int idim, int nslice,
                               rvec slab_dipole[], matrix box, int nframes,
-                              const output_env_t oenv)
+                              const gmx_output_env_t *oenv)
 {
     FILE       *fp;
     char        buf[STRLEN];
@@ -740,7 +740,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                    int  *gkatom,  int skip,
                    gmx_bool bSlab,    int nslices,
                    const char *axtitle, const char *slabfn,
-                   const output_env_t oenv)
+                   const gmx_output_env_t *oenv)
 {
     const char *leg_mtot[] = {
         "M\\sx \\N",
@@ -1500,7 +1500,7 @@ void dipole_atom2molindex(int *n, int *index, t_block *mols)
 }
 int gmx_dipoles(int argc, char *argv[])
 {
-    const char    *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes the total dipole plus fluctuations of a simulation",
         "system. From this you can compute e.g. the dielectric constant for",
         "low-dielectric media.",
@@ -1537,16 +1537,16 @@ int gmx_dipoles(int argc, char *argv[])
         "an average dipole moment of the molecule of 2.273 (SPC). For the",
         "distribution function a maximum of 5.0 will be used."
     };
-    real           mu_max     = 5, mu_aver = -1, rcmax = 0;
-    real           epsilonRF  = 0.0, temp = 300;
-    gmx_bool       bPairs     = TRUE, bPhi = FALSE, bQuad = FALSE;
-    const char    *corrtype[] = {NULL, "none", "mol", "molsep", "total", NULL};
-    const char    *axtitle    = "Z";
-    int            nslices    = 10; /* nr of slices defined       */
-    int            skip       = 0, nFA = 0, nFB = 0, ncos = 1;
-    int            nlevels    = 20, ndegrees = 90;
-    output_env_t   oenv;
-    t_pargs        pa[] = {
+    real              mu_max     = 5, mu_aver = -1, rcmax = 0;
+    real              epsilonRF  = 0.0, temp = 300;
+    gmx_bool          bPairs     = TRUE, bPhi = FALSE, bQuad = FALSE;
+    const char       *corrtype[] = {NULL, "none", "mol", "molsep", "total", NULL};
+    const char       *axtitle    = "Z";
+    int               nslices    = 10; /* nr of slices defined       */
+    int               skip       = 0, nFA = 0, nFB = 0, ncos = 1;
+    int               nlevels    = 20, ndegrees = 90;
+    gmx_output_env_t *oenv;
+    t_pargs           pa[] = {
         { "-mu",       FALSE, etREAL, {&mu_aver},
           "dipole of a single molecule (in Debye)" },
         { "-mumax",    FALSE, etREAL, {&mu_max},
@@ -1582,12 +1582,12 @@ int gmx_dipoles(int argc, char *argv[])
         { "-ndegrees", FALSE, etINT, {&ndegrees},
           "Number of divisions on the [IT]y[it]-axis in the cmap output (for 180 degrees)" }
     };
-    int           *gnx;
-    int            nFF[2];
-    atom_id      **grpindex;
-    char         **grpname = NULL;
-    gmx_bool       bGkr, bMU, bSlab;
-    t_filenm       fnm[] = {
+    int              *gnx;
+    int               nFF[2];
+    atom_id         **grpindex;
+    char            **grpname = NULL;
+    gmx_bool          bGkr, bMU, bSlab;
+    t_filenm          fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
         { efTPR, NULL, NULL,           ffREAD },
@@ -1605,12 +1605,12 @@ int gmx_dipoles(int argc, char *argv[])
         { efXVG, "-slab", "slab",       ffOPTWR }
     };
 #define NFILE asize(fnm)
-    int            npargs;
-    t_pargs       *ppa;
-    t_topology    *top;
-    int            ePBC;
-    int            k, natoms;
-    matrix         box;
+    int               npargs;
+    t_pargs          *ppa;
+    t_topology       *top;
+    int               ePBC;
+    int               k, natoms;
+    matrix            box;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);

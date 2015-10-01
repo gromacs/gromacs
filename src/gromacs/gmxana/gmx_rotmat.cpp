@@ -54,7 +54,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static void get_refx(output_env_t oenv, const char *trxfn, int nfitdim, int skip,
+static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int skip,
                      int gnx, int *index,
                      gmx_bool bMW, t_topology *top, int ePBC, rvec *x_ref)
 {
@@ -175,7 +175,7 @@ static void get_refx(output_env_t oenv, const char *trxfn, int nfitdim, int skip
 
 int gmx_rotmat(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] plots the rotation matrix required for least squares fitting",
         "a conformation onto the reference conformation provided with",
         "[TT]-s[tt]. Translation is removed before fitting.",
@@ -201,11 +201,11 @@ int gmx_rotmat(int argc, char *argv[])
         "Option [TT]-fitxy[tt] fits in the [IT]x-y[it] plane before determining",
         "the rotation matrix."
     };
-    const char     *reffit[] =
+    const char       *reffit[] =
     { NULL, "none", "xyz", "xy", NULL };
-    static int      skip   = 1;
-    static gmx_bool bFitXY = FALSE, bMW = TRUE;
-    t_pargs         pa[]   = {
+    static int        skip   = 1;
+    static gmx_bool   bFitXY = FALSE, bMW = TRUE;
+    t_pargs           pa[]   = {
         { "-ref", FALSE, etENUM, {reffit},
           "Determine the optimal reference structure" },
         { "-skip", FALSE, etINT, {&skip},
@@ -215,23 +215,23 @@ int gmx_rotmat(int argc, char *argv[])
         { "-mw", FALSE, etBOOL, {&bMW},
           "Use mass weighted fitting" }
     };
-    FILE           *out;
-    t_trxstatus    *status;
-    t_topology      top;
-    int             ePBC;
-    rvec           *x_ref, *x;
-    matrix          box, R;
-    real            t;
-    int             natoms, i;
-    char           *grpname;
-    int             gnx;
-    gmx_rmpbc_t     gpbc = NULL;
-    atom_id        *index;
-    output_env_t    oenv;
-    real           *w_rls;
-    const char     *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
+    FILE             *out;
+    t_trxstatus      *status;
+    t_topology        top;
+    int               ePBC;
+    rvec             *x_ref, *x;
+    matrix            box, R;
+    real              t;
+    int               natoms, i;
+    char             *grpname;
+    int               gnx;
+    gmx_rmpbc_t       gpbc = NULL;
+    atom_id          *index;
+    gmx_output_env_t *oenv;
+    real             *w_rls;
+    const char       *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
 #define NLEG asize(leg)
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },

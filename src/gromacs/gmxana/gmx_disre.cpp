@@ -656,7 +656,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
 
 int gmx_disre(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes violations of distance restraints.",
         "The program always",
         "computes the instantaneous violations rather than time-averaged,",
@@ -673,11 +673,11 @@ int gmx_disre(int argc, char *argv[])
         "the program will compute average violations using the third power",
         "averaging algorithm and print them in the log file."
     };
-    static int      ntop      = 0;
-    static int      nlevels   = 20;
-    static real     max_dr    = 0;
-    static gmx_bool bThird    = TRUE;
-    t_pargs         pa[]      = {
+    static int        ntop      = 0;
+    static int        nlevels   = 20;
+    static real       max_dr    = 0;
+    static gmx_bool   bThird    = TRUE;
+    t_pargs           pa[]      = {
         { "-ntop", FALSE, etINT,  {&ntop},
           "Number of large violations that are stored in the log file every step" },
         { "-maxdr", FALSE, etREAL, {&max_dr},
@@ -688,37 +688,37 @@ int gmx_disre(int argc, char *argv[])
           "Use inverse third power averaging or linear for matrix output" }
     };
 
-    FILE           *out = NULL, *aver = NULL, *numv = NULL, *maxxv = NULL, *xvg = NULL;
-    t_tpxheader     header;
-    t_inputrec      ir;
-    gmx_mtop_t      mtop;
-    rvec           *xtop;
-    gmx_localtop_t *top;
-    t_atoms        *atoms = NULL;
-    t_fcdata        fcd;
-    t_nrnb          nrnb;
-    t_graph        *g;
-    int             ntopatoms, natoms, i, j, kkk;
-    t_trxstatus    *status;
-    real            t;
-    rvec           *x, *f, *xav = NULL;
-    matrix          box;
-    gmx_bool        bPDB;
-    int             isize;
-    atom_id        *index = NULL, *ind_fit = NULL;
-    char           *grpname;
-    t_cluster_ndx  *clust = NULL;
-    t_dr_result     dr, *dr_clust = NULL;
-    char          **leg;
-    real           *vvindex = NULL, *w_rls = NULL;
-    t_mdatoms      *mdatoms;
-    t_pbc           pbc, *pbc_null;
-    int             my_clust;
-    FILE           *fplog;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc = NULL;
+    FILE             *out = NULL, *aver = NULL, *numv = NULL, *maxxv = NULL, *xvg = NULL;
+    t_tpxheader       header;
+    t_inputrec        ir;
+    gmx_mtop_t        mtop;
+    rvec             *xtop;
+    gmx_localtop_t   *top;
+    t_atoms          *atoms = NULL;
+    t_fcdata          fcd;
+    t_nrnb            nrnb;
+    t_graph          *g;
+    int               ntopatoms, natoms, i, j, kkk;
+    t_trxstatus      *status;
+    real              t;
+    rvec             *x, *f, *xav = NULL;
+    matrix            box;
+    gmx_bool          bPDB;
+    int               isize;
+    atom_id          *index = NULL, *ind_fit = NULL;
+    char             *grpname;
+    t_cluster_ndx    *clust = NULL;
+    t_dr_result       dr, *dr_clust = NULL;
+    char            **leg;
+    real             *vvindex = NULL, *w_rls = NULL;
+    t_mdatoms        *mdatoms;
+    t_pbc             pbc, *pbc_null;
+    int               my_clust;
+    FILE             *fplog;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTPR, NULL, NULL, ffREAD },
         { efTRX, "-f", NULL, ffREAD },
         { efXVG, "-ds", "drsum",  ffWRITE },

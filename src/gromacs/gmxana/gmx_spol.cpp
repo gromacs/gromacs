@@ -50,6 +50,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -168,7 +169,7 @@ int gmx_spol(int argc, char *argv[])
     gmx_rmpbc_t  gpbc = NULL;
 
 
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] analyzes dipoles around a solute; it is especially useful",
         "for polarizable water. A group of reference atoms, or a center",
         "of mass reference (option [TT]-com[tt]) and a group of solvent",
@@ -189,11 +190,11 @@ int gmx_spol(int argc, char *argv[])
         "to the midpoint between the second and the third atom."
     };
 
-    output_env_t    oenv;
-    static gmx_bool bCom   = FALSE;
-    static int      srefat = 1;
-    static real     rmin   = 0.0, rmax = 0.32, refdip = 0, bw = 0.01;
-    t_pargs         pa[]   = {
+    gmx_output_env_t *oenv;
+    static gmx_bool   bCom   = FALSE;
+    static int        srefat = 1;
+    static real       rmin   = 0.0, rmax = 0.32, refdip = 0, bw = 0.01;
+    t_pargs           pa[]   = {
         { "-com",  FALSE, etBOOL,  {&bCom},
           "Use the center of mass as the reference postion" },
         { "-refat",  FALSE, etINT, {&srefat},
@@ -204,7 +205,7 @@ int gmx_spol(int argc, char *argv[])
         { "-bw",    FALSE, etREAL, {&bw}, "The bin width" }
     };
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, NULL,  NULL,  ffREAD },
         { efTPR, NULL,  NULL,  ffREAD },
         { efNDX, NULL,  NULL,  ffOPTRD },

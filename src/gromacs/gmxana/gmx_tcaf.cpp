@@ -78,7 +78,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
                          real rho, real wt, const char *fn_trans,
                          const char *fn_tca, const char *fn_tc,
                          const char *fn_tcf, const char *fn_cub,
-                         const char *fn_vk, const output_env_t oenv)
+                         const char *fn_vk, const gmx_output_env_t *oenv)
 {
     FILE  *fp, *fp_vk, *fp_cub = NULL;
     int    nk, ntc;
@@ -259,7 +259,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 
 int gmx_tcaf(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes tranverse current autocorrelations.",
         "These are used to estimate the shear viscosity, [GRK]eta[grk].",
         "For details see: Palmer, Phys. Rev. E 49 (1994) pp 359-366.[PAR]",
@@ -293,9 +293,9 @@ int gmx_tcaf(int argc, char *argv[])
         "is very important for obtaining a good fit."
     };
 
-    static gmx_bool bMol = FALSE, bK34 = FALSE;
-    static real     wt   = 5;
-    t_pargs         pa[] = {
+    static gmx_bool   bMol = FALSE, bK34 = FALSE;
+    static real       wt   = 5;
+    t_pargs           pa[] = {
         { "-mol", FALSE, etBOOL, {&bMol},
           "Calculate TCAF of molecules" },
         { "-k34", FALSE, etBOOL, {&bK34},
@@ -304,22 +304,22 @@ int gmx_tcaf(int argc, char *argv[])
           "Exponential decay time for the TCAF fit weights" }
     };
 
-    t_topology      top;
-    int             ePBC;
-    t_trxframe      fr;
-    matrix          box;
-    gmx_bool        bTop;
-    int             gnx;
-    atom_id        *index, *atndx = NULL, at;
-    char           *grpname;
-    char            title[256];
-    real            t0, t1, dt, m, mtot, sysmass, rho, sx, cx;
-    t_trxstatus    *status;
-    int             nframes, n_alloc, i, j, k, d;
-    rvec            mv_mol, cm_mol, kfac[NK];
-    int             nkc, nk, ntc;
-    real          **tc;
-    output_env_t    oenv;
+    t_topology        top;
+    int               ePBC;
+    t_trxframe        fr;
+    matrix            box;
+    gmx_bool          bTop;
+    int               gnx;
+    atom_id          *index, *atndx = NULL, at;
+    char             *grpname;
+    char              title[256];
+    real              t0, t1, dt, m, mtot, sysmass, rho, sx, cx;
+    t_trxstatus      *status;
+    int               nframes, n_alloc, i, j, k, d;
+    rvec              mv_mol, cm_mol, kfac[NK];
+    int               nkc, nk, ntc;
+    real            **tc;
+    gmx_output_env_t *oenv;
 
 #define NHISTO 360
 

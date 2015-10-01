@@ -333,7 +333,7 @@ int gmx_nmeig(int argc, char *argv[])
     real                   factor_omega_to_wavenumber;
     real                  *spectrum = NULL;
     real                   wfac;
-    output_env_t           oenv;
+    gmx_output_env_t      *oenv;
     const char            *qcleg[] = {
         "Heat Capacity cV (J/mol K)",
         "Enthalpy H (kJ/mol)"

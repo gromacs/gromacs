@@ -351,7 +351,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
                        atom_id *index0, int indexm[], real mass2[],
-                       real qmol[], real eps_rf, const output_env_t oenv)
+                       real qmol[], real eps_rf, const gmx_output_env_t *oenv)
 {
     int       i, j;
     int       valloc, nalloc, nfr, nvfr;
@@ -803,7 +803,7 @@ int gmx_current(int argc, char *argv[])
           "Temperature for calculating epsilon."}
     };
 
-    output_env_t           oenv;
+    gmx_output_env_t      *oenv;
     t_topology             top;
     char                 **grpname = NULL;
     const char            *indexfn;

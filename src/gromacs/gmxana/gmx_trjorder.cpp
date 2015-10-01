@@ -83,7 +83,7 @@ static int ocomp(const void *a, const void *b)
 
 int gmx_trjorder(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] orders molecules according to the smallest distance",
         "to atoms in a reference group",
         "or on z-coordinate (with option [TT]-z[tt]).",
@@ -108,10 +108,10 @@ int gmx_trjorder(int argc, char *argv[])
         "With option [TT]-nshell[tt] the number of molecules within a shell",
         "of radius [TT]-r[tt] around the reference group are printed."
     };
-    static int      na   = 3, ref_a = 1;
-    static real     rcut = 0;
-    static gmx_bool bCOM = FALSE, bZ = FALSE;
-    t_pargs         pa[] = {
+    static int        na   = 3, ref_a = 1;
+    static real       rcut = 0;
+    static gmx_bool   bCOM = FALSE, bZ = FALSE;
+    t_pargs           pa[] = {
         { "-na", FALSE, etINT,  {&na},
           "Number of atoms in a molecule" },
         { "-da", FALSE, etINT,  {&ref_a},
@@ -123,23 +123,23 @@ int gmx_trjorder(int argc, char *argv[])
         { "-z", FALSE, etBOOL, {&bZ},
           "Order molecules on z-coordinate" }
     };
-    FILE           *fp;
-    t_trxstatus    *out;
-    t_trxstatus    *status;
-    gmx_bool        bNShell, bPDBout;
-    t_topology      top;
-    int             ePBC;
-    rvec           *x, *xsol, xcom, dx;
-    matrix          box;
-    t_pbc           pbc;
-    gmx_rmpbc_t     gpbc;
-    real            t, totmass, mass, rcut2 = 0, n2;
-    int             natoms, nwat, ncut;
-    char          **grpname;
-    int             i, j, d, *isize, isize_ref = 0, isize_sol;
-    atom_id         sa, sr, *swi, **index, *ind_ref = NULL, *ind_sol;
-    output_env_t    oenv;
-    t_filenm        fnm[] = {
+    FILE             *fp;
+    t_trxstatus      *out;
+    t_trxstatus      *status;
+    gmx_bool          bNShell, bPDBout;
+    t_topology        top;
+    int               ePBC;
+    rvec             *x, *xsol, xcom, dx;
+    matrix            box;
+    t_pbc             pbc;
+    gmx_rmpbc_t       gpbc;
+    real              t, totmass, mass, rcut2 = 0, n2;
+    int               natoms, nwat, ncut;
+    char            **grpname;
+    int               i, j, d, *isize, isize_ref = 0, isize_sol;
+    atom_id           sa, sr, *swi, **index, *ind_ref = NULL, *ind_sol;
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] = {
         { efTRX, "-f", NULL, ffREAD  },
         { efTPS, NULL, NULL, ffREAD  },
         { efNDX, NULL, NULL, ffOPTRD },

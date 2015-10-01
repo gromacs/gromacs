@@ -279,7 +279,7 @@ static void get_dih_props(t_xrama *xr, t_idef *idef, int mult)
 
 
 
-t_topology *init_rama(const output_env_t oenv, const char *infile,
+t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
                       const char *topfile, t_xrama *xr, int mult)
 {
     t_topology *top;

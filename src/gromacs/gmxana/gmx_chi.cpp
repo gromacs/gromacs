@@ -223,7 +223,7 @@ int bin(real chi, int mult)
 static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
                        int nlist, t_dlist dlist[], real time[], int maxchi,
                        gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega,
-                       const output_env_t oenv)
+                       const gmx_output_env_t *oenv)
 {
     char name1[256], name2[256];
     int  i, j, Xi;
@@ -304,7 +304,7 @@ static void copy_dih_data(real in[], real out[], int nf, gmx_bool bLEAVE)
 static void dump_em_all(int nlist, t_dlist dlist[], int nf, real time[],
                         real **dih, int maxchi,
                         gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega, gmx_bool bRAD,
-                        const output_env_t oenv)
+                        const gmx_output_env_t *oenv)
 {
     char  name[256], titlestr[256], ystr[256];
     real *data;
@@ -451,7 +451,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
                           real bfac_max, t_atoms *atoms,
                           gmx_bool bDo_jc, const char *fn,
-                          const output_env_t oenv)
+                          const gmx_output_env_t *oenv)
 {
     /* also gets 3J couplings and order parameters S2 */
     t_karplus kkkphi[] = {
@@ -846,7 +846,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
 }
 
 static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
-                       const char *yaxis, const output_env_t oenv)
+                       const char *yaxis, const gmx_output_env_t *oenv)
 {
     FILE *fp;
 
@@ -884,7 +884,7 @@ static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
 }
 
 static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
-                    gmx_bool bViol, gmx_bool bRamOmega, const output_env_t oenv)
+                    gmx_bool bViol, gmx_bool bRamOmega, const gmx_output_env_t *oenv)
 {
     FILE    *fp, *gp = NULL;
     gmx_bool bOm;
@@ -1011,7 +1011,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
 
 static void print_transitions(const char *fn, int maxchi, int nlist,
                               t_dlist dlist[], real dt,
-                              const output_env_t oenv)
+                              const gmx_output_env_t *oenv)
 {
     /* based on order_params below */
     FILE *fp;
@@ -1061,7 +1061,7 @@ static void order_params(FILE *log,
                          const char *fn, int maxchi, int nlist, t_dlist dlist[],
                          const char *pdbfn, real bfac_init,
                          t_atoms *atoms, rvec x[], int ePBC, matrix box,
-                         gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, const output_env_t oenv)
+                         gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   nh[edMax];
@@ -1359,7 +1359,7 @@ int gmx_chi(int argc, char *argv[])
     gmx_bool           bChi, bCorr, bSSHisto;
     gmx_bool           bDo_rt, bDo_oh, bDo_ot, bDo_jc;
     real               dt = 0, traj_t_ns;
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     gmx_residuetype_t *rt;
 
     atom_id            isize, *index;

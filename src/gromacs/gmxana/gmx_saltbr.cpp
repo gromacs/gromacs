@@ -179,7 +179,7 @@ int gmx_saltbr(int argc, char *argv[])
     t_pbc              pbc;
     rvec              *x;
     matrix             box;
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))

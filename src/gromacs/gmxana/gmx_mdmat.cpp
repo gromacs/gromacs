@@ -202,29 +202,29 @@ int gmx_mdmat(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    FILE          *out = NULL, *fp;
-    t_topology     top;
-    int            ePBC;
-    t_atoms        useatoms;
-    int            isize;
-    atom_id       *index;
-    char          *grpname;
-    int           *rndx, *natm, prevres, newres;
+    FILE             *out = NULL, *fp;
+    t_topology        top;
+    int               ePBC;
+    t_atoms           useatoms;
+    int               isize;
+    atom_id          *index;
+    char             *grpname;
+    int              *rndx, *natm, prevres, newres;
 
-    int            i, j, nres, natoms, nframes, trxnat;
-    t_trxstatus   *status;
-    gmx_bool       bCalcN, bFrames;
-    real           t, ratio;
-    char           label[234];
-    t_rgb          rlo, rhi;
-    rvec          *x;
-    real         **mdmat, *resnr, **totmdmat;
-    int          **nmat, **totnmat;
-    real          *mean_n;
-    int           *tot_n;
-    matrix         box = {{0}};
-    output_env_t   oenv;
-    gmx_rmpbc_t    gpbc = NULL;
+    int               i, j, nres, natoms, nframes, trxnat;
+    t_trxstatus      *status;
+    gmx_bool          bCalcN, bFrames;
+    real              t, ratio;
+    char              label[234];
+    t_rgb             rlo, rhi;
+    rvec             *x;
+    real            **mdmat, *resnr, **totmdmat;
+    int             **nmat, **totnmat;
+    real             *mean_n;
+    int              *tot_n;
+    matrix            box = {{0}};
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
                            asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))

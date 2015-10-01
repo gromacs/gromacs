@@ -216,18 +216,18 @@ void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
 
 int gmx_wheel(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] plots a helical wheel representation of your sequence.",
         "The input sequence is in the [REF].dat[ref] file where the first line contains",
         "the number of residues and each consecutive line contains a residue "
         "name."
     };
-    output_env_t    oenv;
-    static real     rot0  = 0;
-    static gmx_bool bNum  = TRUE;
-    static char    *title = NULL;
-    static int      r0    = 1;
-    t_pargs         pa [] = {
+    gmx_output_env_t *oenv;
+    static real       rot0  = 0;
+    static gmx_bool   bNum  = TRUE;
+    static char      *title = NULL;
+    static int        r0    = 1;
+    t_pargs           pa [] = {
         { "-r0",  FALSE, etINT, {&r0},
           "The first residue number in the sequence" },
         { "-rot0", FALSE, etREAL, {&rot0},
@@ -237,7 +237,7 @@ int gmx_wheel(int argc, char *argv[])
         { "-nn",  FALSE, etBOOL, {&bNum},
           "Toggle numbers" }
     };
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efDAT, "-f", NULL,  ffREAD  },
         { efEPS, "-o", NULL,  ffWRITE }
     };

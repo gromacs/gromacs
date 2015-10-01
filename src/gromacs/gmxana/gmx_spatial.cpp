@@ -56,7 +56,7 @@ static const double bohr = 0.529177249;  /* conversion factor to compensate for 
 
 int gmx_spatial(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] calculates the spatial distribution function and",
         "outputs it in a form that can be read by VMD as Gaussian98 cube format.",
         "For a system of 32,000 atoms and a 50 ns trajectory, the SDF can be generated",
@@ -99,21 +99,21 @@ int gmx_spatial(int argc, char *argv[])
         "memory is allocated for cube bins based on the initial coordinates and the [TT]-nab[tt]",
         "option value."
     };
-    const char     *bugs[] = {
+    const char       *bugs[] = {
         "When the allocated memory is not large enough, a segmentation fault may occur. This is usually detected "
         "and the program is halted prior to the fault while displaying a warning message suggesting the use of the [TT]-nab[tt] (Number of Additional Bins) "
         "option. However, the program does not detect all such events. If you encounter a segmentation fault, run it again "
         "with an increased [TT]-nab[tt] value."
     };
 
-    static gmx_bool bPBC         = FALSE;
-    static int      iIGNOREOUTER = -1;   /*Positive values may help if the surface is spikey */
-    static gmx_bool bCUTDOWN     = TRUE;
-    static real     rBINWIDTH    = 0.05; /* nm */
-    static gmx_bool bCALCDIV     = TRUE;
-    static int      iNAB         = 4;
+    static gmx_bool   bPBC         = FALSE;
+    static int        iIGNOREOUTER = -1;   /*Positive values may help if the surface is spikey */
+    static gmx_bool   bCUTDOWN     = TRUE;
+    static real       rBINWIDTH    = 0.05; /* nm */
+    static gmx_bool   bCALCDIV     = TRUE;
+    static int        iNAB         = 4;
 
-    t_pargs         pa[] = {
+    t_pargs           pa[] = {
         { "-pbc",      FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions for computing distances" },
         { "-div",      FALSE, etBOOL, {&bCALCDIV},
@@ -128,34 +128,34 @@ int gmx_spatial(int argc, char *argv[])
           "Number of additional bins to ensure proper memory allocation" }
     };
 
-    double          MINBIN[3];
-    double          MAXBIN[3];
-    t_topology      top;
-    int             ePBC;
-    t_trxframe      fr;
-    rvec           *xtop;
-    matrix          box, box_pbc;
-    t_trxstatus    *status;
-    int             flags = TRX_READ_X;
-    t_pbc           pbc;
-    t_atoms        *atoms;
-    int             natoms;
-    char           *grpnm, *grpnmp;
-    atom_id        *index, *indexp;
-    int             i, nidx, nidxp;
-    int             v;
-    int             j, k;
-    int          ***bin = NULL;
-    int             nbin[3];
-    FILE           *flp;
-    int             x, y, z, minx, miny, minz, maxx, maxy, maxz;
-    int             numfr, numcu;
-    int             tot, maxval, minval;
-    double          norm;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc = NULL;
+    double            MINBIN[3];
+    double            MAXBIN[3];
+    t_topology        top;
+    int               ePBC;
+    t_trxframe        fr;
+    rvec             *xtop;
+    matrix            box, box_pbc;
+    t_trxstatus      *status;
+    int               flags = TRX_READ_X;
+    t_pbc             pbc;
+    t_atoms          *atoms;
+    int               natoms;
+    char             *grpnm, *grpnmp;
+    atom_id          *index, *indexp;
+    int               i, nidx, nidxp;
+    int               v;
+    int               j, k;
+    int            ***bin = NULL;
+    int               nbin[3];
+    FILE             *flp;
+    int               x, y, z, minx, miny, minz, maxx, maxy, maxz;
+    int               numfr, numcu;
+    int               tot, maxval, minval;
+    double            norm;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTPS,  NULL,  NULL, ffREAD }, /* this is for the topology */
         { efTRX, "-f", NULL, ffREAD },   /* and this for the trajectory */
         { efNDX, NULL, NULL, ffOPTRD }

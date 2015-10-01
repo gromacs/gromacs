@@ -813,7 +813,7 @@ static void do_sham(const char *fn, const char *ndx,
     }
 }
 
-static void ehisto(const char *fh, int n, real **enerT, const output_env_t oenv)
+static void ehisto(const char *fh, int n, real **enerT, const gmx_output_env_t *oenv)
 {
     FILE  *fp;
     int    i, j, k, nbin, blength;
@@ -961,14 +961,14 @@ int gmx_sham(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    int             n, e_n, nset, e_nset = 0, i, *idim, *ibox;
-    real          **val, **et_val, *t, *e_t, e_dt, dt;
-    real           *rmin, *rmax;
-    const char     *fn_ge, *fn_ene;
-    output_env_t    oenv;
-    gmx_int64_t     num_grid_points;
+    int               n, e_n, nset, e_nset = 0, i, *idim, *ibox;
+    real            **val, **et_val, *t, *e_t, e_dt, dt;
+    real             *rmin, *rmax;
+    const char       *fn_ge, *fn_ene;
+    gmx_output_env_t *oenv;
+    gmx_int64_t       num_grid_points;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efXVG, "-f",    "graph",    ffREAD   },
         { efXVG, "-ge",   "gibbs",    ffOPTRD  },
         { efXVG, "-ene",  "esham",    ffOPTRD  },

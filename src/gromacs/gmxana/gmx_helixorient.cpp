@@ -56,7 +56,7 @@
 
 int gmx_helixorient(int argc, char *argv[])
 {
-    const char      *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] calculates the coordinates and direction of the average",
         "axis inside an alpha helix, and the direction/vectors of both the",
         "C[GRK]alpha[grk] and (optionally) a sidechain atom relative to the axis.[PAR]",
@@ -75,68 +75,68 @@ int gmx_helixorient(int argc, char *argv[])
         "purposes, we also write out the actual Euler rotation angles as [TT]theta[1-3].xvg[tt]"
     };
 
-    t_topology      *top = NULL;
-    real             t;
-    rvec            *x = NULL;
-    matrix           box;
-    t_trxstatus     *status;
-    int              natoms;
-    real             theta1, theta2, theta3;
+    t_topology       *top = NULL;
+    real              t;
+    rvec             *x = NULL;
+    matrix            box;
+    t_trxstatus      *status;
+    int               natoms;
+    real              theta1, theta2, theta3;
 
-    int              i, j, teller = 0;
-    int              iCA, iSC;
-    atom_id         *ind_CA;
-    atom_id         *ind_SC;
-    char            *gn_CA;
-    char            *gn_SC;
-    rvec             v1, v2;
-    rvec            *x_CA, *x_SC;
-    rvec            *r12;
-    rvec            *r23;
-    rvec            *r34;
-    rvec            *diff13;
-    rvec            *diff24;
-    rvec            *helixaxis;
-    rvec            *residuehelixaxis;
-    rvec            *residueorigin;
-    rvec            *residuevector;
-    rvec            *sidechainvector;
+    int               i, j, teller = 0;
+    int               iCA, iSC;
+    atom_id          *ind_CA;
+    atom_id          *ind_SC;
+    char             *gn_CA;
+    char             *gn_SC;
+    rvec              v1, v2;
+    rvec             *x_CA, *x_SC;
+    rvec             *r12;
+    rvec             *r23;
+    rvec             *r34;
+    rvec             *diff13;
+    rvec             *diff24;
+    rvec             *helixaxis;
+    rvec             *residuehelixaxis;
+    rvec             *residueorigin;
+    rvec             *residuevector;
+    rvec             *sidechainvector;
 
-    rvec            *residuehelixaxis_t0;
-    rvec            *residuevector_t0;
-    rvec            *axis3_t0;
-    rvec            *residuehelixaxis_tlast;
-    rvec            *residuevector_tlast;
-    rvec            *axis3_tlast;
-    rvec             refaxes[3], newaxes[3];
-    rvec             unitaxes[3];
-    rvec             rot_refaxes[3], rot_newaxes[3];
+    rvec             *residuehelixaxis_t0;
+    rvec             *residuevector_t0;
+    rvec             *axis3_t0;
+    rvec             *residuehelixaxis_tlast;
+    rvec             *residuevector_tlast;
+    rvec             *axis3_tlast;
+    rvec              refaxes[3], newaxes[3];
+    rvec              unitaxes[3];
+    rvec              rot_refaxes[3], rot_newaxes[3];
 
-    real             tilt, rotation;
-    rvec            *axis3;
-    real            *twist, *residuetwist;
-    real            *radius, *residueradius;
-    real            *rise, *residuerise;
-    real            *residuebending;
+    real              tilt, rotation;
+    rvec             *axis3;
+    real             *twist, *residuetwist;
+    real             *radius, *residueradius;
+    real             *rise, *residuerise;
+    real             *residuebending;
 
-    real             tmp;
-    real             weight[3];
-    t_pbc            pbc;
-    matrix           A;
+    real              tmp;
+    real              weight[3];
+    t_pbc             pbc;
+    matrix            A;
 
-    FILE            *fpaxis, *fpcenter, *fptilt, *fprotation;
-    FILE            *fpradius, *fprise, *fptwist;
-    FILE            *fptheta1, *fptheta2, *fptheta3;
-    FILE            *fpbending;
-    int              ePBC;
+    FILE             *fpaxis, *fpcenter, *fptilt, *fprotation;
+    FILE             *fpradius, *fprise, *fptwist;
+    FILE             *fptheta1, *fptheta2, *fptheta3;
+    FILE             *fpbending;
+    int               ePBC;
 
-    output_env_t     oenv;
-    gmx_rmpbc_t      gpbc = NULL;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    static  gmx_bool bSC          = FALSE;
-    static gmx_bool  bIncremental = FALSE;
+    static  gmx_bool  bSC          = FALSE;
+    static gmx_bool   bIncremental = FALSE;
 
-    static t_pargs   pa[] = {
+    static t_pargs    pa[] = {
         { "-sidechain",      FALSE, etBOOL, {&bSC},
           "Calculate sidechain directions relative to helix axis too." },
         { "-incremental",        FALSE, etBOOL, {&bIncremental},

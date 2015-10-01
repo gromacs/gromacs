@@ -478,7 +478,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
                            int ndesc, const char **desc,
                            int nbugs, const char **bugs,
-                           output_env_t *oenv)
+                           gmx_output_env_t **oenv)
 {
     /* This array should match the order of the enum in oenv.h */
     const char *const xvg_formats[] = { "xmgrace", "xmgr", "none" };
