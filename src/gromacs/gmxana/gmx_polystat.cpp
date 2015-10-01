@@ -151,32 +151,32 @@ int gmx_polystat(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    t_topology  *top;
-    output_env_t oenv;
-    int          ePBC;
-    int          isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
-    char        *grpname;
-    t_trxstatus *status;
-    real         t;
-    rvec        *x, *bond = NULL;
-    matrix       box;
-    int          natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = {0};
-    dvec         cm, sum_eig = {0, 0, 0};
-    double     **gyr, **gyr_all, eig[DIM], **eigv;
-    double       sum_eed2, sum_eed2_tot, sum_gyro, sum_gyro_tot, sum_pers_tot;
-    int         *ninp    = NULL;
-    double      *sum_inp = NULL, pers;
-    double      *intd, ymax, ymin;
-    double       mmol, m;
-    char         title[STRLEN];
-    FILE        *out, *outv, *outp, *outi;
-    const char  *leg[8] = {
+    t_topology       *top;
+    gmx_output_env_t *oenv;
+    int               ePBC;
+    int               isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
+    char             *grpname;
+    t_trxstatus      *status;
+    real              t;
+    rvec             *x, *bond = NULL;
+    matrix            box;
+    int               natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = {0};
+    dvec              cm, sum_eig = {0, 0, 0};
+    double          **gyr, **gyr_all, eig[DIM], **eigv;
+    double            sum_eed2, sum_eed2_tot, sum_gyro, sum_gyro_tot, sum_pers_tot;
+    int              *ninp    = NULL;
+    double           *sum_inp = NULL, pers;
+    double           *intd, ymax, ymin;
+    double            mmol, m;
+    char              title[STRLEN];
+    FILE             *out, *outv, *outp, *outi;
+    const char       *leg[8] = {
         "end to end", "<R\\sg\\N>",
         "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
         "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>"
     };
-    char       **legp, buf[STRLEN];
-    gmx_rmpbc_t  gpbc = NULL;
+    char            **legp, buf[STRLEN];
+    gmx_rmpbc_t       gpbc = NULL;
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,

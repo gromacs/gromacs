@@ -264,7 +264,7 @@ nma_sparse_hessian(gmx_sparsematrix_t     *     sparse_hessian,
 
 int gmx_nmeig(int argc, char *argv[])
 {
-    const char            *desc[] = {
+    const char                 *desc[] = {
         "[THISMODULE] calculates the eigenvectors/values of a (Hessian) matrix,",
         "which can be calculated with [gmx-mdrun].",
         "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
@@ -293,10 +293,10 @@ int gmx_nmeig(int argc, char *argv[])
         "output."
     };
 
-    static gmx_bool        bM    = TRUE, bCons = FALSE;
-    static int             begin = 1, end = 50, maxspec = 4000;
-    static real            T     = 298.15, width = 1;
-    t_pargs                pa[]  =
+    static gmx_bool             bM    = TRUE, bCons = FALSE;
+    static int                  begin = 1, end = 50, maxspec = 4000;
+    static real                 T     = 298.15, width = 1;
+    t_pargs                     pa[]  =
     {
         { "-m",  FALSE, etBOOL, {&bM},
           "Divide elements of Hessian by product of sqrt(mass) of involved "
@@ -315,33 +315,33 @@ int gmx_nmeig(int argc, char *argv[])
         { "-width",  FALSE, etREAL, {&width},
           "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
     };
-    FILE                  *out, *qc, *spec;
-    t_topology             top;
-    gmx_mtop_t             mtop;
-    rvec                  *top_x;
-    matrix                 box;
-    real                  *eigenvalues;
-    real                  *eigenvectors;
-    real                   qcvtot, qutot, qcv, qu;
-    int                    natoms, ndim, nrow, ncol, nharm, nvsite;
-    int                    i, j, k;
-    gmx_bool               bSuck;
-    t_tpxheader            tpx;
-    int                    version, generation;
-    real                   value, omega, nu;
-    real                   factor_gmx_to_omega2;
-    real                   factor_omega_to_wavenumber;
-    real                  *spectrum = NULL;
-    real                   wfac;
-    output_env_t           oenv;
-    const char            *qcleg[] = {
+    FILE                       *out, *qc, *spec;
+    t_topology                  top;
+    gmx_mtop_t                  mtop;
+    rvec                       *top_x;
+    matrix                      box;
+    real                       *eigenvalues;
+    real                       *eigenvectors;
+    real                        qcvtot, qutot, qcv, qu;
+    int                         natoms, ndim, nrow, ncol, nharm, nvsite;
+    int                         i, j, k;
+    gmx_bool                    bSuck;
+    t_tpxheader                 tpx;
+    int                         version, generation;
+    real                        value, omega, nu;
+    real                        factor_gmx_to_omega2;
+    real                        factor_omega_to_wavenumber;
+    real                       *spectrum = NULL;
+    real                        wfac;
+    gmx_output_env_t *          oenv;
+    const char                 *qcleg[] = {
         "Heat Capacity cV (J/mol K)",
         "Enthalpy H (kJ/mol)"
     };
-    real *                 full_hessian   = NULL;
-    gmx_sparsematrix_t *   sparse_hessian = NULL;
+    real      *                 full_hessian   = NULL;
+    gmx_sparsematrix_t      *   sparse_hessian = NULL;
 
-    t_filenm               fnm[] = {
+    t_filenm                    fnm[] = {
         { efMTX, "-f", "hessian",    ffREAD  },
         { efTPR, NULL, NULL,         ffREAD  },
         { efXVG, "-of", "eigenfreq", ffWRITE },

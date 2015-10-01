@@ -186,7 +186,8 @@ void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time)
     }
 }
 
-static FILE *open_pull_out(const char *fn, struct pull_t *pull, const output_env_t oenv,
+static FILE *open_pull_out(const char *fn, struct pull_t *pull,
+                           const gmx_output_env_t *oenv,
                            gmx_bool bCoord, unsigned long Flags)
 {
     FILE  *fp;
@@ -1636,7 +1637,8 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
 struct pull_t *
 init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
           int nfile, const t_filenm fnm[],
-          gmx_mtop_t *mtop, t_commrec *cr, const output_env_t oenv, real lambda,
+          gmx_mtop_t *mtop, t_commrec *cr,
+          const gmx_output_env_t *oenv, real lambda,
           gmx_bool bOutFile, unsigned long Flags)
 {
     struct pull_t *pull;

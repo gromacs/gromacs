@@ -125,7 +125,7 @@ static void move_x(int natoms, rvec x[], matrix box)
 
 int gmx_genconf(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] multiplies a given coordinate file by simply stacking them",
         "on top of each other, like a small child playing with wooden blocks.",
         "The program makes a grid of [IT]user-defined[it]",
@@ -140,43 +140,43 @@ int gmx_genconf(int argc, char *argv[])
         "build the grid."
 
     };
-    const char     *bugs[] = {
+    const char       *bugs[] = {
         "The program should allow for random displacement of lattice points."
     };
 
-    int             vol;
-    t_atoms        *atoms;      /* list with all atoms */
-    rvec           *x, *xx, *v; /* coordinates? */
-    real            t;
-    vec4           *xrot, *vrot;
-    int             ePBC;
-    matrix          box, boxx; /* box length matrix */
-    rvec            shift;
-    int             natoms;    /* number of atoms in one molecule  */
-    int             nres;      /* number of molecules? */
-    int             i, j, k, l, m, ndx, nrdx, nx, ny, nz;
-    t_trxstatus    *status;
-    gmx_bool        bTRX;
-    output_env_t    oenv;
-    gmx_rng_t       rng;
+    int               vol;
+    t_atoms          *atoms;      /* list with all atoms */
+    rvec             *x, *xx, *v; /* coordinates? */
+    real              t;
+    vec4             *xrot, *vrot;
+    int               ePBC;
+    matrix            box, boxx; /* box length matrix */
+    rvec              shift;
+    int               natoms;    /* number of atoms in one molecule  */
+    int               nres;      /* number of molecules? */
+    int               i, j, k, l, m, ndx, nrdx, nx, ny, nz;
+    t_trxstatus      *status;
+    gmx_bool          bTRX;
+    gmx_output_env_t *oenv;
+    gmx_rng_t         rng;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
         { efSTO, "-o", "out",  ffWRITE },
         { efTRX, "-trj", NULL,  ffOPTRD }
     };
 #define NFILE asize(fnm)
-    static rvec     nrbox    = {1, 1, 1};
-    static int      seed     = 0;    /* seed for random number generator */
-    static int      nmolat   = 3;
-    static int      nblock   = 1;
-    static gmx_bool bShuffle = FALSE;
-    static gmx_bool bSort    = FALSE;
-    static gmx_bool bRandom  = FALSE;           /* False: no random rotations */
-    static gmx_bool bRenum   = TRUE;            /* renumber residues */
-    static rvec     dist     = {0, 0, 0};       /* space added between molecules ? */
-    static rvec     max_rot  = {180, 180, 180}; /* maximum rotation */
-    t_pargs         pa[]     = {
+    static rvec       nrbox    = {1, 1, 1};
+    static int        seed     = 0;  /* seed for random number generator */
+    static int        nmolat   = 3;
+    static int        nblock   = 1;
+    static gmx_bool   bShuffle = FALSE;
+    static gmx_bool   bSort    = FALSE;
+    static gmx_bool   bRandom  = FALSE;           /* False: no random rotations */
+    static gmx_bool   bRenum   = TRUE;            /* renumber residues */
+    static rvec       dist     = {0, 0, 0};       /* space added between molecules ? */
+    static rvec       max_rot  = {180, 180, 180}; /* maximum rotation */
+    t_pargs           pa[]     = {
         { "-nbox",   FALSE, etRVEC, {nrbox},   "Number of boxes" },
         { "-dist",   FALSE, etRVEC, {dist},    "Distance between boxes" },
         { "-seed",   FALSE, etINT,  {&seed},

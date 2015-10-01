@@ -523,7 +523,7 @@ static void calc_violations(real rt[], real rav3[], int nb, int index[],
 static void analyse_disre(const char *voutfn,    int nframes,
                           real violaver[], real bounds[], int index[],
                           int pair[],      int nbounds,
-                          const output_env_t oenv)
+                          const gmx_output_env_t *oenv)
 {
     FILE   *vout;
     double  sum, sumt, sumaver;
@@ -575,7 +575,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
 static void einstein_visco(const char *fn, const char *fni, int nsets,
                            int nint, real **eneint,
                            real V, real T, double dt,
-                           const output_env_t oenv)
+                           const gmx_output_env_t *oenv)
 {
     FILE  *fp0, *fp1;
     double av[4], avold[4];
@@ -1136,7 +1136,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                          char **leg, gmx_enxnm_t *enm,
                          real Vaver, real ezero,
                          int nbmin, int nbmax,
-                         const output_env_t oenv)
+                         const gmx_output_env_t *oenv)
 {
     FILE           *fp;
     /* Check out the printed manual for equations! */
@@ -1468,7 +1468,7 @@ static void print1(FILE *fp, gmx_bool bDp, real e)
 static void fec(const char *ene2fn, const char *runavgfn,
                 real reftemp, int nset, int set[], char *leg[],
                 enerdata_t *edat, double time[],
-                const output_env_t oenv)
+                const gmx_output_env_t *oenv)
 {
     const char * ravgleg[] = {
         "\\8D\\4E = E\\sB\\N-E\\sA\\N",
@@ -1594,7 +1594,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
 static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
                     const char *filename, gmx_bool bDp,
                     int *blocks, int *hists, int *samples, int *nlambdas,
-                    const output_env_t oenv)
+                    const gmx_output_env_t *oenv)
 {
     const char  *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
     char         title[STRLEN], label_x[STRLEN], label_y[STRLEN], legend[STRLEN];
@@ -1843,7 +1843,7 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
 
 int gmx_energy(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char             *desc[] = {
         "[THISMODULE] extracts energy components or distance restraint",
         "data from an energy file. The user is prompted to interactively",
         "select the desired energy terms.[PAR]",
@@ -1939,11 +1939,11 @@ int gmx_energy(int argc, char *argv[])
         "[BB]Note[bb] that the energies must both be calculated from the same trajectory."
 
     };
-    static gmx_bool    bSum    = FALSE, bFee = FALSE, bPrAll = FALSE, bFluct = FALSE, bDriftCorr = FALSE;
-    static gmx_bool    bDp     = FALSE, bMutot = FALSE, bOrinst = FALSE, bOvec = FALSE, bFluctProps = FALSE;
-    static int         skip    = 0, nmol = 1, nbmin = 5, nbmax = 5;
-    static real        reftemp = 300.0, ezero = 0;
-    t_pargs            pa[]    = {
+    static gmx_bool         bSum    = FALSE, bFee = FALSE, bPrAll = FALSE, bFluct = FALSE, bDriftCorr = FALSE;
+    static gmx_bool         bDp     = FALSE, bMutot = FALSE, bOrinst = FALSE, bOvec = FALSE, bFluctProps = FALSE;
+    static int              skip    = 0, nmol = 1, nbmin = 5, nbmax = 5;
+    static real             reftemp = 300.0, ezero = 0;
+    t_pargs                 pa[]    = {
         { "-fee",   FALSE, etBOOL,  {&bFee},
           "Do a free energy estimate" },
         { "-fetemp", FALSE, etREAL, {&reftemp},
@@ -1977,55 +1977,55 @@ int gmx_energy(int argc, char *argv[])
         { "-ovec", FALSE, etBOOL, {&bOvec},
           "Also plot the eigenvectors with [TT]-oten[tt]" }
     };
-    const char       * drleg[] = {
+    const char            * drleg[] = {
         "Running average",
         "Instantaneous"
     };
-    static const char *setnm[] = {
+    static const char      *setnm[] = {
         "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
         "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ", "Temperature",
         "Volume",  "Pressure"
     };
 
-    FILE              *out     = NULL, *fp_pairs = NULL, *fort = NULL, *fodt = NULL, *foten = NULL;
-    FILE              *fp_dhdl = NULL;
-    ener_file_t        fp;
-    int                timecheck = 0;
-    gmx_mtop_t         mtop;
-    gmx_localtop_t    *top = NULL;
-    t_inputrec         ir;
-    enerdata_t         edat;
-    gmx_enxnm_t       *enm = NULL;
-    t_enxframe        *frame, *fr = NULL;
-    int                cur = 0;
+    FILE                   *out     = NULL, *fp_pairs = NULL, *fort = NULL, *fodt = NULL, *foten = NULL;
+    FILE                   *fp_dhdl = NULL;
+    ener_file_t             fp;
+    int                     timecheck = 0;
+    gmx_mtop_t              mtop;
+    gmx_localtop_t         *top = NULL;
+    t_inputrec              ir;
+    enerdata_t              edat;
+    gmx_enxnm_t            *enm = NULL;
+    t_enxframe             *frame, *fr = NULL;
+    int                     cur = 0;
 #define NEXT (1-cur)
-    int                nre, teller, teller_disre, nfr;
-    gmx_int64_t        start_step;
-    int                nor = 0, nex = 0, norfr = 0, enx_i = 0;
-    real               start_t;
-    real              *bounds  = NULL, *violaver = NULL, *oobs = NULL, *orient = NULL, *odrms = NULL;
-    int               *index   = NULL, *pair = NULL, norsel = 0, *orsel = NULL, *or_label = NULL;
-    int                nbounds = 0, npairs;
-    gmx_bool           bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN, bDHDL;
-    gmx_bool           bFoundStart, bCont, bVisco;
-    double             sum, sumaver, sumt, dbl;
-    double            *time = NULL;
-    real               Vaver;
-    int               *set     = NULL, i, j, k, nset, sss;
-    gmx_bool          *bIsEner = NULL;
-    char             **pairleg, **odtleg, **otenleg;
-    char             **leg = NULL;
-    char              *anm_j, *anm_k, *resnm_j, *resnm_k;
-    int                resnr_j, resnr_k;
-    const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
-    char               buf[256];
-    output_env_t       oenv;
-    t_enxblock        *blk       = NULL;
-    t_enxblock        *blk_disre = NULL;
-    int                ndisre    = 0;
-    int                dh_blocks = 0, dh_hists = 0, dh_samples = 0, dh_lambdas = 0;
+    int                     nre, teller, teller_disre, nfr;
+    gmx_int64_t             start_step;
+    int                     nor = 0, nex = 0, norfr = 0, enx_i = 0;
+    real                    start_t;
+    real                   *bounds  = NULL, *violaver = NULL, *oobs = NULL, *orient = NULL, *odrms = NULL;
+    int                    *index   = NULL, *pair = NULL, norsel = 0, *orsel = NULL, *or_label = NULL;
+    int                     nbounds = 0, npairs;
+    gmx_bool                bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN, bDHDL;
+    gmx_bool                bFoundStart, bCont, bVisco;
+    double                  sum, sumaver, sumt, dbl;
+    double                 *time = NULL;
+    real                    Vaver;
+    int                    *set     = NULL, i, j, k, nset, sss;
+    gmx_bool               *bIsEner = NULL;
+    char                  **pairleg, **odtleg, **otenleg;
+    char                  **leg = NULL;
+    char                   *anm_j, *anm_k, *resnm_j, *resnm_k;
+    int                     resnr_j, resnr_k;
+    const char             *orinst_sub = "@ subtitle \"instantaneous\"\n";
+    char                    buf[256];
+    gmx_output_env_t *      oenv;
+    t_enxblock             *blk       = NULL;
+    t_enxblock             *blk_disre = NULL;
+    int                     ndisre    = 0;
+    int                     dh_blocks = 0, dh_hists = 0, dh_samples = 0, dh_lambdas = 0;
 
-    t_filenm           fnm[] = {
+    t_filenm                fnm[] = {
         { efEDR, "-f",    NULL,      ffREAD  },
         { efEDR, "-f2",   NULL,      ffOPTRD },
         { efTPR, "-s",    NULL,      ffOPTRD },
@@ -2044,8 +2044,8 @@ int gmx_energy(int argc, char *argv[])
         { efXVG, "-odh",  "dhdl", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    int                npargs;
-    t_pargs           *ppa;
+    int                     npargs;
+    t_pargs                *ppa;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);

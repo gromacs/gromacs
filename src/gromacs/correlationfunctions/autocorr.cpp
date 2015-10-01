@@ -522,7 +522,7 @@ void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
     }
 }
 
-void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
+void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *title,
                      int nframes, int nitem, int nout, real **c1,
                      real dt, unsigned long mode, int nrestart,
                      gmx_bool bAver, gmx_bool bNormalize,
@@ -773,7 +773,7 @@ t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
     return ppa;
 }
 
-void do_autocorr(const char *fn, const output_env_t oenv, const char *title,
+void do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *title,
                  int nframes, int nitem, real **c1,
                  real dt, unsigned long mode, gmx_bool bAver)
 {

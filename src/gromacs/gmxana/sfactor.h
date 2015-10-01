@@ -37,7 +37,6 @@
 #ifndef _sfactor_h
 #define _sfactor_h
 
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/gmxcomplex.h"
 
@@ -45,6 +44,7 @@
 extern "C" {
 #endif
 
+struct gmx_output_env_t;
 struct t_topology;
 struct t_trxframe;
 
@@ -70,7 +70,7 @@ real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momentum, re
                                   real lambda, int n_angles);
 
 void save_data (structure_factor_t * sft, const char *file, int ngrps,
-                real start_q, real end_q, const output_env_t oenv);
+                real start_q, real end_q, const gmx_output_env_t *oenv);
 
 double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda, double sin_theta);
 
@@ -83,7 +83,7 @@ int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
                              const char* fnXVG, const char *fnTRX,
                              const char* fnDAT,
                              real start_q, real end_q,
-                             real energy, int ng, const output_env_t oenv);
+                             real energy, int ng, const gmx_output_env_t *oenv);
 
 t_complex *** rc_tensor_allocation(int x, int y, int z);
 

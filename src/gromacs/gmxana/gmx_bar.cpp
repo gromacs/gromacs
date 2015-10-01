@@ -1023,7 +1023,7 @@ static void sample_coll_make_hist(sample_coll_t *sc, int **bin,
 
 /* write a collection of histograms to a file */
 void sim_data_histogram(sim_data_t *sd, const char *filename,
-                        int nbin_default, const output_env_t oenv)
+                        int nbin_default, const gmx_output_env_t *oenv)
 {
     char           label_x[STRLEN];
     const char    *dhdl    = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
@@ -3610,33 +3610,33 @@ int gmx_bar(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    int          f;
-    int          nf = 0;    /* file counter */
-    int          nfile_tot; /* total number of input files */
-    int          nxvgfile = 0;
-    int          nedrfile = 0;
-    char       **fxvgnms;
-    char       **fedrnms;
-    sim_data_t   sim_data; /* the simulation data */
-    barres_t    *results;  /* the results */
-    int          nresults; /* number of results in results array */
+    int               f;
+    int               nf = 0;    /* file counter */
+    int               nfile_tot; /* total number of input files */
+    int               nxvgfile = 0;
+    int               nedrfile = 0;
+    char            **fxvgnms;
+    char            **fedrnms;
+    sim_data_t        sim_data; /* the simulation data */
+    barres_t         *results;  /* the results */
+    int               nresults; /* number of results in results array */
 
-    double      *partsum;
-    double       prec, dg_tot;
-    FILE        *fpb, *fpi;
-    char         dgformat[20], xvg2format[STRLEN], xvg3format[STRLEN];
-    char         buf[STRLEN], buf2[STRLEN];
-    char         ktformat[STRLEN], sktformat[STRLEN];
-    char         kteformat[STRLEN], skteformat[STRLEN];
-    output_env_t oenv;
-    double       kT;
-    gmx_bool     result_OK = TRUE, bEE = TRUE;
+    double           *partsum;
+    double            prec, dg_tot;
+    FILE             *fpb, *fpi;
+    char              dgformat[20], xvg2format[STRLEN], xvg3format[STRLEN];
+    char              buf[STRLEN], buf2[STRLEN];
+    char              ktformat[STRLEN], sktformat[STRLEN];
+    char              kteformat[STRLEN], skteformat[STRLEN];
+    gmx_output_env_t *oenv;
+    double            kT;
+    gmx_bool          result_OK = TRUE, bEE = TRUE;
 
-    gmx_bool     disc_err          = FALSE;
-    double       sum_disc_err      = 0.; /* discretization error */
-    gmx_bool     histrange_err     = FALSE;
-    double       sum_histrange_err = 0.; /* histogram range error */
-    double       stat_err          = 0.; /* statistical error */
+    gmx_bool          disc_err          = FALSE;
+    double            sum_disc_err      = 0.; /* discretization error */
+    gmx_bool          histrange_err     = FALSE;
+    double            sum_histrange_err = 0.; /* histogram range error */
+    double            stat_err          = 0.; /* statistical error */
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW,

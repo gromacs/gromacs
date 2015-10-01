@@ -147,7 +147,7 @@ static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
 
 int gmx_dyndom(int argc, char *argv[])
 {
-    const char  *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] reads a [REF].pdb[ref] file output from DynDom",
         "(http://www.cmp.uea.ac.uk/dyndom/).",
         "It reads the coordinates, the coordinates of the rotation axis,",
@@ -167,12 +167,12 @@ int gmx_dyndom(int argc, char *argv[])
         "inspection, and energy minimization may be necessary to",
         "validate the structure."
     };
-    static real  trans0 = 0;
-    static rvec  head   = { 0, 0, 0 };
-    static rvec  tail   = { 0, 0, 0 };
-    static real  angle0 = 0, angle1 = 0, maxangle = 0;
-    static int   label  = 0, nframes = 11;
-    t_pargs      pa[]   = {
+    static real       trans0 = 0;
+    static rvec       head   = { 0, 0, 0 };
+    static rvec       tail   = { 0, 0, 0 };
+    static real       angle0 = 0, angle1 = 0, maxangle = 0;
+    static int        label  = 0, nframes = 11;
+    t_pargs           pa[]   = {
         { "-firstangle",    FALSE, etREAL, {&angle0},
           "Angle of rotation about rotation vector" },
         { "-lastangle",    FALSE, etREAL, {&angle1},
@@ -188,16 +188,16 @@ int gmx_dyndom(int argc, char *argv[])
         { "-tail",     FALSE, etRVEC, {tail},
           "Last atom of the arrow vector" }
     };
-    int          i, j, natoms, isize;
-    t_trxstatus *status;
-    atom_id     *index = NULL, *index_all;
-    char        *grpname;
-    real         angle, trans;
-    rvec        *x, *v, *xout, *vout;
-    matrix       box;
-    output_env_t oenv;
+    int               i, j, natoms, isize;
+    t_trxstatus      *status;
+    atom_id          *index = NULL, *index_all;
+    char             *grpname;
+    real              angle, trans;
+    rvec             *x, *v, *xout, *vout;
+    matrix            box;
+    gmx_output_env_t *oenv;
 
-    t_filenm     fnm[] = {
+    t_filenm          fnm[] = {
         { efPDB, "-f", "dyndom",  ffREAD },
         { efTRO, "-o", "rotated", ffWRITE },
         { efNDX, "-n", "domains", ffREAD }

@@ -455,7 +455,7 @@ int gmx_x2top(int argc, char *argv[])
     t_symtab           symtab;
     real               qtot, mtot;
     char               n2t[STRLEN];
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
 
     t_filenm           fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },

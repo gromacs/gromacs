@@ -716,7 +716,7 @@ static void cont_status(const char *slog, const char *ener,
                         gmx_bool bNeedVel, gmx_bool bGenVel, real fr_time,
                         t_inputrec *ir, t_state *state,
                         gmx_mtop_t *sys,
-                        const output_env_t oenv)
+                        const gmx_output_env_t *oenv)
 /* If fr_time == -1 read the last frame available which is complete */
 {
     gmx_bool     bReadVel;
@@ -1520,7 +1520,7 @@ int gmx_grompp(int argc, char *argv[])
     int                ntype;
     gmx_bool           bNeedVel, bGenVel;
     gmx_bool           have_atomnumber;
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     gmx_bool           bVerbose = FALSE;
     warninp_t          wi;
     char               warn_buf[STRLEN];
