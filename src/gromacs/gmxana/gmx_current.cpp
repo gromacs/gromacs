@@ -351,7 +351,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
                        atom_id *index0, int indexm[], real mass2[],
-                       real qmol[], real eps_rf, const output_env_t oenv)
+                       real qmol[], real eps_rf, const gmx_output_env_t *oenv)
 {
     int       i, j;
     int       valloc, nalloc, nfr, nvfr;
@@ -776,15 +776,15 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 int gmx_current(int argc, char *argv[])
 {
 
-    static int             nshift  = 1000;
-    static real            temp    = 300.0;
-    static real            eps_rf  = 0.0;
-    static gmx_bool        bNoJump = TRUE;
-    static real            bfit    = 100.0;
-    static real            bvit    = 0.5;
-    static real            efit    = 400.0;
-    static real            evit    = 5.0;
-    t_pargs                pa[]    = {
+    static int                  nshift  = 1000;
+    static real                 temp    = 300.0;
+    static real                 eps_rf  = 0.0;
+    static gmx_bool             bNoJump = TRUE;
+    static real                 bfit    = 100.0;
+    static real                 bvit    = 0.5;
+    static real                 efit    = 400.0;
+    static real                 evit    = 5.0;
+    t_pargs                     pa[]    = {
         { "-sh", FALSE, etINT, {&nshift},
           "Shift of the frames for averaging the correlation functions and the mean-square displacement."},
         { "-nojump", FALSE, etBOOL, {&bNoJump},
@@ -803,31 +803,31 @@ int gmx_current(int argc, char *argv[])
           "Temperature for calculating epsilon."}
     };
 
-    output_env_t           oenv;
-    t_topology             top;
-    char                 **grpname = NULL;
-    const char            *indexfn;
-    t_trxframe             fr;
-    real                  *mass2 = NULL;
-    matrix                 box;
-    atom_id               *index0;
-    int                   *indexm = NULL;
-    int                    isize;
-    t_trxstatus           *status;
-    int                    flags = 0;
-    gmx_bool               bACF;
-    gmx_bool               bINT;
-    int                    ePBC = -1;
-    int                    nmols;
-    int                    i;
-    real                  *qmol;
-    FILE                  *outf   = NULL;
-    FILE                  *mcor   = NULL;
-    FILE                  *fmj    = NULL;
-    FILE                  *fmd    = NULL;
-    FILE                  *fmjdsp = NULL;
-    FILE                  *fcur   = NULL;
-    t_filenm               fnm[]  = {
+    gmx_output_env_t *          oenv;
+    t_topology                  top;
+    char                      **grpname = NULL;
+    const char                 *indexfn;
+    t_trxframe                  fr;
+    real                       *mass2 = NULL;
+    matrix                      box;
+    atom_id                    *index0;
+    int                        *indexm = NULL;
+    int                         isize;
+    t_trxstatus                *status;
+    int                         flags = 0;
+    gmx_bool                    bACF;
+    gmx_bool                    bINT;
+    int                         ePBC = -1;
+    int                         nmols;
+    int                         i;
+    real                       *qmol;
+    FILE                       *outf   = NULL;
+    FILE                       *mcor   = NULL;
+    FILE                       *fmj    = NULL;
+    FILE                       *fmd    = NULL;
+    FILE                       *fmjdsp = NULL;
+    FILE                       *fcur   = NULL;
+    t_filenm                    fnm[]  = {
         { efTPS,  NULL,  NULL, ffREAD }, /* this is for the topology */
         { efNDX, NULL, NULL, ffOPTRD },
         { efTRX, "-f", NULL, ffREAD },   /* and this for the trajectory */

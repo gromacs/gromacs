@@ -1006,12 +1006,11 @@ static void imd_readcommand(t_gmx_IMD_setup *IMDsetup)
  *
  * Call on master only.
  */
-static FILE *open_imd_out(
-        const char           *fn,
-        t_gmx_IMD_setup      *IMDsetup,
-        int                   nat_total,
-        output_env_t          oenv,
-        unsigned long         Flags)
+static FILE *open_imd_out(const char             *fn,
+                          t_gmx_IMD_setup        *IMDsetup,
+                          int                     nat_total,
+                          const gmx_output_env_t *oenv,
+                          unsigned long           Flags)
 {
     FILE       *fp;
 
@@ -1314,17 +1313,17 @@ static void imd_check_integrator_parallel(t_inputrec *ir, t_commrec *cr)
     }
 }
 
-void init_IMD(t_inputrec    *ir,
-              t_commrec     *cr,
-              gmx_mtop_t    *top_global,
-              FILE          *fplog,
-              int            defnstimd,
-              rvec           x[],
-              int            nfile,
-              const t_filenm fnm[],
-              output_env_t   oenv,
-              int            imdport,
-              unsigned long  Flags)
+void init_IMD(t_inputrec             *ir,
+              t_commrec              *cr,
+              gmx_mtop_t             *top_global,
+              FILE                   *fplog,
+              int                     defnstimd,
+              rvec                    x[],
+              int                     nfile,
+              const t_filenm          fnm[],
+              const gmx_output_env_t *oenv,
+              int                     imdport,
+              unsigned long           Flags)
 {
     int              i;
     int              nat_total;

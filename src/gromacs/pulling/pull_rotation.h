@@ -53,6 +53,7 @@
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_domdec_t;
+struct gmx_output_env_t;
 struct t_commrec;
 struct t_rot;
 
@@ -82,7 +83,7 @@ extern "C" {
  *                 whether or not we are doing a rerun.
  */
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     struct t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const output_env_t oenv,
+                     struct t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      gmx_bool bVerbose, unsigned long Flags);
 
 

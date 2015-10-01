@@ -231,15 +231,15 @@ typedef struct
     /*! \brief after wham, set prof to zero at this z-position.
      * When bootstrapping, set zProf0 to a "stable" reference position.
      */
-    real         zProf0;
-    gmx_bool     bProf0Set;              //!< setting profile to 0 at zProf0?
+    real              zProf0;
+    gmx_bool          bProf0Set;              //!< setting profile to 0 at zProf0?
 
-    gmx_bool     bBoundsOnly, bHistOnly; //!< determine min and max, or write histograms and exit
-    gmx_bool     bAuto;                  //!< determine min and max automatically but do not exit
+    gmx_bool          bBoundsOnly, bHistOnly; //!< determine min and max, or write histograms and exit
+    gmx_bool          bAuto;                  //!< determine min and max automatically but do not exit
 
-    gmx_bool     verbose;                //!< more noisy wham mode
-    int          stepchange;             //!< print maximum change in prof after how many interations
-    output_env_t oenv;                   //!< xvgr options
+    gmx_bool          verbose;                //!< more noisy wham mode
+    int               stepchange;             //!< print maximum change in prof after how many interations
+    gmx_output_env_t *oenv;                   //!< xvgr options
     /*!\}*/
     /*!
      * \name Autocorrelation stuff

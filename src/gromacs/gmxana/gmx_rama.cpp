@@ -67,18 +67,18 @@ static void plot_rama(FILE *out, t_xrama *xr)
 
 int gmx_rama(int argc, char *argv[])
 {
-    const char  *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] selects the [GRK]phi[grk]/[GRK]psi[grk] dihedral combinations from your topology file",
         "and computes these as a function of time.",
         "Using simple Unix tools such as [IT]grep[it] you can select out",
         "specific residues."
     };
 
-    FILE        *out;
-    t_xrama     *xr;
-    int          j;
-    output_env_t oenv;
-    t_filenm     fnm[] = {
+    FILE             *out;
+    t_xrama          *xr;
+    int               j;
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] = {
         { efTRX, "-f", NULL,  ffREAD },
         { efTPR, NULL, NULL,  ffREAD },
         { efXVG, NULL, "rama", ffWRITE }

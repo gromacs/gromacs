@@ -85,29 +85,29 @@ int gmx_nmens(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    t_trxstatus        *out;
-    t_topology          top;
-    int                 ePBC;
-    t_atoms            *atoms;
-    rvec               *xtop, *xref, *xav, *xout1, *xout2;
-    gmx_bool            bDMR, bDMA, bFit;
-    int                 nvec, *eignr = NULL;
-    rvec              **eigvec = NULL;
-    matrix              box;
-    real               *eigval, *invsqrtm, t, disp;
-    int                 natoms;
-    char               *grpname;
-    const char         *indexfile;
-    int                 i, j, d, s, v;
-    int                 nout, *iout, noutvec, *outvec;
-    atom_id            *index;
-    real                rfac, rhalf, jr;
-    output_env_t        oenv;
-    gmx_rng_t           rng;
-    int                 jran;
-    const unsigned long im = 0xffff;
-    const unsigned long ia = 1093;
-    const unsigned long ic = 18257;
+    t_trxstatus             *out;
+    t_topology               top;
+    int                      ePBC;
+    t_atoms                 *atoms;
+    rvec                    *xtop, *xref, *xav, *xout1, *xout2;
+    gmx_bool                 bDMR, bDMA, bFit;
+    int                      nvec, *eignr = NULL;
+    rvec                   **eigvec = NULL;
+    matrix                   box;
+    real                    *eigval, *invsqrtm, t, disp;
+    int                      natoms;
+    char                    *grpname;
+    const char              *indexfile;
+    int                      i, j, d, s, v;
+    int                      nout, *iout, noutvec, *outvec;
+    atom_id                 *index;
+    real                     rfac, rhalf, jr;
+    gmx_output_env_t *       oenv;
+    gmx_rng_t                rng;
+    int                      jran;
+    const unsigned long      im = 0xffff;
+    const unsigned long      ia = 1093;
+    const unsigned long      ic = 18257;
 
 
     t_filenm fnm[] = {

@@ -1079,7 +1079,8 @@ static int get_group_apm_check(
  *
  * Also print the initial ion counts
  */
-static void print_ionlist_legend(t_inputrec *ir, const output_env_t oenv)
+static void print_ionlist_legend(t_inputrec             *ir,
+                                 const gmx_output_env_t *oenv)
 {
     const char **legend;
     int          ic, count, ii;
@@ -1340,18 +1341,17 @@ static void init_swapstate(
 }
 
 
-extern void init_swapcoords(
-        FILE              *fplog,
-        gmx_bool           bVerbose,
-        t_inputrec        *ir,
-        const char        *fn,
-        gmx_mtop_t        *mtop,
-        rvec               x[],
-        matrix             box,
-        swapstate_t       *swapstate,
-        t_commrec         *cr,
-        const output_env_t oenv,
-        unsigned long      Flags)
+void init_swapcoords(FILE                   *fplog,
+                     gmx_bool                bVerbose,
+                     t_inputrec             *ir,
+                     const char             *fn,
+                     gmx_mtop_t             *mtop,
+                     rvec                    x[],
+                     matrix                  box,
+                     swapstate_t            *swapstate,
+                     t_commrec              *cr,
+                     const gmx_output_env_t *oenv,
+                     unsigned long           Flags)
 {
     int                    i, ic, ig, ii, j;
     t_swapcoords          *sc;
@@ -1696,7 +1696,7 @@ extern void init_swapcoords(
 }
 
 
-extern void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *sc)
+void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *sc)
 {
     t_group *g;
     int      ig;
@@ -1832,17 +1832,16 @@ static void apply_modified_positions(
 }
 
 
-extern gmx_bool do_swapcoords(
-        t_commrec        *cr,
-        gmx_int64_t       step,
-        double            t,
-        t_inputrec       *ir,
-        gmx_wallcycle_t   wcycle,
-        rvec              x[],
-        matrix            box,
-        gmx_mtop_t       *mtop,
-        gmx_bool          bVerbose,
-        gmx_bool          bRerun)
+gmx_bool do_swapcoords(t_commrec        *cr,
+                       gmx_int64_t       step,
+                       double            t,
+                       t_inputrec       *ir,
+                       gmx_wallcycle_t   wcycle,
+                       rvec              x[],
+                       matrix            box,
+                       gmx_mtop_t       *mtop,
+                       gmx_bool          bVerbose,
+                       gmx_bool          bRerun)
 {
     t_swapcoords         *sc;
     t_swap               *s;

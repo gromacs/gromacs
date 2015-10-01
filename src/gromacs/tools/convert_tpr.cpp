@@ -372,7 +372,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     gmx_enxnm_t      *enm     = NULL;
     t_enxframe       *fr_ener = NULL;
     char              buf[200], buf2[200];
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
         { efTPR, NULL,  NULL,    ffREAD  },
         { efTRN, "-f",  NULL,    ffOPTRD },

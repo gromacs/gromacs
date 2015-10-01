@@ -859,55 +859,55 @@ int gmx_trjconv(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE             *out    = NULL;
-    t_trxstatus      *trxout = NULL;
-    t_trxstatus      *trxin;
-    int               ftp, ftpin = 0, file_nr;
-    t_trxframe        fr, frout;
-    int               flags;
-    rvec             *xmem  = NULL, *vmem = NULL, *fmem = NULL;
-    rvec             *xp    = NULL, x_shift, hbox;
-    real             *w_rls = NULL;
-    int               m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
+    FILE                  *out    = NULL;
+    t_trxstatus           *trxout = NULL;
+    t_trxstatus           *trxin;
+    int                    ftp, ftpin = 0, file_nr;
+    t_trxframe             fr, frout;
+    int                    flags;
+    rvec                  *xmem  = NULL, *vmem = NULL, *fmem = NULL;
+    rvec                  *xp    = NULL, x_shift, hbox;
+    real                  *w_rls = NULL;
+    int                    m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
 #define SKIP 10
-    t_topology        top;
-    gmx_mtop_t       *mtop  = NULL;
-    gmx_conect        gc    = NULL;
-    int               ePBC  = -1;
-    t_atoms          *atoms = NULL, useatoms;
-    matrix            top_box;
-    atom_id          *index, *cindex;
-    char             *grpnm;
-    int              *frindex, nrfri;
-    char             *frname;
-    int               ifit, my_clust = -1;
-    atom_id          *ind_fit;
-    char             *gn_fit;
-    t_cluster_ndx    *clust           = NULL;
-    t_trxstatus     **clust_status    = NULL;
-    int              *clust_status_id = NULL;
-    int               ntrxopen        = 0;
-    int              *nfwritten       = NULL;
-    int               ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
-    double          **dropval;
-    real              tshift = 0, t0 = -1, dt = 0.001, prec;
-    gmx_bool          bFit, bPFit, bReset;
-    int               nfitdim;
-    gmx_rmpbc_t       gpbc = NULL;
-    gmx_bool          bRmPBC, bPBCWhole, bPBCcomRes, bPBCcomMol, bPBCcomAtom, bPBC, bNoJump, bCluster;
-    gmx_bool          bCopy, bDoIt, bIndex, bTDump, bSetTime, bTPS = FALSE, bDTset = FALSE;
-    gmx_bool          bExec, bTimeStep = FALSE, bDumpFrame = FALSE, bSetPrec, bNeedPrec;
-    gmx_bool          bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
-    gmx_bool          bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
-    gmx_bool          bWriteFrame, bSplitHere;
-    const char       *top_file, *in_file, *out_file = NULL;
-    char              out_file2[256], *charpt;
-    char             *outf_base = NULL;
-    const char       *outf_ext  = NULL;
-    char              top_title[256], title[256], filemode[5];
-    output_env_t      oenv;
+    t_topology             top;
+    gmx_mtop_t            *mtop  = NULL;
+    gmx_conect             gc    = NULL;
+    int                    ePBC  = -1;
+    t_atoms               *atoms = NULL, useatoms;
+    matrix                 top_box;
+    atom_id               *index, *cindex;
+    char                  *grpnm;
+    int                   *frindex, nrfri;
+    char                  *frname;
+    int                    ifit, my_clust = -1;
+    atom_id               *ind_fit;
+    char                  *gn_fit;
+    t_cluster_ndx         *clust           = NULL;
+    t_trxstatus          **clust_status    = NULL;
+    int                   *clust_status_id = NULL;
+    int                    ntrxopen        = 0;
+    int                   *nfwritten       = NULL;
+    int                    ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
+    double               **dropval;
+    real                   tshift = 0, t0 = -1, dt = 0.001, prec;
+    gmx_bool               bFit, bPFit, bReset;
+    int                    nfitdim;
+    gmx_rmpbc_t            gpbc = NULL;
+    gmx_bool               bRmPBC, bPBCWhole, bPBCcomRes, bPBCcomMol, bPBCcomAtom, bPBC, bNoJump, bCluster;
+    gmx_bool               bCopy, bDoIt, bIndex, bTDump, bSetTime, bTPS = FALSE, bDTset = FALSE;
+    gmx_bool               bExec, bTimeStep = FALSE, bDumpFrame = FALSE, bSetPrec, bNeedPrec;
+    gmx_bool               bHaveFirstFrame, bHaveNextFrame, bSetBox, bSetUR, bSplit = FALSE;
+    gmx_bool               bSubTraj = FALSE, bDropUnder = FALSE, bDropOver = FALSE, bTrans = FALSE;
+    gmx_bool               bWriteFrame, bSplitHere;
+    const char            *top_file, *in_file, *out_file = NULL;
+    char                   out_file2[256], *charpt;
+    char                  *outf_base = NULL;
+    const char            *outf_ext  = NULL;
+    char                   top_title[256], title[256], filemode[5];
+    gmx_output_env_t *     oenv;
 
-    t_filenm          fnm[] = {
+    t_filenm               fnm[] = {
         { efTRX, "-f",   NULL,      ffREAD  },
         { efTRO, "-o",   NULL,      ffWRITE },
         { efTPS, NULL,   NULL,      ffOPTRD },

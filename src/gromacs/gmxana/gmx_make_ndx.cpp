@@ -1539,20 +1539,20 @@ int gmx_make_ndx(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    output_env_t oenv;
-    int          nndxin;
-    const char  *stxfile;
-    char       **ndxinfiles;
-    const char  *ndxoutfile;
-    gmx_bool     bNatoms;
-    int          i, j;
-    t_atoms     *atoms;
-    rvec        *x, *v;
-    int          ePBC;
-    matrix       box;
-    t_blocka    *block, *block2;
-    char       **gnames, **gnames2;
-    t_filenm     fnm[] = {
+    gmx_output_env_t *oenv;
+    int               nndxin;
+    const char       *stxfile;
+    char            **ndxinfiles;
+    const char       *ndxoutfile;
+    gmx_bool          bNatoms;
+    int               i, j;
+    t_atoms          *atoms;
+    rvec             *x, *v;
+    int               ePBC;
+    matrix            box;
+    t_blocka         *block, *block2;
+    char            **gnames, **gnames2;
+    t_filenm          fnm[] = {
         { efSTX, "-f", NULL,     ffOPTRD  },
         { efNDX, "-n", NULL,     ffOPTRDMULT },
         { efNDX, "-o", NULL,     ffWRITE }

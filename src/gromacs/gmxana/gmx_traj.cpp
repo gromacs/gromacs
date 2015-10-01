@@ -209,7 +209,7 @@ static void write_trx_x(t_trxstatus *status, t_trxframe *fr, real *mass, gmx_boo
 
 static void make_legend(FILE *fp, int ngrps, int isize, atom_id index[],
                         char **name, gmx_bool bCom, gmx_bool bMol, gmx_bool bDim[],
-                        const output_env_t oenv)
+                        const gmx_output_env_t *oenv)
 {
     char      **leg;
     const char *dimtxt[] = { " X", " Y", " Z", "" };
@@ -422,7 +422,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                            int isize, atom_id *index, int nfr_x, rvec *x,
                            int nfr_v, rvec *sum,
                            gmx_bool bDim[], real scale_factor,
-                           const output_env_t oenv)
+                           const gmx_output_env_t *oenv)
 {
     FILE       *fp;
     real        max, len2, scale;
@@ -576,7 +576,7 @@ static void update_histo(int gnx, atom_id index[], rvec v[],
 }
 
 static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
-                        const output_env_t oenv)
+                        const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   i;
@@ -592,7 +592,7 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
 
 int gmx_traj(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char          *desc[] = {
         "[THISMODULE] plots coordinates, velocities, forces and/or the box.",
         "With [TT]-com[tt] the coordinates, velocities and forces are",
         "calculated for the center of mass of each group.",
@@ -623,11 +623,11 @@ int gmx_traj(int argc, char *argv[])
         "norm of the vector is plotted. In addition in the same graph",
         "the kinetic energy distribution is given."
     };
-    static gmx_bool bMol    = FALSE, bCom = FALSE, bPBC = TRUE, bNoJump = FALSE;
-    static gmx_bool bX      = TRUE, bY = TRUE, bZ = TRUE, bNorm = FALSE, bFP = FALSE;
-    static int      ngroups = 1;
-    static real     ctime   = -1, scale = 0, binwidth = 1;
-    t_pargs         pa[]    = {
+    static gmx_bool      bMol    = FALSE, bCom = FALSE, bPBC = TRUE, bNoJump = FALSE;
+    static gmx_bool      bX      = TRUE, bY = TRUE, bZ = TRUE, bNorm = FALSE, bFP = FALSE;
+    static int           ngroups = 1;
+    static real          ctime   = -1, scale = 0, binwidth = 1;
+    t_pargs              pa[]    = {
         { "-com", FALSE, etBOOL, {&bCom},
           "Plot data for the com of each group" },
         { "-pbc", FALSE, etBOOL, {&bPBC},
@@ -655,34 +655,34 @@ int gmx_traj(int argc, char *argv[])
         { "-scale", FALSE, etREAL, {&scale},
           "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
-    FILE           *outx   = NULL, *outv = NULL, *outf = NULL, *outb = NULL, *outt = NULL;
-    FILE           *outekt = NULL, *outekr = NULL;
-    t_topology      top;
-    int             ePBC;
-    real           *mass, time;
-    const char     *indexfn;
-    t_trxframe      fr, frout;
-    int             flags, nvhisto = 0, *vhisto = NULL;
-    rvec           *xtop, *xp = NULL;
-    rvec           *sumx = NULL, *sumv = NULL, *sumf = NULL;
-    matrix          topbox;
-    t_trxstatus    *status;
-    t_trxstatus    *status_out = NULL;
-    gmx_rmpbc_t     gpbc       = NULL;
-    int             i, j;
-    int             nr_xfr, nr_vfr, nr_ffr;
-    char          **grpname;
-    int            *isize0, *isize;
-    atom_id       **index0, **index;
-    atom_id        *atndx;
-    t_block        *mols;
-    gmx_bool        bTop, bOX, bOXT, bOV, bOF, bOB, bOT, bEKT, bEKR, bCV, bCF;
-    gmx_bool        bDim[4], bDum[4], bVD;
-    char            sffmt[STRLEN], sffmt6[STRLEN];
-    const char     *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
-    output_env_t    oenv;
+    FILE                *outx   = NULL, *outv = NULL, *outf = NULL, *outb = NULL, *outt = NULL;
+    FILE                *outekt = NULL, *outekr = NULL;
+    t_topology           top;
+    int                  ePBC;
+    real                *mass, time;
+    const char          *indexfn;
+    t_trxframe           fr, frout;
+    int                  flags, nvhisto = 0, *vhisto = NULL;
+    rvec                *xtop, *xp = NULL;
+    rvec                *sumx = NULL, *sumv = NULL, *sumf = NULL;
+    matrix               topbox;
+    t_trxstatus         *status;
+    t_trxstatus         *status_out = NULL;
+    gmx_rmpbc_t          gpbc       = NULL;
+    int                  i, j;
+    int                  nr_xfr, nr_vfr, nr_ffr;
+    char               **grpname;
+    int                 *isize0, *isize;
+    atom_id            **index0, **index;
+    atom_id             *atndx;
+    t_block             *mols;
+    gmx_bool             bTop, bOX, bOXT, bOV, bOF, bOB, bOT, bEKT, bEKR, bCV, bCF;
+    gmx_bool             bDim[4], bDum[4], bVD;
+    char                 sffmt[STRLEN], sffmt6[STRLEN];
+    const char          *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
+    gmx_output_env_t *   oenv;
 
-    t_filenm        fnm[] = {
+    t_filenm             fnm[] = {
         { efTRX, "-f", NULL, ffREAD },
         { efTPS, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD },
