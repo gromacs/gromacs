@@ -723,26 +723,26 @@ int gmx_make_edi(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    rvec        *xref1;
-    int          nvec1, *eignr1 = NULL;
-    rvec        *xav1, **eigvec1 = NULL;
-    t_atoms     *atoms = NULL;
-    int          nav; /* Number of atoms in the average structure */
-    char        *grpname;
-    const char  *indexfile;
-    int          i;
-    atom_id     *index, *ifit;
-    int          nfit;           /* Number of atoms in the reference/fit structure */
-    int          ev_class;       /* parameter _class i.e. evMON, evRADFIX etc. */
-    int          nvecs;
-    real        *eigval1 = NULL; /* in V3.3 this is parameter of read_eigenvectors */
+    rvec             *xref1;
+    int               nvec1, *eignr1 = NULL;
+    rvec             *xav1, **eigvec1 = NULL;
+    t_atoms          *atoms = NULL;
+    int               nav; /* Number of atoms in the average structure */
+    char             *grpname;
+    const char       *indexfile;
+    int               i;
+    atom_id          *index, *ifit;
+    int               nfit;           /* Number of atoms in the reference/fit structure */
+    int               ev_class;       /* parameter _class i.e. evMON, evRADFIX etc. */
+    int               nvecs;
+    real             *eigval1 = NULL; /* in V3.3 this is parameter of read_eigenvectors */
 
-    const char  *EdiFile;
-    const char  *TargetFile;
-    const char  *OriginFile;
-    const char  *EigvecFile;
+    const char       *EdiFile;
+    const char       *TargetFile;
+    const char       *OriginFile;
+    const char       *EigvecFile;
 
-    output_env_t oenv;
+    gmx_output_env_t *oenv;
 
     /*to read topology file*/
     t_topology  top;

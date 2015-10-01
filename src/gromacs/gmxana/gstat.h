@@ -38,14 +38,13 @@
 #define GMX_GMXANA_GSTAT_H
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/topology/index.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+struct gmx_output_env_t;
 struct gmx_residuetype_t;
 
 /* must correspond with 'leg' g_chi.c:727 */
@@ -116,7 +115,7 @@ void calc_distribution_props(int nh, int histo[],
 void ana_dih_trans(const char *fn_trans, const char *fn_histo,
                    real **dih, int nframes, int nangles,
                    const char *grpname, real *time, gmx_bool bRb,
-                   const output_env_t oenv);
+                   const gmx_output_env_t *oenv);
 /*
  * Analyse dihedral transitions, by counting transitions per dihedral
  * and per frame. The total number of transitions is printed to
@@ -145,7 +144,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
                        real **dih, int nlist, t_dlist dlist[],
                        int nframes, int nangles, const char *grpname,
                        int multiplicity[], real *time, gmx_bool bRb,
-                       real core_frac, const output_env_t oenv);
+                       real core_frac, const gmx_output_env_t *oenv);
 /* as above but passes dlist so can copy occupancies into it, and multiplicity[]
  *  (1..nangles, corresp to dih[this][], so can have non-3 multiplicity of
  * rotamers. Also production of xvg output files is conditional
@@ -163,7 +162,7 @@ void read_ang_dih(const char *trj_fn,
                   real **trans_frac,
                   real **aver_angle,
                   real *dih[],
-                  const output_env_t oenv);
+                  const gmx_output_env_t *oenv);
 /*
  * Read a trajectory and calculate angles and dihedrals.
  *
@@ -243,9 +242,9 @@ void get_chi_product_traj (real **dih, int nframes,
                            real time[], int **lookup, int *multiplicity,
                            gmx_bool bRb, gmx_bool bNormalize,
                            real core_frac, gmx_bool bAll, const char *fnall,
-                           const output_env_t oenv);
+                           const gmx_output_env_t *oenv);
 
-void print_one (const output_env_t oenv, const char *base,
+void print_one (const gmx_output_env_t *oenv, const char *base,
                 const char *name,
                 const char *title, const char *ylabel, int nf,
                 real time[], real data[]);

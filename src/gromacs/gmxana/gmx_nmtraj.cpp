@@ -95,34 +95,34 @@ int gmx_nmtraj(int argc, char *argv[])
 
 #define NPA asize(pa)
 
-    t_trxstatus      *out;
-    t_topology        top;
-    int               ePBC;
-    t_atoms          *atoms;
-    rvec             *xtop, *xref, *xav, *xout;
-    int               nvec, *eignr = NULL;
-    rvec            **eigvec = NULL;
-    matrix            box;
-    int               natoms;
-    int               i, j, k, kmode, d;
-    gmx_bool          bDMR, bDMA, bFit;
+    t_trxstatus           *out;
+    t_topology             top;
+    int                    ePBC;
+    t_atoms               *atoms;
+    rvec                  *xtop, *xref, *xav, *xout;
+    int                    nvec, *eignr = NULL;
+    rvec                 **eigvec = NULL;
+    matrix                 box;
+    int                    natoms;
+    int                    i, j, k, kmode, d;
+    gmx_bool               bDMR, bDMA, bFit;
 
-    real        *     eigval;
-    int        *      dummy;
-    real        *     invsqrtm;
-    real              fraction;
-    int              *out_eigidx;
-    rvec        *     this_eigvec;
-    real              omega, Ekin, m, vel;
-    int               nmodes, nphases;
-    int              *imodes;
-    real             *amplitude;
-    real             *phases;
-    const char       *p;
-    char             *pe;
-    output_env_t      oenv;
+    real                  *eigval;
+    int                   *dummy;
+    real                  *invsqrtm;
+    real                   fraction;
+    int                   *out_eigidx;
+    rvec                  *this_eigvec;
+    real                   omega, Ekin, m, vel;
+    int                    nmodes, nphases;
+    int                   *imodes;
+    real                  *amplitude;
+    real                  *phases;
+    const char            *p;
+    char                  *pe;
+    gmx_output_env_t      *oenv;
 
-    t_filenm          fnm[] =
+    t_filenm               fnm[] =
     {
         { efTPS, NULL,    NULL,          ffREAD },
         { efTRN, "-v",    "eigenvec",    ffREAD  },

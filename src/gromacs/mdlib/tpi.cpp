@@ -128,7 +128,7 @@ namespace gmx
 /*! \brief Do test particle insertion.
     \copydoc integrator_t (FILE *fplog, t_commrec *cr,
                            int nfile, const t_filenm fnm[],
-                           const output_env_t oenv, gmx_bool bVerbose,
+                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
                            gmx_bool bCompact, int nstglobalcomm,
                            gmx_vsite_t *vsite, gmx_constr_t constr,
                            int stepout,
@@ -148,7 +148,7 @@ namespace gmx
  */
 double do_tpi(FILE *fplog, t_commrec *cr,
               int nfile, const t_filenm fnm[],
-              const output_env_t oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+              const gmx_output_env_t *oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
               int gmx_unused nstglobalcomm,
               gmx_vsite_t gmx_unused *vsite, gmx_constr_t gmx_unused constr,
               int gmx_unused stepout,

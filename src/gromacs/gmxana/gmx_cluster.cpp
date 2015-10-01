@@ -150,7 +150,7 @@ void cp_index(int nn, int from[], int to[])
 void mc_optimize(FILE *log, t_mat *m, real *time,
                  int maxiter, int nrandom,
                  int seed, real kT,
-                 const char *conv, output_env_t oenv)
+                 const char *conv, gmx_output_env_t *oenv)
 {
     FILE      *fp = NULL;
     real       ecur, enext, emin, prob, enorm;
@@ -774,7 +774,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 }
 
 rvec **read_whole_trj(const char *fn, int isize, atom_id index[], int skip,
-                      int *nframe, real **time, const output_env_t oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
+                      int *nframe, real **time, const gmx_output_env_t *oenv, gmx_bool bPBC, gmx_rmpbc_t gpbc)
 {
     rvec       **xx, *x;
     matrix       box;
@@ -933,7 +933,7 @@ static char *parse_filename(const char *fn, int maxnr)
 
 static void ana_trans(t_clusters *clust, int nf,
                       const char *transfn, const char *ntransfn, FILE *log,
-                      t_rgb rlo, t_rgb rhi, const output_env_t oenv)
+                      t_rgb rlo, t_rgb rhi, const gmx_output_env_t *oenv)
 {
     FILE  *fp;
     real **trans, *axis;
@@ -1003,7 +1003,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              const char *clustidfn, gmx_bool bAverage,
                              int write_ncl, int write_nst, real rmsmin,
                              gmx_bool bFit, FILE *log, t_rgb rlo, t_rgb rhi,
-                             const output_env_t oenv)
+                             const gmx_output_env_t *oenv)
 {
     FILE        *size_fp = NULL;
     char         buf[STRLEN], buf1[40], buf2[40], buf3[40], *trxsfn;
@@ -1437,20 +1437,20 @@ int gmx_cluster(int argc, char *argv[])
         m_monte_carlo, m_diagonalize, m_gromos, m_nr
     };
     /* Set colors for plotting: white = zero RMS, black = maximum */
-    static t_rgb rlo_top  = { 1.0, 1.0, 1.0 };
-    static t_rgb rhi_top  = { 0.0, 0.0, 0.0 };
-    static t_rgb rlo_bot  = { 1.0, 1.0, 1.0 };
-    static t_rgb rhi_bot  = { 0.0, 0.0, 1.0 };
-    static int   nlevels  = 40, skip = 1;
-    static real  scalemax = -1.0, rmsdcut = 0.1, rmsmin = 0.0;
-    gmx_bool     bRMSdist = FALSE, bBinary = FALSE, bAverage = FALSE, bFit = TRUE;
-    static int   niter    = 10000, nrandom = 0, seed = 1993, write_ncl = 0, write_nst = 1, minstruct = 1;
-    static real  kT       = 1e-3;
-    static int   M        = 10, P = 3;
-    output_env_t oenv;
-    gmx_rmpbc_t  gpbc = NULL;
+    static t_rgb      rlo_top  = { 1.0, 1.0, 1.0 };
+    static t_rgb      rhi_top  = { 0.0, 0.0, 0.0 };
+    static t_rgb      rlo_bot  = { 1.0, 1.0, 1.0 };
+    static t_rgb      rhi_bot  = { 0.0, 0.0, 1.0 };
+    static int        nlevels  = 40, skip = 1;
+    static real       scalemax = -1.0, rmsdcut = 0.1, rmsmin = 0.0;
+    gmx_bool          bRMSdist = FALSE, bBinary = FALSE, bAverage = FALSE, bFit = TRUE;
+    static int        niter    = 10000, nrandom = 0, seed = 1993, write_ncl = 0, write_nst = 1, minstruct = 1;
+    static real       kT       = 1e-3;
+    static int        M        = 10, P = 3;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    t_pargs      pa[] = {
+    t_pargs           pa[] = {
         { "-dista", FALSE, etBOOL, {&bRMSdist},
           "Use RMSD of distances instead of RMS deviation" },
         { "-nlevels", FALSE, etINT,  {&nlevels},
@@ -1495,7 +1495,7 @@ int gmx_cluster(int argc, char *argv[])
         { "-pbc", FALSE, etBOOL,
           { &bPBC }, "PBC check" }
     };
-    t_filenm     fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",     NULL,        ffOPTRD },
         { efTPS, "-s",     NULL,        ffOPTRD },
         { efNDX, NULL,     NULL,        ffOPTRD },

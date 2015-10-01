@@ -274,7 +274,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
 static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, const char *fnTRX, real binw, int tblock,
                                        int *nframes,  int *nslicex, int *nslicey,
                                        real sgang1, real sgang2, real ****intfpos,
-                                       output_env_t oenv)
+                                       gmx_output_env_t *oenv)
 {
     FILE         *fpsg   = NULL, *fpsk = NULL;
     t_topology    top;
@@ -632,10 +632,10 @@ int gmx_hydorder(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /*Filenames*/
-    const char  *ndxfnm, *tpsfnm, *trxfnm;
-    char       **spectra, **intfn, **raw;
-    int          nfspect, nfxpm, nfraw;
-    output_env_t oenv;
+    const char       *ndxfnm, *tpsfnm, *trxfnm;
+    char            **spectra, **intfn, **raw;
+    int               nfspect, nfxpm, nfraw;
+    gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))

@@ -1509,7 +1509,7 @@ static void do_nhb_dist(FILE *fp, t_hbdata *hb, real t)
 }
 
 static void do_hblife(const char *fn, t_hbdata *hb, gmx_bool bMerge, gmx_bool bContact,
-                      const output_env_t oenv)
+                      const gmx_output_env_t *oenv)
 {
     FILE          *fp;
     const char    *leg[] = { "p(t)", "t p(t)" };
@@ -1917,7 +1917,7 @@ static void normalizeACF(real *ct, real *gt, int nhb, int len)
 
 static void do_hbac(const char *fn, t_hbdata *hb,
                     int nDump, gmx_bool bMerge, gmx_bool bContact, real fit_start,
-                    real temp, gmx_bool R2, const output_env_t oenv,
+                    real temp, gmx_bool R2, const gmx_output_env_t *oenv,
                     int nThreads)
 {
     FILE          *fp;
@@ -2187,9 +2187,9 @@ static void init_hbframe(t_hbdata *hb, int nframes, real t)
     }
 }
 
-static FILE *open_donor_properties_file(const char        *fn,
-                                        t_hbdata          *hb,
-                                        const output_env_t oenv)
+static FILE *open_donor_properties_file(const char             *fn,
+                                        t_hbdata               *hb,
+                                        const gmx_output_env_t *oenv)
 {
     FILE       *fp    = NULL;
     const char *leg[] = { "Nbound", "Nfree" };
@@ -2513,44 +2513,44 @@ int gmx_hbond(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    char                  hbmap [HB_NR] = { ' ',    'o',      '-',       '*' };
-    const char           *hbdesc[HB_NR] = { "None", "Present", "Inserted", "Present & Inserted" };
-    t_rgb                 hbrgb [HB_NR] = { {1, 1, 1}, {1, 0, 0},   {0, 0, 1},    {1, 0, 1} };
+    char                       hbmap [HB_NR] = { ' ',    'o',      '-',       '*' };
+    const char                *hbdesc[HB_NR] = { "None", "Present", "Inserted", "Present & Inserted" };
+    t_rgb                      hbrgb [HB_NR] = { {1, 1, 1}, {1, 0, 0},   {0, 0, 1},    {1, 0, 1} };
 
-    t_trxstatus          *status;
-    int                   trrStatus = 1;
-    t_topology            top;
-    t_inputrec            ir;
-    t_pargs              *ppa;
-    int                   npargs, natoms, nframes = 0, shatom;
-    int                  *isize;
-    char                **grpnames;
-    atom_id             **index;
-    rvec                 *x, hbox;
-    matrix                box;
-    real                  t, ccut, dist = 0.0, ang = 0.0;
-    double                max_nhb, aver_nhb, aver_dist;
-    int                   h = 0, i = 0, j, k = 0, ogrp, nsel;
-    int                   xi, yi, zi, ai;
-    int                   xj, yj, zj, aj, xjj, yjj, zjj;
-    gmx_bool              bSelected, bHBmap, bStop, bTwo, bBox, bTric;
-    int                  *adist, *rdist;
-    int                   grp, nabin, nrbin, resdist, ihb;
-    char                **leg;
-    t_hbdata             *hb;
-    FILE                 *fp, *fpnhb = NULL, *donor_properties = NULL;
-    t_gridcell         ***grid;
-    t_ncell              *icell, *jcell;
-    ivec                  ngrid;
-    unsigned char        *datable;
-    output_env_t          oenv;
-    int                   ii, hh, actual_nThreads;
-    int                   threadNr = 0;
-    gmx_bool              bParallel;
-    gmx_bool              bEdge_yjj, bEdge_xjj, bOMP;
+    t_trxstatus               *status;
+    int                        trrStatus = 1;
+    t_topology                 top;
+    t_inputrec                 ir;
+    t_pargs                   *ppa;
+    int                        npargs, natoms, nframes = 0, shatom;
+    int                       *isize;
+    char                     **grpnames;
+    atom_id                  **index;
+    rvec                      *x, hbox;
+    matrix                     box;
+    real                       t, ccut, dist = 0.0, ang = 0.0;
+    double                     max_nhb, aver_nhb, aver_dist;
+    int                        h = 0, i = 0, j, k = 0, ogrp, nsel;
+    int                        xi, yi, zi, ai;
+    int                        xj, yj, zj, aj, xjj, yjj, zjj;
+    gmx_bool                   bSelected, bHBmap, bStop, bTwo, bBox, bTric;
+    int                       *adist, *rdist;
+    int                        grp, nabin, nrbin, resdist, ihb;
+    char                     **leg;
+    t_hbdata                  *hb;
+    FILE                      *fp, *fpnhb = NULL, *donor_properties = NULL;
+    t_gridcell              ***grid;
+    t_ncell                   *icell, *jcell;
+    ivec                       ngrid;
+    unsigned char             *datable;
+    gmx_output_env_t          *oenv;
+    int                        ii, hh, actual_nThreads;
+    int                        threadNr = 0;
+    gmx_bool                   bParallel;
+    gmx_bool                   bEdge_yjj, bEdge_xjj, bOMP;
 
-    t_hbdata            **p_hb    = NULL;                   /* one per thread, then merge after the frame loop */
-    int                 **p_adist = NULL, **p_rdist = NULL; /* a histogram for each thread. */
+    t_hbdata                 **p_hb    = NULL;                   /* one per thread, then merge after the frame loop */
+    int                      **p_adist = NULL, **p_rdist = NULL; /* a histogram for each thread. */
 
 #ifdef GMX_OPENMP
     bOMP = TRUE;

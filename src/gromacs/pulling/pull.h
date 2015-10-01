@@ -57,6 +57,7 @@
 extern "C" {
 #endif
 
+struct gmx_output_env_t;
 struct pull_params_t;
 struct t_mdatoms;
 struct t_pbc;
@@ -174,17 +175,17 @@ void dd_make_local_pull_groups(t_commrec *cr,
  * \param Flags       Flags passed over from main, used to determine
  *                    whether or not we are appending.
  */
-struct pull_t *init_pull(FILE                *fplog,
-                         const pull_params_t *pull_params,
-                         const t_inputrec    *ir,
-                         int                  nfile,
-                         const t_filenm       fnm[],
-                         gmx_mtop_t          *mtop,
-                         t_commrec          * cr,
-                         const output_env_t   oenv,
-                         real                 lambda,
-                         gmx_bool             bOutFile,
-                         unsigned long        Flags);
+struct pull_t *init_pull(FILE                   *fplog,
+                         const pull_params_t    *pull_params,
+                         const t_inputrec       *ir,
+                         int                     nfile,
+                         const t_filenm          fnm[],
+                         gmx_mtop_t             *mtop,
+                         t_commrec             * cr,
+                         const gmx_output_env_t *oenv,
+                         real                    lambda,
+                         gmx_bool                bOutFile,
+                         unsigned long           Flags);
 
 
 /*! \brief Close the pull output files.

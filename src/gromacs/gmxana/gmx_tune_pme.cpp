@@ -2309,15 +2309,15 @@ int gmx_tune_pme(int argc, char *argv[])
     const char     *npmevalues_opt[] =
     { NULL, "auto", "all", "subset", NULL };
 
-    gmx_bool     bAppendFiles          = TRUE;
-    gmx_bool     bKeepAndNumCPT        = FALSE;
-    gmx_bool     bResetCountersHalfWay = FALSE;
-    gmx_bool     bBenchmark            = TRUE;
-    gmx_bool     bCheck                = TRUE;
+    gmx_bool          bAppendFiles          = TRUE;
+    gmx_bool          bKeepAndNumCPT        = FALSE;
+    gmx_bool          bResetCountersHalfWay = FALSE;
+    gmx_bool          bBenchmark            = TRUE;
+    gmx_bool          bCheck                = TRUE;
 
-    output_env_t oenv = NULL;
+    gmx_output_env_t *oenv = NULL;
 
-    t_pargs      pa[] = {
+    t_pargs           pa[] = {
         /***********************/
         /* g_tune_pme options: */
         /***********************/

@@ -153,33 +153,33 @@ int gmx_saltbr(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    FILE              *out[3], *fp;
-    static const char *title[3] = {
+    FILE                   *out[3], *fp;
+    static const char      *title[3] = {
         "Distance between positively charged groups",
         "Distance between negatively charged groups",
         "Distance between oppositely charged groups"
     };
-    static const char *fn[3] = {
+    static const char      *fn[3] = {
         "plus-plus.xvg",
         "min-min.xvg",
         "plus-min.xvg"
     };
-    int                nset[3] = {0, 0, 0};
+    int                     nset[3] = {0, 0, 0};
 
-    t_topology        *top;
-    int                ePBC;
-    char              *buf;
-    t_trxstatus       *status;
-    int                i, j, k, m, nnn, teller, ncg;
-    real               t, *time, qi, qj;
-    t_charge          *cg;
-    real            ***cgdist;
-    int              **nWithin;
+    t_topology             *top;
+    int                     ePBC;
+    char                   *buf;
+    t_trxstatus            *status;
+    int                     i, j, k, m, nnn, teller, ncg;
+    real                    t, *time, qi, qj;
+    t_charge               *cg;
+    real                 ***cgdist;
+    int                   **nWithin;
 
-    t_pbc              pbc;
-    rvec              *x;
-    matrix             box;
-    output_env_t       oenv;
+    t_pbc                   pbc;
+    rvec                   *x;
+    matrix                  box;
+    gmx_output_env_t       *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))

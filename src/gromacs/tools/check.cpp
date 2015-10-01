@@ -274,7 +274,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
     }
 }
 
-void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
+void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real tol)
 {
     t_trxframe       fr;
     t_count          count;
@@ -703,7 +703,7 @@ void chk_enx(const char *fn)
 
 int gmx_check(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] reads a trajectory ([REF].tng[ref], [REF].trr[ref] or ",
         "[REF].xtc[ref]), an energy file ([REF].edr[ref])",
         "or an index file ([REF].ndx[ref])",
@@ -731,7 +731,7 @@ int gmx_check(int argc, char *argv[])
         "In case the [TT]-m[tt] flag is given a LaTeX file will be written",
         "consisting of a rough outline for a methods section for a paper."
     };
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",  NULL, ffOPTRD },
         { efTRX, "-f2",  NULL, ffOPTRD },
         { efTPR, "-s1", "top1", ffOPTRD },
@@ -743,18 +743,18 @@ int gmx_check(int argc, char *argv[])
         { efTEX, "-m",  NULL, ffOPTWR }
     };
 #define NFILE asize(fnm)
-    const char     *fn1 = NULL, *fn2 = NULL, *tex = NULL;
+    const char       *fn1 = NULL, *fn2 = NULL, *tex = NULL;
 
-    output_env_t    oenv;
-    static real     vdw_fac  = 0.8;
-    static real     bon_lo   = 0.4;
-    static real     bon_hi   = 0.7;
-    static gmx_bool bRMSD    = FALSE;
-    static real     ftol     = 0.001;
-    static real     abstol   = 0.001;
-    static gmx_bool bCompAB  = FALSE;
-    static char    *lastener = NULL;
-    static t_pargs  pa[]     = {
+    gmx_output_env_t *oenv;
+    static real       vdw_fac  = 0.8;
+    static real       bon_lo   = 0.4;
+    static real       bon_hi   = 0.7;
+    static gmx_bool   bRMSD    = FALSE;
+    static real       ftol     = 0.001;
+    static real       abstol   = 0.001;
+    static gmx_bool   bCompAB  = FALSE;
+    static char      *lastener = NULL;
+    static t_pargs    pa[]     = {
         { "-vdwfac", FALSE, etREAL, {&vdw_fac},
           "Fraction of sum of VdW radii used as warning cutoff" },
         { "-bonlo",  FALSE, etREAL, {&bon_lo},

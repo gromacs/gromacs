@@ -42,6 +42,7 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -292,7 +293,7 @@ static const char *MenuTitle[MSIZE] = {
 };
 
 static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
-                     const output_env_t oenv)
+                     gmx_output_env_t *oenv)
 {
     Pixmap                pm;
     t_gmx                *gmx;
@@ -373,7 +374,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
 int gmx_view(int argc, char *argv[])
 {
-    const char  *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] is the GROMACS trajectory viewer. This program reads a",
         "trajectory file, a run input file and an index file and plots a",
         "3D structure of your molecule on your standard X Window",
@@ -389,13 +390,13 @@ int gmx_view(int argc, char *argv[])
         "Some of the more common X command line options can be used: ",
         "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
     };
-    const char  *bugs[] = {
+    const char       *bugs[] = {
         "Balls option does not work",
         "Some times dumps core without a good reason"
     };
 
-    output_env_t oenv;
-    t_filenm     fnm[] = {
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] = {
         { efTRX, "-f", NULL, ffREAD },
         { efTPR, NULL, NULL, ffREAD },
         { efNDX, NULL, NULL, ffOPTRD }

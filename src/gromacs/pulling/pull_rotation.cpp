@@ -851,7 +851,7 @@ static void add_to_string_aligned(char **str, char *buf)
 
 /* Open output file and print some general information about the rotation groups.
  * Call on master only */
-static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
+static FILE *open_rot_out(const char *fn, t_rot *rot, const gmx_output_env_t *oenv)
 {
     FILE           *fp;
     int             g, nsets;
@@ -3666,7 +3666,7 @@ static int calc_mpi_bufsize(t_rot *rot)
 
 
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const output_env_t oenv,
+                     t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      gmx_bool bVerbose, unsigned long Flags)
 {
     t_rot          *rot;

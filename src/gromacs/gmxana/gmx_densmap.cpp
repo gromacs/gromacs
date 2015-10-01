@@ -60,7 +60,7 @@
 
 int gmx_densmap(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char             *desc[] = {
         "[THISMODULE] computes 2D number-density maps.",
         "It can make planar and axial-radial density maps.",
         "The output [REF].xpm[ref] file can be visualized with for instance xv",
@@ -94,13 +94,13 @@ int gmx_densmap(int argc, char *argv[])
         "from zero to the maximum density, you can set the maximum",
         "with the option [TT]-dmax[tt]."
     };
-    static int         n1      = 0, n2 = 0;
-    static real        xmin    = -1, xmax = -1, bin = 0.02, dmin = 0, dmax = 0, amax = 0, rmax = 0;
-    static gmx_bool    bMirror = FALSE, bSums = FALSE;
-    static const char *eaver[] = { NULL, "z", "y", "x", NULL };
-    static const char *eunit[] = { NULL, "nm-3", "nm-2", "count", NULL };
+    static int              n1      = 0, n2 = 0;
+    static real             xmin    = -1, xmax = -1, bin = 0.02, dmin = 0, dmax = 0, amax = 0, rmax = 0;
+    static gmx_bool         bMirror = FALSE, bSums = FALSE;
+    static const char      *eaver[] = { NULL, "z", "y", "x", NULL };
+    static const char      *eunit[] = { NULL, "nm-3", "nm-2", "count", NULL };
 
-    t_pargs            pa[] = {
+    t_pargs                 pa[] = {
         { "-bin", FALSE, etREAL, {&bin},
           "Grid size (nm)" },
         { "-aver", FALSE, etENUM, {eaver},
@@ -128,27 +128,27 @@ int gmx_densmap(int argc, char *argv[])
         { "-dmax", FALSE, etREAL, {&dmax},
           "Maximum density in output (0 means calculate it)"},
     };
-    gmx_bool           bXmin, bXmax, bRadial;
-    FILE              *fp;
-    t_trxstatus       *status;
-    t_topology         top;
-    int                ePBC = -1;
-    rvec              *x, xcom[2], direction, center, dx;
-    matrix             box;
-    real               t, m, mtot;
-    t_pbc              pbc;
-    int                cav = 0, c1 = 0, c2 = 0;
-    char             **grpname, buf[STRLEN];
-    const char        *unit;
-    int                i, j, k, l, ngrps, anagrp, *gnx = NULL, nindex, nradial = 0, nfr, nmpower;
-    atom_id          **ind = NULL, *index;
-    real             **grid, maxgrid, m1, m2, box1, box2, *tickx, *tickz, invcellvol;
-    real               invspa = 0, invspz = 0, axial, r, vol_old, vol, rowsum;
-    int                nlev   = 51;
-    t_rgb              rlo    = {1, 1, 1}, rhi = {0, 0, 0};
-    output_env_t       oenv;
-    const char        *label[] = { "x (nm)", "y (nm)", "z (nm)" };
-    t_filenm           fnm[]   = {
+    gmx_bool                bXmin, bXmax, bRadial;
+    FILE                   *fp;
+    t_trxstatus            *status;
+    t_topology              top;
+    int                     ePBC = -1;
+    rvec                   *x, xcom[2], direction, center, dx;
+    matrix                  box;
+    real                    t, m, mtot;
+    t_pbc                   pbc;
+    int                     cav = 0, c1 = 0, c2 = 0;
+    char                  **grpname, buf[STRLEN];
+    const char             *unit;
+    int                     i, j, k, l, ngrps, anagrp, *gnx = NULL, nindex, nradial = 0, nfr, nmpower;
+    atom_id               **ind = NULL, *index;
+    real                  **grid, maxgrid, m1, m2, box1, box2, *tickx, *tickz, invcellvol;
+    real                    invspa = 0, invspz = 0, axial, r, vol_old, vol, rowsum;
+    int                     nlev   = 51;
+    t_rgb                   rlo    = {1, 1, 1}, rhi = {0, 0, 0};
+    gmx_output_env_t       *oenv;
+    const char             *label[] = { "x (nm)", "y (nm)", "z (nm)" };
+    t_filenm                fnm[]   = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffOPTRD },
         { efNDX, NULL,   NULL,       ffOPTRD },
@@ -156,7 +156,7 @@ int gmx_densmap(int argc, char *argv[])
         { efXPM, "-o",   "densmap",   ffWRITE }
     };
 #define NFILE asize(fnm)
-    int                npargs;
+    int                     npargs;
 
     npargs = asize(pa);
 
