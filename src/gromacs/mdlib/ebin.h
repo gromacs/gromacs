@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,20 +34,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _ebin_h
-#define _ebin_h
+#ifndef GMX_MDLIB_EBIN_H
+#define GMX_MDLIB_EBIN_H
 
 #include <stdio.h>
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/legacyheaders/types/energy.h"
 #include "gromacs/utility/basedefinitions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 /* This is a running averaging structure ('energy bin') for use during mdrun. */
 typedef struct {
@@ -101,8 +95,4 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
  * If bPrHead than the header is printed.
  */
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _ebin_h */

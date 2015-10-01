@@ -34,9 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _mdrun_h
-#define _mdrun_h
+#ifndef GMX_MDLIB_MDRUN_H
+#define GMX_MDLIB_MDRUN_H
 
 #include <stdio.h>
 #include <time.h>
@@ -48,14 +47,11 @@
 struct gmx_constr;
 struct gmx_edsam;
 struct gmx_enerdata_t;
+struct t_commrec;
 struct t_expanded;
 struct t_lambda;
 struct t_mdatoms;
 struct t_simtemp;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #define MD_POLARISE       (1<<2)
 #define MD_RERUN          (1<<4)
@@ -104,12 +100,8 @@ void set_state_entries(t_state *state, const t_inputrec *ir);
 void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop);
 
-void bcast_state(const struct t_commrec *cr, t_state *state);
+void bcast_state(const t_commrec *cr, t_state *state);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
  */
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _mdrun_h */

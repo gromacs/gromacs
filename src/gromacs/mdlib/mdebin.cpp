@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/mdebin.h"
+#include "mdebin.h"
 
 #include <float.h>
 #include <stdlib.h>
@@ -47,7 +47,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/orires.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -57,6 +56,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdebin_bar.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/mtop_util.h"

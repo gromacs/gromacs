@@ -40,7 +40,7 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/mdebin.h"
+#include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/timing/wallcycle.h"
 

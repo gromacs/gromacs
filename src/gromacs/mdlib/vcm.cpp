@@ -37,7 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/vcm.h"
+#include "vcm.h"
 
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"

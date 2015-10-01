@@ -34,53 +34,44 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _main_h
-#define _main_h
-
+#ifndef GMX_MDLIB_VCM_H
+#define GMX_MDLIB_VCM_H
 
 #include <stdio.h>
 
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-struct gmx_multisim_t;
+struct gmx_groups_t;
 
-#ifdef __cplusplus
-extern "C" {
+typedef struct {
+    int        nr;             /* Number of groups                    */
+    int        mode;           /* One of the enums above              */
+    gmx_bool   ndim;           /* The number of dimensions for corr.  */
+    real      *group_ndf;      /* Number of degrees of freedom        */
+    rvec      *group_p;        /* Linear momentum per group           */
+    rvec      *group_v;        /* Linear velocity per group           */
+    rvec      *group_x;        /* Center of mass per group            */
+    rvec      *group_j;        /* Angular momentum per group          */
+    rvec      *group_w;        /* Angular velocity (omega)            */
+    tensor    *group_i;        /* Moment of inertia per group         */
+    real      *group_mass;     /* Mass per group                      */
+    char     **group_name;     /* These two are copies to pointers in */
+} t_vcm;
+
+t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir);
+
+/* Do a per group center of mass things */
+void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
+                  rvec x[], rvec v[], t_vcm *vcm);
+
+void do_stopcm_grp(int start, int homenr,
+                   unsigned short *group_id,
+                   rvec x[], rvec v[], t_vcm *vcm);
+
+void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max);
+
 #endif
-
-void gmx_log_open(const char *fn, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE**);
-/* Open the log file, if necessary (nprocs > 1) the logfile name is
- * communicated around the ring.
- */
-
-void gmx_log_close(FILE *fp);
-/* Close the log file */
-
-void check_multi_int(FILE *log, const gmx_multisim_t *ms,
-                     int val, const char *name,
-                     gmx_bool bQuiet);
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       gmx_int64_t val, const char *name,
-                       gmx_bool bQuiet);
-/* Check if val is the same on all processors for a mdrun -multi run
- * The string name is used to print to the log file and in a fatal error
- * if the val's don't match. If bQuiet is true and the check passes,
- * no output is written.
- */
-
-void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
-                      int nfile, const t_filenm fnm[], gmx_bool bParFn);
-/* Splits the communication into nsim separate simulations
- * and creates a communication structure between the master
- * these simulations.
- * If bParFn is set, the nodeid is appended to the tpx and each output file.
- */
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  /* _main_h */

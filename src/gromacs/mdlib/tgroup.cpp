@@ -37,17 +37,17 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/tgroup.h"
+#include "tgroup.h"
 
 #include <math.h>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/rbin.h"
+#include "gromacs/mdlib/update.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"

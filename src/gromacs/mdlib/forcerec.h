@@ -39,11 +39,11 @@
 
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/mdlib/tgroup.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct t_fcdata;
