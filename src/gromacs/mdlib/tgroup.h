@@ -34,9 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _tgroup_h
-#define _tgroup_h
+#ifndef GMX_MDLIB_TGROUP_H
+#define GMX_MDLIB_TGROUP_H
 
 #include "gromacs/legacyheaders/typedefs.h"
 
@@ -45,39 +44,31 @@ struct t_commrec;
 struct t_grpopts;
 struct t_mdatoms;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void init_ekindata(FILE *log, gmx_mtop_t *mtop,
-                   struct t_grpopts *opts,
-                   struct gmx_ekindata_t *ekind);
+                   t_grpopts *opts,
+                   gmx_ekindata_t *ekind);
 /* Allocate memory and set the grpnr array. */
 
-void done_ekindata(struct gmx_ekindata_t *ekind);
+void done_ekindata(gmx_ekindata_t *ekind);
 /* Free the memory */
 
-void accumulate_u(struct t_commrec *cr, struct t_grpopts *opts,
-                  struct gmx_ekindata_t *ekind);
+void accumulate_u(t_commrec *cr, t_grpopts *opts,
+                  gmx_ekindata_t *ekind);
 
 /* Communicate subsystem - group velocities and subsystem ekin respectively
  * and sum them up. Return them in grps.
  */
 
-real sum_ekin(struct t_grpopts *opts, struct gmx_ekindata_t *ekind, real *dekindlambda,
+real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
               gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */
 
-void update_ekindata(int start, int homenr, struct gmx_ekindata_t *ekind,
-                     struct t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda);
+void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
+                     t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda);
 /* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _tgroup_h */

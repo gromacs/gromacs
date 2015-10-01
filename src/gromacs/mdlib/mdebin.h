@@ -34,26 +34,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _mdebin_h
-#define _mdebin_h
+#ifndef GMX_MDLIB_MDEBIN_H
+#define GMX_MDLIB_MDEBIN_H
 
 #include <stdio.h>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/legacyheaders/ebin.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/state.h"
+#include "gromacs/mdlib/ebin.h"
 
 struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_fcdata;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* The functions & data structures here determine the content for outputting
    the .edr file; the file format and actual writing is done with functions
@@ -144,9 +139,9 @@ void upd_mdebin(t_mdebin                 *md,
                 tensor                    fvir,
                 tensor                    vir,
                 tensor                    pres,
-                struct gmx_ekindata_t    *ekind,
+                gmx_ekindata_t           *ekind,
                 rvec                      mu_tot,
-                struct gmx_constr        *constr);
+                gmx_constr               *constr);
 
 void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
@@ -174,8 +169,4 @@ void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin);
 void restore_energyhistory_from_state(t_mdebin        * mdebin,
                                       energyhistory_t * enerhist);
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _mdebin_h */

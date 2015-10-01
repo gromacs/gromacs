@@ -34,9 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef _update_h
-#define _update_h
+#ifndef GMX_MDLIB_UPDATE_H
+#define GMX_MDLIB_UPDATE_H
 
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/timing/wallcycle.h"
@@ -49,10 +48,6 @@ struct t_graph;
 struct t_grpopts;
 struct t_mdatoms;
 struct t_nrnb;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_update *gmx_update_t;
@@ -106,12 +101,12 @@ void update_coords(FILE              *fplog,
                    int                bUpdatePart,
                    t_commrec         *cr, /* these shouldn't be here -- need to think about it */
                    t_nrnb            *nrnb,
-                   struct gmx_constr *constr,
+                   gmx_constr        *constr,
                    t_idef            *idef);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, struct gmx_constr *constr);
+extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t upd, gmx_constr *constr);
 
 void update_constraints(FILE              *fplog,
                         gmx_int64_t        step,
@@ -120,7 +115,7 @@ void update_constraints(FILE              *fplog,
                         t_mdatoms         *md,
                         t_state           *state,
                         gmx_bool           bMolPBC,
-                        struct t_graph    *graph,
+                        t_graph           *graph,
                         rvec               force[], /* forces on home particles */
                         t_idef            *idef,
                         tensor             vir_part,
@@ -128,7 +123,7 @@ void update_constraints(FILE              *fplog,
                         t_nrnb            *nrnb,
                         gmx_wallcycle_t    wcycle,
                         gmx_update_t       upd,
-                        struct gmx_constr *constr,
+                        gmx_constr        *constr,
                         gmx_bool           bFirstHalf,
                         gmx_bool           bCalcVir);
 
@@ -243,9 +238,4 @@ void correct_ekin(FILE *log, int start, int end, rvec v[],
                   rvec vcm, real mass[], real tmass, tensor ekin);
 /* Correct ekin for vcm */
 
-
-#ifdef __cplusplus
-}
 #endif
-
-#endif  /* _update_h */

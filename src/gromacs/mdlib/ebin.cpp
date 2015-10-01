@@ -37,7 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/ebin.h"
+#include "ebin.h"
 
 #include <math.h>
 #include <string.h>

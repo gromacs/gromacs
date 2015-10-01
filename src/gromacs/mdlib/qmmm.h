@@ -39,8 +39,8 @@
 #define _QMMM_h
 
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/mdlib/tgroup.h"
 
 struct t_forcerec;
 struct t_QMMMrec;

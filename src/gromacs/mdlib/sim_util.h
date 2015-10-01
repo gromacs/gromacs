@@ -38,11 +38,11 @@
 #define GMX_MDLIB_SIM_UTIL_H
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/legacyheaders/mdebin.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/update.h"
-#include "gromacs/legacyheaders/vcm.h"
+#include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
+#include "gromacs/mdlib/update.h"
+#include "gromacs/mdlib/vcm.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 
