@@ -92,7 +92,7 @@ int gmx_sans(int argc, char *argv[])
 
 #define NPA asize(pa)
 
-    t_pargs                               pa[] = {
+    t_pargs                                    pa[] = {
         { "-bin", FALSE, etREAL, {&binwidth},
           "[HIDDEN]Binwidth (nm)" },
         { "-mode", FALSE, etENUM, {emode},
@@ -118,28 +118,28 @@ int gmx_sans(int argc, char *argv[])
           "Number of threads to start"},
 #endif
     };
-    FILE                                 *fp;
-    const char                           *fnTPX, *fnTRX, *fnDAT = NULL;
-    t_trxstatus                          *status;
-    t_topology                           *top  = NULL;
-    gmx_rmpbc_t                           gpbc = NULL;
-    gmx_bool                              bFFT = FALSE, bDEBYE = FALSE;
-    gmx_bool                              bMC  = FALSE;
-    int                                   ePBC = -1;
-    matrix                                box;
-    rvec                                 *x;
-    int                                   natoms;
-    real                                  t;
-    char                                **grpname = NULL;
-    atom_id                              *index   = NULL;
-    int                                   isize;
-    int                                   i;
-    char                                 *hdr            = NULL;
-    char                                 *suffix         = NULL;
-    t_filenm                             *fnmdup         = NULL;
-    gmx_radial_distribution_histogram_t  *prframecurrent = NULL, *pr = NULL;
-    gmx_static_structurefactor_t         *sqframecurrent = NULL, *sq = NULL;
-    output_env_t                          oenv;
+    FILE                                      *fp;
+    const char                                *fnTPX, *fnTRX, *fnDAT = NULL;
+    t_trxstatus                               *status;
+    t_topology                                *top  = NULL;
+    gmx_rmpbc_t                                gpbc = NULL;
+    gmx_bool                                   bFFT = FALSE, bDEBYE = FALSE;
+    gmx_bool                                   bMC  = FALSE;
+    int                                        ePBC = -1;
+    matrix                                     box;
+    rvec                                      *x;
+    int                                        natoms;
+    real                                       t;
+    char                                     **grpname = NULL;
+    atom_id                                   *index   = NULL;
+    int                                        isize;
+    int                                        i;
+    char                                      *hdr            = NULL;
+    char                                      *suffix         = NULL;
+    t_filenm                                  *fnmdup         = NULL;
+    gmx_radial_distribution_histogram_t       *prframecurrent = NULL, *pr = NULL;
+    gmx_static_structurefactor_t              *sqframecurrent = NULL, *sq = NULL;
+    gmx_output_env_t *                         oenv;
 
 #define NFILE asize(fnm)
 

@@ -56,6 +56,7 @@
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/timing/wallcycle.h"
 
+struct gmx_output_env_t;
 struct t_swapcoords;
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
@@ -78,17 +79,17 @@ struct t_swapcoords;
  *                          whether we are doing a rerun, appending, etc.
  */
 void init_swapcoords(
-        FILE              *fplog,
-        gmx_bool           bVerbose,
-        t_inputrec        *ir,
-        const char        *fn,
-        gmx_mtop_t        *mtop,
-        rvec               x[],
-        matrix             box,
-        swapstate_t       *swapstate,
-        t_commrec         *cr,
-        const output_env_t oenv,
-        unsigned long      Flags);
+        FILE                   *fplog,
+        gmx_bool                bVerbose,
+        t_inputrec             *ir,
+        const char             *fn,
+        gmx_mtop_t             *mtop,
+        rvec                    x[],
+        matrix                  box,
+        swapstate_t            *swapstate,
+        t_commrec              *cr,
+        const gmx_output_env_t *oenv,
+        unsigned long           Flags);
 
 
 /*! \brief Make a selection of the home atoms for the swap groups. These are

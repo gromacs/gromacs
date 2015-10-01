@@ -1105,15 +1105,15 @@ int gmx_pme_error(int argc, char *argv[])
     int             seed     = 0;
 
 
-    static t_filenm fnm[] = {
+    static t_filenm      fnm[] = {
         { efTPR, "-s",     NULL,    ffREAD },
         { efOUT, "-o",    "error",  ffWRITE },
         { efTPR, "-so",   "tuned",  ffOPTWR }
     };
 
-    output_env_t    oenv = NULL;
+    gmx_output_env_t *   oenv = NULL;
 
-    t_pargs         pa[] = {
+    t_pargs              pa[] = {
         { "-beta",     FALSE, etREAL, {&user_beta},
           "If positive, overwrite ewald_beta from [REF].tpr[ref] file with this value" },
         { "-tune",     FALSE, etBOOL, {&bTUNE},

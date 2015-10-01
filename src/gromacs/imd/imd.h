@@ -74,6 +74,7 @@
 struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
+struct gmx_output_env_t;
 struct t_gmx_IMD;
 struct t_IMD;
 
@@ -133,7 +134,7 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
  */
 void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
               FILE *fplog, int defnstimd, rvec x[],
-              int nfile, const t_filenm fnm[], output_env_t oenv,
+              int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
               int imdport, unsigned long  Flags);
 
 

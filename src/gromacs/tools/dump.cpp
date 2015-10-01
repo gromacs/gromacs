@@ -609,11 +609,11 @@ int gmx_dump(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    output_env_t    oenv;
+    gmx_output_env_t *oenv;
     /* Command line options */
-    static gmx_bool bShowNumbers = TRUE;
-    static gmx_bool bSysTop      = FALSE;
-    t_pargs         pa[]         = {
+    static gmx_bool   bShowNumbers = TRUE;
+    static gmx_bool   bSysTop      = FALSE;
+    t_pargs           pa[]         = {
         { "-nr", FALSE, etBOOL, {&bShowNumbers}, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
         { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
     };

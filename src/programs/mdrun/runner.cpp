@@ -129,38 +129,38 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 struct mdrunner_arglist
 {
-    gmx_hw_opt_t    hw_opt;
-    FILE           *fplog;
-    t_commrec      *cr;
-    int             nfile;
-    const t_filenm *fnm;
-    output_env_t    oenv;
-    gmx_bool        bVerbose;
-    gmx_bool        bCompact;
-    int             nstglobalcomm;
-    ivec            ddxyz;
-    int             dd_node_order;
-    real            rdd;
-    real            rconstr;
-    const char     *dddlb_opt;
-    real            dlb_scale;
-    const char     *ddcsx;
-    const char     *ddcsy;
-    const char     *ddcsz;
-    const char     *nbpu_opt;
-    int             nstlist_cmdline;
-    gmx_int64_t     nsteps_cmdline;
-    int             nstepout;
-    int             resetstep;
-    int             nmultisim;
-    int             repl_ex_nst;
-    int             repl_ex_nex;
-    int             repl_ex_seed;
-    real            pforce;
-    real            cpt_period;
-    real            max_hours;
-    int             imdport;
-    unsigned long   Flags;
+    gmx_hw_opt_t            hw_opt;
+    FILE                   *fplog;
+    t_commrec              *cr;
+    int                     nfile;
+    const t_filenm         *fnm;
+    const gmx_output_env_t *oenv;
+    gmx_bool                bVerbose;
+    gmx_bool                bCompact;
+    int                     nstglobalcomm;
+    ivec                    ddxyz;
+    int                     dd_node_order;
+    real                    rdd;
+    real                    rconstr;
+    const char             *dddlb_opt;
+    real                    dlb_scale;
+    const char             *ddcsx;
+    const char             *ddcsy;
+    const char             *ddcsz;
+    const char             *nbpu_opt;
+    int                     nstlist_cmdline;
+    gmx_int64_t             nsteps_cmdline;
+    int                     nstepout;
+    int                     resetstep;
+    int                     nmultisim;
+    int                     repl_ex_nst;
+    int                     repl_ex_nex;
+    int                     repl_ex_seed;
+    real                    pforce;
+    real                    cpt_period;
+    real                    max_hours;
+    int                     imdport;
+    unsigned long           Flags;
 };
 
 
@@ -204,7 +204,7 @@ static void mdrunner_start_fn(void *arg)
    All options besides nthreads are the same as for mdrunner(). */
 static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
-                                         const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+                                         const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
                                          gmx_bool bCompact, int nstglobalcomm,
                                          ivec ddxyz, int dd_node_order, real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
@@ -654,7 +654,7 @@ static integrator_t *my_integrator(unsigned int ei)
 
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
-             const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
+             const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
              gmx_bool bCompact, int nstglobalcomm,
              ivec ddxyz, int dd_node_order, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,

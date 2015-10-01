@@ -249,7 +249,7 @@ static real wEsolid(real nu, real beta)
 
 int gmx_dos(int argc, char *argv[])
 {
-    const char         *desc[] = {
+    const char              *desc[] = {
         "[THISMODULE] computes the Density of States from a simulations.",
         "In order for this to be meaningful the velocities must be saved",
         "in the trajecotry with sufficiently high frequency such as to cover",
@@ -262,35 +262,35 @@ int gmx_dos(int argc, char *argv[])
         "substantially from the plain vibrational power spectrum you can",
         "calculate with gmx velacc."
     };
-    const char         *bugs[] = {
+    const char              *bugs[] = {
         "This program needs a lot of memory: total usage equals the number of atoms times 3 times number of frames times 4 (or 8 when run in double precision)."
     };
-    FILE               *fp, *fplog;
-    t_topology          top;
-    int                 ePBC = -1;
-    t_trxframe          fr;
-    matrix              box;
-    int                 gnx;
-    real                t0, t1;
-    t_trxstatus        *status;
-    int                 nV, nframes, n_alloc, i, j, fftcode, Nmol, Natom;
-    double              rho, dt, Vsum, V, tmass, dostot, dos2;
-    real              **c1, **dos, mi, beta, bfac, *nu, *tt, stddev, c1j;
-    output_env_t        oenv;
-    gmx_fft_t           fft;
-    double              cP, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
-    double              wCdiff, wSdiff, wAdiff, wEdiff;
-    int                 grpNatoms;
-    atom_id            *index;
-    char               *grpname;
-    double              invNormalize;
-    gmx_bool            normalizeAutocorrelation;
+    FILE                    *fp, *fplog;
+    t_topology               top;
+    int                      ePBC = -1;
+    t_trxframe               fr;
+    matrix                   box;
+    int                      gnx;
+    real                     t0, t1;
+    t_trxstatus             *status;
+    int                      nV, nframes, n_alloc, i, j, fftcode, Nmol, Natom;
+    double                   rho, dt, Vsum, V, tmass, dostot, dos2;
+    real                   **c1, **dos, mi, beta, bfac, *nu, *tt, stddev, c1j;
+    gmx_output_env_t *       oenv;
+    gmx_fft_t                fft;
+    double                   cP, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
+    double                   wCdiff, wSdiff, wAdiff, wEdiff;
+    int                      grpNatoms;
+    atom_id                 *index;
+    char                    *grpname;
+    double                   invNormalize;
+    gmx_bool                 normalizeAutocorrelation;
 
-    static     gmx_bool bVerbose = TRUE, bAbsolute = FALSE, bNormalizeDos = FALSE;
-    static     gmx_bool bRecip   = FALSE;
-    static     real     Temp     = 298.15, toler = 1e-6;
+    static     gmx_bool      bVerbose = TRUE, bAbsolute = FALSE, bNormalizeDos = FALSE;
+    static     gmx_bool      bRecip   = FALSE;
+    static     real          Temp     = 298.15, toler = 1e-6;
 
-    t_pargs             pa[]     = {
+    t_pargs                  pa[]     = {
         { "-v", FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy." },
         { "-recip", FALSE, etBOOL, {&bRecip},
@@ -305,7 +305,7 @@ int gmx_dos(int argc, char *argv[])
           "[HIDDEN]Tolerance when computing the fluidicity using bisection algorithm" }
     };
 
-    t_filenm            fnm[] = {
+    t_filenm                 fnm[] = {
         { efTRN, "-f",    NULL,    ffREAD  },
         { efTPR, "-s",    NULL,    ffREAD  },
         { efNDX, NULL,    NULL,    ffOPTRD },
@@ -315,9 +315,9 @@ int gmx_dos(int argc, char *argv[])
         { efLOG, "-g",    "dos",   ffWRITE },
     };
 #define NFILE asize(fnm)
-    int                 npargs;
-    t_pargs            *ppa;
-    const char         *DoSlegend[] = {
+    int                      npargs;
+    t_pargs                 *ppa;
+    const char              *DoSlegend[] = {
         "DoS(v)", "DoS(v)[Solid]", "DoS(v)[Diff]"
     };
 

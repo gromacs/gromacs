@@ -1079,7 +1079,7 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
     }
 }
 
-void comp_trx(const output_env_t oenv, const char *fn1, const char *fn2,
+void comp_trx(const gmx_output_env_t *oenv, const char *fn1, const char *fn2,
               gmx_bool bRMSD, real ftol, real abstol)
 {
     int          i;

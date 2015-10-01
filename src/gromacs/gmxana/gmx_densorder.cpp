@@ -101,7 +101,7 @@ static void center_coords(t_atoms *atoms, matrix box, rvec x0[], int axis)
 }
 
 
-static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const output_env_t oenv)
+static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const gmx_output_env_t *oenv)
 
 {
 /*
@@ -347,7 +347,7 @@ static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslice
 static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zslices,
                             int tblocks, real binwidth, int method,
                             real dens1, real dens2, t_interf ****intf1,
-                            t_interf ****intf2, const output_env_t oenv)
+                            t_interf ****intf2, const gmx_output_env_t *oenv)
 {
     /*Returns two pointers to 3D arrays of t_interf structs containing (position,thickness) of the interface(s)*/
     FILE         *xvg;
@@ -610,7 +610,7 @@ static void writesurftoxpms(t_interf ***surf1, t_interf ***surf2, int tblocks, i
 
 static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks,
                      int xbins, int ybins, char **fnms,
-                     const output_env_t oenv)
+                     const gmx_output_env_t *oenv)
 {
     FILE *raw1, *raw2;
     int   i, j, n;
@@ -665,39 +665,39 @@ int gmx_densorder(int argc, char *argv[])
      * options when running the program, without mentioning them here!
      */
 
-    output_env_t       oenv;
-    t_topology        *top;
-    char             **grpname;
-    int                ePBC, *ngx;
-    static real        binw      = 0.2;
-    static real        binwz     = 0.05;
-    static real        dens1     = 0.00;
-    static real        dens2     = 1000.00;
-    static int         ftorder   = 0;
-    static int         nsttblock = 100;
-    static int         axis      = 2;
-    static const char *axtitle   = "Z";
-    atom_id          **index; /* Index list for single group*/
-    int                xslices, yslices, zslices, tblock;
-    static gmx_bool    bGraph   = FALSE;
-    static gmx_bool    bCenter  = FALSE;
-    static gmx_bool    bFourier = FALSE;
-    static gmx_bool    bRawOut  = FALSE;
-    static gmx_bool    bOut     = FALSE;
-    static gmx_bool    b1d      = FALSE;
-    static int         nlevels  = 100;
+    gmx_output_env_t *      oenv;
+    t_topology             *top;
+    char                  **grpname;
+    int                     ePBC, *ngx;
+    static real             binw      = 0.2;
+    static real             binwz     = 0.05;
+    static real             dens1     = 0.00;
+    static real             dens2     = 1000.00;
+    static int              ftorder   = 0;
+    static int              nsttblock = 100;
+    static int              axis      = 2;
+    static const char      *axtitle   = "Z";
+    atom_id               **index; /* Index list for single group*/
+    int                     xslices, yslices, zslices, tblock;
+    static gmx_bool         bGraph   = FALSE;
+    static gmx_bool         bCenter  = FALSE;
+    static gmx_bool         bFourier = FALSE;
+    static gmx_bool         bRawOut  = FALSE;
+    static gmx_bool         bOut     = FALSE;
+    static gmx_bool         b1d      = FALSE;
+    static int              nlevels  = 100;
     /*Densitymap - Densmap[t][x][y][z]*/
-    real           ****Densmap = NULL;
+    real                ****Densmap = NULL;
     /* Surfaces surf[t][surf_x,surf_y]*/
-    t_interf        ***surf1, ***surf2;
+    t_interf             ***surf1, ***surf2;
 
-    static const char *meth[] = {NULL, "bisect", "functional", NULL};
-    int                eMeth;
+    static const char      *meth[] = {NULL, "bisect", "functional", NULL};
+    int                     eMeth;
 
-    char             **graphfiles, **rawfiles, **spectra; /* Filenames for xpm-surface maps, rawdata and powerspectra */
-    int                nfxpm = -1, nfraw, nfspect;        /* # files for interface maps and spectra = # interfaces */
+    char                  **graphfiles, **rawfiles, **spectra; /* Filenames for xpm-surface maps, rawdata and powerspectra */
+    int                     nfxpm = -1, nfraw, nfspect;        /* # files for interface maps and spectra = # interfaces */
 
-    t_pargs            pa[] = {
+    t_pargs                 pa[] = {
         { "-1d", FALSE, etBOOL, {&b1d},
           "Pseudo-1d interface geometry"},
         { "-bw", FALSE, etREAL, {&binw},

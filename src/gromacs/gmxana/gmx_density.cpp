@@ -173,7 +173,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
                            int axis, int nr_grps, real *slWidth,
                            t_electron eltab[], int nr, gmx_bool bCenter,
                            atom_id *index_center, int ncenter,
-                           gmx_bool bRelative, const output_env_t oenv)
+                           gmx_bool bRelative, const gmx_output_env_t *oenv)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -330,7 +330,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
                   double ***slDensity, int *nslices, t_topology *top, int ePBC,
                   int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                   atom_id *index_center, int ncenter,
-                  gmx_bool bRelative, const output_env_t oenv)
+                  gmx_bool bRelative, const gmx_output_env_t *oenv)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -479,7 +479,7 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
                   int nr_grps, char *grpname[], real slWidth,
                   const char **dens_opt,
                   gmx_bool bCenter, gmx_bool bRelative, gmx_bool bSymmetrize,
-                  const output_env_t oenv)
+                  const gmx_output_env_t *oenv)
 {
     FILE       *den;
     const char *title  = NULL;
@@ -553,7 +553,7 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
 
 int gmx_density(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char             *desc[] = {
         "[THISMODULE] computes partial densities across the box, using an index file.[PAR]",
         "For the total density of NPT simulations, use [gmx-energy] instead.",
         "[PAR]",
@@ -619,18 +619,18 @@ int gmx_density(int argc, char *argv[])
         "",
     };
 
-    output_env_t       oenv;
-    static const char *dens_opt[] =
+    gmx_output_env_t *      oenv;
+    static const char      *dens_opt[] =
     { NULL, "mass", "number", "charge", "electron", NULL };
-    static int         axis        = 2;  /* normal to memb. default z  */
-    static const char *axtitle     = "Z";
-    static int         nslices     = 50; /* nr of slices defined       */
-    static int         ngrps       = 1;  /* nr. of groups              */
-    static gmx_bool    bSymmetrize = FALSE;
-    static gmx_bool    bCenter     = FALSE;
-    static gmx_bool    bRelative   = FALSE;
+    static int              axis        = 2;  /* normal to memb. default z  */
+    static const char      *axtitle     = "Z";
+    static int              nslices     = 50; /* nr of slices defined       */
+    static int              ngrps       = 1;  /* nr. of groups              */
+    static gmx_bool         bSymmetrize = FALSE;
+    static gmx_bool         bCenter     = FALSE;
+    static gmx_bool         bRelative   = FALSE;
 
-    t_pargs            pa[]        = {
+    t_pargs                 pa[]        = {
         { "-d", FALSE, etSTR, {&axtitle},
           "Take the normal on the membrane in direction X, Y or Z." },
         { "-sl",  FALSE, etINT, {&nslices},
@@ -647,25 +647,25 @@ int gmx_density(int argc, char *argv[])
           "Use relative coordinates for changing boxes and scale output by average dimensions." }
     };
 
-    const char        *bugs[] = {
+    const char             *bugs[] = {
         "When calculating electron densities, atomnames are used instead of types. This is bad.",
     };
 
-    double           **density;        /* density per slice          */
-    real               slWidth;        /* width of one slice         */
-    char              *grpname_center; /* centering group name     */
-    char             **grpname;        /* groupnames                 */
-    int                nr_electrons;   /* nr. electrons              */
-    int                ncenter;        /* size of centering group    */
-    int               *ngx;            /* sizes of groups            */
-    t_electron        *el_tab;         /* tabel with nr. of electrons*/
-    t_topology        *top;            /* topology               */
-    int                ePBC;
-    atom_id           *index_center;   /* index for centering group  */
-    atom_id          **index;          /* indices for all groups     */
-    int                i;
+    double                **density;        /* density per slice          */
+    real                    slWidth;        /* width of one slice         */
+    char                   *grpname_center; /* centering group name     */
+    char                  **grpname;        /* groupnames                 */
+    int                     nr_electrons;   /* nr. electrons              */
+    int                     ncenter;        /* size of centering group    */
+    int                    *ngx;            /* sizes of groups            */
+    t_electron             *el_tab;         /* tabel with nr. of electrons*/
+    t_topology             *top;            /* topology               */
+    int                     ePBC;
+    atom_id                *index_center;   /* index for centering group  */
+    atom_id               **index;          /* indices for all groups     */
+    int                     i;
 
-    t_filenm           fnm[] = { /* files for g_density       */
+    t_filenm                fnm[] = { /* files for g_density       */
         { efTRX, "-f", NULL,  ffREAD },
         { efNDX, NULL, NULL,  ffOPTRD },
         { efTPR, NULL, NULL,  ffREAD },

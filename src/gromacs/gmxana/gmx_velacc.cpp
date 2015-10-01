@@ -122,7 +122,7 @@ static void precalc(t_topology top, real normm[])
 }
 
 static void calc_spectrum(int n, real c[], real dt, const char *fn,
-                          output_env_t oenv, gmx_bool bRecip)
+                          gmx_output_env_t *oenv, gmx_bool bRecip)
 {
     FILE     *fp;
     gmx_fft_t fft;
@@ -212,14 +212,14 @@ int gmx_velacc(int argc, char *argv[])
     /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.
      */
-    real              t0, t1, dt, mass;
-    t_trxstatus      *status;
-    int               counter, n_alloc, i, j, counter_dim, k, l;
-    rvec              mv_mol;
+    real                   t0, t1, dt, mass;
+    t_trxstatus           *status;
+    int                    counter, n_alloc, i, j, counter_dim, k, l;
+    rvec                   mv_mol;
     /* Array for the correlation function */
-    real            **c1;
-    real             *normm = NULL;
-    output_env_t      oenv;
+    real                 **c1;
+    real                  *normm = NULL;
+    gmx_output_env_t *     oenv;
 
 #define NHISTO 360
 
