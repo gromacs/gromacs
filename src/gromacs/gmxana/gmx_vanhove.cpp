@@ -128,24 +128,24 @@ int gmx_vanhove(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    output_env_t oenv;
-    const char  *matfile, *otfile, *orfile;
-    t_topology   top;
-    int          ePBC;
-    matrix       boxtop, box, *sbox, avbox, corr;
-    rvec        *xtop, *x, **sx;
-    int          isize, nalloc, nallocn;
-    t_trxstatus *status;
-    atom_id     *index;
-    char        *grpname;
-    int          nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
-    real        *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
-    real         invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
-    char         buf[STRLEN], **legend;
-    real       **mat = NULL;
-    int         *pt  = NULL, **pr = NULL, *mcount = NULL, *tcount = NULL, *rcount = NULL;
-    FILE        *fp;
-    t_rgb        rlo = {1, 1, 1}, rhi = {0, 0, 0};
+    gmx_output_env_t *oenv;
+    const char       *matfile, *otfile, *orfile;
+    t_topology        top;
+    int               ePBC;
+    matrix            boxtop, box, *sbox, avbox, corr;
+    rvec             *xtop, *x, **sx;
+    int               isize, nalloc, nallocn;
+    t_trxstatus      *status;
+    atom_id          *index;
+    char             *grpname;
+    int               nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
+    real             *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
+    real              invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
+    char              buf[STRLEN], **legend;
+    real            **mat = NULL;
+    int              *pt  = NULL, **pr = NULL, *mcount = NULL, *tcount = NULL, *rcount = NULL;
+    FILE             *fp;
+    t_rgb             rlo = {1, 1, 1}, rhi = {0, 0, 0};
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))

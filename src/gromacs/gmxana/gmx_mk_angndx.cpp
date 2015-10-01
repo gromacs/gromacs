@@ -250,15 +250,15 @@ static int *select_ftype(const char *opt, int *nft, int *mult)
 
 int gmx_mk_angndx(int argc, char *argv[])
 {
-    static const char *desc[] = {
+    static const char      *desc[] = {
         "[THISMODULE] makes an index file for calculation of",
         "angle distributions etc. It uses a run input file ([REF].tpx[ref]) for the",
         "definitions of the angles, dihedrals etc."
     };
-    static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
-    static gmx_bool    bH    = TRUE;
-    static real        hq    = -1;
-    t_pargs            pa[]  = {
+    static const char      *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
+    static gmx_bool         bH    = TRUE;
+    static real             hq    = -1;
+    t_pargs                 pa[]  = {
         { "-type", FALSE, etENUM, {opt},
           "Type of angle" },
         { "-hyd", FALSE, etBOOL, {&bH},
@@ -267,16 +267,16 @@ int gmx_mk_angndx(int argc, char *argv[])
           "Ignore angles with atoms with mass < 1.5 and magnitude of their charge less than this value" }
     };
 
-    output_env_t       oenv;
-    FILE              *out;
-    t_topology        *top;
-    int                i, j, ntype;
-    int                nft = 0, *ft, mult = 0;
-    int              **index;
-    int               *ft_ind;
-    int               *nr;
-    char             **grpnames;
-    t_filenm           fnm[] = {
+    gmx_output_env_t       *oenv;
+    FILE                   *out;
+    t_topology             *top;
+    int                     i, j, ntype;
+    int                     nft = 0, *ft, mult = 0;
+    int                   **index;
+    int                    *ft_ind;
+    int                    *nr;
+    char                  **grpnames;
+    t_filenm                fnm[] = {
         { efTPR, NULL, NULL, ffREAD  },
         { efNDX, NULL, "angle", ffWRITE }
     };

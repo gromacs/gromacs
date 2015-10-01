@@ -343,7 +343,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
 
 int gmx_genion(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char             *desc[] = {
         "[THISMODULE] randomly replaces solvent molecules with monoatomic ions.",
         "The group of solvent molecules should be continuous and all molecules",
         "should have the same number of atoms.",
@@ -358,16 +358,16 @@ int gmx_genion(int argc, char *argv[])
         "added, without sign, for the uncommon states only.[PAR]",
         "For larger ions, e.g. sulfate we recommended using [gmx-insert-molecules]."
     };
-    const char        *bugs[] = {
+    const char             *bugs[] = {
         "If you specify a salt concentration existing ions are not taken into "
         "account. In effect you therefore specify the amount of salt to be added.",
     };
-    static int         p_num    = 0, n_num = 0, p_q = 1, n_q = -1;
-    static const char *p_name   = "NA", *n_name = "CL";
-    static real        rmin     = 0.6, conc = 0;
-    static int         seed     = 1993;
-    static gmx_bool    bNeutral = FALSE;
-    static t_pargs     pa[]     = {
+    static int              p_num    = 0, n_num = 0, p_q = 1, n_q = -1;
+    static const char      *p_name   = "NA", *n_name = "CL";
+    static real             rmin     = 0.6, conc = 0;
+    static int              seed     = 1993;
+    static gmx_bool         bNeutral = FALSE;
+    static t_pargs          pa[]     = {
         { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
         { "-pname", FALSE, etSTR,  {&p_name}, "Name of the positive ion"      },
         { "-pq",    FALSE, etINT,  {&p_q},   "Charge of the positive ion"    },
@@ -380,20 +380,20 @@ int gmx_genion(int argc, char *argv[])
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [REF].tpr[ref] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
         { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
     };
-    t_topology         top;
-    rvec              *x, *v;
-    real               vol, qtot;
-    matrix             box;
-    t_atoms            atoms;
-    t_pbc              pbc;
-    int               *repl, ePBC;
-    atom_id           *index;
-    char              *grpname;
-    gmx_bool          *bSet;
-    int                i, nw, nwa, nsa, nsalt, iqtot;
-    output_env_t       oenv;
-    gmx_rng_t          rng;
-    t_filenm           fnm[] = {
+    t_topology              top;
+    rvec                   *x, *v;
+    real                    vol, qtot;
+    matrix                  box;
+    t_atoms                 atoms;
+    t_pbc                   pbc;
+    int                    *repl, ePBC;
+    atom_id                *index;
+    char                   *grpname;
+    gmx_bool               *bSet;
+    int                     i, nw, nwa, nsa, nsalt, iqtot;
+    gmx_output_env_t       *oenv;
+    gmx_rng_t               rng;
+    t_filenm                fnm[] = {
         { efTPR, NULL,  NULL,      ffREAD  },
         { efNDX, NULL,  NULL,      ffOPTRD },
         { efSTO, "-o",  NULL,      ffWRITE },

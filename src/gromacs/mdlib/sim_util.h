@@ -47,6 +47,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 
 struct gmx_constr;
+struct gmx_output_env_t;
 struct nonbonded_verlet_t;
 struct t_graph;
 struct t_mdatoms;
@@ -126,7 +127,7 @@ void do_constrain_first(FILE *log, gmx_constr *constr,
                         t_forcerec *fr, gmx_localtop_t *top);
 
 void init_md(FILE *fplog,
-             t_commrec *cr, t_inputrec *ir, const output_env_t oenv,
+             t_commrec *cr, t_inputrec *ir, const gmx_output_env_t *oenv,
              double *t, double *t0,
              real *lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,

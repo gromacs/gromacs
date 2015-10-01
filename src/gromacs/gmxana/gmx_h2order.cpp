@@ -67,7 +67,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
                   real **slOrder, real *slWidth, int *nslices,
                   t_topology *top, int ePBC,
                   int axis, gmx_bool bMicel, atom_id micel[], int nmic,
-                  const output_env_t oenv)
+                  const gmx_output_env_t *oenv)
 {
     rvec *x0,            /* coordinates with pbc */
           dipole,        /* dipole moment due to one molecules */
@@ -233,7 +233,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 }
 
 void h2order_plot(rvec dipole[], real order[], const char *afile,
-                  int nslices, real slWidth, const output_env_t oenv)
+                  int nslices, real slWidth, const gmx_output_env_t *oenv)
 {
     FILE       *ord;              /* xvgr files with order parameters  */
     int         slice;            /* loop index     */
@@ -259,7 +259,7 @@ void h2order_plot(rvec dipole[], real order[], const char *afile,
 
 int gmx_h2order(int argc, char *argv[])
 {
-    const char        *desc[] = {
+    const char             *desc[] = {
         "[THISMODULE] computes the orientation of water molecules with respect to the normal",
         "of the box. The program determines the average cosine of the angle",
         "between the dipole moment of water and an axis of the box. The box is",
@@ -269,42 +269,42 @@ int gmx_h2order(int argc, char *argv[])
         "dipole and the axis from the center of mass to the oxygen is calculated",
         "instead of the angle between the dipole and a box axis."
     };
-    static int         axis    = 2;           /* normal to memb. default z  */
-    static const char *axtitle = "Z";
-    static int         nslices = 0;           /* nr of slices defined       */
-    t_pargs            pa[]    = {
+    static int              axis    = 2;      /* normal to memb. default z  */
+    static const char      *axtitle = "Z";
+    static int              nslices = 0;      /* nr of slices defined       */
+    t_pargs                 pa[]    = {
         { "-d",   FALSE, etSTR, {&axtitle},
           "Take the normal on the membrane in direction X, Y or Z." },
         { "-sl",  FALSE, etINT, {&nslices},
           "Calculate order parameter as function of boxlength, dividing the box"
           " in this number of slices."}
     };
-    const char        *bugs[] = {
+    const char             *bugs[] = {
         "The program assigns whole water molecules to a slice, based on the first "
         "atom of three in the index file group. It assumes an order O,H,H. "
         "Name is not important, but the order is. If this demand is not met, "
         "assigning molecules to slices is different."
     };
 
-    output_env_t       oenv;
-    real              *slOrder,             /* av. cosine, per slice      */
-                       slWidth = 0.0;       /* width of a slice           */
-    rvec              *slDipole;
-    char              *grpname,             /* groupnames                 */
+    gmx_output_env_t       *oenv;
+    real                   *slOrder,         /* av. cosine, per slice      */
+                            slWidth = 0.0;   /* width of a slice           */
+    rvec                   *slDipole;
+    char                   *grpname,         /* groupnames                 */
     *micname;
-    int                ngx,                 /* nr. of atomsin sol group   */
-                       nmic = 0;            /* nr. of atoms in micelle    */
-    t_topology        *top;                 /* topology           */
-    int                ePBC;
-    atom_id           *index,               /* indices for solvent group  */
-    *micelle                  = NULL;
-    gmx_bool           bMicel =  FALSE;     /* think we're a micel        */
-    t_filenm           fnm[]  = {           /* files for g_order      */
-        { efTRX, "-f", NULL,  ffREAD },     /* trajectory file            */
-        { efNDX, NULL, NULL,  ffREAD },     /* index file         */
-        { efNDX, "-nm", NULL, ffOPTRD },    /* index with micelle atoms   */
-        { efTPR, NULL, NULL,  ffREAD },     /* topology file              */
-        { efXVG, "-o",  "order", ffWRITE }, /* xvgr output file       */
+    int                     ngx,             /* nr. of atomsin sol group   */
+                            nmic = 0;        /* nr. of atoms in micelle    */
+    t_topology             *top;             /* topology           */
+    int                     ePBC;
+    atom_id                *index,           /* indices for solvent group  */
+    *micelle                       = NULL;
+    gmx_bool                bMicel =  FALSE; /* think we're a micel        */
+    t_filenm                fnm[]  = {       /* files for g_order      */
+        { efTRX, "-f", NULL,  ffREAD },      /* trajectory file            */
+        { efNDX, NULL, NULL,  ffREAD },      /* index file         */
+        { efNDX, "-nm", NULL, ffOPTRD },     /* index with micelle atoms   */
+        { efTPR, NULL, NULL,  ffREAD },      /* topology file              */
+        { efXVG, "-o",  "order", ffWRITE },  /* xvgr output file       */
     };
 
 #define NFILE asize(fnm)

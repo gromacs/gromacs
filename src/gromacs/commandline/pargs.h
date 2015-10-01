@@ -46,12 +46,12 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/oenv.h"
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct t_commrec;
+struct gmx_output_env_t;
 
 #ifdef __cplusplus
 extern "C"
@@ -262,7 +262,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
                            int ndesc, const char **desc,
                            int nbugs, const char **bugs,
-                           output_env_t *oenv);
+                           gmx_output_env_t **oenv);
 
 /*! \} */
 

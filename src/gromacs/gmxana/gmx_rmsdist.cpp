@@ -629,7 +629,7 @@ real rms_diff(int natom, real **d, real **d_r)
 
 int gmx_rmsdist(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char          *desc[] = {
         "[THISMODULE] computes the root mean square deviation of atom distances,",
         "which has the advantage that no fit is needed like in standard RMS",
         "deviation as computed by [gmx-rms].",
@@ -653,36 +653,36 @@ int gmx_rmsdist(int argc, char *argv[])
 
     };
 
-    int             i, teller;
-    real            t;
+    int                  i, teller;
+    real                 t;
 
-    t_topology      top;
-    int             ePBC;
-    t_atoms        *atoms;
-    matrix          box;
-    rvec           *x;
-    FILE           *fp;
+    t_topology           top;
+    int                  ePBC;
+    t_atoms             *atoms;
+    matrix               box;
+    rvec                *x;
+    FILE                *fp;
 
-    t_trxstatus    *status;
-    int             isize, gnr = 0;
-    atom_id        *index, *noe_index;
-    char           *grpname;
-    real          **d_r, **d, **dtot, **dtot2, **mean, **rms, **rmsc, *resnr;
-    real          **dtot1_3 = NULL, **dtot1_6 = NULL;
-    real            rmsnow, meanmax, rmsmax, rmscmax;
-    real            max1_3, max1_6;
-    t_noe_gr       *noe_gr = NULL;
-    t_noe         **noe    = NULL;
-    t_rgb           rlo, rhi;
-    gmx_bool        bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
+    t_trxstatus         *status;
+    int                  isize, gnr = 0;
+    atom_id             *index, *noe_index;
+    char                *grpname;
+    real               **d_r, **d, **dtot, **dtot2, **mean, **rms, **rmsc, *resnr;
+    real               **dtot1_3 = NULL, **dtot1_6 = NULL;
+    real                 rmsnow, meanmax, rmsmax, rmscmax;
+    real                 max1_3, max1_6;
+    t_noe_gr            *noe_gr = NULL;
+    t_noe              **noe    = NULL;
+    t_rgb                rlo, rhi;
+    gmx_bool             bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
 
-    static int      nlevels  = 40;
-    static real     scalemax = -1.0;
-    static gmx_bool bSumH    = TRUE;
-    static gmx_bool bPBC     = TRUE;
-    output_env_t    oenv;
+    static int           nlevels  = 40;
+    static real          scalemax = -1.0;
+    static gmx_bool      bSumH    = TRUE;
+    static gmx_bool      bPBC     = TRUE;
+    gmx_output_env_t    *oenv;
 
-    t_pargs         pa[] = {
+    t_pargs              pa[] = {
         { "-nlevels",   FALSE, etINT,  {&nlevels},
           "Discretize RMS in this number of levels" },
         { "-max",   FALSE, etREAL, {&scalemax},
@@ -692,7 +692,7 @@ int gmx_rmsdist(int argc, char *argv[])
         { "-pbc",   FALSE, etBOOL, {&bPBC},
           "Use periodic boundary conditions when computing distances" }
     };
-    t_filenm        fnm[] = {
+    t_filenm             fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },

@@ -419,7 +419,7 @@ void make_pull_coords(pull_params_t *pull)
 }
 
 void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
-                   const output_env_t oenv)
+                   const gmx_output_env_t *oenv)
 {
     pull_params_t *pull;
     struct pull_t *pull_work;

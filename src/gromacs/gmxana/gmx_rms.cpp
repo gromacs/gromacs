@@ -240,21 +240,21 @@ int gmx_rms(int argc, char *argv[])
     real            rlstot = 0, **rls, **rlsm = NULL, *time, *time2, *rlsnorm = NULL,
     **rmsd_mat             = NULL, **bond_mat = NULL, *axis, *axis2, *del_xaxis,
     *del_yaxis, rmsd_max, rmsd_min, rmsd_avg, bond_max, bond_min, ang;
-    real       **rmsdav_mat = NULL, av_tot, weight, weight_tot;
-    real       **delta      = NULL, delta_max, delta_scalex = 0, delta_scaley = 0,
+    real            **rmsdav_mat = NULL, av_tot, weight, weight_tot;
+    real            **delta      = NULL, delta_max, delta_scalex = 0, delta_scaley = 0,
     *delta_tot;
-    int          delta_xsize = 0, del_lev = 100, mx, my, abs_my;
-    gmx_bool     bA1, bA2, bPrev, bTop, *bInMat = NULL;
-    int          ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
+    int               delta_xsize = 0, del_lev = 100, mx, my, abs_my;
+    gmx_bool          bA1, bA2, bPrev, bTop, *bInMat = NULL;
+    int               ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
         0;
-    atom_id     *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
+    atom_id          *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
         NULL;
-    char        *gn_fit, **gn_rms;
-    t_rgb        rlo, rhi;
-    output_env_t oenv;
-    gmx_rmpbc_t  gpbc = NULL;
+    char             *gn_fit, **gn_rms;
+    t_rgb             rlo, rhi;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    t_filenm     fnm[] =
+    t_filenm          fnm[] =
     {
         { efTPS, NULL, NULL, ffREAD },
         { efTRX, "-f", NULL, ffREAD },

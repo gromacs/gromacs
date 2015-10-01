@@ -1281,7 +1281,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     real              mHmult  = 0;
     t_hackblock      *hb_chain;
     t_restp          *restp_chain;
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
     const char       *p_restype;
     int               rc;
     int               this_atomnum;
