@@ -331,14 +331,14 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
                                         int                   *n_nonlin_vsite)
 {
     verletbuf_atomtype_t          *att;
-    int                            natt;
-    int                            mb, nmol, ft, i, a1, a2, a3, a;
+    int natt;
+    int mb, nmol, ft, i, a1, a2, a3, a;
     const t_atoms                 *atoms;
     const t_ilist                 *il;
     const t_iparams               *ip;
     atom_nonbonded_kinetic_prop_t *prop;
     real                          *vsite_m;
-    int                            n_nonlin_vsite_mol;
+    int n_nonlin_vsite_mol;
 
     att  = NULL;
     natt = 0;
@@ -929,6 +929,10 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                 gmx_incons("Unimplemented VdW modifier");
         }
     }
+    else if (ir->vdwtype == evdwUSER)
+    {
+        /* Here there will be likely some more stuff regarding multiple tables support? */
+    }
     else if (EVDW_PME(ir->vdwtype))
     {
         real b, r, br, br2, br4, br6;
@@ -979,7 +983,10 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         {
             md1_el = elfac*(pow(ir->rcoulomb, -2.0) - 2*k_rf*ir->rcoulomb);
         }
-        d2_el      = elfac*(2*pow(ir->rcoulomb, -3.0) + 2*k_rf);
+        if (!d2_el)
+        {
+            d2_el      = elfac*(2*pow(ir->rcoulomb, -3.0) + 2*k_rf);
+        }
     }
     else if (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD)
     {
@@ -990,6 +997,14 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         br     = b*rc;
         md1_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
         d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
+    }
+    else if (ir->coulombtype == eelNONE)
+    {
+        /* In case no Coulomb interactions will be calculated */
+    }
+    else if (ir->coulombtype == eelUSER)
+    {
+        /* Something to do with multiple tables for Coulomb interactions? */
     }
     else
     {
