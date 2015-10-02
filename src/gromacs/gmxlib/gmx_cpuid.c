@@ -180,7 +180,6 @@ struct gmx_cpuid
     int                        family;
     int                        model;
     int                        stepping;
-    /* Not using gmx_bool here, since this file must be possible to compile without simple.h */
     char                       feature[GMX_CPUID_NFEATURES];
 
     /* Basic CPU topology information. For x86 this is a bit complicated since the topology differs between

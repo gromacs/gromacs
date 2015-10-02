@@ -37,7 +37,7 @@
 #define HWINFO_H
 
 #include "gromacs/legacyheaders/gmx_cpuid.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {

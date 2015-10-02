@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,9 +49,9 @@
 #ifndef GMX_LISTED_FORCES_RESTCBT_H
 #define GMX_LISTED_FORCES_RESTCBT_H
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/real.h"
 
 /*! \brief This function computes factors needed for restricted angle potentials.
  *
