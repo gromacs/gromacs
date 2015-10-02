@@ -43,7 +43,10 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
+
+using gmx::RVec;
 
 std::vector<real>
 makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
@@ -70,11 +73,24 @@ makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
     return exclusionDistances;
 }
 
-void readConformation(const char *confin, t_topology *top, rvec **x, rvec **v,
+void readConformation(const char *confin, t_topology *top,
+                      std::vector<RVec> *x, std::vector<RVec> *v,
                       int *ePBC, matrix box, const char *statusTitle)
 {
-    fprintf(stderr, "Reading %s configuration%s\n", statusTitle, v ? " and velocities" : "");
-    read_tps_conf(confin, top, ePBC, x, v, box, FALSE);
+    fprintf(stderr, "Reading %s configuration%s\n", statusTitle,
+            v ? " and velocities" : "");
+    rvec                   *x_tmp = NULL, *v_tmp = NULL;
+    read_tps_conf(confin, top, ePBC, x ? &x_tmp : NULL, v ? &v_tmp : NULL, box, FALSE);
+    gmx::scoped_guard_sfree xguard(x_tmp);
+    gmx::scoped_guard_sfree vguard(v_tmp);
+    if (x && x_tmp)
+    {
+        *x = std::vector<RVec>(x_tmp, x_tmp + top->atoms.nr);
+    }
+    if (v && v_tmp)
+    {
+        *v = std::vector<RVec>(v_tmp, v_tmp + top->atoms.nr);
+    }
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n",
             *top->name, top->atoms.nr, top->atoms.nres);
 }

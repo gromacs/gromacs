@@ -63,34 +63,34 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+using gmx::RVec;
+
 /* enum for random rotations of inserted solutes */
 enum {
     en_rotXYZ, en_rotZ, en_rotNone
 };
 
-static void center_molecule(int atomCount, rvec x[])
+static void center_molecule(std::vector<RVec> *x)
 {
-    rvec center;
+    const size_t atomCount = x->size();
+    rvec         center;
     clear_rvec(center);
-    for (int i = 0; i < atomCount; ++i)
+    for (size_t i = 0; i < atomCount; ++i)
     {
-        rvec_inc(center, x[i]);
+        rvec_inc(center, (*x)[i]);
     }
     svmul(1.0/atomCount, center, center);
-    for (int i = 0; i < atomCount; ++i)
+    for (size_t i = 0; i < atomCount; ++i)
     {
-        rvec_dec(x[i], center);
+        rvec_dec((*x)[i], center);
     }
 }
 
-static void generate_trial_conf(int atomCount, const rvec xin[],
+static void generate_trial_conf(const std::vector<RVec> &xin,
                                 const rvec offset, int enum_rot, gmx_rng_t rng,
-                                rvec xout[])
+                                std::vector<RVec> *xout)
 {
-    for (int i = 0; i < atomCount; ++i)
-    {
-        copy_rvec(xin[i], xout[i]);
-    }
+    *xout = xin;
     real alfa = 0.0, beta = 0.0, gamma = 0.0;
     switch (enum_rot)
     {
@@ -109,20 +109,20 @@ static void generate_trial_conf(int atomCount, const rvec xin[],
     }
     if (enum_rot == en_rotXYZ || (enum_rot == en_rotZ))
     {
-        rotate_conf(atomCount, xout, NULL, alfa, beta, gamma);
+        rotate_conf(xout->size(), as_rvec_array(xout->data()), NULL, alfa, beta, gamma);
     }
-    for (int i = 0; i < atomCount; ++i)
+    for (size_t i = 0; i < xout->size(); ++i)
     {
-        rvec_inc(xout[i], offset);
+        rvec_inc((*xout)[i], offset);
     }
 }
 
 static bool is_insertion_allowed(gmx::AnalysisNeighborhoodSearch *search,
-                                 const std::vector<real> &exclusionDistances,
-                                 int atomCount, const rvec *x,
-                                 const std::vector<real> &exclusionDistances_insrt)
+                                 const std::vector<real>         &exclusionDistances,
+                                 const std::vector<RVec>         &x,
+                                 const std::vector<real>         &exclusionDistances_insrt)
 {
-    gmx::AnalysisNeighborhoodPositions  pos(x, atomCount);
+    gmx::AnalysisNeighborhoodPositions  pos(x);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
     gmx::AnalysisNeighborhoodPair       pair;
     while (pairSearch.findNextPair(&pair))
@@ -164,13 +164,12 @@ static void merge_atoms_noalloc(t_atoms *atoms, const t_atoms *atoms_add)
 
 static void insert_mols(int nmol_insrt, int ntry, int seed,
                         real defaultDistance, real scaleFactor,
-                        t_atoms *atoms, rvec **x,
-                        const t_atoms *atoms_insrt, const rvec *x_insrt,
+                        t_atoms *atoms, std::vector<RVec> *x,
+                        const t_atoms *atoms_insrt, const std::vector<RVec> &x_insrt,
                         int ePBC, matrix box,
                         const std::string &posfn, const rvec deltaR, int enum_rot)
 {
     t_pbc            pbc;
-    rvec            *x_n;
 
     fprintf(stderr, "Initialising inter-atomic distances...\n");
     gmx_atomprop_t          aps = gmx_atomprop_init();
@@ -199,8 +198,6 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     gmx_rng_t        rng = gmx_rng_init(seed);
     set_pbc(&pbc, ePBC, box);
 
-    snew(x_n, atoms_insrt->nr);
-
     /* With -ip, take nmol_insrt from file posfn */
     double         **rpos = NULL;
     if (!posfn.empty())
@@ -222,14 +219,16 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         srenew(atoms->resinfo,      finalResidueCount);
         srenew(atoms->atomname,     finalAtomCount);
         srenew(atoms->atom,         finalAtomCount);
-        srenew(*x,                  finalAtomCount);
+        x->reserve(finalAtomCount);
         exclusionDistances.reserve(finalAtomCount);
     }
 
-    int mol        = 0;
-    int trial      = 0;
-    int firstTrial = 0;
-    int failed     = 0;
+    std::vector<RVec> x_n(x_insrt.size());
+
+    int               mol        = 0;
+    int               trial      = 0;
+    int               firstTrial = 0;
+    int               failed     = 0;
     while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt))
     {
         rvec offset_x;
@@ -256,19 +255,15 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2 * gmx_rng_uniform_real(rng)-1);
         }
         fprintf(stderr, "\rTry %d", ++trial);
-        generate_trial_conf(atoms_insrt->nr, x_insrt, offset_x, enum_rot, rng,
-                            x_n);
-        gmx::AnalysisNeighborhoodPositions pos(*x, atoms->nr);
+        generate_trial_conf(x_insrt, offset_x, enum_rot, rng, &x_n);
+        gmx::AnalysisNeighborhoodPositions pos(*x);
         gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
-        if (is_insertion_allowed(&search, exclusionDistances, atoms_insrt->nr,
-                                 x_n, exclusionDistances_insrt))
+        if (is_insertion_allowed(&search, exclusionDistances, x_n, exclusionDistances_insrt))
         {
-            const int firstIndex = atoms->nr;
-            for (int i = 0; i < atoms_insrt->nr; ++i)
-            {
-                copy_rvec(x_n[i], (*x)[firstIndex + i]);
-                exclusionDistances.push_back(exclusionDistances_insrt[i]);
-            }
+            x->insert(x->end(), x_n.begin(), x_n.end());
+            exclusionDistances.insert(exclusionDistances.end(),
+                                      exclusionDistances_insrt.begin(),
+                                      exclusionDistances_insrt.end());
             merge_atoms_noalloc(atoms, atoms_insrt);
             ++mol;
             firstTrial = trial;
@@ -279,14 +274,12 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     srenew(atoms->resinfo,  atoms->nres);
     srenew(atoms->atomname, atoms->nr);
     srenew(atoms->atom,     atoms->nr);
-    srenew(*x,              atoms->nr);
 
     fprintf(stderr, "\n");
     /* print number of molecules added */
     fprintf(stderr, "Added %d molecules (out of %d requested)\n",
             mol - failed, nmol_insrt);
 
-    sfree(x_n);
     if (rpos != NULL)
     {
         for (int i = 0; i < DIM; ++i)
@@ -445,11 +438,11 @@ int InsertMolecules::run()
                   "a box size (-box) must be specified");
     }
 
-    char       *title = NULL;
-    t_topology *top;
-    rvec       *x = NULL;
-    matrix      box;
-    int         ePBC = -1;
+    char              *title = NULL;
+    t_topology        *top;
+    std::vector<RVec>  x;
+    matrix             box;
+    int                ePBC = -1;
     snew(top, 1);
     if (bProt)
     {
@@ -479,8 +472,8 @@ int InsertMolecules::run()
                   "or give explicit -box command line option");
     }
 
-    t_topology *top_insrt;
-    rvec       *x_insrt = NULL;
+    t_topology        *top_insrt;
+    std::vector<RVec>  x_insrt;
     snew(top_insrt, 1);
     {
         int         ePBC_dummy;
@@ -498,7 +491,7 @@ int InsertMolecules::run()
         }
         if (positionFile_.empty())
         {
-            center_molecule(top_insrt->atoms.nr, x_insrt);
+            center_molecule(&x_insrt);
         }
     }
 
@@ -511,14 +504,13 @@ int InsertMolecules::run()
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), title, &top->atoms, x, NULL, ePBC, box);
+    write_sto_conf(outputConfFile_.c_str(), title, &top->atoms, as_rvec_array(x.data()),
+                   NULL, ePBC, box);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
             top->atoms.nr, top->atoms.nres);
 
-    sfree(x);
-    sfree(x_insrt);
     done_top(top);
     sfree(top);
     done_top(top_insrt);

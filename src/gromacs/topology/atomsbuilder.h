@@ -97,8 +97,7 @@ class AtomsRemover
         void markResidue(const t_atoms &atoms, int atomIndex, bool bStatus);
         bool isMarked(int atomIndex) const { return removed_[atomIndex] != 0; }
 
-        void removeMarkedVectors(rvec array[]) const;
-        void removeMarkedValues(real array[]) const;
+        void removeMarkedElements(std::vector<RVec> *container) const;
         void removeMarkedElements(std::vector<real> *container) const;
         void removeMarkedAtoms(t_atoms *atoms) const;
 
