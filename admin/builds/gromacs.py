@@ -127,7 +127,7 @@ def do_build(context):
 
         if context.params.gpu:
             if context.params.mpi or use_tmpi:
-                gpu_id = '12' # for (T)MPI use the two GT 640-s
+                gpu_id = '01' # for (T)MPI use the two GT 640-s
             else:
                 gpu_id = '0' # use GPU #0 by default
             cmd += ' -gpu_id ' + gpu_id
