@@ -48,7 +48,6 @@
 
 #include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
-#include "gromacs/legacyheaders/types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {

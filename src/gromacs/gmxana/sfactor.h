@@ -34,15 +34,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _sfactor_h
-#define _sfactor_h
+#ifndef GMX_GMXANA_SFACTOR_H
+#define GMX_GMXANA_SFACTOR_H
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/gmxcomplex.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_output_env_t;
 struct t_topology;
@@ -89,7 +87,4 @@ t_complex *** rc_tensor_allocation(int x, int y, int z);
 
 real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, structure_factor_t * sft);
 
-#ifdef __cplusplus
-}
-#endif
 #endif

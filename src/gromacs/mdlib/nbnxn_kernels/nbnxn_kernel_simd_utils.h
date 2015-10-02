@@ -37,7 +37,6 @@
 
 #include "config.h"
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 #include "gromacs/simd/simd.h"
 
