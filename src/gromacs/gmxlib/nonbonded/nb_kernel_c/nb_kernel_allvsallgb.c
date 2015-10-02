@@ -44,6 +44,7 @@
 
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 typedef struct

@@ -211,8 +211,7 @@ gmx_cpuid_stepping          (gmx_cpuid_t                cpuid);
 
 
 /* Check whether a particular CPUID feature is set.
- * Returns 0 if flag "feature" is not set, 1 if the flag is set. We cannot use
- * gmx_bool here since this file must be possible to compile without simple.h.
+ * Returns 0 if flag "feature" is not set, 1 if the flag is set.
  */
 int
 gmx_cpuid_feature           (gmx_cpuid_t                cpuid,

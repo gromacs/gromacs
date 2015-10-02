@@ -38,7 +38,7 @@
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/real.h"
 
 /* Index in the tables that says which function to use */
 enum {

@@ -38,7 +38,6 @@
 #define _GENBORN_ALLVSALL_H
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
 
 struct gmx_genborn_t;
 struct t_forcerec;
