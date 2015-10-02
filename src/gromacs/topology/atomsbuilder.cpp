@@ -213,28 +213,20 @@ void AtomsRemover::markResidue(const t_atoms &atoms, int atomIndex, bool bStatus
     }
 }
 
-void AtomsRemover::removeMarkedVectors(rvec array[]) const
+void AtomsRemover::removeMarkedElements(std::vector<RVec> *container) const
 {
-    for (size_t i = 0, j = 0; i < removed_.size(); ++i)
+    GMX_RELEASE_ASSERT(container->size() == removed_.size(),
+                       "Mismatching contained passed for removing values");
+    int j = 0;
+    for (size_t i = 0; i < removed_.size(); ++i)
     {
         if (!removed_[i])
         {
-            copy_rvec(array[i], array[j]);
+            (*container)[j] = (*container)[i];
             ++j;
         }
     }
-}
-
-void AtomsRemover::removeMarkedValues(real array[]) const
-{
-    for (size_t i = 0, j = 0; i < removed_.size(); ++i)
-    {
-        if (!removed_[i])
-        {
-            array[j] = array[i];
-            ++j;
-        }
-    }
+    container->resize(j);
 }
 
 void AtomsRemover::removeMarkedElements(std::vector<real> *container) const
