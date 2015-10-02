@@ -58,6 +58,7 @@
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/atomsbuilder.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -137,44 +138,17 @@ static bool is_insertion_allowed(gmx::AnalysisNeighborhoodSearch *search,
     return true;
 }
 
-static void merge_atoms_noalloc(t_atoms *atoms, const t_atoms *atoms_add)
-{
-    int resnr = 0;
-    if (atoms->nr > 0)
-    {
-        resnr = atoms->resinfo[atoms->atom[atoms->nr-1].resind].nr;
-    }
-    int prevResInd = -1;
-    for (int i = 0; i < atoms_add->nr; ++i)
-    {
-        if (atoms_add->atom[i].resind != prevResInd)
-        {
-            prevResInd = atoms_add->atom[i].resind;
-            ++resnr;
-            atoms->resinfo[atoms->nres]    = atoms_add->resinfo[prevResInd];
-            atoms->resinfo[atoms->nres].nr = resnr;
-            ++atoms->nres;
-        }
-        atoms->atom[atoms->nr]        = atoms_add->atom[i];
-        atoms->atomname[atoms->nr]    = atoms_add->atomname[i];
-        atoms->atom[atoms->nr].resind = atoms->nres-1;
-        ++atoms->nr;
-    }
-}
-
 static void insert_mols(int nmol_insrt, int ntry, int seed,
                         real defaultDistance, real scaleFactor,
-                        t_atoms *atoms, std::vector<RVec> *x,
+                        t_topology *top, std::vector<RVec> *x,
                         const t_atoms *atoms_insrt, const std::vector<RVec> &x_insrt,
                         int ePBC, matrix box,
                         const std::string &posfn, const rvec deltaR, int enum_rot)
 {
-    t_pbc            pbc;
-
     fprintf(stderr, "Initialising inter-atomic distances...\n");
     gmx_atomprop_t          aps = gmx_atomprop_init();
     std::vector<real>       exclusionDistances(
-            makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor));
+            makeExclusionDistances(&top->atoms, aps, defaultDistance, scaleFactor));
     const std::vector<real> exclusionDistances_insrt(
             makeExclusionDistances(atoms_insrt, aps, defaultDistance, scaleFactor));
     gmx_atomprop_destroy(aps);
@@ -196,6 +170,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     nb.setCutoff(maxInsertRadius + maxRadius);
 
     gmx_rng_t        rng = gmx_rng_init(seed);
+    t_pbc            pbc;
     set_pbc(&pbc, ePBC, box);
 
     /* With -ip, take nmol_insrt from file posfn */
@@ -213,12 +188,11 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                 nmol_insrt, posfn.c_str());
     }
 
+    gmx::AtomsBuilder builder(&top->atoms, &top->symtab);
     {
-        const int finalAtomCount    = atoms->nr + nmol_insrt * atoms_insrt->nr;
-        const int finalResidueCount = atoms->nres + nmol_insrt * atoms_insrt->nres;
-        srenew(atoms->resinfo,      finalResidueCount);
-        srenew(atoms->atomname,     finalAtomCount);
-        srenew(atoms->atom,         finalAtomCount);
+        const int finalAtomCount    = top->atoms.nr + nmol_insrt * atoms_insrt->nr;
+        const int finalResidueCount = top->atoms.nres + nmol_insrt * atoms_insrt->nres;
+        builder.reserve(finalAtomCount, finalResidueCount);
         x->reserve(finalAtomCount);
         exclusionDistances.reserve(finalAtomCount);
     }
@@ -229,7 +203,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     int               trial      = 0;
     int               firstTrial = 0;
     int               failed     = 0;
-    while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt))
+    while (mol < nmol_insrt && trial < ntry*nmol_insrt)
     {
         rvec offset_x;
         if (posfn.empty())
@@ -264,16 +238,13 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             exclusionDistances.insert(exclusionDistances.end(),
                                       exclusionDistances_insrt.begin(),
                                       exclusionDistances_insrt.end());
-            merge_atoms_noalloc(atoms, atoms_insrt);
+            builder.mergeAtoms(*atoms_insrt);
             ++mol;
             firstTrial = trial;
-            fprintf(stderr, " success (now %d atoms)!\n", atoms->nr);
+            fprintf(stderr, " success (now %d atoms)!\n", builder.currentAtomCount());
         }
     }
     gmx_rng_destroy(rng);
-    srenew(atoms->resinfo,  atoms->nres);
-    srenew(atoms->atomname, atoms->nr);
-    srenew(atoms->atom,     atoms->nr);
 
     fprintf(stderr, "\n");
     /* print number of molecules added */
@@ -498,7 +469,7 @@ int InsertMolecules::run()
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                &top->atoms, &x, &top_insrt->atoms, x_insrt,
+                top, &x, &top_insrt->atoms, x_insrt,
                 ePBC, box, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
