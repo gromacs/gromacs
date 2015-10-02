@@ -40,23 +40,37 @@
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/simple.h"
 
-/* Index in the tables that says which function to use */
+/* Index in the tables that says which function to use for Group Scheme */
 enum {
     etiCOUL, etiLJ6, etiLJ12, etiNR
 };
 
-typedef double (*real_space_grid_contribution_computer)(double, double);
+/* Index in the tables that says which function to use for Verlet Scheme */
+enum {
+    etiCOUL_Verlet, etiLJ6_Verlet, etiLJ12_Verlet, etiUSER_Verlet, etiNR_Verlet
+};
+
+typedef double (*interaction_potential_function)(const double *, double);
 /* Function pointer used to tell table_spline3_fill_ewald_lr whether it
  * should calculate the grid contribution for electrostatics or LJ.
  */
 
-void table_spline3_fill_ewald_lr(real                                 *table_F,
-                                 real                                 *table_V,
-                                 real                                 *table_FDV0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr);
+void table_spline3_fill_ewald_lr(real                           *table_F,
+                                 real                           *table_V,
+                                 real                           *table_FDV0,
+                                 int                             ntab,
+                                 double                          dx,
+                                 real                            beta,
+                                 interaction_potential_function  v_lr);
+
+void table_spline3_fill_Verlet(real                               *table_F,
+                               real                               *table_V,
+                               real                               *table_FDV0,
+                               int                                 ntab,
+                               double                              dx,
+                               real                               *table_in_f,
+                               real                               *table_in_v,
+                               int                                 table_in_size);
 /* Fill tables of ntab points with spacing dr with the ewald long-range
  * (mesh) force.
  * There are three separate tables with format FDV0, F, and V.
@@ -65,19 +79,43 @@ void table_spline3_fill_ewald_lr(real                                 *table_F,
  * The force can then be interpolated linearly.
  */
 
+
+static void table_spline3_fill(real                           *table_f,
+                               real                           *table_v,
+                               real                           *table_fdv0,
+                               int                             ntab,
+                               double                          dx,
+                               interaction_potential_function  v_ana,
+                               const double                   *params,
+                               const double                   *table_in_f,
+                               const double                   *table_in_v,
+                               int                             table_in_size,
+                               int                             stride);
+
+
 real ewald_spline3_table_scale(const interaction_const_t *ic);
 /* Return the scaling for the Ewald quadratic spline tables. */
 
-double v_q_ewald_lr(double beta, double r);
+real nb_spline3_table_scale(const interaction_const_t *i, real rtab);
+/* Generic scaling function for User quadratic spline tables */
+
+double v_q_ewald_lr(const double *beta, double r);
 /* Return the real space grid contribution for Ewald*/
 
-double v_lj_ewald_lr(double beta, double r);
+double v_lj_ewald_lr(const double *beta, double r);
 /* Return the real space grid contribution for LJ-Ewald*/
 
-t_forcetable make_tables(FILE *fp,
+//~ t_forcetable make_tables(FILE *fp,
+//~ const t_forcerec *fr,
+//~ const char *fn, real rtab, int flags);
+
+t_forcetable make_tables(FILE *out, // const output_env_t oenv,
                          const t_forcerec *fr,
-                         const char *fn, real rtab, int flags);
+                         const char *fn,
+                         real rtab, int flags);
 /* Return tables for inner loops. */
+double v_user(const double *beta, double r);
+
 
 bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
 /* Return a table for bonded interactions,
