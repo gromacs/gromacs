@@ -40,7 +40,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/mdlib/constr.h"
 
 #include "testutils/refdata.h"
