@@ -46,7 +46,6 @@
 #include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/mdlib/nbnxn_gpu_types.h"
 
 #ifdef __cplusplus

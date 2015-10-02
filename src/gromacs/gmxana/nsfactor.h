@@ -33,14 +33,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _nsfactor_h
-#define _nsfactor_h
+#ifndef GMX_GMXANA_NSFACTOR_H
+#define GMX_GMXANA_NSFACTOR_H
 
-#include "gromacs/legacyheaders/types/simple.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct t_topology;
 
@@ -95,7 +93,4 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sa
 gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step);
 
 
-#ifdef __cplusplus
-}
-#endif
 #endif

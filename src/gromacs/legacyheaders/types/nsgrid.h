@@ -37,9 +37,6 @@
 #ifndef _nsgrid_h
 #define _nsgrid_h
 
-
-#include "gromacs/legacyheaders/types/simple.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
