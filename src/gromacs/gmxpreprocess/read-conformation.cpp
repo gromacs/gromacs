@@ -36,6 +36,8 @@
 
 #include "read-conformation.h"
 
+#include <vector>
+
 #include "gromacs/fileio/confio.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
@@ -43,27 +45,27 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-real *makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
-                             real defaultDistance, real scaleFactor)
+std::vector<real>
+makeExclusionDistances(const t_atoms *a, gmx_atomprop_t aps,
+                       real defaultDistance, real scaleFactor)
 {
-    int   i;
-    real *exclusionDistances;
+    std::vector<real> exclusionDistances;
 
-    snew(exclusionDistances, a->nr);
-    /* initialise arrays with distances usually based on van der Waals
-       radii */
-    for (i = 0; (i < a->nr); i++)
+    exclusionDistances.reserve(a->nr);
+    for (int i = 0; i < a->nr; ++i)
     {
+        real value;
         if (!gmx_atomprop_query(aps, epropVDW,
                                 *(a->resinfo[a->atom[i].resind].name),
-                                *(a->atomname[i]), &(exclusionDistances[i])))
+                                *(a->atomname[i]), &value))
         {
-            exclusionDistances[i] = defaultDistance;
+            value = defaultDistance;
         }
         else
         {
-            exclusionDistances[i] *= scaleFactor;
+            value *= scaleFactor;
         }
+        exclusionDistances.push_back(value);
     }
     return exclusionDistances;
 }

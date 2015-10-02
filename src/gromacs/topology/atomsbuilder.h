@@ -99,6 +99,7 @@ class AtomsRemover
 
         void removeMarkedVectors(rvec array[]) const;
         void removeMarkedValues(real array[]) const;
+        void removeMarkedElements(std::vector<real> *container) const;
         void removeMarkedAtoms(t_atoms *atoms) const;
 
     private:

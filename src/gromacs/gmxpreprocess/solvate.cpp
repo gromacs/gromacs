@@ -41,6 +41,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -69,13 +70,12 @@ typedef struct {
     int   res0;
 } t_moltypes;
 
-static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
+static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v)
 {
     int         atnr, i, j, moltp = 0, nrmoltypes, resi_o, resi_n, resnr;
     t_moltypes *moltypes;
     t_atoms    *atoms, *newatoms;
     rvec       *newx, *newv = NULL;
-    real       *newr;
 
     fprintf(stderr, "Sorting configuration\n");
 
@@ -157,7 +157,6 @@ static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
         {
             snew(newv, atoms->nr);
         }
-        snew(newr, atoms->nr);
 
         resi_n = 0;
         resnr  = 1;
@@ -184,7 +183,6 @@ static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
                         {
                             copy_rvec(v[i], newv[j]);
                         }
-                        newr[j] = r[i];
                         i++;
                         j++;
                     }
@@ -218,14 +216,12 @@ static void sort_molecule(t_atoms **atoms_solvt, rvec *x, rvec *v, real *r)
             {
                 copy_rvec(newv[i], v[i]);
             }
-            r[i] = newr[i];
         }
         sfree(newx);
         if (v)
         {
             sfree(newv);
         }
-        sfree(newr);
     }
     sfree(moltypes);
 }
@@ -301,8 +297,9 @@ static void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
  * Note that the input configuration should be in the rectangular unit cell and
  * have whole residues.
  */
-static void replicateSolventBox(t_atoms *atoms, rvec **x, rvec **v, real **r,
-                                const matrix box, const matrix boxTarget)
+static void replicateSolventBox(t_atoms *atoms, rvec **x, rvec **v,
+                                std::vector<real> *r, const matrix box,
+                                const matrix boxTarget)
 {
     // Calculate the box multiplication factors.
     ivec n_box;
@@ -328,15 +325,15 @@ static void replicateSolventBox(t_atoms *atoms, rvec **x, rvec **v, real **r,
     builder.reserve(atoms->nr * nmol, atoms->nres * nmol);
     rvec             *newX;
     rvec             *newV = NULL;
-    real             *newR;
+    std::vector<real> newR;
     snew(newX,              atoms->nr * nmol);
-    snew(newR,              atoms->nr * nmol);
     if (*v)
     {
         snew(newV,          atoms->nr * nmol);
     }
+    newR.resize(atoms->nr * nmol);
 
-    const real maxRadius = *std::max_element(*r, *r + atoms->nr);
+    const real maxRadius = *std::max_element(r->begin(), r->end());
     rvec       boxWithMargin;
     for (int i = 0; i < DIM; ++i)
     {
@@ -400,10 +397,10 @@ static void replicateSolventBox(t_atoms *atoms, rvec **x, rvec **v, real **r,
     atoms->resinfo  = newAtoms.resinfo;
     sfree(*x);
     sfree(*v);
-    sfree(*r);
     *x = newX;
     *v = newV;
-    *r = newR;
+    newR.resize(atoms->nr);
+    std::swap(*r, newR);
     fprintf(stderr, "Solvent box contains %d atoms in %d residues\n",
             atoms->nr, atoms->nres);
 }
@@ -427,7 +424,8 @@ static void replicateSolventBox(t_atoms *atoms, rvec **x, rvec **v, real **r,
  * the opposite box edge in a way that is not part of the pre-equilibrated
  * configuration.
  */
-static void removeSolventBoxOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
+static void removeSolventBoxOverlap(t_atoms *atoms, rvec *x, rvec *v,
+                                    std::vector<real> *r,
                                     const t_pbc &pbc)
 {
     gmx::AtomsRemover remover(*atoms);
@@ -435,7 +433,7 @@ static void removeSolventBoxOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
     // TODO: We could limit the amount of pairs searched significantly,
     // since we are only interested in pairs where the positions are on
     // opposite edges.
-    const real maxRadius = *std::max_element(r, r + atoms->nr);
+    const real maxRadius = *std::max_element(r->begin(), r->end());
     gmx::AnalysisNeighborhood           nb;
     nb.setCutoff(2*maxRadius);
     gmx::AnalysisNeighborhoodPositions  pos(x, atoms->nr);
@@ -455,7 +453,7 @@ static void removeSolventBoxOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
         {
             continue;
         }
-        if (pair.distance2() < sqr(r[i1] + r[i2]))
+        if (pair.distance2() < sqr((*r)[i1] + (*r)[i2]))
         {
             rvec dx;
             rvec_sub(x[i2], x[i1], dx);
@@ -496,7 +494,7 @@ static void removeSolventBoxOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
     {
         remover.removeMarkedVectors(v);
     }
-    remover.removeMarkedValues(r);
+    remover.removeMarkedElements(r);
     const int originalAtomCount = atoms->nr;
     remover.removeMarkedAtoms(atoms);
     fprintf(stderr, "Removed %d solvent atoms due to solvent-solvent overlap\n",
@@ -518,15 +516,17 @@ static void removeSolventBoxOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
  * \param[in]     rshell     If >0, only keep solvent atoms within a shell of
  *     this size from the solute.
  */
-static void removeSoluteOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
+static void removeSoluteOverlap(t_atoms *atoms, rvec *x, rvec *v,
+                                std::vector<real> *r,
                                 const t_pbc &pbc, int soluteAtomCount,
-                                const rvec *x_solute, const real *r_solute,
+                                const rvec *x_solute,
+                                const std::vector<real> &r_solute,
                                 real rshell)
 {
     const real                          maxRadius1
-        = *std::max_element(r, r + atoms->nr);
+        = *std::max_element(r->begin(), r->end());
     const real                          maxRadius2
-        = *std::max_element(r_solute, r_solute + soluteAtomCount);
+        = *std::max_element(r_solute.begin(), r_solute.end());
 
     gmx::AtomsRemover                   remover(*atoms);
     // If rshell is >0, the neighborhood search looks at all pairs
@@ -555,7 +555,7 @@ static void removeSoluteOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
             continue;
         }
         const real r1      = r_solute[pair.refIndex()];
-        const real r2      = r[pair.testIndex()];
+        const real r2      = (*r)[pair.testIndex()];
         const bool bRemove = (pair.distance2() < sqr(r1 + r2));
         remover.markResidue(*atoms, pair.testIndex(), bRemove);
     }
@@ -565,7 +565,7 @@ static void removeSoluteOverlap(t_atoms *atoms, rvec *x, rvec *v, real *r,
     {
         remover.removeMarkedVectors(v);
     }
-    remover.removeMarkedValues(r);
+    remover.removeMarkedElements(r);
     const int originalAtomCount = atoms->nr;
     remover.removeMarkedAtoms(atoms);
     fprintf(stderr, "Removed %d solvent atoms due to solute-solvent overlap\n",
@@ -639,10 +639,10 @@ static void add_solv(const char *fn, t_topology *top, rvec **x, rvec **v,
 
     /* initialise distance arrays for solvent configuration */
     fprintf(stderr, "Initialising inter-atomic distances...\n");
-    real *exclusionDistances
-        = makeExclusionDistances(&top->atoms, aps, defaultDistance, scaleFactor);
-    real *exclusionDistances_solvt
-        = makeExclusionDistances(atoms_solvt, aps, defaultDistance, scaleFactor);
+    const std::vector<real> exclusionDistances(
+            makeExclusionDistances(&top->atoms, aps, defaultDistance, scaleFactor));
+    std::vector<real>       exclusionDistances_solvt(
+            makeExclusionDistances(atoms_solvt, aps, defaultDistance, scaleFactor));
 
     /* generate a new solvent configuration */
     fprintf(stderr, "Generating solvent configuration\n");
@@ -652,11 +652,11 @@ static void add_solv(const char *fn, t_topology *top, rvec **x, rvec **v,
                         box_solvt, box);
     if (ePBC != epbcNONE)
     {
-        removeSolventBoxOverlap(atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, pbc);
+        removeSolventBoxOverlap(atoms_solvt, x_solvt, v_solvt, &exclusionDistances_solvt, pbc);
     }
     if (top->atoms.nr > 0)
     {
-        removeSoluteOverlap(atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt, pbc,
+        removeSoluteOverlap(atoms_solvt, x_solvt, v_solvt, &exclusionDistances_solvt, pbc,
                             top->atoms.nr, *x, exclusionDistances, rshell);
     }
 
@@ -667,7 +667,7 @@ static void add_solv(const char *fn, t_topology *top, rvec **x, rvec **v,
     }
 
     /* Sort the solvent mixture, not the protein... */
-    sort_molecule(&atoms_solvt, x_solvt, v_solvt, exclusionDistances_solvt);
+    sort_molecule(&atoms_solvt, x_solvt, v_solvt);
 
     // Merge the two configurations.
     srenew(*x, top->atoms.nr + atoms_solvt->nr);
@@ -693,8 +693,6 @@ static void add_solv(const char *fn, t_topology *top, rvec **x, rvec **v,
 
     sfree(x_solvt);
     sfree(v_solvt);
-    sfree(exclusionDistances);
-    sfree(exclusionDistances_solvt);
     done_top(top_solvt);
     sfree(top_solvt);
 }

@@ -47,6 +47,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -234,6 +235,22 @@ void AtomsRemover::removeMarkedValues(real array[]) const
             ++j;
         }
     }
+}
+
+void AtomsRemover::removeMarkedElements(std::vector<real> *container) const
+{
+    GMX_RELEASE_ASSERT(container->size() == removed_.size(),
+                       "Mismatching contained passed for removing values");
+    int j = 0;
+    for (size_t i = 0; i < removed_.size(); ++i)
+    {
+        if (!removed_[i])
+        {
+            (*container)[j] = (*container)[i];
+            ++j;
+        }
+    }
+    container->resize(j);
 }
 
 void AtomsRemover::removeMarkedAtoms(t_atoms *atoms) const
