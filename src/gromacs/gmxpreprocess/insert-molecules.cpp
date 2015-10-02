@@ -39,6 +39,7 @@
 #include "insert-molecules.h"
 
 #include <algorithm>
+#include <vector>
 #include <string>
 
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
@@ -117,9 +118,9 @@ static void generate_trial_conf(int atomCount, const rvec xin[],
 }
 
 static bool is_insertion_allowed(gmx::AnalysisNeighborhoodSearch *search,
-                                 const real *exclusionDistances,
+                                 const std::vector<real> &exclusionDistances,
                                  int atomCount, const rvec *x,
-                                 const real *exclusionDistances_insrt)
+                                 const std::vector<real> &exclusionDistances_insrt)
 {
     gmx::AnalysisNeighborhoodPositions  pos(x, atomCount);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
@@ -172,22 +173,22 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     rvec            *x_n;
 
     fprintf(stderr, "Initialising inter-atomic distances...\n");
-    gmx_atomprop_t   aps = gmx_atomprop_init();
-    real            *exclusionDistances
-        = makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor);
-    real            *exclusionDistances_insrt
-        = makeExclusionDistances(atoms_insrt, aps, defaultDistance, scaleFactor);
+    gmx_atomprop_t          aps = gmx_atomprop_init();
+    std::vector<real>       exclusionDistances(
+            makeExclusionDistances(atoms, aps, defaultDistance, scaleFactor));
+    const std::vector<real> exclusionDistances_insrt(
+            makeExclusionDistances(atoms_insrt, aps, defaultDistance, scaleFactor));
     gmx_atomprop_destroy(aps);
 
     const real       maxInsertRadius
-        = *std::max_element(exclusionDistances_insrt,
-                            exclusionDistances_insrt + atoms_insrt->nr);
+        = *std::max_element(exclusionDistances_insrt.begin(),
+                            exclusionDistances_insrt.end());
     real             maxRadius = maxInsertRadius;
-    if (atoms->nr > 0)
+    if (!exclusionDistances.empty())
     {
         const real maxExistingRadius
-            = *std::max_element(exclusionDistances,
-                                exclusionDistances + atoms->nr);
+            = *std::max_element(exclusionDistances.begin(),
+                                exclusionDistances.end());
         maxRadius = std::max(maxInsertRadius, maxExistingRadius);
     }
 
@@ -222,7 +223,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         srenew(atoms->atomname,     finalAtomCount);
         srenew(atoms->atom,         finalAtomCount);
         srenew(*x,                  finalAtomCount);
-        srenew(exclusionDistances,  finalAtomCount);
+        exclusionDistances.reserve(finalAtomCount);
     }
 
     int mol        = 0;
@@ -266,7 +267,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             for (int i = 0; i < atoms_insrt->nr; ++i)
             {
                 copy_rvec(x_n[i], (*x)[firstIndex + i]);
-                exclusionDistances[firstIndex + i] = exclusionDistances_insrt[i];
+                exclusionDistances.push_back(exclusionDistances_insrt[i]);
             }
             merge_atoms_noalloc(atoms, atoms_insrt);
             ++mol;
@@ -286,8 +287,6 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             mol - failed, nmol_insrt);
 
     sfree(x_n);
-    sfree(exclusionDistances);
-    sfree(exclusionDistances_insrt);
     if (rpos != NULL)
     {
         for (int i = 0; i < DIM; ++i)
