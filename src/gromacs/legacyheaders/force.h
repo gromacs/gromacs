@@ -97,22 +97,27 @@ void make_wall_tables(FILE *fplog,
 real do_walls(struct t_inputrec *ir, t_forcerec *fr, matrix box, struct t_mdatoms *md,
               rvec x[], rvec f[], real lambda, real Vlj[], struct t_nrnb *nrnb);
 
-#define GMX_MAKETABLES_FORCEUSER  (1<<0)
-#define GMX_MAKETABLES_14ONLY     (1<<1)
+#define GMX_MAKETABLES_FORCEUSER     (1<<0)
+#define GMX_MAKETABLES_14ONLY        (1<<1)
+#define GMX_MAKETABLES_USER          (1<<2)
+#define GMX_MAKETABLES_USER_ELEC     (1<<3)
+#define GMX_MAKETABLES_USER_VDW_LJ6  (1<<4)
+#define GMX_MAKETABLES_USER_VDW_LJ12 (1<<5)
 
 gmx_bool can_use_allvsall(const struct t_inputrec *ir,
                           gmx_bool bPrintNote, struct t_commrec *cr, FILE *fp);
-/* Returns if we can use all-vs-all loops.
- * If bPrintNote==TRUE, prints a note, if necessary, to stderr
- * and fp (if !=NULL) on the master node.
+
+t_genericTable make_tables_Verlet(FILE *fp, // const output_env_t oenv,
+                                  const t_forcerec *fr, gmx_bool bVerbose,
+                                  const char *fn, real rtab, int flags);
+/* make_tables_Verlet reads the table file/s and fills the tables data
+ * structures for Verlet scheme
  */
-
-
 gmx_bool nbnxn_acceleration_supported(FILE                           *fplog,
                                       const struct t_commrec         *cr,
                                       const struct t_inputrec        *ir,
                                       gmx_bool                        bGPU);
-/* Return if GPU/CPU-SIMD acceleration is supported with the given inputrec
+/* nbnxn_acceleration_supported returns if GPU/CPU-SIMD acceleration is supported with the given inputrec
  * with bGPU TRUE/FALSE.
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
  * message to fplog/stderr.
@@ -121,31 +126,31 @@ gmx_bool nbnxn_acceleration_supported(FILE                           *fplog,
 gmx_bool uses_simple_tables(int                        cutoff_scheme,
                             struct nonbonded_verlet_t *nbv,
                             int                        group);
-/* Returns whether simple tables (i.e. not for use with GPUs) are used
+/* uses_simple_tables returns whether simple tables (i.e. not for use with GPUs) are used
  * with the type of kernel indicated.
  */
 
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
-/* Intializes the energy storage struct */
+/* init_enerdata intializes the energy storage struct */
 
 void destroy_enerdata(gmx_enerdata_t *enerd);
-/* Free all memory associated with enerd */
+/* destroy_enerdata free all memory associated with enerd */
 
 void reset_foreign_enerdata(gmx_enerdata_t *enerd);
-/* Resets only the foreign energy data */
+/* reset_foreign_enerdata resets only the foreign energy data */
 
 void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
                     gmx_enerdata_t *enerd,
                     gmx_bool bMaster);
-/* Resets the energy data, if bNS=TRUE also zeros the long-range part */
+/* reset_enerdata resets the energy data, if bNS=TRUE also zeros the long-range part */
 
 void sum_epot(gmx_grppairener_t *grpp, real *epot);
-/* Locally sum the non-bonded potential energy terms */
+/* sum_epot locally sum the non-bonded potential energy terms */
 
 void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, struct t_lambda *fepvals);
-/* Sum the free energy contributions */
+/* sum_dhdl sum the free energy contributions */
 
-/* Compute the average C6 and C12 params for LJ corrections */
+/* set_avcsixtwelve compute the average C6 and C12 params for LJ corrections */
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
 
@@ -166,7 +171,8 @@ extern void do_force(FILE *log, struct t_commrec *cr,
                      gmx_bool bBornRadii,
                      int flags);
 
-/* Communicate coordinates (if parallel).
+/* do_force
+ * Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
  * Calculate forces.
  * Communicate forces (if parallel).
@@ -185,7 +191,7 @@ void ns(FILE                     *fplog,
         struct t_nrnb            *nrnb,
         gmx_bool                  bFillGrid,
         gmx_bool                  bDoLongRangeNS);
-/* Call the neighborsearcher */
+/* ns calls the neighborsearcher */
 
 extern void do_force_lowlevel(t_forcerec   *fr,
                               struct t_inputrec   *ir,
@@ -196,8 +202,8 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               struct t_mdatoms    *md,
                               rvec         x[],
                               history_t    *hist,
-                              rvec         f_shortrange[],
-                              rvec         f_longrange[],
+                              rvec f_shortrange[],
+                              rvec f_longrange[],
                               gmx_enerdata_t *enerd,
                               struct t_fcdata     *fcd,
                               gmx_localtop_t *top,
@@ -208,15 +214,16 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               real         *lambda,
                               struct t_graph      *graph,
                               t_blocka     *excl,
-                              rvec         mu_tot[2],
-                              int          flags,
+                              rvec mu_tot[2],
+                              int flags,
                               float        *cycles_pme);
-/* Call all the force routines */
+/* do_force_lowlevel calls all the force routines */
 
 void free_gpu_resources(const t_forcerec                   *fr,
                         const struct t_commrec             *cr,
                         const struct gmx_gpu_info_t        *gpu_info,
                         const gmx_gpu_opt_t                *gpu_opt);
+/* free_gpu_resources frees all the resources previously allocated on GPUs */
 
 #ifdef __cplusplus
 }
