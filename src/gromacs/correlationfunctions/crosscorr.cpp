@@ -45,6 +45,7 @@
 #include "crosscorr.h"
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
 /*! \brief
@@ -157,10 +158,14 @@ void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr)
 #pragma omp for
         for (i = 0; i < nFunc; i++)
         {
-            gmx_fft_t fft;
-            gmx_fft_init_1d(&fft, zeroPaddingSize(nData[i]), GMX_FFT_FLAG_CONSERVATIVE);
-            cross_corr_low( nData[i],  f[i],  g[i], corr[i], fft);
-            gmx_fft_destroy(fft);
+            try
+            {
+                gmx_fft_t fft;
+                gmx_fft_init_1d(&fft, zeroPaddingSize(nData[i]), GMX_FFT_FLAG_CONSERVATIVE);
+                cross_corr_low( nData[i],  f[i],  g[i], corr[i], fft);
+                gmx_fft_destroy(fft);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
     }
     gmx_fft_cleanup();

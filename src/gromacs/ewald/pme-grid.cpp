@@ -468,6 +468,7 @@ void unwrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
         for (ix = 0; ix < pme->pmegrid_nx; ix++)
         {
+            // Trivial OpenMP region that does not throw, no need for try/catch
             int iy, iz;
 
             for (iy = 0; iy < overlap; iy++)
@@ -485,6 +486,7 @@ void unwrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
     for (ix = 0; ix < pme->pmegrid_nx; ix++)
     {
+        // Trivial OpenMP region that does not throw, no need for try/catch
         int iy, iz;
 
         for (iy = 0; iy < pme->pmegrid_ny; iy++)

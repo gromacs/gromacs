@@ -45,6 +45,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
@@ -125,7 +126,11 @@ void pme_init_all_work(struct pme_solve_work_t **work, int nthread, int nkx)
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
-        realloc_work(&((*work)[thread]), nkx);
+        try
+        {
+            realloc_work(&((*work)[thread]), nkx);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 

@@ -872,6 +872,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 /* OpenMP atomics are expensive, but this kernels is also
                  * expensive, so we can take this hit, instead of using
                  * thread-local output buffers and extra reduction.
+                 *
+                 * All the OpenMP regions in this file are trivial and should
+                 * not throw, so no need for try/catch.
                  */
 #pragma omp atomic
                 f[j3]     -= tx;

@@ -64,6 +64,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -457,26 +458,30 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 #pragma omp parallel for num_threads(nth) schedule(static)
                 for (th = 0; th < nth; th++)
                 {
-                    int start_th, end_th;
-
-                    if (th > 0)
+                    try
                     {
-                        clear_mat(constr->vir_r_m_dr_th[th]);
-                    }
+                        int start_th, end_th;
 
-                    start_th = (nsettle* th   )/nth;
-                    end_th   = (nsettle*(th+1))/nth;
-                    if (start_th >= 0 && end_th - start_th > 0)
-                    {
-                        csettle(constr->settled,
-                                end_th-start_th,
-                                settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
-                                pbc_null,
-                                x[0], xprime[0],
-                                invdt, v ? v[0] : NULL, calcvir_atom_end,
-                                th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
-                                th == 0 ? &settle_error : &constr->settle_error[th]);
+                        if (th > 0)
+                        {
+                            clear_mat(constr->vir_r_m_dr_th[th]);
+                        }
+
+                        start_th = (nsettle* th   )/nth;
+                        end_th   = (nsettle*(th+1))/nth;
+                        if (start_th >= 0 && end_th - start_th > 0)
+                        {
+                            csettle(constr->settled,
+                                    end_th-start_th,
+                                    settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
+                                    pbc_null,
+                                    x[0], xprime[0],
+                                    invdt, v ? v[0] : NULL, calcvir_atom_end,
+                                    th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
+                                    th == 0 ? &settle_error : &constr->settle_error[th]);
+                        }
                     }
+                    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
                 if (v != NULL)
@@ -495,26 +500,30 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 #pragma omp parallel for num_threads(nth) schedule(static)
                 for (th = 0; th < nth; th++)
                 {
-                    int start_th, end_th;
-
-                    if (th > 0)
+                    try
                     {
-                        clear_mat(constr->vir_r_m_dr_th[th]);
-                    }
+                        int start_th, end_th;
 
-                    start_th = (nsettle* th   )/nth;
-                    end_th   = (nsettle*(th+1))/nth;
+                        if (th > 0)
+                        {
+                            clear_mat(constr->vir_r_m_dr_th[th]);
+                        }
 
-                    if (start_th >= 0 && end_th - start_th > 0)
-                    {
-                        settle_proj(constr->settled, econq,
-                                    end_th-start_th,
-                                    settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
-                                    pbc_null,
-                                    x,
-                                    xprime, min_proj, calcvir_atom_end,
-                                    th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th]);
+                        start_th = (nsettle* th   )/nth;
+                        end_th   = (nsettle*(th+1))/nth;
+
+                        if (start_th >= 0 && end_th - start_th > 0)
+                        {
+                            settle_proj(constr->settled, econq,
+                                        end_th-start_th,
+                                        settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
+                                        pbc_null,
+                                        x,
+                                        xprime, min_proj, calcvir_atom_end,
+                                        th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th]);
+                        }
                     }
+                    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
                 /* This is an overestimate */
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);

@@ -58,6 +58,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -1514,11 +1515,15 @@ void put_atoms_in_box_omp(int ePBC, matrix box, int natoms, rvec x[])
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (t = 0; t < nth; t++)
     {
-        int offset, len;
+        try
+        {
+            int offset, len;
 
-        offset = (natoms*t    )/nth;
-        len    = (natoms*(t + 1))/nth - offset;
-        put_atoms_in_box(ePBC, box, len, x + offset);
+            offset = (natoms*t    )/nth;
+            len    = (natoms*(t + 1))/nth - offset;
+            put_atoms_in_box(ePBC, box, len, x + offset);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 
