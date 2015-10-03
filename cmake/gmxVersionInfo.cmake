@@ -93,14 +93,6 @@
 # written against the GROMACS API to provide some #ifdef'ed code to support
 # multiple GROMACS versions.
 #
-# The following variables are defined without manual intervention:
-#   SOURCE_IS_SOURCE_DISTRIBUTION  The source tree is from a source tarball.
-#   SOURCE_IS_GIT_REPOSITORY       The source tree is a git repository.
-# Note that both can be false if the tree has been extracted, e.g., as a
-# tarball directly from git.
-# Additionally, the following variable is defined:
-#   BUILD_IS_INSOURCE              The build is happening in-source.
-#
 # This script also declares machinery to generate and obtain version
 # information from a git repository.  This is enabled by default if the source
 # tree is a git, but can be disabled with
@@ -188,24 +180,6 @@
 # Other variables set here are not intended for use outside this file.
 # The scripts gmxGenerateVersionInfo.cmake and gmxConfigureVersionInfo.cmake
 # are used internally by this machinery, as well as VersionInfo.cmake.cmakein.
-
-#####################################################################
-# Basic nature of the source tree
-
-set(SOURCE_IS_GIT_REPOSITORY OFF)
-set(SOURCE_IS_SOURCE_DISTRIBUTION OFF)
-if (EXISTS "${PROJECT_SOURCE_DIR}/.git")
-    set(SOURCE_IS_GIT_REPOSITORY ON)
-endif()
-# This file is excluded from CPack source packages, but part of the repository,
-# so it should get included everywhere else.
-if (NOT EXISTS "${PROJECT_SOURCE_DIR}/admin/.isreposource")
-    set(SOURCE_IS_SOURCE_DISTRIBUTION ON)
-endif()
-set(BUILD_IS_INSOURCE OFF)
-if ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-    set(BUILD_IS_INSOURCE ON)
-endif()
 
 #####################################################################
 # Manually maintained version info
