@@ -6,6 +6,7 @@ Development-time tools
 
    doxygen
    jenkins
+   releng/index
    gmxtree
    uncrustify
    testutils
