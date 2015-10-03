@@ -81,7 +81,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
     double        rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV; /* Needs double for sc_power==48 */
     real          sigma2[NSTATES], sigma_pow[NSTATES];
-    int           do_tab, tab_elemsize;
+    int           do_tab, tab_elemsize = 0;
     int           n0, n1C, n1V, nnn;
     real          Y, F, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, VV, FF;
     int           icoul, ivdw;
