@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,17 +32,41 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_sphinx_extension_path = '@SPHINX_EXTENSION_PATH@'
-releng_path = '@RELENG_PATH@'
-gmx_version_string = '@GMX_VERSION_STRING@'
-gmx_version_string_full = '@GMX_VERSION_STRING_FULL@'
-regressiontest_version = '@REGRESSIONTEST_VERSION@'
-variables = [
-        ('EXPECTED_DOXYGEN_VERSION', '@EXPECTED_DOXYGEN_VERSION@'),
-        ('GMX_CMAKE_MINIMUM_REQUIRED_VERSION', '@GMX_CMAKE_MINIMUM_REQUIRED_VERSION@'),
-        ('REQUIRED_CUDA_VERSION', '@REQUIRED_CUDA_VERSION@'),
-        ('REQUIRED_CUDA_COMPUTE_CAPABILITY', '@REQUIRED_CUDA_COMPUTE_CAPABILITY@'),
-        ('REQUIRED_OPENCL_MIN_VERSION', '@REQUIRED_OPENCL_MIN_VERSION@'),
-        ('SOURCE_MD5SUM', '@SOURCE_MD5SUM@'),
-        ('REGRESSIONTEST_MD5SUM', '@REGRESSIONTEST_MD5SUM_STRING@')
-    ]
+# Retrieves information about the nature of the build tree
+#
+# The following variables are defined:
+#   SOURCE_IS_SOURCE_DISTRIBUTION  The source tree is from a source tarball.
+#   SOURCE_IS_GIT_REPOSITORY       The source tree is a git repository.
+# Note that both can be false if the tree has been extracted, e.g., as a
+# tarball directly from git.
+# Additionally, the following variable is defined:
+#   BUILD_IS_INSOURCE              The build is happening in-source.
+
+#####################################################################
+# Basic nature of the source tree
+
+set(SOURCE_IS_GIT_REPOSITORY OFF)
+set(SOURCE_IS_SOURCE_DISTRIBUTION OFF)
+if (EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    set(SOURCE_IS_GIT_REPOSITORY ON)
+endif()
+# This file is excluded from CPack source packages, but part of the repository,
+# so it should get included everywhere else.
+if (NOT EXISTS "${PROJECT_SOURCE_DIR}/admin/.isreposource")
+    set(SOURCE_IS_SOURCE_DISTRIBUTION ON)
+endif()
+set(BUILD_IS_INSOURCE OFF)
+if ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+    set(BUILD_IS_INSOURCE ON)
+endif()
+
+#####################################################################
+# Location of other repositories (for development use only)
+
+if (NOT DEFINED RELENG_PATH)
+    if (IS_DIRECTORY "${PROJECT_SOURCE_DIR}/../releng")
+        set(RELENG_PATH "${PROJECT_SOURCE_DIR}/../releng")
+    endif()
+endif()
+set(RELENG_PATH "${RELENG_PATH}" CACHE PATH "Path to releng repository")
+mark_as_advanced(RELENG_PATH)
