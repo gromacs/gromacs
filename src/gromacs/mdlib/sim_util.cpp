@@ -92,6 +92,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -666,8 +667,12 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
 #pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
     for (th = 0; th < nbl_lists->nnbl; th++)
     {
-        gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
-                                  x, f, fr, mdatoms, &kernel_data, nrnb);
+        try
+        {
+            gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
+                                      x, f, fr, mdatoms, &kernel_data, nrnb);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     if (fepvals->sc_alpha != 0)
@@ -702,8 +707,12 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
 #pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
             for (th = 0; th < nbl_lists->nnbl; th++)
             {
-                gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
-                                          x, f, fr, mdatoms, &kernel_data, nrnb);
+                try
+                {
+                    gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
+                                              x, f, fr, mdatoms, &kernel_data, nrnb);
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
 
             sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);

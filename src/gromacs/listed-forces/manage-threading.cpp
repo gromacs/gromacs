@@ -55,6 +55,7 @@
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/listed-forces/listed-forces.h"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -382,8 +383,12 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
 #pragma omp parallel for num_threads(bt->nthreads) schedule(static)
     for (t = 1; t < bt->nthreads; t++)
     {
-        calc_bonded_reduction_mask(&bt->f_t[t].red_mask,
-                                   idef, bt->red_ashift, t, bt->nthreads);
+        try
+        {
+            calc_bonded_reduction_mask(&bt->f_t[t].red_mask,
+                                       idef, bt->red_ashift, t, bt->nthreads);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     /* Determine the maximum number of blocks we need to reduce over */
@@ -442,20 +447,24 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
 #pragma omp parallel for num_threads(bt->nthreads) schedule(static)
         for (t = 0; t < bt->nthreads; t++)
         {
-            /* Thread 0 uses the global force and energy arrays */
-            if (t > 0)
+            try
             {
-                int i;
-
-                bt->f_t[t].f        = NULL;
-                bt->f_t[t].f_nalloc = 0;
-                snew(bt->f_t[t].fshift, SHIFTS);
-                bt->f_t[t].grpp.nener = nenergrp*nenergrp;
-                for (i = 0; i < egNR; i++)
+                /* Thread 0 uses the global force and energy arrays */
+                if (t > 0)
                 {
-                    snew(bt->f_t[t].grpp.ener[i], bt->f_t[t].grpp.nener);
+                    int i;
+
+                    bt->f_t[t].f        = NULL;
+                    bt->f_t[t].f_nalloc = 0;
+                    snew(bt->f_t[t].fshift, SHIFTS);
+                    bt->f_t[t].grpp.nener = nenergrp*nenergrp;
+                    for (i = 0; i < egNR; i++)
+                    {
+                        snew(bt->f_t[t].grpp.ener[i], bt->f_t[t].grpp.nener);
+                    }
                 }
             }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
         /* The optimal value after which to switch from uniform to localized

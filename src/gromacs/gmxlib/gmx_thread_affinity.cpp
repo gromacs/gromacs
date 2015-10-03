@@ -58,6 +58,7 @@
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
@@ -295,32 +296,36 @@ gmx_set_thread_affinity(FILE                *fplog,
     nth_affinity_set = 0;
 #pragma omp parallel num_threads(nthread_local) reduction(+:nth_affinity_set)
     {
-        int      thread_id, thread_id_node;
-        int      index, core;
-        gmx_bool setaffinity_ret;
-
-        thread_id      = gmx_omp_get_thread_num();
-        thread_id_node = thread0_id_node + thread_id;
-        index          = offset + thread_id_node*core_pinning_stride;
-        if (locality_order != NULL)
+        try
         {
-            core = locality_order[index];
-        }
-        else
-        {
-            core = index;
-        }
+            int      thread_id, thread_id_node;
+            int      index, core;
+            gmx_bool setaffinity_ret;
 
-        setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+            thread_id      = gmx_omp_get_thread_num();
+            thread_id_node = thread0_id_node + thread_id;
+            index          = offset + thread_id_node*core_pinning_stride;
+            if (locality_order != NULL)
+            {
+                core = locality_order[index];
+            }
+            else
+            {
+                core = index;
+            }
 
-        /* store the per-thread success-values of the setaffinity */
-        nth_affinity_set += (setaffinity_ret == 0);
+            setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
 
-        if (debug)
-        {
-            fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
-                    cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
+            /* store the per-thread success-values of the setaffinity */
+            nth_affinity_set += (setaffinity_ret == 0);
+
+            if (debug)
+            {
+                fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
+                        cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
+            }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     if (nth_affinity_set > nthread_local)

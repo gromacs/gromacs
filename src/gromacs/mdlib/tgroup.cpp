@@ -49,6 +49,7 @@
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -131,20 +132,24 @@ void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
+        try
+        {
 #define EKIN_WORK_BUFFER_SIZE 2
-        /* Allocate 2 extra elements on both sides, so in single
-         * precision we have
-         * EKIN_WORK_BUFFER_SIZE*DIM*DIM*sizeof(real) = 72/144 bytes
-         * buffer on both sides to avoid cache pollution.
-         */
-        snew(ekind->ekin_work_alloc[thread], ekind->ngtc+2*EKIN_WORK_BUFFER_SIZE);
-        ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + EKIN_WORK_BUFFER_SIZE;
-        /* Nasty hack so we can have the per-thread accumulation
-         * variable for dekindl in the same thread-local cache lines
-         * as the per-thread accumulation tensors for ekin[fh],
-         * because they are accumulated in the same loop. */
-        ekind->dekindl_work[thread] = &(ekind->ekin_work[thread][ekind->ngtc][0][0]);
+            /* Allocate 2 extra elements on both sides, so in single
+             * precision we have
+             * EKIN_WORK_BUFFER_SIZE*DIM*DIM*sizeof(real) = 72/144 bytes
+             * buffer on both sides to avoid cache pollution.
+             */
+            snew(ekind->ekin_work_alloc[thread], ekind->ngtc+2*EKIN_WORK_BUFFER_SIZE);
+            ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + EKIN_WORK_BUFFER_SIZE;
+            /* Nasty hack so we can have the per-thread accumulation
+             * variable for dekindl in the same thread-local cache lines
+             * as the per-thread accumulation tensors for ekin[fh],
+             * because they are accumulated in the same loop. */
+            ekind->dekindl_work[thread] = &(ekind->ekin_work[thread][ekind->ngtc][0][0]);
 #undef EKIN_WORK_BUFFER_SIZE
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     ekind->ngacc = opts->ngacc;

@@ -99,6 +99,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/qsort_threadsafe.h"
@@ -4460,13 +4461,17 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
-        calc_cg_move(fplog, step, dd, state, tric_dir, tcm,
-                     cell_x0, cell_x1, limitd, limit0, limit1,
-                     cgindex,
-                     ( thread   *dd->ncg_home)/nthread,
-                     ((thread+1)*dd->ncg_home)/nthread,
-                     fr->cutoff_scheme == ecutsGROUP ? cg_cm : state->x,
-                     move);
+        try
+        {
+            calc_cg_move(fplog, step, dd, state, tric_dir, tcm,
+                         cell_x0, cell_x1, limitd, limit0, limit1,
+                         cgindex,
+                         ( thread   *dd->ncg_home)/nthread,
+                         ((thread+1)*dd->ncg_home)/nthread,
+                         fr->cutoff_scheme == ecutsGROUP ? cg_cm : state->x,
+                         move);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     for (cg = 0; cg < dd->ncg_home; cg++)
@@ -8114,68 +8119,72 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 #pragma omp parallel for num_threads(comm->nth) schedule(static)
                 for (th = 0; th < comm->nth; th++)
                 {
-                    gmx_domdec_ind_t *ind_p;
-                    int             **ibuf_p, *ibuf_nalloc_p;
-                    vec_rvec_t       *vbuf_p;
-                    int              *nsend_p, *nat_p;
-                    int              *nsend_zone_p;
-                    int               cg0_th, cg1_th;
-
-                    if (th == 0)
+                    try
                     {
-                        /* Thread 0 writes in the comm buffers */
-                        ind_p         = ind;
-                        ibuf_p        = &comm->buf_int;
-                        ibuf_nalloc_p = &comm->nalloc_int;
-                        vbuf_p        = &comm->vbuf;
-                        nsend_p       = &nsend;
-                        nat_p         = &nat;
-                        nsend_zone_p  = &ind->nsend[zone];
-                    }
-                    else
-                    {
-                        /* Other threads write into temp buffers */
-                        ind_p         = &comm->dth[th].ind;
-                        ibuf_p        = &comm->dth[th].ibuf;
-                        ibuf_nalloc_p = &comm->dth[th].ibuf_nalloc;
-                        vbuf_p        = &comm->dth[th].vbuf;
-                        nsend_p       = &comm->dth[th].nsend;
-                        nat_p         = &comm->dth[th].nat;
-                        nsend_zone_p  = &comm->dth[th].nsend_zone;
+                        gmx_domdec_ind_t *ind_p;
+                        int             **ibuf_p, *ibuf_nalloc_p;
+                        vec_rvec_t       *vbuf_p;
+                        int              *nsend_p, *nat_p;
+                        int              *nsend_zone_p;
+                        int               cg0_th, cg1_th;
 
-                        comm->dth[th].nsend      = 0;
-                        comm->dth[th].nat        = 0;
-                        comm->dth[th].nsend_zone = 0;
-                    }
+                        if (th == 0)
+                        {
+                            /* Thread 0 writes in the comm buffers */
+                            ind_p         = ind;
+                            ibuf_p        = &comm->buf_int;
+                            ibuf_nalloc_p = &comm->nalloc_int;
+                            vbuf_p        = &comm->vbuf;
+                            nsend_p       = &nsend;
+                            nat_p         = &nat;
+                            nsend_zone_p  = &ind->nsend[zone];
+                        }
+                        else
+                        {
+                            /* Other threads write into temp buffers */
+                            ind_p         = &comm->dth[th].ind;
+                            ibuf_p        = &comm->dth[th].ibuf;
+                            ibuf_nalloc_p = &comm->dth[th].ibuf_nalloc;
+                            vbuf_p        = &comm->dth[th].vbuf;
+                            nsend_p       = &comm->dth[th].nsend;
+                            nat_p         = &comm->dth[th].nat;
+                            nsend_zone_p  = &comm->dth[th].nsend_zone;
 
-                    if (comm->nth == 1)
-                    {
-                        cg0_th = cg0;
-                        cg1_th = cg1;
-                    }
-                    else
-                    {
-                        cg0_th = cg0 + ((cg1 - cg0)* th   )/comm->nth;
-                        cg1_th = cg0 + ((cg1 - cg0)*(th+1))/comm->nth;
-                    }
+                            comm->dth[th].nsend      = 0;
+                            comm->dth[th].nat        = 0;
+                            comm->dth[th].nsend_zone = 0;
+                        }
 
-                    /* Get the cg's for this pulse in this zone */
-                    get_zone_pulse_cgs(dd, zonei, zone, cg0_th, cg1_th,
-                                       index_gl, cgindex,
-                                       dim, dim_ind, dim0, dim1, dim2,
-                                       r_comm2, r_bcomm2,
-                                       box, tric_dist,
-                                       normal, skew_fac2_d, skew_fac_01,
-                                       v_d, v_0, v_1, &corners, sf2_round,
-                                       bDistBonded, bBondComm,
-                                       bDist2B, bDistMB,
-                                       cg_cm, fr->cginfo,
-                                       ind_p,
-                                       ibuf_p, ibuf_nalloc_p,
-                                       vbuf_p,
-                                       nsend_p, nat_p,
-                                       nsend_zone_p);
-                }
+                        if (comm->nth == 1)
+                        {
+                            cg0_th = cg0;
+                            cg1_th = cg1;
+                        }
+                        else
+                        {
+                            cg0_th = cg0 + ((cg1 - cg0)* th   )/comm->nth;
+                            cg1_th = cg0 + ((cg1 - cg0)*(th+1))/comm->nth;
+                        }
+
+                        /* Get the cg's for this pulse in this zone */
+                        get_zone_pulse_cgs(dd, zonei, zone, cg0_th, cg1_th,
+                                           index_gl, cgindex,
+                                           dim, dim_ind, dim0, dim1, dim2,
+                                           r_comm2, r_bcomm2,
+                                           box, tric_dist,
+                                           normal, skew_fac2_d, skew_fac_01,
+                                           v_d, v_0, v_1, &corners, sf2_round,
+                                           bDistBonded, bBondComm,
+                                           bDist2B, bDistMB,
+                                           cg_cm, fr->cginfo,
+                                           ind_p,
+                                           ibuf_p, ibuf_nalloc_p,
+                                           vbuf_p,
+                                           nsend_p, nat_p,
+                                           nsend_zone_p);
+                    }
+                    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+                } // END
 
                 /* Append data of threads>=1 to the communication buffers */
                 for (th = 1; th < comm->nth; th++)

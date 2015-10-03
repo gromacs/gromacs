@@ -68,6 +68,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -432,51 +433,55 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 #pragma omp parallel for num_threads(nthreads) schedule(static)
                 for (t = 0; t < nthreads; t++)
                 {
-                    tensor *vir_q, *vir_lj;
-                    real   *Vcorrt_q, *Vcorrt_lj, *dvdlt_q, *dvdlt_lj;
-                    if (t == 0)
+                    try
                     {
-                        vir_q     = &fr->vir_el_recip;
-                        vir_lj    = &fr->vir_lj_recip;
-                        Vcorrt_q  = &Vcorr_q;
-                        Vcorrt_lj = &Vcorr_lj;
-                        dvdlt_q   = &dvdl_long_range_correction_q;
-                        dvdlt_lj  = &dvdl_long_range_correction_lj;
-                    }
-                    else
-                    {
-                        vir_q     = &fr->ewc_t[t].vir_q;
-                        vir_lj    = &fr->ewc_t[t].vir_lj;
-                        Vcorrt_q  = &fr->ewc_t[t].Vcorr_q;
-                        Vcorrt_lj = &fr->ewc_t[t].Vcorr_lj;
-                        dvdlt_q   = &fr->ewc_t[t].dvdl[efptCOUL];
-                        dvdlt_lj  = &fr->ewc_t[t].dvdl[efptVDW];
-                        clear_mat(*vir_q);
-                        clear_mat(*vir_lj);
-                    }
-                    *dvdlt_q  = 0;
-                    *dvdlt_lj = 0;
+                        tensor *vir_q, *vir_lj;
+                        real   *Vcorrt_q, *Vcorrt_lj, *dvdlt_q, *dvdlt_lj;
+                        if (t == 0)
+                        {
+                            vir_q     = &fr->vir_el_recip;
+                            vir_lj    = &fr->vir_lj_recip;
+                            Vcorrt_q  = &Vcorr_q;
+                            Vcorrt_lj = &Vcorr_lj;
+                            dvdlt_q   = &dvdl_long_range_correction_q;
+                            dvdlt_lj  = &dvdl_long_range_correction_lj;
+                        }
+                        else
+                        {
+                            vir_q     = &fr->ewc_t[t].vir_q;
+                            vir_lj    = &fr->ewc_t[t].vir_lj;
+                            Vcorrt_q  = &fr->ewc_t[t].Vcorr_q;
+                            Vcorrt_lj = &fr->ewc_t[t].Vcorr_lj;
+                            dvdlt_q   = &fr->ewc_t[t].dvdl[efptCOUL];
+                            dvdlt_lj  = &fr->ewc_t[t].dvdl[efptVDW];
+                            clear_mat(*vir_q);
+                            clear_mat(*vir_lj);
+                        }
+                        *dvdlt_q  = 0;
+                        *dvdlt_lj = 0;
 
-                    /* Threading is only supported with the Verlet cut-off
-                     * scheme and then only single particle forces (no
-                     * exclusion forces) are calculated, so we can store
-                     * the forces in the normal, single fr->f_novirsum array.
-                     */
-                    ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
-                                       cr, t, fr,
-                                       md->chargeA, md->chargeB,
-                                       md->sqrt_c6A, md->sqrt_c6B,
-                                       md->sigmaA, md->sigmaB,
-                                       md->sigma3A, md->sigma3B,
-                                       md->nChargePerturbed || md->nTypePerturbed,
-                                       ir->cutoff_scheme != ecutsVERLET,
-                                       excl, x, bSB ? boxs : box, mu_tot,
-                                       ir->ewald_geometry,
-                                       ir->epsilon_surface,
-                                       fr->f_novirsum, *vir_q, *vir_lj,
-                                       Vcorrt_q, Vcorrt_lj,
-                                       lambda[efptCOUL], lambda[efptVDW],
-                                       dvdlt_q, dvdlt_lj);
+                        /* Threading is only supported with the Verlet cut-off
+                         * scheme and then only single particle forces (no
+                         * exclusion forces) are calculated, so we can store
+                         * the forces in the normal, single fr->f_novirsum array.
+                         */
+                        ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
+                                           cr, t, fr,
+                                           md->chargeA, md->chargeB,
+                                           md->sqrt_c6A, md->sqrt_c6B,
+                                           md->sigmaA, md->sigmaB,
+                                           md->sigma3A, md->sigma3B,
+                                           md->nChargePerturbed || md->nTypePerturbed,
+                                           ir->cutoff_scheme != ecutsVERLET,
+                                           excl, x, bSB ? boxs : box, mu_tot,
+                                           ir->ewald_geometry,
+                                           ir->epsilon_surface,
+                                           fr->f_novirsum, *vir_q, *vir_lj,
+                                           Vcorrt_q, Vcorrt_lj,
+                                           lambda[efptCOUL], lambda[efptVDW],
+                                           dvdlt_q, dvdlt_lj);
+                    }
+                    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
                 if (nthreads > 1)
                 {

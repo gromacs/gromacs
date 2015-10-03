@@ -59,6 +59,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
 struct gmx_domdec_zones_t;
@@ -1254,8 +1255,12 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (int thread = 0; thread < nthread; thread++)
     {
-        calc_column_indices(grid, a0, a1, x, dd_zone, move, thread, nthread,
-                            nbs->cell, nbs->work[thread].cxy_na);
+        try
+        {
+            calc_column_indices(grid, a0, a1, x, dd_zone, move, thread, nthread,
+                                nbs->cell, nbs->work[thread].cxy_na);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     /* Make the cell index as a function of x and y */
@@ -1357,20 +1362,24 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (int thread = 0; thread < nthread; thread++)
     {
-        if (grid->bSimple)
+        try
         {
-            sort_columns_simple(nbs, dd_zone, grid, a0, a1, atinfo, x, nbat,
-                                ((thread+0)*grid->ncx*grid->ncy)/nthread,
-                                ((thread+1)*grid->ncx*grid->ncy)/nthread,
-                                nbs->work[thread].sort_work);
+            if (grid->bSimple)
+            {
+                sort_columns_simple(nbs, dd_zone, grid, a0, a1, atinfo, x, nbat,
+                                    ((thread+0)*grid->ncx*grid->ncy)/nthread,
+                                    ((thread+1)*grid->ncx*grid->ncy)/nthread,
+                                    nbs->work[thread].sort_work);
+            }
+            else
+            {
+                sort_columns_supersub(nbs, dd_zone, grid, a0, a1, atinfo, x, nbat,
+                                      ((thread+0)*grid->ncx*grid->ncy)/nthread,
+                                      ((thread+1)*grid->ncx*grid->ncy)/nthread,
+                                      nbs->work[thread].sort_work);
+            }
         }
-        else
-        {
-            sort_columns_supersub(nbs, dd_zone, grid, a0, a1, atinfo, x, nbat,
-                                  ((thread+0)*grid->ncx*grid->ncy)/nthread,
-                                  ((thread+1)*grid->ncx*grid->ncy)/nthread,
-                                  nbs->work[thread].sort_work);
-        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     if (grid->bSimple && nbat->XFormat == nbatX8)
@@ -1611,47 +1620,51 @@ void nbnxn_grid_add_simple(nbnxn_search_t    nbs,
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (int sc = 0; sc < grid->nc; sc++)
     {
-        for (int c = 0; c < ncd; c++)
+        try
         {
-            int tx = sc*ncd + c;
-            int na = NBNXN_CPU_CLUSTER_I_SIZE;
-            while (na > 0 &&
-                   nbat->type[tx*NBNXN_CPU_CLUSTER_I_SIZE+na-1] == nbat->ntype-1)
+            for (int c = 0; c < ncd; c++)
             {
-                na--;
-            }
-
-            if (na > 0)
-            {
-                switch (nbat->XFormat)
+                int tx = sc*ncd + c;
+                int na = NBNXN_CPU_CLUSTER_I_SIZE;
+                while (na > 0 &&
+                       nbat->type[tx*NBNXN_CPU_CLUSTER_I_SIZE+na-1] == nbat->ntype-1)
                 {
-                    case nbatX4:
-                        /* PACK_X4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
-                        calc_bounding_box_x_x4(na, nbat->x+tx*STRIDE_P4,
-                                               bb+tx);
-                        break;
-                    case nbatX8:
-                        /* PACK_X8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
-                        calc_bounding_box_x_x8(na, nbat->x+X8_IND_A(tx*NBNXN_CPU_CLUSTER_I_SIZE),
-                                               bb+tx);
-                        break;
-                    default:
-                        calc_bounding_box(na, nbat->xstride,
-                                          nbat->x+tx*NBNXN_CPU_CLUSTER_I_SIZE*nbat->xstride,
-                                          bb+tx);
-                        break;
+                    na--;
                 }
-                bbcz[tx*NNBSBB_D+0] = bb[tx].lower[BB_Z];
-                bbcz[tx*NNBSBB_D+1] = bb[tx].upper[BB_Z];
 
-                /* No interaction optimization yet here */
-                grid->flags_simple[tx] = NBNXN_CI_DO_LJ(0) | NBNXN_CI_DO_COUL(0);
-            }
-            else
-            {
-                grid->flags_simple[tx] = 0;
+                if (na > 0)
+                {
+                    switch (nbat->XFormat)
+                    {
+                        case nbatX4:
+                            /* PACK_X4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
+                            calc_bounding_box_x_x4(na, nbat->x+tx*STRIDE_P4,
+                                                   bb+tx);
+                            break;
+                        case nbatX8:
+                            /* PACK_X8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
+                            calc_bounding_box_x_x8(na, nbat->x+X8_IND_A(tx*NBNXN_CPU_CLUSTER_I_SIZE),
+                                                   bb+tx);
+                            break;
+                        default:
+                            calc_bounding_box(na, nbat->xstride,
+                                              nbat->x+tx*NBNXN_CPU_CLUSTER_I_SIZE*nbat->xstride,
+                                              bb+tx);
+                            break;
+                    }
+                    bbcz[tx*NNBSBB_D+0] = bb[tx].lower[BB_Z];
+                    bbcz[tx*NNBSBB_D+1] = bb[tx].upper[BB_Z];
+
+                    /* No interaction optimization yet here */
+                    grid->flags_simple[tx] = NBNXN_CI_DO_LJ(0) | NBNXN_CI_DO_COUL(0);
+                }
+                else
+                {
+                    grid->flags_simple[tx] = 0;
+                }
             }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     if (grid->bSimple && nbat->XFormat == nbatX8)
