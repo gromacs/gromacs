@@ -57,7 +57,7 @@ def do_build(context):
     elif context.job_type == JobType.GERRIT:
         cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
     cmake_opts.update(context.get_doc_cmake_options(
-        doxygen_version='1.8.5', sphinx_version='1.2.3'))
+        doxygen_version='1.8.5', sphinx_version='1.3'))
     context.run_cmake(cmake_opts);
     context.build_target(target='gmx', parallel=True,
             continue_on_failure=True)
