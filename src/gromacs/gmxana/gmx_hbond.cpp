@@ -65,6 +65,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
@@ -499,13 +500,17 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
 
 #pragma omp critical
             {
-                if (hb->hbmap[id][ia] == NULL)
+                try
                 {
-                    snew(hb->hbmap[id][ia], 1);
-                    snew(hb->hbmap[id][ia]->h, hb->maxhydro);
-                    snew(hb->hbmap[id][ia]->g, hb->maxhydro);
+                    if (hb->hbmap[id][ia] == NULL)
+                    {
+                        snew(hb->hbmap[id][ia], 1);
+                        snew(hb->hbmap[id][ia]->h, hb->maxhydro);
+                        snew(hb->hbmap[id][ia]->g, hb->maxhydro);
+                    }
+                    add_ff(hb, id, k, ia, frame, ihb);
                 }
-                add_ff(hb, id, k, ia, frame, ihb);
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
         }
 
@@ -2877,26 +2882,34 @@ int gmx_hbond(int argc, char *argv[])
 
             if (bOMP)
             {
-                sync_hbdata(p_hb[threadNr], nframes);
+                try
+                {
+                    sync_hbdata(p_hb[threadNr], nframes);
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
 #pragma omp single
             {
-                build_grid(hb, x, x[shatom], bBox, box, hbox, (rcut > r2cut) ? rcut : r2cut,
-                           rshell, ngrid, grid);
-                reset_nhbonds(&(hb->d));
-
-                if (debug && bDebug)
+                try
                 {
-                    dump_grid(debug, ngrid, grid);
-                }
+                    build_grid(hb, x, x[shatom], bBox, box, hbox, (rcut > r2cut) ? rcut : r2cut,
+                               rshell, ngrid, grid);
+                    reset_nhbonds(&(hb->d));
 
-                add_frames(hb, nframes);
-                init_hbframe(hb, nframes, output_env_conv_time(oenv, t));
+                    if (debug && bDebug)
+                    {
+                        dump_grid(debug, ngrid, grid);
+                    }
 
-                if (hb->bDAnr)
-                {
-                    count_da_grid(ngrid, grid, hb->danr[nframes]);
+                    add_frames(hb, nframes);
+                    init_hbframe(hb, nframes, output_env_conv_time(oenv, t));
+
+                    if (hb->bDAnr)
+                    {
+                        count_da_grid(ngrid, grid, hb->danr[nframes]);
+                    }
                 }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             } /* omp single */
 
             if (bOMP)
@@ -2909,23 +2922,27 @@ int gmx_hbond(int argc, char *argv[])
 
 #pragma omp single
                 {
-                    /* Do not parallelize this just yet. */
-                    /* int ii; */
-                    for (ii = 0; (ii < nsel); ii++)
+                    try
                     {
-                        int dd = index[0][i];
-                        int aa = index[0][i+2];
-                        /* int */ hh = index[0][i+1];
-                        ihb          = is_hbond(hb, ii, ii, dd, aa, rcut, r2cut, ccut, x, bBox, box,
-                                                hbox, &dist, &ang, bDA, &h, bContact, bMerge);
-
-                        if (ihb)
+                        /* Do not parallelize this just yet. */
+                        /* int ii; */
+                        for (ii = 0; (ii < nsel); ii++)
                         {
-                            /* add to index if not already there */
-                            /* Add a hbond */
-                            add_hbond(hb, dd, aa, hh, ii, ii, nframes, bMerge, ihb, bContact);
+                            int dd = index[0][i];
+                            int aa = index[0][i+2];
+                            /* int */ hh = index[0][i+1];
+                            ihb          = is_hbond(hb, ii, ii, dd, aa, rcut, r2cut, ccut, x, bBox, box,
+                                                    hbox, &dist, &ang, bDA, &h, bContact, bMerge);
+
+                            if (ihb)
+                            {
+                                /* add to index if not already there */
+                                /* Add a hbond */
+                                add_hbond(hb, dd, aa, hh, ii, ii, nframes, bMerge, ihb, bContact);
+                            }
                         }
                     }
+                    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 } /* omp single */
             }     /* if (bSelected) */
             else
@@ -2934,108 +2951,112 @@ int gmx_hbond(int argc, char *argv[])
 #pragma omp for schedule(dynamic)
                 for (xi = 0; xi < ngrid[XX]; xi++)
                 {
-                    for (yi = 0; (yi < ngrid[YY]); yi++)
+                    try
                     {
-                        for (zi = 0; (zi < ngrid[ZZ]); zi++)
+                        for (yi = 0; (yi < ngrid[YY]); yi++)
                         {
-
-                            /* loop over donor groups gr0 (always) and gr1 (if necessary) */
-                            for (grp = gr0; (grp <= (bTwo ? gr1 : gr0)); grp++)
+                            for (zi = 0; (zi < ngrid[ZZ]); zi++)
                             {
-                                icell = &(grid[zi][yi][xi].d[grp]);
 
-                                if (bTwo)
+                                /* loop over donor groups gr0 (always) and gr1 (if necessary) */
+                                for (grp = gr0; (grp <= (bTwo ? gr1 : gr0)); grp++)
                                 {
-                                    ogrp = 1-grp;
-                                }
-                                else
-                                {
-                                    ogrp = grp;
-                                }
+                                    icell = &(grid[zi][yi][xi].d[grp]);
 
-                                /* loop over all hydrogen atoms from group (grp)
-                                 * in this gridcell (icell)
-                                 */
-                                for (ai = 0; (ai < icell->nr); ai++)
-                                {
-                                    i  = icell->atoms[ai];
-
-                                    /* loop over all adjacent gridcells (xj,yj,zj) */
-                                    for (zjj = grid_loop_begin(ngrid[ZZ], zi, bTric, FALSE);
-                                         zjj <= grid_loop_end(ngrid[ZZ], zi, bTric, FALSE);
-                                         zjj++)
+                                    if (bTwo)
                                     {
-                                        zj        = grid_mod(zjj, ngrid[ZZ]);
-                                        bEdge_yjj = (zj == 0) || (zj == ngrid[ZZ] - 1);
-                                        for (yjj = grid_loop_begin(ngrid[YY], yi, bTric, bEdge_yjj);
-                                             yjj <= grid_loop_end(ngrid[YY], yi, bTric, bEdge_yjj);
-                                             yjj++)
+                                        ogrp = 1-grp;
+                                    }
+                                    else
+                                    {
+                                        ogrp = grp;
+                                    }
+
+                                    /* loop over all hydrogen atoms from group (grp)
+                                     * in this gridcell (icell)
+                                     */
+                                    for (ai = 0; (ai < icell->nr); ai++)
+                                    {
+                                        i  = icell->atoms[ai];
+
+                                        /* loop over all adjacent gridcells (xj,yj,zj) */
+                                        for (zjj = grid_loop_begin(ngrid[ZZ], zi, bTric, FALSE);
+                                             zjj <= grid_loop_end(ngrid[ZZ], zi, bTric, FALSE);
+                                             zjj++)
                                         {
-                                            yj        = grid_mod(yjj, ngrid[YY]);
-                                            bEdge_xjj =
-                                                (yj == 0) || (yj == ngrid[YY] - 1) ||
-                                                (zj == 0) || (zj == ngrid[ZZ] - 1);
-                                            for (xjj = grid_loop_begin(ngrid[XX], xi, bTric, bEdge_xjj);
-                                                 xjj <= grid_loop_end(ngrid[XX], xi, bTric, bEdge_xjj);
-                                                 xjj++)
+                                            zj        = grid_mod(zjj, ngrid[ZZ]);
+                                            bEdge_yjj = (zj == 0) || (zj == ngrid[ZZ] - 1);
+                                            for (yjj = grid_loop_begin(ngrid[YY], yi, bTric, bEdge_yjj);
+                                                 yjj <= grid_loop_end(ngrid[YY], yi, bTric, bEdge_yjj);
+                                                 yjj++)
                                             {
-                                                xj    = grid_mod(xjj, ngrid[XX]);
-                                                jcell = &(grid[zj][yj][xj].a[ogrp]);
-                                                /* loop over acceptor atoms from other group (ogrp)
-                                                 * in this adjacent gridcell (jcell)
-                                                 */
-                                                for (aj = 0; (aj < jcell->nr); aj++)
+                                                yj        = grid_mod(yjj, ngrid[YY]);
+                                                bEdge_xjj =
+                                                    (yj == 0) || (yj == ngrid[YY] - 1) ||
+                                                    (zj == 0) || (zj == ngrid[ZZ] - 1);
+                                                for (xjj = grid_loop_begin(ngrid[XX], xi, bTric, bEdge_xjj);
+                                                     xjj <= grid_loop_end(ngrid[XX], xi, bTric, bEdge_xjj);
+                                                     xjj++)
                                                 {
-                                                    j = jcell->atoms[aj];
-
-                                                    /* check if this once was a h-bond */
-                                                    ihb  = is_hbond(__HBDATA, grp, ogrp, i, j, rcut, r2cut, ccut, x, bBox, box,
-                                                                    hbox, &dist, &ang, bDA, &h, bContact, bMerge);
-
-                                                    if (ihb)
+                                                    xj    = grid_mod(xjj, ngrid[XX]);
+                                                    jcell = &(grid[zj][yj][xj].a[ogrp]);
+                                                    /* loop over acceptor atoms from other group (ogrp)
+                                                     * in this adjacent gridcell (jcell)
+                                                     */
+                                                    for (aj = 0; (aj < jcell->nr); aj++)
                                                     {
-                                                        /* add to index if not already there */
-                                                        /* Add a hbond */
-                                                        add_hbond(__HBDATA, i, j, h, grp, ogrp, nframes, bMerge, ihb, bContact);
+                                                        j = jcell->atoms[aj];
 
-                                                        /* make angle and distance distributions */
-                                                        if (ihb == hbHB && !bContact)
+                                                        /* check if this once was a h-bond */
+                                                        ihb  = is_hbond(__HBDATA, grp, ogrp, i, j, rcut, r2cut, ccut, x, bBox, box,
+                                                                        hbox, &dist, &ang, bDA, &h, bContact, bMerge);
+
+                                                        if (ihb)
                                                         {
-                                                            if (dist > rcut)
-                                                            {
-                                                                gmx_fatal(FARGS, "distance is higher than what is allowed for an hbond: %f", dist);
-                                                            }
-                                                            ang *= RAD2DEG;
-                                                            __ADIST[static_cast<int>( ang/abin)]++;
-                                                            __RDIST[static_cast<int>(dist/rbin)]++;
-                                                            if (!bTwo)
-                                                            {
-                                                                if (donor_index(&hb->d, grp, i) == NOTSET)
-                                                                {
-                                                                    gmx_fatal(FARGS, "Invalid donor %d", i);
-                                                                }
-                                                                if (acceptor_index(&hb->a, ogrp, j) == NOTSET)
-                                                                {
-                                                                    gmx_fatal(FARGS, "Invalid acceptor %d", j);
-                                                                }
-                                                                resdist = std::abs(top.atoms.atom[i].resind-top.atoms.atom[j].resind);
-                                                                if (resdist >= max_hx)
-                                                                {
-                                                                    resdist = max_hx-1;
-                                                                }
-                                                                __HBDATA->nhx[nframes][resdist]++;
-                                                            }
-                                                        }
+                                                            /* add to index if not already there */
+                                                            /* Add a hbond */
+                                                            add_hbond(__HBDATA, i, j, h, grp, ogrp, nframes, bMerge, ihb, bContact);
 
-                                                    }
-                                                } /* for aj  */
-                                            }     /* for xjj */
-                                        }         /* for yjj */
-                                    }             /* for zjj */
-                                }                 /* for ai  */
-                            }                     /* for grp */
-                        }                         /* for xi,yi,zi */
+                                                            /* make angle and distance distributions */
+                                                            if (ihb == hbHB && !bContact)
+                                                            {
+                                                                if (dist > rcut)
+                                                                {
+                                                                    gmx_fatal(FARGS, "distance is higher than what is allowed for an hbond: %f", dist);
+                                                                }
+                                                                ang *= RAD2DEG;
+                                                                __ADIST[static_cast<int>( ang/abin)]++;
+                                                                __RDIST[static_cast<int>(dist/rbin)]++;
+                                                                if (!bTwo)
+                                                                {
+                                                                    if (donor_index(&hb->d, grp, i) == NOTSET)
+                                                                    {
+                                                                        gmx_fatal(FARGS, "Invalid donor %d", i);
+                                                                    }
+                                                                    if (acceptor_index(&hb->a, ogrp, j) == NOTSET)
+                                                                    {
+                                                                        gmx_fatal(FARGS, "Invalid acceptor %d", j);
+                                                                    }
+                                                                    resdist = std::abs(top.atoms.atom[i].resind-top.atoms.atom[j].resind);
+                                                                    if (resdist >= max_hx)
+                                                                    {
+                                                                        resdist = max_hx-1;
+                                                                    }
+                                                                    __HBDATA->nhx[nframes][resdist]++;
+                                                                }
+                                                            }
+
+                                                        }
+                                                    } /* for aj  */
+                                                }     /* for xjj */
+                                            }         /* for yjj */
+                                        }             /* for zjj */
+                                    }                 /* for ai  */
+                                }                     /* for grp */
+                            }                         /* for xi,yi,zi */
+                        }
                     }
+                    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
             } /* if (bSelected) {...} else */
 
@@ -3045,16 +3066,20 @@ int gmx_hbond(int argc, char *argv[])
 #pragma omp barrier
 #pragma omp critical
             {
-                /* Sum up histograms and counts from p_hb[] into hb */
-                if (bOMP)
+                try
                 {
-                    hb->nhb[k]   += p_hb[threadNr]->nhb[k];
-                    hb->ndist[k] += p_hb[threadNr]->ndist[k];
-                    for (j = 0; j < max_hx; j++)
+                    /* Sum up histograms and counts from p_hb[] into hb */
+                    if (bOMP)
                     {
-                        hb->nhx[k][j]  += p_hb[threadNr]->nhx[k][j];
+                        hb->nhb[k]   += p_hb[threadNr]->nhb[k];
+                        hb->ndist[k] += p_hb[threadNr]->ndist[k];
+                        for (j = 0; j < max_hx; j++)
+                        {
+                            hb->nhx[k][j]  += p_hb[threadNr]->nhx[k][j];
+                        }
                     }
                 }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
 
             /* Here are a handful of single constructs
@@ -3065,21 +3090,33 @@ int gmx_hbond(int argc, char *argv[])
 #pragma omp barrier
 #pragma omp single
             {
-                analyse_donor_properties(donor_properties, hb, k, t);
-            }
-
-#pragma omp single
-            {
-                if (fpnhb)
+                try
                 {
-                    do_nhb_dist(fpnhb, hb, t);
+                    analyse_donor_properties(donor_properties, hb, k, t);
                 }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
 
 #pragma omp single
             {
-                trrStatus = (read_next_x(oenv, status, &t, x, box));
-                nframes++;
+                try
+                {
+                    if (fpnhb)
+                    {
+                        do_nhb_dist(fpnhb, hb, t);
+                    }
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+            }
+
+#pragma omp single
+            {
+                try
+                {
+                    trrStatus = (read_next_x(oenv, status, &t, x, box));
+                    nframes++;
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
 
 #pragma omp barrier
@@ -3093,6 +3130,7 @@ int gmx_hbond(int argc, char *argv[])
                 hb->nrhb   += p_hb[threadNr]->nrhb;
                 hb->nrdist += p_hb[threadNr]->nrdist;
             }
+
             /* Free parallel datastructures */
             sfree(p_hb[threadNr]->nhb);
             sfree(p_hb[threadNr]->ndist);
@@ -3101,19 +3139,27 @@ int gmx_hbond(int argc, char *argv[])
 #pragma omp for
             for (i = 0; i < nabin; i++)
             {
-                for (j = 0; j < actual_nThreads; j++)
+                try
                 {
+                    for (j = 0; j < actual_nThreads; j++)
+                    {
 
-                    adist[i] += p_adist[j][i];
+                        adist[i] += p_adist[j][i];
+                    }
                 }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
 #pragma omp for
             for (i = 0; i <= nrbin; i++)
             {
-                for (j = 0; j < actual_nThreads; j++)
+                try
                 {
-                    rdist[i] += p_rdist[j][i];
+                    for (j = 0; j < actual_nThreads; j++)
+                    {
+                        rdist[i] += p_rdist[j][i];
+                    }
                 }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
 
             sfree(p_adist[threadNr]);

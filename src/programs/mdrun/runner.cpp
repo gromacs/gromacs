@@ -169,34 +169,39 @@ struct mdrunner_arglist
    a commrec. */
 static void mdrunner_start_fn(void *arg)
 {
-    struct mdrunner_arglist *mda = (struct mdrunner_arglist*)arg;
-    struct mdrunner_arglist  mc  = *mda; /* copy the arg list to make sure
-                                            that it's thread-local. This doesn't
-                                            copy pointed-to items, of course,
-                                            but those are all const. */
-    t_commrec *cr;                       /* we need a local version of this */
-    FILE      *fplog = NULL;
-    t_filenm  *fnm;
-
-    fnm = dup_tfn(mc.nfile, mc.fnm);
-
-    cr = reinitialize_commrec_for_this_thread(mc.cr);
-
-    if (MASTER(cr))
+    try
     {
-        fplog = mc.fplog;
-    }
+        struct mdrunner_arglist *mda = (struct mdrunner_arglist*)arg;
+        struct mdrunner_arglist  mc  = *mda; /* copy the arg list to make sure
+                                                that it's thread-local. This doesn't
+                                                copy pointed-to items, of course,
+                                                but those are all const. */
+        t_commrec *cr;                       /* we need a local version of this */
+        FILE      *fplog = NULL;
+        t_filenm  *fnm;
 
-    gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-                  mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
-                  mc.ddxyz, mc.dd_node_order, mc.rdd,
-                  mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
-                  mc.ddcsx, mc.ddcsy, mc.ddcsz,
-                  mc.nbpu_opt, mc.nstlist_cmdline,
-                  mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
-                  mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
-                  mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
+        fnm = dup_tfn(mc.nfile, mc.fnm);
+
+        cr = reinitialize_commrec_for_this_thread(mc.cr);
+
+        if (MASTER(cr))
+        {
+            fplog = mc.fplog;
+        }
+
+        gmx::mdrunner(&mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
+                      mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
+                      mc.ddxyz, mc.dd_node_order, mc.rdd,
+                      mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
+                      mc.ddcsx, mc.ddcsy, mc.ddcsz,
+                      mc.nbpu_opt, mc.nstlist_cmdline,
+                      mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
+                      mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
+                      mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
+
 
 /* called by mdrunner() to start a specific number of threads (including
    the main thread) for thread-parallel runs. This in turn calls mdrunner()

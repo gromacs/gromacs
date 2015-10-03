@@ -64,6 +64,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -833,23 +834,27 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
 #pragma omp parallel for num_threads(nbl_list->nnbl) schedule(static)
     for (int i = 0; i < nbl_list->nnbl; i++)
     {
-        /* Allocate the nblist data structure locally on each thread
-         * to optimize memory access for NUMA architectures.
-         */
-        snew(nbl_list->nbl[i], 1);
-
-        /* Only list 0 is used on the GPU, use normal allocation for i>0 */
-        if (i == 0)
+        try
         {
-            nbnxn_init_pairlist(nbl_list->nbl[i], nbl_list->bSimple, alloc, free);
-        }
-        else
-        {
-            nbnxn_init_pairlist(nbl_list->nbl[i], nbl_list->bSimple, NULL, NULL);
-        }
+            /* Allocate the nblist data structure locally on each thread
+             * to optimize memory access for NUMA architectures.
+             */
+            snew(nbl_list->nbl[i], 1);
 
-        snew(nbl_list->nbl_fep[i], 1);
-        nbnxn_init_pairlist_fep(nbl_list->nbl_fep[i]);
+            /* Only list 0 is used on the GPU, use normal allocation for i>0 */
+            if (i == 0)
+            {
+                nbnxn_init_pairlist(nbl_list->nbl[i], nbl_list->bSimple, alloc, free);
+            }
+            else
+            {
+                nbnxn_init_pairlist(nbl_list->nbl[i], nbl_list->bSimple, NULL, NULL);
+            }
+
+            snew(nbl_list->nbl_fep[i], 1);
+            nbnxn_init_pairlist_fep(nbl_list->nbl_fep[i]);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 
@@ -2774,43 +2779,47 @@ static void combine_nblists(int nnbl, nbnxn_pairlist_t **nbl,
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (int n = 0; n < nnbl; n++)
     {
-        int                     sci_offset;
-        int                     cj4_offset;
-        int                     excl_offset;
-        const nbnxn_pairlist_t *nbli;
-
-        /* Determine the offset in the combined data for our thread */
-        sci_offset  = nblc->nsci;
-        cj4_offset  = nblc->ncj4;
-        excl_offset = nblc->nexcl;
-
-        for (int i = 0; i < n; i++)
+        try
         {
-            sci_offset  += nbl[i]->nsci;
-            cj4_offset  += nbl[i]->ncj4;
-            excl_offset += nbl[i]->nexcl;
-        }
+            int                     sci_offset;
+            int                     cj4_offset;
+            int                     excl_offset;
+            const nbnxn_pairlist_t *nbli;
 
-        nbli = nbl[n];
+            /* Determine the offset in the combined data for our thread */
+            sci_offset  = nblc->nsci;
+            cj4_offset  = nblc->ncj4;
+            excl_offset = nblc->nexcl;
 
-        for (int i = 0; i < nbli->nsci; i++)
-        {
-            nblc->sci[sci_offset+i]                = nbli->sci[i];
-            nblc->sci[sci_offset+i].cj4_ind_start += cj4_offset;
-            nblc->sci[sci_offset+i].cj4_ind_end   += cj4_offset;
-        }
+            for (int i = 0; i < n; i++)
+            {
+                sci_offset  += nbl[i]->nsci;
+                cj4_offset  += nbl[i]->ncj4;
+                excl_offset += nbl[i]->nexcl;
+            }
 
-        for (int j4 = 0; j4 < nbli->ncj4; j4++)
-        {
-            nblc->cj4[cj4_offset+j4]                   = nbli->cj4[j4];
-            nblc->cj4[cj4_offset+j4].imei[0].excl_ind += excl_offset;
-            nblc->cj4[cj4_offset+j4].imei[1].excl_ind += excl_offset;
-        }
+            nbli = nbl[n];
 
-        for (int j4 = 0; j4 < nbli->nexcl; j4++)
-        {
-            nblc->excl[excl_offset+j4] = nbli->excl[j4];
+            for (int i = 0; i < nbli->nsci; i++)
+            {
+                nblc->sci[sci_offset+i]                = nbli->sci[i];
+                nblc->sci[sci_offset+i].cj4_ind_start += cj4_offset;
+                nblc->sci[sci_offset+i].cj4_ind_end   += cj4_offset;
+            }
+
+            for (int j4 = 0; j4 < nbli->ncj4; j4++)
+            {
+                nblc->cj4[cj4_offset+j4]                   = nbli->cj4[j4];
+                nblc->cj4[cj4_offset+j4].imei[0].excl_ind += excl_offset;
+                nblc->cj4[cj4_offset+j4].imei[1].excl_ind += excl_offset;
+            }
+
+            for (int j4 = 0; j4 < nbli->nexcl; j4++)
+            {
+                nblc->excl[excl_offset+j4] = nbli->excl[j4];
+            }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     for (int n = 0; n < nnbl; n++)
@@ -2854,26 +2863,30 @@ static void balance_fep_lists(const nbnxn_search_t  nbs,
 #pragma omp parallel for schedule(static) num_threads(nnbl)
     for (int th = 0; th < nnbl; th++)
     {
-        t_nblist *nbl;
-
-        nbl = nbs->work[th].nbl_fep;
-
-        /* Note that here we allocate for the total size, instead of
-         * a per-thread esimate (which is hard to obtain).
-         */
-        if (nri_tot > nbl->maxnri)
+        try
         {
-            nbl->maxnri = over_alloc_large(nri_tot);
-            reallocate_nblist(nbl);
-        }
-        if (nri_tot > nbl->maxnri || nrj_tot > nbl->maxnrj)
-        {
-            nbl->maxnrj = over_alloc_small(nrj_tot);
-            srenew(nbl->jjnr, nbl->maxnrj);
-            srenew(nbl->excl_fep, nbl->maxnrj);
-        }
+            t_nblist *nbl;
 
-        clear_pairlist_fep(nbl);
+            nbl = nbs->work[th].nbl_fep;
+
+            /* Note that here we allocate for the total size, instead of
+             * a per-thread esimate (which is hard to obtain).
+             */
+            if (nri_tot > nbl->maxnri)
+            {
+                nbl->maxnri = over_alloc_large(nri_tot);
+                reallocate_nblist(nbl);
+            }
+            if (nri_tot > nbl->maxnri || nrj_tot > nbl->maxnrj)
+            {
+                nbl->maxnrj = over_alloc_small(nrj_tot);
+                srenew(nbl->jjnr, nbl->maxnrj);
+                srenew(nbl->excl_fep, nbl->maxnrj);
+            }
+
+            clear_pairlist_fep(nbl);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     /* Loop over the source lists and assign and copy i-entries */
@@ -3990,32 +4003,36 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for (int th = 0; th < nnbl; th++)
             {
-                /* Re-init the thread-local work flag data before making
-                 * the first list (not an elegant conditional).
-                 */
-                if (nbat->bUseBufferFlags && ((zi == 0 && zj == 0) ||
-                                              (bGPUCPU && zi == 0 && zj == 1)))
+                try
                 {
-                    init_buffer_flags(&nbs->work[th].buffer_flags, nbat->natoms);
-                }
+                    /* Re-init the thread-local work flag data before making
+                     * the first list (not an elegant conditional).
+                     */
+                    if (nbat->bUseBufferFlags && ((zi == 0 && zj == 0) ||
+                                                  (bGPUCPU && zi == 0 && zj == 1)))
+                    {
+                        init_buffer_flags(&nbs->work[th].buffer_flags, nbat->natoms);
+                    }
 
-                if (CombineNBLists && th > 0)
-                {
-                    clear_pairlist(nbl[th]);
-                }
+                    if (CombineNBLists && th > 0)
+                    {
+                        clear_pairlist(nbl[th]);
+                    }
 
-                /* Divide the i super cell equally over the nblists */
-                nbnxn_make_pairlist_part(nbs, gridi, gridj,
-                                         &nbs->work[th], nbat, excl,
-                                         rlist,
-                                         nb_kernel_type,
-                                         ci_block,
-                                         nbat->bUseBufferFlags,
-                                         nsubpair_target,
-                                         progBal, nsubpair_tot_est,
-                                         th, nnbl,
-                                         nbl[th],
-                                         nbl_list->nbl_fep[th]);
+                    /* Divide the i super cell equally over the nblists */
+                    nbnxn_make_pairlist_part(nbs, gridi, gridj,
+                                             &nbs->work[th], nbat, excl,
+                                             rlist,
+                                             nb_kernel_type,
+                                             ci_block,
+                                             nbat->bUseBufferFlags,
+                                             nsubpair_target,
+                                             progBal, nsubpair_tot_est,
+                                             th, nnbl,
+                                             nbl[th],
+                                             nbl_list->nbl_fep[th]);
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
             nbs_cycle_stop(&nbs->cc[enbsCCsearch]);
 
@@ -4066,7 +4083,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for (int th = 0; th < nnbl; th++)
             {
-                sort_sci(nbl[th]);
+                try
+                {
+                    sort_sci(nbl[th]);
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
         }
     }
