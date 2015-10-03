@@ -61,6 +61,7 @@
 #include "gromacs/topology/atomsbuilder.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -141,7 +142,7 @@ static bool is_insertion_allowed(gmx::AnalysisNeighborhoodSearch *search,
 static void insert_mols(int nmol_insrt, int ntry, int seed,
                         real defaultDistance, real scaleFactor,
                         t_topology *top, std::vector<RVec> *x,
-                        const t_atoms *atoms_insrt, const std::vector<RVec> &x_insrt,
+                        const t_atoms &atoms_insrt, const std::vector<RVec> &x_insrt,
                         int ePBC, matrix box,
                         const std::string &posfn, const rvec deltaR, int enum_rot)
 {
@@ -150,7 +151,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     std::vector<real>       exclusionDistances(
             makeExclusionDistances(&top->atoms, aps, defaultDistance, scaleFactor));
     const std::vector<real> exclusionDistances_insrt(
-            makeExclusionDistances(atoms_insrt, aps, defaultDistance, scaleFactor));
+            makeExclusionDistances(&atoms_insrt, aps, defaultDistance, scaleFactor));
     gmx_atomprop_destroy(aps);
 
     const real       maxInsertRadius
@@ -190,8 +191,8 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
 
     gmx::AtomsBuilder builder(&top->atoms, &top->symtab);
     {
-        const int finalAtomCount    = top->atoms.nr + nmol_insrt * atoms_insrt->nr;
-        const int finalResidueCount = top->atoms.nres + nmol_insrt * atoms_insrt->nres;
+        const int finalAtomCount    = top->atoms.nr + nmol_insrt * atoms_insrt.nr;
+        const int finalResidueCount = top->atoms.nres + nmol_insrt * atoms_insrt.nres;
         builder.reserve(finalAtomCount, finalResidueCount);
         x->reserve(finalAtomCount);
         exclusionDistances.reserve(finalAtomCount);
@@ -238,7 +239,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             exclusionDistances.insert(exclusionDistances.end(),
                                       exclusionDistances_insrt.begin(),
                                       exclusionDistances_insrt.end());
-            builder.mergeAtoms(*atoms_insrt);
+            builder.mergeAtoms(atoms_insrt);
             ++mol;
             firstTrial = trial;
             fprintf(stderr, " success (now %d atoms)!\n", builder.currentAtomCount());
@@ -284,7 +285,7 @@ class InsertMolecules : public ICommandLineOptionsModule
 
         virtual void initOptions(IOptionsContainer                 *options,
                                  ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished() {}
+        virtual void optionsFinished();
 
         virtual int run();
 
@@ -393,29 +394,28 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
                            .description("Rotate inserted molecules randomly"));
 }
 
-int InsertMolecules::run()
+void InsertMolecules::optionsFinished()
 {
-    const bool bProt = !inputConfFile_.empty();
-
-    /* check input */
     if (nmolIns_ <= 0 && positionFile_.empty())
     {
-        gmx_fatal(FARGS, "Either -nmol must be larger than 0, "
-                  "or positions must be given with -ip");
+        GMX_THROW(InconsistentInputError("Either -nmol must be larger than 0, "
+                                         "or positions must be given with -ip."));
     }
-    if (!bProt && !bBox_)
+    if (inputConfFile_.empty() && !bBox_)
     {
-        gmx_fatal(FARGS, "When no solute (-f) is specified, "
-                  "a box size (-box) must be specified");
+        GMX_THROW(InconsistentInputError("When no solute (-f) is specified, "
+                                         "a box size (-box) must be specified."));
     }
+}
 
-    char              *title = NULL;
+int InsertMolecules::run()
+{
     t_topology        *top;
     std::vector<RVec>  x;
     matrix             box;
     int                ePBC = -1;
     snew(top, 1);
-    if (bProt)
+    if (!inputConfFile_.empty())
     {
         /* Generate a solute configuration */
         readConformation(inputConfFile_.c_str(), top, &x, NULL,
@@ -423,10 +423,6 @@ int InsertMolecules::run()
         if (top->atoms.nr == 0)
         {
             fprintf(stderr, "Note: no atoms in %s\n", inputConfFile_.c_str());
-        }
-        else
-        {
-            title = *top->name;
         }
     }
     if (bBox_)
@@ -456,9 +452,9 @@ int InsertMolecules::run()
             gmx_fatal(FARGS, "No molecule in %s, please check your input",
                       insertConfFile_.c_str());
         }
-        if (title == NULL)
+        if (top->name == NULL)
         {
-            title = *top_insrt->name;
+            top->name = top_insrt->name;
         }
         if (positionFile_.empty())
         {
@@ -469,14 +465,14 @@ int InsertMolecules::run()
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                top, &x, &top_insrt->atoms, x_insrt,
+                top, &x, top_insrt->atoms, x_insrt,
                 ePBC, box, positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), title, &top->atoms, as_rvec_array(x.data()),
-                   NULL, ePBC, box);
+    write_sto_conf(outputConfFile_.c_str(), *top->name, &top->atoms,
+                   as_rvec_array(x.data()), NULL, ePBC, box);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
