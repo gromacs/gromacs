@@ -105,6 +105,16 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoEnlargedBox)
     runTest(CommandLine(cmdline));
 }
 
+TEST_F(InsertMoleculesTest, InsertsMoleculesWithReplacement)
+{
+    const char *const cmdline[] = {
+        "insert-molecules", "-nmol", "4", "-replace", "all", "-seed", "1997"
+    };
+    setInputFile("-f", "spc216.gro");
+    setInputFile("-ci", "x.gro");
+    runTest(CommandLine(cmdline));
+}
+
 TEST_F(InsertMoleculesTest, InsertsMoleculesIntoFixedPositions)
 {
     const char *const cmdline[] = {
