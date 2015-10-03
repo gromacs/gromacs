@@ -44,6 +44,7 @@
 
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
@@ -118,9 +119,13 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
-        pme_calc_pidx(natoms* thread   /nthread,
-                      natoms*(thread+1)/nthread,
-                      recipbox, x, atc, atc->count_thread[thread]);
+        try
+        {
+            pme_calc_pidx(natoms* thread   /nthread,
+                          natoms*(thread+1)/nthread,
+                          recipbox, x, atc, atc->count_thread[thread]);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
     /* Non-parallel reduction, since nslab is small */
 

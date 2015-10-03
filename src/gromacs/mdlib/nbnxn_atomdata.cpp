@@ -59,6 +59,7 @@
 #include "gromacs/mdlib/nbnxn_util.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
@@ -1169,41 +1170,45 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (th = 0; th < nth; th++)
     {
-        for (int g = g0; g < g1; g++)
+        try
         {
-            const nbnxn_grid_t *grid;
-            int                 cxy0, cxy1;
-
-            grid = &nbs->grid[g];
-
-            cxy0 = (grid->ncx*grid->ncy* th   +nth-1)/nth;
-            cxy1 = (grid->ncx*grid->ncy*(th+1)+nth-1)/nth;
-
-            for (int cxy = cxy0; cxy < cxy1; cxy++)
+            for (int g = g0; g < g1; g++)
             {
-                int na, ash, na_fill;
+                const nbnxn_grid_t *grid;
+                int                 cxy0, cxy1;
 
-                na  = grid->cxy_na[cxy];
-                ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
+                grid = &nbs->grid[g];
 
-                if (g == 0 && FillLocal)
+                cxy0 = (grid->ncx*grid->ncy* th   +nth-1)/nth;
+                cxy1 = (grid->ncx*grid->ncy*(th+1)+nth-1)/nth;
+
+                for (int cxy = cxy0; cxy < cxy1; cxy++)
                 {
-                    na_fill =
-                        (grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy])*grid->na_sc;
+                    int na, ash, na_fill;
+
+                    na  = grid->cxy_na[cxy];
+                    ash = (grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc;
+
+                    if (g == 0 && FillLocal)
+                    {
+                        na_fill =
+                            (grid->cxy_ind[cxy+1] - grid->cxy_ind[cxy])*grid->na_sc;
+                    }
+                    else
+                    {
+                        /* We fill only the real particle locations.
+                         * We assume the filling entries at the end have been
+                         * properly set before during ns.
+                         */
+                        na_fill = na;
+                    }
+                    copy_rvec_to_nbat_real(nbs->a+ash, na, na_fill, x,
+                                           nbat->XFormat, nbat->x, ash,
+                                           0, 0, 0);
                 }
-                else
-                {
-                    /* We fill only the real particle locations.
-                     * We assume the filling entries at the end have been
-                     * properly set before during ns.
-                     */
-                    na_fill = na;
-                }
-                copy_rvec_to_nbat_real(nbs->a+ash, na, na_fill, x,
-                                       nbat->XFormat, nbat->x, ash,
-                                       0, 0, 0);
             }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 
@@ -1420,112 +1425,116 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 
 #pragma omp parallel num_threads(nth)
     {
-        int   b0, b1, b;
-        int   i0, i1;
-        int   group_size, th;
-
-        th = gmx_omp_get_thread_num();
-
-        for (group_size = 2; group_size < 2*next_pow2; group_size *= 2)
+        try
         {
-            int index[2], group_pos, partner_pos, wu;
-            int partner_th = th ^ (group_size/2);
+            int   b0, b1, b;
+            int   i0, i1;
+            int   group_size, th;
 
-            if (group_size > 2)
+            th = gmx_omp_get_thread_num();
+
+            for (group_size = 2; group_size < 2*next_pow2; group_size *= 2)
             {
+                int index[2], group_pos, partner_pos, wu;
+                int partner_th = th ^ (group_size/2);
+
+                if (group_size > 2)
+                {
 #ifdef TMPI_ATOMICS
-                /* wait on partner thread - replaces full barrier */
-                int sync_th, sync_group_size;
+                    /* wait on partner thread - replaces full barrier */
+                    int sync_th, sync_group_size;
 
-                tMPI_Atomic_memory_barrier();                         /* gurantee data is saved before marking work as done */
-                tMPI_Atomic_set(&(nbat->syncStep[th]), group_size/2); /* mark previous step as completed */
+                    tMPI_Atomic_memory_barrier();                         /* gurantee data is saved before marking work as done */
+                    tMPI_Atomic_set(&(nbat->syncStep[th]), group_size/2); /* mark previous step as completed */
 
-                /* find thread to sync with. Equal to partner_th unless nth is not a power of two. */
-                for (sync_th = partner_th, sync_group_size = group_size; sync_th >= nth && sync_group_size > 2; sync_group_size /= 2)
-                {
-                    sync_th &= ~(sync_group_size/4);
-                }
-                if (sync_th < nth) /* otherwise nothing to sync index[1] will be >=nout */
-                {
-                    /* wait on the thread which computed input data in previous step */
-                    while (tMPI_Atomic_get((volatile tMPI_Atomic_t*)&(nbat->syncStep[sync_th])) < group_size/2)
+                    /* find thread to sync with. Equal to partner_th unless nth is not a power of two. */
+                    for (sync_th = partner_th, sync_group_size = group_size; sync_th >= nth && sync_group_size > 2; sync_group_size /= 2)
                     {
-                        gmx_pause();
+                        sync_th &= ~(sync_group_size/4);
                     }
-                    /* guarantee that no later load happens before wait loop is finisehd */
-                    tMPI_Atomic_memory_barrier();
-                }
-#else           /* TMPI_ATOMICS */
+                    if (sync_th < nth) /* otherwise nothing to sync index[1] will be >=nout */
+                    {
+                        /* wait on the thread which computed input data in previous step */
+                        while (tMPI_Atomic_get((volatile tMPI_Atomic_t*)&(nbat->syncStep[sync_th])) < group_size/2)
+                        {
+                            gmx_pause();
+                        }
+                        /* guarantee that no later load happens before wait loop is finisehd */
+                        tMPI_Atomic_memory_barrier();
+                    }
+#else               /* TMPI_ATOMICS */
 #pragma omp barrier
 #endif
-            }
+                }
 
-            /* Calculate buffers to sum (result goes into first buffer) */
-            group_pos = th % group_size;
-            index[0]  = th - group_pos;
-            index[1]  = index[0] + group_size/2;
+                /* Calculate buffers to sum (result goes into first buffer) */
+                group_pos = th % group_size;
+                index[0]  = th - group_pos;
+                index[1]  = index[0] + group_size/2;
 
-            /* If no second buffer, nothing to do */
-            if (index[1] >= nbat->nout && group_size > 2)
-            {
-                continue;
-            }
+                /* If no second buffer, nothing to do */
+                if (index[1] >= nbat->nout && group_size > 2)
+                {
+                    continue;
+                }
 
 #if NBNXN_BUFFERFLAG_MAX_THREADS > 256
 #error reverse_bits assumes max 256 threads
 #endif
-            /* Position is permuted so that one of the 2 vectors being added was computed on the same thread in the previous step.
-               This improves locality and enables to sync with just a single thread between steps (=the levels in the btree).
-               The permutation which allows this corresponds to reversing the bits of the group position.
-             */
-            group_pos = reverse_bits(group_pos)/(256/group_size);
+                /* Position is permuted so that one of the 2 vectors being added was computed on the same thread in the previous step.
+                   This improves locality and enables to sync with just a single thread between steps (=the levels in the btree).
+                   The permutation which allows this corresponds to reversing the bits of the group position.
+                 */
+                group_pos = reverse_bits(group_pos)/(256/group_size);
 
-            partner_pos = group_pos ^ 1;
+                partner_pos = group_pos ^ 1;
 
-            /* loop over two work-units (own and partner) */
-            for (wu = 0; wu < 2; wu++)
-            {
-                if (wu == 1)
+                /* loop over two work-units (own and partner) */
+                for (wu = 0; wu < 2; wu++)
                 {
-                    if (partner_th < nth)
+                    if (wu == 1)
                     {
-                        break; /* partner exists we don't have to do his work */
+                        if (partner_th < nth)
+                        {
+                            break; /* partner exists we don't have to do his work */
+                        }
+                        else
+                        {
+                            group_pos = partner_pos;
+                        }
                     }
-                    else
+
+                    /* Calculate the cell-block range for our thread */
+                    b0 = (flags->nflag* group_pos   )/group_size;
+                    b1 = (flags->nflag*(group_pos+1))/group_size;
+
+                    for (b = b0; b < b1; b++)
                     {
-                        group_pos = partner_pos;
-                    }
-                }
+                        i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+                        i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
 
-                /* Calculate the cell-block range for our thread */
-                b0 = (flags->nflag* group_pos   )/group_size;
-                b1 = (flags->nflag*(group_pos+1))/group_size;
-
-                for (b = b0; b < b1; b++)
-                {
-                    i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
-                    i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
-
-                    if (bitmask_is_set(flags->flag[b], index[1]) || group_size > 2)
-                    {
+                        if (bitmask_is_set(flags->flag[b], index[1]) || group_size > 2)
+                        {
 #ifdef GMX_NBNXN_SIMD
-                        nbnxn_atomdata_reduce_reals_simd
+                            nbnxn_atomdata_reduce_reals_simd
 #else
-                        nbnxn_atomdata_reduce_reals
+                            nbnxn_atomdata_reduce_reals
 #endif
-                            (nbat->out[index[0]].f,
-                            bitmask_is_set(flags->flag[b], index[0]) || group_size > 2,
-                            &(nbat->out[index[1]].f), 1, i0, i1);
+                                (nbat->out[index[0]].f,
+                                bitmask_is_set(flags->flag[b], index[0]) || group_size > 2,
+                                &(nbat->out[index[1]].f), 1, i0, i1);
 
-                    }
-                    else if (!bitmask_is_set(flags->flag[b], index[0]))
-                    {
-                        nbnxn_atomdata_clear_reals(nbat->out[index[0]].f,
-                                                   i0, i1);
+                        }
+                        else if (!bitmask_is_set(flags->flag[b], index[0]))
+                        {
+                            nbnxn_atomdata_clear_reals(nbat->out[index[0]].f,
+                                                       i0, i1);
+                        }
                     }
                 }
             }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 
@@ -1536,47 +1545,51 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
     {
-        const nbnxn_buffer_flags_t *flags;
-        int   nfptr;
-        real *fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
-
-        flags = &nbat->buffer_flags;
-
-        /* Calculate the cell-block range for our thread */
-        int b0 = (flags->nflag* th   )/nth;
-        int b1 = (flags->nflag*(th+1))/nth;
-
-        for (int b = b0; b < b1; b++)
+        try
         {
-            int i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
-            int i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+            const nbnxn_buffer_flags_t *flags;
+            int   nfptr;
+            real *fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
 
-            nfptr = 0;
-            for (int out = 1; out < nbat->nout; out++)
+            flags = &nbat->buffer_flags;
+
+            /* Calculate the cell-block range for our thread */
+            int b0 = (flags->nflag* th   )/nth;
+            int b1 = (flags->nflag*(th+1))/nth;
+
+            for (int b = b0; b < b1; b++)
             {
-                if (bitmask_is_set(flags->flag[b], out))
+                int i0 =  b   *NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+                int i1 = (b+1)*NBNXN_BUFFERFLAG_SIZE*nbat->fstride;
+
+                nfptr = 0;
+                for (int out = 1; out < nbat->nout; out++)
                 {
-                    fptr[nfptr++] = nbat->out[out].f;
+                    if (bitmask_is_set(flags->flag[b], out))
+                    {
+                        fptr[nfptr++] = nbat->out[out].f;
+                    }
+                }
+                if (nfptr > 0)
+                {
+#ifdef GMX_NBNXN_SIMD
+                    nbnxn_atomdata_reduce_reals_simd
+#else
+                    nbnxn_atomdata_reduce_reals
+#endif
+                        (nbat->out[0].f,
+                        bitmask_is_set(flags->flag[b], 0),
+                        fptr, nfptr,
+                        i0, i1);
+                }
+                else if (!bitmask_is_set(flags->flag[b], 0))
+                {
+                    nbnxn_atomdata_clear_reals(nbat->out[0].f,
+                                               i0, i1);
                 }
             }
-            if (nfptr > 0)
-            {
-#ifdef GMX_NBNXN_SIMD
-                nbnxn_atomdata_reduce_reals_simd
-#else
-                nbnxn_atomdata_reduce_reals
-#endif
-                    (nbat->out[0].f,
-                    bitmask_is_set(flags->flag[b], 0),
-                    fptr, nfptr,
-                    i0, i1);
-            }
-            else if (!bitmask_is_set(flags->flag[b], 0))
-            {
-                nbnxn_atomdata_clear_reals(nbat->out[0].f,
-                                           i0, i1);
-            }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 
@@ -1630,12 +1643,16 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
     {
-        nbnxn_atomdata_add_nbat_f_to_f_part(nbs, nbat,
-                                            nbat->out,
-                                            1,
-                                            a0+((th+0)*na)/nth,
-                                            a0+((th+1)*na)/nth,
-                                            f);
+        try
+        {
+            nbnxn_atomdata_add_nbat_f_to_f_part(nbs, nbat,
+                                                nbat->out,
+                                                1,
+                                                a0+((th+0)*na)/nth,
+                                                a0+((th+1)*na)/nth,
+                                                f);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     nbs_cycle_stop(&nbs->cc[enbsCCreducef]);

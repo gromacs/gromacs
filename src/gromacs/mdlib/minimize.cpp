@@ -90,6 +90,7 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -634,21 +635,25 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
 #pragma omp for schedule(static) nowait
         for (i = start; i < end; i++)
         {
-            if (md->cFREEZE)
+            try
             {
-                gf = md->cFREEZE[i];
-            }
-            for (m = 0; m < DIM; m++)
-            {
-                if (ir->opts.nFreeze[gf][m])
+                if (md->cFREEZE)
                 {
-                    x2[i][m] = x1[i][m];
+                    gf = md->cFREEZE[i];
                 }
-                else
+                for (m = 0; m < DIM; m++)
                 {
-                    x2[i][m] = x1[i][m] + a*f[i][m];
+                    if (ir->opts.nFreeze[gf][m])
+                    {
+                        x2[i][m] = x1[i][m];
+                    }
+                    else
+                    {
+                        x2[i][m] = x1[i][m] + a*f[i][m];
+                    }
                 }
             }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
         if (s2->flags & (1<<estCGP))
@@ -659,6 +664,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
 #pragma omp for schedule(static) nowait
             for (i = start; i < end; i++)
             {
+                // Trivial OpenMP block that does not throw
                 copy_rvec(x1[i], x2[i]);
             }
         }
@@ -670,7 +676,11 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
             {
 #pragma omp barrier
                 s2->cg_gl_nalloc = s1->cg_gl_nalloc;
-                srenew(s2->cg_gl, s2->cg_gl_nalloc);
+                try
+                {
+                    srenew(s2->cg_gl, s2->cg_gl_nalloc);
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 #pragma omp barrier
             }
             s2->ncg_gl = s1->ncg_gl;

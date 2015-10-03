@@ -65,6 +65,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/random.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
@@ -991,6 +992,9 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
+        // This OpenMP only loops over arrays and does not call any functions
+        // or memory allocation. It should not be able to throw, so for now
+        // we do not need a try/catch wrapper.
         int     start_t, end_t, n;
         int     ga, gt;
         rvec    v_corrt;
@@ -1635,25 +1639,28 @@ void update_constraints(FILE             *fplog,
         nth = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
-
         for (th = 0; th < nth; th++)
         {
-            int start_th, end_th;
+            try
+            {
+                int start_th, end_th;
 
-            start_th = start + ((nrend-start)* th   )/nth;
-            end_th   = start + ((nrend-start)*(th+1))/nth;
+                start_th = start + ((nrend-start)* th   )/nth;
+                end_th   = start + ((nrend-start)*(th+1))/nth;
 
-            /* The second part of the SD integration */
-            do_update_sd1(upd->sd,
-                          start_th, end_th, dt,
-                          inputrec->opts.acc, inputrec->opts.nFreeze,
-                          md->invmass, md->ptype,
-                          md->cFREEZE, md->cACC, md->cTC,
-                          state->x, xprime, state->v, force,
-                          inputrec->opts.ngtc, inputrec->opts.ref_t,
-                          bDoConstr, FALSE,
-                          step, inputrec->ld_seed,
-                          DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                /* The second part of the SD integration */
+                do_update_sd1(upd->sd,
+                              start_th, end_th, dt,
+                              inputrec->opts.acc, inputrec->opts.nFreeze,
+                              md->invmass, md->ptype,
+                              md->cFREEZE, md->cACC, md->cTC,
+                              state->x, xprime, state->v, force,
+                              inputrec->opts.ngtc, inputrec->opts.ref_t,
+                              bDoConstr, FALSE,
+                              step, inputrec->ld_seed,
+                              DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
         wallcycle_stop(wcycle, ewcUPDATE);
@@ -1684,21 +1691,25 @@ void update_constraints(FILE             *fplog,
 #pragma omp parallel for num_threads(nth) schedule(static)
         for (th = 0; th < nth; th++)
         {
-            int start_th, end_th;
+            try
+            {
+                int start_th, end_th;
 
-            start_th = start + ((nrend-start)* th   )/nth;
-            end_th   = start + ((nrend-start)*(th+1))/nth;
+                start_th = start + ((nrend-start)* th   )/nth;
+                end_th   = start + ((nrend-start)*(th+1))/nth;
 
-            /* The second part of the SD integration */
-            do_update_sd2(upd->sd,
-                          FALSE, start_th, end_th,
-                          inputrec->opts.acc, inputrec->opts.nFreeze,
-                          md->invmass, md->ptype,
-                          md->cFREEZE, md->cACC, md->cTC,
-                          state->x, xprime, state->v, force, state->sd_X,
-                          inputrec->opts.tau_t,
-                          FALSE, step, inputrec->ld_seed,
-                          DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                /* The second part of the SD integration */
+                do_update_sd2(upd->sd,
+                              FALSE, start_th, end_th,
+                              inputrec->opts.acc, inputrec->opts.nFreeze,
+                              md->invmass, md->ptype,
+                              md->cFREEZE, md->cACC, md->cTC,
+                              state->x, xprime, state->v, force, state->sd_X,
+                              inputrec->opts.tau_t,
+                              FALSE, step, inputrec->ld_seed,
+                              DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
         wallcycle_stop(wcycle, ewcUPDATE);
@@ -1751,6 +1762,7 @@ void update_constraints(FILE             *fplog,
 #pragma omp parallel for num_threads(nth) schedule(static)
             for (i = start; i < nrend; i++)
             {
+                // Trivial statement, does not throw
                 copy_rvec(upd->xp[i], state->x[i]);
             }
         }
@@ -1960,99 +1972,103 @@ void update_coords(FILE             *fplog,
 #pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
     for (th = 0; th < nth; th++)
     {
-        int start_th, end_th;
-
-        start_th = start + ((nrend-start)* th   )/nth;
-        end_th   = start + ((nrend-start)*(th+1))/nth;
-
-        switch (inputrec->eI)
+        try
         {
-            case (eiMD):
-                if (ekind->cosacc.cos_accel == 0)
-                {
-                    do_update_md(start_th, end_th, dt,
-                                 ekind->tcstat, state->nosehoover_vxi,
-                                 ekind->bNEMD, ekind->grpstat, inputrec->opts.acc,
-                                 inputrec->opts.nFreeze,
-                                 md->invmass, md->ptype,
-                                 md->cFREEZE, md->cACC, md->cTC,
-                                 state->x, xprime, state->v, force, M,
-                                 bNH, bPR);
-                }
-                else
-                {
-                    do_update_visc(start_th, end_th, dt,
-                                   ekind->tcstat, state->nosehoover_vxi,
-                                   md->invmass, md->ptype,
-                                   md->cTC, state->x, xprime, state->v, force, M,
-                                   state->box,
-                                   ekind->cosacc.cos_accel,
-                                   ekind->cosacc.vcos,
-                                   bNH, bPR);
-                }
-                break;
-            case (eiSD1):
-                /* With constraints, the SD1 update is done in 2 parts */
-                do_update_sd1(upd->sd,
-                              start_th, end_th, dt,
-                              inputrec->opts.acc, inputrec->opts.nFreeze,
-                              md->invmass, md->ptype,
-                              md->cFREEZE, md->cACC, md->cTC,
-                              state->x, xprime, state->v, force,
-                              inputrec->opts.ngtc, inputrec->opts.ref_t,
-                              bDoConstr, TRUE,
-                              step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                break;
-            case (eiSD2):
-                /* The SD2 update is always done in 2 parts,
-                 * because an extra constraint step is needed
-                 */
-                do_update_sd2(upd->sd,
-                              bInitStep, start_th, end_th,
-                              inputrec->opts.acc, inputrec->opts.nFreeze,
-                              md->invmass, md->ptype,
-                              md->cFREEZE, md->cACC, md->cTC,
-                              state->x, xprime, state->v, force, state->sd_X,
-                              inputrec->opts.tau_t,
-                              TRUE, step, inputrec->ld_seed,
-                              DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                break;
-            case (eiBD):
-                do_update_bd(start_th, end_th, dt,
-                             inputrec->opts.nFreeze, md->invmass, md->ptype,
-                             md->cFREEZE, md->cTC,
-                             state->x, xprime, state->v, force,
-                             inputrec->bd_fric,
-                             upd->sd->bd_rf,
-                             step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                break;
-            case (eiVV):
-            case (eiVVAK):
-                alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
-                switch (UpdatePart)
-                {
-                    case etrtVELOCITY1:
-                    case etrtVELOCITY2:
-                        do_update_vv_vel(start_th, end_th, dt,
-                                         inputrec->opts.acc, inputrec->opts.nFreeze,
-                                         md->invmass, md->ptype,
-                                         md->cFREEZE, md->cACC,
-                                         state->v, force,
-                                         (bNH || bPR), state->veta, alpha);
-                        break;
-                    case etrtPOSITION:
-                        do_update_vv_pos(start_th, end_th, dt,
-                                         inputrec->opts.nFreeze,
-                                         md->ptype, md->cFREEZE,
-                                         state->x, xprime, state->v,
-                                         (bNH || bPR), state->veta);
-                        break;
-                }
-                break;
-            default:
-                gmx_fatal(FARGS, "Don't know how to update coordinates");
-                break;
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+
+            switch (inputrec->eI)
+            {
+                case (eiMD):
+                    if (ekind->cosacc.cos_accel == 0)
+                    {
+                        do_update_md(start_th, end_th, dt,
+                                     ekind->tcstat, state->nosehoover_vxi,
+                                     ekind->bNEMD, ekind->grpstat, inputrec->opts.acc,
+                                     inputrec->opts.nFreeze,
+                                     md->invmass, md->ptype,
+                                     md->cFREEZE, md->cACC, md->cTC,
+                                     state->x, xprime, state->v, force, M,
+                                     bNH, bPR);
+                    }
+                    else
+                    {
+                        do_update_visc(start_th, end_th, dt,
+                                       ekind->tcstat, state->nosehoover_vxi,
+                                       md->invmass, md->ptype,
+                                       md->cTC, state->x, xprime, state->v, force, M,
+                                       state->box,
+                                       ekind->cosacc.cos_accel,
+                                       ekind->cosacc.vcos,
+                                       bNH, bPR);
+                    }
+                    break;
+                case (eiSD1):
+                    /* With constraints, the SD1 update is done in 2 parts */
+                    do_update_sd1(upd->sd,
+                                  start_th, end_th, dt,
+                                  inputrec->opts.acc, inputrec->opts.nFreeze,
+                                  md->invmass, md->ptype,
+                                  md->cFREEZE, md->cACC, md->cTC,
+                                  state->x, xprime, state->v, force,
+                                  inputrec->opts.ngtc, inputrec->opts.ref_t,
+                                  bDoConstr, TRUE,
+                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                    break;
+                case (eiSD2):
+                    /* The SD2 update is always done in 2 parts,
+                     * because an extra constraint step is needed
+                     */
+                    do_update_sd2(upd->sd,
+                                  bInitStep, start_th, end_th,
+                                  inputrec->opts.acc, inputrec->opts.nFreeze,
+                                  md->invmass, md->ptype,
+                                  md->cFREEZE, md->cACC, md->cTC,
+                                  state->x, xprime, state->v, force, state->sd_X,
+                                  inputrec->opts.tau_t,
+                                  TRUE, step, inputrec->ld_seed,
+                                  DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                    break;
+                case (eiBD):
+                    do_update_bd(start_th, end_th, dt,
+                                 inputrec->opts.nFreeze, md->invmass, md->ptype,
+                                 md->cFREEZE, md->cTC,
+                                 state->x, xprime, state->v, force,
+                                 inputrec->bd_fric,
+                                 upd->sd->bd_rf,
+                                 step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                    break;
+                case (eiVV):
+                case (eiVVAK):
+                    alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
+                    switch (UpdatePart)
+                    {
+                        case etrtVELOCITY1:
+                        case etrtVELOCITY2:
+                            do_update_vv_vel(start_th, end_th, dt,
+                                             inputrec->opts.acc, inputrec->opts.nFreeze,
+                                             md->invmass, md->ptype,
+                                             md->cFREEZE, md->cACC,
+                                             state->v, force,
+                                             (bNH || bPR), state->veta, alpha);
+                            break;
+                        case etrtPOSITION:
+                            do_update_vv_pos(start_th, end_th, dt,
+                                             inputrec->opts.nFreeze,
+                                             md->ptype, md->cFREEZE,
+                                             state->x, xprime, state->v,
+                                             (bNH || bPR), state->veta);
+                            break;
+                    }
+                    break;
+                default:
+                    gmx_fatal(FARGS, "Don't know how to update coordinates");
+                    break;
+            }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
 }

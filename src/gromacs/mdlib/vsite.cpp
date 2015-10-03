@@ -53,6 +53,7 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
@@ -523,10 +524,14 @@ void construct_vsites(const gmx_vsite_t *vsite,
     {
 #pragma omp parallel num_threads(vsite->nthreads)
         {
-            construct_vsites_thread(vsite,
-                                    x, dt, v,
-                                    ip, vsite->tdata[gmx_omp_get_thread_num()].ilist,
-                                    pbc_null);
+            try
+            {
+                construct_vsites_thread(vsite,
+                                        x, dt, v,
+                                        ip, vsite->tdata[gmx_omp_get_thread_num()].ilist,
+                                        pbc_null);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         /* Now we can construct the vsites that might depend on other vsites */
         construct_vsites_thread(vsite,
@@ -1462,33 +1467,37 @@ void spread_vsite_f(gmx_vsite_t *vsite,
 
 #pragma omp parallel num_threads(vsite->nthreads)
         {
-            int   thread;
-            rvec *fshift_t;
-
-            thread = gmx_omp_get_thread_num();
-
-            if (thread == 0 || fshift == NULL)
+            try
             {
-                fshift_t = fshift;
-            }
-            else
-            {
-                int i;
+                int   thread;
+                rvec *fshift_t;
 
-                fshift_t = vsite->tdata[thread].fshift;
+                thread = gmx_omp_get_thread_num();
 
-                for (i = 0; i < SHIFTS; i++)
+                if (thread == 0 || fshift == NULL)
                 {
-                    clear_rvec(fshift_t[i]);
+                    fshift_t = fshift;
                 }
-            }
+                else
+                {
+                    int i;
 
-            spread_vsite_f_thread(vsite,
-                                  x, f, fshift_t,
-                                  VirCorr, vsite->tdata[thread].dxdf,
-                                  idef->iparams,
-                                  vsite->tdata[thread].ilist,
-                                  g, pbc_null);
+                    fshift_t = vsite->tdata[thread].fshift;
+
+                    for (i = 0; i < SHIFTS; i++)
+                    {
+                        clear_rvec(fshift_t[i]);
+                    }
+                }
+
+                spread_vsite_f_thread(vsite,
+                                      x, f, fshift_t,
+                                      VirCorr, vsite->tdata[thread].dxdf,
+                                      idef->iparams,
+                                      vsite->tdata[thread].ilist,
+                                      g, pbc_null);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
         if (fshift != NULL)
@@ -1861,7 +1870,11 @@ void split_vsites_over_threads(const t_ilist   *ilist,
 #pragma omp parallel for num_threads(vsite->nthreads) schedule(static)
     for (th = 0; th < vsite->nthreads; th++)
     {
-        prepare_vsite_thread(ilist, &vsite->tdata[th]);
+        try
+        {
+            prepare_vsite_thread(ilist, &vsite->tdata[th]);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
     /* Master threads does the (potential) overlap vsites */
     prepare_vsite_thread(ilist, &vsite->tdata[vsite->nthreads]);

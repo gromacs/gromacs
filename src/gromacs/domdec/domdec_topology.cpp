@@ -69,6 +69,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topsort.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -1985,88 +1986,92 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
 #pragma omp parallel for num_threads(rt->nthread) schedule(static)
         for (thread = 0; thread < rt->nthread; thread++)
         {
-            int       cg0t, cg1t;
-            t_idef   *idef_t;
-            int     **vsite_pbc;
-            int      *vsite_pbc_nalloc;
-            t_blocka *excl_t;
-
-            cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
-            cg1t = cg0 + ((cg1 - cg0)*(thread+1))/rt->nthread;
-
-            if (thread == 0)
+            try
             {
-                idef_t = idef;
-            }
-            else
-            {
-                idef_t = &rt->th_work[thread].idef;
-                clear_idef(idef_t);
-            }
+                int       cg0t, cg1t;
+                t_idef   *idef_t;
+                int     **vsite_pbc;
+                int      *vsite_pbc_nalloc;
+                t_blocka *excl_t;
 
-            if (vsite && vsite->bHaveChargeGroups && vsite->n_intercg_vsite > 0)
-            {
+                cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
+                cg1t = cg0 + ((cg1 - cg0)*(thread+1))/rt->nthread;
+
                 if (thread == 0)
                 {
-                    vsite_pbc        = vsite->vsite_pbc_loc;
-                    vsite_pbc_nalloc = vsite->vsite_pbc_loc_nalloc;
+                    idef_t = idef;
                 }
                 else
                 {
-                    vsite_pbc        = rt->th_work[thread].vsite_pbc;
-                    vsite_pbc_nalloc = rt->th_work[thread].vsite_pbc_nalloc;
+                    idef_t = &rt->th_work[thread].idef;
+                    clear_idef(idef_t);
                 }
-            }
-            else
-            {
-                vsite_pbc        = NULL;
-                vsite_pbc_nalloc = NULL;
-            }
 
-            rt->th_work[thread].nbonded =
-                make_bondeds_zone(dd, zones,
-                                  mtop->molblock,
-                                  bRCheckMB, rcheck, bRCheck2B, rc2,
-                                  la2lc, pbc_null, cg_cm, idef->iparams,
-                                  idef_t,
-                                  vsite_pbc, vsite_pbc_nalloc,
-                                  izone,
-                                  dd->cgindex[cg0t], dd->cgindex[cg1t]);
-
-            if (izone < nzone_excl)
-            {
-                if (thread == 0)
+                if (vsite && vsite->bHaveChargeGroups && vsite->n_intercg_vsite > 0)
                 {
-                    excl_t = lexcls;
+                    if (thread == 0)
+                    {
+                        vsite_pbc        = vsite->vsite_pbc_loc;
+                        vsite_pbc_nalloc = vsite->vsite_pbc_loc_nalloc;
+                    }
+                    else
+                    {
+                        vsite_pbc        = rt->th_work[thread].vsite_pbc;
+                        vsite_pbc_nalloc = rt->th_work[thread].vsite_pbc_nalloc;
+                    }
                 }
                 else
                 {
-                    excl_t      = &rt->th_work[thread].excl;
-                    excl_t->nr  = 0;
-                    excl_t->nra = 0;
+                    vsite_pbc        = NULL;
+                    vsite_pbc_nalloc = NULL;
                 }
 
-                if (dd->cgindex[dd->ncg_tot] == dd->ncg_tot &&
-                    !rt->bExclRequired)
+                rt->th_work[thread].nbonded =
+                    make_bondeds_zone(dd, zones,
+                                      mtop->molblock,
+                                      bRCheckMB, rcheck, bRCheck2B, rc2,
+                                      la2lc, pbc_null, cg_cm, idef->iparams,
+                                      idef_t,
+                                      vsite_pbc, vsite_pbc_nalloc,
+                                      izone,
+                                      dd->cgindex[cg0t], dd->cgindex[cg1t]);
+
+                if (izone < nzone_excl)
                 {
-                    /* No charge groups and no distance check required */
-                    make_exclusions_zone(dd, zones,
-                                         mtop->moltype, cginfo,
-                                         excl_t,
-                                         izone,
-                                         cg0t, cg1t);
-                }
-                else
-                {
-                    rt->th_work[thread].excl_count =
-                        make_exclusions_zone_cg(dd, zones,
-                                                mtop->moltype, bRCheck2B, rc2,
-                                                la2lc, pbc_null, cg_cm, cginfo,
-                                                excl_t,
-                                                izone,
-                                                cg0t, cg1t);
+                    if (thread == 0)
+                    {
+                        excl_t = lexcls;
+                    }
+                    else
+                    {
+                        excl_t      = &rt->th_work[thread].excl;
+                        excl_t->nr  = 0;
+                        excl_t->nra = 0;
+                    }
+
+                    if (dd->cgindex[dd->ncg_tot] == dd->ncg_tot &&
+                        !rt->bExclRequired)
+                    {
+                        /* No charge groups and no distance check required */
+                        make_exclusions_zone(dd, zones,
+                                             mtop->moltype, cginfo,
+                                             excl_t,
+                                             izone,
+                                             cg0t, cg1t);
+                    }
+                    else
+                    {
+                        rt->th_work[thread].excl_count =
+                            make_exclusions_zone_cg(dd, zones,
+                                                    mtop->moltype, bRCheck2B, rc2,
+                                                    la2lc, pbc_null, cg_cm, cginfo,
+                                                    excl_t,
+                                                    izone,
+                                                    cg0t, cg1t);
+                    }
                 }
             }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
         if (rt->nthread > 1)

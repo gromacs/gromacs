@@ -663,6 +663,7 @@ void berendsen_pscale(t_inputrec *ir, matrix mu,
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (n = start; n < start+nr_atoms; n++)
     {
+        // Trivial OpenMP region that does not throw
         int g;
 
         if (cFREEZE == NULL)
