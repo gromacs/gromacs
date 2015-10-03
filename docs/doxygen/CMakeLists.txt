@@ -56,7 +56,6 @@ gmx_dependent_option(
     DOXYGEN_FOUND)
 mark_as_advanced(GMX_COMPACT_DOXYGEN)
 
-find_package(PythonInterp)
 set(USE_PYTHON_SCRIPTS OFF)
 if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6")
     set(USE_PYTHON_SCRIPTS ON)
