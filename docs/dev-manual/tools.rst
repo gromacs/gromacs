@@ -3,9 +3,11 @@ Development-time tools
 
 .. toctree::
    :maxdepth: 2
+   :glob:
 
    doxygen
    jenkins
+   releng/*
    gmxtree
    uncrustify
    testutils
