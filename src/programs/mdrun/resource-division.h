@@ -51,12 +51,13 @@ struct t_commrec;
  * with the hardware, except that ntmpi could be larger than #GPU.
  * If necessary, this function will modify hw_opt->nthreads_omp.
  */
-int get_nthreads_mpi(const gmx_hw_info_t     *hwinfo,
-                     gmx_hw_opt_t            *hw_opt,
-                     const t_inputrec        *inputrec,
-                     const struct gmx_mtop_t *mtop,
-                     const struct t_commrec  *cr,
-                     FILE                    *fplog);
+int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
+                     gmx_hw_opt_t        *hw_opt,
+                     const t_inputrec    *inputrec,
+                     const gmx_mtop_t    *mtop,
+                     const t_commrec     *cr,
+                     FILE                *fplog,
+                     gmx_bool             bUseGpu);
 
 /* Check if the number of OpenMP threads is within reasonable range
  * considering the hardware used. This is a crude check, but mainly
