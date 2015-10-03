@@ -249,13 +249,13 @@
 #cmakedefine HAVE_IO_H
 
 /* Define to 1 if you have the posix_memalign() function. */
-#cmakedefine HAVE_POSIX_MEMALIGN
+#cmakedefine01 HAVE_POSIX_MEMALIGN
 
 /* Define to 1 if you have the memalign() function. */
-#cmakedefine HAVE_MEMALIGN
+#cmakedefine01 HAVE_MEMALIGN
 
 /* Define to 1 if you have the MSVC _aligned_malloc() function. */
-#cmakedefine HAVE__ALIGNED_MALLOC
+#cmakedefine01 HAVE__ALIGNED_MALLOC
 
 /* Define to 1 if you have the clock_gettime() function. */
 #cmakedefine HAVE_CLOCK_GETTIME
@@ -320,6 +320,15 @@
 /* Define to 1 if you have the <sched.h> header */
 #cmakedefine HAVE_SCHED_H
 
+/* Define to 1 if mm_malloc.h is present, otherwise 0 */
+#cmakedefine01 HAVE_MM_MALLOC_H
+
+/* Define to 1 if malloc.h is present, otherwise 0 */
+#cmakedefine01 HAVE_MALLOC_H
+
+/* Define to 1 if xmmintrin.h is present, otherwise 0 */
+#cmakedefine01 HAVE_XMMINTRIN_H
+
 /* Define to 1 if you have the POSIX <regex.h> header file. */
 #cmakedefine01 HAVE_POSIX_REGEX
 
@@ -332,6 +341,12 @@
 /* Define to 1 if you have the all the affinity functions in sched.h */
 #cmakedefine HAVE_SCHED_AFFINITY
 
+/* Define to 1 if _mm_malloc() is present in either mm_malloc.h,
+ * malloc.h or xmmintrin.h, and 0 otherwise. Note that you need to
+ * conditionally include the three headers too before using _mm_malloc().
+ */
+#cmakedefine01 HAVE__MM_MALLOC
+ 
 /* Define if SIGUSR1 is present */
 #cmakedefine01 HAVE_SIGUSR1
 
