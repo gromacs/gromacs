@@ -40,6 +40,7 @@
  *  Data types used internally in the nbnxn_cuda module.
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \author Alfredo Metere <alfredometere2@gmail.com>
  *  \ingroup module_mdlib
  */
 
@@ -53,6 +54,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*! \brief Important limits for tables stored in 1D Texture object **/
+#define CUDA_1DTEXTURE_LIMIT 65536 /**< Maximum size for 1D Texture in CUDA */
+#define CUDA_TAB_SIZE_MAX    2048  /**< Maximum size of a potential/force table */
+#define CUDA_NTABS_MAX       32    /**< Maximum number of tables allowed */
 
 /*! \brief Electrostatic CUDA kernel flavors.
  *
@@ -69,7 +75,15 @@ extern "C" {
  *  should match the order of enumerated types below.
  */
 enum eelCu {
-    eelCuCUT, eelCuRF, eelCuEWALD_TAB, eelCuEWALD_TAB_TWIN, eelCuEWALD_ANA, eelCuEWALD_ANA_TWIN, eelCuNR
+    eelCuCUT,
+    eelCuRF,
+    eelCuEWALD_TAB,
+    eelCuEWALD_TAB_TWIN,
+    eelCuEWALD_ANA,
+    eelCuEWALD_ANA_TWIN,
+    eelCuNONE,
+    eelCuUSER,          /* Electrostatics are set to zero */
+    eelCuNR
 };
 
 /*! \brief VdW CUDA kernel flavors.
@@ -82,7 +96,14 @@ enum eelCu {
  * should match the order of enumerated types below.
  */
 enum evdwCu {
-    evdwCuCUT, evdwCuFSWITCH, evdwCuPSWITCH, evdwCuEWALDGEOM, evdwCuEWALDLB, evdwCuNR
+    evdwCuCUT,
+    evdwCuFSWITCH,
+    evdwCuPSWITCH,
+    evdwCuEWALDGEOM,
+    evdwCuEWALDLB,
+    evdwCuUSER,           /* tabulated non-bonded VdWLJ CUDA type */
+    evdwCuUSER_GENERIC,
+    evdwCuNR
 };
 
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
@@ -95,13 +116,13 @@ typedef struct cu_timers    cu_timers_t;
 typedef struct nb_staging   nb_staging_t;
 /*! \endcond */
 
-
 /** \internal
  * \brief Staging area for temporary data downloaded from the GPU.
  *
  *  The energies/shift forces get downloaded here first, before getting added
  *  to the CPU-side aggregate values.
  */
+
 struct nb_staging
 {
     float   *e_lj;      /**< LJ energy            */
@@ -171,6 +192,41 @@ struct cu_nbparam
     float                coulomb_tab_scale;  /**< table scale/spacing                        */
     float               *coulomb_tab;        /**< pointer to the table in the device memory  */
     cudaTextureObject_t  coulomb_tab_texobj; /**< texture object bound to coulomb_tab        */
+
+    /* Non-Bonded GENERIC Table data - accessed through texture memory */
+
+    bool                 gmx_no_table_coeffs;            /**< When set to 1, GENERIC tables are used.              */
+    int                  nparms;                         /**< Number of interpolation parameters                   */
+    int                  nb_generic_ntabs;               /**< amount of tables                                     */
+    int                  nb_generic_tab_size;            /**< table size (s.t. it fits in texture cache)           */
+    float                nb_generic_tab_scale;           /**< table scale/spacing                                  */
+    float               *nb_generic_Ftab;                /**< pointer to the force tables in the device memory     */
+    float               *nb_generic_Vtab;                /**< pointer to the potential tables in the device memory */
+    cudaTextureObject_t  nb_generic_Ftab_texobj;         /**< texture object bound to nb_generic_Ftab              */
+    cudaTextureObject_t  nb_generic_Vtab_texobj;         /**< texture object bound to nb_generic_Vtab              */
+
+    /* User Coulomb Table data */
+    int                 nb_coul_ntabs;                   /**< amount of tables                                     */
+    int                 nb_coul_tab_size;                /**< table size (s.t. it fits in texture cache)           */
+    float               nb_coul_tab_scale;               /**< table scale/spacing                                  */
+    float              *nb_coul_Ftab;                    /**< pointer to the force tables in the device memory     */
+    float              *nb_coul_Vtab;                    /**< pointer to the potential tables in the device memory */
+    cudaTextureObject_t nb_coul_Ftab_texobj;             /**< texture object bound to nb_coul_Ftab                 */
+    cudaTextureObject_t nb_coul_Vtab_texobj;             /**< texture object bound to nb_coul_Vtab                 */
+
+    /* User Vdw Table data */
+    int                 nb_vdw_ntabs;                    /**< amount of tables                                     */
+    int                 nb_vdw_tab_size;                 /**< table size (s.t. it fits in texture cache)           */
+    float               nb_vdw_tab_scale;                /**< table size (s.t. it fits in texture cache)           */
+    float              *nb_vdw_LJ6_Ftab;                 /**< pointer to the force tables in the device memory     */
+    float              *nb_vdw_LJ6_Vtab;                 /**< pointer to the potential tables in the device memory */
+    cudaTextureObject_t nb_vdw_LJ6_Ftab_texobj;          /**< texture object bound to nb_vdw_LJ6_Ftab              */
+    cudaTextureObject_t nb_vdw_LJ6_Vtab_texobj;          /**< texture object bound to nb_vdw_LJ6_Vtab              */
+
+    float              *nb_vdw_LJ12_Ftab;                /**< pointer to the force tables in the device memory     */
+    float              *nb_vdw_LJ12_Vtab;                /**< pointer to the potential tables in the device memory */
+    cudaTextureObject_t nb_vdw_LJ12_Ftab_texobj;         /**< texture object bound to nb_vdw_LJ12_Ftab             */
+    cudaTextureObject_t nb_vdw_LJ12_Vtab_texobj;         /**< texture object bound to nb_vdw_LJ12_Vtab             */
 };
 
 /** \internal
@@ -231,9 +287,9 @@ struct gmx_nbnxn_cuda_t
     cudaStream_t              stream[2];      /**< local and non-local GPU streams                      */
 
     /** events used for synchronization */
-    cudaEvent_t    nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
+    cudaEvent_t nonlocal_done;                  /**< event triggered when the non-local non-bonded kernel
                                                    is done (and the local transfer can proceed)           */
-    cudaEvent_t    misc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
+    cudaEvent_t misc_ops_and_local_H2D_done;    /**< event triggered when the tasks issued in
                                                    the local stream that need to precede the
                                                    non-local force calculations are done
                                                    (e.g. f buffer 0-ing, local x/q H2D) */
