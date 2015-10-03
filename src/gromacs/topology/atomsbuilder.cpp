@@ -209,6 +209,11 @@ AtomsRemover::~AtomsRemover()
 {
 }
 
+void AtomsRemover::refreshAtomCount(const t_atoms &atoms)
+{
+    removed_.resize(atoms.nr, 0);
+}
+
 void AtomsRemover::markAll()
 {
     std::fill(removed_.begin(), removed_.end(), 1);
