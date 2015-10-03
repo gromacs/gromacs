@@ -47,14 +47,12 @@
 #ifdef WITH_DMALLOC
 #include <dmalloc.h>
 #endif
-#ifdef HAVE__ALIGNED_MALLOC
-#include <malloc.h>
-#endif
 
 #include <cstring>
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
 #ifdef PRINT_ALLOC_KB
@@ -248,18 +246,6 @@ void save_free(const char gmx_unused *name, const char gmx_unused *file, int gmx
     }
 }
 
-/* If we don't have useful routines for allocating aligned memory,
- * then we have to use the old-style GROMACS approach bitwise-ANDing
- * pointers to ensure alignment. We store the pointer to the originally
- * allocated region in the space before the returned pointer */
-
-/* we create a positive define for the absence of an system-provided memalign */
-#if (!defined HAVE_POSIX_MEMALIGN && !defined HAVE_MEMALIGN && \
-     !defined HAVE__ALIGNED_MALLOC)
-#define GMX_OWN_MEMALIGN
-#endif
-
-
 /* Pointers allocated with this routine should only be freed
  * with save_free_aligned, however this will only matter
  * on systems that lack posix_memalign() and memalign() when
@@ -268,9 +254,7 @@ void save_free(const char gmx_unused *name, const char gmx_unused *file, int gmx
 void *save_malloc_aligned(const char *name, const char *file, int line,
                           size_t nelem, size_t elsize, size_t alignment)
 {
-    void   **aligned  = NULL;
-    void    *malloced = NULL;
-    gmx_bool allocate_fail;
+    void * p;
 
     if (alignment == 0)
     {
@@ -278,10 +262,17 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
                   "Cannot allocate aligned memory with alignment of zero!\n(called from file %s, line %d)", file, line);
     }
 
+    // Our new alignedMalloc always returns 128-byte aligned memory.
+    if (alignment > 128)
+    {
+        gmx_fatal(errno, __FILE__, __LINE__,
+                  "Cannot allocate aligned memory with alignment > 128 bytes\n(called from file %s, line %d)", file, line);
+    }
+
 
     if (nelem == 0 || elsize == 0)
     {
-        aligned  = NULL;
+        p = nullptr;
     }
     else
     {
@@ -294,40 +285,15 @@ void *save_malloc_aligned(const char *name, const char *file, int line,
         }
 #endif
 
-#ifdef HAVE_POSIX_MEMALIGN
-        allocate_fail = (0 != posix_memalign(&malloced, alignment, nelem*elsize));
-#elif defined HAVE_MEMALIGN
-        allocate_fail = ((malloced = memalign(alignment, nelem*elsize)) == NULL);
-#elif defined HAVE__ALIGNED_MALLOC
-        allocate_fail = ((malloced = _aligned_malloc(nelem*elsize, alignment))
-                         == NULL);
-#else
-        allocate_fail = ((malloced = malloc(nelem*elsize+alignment+
-                                            sizeof(void*))) == NULL);
-#endif
-        if (allocate_fail)
+        p = gmx::internal::alignedMalloc(nelem*elsize);
+
+        if (p == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
                       "Not enough memory. Failed to allocate %u aligned elements of size %u for %s\n(called from file %s, line %d)", nelem, elsize, name, file, line);
         }
-        /* we start with the original pointer */
-        aligned = (void**)malloced;
-
-#ifdef GMX_OWN_MEMALIGN
-        /* Make the aligned pointer, and save the underlying pointer that
-         * we're allowed to free(). */
-
-        /* we first make space to store that underlying pointer: */
-        aligned = aligned + 1;
-        /* then we apply a bit mask */
-        aligned = (void *) (((size_t) aligned + alignment - 1) &
-                            (~((size_t) (alignment-1))));
-        /* and we store the original pointer in the area just before the
-           pointer we're going to return */
-        aligned[-1] = malloced;
-#endif
     }
-    return (void*)aligned;
+    return p;
 }
 
 void *save_calloc_aligned(const char *name, const char *file, int line,
@@ -344,22 +310,7 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
 /* This routine can NOT be called with any pointer */
 void save_free_aligned(const char gmx_unused *name, const char gmx_unused *file, int gmx_unused line, void *ptr)
 {
-    void *free = ptr;
-
-    if (NULL != ptr)
-    {
-#ifdef GMX_OWN_MEMALIGN
-        /* we get the pointer from just before the memaligned pointer */
-        free = ((void**)ptr)[-1];
-#endif
-
-#ifndef HAVE__ALIGNED_MALLOC
-        /* (Now) we're allowed to use a normal free() on this pointer. */
-        save_free(name, file, line, free);
-#else
-        _aligned_free(free);
-#endif
-    }
+    gmx::internal::alignedFree(ptr);
 }
 
 void set_over_alloc_dd(gmx_bool set)
