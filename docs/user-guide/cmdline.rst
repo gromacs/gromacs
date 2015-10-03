@@ -141,6 +141,20 @@ linked help for the new commands for a full description.
 This section lists only major changes; minor changes like additional/removed
 options or bug fixes are not typically included.
 
+Version 2016
+^^^^^^^^^^^^
+
+gmx insert-molecules
+....................
+
+**improved**
+
+:ref:`gmx insert-molecules` has gained an option ``-replace`` that makes it
+possible to insert molecules into a solvated configuration, replacing any
+overlapping solvent atoms.  It is also possible to insert into a certain region
+of the box only by selecting a subset of the solvent atoms (``-replace`` takes
+a selection that can also contain expressions like ``not within 1 of ...``).
+
 Version 5.1
 ^^^^^^^^^^^
 
@@ -266,6 +280,7 @@ calculating normal angles between three atoms and/or centers-of-mass, making it
 a partial replacement for :ref:`gmx angle` as well.
 
 gmx protonate
+.............
 
 **replaced**
 
