@@ -93,6 +93,8 @@ class AtomsRemover
         explicit AtomsRemover(const t_atoms &atoms);
         ~AtomsRemover();
 
+        void refreshAtomCount(const t_atoms &atoms);
+
         void markAll();
         void markResidue(const t_atoms &atoms, int atomIndex, bool bStatus);
         bool isMarked(int atomIndex) const { return removed_[atomIndex] != 0; }
