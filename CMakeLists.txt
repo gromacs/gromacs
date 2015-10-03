@@ -52,6 +52,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # the build tree (whether the build is from a source package or from a git
 # repository).  Also declares a few functions that will be used for generating
 # version info files later.
+include(gmxBuildTreeInfo)
 include(gmxVersionInfo)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
