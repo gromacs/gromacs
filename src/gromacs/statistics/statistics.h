@@ -77,9 +77,8 @@ gmx_stats_t gmx_stats_init();
 /*! \brief
  * Destroy a data structure
  * \param stats The data structure
- * \return error code
  */
-int gmx_stats_done(gmx_stats_t stats);
+void gmx_stats_free(gmx_stats_t stats);
 
 /*! \brief
  * Remove outliers from a straight line, where level in units of
