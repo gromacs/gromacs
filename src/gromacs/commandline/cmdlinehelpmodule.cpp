@@ -550,10 +550,10 @@ HelpExportReStructuredText::HelpExportReStructuredText(
       binaryName_(helpModule.binaryName_),
       links_(eHelpOutputFormat_Rst)
 {
-    TextReader   linksFile("links.dat");
-    std::string  line;
-    while (linksFile.readLineTrimmed(&line))
+    TextReader linksFile("links.dat");
+    while (linksFile.readLine())
     {
+        std::string line = linksFile.currentLineTrimmed();
         links_.addLink("[REF]." + line + "[ref]",
                        formatString(":ref:`.%s <%s>`", line.c_str(), line.c_str()),
                        line);
