@@ -583,8 +583,7 @@ void printmol(t_corr *curr, const char *fn,
             }
         }
         gmx_stats_get_ab(lsq1, elsqWEIGHT_NONE, &a, &b, NULL, NULL, NULL, NULL);
-        gmx_stats_done(lsq1);
-        sfree(lsq1);
+        gmx_stats_free(lsq1);
         D     = a*FACTOR/curr->dim_factor;
         if (D < 0)
         {
