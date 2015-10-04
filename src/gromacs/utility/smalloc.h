@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -195,6 +195,11 @@ void save_free_aligned(const char *name, const char *file, int line, void *ptr);
 #endif
 
 #ifdef __cplusplus
+
+#if GMX_CXX11_COMPILATION
+#include <type_traits>
+#endif
+
 /*! \cond internal */
 /*! \name Implementation templates for C++ memory allocation macros
  *
@@ -222,6 +227,9 @@ template <typename T> static inline
 void gmx_snew_impl(const char *name, const char *file, int line,
                    T * &ptr, size_t nelem)
 {
+#if GMX_CXX11_COMPILATION
+    static_assert(std::is_pod<T>::value, "snew() called on C++ type");
+#endif
     ptr = (T *)save_calloc(name, file, line, nelem, sizeof(T));
 }
 /** C++ helper for srenew(). */
@@ -229,6 +237,9 @@ template <typename T> static inline
 void gmx_srenew_impl(const char *name, const char *file, int line,
                      T * &ptr, size_t nelem)
 {
+#if GMX_CXX11_COMPILATION
+    static_assert(std::is_pod<T>::value, "srenew() called on C++ type");
+#endif
     ptr = (T *)save_realloc(name, file, line, ptr, nelem, sizeof(T));
 }
 /** C++ helper for smalloc(). */
@@ -236,6 +247,9 @@ template <typename T> static inline
 void gmx_smalloc_impl(const char *name, const char *file, int line,
                       T * &ptr, size_t size)
 {
+#if GMX_CXX11_COMPILATION
+    static_assert(std::is_pod<T>::value, "smalloc() called on C++ type");
+#endif
     ptr = (T *)save_malloc(name, file, line, size);
 }
 /** C++ helper for snew_aligned(). */
@@ -243,9 +257,32 @@ template <typename T> static inline
 void gmx_snew_aligned_impl(const char *name, const char *file, int line,
                            T * &ptr, size_t nelem, size_t alignment)
 {
+#if GMX_CXX11_COMPILATION
+    static_assert(std::is_pod<T>::value, "snew_aligned() called on C++ type");
+#endif
     ptr = (T *)save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment);
 }
-/*! \] */
+/** C++ helper for sfree(). */
+template <typename T> static inline
+void gmx_sfree_impl(const char *name, const char *file, int line, T *ptr)
+{
+#if GMX_CXX11_COMPILATION
+    static_assert(std::is_pod<T>::value || std::is_void<T>::value,
+                  "sfree() called on C++ type");
+#endif
+    save_free(name, file, line, ptr);
+}
+/** C++ helper for sfree_aligned(). */
+template <typename T> static inline
+void gmx_sfree_aligned_impl(const char *name, const char *file, int line, T *ptr)
+{
+#if GMX_CXX11_COMPILATION
+    static_assert(std::is_pod<T>::value || std::is_void<T>::value,
+                  "sfree_aligned() called on C++ type");
+#endif
+    save_free_aligned(name, file, line, ptr);
+}
+/*! \} */
 /*! \endcond */
 #endif /* __cplusplus */
 
@@ -304,6 +341,23 @@ void gmx_snew_aligned_impl(const char *name, const char *file, int line,
  *
  * \hideinitializer
  */
+/*! \def sfree
+ * \brief
+ * Frees memory referenced by \p ptr.
+ *
+ * \p ptr is allowed to be NULL, in which case nothing is done.
+ *
+ * \hideinitializer
+ */
+/*! \def sfree_aligned
+ * \brief
+ * Frees aligned memory referenced by \p ptr.
+ *
+ * This must only be called with a pointer obtained through snew_aligned().
+ * \p ptr is allowed to be NULL, in which case nothing is done.
+ *
+ * \hideinitializer
+ */
 #ifdef __cplusplus
 
 /* C++ implementation */
@@ -315,6 +369,10 @@ void gmx_snew_aligned_impl(const char *name, const char *file, int line,
     gmx_smalloc_impl(#ptr, __FILE__, __LINE__, (ptr), (size))
 #define snew_aligned(ptr, nelem, alignment) \
     gmx_snew_aligned_impl(#ptr, __FILE__, __LINE__, (ptr), (nelem), alignment)
+#define sfree(ptr) \
+    gmx_sfree_impl(#ptr, __FILE__, __LINE__, (ptr))
+#define sfree_aligned(ptr) \
+    gmx_sfree_aligned_impl(#ptr, __FILE__, __LINE__, (ptr))
 
 #else
 
@@ -327,31 +385,14 @@ void gmx_snew_aligned_impl(const char *name, const char *file, int line,
     (ptr) = save_malloc(#ptr, __FILE__, __LINE__, size)
 #define snew_aligned(ptr, nelem, alignment) \
     (ptr) = save_calloc_aligned(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)), alignment)
+#define sfree(ptr) save_free(#ptr, __FILE__, __LINE__, (ptr))
+#define sfree_aligned(ptr) save_free_aligned(#ptr, __FILE__, __LINE__, (ptr))
 
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*! \brief
- * Frees memory referenced by \p ptr.
- *
- * \p ptr is allowed to be NULL, in which case nothing is done.
- *
- * \hideinitializer
- */
-#define sfree(ptr) save_free(#ptr, __FILE__, __LINE__, (ptr))
-
-/*! \brief
- * Frees aligned memory referenced by \p ptr.
- *
- * This must only be called with a pointer obtained through snew_aligned().
- * \p ptr is allowed to be NULL, in which case nothing is done.
- *
- * \hideinitializer
- */
-#define sfree_aligned(ptr) save_free_aligned(#ptr, __FILE__, __LINE__, (ptr))
 
 /*! \brief
  * Over allocation factor for memory allocations.

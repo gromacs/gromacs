@@ -49,4 +49,6 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 /* rescaling the coordinates voor de membed code */
 void rescale_membed(int step_rel, gmx_membed_t *membed, rvec *x);
 
+void free_membed(gmx_membed_t *membed);
+
 #endif
