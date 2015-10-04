@@ -88,7 +88,7 @@ class StringInputStream : public TextInputStream
         /*! \brief
          * Constructor that stores input lines in a string.
          *
-         * The string is internally but no processing is done.
+         * The string is copied to store it, but no processing is done.
          *
          * \param[in] input String to be served by the stream.
          */
