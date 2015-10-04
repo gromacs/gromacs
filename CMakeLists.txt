@@ -619,7 +619,7 @@ endif()
 set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
 
 # Now we can test for CXX11_REGEX include file
-check_include_file_cxx(regex     HAVE_CXX11_REGEX)
+check_include_file_cxx(regex HAVE_CXX11_REGEX "${GMX_CXX11_FLAGS}")
 
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
