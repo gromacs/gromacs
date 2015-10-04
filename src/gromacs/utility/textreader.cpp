@@ -37,14 +37,17 @@
  * Implements gmx::TextReader.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_utility
  */
 #include "gmxpre.h"
 
 #include "textreader.h"
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/nodelete.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textstream.h"
 
 namespace gmx
@@ -69,11 +72,32 @@ class TextReader::Impl
 {
     public:
         explicit Impl(const TextInputStreamPointer &stream)
-            : stream_(stream)
+            : stream_(stream), lineIndex_(0), currentLine_() {}
+
+        bool readLine()
         {
+            /*! As each line is read we prepare for an error message
+             * that might be given later by makeError(). */
+            lineIndex_++;
+            return stream_->readLine(&currentLine_);
+        }
+
+        InvalidInputError makeError(const std::string &message) const
+        {
+            if (!currentLine_.empty())
+            {
+                return InvalidInputError(message + formatString("\n on line %d, which was\n '%s'",
+                                                                lineIndex_, stripString(currentLine_).c_str()));
+            }
+            else
+            {
+                return InvalidInputError(message);
+            }
         }
 
         TextInputStreamPointer stream_;
+        int                    lineIndex_;
+        std::string            currentLine_;
 };
 
 TextReader::TextReader(const std::string &filename)
@@ -95,34 +119,34 @@ TextReader::~TextReader()
 {
 }
 
-bool TextReader::readLine(std::string *line)
+bool TextReader::readLine()
 {
-    return impl_->stream_->readLine(line);
+    return impl_->readLine();
 }
 
-bool TextReader::readLineTrimmed(std::string *line)
+const std::string &TextReader::currentLine()
 {
-    if (!readLine(line))
-    {
-        return false;
-    }
-    const size_t endPos = line->find_last_not_of(" \t\r\n");
+    const size_t endPos = impl_->currentLine_.find_last_not_of(" \t\r\n");
     if (endPos != std::string::npos)
     {
-        line->resize(endPos + 1);
+        impl_->currentLine_.resize(endPos + 1);
     }
-    return true;
+    return impl_->currentLine_;
 }
 
 std::string TextReader::readAll()
 {
     std::string result;
-    std::string line;
-    while (readLine(&line))
+    while (readLine())
     {
-        result.append(line);
+        result.append(impl_->currentLine_);
     }
     return result;
+}
+
+InvalidInputError TextReader::makeError(const std::string &message) const
+{
+    return impl_->makeError(message);
 }
 
 void TextReader::close()

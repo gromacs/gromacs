@@ -390,4 +390,14 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
               "WrappedAt14");
 }
 
+/********************************************************************
+ * Tests for countWords
+ */
+
+TEST(CountWords, CountsWordsCorrectly)
+{
+    EXPECT_EQ(3, gmx::countWords(" a, b\tc"));
+    EXPECT_EQ(4, gmx::countWords("1.0 3e5; -1.2, 0xad34\n"));
+}
+
 } // namespace

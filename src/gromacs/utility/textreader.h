@@ -46,6 +46,7 @@
 #include <string>
 
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/textstream.h"
 
 namespace gmx
@@ -117,45 +118,58 @@ class TextReader
         ~TextReader();
 
         /*! \brief
-         * Reads a single line (including newline) from the stream.
+         * Reads a single line from the stream
          *
-         * \param[out] line    String to receive the line.
          * \returns    `false` if nothing was read because the file ended.
          *
-         * On error or when false is returned, \p line will be empty.
-         * Newlines will be returned as part of \p line if it was present in
-         * the stream.
          * To loop over all lines in the stream, use:
          * \code
-           std::string line;
-           while (reader.readLine(&line))
+           TextReader reader("file.txt");
+           while (reader.readLine())
            {
+               const std::string &line = reader.currentLine();
                // ...
            }
            \endcode
+         *
+         * \see currentLine()
          */
-        bool readLine(std::string *line);
-        /*! \brief
-         * Reads a single line from the stream.
+        bool readLine();
+        /*! \brief Returns from the stream the last line read
+         * (trimming any final whitespace, including newline)
          *
-         * \param[out] line    String to receive the line.
-         * \returns    false if nothing was read because the file ended.
-         *
-         * On error or when false is returned, \p line will be empty.
-         * Works as readLine(), except that trailing whitespace will be removed
-         * from \p line.
+         * Newlines will be returned as part of \p line if any were present in
+         * the stream.
          *
          * \see readLine()
          */
-        bool readLineTrimmed(std::string *line);
-
+        const std::string &currentLine();
         /*! \brief
          * Reads all remaining lines from the stream as a single string.
+         *
+         * No whitespace is trimmed
          *
          * \returns   Full contents of the stream (from the current point to
          *     the end).
          */
         std::string readAll();
+
+        /*! \brief Constructs an InvalidInputError with an error
+         * message, and adds custom context information useful for
+         * trouble-shooting issues when reading line-based input from
+         * files.
+         *
+         * This will produce an error message that reads
+         * \verbatim
+           <message>
+            on line <number>, which was
+            '<the actual line text>'
+           \endverbatim
+         *
+         * \param[in]  message        String describing to the user the nature of the error.
+         * \throws     std::bad_alloc if out of memory.
+         */
+        InvalidInputError makeError(const std::string &message) const;
 
         /*! \brief
          * Closes the underlying stream.
