@@ -544,6 +544,8 @@ static char *read_xvgr_string(const char *line)
     return str;
 }
 
+/* TODO Remove this in favour of gmx::readXvgTable (and probably lots
+   of things here it uses) */
 int read_xvg_legend(const char *fn, double ***y, int *ny,
                     char **subtitle, char ***legend)
 {
@@ -701,6 +703,7 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
     return nx;
 }
 
+/* TODO Remove this in favour of gmx::readXvgTable */
 int read_xvg(const char *fn, double ***y, int *ny)
 {
     return read_xvg_legend(fn, y, ny, NULL, NULL);

@@ -38,6 +38,7 @@ set(TESTUTILS_SOURCES
     cmdlinetest.cpp
     integrationtests.cpp
     interactivetest.cpp
+    memoryinputstream.cpp
     mpi-printer.cpp
     refdata.cpp
     refdata-xml.cpp

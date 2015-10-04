@@ -34,6 +34,8 @@
 
 set(test_sources
     confio.cpp
+    errormessagemaker.cpp
+    xvgreader.cpp
     )
 if (GMX_USE_TNG)
     list(APPEND test_sources tngio.cpp)

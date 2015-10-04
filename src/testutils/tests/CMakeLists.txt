@@ -34,6 +34,7 @@
 
 gmx_add_unit_test(TestUtilsUnitTests testutils-test
                   interactivetest.cpp
+                  memoryinputstream.cpp
                   refdata_tests.cpp
                   testasserts_tests.cpp
                   xvgtest_tests.cpp)

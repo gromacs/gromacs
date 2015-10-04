@@ -58,6 +58,7 @@ gmx_install_headers(
     xdr_datatype.h
     xtcio.h
     xvgr.h
+    xvgreader.h
     )
 
 if (GMX_USE_TNG AND TNG_IO_DEFINITIONS)

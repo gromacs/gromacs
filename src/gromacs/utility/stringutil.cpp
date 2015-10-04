@@ -67,11 +67,11 @@ countWords(const char *s)
     for (std::size_t i = 0; i < length; i++)
     {
         // If we found a new word, increase counter and step through the word
-        if (std::isalnum(s[i]))
+        if (!std::isspace(s[i]))
         {
             ++nWords;
-            // If we hit string end, '\0' is not alphanumerical
-            while (std::isalnum(s[i]))
+            // If we hit string end, '\0' is space
+            while (!std::isspace(s[i]) && i < length)
             {
                 // This might increment i to the string end, and then the outer
                 // loop will increment i one unit beyond that, but since
@@ -87,7 +87,7 @@ countWords(const char *s)
 std::size_t
 countWords(const std::string &str)
 {
-    // Under out beautiful C++ interface hides an ugly c-string implementation :-)
+    // Under our beautiful C++ interface hides an ugly c-string implementation :-)
     return countWords(str.c_str());
 }
 
