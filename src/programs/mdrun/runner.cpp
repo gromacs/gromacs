@@ -1381,9 +1381,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);
 
-    if (opt2bSet("-membed", nfile, fnm))
+    if (membed != NULL)
     {
-        sfree(membed);
+        free_membed(membed);
     }
 
     gmx_hardware_info_free(hwinfo);

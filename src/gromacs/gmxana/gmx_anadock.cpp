@@ -212,10 +212,8 @@ static void clust_stat(FILE *fp, int start, int end, t_pdbfile *pdbf[])
     fprintf(fp, "  <%12s> = %8.3f (+/- %6.3f)\n", etitles[FALSE], aver, sigma);
     gmx_stats_get_ase(ef, &aver, &sigma, NULL);
     fprintf(fp, "  <%12s> = %8.3f (+/- %6.3f)\n", etitles[TRUE], aver, sigma);
-    gmx_stats_done(ed);
-    gmx_stats_done(ef);
-    sfree(ed);
-    sfree(ef);
+    gmx_stats_free(ed);
+    gmx_stats_free(ef);
 }
 
 static real rmsd_dist(t_pdbfile *pa, t_pdbfile *pb, gmx_bool bRMSD)

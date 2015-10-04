@@ -1316,7 +1316,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                 fprintf(outeps, "%10g  %12.8e\n", t, epsilon);
             }
         }
-        gmx_stats_done(muframelsq);
+        gmx_stats_free(muframelsq);
 
         if (bMU)
         {
