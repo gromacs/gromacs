@@ -42,10 +42,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_output_env_t;
 
 /***************************************************
@@ -168,10 +164,13 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
  * the subtitle string will be NULL when not present.
  * If legend!=NULL, read the legends for the sets (when present),
  * 0 is the first y legend, the legend string will be NULL when not present.
- */
+ *
+ * This routine is deprecated, use readXvgTable in new code */
 
 int read_xvg(const char *fn, double ***y, int *ny);
-/* As read_xvg_legend, but does not read legends. */
+/* As read_xvg_legend, but does not read legends.
+ *
+ * This routine is deprecated, use readXvgTable in new code. */
 
 void write_xvg(const char *fn, const char *title, int nx, int ny, real **y,
                const char** leg, const struct gmx_output_env_t *oenv);
@@ -189,8 +188,5 @@ real **read_xvg_time(const char *fn,
                      gmx_bool bTE, real te,
                      int nsets_in, int *nset, int *nval,
                      real *dt, real **t);
-#ifdef __cplusplus
-}
-#endif
 
 #endif

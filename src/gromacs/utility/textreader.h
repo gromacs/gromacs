@@ -46,6 +46,7 @@
 #include <string>
 
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/textstream.h"
 
 namespace gmx
@@ -156,6 +157,23 @@ class TextReader
          *     the end).
          */
         std::string readAll();
+
+        /*! \brief Constructs an InvalidInputError with an error
+         * message, and adds custom context information useful for
+         * trouble-shooting issues when reading line-based input from
+         * files.
+         *
+         * This will produce an error message that reads
+         * \verbatim
+           <message>
+            on line <number>, which was
+            '<the actual line text>'
+           \endverbatim
+         *
+         * \param[in]  message        String describing to the user the nature of the error.
+         * \throws     std::bad_alloc if out of memory.
+         */
+        InvalidInputError makeError(const std::string &message) const;
 
         /*! \brief
          * Closes the underlying stream.

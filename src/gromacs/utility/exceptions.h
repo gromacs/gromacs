@@ -385,7 +385,7 @@ class NotImplementedError : public APIError
  * \p e should evaluate to an instance of an object derived from
  * GromacsException.
  *
- * Typical usage (note that gmx::File wraps this particular case):
+ * Typical usage (note that gmx::TextInputFile wraps this particular case):
  * \code
    FILE *fp = fopen("filename.txt", "r");
    if (fp == NULL)

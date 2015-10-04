@@ -37,14 +37,17 @@
  * Implements gmx::TextReader.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_utility
  */
 #include "gmxpre.h"
 
 #include "textreader.h"
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/nodelete.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textstream.h"
 
 namespace gmx
@@ -69,11 +72,34 @@ class TextReader::Impl
 {
     public:
         explicit Impl(const TextInputStreamPointer &stream)
-            : stream_(stream)
+            : stream_(stream), lineIndex_(0), currentLine_(nullptr) {}
+
+        bool readLine(std::string *line)
         {
+            /*! As each line is read we prepare for an error message
+             * that might be given later by makeError(). */
+            lineIndex_++;
+            bool returnValue = stream_->readLine(line);
+            currentLine_ = line;
+            return returnValue;
+        }
+
+        InvalidInputError makeError(const std::string &message) const
+        {
+            if (currentLine_)
+            {
+                return InvalidInputError(message + formatString("\n on line %d, which was\n '%s'",
+                                                                lineIndex_, stripString(*currentLine_).c_str()));
+            }
+            else
+            {
+                return InvalidInputError(message);
+            }
         }
 
         TextInputStreamPointer stream_;
+        int                    lineIndex_;
+        const std::string     *currentLine_;
 };
 
 TextReader::TextReader(const std::string &filename)
@@ -97,7 +123,7 @@ TextReader::~TextReader()
 
 bool TextReader::readLine(std::string *line)
 {
-    return impl_->stream_->readLine(line);
+    return impl_->readLine(line);
 }
 
 bool TextReader::readLineTrimmed(std::string *line)
@@ -123,6 +149,11 @@ std::string TextReader::readAll()
         result.append(line);
     }
     return result;
+}
+
+InvalidInputError TextReader::makeError(const std::string &message) const
+{
+    return impl_->makeError(message);
 }
 
 void TextReader::close()
