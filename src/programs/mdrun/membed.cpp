@@ -1336,3 +1336,8 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
     return membed;
 }
+
+void free_membed(gmx_membed_t *membed)
+{
+    sfree(membed);
+}

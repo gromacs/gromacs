@@ -171,6 +171,22 @@ typedef uint64_t gmx_uint64_t;
 #define gmx_cxx_const
 #endif
 
+/*! \def GMX_CXX11_COMPILATION
+ * \brief
+ * Defined to 1 when compiling as C++11.
+ *
+ * This is not 1 only in CUDA code, and is intended for conditional compilation
+ * in headers that are included by both CUDA and non-CUDA code.
+ * It should only be used for convenience features that do not influence the
+ * ABI of the header; e.g., static_asserts that add to the safety in non-CUDA
+ * code.
+ */
+#if defined __cplusplus && __cplusplus >= 201103L
+#    define GMX_CXX11_COMPILATION 1
+#else
+#    define GMX_CXX11_COMPILATION 0
+#endif
+
 /*! \def gmx_unused
  * \brief
  * Attribute to suppress compiler warnings about unused function parameters.
