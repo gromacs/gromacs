@@ -656,6 +656,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (fplog != NULL)
     {
         /* Print references after all software/hardware printing */
+        please_cite(fplog, "Abraham2015");
         please_cite(fplog, "Pall2015");
         please_cite(fplog, "Pronk2013");
         please_cite(fplog, "Hess2008b");

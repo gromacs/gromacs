@@ -2821,7 +2821,7 @@ int gmx_energy(int argc, char *argv[])
     {
         double dt = (frame[cur].t-start_t)/(edat.nframes-1);
         analyse_ener(opt2bSet("-corr", NFILE, fnm), opt2fn("-corr", NFILE, fnm),
-                     bFee, bSum, opt2parg_bSet("-nmol", npargs, ppa),
+                     bFee, bSum, bFluct,
                      bVisco, opt2fn("-vis", NFILE, fnm),
                      nmol,
                      start_step, start_t, frame[cur].step, frame[cur].t,

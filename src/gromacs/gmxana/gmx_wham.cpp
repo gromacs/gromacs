@@ -643,7 +643,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
 
         sscanf(ptr, fmtlf, &time); /* printf("Time %f\n",time); */
         /* Round time to fs */
-        time = 1.0/1000*( static_cast<int> (time*1000+0.5) );
+        time = 1.0/1000*( static_cast<gmx_int64_t> (time*1000+0.5) );
 
         /* get time step of pdo file */
         if (count == 0)
@@ -2363,7 +2363,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
     for (i = 0; i < nt; i++)
     {
         /* Do you want that time frame? */
-        t = 1.0/1000*( static_cast<int> ((y[0][i]*1000) + 0.5)); /* round time to fs */
+        t = 1.0/1000*( static_cast<gmx_int64_t> ((y[0][i]*1000) + 0.5)); /* round time to fs */
 
         /* get time step of pdo file and get dstep from opt->dt */
         if (i == 0)

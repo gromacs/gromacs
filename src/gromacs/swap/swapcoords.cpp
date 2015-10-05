@@ -1357,6 +1357,7 @@ extern void init_swapcoords(
     t_group               *g;
     gmx_bool               bAppend, bStartFromCpt, bRerun;
     gmx_mtop_atomlookup_t  alook = NULL;
+    matrix                 boxCopy;
 
 
     alook = gmx_mtop_atomlookup_init(mtop);
@@ -1496,9 +1497,17 @@ extern void init_swapcoords(
         g->qc[i] = atom->q;
     }
 
+    /* Make a t_pbc struct on all nodes so that the molecules
+     * chosen for an exchange can be made whole. */
     snew(s->pbc, 1);
-    set_pbc(s->pbc, -1, box);
-
+    /* Every node needs to call set_pbc() and therefore every node needs
+     * to know the box dimensions */
+    copy_mat(box, boxCopy);
+    if (PAR(cr))
+    {
+        gmx_bcast(sizeof(boxCopy), boxCopy, cr);
+    }
+    set_pbc(s->pbc, -1, boxCopy);
 
     if (MASTER(cr))
     {
