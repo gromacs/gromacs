@@ -202,7 +202,7 @@ static void check_nst(const char *desc_nst, int nst,
 
 static gmx_bool ir_NVE(const t_inputrec *ir)
 {
-    return ((ir->eI == eiMD || EI_VV(ir->eI)) && ir->etc == etcNO);
+    return (EI_MD(ir->eI) && ir->etc == etcNO);
 }
 
 static int lcd(int n1, int n2)
