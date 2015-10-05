@@ -295,6 +295,26 @@ SelectionOptionManager::hasRequestedSelections() const
 }
 
 void
+SelectionOptionManager::initOptions(IOptionsContainer *options)
+{
+    bool allowOnlyAtomOutput = true;
+    Impl::OptionList::const_iterator iter;
+    for (iter = impl_->options_.begin(); iter != impl_->options_.end(); ++iter)
+    {
+        if (!(*iter)->allowsOnlyAtoms())
+        {
+            allowOnlyAtomOutput = false;
+        }
+    }
+
+    SelectionCollection::SelectionTypeOption typeOption
+        = allowOnlyAtomOutput
+            ? SelectionCollection::AlwaysAtomSelections
+            : SelectionCollection::IncludeSelectionTypeOption;
+    impl_->collection_.initOptions(options, typeOption);
+}
+
+void
 SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
 {
     Impl::RequestsClearer             clearRequestsOnExit(&impl_->requests_);

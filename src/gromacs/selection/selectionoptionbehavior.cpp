@@ -170,7 +170,7 @@ SelectionOptionBehavior::initOptions(IOptionsContainer *options)
                            .defaultBasename("index")
                            .description("Extra index groups"));
     options->addOption(SelectionFileOption("sf"));
-    impl_->selections_.initOptions(options);
+    impl_->manager_.initOptions(options);
 }
 
 void

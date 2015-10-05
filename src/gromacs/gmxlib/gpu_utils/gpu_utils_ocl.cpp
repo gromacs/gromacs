@@ -84,15 +84,18 @@ static bool is_compatible_gpu(int stat)
     return (stat == egpuCompatible);
 }
 
-/*! \brief Return true if executing on OS X earlier than 10.10.4
+/*! \brief Return true if executing on compatible OS for AMD OpenCL.
+ *
+ * This is assumed to be true for OS X version of at least 10.10.4 and
+ * all other OS flavors.
  *
  * Uses the BSD sysctl() interfaces to extract the kernel version.
  *
  * \return true if version is 14.4 or later (= OS X version 10.10.4),
- *         otherwise false.
+ *         or OS is not Darwin.
  */
 static bool
-runningOnWorkingOSXVersionForAmd()
+runningOnCompatibleOSForAmd()
 {
 #ifdef __APPLE__
     int    mib[2];
@@ -110,7 +113,7 @@ runningOnWorkingOSXVersionForAmd()
     // Kernel 14.4 corresponds to OS X 10.10.4
     return (major > 14 || (major == 14 && minor >= 4));
 #else
-    return false;
+    return true;
 #endif
 }
 
@@ -127,7 +130,7 @@ static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
         case OCL_VENDOR_NVIDIA:
             return egpuCompatible;
         case OCL_VENDOR_AMD:
-            return runningOnWorkingOSXVersionForAmd() ? egpuCompatible : egpuIncompatible;
+            return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
         default:
             return egpuIncompatible;
     }

@@ -141,6 +141,16 @@ class SelectionOptionManager : public IOptionManager
         bool hasRequestedSelections() const;
 
         /*! \brief
+         * Initializes options for setting global selection properties.
+         *
+         * \param[in,out] options Options object to initialize.
+         * \throws        std::bad_alloc if out of memory.
+         *
+         * \see SelectionCollection::initOptions()
+         */
+        void initOptions(IOptionsContainer *options);
+
+        /*! \brief
          * Parses selection(s) from standard input for options not yet
          * provided.
          *
