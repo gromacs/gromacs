@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,6 @@
  * Declares error codes and related functions for fatal error handling.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_ERRORCODES_H
@@ -110,72 +109,7 @@ enum ErrorCode
  */
 const char *getErrorCodeString(int errorcode);
 
-/*! \brief
- * Callback function pointer type for error handlers.
- *
- * \param[in] retcode Code of the error that has occurred.
- * \param[in] msg     More detailed description of the error.
- * \param[in] file    Name of the file where the error occurred.
- * \param[in] line    Line in \p file on which the error occurred.
- */
-typedef void (*ErrorHandlerFunc)(int retcode, const char *msg,
-                                 const char *file, int line);
-
-/*! \brief
- * Sets callback function for handling errors.
- *
- * \param[in] handler New error handler function.
- * \returns   Old error handler function.
- *
- * The default error handler prints out the location and reason of the error to
- * stderr, and then calls std::abort().
- */
-ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler);
-
-/*! \brief
- * Macro for raising an error and returning from a function.
- *
- * The function should return \c int.
- * If it doesn't, use ::GMX_ERROR_NORET.
- */
-#define GMX_ERROR(retcode, msg) \
-    do { \
-        int _rc_internal = (retcode); \
-        ::gmx::internal::fatalError(_rc_internal, msg, __FILE__, __LINE__); \
-        return _rc_internal; \
-    } while (0)
-
-/*! \brief
- * Macro for raising an error in a function that does not return \c int.
- *
- * \see GMX_ERROR
- */
-#define GMX_ERROR_NORET(retcode, msg) \
-        ::gmx::internal::fatalError(retcode, msg, __FILE__, __LINE__)
-
 /*!\}*/
-
-/*! \cond internal */
-namespace internal
-{
-
-/*! \internal \brief
- * Raises a fatal error.
- *
- * \param[in] retcode Error code to raise.
- * \param[in] msg     More detailed description of the error.
- * \param[in] file    Name of the source file where the error occurred.
- * \param[in] line    Line in \p file on which the error occurred.
- *
- * Should not be called directly, but instead through ::GMX_ERROR or
- * ::GMX_ERROR_NORET.
- *
- * \ingroup module_utility
- */
-void fatalError(int retcode, const char *msg, const char *file, int line);
-
-}   // namespace internal
-//! \endcond
 
 } // namespace gmx
 

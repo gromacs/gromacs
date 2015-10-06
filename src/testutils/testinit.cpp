@@ -58,7 +58,6 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/futil.h"
@@ -219,7 +218,6 @@ void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *
             TestFileManager::setInputDataDirectory(
                     Path::join(sourceRoot, dataPath));
         }
-        setFatalErrorHandler(NULL);
     }
     catch (const std::exception &ex)
     {
