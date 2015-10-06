@@ -332,10 +332,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         {
             warning_error(wi, "With Verlet lists only full pbc or pbc=xy with walls is supported");
         }
-        if (ir->rcoulomb != ir->rvdw)
-        {
-            warning_error(wi, "With Verlet lists rcoulomb!=rvdw is not supported");
-        }
         if (ir->vdwtype == evdwSHIFT || ir->vdwtype == evdwSWITCH)
         {
             if (ir->vdw_modifier == eintmodNONE ||
@@ -355,12 +351,17 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
             }
         }
 
-        if (!(ir->vdwtype == evdwCUT || ir->vdwtype == evdwPME))
+        if (!(ir->vdwtype == evdwCUT    ||
+              ir->vdwtype == evdwPME    ||
+              ir->vdwtype == evdwUSER   ||
+              ir->vdwtype == evdwGENERIC))
         {
-            warning_error(wi, "With Verlet lists only cut-off and PME LJ interactions are supported");
+            warning_error(wi, "With Verlet lists only cut-off, PME LJ, USER and GENERIC interactions are supported");
         }
-        if (!(ir->coulombtype == eelCUT ||
-              (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC) ||
+        if (!(ir->coulombtype == eelCUT  ||
+              ir->coulombtype == eelUSER ||
+              ir->coulombtype == eelNONE ||
+              (EEL_RF(ir->coulombtype)  && ir->coulombtype != eelRF_NEC) ||
               EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD))
         {
             warning_error(wi, "With Verlet lists only cut-off, reaction-field, PME and Ewald electrostatics are supported");
@@ -3210,7 +3211,7 @@ static void make_swap_groups(
 
 void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
 {
-    int      ig, i;
+    int ig, i;
 
 
     ig            = search_string(IMDgname, grps->nr, gnames);
