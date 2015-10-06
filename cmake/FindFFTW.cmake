@@ -39,7 +39,8 @@
 #  ${FFTW}_LIBRARIES    - List of libraries when using FFTW.
 #  ${FFTW}_PKG          - The name of the pkg-config package needed
 #  ${FFTW}_HAVE_SIMD    - True if FFTW was built with SIMD support
-#  ${FFTW}_HAVE_AVX     - True if FFTW was built with AVX support
+#  ${FFTW}_HAVE_SSE     - True if FFTW was built with SSE support
+#  ${FFTW}_HAVE_SSE2    - True if FFTW was built with SSE2 support
 #  ${FFTW}_FOUND        - True if FFTW was found
 #  where ${FFTW} is FFTW or FFTWF
 
@@ -101,64 +102,55 @@ if (${FFTW}_FOUND)
   endif()
 
   # Check for FFTW3 compiled with --enable-sse
-  foreach(SSE_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse)
+  foreach(SSE_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse ${${FFTW}_FUNCTION_PREFIX}_have_sse)
     if (FFTW_LIBRARY_CHANGED)
       unset(${FFTW}_HAVE_${SSE_FUNCTION} CACHE)
     endif()
     check_library_exists("${${FFTW}_LIBRARIES}" "${SSE_FUNCTION}" "" ${FFTW}_HAVE_${SSE_FUNCTION})
     if(${FFTW}_HAVE_${SSE_FUNCTION})
       set(${FFTW}_HAVE_SSE TRUE)
+      set(${FFTW}_HAVE_SIMD TRUE)
       break()
     endif()
   endforeach()
 
   # Check for FFTW3 compiled with --enable-sse2
-  foreach(SSE2_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2)
+  foreach(SSE2_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2 ${${FFTW}_FUNCTION_PREFIX}_have_sse2)
     if (FFTW_LIBRARY_CHANGED)
       unset(${FFTW}_HAVE_${SSE2_FUNCTION} CACHE)
     endif()
     check_library_exists("${${FFTW}_LIBRARIES}" "${SSE2_FUNCTION}" "" ${FFTW}_HAVE_${SSE2_FUNCTION})
     if(${FFTW}_HAVE_${SSE2_FUNCTION})
       set(${FFTW}_HAVE_SSE2 TRUE)
-      break()
-    endif()
-  endforeach()
-
-  # Check for FFTW3 with 128-bit AVX compiled with --enable-avx
-  foreach(AVX_128_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_128)
-    if (FFTW_LIBRARY_CHANGED)
-      unset(${FFTW}_HAVE_${AVX_128_FUNCTION} CACHE)
-    endif()
-    check_library_exists("${${FFTW}_LIBRARIES}" "${AVX_128_FUNCTION}" "" ${FFTW}_HAVE_${AVX_128_FUNCTION})
-    if(${FFTW}_HAVE_${AVX_128_FUNCTION})
-      set(${FFTW}_HAVE_AVX_128 TRUE)
-      break()
-    endif()
-  endforeach()
-
-  # Check for FFTW3 with 128-bit AVX2 compiled with --enable-avx2
-  foreach(AVX2_128_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2_128)
-    if (FFTW_LIBRARY_CHANGED)
-      unset(${FFTW}_HAVE_${AVX2_128_FUNCTION} CACHE)
-    endif()
-    check_library_exists("${${FFTW}_LIBRARIES}" "${AVX2_128_FUNCTION}" "" ${FFTW}_HAVE_${AVX2_128_FUNCTION})
-    if(${FFTW}_HAVE_${AVX2_128_FUNCTION})
-      set(${FFTW}_HAVE_AVX2_128 TRUE)
-      break()
-    endif()
-  endforeach()
-
-  #in 3.3 sse function name has changed
-  foreach(SIMD_FCT ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2;${${FFTW}_FUNCTION_PREFIX}_have_simd_avx;${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec;${${FFTW}_FUNCTION_PREFIX}_have_simd_neon;${${FFTW}_FUNCTION_PREFIX}_have_sse2;${${FFTW}_FUNCTION_PREFIX}_have_sse;${${FFTW}_FUNCTION_PREFIX}_have_altivec)
-    if (FFTW_LIBRARY_CHANGED)
-      unset(${FFTW}_HAVE_${SIMD_FCT} CACHE)
-    endif()
-    check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
-    if(${FFTW}_HAVE_${SIMD_FCT})
       set(${FFTW}_HAVE_SIMD TRUE)
       break()
     endif()
   endforeach()
+
+  # Check for any other SIMD support in FFTW
+  if (NOT ${FFTW}_HAVE_SIMD)
+      foreach(SIMD_FCT
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2_128
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx512
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_128_fma
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_neon
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_vsx
+              ${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec
+              ${${FFTW}_FUNCTION_PREFIX}_have_altivec) # Name used before FFTW 3.3
+          if (FFTW_LIBRARY_CHANGED)
+              unset(${FFTW}_HAVE_${SIMD_FCT} CACHE)
+          endif()
+          check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
+          if(${FFTW}_HAVE_${SIMD_FCT})
+              set(${FFTW}_HAVE_SIMD TRUE)
+              break()
+          endif()
+      endforeach()
+  endif()
+
   #Verify FFTW is compiled with fPIC (necessary for shared libraries)
   if (CMAKE_OBJDUMP AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND BUILD_SHARED_LIBS AND NOT CYGWIN)
       execute_process(COMMAND ${CMAKE_OBJDUMP} --reloc ${${FFTW}_LIBRARY} OUTPUT_VARIABLE ${FFTW}_OBJDUMP)
