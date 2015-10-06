@@ -124,7 +124,7 @@ dat
 
 Files with the dat file extension contain generic input or output.
 As it is not possible
-to categorise all data file formats, GROMACS has a generic file format called
+to categorize all data file formats, GROMACS has a generic file format called
 dat of which no format is given.
 
 .. _dlg:
@@ -514,7 +514,7 @@ out
 ---
 
 Files with the out file extension contain generic output. As it is not possible
-to categorise all data file formats, GROMACS has a generic file format called
+to categorize all data file formats, GROMACS has a generic file format called
 out of which no format is given.
 
 .. _pdb:
@@ -650,7 +650,7 @@ tng
 Files with the ``.tng`` file extension can contain all kinds of data
 related to the trajectory of a simulation. For example, it might
 contain coordinates, velocities, forces and/or energies. Various :ref:`mdp`
-file options control which of these are written by mdrun, whether data
+file options control which of these are written by :ref:`gmx mdrun`, whether data
 is written with compression, and how lossy that compression can be.
 This file is in portable binary format and can be read with :ref:`gmx dump`.
 
