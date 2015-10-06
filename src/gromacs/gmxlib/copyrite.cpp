@@ -610,7 +610,12 @@ void please_cite(FILE *fp, const char *key)
           "S. Páll, M. J. Abraham, C. Kutzner, B. Hess, E. Lindahl",
           "Tackling Exascale Software Challenges in Molecular Dynamics Simulations with GROMACS",
           "In S. Markidis & E. Laure (Eds.), Solving Software Challenges for Exascale",
-          8759, 2015, "3-27" }
+          8759, 2015, "3-27" },
+        { "Abraham2015",
+          "M. J. Abraham, T. Murtola, R. Schulz, S. Páll, J. C. Smith, B. Hess, E. Lindahl",
+          "GROMACS: High performance molecular simulations through multi-level parallelism from laptops to supercomputers",
+          "SoftwareX",
+          1, 2015, "19-25" },
     };
 #define NSTR (int)asize(citedb)
 
