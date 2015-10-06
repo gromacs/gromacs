@@ -8,7 +8,7 @@ Command-line reference
    /onlinehelp/gmx
    /onlinehelp/gmx-*
 
-|Gromacs| includes many tools for preparing, running and analysing
+|Gromacs| includes many tools for preparing, running and analyzing
 molecular dynamics simulations. These are all structured as part of a single
 :command:`gmx` wrapper binary, and invoked with commands like :command:`gmx grompp`.
 :ref:`mdrun <gmx mdrun>` is the only other binary that
