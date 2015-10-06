@@ -473,11 +473,6 @@ void formatExceptionMessageToWriter(TextWriter           *writer,
 int processExceptionAtExit(const std::exception &ex);
 
 /*! \brief
- * Converts an exception into a return code.
- */
-int translateException(const std::exception &ex);
-
-/*! \brief
  * Macro for catching exceptions at C++ -> C boundary.
  *
  * This macro is intended for uniform handling of exceptions when C++ code is
