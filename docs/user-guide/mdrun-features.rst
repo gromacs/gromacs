@@ -140,7 +140,7 @@ lipid bilayer at a position and orientation specified by the user. The
 main advantage is that it is possible to use very complex lipid bilayers
 with a number of different components that have been relaxed for a
 long time in a previous simulation. In theory that could be accomplished
-with a procedure similar to genbox, but since lipids are much larger
+with a procedure similar to :ref:`gmx solvate`, but since lipids are much larger
 than water molecules it will lead to a large vacuum layer between the
 protein and membrane if we remove all molecules where any atom is
 overlapping. Instead, this module works by first artificially shrinking
