@@ -95,8 +95,8 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
                 # version, however.
                 message(WARNING "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with both SSE2 and AVX instruction support (use both --enable-sse2 and --enable-avx). More recent versions of FFTW compile support for such narrower SIMD by default.")
             endif()
-            set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
         endif()
+        set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
     endif()
 
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
