@@ -43,8 +43,6 @@
 
 #include "exceptions.h"
 
-#include "config.h"
-
 #include <cstring>
 
 #include <new>
@@ -58,6 +56,7 @@
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/errorcodes.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
@@ -563,12 +562,22 @@ void formatExceptionMessageToWriter(TextWriter           *writer,
 int processExceptionAtExit(const std::exception & /*ex*/)
 {
     int returnCode = 1;
-#ifdef GMX_LIB_MPI
-    // TODO: Consider moving the output done in gmx_abort() into the message
-    // printing routine above, so that this could become a simple MPI_Abort().
-    gmx_abort(returnCode);
-#endif
+    // If we have more than one rank (whether real MPI or thread-MPI),
+    // we cannot currently know whether just one rank or all ranks
+    // actually threw the error, so we need to exit here.
+    // Returning would mean graceful cleanup, which is not possible if
+    // some code is still executing on other ranks/threads.
+    if (gmx_node_num() > 1)
+    {
+        gmx_exit_on_fatal_error(ExitType_Abort, returnCode);
+    }
     return returnCode;
+}
+
+void processExceptionAsFatalError(const std::exception &ex)
+{
+    printFatalErrorMessage(stderr, ex);
+    gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
 
 } // namespace gmx
