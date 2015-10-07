@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "gromacs/utility/fatalerror.h"
+
 #include "errorformat.h"
 
 namespace gmx
@@ -62,7 +64,7 @@ void assertHandler(const char *condition, const char *msg,
     std::fprintf(stderr, "Condition: %s\n", condition);
     printFatalErrorMessageLine(stderr, msg, 0);
     printFatalErrorFooter(stderr);
-    std::abort();
+    gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
 
 }   // namespace internal

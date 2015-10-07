@@ -67,12 +67,11 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins, char **out
     int        n;                   /*time index*/
     int        fy  = ybins/2+1;     /* number of (symmetric) fourier y elements; */
     int        rfl = xbins*fy;      /*length of real - DFT == Symmetric 2D matrix*/
-    int        status;
 
 /*Prepare data structures for FFT, with time averaging of power spectrum*/
-    if ( (status = gmx_fft_init_2d_real(&fftp, xbins, ybins, GMX_FFT_FLAG_NONE) ) != 0)
+    if (gmx_fft_init_2d_real(&fftp, xbins, ybins, GMX_FFT_FLAG_NONE) != 0)
     {
-        gmx_fatal(status, __FILE__, __LINE__, "Error allocating FFT");
+        gmx_fatal(FARGS, "Error allocating FFT");
     }
 
 /*Initialize arrays*/
