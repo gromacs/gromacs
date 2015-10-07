@@ -348,9 +348,13 @@ int gmx_genconf(int argc, char *argv[])
 
     /* move_x(natoms*vol,x,box); */          /* put atoms in box? */
 
+/* These two lines makes the program segfault with the -nbox option
+ * and make no sense to me:
+  
     atoms->nr   *= vol;
     atoms->nres *= vol;
-
+ 
+*/
     /*depending on how you look at it, this is either a nasty hack or the way it should work*/
     if (bRenum)
     {
