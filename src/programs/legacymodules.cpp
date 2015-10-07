@@ -348,6 +348,8 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Diagonalize the Hessian for normal mode analysis");
     registerModule(manager, &gmx_nmens, "nmens",
                    "Generate an ensemble of structures from the normal modes");
+    registerModule(manager, &gmx_nmranalysis, "nmr",
+                   "Extract distance restraints and orientation restraints from energy file");
     registerModule(manager, &gmx_nmtraj, "nmtraj",
                    "Generate a virtual oscillating trajectory from an eigenvector");
     registerModule(manager, &gmx_order, "order",
