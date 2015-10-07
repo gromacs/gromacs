@@ -48,6 +48,7 @@
 #include <cstring>
 
 #include "buildinfo.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
@@ -92,6 +93,10 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     if (func != NULL)
     {
         std::fprintf(fp, "Function:    %s\n", func);
+    }
+    if (gmx_node_num() > 1)
+    {
+        std::fprintf(fp, "MPI rank:    %d (out of %d)\n", gmx_node_rank(), gmx_node_num());
     }
     std::fprintf(fp, "\n");
     std::fprintf(fp, "%s:\n", title);
