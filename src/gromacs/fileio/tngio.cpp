@@ -98,8 +98,7 @@ void gmx_tng_open(const char       *filename,
            no use case for GROMACS handling the non-fatal errors
            gracefully. */
         gmx_fatal(FARGS,
-                  "%s while opening %s for %s",
-                  gmx_strerror("file"),
+                  "File I/O error while opening %s for %s",
                   filename,
                   modeToVerb(mode));
     }
