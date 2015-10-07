@@ -172,6 +172,9 @@ int
 gmx_nmens(int argc, char *argv[]);
 
 int
+gmx_nmranalysis(int argc, char *argv[]);
+
+int
 gmx_nmtraj(int argc, char *argv[]);
 
 int
