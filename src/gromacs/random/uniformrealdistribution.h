@@ -290,12 +290,11 @@ class UniformRealDistribution
         operator!=(const UniformRealDistribution &x) const
         { return !operator==(x); }
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(UniformRealDistribution);
-
     private:
-
         /*! \brief Internal value for parameters, can be overridden at generation time. */
         param_type param_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(UniformRealDistribution);
 };
 
 }      // namespace gmx
