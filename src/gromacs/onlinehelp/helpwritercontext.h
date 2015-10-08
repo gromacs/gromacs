@@ -151,6 +151,7 @@ class HelpWriterContext
                           const HelpLinks *links);
         //! Creates a copy of the context.
         HelpWriterContext(const HelpWriterContext &other);
+        HelpWriterContext &operator=(const HelpWriterContext &) = delete;
         ~HelpWriterContext();
 
         /*! \brief
@@ -295,8 +296,6 @@ class HelpWriterContext
         explicit HelpWriterContext(Impl *impl);
 
         PrivateImplPointer<Impl> impl_;
-
-        GMX_DISALLOW_ASSIGN(HelpWriterContext);
 };
 
 } // namespace gmx

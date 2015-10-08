@@ -183,7 +183,7 @@ class GromacsException : public std::exception, public boost::exception
          *
          * The return value is the string that was passed to the constructor.
          */
-        virtual const char *what() const throw();
+        virtual const char *what() const noexcept;
         /*! \brief
          * Returns the error code corresponding to the exception type.
          */

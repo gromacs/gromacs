@@ -174,7 +174,7 @@ GromacsException::GromacsException(const ExceptionInitializer &details)
     }
 }
 
-const char *GromacsException::what() const throw()
+const char *GromacsException::what() const noexcept
 {
     const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*this);
     if (msg == NULL)

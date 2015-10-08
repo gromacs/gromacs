@@ -86,7 +86,8 @@ class CommandLineHelpContext
          */
         explicit CommandLineHelpContext(ShellCompletionWriter *writer);
         //! Creates a copy of the context.
-        explicit CommandLineHelpContext(const CommandLineHelpContext &other);
+        CommandLineHelpContext(const CommandLineHelpContext &other);
+        CommandLineHelpContext &operator=(const CommandLineHelpContext &) = delete;
         ~CommandLineHelpContext();
 
         /*! \brief
@@ -123,8 +124,6 @@ class CommandLineHelpContext
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
-
-        GMX_DISALLOW_ASSIGN(CommandLineHelpContext);
 };
 
 /*! \libinternal \brief

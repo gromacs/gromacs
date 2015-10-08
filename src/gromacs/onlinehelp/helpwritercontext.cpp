@@ -499,6 +499,8 @@ class HelpWriterContext::Impl
             : state_(state), sectionDepth_(sectionDepth)
         {
         }
+        Impl &operator=(const Impl &) = delete;
+        Impl(const Impl &)            = default;
 
         //! Adds a new replacement.
         void addReplacement(const std::string &search,
@@ -528,9 +530,6 @@ class HelpWriterContext::Impl
         ReplaceList             replacements_;
         //! Number of subsections above this context.
         int                     sectionDepth_;
-
-    private:
-        GMX_DISALLOW_ASSIGN(Impl);
 };
 
 std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) const

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,18 +61,8 @@ namespace gmx
  */
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
     private: \
-        ClassName &operator=(const ClassName &); \
-        ClassName(const ClassName &)
-/*! \brief
- * Macro to declare a class non-assignable.
- *
- * For consistency, should appear last in the class declaration.
- *
- * \ingroup module_utility
- */
-#define GMX_DISALLOW_ASSIGN(ClassName) \
-    private: \
-        ClassName &operator=(const ClassName &)
+        ClassName &operator=(const ClassName &) = delete;   \
+        ClassName(const ClassName &)            = delete
 
 /*! \brief
  * Helper class to manage a pointer to a private implementation class.
