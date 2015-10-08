@@ -35,6 +35,8 @@
 #ifndef _nb_kernel_h_
 #define _nb_kernel_h_
 
+#include <stdio.h>
+
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/legacyheaders/types/nblist.h"
