@@ -317,6 +317,7 @@ MACRO(gmx_c_flags)
         endif()
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_DEPRECATED "-Wdeprecated" GMXC_CXXFLAGS)
     endif()
 
     # Fujitsu compilers on PrimeHPC/Sparc64

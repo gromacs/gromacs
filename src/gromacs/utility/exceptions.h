@@ -252,6 +252,11 @@ class ExceptionInitializer
         friend class GromacsException;
 };
 
+//MSVC 2013 is missing noexcept
+#if defined _MSC_VER && _MSC_VER == 1800
+#define noexcept throw()
+#endif
+
 /*! \brief
  * Base class for all exception objects in Gromacs.
  *
@@ -269,7 +274,7 @@ class GromacsException : public std::exception
          *
          * The return value is the string that was passed to the constructor.
          */
-        virtual const char *what() const throw();
+        virtual const char *what() const noexcept;
         /*! \brief
          * Returns the error code corresponding to the exception type.
          */
