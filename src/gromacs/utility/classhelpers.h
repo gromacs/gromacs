@@ -60,9 +60,8 @@ namespace gmx
  * \ingroup module_utility
  */
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
-    private: \
-        ClassName &operator=(const ClassName &); \
-        ClassName(const ClassName &)
+    ClassName &operator=(const ClassName &) = delete;   \
+    ClassName(const ClassName &)            = delete
 /*! \brief
  * Macro to declare a class non-assignable.
  *
@@ -71,8 +70,25 @@ namespace gmx
  * \ingroup module_utility
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
-    private: \
-        ClassName &operator=(const ClassName &)
+    ClassName &operator=(const ClassName &) = delete
+
+/*! \brief
+ * Macro to declare copyable interface
+ *
+ * All but the destructor of default methods are defined as empty.
+ * For consistency, should appear last in public section of class
+ * declaration.
+ *
+ * \ingroup module_utility
+ */
+#define GMX_COPYABLE_INTERFACE(ClassName) \
+    /*! \cond */                                                                \
+    ClassName()                                             {}                  \
+    ClassName                 &operator=(const ClassName &) {return *this; }    \
+    ClassName(const ClassName &)                            {}                  \
+    ClassName                 &operator=(ClassName &&)      {return *this; }    \
+    ClassName(ClassName &&)                                 {}                  \
+    /*! \endcond */
 
 /*! \brief
  * Helper class to manage a pointer to a private implementation class.
