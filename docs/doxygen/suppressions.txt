@@ -1,6 +1,8 @@
 # The script is currently a bit too eager
 share/template/template.cpp: error: source file documentation appears outside full documentation
 # The parser in the script is not clever enough
+src/gromacs/gmxlib/gmx_detect_hardware.cpp: warning: includes "simd.h" unnecessarily
+src/gromacs/simd/simd.cpp: warning: includes "simd.h" unnecessarily
 src/gromacs/version.h: warning: includes local file as <gromacs/version.h>
 
 # These are OK

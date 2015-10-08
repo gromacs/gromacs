@@ -58,12 +58,14 @@
 
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/cpuinfo.h"
+#include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_cpuid.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
@@ -291,34 +293,46 @@ makeGpuUsageReport(const gmx_gpu_info_t *gpu_info,
 /* Give a suitable fatal error or warning if the build configuration
    and runtime CPU do not match. */
 static void
-check_use_of_rdtscp_on_this_cpu(FILE                *fplog,
-                                const t_commrec     *cr,
-                                const gmx_hw_info_t *hwinfo)
+check_use_of_rdtscp_on_this_cpu(FILE                  *fplog,
+                                const t_commrec       *cr,
+                                const gmx::CpuInfo    &cpuInfo)
 {
-    gmx_bool bCpuHasRdtscp, bBinaryUsesRdtscp;
 #ifdef HAVE_RDTSCP
-    bBinaryUsesRdtscp = TRUE;
+    bool binaryUsesRdtscp = TRUE;
 #else
-    bBinaryUsesRdtscp = FALSE;
+    bool binaryUsesRdtscp = FALSE;
 #endif
 
-    bCpuHasRdtscp = gmx_cpuid_feature(hwinfo->cpuid_info, GMX_CPUID_FEATURE_X86_RDTSCP);
-
-    if (!bCpuHasRdtscp && bBinaryUsesRdtscp)
+    if (cpuInfo.supportLevel() < gmx::CpuInfo::SupportLevel::Features)
     {
-        gmx_fatal(FARGS, "The %s executable was compiled to use the rdtscp CPU instruction. "
-                  "However, this is not supported by the current hardware and continuing would lead to a crash. "
-                  "Please rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake option.",
-                  ShortProgram());
+        if (binaryUsesRdtscp)
+        {
+            md_print_warn(cr, fplog, "The %s executable was compiled to use the rdtscp CPU instruction. "
+                          "We cannot detect the features of your current CPU, but will proceed anyway. "
+                          "If you get a crash, rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake option.",
+                          ShortProgram());
+        }
     }
-
-    if (bCpuHasRdtscp && !bBinaryUsesRdtscp)
+    else
     {
-        md_print_warn(cr, fplog, "The current CPU can measure timings more accurately than the code in\n"
-                      "%s was configured to use. This might affect your simulation\n"
-                      "speed as accurate timings are needed for load-balancing.\n"
-                      "Please consider rebuilding %s with the GMX_USE_RDTSCP=ON CMake option.\n",
-                      ShortProgram(), ShortProgram());
+        bool cpuHasRdtscp = cpuInfo.feature(gmx::CpuInfo::Feature::X86_Rdtscp);
+
+        if (!cpuHasRdtscp && binaryUsesRdtscp)
+        {
+            gmx_fatal(FARGS, "The %s executable was compiled to use the rdtscp CPU instruction. "
+                      "However, this is not supported by the current hardware and continuing would lead to a crash. "
+                      "Please rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake option.",
+                      ShortProgram());
+        }
+
+        if (cpuHasRdtscp && !binaryUsesRdtscp)
+        {
+            md_print_warn(cr, fplog, "The current CPU can measure timings more accurately than the code in\n"
+                          "%s was configured to use. This might affect your simulation\n"
+                          "speed as accurate timings are needed for load-balancing.\n"
+                          "Please consider rebuilding %s with the GMX_USE_RDTSCP=ON CMake option.\n",
+                          ShortProgram(), ShortProgram());
+        }
     }
 }
 
@@ -606,25 +620,14 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     return uniq_count;
 }
 
-static int get_ncores(gmx_cpuid_t cpuid)
+static int get_ncores(const gmx::HardwareTopology &hwTop)
 {
-    int        nprocessors, npackages, ncores_per_package, nhwthreads_per_core;
-    const int *package_id, *core_id, *hwthread_id, *locality_order;
-    int        rc;
-
-    rc = gmx_cpuid_topology(cpuid,
-                            &nprocessors, &npackages,
-                            &ncores_per_package, &nhwthreads_per_core,
-                            &package_id, &core_id,
-                            &hwthread_id, &locality_order);
-
-    if (rc == 0)
+    if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::None)
     {
-        return npackages*ncores_per_package;
+        return hwTop.machine().logicalProcessorCount;
     }
     else
     {
-        /* We don't have cpuid topology info, return 0 core count */
         return 0;
     }
 }
@@ -782,7 +785,7 @@ static void gmx_detect_gpus(FILE *fplog, const t_commrec *cr)
 #endif
 }
 
-static void gmx_collect_hardware_mpi()
+static void gmx_collect_hardware_mpi(const gmx::CpuInfo &cpuInfo)
 {
 #ifdef GMX_LIB_MPI
     int  rank_id;
@@ -870,7 +873,7 @@ static void gmx_collect_hardware_mpi()
         buf[0] = ncore;
         buf[1] = nhwthread;
         buf[2] = ngpu;
-        buf[3] = gmx_cpuid_simd_suggest(hwinfo_g->cpuid_info);
+        buf[3] = static_cast<int>(gmx::simdSuggested(cpuInfo));
         buf[4] = gpu_hash;
         buf[5] = -buf[0];
         buf[6] = -buf[1];
@@ -891,8 +894,8 @@ static void gmx_collect_hardware_mpi()
     hwinfo_g->ngpu_compatible_tot = sum[3];
     hwinfo_g->ngpu_compatible_min = -maxmin[7];
     hwinfo_g->ngpu_compatible_max = maxmin[2];
-    hwinfo_g->simd_suggest_min    = static_cast<enum gmx_cpuid_simd>(-maxmin[8]);
-    hwinfo_g->simd_suggest_max    = static_cast<enum gmx_cpuid_simd>(maxmin[3]);
+    hwinfo_g->simd_suggest_min    = -maxmin[8];
+    hwinfo_g->simd_suggest_max    = maxmin[3];
     hwinfo_g->bIdenticalGPUs      = (maxmin[4] == -maxmin[9]);
 #else
     /* All ranks use the same pointer, protect it with a mutex */
@@ -907,8 +910,8 @@ static void gmx_collect_hardware_mpi()
     hwinfo_g->ngpu_compatible_tot = hwinfo_g->gpu_info.n_dev_compatible;
     hwinfo_g->ngpu_compatible_min = hwinfo_g->gpu_info.n_dev_compatible;
     hwinfo_g->ngpu_compatible_max = hwinfo_g->gpu_info.n_dev_compatible;
-    hwinfo_g->simd_suggest_min    = gmx_cpuid_simd_suggest(hwinfo_g->cpuid_info);
-    hwinfo_g->simd_suggest_max    = gmx_cpuid_simd_suggest(hwinfo_g->cpuid_info);
+    hwinfo_g->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
+    hwinfo_g->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hwinfo_g->bIdenticalGPUs      = TRUE;
     tMPI_Thread_mutex_unlock(&hw_info_lock);
 #endif
@@ -931,15 +934,14 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
     {
         snew(hwinfo_g, 1);
 
-        /* detect CPUID info; no fuss, we don't detect system-wide
-         * -- sloppy, but that's it for now */
-        if (gmx_cpuid_init(&hwinfo_g->cpuid_info) != 0)
-        {
-            gmx_fatal_collective(FARGS, cr, NULL, "CPUID detection failed!");
-        }
+        hwinfo_g->pCpuInfo                  = reinterpret_cast<void *>(new gmx::CpuInfo);
+
+        gmx::HardwareTopology * hwTop       = new gmx::HardwareTopology;
+        hwinfo_g->pHardwareTopology         = reinterpret_cast<void *>(hwTop);
+
 
         /* get the number of cores, will be 0 when not detected */
-        hwinfo_g->ncore             = get_ncores(hwinfo_g->cpuid_info);
+        hwinfo_g->ncore             = get_ncores(*hwTop);
 
         /* detect number of hardware threads */
         hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
@@ -969,7 +971,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
     }
 
-    gmx_collect_hardware_mpi();
+    gmx_collect_hardware_mpi(*reinterpret_cast<gmx::CpuInfo *>(hwinfo_g->pCpuInfo));
 
     return hwinfo_g;
 }
@@ -977,7 +979,9 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
 static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
                                             bool                 bFullCpuInfo)
 {
-    std::string s;
+    std::string         s;
+
+    const gmx::CpuInfo &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo_g->pCpuInfo);
 
     s  = gmx::formatString("\n");
     s += gmx::formatString("Running on %d node%s with total",
@@ -1057,32 +1061,36 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     s += gmx::formatString("Hardware detected:\n");
 #endif
     s += gmx::formatString("  CPU info:\n");
+
+    s += gmx::formatString("    Vendor: %s\n", cpuInfo.vendorString().c_str());
+
+    s += gmx::formatString("    Brand:  %s\n", cpuInfo.brandString().c_str());
+
     if (bFullCpuInfo)
     {
-        char buf[1024];
+        s += gmx::formatString("    Family: %d   Model: %d   Stepping: %d\n",
+                               cpuInfo.family(), cpuInfo.model(), cpuInfo.stepping());
 
-        gmx_cpuid_formatstring(hwinfo->cpuid_info, buf, 1023);
-        buf[1023] = '\0';
+        s += gmx::formatString("    Features:");
+        for (auto &f : cpuInfo.featureSet())
+        {
+            s += gmx::formatString(" %s", cpuInfo.featureString(f).c_str());;
+        }
+        s += gmx::formatString("\n");
+    }
 
-        s += gmx::formatString("%s", buf);
-    }
-    else
-    {
-        s += gmx::formatString("    Vendor: %s\n",
-                               gmx_cpuid_vendor_string[gmx_cpuid_vendor(hwinfo->cpuid_info)]);
-        s += gmx::formatString("    Brand:  %s\n",
-                               gmx_cpuid_brand(hwinfo->cpuid_info));
-    }
     s += gmx::formatString("    SIMD instructions most likely to fit this hardware: %s",
-                           gmx_cpuid_simd_string[hwinfo->simd_suggest_min]);
+                           gmx::simdString(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min)).c_str());
+
     if (hwinfo->simd_suggest_max > hwinfo->simd_suggest_min)
     {
-        s += gmx::formatString(" - %s",
-                               gmx_cpuid_simd_string[hwinfo->simd_suggest_max]);
+        s += gmx::formatString(" - %s", gmx::simdString(static_cast<gmx::SimdType>(hwinfo->simd_suggest_max)).c_str());
     }
     s += gmx::formatString("\n");
+
     s += gmx::formatString("    SIMD instructions selected at GROMACS compile time: %s\n",
-                           gmx_cpuid_simd_string[gmx_compiled_simd()]);
+                           gmx::simdString(gmx::simdCompiled()).c_str());
+
     if (bGPUBinary && (hwinfo->ngpu_compatible_tot > 0 ||
                        hwinfo->gpu_info.n_dev > 0))
     {
@@ -1097,13 +1105,14 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
             s += gmx::formatString("%s\n", buf);
         }
     }
-
     return s;
 }
 
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx_hw_info_t *hwinfo)
 {
+    const gmx::CpuInfo &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo_g->pCpuInfo);
+
     if (fplog != NULL)
     {
         std::string detected;
@@ -1123,12 +1132,15 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
     }
 
     /* Check the compiled SIMD instruction set against that of the node
-     * with the lowest SIMD level support.
+     * with the lowest SIMD level support (skip if SIMD detection did not work)
      */
-    gmx_cpuid_simd_check(hwinfo->simd_suggest_min, fplog, MULTIMASTER(cr));
+    if (cpuInfo.supportLevel() >= gmx::CpuInfo::SupportLevel::Features)
+    {
+        gmx::simdCheck(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, MULTIMASTER(cr));
+    }
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */
-    check_use_of_rdtscp_on_this_cpu(fplog, cr, hwinfo);
+    check_use_of_rdtscp_on_this_cpu(fplog, cr, cpuInfo);
 }
 
 //! \brief Return if any GPU ID (e.g in a user-supplied string) is repeated
@@ -1349,7 +1361,11 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
 
     if (n_hwinfo == 0)
     {
-        gmx_cpuid_done(hwinfo_g->cpuid_info);
+        gmx::CpuInfo *          pCpuInfo = reinterpret_cast<gmx::CpuInfo *>(hwinfo_g->pCpuInfo);
+        gmx::HardwareTopology * pHwTop   = reinterpret_cast<gmx::HardwareTopology *>(hwinfo_g->pHardwareTopology);
+
+        delete pCpuInfo;
+        delete pHwTop;
         free_gpu_info(&hwinfo_g->gpu_info);
         sfree(hwinfo_g);
     }

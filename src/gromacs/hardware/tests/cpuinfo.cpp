@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,44 +32,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief Declares functions for managing threading of listed forces
+/*! \internal \file
+ * \brief
+ * Tests for gmx::CpuInfo
  *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
- * \ingroup module_listed-forces
+ * \author Erik Lindahl <erik.lindahl@gmail.com>
+ * \ingroup module_hardware
  */
-#ifndef GMX_LISTED_FORCES_MANAGE_THREADING_H
-#define GMX_LISTED_FORCES_MANAGE_THREADING_H
+#include "gmxpre.h"
 
-#include <cstdio>
+#include "gromacs/hardware/cpuinfo.h"
 
-#include "gromacs/legacyheaders/types/forcerec.h"
-#include "gromacs/topology/idef.h"
+#include "config.h"
 
-#ifdef __cplusplus
-extern "C" {
+#include <gtest/gtest.h>
+
+namespace
+{
+
+TEST(CpuInfoTest, SupportLevel)
+{
+    // There is no way we can compare to any reference data since that
+    // depends on the architecture, but we can at least make sure that it
+    // works to execute the tests
+
+    gmx::CpuInfo c;
+
+    // It is not the end of the world if any of these tests fail (Gromacs will
+    // work fine without cpuinfo), but we might as well flag it so we add it to
+    // our detection code
+    EXPECT_GT(c.supportLevel(), gmx::CpuInfo::SupportLevel::None);
+
+#if defined __powerpc__ || defined __ppc__ || defined __PPC__  || defined __arm__ || defined __arm || defined GMX_TARGET_X86
+    EXPECT_GE(c.supportLevel(), gmx::CpuInfo::SupportLevel::Features);
 #endif
 
-/*! \brief Divide the listed interactions over the threads
- *
- * Uses fr->nthreads for the number of threads, and sets up the
- * thread-force buffer reduction. This should be called each time the
- * bonded setup changes; i.e. at start-up without domain decomposition
- * and at DD.
- */
-void setup_bonded_threading(t_forcerec *fr, t_idef *idef);
-
-/*! \brief Initialize the bonded threading data structures
- *
- * Allocates and initializes a bonded threading data structure.
- * A pointer to this struct is returned as \p *bb_ptr.
- */
-void init_bonded_threading(FILE *fplog, int nenergrp,
-                           struct bonded_threading_t **bt_ptr);
-
-#ifdef __cplusplus
+    if (c.supportLevel() >= gmx::CpuInfo::SupportLevel::LogicalProcessorInfo)
+    {
+        // Make sure assigned numbers are reasonable if we have them
+        for (auto &l : c.logicalProcessors())
+        {
+            EXPECT_GE(l.socket, 0);
+            EXPECT_GE(l.core, 0);
+            EXPECT_GE(l.hwThread, 0);
+        }
+    }
 }
-#endif
 
-#endif
+} // namespace
