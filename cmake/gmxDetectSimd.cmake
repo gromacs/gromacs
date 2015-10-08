@@ -68,33 +68,62 @@ function(gmx_suggest_simd _suggested_simd)
     message(STATUS "Detecting best SIMD instructions for this CPU")
 
     # Get CPU SIMD properties information
-    set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUID_STANDALONE")
-    if(GMX_TARGET_X86)
-        set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
-    endif()
+    set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE")
 
     # We need to execute the binary, so this only works if not cross-compiling.
     # However, note that we are NOT limited to x86.
     if(NOT CMAKE_CROSSCOMPILING)
-        try_run(GMX_CPUID_RUN_SIMD GMX_CPUID_COMPILED
+        try_run(GMX_CPUINFO_RUN_SIMD GMX_CPUINFO_COMPILED
                 ${CMAKE_BINARY_DIR}
-                ${CMAKE_SOURCE_DIR}/src/gromacs/gmxlib/gmx_cpuid.c
+                ${CMAKE_SOURCE_DIR}/src/gromacs/hardware/cpuinfo.cpp
                 COMPILE_DEFINITIONS ${_compile_definitions}
                 RUN_OUTPUT_VARIABLE OUTPUT_TMP
-                COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
-                ARGS "-simd")
+                COMPILE_OUTPUT_VARIABLE GMX_CPUINFO_COMPILE_OUTPUT
+                ARGS "-features")
 
-        if(NOT GMX_CPUID_COMPILED)
-            message(WARNING "Cannot compile CPUID code, which means no SIMD instructions.")
-            message(STATUS "Compile output: ${GMX_CPUID_COMPILE_OUTPUT}")
+        if(NOT GMX_CPUINFO_COMPILED)
+            message(WARNING "Cannot compile cpuinfo code, which means no SIMD instructions.")
+            message(STATUS "Compile output: ${GMX_CPUINFO_COMPILE_OUTPUT}")
             set(OUTPUT_TMP "None")
-        elseif(NOT GMX_CPUID_RUN_SIMD EQUAL 0)
-            message(WARNING "Cannot run CPUID code, which means no SIMD instructions.")
+        elseif(NOT GMX_CPUINFO_RUN_SIMD EQUAL 0)
+            message(WARNING "Cannot run cpuinfo code, which means no SIMD instructions.")
             message(STATUS "Run output: ${OUTPUT_TMP}")
             set(OUTPUT_TMP "None")
-        endif(NOT GMX_CPUID_COMPILED)
+        endif(NOT GMX_CPUINFO_COMPILED)
 
-        string(STRIP "${OUTPUT_TMP}" OUTPUT_SIMD)
+        if(GMX_TARGET_X86)
+            if(OUTPUT_TMP MATCHES " avx512er ")
+                set(OUTPUT_SIMD "AVX_512ER")
+            elseif(OUTPUT_TMP MATCHES " avx512f ")
+                set(OUTPUT_SIMD "AVX_512F")
+            elseif(OUTPUT_TMP MATCHES " avx2 ")
+                set(OUTPUT_SIMD "AVX2_256")
+            elseif(OUTPUT_TMP MATCHES " avx ")
+                if(OUTPUT_TMP MATCHES " fma4 ")
+                    # AMD that works better with avx-128-fma
+                set(OUTPUT_SIMD "AVX_128_FMA")
+                else()
+                    # Intel
+                set(OUTPUT_SIMD "AVX_256")
+                endif()
+            elseif(OUTPUT_TMP MATCHES " sse4.1 ")
+                set(OUTPUT_SIMD "SSE4.1")
+            elseif(OUTPUT_TMP MATCHES " sse2 ")
+                set(OUTPUT_SIMD "SSE2")
+            endif()
+        else()
+            if(OUTPUT_TMP MATCHES " vsx ")
+                set(OUTPUT_SIMD "IBM_VSX")
+            elseif(OUTPUT_TMP MATCHES " vmx ")
+                set(OUTPUT_SIMD "IBM_VMX")
+            elseif(OUTPUT_TMP MATCHES " qpx ")
+                set(OUTPUT_SIMD "IBM_QPX")
+            elseif(OUTPUT_TMP MATCHES " neon ")
+                set(OUTPUT_SIMD "ARM_NEON")
+            elseif(OUTPUT_TMP MATCHES " neon_asimd ")
+                set(OUTPUT_SIMD "ARM_NEON_ASIMD")
+            endif()
+        endif()
 
         set(${_suggested_simd} "${OUTPUT_SIMD}" PARENT_SCOPE)
         message(STATUS "Detected best SIMD instructions for this CPU - ${OUTPUT_SIMD}")
