@@ -501,6 +501,8 @@ class HelpWriterContext::Impl
             : state_(state), sectionDepth_(sectionDepth)
         {
         }
+        //! Copies the context.
+        Impl(const Impl &)            = default;
 
         //! Adds a new replacement.
         void addReplacement(const std::string &search,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,9 +60,8 @@ namespace gmx
  * \ingroup module_utility
  */
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
-    private: \
-        ClassName &operator=(const ClassName &); \
-        ClassName(const ClassName &)
+    ClassName &operator=(const ClassName &) = delete;   \
+    ClassName(const ClassName &)            = delete
 /*! \brief
  * Macro to declare a class non-assignable.
  *
@@ -71,8 +70,27 @@ namespace gmx
  * \ingroup module_utility
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
-    private: \
-        ClassName &operator=(const ClassName &)
+    ClassName &operator=(const ClassName &) = delete
+
+/*! \brief
+ * Macro to declare default constructors
+ *
+ * Intended for copyable interfaces or bases classes which require to create custom
+ * destructor (e.g. protected or virtual) but need the default constructors.
+ *
+ * For consistency, should appear last in public section of class
+ * declaration.
+ *
+ * \ingroup module_utility
+ */
+#define GMX_DEFAULT_CONSTRUCTORS(ClassName) \
+    /*! \cond */                                                          \
+    ClassName()                                             = default;    \
+    ClassName                 &operator=(const ClassName &) = default;    \
+    ClassName(const ClassName &)                            = default;    \
+    ClassName                 &operator=(ClassName &&)      = default;    \
+    ClassName(ClassName &&)                                 = default     \
+        /*! \endcond */
 
 /*! \brief
  * Helper class to manage a pointer to a private implementation class.
