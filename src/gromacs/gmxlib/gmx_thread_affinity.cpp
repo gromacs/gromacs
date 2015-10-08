@@ -50,8 +50,8 @@
 #include "thread_mpi/threads.h"
 
 #include "gromacs/gmxlib/md_logging.h"
+#include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/gmx_cpuid.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -62,21 +62,26 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
+
 
 static int
 get_thread_affinity_layout(FILE *fplog,
                            const t_commrec *cr,
                            const gmx_hw_info_t * hwinfo,
-                           int nthreads,
+                           int   threads,
                            int pin_offset, int * pin_stride,
-                           const int **locality_order)
+                           int **localityOrder)
 {
-    int         nhwthreads, npkg, ncores, nhwthreads_per_core, rc;
-    const int * pkg_id;
-    const int * core_id;
-    const int * hwthread_id;
-    gmx_bool    bPickPinStride;
+    int                          hwThreads;
+    int                          hwThreadsPerCore = 0;
+    bool                         bPickPinStride;
+    bool                         haveTopology;
+
+    const gmx::HardwareTopology &hwTop = *reinterpret_cast<gmx::HardwareTopology *>(hwinfo->pHardwareTopology);
+
+    haveTopology = (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic);
 
     if (pin_offset < 0)
     {
@@ -87,17 +92,31 @@ get_thread_affinity_layout(FILE *fplog,
         gmx_fatal(FARGS, "Negative thread pinning stride requested");
     }
 
-    rc = gmx_cpuid_topology(hwinfo->cpuid_info, &nhwthreads, &npkg, &ncores,
-                            &nhwthreads_per_core,
-                            &pkg_id, &core_id, &hwthread_id, locality_order);
-
-    if (rc != 0)
+    if (haveTopology)
+    {
+        hwThreads           = hwTop.machine().logicalProcessorCount;
+        // Just use the value for the first core
+        hwThreadsPerCore    = hwTop.machine().sockets[0].cores[0].hwThreads.size();
+        snew(*localityOrder, hwThreads);
+        int i = 0;
+        for (auto &s : hwTop.machine().sockets)
+        {
+            for (auto &c : s.cores)
+            {
+                for (auto &t : c.hwThreads)
+                {
+                    (*localityOrder)[i++] = t.logicalProcessorId;
+                }
+            }
+        }
+    }
+    else
     {
         /* topology information not available or invalid, ignore it */
-        nhwthreads      = hwinfo->nthreads_hw_avail;
-        *locality_order = NULL;
+        hwThreads       = hwinfo->nthreads_hw_avail;
+        *localityOrder  = NULL;
 
-        if (nhwthreads <= 0)
+        if (hwThreads <= 0)
         {
             /* We don't know anything about the hardware, don't pin */
             md_print_warn(cr, fplog,
@@ -107,7 +126,7 @@ get_thread_affinity_layout(FILE *fplog,
         }
     }
 
-    if (nthreads > nhwthreads)
+    if (threads > hwThreads)
     {
         /* We are oversubscribing, don't pin */
         md_print_warn(NULL, fplog,
@@ -116,7 +135,7 @@ get_thread_affinity_layout(FILE *fplog,
         return -1;
     }
 
-    if (pin_offset + nthreads > nhwthreads)
+    if (pin_offset + threads > hwThreads)
     {
         /* We are oversubscribing, don't pin */
         md_print_warn(NULL, fplog,
@@ -131,10 +150,10 @@ get_thread_affinity_layout(FILE *fplog,
 
     if (bPickPinStride)
     {
-        if (rc == 0 && pin_offset + nthreads*nhwthreads_per_core <= nhwthreads)
+        if (haveTopology && pin_offset + threads*hwThreadsPerCore <= hwThreads)
         {
             /* Put one thread on each physical core */
-            *pin_stride = nhwthreads_per_core;
+            *pin_stride = hwThreadsPerCore;
         }
         else
         {
@@ -147,14 +166,14 @@ get_thread_affinity_layout(FILE *fplog,
              * and probably threads are already pinned by the queuing system,
              * so we wouldn't end up here in the first place.
              */
-            *pin_stride = (nhwthreads - pin_offset)/nthreads;
+            *pin_stride = (hwThreads - pin_offset)/threads;
         }
     }
     else
     {
         /* Check the placement of the thread with the largest index to make sure
          * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
-        if (pin_offset + (nthreads-1)*(*pin_stride) >= nhwthreads)
+        if (pin_offset + (threads-1)*(*pin_stride) >= hwThreads)
         {
             /* We are oversubscribing, don't pin */
             md_print_warn(NULL, fplog,
@@ -192,7 +211,7 @@ gmx_set_thread_affinity(FILE                *fplog,
     int        nth_affinity_set, thread0_id_node,
                nthread_local, nthread_node;
     int        offset;
-    const int *locality_order;
+    int *      localityOrder = nullptr;
     int        rc;
 
     if (hw_opt->thread_affinity == threadaffOFF)
@@ -275,7 +294,8 @@ gmx_set_thread_affinity(FILE                *fplog,
     rc = get_thread_affinity_layout(fplog, cr, hwinfo,
                                     nthread_node,
                                     offset, &core_pinning_stride,
-                                    &locality_order);
+                                    &localityOrder);
+    gmx::scoped_guard_sfree localityOrderGuard(localityOrder);
 
     if (rc != 0)
     {
@@ -305,9 +325,9 @@ gmx_set_thread_affinity(FILE                *fplog,
             thread_id      = gmx_omp_get_thread_num();
             thread_id_node = thread0_id_node + thread_id;
             index          = offset + thread_id_node*core_pinning_stride;
-            if (locality_order != NULL)
+            if (localityOrder != nullptr)
             {
-                core = locality_order[index];
+                core = localityOrder[index];
             }
             else
             {
