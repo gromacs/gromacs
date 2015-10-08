@@ -80,6 +80,9 @@ namespace gmx
 class IOptionsContainer
 {
     public:
+        IOptionsContainer() = default;
+        IOptionsContainer &operator=(const IOptionsContainer &) = default;
+        IOptionsContainer(const IOptionsContainer &)            = default;
         /*! \brief
          * Creates a subgroup of options within the current options.
          *

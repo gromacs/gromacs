@@ -1202,6 +1202,8 @@ class MindistAction
             : closestPoint_(*closestPoint), minDist2_(*minDist2), dx_(*dx)
         {
         }
+        MindistAction &operator=(const MindistAction &) = delete;
+        MindistAction(const MindistAction &)            = default;
 
         //! Processes a neighbor to find the nearest point.
         bool operator()(int i, real r2, const rvec dx)
@@ -1219,8 +1221,6 @@ class MindistAction
         int     &closestPoint_;
         real    &minDist2_;
         rvec    &dx_;
-
-        GMX_DISALLOW_ASSIGN(MindistAction);
 };
 
 }   // namespace

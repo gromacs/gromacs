@@ -107,8 +107,7 @@
  *
  * The header classhelpers.h implements a gmx::PrivateImplPointer template for easily
  * writing classes that use the private implementation idiom.  This header also
- * declares ::GMX_DISALLOW_COPY_AND_ASSIGN and ::GMX_DISALLOW_ASSIGN macros for
- * class declarations.
+ * declares ::GMX_DISALLOW_COPY_AND_ASSIGN macro for class declarations.
  *
  * The header flags.h implements a gmx::FlagsTemplate template for better type
  * safety when using bit flag fields.

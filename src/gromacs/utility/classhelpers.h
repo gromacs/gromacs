@@ -61,18 +61,8 @@ namespace gmx
  */
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
     private: \
-        ClassName &operator=(const ClassName &); \
-        ClassName(const ClassName &)
-/*! \brief
- * Macro to declare a class non-assignable.
- *
- * For consistency, should appear last in the class declaration.
- *
- * \ingroup module_utility
- */
-#define GMX_DISALLOW_ASSIGN(ClassName) \
-    private: \
-        ClassName &operator=(const ClassName &)
+        ClassName &operator=(const ClassName &) = delete;   \
+        ClassName(const ClassName &)            = delete
 
 /*! \brief
  * Helper class to manage a pointer to a private implementation class.
