@@ -105,7 +105,7 @@
     } while (0)
 
 /*! Check for NVML error on the return status of a NVML API call. */
-#ifdef HAVE_NVML
+#if defined(HAVE_NVML) && NVML_API_VERSION >= 6
 #define HANDLE_NVML_RET_ERR(status, msg) \
     do { \
         if (status != NVML_SUCCESS) \
@@ -113,7 +113,7 @@
             gmx_warning("%s: %s\n", msg, nvmlErrorString(status)); \
         } \
     } while (0)
-#endif /* HAVE_NVML */
+#endif /* defined(HAVE_NVML) && NVML_API_VERSION >= 6 */
 #else
 
 #define CU_RET_ERR(status, msg) do { } while (0)
@@ -136,10 +136,10 @@ struct gmx_device_info_t
     int                 stat;                   /* result of the device check */
     gmx_bool            nvml_initialized;       /* If NVML was initialized */
     gmx_bool            nvml_ap_clocks_changed; /* If application clocks have been changed */
-#ifdef HAVE_NVML
+#if defined(HAVE_NVML) && NVML_API_VERSION >= 6
     nvmlDevice_t        nvml_device_id;         /* NVML device id */
     nvmlEnableState_t   nvml_is_restricted;     /* Status of application clocks permission */
-#endif                                          /* HAVE_NVML */
+#endif                                          /* defined(HAVE_NVML) && NVML_API_VERSION >= 6 */
 };
 
 
