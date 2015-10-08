@@ -46,6 +46,8 @@
 #ifndef GMX_GMXLIB_GPU_UTILS_GPU_UTILS_H
 #define GMX_GMXLIB_GPU_UTILS_GPU_UTILS_H
 
+#include <cstdio>
+
 #include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 
