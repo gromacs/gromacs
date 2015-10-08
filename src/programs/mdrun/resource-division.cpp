@@ -45,6 +45,8 @@
 #include <algorithm>
 
 #include "gromacs/gmxlib/md_logging.h"
+#include "gromacs/hardware/cpuinfo.h"
+#include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/names.h"
@@ -124,17 +126,18 @@ const int nthreads_omp_mpi_target_max          =  6;
 /* Returns the maximum OpenMP thread count for which using a single MPI rank
  * should be faster than using multiple ranks with the same total thread count.
  */
-static int nthreads_omp_faster(gmx_cpuid_t cpuid_info, gmx_bool bUseGPU)
+static int nthreads_omp_faster(const gmx::CpuInfo &cpuInfo, gmx_bool bUseGPU)
 {
     int nth;
 
-    if (gmx_cpuid_vendor(cpuid_info) == GMX_CPUID_VENDOR_INTEL &&
-        gmx_cpuid_feature(cpuid_info, GMX_CPUID_FEATURE_X86_AVX))
+    if (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Intel &&
+        cpuInfo.feature(gmx::CpuInfo::Feature::X86_Avx))
     {
         nth = nthreads_omp_faster_Intel_AVX;
     }
-    else if (gmx_cpuid_is_intel_nehalem(cpuid_info))
+    else if (gmx::cpuIsX86Nehalem(cpuInfo))
     {
+        // Intel Nehalem
         nth = nthreads_omp_faster_Nehalem;
     }
     else
@@ -153,9 +156,9 @@ static int nthreads_omp_faster(gmx_cpuid_t cpuid_info, gmx_bool bUseGPU)
 }
 
 /* Returns that maximum OpenMP thread count that passes the efficiency check */
-static int nthreads_omp_efficient_max(int gmx_unused nrank,
-                                      gmx_cpuid_t    cpuid_info,
-                                      gmx_bool       bUseGPU)
+static int nthreads_omp_efficient_max(int gmx_unused       nrank,
+                                      const gmx::CpuInfo  &cpuInfo,
+                                      gmx_bool             bUseGPU)
 {
 #if defined GMX_OPENMP && defined GMX_MPI
     if (nrank > 1)
@@ -165,7 +168,7 @@ static int nthreads_omp_efficient_max(int gmx_unused nrank,
     else
 #endif
     {
-        return nthreads_omp_faster(cpuid_info, bUseGPU);
+        return nthreads_omp_faster(cpuInfo, bUseGPU);
     }
 }
 
@@ -177,7 +180,8 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
                                         int                  nthreads_tot,
                                         int                  ngpu)
 {
-    int nrank;
+    int                 nrank;
+    const gmx::CpuInfo &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo->pCpuInfo);
 
     GMX_RELEASE_ASSERT(nthreads_tot > 0, "There must be at least one thread per rank");
 
@@ -195,8 +199,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
             nrank = nthreads_tot;
         }
         else if (gmx_gpu_sharing_supported() &&
-                 (nthreads_tot > nthreads_omp_faster(hwinfo->cpuid_info,
-                                                     ngpu > 0) ||
+                 (nthreads_tot > nthreads_omp_faster(cpuInfo, ngpu > 0) ||
                   (ngpu > 1 && nthreads_tot/ngpu > nthreads_omp_mpi_target_max)))
         {
             /* The high OpenMP thread count will likely result in sub-optimal
@@ -226,7 +229,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
     }
     else
     {
-        if (nthreads_tot <= nthreads_omp_faster(hwinfo->cpuid_info, ngpu > 0))
+        if (nthreads_tot <= nthreads_omp_faster(cpuInfo, ngpu > 0))
         {
             /* Use pure OpenMP parallelization */
             nrank = 1;
@@ -273,6 +276,14 @@ static int getMaxGpuUsable(FILE *fplog, const t_commrec *cr, const gmx_hw_info_t
 
 
 #ifdef GMX_THREAD_MPI
+
+
+static bool
+gmxSmtIsEnabled(const gmx::HardwareTopology &hwTop)
+{
+    return (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic && hwTop.machine().sockets[0].cores[0].hwThreads.size() > 1);
+}
+
 /* Get the number of MPI ranks to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
  * and how many particles there are.
@@ -288,8 +299,11 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      FILE                *fplog,
                      gmx_bool             bUseGpu)
 {
-    int      nthreads_hw, nthreads_tot_max, nrank, ngpu;
-    int      min_atoms_per_mpi_rank;
+    int                          nthreads_hw, nthreads_tot_max, nrank, ngpu;
+    int                          min_atoms_per_mpi_rank;
+
+    const gmx::CpuInfo          &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo->pCpuInfo);
+    const gmx::HardwareTopology &hwTop   = *reinterpret_cast<gmx::HardwareTopology *>(hwinfo->pHardwareTopology);
 
     /* Check if an algorithm does not support parallel simulation.  */
     if (inputrec->eI == eiLBFGS ||
@@ -369,7 +383,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         nrank_new = std::max(1, mtop->natoms/min_atoms_per_mpi_rank);
 
         /* Avoid partial use of Hyper-Threading */
-        if (gmx_cpuid_x86_smt(hwinfo->cpuid_info) == GMX_CPUID_X86_SMT_ENABLED &&
+        if (gmxSmtIsEnabled(hwTop) &&
             nrank_new > nthreads_hw/2 && nrank_new < nthreads_hw)
         {
             nrank_new = nthreads_hw/2;
@@ -426,7 +440,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
              */
             int  nt_omp_max;
 
-            nt_omp_max = nthreads_omp_efficient_max(nrank, hwinfo->cpuid_info, ngpu >= 1);
+            nt_omp_max = nthreads_omp_efficient_max(nrank, cpuInfo, ngpu >= 1);
 
             if (nrank*nt_omp_max < hwinfo->nthreads_hw_avail)
             {
@@ -533,9 +547,11 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     }
     else
     {
+        const gmx::CpuInfo &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo->pCpuInfo);
+
         /* No domain decomposition (or only one domain) */
         if (!(ngpu > 0 && !gmx_gpu_sharing_supported()) &&
-            nth_omp_max > nthreads_omp_faster(hwinfo->cpuid_info, ngpu > 0))
+            nth_omp_max > nthreads_omp_faster(cpuInfo, ngpu > 0))
         {
             /* To arrive here, the user/system set #ranks and/or #OMPthreads */
             gmx_bool bEnvSet;

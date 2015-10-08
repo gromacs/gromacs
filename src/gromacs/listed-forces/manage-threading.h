@@ -44,6 +44,8 @@
 #ifndef GMX_LISTED_FORCES_MANAGE_THREADING_H
 #define GMX_LISTED_FORCES_MANAGE_THREADING_H
 
+#include <cstdio>
+
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/topology/idef.h"
 
