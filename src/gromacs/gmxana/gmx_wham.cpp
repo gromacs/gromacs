@@ -172,7 +172,7 @@ typedef struct
     double *tau;         //!< intetrated autocorrelation time (IACT)
     double *tausmooth;   //!< smoothed IACT
 
-    double  dt;          //!< timestep in the input data. Can be adapted with g_wham option -dt
+    double  dt;          //!< timestep in the input data. Can be adapted with gmx wham option -dt
 
     /*! \brief TRUE, if any data point of the histogram is within min and max, otherwise FALSE */
     gmx_bool **bContrib;
@@ -1371,7 +1371,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
                 "When generating hypothetical trajctories from given umbrella histograms,\n"
                 "autocorrelation times (ACTs) are required. Otherwise the statistical error\n"
                 "cannot be predicted. You have 3 options:\n"
-                "1) Make g_wham estimate the ACTs (options -ac and -acsig).\n"
+                "1) Make gmx wham estimate the ACTs (options -ac and -acsig).\n"
                 "2) Calculate the ACTs by yourself (e.g. with g_analyze) and provide them\n");
         std::strcat(errstr,
                     "   with option -iiact for all umbrella windows.\n"
@@ -2239,7 +2239,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         gmx_fatal(FARGS, "With pull geometries \"direction\" and \"direction_periodic\", only pull force "
                   "reading \n(option -if) is supported at present, "
                   "not pull position reading (options -ix).\nMake sure mdrun writes the pull "
-                  "forces (pullf.xvg files)\nand provide them to g_wham with option -if.",
+                  "forces (pullf.xvg files)\nand provide them to gmx wham with option -if.",
                   epullg_names[header->pull_geometry]);
     }
 
@@ -3218,7 +3218,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 //! Number of elements in fnm (used for command line parsing)
 #define NFILE asize(fnm)
 
-//! The main g_wham routine
+//! The main gmx wham routine
 int gmx_wham(int argc, char *argv[])
 {
     const char              *desc[] = {
@@ -3316,7 +3316,7 @@ int gmx_wham(int argc, char *argv[])
         "Parallelization",
         "^^^^^^^^^^^^^^^",
         "",
-        "If available, the number of OpenMP threads used by g_wham is controlled with [TT]-nt[tt].",
+        "If available, the number of OpenMP threads used by gmx wham is controlled with [TT]-nt[tt].",
         "",
         "Autocorrelations",
         "^^^^^^^^^^^^^^^^",
@@ -3393,7 +3393,7 @@ int gmx_wham(int argc, char *argv[])
     t_pargs                  pa[] = {
 #ifdef GMX_OPENMP
         { "-nt", FALSE, etINT, {&nthreads},
-          "Number of threads used by g_wham (if -1, all threads will be used or what is specified by the environment variable OMP_NUM_THREADS)"},
+          "Number of threads used by gmx wham (if -1, all threads will be used or what is specified by the environment variable OMP_NUM_THREADS)"},
 #endif
         { "-min", FALSE, etREAL, {&opt.min},
           "Minimum coordinate in profile"},
@@ -3547,8 +3547,8 @@ int gmx_wham(int argc, char *argv[])
     }
     if (!opt.bPdo && !(opt.bTpr || opt.bPullf || opt.bPullx))
     {
-        gmx_fatal(FARGS, "g_wham supports three input modes, pullx, pullf, or pdo file input."
-                  "\n\n Check g_wham -h !");
+        gmx_fatal(FARGS, "gmx wham supports three input modes, pullx, pullf, or pdo file input."
+                  "\n\n Check gmx wham -h !");
     }
 
     opt.fnPdo      = opt2fn("-ip", NFILE, fnm);
@@ -3781,7 +3781,7 @@ int gmx_wham(int argc, char *argv[])
     sfree(profile);
     freeUmbrellaWindows(window, nfiles);
 
-    printf("\nIn case you use results from g_wham for a publication, please cite:\n");
+    printf("\nIn case you use results from gmx wham for a publication, please cite:\n");
     please_cite(stdout, "Hub2010");
 
     return 0;
