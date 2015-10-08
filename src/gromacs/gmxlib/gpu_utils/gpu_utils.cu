@@ -55,6 +55,30 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
+#ifdef HAVE_NVML
+#include <nvml.h>
+#endif /* HAVE_NVML */
+#define HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS (NVML_API_VERSION >= 6)
+
+#if defined(CHECK_CUDA_ERRORS) && HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS
+/*! Check for NVML error on the return status of a NVML API call. */
+#  define HANDLE_NVML_RET_ERR(status, msg) \
+    do { \
+        if (status != NVML_SUCCESS) \
+        { \
+            gmx_warning("%s: %s\n", msg, nvmlErrorString(status)); \
+        } \
+    } while (0)
+#else /* defined(CHECK_CUDA_ERRORS) && HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS */
+#  define HANDLE_NVML_RET_ERR(status, msg) do { } while (0)
+#endif /* defined(CHECK_CUDA_ERRORS) && HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS */
+
+#if HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS
+static const gmx_bool bCompiledWithApplicationClockSupport = true;
+#else
+static const gmx_bool gmx_unused bCompiledWithApplicationClockSupport = false;
+#endif
+
 /*! \internal \brief
  * Max number of devices supported by CUDA (for consistency checking).
  *
@@ -229,7 +253,7 @@ static void md_print_warn(FILE       *fplog,
     }
 }
 
-#ifdef HAVE_NVML
+#if HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS
 /*! \brief Determines and adds the NVML device ID to the passed \cuda_dev.
  *
  * Determines and adds the NVML device ID to the passed \cuda_dev. This is done by
@@ -273,7 +297,7 @@ static bool addNVMLDeviceId(gmx_device_info_t* cuda_dev)
     }
     return cuda_dev->nvml_initialized;
 }
-#endif /*HAVE_NVML*/
+#endif /* HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS */
 
 /*! \brief Tries to set application clocks for the GPU with the given index.
  *
@@ -295,27 +319,39 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     gmx_bool              bGpuCanUseApplicationClocks =
         ((0 == gmx_wcmatch("*Tesla*", prop->name) && cuda_version_number >= 35 ) ||
          (0 == gmx_wcmatch("*Quadro*", prop->name) && cuda_version_number >= 52 ));
+    if (!bGpuCanUseApplicationClocks)
+    {
+        return true;
+    }
 #ifndef HAVE_NVML
-    if (bGpuCanUseApplicationClocks)
+    int cuda_driver  = 0;
+    int cuda_runtime = 0;
+    cudaDriverGetVersion(&cuda_driver);
+    cudaRuntimeGetVersion(&cuda_runtime);
+    md_print_warn( fplog, "Note: NVML support was not found (CUDA runtime %d.%d, driver %d.%d), so your\n"
+                   "      %s GPU cannot use application clock support to improve performance.\n",
+                   cuda_runtime/1000, cuda_runtime%100,
+                   cuda_driver/1000, cuda_driver%100,
+                   prop->name );
+    return true;
+#else
+    if (!bCompiledWithApplicationClockSupport)
     {
         int cuda_driver  = 0;
         int cuda_runtime = 0;
         cudaDriverGetVersion(&cuda_driver);
         cudaRuntimeGetVersion(&cuda_runtime);
-        md_print_warn( fplog, "Note: NVML support was not found (CUDA runtime %d.%d, driver %d.%d), so your\n"
+        md_print_warn( fplog, "Note: The NVML support in use is too old (CUDA runtime %d.%d, driver %d.%d), so your\n"
                        "      %s GPU cannot use application clock support to improve performance.\n",
                        cuda_runtime/1000, cuda_runtime%100,
                        cuda_driver/1000, cuda_driver%100,
                        prop->name );
-    }
-    return true;
-#else /* HAVE_NVML defined */
-    nvmlReturn_t nvml_stat = NVML_SUCCESS;
-    char        *env;
-    if (!bGpuCanUseApplicationClocks)
-    {
         return true;
     }
+
+    /* We've compiled with NVML application clocks support, and have a GPU that can use it */
+    nvmlReturn_t nvml_stat = NVML_SUCCESS;
+    char        *env;
     //TODO: GMX_GPU_APPLICATION_CLOCKS is currently only used to enable/disable setting of application clocks
     //      this variable can be later used to give a user more fine grained control.
     env = getenv("GMX_GPU_APPLICATION_CLOCKS");
@@ -386,7 +422,7 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
         md_print_warn( fplog,  "Not possible to change GPU clocks to optimal value because application clocks handling failed with NVML error (%d): %s.\n", nvml_stat, nvmlErrorString(nvml_stat));
     }
     return (nvml_stat == NVML_SUCCESS);
-#endif /*HAVE_NVML*/
+#endif /* HAVE_NVML */
 }
 
 /*! \brief Resets application clocks if changed and cleans up NVML for the passed \gpu_dev.
@@ -395,10 +431,10 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
  */
 static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused * cuda_dev)
 {
-#ifndef HAVE_NVML
+#if !HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS
     GMX_UNUSED_VALUE(cuda_dev);
     return true;
-#else
+#else /* HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS */
     nvmlReturn_t nvml_stat = NVML_SUCCESS;
     if (cuda_dev &&
         cuda_dev->nvml_is_restricted == NVML_FEATURE_DISABLED &&
@@ -410,7 +446,7 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
     nvml_stat = nvmlShutdown();
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlShutdown failed" );
     return (nvml_stat == NVML_SUCCESS);
-#endif /*HAVE_NVML*/
+#endif /* HAVE_REQUIRED_NVML_VERSION_FOR_APPLICATION_CLOCKS */
 }
 
 gmx_bool init_gpu(FILE gmx_unused *fplog, int mygpu, char *result_str,
