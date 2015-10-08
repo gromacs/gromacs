@@ -35,6 +35,8 @@
 #ifndef _nb_kernel_h_
 #define _nb_kernel_h_
 
+#include <stdio.h>
+
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/math/vectypes.h"

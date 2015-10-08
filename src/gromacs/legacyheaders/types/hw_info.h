@@ -36,7 +36,6 @@
 #ifndef HWINFO_H
 #define HWINFO_H
 
-#include "gromacs/legacyheaders/gmx_cpuid.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -80,13 +79,14 @@ typedef struct gmx_hw_info_t
     /* Data for our local physical node */
     struct gmx_gpu_info_t gpu_info;          /* Information about GPUs detected in the system */
 
-    gmx_cpuid_t           cpuid_info;        /* CPUID information about CPU detected;
-                                                NOTE: this will only detect the CPU thread 0 of the
-                                                current process runs on. */
     int                   ncore;             /* Number of cores, will be 0 when not detected */
     int                   nthreads_hw_avail; /* Number of hardware threads available; this number
                                                 is based on the number of CPUs reported as available
                                                 by the OS at the time of detection. */
+
+    // TODO: Change these to proper C++ objects when this file is no longer included in any C sources
+    struct CxxObject *  pCpuInfo;            /* Opaque pointer to C++ object (CxxObject does not exist) */
+    struct CxxObject *  pHardwareTopology;   /* Opaque pointer to C++ object (CxxObject does not exist) */
 
     /* Data reduced through MPI over all physical nodes */
     int                 nphysicalnode;       /* Number of physical nodes */
@@ -100,11 +100,8 @@ typedef struct gmx_hw_info_t
     int                 ngpu_compatible_min; /* Min #GPUs over all nodes */
     int                 ngpu_compatible_max; /* Max #GPUs over all nodes */
 
-    /* The values below are only used for printing, so here it's not an issue
-     * that stricly speaking SIMD instruction sets can't be uniquely ordered.
-     */
-    enum gmx_cpuid_simd simd_suggest_min;    /* Highest SIMD instruction set supported by all ranks */
-    enum gmx_cpuid_simd simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
+    int                 simd_suggest_min;    /* Highest SIMD instruction set supported by all ranks */
+    int                 simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
 
     gmx_bool            bIdenticalGPUs;      /* TRUE if all ranks have the same type(s) and order of GPUs */
 } gmx_hw_info_t;
