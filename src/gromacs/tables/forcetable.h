@@ -35,6 +35,8 @@
 #ifndef GMX_TABLES_FORCETABLE_H
 #define GMX_TABLES_FORCETABLE_H
 
+#include <cstdio>
+
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
