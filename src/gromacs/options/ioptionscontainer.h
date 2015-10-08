@@ -141,6 +141,7 @@ class IOptionsContainer
         // (no need for the virtual, but some compilers warn otherwise)
         virtual ~IOptionsContainer();
 
+        GMX_COPYABLE_INTERFACE(IOptionsContainer);
 };
 
 } // namespace

@@ -58,6 +58,7 @@
 #include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/current_function.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -85,6 +86,7 @@ class IExceptionInfo
 {
     public:
         virtual ~IExceptionInfo();
+        GMX_COPYABLE_INTERFACE(IExceptionInfo);
 };
 
 //! Smart pointer to manage IExceptionInfo ownership.
@@ -252,6 +254,11 @@ class ExceptionInitializer
         friend class GromacsException;
 };
 
+//MSVC 2013 is missing noexcept
+#if defined _MSC_VER && _MSC_VER == 1800
+#define noexcept throw()
+#endif
+
 /*! \brief
  * Base class for all exception objects in Gromacs.
  *
@@ -261,15 +268,25 @@ class GromacsException : public std::exception
 {
     public:
         // Explicitly declared because some compiler/library combinations warn
-        // about missing throw() otherwise.
-        virtual ~GromacsException() throw() {}
+        // about missing noexcept otherwise.
+        virtual ~GromacsException() noexcept {}
+
+        // Copy and move explcit declared because destructor explicit declared (required for move, warning for copy)
+        //! Copy constructor
+        GromacsException(const GromacsException &o) : data_(o.data_) {}
+        //! Assignment operator
+        GromacsException &operator=(const GromacsException &o) { data_ = o.data_; return *this; }
+        //! Move constructor
+        GromacsException(GromacsException &&o) : data_(std::move(o.data_)) {}
+        //! Move-assignment operator
+        GromacsException &operator=(GromacsException &&o) { data_ = std::move(o.data_); return *this; }
 
         /*! \brief
          * Returns the reason string for the exception.
          *
          * The return value is the string that was passed to the constructor.
          */
-        virtual const char *what() const throw();
+        virtual const char *what() const noexcept;
         /*! \brief
          * Returns the error code corresponding to the exception type.
          */
