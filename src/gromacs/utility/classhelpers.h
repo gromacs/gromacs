@@ -60,9 +60,8 @@ namespace gmx
  * \ingroup module_utility
  */
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
-    private: \
-        ClassName &operator=(const ClassName &); \
-        ClassName(const ClassName &)
+    ClassName &operator=(const ClassName &) = delete;   \
+    ClassName(const ClassName &)            = delete
 /*! \brief
  * Macro to declare a class non-assignable.
  *
@@ -71,8 +70,24 @@ namespace gmx
  * \ingroup module_utility
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
-    private: \
-        ClassName &operator=(const ClassName &)
+    ClassName &operator=(const ClassName &) = delete
+
+/*! \brief
+ * Macro to declare all but the destructor as the default
+ *
+ * For consistency, should appear last in public section of class
+ * declaration.
+ *
+ * \ingroup module_utility
+ */
+#define GMX_DEFAULT_CONSTRUCT_COPY_MOVE_AND_ASSIGN(ClassName) \
+    /*! \cond */                                              \
+    ClassName()                                             = default;    \
+    ClassName                 &operator=(ClassName &&)      = default;    \
+    ClassName                 &operator=(const ClassName &) = default;    \
+    ClassName(const ClassName &)                            = default;    \
+    ClassName(ClassName &&)                                 = default     \
+        /*! \endcond */
 
 /*! \brief
  * Helper class to manage a pointer to a private implementation class.

@@ -141,6 +141,7 @@ class IOptionsContainer
         // (no need for the virtual, but some compilers warn otherwise)
         virtual ~IOptionsContainer();
 
+        GMX_DEFAULT_CONSTRUCT_COPY_MOVE_AND_ASSIGN(IOptionsContainer);
 };
 
 } // namespace
