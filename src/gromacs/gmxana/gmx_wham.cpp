@@ -60,6 +60,7 @@
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/arraysize.h"
@@ -870,8 +871,8 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
                     }
                 }
                 /* Note: there are two contributions to bin k in the wham equations:
-                   i)  N[j]*exp(- U/(8.314e-3*opt->Temperature) + window[i].z[j])
-                   ii) exp(- U/(8.314e-3*opt->Temperature))
+                   i)  N[j]*exp(- U/(BOLTZ*opt->Temperature) + window[i].z[j])
+                   ii) exp(- U/(BOLTZ*opt->Temperature))
                    where U is the umbrella potential
                    If any of these number is larger wham_contrib_lim, I set contrib=TRUE
                  */
@@ -884,8 +885,8 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
                 {
                     U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
                 }
-                contrib1                 = profile[k]*std::exp(-U/(8.314e-3*opt->Temperature));
-                contrib2                 = window[i].N[j]*std::exp(-U/(8.314e-3*opt->Temperature) + window[i].z[j]);
+                contrib1                 = profile[k]*std::exp(-U/(BOLTZ*opt->Temperature));
+                contrib2                 = window[i].N[j]*std::exp(-U/(BOLTZ*opt->Temperature) + window[i].z[j]);
                 window[i].bContrib[j][k] = (contrib1 > wham_contrib_lim || contrib2 > wham_contrib_lim);
                 bAnyContrib              = (bAnyContrib | window[i].bContrib[j][k]);
                 if (window[i].bContrib[j][k])
@@ -977,7 +978,7 @@ void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
                         {
                             U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
                         }
-                        denom += invg*window[j].N[k]*std::exp(-U/(8.314e-3*opt->Temperature) + window[j].z[k]);
+                        denom += invg*window[j].N[k]*std::exp(-U/(BOLTZ*opt->Temperature) + window[j].z[k]);
                     }
                 }
                 profile[i] = num/denom;
@@ -1044,7 +1045,7 @@ double calc_z(double * profile, t_UmbrellaWindow * window, int nWindows,
                         {
                             U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
                         }
-                        total += profile[k]*std::exp(-U/(8.314e-3*opt->Temperature));
+                        total += profile[k]*std::exp(-U/(BOLTZ*opt->Temperature));
                     }
                     /* Avoid floating point exception if window is far outside min and max */
                     if (total != 0.0)
@@ -1125,9 +1126,8 @@ void symmetrizeProfile(double* profile, t_UmbrellaOptions *opt)
 void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
 {
     int    i, bins, imin;
-    double unit_factor = 1., R_MolarGasConst, diff;
+    double unit_factor = 1., diff;
 
-    R_MolarGasConst = 8.314472e-3; /* in kJ/(mol*K) */
     bins            = opt->bins;
 
     /* Not log? Nothing to do! */
@@ -1143,11 +1143,11 @@ void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
     }
     else if (opt->unit == en_kJ)
     {
-        unit_factor = R_MolarGasConst*opt->Temperature;
+        unit_factor = BOLTZ*opt->Temperature;
     }
     else if (opt->unit == en_kCal)
     {
-        unit_factor = R_MolarGasConst*opt->Temperature/4.1868;
+        unit_factor = (BOLTZ/CAL2JOULE)*opt->Temperature;
     }
     else
     {
@@ -3106,7 +3106,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
      */
     for (j = 0; j < opt->bins; ++j)
     {
-        pot[j] = std::exp(-pot[j]/(8.314e-3*opt->Temperature));
+        pot[j] = std::exp(-pot[j]/(BOLTZ*opt->Temperature));
     }
     calc_z(pot, window, nWindows, opt, TRUE);
 
