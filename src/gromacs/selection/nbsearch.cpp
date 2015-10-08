@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1202,6 +1202,8 @@ class MindistAction
             : closestPoint_(*closestPoint), minDist2_(*minDist2), dx_(*dx)
         {
         }
+        //! Copies the action.
+        MindistAction(const MindistAction &)            = default;
 
         //! Processes a neighbor to find the nearest point.
         bool operator()(int i, real r2, const rvec dx)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,7 @@
 #include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/current_function.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -85,6 +86,7 @@ class IExceptionInfo
 {
     public:
         virtual ~IExceptionInfo();
+        GMX_DEFAULT_CONSTRUCTORS(IExceptionInfo);
 };
 
 //! Smart pointer to manage IExceptionInfo ownership.
@@ -261,15 +263,17 @@ class GromacsException : public std::exception
 {
     public:
         // Explicitly declared because some compiler/library combinations warn
-        // about missing throw() otherwise.
-        virtual ~GromacsException() throw() {}
+        // about missing noexcept otherwise.
+        virtual ~GromacsException() noexcept {}
+
+        GMX_DEFAULT_CONSTRUCTORS(GromacsException);
 
         /*! \brief
          * Returns the reason string for the exception.
          *
          * The return value is the string that was passed to the constructor.
          */
-        virtual const char *what() const throw();
+        virtual const char *what() const noexcept;
         /*! \brief
          * Returns the error code corresponding to the exception type.
          */

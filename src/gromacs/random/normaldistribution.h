@@ -262,16 +262,15 @@ class NormalDistribution
         operator!=(const NormalDistribution &x) const
         { return !operator==(x); }
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(NormalDistribution);
-
     private:
-
         /*! \brief Internal value for parameters, can be overridden at generation time. */
         param_type  param_;
         /*! \brief True if there is a saved result to return */
         bool        hot_;
         /*! \brief The saved result to return - only valid if hot_ is true */
         result_type saved_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(NormalDistribution);
 };
 
 

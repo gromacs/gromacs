@@ -251,8 +251,6 @@ class UniformIntDistribution
         operator!=(const UniformIntDistribution &x) const
         { return !operator==(x); }
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(UniformIntDistribution);
-
     private:
         /*! \brief Internal value for parameters, can be overridden at generation time. */
         param_type      param_;
@@ -260,6 +258,8 @@ class UniformIntDistribution
         gmx_uint64_t    savedRandomBits_;
         /*! \brief Number of valid bits remaining i savedRandomBits_ */
         unsigned int    savedRandomBitsLeft_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(UniformIntDistribution);
 };
 
 }      // namespace gmx
