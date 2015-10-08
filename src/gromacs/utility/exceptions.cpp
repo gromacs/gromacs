@@ -188,7 +188,7 @@ GromacsException::GromacsException(const ExceptionInitializer &details)
     }
 }
 
-const char *GromacsException::what() const throw()
+const char *GromacsException::what() const noexcept
 {
     const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
     if (msg == NULL)
