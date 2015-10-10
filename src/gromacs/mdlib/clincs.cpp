@@ -40,8 +40,9 @@
 #include "config.h"
 
 #include <assert.h>
-#include <math.h>
 #include <stdlib.h>
+
+#include <cmath>
 
 #include <algorithm>
 
@@ -2436,7 +2437,7 @@ static void lincs_warning(FILE *fplog,
             {
                 fprintf(fplog, "%s", buf);
             }
-            if (!gmx_isfinite(d1))
+            if (!std::isfinite(d1))
             {
                 gmx_fatal(FARGS, "Bond length not finite.");
             }

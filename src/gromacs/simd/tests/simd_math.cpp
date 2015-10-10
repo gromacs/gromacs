@@ -38,9 +38,10 @@
 
 #include "config.h"
 
+#include <cmath>
+
 #include <vector>
 
-#include "gromacs/math/utilities.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/simd/simd.h"
 
@@ -272,18 +273,10 @@ TEST_F(SimdMathTest, gmxSimdLogR)
     GMX_EXPECT_SIMD_FUNC_NEAR(ref_log, gmx_simd_log_r);
 }
 
-// MSVC does not support exp2(), so we have no reference to test against
-#ifndef _MSC_VER
-/*! \brief Function wrapper for exp2(x), with argument/return in default Gromacs precision */
-real ref_exp2(real x)
-{
-    return exp2(x);
-}
-
 TEST_F(SimdMathTest, gmxSimdExp2R)
 {
     setRange(-100, 100);
-    GMX_EXPECT_SIMD_FUNC_NEAR(ref_exp2, gmx_simd_exp2_r);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, gmx_simd_exp2_r);
 
     // We do not care about the SIMD implementation getting denormal values right,
     // but they must be clamped to zero rather than producing garbage.
@@ -291,7 +284,7 @@ TEST_F(SimdMathTest, gmxSimdExp2R)
     setAbsTol(GMX_REAL_EPS);
 
     // First two values will have denormal results in single, third value in double too.
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(ref_exp2(-150.0), ref_exp2(-300.0), ref_exp2(-1050.0)),
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp2(-150.0), std::exp2(-300.0), std::exp2(-1050.0)),
                               gmx_simd_exp2_r(setSimdRealFrom3R(-150.0, -300.0, -1050.0)));
 
     // Reset absolute tolerance to enforce ULP checking
@@ -299,10 +292,9 @@ TEST_F(SimdMathTest, gmxSimdExp2R)
 
     // Make sure that underflowing values are set to zero.
     // First two values underflow in single, third value in double too.
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(ref_exp2(-200.0), ref_exp2(-600.0), ref_exp2(-1500.0)),
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(std::exp2(-200.0), std::exp2(-600.0), std::exp2(-1500.0)),
                               gmx_simd_exp2_r(setSimdRealFrom3R(-200.0, -600.0, -1500.0)));
 }
-#endif
 
 /*! \brief Function wrapper for exp(x), with argument/return in default Gromacs precision */
 real ref_exp(real x)
@@ -334,12 +326,12 @@ TEST_F(SimdMathTest, gmxSimdExpR)
 
 /*! \brief Function wrapper for erf(x), with argument/return in default Gromacs precision.
  *
- * \note The single-precision gmx_erff() in gmxlib is slightly lower precision
- * than the SIMD flavor, so we use double for reference.
+ * \note Single-precision erf() in some libraries can be slightly lower precision
+ * than the SIMD flavor, so we use a cast to force double precision for reference.
  */
 real ref_erf(real x)
 {
-    return gmx_erfd(x);
+    return std::erf(static_cast<double>(x));
 }
 
 TEST_F(SimdMathTest, gmxSimdErfR)
@@ -351,12 +343,12 @@ TEST_F(SimdMathTest, gmxSimdErfR)
 
 /*! \brief Function wrapper for erfc(x), with argument/return in default Gromacs precision.
  *
- * \note The single-precision gmx_erfcf() in gmxlib is slightly lower precision
- * than the SIMD flavor, so we use double for reference.
+ * \note Single-precision erfc() in some libraries can be slightly lower precision
+ * than the SIMD flavor, so we use a cast to force double precision for reference.
  */
 real ref_erfc(real x)
 {
-    return gmx_erfcd(x);
+    return std::erfc(static_cast<double>(x));
 }
 
 TEST_F(SimdMathTest, gmxSimdErfcR)
@@ -488,7 +480,7 @@ real ref_pmecorrF(real x)
     if (x != 0)
     {
         real y = sqrt(x);
-        return 2*exp(-x)/(sqrt(M_PI)*x) - gmx_erfd(y)/(x*y);
+        return 2*exp(-x)/(sqrt(M_PI)*x) - std::erf(static_cast<double>(y))/(x*y);
     }
     else
     {
@@ -515,7 +507,7 @@ TEST_F(SimdMathTest, gmxSimdPmecorrForceR)
 real ref_pmecorrV(real x)
 {
     real y = sqrt(x);
-    return gmx_erfd(y)/y;
+    return std::erf(static_cast<double>(y))/y;
 }
 
 // The PME corrections will be added to ~1/r, so absolute tolerance of EPS is fine.
@@ -608,17 +600,14 @@ TEST_F(SimdMathTest, gmxSimdLogSingleaccuracyR)
     GMX_EXPECT_SIMD_FUNC_NEAR(ref_log, gmx_simd_log_singleaccuracy_r);
 }
 
-// MSVC does not support exp2(), so we have no reference to test against
-#ifndef _MSC_VER
 TEST_F(SimdMathTest, gmxSimdExp2SingleaccuracyR)
 {
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTol(ulpTol_ * (1LL << (std::numeric_limits<real>::digits-std::numeric_limits<float>::digits)));
 
     setRange(-100, 100);
-    GMX_EXPECT_SIMD_FUNC_NEAR(ref_exp2, gmx_simd_exp2_singleaccuracy_r);
+    GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, gmx_simd_exp2_singleaccuracy_r);
 }
-#endif
 
 TEST_F(SimdMathTest, gmxSimdExpSingleaccuracyR)
 {

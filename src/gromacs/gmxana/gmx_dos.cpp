@@ -215,7 +215,7 @@ static real wSsolid(real nu, real beta)
     }
     else
     {
-        return bhn/gmx_expm1(bhn) - gmx_log1p(-std::exp(-bhn));
+        return bhn/std::expm1(bhn) - std::log1p(-std::exp(-bhn));
     }
 }
 
@@ -243,7 +243,7 @@ static real wEsolid(real nu, real beta)
     }
     else
     {
-        return bhn/2 + bhn/gmx_expm1(bhn)-1;
+        return bhn/2 + bhn/std::expm1(bhn)-1;
     }
 }
 

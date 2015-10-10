@@ -352,7 +352,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
         fp_out[i] = open_trx(fnms_out[i], "w");
     }
     k = 0;
-    if (gmx_nint(time[k] - t) != 0)
+    if (std::round(time[k] - t) != 0)
     {
         gmx_fatal(FARGS, "First time in demuxing table does not match trajectories");
     }
@@ -372,7 +372,7 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
         }
         for (i = 0; (i < nset); i++)
         {
-            j = gmx_nint(value[i][k]);
+            j = std::round(value[i][k]);
             range_check(j, 0, nset);
             if (bSet[j])
             {
@@ -541,7 +541,7 @@ int gmx_trjcat(int argc, char *argv[])
                 fprintf(debug, "%10g", t[i]);
                 for (j = 0; (j < nset); j++)
                 {
-                    fprintf(debug, "  %3d", gmx_nint(val[j][i]));
+                    fprintf(debug, "  %3d", static_cast<int>(std::round(val[j][i])));
                 }
                 fprintf(debug, "\n");
             }

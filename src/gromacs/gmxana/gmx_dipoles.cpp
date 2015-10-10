@@ -134,7 +134,7 @@ static void done_gkrbin(t_gkrbin **gb)
 
 static void add2gkr(t_gkrbin *gb, real r, real cosa, real phi)
 {
-    int  cy, index = gmx_nint(r/gb->spacing);
+    int  cy, index = std::round(r/gb->spacing);
     real alpha;
 
     if (index < gb->nelem)
@@ -253,7 +253,7 @@ void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
                     cosa = cos_angle(mu[gi], mu[gj]);
                     phi  = 0;
                 }
-                if (debug || gmx_isnan(cosa))
+                if (debug || std::isnan(cosa))
                 {
                     fprintf(debug ? debug : stderr,
                             "mu[%d] = %5.2f %5.2f %5.2f |mi| = %5.2f, mu[%d] = %5.2f %5.2f %5.2f |mj| = %5.2f rr = %5.2f cosa = %5.2f\n",

@@ -220,7 +220,7 @@ static void find_nearest_neighbours(int ePBC,
         *skmean += skmol[i];
 
         /* Compute sliced stuff */
-        sl_index           = gmx_nint((1+x[i][slice_dim]/box[slice_dim][slice_dim])*nslice) % nslice;
+        sl_index           = static_cast<int>(std::round((1+x[i][slice_dim]/box[slice_dim][slice_dim])*nslice)) % nslice;
         sgslice[sl_index] += sgmol[i];
         skslice[sl_index] += skmol[i];
         sl_count[sl_index]++;

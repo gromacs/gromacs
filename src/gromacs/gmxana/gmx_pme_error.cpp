@@ -949,7 +949,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
     if (MASTER(cr))
     {
         calc_q2all(mtop, &(info->q2all), &(info->q2allnr));
-        info->ewald_rtol[0] = gmx_erfc(info->rcoulomb[0]*info->ewald_beta[0]);
+        info->ewald_rtol[0] = std::erfc(info->rcoulomb[0]*info->ewald_beta[0]);
         /* Write some info to log file */
         fprintf(fp_out, "Box volume              : %g nm^3\n", info->volume);
         fprintf(fp_out, "Number of charged atoms : %d (total atoms %d)\n", ncharges, info->natoms);
@@ -1055,7 +1055,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
             }
         }
 
-        info->ewald_rtol[0] = gmx_erfc(info->rcoulomb[0]*info->ewald_beta[0]);
+        info->ewald_rtol[0] = std::erfc(info->rcoulomb[0]*info->ewald_beta[0]);
 
         if (MASTER(cr))
         {

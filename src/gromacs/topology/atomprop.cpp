@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,8 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <cmath>
 
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/legacyheaders/copyrite.h"
@@ -406,7 +408,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber)
     set_prop(aps, epropElement);
     for (i = 0; (i < ap->prop[epropElement].nprop); i++)
     {
-        if (gmx_nint(ap->prop[epropElement].value[i]) == atomnumber)
+        if (std::round(ap->prop[epropElement].value[i]) == atomnumber)
         {
             return ap->prop[epropElement].atomnm[i];
         }
@@ -424,7 +426,7 @@ int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)
     {
         if (gmx_strcasecmp(ap->prop[epropElement].atomnm[i], elem) == 0)
         {
-            return gmx_nint(ap->prop[epropElement].value[i]);
+            return std::round(ap->prop[epropElement].value[i]);
         }
     }
     return -1;

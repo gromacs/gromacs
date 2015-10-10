@@ -37,6 +37,7 @@
 #include "gmxpre.h"
 
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 
@@ -425,14 +426,14 @@ int gmx_genion(int argc, char *argv[])
     {
         qtot += atoms.atom[i].q;
     }
-    iqtot = gmx_nint(qtot);
+    iqtot = std::round(qtot);
 
 
     if (conc > 0)
     {
         /* Compute number of ions to be added */
         vol   = det(box);
-        nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
+        nsalt = std::round(conc*vol*AVOGADRO/1e24);
         p_num = abs(nsalt*n_q);
         n_num = abs(nsalt*p_q);
     }
