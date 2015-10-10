@@ -39,7 +39,7 @@
 
 #include "pme-solve.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/vec.h"
@@ -279,7 +279,7 @@ gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *t
     for (kx = start; kx < end; kx++)
     {
         mk       = tmp2[kx];
-        tmp2[kx] = sqrt(M_PI)*mk*gmx_erfc(mk);
+        tmp2[kx] = sqrt(M_PI)*mk*std::erfc(mk);
     }
 }
 #endif

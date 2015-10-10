@@ -47,11 +47,6 @@
 /* TODO: For now, disable Doxygen warnings from here */
 /*! \cond */
 
-/* IEEE754 floating-point format. Memory layout is defined by macros
- * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
- */
-#cmakedefine01 GMX_FLOAT_FORMAT_IEEE754
-
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
 
@@ -336,15 +331,6 @@
 
 /* Define to 1 if you have the all the affinity functions in sched.h */
 #cmakedefine HAVE_SCHED_AFFINITY
-
-/* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
-   Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
-#cmakedefine01 GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER
-
-/* The two words in a double precision variable are in b ig-endian order if
-   set, little-endian if not. Do NOT assume this is the same as the byte
-   order! Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
-#cmakedefine01 GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
 
 /* Define if SIGUSR1 is present */
 #cmakedefine01 HAVE_SIGUSR1

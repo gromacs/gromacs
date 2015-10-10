@@ -41,9 +41,10 @@
 #include "config.h"
 
 #include <assert.h>
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <cmath>
 
 #include <algorithm>
 
@@ -2052,7 +2053,7 @@ init_interaction_const(FILE                       *fp,
 
     if (fr->coulomb_modifier == eintmodPOTSHIFT)
     {
-        ic->sh_ewald = gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+        ic->sh_ewald = std::erfc(ic->ewaldcoeff_q*ic->rcoulomb);
     }
     else
     {

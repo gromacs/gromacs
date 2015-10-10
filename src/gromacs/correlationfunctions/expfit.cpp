@@ -46,8 +46,9 @@
 
 #include "expfit.h"
 
-#include <math.h>
 #include <string.h>
+
+#include <cmath>
 
 #include <algorithm>
 
@@ -150,7 +151,7 @@ static double lmc_erffit (double x, const double *a)
     if (a[3] != 0)
     {
         erfarg = (x-a[2])/(a[3]*a[3]);
-        myerf  = gmx_erfd(erfarg);
+        myerf  = std::erf(erfarg);
     }
     else
     {
@@ -201,7 +202,7 @@ static double safe_expm1(double x)
     }
     else
     {
-        return gmx_expm1(x);
+        return std::expm1(x);
     }
 }
 
