@@ -39,7 +39,8 @@
 #include "config.h"
 
 #include <assert.h>
-#include <math.h>
+
+#include <cmath>
 
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
