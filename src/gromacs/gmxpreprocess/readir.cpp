@@ -163,7 +163,7 @@ static void GetSimTemps(int ntemps, t_simtemp *simtemp, double *temperature_lamb
         }
         else if (simtemp->eSimTempScale == esimtempEXPONENTIAL)
         {
-            simtemp->temperatures[i] = simtemp->simtemp_low + (simtemp->simtemp_high-simtemp->simtemp_low)*(gmx_expm1(temperature_lambdas[i])/gmx_expm1(1.0));
+            simtemp->temperatures[i] = simtemp->simtemp_low + (simtemp->simtemp_high-simtemp->simtemp_low)*(std::expm1(temperature_lambdas[i])/std::expm1(1.0));
         }
         else
         {

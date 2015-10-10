@@ -37,8 +37,9 @@
 #include "calc_verletbuf.h"
 
 #include <assert.h>
-#include <math.h>
 #include <stdlib.h>
+
+#include <cmath>
 
 #include <algorithm>
 
@@ -564,7 +565,7 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
     real ex, er;
 
     ex = exp(-x*x/(2*s2));
-    er = gmx_erfc(x/sqrt(2*s2));
+    er = std::erfc(x/sqrt(2*s2));
 
     *shift = -x + sqrt(2*s2/M_PI)*ex/er;
     *scale = 0.5*M_PI*exp(ex*ex/(M_PI*er*er))*er;
@@ -678,7 +679,7 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
                  * atom density still needs to be put in.
                  */
                 c_exp  = exp(-rsh*rsh/(2*s2))/sqrt(2*M_PI);
-                c_erfc = 0.5*gmx_erfc(rsh/(sqrt(2*s2)));
+                c_erfc = 0.5*std::erfc(rsh/(sqrt(2*s2)));
             }
             s      = sqrt(s2);
             rsh2   = rsh*rsh;
@@ -988,8 +989,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         b      = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
         rc     = ir->rcoulomb;
         br     = b*rc;
-        md1_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + gmx_erfc(br)/(rc*rc));
-        d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*gmx_erfc(br)/rc);
+        md1_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + std::erfc(br)/(rc*rc));
+        d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*std::erfc(br)/rc);
     }
     else
     {

@@ -38,7 +38,7 @@
 
 #include "long-range-correction.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
@@ -226,7 +226,7 @@ void ewald_LRcorrection(int start, int end,
 
                                     dr       = 1.0/rinv;
                                     ewcdr    = ewc_q*dr;
-                                    vc       = qqA*gmx_erf(ewcdr)*rinv;
+                                    vc       = qqA*std::erf(ewcdr)*rinv;
                                     Vexcl_q += vc;
 #ifdef GMX_DOUBLE
                                     /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
@@ -388,7 +388,7 @@ void ewald_LRcorrection(int start, int end,
                                     real dr;
 
                                     dr           = 1.0/rinv;
-                                    v            = gmx_erf(ewc_q*dr)*rinv;
+                                    v            = std::erf(ewc_q*dr)*rinv;
                                     vc           = qqL*v;
                                     Vexcl_q     += vc;
                                     /* fscal is the scalar force pre-multiplied by rinv,

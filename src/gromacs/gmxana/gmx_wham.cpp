@@ -1433,7 +1433,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
             /* get flat distribution in [0,1] using cumulative distribution function of Gauusian
                Note: CDF(Gaussian) = 0.5*{1+erf[x/sqrt(2)]}
              */
-            r = 0.5*(1+gmx_erf(x*invsqrt2));
+            r = 0.5*(1+std::erf(x*invsqrt2));
             searchCumulative(thisWindow->cum[pullid], nbins+1, r, &r_index);
             synthWindow->Histo[0][r_index] += 1.;
         }
