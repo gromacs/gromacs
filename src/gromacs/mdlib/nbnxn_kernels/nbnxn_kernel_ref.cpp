@@ -39,7 +39,8 @@
 #include "config.h"
 
 #include <assert.h>
-#include <math.h>
+
+#include <cmath>
 
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
@@ -243,6 +244,7 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
         gmx_incons("Unsupported vdwtype in nbnxn reference kernel");
     }
 
+    // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntNonbonded);
 #pragma omp parallel for schedule(static) num_threads(nthreads)
     for (nb = 0; nb < nnbl; nb++)
