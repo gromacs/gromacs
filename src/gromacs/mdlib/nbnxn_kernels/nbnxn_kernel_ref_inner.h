@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,14 +64,15 @@
 
         for (j = 0; j < UNROLLJ; j++)
         {
-            int  aj;
-            real dx, dy, dz;
-            real rsq, rinv;
-            real rinvsq, rinvsix;
-            real c6, c12;
-            real FrLJ6 = 0, FrLJ12 = 0, frLJ = 0, VLJ = 0;
+            int             aj;
+            real            dx, dy, dz;
+            real            rsq, rinv;
+            real            rinvsq, rinvsix;
+            real            c6, c12;
+            real            FrLJ6 = 0, FrLJ12 = 0, frLJ = 0;
+            real            VLJ gmx_unused;
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-            real r, rsw;
+            real            r, rsw;
 #endif
 
 #ifdef CALC_COULOMB
@@ -105,12 +106,15 @@
 #ifndef EXCL_FORCES
             skipmask = interact;
 #else
-            skipmask = !(cj == ci_sh && j <= i);
+            skipmask = (cj == ci_sh && j <= i) ? 0.0 : 1.0;
 #endif
 #else
 #define interact 1.0
             skipmask = 1.0;
 #endif
+
+            // cppcheck-suppress unreadVariable
+            VLJ = 0;
 
             aj = cj*UNROLLJ + j;
 
@@ -206,7 +210,10 @@
 
 #ifdef LJ_EWALD
                 {
-                    real c6grid, rinvsix_nm, cr2, expmcr2, poly, sh_mask;
+                    real            c6grid, rinvsix_nm, cr2, expmcr2, poly;
+#ifdef CALC_ENERGIES
+                    real            sh_mask;
+#endif
 
 #ifdef LJ_EWALD_COMB_GEOM
                     c6grid       = ljc[type[ai]*2]*ljc[type[aj]*2];
