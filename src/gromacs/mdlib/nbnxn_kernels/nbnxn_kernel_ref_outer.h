@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,12 +120,10 @@ NBK_FUNC_NAME(_VgrpF)
 #endif
     int                 ntype2;
     real                facel;
-    real               *nbfp_i;
     int                 n, ci, ci_sh;
     int                 ish, ishf;
-    gmx_bool            do_LJ, half_LJ, do_coul, do_self;
+    gmx_bool            do_LJ, half_LJ, do_coul;
     int                 cjind0, cjind1, cjind;
-    int                 ip, jp;
 
     real                xi[UNROLLI*XI_STRIDE];
     real                fi[UNROLLI*FI_STRIDE];
@@ -145,7 +143,10 @@ NBK_FUNC_NAME(_VgrpF)
     real       swF2, swF3, swF4;
 #endif
 #ifdef LJ_EWALD
-    real        lje_coeff2, lje_coeff6_6, lje_vc;
+    real        lje_coeff2, lje_coeff6_6;
+#ifdef CALC_ENERGIES
+    real        lje_vc;
+#endif
     const real *ljc;
 #endif
 
@@ -156,19 +157,16 @@ NBK_FUNC_NAME(_VgrpF)
 #endif
 #endif
 #ifdef CALC_COUL_TAB
-    real       tabscale;
 #ifdef CALC_ENERGIES
     real       halfsp;
 #endif
 #ifndef GMX_DOUBLE
-    const real *tab_coul_FDV0;
+    const real            *tab_coul_FDV0;
 #else
-    const real *tab_coul_F;
-    const real *tab_coul_V;
+    const real            *tab_coul_F;
+    const real gmx_unused *tab_coul_V;
 #endif
 #endif
-
-    int ninner;
 
 #ifdef COUNT_PAIRS
     int npair = 0;
@@ -186,7 +184,9 @@ NBK_FUNC_NAME(_VgrpF)
 #ifdef LJ_EWALD
     lje_coeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
     lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2/6.0;
+#ifdef CALC_ENERGIES
     lje_vc       = ic->sh_lj_ewald;
+#endif
 
     ljc          = nbat->nbfp_comb;
 #endif
@@ -199,7 +199,6 @@ NBK_FUNC_NAME(_VgrpF)
 #endif
 #endif
 #ifdef CALC_COUL_TAB
-    tabscale = ic->tabq_scale;
 #ifdef CALC_ENERGIES
     halfsp = 0.5/ic->tabq_scale;
 #endif
@@ -232,7 +231,6 @@ NBK_FUNC_NAME(_VgrpF)
 
     l_cj = nbl->cj;
 
-    ninner = 0;
     for (n = 0; n < nbl->nci; n++)
     {
         int i, d;
@@ -257,13 +255,14 @@ NBK_FUNC_NAME(_VgrpF)
         do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
         do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
         half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
+#ifdef CALC_ENERGIES
+
 #ifdef LJ_EWALD
-        do_self = TRUE;
+        gmx_bool do_self = TRUE;
 #else
-        do_self = do_coul;
+        gmx_bool do_self = do_coul;
 #endif
 
-#ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
         Vvdw_ci = 0;
         Vc_ci   = 0;
@@ -371,7 +370,6 @@ NBK_FUNC_NAME(_VgrpF)
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref_inner.h"
             }
         }
-        ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
         for (i = 0; i < UNROLLI; i++)
