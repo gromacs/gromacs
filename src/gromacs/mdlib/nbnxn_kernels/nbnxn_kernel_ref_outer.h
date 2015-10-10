@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,12 +120,13 @@ NBK_FUNC_NAME(_VgrpF)
 #endif
     int                 ntype2;
     real                facel;
-    real               *nbfp_i;
+    real gmx_unused    *nbfp_i;
     int                 n, ci, ci_sh;
     int                 ish, ishf;
     gmx_bool            do_LJ, half_LJ, do_coul, do_self;
     int                 cjind0, cjind1, cjind;
-    int                 ip, jp;
+    int gmx_unused      ip;
+    int gmx_unused      jp;
 
     real                xi[UNROLLI*XI_STRIDE];
     real                fi[UNROLLI*FI_STRIDE];
