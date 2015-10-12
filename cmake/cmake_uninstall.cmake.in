@@ -18,5 +18,35 @@ FOREACH(file ${files})
   ELSE(EXISTS "$ENV{DESTDIR}${file}" OR IS_SYMLINK "$ENV{DESTDIR}${file}")
     MESSAGE(STATUS "File \"$ENV{DESTDIR}${file}\" does not exist.")
   ENDIF(EXISTS "$ENV{DESTDIR}${file}" OR IS_SYMLINK "$ENV{DESTDIR}${file}")
+  GET_FILENAME_COMPONENT(directory ${file} PATH)
+  LIST(APPEND directories ${directory})
 ENDFOREACH(file)
 
+FUNCTION(DELETE_EMPTY_DIRECTORIES DIRECTORY_PATH)
+  # FUNCTION can work with one or more arguments, using ARGV to catch them all
+  FOREACH(directory ${ARGV})
+    IF(EXISTS ${directory} AND IS_DIRECTORY ${directory})
+      MESSAGE(STATUS "Removing directory \"${directory}\"")
+      # check if there are subdirs and recurse if necessary
+      FILE(GLOB directory_files "${directory}/*")
+      IF(directory_files)
+        MESSAGE(STATUS "Directory \"${directory}\" not empty, recursing")
+        DELETE_EMPTY_DIRECTORIES(${directory_files})
+      ENDIF(directory_files)
+      # check if there are no files left after recursion
+      FILE(GLOB directory_files "${directory}/*")
+      IF(NOT directory_files)
+        EXEC_PROGRAM(
+          "@CMAKE_COMMAND@" ARGS "-E remove_directory \"${directory}\""
+          OUTPUT_VARIABLE rmdir_out
+          RETURN_VALUE rmdir_retval
+          )
+      ENDIF(NOT directory_files)
+    ELSE(EXISTS ${directory} AND IS_DIRECTORY ${directory})
+      MESSAGE(STATUS "File \"${directory}\" does not exist or is not a directory.")
+    ENDIF(EXISTS ${directory} AND IS_DIRECTORY ${directory})
+  ENDFOREACH(directory)
+ENDFUNCTION(DELETE_EMPTY_DIRECTORIES DIRECTORY_LIST)
+
+LIST(REMOVE_DUPLICATES directories)
+DELETE_EMPTY_DIRECTORIES(${directories})
