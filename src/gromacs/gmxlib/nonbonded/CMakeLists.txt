@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # Sources that should always be built
-file(GLOB NONBONDED_SOURCES *.c *.cpp nb_kernel_c/*.c)
+file(GLOB NONBONDED_SOURCES *.cpp nb_kernel_c/*.c)
 
 if("${GMX_SIMD}" STREQUAL "SSE2" AND NOT GMX_DOUBLE)
     file(GLOB NONBONDED_SSE2_SINGLE_SOURCES nb_kernel_sse2_single/*.c)

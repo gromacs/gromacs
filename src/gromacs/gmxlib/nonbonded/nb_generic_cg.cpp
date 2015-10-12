@@ -38,7 +38,7 @@
 
 #include "nb_generic_cg.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/nonbonded.h"
@@ -55,8 +55,8 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                          nb_kernel_data_t *        kernel_data,
                          t_nrnb *                  nrnb)
 {
-    int           nri, ntype, table_nelements, ielec, ivdw;
-    real          facel, gbtabscale;
+    int           ntype, table_nelements, ielec, ivdw;
+    real          facel;
     int           n, is3, i3, k, nj0, nj1, j3, ggid, nnn, n0;
     int           ai0, ai1, ai, aj0, aj1, aj;
     real          shX, shY, shZ;
@@ -77,7 +77,6 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
     real *        charge;
     real *        shiftvec;
     real *        vdwparam;
-    int *         shift;
     int *         type;
     t_excl *      excl;
     real *        fshift;
@@ -101,7 +100,6 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
 
     /* avoid compiler warnings for cases that cannot happen */
     nnn                 = 0;
-    vcoul               = 0.0;
     eps                 = 0.0;
     eps2                = 0.0;
 
@@ -259,7 +257,7 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                                 rinvsix          = rinvsq*rinvsq*rinvsq;
                                 Vvdw_disp        = c6*rinvsix;
                                 br               = cexp2*rsq*rinv;
-                                Vvdw_rep         = cexp1*exp(-br);
+                                Vvdw_rep         = cexp1*std::exp(-br);
                                 fscal           += (br*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
                                 Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
                                 break;

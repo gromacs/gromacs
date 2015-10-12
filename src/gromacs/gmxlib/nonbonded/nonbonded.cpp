@@ -40,9 +40,9 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
 
 #include "thread_mpi/threads.h"
 
@@ -176,7 +176,6 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     const char *     vdw_mod;
     const char *     geom;
     const char *     other;
-    const char *     vf;
 
     struct
     {
@@ -337,7 +336,7 @@ void do_nonbonded(t_forcerec *fr,
                   int nls, int eNL, int flags)
 {
     t_nblist *        nlist;
-    int               n, n0, n1, i, i0, i1, sz, range;
+    int               n, n0, n1, i, i0, i1, range;
     t_nblists *       nblists;
     nb_kernel_data_t  kernel_data;
     nb_kernel_t *     kernelptr = NULL;

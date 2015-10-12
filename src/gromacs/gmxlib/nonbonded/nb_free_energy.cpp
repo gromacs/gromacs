@@ -38,7 +38,7 @@
 
 #include "nb_free_energy.h"
 
-#include <math.h>
+#include <cmath>
 
 #include <algorithm>
 
@@ -321,8 +321,8 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
         dlfac_vdw[i]  = DLF[i]*lam_power/sc_r_power*(lam_power == 2 ? (1-LFV[i]) : 1);
     }
     /* precalculate */
-    sigma2_def = pow(sigma6_def, 1.0/3.0);
-    sigma2_min = pow(sigma6_min, 1.0/3.0);
+    sigma2_def = std::pow(sigma6_def, 1.0/3.0);
+    sigma2_min = std::pow(sigma6_min, 1.0/3.0);
 
     /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
 
@@ -413,7 +413,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
             }
             else
             {
-                rp             = pow(r, sc_r_power);  /* not currently supported as input, but can handle it */
+                rp             = std::pow(r, sc_r_power);  /* not currently supported as input, but can handle it */
                 rpm2           = rp/rsq;
             }
 
@@ -437,7 +437,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     {
                         /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
                         sigma6[i]       = half*c12[i]/c6[i];
-                        sigma2[i]       = pow(sigma6[i], 1.0/3.0);
+                        sigma2[i]       = std::pow(sigma6[i], 1.0/3.0);
                         /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                            what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
                         if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
@@ -463,7 +463,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     }
                     else
                     {    /* not really supported as input, but in here for testing the general case*/
-                        sigma_pow[i]    = pow(sigma2[i], sc_r_power/2);
+                        sigma_pow[i]    = std::pow(sigma2[i], sc_r_power/2);
                     }
                 }
 
@@ -491,11 +491,11 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                     {
                         /* this section has to be inside the loop because of the dependence on sigma_pow */
                         rpinvC         = one/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
-                        rinvC          = pow(rpinvC, one/sc_r_power);
+                        rinvC          = std::pow(rpinvC, one/sc_r_power);
                         rC             = one/rinvC;
 
                         rpinvV         = one/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
-                        rinvV          = pow(rpinvV, one/sc_r_power);
+                        rinvV          = std::pow(rpinvV, one/sc_r_power);
                         rV             = one/rinvV;
 
                         if (do_tab)
@@ -569,7 +569,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     else
                                     {
                                         ewrt      = rC*ewtabscale;
-                                        ewitab    = (int) ewrt;
+                                        ewitab    = static_cast<int>(ewrt);
                                         eweps     = ewrt-ewitab;
                                         ewitab    = 4*ewitab;
                                         FscalC[i] = ewtab[ewitab]+eweps*ewtab[ewitab+1];
@@ -692,7 +692,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                     {
                                         /* Normal LJ-PME */
                                         ewcljrsq         = ewclj2*rV*rV;
-                                        exponent         = exp(-ewcljrsq);
+                                        exponent         = std::exp(-ewcljrsq);
                                         poly             = exponent*(one + ewcljrsq + ewcljrsq*ewcljrsq*half);
                                         vvdw_disp        = (c6[i]-c6grid*(one-poly))*rinv6;
                                         vvdw_rep         = c12[i]*rinv6*rinv6;
@@ -786,7 +786,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 real v_lr, f_lr;
 
                 ewrt      = r*ewtabscale;
-                ewitab    = (int) ewrt;
+                ewitab    = static_cast<int>(ewrt);
                 eweps     = ewrt-ewitab;
                 ewitab    = 4*ewitab;
                 f_lr      = ewtab[ewitab]+eweps*ewtab[ewitab+1];
@@ -833,7 +833,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                 int  ri;
 
                 rs     = rsq*rinv*ewtabscale;
-                ri     = (int)rs;
+                ri     = static_cast<int>(rs);
                 frac   = rs - ri;
                 f_lr   = (1 - frac)*tab_ewald_F_lj[ri] + frac*tab_ewald_F_lj[ri+1];
                 /* TODO: Currently the Ewald LJ table does not contain
