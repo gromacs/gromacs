@@ -56,10 +56,10 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_cpuid.h"
-#include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/enums.h"
@@ -86,12 +86,17 @@ static const char *gpu_implementation       = "OpenCL";
 /* Our current OpenCL implementation only supports using exactly one
  * GPU per PP rank, so sharing is impossible */
 static const bool bGpuSharingSupported      = false;
-/* Our current OpenCL implementation is not known to handle
- * concurrency correctly (at context creation, JIT compilation, or JIT
- * cache-management stages). OpenCL runtimes need not support it
- * either; library MPI segfaults when creating OpenCL contexts;
- * thread-MPI seems to work but is not yet known to be safe. */
+/* Our current OpenCL implementation seems to handle concurrency
+ * correctly with thread-MPI. The AMD OpenCL runtime does not seem to
+ * support creating a context from more than one real MPI rank on the
+ * same node (it segfaults when you try).
+ */
+#    ifdef GMX_THREAD_MPI
+static const bool bMultiGpuPerNodeSupported = true;
+#    else /* GMX_THREAD_MPI */
+/* Real MPI and no MPI */
 static const bool bMultiGpuPerNodeSupported = false;
+#    endif
 
 #  else /* GMX_USE_OPENCL */
 
@@ -629,10 +634,17 @@ static int get_ncores(gmx_cpuid_t cpuid)
  * reported to be online by the OS at the time of the call. The
  * definition of "processor" is according to an old POSIX standard.
  *
+ * On e.g. Arm, the Linux kernel can use advanced power saving features where
+ * processors are brought online/offline dynamically. This will cause
+ * _SC_NPROCESSORS_ONLN to report 1 at the beginning of the run. For this
+ * reason we now first try to use the number of configured processors, but
+ * also warn if they mismatch.
+ *
  * Note that the number of hardware threads is generally greater than
  * the number of cores (e.g. x86 hyper-threading, Power). Managing the
  * mapping of software threads to hardware threads is managed
- * elsewhere. */
+ * elsewhere.
+ */
 static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
 {
     int ret = 0;
@@ -646,16 +658,28 @@ static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unu
     /* We are probably on Unix.
      * Now check if we have the argument to use before executing the call
      */
-#if defined(_SC_NPROCESSORS_ONLN)
+#if defined(_SC_NPROCESSORS_CONF)
+    ret = sysconf(_SC_NPROCESSORS_CONF);
+#    if defined(_SC_NPROCESSORS_ONLN)
+    if (ret != sysconf(_SC_NPROCESSORS_ONLN))
+    {
+        md_print_warn(cr, fplog,
+                      "%d CPUs configured, but only %d of them are online.\n"
+                      "This can happen on embedded platforms (e.g. ARM) where the OS shuts some cores\n"
+                      "off to save power, and will turn them back on later when the load increases.\n"
+                      "However, this will likely mean GROMACS cannot pin threads to those cores. You\n"
+                      "will likely see much better performance by forcing all cores to be online, and\n"
+                      "making sure they run at their full clock frequency.", ret, sysconf(_SC_NPROCESSORS_ONLN));
+    }
+#    endif
+#elif defined(_SC_NPROC_CONF)
+    ret = sysconf(_SC_NPROC_CONF);
+#elif defined(_SC_NPROCESSORS_ONLN)
     ret = sysconf(_SC_NPROCESSORS_ONLN);
 #elif defined(_SC_NPROC_ONLN)
     ret = sysconf(_SC_NPROC_ONLN);
-#elif defined(_SC_NPROCESSORS_CONF)
-    ret = sysconf(_SC_NPROCESSORS_CONF);
-#elif defined(_SC_NPROC_CONF)
-    ret = sysconf(_SC_NPROC_CONF);
 #else
-#warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
+#    warning "No valid sysconf argument value found. Executables will not be able to determine the number of logical cores: mdrun will use 1 thread by default!"
 #endif /* End of check for sysconf argument values */
 
 #else

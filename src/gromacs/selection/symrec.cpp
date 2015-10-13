@@ -44,14 +44,14 @@
 #include "symrec.h"
 
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/uniqueptr.h"
 
 #include "poscalc.h"
 #include "selelem.h"
@@ -148,7 +148,7 @@ class SelectionParserSymbolTable::Impl
 {
     public:
         //! Smart pointer type for managing a SelectionParserSymbol.
-        typedef gmx::gmx_unique_ptr<SelectionParserSymbol>::type
+        typedef std::unique_ptr<SelectionParserSymbol>
             SymbolPointer;
         //! Container type for the list of symbols.
         typedef std::map<std::string, SymbolPointer> SymbolMap;
@@ -171,7 +171,7 @@ class SelectionParserSymbolTable::Impl
 void
 SelectionParserSymbolTable::Impl::addSymbol(SymbolPointer symbol)
 {
-    symbols_.insert(std::make_pair(symbol->name(), move(symbol)));
+    symbols_.insert(std::make_pair(symbol->name(), std::move(symbol)));
 }
 
 void
@@ -195,7 +195,7 @@ SelectionParserSymbolTable::Impl::addReservedSymbols()
         SymbolPointer sym(new SelectionParserSymbol(
                                   new SelectionParserSymbol::Impl(
                                           SelectionParserSymbol::ReservedSymbol, sym_reserved[i])));
-        addSymbol(move(sym));
+        addSymbol(std::move(sym));
     }
 }
 
@@ -209,7 +209,7 @@ SelectionParserSymbolTable::Impl::addPositionSymbols()
         SymbolPointer sym(new SelectionParserSymbol(
                                   new SelectionParserSymbol::Impl(
                                           SelectionParserSymbol::PositionSymbol, postypes[i])));
-        addSymbol(move(sym));
+        addSymbol(std::move(sym));
     }
 }
 
@@ -378,7 +378,7 @@ SelectionParserSymbolTable::addVariable(const char                             *
                                     new SelectionParserSymbol::Impl(
                                             SelectionParserSymbol::VariableSymbol, name)));
     sym->impl_->var_ = sel;
-    impl_->addSymbol(move(sym));
+    impl_->addSymbol(std::move(sym));
 }
 
 void
@@ -395,7 +395,7 @@ SelectionParserSymbolTable::addMethod(const char          *name,
                                     new SelectionParserSymbol::Impl(
                                             SelectionParserSymbol::MethodSymbol, name)));
     sym->impl_->meth_ = method;
-    impl_->addSymbol(move(sym));
+    impl_->addSymbol(std::move(sym));
 }
 
 } // namespace gmx

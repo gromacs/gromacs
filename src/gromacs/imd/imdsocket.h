@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,13 +65,6 @@
 #define GMX_IMD
 #endif
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-
 /*! \internal
  *
  * \brief
@@ -95,7 +88,7 @@ typedef struct
  *
  * \returns 0 if successful.
  */
-extern int imdsock_winsockinit();
+int imdsock_winsockinit();
 #endif
 
 
@@ -103,7 +96,7 @@ extern int imdsock_winsockinit();
  *
  * \returns  The IMD socket if successful. Otherwise prints an error message and returns NULL.
  */
-extern IMDSocket *imdsock_create();
+IMDSocket *imdsock_create();
 
 
 /*! \brief Bind the IMD socket to address and port.
@@ -117,7 +110,7 @@ extern IMDSocket *imdsock_create();
  *
  * \returns 0 if successful.
  */
-extern int imdsock_bind(IMDSocket *sock, int port);
+int imdsock_bind(IMDSocket *sock, int port);
 
 
 /*! \brief Set socket to listening state.
@@ -129,7 +122,7 @@ extern int imdsock_bind(IMDSocket *sock, int port);
  * \returns 0 if successful.
  *
  */
-extern int imd_sock_listen(IMDSocket *sock);
+int imd_sock_listen(IMDSocket *sock);
 
 
 /*! \brief Accept incoming connection and redirect to client socket.
@@ -140,7 +133,7 @@ extern int imd_sock_listen(IMDSocket *sock);
  *
  * \returns IMD socket if successful, NULL otherwise.
  */
-extern IMDSocket *imdsock_accept(IMDSocket *sock);
+IMDSocket *imdsock_accept(IMDSocket *sock);
 
 
 /*! \brief Get the port number used for IMD connection.
@@ -152,7 +145,7 @@ extern IMDSocket *imdsock_accept(IMDSocket *sock);
  *
  * \returns 0 if successful, an error code otherwise.
  */
-extern int imdsock_getport(IMDSocket *sock, int *port);
+int imdsock_getport(IMDSocket *sock, int *port);
 
 
 /*! \brief  Write to socket.
@@ -164,7 +157,7 @@ extern int imdsock_getport(IMDSocket *sock, int *port);
  *
  * \returns The number of bytes written, or -1.
  */
-extern int imdsock_write(IMDSocket *sock, const char *buffer, int length);
+int imdsock_write(IMDSocket *sock, const char *buffer, int length);
 
 
 /*! \brief  Read from socket.
@@ -175,7 +168,7 @@ extern int imdsock_write(IMDSocket *sock, const char *buffer, int length);
  *
  * \returns The number of bytes read, or -1 for errors.
  */
-extern int imdsock_read(IMDSocket *sock, char *buffer, int length);
+int imdsock_read(IMDSocket *sock, char *buffer, int length);
 
 
 /*! \brief Shutdown the socket.
@@ -183,7 +176,7 @@ extern int imdsock_read(IMDSocket *sock, char *buffer, int length);
  * \param sock      The IMD socket.
  *
  */
-extern void imdsock_shutdown(IMDSocket *sock);
+void imdsock_shutdown(IMDSocket *sock);
 
 
 /*! \brief Close the socket and free the sock struct memory.
@@ -194,7 +187,7 @@ extern void imdsock_shutdown(IMDSocket *sock);
  *
  * \returns 1 on success, or 0 if unsuccessful.
  */
-extern int imdsock_destroy(IMDSocket *sock);
+int imdsock_destroy(IMDSocket *sock);
 
 
 /*! \brief Try to read from the socket.
@@ -207,12 +200,6 @@ extern int imdsock_destroy(IMDSocket *sock);
  * \param timeoutusec  Time out microseconds
  *
  */
-extern int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec);
-
-
-#ifdef __cplusplus
-}
-#endif
-
+int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec);
 
 #endif

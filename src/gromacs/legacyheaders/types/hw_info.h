@@ -37,7 +37,7 @@
 #define HWINFO_H
 
 #include "gromacs/legacyheaders/gmx_cpuid.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,7 +75,7 @@ struct gmx_gpu_info_t
  * It is initialized by gmx_detect_hardware().
  * NOTE: this structure may only contain structures that are globally valid
  *       (i.e. must be able to be shared among all threads) */
-typedef struct
+typedef struct gmx_hw_info_t
 {
     /* Data for our local physical node */
     struct gmx_gpu_info_t gpu_info;          /* Information about GPUs detected in the system */
@@ -116,7 +116,7 @@ enum {
 };
 
 /* GPU device selection information -- includes either CUDA or OpenCL devices */
-typedef struct
+typedef struct gmx_gpu_opt_t
 {
     char     *gpu_id;           /* GPU id's to use, each specified as chars */
     gmx_bool  bUserSet;         /* true if the GPUs in dev_use are manually provided by the user */
@@ -128,7 +128,7 @@ typedef struct
 } gmx_gpu_opt_t;
 
 /* Threading and GPU options, can be set automatically or by the user */
-typedef struct {
+typedef struct gmx_hw_opt_t {
     int           nthreads_tot;        /* Total number of threads requested (TMPI) */
     int           nthreads_tmpi;       /* Number of TMPI threads requested         */
     int           nthreads_omp;        /* Number of OpenMP threads requested       */

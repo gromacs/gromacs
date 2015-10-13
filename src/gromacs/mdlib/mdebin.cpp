@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/mdebin.h"
+#include "mdebin.h"
 
 #include <float.h>
 #include <stdlib.h>
@@ -45,20 +45,23 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/disre.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/orires.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/orires.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdebin_bar.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
@@ -747,7 +750,7 @@ static void print_lambda_vector(t_lambda *fep, int i,
 
 
 extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
-                       const output_env_t oenv)
+                       const gmx_output_env_t *oenv)
 {
     FILE       *fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
@@ -1330,13 +1333,13 @@ static void pprint(FILE *log, const char *s, t_mdebin *md)
     fprintf(log, "\n");
 }
 
-void print_ebin_header(FILE *log, gmx_int64_t steps, double time, real lambda)
+void print_ebin_header(FILE *log, gmx_int64_t steps, double time)
 {
     char buf[22];
 
-    fprintf(log, "   %12s   %12s   %12s\n"
-            "   %12s   %12.5f   %12.5f\n\n",
-            "Step", "Time", "Lambda", gmx_step_str(steps, buf), time, lambda);
+    fprintf(log, "   %12s   %12s\n"
+            "   %12s   %12.5f\n\n",
+            "Step", "Time", gmx_step_str(steps, buf), time);
 }
 
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,

@@ -42,6 +42,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
@@ -50,13 +51,13 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -239,21 +240,21 @@ int gmx_rms(int argc, char *argv[])
     real            rlstot = 0, **rls, **rlsm = NULL, *time, *time2, *rlsnorm = NULL,
     **rmsd_mat             = NULL, **bond_mat = NULL, *axis, *axis2, *del_xaxis,
     *del_yaxis, rmsd_max, rmsd_min, rmsd_avg, bond_max, bond_min, ang;
-    real       **rmsdav_mat = NULL, av_tot, weight, weight_tot;
-    real       **delta      = NULL, delta_max, delta_scalex = 0, delta_scaley = 0,
+    real            **rmsdav_mat = NULL, av_tot, weight, weight_tot;
+    real            **delta      = NULL, delta_max, delta_scalex = 0, delta_scaley = 0,
     *delta_tot;
-    int          delta_xsize = 0, del_lev = 100, mx, my, abs_my;
-    gmx_bool     bA1, bA2, bPrev, bTop, *bInMat = NULL;
-    int          ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
+    int               delta_xsize = 0, del_lev = 100, mx, my, abs_my;
+    gmx_bool          bA1, bA2, bPrev, bTop, *bInMat = NULL;
+    int               ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
         0;
-    atom_id     *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
+    atom_id          *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
         NULL;
-    char        *gn_fit, **gn_rms;
-    t_rgb        rlo, rhi;
-    output_env_t oenv;
-    gmx_rmpbc_t  gpbc = NULL;
+    char             *gn_fit, **gn_rms;
+    t_rgb             rlo, rhi;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    t_filenm     fnm[] =
+    t_filenm          fnm[] =
     {
         { efTPS, NULL, NULL, ffREAD },
         { efTRX, "-f", NULL, ffREAD },
@@ -355,7 +356,7 @@ int gmx_rms(int argc, char *argv[])
         }
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), buf, &top, &ePBC, &xp,
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp,
                          NULL, box, TRUE);
     snew(w_rls, top.atoms.nr);
     snew(w_rms, top.atoms.nr);

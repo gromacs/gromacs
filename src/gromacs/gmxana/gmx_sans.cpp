@@ -45,11 +45,11 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/nsfactor.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -127,7 +127,6 @@ int gmx_sans(int argc, char *argv[])
     gmx_bool                              bMC  = FALSE;
     int                                   ePBC = -1;
     matrix                                box;
-    char                                  title[STRLEN];
     rvec                                 *x;
     int                                   natoms;
     real                                  t;
@@ -140,7 +139,7 @@ int gmx_sans(int argc, char *argv[])
     t_filenm                             *fnmdup         = NULL;
     gmx_radial_distribution_histogram_t  *prframecurrent = NULL, *pr = NULL;
     gmx_static_structurefactor_t         *sqframecurrent = NULL, *sq = NULL;
-    output_env_t                          oenv;
+    gmx_output_env_t                     *oenv;
 
 #define NFILE asize(fnm)
 
@@ -227,7 +226,7 @@ int gmx_sans(int argc, char *argv[])
     snew(grpname, 1);
     snew(index, 1);
 
-    read_tps_conf(fnTPX, title, top, &ePBC, &x, NULL, box, TRUE);
+    read_tps_conf(fnTPX, top, &ePBC, &x, NULL, box, TRUE);
 
     printf("\nPlease select group for SANS spectra calculation:\n");
     get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);

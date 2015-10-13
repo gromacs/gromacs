@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,10 @@
 
 #include "nmol.h"
 
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -81,7 +80,7 @@ static bool MWCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
             break;
         case ButtonPress:
 #ifdef DEBUG
-            printf("Molwindow: Buttonpress\n");
+            std::printf("Molwindow: Buttonpress\n");
 #endif
             letter.xclient.data.l[0] = IDLABEL;
             letter.xclient.data.l[1] = (long)event->xbutton.button;
@@ -154,7 +153,7 @@ void set_bond_type(t_x11 *x11, t_molwin *mw, int bt)
 void set_box_type (t_x11 *x11, t_molwin *mw, int bt)
 {
 #ifdef DEBUG
-    fprintf(stderr, "mw->boxtype = %d, bt = %d\n", mw->boxtype, bt);
+    std::fprintf(stderr, "mw->boxtype = %d, bt = %d\n", mw->boxtype, bt);
 #endif
     if (bt != mw->boxtype)
     {
@@ -165,7 +164,7 @@ void set_box_type (t_x11 *x11, t_molwin *mw, int bt)
         }
         else
         {
-            fprintf(stderr, "Can not change rectangular box to truncated octahedron\n");
+            std::fprintf(stderr, "Can not change rectangular box to truncated octahedron\n");
         }
     }
 }
@@ -586,8 +585,8 @@ void draw_mol(t_x11 *x11, t_manager *man)
     XClearWindow(x11->disp, win->self);
 
     /* Draw Time */
-    sprintf(tstr[ntime], "Time: %.3f ps", man->time);
-    if (strcmp(tstr[ntime], tstr[1-ntime]) != 0)
+    std::sprintf(tstr[ntime], "Time: %.3f ps", man->time);
+    if (std::strcmp(tstr[ntime], tstr[1-ntime]) != 0)
     {
         set_vbtime(x11, man->vbox, tstr[ntime]);
         ntime = 1-ntime;
@@ -602,7 +601,7 @@ void draw_mol(t_x11 *x11, t_manager *man)
     nvis = filter_vis(man);
     if (nvis && man->bSort)
     {
-        qsort(man->obj, nvis, sizeof(man->obj[0]), compare_obj);
+        std::qsort(man->obj, nvis, sizeof(man->obj[0]), compare_obj);
     }
 
     /* Draw the objects */
@@ -617,7 +616,7 @@ void draw_mol(t_x11 *x11, t_manager *man)
         if (man->bLabel[i] && man->bVis[i])
         {
             XDrawString(x11->disp, win->self, x11->gc, vec2[i][XX]+2, vec2[i][YY]-2,
-                        man->szLab[i], strlen(man->szLab[i]));
+                        man->szLab[i], std::strlen(man->szLab[i]));
         }
     }
 

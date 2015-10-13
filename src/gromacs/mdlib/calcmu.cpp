@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,7 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/calcmu.h"
+#include "calcmu.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,6 +62,7 @@ void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
     num_threads(gmx_omp_nthreads_get(emntDefault))
     for (i = start; i < end; i++)
     {
+        // Trivial OpenMP region that cannot throw
         mu_x += q[i]*x[i][XX];
         mu_y += q[i]*x[i][YY];
         mu_z += q[i]*x[i][ZZ];
@@ -82,6 +83,7 @@ void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
         num_threads(gmx_omp_nthreads_get(emntDefault))
         for (i = start; i < end; i++)
         {
+            // Trivial OpenMP region that cannot throw
             mu_x += qB[i]*x[i][XX];
             mu_y += qB[i]*x[i][YY];
             mu_z += qB[i]*x[i][ZZ];

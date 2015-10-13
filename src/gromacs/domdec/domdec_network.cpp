@@ -58,7 +58,7 @@
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
 
-void dd_sendrecv_int(const gmx_domdec_t gmx_unused *dd,
+void dd_sendrecv_int(const struct gmx_domdec_t gmx_unused *dd,
                      int gmx_unused ddimind, int gmx_unused direction,
                      int gmx_unused *buf_s, int gmx_unused n_s,
                      int gmx_unused *buf_r, int gmx_unused n_r)
@@ -90,7 +90,7 @@ void dd_sendrecv_int(const gmx_domdec_t gmx_unused *dd,
 #endif
 }
 
-void dd_sendrecv_real(const gmx_domdec_t gmx_unused *dd,
+void dd_sendrecv_real(const struct gmx_domdec_t gmx_unused *dd,
                       int gmx_unused ddimind, int gmx_unused direction,
                       real gmx_unused *buf_s, int gmx_unused n_s,
                       real gmx_unused *buf_r, int gmx_unused n_r)
@@ -122,7 +122,7 @@ void dd_sendrecv_real(const gmx_domdec_t gmx_unused *dd,
 #endif
 }
 
-void dd_sendrecv_rvec(const gmx_domdec_t gmx_unused *dd,
+void dd_sendrecv_rvec(const struct gmx_domdec_t gmx_unused *dd,
                       int gmx_unused ddimind, int gmx_unused direction,
                       rvec gmx_unused *buf_s, int gmx_unused n_s,
                       rvec gmx_unused *buf_r, int gmx_unused n_r)
@@ -154,7 +154,7 @@ void dd_sendrecv_rvec(const gmx_domdec_t gmx_unused *dd,
 #endif
 }
 
-void dd_sendrecv2_rvec(const gmx_domdec_t gmx_unused *dd,
+void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused *dd,
                        int gmx_unused ddimind,
                        rvec gmx_unused *buf_s_fw, int gmx_unused n_s_fw,
                        rvec gmx_unused *buf_r_fw, int gmx_unused n_r_fw,

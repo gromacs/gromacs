@@ -60,9 +60,9 @@
 #include "buildinfo.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/strdb.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -190,6 +190,7 @@ static void printCopyright(FILE *fp)
         "Vincent Hindriksen",
         "Dimitrios Karkoulis",
         "Peter Kasson",
+        "Jiri Kraus",
         "Carsten Kutzner",
         "Per Larsson",
         "Justin A. Lemkul",
@@ -619,7 +620,12 @@ void please_cite(FILE *fp, const char *key)
           "S. Páll, M. J. Abraham, C. Kutzner, B. Hess, E. Lindahl",
           "Tackling Exascale Software Challenges in Molecular Dynamics Simulations with GROMACS",
           "In S. Markidis & E. Laure (Eds.), Solving Software Challenges for Exascale",
-          8759, 2015, "3–27" }
+          8759, 2015, "3-27" },
+        { "Abraham2015",
+          "M. J. Abraham, T. Murtola, R. Schulz, S. Páll, J. C. Smith, B. Hess, E. Lindahl",
+          "GROMACS: High performance molecular simulations through multi-level parallelism from laptops to supercomputers",
+          "SoftwareX",
+          1, 2015, "19-25" },
     };
 #define NSTR (int)asize(citedb)
 
@@ -740,18 +746,13 @@ static void gmx_print_version_info(FILE *fp)
     /* A preprocessor trick to avoid duplicating logic from vec.h */
 #define gmx_stringify2(x) #x
 #define gmx_stringify(x) gmx_stringify2(x)
-    fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
+    fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt_impl(x)));
     fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
     fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef HAVE_RDTSCP
     fprintf(fp, "RDTSCP usage:       enabled\n");
 #else
     fprintf(fp, "RDTSCP usage:       disabled\n");
-#endif
-#if GMX_CXX11
-    fprintf(fp, "C++11 compilation:  enabled\n");
-#else
-    fprintf(fp, "C++11 compilation:  disabled\n");
 #endif
 #ifdef GMX_USE_TNG
     fprintf(fp, "TNG support:        enabled\n");

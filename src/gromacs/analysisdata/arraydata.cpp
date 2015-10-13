@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,7 @@ AbstractAnalysisArrayData::setRowCount(int rowCount)
     GMX_RELEASE_ASSERT(rowCount > 0, "Invalid number of rows");
     GMX_RELEASE_ASSERT(!isAllocated(),
                        "Cannot change row count after data has been allocated");
-    GMX_RELEASE_ASSERT(bUniformX_ || rowCount_ == 0
+    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty()
                        || rowCount == static_cast<int>(xvalue_.size()),
                        "X axis set with setXAxisValue() does not match the row count");
     xvalue_.resize(rowCount);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,11 @@
 
 #include "popup.h"
 
-#include <math.h>
-#include <string.h>
+#include <cmath>
+#include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "x11.h"
@@ -142,7 +141,7 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     mlen = 0;
     for (i = 0; (i < nent); i++)
     {
-        mlen = std::max(mlen, XTextWidth(x11->font, ent[i].str, strlen(ent[i].str)));
+        mlen = std::max(mlen, XTextWidth(x11->font, ent[i].str, std::strlen(ent[i].str)));
     }
     mht = XTextHeight(x11->font);
     /* Now we have the biggest single box, add a border of 2 pixels */
@@ -150,7 +149,7 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     mht  += 4;
     /* Calculate the area of the menu */
     area = mlen*mht;
-    ht   = sqrt(area);
+    ht   = std::sqrt(area);
     /* No the number of rows per column, only beyond 8 rows */
     if (ncol == 0)
     {

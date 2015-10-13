@@ -48,12 +48,12 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -202,29 +202,29 @@ int gmx_mdmat(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    FILE          *out = NULL, *fp;
-    t_topology     top;
-    int            ePBC;
-    t_atoms        useatoms;
-    int            isize;
-    atom_id       *index;
-    char          *grpname;
-    int           *rndx, *natm, prevres, newres;
+    FILE             *out = NULL, *fp;
+    t_topology        top;
+    int               ePBC;
+    t_atoms           useatoms;
+    int               isize;
+    atom_id          *index;
+    char             *grpname;
+    int              *rndx, *natm, prevres, newres;
 
-    int            i, j, nres, natoms, nframes, trxnat;
-    t_trxstatus   *status;
-    gmx_bool       bCalcN, bFrames;
-    real           t, ratio;
-    char           title[256], label[234];
-    t_rgb          rlo, rhi;
-    rvec          *x;
-    real         **mdmat, *resnr, **totmdmat;
-    int          **nmat, **totnmat;
-    real          *mean_n;
-    int           *tot_n;
-    matrix         box = {{0}};
-    output_env_t   oenv;
-    gmx_rmpbc_t    gpbc = NULL;
+    int               i, j, nres, natoms, nframes, trxnat;
+    t_trxstatus      *status;
+    gmx_bool          bCalcN, bFrames;
+    real              t, ratio;
+    char              label[234];
+    t_rgb             rlo, rhi;
+    rvec             *x;
+    real            **mdmat, *resnr, **totmdmat;
+    int             **nmat, **totnmat;
+    real             *mean_n;
+    int              *tot_n;
+    matrix            box = {{0}};
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
                            asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
@@ -240,7 +240,7 @@ int gmx_mdmat(int argc, char *argv[])
         fprintf(stderr, "Will calculate number of different contacts\n");
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x, NULL, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box, FALSE);
 
     fprintf(stderr, "Select group for analysis\n");
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);

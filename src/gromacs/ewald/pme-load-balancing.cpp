@@ -55,17 +55,18 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
-#include "gromacs/legacyheaders/calcgrid.h"
-#include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/md_logging.h"
+#include "gromacs/gmxlib/calcgrid.h"
+#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/sim_util.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
@@ -142,6 +143,13 @@ struct pme_load_balancing_t {
     int          cycles_n;           /**< step cycle counter cummulative count */
     double       cycles_c;           /**< step cycle counter cummulative cycles */
 };
+
+/* TODO The code in this file should call this getter, rather than
+ * read bActive anywhere */
+bool pme_loadbal_is_active(const pme_load_balancing_t *pme_lb)
+{
+    return pme_lb != NULL && pme_lb->bActive;
+}
 
 void pme_loadbal_init(pme_load_balancing_t     **pme_lb_p,
                       t_commrec                 *cr,

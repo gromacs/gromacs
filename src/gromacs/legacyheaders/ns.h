@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,9 +40,14 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
+
+struct gmx_ns_t;
+struct t_commrec;
+struct t_forcerec;
+struct t_mdatoms;
+struct t_nblist;
+struct t_nrnb;
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,21 +80,21 @@ int calc_naaj(int icg, int cgtot);
  *    Return total number of pairs searched
  *
  ****************************************************/
-void init_ns(FILE *fplog, const t_commrec *cr,
+void init_ns(FILE *fplog, const struct t_commrec *cr,
              gmx_ns_t *ns, t_forcerec *fr,
              const gmx_mtop_t *mtop);
 
 int search_neighbours(FILE *log, t_forcerec *fr, matrix box,
                       gmx_localtop_t *top,
                       gmx_groups_t *groups,
-                      t_commrec *cr,
+                      struct t_commrec *cr,
                       t_nrnb *nrnb, t_mdatoms *md,
                       gmx_bool bFillGrid,
                       gmx_bool bDoLongRangeNS);
 
 
 /* Debugging routines from wnblist.c */
-void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL);
+void dump_nblist(FILE *out, struct t_commrec *cr, t_forcerec *fr, int nDNL);
 
 int read_nblist(FILE *in, FILE *out, int **mat, int natoms, gmx_bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */

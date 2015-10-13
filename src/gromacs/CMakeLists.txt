@@ -103,6 +103,7 @@ add_subdirectory(random)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
 add_subdirectory(pbcutil)
+add_subdirectory(tables)
 add_subdirectory(timing)
 add_subdirectory(topology)
 add_subdirectory(utility)
@@ -158,19 +159,8 @@ gmx_configure_version_file(
     REMOTE_HASH SOURCE_FILE)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
-# apply gcc 4.4.x bug workaround
-if(GMX_USE_GCC44_BUG_WORKAROUND)
-   include(gmxGCC44O3BugWorkaround)
-   gmx_apply_gcc44_bug_workaround("listed-forces/bonded.cpp")
-   gmx_apply_gcc44_bug_workaround("mdlib/force.c")
-   gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
-endif()
-
 if (GMX_GPU AND NOT GMX_USE_OPENCL)
-    cuda_add_library(libgromacs ${LIBGROMACS_SOURCES}
-            OPTIONS
-            RELWITHDEBINFO -g
-            DEBUG -g -D_DEBUG_=1)
+    cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()

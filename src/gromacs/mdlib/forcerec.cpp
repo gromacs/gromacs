@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "forcerec.h"
+
 #include "config.h"
 
 #include <assert.h>
@@ -47,38 +49,41 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/ewald.h"
+#include "gromacs/fileio/trx.h"
+#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/md_logging.h"
-#include "gromacs/legacyheaders/md_support.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/qmmm.h"
-#include "gromacs/legacyheaders/tables.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec-threading.h"
+#include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/nbnxn_search.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
+#include "gromacs/mdlib/nbnxn_util.h"
+#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1272,9 +1277,8 @@ static void set_bham_b_max(FILE *fplog, t_forcerec *fr,
     }
 }
 
-static void make_nbf_tables(FILE *fp, const output_env_t oenv,
+static void make_nbf_tables(FILE *fp,
                             t_forcerec *fr, real rtab,
-                            const t_commrec *cr,
                             const char *tabfn, char *eg1, char *eg2,
                             t_nblists *nbl)
 {
@@ -1297,7 +1301,7 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
         sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
                 eg1, eg2, ftp2ext(efXVG));
     }
-    nbl->table_elec_vdw = make_tables(fp, oenv, fr, MASTER(cr), buf, rtab, 0);
+    nbl->table_elec_vdw = make_tables(fp, fr, buf, rtab, 0);
     /* Copy the contents of the table to separate coulomb and LJ tables too,
      * to improve cache performance.
      */
@@ -1310,7 +1314,6 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
     nbl->table_elec.r             = nbl->table_elec_vdw.r;
     nbl->table_elec.n             = nbl->table_elec_vdw.n;
     nbl->table_elec.scale         = nbl->table_elec_vdw.scale;
-    nbl->table_elec.scale_exp     = nbl->table_elec_vdw.scale_exp;
     nbl->table_elec.formatsize    = nbl->table_elec_vdw.formatsize;
     nbl->table_elec.ninteractions = 1;
     nbl->table_elec.stride        = nbl->table_elec.formatsize * nbl->table_elec.ninteractions;
@@ -1321,7 +1324,6 @@ static void make_nbf_tables(FILE *fp, const output_env_t oenv,
     nbl->table_vdw.r             = nbl->table_elec_vdw.r;
     nbl->table_vdw.n             = nbl->table_elec_vdw.n;
     nbl->table_vdw.scale         = nbl->table_elec_vdw.scale;
-    nbl->table_vdw.scale_exp     = nbl->table_elec_vdw.scale_exp;
     nbl->table_vdw.formatsize    = nbl->table_elec_vdw.formatsize;
     nbl->table_vdw.ninteractions = 2;
     nbl->table_vdw.stride        = nbl->table_vdw.formatsize * nbl->table_vdw.ninteractions;
@@ -1463,7 +1465,7 @@ static real cutoff_inf(real cutoff)
     return cutoff;
 }
 
-static void make_adress_tf_tables(FILE *fp, const output_env_t oenv,
+static void make_adress_tf_tables(FILE *fp,
                                   t_forcerec *fr, const t_inputrec *ir,
                                   const char *tabfn, const gmx_mtop_t *mtop,
                                   matrix     box)
@@ -1489,7 +1491,7 @@ static void make_adress_tf_tables(FILE *fp, const output_env_t oenv,
         {
             fprintf(fp, "loading tf table for energygrp index %d from %s\n", ir->adress->tf_table_index[i], buf);
         }
-        fr->atf_tabs[i] = make_atf_table(fp, oenv, fr, buf, box);
+        fr->atf_tabs[i] = make_atf_table(fp, fr, buf, box);
     }
 
 }
@@ -1541,16 +1543,47 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
 }
 
 
-gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
-                                      const t_commrec  *cr,
-                                      const t_inputrec *ir,
-                                      gmx_bool          bGPU)
+gmx_bool nbnxn_gpu_acceleration_supported(FILE             *fplog,
+                                          const t_commrec  *cr,
+                                          const t_inputrec *ir,
+                                          gmx_bool          bRerunMD)
 {
-    if (!bGPU && (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB))
+    if (bRerunMD && ir->opts.ngener > 1)
     {
-        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with %s, falling back to %s\n",
-                      bGPU ? "GPUs" : "SIMD kernels",
-                      bGPU ? "CPU only" : "plain-C kernels");
+        /* Rerun execution time is dominated by I/O and pair search,
+         * so GPUs are not very useful, plus they do not support more
+         * than one energy group. If the user requested GPUs
+         * explicitly, a fatal error is given later.  With non-reruns,
+         * we fall back to a single whole-of system energy group
+         * (which runs much faster than a multiple-energy-groups
+         * implementation would), and issue a note in the .log
+         * file. Users can re-run if they want the information. */
+        md_print_warn(cr, fplog, "Rerun with energy groups is not implemented for GPUs, falling back to the CPU\n");
+        return FALSE;
+    }
+
+    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
+    {
+        /* LJ PME with LB combination rule does 7 mesh operations.
+         * This so slow that we don't compile GPU non-bonded kernels for that.
+         */
+        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with GPUs, falling back to CPU only\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+gmx_bool nbnxn_simd_supported(FILE             *fplog,
+                              const t_commrec  *cr,
+                              const t_inputrec *ir)
+{
+    if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
+    {
+        /* LJ PME with LB combination rule does 7 mesh operations.
+         * This so slow that we don't compile SIMD non-bonded kernels
+         * for that. */
+        md_print_warn(cr, fplog, "LJ-PME with Lorentz-Berthelot is not supported with SIMD kernels, falling back to plain C kernels\n");
         return FALSE;
     }
 
@@ -1724,11 +1757,8 @@ static void pick_nbnxn_kernel(FILE                *fp,
 
     if (*kernel_type == nbnxnkNotSet)
     {
-        /* LJ PME with LB combination rule does 7 mesh operations.
-         * This so slow that we don't compile SIMD non-bonded kernels for that.
-         */
         if (use_simd_kernels &&
-            nbnxn_acceleration_supported(fp, cr, ir, FALSE))
+            nbnxn_simd_supported(fp, cr, ir))
         {
             pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
@@ -1742,8 +1772,8 @@ static void pick_nbnxn_kernel(FILE                *fp,
     {
         fprintf(fp, "\nUsing %s %dx%d non-bonded kernels\n\n",
                 lookup_nbnxn_kernel_name(*kernel_type),
-                nbnxn_kernel_to_ci_size(*kernel_type),
-                nbnxn_kernel_to_cj_size(*kernel_type));
+                nbnxn_kernel_to_cluster_i_size(*kernel_type),
+                nbnxn_kernel_to_cluster_j_size(*kernel_type));
 
         if (nbnxnk4x4_PlainC == *kernel_type ||
             nbnxnk8x8x8_PlainC == *kernel_type)
@@ -2210,7 +2240,7 @@ static void init_nb_verlet(FILE                *fp,
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        nbnxn_gpu_init(fp, &nbv->gpu_nbv,
+        nbnxn_gpu_init(&nbv->gpu_nbv,
                        &fr->hwinfo->gpu_info,
                        fr->gpu_opt,
                        fr->ic,
@@ -2275,7 +2305,6 @@ gmx_bool usingGpu(nonbonded_verlet_t *nbv)
 }
 
 void init_forcerec(FILE              *fp,
-                   const output_env_t oenv,
                    t_forcerec        *fr,
                    t_fcdata          *fcd,
                    const t_inputrec  *ir,
@@ -2931,7 +2960,7 @@ void init_forcerec(FILE              *fp,
 #endif
 
         fr->gbtabr = 100;
-        fr->gbtab  = make_gb_table(oenv, fr);
+        fr->gbtab  = make_gb_table(fr);
 
         init_gb(&fr->born, fr, ir, mtop, ir->gb_algorithm);
 
@@ -3045,10 +3074,10 @@ void init_forcerec(FILE              *fp,
         /* make tables for ordinary interactions */
         if (bSomeNormalNbListsAreInUse)
         {
-            make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+            make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
             if (ir->adress)
             {
-                make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
+                make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[fr->nnblists/2]);
             }
             if (!bMakeSeparate14Table)
             {
@@ -3076,13 +3105,13 @@ void init_forcerec(FILE              *fp,
                             fr->gid2nblists[GID(egi, egj, ir->opts.ngener)] = m;
                         }
                         /* Read the table file with the two energy groups names appended */
-                        make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn,
+                        make_nbf_tables(fp, fr, rtab, tabfn,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
                         if (ir->adress)
                         {
-                            make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn,
+                            make_nbf_tables(fp, fr, rtab, tabfn,
                                             *mtop->groups.grpname[nm_ind[egi]],
                                             *mtop->groups.grpname[nm_ind[egj]],
                                             &fr->nblists[fr->nnblists/2+m]);
@@ -3105,13 +3134,13 @@ void init_forcerec(FILE              *fp,
         /* Tables might not be used for the potential modifier interactions per se, but
          * we still need them to evaluate switch/shift dispersion corrections in this case.
          */
-        make_nbf_tables(fp, oenv, fr, rtab, cr, tabfn, NULL, NULL, &fr->nblists[0]);
+        make_nbf_tables(fp, fr, rtab, tabfn, NULL, NULL, &fr->nblists[0]);
     }
 
     if (bMakeSeparate14Table)
     {
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
-        fr->tab14 = make_tables(fp, oenv, fr, MASTER(cr), tabpfn, rtab,
+        fr->tab14 = make_tables(fp, fr, tabpfn, rtab,
                                 GMX_MAKETABLES_14ONLY);
     }
 
@@ -3122,14 +3151,14 @@ void init_forcerec(FILE              *fp,
 
         if (ir->adress->n_tf_grps > 0)
         {
-            make_adress_tf_tables(fp, oenv, fr, ir, tabfn, mtop, box);
+            make_adress_tf_tables(fp, fr, ir, tabfn, mtop, box);
 
         }
         else
         {
             /* load the default table */
             snew(fr->atf_tabs, 1);
-            fr->atf_tabs[DEFAULT_TF_TABLE] = make_atf_table(fp, oenv, fr, tabafn, box);
+            fr->atf_tabs[DEFAULT_TF_TABLE] = make_atf_table(fp, fr, tabafn, box);
         }
     }
 
@@ -3137,7 +3166,7 @@ void init_forcerec(FILE              *fp,
     fr->nwall = ir->nwall;
     if (ir->nwall && ir->wall_type == ewtTABLE)
     {
-        make_wall_tables(fp, oenv, ir, tabfn, &mtop->groups, fr);
+        make_wall_tables(fp, ir, tabfn, &mtop->groups, fr);
     }
 
     if (fcd && tabbfn)

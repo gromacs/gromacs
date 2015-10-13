@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -163,8 +163,7 @@ gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file,
  *
  * This works as gmx_fatal(), except that a generic error message is added
  * based on a string key, and printf-style formatting is not supported.
- * Should not typically be called directly, but through gmx_bug(), gmx_call()
- * etc.
+ * Should not typically be called directly, but through gmx_call() etc.
  */
 #define gmx_error(key, msg) _gmx_error(key, msg, __FILE__, __LINE__)
 
@@ -174,11 +173,9 @@ gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file,
  * recognized strings.
  */
 /*! \{ */
-#define gmx_bug(msg)    gmx_error("bug", msg)
 #define gmx_call(msg)   gmx_error("call", msg)
 #define gmx_comm(msg)   gmx_error("comm", msg)
 #define gmx_file(msg)   gmx_error("file", msg)
-#define gmx_cmd(msg)    gmx_error("cmd", msg)
 #define gmx_impl(msg)   gmx_error("impl", msg)
 #define gmx_incons(msg) gmx_error("incons", msg)
 #define gmx_input(msg)  gmx_error("input", msg)

@@ -143,7 +143,7 @@ enum {
 #define EI_SD(e) ((e) == eiSD1 || (e) == eiSD2)
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/
-#define EI_DYNAMICS(e) (EI_MD(e) || EI_SD(e) || (e) == eiBD)
+#define EI_DYNAMICS(e) (EI_MD(e) || EI_RANDOM(e))
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 #define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
 

@@ -45,10 +45,10 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -69,36 +69,29 @@ static t_pdbfile *read_pdbf(const char *fn)
 {
     t_pdbfile *pdbf;
     double     e;
-    char       buf[256], *ptr;
-    int        natoms;
     FILE      *fp;
 
     snew(pdbf, 1);
-    get_stx_coordnum (fn, &natoms);
-    init_t_atoms(&(pdbf->atoms), natoms, FALSE);
-    snew(pdbf->x, natoms);
-    read_stx_conf(fn, buf, &pdbf->atoms, pdbf->x, NULL, &pdbf->ePBC, pdbf->box);
-    fp = gmx_ffopen(fn, "r");
-    do
+    t_topology top;
+    read_tps_conf(fn, &top, &pdbf->ePBC, &pdbf->x, NULL, pdbf->box, FALSE);
+    pdbf->atoms = top.atoms;
+    fp          = gmx_ffopen(fn, "r");
+    char       buf[256], *ptr;
+    while ((ptr = fgets2(buf, 255, fp)) != NULL)
     {
-        ptr = fgets2(buf, 255, fp);
-        if (ptr)
+        if (std::strstr(buf, "Intermolecular") != NULL)
         {
-            if (std::strstr(buf, "Intermolecular") != NULL)
-            {
-                ptr = std::strchr(buf, '=');
-                sscanf(ptr+1, "%lf", &e);
-                pdbf->edocked = e;
-            }
-            else if (std::strstr(buf, "Estimated Free") != NULL)
-            {
-                ptr = std::strchr(buf, '=');
-                sscanf(ptr+1, "%lf", &e);
-                pdbf->efree = e;
-            }
+            ptr = std::strchr(buf, '=');
+            sscanf(ptr+1, "%lf", &e);
+            pdbf->edocked = e;
+        }
+        else if (std::strstr(buf, "Estimated Free") != NULL)
+        {
+            ptr = std::strchr(buf, '=');
+            sscanf(ptr+1, "%lf", &e);
+            pdbf->efree = e;
         }
     }
-    while (ptr != NULL);
     gmx_ffclose(fp);
 
     return pdbf;
@@ -184,7 +177,7 @@ static int pdbf_comp(const void *a, const void *b)
 }
 
 static void analyse_em_all(int npdb, t_pdbfile *pdbf[], const char *edocked,
-                           const char *efree, const output_env_t oenv)
+                           const char *efree, const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   i;
@@ -219,10 +212,8 @@ static void clust_stat(FILE *fp, int start, int end, t_pdbfile *pdbf[])
     fprintf(fp, "  <%12s> = %8.3f (+/- %6.3f)\n", etitles[FALSE], aver, sigma);
     gmx_stats_get_ase(ef, &aver, &sigma, NULL);
     fprintf(fp, "  <%12s> = %8.3f (+/- %6.3f)\n", etitles[TRUE], aver, sigma);
-    gmx_stats_done(ed);
-    gmx_stats_done(ef);
-    sfree(ed);
-    sfree(ef);
+    gmx_stats_free(ed);
+    gmx_stats_free(ef);
 }
 
 static real rmsd_dist(t_pdbfile *pa, t_pdbfile *pb, gmx_bool bRMSD)
@@ -343,7 +334,7 @@ static void cluster_em_all(FILE *fp, int npdb, t_pdbfile *pdbf[],
 
 int gmx_anadock(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] analyses the results of an Autodock run and clusters the",
         "structures together, based on distance or RMSD. The docked energy",
         "and free energy estimates are analysed, and for each cluster the",
@@ -352,17 +343,17 @@ int gmx_anadock(int argc, char *argv[])
         "using [gmx-cluster] and then sort the clusters on either lowest",
         "energy or average energy."
     };
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efPDB, "-f", NULL,       ffREAD  },
         { efXVG, "-od", "edocked", ffWRITE },
         { efXVG, "-of", "efree",   ffWRITE },
         { efLOG, "-g",  "anadock", ffWRITE }
     };
-    output_env_t    oenv;
+    gmx_output_env_t *oenv;
 #define NFILE asize(fnm)
-    static gmx_bool bFree  = FALSE, bRMS = TRUE;
-    static real     cutoff = 0.2;
-    t_pargs         pa[]   = {
+    static gmx_bool   bFree  = FALSE, bRMS = TRUE;
+    static real       cutoff = 0.2;
+    t_pargs           pa[]   = {
         { "-free",   FALSE, etBOOL, {&bFree},
           "Use Free energy estimate from autodock for sorting the classes" },
         { "-rms",    FALSE, etBOOL, {&bRMS},

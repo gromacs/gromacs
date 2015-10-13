@@ -48,8 +48,8 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/refdata.h"
@@ -126,8 +126,8 @@ class ExpfitTest : public ::testing::Test
         void test(int type, double result[], double tolerance,
                   unsigned int testType)
         {
-            int          nfitparm = effnNparams(type);
-            output_env_t oenv;
+            int               nfitparm = effnNparams(type);
+            gmx_output_env_t *oenv;
 
             if (testType >= data_.size())
             {

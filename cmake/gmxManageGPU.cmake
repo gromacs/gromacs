@@ -76,14 +76,6 @@ if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
     endif()
     find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
 
-    # The IBM xlc compiler chokes if we use both altivec and Cuda. Solve
-    # this by not propagating the flags in this case, but add -O3
-    # to make sure we don't turn off optimization.
-    if(CMAKE_CXX_COMPILER_ID MATCHES "XL")
-        set(CUDA_PROPAGATE_HOST_FLAGS OFF)
-        list(APPEND CUDA_NVCC_FLAGS "-O3")
-    endif()
-
     # Cmake 2.8.12 (and CMake 3.0) introduced a new bug where the cuda
     # library dir is added twice as an rpath on APPLE, which in turn causes
     # the install_name_tool to wreck the binaries when it tries to remove this
@@ -145,7 +137,7 @@ ${_msg}")
     if (NOT CUDA_FOUND)
         if (GMX_GPU_AUTO)
             # Disable GPU acceleration in auto mode
-            message(STATUS "No compatible CUDA toolkit found (v4.0+), disabling native GPU acceleration")
+            message(STATUS "No compatible CUDA toolkit found (v5.0+), disabling native GPU acceleration")
             set_property(CACHE GMX_GPU PROPERTY VALUE OFF)
             set(CUDA_NOTFOUND_AUTO ON)
         else()
@@ -250,15 +242,6 @@ macro(gmx_gpu_setup)
             endif()
         endif()
     endif()
-
-    # texture objects are supported in CUDA 5.0 and later
-    if (CUDA_VERSION VERSION_GREATER 4.999)
-        set(HAVE_CUDA_TEXOBJ_SUPPORT 1)
-    endif()
-
-    # Atomic operations used for polling wait for GPU
-    # (to avoid the cudaStreamSynchronize + ECC bug).
-    # ThreadMPI is now always included. Thus, we don't check for Atomics anymore here.
 
     # no OpenMP is no good!
     if(NOT GMX_OPENMP)

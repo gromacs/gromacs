@@ -44,19 +44,21 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
@@ -371,7 +373,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     gmx_enxnm_t      *enm     = NULL;
     t_enxframe       *fr_ener = NULL;
     char              buf[200], buf2[200];
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
         { efTPR, NULL,  NULL,    ffREAD  },
         { efTRN, "-f",  NULL,    ffOPTRD },
@@ -425,7 +427,7 @@ int gmx_convert_tpr(int argc, char *argv[])
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
     snew(ir, 1);
-    read_tpx_state(top_fn, ir, &state, NULL, &mtop);
+    read_tpx_state(top_fn, ir, &state, &mtop);
     run_step = ir->init_step;
     run_t    = ir->init_step*ir->delta_t + ir->init_t;
 

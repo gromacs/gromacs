@@ -47,11 +47,11 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -110,7 +110,6 @@ int gmx_nmtraj(int argc, char *argv[])
     real        *     eigval;
     int        *      dummy;
     real        *     invsqrtm;
-    char              title[STRLEN];
     real              fraction;
     int              *out_eigidx;
     rvec        *     this_eigvec;
@@ -121,7 +120,7 @@ int gmx_nmtraj(int argc, char *argv[])
     real             *phases;
     const char       *p;
     char             *pe;
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
 
     t_filenm          fnm[] =
     {
@@ -141,7 +140,7 @@ int gmx_nmtraj(int argc, char *argv[])
     read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit,
                       &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, bDMA);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, bDMA);
 
     /* Find vectors and phases */
 

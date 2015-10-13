@@ -44,14 +44,13 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toppush.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -234,8 +233,8 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
         nb      = 0;
         for (j = 0; (j < bonds->nr); j++)
         {
-            ai = bonds->param[j].AI;
-            aj = bonds->param[j].AJ;
+            ai = bonds->param[j].ai();
+            aj = bonds->param[j].aj();
             if (ai == i)
             {
                 bbb[nb++] = aj;

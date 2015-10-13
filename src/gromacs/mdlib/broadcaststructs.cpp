@@ -39,13 +39,15 @@
 
 #include <string.h>
 
-#include "gromacs/legacyheaders/main.h"
-#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/gmxlib/main.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/tgroup.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"

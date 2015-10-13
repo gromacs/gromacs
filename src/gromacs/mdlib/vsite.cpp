@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/typedefs.h"
@@ -54,6 +53,8 @@
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -270,7 +271,7 @@ static void constr_vsite4FDN(rvec xi, rvec xj, rvec xk, rvec xl, rvec x,
 }
 
 
-static int constr_vsiten(t_iatom *ia, t_iparams ip[],
+static int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
                          rvec *x, t_pbc *pbc)
 {
     rvec x1, dx;
@@ -309,10 +310,10 @@ static int constr_vsiten(t_iatom *ia, t_iparams ip[],
 }
 
 
-void construct_vsites_thread(gmx_vsite_t *vsite,
+void construct_vsites_thread(const gmx_vsite_t *vsite,
                              rvec x[],
                              real dt, rvec *v,
-                             t_iparams ip[], t_ilist ilist[],
+                             const t_iparams ip[], const t_ilist ilist[],
                              t_pbc *pbc_null)
 {
     gmx_bool   bPBCAll;
@@ -482,10 +483,10 @@ void construct_vsites_thread(gmx_vsite_t *vsite,
     }
 }
 
-void construct_vsites(gmx_vsite_t *vsite,
+void construct_vsites(const gmx_vsite_t *vsite,
                       rvec x[],
                       real dt, rvec *v,
-                      t_iparams ip[], t_ilist ilist[],
+                      const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
                       t_commrec *cr, matrix box)
 {
@@ -523,10 +524,14 @@ void construct_vsites(gmx_vsite_t *vsite,
     {
 #pragma omp parallel num_threads(vsite->nthreads)
         {
-            construct_vsites_thread(vsite,
-                                    x, dt, v,
-                                    ip, vsite->tdata[gmx_omp_get_thread_num()].ilist,
-                                    pbc_null);
+            try
+            {
+                construct_vsites_thread(vsite,
+                                        x, dt, v,
+                                        ip, vsite->tdata[gmx_omp_get_thread_num()].ilist,
+                                        pbc_null);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         /* Now we can construct the vsites that might depend on other vsites */
         construct_vsites_thread(vsite,
@@ -1462,33 +1467,37 @@ void spread_vsite_f(gmx_vsite_t *vsite,
 
 #pragma omp parallel num_threads(vsite->nthreads)
         {
-            int   thread;
-            rvec *fshift_t;
-
-            thread = gmx_omp_get_thread_num();
-
-            if (thread == 0 || fshift == NULL)
+            try
             {
-                fshift_t = fshift;
-            }
-            else
-            {
-                int i;
+                int   thread;
+                rvec *fshift_t;
 
-                fshift_t = vsite->tdata[thread].fshift;
+                thread = gmx_omp_get_thread_num();
 
-                for (i = 0; i < SHIFTS; i++)
+                if (thread == 0 || fshift == NULL)
                 {
-                    clear_rvec(fshift_t[i]);
+                    fshift_t = fshift;
                 }
-            }
+                else
+                {
+                    int i;
 
-            spread_vsite_f_thread(vsite,
-                                  x, f, fshift_t,
-                                  VirCorr, vsite->tdata[thread].dxdf,
-                                  idef->iparams,
-                                  vsite->tdata[thread].ilist,
-                                  g, pbc_null);
+                    fshift_t = vsite->tdata[thread].fshift;
+
+                    for (i = 0; i < SHIFTS; i++)
+                    {
+                        clear_rvec(fshift_t[i]);
+                    }
+                }
+
+                spread_vsite_f_thread(vsite,
+                                      x, f, fshift_t,
+                                      VirCorr, vsite->tdata[thread].dxdf,
+                                      idef->iparams,
+                                      vsite->tdata[thread].ilist,
+                                      g, pbc_null);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
         if (fshift != NULL)
@@ -1552,8 +1561,8 @@ static int *atom2cg(t_block *cgs)
     return a2cg;
 }
 
-static int count_intercg_vsite(gmx_mtop_t *mtop,
-                               gmx_bool   *bHaveChargeGroups)
+static int count_intercg_vsite(const gmx_mtop_t *mtop,
+                               gmx_bool         *bHaveChargeGroups)
 {
     int             mb, ftype, nral, i, cg, a;
     gmx_molblock_t *molb;
@@ -1746,7 +1755,7 @@ static int **get_vsite_pbc(t_iparams *iparams, t_ilist *ilist,
 }
 
 
-gmx_vsite_t *init_vsite(gmx_mtop_t *mtop, t_commrec *cr,
+gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
                         gmx_bool bSerial_NoPBC)
 {
     int            nvsite, i;
@@ -1861,7 +1870,11 @@ void split_vsites_over_threads(const t_ilist   *ilist,
 #pragma omp parallel for num_threads(vsite->nthreads) schedule(static)
     for (th = 0; th < vsite->nthreads; th++)
     {
-        prepare_vsite_thread(ilist, &vsite->tdata[th]);
+        try
+        {
+            prepare_vsite_thread(ilist, &vsite->tdata[th]);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
     /* Master threads does the (potential) overlap vsites */
     prepare_vsite_thread(ilist, &vsite->tdata[vsite->nthreads]);

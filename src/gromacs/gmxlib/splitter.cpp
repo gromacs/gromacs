@@ -36,14 +36,13 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/splitter.h"
+#include "splitter.h"
 
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"

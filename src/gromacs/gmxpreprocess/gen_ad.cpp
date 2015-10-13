@@ -53,7 +53,7 @@
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -89,17 +89,17 @@ static int acomp(const void *a1, const void *a2)
 
     p1 = (t_param *)a1;
     p2 = (t_param *)a2;
-    if ((ac = (p1->AJ-p2->AJ)) != 0)
+    if ((ac = (p1->aj()-p2->aj())) != 0)
     {
         return ac;
     }
-    else if ((ac = (p1->AI-p2->AI)) != 0)
+    else if ((ac = (p1->ai()-p2->ai())) != 0)
     {
         return ac;
     }
     else
     {
-        return (p1->AK-p2->AK);
+        return (p1->ak()-p2->ak());
     }
 }
 
@@ -110,13 +110,13 @@ static int pcomp(const void *a1, const void *a2)
 
     p1 = (t_param *)a1;
     p2 = (t_param *)a2;
-    if ((pc = (p1->AI-p2->AI)) != 0)
+    if ((pc = (p1->ai()-p2->ai())) != 0)
     {
         return pc;
     }
     else
     {
-        return (p1->AJ-p2->AJ);
+        return (p1->aj()-p2->aj());
     }
 }
 
@@ -128,11 +128,11 @@ static int dcomp(const void *d1, const void *d2)
     p1 = (t_param *)d1;
     p2 = (t_param *)d2;
     /* First sort by J & K (the two central) atoms */
-    if ((dc = (p1->AJ-p2->AJ)) != 0)
+    if ((dc = (p1->aj()-p2->aj())) != 0)
     {
         return dc;
     }
-    else if ((dc = (p1->AK-p2->AK)) != 0)
+    else if ((dc = (p1->ak()-p2->ak())) != 0)
     {
         return dc;
     }
@@ -148,21 +148,21 @@ static int dcomp(const void *d1, const void *d2)
         return 1;
     }
     /* Finally, sort by I and J (two outer) atoms */
-    else if ((dc = (p1->AI-p2->AI)) != 0)
+    else if ((dc = (p1->ai()-p2->ai())) != 0)
     {
         return dc;
     }
     else
     {
-        return (p1->AL-p2->AL);
+        return (p1->al()-p2->al());
     }
 }
 
 
 static gmx_bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
 {
-    if (((p1->AJ == p2->AJ) && (p1->AK == p2->AK)) ||
-        ((p1->AJ == p2->AK) && (p1->AK == p2->AJ)))
+    if (((p1->aj() == p2->aj()) && (p1->ak() == p2->ak())) ||
+        ((p1->aj() == p2->ak()) && (p1->ak() == p2->aj())))
     {
         return TRUE;
     }
@@ -175,7 +175,7 @@ static gmx_bool is_dihedral_on_same_bond(t_param *p1, t_param *p2)
 
 static gmx_bool preq(t_param *p1, t_param *p2)
 {
-    if ((p1->AI == p2->AI) && (p1->AJ == p2->AJ))
+    if ((p1->ai() == p2->ai()) && (p1->aj() == p2->aj()))
     {
         return TRUE;
     }
@@ -468,8 +468,8 @@ static void clean_ang(t_param *ang, int *nang, t_atoms *atoms)
     {
         gmx_bool    bKeep = TRUE;
 
-        if (is_d(atoms, ang[index[i]].AI) || is_d(atoms, ang[index[i]].AK) ||
-            is_lp(atoms, ang[index[i]].AI) || is_lp(atoms, ang[index[i]].AK))
+        if (is_d(atoms, ang[index[i]].ai()) || is_d(atoms, ang[index[i]].ak()) ||
+            is_lp(atoms, ang[index[i]].ai()) || is_lp(atoms, ang[index[i]].ak()))
         {
             bKeep = FALSE;
         }
@@ -513,8 +513,8 @@ static void clean_pairs(t_param *pai, int *npai, t_atoms *atoms)
     {
         gmx_bool    bKeep = TRUE;
 
-        if (is_d(atoms, pai[index[i]].AI) || is_d(atoms, pai[index[i]].AJ) ||
-            is_lp(atoms, pai[index[i]].AI) || is_lp(atoms, pai[index[i]].AJ))
+        if (is_d(atoms, pai[index[i]].ai()) || is_d(atoms, pai[index[i]].aj()) ||
+            is_lp(atoms, pai[index[i]].ai()) || is_lp(atoms, pai[index[i]].aj()))
         {
             bKeep = FALSE;
         }
@@ -596,8 +596,8 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
         }
 
         /* remove dihedral if ai or al is a Drude or LP */
-        if (is_d(atoms, dih[index[i]].AI) || is_d(atoms, dih[index[i]].AL) ||
-            is_lp(atoms, dih[index[i]].AI) || is_lp(atoms, dih[index[i]].AL))
+        if (is_d(atoms, dih[index[i]].ai()) || is_d(atoms, dih[index[i]].al()) ||
+            is_lp(atoms, dih[index[i]].ai()) || is_lp(atoms, dih[index[i]].al()))
         {
             bKeep = FALSE;
         }
@@ -656,9 +656,8 @@ static void clean_dih(t_param *dih, int *ndih, t_param improper[], int nimproper
 static int get_tdb_bonded(t_atoms *atoms, t_hackblock hb[], t_param **p, int ftype)
 {
 
-    char       *a0;
     const char *ptr;
-    int         nbonded, i, j, k, r, start, ninc, nalloc;
+    int         nbonded, i, j, k, start, ninc, nalloc;
     int         btype;
     int         natoms;
     t_rbondeds *bondeds;
@@ -1338,11 +1337,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                             maxang += ninc;
                             srenew(ang, maxang);
                         }
-                        ang[nang].AI = i;
-                        ang[nang].AJ = j1;
-                        ang[nang].AK = k1;
-                        ang[nang].C0 = NOTSET;
-                        ang[nang].C1 = NOTSET;
+                        ang[nang].ai() = i;
+                        ang[nang].aj() = j1;
+                        ang[nang].ak() = k1;
+                        ang[nang].c0() = NOTSET;
+                        ang[nang].c1() = NOTSET;
                         set_p_string(&(ang[nang]), "");
                         if (hb)
                         {
@@ -1361,14 +1360,14 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 hbang = &hb[res].rb[ebtsANGLES];
                                 for (l = 0; (l < hbang->nb); l++)
                                 {
-                                    if (strcmp(anm[1], hbang->b[l].AJ) == 0)
+                                    if (strcmp(anm[1], hbang->b[l].aj()) == 0)
                                     {
                                         bFound = FALSE;
                                         for (m = 0; m < 3; m += 2)
                                         {
                                             bFound = (bFound ||
-                                                      ((strcmp(anm[m], hbang->b[l].AI) == 0) &&
-                                                       (strcmp(anm[2-m], hbang->b[l].AK) == 0)));
+                                                      ((strcmp(anm[m], hbang->b[l].ai()) == 0) &&
+                                                       (strcmp(anm[2-m], hbang->b[l].ak()) == 0)));
                                         }
                                         if (bFound)
                                         {
@@ -1398,10 +1397,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                     maxdih += ninc;
                                     srenew(dih, maxdih);
                                 }
-                                dih[ndih].AI = i;
-                                dih[ndih].AJ = j1;
-                                dih[ndih].AK = k1;
-                                dih[ndih].AL = l1;
+                                dih[ndih].ai() = i;
+                                dih[ndih].aj() = j1;
+                                dih[ndih].ak() = k1;
+                                dih[ndih].al() = l1;
                                 for (m = 0; m < MAXFORCEPARAM; m++)
                                 {
                                     dih[ndih].c[m] = NOTSET;
@@ -1429,10 +1428,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                             for (m = 0; m < 2; m++)
                                             {
                                                 bFound = (bFound ||
-                                                          ((strcmp(anm[3*m],  hbdih->b[n].AI) == 0) &&
-                                                           (strcmp(anm[1+m],  hbdih->b[n].AJ) == 0) &&
-                                                           (strcmp(anm[2-m],  hbdih->b[n].AK) == 0) &&
-                                                           (strcmp(anm[3-3*m], hbdih->b[n].AL) == 0)));
+                                                          ((strcmp(anm[3*m],  hbdih->b[n].ai()) == 0) &&
+                                                           (strcmp(anm[1+m],  hbdih->b[n].aj()) == 0) &&
+                                                           (strcmp(anm[2-m],  hbdih->b[n].ak()) == 0) &&
+                                                           (strcmp(anm[3-3*m], hbdih->b[n].al()) == 0)));
                                             }
                                             if (bFound)
                                             {
@@ -1454,10 +1453,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                     maxdih += ninc;
                                                     srenew(dih, maxdih);
                                                 }
-                                                dih[ndih].AI = i;
-                                                dih[ndih].AJ = j1;
-                                                dih[ndih].AK = k1;
-                                                dih[ndih].AL = l1;
+                                                dih[ndih].ai() = i;
+                                                dih[ndih].aj() = j1;
+                                                dih[ndih].ak() = k1;
+                                                dih[ndih].al() = l1;
                                                 for (m = 0; m < MAXFORCEPARAM; m++)
                                                 {
                                                     dih[ndih].c[m] = NOTSET;
@@ -1474,10 +1473,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                         maxdih += ninc;
                                         srenew(dih, maxdih);
                                     }
-                                    dih[ndih].AI = i;
-                                    dih[ndih].AJ = j1;
-                                    dih[ndih].AK = k1;
-                                    dih[ndih].AL = l1;
+                                    dih[ndih].ai() = i;
+                                    dih[ndih].aj() = j1;
+                                    dih[ndih].ak() = k1;
+                                    dih[ndih].al() = l1;
                                     for (m = 0; m < MAXFORCEPARAM; m++)
                                     {
                                         dih[ndih].c[m] = NOTSET;
@@ -1510,10 +1509,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                 maxpai += ninc;
                                                 srenew(pai, maxpai);
                                             }
-                                            pai[npai].AI = i1;
-                                            pai[npai].AJ = i2;
-                                            pai[npai].C0 = NOTSET;
-                                            pai[npai].C1 = NOTSET;
+                                            pai[npai].ai() = i1;
+                                            pai[npai].aj() = i2;
+                                            pai[npai].c0() = NOTSET;
+                                            pai[npai].c1() = NOTSET;
                                             set_p_string(&(pai[npai]), "");
                                             npai++;
                                         }
@@ -1569,8 +1568,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                     ang[nang].a[k] = search_res_atom(p, res, atoms, "angle", TRUE);
                     bFound         = (ang[nang].a[k] != NO_ATID);
                 }
-                ang[nang].C0 = NOTSET;
-                ang[nang].C1 = NOTSET;
+                ang[nang].c0() = NOTSET;
+                ang[nang].c1() = NOTSET;
 
                 if (bFound)
                 {

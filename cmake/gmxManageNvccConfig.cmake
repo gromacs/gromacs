@@ -36,7 +36,7 @@
 # pain as much as possible:
 # - use the CUDA_HOST_COMPILER if defined by the user, otherwise
 # - auto-detect compatible nvcc host compiler and set nvcc -ccbin (if not MPI wrapper)
-# - set icc compatibility mode to gcc 4.4/4.5 (CUDA 4.0 is not compatible with gcc >v4.4)
+# - set icc compatibility mode to gcc 4.6
 # - (advanced) variables set:
 #   * CUDA_HOST_COMPILER            - the host compiler for nvcc (only with cmake <2.8.10)
 #   * CUDA_HOST_COMPILER_OPTIONS    - the full host-compiler related option list passed to nvcc
@@ -108,8 +108,7 @@ if(CUDA_HOST_COMPILER_CHANGED)
             CACHE PATH "Host compiler for nvcc")
     endif()
 
-    # On *nix force icc in gcc 4.4 compatibility mode with CUDA 3.2/4.0 and
-    # gcc 4.5 compatibility mode with later CUDA versions. This is needed
+    # On *nix force icc in gcc 4.6 compatibility mode. This is needed
     # as even with icc used as host compiler, when icc's gcc compatibility
     # mode is higher than the max gcc version officially supported by CUDA,
     # nvcc will freak out.
@@ -119,13 +118,8 @@ if(CUDA_HOST_COMPILER_CHANGED)
               (CUDA_HOST_COMPILER_AUTOSET OR CMAKE_C_COMPILER STREQUAL CUDA_HOST_COMPILER)) OR
             (CMAKE_CXX_COMPILER_ID MATCHES "Intel" AND CMAKE_CXX_COMPILER STREQUAL CUDA_HOST_COMPILER))
         )
-        if (CUDA_VERSION VERSION_LESS "4.1")
-            message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.4 for nvcc host compilation")
-            list(APPEND CUDA_HOST_COMPILER_OPTIONS "-Xcompiler;-gcc-version=440")
-        else()
-            message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.5 for nvcc host compilation")
-            list(APPEND CUDA_HOST_COMPILER_OPTIONS "-Xcompiler;-gcc-version=450")
-        endif()
+        message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.6 for nvcc host compilation")
+        list(APPEND CUDA_HOST_COMPILER_OPTIONS "-Xcompiler;-gcc-version=460")
     endif()
 
     if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "GNU")
@@ -138,12 +132,6 @@ if(CUDA_HOST_COMPILER_CHANGED)
         CACHE STRING "Options for nvcc host compiler (do not edit!).")
 
     mark_as_advanced(CUDA_HOST_COMPILER CUDA_HOST_COMPILER_OPTIONS)
-endif()
-
-# the legacy CUDA kernels have been dropped, warn with CUDA 4.0
-if (CUDA_VERSION VERSION_EQUAL "4.0")
-    message(WARNING "The legacy GPU kernels optimized for older CUDA compilers, including the detected version 4.0, have been removed. To avoid performance loss, we strongly recommend upgrading to a newer CUDA toolkit.
-    ")
 endif()
 
 # If any of these manual override variables for target CUDA GPU architectures
@@ -163,10 +151,6 @@ if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
     endforeach()
 else()
     # Set the CUDA GPU architectures to compile for:
-    # - with CUDA  <4.2:        compute capability 2.x supported (compiling for sm_2.1 does not help):
-    #     => compile sm_20 cubin, and compute_20 PTX
-    # - with CUDA  =4.2 <5.0:   CC <=3.0 is supported:
-    #     => compile sm_20, sm_30 cubin, and compute_30 PTX
     # - with CUDA >=5.0 <6.5:   CC <=3.5 is supported
     #     => compile sm_20, sm_30, sm_35 cubin, and compute_35 PTX
     # - with CUDA >=6.5:        CC <=3.7 and 5.0 are supported
@@ -176,22 +160,14 @@ else()
     #   CUDA_VERSION does not contain patch version and having PTX 5.0 JIT-ed is
     #   equally fast as compiling with sm_5.2 anyway.
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_20,code=sm_20")
-    if(CUDA_VERSION VERSION_GREATER "4.1990") # >= 4.2
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
-    endif()
-    if(CUDA_VERSION VERSION_GREATER "4.999") # >= 5.0
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=sm_35")
-    endif()
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
+    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=sm_35")
     if(CUDA_VERSION VERSION_GREATER "6.4999") # >= 6.5
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_37,code=sm_37")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=sm_50")
     endif()
 
-    if(CUDA_VERSION VERSION_LESS "4.2")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_20,code=compute_20")
-    elseif(CUDA_VERSION VERSION_LESS "5.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=compute_30")
-    elseif(CUDA_VERSION VERSION_LESS "6.5")
+    if(CUDA_VERSION VERSION_LESS "6.5")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=compute_35")
     else() # version >= 6.5
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=compute_50")
@@ -212,5 +188,40 @@ if (CMAKE_VERSION VERSION_LESS "2.8.10")
 endif()
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 
-# finally set the damn flags
-set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS}" CACHE STRING "Compiler flags for nvcc." FORCE)
+# The flags are set as local variables which shadow the cache variables. The cache variables
+# (can be set by the user) are appended. This is done in a macro to set the flags when all
+# host compiler flags are already set.
+macro(GMX_SET_CUDA_NVCC_FLAGS)
+    if(CUDA_PROPAGATE_HOST_FLAGS)
+        set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+
+        # When CUDA 6.5 is required we should use C++11 also for CUDA and also propagate
+        # the C++11 flag to CUDA. Then we can use the solution implemented in FindCUDA
+        # (starting with 3.3 - can be backported). For now we need to remove the C++11
+        # flag which means we need to manually propagate all other flags.
+        string(REGEX REPLACE "[-]+std=c\\+\\+0x" "" _CMAKE_CXX_FLAGS_NOCXX11 "${CMAKE_CXX_FLAGS}")
+
+        # The IBM xlc compiler chokes if we use both altivec and Cuda. Solve
+        # this by not propagating the flag in this case.
+        if(CMAKE_CXX_COMPILER_ID MATCHES "XL")
+            string(REGEX REPLACE "-qaltivec" _CMAKE_CXX_FLAGS_NOCXX11 "$_CMAKE_CXX_FLAGS_NOCXX11")
+        endif()
+
+        string(REPLACE " " "," _flags "${_CMAKE_CXX_FLAGS_NOCXX11}")
+        set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS};-Xcompiler;${_flags}")
+
+        # Create list of all possible configurations. For multi-configuration this is CMAKE_CONFIGURATION_TYPES
+        # and for single configuration CMAKE_BUILD_TYPE. Not sure why to add the default ones, but FindCUDA
+        # claims one should.
+        set(CUDA_configuration_types ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE} Debug MinSizeRel Release RelWithDebInfo)
+        list(REMOVE_DUPLICATES CUDA_configuration_types)
+
+        foreach(_config ${CUDA_configuration_types})
+            string(TOUPPER ${_config} _config_upper)
+            string(REPLACE " " "," _flags "${CMAKE_CXX_FLAGS_${_config_upper}}")
+            set(CUDA_NVCC_FLAGS_${_config_upper} "${CUDA_NVCC_FLAGS_${_config_upper}};-Xcompiler;${_flags}")
+        endforeach()
+    else()
+        set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS}")
+    endif()
+endmacro()

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,10 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/tables/forcetable.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "listed-internal.h"
 
@@ -87,7 +89,7 @@ warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, r
 
 /*! \brief Compute the energy and force for a single pair interaction */
 real
-evaluate_single(real r2, real tabscale, real *vftab,
+evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
                 real qq, real c6, real c12, real *velec, real *vvdw)
 {
     real       rinv, r, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VVe, FFe, VVd, FFd, VVr, FFr, fscal;
@@ -100,7 +102,7 @@ evaluate_single(real r2, real tabscale, real *vftab,
     ntab             = static_cast<int>(rtab);
     eps              = rtab-ntab;
     eps2             = eps*eps;
-    ntab             = 12*ntab;
+    ntab             = tableStride*ntab;
     /* Electrostatics */
     Y                = vftab[ntab];
     F                = vftab[ntab+1];
@@ -137,7 +139,7 @@ evaluate_single(real r2, real tabscale, real *vftab,
 /*! \brief Compute the energy and force for a single pair interaction under FEP */
 real
 free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
-                            real alpha_vdw, real tabscale, real *vftab,
+                            real alpha_vdw, real tabscale, real *vftab, real tableStride,
                             real qqA, real c6A, real c12A, real qqB,
                             real c6B, real c12B, real LFC[2], real LFV[2], real DLF[2],
                             real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2],
@@ -257,7 +259,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
             ntab             = static_cast<int>(rtab);
             eps              = rtab-ntab;
             eps2             = eps*eps;
-            ntab             = 12*ntab;
+            ntab             = tableStride*ntab;
             /* Electrostatics */
             Y                = vftab[ntab];
             F                = vftab[ntab+1];
@@ -404,6 +406,13 @@ do_pairs(int ftype, int nbonds,
         sigma2_min = sigma2_def = 0;
     }
 
+    /* TODO This code depends on the logic in tables.c that constructs
+       the table layout, which should be made explicit in future
+       cleanup. */
+    GMX_ASSERT(etiNR == 3, "Pair-interaction code that uses GROMACS interaction tables supports exactly 3 tables");
+    GMX_ASSERT(fr->tab14.interaction == GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+               "Pair interaction kernels need a table with Coulomb, repulsion and dispersion entries");
+
     bFreeEnergy = FALSE;
     for (i = 0; (i < nbonds); )
     {
@@ -481,14 +490,15 @@ do_pairs(int ftype, int nbonds,
             c12B             = iparams[itype].lj14.c12B*12.0;
 
             fscal            = free_energy_evaluate_single(r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw,
-                                                           fr->tab14.scale, fr->tab14.data, qq, c6, c12, qqB, c6B, c12B,
+                                                           fr->tab14.scale, fr->tab14.data, fr->tab14.stride,
+                                                           qq, c6, c12, qqB, c6B, c12B,
                                                            LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw,
                                                            fr->sc_sigma6_def, fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
         }
         else
         {
             /* Evaluate tabulated interaction without free energy */
-            fscal            = evaluate_single(r2, fr->tab14.scale, fr->tab14.data, qq, c6, c12, &velec, &vvdw);
+            fscal            = evaluate_single(r2, fr->tab14.scale, fr->tab14.data, fr->tab14.stride, qq, c6, c12, &velec, &vvdw);
         }
 
         energygrp_elec[gid]  += velec;

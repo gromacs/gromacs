@@ -49,6 +49,7 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -240,8 +241,8 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                 /* Now loop over the harmonics, trying to convert them */
                 for (j = 0; (j < nrharm); j++)
                 {
-                    ni   = mols[i].plist[bb].param[j].AI;
-                    nj   = mols[i].plist[bb].param[j].AJ;
+                    ni   = mols[i].plist[bb].param[j].ai();
+                    nj   = mols[i].plist[bb].param[j].aj();
                     edis =
                         search_e_diss(n2m, t2m,
                                       get_atomtype_name(mols[i].atoms.atom[ni].type, atype),

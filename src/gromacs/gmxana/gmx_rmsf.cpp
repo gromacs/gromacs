@@ -40,20 +40,20 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -86,7 +86,7 @@ static real find_pdb_bfac(t_atoms *atoms, t_resinfo *ri, char *atomnm)
 }
 
 void correlate_aniso(const char *fn, t_atoms *ref, t_atoms *calc,
-                     const output_env_t oenv)
+                     const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   i, j;
@@ -187,7 +187,7 @@ void print_dir(FILE *fp, real *Uaver)
 
 int gmx_rmsf(int argc, char *argv[])
 {
-    const char      *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes the root mean square fluctuation (RMSF, i.e. standard ",
         "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
         "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
@@ -212,8 +212,8 @@ int gmx_rmsf(int argc, char *argv[])
         "This shows the directions in which the atoms fluctuate the most and",
         "the least."
     };
-    static gmx_bool  bRes    = FALSE, bAniso = FALSE, bFit = TRUE;
-    t_pargs          pargs[] = {
+    static gmx_bool   bRes    = FALSE, bAniso = FALSE, bFit = TRUE;
+    t_pargs           pargs[] = {
         { "-res", FALSE, etBOOL, {&bRes},
           "Calculate averages for each residue" },
         { "-aniso", FALSE, etBOOL, {&bAniso},
@@ -221,45 +221,43 @@ int gmx_rmsf(int argc, char *argv[])
         { "-fit", FALSE, etBOOL, {&bFit},
           "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
     };
-    int              natom;
-    int              i, m, teller = 0;
-    real             t, *w_rls;
+    int               natom;
+    int               i, m, teller = 0;
+    real              t, *w_rls;
 
-    t_topology       top;
-    int              ePBC;
-    t_atoms         *pdbatoms, *refatoms;
+    t_topology        top;
+    int               ePBC;
+    t_atoms          *pdbatoms, *refatoms;
 
-    matrix           box, pdbbox;
-    rvec            *x, *pdbx, *xref;
-    t_trxstatus     *status;
-    int              npdbatoms;
-    const char      *label;
-    char             title[STRLEN];
+    matrix            box, pdbbox;
+    rvec             *x, *pdbx, *xref;
+    t_trxstatus      *status;
+    const char       *label;
 
-    FILE            *fp;          /* the graphics file */
-    const char      *devfn, *dirfn;
-    int              resind;
+    FILE             *fp;         /* the graphics file */
+    const char       *devfn, *dirfn;
+    int               resind;
 
-    gmx_bool         bReadPDB;
-    atom_id         *index;
-    int              isize;
-    char            *grpnames;
+    gmx_bool          bReadPDB;
+    atom_id          *index;
+    int               isize;
+    char             *grpnames;
 
-    real             bfac, pdb_bfac, *Uaver;
-    double         **U, *xav;
-    atom_id          aid;
-    rvec            *rmsd_x = NULL;
-    double          *rmsf, invcount, totmass;
-    int              d;
-    real             count = 0;
-    rvec             xcm;
-    gmx_rmpbc_t      gpbc = NULL;
+    real              bfac, pdb_bfac, *Uaver;
+    double          **U, *xav;
+    atom_id           aid;
+    rvec             *rmsd_x = NULL;
+    double           *rmsf, invcount, totmass;
+    int               d;
+    real              count = 0;
+    rvec              xcm;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    output_env_t     oenv;
+    gmx_output_env_t *oenv;
 
-    const char      *leg[2] = { "MD", "X-Ray" };
+    const char       *leg[2] = { "MD", "X-Ray" };
 
-    t_filenm         fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",  NULL,     ffREAD  },
         { efTPS, NULL,  NULL,     ffREAD  },
         { efNDX, NULL,  NULL,     ffOPTRD },
@@ -284,7 +282,8 @@ int gmx_rmsf(int argc, char *argv[])
     devfn    = opt2fn_null("-od", NFILE, fnm);
     dirfn    = opt2fn_null("-dir", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xref, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, NULL, box, TRUE);
+    const char *title = *top.name;
     snew(w_rls, top.atoms.nr);
 
     fprintf(stderr, "Select group(s) for root mean square calculation\n");
@@ -311,23 +310,24 @@ int gmx_rmsf(int argc, char *argv[])
 
     if (bReadPDB)
     {
-        get_stx_coordnum(opt2fn("-q", NFILE, fnm), &npdbatoms);
-        snew(pdbatoms, 1);
-        snew(refatoms, 1);
-        init_t_atoms(pdbatoms, npdbatoms, TRUE);
-        init_t_atoms(refatoms, npdbatoms, TRUE);
-        snew(pdbx, npdbatoms);
+        t_topology *top_pdb;
+        snew(top_pdb, 1);
         /* Read coordinates twice */
-        read_stx_conf(opt2fn("-q", NFILE, fnm), title, pdbatoms, pdbx, NULL, NULL, pdbbox);
-        read_stx_conf(opt2fn("-q", NFILE, fnm), title, refatoms, pdbx, NULL, NULL, pdbbox);
+        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, NULL, NULL, NULL, pdbbox, FALSE);
+        snew(pdbatoms, 1);
+        *pdbatoms = top_pdb->atoms;
+        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, NULL, &pdbx, NULL, pdbbox, FALSE);
+        title = *top_pdb->name;
+        snew(refatoms, 1);
+        *refatoms = top_pdb->atoms;
+        sfree(top_pdb);
     }
     else
     {
         pdbatoms  = &top.atoms;
         refatoms  = &top.atoms;
         pdbx      = xref;
-        npdbatoms = pdbatoms->nr;
-        snew(pdbatoms->pdbinfo, npdbatoms);
+        snew(pdbatoms->pdbinfo, pdbatoms->nr);
         copy_mat(box, pdbbox);
     }
 

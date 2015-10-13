@@ -71,7 +71,6 @@ TopologyManager::~TopologyManager()
 {
     if (top_ != NULL)
     {
-        free_t_atoms(&top_->atoms, TRUE);
         done_top(top_);
         sfree(top_);
     }
@@ -119,7 +118,6 @@ void TopologyManager::requestForces()
 
 void TopologyManager::loadTopology(const char *filename)
 {
-    char    title[STRLEN];
     int     ePBC;
     rvec   *xtop = NULL;
     matrix  box;
@@ -127,7 +125,7 @@ void TopologyManager::loadTopology(const char *filename)
     GMX_RELEASE_ASSERT(top_ == NULL, "Topology initialized more than once");
     snew(top_, 1);
     read_tps_conf(gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
-                  title, top_, &ePBC, frame_ != NULL ? &xtop : NULL,
+                  top_, &ePBC, frame_ != NULL ? &xtop : NULL,
                   NULL, box, FALSE);
 
     if (frame_ != NULL)

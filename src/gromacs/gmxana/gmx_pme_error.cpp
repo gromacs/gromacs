@@ -43,14 +43,12 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/gmxlib/calcgrid.h"
+#include "gromacs/gmxlib/main.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/main.h"
-#include "gromacs/legacyheaders/mdatoms.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
@@ -58,6 +56,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -863,7 +862,7 @@ static int prepare_x_q(real *q[], rvec *x[], gmx_mtop_t *mtop, rvec x_orig[], t_
 /* Read in the tpr file and save information we need later in info */
 static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *state, gmx_mtop_t *mtop, t_inputrec *ir, real user_beta, real fracself)
 {
-    read_tpx_state(fn_sim_tpr, ir, state, NULL, mtop);
+    read_tpx_state(fn_sim_tpr, ir, state, mtop);
 
     /* The values of the original tpr input file are save in the first
      * place [0] of the arrays */
@@ -1106,15 +1105,15 @@ int gmx_pme_error(int argc, char *argv[])
     int             seed     = 0;
 
 
-    static t_filenm fnm[] = {
+    static t_filenm   fnm[] = {
         { efTPR, "-s",     NULL,    ffREAD },
         { efOUT, "-o",    "error",  ffWRITE },
         { efTPR, "-so",   "tuned",  ffOPTWR }
     };
 
-    output_env_t    oenv = NULL;
+    gmx_output_env_t *oenv = NULL;
 
-    t_pargs         pa[] = {
+    t_pargs           pa[] = {
         { "-beta",     FALSE, etREAL, {&user_beta},
           "If positive, overwrite ewald_beta from [REF].tpr[ref] file with this value" },
         { "-tune",     FALSE, etBOOL, {&bTUNE},

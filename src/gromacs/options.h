@@ -159,6 +159,8 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/filenameoptionmanager.h"
+#include "gromacs/options/ioptionsbehavior.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/options.h"
 
 #endif

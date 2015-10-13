@@ -293,22 +293,14 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     return bVel;
 }
 
-void read_whole_conf(const char *infile, char *title,
-                     t_atoms *atoms, rvec x[], rvec *v, matrix box)
+void gmx_gro_read_conf(const char *infile,
+                       t_topology *top, rvec x[], rvec *v, matrix box)
 {
-    FILE    *in;
-    int      ndec;
-    t_symtab symtab;
-
-    /* open file */
-    in = gmx_fio_fopen(infile, "r");
-
-    open_symtab(&symtab);
-    get_w_conf(in, infile, title, &symtab, atoms, &ndec, x, v, box);
-    /* We can't free the symbols, as they are still used in atoms, so
-     * the only choice is to leak them. */
-    free_symtab(&symtab);
-
+    FILE *in = gmx_fio_fopen(infile, "r");
+    int   ndec;
+    char  title[STRLEN];
+    get_w_conf(in, infile, title, &top->symtab, &top->atoms, &ndec, x, v, box);
+    top->name = put_symtab(&top->symtab, title);
     gmx_fio_fclose(in);
 }
 

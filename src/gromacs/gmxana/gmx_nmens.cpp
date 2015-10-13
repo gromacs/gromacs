@@ -45,13 +45,13 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -96,13 +96,13 @@ int gmx_nmens(int argc, char *argv[])
     matrix              box;
     real               *eigval, *invsqrtm, t, disp;
     int                 natoms;
-    char               *grpname, title[STRLEN];
+    char               *grpname;
     const char         *indexfile;
     int                 i, j, d, s, v;
     int                 nout, *iout, noutvec, *outvec;
     atom_id            *index;
     real                rfac, rhalf, jr;
-    output_env_t        oenv;
+    gmx_output_env_t   *oenv;
     gmx_rng_t           rng;
     int                 jran;
     const unsigned long im = 0xffff;
@@ -130,7 +130,7 @@ int gmx_nmens(int argc, char *argv[])
     read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit,
                       &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, bDMA);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, bDMA);
     atoms = &top.atoms;
 
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", natoms);

@@ -68,6 +68,53 @@ and use the copy_xsl.sh script to copy it to relevant locations.
     <xsl:value-of select="."/>
 </xsl:template>
 
+<xsl:template match="OutputFiles">
+    <xsl:if test="*/*">
+        <h2>Output Files</h2>
+        <xsl:apply-templates />
+    </xsl:if>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File">
+    <xsl:if test="*">
+        <h3><xsl:value-of select="@Name"/></h3>
+        <xsl:apply-templates />
+    </xsl:if>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/String[@Name='Contents']">
+    <pre>
+        <xsl:value-of select="substring(.,2)"/>
+    </pre>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/XvgLegend/String[@Name='XvgLegend']">
+    <pre>
+        <xsl:value-of select="substring(.,2)"/>
+    </pre>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/XvgData">
+    <xsl:choose>
+        <xsl:when test="*">
+            <table>
+                <xsl:apply-templates />
+            </table>
+        </xsl:when>
+        <xsl:otherwise>Data omitted</xsl:otherwise>
+    </xsl:choose>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/XvgData/Sequence">
+    <tr>
+        <xsl:apply-templates select="Real"/>
+    </tr>
+</xsl:template>
+
+<xsl:template match="OutputFiles/File/XvgData/Sequence/Real">
+    <td><xsl:value-of select="."/></td>
+</xsl:template>
+
 <xsl:template match="InteractiveSession">
     <pre>
         <xsl:for-each select="*">

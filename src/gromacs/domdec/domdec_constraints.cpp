@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,15 +51,15 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/gmx_hash.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -462,7 +462,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
 }
 
 int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
-                              const gmx_mtop_t *mtop,
+                              const struct gmx_mtop_t *mtop,
                               const int *cginfo,
                               gmx_constr_t constr, int nrec,
                               t_ilist *il_local)
@@ -537,44 +537,48 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
 #pragma omp parallel for num_threads(dc->nthread) schedule(static)
         for (thread = 0; thread < dc->nthread; thread++)
         {
-            if (at2con_mt && thread == 0)
+            try
             {
-                atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec,
-                                     ilc_local, ireq);
+                if (at2con_mt && thread == 0)
+                {
+                    atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec,
+                                         ilc_local, ireq);
+                }
+
+                if (thread >= t0_set)
+                {
+                    int        cg0, cg1;
+                    t_ilist   *ilst;
+                    ind_req_t *ireqt;
+
+                    /* Distribute the settle check+assignments over
+                     * dc->nthread or dc->nthread-1 threads.
+                     */
+                    cg0 = (dd->ncg_home*(thread-t0_set  ))/(dc->nthread-t0_set);
+                    cg1 = (dd->ncg_home*(thread-t0_set+1))/(dc->nthread-t0_set);
+
+                    if (thread == t0_set)
+                    {
+                        ilst = ils_local;
+                    }
+                    else
+                    {
+                        ilst = &dc->ils[thread];
+                    }
+                    ilst->nr = 0;
+
+                    ireqt = &dd->constraint_comm->ireq[thread];
+                    if (thread > 0)
+                    {
+                        ireqt->n = 0;
+                    }
+
+                    atoms_to_settles(dd, mtop, cginfo, at2settle_mt,
+                                     cg0, cg1,
+                                     ilst, ireqt);
+                }
             }
-
-            if (thread >= t0_set)
-            {
-                int        cg0, cg1;
-                t_ilist   *ilst;
-                ind_req_t *ireqt;
-
-                /* Distribute the settle check+assignments over
-                 * dc->nthread or dc->nthread-1 threads.
-                 */
-                cg0 = (dd->ncg_home*(thread-t0_set  ))/(dc->nthread-t0_set);
-                cg1 = (dd->ncg_home*(thread-t0_set+1))/(dc->nthread-t0_set);
-
-                if (thread == t0_set)
-                {
-                    ilst = ils_local;
-                }
-                else
-                {
-                    ilst = &dc->ils[thread];
-                }
-                ilst->nr = 0;
-
-                ireqt = &dd->constraint_comm->ireq[thread];
-                if (thread > 0)
-                {
-                    ireqt->n = 0;
-                }
-
-                atoms_to_settles(dd, mtop, cginfo, at2settle_mt,
-                                 cg0, cg1,
-                                 ilst, ireqt);
-            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
         /* Combine the generate settles and requested indices */

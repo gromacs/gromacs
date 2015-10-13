@@ -58,32 +58,20 @@
  * throwing exceptions.  ::GMX_THROW_WITH_ERRNO is also provided for reporting
  * syscall errors, but its use should be mostly limited to within the library.
  * This header also declares helper functions printFatalErrorMessage(),
- * formatExceptionMessageToString(), formatExceptionMessageToFile(), and
- * translateException() for creating standard error messages and translating
- * exceptions to error return codes.  processExceptionAtExit() provides
+ * formatExceptionMessageToString(), and formatExceptionMessageToFile() for
+ * creating standard error messages.  processExceptionAtExit() provides
  * clean-up code before exiting the program after an exception.
  * To help in cases where bottom-up conversion to C++ is appropriate, macro
  * ::GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR is also provided to catch all
  * exceptions at C++ to C boundary.
- *
- * Use of error return codes should be avoided in new code except in C wrappers
- * and similar, but to ease migration (and for these cases where they are
- * necessary), facilities for handling them are provided by the errorcodes.h
- * header file.
- * It provides a set of error codes (the enum \ref gmx::ErrorCode) that should
- * be used for return codes in functions.
- * It also provides macros ::GMX_ERROR and ::GMX_ERROR_NORET that should be
- * used for returning an error code.  setFatalErrorHandler() is provided to
- * alter the behavior of ::GMX_ERROR and ::GMX_ERROR_NORET.  The default
- * handler prints the reason of the error to \c stderr and aborts the
- * execution.
  *
  * Header file gmxassert.h is also provided for assertions.  It declares macros
  * ::GMX_ASSERT and ::GMX_RELEASE_ASSERT that should be used for assertions.
  *
  * \if internal
  * Internally, functions from errorformat.h are used for all the above cases to
- * format error messages to \c stderr.
+ * format error messages to \c stderr.  errorcodes.h provides some common
+ * functionality for classifying errors.
  * \endif
  *
  *
@@ -162,9 +150,6 @@
  * The header qsort_threadsafe.h provides a guaranteed threadsafe
  * implementation for qsort().
  *
- * The header uniqueptr.h declares gmx::gmx_unique_ptr, which is intended for
- * declaring smart pointer types with unique ownership.
- *
  * \endif
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
@@ -180,7 +165,6 @@
 #ifndef GMX_UTILITY_H
 #define GMX_UTILITY_H
 
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/init.h"

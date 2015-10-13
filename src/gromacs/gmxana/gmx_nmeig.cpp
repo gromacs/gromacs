@@ -46,14 +46,15 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -332,7 +333,7 @@ int gmx_nmeig(int argc, char *argv[])
     real                   factor_omega_to_wavenumber;
     real                  *spectrum = NULL;
     real                   wfac;
-    output_env_t           oenv;
+    gmx_output_env_t      *oenv;
     const char            *qcleg[] = {
         "Heat Capacity cV (J/mol K)",
         "Enthalpy H (kJ/mol)"
@@ -362,7 +363,7 @@ int gmx_nmeig(int argc, char *argv[])
     snew(top_x, tpx.natoms);
 
     read_tpx(ftp2fn(efTPR, NFILE, fnm), NULL, box, &natoms,
-             top_x, NULL, NULL, &mtop);
+             top_x, NULL, &mtop);
     if (bCons)
     {
         nharm = get_nharm(&mtop, &nvsite);

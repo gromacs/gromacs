@@ -42,12 +42,14 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/fileio/groio.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/tngio.h"
@@ -171,7 +173,7 @@ int nframes_read(t_trxstatus *status)
     return status->__frame;
 }
 
-static void printcount_(t_trxstatus *status, const output_env_t oenv,
+static void printcount_(t_trxstatus *status, const gmx_output_env_t *oenv,
                         const char *l, real t)
 {
     if ((status->__frame < 2*SKIP1 || status->__frame % SKIP1 == 0) &&
@@ -183,14 +185,14 @@ static void printcount_(t_trxstatus *status, const output_env_t oenv,
     }
 }
 
-static void printcount(t_trxstatus *status, const output_env_t oenv, real t,
+static void printcount(t_trxstatus *status, const gmx_output_env_t *oenv, real t,
                        gmx_bool bSkip)
 {
     status->__frame++;
     printcount_(status, oenv, bSkip ? "Skipping frame" : "Reading frame", t);
 }
 
-static void printlast(t_trxstatus *status, const output_env_t oenv, real t)
+static void printlast(t_trxstatus *status, const gmx_output_env_t *oenv, real t)
 {
     printcount_(status, oenv, "Last frame", t);
     fprintf(stderr, "\n");
@@ -698,6 +700,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
 static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
 {
     t_atoms   atoms;
+    t_symtab *symtab;
     matrix    boxpdb;
     int       ePBC, model_nr, na;
     char      title[STRLEN], *time;
@@ -708,7 +711,11 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     atoms.pdbinfo = NULL;
     /* the other pointers in atoms should not be accessed if these are NULL */
     model_nr = NOTSET;
-    na       = read_pdbfile(fp, title, &model_nr, &atoms, fr->x, &ePBC, boxpdb, TRUE, NULL);
+    snew(symtab, 1);
+    open_symtab(symtab);
+    na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, NULL);
+    free_symtab(symtab);
+    sfree(symtab);
     set_trxframe_ePBC(fr, ePBC);
     if (nframes_read(status) == 0)
     {
@@ -728,7 +735,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
         fr->bStep = TRUE;
         fr->step  = model_nr;
     }
-    time = strstr(title, " t= ");
+    time = std::strstr(title, " t= ");
     if (time)
     {
         fr->bTime = TRUE;
@@ -782,7 +789,7 @@ static int pdb_first_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     return fr->natoms;
 }
 
-gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxframe *fr)
+gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_trxframe *fr)
 {
     real     pt;
     int      ct;
@@ -816,10 +823,16 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                 /* Checkpoint files can not contain mulitple frames */
                 break;
             case efG96:
+            {
+                t_symtab *symtab;
+                snew(symtab, 1);
+                open_symtab(symtab);
                 read_g96_conf(gmx_fio_getfp(status->fio), NULL, fr,
-                              status->persistent_line);
+                              symtab, status->persistent_line);
+                free_symtab(symtab);
                 bRet = (fr->natoms > 0);
                 break;
+            }
             case efXTC:
                 /* B. Hess 2005-4-20
                  * Sometimes is off by one frame
@@ -911,7 +924,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
     return bRet;
 }
 
-int read_first_frame(const output_env_t oenv, t_trxstatus **status,
+int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                      const char *fn, t_trxframe *fr, int flags)
 {
     t_fileio      *fio;
@@ -947,13 +960,18 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             bFirst = FALSE;
             break;
         case efG96:
+        {
             /* Can not rewind a compressed file, so open it twice */
             if (!(*status)->persistent_line)
             {
                 /* allocate the persistent line */
                 snew((*status)->persistent_line, STRLEN+1);
             }
-            read_g96_conf(gmx_fio_getfp(fio), fn, fr, (*status)->persistent_line);
+            t_symtab *symtab;
+            snew(symtab, 1);
+            open_symtab(symtab);
+            read_g96_conf(gmx_fio_getfp(fio), fn, fr, symtab, (*status)->persistent_line);
+            free_symtab(symtab);
             gmx_fio_close(fio);
             clear_trxframe(fr, FALSE);
             if (flags & (TRX_READ_X | TRX_NEED_X))
@@ -966,6 +984,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
             }
             (*status)->fio = gmx_fio_open(fn, "r");
             break;
+        }
         case efXTC:
             if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
                                &fr->prec, &bOK) == 0)
@@ -1066,7 +1085,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
 
 /***** C O O R D I N A T E   S T U F F *****/
 
-int read_first_x(const output_env_t oenv, t_trxstatus **status, const char *fn,
+int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status, const char *fn,
                  real *t, rvec **x, matrix box)
 {
     t_trxframe fr;
@@ -1083,7 +1102,7 @@ int read_first_x(const output_env_t oenv, t_trxstatus **status, const char *fn,
     return (*status)->xframe->natoms;
 }
 
-gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
+gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t,
                      rvec x[], matrix box)
 {
     gmx_bool bRet;
@@ -1127,7 +1146,7 @@ t_topology *read_top(const char *fn, int *ePBC)
     t_topology *top;
 
     snew(top, 1);
-    epbc = read_tpx_top(fn, NULL, NULL, &natoms, NULL, NULL, NULL, top);
+    epbc = read_tpx_top(fn, NULL, NULL, &natoms, NULL, NULL, top);
     if (ePBC)
     {
         *ePBC = epbc;

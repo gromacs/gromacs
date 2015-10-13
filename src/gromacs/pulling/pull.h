@@ -57,6 +57,9 @@
 extern "C" {
 #endif
 
+struct gmx_output_env_t;
+struct pull_params_t;
+struct t_mdatoms;
 struct t_pbc;
 
 
@@ -71,6 +74,33 @@ void get_pull_coord_value(struct pull_t      *pull,
                           int                 coord_ind,
                           const struct t_pbc *pbc,
                           double             *value);
+
+
+/*! \brief Set the reference value for a pull coord with rate!=0 to value_ref.
+ *
+ * This modifies the reference value. For potential (non-constraint) pulling,
+ * a modification of the reference value at time t will lead to a different
+ * force over t-dt/2 to t and over t to t+dt/2. To take this into account,
+ * bUpdateForce=TRUE will update the force when this function is called
+ * after calling pull_potential.
+ * Note: can not be called for a pull coord with rate!=0.
+ *
+ * \param[in,out] pull         The pull struct.
+ * \param[in]     coord_ind    The pull coordinate index to set.
+ * \param[in]     value_ref    The reference value.
+ * \param[in]     pbc          Information structure about periodicity.
+ * \param[in]     md           Atom properties.
+ * \param[in]     lambda       The value of lambda in FEP calculations.
+ * \param[in]     bUpdateForce Update the force for the new reference value.
+ * \param[in,out] f            The forces.
+ * \param[in,out] vir          The virial, can be NULL.
+ */
+void set_pull_coord_reference_value(struct pull_t *pull,
+                                    int coord_ind, real value_ref,
+                                    const struct t_pbc *pbc,
+                                    const t_mdatoms *md,
+                                    real lambda,
+                                    gmx_bool bUpdateForce, rvec *f, tensor vir);
 
 
 /*! \brief Set the all the pull forces to zero.
@@ -145,17 +175,17 @@ void dd_make_local_pull_groups(t_commrec *cr,
  * \param Flags       Flags passed over from main, used to determine
  *                    whether or not we are appending.
  */
-struct pull_t *init_pull(FILE                *fplog,
-                         const pull_params_t *pull_params,
-                         const t_inputrec    *ir,
-                         int                  nfile,
-                         const t_filenm       fnm[],
-                         gmx_mtop_t          *mtop,
-                         t_commrec          * cr,
-                         const output_env_t   oenv,
-                         real                 lambda,
-                         gmx_bool             bOutFile,
-                         unsigned long        Flags);
+struct pull_t *init_pull(FILE                   *fplog,
+                         const pull_params_t    *pull_params,
+                         const t_inputrec       *ir,
+                         int                     nfile,
+                         const t_filenm          fnm[],
+                         gmx_mtop_t             *mtop,
+                         t_commrec             * cr,
+                         const gmx_output_env_t *oenv,
+                         real                    lambda,
+                         gmx_bool                bOutFile,
+                         unsigned long           Flags);
 
 
 /*! \brief Close the pull output files.

@@ -44,11 +44,11 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -1539,21 +1539,20 @@ int gmx_make_ndx(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    output_env_t oenv;
-    char         title[STRLEN];
-    int          nndxin;
-    const char  *stxfile;
-    char       **ndxinfiles;
-    const char  *ndxoutfile;
-    gmx_bool     bNatoms;
-    int          i, j;
-    t_atoms     *atoms;
-    rvec        *x, *v;
-    int          ePBC;
-    matrix       box;
-    t_blocka    *block, *block2;
-    char       **gnames, **gnames2;
-    t_filenm     fnm[] = {
+    gmx_output_env_t *oenv;
+    int               nndxin;
+    const char       *stxfile;
+    char            **ndxinfiles;
+    const char       *ndxoutfile;
+    gmx_bool          bNatoms;
+    int               i, j;
+    t_atoms          *atoms;
+    rvec             *x, *v;
+    int               ePBC;
+    matrix            box;
+    t_blocka         *block, *block2;
+    char            **gnames, **gnames2;
+    t_filenm          fnm[] = {
         { efSTX, "-f", NULL,     ffOPTRD  },
         { efNDX, "-n", NULL,     ffOPTRDMULT },
         { efNDX, "-o", NULL,     ffWRITE }
@@ -1585,13 +1584,15 @@ int gmx_make_ndx(int argc, char *argv[])
 
     if (stxfile)
     {
-        snew(atoms, 1);
-        get_stx_coordnum(stxfile, &(atoms->nr));
-        init_t_atoms(atoms, atoms->nr, TRUE);
-        snew(x, atoms->nr);
-        snew(v, atoms->nr);
+        t_topology *top;
+        snew(top, 1);
         fprintf(stderr, "\nReading structure file\n");
-        read_stx_conf(stxfile, title, atoms, x, v, &ePBC, box);
+        read_tps_conf(stxfile, top, &ePBC, &x, &v, box, FALSE);
+        atoms = &top->atoms;
+        if (atoms->pdbinfo == NULL)
+        {
+            snew(atoms->pdbinfo, atoms->nr);
+        }
         natoms  = atoms->nr;
         bNatoms = TRUE;
     }

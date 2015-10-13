@@ -146,7 +146,7 @@ OptionInfo *OptionsImpl::Group::addOption(const AbstractOption &settings)
     options_.reserve(options_.size() + 1);
     std::pair<OptionMap::iterator, bool> insertionResult =
         parent_->optionMap_.insert(std::make_pair(option->name(),
-                                                  move(option)));
+                                                  std::move(option)));
     if (!insertionResult.second)
     {
         GMX_THROW(APIError("Duplicate option: " + option->name()));

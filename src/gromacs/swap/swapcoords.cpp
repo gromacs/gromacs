@@ -52,18 +52,21 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/snprintf.h"
 
 static const char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
 static const char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */
@@ -111,7 +114,8 @@ typedef struct swap_compartment
                                                    the compartment conditions.                   */
     int               *nat_past;              /**< Past ion counts for time-averaging.           */
     int               *ind;                   /**< Indices to coll array of atoms.               */
-    real              *dist;                  /**< Distance of atom to compartment center.       */
+    real              *dist;                  /**< Distance of atom to bulk layer, which is
+                                                   normally the center layer of the compartment  */
     int                nalloc;                /**< Allocation size for ind array.                */
     int                inflow_netto;          /**< Net inflow of ions into this compartment.     */
 } t_compartment;
@@ -184,15 +188,25 @@ typedef struct t_swap
  *               v  d_down
  *
  * \endcode
+ *
+ * \param[in] point    The position (xyz) under consideration.
+ * \param[in] center   The center of the cylinder.
+ * \param[in] d_up     The upper extension of the cylinder.
+ * \param[in] d_down   The lower extension.
+ * \param[in] r_cyl2   Cylinder radius squared.
+ * \param[in] pbc      Structure with info about periodic boundary conditions.
+ * \param[in] normal   The membrane normal direction is typically 3, i.e. z, but can be x or y also.
+ *
+ * \returns   Whether the point is inside the defined cylindric channel.
  */
 static gmx_bool is_in_channel(
-        rvec   point,  /* Point under consideration */
-        rvec   center, /* 'Center' of cylinder */
-        real   d_up,   /* Upper extension */
-        real   d_down, /* Lower extensions */
-        real   r_cyl2, /* Cylinder radius squared */
+        rvec   point,
+        rvec   center,
+        real   d_up,
+        real   d_down,
+        real   r_cyl2,
         t_pbc *pbc,
-        int    normal) /* The membrane normal direction is typically 3, i.e. ZZ, but can be X or Y also */
+        int    normal)
 {
     rvec dr;
     int  plane1, plane2; /* Directions tangential to membrane */
@@ -314,33 +328,56 @@ static void get_molecule_center(
 
 
 
-/*! \brief Return TRUE if ion is found in the compartment.
+/*! \brief Return TRUE if position x of ion (or water) is found in the compartment,
+ * i.e. between w1 and w2.
  *
- * Returns TRUE if x is between (w1+gap) and (w2-gap)
+ * One can define and additional offset "b" if one wants to exchange ions/water
+ * to or from a plane not directly in the middle of w1 and w2. The offset can be
+ * in  ]-1.0, ..., +1.0 [.
+ * A bulkOffset of 0.0 means 'no offset', so the swap-layer is directly in the
+ * middle between w1 and w2. Offsets -1.0 < b <  0.0 will yield swaps nearer to w1,
+ * whereas offsets  0.0 < 0 < +1.0 will yield swaps nearer to w2.
  *
  * \code
  *
- * ||-----------|--+--|----------o----------|--+--|---------------------||
- *                w1   ?????????????????????  w2
+ * ||--------------+-------------|-------------+------------------------||
+ *                w1  ? ? ? ? ? ? ? ? ? ? ?   w2
+ * ||--------------+-------------|----b--------+------------------------||
+ *                -1            0.0           +1
  *
  * \endcode
+ *
+ * \param[in]  w1               Position of 'wall' atom 1.
+ * \param[in]  w2               Position of 'wall' atom 2.
+ * \param[in]  x                Position of the ion or the water molecule under consideration.
+ * \param[in]  l                Length of the box, from || to || in the sketch.
+ * \param[in]  bulkOffset       Where is the bulk layer "b" to be found between w1 and w2?
+ * \param[out] distance_from_b  Distance of x to the bulk layer "b".
+ *
+ * \returns TRUE if x is between w1 and w2.
+ *
+ * Also computes the distance of x to the compartment center (the layer that is
+ * normally situated in the middle of w1 and w2 that would be considered as having
+ * the bulk concentration of ions).
  */
 static gmx_bool compartment_contains_atom(
-        real  w1, /* position of wall atom 1 */
-        real  w2, /* position of wall atom 2 */
-        real  gap,
+        real  w1,
+        real  w2,
         real  x,
-        real  l,  /* length of the box, from || to || in the sketch */
-        real *distance_from_center)
+        real  l,
+        real  bulkOffset,
+        real *distance_from_b)
 {
     real m, l_2;
+    real width;
 
 
     /* First set the origin in the middle of w1 and w2 */
-    m   = 0.5 * (w1 + w2);
-    w1 -= m;
-    w2 -= m;
-    x  -= m;
+    m     = 0.5 * (w1 + w2);
+    w1   -= m;
+    w2   -= m;
+    x    -= m;
+    width = w2 - w1;
 
     /* Now choose the PBC image of x that is closest to the origin: */
     l_2 = 0.5*l;
@@ -353,10 +390,10 @@ static gmx_bool compartment_contains_atom(
         x += l;
     }
 
-    *distance_from_center = (real)fabs(x);
+    *distance_from_b = (real)fabs(x - bulkOffset*0.5*width);
 
     /* Return TRUE if we now are in area "????" */
-    if ( (x >= (w1+gap)) &&  (x < (w2-gap)) )
+    if ( (x >= w1) &&  (x < w2) )
     {
         return TRUE;
     }
@@ -391,11 +428,17 @@ static void update_time_window(t_compartment *comp, int values, int replace)
 }
 
 
-/*! \brief Add atom with collective index ci to the list 'comp'. */
+/*! \brief Add the atom with collective index ci to the atom list in compartment 'comp'.
+ *
+ * \param[in]     ci        Index of this ion in the collective xc array.
+ * \param[inout]  comp      Compartment to add this atom to.
+ * \param[in]     distance  Shortest distance of this atom to the bulk layer,
+ *                          from which ion/water pairs are selected for swapping.
+ */
 static void add_to_list(
-        int            ci,       /* index of this ion in the collective array xc, qc */
-        t_compartment *comp,     /* Compartment to add this atom to */
-        real           distance) /* Shortest distance of this atom to the compartment center */
+        int            ci,
+        t_compartment *comp,
+        real           distance)
 {
     int nr;
 
@@ -427,7 +470,7 @@ static void get_compartment_boundaries(
 
     if (c >= eCompNR)
     {
-        gmx_fatal(FARGS, "No compartment %d.", c);
+        gmx_fatal(FARGS, "No compartment %c.", c+'A');
     }
 
     pos0 = s->group[eGrpSplit0].center[s->swapdim];
@@ -660,7 +703,7 @@ static void compartmentalize_ions(
             type = iong->qc[i] < 0 ? eIonNEG : eIonPOS;
 
             /* Is this ion in the compartment that we look at? */
-            if (compartment_contains_atom(left, right, 0, iong->xc[i][sd], box[sd][sd], &dist) )
+            if (compartment_contains_atom(left, right, iong->xc[i][sd], box[sd][sd], sc->bulkOffset[comp], &dist) )
             {
                 /* Now put it into the list containing only ions of its type */
                 add_to_list(i, &s->comp[comp][type], dist);
@@ -771,7 +814,7 @@ static void compartmentalize_solvent(
         /* Loop over the solvent MOLECULES */
         for (i = 0; i < sc->nat_sol; i += apm)
         {
-            if (compartment_contains_atom(left, right, 0, solg->xc[i][sd], box[sd][sd], &dist))
+            if (compartment_contains_atom(left, right, solg->xc[i][sd], box[sd][sd], sc->bulkOffset[comp], &dist))
             {
                 /* Add the whole molecule to the list */
                 for (j = 0; j < apm; j++)
@@ -1077,11 +1120,12 @@ static int get_group_apm_check(
  *
  * Also print the initial ion counts
  */
-static void print_ionlist_legend(t_inputrec *ir, const output_env_t oenv)
+static void print_ionlist_legend(t_inputrec             *ir,
+                                 const gmx_output_env_t *oenv)
 {
     const char **legend;
     int          ic, count, ii;
-    char         buf[256];
+    char         buf[STRLEN];
     t_swap      *s;
 
 
@@ -1092,30 +1136,30 @@ static void print_ionlist_legend(t_inputrec *ir, const output_env_t oenv)
     {
         for (ii = 0; ii < eIonNR; ii++)
         {
-            sprintf(buf, "%s %ss", CompStr[ic], IonString[ii]);
+            snprintf(buf, STRLEN, "%s %ss", CompStr[ic], IonString[ii]);
             legend[count++] = gmx_strdup(buf);
-            sprintf(buf, "%s av. mismatch to %d%s",
-                    CompStr[ic], s->comp[ic][ii].nat_req, IonStr[ii]);
+            snprintf(buf, STRLEN, "%s av. mismatch to %d%s",
+                     CompStr[ic], s->comp[ic][ii].nat_req, IonStr[ii]);
             legend[count++] = gmx_strdup(buf);
-            sprintf(buf, "%s netto %s influx", CompStr[ic], IonString[ii]);
+            snprintf(buf, STRLEN, "%s netto %s influx", CompStr[ic], IonString[ii]);
             legend[count++] = gmx_strdup(buf);
         }
     }
-    sprintf(buf, "%scenter of %s of split group 0", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit0].m) ? "mass" : "geometry");
+    snprintf(buf, STRLEN, "%scenter of %s of split group 0", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit0].m) ? "mass" : "geometry");
     legend[count++] = gmx_strdup(buf);
-    sprintf(buf, "%scenter of %s of split group 1", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit1].m) ? "mass" : "geometry");
+    snprintf(buf, STRLEN, "%scenter of %s of split group 1", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit1].m) ? "mass" : "geometry");
     legend[count++] = gmx_strdup(buf);
 
     for (ic = 0; ic < eChanNR; ic++)
     {
         for (ii = 0; ii < eIonNR; ii++)
         {
-            sprintf(buf, "A->ch%d->B %s permeations", ic, IonString[ii]);
+            snprintf(buf, STRLEN, "A->ch%d->B %s permeations", ic, IonString[ii]);
             legend[count++] = gmx_strdup(buf);
         }
     }
 
-    sprintf(buf, "leakage");
+    snprintf(buf, STRLEN, "leakage");
     legend[count++] = gmx_strdup(buf);
 
     xvgr_legend(s->fpout, count, legend, oenv);
@@ -1338,18 +1382,17 @@ static void init_swapstate(
 }
 
 
-extern void init_swapcoords(
-        FILE              *fplog,
-        gmx_bool           bVerbose,
-        t_inputrec        *ir,
-        const char        *fn,
-        gmx_mtop_t        *mtop,
-        rvec               x[],
-        matrix             box,
-        swapstate_t       *swapstate,
-        t_commrec         *cr,
-        const output_env_t oenv,
-        unsigned long      Flags)
+void init_swapcoords(FILE                   *fplog,
+                     gmx_bool                bVerbose,
+                     t_inputrec             *ir,
+                     const char             *fn,
+                     gmx_mtop_t             *mtop,
+                     rvec                    x[],
+                     matrix                  box,
+                     swapstate_t            *swapstate,
+                     t_commrec              *cr,
+                     const gmx_output_env_t *oenv,
+                     unsigned long           Flags)
 {
     int                    i, ic, ig, ii, j;
     t_swapcoords          *sc;
@@ -1358,6 +1401,7 @@ extern void init_swapcoords(
     t_group               *g;
     gmx_bool               bAppend, bStartFromCpt, bRerun;
     gmx_mtop_atomlookup_t  alook = NULL;
+    matrix                 boxCopy;
 
 
     alook = gmx_mtop_atomlookup_init(mtop);
@@ -1497,9 +1541,17 @@ extern void init_swapcoords(
         g->qc[i] = atom->q;
     }
 
+    /* Make a t_pbc struct on all nodes so that the molecules
+     * chosen for an exchange can be made whole. */
     snew(s->pbc, 1);
-    set_pbc(s->pbc, -1, box);
-
+    /* Every node needs to call set_pbc() and therefore every node needs
+     * to know the box dimensions */
+    copy_mat(box, boxCopy);
+    if (PAR(cr))
+    {
+        gmx_bcast(sizeof(boxCopy), boxCopy, cr);
+    }
+    set_pbc(s->pbc, -1, boxCopy);
 
     if (MASTER(cr))
     {
@@ -1555,15 +1607,22 @@ extern void init_swapcoords(
 
         if (!bAppend)
         {
+            if ( (0 != sc->bulkOffset[eCompA]) || (0 != sc->bulkOffset[eCompB]) )
+            {
+                fprintf(s->fpout, "#\n");
+                fprintf(s->fpout, "# You provided an offset for the position of the bulk layer(s).\n");
+                fprintf(s->fpout, "# That means the layers to/from which ions and water molecules are swapped\n");
+                fprintf(s->fpout, "# are not midway (= at 0.0) between the compartment-defining layers (at +/- 1.0).\n");
+                fprintf(s->fpout, "# bulk-offsetA = %g\n", sc->bulkOffset[eCompA]);
+                fprintf(s->fpout, "# bulk-offsetB = %g\n", sc->bulkOffset[eCompB]);
+            }
+
             fprintf(s->fpout, "#\n");
             fprintf(s->fpout, "# split0 cylinder radius %f nm, up %f nm, down %f nm\n",
                     sc->cyl0r, sc->cyl0u, sc->cyl0l);
             fprintf(s->fpout, "# split1 cylinder radius %f nm, up %f nm, down %f nm\n",
                     sc->cyl1r, sc->cyl1u, sc->cyl1l);
-        }
 
-        if (!bAppend)
-        {
             fprintf(s->fpout, "#\n");
             if (!bRerun)
             {
@@ -1661,11 +1720,11 @@ extern void init_swapcoords(
 
         if (bVerbose)
         {
-            fprintf(stderr, "%s Requested charge imbalance is Q(A) - Q(B) = %gz.\n", SwS, s->deltaQ);
+            fprintf(stderr, "%s Requested charge imbalance is Q(A) - Q(B) = %g e.\n", SwS, s->deltaQ);
         }
         if (!bAppend)
         {
-            fprintf(s->fpout, "# Requested charge imbalance is Q(A)-Q(B) = %gz.\n", s->deltaQ);
+            fprintf(s->fpout, "# Requested charge imbalance is Q(A)-Q(B) = %g e.\n", s->deltaQ);
         }
     }
 
@@ -1694,7 +1753,7 @@ extern void init_swapcoords(
 }
 
 
-extern void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *sc)
+void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *sc)
 {
     t_group *g;
     int      ig;
@@ -1736,14 +1795,20 @@ static gmx_bool need_swap(t_swapcoords *sc)
 }
 
 
-/*! \brief Return index of atom that we can use for swapping.
+/*! \brief Return the index of an atom or molecule suitable for swapping.
  *
- * Returns the index of an atom that is far off the compartment boundaries.
- * Other atoms of the molecule (if any) will directly follow the returned index
+ * Returns the index of an atom that is far off the compartment boundaries,
+ * that is near to the bulk layer to/from which the swaps take place.
+ * Other atoms of the molecule (if any) will directly follow the returned index.
+ *
+ * \param[in] comp  Structure containing compartment-specific data.
+ * \param[in] apm   Atoms per molecule - just return the first atom index of a molecule
+ *
+ * \returns Index of the first atom of the molecule chosen for a position exchange.
  */
 static int get_index_of_distant_atom(
         t_compartment *comp,
-        int            apm) /* Atoms per molecule - just return the first atom index of a molecule */
+        int            apm)
 {
     int  i, ibest = -1;
     real d = GMX_REAL_MAX;
@@ -1830,21 +1895,20 @@ static void apply_modified_positions(
 }
 
 
-extern gmx_bool do_swapcoords(
-        t_commrec        *cr,
-        gmx_int64_t       step,
-        double            t,
-        t_inputrec       *ir,
-        gmx_wallcycle_t   wcycle,
-        rvec              x[],
-        matrix            box,
-        gmx_mtop_t       *mtop,
-        gmx_bool          bVerbose,
-        gmx_bool          bRerun)
+gmx_bool do_swapcoords(t_commrec        *cr,
+                       gmx_int64_t       step,
+                       double            t,
+                       t_inputrec       *ir,
+                       gmx_wallcycle_t   wcycle,
+                       rvec              x[],
+                       matrix            box,
+                       gmx_mtop_t       *mtop,
+                       gmx_bool          bVerbose,
+                       gmx_bool          bRerun)
 {
     t_swapcoords         *sc;
     t_swap               *s;
-    int                   j, ii, ic, ig, im, gmax, nswaps;
+    int                   j, ii, ic, ig, im, nswaps;
     gmx_bool              bSwap = FALSE;
     t_group              *g;
     real                  vacancy[eCompNR][eIonNR];
@@ -1859,32 +1923,23 @@ extern gmx_bool do_swapcoords(
     sc  = ir->swap;
     s   = sc->si_priv;
 
-    /* Assemble all the positions of the swap group (ig = 0), the split groups
-     * (ig = 1,2), and possibly the solvent group (ig = 3) */
-    gmax = eGrpNr;
+    /* Assemble the positions of the ions. Since we do not need to make these
+     * whole, we pass NULL as third argument. */
+    g = &(s->group[eGrpIons]);
+    communicate_group_positions(cr, g->xc, NULL, NULL, FALSE,
+                                x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, NULL, NULL);
 
-    for (ig = 0; ig < gmax; ig++)
+    /* Assemble the positions of the split groups, i.e. the channels.
+     * Here we also pass a shifts array to communicate_group_positions(), so that it can make
+     * the molecules whole even in cases where they span more than half of the box in
+     * any dimension */
+    for (ig = eGrpSplit0; ig <= eGrpSplit1; ig++)
     {
         g = &(s->group[ig]);
-        if (eGrpSplit0 == ig || eGrpSplit1 == ig)
-        {
-            /* The split groups, i.e. the channels. Here we need  the full
-             * communicate_group_positions(), so that we can make the molecules
-             * whole even in cases where they span more than half of the box in
-             * any dimension */
-            communicate_group_positions(cr, g->xc, g->xc_shifts, g->xc_eshifts, TRUE,
-                                        x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, g->xc_old, box);
+        communicate_group_positions(cr, g->xc, g->xc_shifts, g->xc_eshifts, TRUE,
+                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, g->xc_old, box);
 
-            get_center(g->xc, g->m, g->nat, g->center); /* center of split groups == channels */
-        }
-        else
-        {
-            /* Swap group (ions), and solvent group. These molecules are small
-             * and we can always make them whole with a simple distance check.
-             * Therefore we pass NULL as third argument. */
-            communicate_group_positions(cr, g->xc, NULL, NULL, FALSE,
-                                        x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, NULL, NULL);
-        }
+        get_center(g->xc, g->m, g->nat, g->center); /* center of split groups == channels */
     }
 
     /* Set up the compartments and get lists of atoms in each compartment,
@@ -1908,6 +1963,8 @@ extern gmx_bool do_swapcoords(
     bSwap = need_swap(sc);
     if (bSwap)
     {
+        /* Since we here know that we have to perform ion/water position exchanges,
+         * we now assemble the solvent positions */
         g = &(s->group[eGrpSolvent]);
         communicate_group_positions(cr, g->xc, NULL, NULL, FALSE,
                                     x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, NULL, NULL);

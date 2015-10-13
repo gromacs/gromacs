@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/md_logging.h"
+#include "md_logging.h"
 
 #include <cstdarg>
 #include <cstdio>

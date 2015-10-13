@@ -49,14 +49,16 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/inputrec.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -72,8 +74,7 @@
  * formats around which cannot be distinguished, while not causing
  * problems rebasing the feature branch onto upstream changes. When
  * merging with mainstream GROMACS, set this tag string back to
- * TPX_TAG_RELEASE, and instead add an element to tpxv and set
- * tpx_version to that.
+ * TPX_TAG_RELEASE, and instead add an element to tpxv.
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
@@ -82,10 +83,10 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  *
  * The enum helps the code be more self-documenting and ensure merges
  * do not silently resolve when two patches make the same bump. When
- * adding new functionality, add a new element to the end of this
- * enumeration, change the definition of tpx_version, and write code
- * below that does the right thing according to the value of
- * file_version. */
+ * adding new functionality, add a new element just above tpxv_Count
+ * in this enumeration, and write code below that does the right thing
+ * according to the value of file_version.
+ */
 enum tpxv {
     tpxv_ComputationalElectrophysiology = 96,                /**< support for ion/water position swaps (computational electrophysiology) */
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
@@ -95,22 +96,23 @@ enum tpxv {
     tpxv_PullCoordTypeGeom,                                  /**< add pull type and geometry per group and flat-bottom */
     tpxv_PullGeomDirRel,                                     /**< add pull geometry direction-relative */
     tpxv_IntermolecularBondeds,                              /**< permit inter-molecular bonded interactions in the topology */
-    tpxv_DrudeExtendedLagrangian                             /**< Drude extended Lagrangian support within md-vv */
+    tpxv_CompElWithSwapLayerOffset,                          /**< added parameters for improved CompEl setups */
+    tpxv_DrudeExtendedLagrangian,                            /**< Drude extended Lagrangian support within md-vv */
+    tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
 /*! \brief Version number of the file format written to run input
  * files by this version of the code.
  *
- * The tpx_version number should be increased whenever the file format
- * in the main development branch changes, generally to the highest
- * value present in tpxv. Backward compatibility for reading old run
- * input files is maintained by checking this version number against
- * that of the file and then using the correct code path.
+ * The tpx_version increases whenever the file format in the main
+ * development branch changes, due to an extension of the tpxv enum above.
+ * Backward compatibility for reading old run input files is maintained
+ * by checking this version number against that of the file and then using
+ * the correct code path.
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_DrudeExtendedLagrangian;
-
+static const int tpx_version = tpxv_Count - 1;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -142,33 +144,9 @@ typedef struct {
 
 /*
  * The entries should be ordered in:
- * 1. ascending file version number
- * 2. ascending function type number
- */
-/*static const t_ftupd ftupd[] = {
-   { 20, F_CUBICBONDS        },
-   { 20, F_CONNBONDS         },
-   { 20, F_HARMONIC          },
-   { 20, F_EQM,              },
-   { 22, F_DISRESVIOL        },
-   { 22, F_ORIRES            },
-   { 22, F_ORIRESDEV         },
-   { 26, F_FOURDIHS          },
-   { 26, F_PIDIHS            },
-   { 26, F_DIHRES            },
-   { 26, F_DIHRESVIOL        },
-   { 30, F_CROSS_BOND_BONDS  },
-   { 30, F_CROSS_BOND_ANGLES },
-   { 30, F_UREY_BRADLEY      },
-   { 30, F_POLARIZATION      },
-   { 54, F_DHDL_CON          },
-   };*/
-/*
- * The entries should be ordered in:
  * 1. ascending function type number
  * 2. ascending file version number
  */
-/* question; what is the purpose of the commented code above? */
 static const t_ftupd ftupd[] = {
     { 20, F_CUBICBONDS        },
     { 20, F_CONNBONDS         },
@@ -763,7 +741,7 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
 }
 
 
-static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
+static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead, int file_version)
 {
     int j;
 
@@ -805,6 +783,14 @@ static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
     {
         gmx_fio_do_int(fio, swap->nanions[j]);
         gmx_fio_do_int(fio, swap->ncations[j]);
+    }
+
+    if (file_version >= tpxv_CompElWithSwapLayerOffset)
+    {
+        for (j = 0; j < eCompNR; j++)
+        {
+            gmx_fio_do_real(fio, swap->bulkOffset[j]);
+        }
     }
 
 }
@@ -1796,7 +1782,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             {
                 snew(ir->swap, 1);
             }
-            do_swapcoords(fio, ir->swap, bRead);
+            do_swapcoords(fio, ir->swap, bRead, file_version);
         }
     }
 
@@ -2209,11 +2195,6 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
         gmx_fio_do_int(fio, idum);
     }
     gmx_fio_do_int(fio, ffparams->ntypes);
-    if (bRead && debug)
-    {
-        fprintf(debug, "ffparams->atnr = %d, ntypes = %d\n",
-                ffparams->atnr, ffparams->ntypes);
-    }
     if (bRead)
     {
         snew(ffparams->functype, ffparams->ntypes);
@@ -2221,10 +2202,6 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
     }
     /* Read/write all the function types */
     gmx_fio_ndo_int(fio, ffparams->functype, ffparams->ntypes);
-    if (bRead && debug)
-    {
-        pr_ivec(debug, 0, "functype", ffparams->functype, ffparams->ntypes, TRUE);
-    }
 
     if (file_version >= 66)
     {
@@ -2256,23 +2233,12 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
                     (ffparams->functype[i] >= ftupd[k].ftype))
                 {
                     ffparams->functype[i] += 1;
-                    if (debug)
-                    {
-                        fprintf(debug, "Incrementing function type %d to %d (due to %s)\n",
-                                i, ffparams->functype[i],
-                                interaction_function[ftupd[k].ftype].longname);
-                        fflush(debug);
-                    }
                 }
             }
         }
 
         do_iparams(fio, ffparams->functype[i], &ffparams->iparams[i], bRead,
                    file_version);
-        if (bRead && debug)
-        {
-            pr_iparams(debug, ffparams->functype[i], &ffparams->iparams[i]);
-        }
     }
 }
 
@@ -2325,11 +2291,6 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
                 add_settle_atoms(&ilist[j]);
             }
         }
-        /*
-           if (bRead && gmx_debug_at)
-           pr_ilist(debug,0,interaction_function[j].longname,
-               functype,&ilist[j],TRUE);
-         */
     }
 }
 
@@ -2813,20 +2774,11 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
 
     do_atoms(fio, &molt->atoms, bRead, symtab, file_version, groups);
 
-    if (bRead && gmx_debug_at)
-    {
-        pr_atoms(debug, 0, "atoms", &molt->atoms, TRUE);
-    }
-
     if (file_version >= 57)
     {
         do_ilists(fio, molt->ilist, bRead, file_version);
 
         do_block(fio, &molt->cgs, bRead, file_version);
-        if (bRead && gmx_debug_at)
-        {
-            pr_block(debug, 0, "cgs", &molt->cgs, TRUE);
-        }
     }
 
     /* This used to be in the atoms struct */
@@ -3019,10 +2971,6 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         init_mtop(mtop);
     }
     do_symtab(fio, &(mtop->symtab), bRead);
-    if (bRead && debug)
-    {
-        pr_symtab(debug, 0, "symtab", &mtop->symtab);
-    }
 
     do_symstr(fio, &(mtop->name), bRead, &(mtop->symtab));
 
@@ -3097,14 +3045,9 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     }
 
     do_atomtypes (fio, &(mtop->atomtypes), bRead, file_version);
-    if (bRead && debug)
-    {
-        pr_atomtypes(debug, 0, "atomtypes", &mtop->atomtypes, TRUE);
-    }
 
     if (file_version < 57)
     {
-        /* Debug statements are inside do_idef */
         do_idef (fio, &mtop->ffparams, &mtop->moltype[0], bRead, file_version);
         mtop->natoms = mtop->moltype[0].atoms.nr;
     }
@@ -3128,10 +3071,6 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     if (file_version < 57)
     {
         do_block(fio, &mtop->moltype[0].cgs, bRead, file_version);
-        if (bRead && gmx_debug_at)
-        {
-            pr_block(debug, 0, "cgs", &mtop->moltype[0].cgs, TRUE);
-        }
         do_block(fio, &mtop->mols, bRead, file_version);
         /* Add the posres coordinates to the molblock */
         add_posres_molblock(mtop);
@@ -3142,10 +3081,6 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         {
             done_block(&mtop->mols);
             mtop->mols = mtop_mols(mtop);
-        }
-        if (gmx_debug_at)
-        {
-            pr_block(debug, 0, "mols", &mtop->mols, TRUE);
         }
     }
 
@@ -3310,11 +3245,6 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
         gmx_fio_do_int(fio, idum);
         gmx_fio_do_real(fio, rdum);
     }
-    /*a better decision will eventually (5.0 or later) need to be made
-       on how to treat the alchemical state of the system, which can now
-       vary through a simulation, and cannot be completely described
-       though a single lambda variable, or even a single state
-       index. Eventually, should probably be a vector. MRS*/
     if (fver >= 79)
     {
         gmx_fio_do_int(fio, tpx->fep_state);
@@ -3335,7 +3265,7 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
 }
 
 static int do_tpx(t_fileio *fio, gmx_bool bRead,
-                  t_inputrec *ir, t_state *state, rvec *f, gmx_mtop_t *mtop,
+                  t_inputrec *ir, t_state *state, gmx_mtop_t *mtop,
                   gmx_bool bXVallocated)
 {
     t_tpxheader     tpx;
@@ -3350,14 +3280,14 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (!bRead)
     {
         tpx.natoms    = state->natoms;
-        tpx.ngtc      = state->ngtc; /* need to add nnhpres here? */
+        tpx.ngtc      = state->ngtc;
         tpx.fep_state = state->fep_state;
         tpx.lambda    = state->lambda[efptFEP];
         tpx.bIr       = (ir       != NULL);
         tpx.bTop      = (mtop     != NULL);
         tpx.bX        = (state->x != NULL);
         tpx.bV        = (state->v != NULL);
-        tpx.bF        = (f        != NULL);
+        tpx.bF        = FALSE;
         tpx.bBox      = TRUE;
     }
 
@@ -3368,13 +3298,11 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (bRead)
     {
         state->flags  = 0;
-        /* state->lambda = tpx.lambda;*/ /*remove this eventually? */
-        /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
         if (bXVallocated)
         {
             xptr = state->x;
             vptr = state->v;
-            init_state(state, 0, tpx.ngtc, 0, 0, 0); /* nose-hoover chains */ /* eventually, need to add nnhpres here? */
+            init_state(state, 0, tpx.ngtc, 0, 0, 0);
             state->natoms = tpx.natoms;
             state->nalloc = tpx.natoms;
             state->x      = xptr;
@@ -3382,7 +3310,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
         else
         {
-            init_state(state, tpx.natoms, tpx.ngtc, 0, 0, 0); /* nose-hoover chains */
+            init_state(state, tpx.natoms, tpx.ngtc, 0, 0, 0);
         }
     }
 
@@ -3415,9 +3343,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (state->ngtc > 0 && file_version >= 28)
     {
         real *dumv;
-        /*ndo_double(state->nosehoover_xi,state->ngtc,bDum);*/
-        /*ndo_double(state->nosehoover_vxi,state->ngtc,bDum);*/
-        /*ndo_double(state->therm_integral,state->ngtc,bDum);*/
         snew(dumv, state->ngtc);
         if (file_version < 69)
         {
@@ -3441,19 +3366,11 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             {
                 do_inputrec(fio, ir, bRead, file_version,
                             mtop ? &mtop->ffparams.fudgeQQ : NULL);
-                if (bRead && debug)
-                {
-                    pr_inputrec(debug, 0, "inputrec", ir, FALSE);
-                }
             }
             else
             {
                 do_inputrec(fio, &dum_ir, bRead, file_version,
                             mtop ? &mtop->ffparams.fudgeQQ : NULL);
-                if (bRead && debug)
-                {
-                    pr_inputrec(debug, 0, "inputrec", &dum_ir, FALSE);
-                }
                 done_inputrec(&dum_ir);
             }
 
@@ -3493,10 +3410,13 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         gmx_fio_ndo_rvec(fio, state->v, state->natoms);
     }
 
-    do_test(fio, tpx.bF, f);
+    // No need to run do_test when the last argument is NULL
     if (tpx.bF)
     {
-        gmx_fio_ndo_rvec(fio, f, state->natoms);
+        rvec *dummyForces;
+        snew(dummyForces, state->natoms);
+        gmx_fio_ndo_rvec(fio, dummyForces, state->natoms);
+        sfree(dummyForces);
     }
 
     /* Starting with tpx version 26, we have the inputrec
@@ -3527,10 +3447,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             if (file_generation <= tpx_generation && ir)
             {
                 do_inputrec(fio, ir, bRead, file_version, mtop ? &mtop->ffparams.fudgeQQ : NULL);
-                if (bRead && debug)
-                {
-                    pr_inputrec(debug, 0, "inputrec", ir, FALSE);
-                }
                 if (file_version < 51)
                 {
                     set_box_rel(ir, state);
@@ -3580,27 +3496,6 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         {
             gmx_mtop_finalize(mtop);
         }
-
-        if (file_version >= 57)
-        {
-            char *env;
-            int   ienv;
-            env = getenv("GMX_NOCHARGEGROUPS");
-            if (env != NULL)
-            {
-                sscanf(env, "%d", &ienv);
-                fprintf(stderr, "\nFound env.var. GMX_NOCHARGEGROUPS = %d\n",
-                        ienv);
-                if (ienv > 0)
-                {
-                    fprintf(stderr,
-                            "Will make single atomic charge groups in non-solvent%s\n",
-                            ienv > 1 ? " and solvent" : "");
-                    gmx_mtop_make_atomic_charge_groups(mtop, ienv == 1);
-                }
-                fprintf(stderr, "\n");
-            }
-        }
     }
 
     return ePBC;
@@ -3638,23 +3533,23 @@ void write_tpx_state(const char *fn,
     t_fileio *fio;
 
     fio = open_tpx(fn, "w");
-    do_tpx(fio, FALSE, ir, state, NULL, mtop, FALSE);
+    do_tpx(fio, FALSE, ir, state, mtop, FALSE);
     close_tpx(fio);
 }
 
 void read_tpx_state(const char *fn,
-                    t_inputrec *ir, t_state *state, rvec *f, gmx_mtop_t *mtop)
+                    t_inputrec *ir, t_state *state, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
 
     fio = open_tpx(fn, "r");
-    do_tpx(fio, TRUE, ir, state, f, mtop, FALSE);
+    do_tpx(fio, TRUE, ir, state, mtop, FALSE);
     close_tpx(fio);
 }
 
 int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,
-             rvec *x, rvec *v, rvec *f, gmx_mtop_t *mtop)
+             rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
     t_state   state;
@@ -3663,7 +3558,7 @@ int read_tpx(const char *fn,
     state.x = x;
     state.v = v;
     fio     = open_tpx(fn, "r");
-    ePBC    = do_tpx(fio, TRUE, ir, &state, f, mtop, TRUE);
+    ePBC    = do_tpx(fio, TRUE, ir, &state, mtop, TRUE);
     close_tpx(fio);
     *natoms = state.natoms;
     if (box)
@@ -3679,12 +3574,12 @@ int read_tpx(const char *fn,
 
 int read_tpx_top(const char *fn,
                  t_inputrec *ir, matrix box, int *natoms,
-                 rvec *x, rvec *v, rvec *f, t_topology *top)
+                 rvec *x, rvec *v, t_topology *top)
 {
     gmx_mtop_t  mtop;
     int         ePBC;
 
-    ePBC = read_tpx(fn, ir, box, natoms, x, v, f, &mtop);
+    ePBC = read_tpx(fn, ir, box, natoms, x, v, &mtop);
 
     *top = gmx_mtop_t_to_t_topology(&mtop);
 

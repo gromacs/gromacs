@@ -239,12 +239,13 @@ MACRO(gmx_c_flags)
         endif()
     endif()
 
-    # pgi
+    # PGI
+    # Inter-procedural analysis causes pgcc/pgc++ to crash when linking the library with PGI release 15.7.
     if (CMAKE_C_COMPILER_ID MATCHES "PGI")
-        GMX_TEST_CFLAG(CFLAGS_OPT "-fastsse" GMXC_CFLAGS_RELEASE)
+        GMX_TEST_CFLAG(CFLAGS_OPT "-Mnoipa" GMXC_CFLAGS_RELEASE)
     endif()
     if (CMAKE_CXX_COMPILER_ID MATCHES "PGI")
-        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-fastsse" GMXC_CXXFLAGS_RELEASE)
+        GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-Mnoipa" GMXC_CXXFLAGS_RELEASE)
     endif()
 
     # Pathscale
@@ -314,8 +315,6 @@ MACRO(gmx_c_flags)
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        # Once we get rid of most extern "C" declarations, this can hopefully go away.
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN_PEDANTIC "-Wno-return-type-c-linkage" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall -Wno-unused-function" GMXC_CXXFLAGS)
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
     endif()

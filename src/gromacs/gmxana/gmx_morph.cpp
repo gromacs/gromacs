@@ -37,15 +37,16 @@
 #include "gmxpre.h"
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -72,7 +73,7 @@ static real dointerp(int n, rvec x1[], rvec x2[], rvec xx[],
 
 int gmx_morph(int argc, char *argv[])
 {
-    const char      *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] does a linear interpolation of conformations in order to",
         "create intermediates. Of course these are completely unphysical, but",
         "that you may try to justify yourself. Output is in the form of a ",
@@ -88,7 +89,7 @@ int gmx_morph(int argc, char *argv[])
         "if explicitly selected ([TT]-or[tt] option). In that case, an index file may be",
         "read to select the group from which the RMS is computed."
     };
-    t_filenm         fnm[] = {
+    t_filenm          fnm[] = {
         { efSTX, "-f1", "conf1",  ffREAD },
         { efSTX, "-f2", "conf2",  ffREAD },
         { efTRX, "-o",  "interm", ffWRITE },
@@ -96,11 +97,11 @@ int gmx_morph(int argc, char *argv[])
         { efNDX, "-n",  "index",  ffOPTRD }
     };
 #define NFILE asize(fnm)
-    static  int      ninterm = 11;
-    static  real     first   = 0.0;
-    static  real     last    = 1.0;
-    static  gmx_bool bFit    = TRUE;
-    t_pargs          pa []   = {
+    static  int       ninterm = 11;
+    static  real      first   = 0.0;
+    static  real      last    = 1.0;
+    static  gmx_bool  bFit    = TRUE;
+    t_pargs           pa []   = {
         { "-ninterm", FALSE, etINT,  {&ninterm},
           "Number of intermediates" },
         { "-first",   FALSE, etREAL, {&first},
@@ -110,18 +111,17 @@ int gmx_morph(int argc, char *argv[])
         { "-fit",     FALSE, etBOOL, {&bFit},
           "Do a least squares fit of the second to the first structure before interpolating" }
     };
-    const char      *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
-    FILE            *fp    = NULL;
-    int              i, isize, is_lsq, nat1, nat2;
-    t_trxstatus     *status;
-    atom_id         *index, *index_lsq, *index_all, *dummy;
-    t_atoms          atoms;
-    rvec            *x1, *x2, *xx, *v;
-    matrix           box;
-    real             rms1, rms2, fac, *mass;
-    char             title[STRLEN], *grpname;
-    gmx_bool         bRMS;
-    output_env_t     oenv;
+    const char       *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
+    FILE             *fp    = NULL;
+    int               i, isize, is_lsq, nat1, nat2;
+    t_trxstatus      *status;
+    atom_id          *index, *index_lsq, *index_all, *dummy;
+    rvec             *x1, *x2, *xx;
+    matrix            box;
+    real              rms1, rms2, fac, *mass;
+    char             *grpname;
+    gmx_bool          bRMS;
+    gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
@@ -129,22 +129,20 @@ int gmx_morph(int argc, char *argv[])
     {
         return 0;
     }
-    get_stx_coordnum (opt2fn("-f1", NFILE, fnm), &nat1);
-    get_stx_coordnum (opt2fn("-f2", NFILE, fnm), &nat2);
+
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(opt2fn("-f1", NFILE, fnm), top, NULL, &x1, NULL, box, FALSE);
+    nat1 = top->atoms.nr;
+    read_tps_conf(opt2fn("-f2", NFILE, fnm), top, NULL, &x2, NULL, box, FALSE);
+    nat2 = top->atoms.nr;
     if (nat1 != nat2)
     {
         gmx_fatal(FARGS, "Number of atoms in first structure is %d, in second %d",
                   nat1, nat2);
     }
-
-    init_t_atoms(&atoms, nat1, TRUE);
-    snew(x1, nat1);
-    snew(x2, nat1);
     snew(xx, nat1);
-    snew(v, nat1);
-
-    read_stx_conf(opt2fn("-f1", NFILE, fnm), title, &atoms, x1, v, NULL, box);
-    read_stx_conf(opt2fn("-f2", NFILE, fnm), title, &atoms, x2, v, NULL, box);
+    t_atoms  &atoms = top->atoms;
 
     snew(mass, nat1);
     snew(index_all, nat1);

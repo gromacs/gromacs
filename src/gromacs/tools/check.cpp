@@ -45,11 +45,12 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -58,6 +59,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -147,7 +149,7 @@ static void tpx2methods(const char *tpx, const char *tex)
     t_state       state;
     gmx_mtop_t    mtop;
 
-    read_tpx_state(tpx, &ir, &state, NULL, &mtop);
+    read_tpx_state(tpx, &ir, &state, &mtop);
     fp = gmx_fio_fopen(tex, "w");
     fprintf(fp, "\\section{Methods}\n");
     tpx2system(fp, &mtop);
@@ -272,7 +274,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
     }
 }
 
-void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
+void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real tol)
 {
     t_trxframe       fr;
     t_count          count;
@@ -288,7 +290,7 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
 
     if (tpr)
     {
-        read_tpx_state(tpr, &ir, &state, NULL, &mtop);
+        read_tpx_state(tpr, &ir, &state, &mtop);
         top = gmx_mtop_generate_local_top(&mtop, &ir);
     }
     new_natoms = -1;
@@ -411,7 +413,6 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
 void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
 {
     int            natom, i, j, k;
-    char           title[STRLEN];
     t_topology     top;
     int            ePBC;
     t_atoms       *atoms;
@@ -425,7 +426,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     gmx_atomprop_t aps;
 
     fprintf(stderr, "Checking coordinate file %s\n", fn);
-    read_tps_conf(fn, title, &top, &ePBC, &x, &v, box, TRUE);
+    read_tps_conf(fn, &top, &ePBC, &x, &v, box, TRUE);
     atoms = &top.atoms;
     natom = atoms->nr;
     fprintf(stderr, "%d atoms in file\n", atoms->nr);
@@ -702,7 +703,7 @@ void chk_enx(const char *fn)
 
 int gmx_check(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] reads a trajectory ([REF].tng[ref], [REF].trr[ref] or ",
         "[REF].xtc[ref]), an energy file ([REF].edr[ref])",
         "or an index file ([REF].ndx[ref])",
@@ -730,7 +731,7 @@ int gmx_check(int argc, char *argv[])
         "In case the [TT]-m[tt] flag is given a LaTeX file will be written",
         "consisting of a rough outline for a methods section for a paper."
     };
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",  NULL, ffOPTRD },
         { efTRX, "-f2",  NULL, ffOPTRD },
         { efTPR, "-s1", "top1", ffOPTRD },
@@ -742,18 +743,18 @@ int gmx_check(int argc, char *argv[])
         { efTEX, "-m",  NULL, ffOPTWR }
     };
 #define NFILE asize(fnm)
-    const char     *fn1 = NULL, *fn2 = NULL, *tex = NULL;
+    const char       *fn1 = NULL, *fn2 = NULL, *tex = NULL;
 
-    output_env_t    oenv;
-    static real     vdw_fac  = 0.8;
-    static real     bon_lo   = 0.4;
-    static real     bon_hi   = 0.7;
-    static gmx_bool bRMSD    = FALSE;
-    static real     ftol     = 0.001;
-    static real     abstol   = 0.001;
-    static gmx_bool bCompAB  = FALSE;
-    static char    *lastener = NULL;
-    static t_pargs  pa[]     = {
+    gmx_output_env_t *oenv;
+    static real       vdw_fac  = 0.8;
+    static real       bon_lo   = 0.4;
+    static real       bon_hi   = 0.7;
+    static gmx_bool   bRMSD    = FALSE;
+    static real       ftol     = 0.001;
+    static real       abstol   = 0.001;
+    static gmx_bool   bCompAB  = FALSE;
+    static char      *lastener = NULL;
+    static t_pargs    pa[]     = {
         { "-vdwfac", FALSE, etREAL, {&vdw_fac},
           "Fraction of sum of VdW radii used as warning cutoff" },
         { "-bonlo",  FALSE, etREAL, {&bon_lo},

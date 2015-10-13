@@ -41,18 +41,18 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -128,25 +128,24 @@ int gmx_vanhove(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    output_env_t oenv;
-    const char  *matfile, *otfile, *orfile;
-    char         title[256];
-    t_topology   top;
-    int          ePBC;
-    matrix       boxtop, box, *sbox, avbox, corr;
-    rvec        *xtop, *x, **sx;
-    int          isize, nalloc, nallocn;
-    t_trxstatus *status;
-    atom_id     *index;
-    char        *grpname;
-    int          nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
-    real        *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
-    real         invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
-    char         buf[STRLEN], **legend;
-    real       **mat = NULL;
-    int         *pt  = NULL, **pr = NULL, *mcount = NULL, *tcount = NULL, *rcount = NULL;
-    FILE        *fp;
-    t_rgb        rlo = {1, 1, 1}, rhi = {0, 0, 0};
+    gmx_output_env_t *oenv;
+    const char       *matfile, *otfile, *orfile;
+    t_topology        top;
+    int               ePBC;
+    matrix            boxtop, box, *sbox, avbox, corr;
+    rvec             *xtop, *x, **sx;
+    int               isize, nalloc, nallocn;
+    t_trxstatus      *status;
+    atom_id          *index;
+    char             *grpname;
+    int               nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
+    real             *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
+    real              invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
+    char              buf[STRLEN], **legend;
+    real            **mat = NULL;
+    int              *pt  = NULL, **pr = NULL, *mcount = NULL, *tcount = NULL, *rcount = NULL;
+    FILE             *fp;
+    t_rgb             rlo = {1, 1, 1}, rhi = {0, 0, 0};
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
@@ -179,7 +178,7 @@ int gmx_vanhove(int argc, char *argv[])
         exit(0);
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, boxtop,
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, boxtop,
                   FALSE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 

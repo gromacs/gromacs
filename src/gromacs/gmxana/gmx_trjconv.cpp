@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/g96io.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -51,21 +52,21 @@
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -577,7 +578,7 @@ static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
         int temp_natoms = -1;
         snew(mtop, 1);
         read_tpx(tps_file, NULL, NULL, &temp_natoms,
-                 NULL, NULL, NULL, mtop);
+                 NULL, NULL, mtop);
     }
 
     return mtop;
@@ -904,9 +905,7 @@ int gmx_trjconv(int argc, char *argv[])
     char             *outf_base = NULL;
     const char       *outf_ext  = NULL;
     char              top_title[256], title[256], filemode[5];
-    gmx_bool          bWarnCompact = FALSE;
-    const char       *warn;
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
         { efTRX, "-f",   NULL,      ffREAD  },
@@ -1095,9 +1094,11 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bTPS)
         {
-            read_tps_conf(top_file, top_title, &top, &ePBC, &xp, NULL, top_box,
+            read_tps_conf(top_file, &top, &ePBC, &xp, NULL, top_box,
                           bReset || bPBCcomRes);
-            atoms = &top.atoms;
+            std::strncpy(top_title, *top.name, 255);
+            top_title[255] = '\0';
+            atoms          = &top.atoms;
 
             if (0 == top.mols.nr && (bCluster || bPBCcomMol))
             {
@@ -1666,13 +1667,8 @@ int gmx_trjconv(int argc, char *argv[])
                                     put_atoms_in_triclinic_unitcell(ecenter, fr.box, natoms, fr.x);
                                     break;
                                 case euCompact:
-                                    warn = put_atoms_in_compact_unitcell(ePBC, ecenter, fr.box,
-                                                                         natoms, fr.x);
-                                    if (warn && !bWarnCompact)
-                                    {
-                                        fprintf(stderr, "\n%s\n", warn);
-                                        bWarnCompact = TRUE;
-                                    }
+                                    put_atoms_in_compact_unitcell(ePBC, ecenter, fr.box,
+                                                                  natoms, fr.x);
                                     break;
                             }
                         }

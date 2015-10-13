@@ -41,22 +41,23 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/correlationfunctions/expfit.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -77,7 +78,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
                          real rho, real wt, const char *fn_trans,
                          const char *fn_tca, const char *fn_tc,
                          const char *fn_tcf, const char *fn_cub,
-                         const char *fn_vk, const output_env_t oenv)
+                         const char *fn_vk, const gmx_output_env_t *oenv)
 {
     FILE  *fp, *fp_vk, *fp_cub = NULL;
     int    nk, ntc;
@@ -258,7 +259,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 
 int gmx_tcaf(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes tranverse current autocorrelations.",
         "These are used to estimate the shear viscosity, [GRK]eta[grk].",
         "For details see: Palmer, Phys. Rev. E 49 (1994) pp 359-366.[PAR]",
@@ -292,9 +293,9 @@ int gmx_tcaf(int argc, char *argv[])
         "is very important for obtaining a good fit."
     };
 
-    static gmx_bool bMol = FALSE, bK34 = FALSE;
-    static real     wt   = 5;
-    t_pargs         pa[] = {
+    static gmx_bool   bMol = FALSE, bK34 = FALSE;
+    static real       wt   = 5;
+    t_pargs           pa[] = {
         { "-mol", FALSE, etBOOL, {&bMol},
           "Calculate TCAF of molecules" },
         { "-k34", FALSE, etBOOL, {&bK34},
@@ -303,22 +304,22 @@ int gmx_tcaf(int argc, char *argv[])
           "Exponential decay time for the TCAF fit weights" }
     };
 
-    t_topology      top;
-    int             ePBC;
-    t_trxframe      fr;
-    matrix          box;
-    gmx_bool        bTop;
-    int             gnx;
-    atom_id        *index, *atndx = NULL, at;
-    char           *grpname;
-    char            title[256];
-    real            t0, t1, dt, m, mtot, sysmass, rho, sx, cx;
-    t_trxstatus    *status;
-    int             nframes, n_alloc, i, j, k, d;
-    rvec            mv_mol, cm_mol, kfac[NK];
-    int             nkc, nk, ntc;
-    real          **tc;
-    output_env_t    oenv;
+    t_topology        top;
+    int               ePBC;
+    t_trxframe        fr;
+    matrix            box;
+    gmx_bool          bTop;
+    int               gnx;
+    atom_id          *index, *atndx = NULL, at;
+    char             *grpname;
+    char              title[256];
+    real              t0, t1, dt, m, mtot, sysmass, rho, sx, cx;
+    t_trxstatus      *status;
+    int               nframes, n_alloc, i, j, k, d;
+    rvec              mv_mol, cm_mol, kfac[NK];
+    int               nkc, nk, ntc;
+    real            **tc;
+    gmx_output_env_t *oenv;
 
 #define NHISTO 360
 
@@ -346,7 +347,7 @@ int gmx_tcaf(int argc, char *argv[])
         return 0;
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box,
                          TRUE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 

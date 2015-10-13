@@ -48,15 +48,16 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/tngio_for_tools.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -71,7 +72,7 @@
 
 static void scan_trj_files(char **fnms, int nfiles, real *readtime,
                            real *timestep, atom_id imax,
-                           const output_env_t oenv)
+                           const gmx_output_env_t *oenv)
 {
     /* Check start time of all files */
     int          i, natoms = 0;
@@ -178,7 +179,7 @@ static void sort_files(char **fnms, real *settime, int nfile)
 
 static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
                        real *settime, int *cont_type, gmx_bool bSetTime,
-                       gmx_bool bSort, const output_env_t oenv)
+                       gmx_bool bSort, const gmx_output_env_t *oenv)
 {
     int      i;
     gmx_bool ok;
@@ -309,7 +310,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
 
 static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
                      real **value, real *time, real dt_remd, int isize,
-                     atom_id index[], real dt, const output_env_t oenv)
+                     atom_id index[], real dt, const gmx_output_env_t *oenv)
 {
     int           i, j, k, natoms, nnn;
     t_trxstatus **fp_in, **fp_out;
@@ -473,25 +474,25 @@ int gmx_trjcat(int argc, char *argv[])
           { &bCat }, "Do not discard double time frames" }
     };
 #define npargs asize(pa)
-    int          ftpin, i, frame, frame_out;
-    t_trxstatus *status, *trxout = NULL;
-    real         t_corr;
-    t_trxframe   fr, frout;
-    char       **fnms, **fnms_out, *out_file;
-    int          n_append;
-    gmx_bool     bNewFile, bIndex, bWrite;
-    int          nfile_in, nfile_out, *cont_type;
-    real        *readtime, *timest, *settime;
-    real         first_time = 0, lasttime = NOTSET, last_ok_t = -1, timestep;
-    real         last_frame_time, searchtime;
-    int          isize = 0, j;
-    atom_id     *index = NULL, imax;
-    char        *grpname;
-    real       **val = NULL, *t = NULL, dt_remd;
-    int          n, nset, ftpout = -1, prevEndStep = 0, filetype;
-    gmx_off_t    fpos;
-    output_env_t oenv;
-    t_filenm     fnm[] =
+    int               ftpin, i, frame, frame_out;
+    t_trxstatus      *status, *trxout = NULL;
+    real              t_corr;
+    t_trxframe        fr, frout;
+    char            **fnms, **fnms_out, *out_file;
+    int               n_append;
+    gmx_bool          bNewFile, bIndex, bWrite;
+    int               nfile_in, nfile_out, *cont_type;
+    real             *readtime, *timest, *settime;
+    real              first_time = 0, lasttime = NOTSET, last_ok_t = -1, timestep;
+    real              last_frame_time, searchtime;
+    int               isize = 0, j;
+    atom_id          *index = NULL, imax;
+    char             *grpname;
+    real            **val = NULL, *t = NULL, dt_remd;
+    int               n, nset, ftpout = -1, prevEndStep = 0, filetype;
+    gmx_off_t         fpos;
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] =
     {
         { efTRX, "-f", NULL, ffRDMULT },
         { efTRO, "-o", NULL, ffWRMULT },

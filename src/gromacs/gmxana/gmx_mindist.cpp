@@ -43,19 +43,20 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -141,7 +142,7 @@ static void periodic_dist(int ePBC,
 static void periodic_mindist_plot(const char *trxfn, const char *outfn,
                                   t_topology *top, int ePBC,
                                   int n, atom_id index[], gmx_bool bSplit,
-                                  const output_env_t oenv)
+                                  const gmx_output_env_t *oenv)
 {
     FILE        *out;
     const char  *leg[5] = { "min per.", "max int.", "box1", "box2", "box3" };
@@ -329,7 +330,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
                int ng, atom_id *index[], int gnx[], char *grpn[], gmx_bool bSplit,
                gmx_bool bMin, int nres, atom_id *residue, gmx_bool bPBC, int ePBC,
                gmx_bool bGroup, gmx_bool bEachResEachTime, gmx_bool bPrintResName,
-               const output_env_t oenv)
+               const gmx_output_env_t *oenv)
 {
     FILE            *atm, *dist, *num;
     t_trxstatus     *trxout;
@@ -642,7 +643,7 @@ void dump_res(FILE *out, int nres, atom_id *resindex, atom_id index[])
 
 int gmx_mindist(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes the distance between one group and a number of",
         "other groups. Both the minimum distance",
         "(between any pair of atoms from the respective groups)",
@@ -662,12 +663,12 @@ int gmx_mindist(int argc, char *argv[])
         "Also [gmx-distance] and [gmx-pairdist] calculate distances."
     };
 
-    static gmx_bool bMat             = FALSE, bPI = FALSE, bSplit = FALSE, bMax = FALSE, bPBC = TRUE;
-    static gmx_bool bGroup           = FALSE;
-    static real     rcutoff          = 0.6;
-    static int      ng               = 1;
-    static gmx_bool bEachResEachTime = FALSE, bPrintResName = FALSE;
-    t_pargs         pa[]             = {
+    static gmx_bool   bMat             = FALSE, bPI = FALSE, bSplit = FALSE, bMax = FALSE, bPBC = TRUE;
+    static gmx_bool   bGroup           = FALSE;
+    static real       rcutoff          = 0.6;
+    static int        ng               = 1;
+    static gmx_bool   bEachResEachTime = FALSE, bPrintResName = FALSE;
+    t_pargs           pa[]             = {
         { "-matrix", FALSE, etBOOL, {&bMat},
           "Calculate half a matrix of group-group distances" },
         { "-max",    FALSE, etBOOL, {&bMax},
@@ -689,20 +690,19 @@ int gmx_mindist(int argc, char *argv[])
         { "-printresname",  FALSE, etBOOL, {&bPrintResName},
           "Write residue names" }
     };
-    output_env_t    oenv;
-    t_topology     *top  = NULL;
-    int             ePBC = -1;
-    char            title[256];
-    rvec           *x;
-    matrix          box;
-    gmx_bool        bTop = FALSE;
+    gmx_output_env_t *oenv;
+    t_topology       *top  = NULL;
+    int               ePBC = -1;
+    rvec             *x;
+    matrix            box;
+    gmx_bool          bTop = FALSE;
 
-    int             i, nres = 0;
-    const char     *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
-    char          **grpname;
-    int            *gnx;
-    atom_id       **index, *residues = NULL;
-    t_filenm        fnm[] = {
+    int               i, nres = 0;
+    const char       *trxfnm, *tpsfnm, *ndxfnm, *distfnm, *numfnm, *atmfnm, *oxfnm, *resfnm;
+    char            **grpname;
+    int              *gnx;
+    atom_id         **index, *residues = NULL;
+    t_filenm          fnm[] = {
         { efTRX, "-f",  NULL,      ffREAD },
         { efTPS,  NULL, NULL,      ffOPTRD },
         { efNDX,  NULL, NULL,      ffOPTRD },
@@ -760,7 +760,7 @@ int gmx_mindist(int argc, char *argv[])
     if (tpsfnm || resfnm || !ndxfnm)
     {
         snew(top, 1);
-        bTop = read_tps_conf(tpsfnm, title, top, &ePBC, &x, NULL, box, FALSE);
+        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, NULL, box, FALSE);
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");

@@ -61,6 +61,7 @@ extern "C" {
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
+struct t_nblist;
 
 /* Structure describing the data in a single table */
 typedef struct
@@ -71,7 +72,6 @@ typedef struct
     real                        r;           /* range of the table */
     int                         n;           /* n+1 is the number of table points */
     real                        scale;       /* distance (nm) between two table points */
-    real                        scale_exp;   /* distance for exponential part of VdW table, not always used */
     real *                      data;        /* the actual table data */
 
     /* Some information about the table layout. This can also be derived from the interpolation
@@ -153,12 +153,12 @@ enum {
     egCOUL14, egLJ14, egGB, egNR
 };
 
-typedef struct {
+typedef struct gmx_grppairener_t {
     int   nener;      /* The number of energy group pairs     */
     real *ener[egNR]; /* Energy terms for each pair of groups */
 } gmx_grppairener_t;
 
-typedef struct {
+typedef struct gmx_enerdata_t {
     real              term[F_NRE];         /* The energies for all different interaction types */
     gmx_grppairener_t grpp;
     double            dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
@@ -188,7 +188,7 @@ struct gmx_ewald_tab_t;
 
 typedef struct ewald_corr_thread_t ewald_corr_thread_t;
 
-typedef struct {
+typedef struct t_forcerec {
     interaction_const_t *ic;
 
     /* Domain Decomposition */

@@ -53,17 +53,18 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull_internal.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -185,7 +186,8 @@ void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time)
     }
 }
 
-static FILE *open_pull_out(const char *fn, struct pull_t *pull, const output_env_t oenv,
+static FILE *open_pull_out(const char *fn, struct pull_t *pull,
+                           const gmx_output_env_t *oenv,
                            gmx_bool bCoord, unsigned long Flags)
 {
     FILE  *fp;
@@ -408,47 +410,44 @@ static void apply_forces_vec_torque(const struct pull_t     *pull,
 }
 
 /* Apply forces in a mass weighted fashion */
-static void apply_forces(struct pull_t * pull, t_mdatoms * md, rvec *f)
+static void apply_forces_coord(struct pull_t * pull, int coord,
+                               const t_mdatoms * md,
+                               rvec *f)
 {
-    int c;
+    const pull_coord_work_t *pcrd;
 
-    for (c = 0; c < pull->ncoord; c++)
+    pcrd = &pull->coord[coord];
+
+    if (pcrd->params.eGeom == epullgCYL)
     {
-        const pull_coord_work_t *pcrd;
+        dvec f_tot;
+        int  m;
 
-        pcrd = &pull->coord[c];
+        apply_forces_cyl_grp(&pull->dyna[coord], pcrd->cyl_dev, md,
+                             pcrd->f, pcrd->f_scal, -1, f);
 
-        if (pcrd->params.eGeom == epullgCYL)
+        /* Sum the force along the vector and the radial force */
+        for (m = 0; m < DIM; m++)
         {
-            dvec f_tot;
-            int  m;
-
-            apply_forces_cyl_grp(&pull->dyna[c], pcrd->cyl_dev, md,
-                                 pcrd->f, pcrd->f_scal, -1, f);
-
-            /* Sum the force along the vector and the radial force */
-            for (m = 0; m < DIM; m++)
-            {
-                f_tot[m] = pcrd->f[m] + pcrd->f_scal*pcrd->ffrad[m];
-            }
-            apply_forces_grp(&pull->group[pcrd->params.group[1]], md, f_tot, 1, f);
+            f_tot[m] = pcrd->f[m] + pcrd->f_scal*pcrd->ffrad[m];
         }
-        else
+        apply_forces_grp(&pull->group[pcrd->params.group[1]], md, f_tot, 1, f);
+    }
+    else
+    {
+        if (pcrd->params.eGeom == epullgDIRRELATIVE)
         {
-            if (pcrd->params.eGeom == epullgDIRRELATIVE)
-            {
-                /* We need to apply the torque forces to the pull groups
-                 * that define the pull vector.
-                 */
-                apply_forces_vec_torque(pull, pcrd, md, f);
-            }
-
-            if (pull->group[pcrd->params.group[0]].params.nat > 0)
-            {
-                apply_forces_grp(&pull->group[pcrd->params.group[0]], md, pcrd->f, -1, f);
-            }
-            apply_forces_grp(&pull->group[pcrd->params.group[1]], md, pcrd->f, 1, f);
+            /* We need to apply the torque forces to the pull groups
+             * that define the pull vector.
+             */
+            apply_forces_vec_torque(pull, pcrd, md, f);
         }
+
+        if (pull->group[pcrd->params.group[0]].params.nat > 0)
+        {
+            apply_forces_grp(&pull->group[pcrd->params.group[0]], md, pcrd->f, -1, f);
+        }
+        apply_forces_grp(&pull->group[pcrd->params.group[1]], md, pcrd->f, 1, f);
     }
 }
 
@@ -519,7 +518,7 @@ static void low_get_pull_coord_dr(const struct pull_t *pull,
     {
         gmx_fatal(FARGS, "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the box size (%f).\nYou might want to consider using \"pull-geometry = direction-periodic\" instead.\n",
                   pcrd->params.group[0], pcrd->params.group[1],
-                  sqrt(dr2), sqrt(max_dist2));
+                  sqrt(dr2), sqrt(0.98*0.98*max_dist2));
     }
 
     if (pcrd->params.eGeom == epullgDIRPBC)
@@ -1066,97 +1065,148 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
     sfree(rnew);
 }
 
-/* Pulling with a harmonic umbrella potential or constant force */
-static void do_pull_pot(struct pull_t *pull, t_pbc *pbc, double t, real lambda,
-                        real *V, tensor vir, real *dVdl)
+static void calc_pull_coord_force(pull_coord_work_t *pcrd,
+                                  double dev, real lambda,
+                                  real *V, tensor vir, real *dVdl)
 {
-    int    c, j, m;
-    double dev, ndr, invdr = 0;
+    int    j, m;
+    double ndr, invdr = 0;
     real   k, dkdl;
 
-    /* loop over the pull coordinates */
-    *V    = 0;
-    *dVdl = 0;
-    for (c = 0; c < pull->ncoord; c++)
-    {
-        pull_coord_work_t *pcrd;
+    k    = (1.0 - lambda)*pcrd->params.k + lambda*pcrd->params.kB;
+    dkdl = pcrd->params.kB - pcrd->params.k;
 
-        pcrd = &pull->coord[c];
+    if (pcrd->params.eGeom == epullgDIST)
+    {
+        ndr   = dnorm(pcrd->dr);
+        if (ndr > 0)
+        {
+            invdr = 1/ndr;
+        }
+        else
+        {
+            /* With an harmonic umbrella, the force is 0 at r=0,
+             * so we can set invdr to any value.
+             * With a constant force, the force at r=0 is not defined,
+             * so we zero it (this is anyhow a very rare event).
+             */
+            invdr = 0;
+        }
+    }
+    else
+    {
+        ndr = 0;
+        for (m = 0; m < DIM; m++)
+        {
+            ndr += pcrd->vec[m]*pcrd->dr[m];
+        }
+    }
+
+    switch (pcrd->params.eType)
+    {
+        case epullUMBRELLA:
+        case epullFLATBOTTOM:
+            /* The only difference between an umbrella and a flat-bottom
+             * potential is that a flat-bottom is zero below zero.
+             */
+            if (pcrd->params.eType == epullFLATBOTTOM && dev < 0)
+            {
+                dev = 0;
+            }
+
+            pcrd->f_scal  =       -k*dev;
+            *V           += 0.5*   k*dsqr(dev);
+            *dVdl        += 0.5*dkdl*dsqr(dev);
+            break;
+        case epullCONST_F:
+            pcrd->f_scal  =   -k;
+            *V           +=    k*ndr;
+            *dVdl        += dkdl*ndr;
+            break;
+        default:
+            gmx_incons("Unsupported pull type in do_pull_pot");
+    }
+
+    if (pcrd->params.eGeom == epullgDIST)
+    {
+        for (m = 0; m < DIM; m++)
+        {
+            pcrd->f[m] = pcrd->f_scal*pcrd->dr[m]*invdr;
+        }
+    }
+    else
+    {
+        for (m = 0; m < DIM; m++)
+        {
+            pcrd->f[m] = pcrd->f_scal*pcrd->vec[m];
+        }
+    }
+
+    if (vir != NULL && pcrd->params.eGeom != epullgDIRPBC)
+    {
+        /* Add the pull contribution to the virial */
+        for (j = 0; j < DIM; j++)
+        {
+            for (m = 0; m < DIM; m++)
+            {
+                vir[j][m] -= 0.5*pcrd->f[j]*pcrd->dr[m];
+            }
+        }
+    }
+}
+
+void set_pull_coord_reference_value(struct pull_t *pull,
+                                    int coord_ind, real value_ref,
+                                    const struct t_pbc *pbc,
+                                    const t_mdatoms *md,
+                                    real lambda,
+                                    gmx_bool bUpdateForce, rvec *f, tensor vir)
+{
+    pull_coord_work_t *pcrd;
+
+    pcrd = &pull->coord[coord_ind];
+
+    if (pcrd->params.rate != 0)
+    {
+        gmx_incons("Can not update the reference value for pull coordinates with rate!=0");
+    }
+
+    /* Update the reference value */
+    pcrd->value_ref = value_ref;
+
+    if (bUpdateForce)
+    {
+        real   V = 0, dVdl = 0;
+        double f_scal_old;
+        dvec   f_old;
+        double dev;
+        int    j, m;
 
         if (pcrd->params.eType == epullCONSTRAINT)
         {
-            continue;
+            gmx_incons("Can not update the pull force for constraint coordinates");
         }
 
-        dev = get_pull_coord_deviation(pull, c, pbc, t);
+        /* The time parameter is not used here, so we pass 0.0 */
+        dev = get_pull_coord_deviation(pull, coord_ind, pbc, 0.0);
 
-        k    = (1.0 - lambda)*pcrd->params.k + lambda*pcrd->params.kB;
-        dkdl = pcrd->params.kB - pcrd->params.k;
+        f_scal_old = pcrd->f_scal;
+        copy_dvec(pcrd->f, f_old);
 
-        if (pcrd->params.eGeom == epullgDIST)
-        {
-            ndr   = dnorm(pcrd->dr);
-            if (ndr > 0)
-            {
-                invdr = 1/ndr;
-            }
-            else
-            {
-                /* With an harmonic umbrella, the force is 0 at r=0,
-                 * so we can set invdr to any value.
-                 * With a constant force, the force at r=0 is not defined,
-                 * so we zero it (this is anyhow a very rare event).
-                 */
-                invdr = 0;
-            }
-        }
-        else
-        {
-            ndr = 0;
-            for (m = 0; m < DIM; m++)
-            {
-                ndr += pcrd->vec[m]*pcrd->dr[m];
-            }
-        }
+        /* Calculate the new forces, ingnore V, vir and dVdl */
+        calc_pull_coord_force(pcrd, dev, lambda, &V, NULL, &dVdl);
 
-        switch (pcrd->params.eType)
+        /* Here we determine the force correction:
+         * substract the half step contribution we added already,
+         * add the half step contribution for the new force.
+         * Note that the printing of f_scal is done in pull_potential, which
+         * might be called before this function is called, so the output might
+         * contain values without the correction below.
+         */
+        pcrd->f_scal   = 0.5*(-f_scal_old + pcrd->f_scal);
+        for (m = 0; m < DIM; m++)
         {
-            case epullUMBRELLA:
-            case epullFLATBOTTOM:
-                /* The only difference between an umbrella and a flat-bottom
-                 * potential is that a flat-bottom is zero below zero.
-                 */
-                if (pcrd->params.eType == epullFLATBOTTOM && dev < 0)
-                {
-                    dev = 0;
-                }
-
-                pcrd->f_scal  =       -k*dev;
-                *V           += 0.5*   k*dsqr(dev);
-                *dVdl        += 0.5*dkdl*dsqr(dev);
-                break;
-            case epullCONST_F:
-                pcrd->f_scal  =   -k;
-                *V           +=    k*ndr;
-                *dVdl        += dkdl*ndr;
-                break;
-            default:
-                gmx_incons("Unsupported pull type in do_pull_pot");
-        }
-
-        if (pcrd->params.eGeom == epullgDIST)
-        {
-            for (m = 0; m < DIM; m++)
-            {
-                pcrd->f[m] = pcrd->f_scal*pcrd->dr[m]*invdr;
-            }
-        }
-        else
-        {
-            for (m = 0; m < DIM; m++)
-            {
-                pcrd->f[m] = pcrd->f_scal*pcrd->vec[m];
-            }
+            pcrd->f[m] = 0.5*(-f_old[m] + pcrd->f[m]);
         }
 
         if (vir != NULL && pcrd->params.eGeom != epullgDIRPBC)
@@ -1170,26 +1220,55 @@ static void do_pull_pot(struct pull_t *pull, t_pbc *pbc, double t, real lambda,
                 }
             }
         }
+
+        apply_forces_coord(pull, coord_ind, md, f);
     }
+}
+
+/* Calculate the pull potential and scalar force for a pull coordinate */
+static void do_pull_pot_coord(struct pull_t *pull, int coord_ind, t_pbc *pbc,
+                              double t, real lambda,
+                              real *V, tensor vir, real *dVdl)
+{
+    pull_coord_work_t *pcrd;
+    double             dev;
+
+    pcrd = &pull->coord[coord_ind];
+
+    assert(pcrd->params.eType != epullCONSTRAINT);
+
+    dev = get_pull_coord_deviation(pull, coord_ind, pbc, t);
+
+    calc_pull_coord_force(pcrd, dev, lambda, V, vir, dVdl);
 }
 
 real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
                     rvec *x, rvec *f, tensor vir, real *dvdlambda)
 {
-    real V = 0, dVdl;
+    real V = 0;
 
     assert(pull != NULL);
 
     if (pull->comm.bParticipate)
     {
+        real dVdl = 0;
+
         pull_calc_coms(cr, pull, md, pbc, t, x, NULL);
 
-        do_pull_pot(pull, pbc, t, lambda,
-                    &V, MASTER(cr) ? vir : NULL, &dVdl);
+        for (int c = 0; c < pull->ncoord; c++)
+        {
+            if (pull->coord[c].params.eType == epullCONSTRAINT)
+            {
+                continue;
+            }
 
-        /* Distribute forces over the pull groups */
-        apply_forces(pull, md, f);
+            do_pull_pot_coord(pull, c, pbc, t, lambda,
+                              &V, MASTER(cr) ? vir : NULL, &dVdl);
+
+            /* Distribute the force over the atoms in the pulled groups */
+            apply_forces_coord(pull, c, md, f);
+        }
 
         if (MASTER(cr))
         {
@@ -1558,7 +1637,8 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
 struct pull_t *
 init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
           int nfile, const t_filenm fnm[],
-          gmx_mtop_t *mtop, t_commrec *cr, const output_env_t oenv, real lambda,
+          gmx_mtop_t *mtop, t_commrec *cr,
+          const gmx_output_env_t *oenv, real lambda,
           gmx_bool bOutFile, unsigned long Flags)
 {
     struct pull_t *pull;

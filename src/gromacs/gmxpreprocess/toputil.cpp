@@ -46,7 +46,7 @@
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
-#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
@@ -326,7 +326,7 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
     /* print bondtypes */
     for (i = 0; (i < bt->nr); i++)
     {
-        bSwapParity = (bt->param[i].C0 == NOTSET) && (bt->param[i].C1 == -1);
+        bSwapParity = (bt->param[i].c0() == NOTSET) && (bt->param[i].c1() == -1);
         if (!bDih)
         {
             for (j = 0; (j < nral); j++)

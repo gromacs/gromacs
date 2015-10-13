@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,7 +72,7 @@ typedef struct {
     real    vcos;       /* The velocity of the cosine profile           */
 } t_cos_acc;
 
-typedef struct {
+typedef struct gmx_ekindata_t {
     gmx_bool         bNEMD;
     int              ngtc;            /* The number of T-coupling groups      */
     t_grp_tcstat    *tcstat;          /* T-coupling data            */

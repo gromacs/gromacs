@@ -41,25 +41,25 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_ana.h"
 
 static void index_atom2mol(int *n, atom_id *index, t_block *mols)
 {
@@ -122,7 +122,7 @@ static void precalc(t_topology top, real normm[])
 }
 
 static void calc_spectrum(int n, real c[], real dt, const char *fn,
-                          output_env_t oenv, gmx_bool bRecip)
+                          gmx_output_env_t *oenv, gmx_bool bRecip)
 {
     FILE     *fp;
     gmx_fft_t fft;
@@ -209,7 +209,6 @@ int gmx_velacc(int argc, char *argv[])
     int             gnx;
     atom_id        *index;
     char           *grpname;
-    char            title[256];
     /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.
      */
@@ -220,7 +219,7 @@ int gmx_velacc(int argc, char *argv[])
     /* Array for the correlation function */
     real            **c1;
     real             *normm = NULL;
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
 
 #define NHISTO 360
 
@@ -250,7 +249,7 @@ int gmx_velacc(int argc, char *argv[])
 
     if (bTPS)
     {
-        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
+        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box,
                              TRUE);
         get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
     }

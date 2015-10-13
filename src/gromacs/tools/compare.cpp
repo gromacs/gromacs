@@ -46,10 +46,11 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -982,7 +983,7 @@ void comp_tpx(const char *fn1, const char *fn2,
     ff[1] = fn2;
     for (i = 0; i < (fn2 ? 2 : 1); i++)
     {
-        read_tpx_state(ff[i], &(ir[i]), &state[i], NULL, &(mtop[i]));
+        read_tpx_state(ff[i], &(ir[i]), &state[i], &(mtop[i]));
     }
     if (fn2)
     {
@@ -1078,7 +1079,7 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
     }
 }
 
-void comp_trx(const output_env_t oenv, const char *fn1, const char *fn2,
+void comp_trx(const gmx_output_env_t *oenv, const char *fn1, const char *fn2,
               gmx_bool bRMSD, real ftol, real abstol)
 {
     int          i;

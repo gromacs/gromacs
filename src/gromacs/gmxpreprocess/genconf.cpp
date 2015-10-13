@@ -41,15 +41,15 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/sortwater.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/3dtransforms.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -125,7 +125,7 @@ static void move_x(int natoms, rvec x[], matrix box)
 
 int gmx_genconf(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] multiplies a given coordinate file by simply stacking them",
         "on top of each other, like a small child playing with wooden blocks.",
         "The program makes a grid of [IT]user-defined[it]",
@@ -140,44 +140,43 @@ int gmx_genconf(int argc, char *argv[])
         "build the grid."
 
     };
-    const char     *bugs[] = {
+    const char       *bugs[] = {
         "The program should allow for random displacement of lattice points."
     };
 
-    int             vol;
-    t_atoms        *atoms;      /* list with all atoms */
-    char            title[STRLEN];
-    rvec           *x, *xx, *v; /* coordinates? */
-    real            t;
-    vec4           *xrot, *vrot;
-    int             ePBC;
-    matrix          box, boxx; /* box length matrix */
-    rvec            shift;
-    int             natoms;    /* number of atoms in one molecule  */
-    int             nres;      /* number of molecules? */
-    int             i, j, k, l, m, ndx, nrdx, nx, ny, nz;
-    t_trxstatus    *status;
-    gmx_bool        bTRX;
-    output_env_t    oenv;
-    gmx_rng_t       rng;
+    int               vol;
+    t_atoms          *atoms;      /* list with all atoms */
+    rvec             *x, *xx, *v; /* coordinates? */
+    real              t;
+    vec4             *xrot, *vrot;
+    int               ePBC;
+    matrix            box, boxx; /* box length matrix */
+    rvec              shift;
+    int               natoms;    /* number of atoms in one molecule  */
+    int               nres;      /* number of molecules? */
+    int               i, j, k, l, m, ndx, nrdx, nx, ny, nz;
+    t_trxstatus      *status;
+    gmx_bool          bTRX;
+    gmx_output_env_t *oenv;
+    gmx_rng_t         rng;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
         { efSTO, "-o", "out",  ffWRITE },
         { efTRX, "-trj", NULL,  ffOPTRD }
     };
 #define NFILE asize(fnm)
-    static rvec     nrbox    = {1, 1, 1};
-    static int      seed     = 0;    /* seed for random number generator */
-    static int      nmolat   = 3;
-    static int      nblock   = 1;
-    static gmx_bool bShuffle = FALSE;
-    static gmx_bool bSort    = FALSE;
-    static gmx_bool bRandom  = FALSE;           /* False: no random rotations */
-    static gmx_bool bRenum   = TRUE;            /* renumber residues */
-    static rvec     dist     = {0, 0, 0};       /* space added between molecules ? */
-    static rvec     max_rot  = {180, 180, 180}; /* maximum rotation */
-    t_pargs         pa[]     = {
+    static rvec       nrbox    = {1, 1, 1};
+    static int        seed     = 0;  /* seed for random number generator */
+    static int        nmolat   = 3;
+    static int        nblock   = 1;
+    static gmx_bool   bShuffle = FALSE;
+    static gmx_bool   bSort    = FALSE;
+    static gmx_bool   bRandom  = FALSE;           /* False: no random rotations */
+    static gmx_bool   bRenum   = TRUE;            /* renumber residues */
+    static rvec       dist     = {0, 0, 0};       /* space added between molecules ? */
+    static rvec       max_rot  = {180, 180, 180}; /* maximum rotation */
+    t_pargs           pa[]     = {
         { "-nbox",   FALSE, etRVEC, {nrbox},   "Number of boxes" },
         { "-dist",   FALSE, etRVEC, {dist},    "Distance between boxes" },
         { "-seed",   FALSE, etINT,  {&seed},
@@ -226,21 +225,18 @@ int gmx_genconf(int argc, char *argv[])
 
     vol = nx*ny*nz; /* calculate volume in grid points (= nr. molecules) */
 
-    get_stx_coordnum(opt2fn("-f", NFILE, fnm), &natoms);
-    snew(atoms, 1);
+    t_topology *top;
+    snew(top, 1);
+    atoms = &top->atoms;
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &ePBC, &x, &v, box, FALSE);
+    natoms = atoms->nr;
+    nres   = atoms->nres;          /* nr of residues in one element? */
     /* make space for all the atoms */
-    init_t_atoms(atoms, natoms*vol, FALSE);
-    snew(x, natoms*vol);           /* get space for coordinates of all atoms */
+    add_t_atoms(atoms, natoms*(vol-1), nres*(vol-1));
+    srenew(x, natoms*vol);         /* get space for coordinates of all atoms */
+    srenew(v, natoms*vol);         /* velocities. not really needed? */
     snew(xrot, natoms);            /* get space for rotation matrix? */
-    snew(v, natoms*vol);           /* velocities. not really needed? */
     snew(vrot, natoms);
-    /* set atoms->nr to the number in one box *
-     * to avoid complaints in read_stx_conf   *
-     */
-    atoms->nr = natoms;
-    read_stx_conf(opt2fn("-f", NFILE, fnm), title, atoms, x, v, &ePBC, box);
-
-    nres = atoms->nres;            /* nr of residues in one element? */
 
     if (bTRX)
     {
@@ -379,7 +375,7 @@ int gmx_genconf(int argc, char *argv[])
     }
     gmx_rng_destroy(rng);
 
-    write_sto_conf(opt2fn("-o", NFILE, fnm), title, atoms, x, v, ePBC, box);
+    write_sto_conf(opt2fn("-o", NFILE, fnm), *top->name, atoms, x, v, ePBC, box);
 
     return 0;
 }

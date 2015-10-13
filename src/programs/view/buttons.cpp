@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,11 @@
 
 #include "buttons.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -213,7 +212,7 @@ t_butbox *init_vbox(t_x11 *x11, Window Parent, Window SendTo, unsigned long fg, 
                 break;
             default:
                 fprintf(stderr, "Invalid bitmap in init_vbox %d\n", ID);
-                exit(1);
+                std::exit(1);
         }
         /* Rely on the fact that all bitmaps are equal size */
         pm = XCreatePixmapFromBitmapData(x11->disp, x11->root,

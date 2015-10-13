@@ -39,10 +39,10 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -50,6 +50,7 @@
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -350,7 +351,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                        real bfit, real efit, real bvit, real evit,
                        t_trxstatus *status, int isize, int nmols, int nshift,
                        atom_id *index0, int indexm[], real mass2[],
-                       real qmol[], real eps_rf, const output_env_t oenv)
+                       real qmol[], real eps_rf, const gmx_output_env_t *oenv)
 {
     int       i, j;
     int       valloc, nalloc, nfr, nvfr;
@@ -802,14 +803,12 @@ int gmx_current(int argc, char *argv[])
           "Temperature for calculating epsilon."}
     };
 
-    output_env_t           oenv;
+    gmx_output_env_t      *oenv;
     t_topology             top;
-    char                   title[STRLEN];
     char                 **grpname = NULL;
     const char            *indexfn;
     t_trxframe             fr;
     real                  *mass2 = NULL;
-    rvec                  *xtop, *vtop;
     matrix                 box;
     atom_id               *index0;
     int                   *indexm = NULL;
@@ -889,12 +888,8 @@ int gmx_current(int argc, char *argv[])
     bACF = opt2bSet("-caf", NFILE, fnm);
     bINT = opt2bSet("-mc", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, &vtop, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box, TRUE);
 
-
-
-    sfree(xtop);
-    sfree(vtop);
     indexfn = ftp2fn_null(efNDX, NFILE, fnm);
     snew(grpname, 1);
 

@@ -55,10 +55,12 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/gmxlib/main.h"
 #include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 /*! \brief Search for \p fnm_cp in fnm and return true iff found

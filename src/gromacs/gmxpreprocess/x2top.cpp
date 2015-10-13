@@ -43,6 +43,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
@@ -50,9 +51,7 @@
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/gmxpreprocess/toppush.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
@@ -60,6 +59,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -159,9 +159,9 @@ void mk_bonds(int nnm, t_nm2type nmt[],
             if (is_bond(nnm, nmt, *atoms->atomname[i], *atoms->atomname[j],
                         std::sqrt(dx2)))
             {
-                b.AI = i;
-                b.AJ = j;
-                b.C0 = std::sqrt(dx2);
+                b.ai() = i;
+                b.aj() = j;
+                b.c0() = std::sqrt(dx2);
                 add_param_to_list (bond, &b);
                 nbond[i]++;
                 nbond[j]++;
@@ -307,9 +307,9 @@ void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
     }
     for (i = 0; (i < ang->nr); i++)
     {
-        ai = ang->param[i].AI;
-        aj = ang->param[i].AJ;
-        ak = ang->param[i].AK;
+        ai = ang->param[i].ai();
+        aj = ang->param[i].aj();
+        ak = ang->param[i].ak();
         th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : NULL,
                                 r_ij, r_kj, &costh, &t1, &t2);
         if (debug)
@@ -317,14 +317,14 @@ void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
             fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
                     ai, aj, ak, norm(r_ij), norm(r_kj), th);
         }
-        ang->param[i].C0 = th;
+        ang->param[i].c0() = th;
     }
     for (i = 0; (i < dih->nr); i++)
     {
-        ai = dih->param[i].AI;
-        aj = dih->param[i].AJ;
-        ak = dih->param[i].AK;
-        al = dih->param[i].AL;
+        ai = dih->param[i].ai();
+        aj = dih->param[i].aj();
+        ak = dih->param[i].ak();
+        al = dih->param[i].al();
         ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : NULL,
                                r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
         if (debug)
@@ -332,7 +332,7 @@ void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
             fprintf(debug, "X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
                     ai, aj, ak, al, norm(r_ij), norm(r_kj), norm(r_kl), ph);
         }
-        dih->param[i].C0 = ph;
+        dih->param[i].c0() = ph;
     }
 }
 
@@ -439,13 +439,12 @@ int gmx_x2top(int argc, char *argv[])
     FILE              *fp;
     t_params           plist[F_NRE];
     t_excls           *excls;
-    t_atoms           *atoms; /* list with all atoms */
     gpp_atomtype_t     atype;
     t_nextnb           nnb;
     t_nm2type         *nm2t;
     t_mols             mymol;
     int                nnm;
-    char               title[STRLEN], forcefield[32], ffdir[STRLEN];
+    char               forcefield[32], ffdir[STRLEN];
     rvec              *x; /* coordinates? */
     int               *nbonds, *cgnr;
     int                bts[] = { 1, 1, 1, 2 };
@@ -456,7 +455,7 @@ int gmx_x2top(int argc, char *argv[])
     t_symtab           symtab;
     real               qtot, mtot;
     char               n2t[STRLEN];
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
 
     t_filenm           fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
@@ -542,14 +541,15 @@ int gmx_x2top(int argc, char *argv[])
     init_plist(plist);
 
     /* Read coordinates */
-    get_stx_coordnum(opt2fn("-f", NFILE, fnm), &natoms);
-    snew(atoms, 1);
-
-    /* make space for all the atoms */
-    init_t_atoms(atoms, natoms, TRUE);
-    snew(x, natoms);
-
-    read_stx_conf(opt2fn("-f", NFILE, fnm), title, atoms, x, NULL, &epbc, box);
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, NULL, box, FALSE);
+    t_atoms  *atoms = &top->atoms;
+    natoms = atoms->nr;
+    if (atoms->pdbinfo == NULL)
+    {
+        snew(atoms->pdbinfo, natoms);
+    }
 
     sprintf(n2t, "%s", ffdir);
     nm2t = rd_nm2type(n2t, &nnm);

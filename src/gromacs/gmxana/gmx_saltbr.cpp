@@ -44,10 +44,10 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -179,7 +179,7 @@ int gmx_saltbr(int argc, char *argv[])
     t_pbc              pbc;
     rvec              *x;
     matrix             box;
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))

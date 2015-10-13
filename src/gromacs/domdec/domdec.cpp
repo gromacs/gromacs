@@ -52,25 +52,20 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/chargegroup.h"
-#include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/nsgrid.h"
-#include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/constr.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
@@ -80,13 +75,17 @@
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/nsgrid.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/nb_verlet.h"
-#include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/nbnxn_grid.h"
+#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -100,6 +99,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/qsort_threadsafe.h"
@@ -127,329 +127,9 @@ typedef struct gmx_domdec_master
     rvec  *vbuf;   /* Buffer for state scattering and gathering */
 } gmx_domdec_master_t;
 
-typedef struct
-{
-    /* The numbers of charge groups to send and receive for each cell
-     * that requires communication, the last entry contains the total
-     * number of atoms that needs to be communicated.
-     */
-    int  nsend[DD_MAXIZONE+2];
-    int  nrecv[DD_MAXIZONE+2];
-    /* The charge groups to send */
-    int *index;
-    int  nalloc;
-    /* The atom range for non-in-place communication */
-    int  cell2at0[DD_MAXIZONE];
-    int  cell2at1[DD_MAXIZONE];
-} gmx_domdec_ind_t;
-
-typedef struct
-{
-    int               np;       /* Number of grid pulses in this dimension */
-    int               np_dlb;   /* For dlb, for use with edlbAUTO          */
-    gmx_domdec_ind_t *ind;      /* The indices to communicate, size np     */
-    int               np_nalloc;
-    gmx_bool          bInPlace; /* Can we communicate in place?            */
-} gmx_domdec_comm_dim_t;
-
-typedef struct
-{
-    gmx_bool *bCellMin;    /* Temp. var.: is this cell size at the limit     */
-    real     *cell_f;      /* State var.: cell boundaries, box relative      */
-    real     *old_cell_f;  /* Temp. var.: old cell size                      */
-    real     *cell_f_max0; /* State var.: max lower boundary, incl neighbors */
-    real     *cell_f_min1; /* State var.: min upper boundary, incl neighbors */
-    real     *bound_min;   /* Temp. var.: lower limit for cell boundary      */
-    real     *bound_max;   /* Temp. var.: upper limit for cell boundary      */
-    gmx_bool  bLimited;    /* State var.: is DLB limited in this dim and row */
-    real     *buf_ncd;     /* Temp. var.                                     */
-} gmx_domdec_root_t;
-
 #define DD_NLOAD_MAX 9
 
-/* Here floats are accurate enough, since these variables
- * only influence the load balancing, not the actual MD results.
- */
-typedef struct
-{
-    int    nload;
-    float *load;
-    float  sum;
-    float  max;
-    float  sum_m;
-    float  cvol_min;
-    float  mdf;
-    float  pme;
-    int    flags;
-} gmx_domdec_load_t;
-
-typedef struct
-{
-    int  nsc;
-    int  ind_gl;
-    int  ind;
-} gmx_cgsort_t;
-
-typedef struct
-{
-    gmx_cgsort_t *sort;
-    gmx_cgsort_t *sort2;
-    int           sort_nalloc;
-    gmx_cgsort_t *sort_new;
-    int           sort_new_nalloc;
-    int          *ibuf;
-    int           ibuf_nalloc;
-} gmx_domdec_sort_t;
-
-typedef struct
-{
-    rvec *v;
-    int   nalloc;
-} vec_rvec_t;
-
-/* This enum determines the order of the coordinates.
- * ddnatHOME and ddnatZONE should be first and second,
- * the others can be ordered as wanted.
- */
-enum {
-    ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatSHELL, ddnatNR
-};
-
-enum {
-    edlbsOffForever,           /* DLB is off and will never be turned on */
-    edlbsOffCanTurnOn,         /* DLB is off and will turn on with imbalance */
-    edlbsOffTemporarilyLocked, /* DLB is off and temporarily can not turn on */
-    edlbsOn,                   /* DLB is on and will stay on forever */
-    edlbsNR
-};
-/* Allowed DLB state transitions:
- *   edlbsOffCanTurnOn         -> edlbsOn
- *   edlbsOffCanTurnOn         -> edlbsOffForever
- *   edlbsOffCanTurnOn         -> edlbsOffTemporarilyLocked
- *   edlbsOffTemporarilyLocked -> edlbsOffCanTurnOn
- */
-
 const char *edlbs_names[edlbsNR] = { "off", "auto", "locked", "on" };
-
-typedef struct
-{
-    int      dim;       /* The dimension                                          */
-    gmx_bool dim_match; /* Tells if DD and PME dims match                         */
-    int      nslab;     /* The number of PME slabs in this dimension              */
-    real    *slb_dim_f; /* Cell sizes for determining the PME comm. with SLB    */
-    int     *pp_min;    /* The minimum pp node location, size nslab               */
-    int     *pp_max;    /* The maximum pp node location,size nslab                */
-    int      maxshift;  /* The maximum shift for coordinate redistribution in PME */
-} gmx_ddpme_t;
-
-typedef struct
-{
-    real min0;    /* The minimum bottom of this zone                        */
-    real max1;    /* The maximum top of this zone                           */
-    real min1;    /* The minimum top of this zone                           */
-    real mch0;    /* The maximum bottom communicaton height for this zone   */
-    real mch1;    /* The maximum top communicaton height for this zone      */
-    real p1_0;    /* The bottom value of the first cell in this zone        */
-    real p1_1;    /* The top value of the first cell in this zone           */
-} gmx_ddzone_t;
-
-typedef struct
-{
-    gmx_domdec_ind_t ind;
-    int             *ibuf;
-    int              ibuf_nalloc;
-    vec_rvec_t       vbuf;
-    int              nsend;
-    int              nat;
-    int              nsend_zone;
-} dd_comm_setup_work_t;
-
-typedef struct gmx_domdec_comm
-{
-    /* All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
-     * unless stated otherwise.
-     */
-
-    /* The number of decomposition dimensions for PME, 0: no PME */
-    int         npmedecompdim;
-    /* The number of nodes doing PME (PP/PME or only PME) */
-    int         npmenodes;
-    int         npmenodes_x;
-    int         npmenodes_y;
-    /* The communication setup including the PME only nodes */
-    gmx_bool    bCartesianPP_PME;
-    ivec        ntot;
-    int         cartpmedim;
-    int        *pmenodes;          /* size npmenodes                         */
-    int        *ddindex2simnodeid; /* size npmenodes, only with bCartesianPP
-                                    * but with bCartesianPP_PME              */
-    gmx_ddpme_t ddpme[2];
-
-    /* The DD particle-particle nodes only */
-    gmx_bool bCartesianPP;
-    int     *ddindex2ddnodeid; /* size npmenode, only with bCartesianPP_PME */
-
-    /* The global charge groups */
-    t_block cgs_gl;
-
-    /* Should we sort the cgs */
-    int                nstSortCG;
-    gmx_domdec_sort_t *sort;
-
-    /* Are there charge groups? */
-    gmx_bool bCGs;
-
-    /* Are there bonded and multi-body interactions between charge groups? */
-    gmx_bool bInterCGBondeds;
-    gmx_bool bInterCGMultiBody;
-
-    /* Data for the optional bonded interaction atom communication range */
-    gmx_bool  bBondComm;
-    t_blocka *cglink;
-    char     *bLocalCG;
-
-    /* The DLB state, possible values are defined above */
-    int      dlbState;
-    /* With dlbState=edlbsOffCanTurnOn, should we check if to DLB on at the next DD? */
-    gmx_bool bCheckWhetherToTurnDlbOn;
-
-    /* Cell sizes for static load balancing, first index cartesian */
-    real **slb_frac;
-
-    /* The width of the communicated boundaries */
-    real     cutoff_mbody;
-    real     cutoff;
-    /* The minimum cell size (including triclinic correction) */
-    rvec     cellsize_min;
-    /* For dlb, for use with edlbAUTO */
-    rvec     cellsize_min_dlb;
-    /* The lower limit for the DD cell size with DLB */
-    real     cellsize_limit;
-    /* Effectively no NB cut-off limit with DLB for systems without PBC? */
-    gmx_bool bVacDLBNoLimit;
-
-    /* With PME load balancing we set limits on DLB */
-    gmx_bool bPMELoadBalDLBLimits;
-    /* DLB needs to take into account that we want to allow this maximum
-     * cut-off (for PME load balancing), this could limit cell boundaries.
-     */
-    real PMELoadBal_max_cutoff;
-
-    /* tric_dir is only stored here because dd_get_ns_ranges needs it */
-    ivec tric_dir;
-    /* box0 and box_size are required with dim's without pbc and -gcom */
-    rvec box0;
-    rvec box_size;
-
-    /* The cell boundaries */
-    rvec cell_x0;
-    rvec cell_x1;
-
-    /* The old location of the cell boundaries, to check cg displacements */
-    rvec old_cell_x0;
-    rvec old_cell_x1;
-
-    /* The communication setup and charge group boundaries for the zones */
-    gmx_domdec_zones_t zones;
-
-    /* The zone limits for DD dimensions 1 and 2 (not 0), determined from
-     * cell boundaries of neighboring cells for dynamic load balancing.
-     */
-    gmx_ddzone_t zone_d1[2];
-    gmx_ddzone_t zone_d2[2][2];
-
-    /* The coordinate/force communication setup and indices */
-    gmx_domdec_comm_dim_t cd[DIM];
-    /* The maximum number of cells to communicate with in one dimension */
-    int                   maxpulse;
-
-    /* Which cg distribution is stored on the master node */
-    int master_cg_ddp_count;
-
-    /* The number of cg's received from the direct neighbors */
-    int  zone_ncg1[DD_MAXZONE];
-
-    /* The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
-    int  nat[ddnatNR];
-
-    /* Array for signalling if atoms have moved to another domain */
-    int  *moved;
-    int   moved_nalloc;
-
-    /* Communication buffer for general use */
-    int  *buf_int;
-    int   nalloc_int;
-
-    /* Communication buffer for general use */
-    vec_rvec_t vbuf;
-
-    /* Temporary storage for thread parallel communication setup */
-    int                   nth;
-    dd_comm_setup_work_t *dth;
-
-    /* Communication buffers only used with multiple grid pulses */
-    int       *buf_int2;
-    int        nalloc_int2;
-    vec_rvec_t vbuf2;
-
-    /* Communication buffers for local redistribution */
-    int  **cggl_flag;
-    int    cggl_flag_nalloc[DIM*2];
-    rvec **cgcm_state;
-    int    cgcm_state_nalloc[DIM*2];
-
-    /* Cell sizes for dynamic load balancing */
-    gmx_domdec_root_t **root;
-    real               *cell_f_row;
-    real                cell_f0[DIM];
-    real                cell_f1[DIM];
-    real                cell_f_max0[DIM];
-    real                cell_f_min1[DIM];
-
-    /* Stuff for load communication */
-    gmx_bool           bRecordLoad;
-    gmx_domdec_load_t *load;
-    int                nrank_gpu_shared;
-#ifdef GMX_MPI
-    MPI_Comm          *mpi_comm_load;
-    MPI_Comm           mpi_comm_gpu_shared;
-#endif
-
-    /* Maximum DLB scaling per load balancing step in percent */
-    int dlb_scale_lim;
-
-    /* Cycle counters */
-    float  cycl[ddCyclNr];
-    int    cycl_n[ddCyclNr];
-    float  cycl_max[ddCyclNr];
-    /* Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise */
-    int    eFlop;
-    double flop;
-    int    flop_n;
-    /* How many times have did we have load measurements */
-    int    n_load_have;
-    /* How many times have we collected the load measurements */
-    int    n_load_collect;
-
-    /* Statistics */
-    double sum_nat[ddnatNR-ddnatZONE];
-    int    ndecomp;
-    int    nload;
-    double load_step;
-    double load_sum;
-    double load_max;
-    ivec   load_lim;
-    double load_mdf;
-    double load_pme;
-
-    /* The last partition step */
-    gmx_int64_t partition_step;
-
-    /* Debugging */
-    int  nstDDDump;
-    int  nstDDDumpGrid;
-    int  DD_debug;
-} gmx_domdec_comm_t;
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
@@ -458,15 +138,6 @@ typedef struct gmx_domdec_comm
 #define DD_FLAG_NRCG  65535
 #define DD_FLAG_FW(d) (1<<(16+(d)*2))
 #define DD_FLAG_BW(d) (1<<(16+(d)*2+1))
-
-/* Zone permutation required to obtain consecutive charge groups
- * for neighbor searching.
- */
-static const int zone_perm[3][4] = { {0, 0, 0, 0}, {1, 0, 0, 0}, {3, 0, 1, 2} };
-
-/* dd_zo and dd_zp3/dd_zp2 are set up such that i zones with non-zero
- * components see only j zones with that component 0.
- */
 
 /* The DD zone order */
 static const ivec dd_zo[DD_MAXZONE] =
@@ -3253,7 +2924,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
 
 
 static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
-                                                  int d, int dim, gmx_domdec_root_t *root,
+                                                  int d, int dim, domdec_root_t *root,
                                                   gmx_ddbox_t *ddbox,
                                                   gmx_bool bUniform, gmx_int64_t step, real cellsize_limit_f, int range[])
 {
@@ -3464,7 +3135,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
 
 
 static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
-                                       int d, int dim, gmx_domdec_root_t *root,
+                                       int d, int dim, domdec_root_t *root,
                                        gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
                                        gmx_bool bUniform, gmx_int64_t step)
 {
@@ -4798,13 +4469,17 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
-        calc_cg_move(fplog, step, dd, state, tric_dir, tcm,
-                     cell_x0, cell_x1, limitd, limit0, limit1,
-                     cgindex,
-                     ( thread   *dd->ncg_home)/nthread,
-                     ((thread+1)*dd->ncg_home)/nthread,
-                     fr->cutoff_scheme == ecutsGROUP ? cg_cm : state->x,
-                     move);
+        try
+        {
+            calc_cg_move(fplog, step, dd, state, tric_dir, tcm,
+                         cell_x0, cell_x1, limitd, limit0, limit1,
+                         cgindex,
+                         ( thread   *dd->ncg_home)/nthread,
+                         ((thread+1)*dd->ncg_home)/nthread,
+                         fr->cutoff_scheme == ecutsGROUP ? cg_cm : state->x,
+                         move);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     for (cg = 0; cg < dd->ncg_home; cg++)
@@ -5207,6 +4882,16 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 
 void dd_cycles_add(gmx_domdec_t *dd, float cycles, int ddCycl)
 {
+    /* Note that the cycles value can be incorrect, either 0 or some
+     * extremely large value, when our thread migrated to another core
+     * with an unsynchronized cycle counter. If this happens less often
+     * that once per nstlist steps, this will not cause issues, since
+     * we later subtract the maximum value from the sum over nstlist steps.
+     * A zero count will slightly lower the total, but that's a small effect.
+     * Note that the main purpose of the subtraction of the maximum value
+     * is to avoid throwing off the load balancing when stalls occur due
+     * e.g. system activity or network congestion.
+     */
     dd->comm->cycl[ddCycl] += cycles;
     dd->comm->cycl_n[ddCycl]++;
     if (cycles > dd->comm->cycl_max[ddCycl])
@@ -5286,8 +4971,8 @@ static void clear_dd_cycle_counts(gmx_domdec_t *dd)
 static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm;
-    gmx_domdec_load_t *load;
-    gmx_domdec_root_t *root = NULL;
+    domdec_load_t     *load;
+    domdec_root_t     *root = NULL;
     int                d, dim, i, pos;
     float              cell_frac = 0, sbuf[DD_NLOAD_MAX];
     gmx_bool           bSepPME;
@@ -5472,7 +5157,7 @@ static float dd_force_imb_perf_loss(gmx_domdec_t *dd)
     /* Return the relative performance loss on the total run time
      * due to the force calculation load imbalance.
      */
-    if (dd->comm->nload > 0)
+    if (dd->comm->nload > 0 && dd->comm->load_step > 0)
     {
         return
             (dd->comm->load_max*dd->nnodes - dd->comm->load_sum)/
@@ -5498,7 +5183,7 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
         npp    = dd->nnodes;
         npme   = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
         nnodes = npp + npme;
-        if (dd->nnodes > 1)
+        if (dd->nnodes > 1 && comm->load_sum > 0)
         {
             imbal  = comm->load_max*npp/comm->load_sum - 1;
             lossf  = dd_force_imb_perf_loss(dd);
@@ -5527,10 +5212,10 @@ static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
             fprintf(fplog, "%s", buf);
             fprintf(stderr, "%s", buf);
         }
-        if (npme > 0)
+        if (npme > 0 && comm->load_mdf > 0 && comm->load_step > 0)
         {
             pme_f_ratio = comm->load_pme/comm->load_mdf;
-            lossp       = (comm->load_pme -comm->load_mdf)/comm->load_step;
+            lossp       = (comm->load_pme - comm->load_mdf)/comm->load_step;
             if (lossp <= 0)
             {
                 lossp *= (float)npme/(float)nnodes;
@@ -5594,7 +5279,15 @@ static gmx_bool dd_load_flags(gmx_domdec_t *dd)
 
 static float dd_f_imbal(gmx_domdec_t *dd)
 {
-    return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1;
+    if (dd->comm->load[0].sum > 0)
+    {
+        return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1.0f;
+    }
+    else
+    {
+        /* Something is wrong in the cycle counting, report no load imbalance */
+        return 0.0f;
+    }
 }
 
 float dd_pme_f_ratio(gmx_domdec_t *dd)
@@ -5671,7 +5364,7 @@ static void make_load_communicator(gmx_domdec_t *dd, int dim_ind, ivec loc)
     MPI_Comm           c_row;
     int                dim, i, rank;
     ivec               loc_c;
-    gmx_domdec_root_t *root;
+    domdec_root_t     *root;
     gmx_bool           bPartOfGroup = FALSE;
 
     dim = dd->dim[dim_ind];
@@ -8436,68 +8129,72 @@ static void setup_dd_communication(gmx_domdec_t *dd,
 #pragma omp parallel for num_threads(comm->nth) schedule(static)
                 for (th = 0; th < comm->nth; th++)
                 {
-                    gmx_domdec_ind_t *ind_p;
-                    int             **ibuf_p, *ibuf_nalloc_p;
-                    vec_rvec_t       *vbuf_p;
-                    int              *nsend_p, *nat_p;
-                    int              *nsend_zone_p;
-                    int               cg0_th, cg1_th;
-
-                    if (th == 0)
+                    try
                     {
-                        /* Thread 0 writes in the comm buffers */
-                        ind_p         = ind;
-                        ibuf_p        = &comm->buf_int;
-                        ibuf_nalloc_p = &comm->nalloc_int;
-                        vbuf_p        = &comm->vbuf;
-                        nsend_p       = &nsend;
-                        nat_p         = &nat;
-                        nsend_zone_p  = &ind->nsend[zone];
-                    }
-                    else
-                    {
-                        /* Other threads write into temp buffers */
-                        ind_p         = &comm->dth[th].ind;
-                        ibuf_p        = &comm->dth[th].ibuf;
-                        ibuf_nalloc_p = &comm->dth[th].ibuf_nalloc;
-                        vbuf_p        = &comm->dth[th].vbuf;
-                        nsend_p       = &comm->dth[th].nsend;
-                        nat_p         = &comm->dth[th].nat;
-                        nsend_zone_p  = &comm->dth[th].nsend_zone;
+                        gmx_domdec_ind_t *ind_p;
+                        int             **ibuf_p, *ibuf_nalloc_p;
+                        vec_rvec_t       *vbuf_p;
+                        int              *nsend_p, *nat_p;
+                        int              *nsend_zone_p;
+                        int               cg0_th, cg1_th;
 
-                        comm->dth[th].nsend      = 0;
-                        comm->dth[th].nat        = 0;
-                        comm->dth[th].nsend_zone = 0;
-                    }
+                        if (th == 0)
+                        {
+                            /* Thread 0 writes in the comm buffers */
+                            ind_p         = ind;
+                            ibuf_p        = &comm->buf_int;
+                            ibuf_nalloc_p = &comm->nalloc_int;
+                            vbuf_p        = &comm->vbuf;
+                            nsend_p       = &nsend;
+                            nat_p         = &nat;
+                            nsend_zone_p  = &ind->nsend[zone];
+                        }
+                        else
+                        {
+                            /* Other threads write into temp buffers */
+                            ind_p         = &comm->dth[th].ind;
+                            ibuf_p        = &comm->dth[th].ibuf;
+                            ibuf_nalloc_p = &comm->dth[th].ibuf_nalloc;
+                            vbuf_p        = &comm->dth[th].vbuf;
+                            nsend_p       = &comm->dth[th].nsend;
+                            nat_p         = &comm->dth[th].nat;
+                            nsend_zone_p  = &comm->dth[th].nsend_zone;
 
-                    if (comm->nth == 1)
-                    {
-                        cg0_th = cg0;
-                        cg1_th = cg1;
-                    }
-                    else
-                    {
-                        cg0_th = cg0 + ((cg1 - cg0)* th   )/comm->nth;
-                        cg1_th = cg0 + ((cg1 - cg0)*(th+1))/comm->nth;
-                    }
+                            comm->dth[th].nsend      = 0;
+                            comm->dth[th].nat        = 0;
+                            comm->dth[th].nsend_zone = 0;
+                        }
 
-                    /* Get the cg's for this pulse in this zone */
-                    get_zone_pulse_cgs(dd, zonei, zone, cg0_th, cg1_th,
-                                       index_gl, cgindex,
-                                       dim, dim_ind, dim0, dim1, dim2,
-                                       r_comm2, r_bcomm2,
-                                       box, tric_dist,
-                                       normal, skew_fac2_d, skew_fac_01,
-                                       v_d, v_0, v_1, &corners, sf2_round,
-                                       bDistBonded, bBondComm,
-                                       bDist2B, bDistMB,
-                                       cg_cm, fr->cginfo,
-                                       ind_p,
-                                       ibuf_p, ibuf_nalloc_p,
-                                       vbuf_p,
-                                       nsend_p, nat_p,
-                                       nsend_zone_p);
-                }
+                        if (comm->nth == 1)
+                        {
+                            cg0_th = cg0;
+                            cg1_th = cg1;
+                        }
+                        else
+                        {
+                            cg0_th = cg0 + ((cg1 - cg0)* th   )/comm->nth;
+                            cg1_th = cg0 + ((cg1 - cg0)*(th+1))/comm->nth;
+                        }
+
+                        /* Get the cg's for this pulse in this zone */
+                        get_zone_pulse_cgs(dd, zonei, zone, cg0_th, cg1_th,
+                                           index_gl, cgindex,
+                                           dim, dim_ind, dim0, dim1, dim2,
+                                           r_comm2, r_bcomm2,
+                                           box, tric_dist,
+                                           normal, skew_fac2_d, skew_fac_01,
+                                           v_d, v_0, v_1, &corners, sf2_round,
+                                           bDistBonded, bBondComm,
+                                           bDist2B, bDistMB,
+                                           cg_cm, fr->cginfo,
+                                           ind_p,
+                                           ibuf_p, ibuf_nalloc_p,
+                                           vbuf_p,
+                                           nsend_p, nat_p,
+                                           nsend_zone_p);
+                    }
+                    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+                } // END
 
                 /* Append data of threads>=1 to the communication buffers */
                 for (th = 1; th < comm->nth; th++)
@@ -9169,7 +8866,8 @@ static int dd_sort_order(gmx_domdec_t *dd, t_forcerec *fr, int ncg_home_old)
 static int dd_sort_order_nbnxn(gmx_domdec_t *dd, t_forcerec *fr)
 {
     gmx_cgsort_t *sort;
-    int           ncg_new, i, *a, na;
+    int           ncg_new, i, na;
+    const int    *a;
 
     sort = dd->comm->sort->sort;
 

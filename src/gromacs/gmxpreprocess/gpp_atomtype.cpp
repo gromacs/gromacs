@@ -45,6 +45,7 @@
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -348,7 +349,7 @@ void print_at (FILE * out, gpp_atomtype_t ga)
     {
         fprintf(out, "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
                 *(ga->atomname[i]), atom[i].m, atom[i].q, "A",
-                nb[i].C0, nb[i].C1);
+                nb[i].c0(), nb[i].c1());
     }
 
     fprintf (out, "\n");

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,19 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#ifndef GMX_STATISTICS_H
-#define GMX_STATISTICS_H
-
-#include <stdio.h>
-
-#include "gromacs/utility/real.h"
-
 /*! \libinternal \file
- *
  * \brief
  * Declares simple statistics toolbox
  *
  * \authors David van der Spoel <david.vanderspoel@icm.uu.se>
- *
  * \inlibraryapi
  */
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef GMX_STATISTICS_H
+#define GMX_STATISTICS_H
+
+#include <cstdio>
+
+#include "gromacs/utility/real.h"
 
 //! Abstract container type
 typedef struct gmx_stats *gmx_stats_t;
@@ -84,9 +77,8 @@ gmx_stats_t gmx_stats_init();
 /*! \brief
  * Destroy a data structure
  * \param stats The data structure
- * \return error code
  */
-int gmx_stats_done(gmx_stats_t stats);
+void gmx_stats_free(gmx_stats_t stats);
 
 /*! \brief
  * Remove outliers from a straight line, where level in units of
@@ -325,9 +317,5 @@ int lsq_y_ax_b_xdouble(int n, double x[], real y[],
 int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
                      real *a, real *b, real *da, real *db,
                      real *r, real *chi2);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

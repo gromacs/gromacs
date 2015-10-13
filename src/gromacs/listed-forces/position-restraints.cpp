@@ -51,11 +51,14 @@
 #include <cmath>
 
 #include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
 
 struct gmx_wallcycle;
 

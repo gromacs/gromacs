@@ -149,7 +149,7 @@ std::string findFullBinaryPath(const std::string            &invokedName,
         {
             const std::string &dir      = i->empty() ? env.getWorkingDirectory() : *i;
             std::string        testPath = Path::join(dir, searchName);
-            if (File::exists(testPath))
+            if (File::exists(testPath, File::returnFalseOnError))
             {
                 return testPath;
             }

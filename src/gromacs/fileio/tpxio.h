@@ -64,7 +64,8 @@ typedef struct
     int   bTop;      /* Non zero if a topology is present		*/
     int   bX;        /* Non zero if coordinates are present		*/
     int   bV;        /* Non zero if velocities are present		*/
-    int   bF;        /* Non zero if forces are present		*/
+    int   bF;        /* Non zero if forces are present (no longer
+                        supported, but retained so old .tpr can be read) */
 
     int   natoms;    /* The total number of atoms			*/
     int   ngtc;      /* The number of temperature coupling groups    */
@@ -105,11 +106,11 @@ void write_tpx_state(const char *fn,
  */
 
 void read_tpx_state(const char *fn,
-                    t_inputrec *ir, t_state *state, rvec *f,
+                    t_inputrec *ir, t_state *state,
                     struct gmx_mtop_t *mtop);
 int read_tpx(const char *fn,
              t_inputrec *ir, matrix box, int *natoms,
-             rvec *x, rvec *v, rvec *f, struct gmx_mtop_t *mtop);
+             rvec *x, rvec *v, struct gmx_mtop_t *mtop);
 /* Read a file, and close it again.
  * When step, t or lambda are NULL they will not be stored.
  * Returns ir->ePBC, if it could be read from the file.
@@ -117,7 +118,7 @@ int read_tpx(const char *fn,
 
 int read_tpx_top(const char *fn,
                  t_inputrec *ir, matrix box, int *natoms,
-                 rvec *x, rvec *v, rvec *f, struct t_topology *top);
+                 rvec *x, rvec *v, struct t_topology *top);
 /* As read_tpx, but for the old t_topology struct */
 
 gmx_bool fn2bTPX(const char *file);

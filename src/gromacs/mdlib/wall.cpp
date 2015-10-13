@@ -43,15 +43,18 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/tables/forcetable.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void make_wall_tables(FILE *fplog, const output_env_t oenv,
+void make_wall_tables(FILE *fplog,
                       const t_inputrec *ir, const char *tabfn,
                       const gmx_groups_t *groups,
                       t_forcerec *fr)
@@ -85,7 +88,7 @@ void make_wall_tables(FILE *fplog, const output_env_t oenv,
                         *groups->grpname[nm_ind[egp]],
                         *groups->grpname[nm_ind[negp_pp+w]],
                         ftp2ext(efXVG));
-                *tab = make_tables(fplog, oenv, fr, FALSE, buf, 0, GMX_MAKETABLES_FORCEUSER);
+                *tab = make_tables(fplog, fr, buf, 0, GMX_MAKETABLES_FORCEUSER);
                 /* Since wall have no charge, we can compress the table */
                 for (int i = 0; i <= tab->n; i++)
                 {

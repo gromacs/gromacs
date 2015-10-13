@@ -45,10 +45,10 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -849,6 +849,11 @@ static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
         PI(str, swap->nanions[j]);
         sprintf(str, "cations%c", j+'A');
         PI(str, swap->ncations[j]);
+    }
+    for (j = 0; j < 2; j++)
+    {
+        sprintf(str, "bulk-offset%c", j+'A');
+        PR(str, swap->bulkOffset[j]);
     }
     PR("threshold", swap->threshold);
 }

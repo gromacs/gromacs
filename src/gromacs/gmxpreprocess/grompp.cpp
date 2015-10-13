@@ -52,7 +52,11 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxlib/calcgrid.h"
+#include "gromacs/gmxlib/splitter.h"
+#include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
@@ -65,22 +69,20 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/vsite_parm.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/calcgrid.h"
 #include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/perf_est.h"
-#include "gromacs/legacyheaders/splitter.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
+#include "gromacs/mdlib/perf_est.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -517,7 +519,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     t_molinfo      *molinfo = NULL;
     int             nmolblock;
     gmx_molblock_t *molblock, *molbs;
-    t_atoms        *confat;
     int             mb, i, nrmols, nmismatch;
     char            buf[STRLEN];
     gmx_bool        bGB = FALSE;
@@ -608,51 +609,46 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         fprintf(stderr, "processing coordinates...\n");
     }
 
-    get_stx_coordnum(confin, &state->natoms);
+    t_topology *conftop;
+    snew(conftop, 1);
+    init_state(state, 0, 0, 0, 0, 0);
+    read_tps_conf(confin, conftop, NULL, &state->x, &state->v, state->box, FALSE);
+    state->natoms = state->nalloc = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
         gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
                   "             does not match topology (%s, %d)",
                   confin, state->natoms, topfile, sys->natoms);
     }
-    else
+    /* This call fixes the box shape for runs with pressure scaling */
+    set_box_rel(ir, state);
+
+    nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
+    done_top(conftop);
+    sfree(conftop);
+
+    if (nmismatch)
     {
-        /* make space for coordinates and velocities */
-        char title[STRLEN];
-        snew(confat, 1);
-        init_t_atoms(confat, state->natoms, FALSE);
-        init_state(state, state->natoms, 0, 0, 0, 0);
-        read_stx_conf(confin, title, confat, state->x, state->v, NULL, state->box);
-        /* This call fixes the box shape for runs with pressure scaling */
-        set_box_rel(ir, state);
+        sprintf(buf, "%d non-matching atom name%s\n"
+                "atom names from %s will be used\n"
+                "atom names from %s will be ignored\n",
+                nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
+        warning(wi, buf);
+    }
 
-        nmismatch = check_atom_names(topfile, confin, sys, confat);
-        free_t_atoms(confat, TRUE);
-        sfree(confat);
-
-        if (nmismatch)
-        {
-            sprintf(buf, "%d non-matching atom name%s\n"
-                    "atom names from %s will be used\n"
-                    "atom names from %s will be ignored\n",
-                    nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
-            warning(wi, buf);
-        }
-
-        /* Do more checks, mostly related to constraints */
-        if (bVerbose)
-        {
-            fprintf(stderr, "double-checking input for internal consistency...\n");
-        }
-        {
-            int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
-                                             nint_ftype(sys, molinfo, F_CONSTRNC));
-            int bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
-            double_check(ir, state->box,
-                         bHasNormalConstraints,
-                         bHasAnyConstraints,
-                         wi);
-        }
+    /* Do more checks, mostly related to constraints */
+    if (bVerbose)
+    {
+        fprintf(stderr, "double-checking input for internal consistency...\n");
+    }
+    {
+        int bHasNormalConstraints = 0 < (nint_ftype(sys, molinfo, F_CONSTR) +
+                                         nint_ftype(sys, molinfo, F_CONSTRNC));
+        int bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, molinfo, F_SETTLE);
+        double_check(ir, state->box,
+                     bHasNormalConstraints,
+                     bHasAnyConstraints,
+                     wi);
     }
 
     if (bGenVel)
@@ -728,7 +724,7 @@ static void cont_status(const char *slog, const char *ener,
                         gmx_bool bNeedVel, gmx_bool bGenVel, real fr_time,
                         t_inputrec *ir, t_state *state,
                         gmx_mtop_t *sys,
-                        const output_env_t oenv)
+                        const gmx_output_env_t *oenv)
 /* If fr_time == -1 read the last frame available which is complete */
 {
     gmx_bool     bReadVel;
@@ -824,25 +820,25 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     rvec           *x, *v, *xp;
     dvec            sum;
     double          totmass;
-    t_atoms         dumat;
+    t_topology     *top;
     matrix          box, invbox;
     int             natoms, npbcdim = 0;
-    char            warn_buf[STRLEN], title[STRLEN];
+    char            warn_buf[STRLEN];
     int             a, i, ai, j, k, mb, nat_molb;
     gmx_molblock_t *molb;
     t_params       *pr, *prfb;
     t_atom         *atom;
 
-    get_stx_coordnum(fn, &natoms);
+    snew(top, 1);
+    read_tps_conf(fn, top, NULL, &x, &v, box, FALSE);
+    natoms = top->atoms.nr;
+    done_top(top);
+    sfree(top);
     if (natoms != mtop->natoms)
     {
         sprintf(warn_buf, "The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.", fn, natoms, mtop->natoms, std::min(mtop->natoms, natoms), fn);
         warning(wi, warn_buf);
     }
-    snew(x, natoms);
-    snew(v, natoms);
-    init_t_atoms(&dumat, natoms, FALSE);
-    read_stx_conf(fn, title, &dumat, x, v, NULL, box);
 
     npbcdim = ePBC2npbcdim(ePBC);
     clear_rvec(com);
@@ -873,7 +869,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             atom = mtop->moltype[molb->type].atoms.atom;
             for (i = 0; (i < pr->nr); i++)
             {
-                ai = pr->param[i].AI;
+                ai = pr->param[i].ai();
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
@@ -893,7 +889,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
             /* Same for flat-bottomed posres, but do not count an atom twice for COM */
             for (i = 0; (i < prfb->nr); i++)
             {
-                ai = prfb->param[i].AI;
+                ai = prfb->param[i].ai();
                 if (ai >= natoms)
                 {
                     gmx_fatal(FARGS, "Position restraint atom index (%d) in moltype '%s' is larger than number of atoms in %s (%d).\n",
@@ -991,7 +987,6 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
         }
     }
 
-    free_t_atoms(&dumat, TRUE);
     sfree(x);
     sfree(v);
     sfree(hadAtom);
@@ -1534,7 +1529,7 @@ int gmx_grompp(int argc, char *argv[])
     int                ntype;
     gmx_bool           bNeedVel, bGenVel;
     gmx_bool           have_atomnumber;
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     gmx_bool           bVerbose = FALSE;
     warninp_t          wi;
     char               warn_buf[STRLEN];
@@ -2055,25 +2050,29 @@ int gmx_grompp(int argc, char *argv[])
             }
             else
             {
-                /* We warn for NVE simulations with >1(.1)% drift tolerance */
-                const real drift_tol = 0.01;
-                real       ener_runtime;
-
-                /* We use 2 DOF per atom = 2kT pot+kin energy, to be on
-                 * the safe side with constraints (without constraints: 3 DOF).
+                /* We warn for NVE simulations with a drift tolerance that
+                 * might result in a 1(.1)% drift over the total run-time.
+                 * Note that we can't warn when nsteps=0, since we don't
+                 * know how many steps the user intends to run.
                  */
-                ener_runtime = 2*BOLTZ*buffer_temp/(ir->nsteps*ir->delta_t);
-
                 if (EI_MD(ir->eI) && ir->etc == etcNO && ir->nstlist > 1 &&
-                    ir->nsteps > 0 &&
-                    ir->verletbuf_tol > 1.1*drift_tol*ener_runtime)
+                    ir->nsteps > 0)
                 {
-                    sprintf(warn_buf, "You are using a Verlet buffer tolerance of %g kJ/mol/ps for an NVE simulation of length %g ps, which can give a final drift of %d%%. For conserving energy to %d%%, you might need to set verlet-buffer-tolerance to %.1e.",
-                            ir->verletbuf_tol, ir->nsteps*ir->delta_t,
-                            (int)(ir->verletbuf_tol/ener_runtime*100 + 0.5),
-                            (int)(100*drift_tol + 0.5),
-                            drift_tol*ener_runtime);
-                    warning_note(wi, warn_buf);
+                    const real driftTolerance = 0.01;
+                    /* We use 2 DOF per atom = 2kT pot+kin energy,
+                     * to be on the safe side with constraints.
+                     */
+                    const real totalEnergyDriftPerAtomPerPicosecond = 2*BOLTZ*buffer_temp/(ir->nsteps*ir->delta_t);
+
+                    if (ir->verletbuf_tol > 1.1*driftTolerance*totalEnergyDriftPerAtomPerPicosecond)
+                    {
+                        sprintf(warn_buf, "You are using a Verlet buffer tolerance of %g kJ/mol/ps for an NVE simulation of length %g ps, which can give a final drift of %d%%. For conserving energy to %d%% when using constraints, you might need to set verlet-buffer-tolerance to %.1e.",
+                                ir->verletbuf_tol, ir->nsteps*ir->delta_t,
+                                (int)(ir->verletbuf_tol/totalEnergyDriftPerAtomPerPicosecond*100 + 0.5),
+                                (int)(100*driftTolerance + 0.5),
+                                driftTolerance*totalEnergyDriftPerAtomPerPicosecond);
+                        warning_note(wi, warn_buf);
+                    }
                 }
 
                 set_verlet_buffer(sys, ir, buffer_temp, state->box, wi);

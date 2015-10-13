@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -52,14 +53,14 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/mdebin.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdebin.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -360,7 +361,7 @@ static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
     matrix      box;
 
     /* all we need is the ir to be able to write the label */
-    read_tpx(topnm, ir, box, &natoms, NULL, NULL, NULL, &mtop);
+    read_tpx(topnm, ir, box, &natoms, NULL, NULL, &mtop);
 }
 
 static void get_orires_parms(const char *topnm,
@@ -375,7 +376,7 @@ static void get_orires_parms(const char *topnm,
     int             nb;
     matrix          box;
 
-    read_tpx(topnm, &ir, box, &natoms, NULL, NULL, NULL, &mtop);
+    read_tpx(topnm, &ir, box, &natoms, NULL, NULL, &mtop);
     top = gmx_mtop_generate_local_top(&mtop, &ir);
 
     ip       = top->idef.iparams;
@@ -420,7 +421,7 @@ static int get_bounds(const char *topnm,
     int             nb, label1;
     matrix          box;
 
-    read_tpx(topnm, ir, box, &natoms, NULL, NULL, NULL, mtop);
+    read_tpx(topnm, ir, box, &natoms, NULL, NULL, mtop);
     snew(*ltop, 1);
     top   = gmx_mtop_generate_local_top(mtop, ir);
     *ltop = top;
@@ -522,7 +523,7 @@ static void calc_violations(real rt[], real rav3[], int nb, int index[],
 static void analyse_disre(const char *voutfn,    int nframes,
                           real violaver[], real bounds[], int index[],
                           int pair[],      int nbounds,
-                          const output_env_t oenv)
+                          const gmx_output_env_t *oenv)
 {
     FILE   *vout;
     double  sum, sumt, sumaver;
@@ -574,7 +575,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
 static void einstein_visco(const char *fn, const char *fni, int nsets,
                            int nint, real **eneint,
                            real V, real T, double dt,
-                           const output_env_t oenv)
+                           const gmx_output_env_t *oenv)
 {
     FILE  *fp0, *fp1;
     double av[4], avold[4];
@@ -1135,7 +1136,7 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
                          char **leg, gmx_enxnm_t *enm,
                          real Vaver, real ezero,
                          int nbmin, int nbmax,
-                         const output_env_t oenv)
+                         const gmx_output_env_t *oenv)
 {
     FILE           *fp;
     /* Check out the printed manual for equations! */
@@ -1467,7 +1468,7 @@ static void print1(FILE *fp, gmx_bool bDp, real e)
 static void fec(const char *ene2fn, const char *runavgfn,
                 real reftemp, int nset, int set[], char *leg[],
                 enerdata_t *edat, double time[],
-                const output_env_t oenv)
+                const gmx_output_env_t *oenv)
 {
     const char * ravgleg[] = {
         "\\8D\\4E = E\\sB\\N-E\\sA\\N",
@@ -1593,7 +1594,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
 static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
                     const char *filename, gmx_bool bDp,
                     int *blocks, int *hists, int *samples, int *nlambdas,
-                    const output_env_t oenv)
+                    const gmx_output_env_t *oenv)
 {
     const char  *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda";
     char         title[STRLEN], label_x[STRLEN], label_y[STRLEN], legend[STRLEN];
@@ -2018,7 +2019,7 @@ int gmx_energy(int argc, char *argv[])
     int                resnr_j, resnr_k;
     const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
     char               buf[256];
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     t_enxblock        *blk       = NULL;
     t_enxblock        *blk_disre = NULL;
     int                ndisre    = 0;
@@ -2811,7 +2812,7 @@ int gmx_energy(int argc, char *argv[])
     {
         double dt = (frame[cur].t-start_t)/(edat.nframes-1);
         analyse_ener(opt2bSet("-corr", NFILE, fnm), opt2fn("-corr", NFILE, fnm),
-                     bFee, bSum, opt2parg_bSet("-nmol", npargs, ppa),
+                     bFee, bSum, bFluct,
                      bVisco, opt2fn("-vis", NFILE, fnm),
                      nmol,
                      start_step, start_t, frame[cur].step, frame[cur].t,

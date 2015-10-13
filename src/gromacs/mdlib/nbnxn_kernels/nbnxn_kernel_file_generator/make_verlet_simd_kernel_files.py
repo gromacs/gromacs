@@ -151,7 +151,7 @@ VerletKernelTypeDict = {
     },
 }
 
-KernelDispatcherTemplate = read_kernel_template("nbnxn_kernel_simd_template.c.pre")
+KernelDispatcherTemplate = read_kernel_template("nbnxn_kernel_simd_template.cpp.pre")
 KernelsHeaderTemplate = read_kernel_template("nbnxn_kernel_simd_template.h.pre")
 
 # For each Verlet kernel type, write three kinds of files:
@@ -167,7 +167,7 @@ for type in VerletKernelTypeDict:
     KernelsHeaderPathName = "gromacs/mdlib/nbnxn_kernels/simd_{0}/{1}".format(type,KernelsHeaderFileName)
     KernelFunctionLookupTable = {}
     KernelDeclarations = ''
-    KernelTemplate = read_kernel_template("{0}_kernel.c.pre".format(KernelsName))
+    KernelTemplate = read_kernel_template("{0}_kernel.cpp.pre".format(KernelsName))
 
     # Loop over all kernels
     for ener in EnergiesComputationDict:
@@ -184,7 +184,7 @@ for type in VerletKernelTypeDict:
                                                EnergiesComputationDict[ener]['function type']))
 
                 # Write the file with the kernel definition
-                with open('{0}/{1}.c'.format(DirName,KernelName), 'w') as kernelfp:
+                with open('{0}/{1}.cpp'.format(DirName,KernelName), 'w') as kernelfp:
                     kernelfp.write(FileHeader.format(type))
                     kernelfp.write(KernelTemplate
                                    .format(VerletKernelTypeDict[type]['Define'],
@@ -216,7 +216,7 @@ for type in VerletKernelTypeDict:
 
     # Write the file defining the kernel dispatcher
     # function for this type
-    with open('{0}/{1}'.format(DirName,"{0}.c".format(KernelsName,type)),'w') as fp:
+    with open('{0}/{1}'.format(DirName,"{0}.cpp".format(KernelsName,type)),'w') as fp:
         fp.write(FileHeader.format(type))
         fp.write(KernelDispatcherTemplate
                  .format(VerletKernelTypeDict[type]['Define'],

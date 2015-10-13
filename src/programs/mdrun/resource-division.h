@@ -37,7 +37,11 @@
 #define GMX_RESOURCE_DIVISION_H
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
+
+struct gmx_hw_info_t;
+struct gmx_hw_opt_t;
+struct gmx_mtop_t;
+struct t_commrec;
 
 /* Return the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
@@ -52,7 +56,8 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      const t_inputrec    *inputrec,
                      const gmx_mtop_t    *mtop,
                      const t_commrec     *cr,
-                     FILE                *fplog);
+                     FILE                *fplog,
+                     gmx_bool             bUseGpu);
 
 /* Check if the number of OpenMP threads is within reasonable range
  * considering the hardware used. This is a crude check, but mainly
@@ -65,15 +70,18 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
                                         gmx_bool             bNtOmpOptionSet,
-                                        t_commrec           *cr,
+                                        struct t_commrec    *cr,
                                         FILE                *fplog);
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */
-void check_and_update_hw_opt_1(gmx_hw_opt_t *hw_opt,
-                               gmx_bool      bIsSimMaster);
+void check_and_update_hw_opt_1(gmx_hw_opt_t    *hw_opt,
+                               const t_commrec *cr);
 
 /* Checks we can do when we know the cut-off scheme */
 void check_and_update_hw_opt_2(gmx_hw_opt_t *hw_opt,
                                int           cutoff_scheme);
+
+/* Checks we can do when we know the thread-MPI rank count */
+void check_and_update_hw_opt_3(gmx_hw_opt_t *hw_opt);
 
 #endif /* GMX_RESOURCE_DIVISION_H */

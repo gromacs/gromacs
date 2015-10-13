@@ -48,7 +48,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
@@ -56,6 +55,8 @@
 #include "gromacs/legacyheaders/nsgrid.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -1768,7 +1769,11 @@ static int ns_simple_core(t_forcerec *fr,
     {
         for (m = 0; (m < DIM); m++)
         {
-            b_inv[m] = divide_err(1.0, box_size[m]);
+            if (gmx_numzero(box_size[m]))
+            {
+                gmx_fatal(FARGS, "Dividing by zero box size!");
+            }
+            b_inv[m] = 1.0/box_size[m];
         }
         bTriclinic = TRICLINIC(box);
     }

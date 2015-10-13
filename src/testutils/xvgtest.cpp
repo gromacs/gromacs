@@ -37,6 +37,7 @@
  * Implements routine to check the content of xvg files.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
 #include "gmxpre.h"
@@ -54,54 +55,102 @@
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 
 namespace gmx
 {
-
 namespace test
 {
 
-void checkXvgFile(TextInputStream      *input,
-                  TestReferenceChecker *checker)
+namespace
 {
-    std::string line;
-    int         nrow = 0;
 
+class XvgMatcher : public ITextBlockMatcher
+{
+    public:
+        explicit XvgMatcher(const XvgMatchSettings &settings)
+            : settings_(settings)
+        {
+        }
+
+        virtual void checkStream(TextInputStream      *stream,
+                                 TestReferenceChecker *checker)
+        {
+            checkXvgFile(stream, checker, settings_);
+        }
+
+    private:
+        XvgMatchSettings  settings_;
+};
+
+//! Helper function to identify which @ lines in xvg files should be tested.
+bool isRelevantXvgCommand(const std::string &line)
+{
+    return contains(line, " title ")
+           || contains(line, " subtitle ")
+           || contains(line, " label ")
+           || contains(line, "@TYPE ")
+           || contains(line, " legend \"");
+}
+
+//! Helper function to check a single xvg value in a sequence.
+void checkXvgDataPoint(TestReferenceChecker *checker, const std::string &value)
+{
+    checker->checkRealFromString(value, NULL);
+}
+
+}       // namespace
+
+void checkXvgFile(TextInputStream        *input,
+                  TestReferenceChecker   *checker,
+                  const XvgMatchSettings &settings)
+{
+    TestReferenceChecker legendChecker(checker->checkCompound("XvgLegend", "Legend"));
+    TestReferenceChecker dataChecker(checker->checkCompound("XvgData", "Data"));
+    dataChecker.setDefaultTolerance(settings.tolerance);
+
+    std::string legendText;
+    int         dataRowCount = 0;
+    std::string line;
     while (input->readLine(&line))
     {
-        if (!((line.find("#") != line.npos) ||
-              (line.find("@") != line.npos)))
+        // Ignore comments, as they contain dynamic content, and very little of
+        // that would be useful to test (and in particular, not with every
+        // output file).
+        if (startsWith(line, "#"))
         {
-            std::vector<std::string> split = splitString(line);
-            std::vector<real>        row;
-
-            for (std::vector<std::string>::iterator si = split.begin();
-                 (si < split.end()); ++si)
-            {
-                const char *ptr = si->c_str();
-                char       *endptr;
-                errno = 0;
-                double      dval = std::strtod(ptr, &endptr);
-                if (errno == ERANGE)
-                {
-                    GMX_THROW(InvalidInputError("Invalid value: '" + *si
-                                                + "'; it causes an overflow/underflow"));
-                }
-                if (*ptr == '\0' || *endptr != '\0')
-                {
-                    GMX_THROW(InvalidInputError("Invalid value: '" + *si
-                                                + "'; expected a number"));
-                }
-                row.push_back(dval);
-            }
-            std::string buf = formatString("Row%d", nrow++);
-            checker->checkSequence(row.begin(), row.end(), buf.c_str());
+            continue;
         }
+        if (startsWith(line, "@"))
+        {
+            if (isRelevantXvgCommand(line))
+            {
+                legendText.append(stripString(line.substr(1)));
+                legendText.append("\n");
+            }
+            continue;
+        }
+        if (!settings.testData)
+        {
+            break;
+        }
+        const std::vector<std::string> columns = splitString(line);
+        const std::string              id      = formatString("Row%d", dataRowCount);
+        dataChecker.checkSequence(columns.begin(), columns.end(), id.c_str(),
+                                  &checkXvgDataPoint);
+        ++dataRowCount;
     }
-    std::string buf = formatString("Row%d", nrow++);
-    checker->checkPresent(false, buf.c_str());
+    if (settings.testData)
+    {
+        dataChecker.checkPresent(false, formatString("Row%d", dataRowCount).c_str());
+    }
+    legendChecker.checkTextBlock(legendText, "XvgLegend");
+}
+
+TextBlockMatcherPointer XvgMatch::createMatcher() const
+{
+    return TextBlockMatcherPointer(new XvgMatcher(settings_));
 }
 
 } // namespace test
-
 } // namespace gmx

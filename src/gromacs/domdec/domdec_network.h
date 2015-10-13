@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,9 @@
 #ifndef GMX_DOMDEC_DOMDEC_NETWORK_H
 #define GMX_DOMDEC_DOMDEC_NETWORK_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
+
+struct gmx_domdec_t;
 
 /* \brief */
 enum {
@@ -62,7 +64,7 @@ enum {
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
 void
-dd_sendrecv_int(const gmx_domdec_t *dd,
+dd_sendrecv_int(const struct gmx_domdec_t *dd,
                 int ddimind, int direction,
                 int *buf_s, int n_s,
                 int *buf_r, int n_r);
@@ -73,7 +75,7 @@ dd_sendrecv_int(const gmx_domdec_t *dd,
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
 void
-dd_sendrecv_real(const gmx_domdec_t *dd,
+dd_sendrecv_real(const struct gmx_domdec_t *dd,
                  int ddimind, int direction,
                  real *buf_s, int n_s,
                  real *buf_r, int n_r);
@@ -84,7 +86,7 @@ dd_sendrecv_real(const gmx_domdec_t *dd,
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
 void
-dd_sendrecv_rvec(const gmx_domdec_t *dd,
+dd_sendrecv_rvec(const struct gmx_domdec_t *dd,
                  int ddimind, int direction,
                  rvec *buf_s, int n_s,
                  rvec *buf_r, int n_r);
@@ -96,7 +98,7 @@ dd_sendrecv_rvec(const gmx_domdec_t *dd,
  * and backward directions.
  */
 void
-dd_sendrecv2_rvec(const gmx_domdec_t *dd,
+dd_sendrecv2_rvec(const struct gmx_domdec_t *dd,
                   int ddimind,
                   rvec *buf_s_fw, int n_s_fw,
                   rvec *buf_r_fw, int n_r_fw,
@@ -112,27 +114,27 @@ dd_sendrecv2_rvec(const gmx_domdec_t *dd,
 
 /*! \brief Broadcasts \p nbytes from \p data on \p DDMASTERRANK to all PP ranks */
 void
-dd_bcast(gmx_domdec_t *dd, int nbytes, void *data);
+dd_bcast(struct gmx_domdec_t *dd, int nbytes, void *data);
 
 /*! \brief Copies \p nbytes from \p src to \p dest on \p DDMASTERRANK
  * and then broadcasts to \p dest on all PP ranks */
 void
-dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest);
+dd_bcastc(struct gmx_domdec_t *dd, int nbytes, void *src, void *dest);
 
 /*! \brief Scatters \p nbytes from \p src on \p DDMASTERRANK to all PP ranks, received in \p dest */
 void
-dd_scatter(gmx_domdec_t *dd, int nbytes, void *src, void *dest);
+dd_scatter(struct gmx_domdec_t *dd, int nbytes, void *src, void *dest);
 
 /*! \brief Gathers \p nbytes from \p src on all PP ranks, received in \p dest on \p DDMASTERRANK */
 void
-dd_gather(gmx_domdec_t *dd, int nbytes, void *src, void *dest);
+dd_gather(struct gmx_domdec_t *dd, int nbytes, void *src, void *dest);
 
 /*! \brief Scatters \p scounts bytes from \p src on \p DDMASTERRANK to all PP ranks, receiving \p rcount bytes in \p dest.
  *
  * See man MPI_Scatterv for details of how to construct scounts and disps.
  * If rcount==0, rbuf is allowed to be NULL */
 void
-dd_scatterv(gmx_domdec_t *dd,
+dd_scatterv(struct gmx_domdec_t *dd,
             int *scounts, int *disps, void *sbuf,
             int rcount, void *rbuf);
 
@@ -142,7 +144,7 @@ dd_scatterv(gmx_domdec_t *dd,
  *
  * If scount==0, sbuf is allowed to be NULL */
 void
-dd_gatherv(gmx_domdec_t *dd,
+dd_gatherv(struct gmx_domdec_t *dd,
            int scount, void *sbuf,
            int *rcounts, int *disps, void *rbuf);
 

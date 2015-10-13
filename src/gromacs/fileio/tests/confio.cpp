@@ -93,7 +93,6 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         {
             if (testTop_ != NULL)
             {
-                free_t_atoms(&testTop_->atoms, TRUE);
                 done_top(testTop_);
                 sfree(testTop_);
             }
@@ -109,29 +108,12 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
                            refBox_);
         }
 
-        void readReferenceFileStx()
-        {
-            int natoms = -1;
-            get_stx_coordnum(referenceFilename_.c_str(), &natoms);
-            ASSERT_EQ(refTop_->atoms.nr, natoms)
-            << "get_stx_coordnum() returned unexpected number of atoms";
-            char title[STRLEN];
-            snew(testTop_, 1);
-            init_t_atoms(&testTop_->atoms, natoms, GetParam() == efPDB);
-            snew(testX_, natoms);
-            read_stx_conf(referenceFilename_.c_str(), title, &testTop_->atoms,
-                          testX_, NULL, NULL, testBox_);
-            testTop_->name = put_symtab(&testTop_->symtab, title);
-        }
-
         void readReferenceFileTps()
         {
             snew(testTop_, 1);
             int  ePBC = -2;
-            char title[STRLEN];
-            read_tps_conf(referenceFilename_.c_str(), title, testTop_,
+            read_tps_conf(referenceFilename_.c_str(), testTop_,
                           &ePBC, &testX_, NULL, testBox_, FALSE);
-            testTop_->name = put_symtab(&testTop_->symtab, title);
         }
 
         void testTopologies()
@@ -213,14 +195,6 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         rvec                           *testX_;
         matrix                          testBox_;
 };
-
-TEST_P(StructureIORoundtripTest, ReadWriteStxConf)
-{
-    writeReferenceFile();
-    readReferenceFileStx();
-    testTopologies();
-    writeTestFileAndTest();
-}
 
 TEST_P(StructureIORoundtripTest, ReadWriteTpsConf)
 {

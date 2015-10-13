@@ -49,6 +49,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/genhydro.h"
 #include "gromacs/gmxpreprocess/h_db.h"
@@ -61,8 +62,6 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/gmxpreprocess/xlate.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atomprop.h"
@@ -70,6 +69,7 @@
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
@@ -539,10 +539,18 @@ static int read_pdball(const char *inf, const char *outf, char *title,
 
     /* READ IT */
     printf("Reading %s...\n", inf);
-    get_stx_coordnum(inf, &natom);
-    init_t_atoms(atoms, natom, TRUE);
-    snew(*x, natom);
-    read_stx_conf(inf, title, atoms, *x, NULL, ePBC, box);
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(inf, top, ePBC, x, NULL, box, FALSE);
+    strncpy(title, *top->name, STRLEN);
+    title[STRLEN-1] = '\0';
+    *atoms          = top->atoms;
+    sfree(top);
+    natom = atoms->nr;
+    if (atoms->pdbinfo == NULL)
+    {
+        snew(atoms->pdbinfo, atoms->nr);
+    }
     if (fn2ftp(inf) == efPDB)
     {
         get_pdb_atomnumber(atoms, aps);
@@ -566,7 +574,7 @@ static int read_pdball(const char *inf, const char *outf, char *title,
     }
 
     printf("Read");
-    if (title && title[0])
+    if (title[0])
     {
         printf(" '%s',", title);
     }
@@ -1274,7 +1282,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     real              mHmult  = 0;
     t_hackblock      *hb_chain;
     t_restp          *restp_chain;
-    output_env_t      oenv;
+    gmx_output_env_t *oenv;
     const char       *p_restype;
     int               rc;
     int               this_atomnum;

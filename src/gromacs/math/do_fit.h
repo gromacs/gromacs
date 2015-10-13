@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,6 @@
 #ifndef GMX_MATH_DO_FIT_H
 #define GMX_MATH_DO_FIT_H
 
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -46,18 +45,18 @@
 extern "C" {
 #endif
 
-real calc_similar_ind(gmx_bool bRho, int nind, atom_id *index, real mass[],
+real calc_similar_ind(gmx_bool bRho, int nind, int *index, real mass[],
                       rvec x[], rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */
 
-real rmsdev_ind(int nind, atom_id index[], real mass[],
+real rmsdev_ind(int nind, int index[], real mass[],
                 rvec x[], rvec xp[]);
 /* Returns the RMS Deviation betweem x and xp over all atoms in index */
 
 real rmsdev(int natoms, real mass[], rvec x[], rvec xp[]);
 /* Returns the RMS Deviation betweem x and xp over all atoms */
 
-real rhodev_ind(int nind, atom_id index[], real mass[], rvec x[], rvec xp[]);
+real rhodev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[]);
 /* Returns size-independent Rho similarity parameter over all atoms in index
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
@@ -87,8 +86,8 @@ void do_fit_ndim(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x);
 void do_fit(int natoms, real *w_rls, rvec *xp, rvec *x);
 /* Calls do_fit with ndim=3, thus fitting in 3D */
 
-void reset_x_ndim(int ndim, int ncm, const atom_id *ind_cm,
-                  int nreset, const atom_id *ind_reset,
+void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
+                  int nreset, const int *ind_reset,
                   rvec x[], const real mass[]);
 /* Put the center of mass of atoms in the origin for dimensions 0 to ndim.
  * The center of mass is computed from the index ind_cm.
@@ -98,8 +97,8 @@ void reset_x_ndim(int ndim, int ncm, const atom_id *ind_cm,
  * When ind_reset==NULL the coordinates up to nreset are reset.
  */
 
-void reset_x(int ncm, const atom_id *ind_cm,
-             int nreset, const atom_id *ind_reset,
+void reset_x(int ncm, const int *ind_cm,
+             int nreset, const int *ind_reset,
              rvec x[], const real mass[]);
 /* Calls reset_x with ndim=3, thus resetting all dimesions */
 

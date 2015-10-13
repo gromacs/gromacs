@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
@@ -47,17 +48,15 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/princ.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_ana.h"
 
 real calc_gyro(rvec x[], int gnx, atom_id index[], t_atom atom[], real tm,
                rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
@@ -176,7 +175,7 @@ void calc_gyro_z(rvec x[], matrix box,
 
 int gmx_gyrate(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes the radius of gyration of a molecule",
         "and the radii of gyration about the [IT]x[it]-, [IT]y[it]- and [IT]z[it]-axes,",
         "as a function of time. The atoms are explicitly mass weighted.[PAR]",
@@ -189,9 +188,9 @@ int gmx_gyrate(int argc, char *argv[])
         "With the option [TT]-nz[tt] 2D radii of gyration in the [IT]x-y[it] plane",
         "of slices along the [IT]z[it]-axis are calculated."
     };
-    static int      nmol = 1, nz = 0;
-    static gmx_bool bQ   = FALSE, bRot = FALSE, bMOI = FALSE;
-    t_pargs         pa[] = {
+    static int        nmol = 1, nz = 0;
+    static gmx_bool   bQ   = FALSE, bRot = FALSE, bMOI = FALSE;
+    t_pargs           pa[] = {
         { "-nmol", FALSE, etINT, {&nmol},
           "The number of molecules to analyze" },
         { "-q", FALSE, etBOOL, {&bQ},
@@ -203,28 +202,28 @@ int gmx_gyrate(int argc, char *argv[])
         { "-nz", FALSE, etINT, {&nz},
           "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
     };
-    FILE           *out;
-    t_trxstatus    *status;
-    t_topology      top;
-    int             ePBC;
-    rvec           *x, *x_s;
-    rvec            xcm, gvec, gvec1;
-    matrix          box, trans;
-    gmx_bool        bACF;
-    real          **moi_trans = NULL;
-    int             max_moi   = 0, delta_moi = 100;
-    rvec            d, d1; /* eigenvalues of inertia tensor */
-    real            t, t0, tm, gyro;
-    int             natoms;
-    char           *grpname, title[256];
-    int             j, m, gnx, nam, mol;
-    atom_id        *index;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc   = NULL;
-    const char     *leg[]  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
-    const char     *legI[] = { "Itot", "I1", "I2", "I3" };
+    FILE             *out;
+    t_trxstatus      *status;
+    t_topology        top;
+    int               ePBC;
+    rvec             *x, *x_s;
+    rvec              xcm, gvec, gvec1;
+    matrix            box, trans;
+    gmx_bool          bACF;
+    real            **moi_trans = NULL;
+    int               max_moi   = 0, delta_moi = 100;
+    rvec              d, d1; /* eigenvalues of inertia tensor */
+    real              t, t0, tm, gyro;
+    int               natoms;
+    char             *grpname;
+    int               j, m, gnx, nam, mol;
+    atom_id          *index;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc   = NULL;
+    const char       *leg[]  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
+    const char       *legI[] = { "Itot", "I1", "I2", "I3" };
 #define NLEG asize(leg)
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },
@@ -232,8 +231,8 @@ int gmx_gyrate(int argc, char *argv[])
         { efXVG, "-acf", "moi-acf",  ffOPTWR },
     };
 #define NFILE asize(fnm)
-    int             npargs;
-    t_pargs        *ppa;
+    int               npargs;
+    t_pargs          *ppa;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
@@ -268,7 +267,7 @@ int gmx_gyrate(int argc, char *argv[])
         printf("Will print radius normalised by charge\n");
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box, TRUE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     if (nmol > gnx || gnx % nmol != 0)

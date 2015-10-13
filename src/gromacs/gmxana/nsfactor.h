@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,15 +33,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _nsfactor_h
-#define _nsfactor_h
+#ifndef GMX_GMXANA_NSFACTOR_H
+#define GMX_GMXANA_NSFACTOR_H
 
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/types/simple.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct t_topology;
 
@@ -96,7 +93,4 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sa
 gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step);
 
 
-#ifdef __cplusplus
-}
-#endif
 #endif

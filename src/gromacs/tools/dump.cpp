@@ -51,14 +51,15 @@
 #include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/legacyheaders/checkpoint.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -69,7 +70,6 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
     t_state       state;
-    rvec         *f = NULL;
     t_inputrec    ir;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
@@ -80,7 +80,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
 
     read_tpx_state(fn,
                    tpx.bIr  ? &ir : NULL,
-                   &state, tpx.bF ? f : NULL,
+                   &state,
                    tpx.bTop ? &mtop : NULL);
 
     if (mdpfn && tpx.bIr)
@@ -126,10 +126,6 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
             /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
             pr_rvecs(stdout, indent, "x", tpx.bX ? state.x : NULL, state.natoms);
             pr_rvecs(stdout, indent, "v", tpx.bV ? state.v : NULL, state.natoms);
-            if (tpx.bF)
-            {
-                pr_rvecs(stdout, indent, "f", f, state.natoms);
-            }
         }
 
         groups = &mtop.groups;
@@ -163,7 +159,6 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
         sfree(gcount);
     }
     done_state(&state);
-    sfree(f);
 }
 
 static void list_top(const char *fn)
@@ -614,11 +609,11 @@ int gmx_dump(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    output_env_t    oenv;
+    gmx_output_env_t *oenv;
     /* Command line options */
-    static gmx_bool bShowNumbers = TRUE;
-    static gmx_bool bSysTop      = FALSE;
-    t_pargs         pa[]         = {
+    static gmx_bool   bShowNumbers = TRUE;
+    static gmx_bool   bSysTop      = FALSE;
+    t_pargs           pa[]         = {
         { "-nr", FALSE, etBOOL, {&bShowNumbers}, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
         { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
     };

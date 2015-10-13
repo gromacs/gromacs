@@ -49,15 +49,16 @@
 
 #include "thread_mpi/threads.h"
 
+#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_cpuid.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/md_logging.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
@@ -185,7 +186,7 @@ get_thread_affinity_layout(FILE *fplog,
 void
 gmx_set_thread_affinity(FILE                *fplog,
                         const t_commrec     *cr,
-                        gmx_hw_opt_t        *hw_opt,
+                        const gmx_hw_opt_t  *hw_opt,
                         const gmx_hw_info_t *hwinfo)
 {
     int        nth_affinity_set, thread0_id_node,
@@ -270,9 +271,10 @@ gmx_set_thread_affinity(FILE                *fplog,
         md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
     }
 
+    int core_pinning_stride = hw_opt->core_pinning_stride;
     rc = get_thread_affinity_layout(fplog, cr, hwinfo,
                                     nthread_node,
-                                    offset, &hw_opt->core_pinning_stride,
+                                    offset, &core_pinning_stride,
                                     &locality_order);
 
     if (rc != 0)
@@ -294,32 +296,36 @@ gmx_set_thread_affinity(FILE                *fplog,
     nth_affinity_set = 0;
 #pragma omp parallel num_threads(nthread_local) reduction(+:nth_affinity_set)
     {
-        int      thread_id, thread_id_node;
-        int      index, core;
-        gmx_bool setaffinity_ret;
-
-        thread_id      = gmx_omp_get_thread_num();
-        thread_id_node = thread0_id_node + thread_id;
-        index          = offset + thread_id_node*hw_opt->core_pinning_stride;
-        if (locality_order != NULL)
+        try
         {
-            core = locality_order[index];
-        }
-        else
-        {
-            core = index;
-        }
+            int      thread_id, thread_id_node;
+            int      index, core;
+            gmx_bool setaffinity_ret;
 
-        setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+            thread_id      = gmx_omp_get_thread_num();
+            thread_id_node = thread0_id_node + thread_id;
+            index          = offset + thread_id_node*core_pinning_stride;
+            if (locality_order != NULL)
+            {
+                core = locality_order[index];
+            }
+            else
+            {
+                core = index;
+            }
 
-        /* store the per-thread success-values of the setaffinity */
-        nth_affinity_set += (setaffinity_ret == 0);
+            setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
 
-        if (debug)
-        {
-            fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
-                    cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
+            /* store the per-thread success-values of the setaffinity */
+            nth_affinity_set += (setaffinity_ret == 0);
+
+            if (debug)
+            {
+                fprintf(debug, "On rank %2d, thread %2d, index %2d, core %2d the affinity setting returned %d\n",
+                        cr->nodeid, gmx_omp_get_thread_num(), index, core, setaffinity_ret);
+            }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     if (nth_affinity_set > nthread_local)
@@ -413,7 +419,7 @@ gmx_check_thread_affinity_set(FILE            *fplog,
 #endif
     }
 
-#ifdef HAVE_SCHED_GETAFFINITY
+#ifdef HAVE_SCHED_AFFINITY
     int       ret;
     cpu_set_t mask_current;
 

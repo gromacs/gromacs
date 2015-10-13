@@ -49,12 +49,12 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -394,25 +394,14 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
     write_t_edx(fp, edpars->sori, "NORIGIN, XORIGIN");
 }
 
-int read_conffile(const char *confin, char *title, rvec *x[])
+int read_conffile(const char *confin, rvec **x)
 {
-/* read coordinates out of STX file  */
-    int      natoms;
-    t_atoms  confat;
-    matrix   box;
+    t_topology  top;
+    matrix      box;
     printf("read coordnumber from file %s\n", confin);
-    get_stx_coordnum(confin, &natoms);
-    printf("number of coordinates in file %d\n", natoms);
-/*  if (natoms != ncoords)
-     gmx_fatal(FARGS,"number of coordinates in coordinate file (%s, %d)\n"
-           "             does not match topology (= %d)",
-           confin,natoms,ncoords);
-   else {*/
-    /* make space for coordinates and velocities */
-    init_t_atoms(&confat, natoms, FALSE);
-    snew(*x, natoms);
-    read_stx_conf(confin, title, &confat, *x, NULL, NULL, box);
-    return natoms;
+    read_tps_conf(confin, &top, NULL, x, NULL, box, FALSE);
+    printf("number of coordinates in file %d\n", top.atoms.nr);
+    return top.atoms.nr;
 }
 
 
@@ -537,11 +526,10 @@ void get_structure(t_atoms *atoms, const char *IndexFile,
     int      ngro;
     int      ntar;
     rvec    *xtar;
-    char     title[STRLEN];
     char   * grpname;
 
 
-    ntar = read_conffile(StructureFile, title, &xtar);
+    ntar = read_conffile(StructureFile, &xtar);
     printf("Select an index group of %d elements that corresponds to the atoms in the structure file %s\n",
            ntar, StructureFile);
     get_index(atoms, IndexFile, 1, &ngro, &igro, &grpname);
@@ -735,31 +723,30 @@ int gmx_make_edi(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    rvec        *xref1;
-    int          nvec1, *eignr1 = NULL;
-    rvec        *xav1, **eigvec1 = NULL;
-    t_atoms     *atoms = NULL;
-    int          nav; /* Number of atoms in the average structure */
-    char        *grpname;
-    const char  *indexfile;
-    int          i;
-    atom_id     *index, *ifit;
-    int          nfit;           /* Number of atoms in the reference/fit structure */
-    int          ev_class;       /* parameter _class i.e. evMON, evRADFIX etc. */
-    int          nvecs;
-    real        *eigval1 = NULL; /* in V3.3 this is parameter of read_eigenvectors */
+    rvec             *xref1;
+    int               nvec1, *eignr1 = NULL;
+    rvec             *xav1, **eigvec1 = NULL;
+    t_atoms          *atoms = NULL;
+    int               nav; /* Number of atoms in the average structure */
+    char             *grpname;
+    const char       *indexfile;
+    int               i;
+    atom_id          *index, *ifit;
+    int               nfit;           /* Number of atoms in the reference/fit structure */
+    int               ev_class;       /* parameter _class i.e. evMON, evRADFIX etc. */
+    int               nvecs;
+    real             *eigval1 = NULL; /* in V3.3 this is parameter of read_eigenvectors */
 
-    const char  *EdiFile;
-    const char  *TargetFile;
-    const char  *OriginFile;
-    const char  *EigvecFile;
+    const char       *EdiFile;
+    const char       *TargetFile;
+    const char       *OriginFile;
+    const char       *EigvecFile;
 
-    output_env_t oenv;
+    gmx_output_env_t *oenv;
 
     /*to read topology file*/
     t_topology  top;
     int         ePBC;
-    char        title[STRLEN];
     matrix      topbox;
     rvec       *xtop;
     gmx_bool    bFit1;
@@ -860,7 +847,7 @@ int gmx_make_edi(int argc, char *argv[])
                       &xref1, &edi_params.fitmas, &xav1, &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                  title, &top, &ePBC, &xtop, NULL, topbox, 0);
+                  &top, &ePBC, &xtop, NULL, topbox, 0);
     atoms = &top.atoms;
 
 

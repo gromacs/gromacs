@@ -44,10 +44,10 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -109,21 +109,20 @@ int gmx_genpr(int argc, char *argv[])
     };
 #define npargs asize(pa)
 
-    output_env_t     oenv;
-    t_atoms         *atoms = NULL;
-    int              i, j, k;
-    FILE            *out;
-    int              igrp;
-    real             d, dd, lo, hi;
-    atom_id         *ind_grp;
-    const char      *xfn, *nfn;
-    char            *gn_grp;
-    char             title[STRLEN];
-    matrix           box;
-    gmx_bool         bFreeze;
-    rvec             dx, *x = NULL, *v = NULL;
+    gmx_output_env_t *oenv;
+    t_atoms          *atoms = NULL;
+    int               i, j, k;
+    FILE             *out;
+    int               igrp;
+    real              d, dd, lo, hi;
+    atom_id          *ind_grp;
+    const char       *xfn, *nfn;
+    char             *gn_grp;
+    matrix            box;
+    gmx_bool          bFreeze;
+    rvec              dx, *x = NULL, *v = NULL;
 
-    t_filenm         fnm[] = {
+    t_filenm          fnm[] = {
         { efSTX, "-f",  NULL,    ffREAD },
         { efNDX, "-n",  NULL,    ffOPTRD },
         { efITP, "-o",  "posre", ffWRITE },
@@ -156,15 +155,19 @@ int gmx_genpr(int argc, char *argv[])
         gmx_fatal(FARGS, "disre_dist should be >= 0");
     }
 
+    const char *title = "";
     if (xfn != NULL)
     {
-        snew(atoms, 1);
-        get_stx_coordnum(xfn, &(atoms->nr));
-        init_t_atoms(atoms, atoms->nr, TRUE);
-        snew(x, atoms->nr);
-        snew(v, atoms->nr);
         fprintf(stderr, "\nReading structure file\n");
-        read_stx_conf(xfn, title, atoms, x, v, NULL, box);
+        t_topology *top = NULL;
+        snew(top, 1);
+        read_tps_conf(xfn, top, NULL, &x, &v, box, FALSE);
+        title = *top->name;
+        atoms = &top->atoms;
+        if (atoms->pdbinfo == NULL)
+        {
+            snew(atoms->pdbinfo, atoms->nr);
+        }
     }
 
     if (bFreeze)

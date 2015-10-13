@@ -44,8 +44,10 @@
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/topology/atom_id.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
@@ -258,12 +260,16 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
             #pragma omp for
             for (mc = 0; mc < mc_max; mc++)
             {
-                i = static_cast<int>(std::floor(gmx_rng_uniform_real(trng[tid])*isize));
-                j = static_cast<int>(std::floor(gmx_rng_uniform_real(trng[tid])*isize));
-                if (i != j)
+                try
                 {
-                    tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                    i = static_cast<int>(std::floor(gmx_rng_uniform_real(trng[tid])*isize));
+                    j = static_cast<int>(std::floor(gmx_rng_uniform_real(trng[tid])*isize));
+                    if (i != j)
+                    {
+                        tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                    }
                 }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
         }
         /* collecting data from threads */
@@ -312,10 +318,14 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
             #pragma omp for
             for (i = 0; i < isize; i++)
             {
-                for (j = 0; j < i; j++)
+                try
                 {
-                    tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                    for (j = 0; j < i; j++)
+                    {
+                        tgr[tid][static_cast<int>(std::floor(std::sqrt(distance2(x[index[i]], x[index[j]]))/binwidth))] += gsans->slength[index[i]]*gsans->slength[index[j]];
+                    }
                 }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
         }
         /* collecating data for pr->gr */

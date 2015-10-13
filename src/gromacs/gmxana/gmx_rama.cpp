@@ -40,14 +40,14 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/nrama.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -67,18 +67,18 @@ static void plot_rama(FILE *out, t_xrama *xr)
 
 int gmx_rama(int argc, char *argv[])
 {
-    const char  *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] selects the [GRK]phi[grk]/[GRK]psi[grk] dihedral combinations from your topology file",
         "and computes these as a function of time.",
         "Using simple Unix tools such as [IT]grep[it] you can select out",
         "specific residues."
     };
 
-    FILE        *out;
-    t_xrama     *xr;
-    int          j;
-    output_env_t oenv;
-    t_filenm     fnm[] = {
+    FILE             *out;
+    t_xrama          *xr;
+    int               j;
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] = {
         { efTRX, "-f", NULL,  ffREAD },
         { efTPR, NULL, NULL,  ffREAD },
         { efXVG, NULL, "rama", ffWRITE }

@@ -35,10 +35,14 @@
 #ifndef GMX_GMXPREPROCESS_READ_CONFORMATION_H
 #define GMX_GMXPREPROCESS_READ_CONFORMATION_H
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include <vector>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_atomprop;
 struct t_atoms;
+struct t_topology;
 
 /*! \brief Allocate and fill an array of inter-atomic half distances
  *
@@ -46,15 +50,17 @@ struct t_atoms;
  * default value. Used directly and indirectly by solvate and
  * insert-molecules for deciding whether molecules clash. The return
  * pointer should be freed by the caller. */
-real *makeExclusionDistances(const struct t_atoms *a, struct gmx_atomprop *aps,
-                             real defaultDistance, real scaleFactor);
+std::vector<real>
+makeExclusionDistances(const t_atoms *a, gmx_atomprop *aps,
+                       real defaultDistance, real scaleFactor);
 
 /*! \brief Read a conformation from a file, allocate and fill data structures.
  *
  * Used by solvate and insert-molecules. The returned pointers *x and
- * *v should be freed by the caller. atoms should have its destructor
+ * *v should be freed by the caller. top should have its destructor
  * called. */
-char *readConformation(const char *confin, struct t_atoms *atoms, rvec **x, rvec **v,
-                       int *ePBC, matrix box, const char *statusTitle);
+void readConformation(const char *confin, t_topology *top,
+                      std::vector<gmx::RVec> *x, std::vector<gmx::RVec> *v,
+                      int *ePBC, matrix box, const char *statusTitle);
 
 #endif

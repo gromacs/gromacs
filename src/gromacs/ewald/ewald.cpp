@@ -61,6 +61,7 @@
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 struct gmx_ewald_tab_t

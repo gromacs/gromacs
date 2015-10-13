@@ -1154,4 +1154,1380 @@
       </DataFrame>
     </AnalysisData>
   </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Solvent Accessible Surface"
+xaxis  label "Time (ps)"
+yaxis  label "Area (nm\S2\N)"
+TYPE xy
+s0 legend "Total"
+s1 legend "name N CA C O H"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data"/>
+    </File>
+    <File Name="-or">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Area per residue over the trajectory"
+xaxis  label "Residue"
+yaxis  label "Area (nm\S2\N)"
+TYPE xy
+s0 legend "Average (nm\S2\N)"
+s1 legend "Standard deviation (nm\S2\N)"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>1</Real>
+          <Real>2.078</Real>
+          <Real>0.000</Real>
+          <Real>0.235</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>2</Real>
+          <Real>1.569</Real>
+          <Real>0.000</Real>
+          <Real>0.307</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>3</Real>
+          <Real>0.955</Real>
+          <Real>0.000</Real>
+          <Real>0.258</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>4</Real>
+          <Real>0.394</Real>
+          <Real>0.000</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>5</Real>
+          <Real>1.979</Real>
+          <Real>0.000</Real>
+          <Real>0.166</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">5</Int>
+          <Real>6</Real>
+          <Real>0.781</Real>
+          <Real>0.000</Real>
+          <Real>0.060</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">5</Int>
+          <Real>7</Real>
+          <Real>0.818</Real>
+          <Real>0.000</Real>
+          <Real>0.100</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">5</Int>
+          <Real>8</Real>
+          <Real>1.213</Real>
+          <Real>0.000</Real>
+          <Real>0.201</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">5</Int>
+          <Real>9</Real>
+          <Real>0.855</Real>
+          <Real>0.000</Real>
+          <Real>0.301</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">5</Int>
+          <Real>10</Real>
+          <Real>1.239</Real>
+          <Real>0.000</Real>
+          <Real>0.515</Real>
+          <Real>0.000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-oa">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Area per atom over the trajectory"
+xaxis  label "Atom"
+yaxis  label "Area (nm\S2\N)"
+TYPE xy
+s0 legend "Average (nm\S2\N)"
+s1 legend "Standard deviation (nm\S2\N)"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>1</Real>
+          <Real>0.034</Real>
+          <Real>0.000</Real>
+          <Real>0.034</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>2</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>3</Real>
+          <Real>0.239</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>4</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>5</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">5</Int>
+          <Real>6</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row6">
+          <Int Name="Length">5</Int>
+          <Real>7</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row7">
+          <Int Name="Length">5</Int>
+          <Real>8</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row8">
+          <Int Name="Length">5</Int>
+          <Real>9</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row9">
+          <Int Name="Length">5</Int>
+          <Real>10</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row10">
+          <Int Name="Length">5</Int>
+          <Real>11</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row11">
+          <Int Name="Length">5</Int>
+          <Real>12</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row12">
+          <Int Name="Length">5</Int>
+          <Real>13</Real>
+          <Real>0.038</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row13">
+          <Int Name="Length">5</Int>
+          <Real>14</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row14">
+          <Int Name="Length">5</Int>
+          <Real>15</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row15">
+          <Int Name="Length">5</Int>
+          <Real>16</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row16">
+          <Int Name="Length">5</Int>
+          <Real>17</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row17">
+          <Int Name="Length">5</Int>
+          <Real>18</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row18">
+          <Int Name="Length">5</Int>
+          <Real>19</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row19">
+          <Int Name="Length">5</Int>
+          <Real>20</Real>
+          <Real>0.053</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row20">
+          <Int Name="Length">5</Int>
+          <Real>21</Real>
+          <Real>0.239</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row21">
+          <Int Name="Length">5</Int>
+          <Real>22</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row22">
+          <Int Name="Length">5</Int>
+          <Real>23</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row23">
+          <Int Name="Length">5</Int>
+          <Real>24</Real>
+          <Real>0.201</Real>
+          <Real>0.000</Real>
+          <Real>0.201</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row24">
+          <Int Name="Length">5</Int>
+          <Real>25</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row25">
+          <Int Name="Length">5</Int>
+          <Real>26</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row26">
+          <Int Name="Length">5</Int>
+          <Real>27</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row27">
+          <Int Name="Length">5</Int>
+          <Real>28</Real>
+          <Real>0.027</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row28">
+          <Int Name="Length">5</Int>
+          <Real>29</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row29">
+          <Int Name="Length">5</Int>
+          <Real>30</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row30">
+          <Int Name="Length">5</Int>
+          <Real>31</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row31">
+          <Int Name="Length">5</Int>
+          <Real>32</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row32">
+          <Int Name="Length">5</Int>
+          <Real>33</Real>
+          <Real>0.053</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row33">
+          <Int Name="Length">5</Int>
+          <Real>34</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row34">
+          <Int Name="Length">5</Int>
+          <Real>35</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row35">
+          <Int Name="Length">5</Int>
+          <Real>36</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row36">
+          <Int Name="Length">5</Int>
+          <Real>37</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row37">
+          <Int Name="Length">5</Int>
+          <Real>38</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row38">
+          <Int Name="Length">5</Int>
+          <Real>39</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row39">
+          <Int Name="Length">5</Int>
+          <Real>40</Real>
+          <Real>0.201</Real>
+          <Real>0.000</Real>
+          <Real>0.201</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row40">
+          <Int Name="Length">5</Int>
+          <Real>41</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row41">
+          <Int Name="Length">5</Int>
+          <Real>42</Real>
+          <Real>0.053</Real>
+          <Real>0.000</Real>
+          <Real>0.053</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row42">
+          <Int Name="Length">5</Int>
+          <Real>43</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row43">
+          <Int Name="Length">5</Int>
+          <Real>44</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row44">
+          <Int Name="Length">5</Int>
+          <Real>45</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row45">
+          <Int Name="Length">5</Int>
+          <Real>46</Real>
+          <Real>0.027</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row46">
+          <Int Name="Length">5</Int>
+          <Real>47</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row47">
+          <Int Name="Length">5</Int>
+          <Real>48</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row48">
+          <Int Name="Length">5</Int>
+          <Real>49</Real>
+          <Real>0.038</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row49">
+          <Int Name="Length">5</Int>
+          <Real>50</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row50">
+          <Int Name="Length">5</Int>
+          <Real>51</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row51">
+          <Int Name="Length">5</Int>
+          <Real>52</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row52">
+          <Int Name="Length">5</Int>
+          <Real>53</Real>
+          <Real>0.038</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row53">
+          <Int Name="Length">5</Int>
+          <Real>54</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row54">
+          <Int Name="Length">5</Int>
+          <Real>55</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row55">
+          <Int Name="Length">5</Int>
+          <Real>56</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row56">
+          <Int Name="Length">5</Int>
+          <Real>57</Real>
+          <Real>0.038</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row57">
+          <Int Name="Length">5</Int>
+          <Real>58</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row58">
+          <Int Name="Length">5</Int>
+          <Real>59</Real>
+          <Real>0.038</Real>
+          <Real>0.000</Real>
+          <Real>0.038</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row59">
+          <Int Name="Length">5</Int>
+          <Real>60</Real>
+          <Real>0.167</Real>
+          <Real>0.000</Real>
+          <Real>0.167</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row60">
+          <Int Name="Length">5</Int>
+          <Real>61</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row61">
+          <Int Name="Length">5</Int>
+          <Real>62</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row62">
+          <Int Name="Length">5</Int>
+          <Real>63</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row63">
+          <Int Name="Length">5</Int>
+          <Real>64</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row64">
+          <Int Name="Length">5</Int>
+          <Real>65</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row65">
+          <Int Name="Length">5</Int>
+          <Real>66</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row66">
+          <Int Name="Length">5</Int>
+          <Real>67</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row67">
+          <Int Name="Length">5</Int>
+          <Real>68</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row68">
+          <Int Name="Length">5</Int>
+          <Real>69</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row69">
+          <Int Name="Length">5</Int>
+          <Real>70</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row70">
+          <Int Name="Length">5</Int>
+          <Real>71</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row71">
+          <Int Name="Length">5</Int>
+          <Real>72</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row72">
+          <Int Name="Length">5</Int>
+          <Real>73</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row73">
+          <Int Name="Length">5</Int>
+          <Real>74</Real>
+          <Real>0.027</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row74">
+          <Int Name="Length">5</Int>
+          <Real>75</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row75">
+          <Int Name="Length">5</Int>
+          <Real>76</Real>
+          <Real>0.027</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row76">
+          <Int Name="Length">5</Int>
+          <Real>77</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row77">
+          <Int Name="Length">5</Int>
+          <Real>78</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row78">
+          <Int Name="Length">5</Int>
+          <Real>79</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row79">
+          <Int Name="Length">5</Int>
+          <Real>80</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row80">
+          <Int Name="Length">5</Int>
+          <Real>81</Real>
+          <Real>0.034</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row81">
+          <Int Name="Length">5</Int>
+          <Real>82</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row82">
+          <Int Name="Length">5</Int>
+          <Real>83</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row83">
+          <Int Name="Length">5</Int>
+          <Real>84</Real>
+          <Real>0.034</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row84">
+          <Int Name="Length">5</Int>
+          <Real>85</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row85">
+          <Int Name="Length">5</Int>
+          <Real>86</Real>
+          <Real>0.239</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row86">
+          <Int Name="Length">5</Int>
+          <Real>87</Real>
+          <Real>0.103</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row87">
+          <Int Name="Length">5</Int>
+          <Real>88</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row88">
+          <Int Name="Length">5</Int>
+          <Real>89</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row89">
+          <Int Name="Length">5</Int>
+          <Real>90</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row90">
+          <Int Name="Length">5</Int>
+          <Real>91</Real>
+          <Real>0.033</Real>
+          <Real>0.000</Real>
+          <Real>0.033</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row91">
+          <Int Name="Length">5</Int>
+          <Real>92</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row92">
+          <Int Name="Length">5</Int>
+          <Real>93</Real>
+          <Real>0.027</Real>
+          <Real>0.000</Real>
+          <Real>0.027</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row93">
+          <Int Name="Length">5</Int>
+          <Real>94</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row94">
+          <Int Name="Length">5</Int>
+          <Real>95</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row95">
+          <Int Name="Length">5</Int>
+          <Real>96</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row96">
+          <Int Name="Length">5</Int>
+          <Real>97</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row97">
+          <Int Name="Length">5</Int>
+          <Real>98</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row98">
+          <Int Name="Length">5</Int>
+          <Real>99</Real>
+          <Real>0.402</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row99">
+          <Int Name="Length">5</Int>
+          <Real>100</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row100">
+          <Int Name="Length">5</Int>
+          <Real>101</Real>
+          <Real>0.033</Real>
+          <Real>0.000</Real>
+          <Real>0.033</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row101">
+          <Int Name="Length">5</Int>
+          <Real>102</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row102">
+          <Int Name="Length">5</Int>
+          <Real>103</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row103">
+          <Int Name="Length">5</Int>
+          <Real>104</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row104">
+          <Int Name="Length">5</Int>
+          <Real>105</Real>
+          <Real>0.080</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row105">
+          <Int Name="Length">5</Int>
+          <Real>106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row106">
+          <Int Name="Length">5</Int>
+          <Real>107</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row107">
+          <Int Name="Length">5</Int>
+          <Real>108</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row108">
+          <Int Name="Length">5</Int>
+          <Real>109</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row109">
+          <Int Name="Length">5</Int>
+          <Real>110</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row110">
+          <Int Name="Length">5</Int>
+          <Real>111</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row111">
+          <Int Name="Length">5</Int>
+          <Real>112</Real>
+          <Real>0.038</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row112">
+          <Int Name="Length">5</Int>
+          <Real>113</Real>
+          <Real>0.134</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row113">
+          <Int Name="Length">5</Int>
+          <Real>114</Real>
+          <Real>0.201</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row114">
+          <Int Name="Length">5</Int>
+          <Real>115</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row115">
+          <Int Name="Length">5</Int>
+          <Real>116</Real>
+          <Real>0.100</Real>
+          <Real>0.000</Real>
+          <Real>0.100</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row116">
+          <Int Name="Length">5</Int>
+          <Real>117</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row117">
+          <Int Name="Length">5</Int>
+          <Real>118</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row118">
+          <Int Name="Length">5</Int>
+          <Real>119</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row119">
+          <Int Name="Length">5</Int>
+          <Real>120</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row120">
+          <Int Name="Length">5</Int>
+          <Real>121</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row121">
+          <Int Name="Length">5</Int>
+          <Real>122</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row122">
+          <Int Name="Length">5</Int>
+          <Real>123</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row123">
+          <Int Name="Length">5</Int>
+          <Real>124</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row124">
+          <Int Name="Length">5</Int>
+          <Real>125</Real>
+          <Real>0.053</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row125">
+          <Int Name="Length">5</Int>
+          <Real>126</Real>
+          <Real>0.038</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row126">
+          <Int Name="Length">5</Int>
+          <Real>127</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row127">
+          <Int Name="Length">5</Int>
+          <Real>128</Real>
+          <Real>0.053</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row128">
+          <Int Name="Length">5</Int>
+          <Real>129</Real>
+          <Real>0.027</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row129">
+          <Int Name="Length">5</Int>
+          <Real>130</Real>
+          <Real>0.151</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row130">
+          <Int Name="Length">5</Int>
+          <Real>131</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row131">
+          <Int Name="Length">5</Int>
+          <Real>132</Real>
+          <Real>0.133</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row132">
+          <Int Name="Length">5</Int>
+          <Real>133</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row133">
+          <Int Name="Length">5</Int>
+          <Real>134</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row134">
+          <Int Name="Length">5</Int>
+          <Real>135</Real>
+          <Real>0.201</Real>
+          <Real>0.000</Real>
+          <Real>0.201</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row135">
+          <Int Name="Length">5</Int>
+          <Real>136</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row136">
+          <Int Name="Length">5</Int>
+          <Real>137</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row137">
+          <Int Name="Length">5</Int>
+          <Real>138</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row138">
+          <Int Name="Length">5</Int>
+          <Real>139</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row139">
+          <Int Name="Length">5</Int>
+          <Real>140</Real>
+          <Real>0.075</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row140">
+          <Int Name="Length">5</Int>
+          <Real>141</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row141">
+          <Int Name="Length">5</Int>
+          <Real>142</Real>
+          <Real>0.106</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row142">
+          <Int Name="Length">5</Int>
+          <Real>143</Real>
+          <Real>0.027</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row143">
+          <Int Name="Length">5</Int>
+          <Real>144</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row144">
+          <Int Name="Length">5</Int>
+          <Real>145</Real>
+          <Real>0.301</Real>
+          <Real>0.000</Real>
+          <Real>0.301</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row145">
+          <Int Name="Length">5</Int>
+          <Real>146</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row146">
+          <Int Name="Length">5</Int>
+          <Real>147</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row147">
+          <Int Name="Length">5</Int>
+          <Real>148</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row148">
+          <Int Name="Length">5</Int>
+          <Real>149</Real>
+          <Real>0.159</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row149">
+          <Int Name="Length">5</Int>
+          <Real>150</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row150">
+          <Int Name="Length">5</Int>
+          <Real>151</Real>
+          <Real>0.186</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row151">
+          <Int Name="Length">5</Int>
+          <Real>152</Real>
+          <Real>0.212</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row152">
+          <Int Name="Length">5</Int>
+          <Real>153</Real>
+          <Real>0.053</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row153">
+          <Int Name="Length">5</Int>
+          <Real>154</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+          <Real>0.113</Real>
+          <Real>0.000</Real>
+        </Sequence>
+        <Sequence Name="Row154">
+          <Int Name="Length">5</Int>
+          <Real>155</Real>
+          <Real>0.402</Real>
+          <Real>0.000</Real>
+          <Real>0.402</Real>
+          <Real>0.000</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-tv">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Volume and Density"
+xaxis  label "Time (ps)"
+yaxis  label ""
+TYPE xy
+s0 legend "Volume (nm\S3\N)"
+s1 legend "Density (g/l)"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data"/>
+    </File>
+  </OutputFiles>
 </ReferenceData>

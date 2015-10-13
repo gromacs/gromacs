@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "shellfc.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -43,25 +45,23 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/chargegroup.h"
-#include "gromacs/legacyheaders/constr.h"
+#include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/shellfc.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -704,7 +704,7 @@ static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
                  * cause a NaN if df were binary-equal to zero. Values close to
                  * zero won't cause problems (because of the min() and max()), so
                  * just testing for binary inequality is OK. */
-                if (0.0 != df)
+                if (zero != df)
                 {
                     k_est = -dx/df;
                     /* Scale the step size by a factor interpolated from
@@ -855,8 +855,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
                       real *lambda, real *dvdlambda, t_nrnb *nrnb)
 {
     rvec           *xnold, *xnew;
-    double          w_dt;
-    real            dt;
+    double          dt, w_dt;
     int             n, d;
     unsigned short *ptype;
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,19 +37,14 @@
 {
     const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
-    const int *         type;
     const real *        q;
     const real         *shiftvec;
     const real         *x;
-    const real         *nbfp0, *nbfp1, *nbfp2 = NULL, *nbfp3 = NULL;
     real                facel;
-    real               *nbfp_ptr;
     int                 n, ci, ci_sh;
     int                 ish, ish3;
-    gmx_bool            do_LJ, half_LJ, do_coul, do_self;
-    int                 sci, scix, sciy, sciz, sci2;
+    gmx_bool            do_LJ, half_LJ, do_coul;
     int                 cjind0, cjind1, cjind;
-    int                 ip, jp;
 
 #ifdef ENERGY_GROUPS
     int         Vstride_i;
@@ -108,10 +103,10 @@
 
 #ifdef CALC_COUL_TAB
     /* Coulomb table variables */
-    gmx_simd_real_t   invtsp_S;
-    const real *      tab_coul_F;
+    gmx_simd_real_t        invtsp_S;
+    const real      *      tab_coul_F;
 #ifndef TAB_FDV0
-    const real *      tab_coul_V;
+    const real gmx_unused *tab_coul_V;
 #endif
     /* Thread-local working buffers for force and potential lookups */
     int               ti0_array[2*GMX_SIMD_REAL_WIDTH], *ti0 = NULL;
@@ -151,7 +146,7 @@
 #endif
 #ifdef LJ_EWALD_GEOM
     real              lj_ewaldcoeff2, lj_ewaldcoeff6_6;
-    gmx_simd_real_t   mone_S, half_S, lje_c2_S, lje_c6_6_S, lje_vc_S;
+    gmx_simd_real_t   mone_S, half_S, lje_c2_S, lje_c6_6_S;
 #endif
 
 #ifdef LJ_COMB_LB
@@ -162,29 +157,11 @@
     gmx_simd_real_t   hsig_i_S2, seps_i_S2;
     gmx_simd_real_t   hsig_i_S3, seps_i_S3;
 #else
-#ifdef FIX_LJ_C
-    real              pvdw_array[2*UNROLLI*UNROLLJ+3];
-    real             *pvdw_c6, *pvdw_c12;
-    gmx_simd_real_t   c6_S0, c12_S0;
-    gmx_simd_real_t   c6_S1, c12_S1;
-    gmx_simd_real_t   c6_S2, c12_S2;
-    gmx_simd_real_t   c6_S3, c12_S3;
-#endif
 
 #if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
     const real       *ljc;
-
-    gmx_simd_real_t   c6s_S0, c12s_S0;
-    gmx_simd_real_t   c6s_S1, c12s_S1;
-    gmx_simd_real_t   c6s_S2  = gmx_simd_setzero_r();
-    gmx_simd_real_t   c12s_S2 = gmx_simd_setzero_r();
-    gmx_simd_real_t   c6s_S3  = gmx_simd_setzero_r();
-    gmx_simd_real_t   c12s_S3 = gmx_simd_setzero_r();
 #endif
 #endif /* LJ_COMB_LB */
-
-    gmx_simd_real_t  vctot_S, Vvdwtot_S;
-    gmx_simd_real_t  sixth_S, twelveth_S;
 
     gmx_simd_real_t  avoid_sing_S;
     gmx_simd_real_t  rc2_S;
@@ -201,9 +178,10 @@
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
     ljc = nbat->lj_comb;
 #endif
-#if !(defined LJ_COMB_GEOM || defined LJ_COMB_LB)
+#if !(defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined FIX_LJ_C)
     /* No combination rule used */
-    nbfp_ptr    = (4 == nbfp_stride) ? nbat->nbfp_s4 : nbat->nbfp;
+    real      *nbfp_ptr    = (4 == nbfp_stride) ? nbat->nbfp_s4 : nbat->nbfp;
+    const int *type        = nbat->type;
 #endif
 
     /* Load j-i for the first i */
@@ -303,8 +281,8 @@
 
     /* LJ function constants */
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    sixth_S      = gmx_simd_set1_r(1.0/6.0);
-    twelveth_S   = gmx_simd_set1_r(1.0/12.0);
+    gmx_simd_real_t sixth_S    = gmx_simd_set1_r(1.0/6.0);
+    gmx_simd_real_t twelveth_S = gmx_simd_set1_r(1.0/12.0);
 #endif
 
 #if defined LJ_CUT && defined CALC_ENERGIES
@@ -348,8 +326,10 @@
     lj_ewaldcoeff6_6 = lj_ewaldcoeff2*lj_ewaldcoeff2*lj_ewaldcoeff2/6;
     lje_c2_S         = gmx_simd_set1_r(lj_ewaldcoeff2);
     lje_c6_6_S       = gmx_simd_set1_r(lj_ewaldcoeff6_6);
+#ifdef CALC_ENERGIES
     /* Determine the grid potential at the cut-off */
-    lje_vc_S         = gmx_simd_set1_r(ic->sh_lj_ewald);
+    gmx_simd_real_t lje_vc_S = gmx_simd_set1_r(ic->sh_lj_ewald);
+#endif
 #endif
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
@@ -361,16 +341,16 @@
     avoid_sing_S = gmx_simd_set1_r(NBNXN_AVOID_SING_R2_INC);
 
     q                   = nbat->q;
-    type                = nbat->type;
     facel               = ic->epsfac;
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
 
 #ifdef FIX_LJ_C
-    pvdw_c6  = gmx_simd_align_real(pvdw_array);
-    pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
+    real  pvdw_array[2*UNROLLI*UNROLLJ+3];
+    real *pvdw_c6  = gmx_simd_align_real(pvdw_array);
+    real *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
 
-    for (jp = 0; jp < UNROLLJ; jp++)
+    for (int jp = 0; jp < UNROLLJ; jp++)
     {
         pvdw_c6 [0*UNROLLJ+jp] = nbat->nbfp[0*2];
         pvdw_c6 [1*UNROLLJ+jp] = nbat->nbfp[0*2];
@@ -382,15 +362,15 @@
         pvdw_c12[2*UNROLLJ+jp] = nbat->nbfp[0*2+1];
         pvdw_c12[3*UNROLLJ+jp] = nbat->nbfp[0*2+1];
     }
-    c6_S0            = gmx_simd_load_r(pvdw_c6 +0*UNROLLJ);
-    c6_S1            = gmx_simd_load_r(pvdw_c6 +1*UNROLLJ);
-    c6_S2            = gmx_simd_load_r(pvdw_c6 +2*UNROLLJ);
-    c6_S3            = gmx_simd_load_r(pvdw_c6 +3*UNROLLJ);
+    gmx_simd_real_t c6_S0  = gmx_simd_load_r(pvdw_c6 +0*UNROLLJ);
+    gmx_simd_real_t c6_S1  = gmx_simd_load_r(pvdw_c6 +1*UNROLLJ);
+    gmx_simd_real_t c6_S2  = gmx_simd_load_r(pvdw_c6 +2*UNROLLJ);
+    gmx_simd_real_t c6_S3  = gmx_simd_load_r(pvdw_c6 +3*UNROLLJ);
 
-    c12_S0           = gmx_simd_load_r(pvdw_c12+0*UNROLLJ);
-    c12_S1           = gmx_simd_load_r(pvdw_c12+1*UNROLLJ);
-    c12_S2           = gmx_simd_load_r(pvdw_c12+2*UNROLLJ);
-    c12_S3           = gmx_simd_load_r(pvdw_c12+3*UNROLLJ);
+    gmx_simd_real_t c12_S0 = gmx_simd_load_r(pvdw_c12+0*UNROLLJ);
+    gmx_simd_real_t c12_S1 = gmx_simd_load_r(pvdw_c12+1*UNROLLJ);
+    gmx_simd_real_t c12_S2 = gmx_simd_load_r(pvdw_c12+2*UNROLLJ);
+    gmx_simd_real_t c12_S3 = gmx_simd_load_r(pvdw_c12+3*UNROLLJ);
 #endif /* FIX_LJ_C */
 
 #ifdef ENERGY_GROUPS
@@ -422,13 +402,17 @@
         shZ_S = gmx_simd_load1_r(shiftvec+ish3+2);
 
 #if UNROLLJ <= 4
-        sci              = ci*STRIDE;
-        scix             = sci*DIM;
-        sci2             = sci*2;
+        int sci          = ci*STRIDE;
+        int scix         = sci*DIM;
+#if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
+        int sci2         = sci*2;
+#endif
 #else
-        sci              = (ci>>1)*STRIDE;
-        scix             = sci*DIM + (ci & 1)*(STRIDE>>1);
-        sci2             = sci*2 + (ci & 1)*(STRIDE>>1);
+        int sci          = (ci>>1)*STRIDE;
+        int scix         = sci*DIM + (ci & 1)*(STRIDE>>1);
+#if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
+        int sci2         = sci*2 + (ci & 1)*(STRIDE>>1);
+#endif
         sci             += (ci & 1)*(STRIDE>>1);
 #endif
 
@@ -441,11 +425,6 @@
         do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
         do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
         half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
-#ifdef LJ_EWALD_GEOM
-        do_self = TRUE;
-#else
-        do_self = do_coul;
-#endif
 
 #ifdef ENERGY_GROUPS
         egps_i = nbat->energrp[ci];
@@ -462,6 +441,11 @@
 #endif
 
 #ifdef CALC_ENERGIES
+#ifdef LJ_EWALD_GEOM
+        gmx_bool do_self = TRUE;
+#else
+        gmx_bool do_self = do_coul;
+#endif
 #if UNROLLJ == 4
         if (do_self && l_cj[nbln->cj_ind_start].cj == ci_sh)
 #endif
@@ -528,8 +512,8 @@
 #endif
 
         /* Load i atom data */
-        sciy             = scix + STRIDE;
-        sciz             = sciy + STRIDE;
+        int sciy         = scix + STRIDE;
+        int sciz         = sciy + STRIDE;
         ix_S0            = gmx_simd_add_r(gmx_simd_load1_r(x+scix), shX_S);
         ix_S1            = gmx_simd_add_r(gmx_simd_load1_r(x+scix+1), shX_S);
         ix_S2            = gmx_simd_add_r(gmx_simd_load1_r(x+scix+2), shX_S);
@@ -562,23 +546,26 @@
         seps_i_S3      = gmx_simd_load1_r(ljc+sci2+STRIDE+3);
 #else
 #ifdef LJ_COMB_GEOM
-        c6s_S0         = gmx_simd_load1_r(ljc+sci2+0);
-        c6s_S1         = gmx_simd_load1_r(ljc+sci2+1);
+        gmx_simd_real_t c6s_S0 = gmx_simd_load1_r(ljc+sci2+0);
+        gmx_simd_real_t c6s_S1 = gmx_simd_load1_r(ljc+sci2+1);
+        gmx_simd_real_t c6s_S2, c6s_S3;
         if (!half_LJ)
         {
             c6s_S2     = gmx_simd_load1_r(ljc+sci2+2);
             c6s_S3     = gmx_simd_load1_r(ljc+sci2+3);
         }
-        c12s_S0        = gmx_simd_load1_r(ljc+sci2+STRIDE+0);
-        c12s_S1        = gmx_simd_load1_r(ljc+sci2+STRIDE+1);
+        gmx_simd_real_t c12s_S0 = gmx_simd_load1_r(ljc+sci2+STRIDE+0);
+        gmx_simd_real_t c12s_S1 = gmx_simd_load1_r(ljc+sci2+STRIDE+1);
+        gmx_simd_real_t c12s_S2, c12s_S3;
         if (!half_LJ)
         {
             c12s_S2    = gmx_simd_load1_r(ljc+sci2+STRIDE+2);
             c12s_S3    = gmx_simd_load1_r(ljc+sci2+STRIDE+3);
         }
 #else
-        nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*nbfp_stride;
-        nbfp1     = nbfp_ptr + type[sci+1]*nbat->ntype*nbfp_stride;
+        const real *nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*nbfp_stride;
+        const real *nbfp1     = nbfp_ptr + type[sci+1]*nbat->ntype*nbfp_stride;
+        const real *nbfp2     = NULL, *nbfp3 = NULL;
         if (!half_LJ)
         {
             nbfp2 = nbfp_ptr + type[sci+2]*nbat->ntype*nbfp_stride;
@@ -588,8 +575,9 @@
 #endif
 #ifdef LJ_EWALD_GEOM
         /* We need the geometrically combined C6 for the PME grid correction */
-        c6s_S0 = gmx_simd_load1_r(ljc+sci2+0);
-        c6s_S1 = gmx_simd_load1_r(ljc+sci2+1);
+        gmx_simd_real_t c6s_S0 = gmx_simd_load1_r(ljc+sci2+0);
+        gmx_simd_real_t c6s_S1 = gmx_simd_load1_r(ljc+sci2+1);
+        gmx_simd_real_t c6s_S2, c6s_S3;
         if (!half_LJ)
         {
             c6s_S2 = gmx_simd_load1_r(ljc+sci2+2);
@@ -598,8 +586,10 @@
 #endif
 
         /* Zero the potential energy for this list */
-        Vvdwtot_S        = gmx_simd_setzero_r();
-        vctot_S          = gmx_simd_setzero_r();
+#ifdef CALC_ENERGIES
+        gmx_simd_real_t Vvdwtot_S = gmx_simd_setzero_r();
+        gmx_simd_real_t vctot_S   = gmx_simd_setzero_r();
+#endif
 
         /* Clear i atom forces */
         fix_S0           = gmx_simd_setzero_r();

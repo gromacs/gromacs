@@ -40,22 +40,22 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
 int gmx_rotacf(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] calculates the rotational correlation function",
         "for molecules. Atom triplets (i,j,k) must be given in the index",
         "file, defining two vectors ij and jk. The rotational ACF",
@@ -74,40 +74,40 @@ int gmx_rotacf(int argc, char *argv[])
         "file. The correlation function will be fitted from 2.5 ps until 20.0 ps",
         "to a two-parameter exponential."
     };
-    static gmx_bool bVec    = FALSE, bAver = TRUE;
+    static gmx_bool   bVec    = FALSE, bAver = TRUE;
 
-    t_pargs         pa[] = {
+    t_pargs           pa[] = {
         { "-d",   FALSE, etBOOL, {&bVec},
           "Use index doublets (vectors) for correlation function instead of triplets (planes)" },
         { "-aver", FALSE, etBOOL, {&bAver},
           "Average over molecules" }
     };
 
-    t_trxstatus    *status;
-    int             isize;
-    atom_id        *index;
-    char           *grpname;
-    rvec           *x, *x_s;
-    matrix          box;
-    real          **c1;
-    rvec            xij, xjk, n;
-    int             i, m, teller, n_alloc, natoms, nvec, ai, aj, ak;
-    unsigned long   mode;
-    real            t, t0, t1, dt;
-    gmx_rmpbc_t     gpbc = NULL;
-    t_topology     *top;
-    int             ePBC;
-    t_filenm        fnm[] = {
+    t_trxstatus      *status;
+    int               isize;
+    atom_id          *index;
+    char             *grpname;
+    rvec             *x, *x_s;
+    matrix            box;
+    real            **c1;
+    rvec              xij, xjk, n;
+    int               i, m, teller, n_alloc, natoms, nvec, ai, aj, ak;
+    unsigned long     mode;
+    real              t, t0, t1, dt;
+    gmx_rmpbc_t       gpbc = NULL;
+    t_topology       *top;
+    int               ePBC;
+    t_filenm          fnm[] = {
         { efTRX, "-f", NULL,  ffREAD  },
         { efTPR, NULL, NULL,  ffREAD },
         { efNDX, NULL, NULL,  ffREAD  },
         { efXVG, "-o", "rotacf",  ffWRITE }
     };
 #define NFILE asize(fnm)
-    int             npargs;
-    t_pargs        *ppa;
+    int               npargs;
+    t_pargs          *ppa;
 
-    output_env_t    oenv;
+    gmx_output_env_t *oenv;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);

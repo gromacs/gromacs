@@ -42,18 +42,18 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -173,7 +173,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
                            int axis, int nr_grps, real *slWidth,
                            t_electron eltab[], int nr, gmx_bool bCenter,
                            atom_id *index_center, int ncenter,
-                           gmx_bool bRelative, const output_env_t oenv)
+                           gmx_bool bRelative, const gmx_output_env_t *oenv)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -330,7 +330,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
                   double ***slDensity, int *nslices, t_topology *top, int ePBC,
                   int axis, int nr_grps, real *slWidth, gmx_bool bCenter,
                   atom_id *index_center, int ncenter,
-                  gmx_bool bRelative, const output_env_t oenv)
+                  gmx_bool bRelative, const gmx_output_env_t *oenv)
 {
     rvec        *x0;            /* coordinates without pbc */
     matrix       box;           /* box (3x3) */
@@ -479,7 +479,7 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
                   int nr_grps, char *grpname[], real slWidth,
                   const char **dens_opt,
                   gmx_bool bCenter, gmx_bool bRelative, gmx_bool bSymmetrize,
-                  const output_env_t oenv)
+                  const gmx_output_env_t *oenv)
 {
     FILE       *den;
     const char *title  = NULL;
@@ -501,8 +501,6 @@ void plot_density(double *slDensity[], const char *afile, int nslices,
     {
         xlabel = bRelative ? "Average coordinate (nm)" : "Coordinate (nm)";
     }
-
-    GMX_RELEASE_ASSERT(dens_opt[0] != NULL, "Option setting inconsistency; dens_opt[0] is NULL");
 
     switch (dens_opt[0][0])
     {
@@ -621,7 +619,7 @@ int gmx_density(int argc, char *argv[])
         "",
     };
 
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     static const char *dens_opt[] =
     { NULL, "mass", "number", "charge", "electron", NULL };
     static int         axis        = 2;  /* normal to memb. default z  */
@@ -683,6 +681,8 @@ int gmx_density(int argc, char *argv[])
     {
         return 0;
     }
+
+    GMX_RELEASE_ASSERT(dens_opt[0] != NULL, "Option setting inconsistency; dens_opt[0] is NULL");
 
     if (bSymmetrize && !bCenter)
     {

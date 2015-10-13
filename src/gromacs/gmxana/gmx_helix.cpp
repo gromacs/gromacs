@@ -40,6 +40,7 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
@@ -48,13 +49,12 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/hxprops.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -120,7 +120,7 @@ int gmx_helix(int argc, char *argv[])
         real        val;
     } t_xvgrfile;
 
-    t_xvgrfile     xf[efhNR] = {
+    t_xvgrfile        xf[efhNR] = {
         { NULL, NULL, TRUE,  "radius",  "Helix radius",               NULL, "r (nm)", 0.0 },
         { NULL, NULL, TRUE,  "twist",   "Twist per residue",          NULL, "Angle (deg)", 0.0 },
         { NULL, NULL, TRUE,  "rise",    "Rise per residue",           NULL, "Rise (nm)", 0.0 },
@@ -140,22 +140,22 @@ int gmx_helix(int argc, char *argv[])
         { NULL, NULL, FALSE,  "helicity", "Helicity per Residue",     "Residue", "% of time", 0.0 }
     };
 
-    output_env_t   oenv;
-    char           buf[54];
-    t_trxstatus   *status;
-    int            natoms, nres;
-    t_bb          *bb;
-    int            i, j, nall, nbb, nca, teller;
-    atom_id       *bbindex, *caindex, *allindex;
-    t_topology    *top;
-    int            ePBC;
-    rvec          *x, *xref;
-    real           t;
-    real           rms;
-    matrix         box;
-    gmx_rmpbc_t    gpbc = NULL;
-    gmx_bool       bRange;
-    t_filenm       fnm[] = {
+    gmx_output_env_t *oenv;
+    char              buf[54];
+    t_trxstatus      *status;
+    int               natoms, nres;
+    t_bb             *bb;
+    int               i, j, nall, nbb, nca, teller;
+    atom_id          *bbindex, *caindex, *allindex;
+    t_topology       *top;
+    int               ePBC;
+    rvec             *x, *xref;
+    real              t;
+    real              rms;
+    matrix            box;
+    gmx_rmpbc_t       gpbc = NULL;
+    gmx_bool          bRange;
+    t_filenm          fnm[] = {
         { efTPR, NULL,  NULL,   ffREAD  },
         { efNDX, NULL,  NULL,   ffREAD  },
         { efTRX, "-f",  NULL,   ffREAD  },
@@ -208,7 +208,7 @@ int gmx_helix(int argc, char *argv[])
     /* Read reference frame from tpx file to compute helix length */
     snew(xref, top->atoms.nr);
     read_tpx(ftp2fn(efTPR, NFILE, fnm),
-             NULL, NULL, &natoms, xref, NULL, NULL, NULL);
+             NULL, NULL, &natoms, xref, NULL, NULL);
     calc_hxprops(nres, bb, xref);
     do_start_end(nres, bb, &nbb, bbindex, &nca, caindex, bRange, rStart, rEnd);
     sfree(xref);

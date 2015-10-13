@@ -31,15 +31,20 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
+#include "gmxpre.h"
 
-#include "readir.h"
+#include <stdlib.h>
+#include <string.h>
+
+#include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/smalloc.h"
 
 void read_drude_opts(int *ninp_p, t_inpfile **inp_p, t_drude *drude, warninp_t wi)
 {
-    const char *tmp;
     int        ninp;
     t_inpfile *inp;
 

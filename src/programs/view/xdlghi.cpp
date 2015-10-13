@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,12 +38,12 @@
 
 #include "xdlghi.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -193,10 +193,10 @@ static void AddDlgItemGroups(t_dlg *dlg, int gridx, int gridy,
             {
                 if (!item->list)
                 {
-                    printf("Error: empty list with non-empty nitem (%d)\n", item->nitem);
-                    printf("       at grid point: %d,%d\n", x, y);
-                    printf("       with size: %dx%d\n", item->w, item->h);
-                    exit(1);
+                    std::printf("Error: empty list with non-empty nitem (%d)\n", item->nitem);
+                    std::printf("       at grid point: %d,%d\n", x, y);
+                    std::printf("       with size: %dx%d\n", item->w, item->h);
+                    std::exit(1);
                 }
                 else
                 {
@@ -213,8 +213,8 @@ static void AddDlgItemGroups(t_dlg *dlg, int gridx, int gridy,
     h1 = gridy*h;
     SetDlgSize(dlg, w1, h1, bAutoPosition);
 #ifdef DEBUG
-    printf("Dimensions of grid cell: %8.3f x %8.3f\n", w, h);
-    printf("Dimensions of window:    %d x %d\n", w1, h1);
+    std::printf("Dimensions of grid cell: %8.3f x %8.3f\n", w, h);
+    std::printf("Dimensions of window:    %d x %d\n", w1, h1);
 #endif
 
     for (x = 0; (x < gridx); x++)
@@ -229,7 +229,7 @@ static void AddDlgItemGroups(t_dlg *dlg, int gridx, int gridy,
                 w1 = item->w*w;
                 h1 = item->h*h;
 #ifdef DEBUG
-                printf("New size: %d x %d at %d, %d\n", w1, h1, x1, y1);
+                std::printf("New size: %d x %d at %d, %d\n", w1, h1, x1, y1);
 #endif
                 SetDlgItemSize(dlg, item->list[0]->ID, w1, h1);
                 SetDlgItemPos(dlg, item->list[0]->ID, x1, y1);
@@ -277,13 +277,13 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
                                     x, (*y), 0, 0, 0));
             break;
         case edlgRB:
-            strcpy(buf, fitem->def);
+            std::strcpy(buf, fitem->def);
             iSel = -1;
             for (i = 0; (i < fitem->nname); i++)
             {
                 char buf2[100];
 
-                strcpy(buf2, fitem->name[i]);
+                std::strcpy(buf2, fitem->name[i]);
                 buf2[strlen(buf)] = '\0'; /* truncate itemname */
                 if (gmx_strcasecmp(buf2, buf) == 0)
                 {
@@ -318,7 +318,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
                                          GroupID, x, (*y), 0, 0, 0));
             break;
         case edlgET:
-            slen = strlen(fitem->name[0])+strlen(fitem->def);
+            slen = std::strlen(fitem->name[0])+strlen(fitem->def);
             AddListItem(list, CreateEditText(x11, fitem->name[0], slen, fitem->def,
                                              (*ID)++, GroupID, x, (*y), 0, 0, 0));
             break;

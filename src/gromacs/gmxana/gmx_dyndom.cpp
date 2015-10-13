@@ -42,12 +42,13 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/3dtransforms.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -146,7 +147,7 @@ static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
 
 int gmx_dyndom(int argc, char *argv[])
 {
-    const char  *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] reads a [REF].pdb[ref] file output from DynDom",
         "(http://www.cmp.uea.ac.uk/dyndom/).",
         "It reads the coordinates, the coordinates of the rotation axis,",
@@ -166,12 +167,12 @@ int gmx_dyndom(int argc, char *argv[])
         "inspection, and energy minimization may be necessary to",
         "validate the structure."
     };
-    static real  trans0 = 0;
-    static rvec  head   = { 0, 0, 0 };
-    static rvec  tail   = { 0, 0, 0 };
-    static real  angle0 = 0, angle1 = 0, maxangle = 0;
-    static int   label  = 0, nframes = 11;
-    t_pargs      pa[]   = {
+    static real       trans0 = 0;
+    static rvec       head   = { 0, 0, 0 };
+    static rvec       tail   = { 0, 0, 0 };
+    static real       angle0 = 0, angle1 = 0, maxangle = 0;
+    static int        label  = 0, nframes = 11;
+    t_pargs           pa[]   = {
         { "-firstangle",    FALSE, etREAL, {&angle0},
           "Angle of rotation about rotation vector" },
         { "-lastangle",    FALSE, etREAL, {&angle1},
@@ -187,17 +188,16 @@ int gmx_dyndom(int argc, char *argv[])
         { "-tail",     FALSE, etRVEC, {tail},
           "Last atom of the arrow vector" }
     };
-    int          i, j, natoms, isize;
-    t_trxstatus *status;
-    atom_id     *index = NULL, *index_all;
-    char         title[256], *grpname;
-    t_atoms      atoms;
-    real         angle, trans;
-    rvec        *x, *v, *xout, *vout;
-    matrix       box;
-    output_env_t oenv;
+    int               i, j, natoms, isize;
+    t_trxstatus      *status;
+    atom_id          *index = NULL, *index_all;
+    char             *grpname;
+    real              angle, trans;
+    rvec             *x, *v, *xout, *vout;
+    matrix            box;
+    gmx_output_env_t *oenv;
 
-    t_filenm     fnm[] = {
+    t_filenm          fnm[] = {
         { efPDB, "-f", "dyndom",  ffREAD },
         { efTRO, "-o", "rotated", ffWRITE },
         { efNDX, "-n", "domains", ffREAD }
@@ -215,11 +215,15 @@ int gmx_dyndom(int argc, char *argv[])
         gmx_fatal(FARGS, "maxangle not given");
     }
 
-    get_stx_coordnum (opt2fn("-f", NFILE, fnm), &natoms);
-    init_t_atoms(&atoms, natoms, TRUE);
-    snew(x, natoms);
-    snew(v, natoms);
-    read_stx_conf(opt2fn("-f", NFILE, fnm), title, &atoms, x, v, NULL, box);
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, NULL, &x, &v, box, FALSE);
+    t_atoms  &atoms = top->atoms;
+    if (atoms.pdbinfo == NULL)
+    {
+        snew(atoms.pdbinfo, atoms.nr);
+    }
+    natoms = atoms.nr;
     snew(xout, natoms);
     snew(vout, natoms);
 

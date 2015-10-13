@@ -40,17 +40,13 @@
 
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/oenv.h"
-#include "gromacs/legacyheaders/readinp.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if 0 /* avoid screwing up indentation */
-}
-#endif
 
 struct gmx_mtop_t;
+struct gmx_output_env_t;
 struct t_atoms;
 struct t_fileio;
 struct t_topology;
@@ -202,7 +198,7 @@ int check_times(real t);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
-int read_first_frame(const output_env_t oenv, t_trxstatus **status,
+int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                      const char *fn, struct t_trxframe *fr, int flags);
 /* Read the first frame which is in accordance with flags, which are
  * defined further up in this file.
@@ -212,13 +208,13 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
  * Returns TRUE when succeeded, FALSE otherwise.
  */
 
-gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status,
+gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status,
                          struct t_trxframe *fr);
 /* Reads the next frame which is in accordance with fr->flags.
  * Returns TRUE when succeeded, FALSE otherwise.
  */
 
-int read_first_x(const output_env_t oenv, t_trxstatus **status,
+int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status,
                  const char *fn, real *t, rvec **x, matrix box);
 /* These routines read first coordinates and box, and allocates
  * memory for the coordinates, for a trajectory file.
@@ -226,7 +222,7 @@ int read_first_x(const output_env_t oenv, t_trxstatus **status,
  * The integer in status should be passed to calls of read_next_x
  */
 
-gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t, rvec x[], matrix box);
+gmx_bool read_next_x(const gmx_output_env_t *oenv, t_trxstatus *status, real *t, rvec x[], matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.

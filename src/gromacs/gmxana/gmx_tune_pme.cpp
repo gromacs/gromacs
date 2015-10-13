@@ -50,26 +50,24 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/calcgrid.h"
+#include "gromacs/gmxlib/calcgrid.h"
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
-#include "gromacs/legacyheaders/perf_est.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/perf_est.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "gmx_ana.h"
 
 /* Enum for situations that can occur during log file parsing, the
  * corresponding string entries can be found in do_the_tests() in
@@ -603,7 +601,6 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
 {
     char      *cp;
     const char def_mpirun[]   = "mpirun";
-    const char def_mdrun[]    = "mdrun";
 
     const char empty_mpirun[] = "";
 
@@ -624,13 +621,19 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_m
         *cmd_mpirun = gmx_strdup(empty_mpirun);
     }
 
-    if ( (cp = getenv("MDRUN" )) != NULL)
+    if (*cmd_mdrun == NULL)
     {
-        *cmd_mdrun  = gmx_strdup(cp);
-    }
-    else
-    {
-        *cmd_mdrun  = gmx_strdup(def_mdrun);
+        /* The use of MDRUN is deprecated, but made available in 5.1
+           for backward compatibility. It may be removed in a future
+           version. */
+        if ( (cp = getenv("MDRUN" )) != NULL)
+        {
+            *cmd_mdrun = gmx_strdup(cp);
+        }
+        else
+        {
+            gmx_fatal(FARGS, "The way to call mdrun must be set in the -mdrun command-line flag.");
+        }
     }
 }
 
@@ -872,7 +875,7 @@ static void modify_PMEsettings(
     char          buf[200];
 
     snew(ir, 1);
-    read_tpx_state(fn_best_tpr, ir, &state, NULL, &mtop);
+    read_tpx_state(fn_best_tpr, ir, &state, &mtop);
 
     /* Reset nsteps and init_step to the value of the input .tpr file */
     ir->nsteps    = simsteps;
@@ -936,7 +939,7 @@ static void make_benchmark_tprs(
 
 
     snew(ir, 1);
-    read_tpx_state(fn_sim_tpr, ir, &state, NULL, &mtop);
+    read_tpx_state(fn_sim_tpr, ir, &state, &mtop);
 
     /* Check if some kind of PME was chosen */
     if (EEL_PME(ir->coulombtype) == FALSE)
@@ -2058,7 +2061,7 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
 
 
     /* Check tpr file for options that trigger extra output files */
-    read_tpx_state(opt2fn("-s", nfile, fnm), &ir, &state, NULL, &mtop);
+    read_tpx_state(opt2fn("-s", nfile, fnm), &ir, &state, &mtop);
     bFree = (efepNO  != ir.efep );
     bNM   = (eiNM    == ir.eI   );
     bSwap = (eswapNO != ir.eSwapCoords);
@@ -2138,14 +2141,20 @@ int gmx_tune_pme(int argc, char *argv[])
         "part of the Ewald sum. ",
         "Simply pass your [REF].tpr[ref] file to [THISMODULE] together with other options",
         "for [gmx-mdrun] as needed.[PAR]",
-        "Which executables are used can be set in the environment variables",
-        "MPIRUN and MDRUN. If these are not present, 'mpirun' and 'mdrun'",
-        "will be used as defaults. Note that for certain MPI frameworks you",
-        "need to provide a machine- or hostfile. This can also be passed",
+        "[THISMODULE] needs to call [gmx-mdrun] and so requires that you",
+        "specify how to call mdrun with the argument to the [TT]-mdrun[tt]",
+        "parameter. Depending how you have built GROMACS, values such as",
+        "'gmx mdrun', 'gmx_d mdrun', or 'mdrun_mpi' might be needed.[PAR]",
+        "The program that runs MPI programs can be set in the environment variable",
+        "MPIRUN (defaults to 'mpirun'). Note that for certain MPI frameworks,",
+        "you need to provide a machine- or hostfile. This can also be passed",
         "via the MPIRUN variable, e.g.[PAR]",
-        "[TT]export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"[tt][PAR]",
+        "[TT]export MPIRUN=\"/usr/local/mpirun -machinefile hosts\"[tt]",
+        "Note that in such cases it is normally necessary to compile",
+        "and/or run [THISMODULE] without MPI support, so that it can call",
+        "the MPIRUN program.[PAR]",
         "Before doing the actual benchmark runs, [THISMODULE] will do a quick",
-        "check whether mdrun works as expected with the provided parallel settings",
+        "check whether [gmx-mdrun] works as expected with the provided parallel settings",
         "if the [TT]-check[tt] option is activated (the default).",
         "Please call [THISMODULE] with the normal options you would pass to",
         "[gmx-mdrun] and add [TT]-np[tt] for the number of ranks to perform the",
@@ -2300,18 +2309,20 @@ int gmx_tune_pme(int argc, char *argv[])
     const char     *npmevalues_opt[] =
     { NULL, "auto", "all", "subset", NULL };
 
-    gmx_bool     bAppendFiles          = TRUE;
-    gmx_bool     bKeepAndNumCPT        = FALSE;
-    gmx_bool     bResetCountersHalfWay = FALSE;
-    gmx_bool     bBenchmark            = TRUE;
-    gmx_bool     bCheck                = TRUE;
+    gmx_bool          bAppendFiles          = TRUE;
+    gmx_bool          bKeepAndNumCPT        = FALSE;
+    gmx_bool          bResetCountersHalfWay = FALSE;
+    gmx_bool          bBenchmark            = TRUE;
+    gmx_bool          bCheck                = TRUE;
 
-    output_env_t oenv = NULL;
+    gmx_output_env_t *oenv = NULL;
 
-    t_pargs      pa[] = {
+    t_pargs           pa[] = {
         /***********************/
         /* g_tune_pme options: */
         /***********************/
+        { "-mdrun",    FALSE, etSTR,  {&cmd_mdrun},
+          "Command line to run a simulation, e.g. 'gmx mdrun' or 'mdrun_mpi'" },
         { "-np",       FALSE, etINT,  {&nnodes},
           "Number of ranks to run the tests on (must be > 2 for separate PME ranks)" },
         { "-npstring", FALSE, etENUM, {procstring},

@@ -41,16 +41,20 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/energy.h"
+#include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/update.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1466,6 +1470,7 @@ void berendsen_pscale(t_inputrec *ir, matrix mu,
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (n = start; n < start+nr_atoms; n++)
     {
+        // Trivial OpenMP region that does not throw
         int g;
 
         if (cFREEZE == NULL)

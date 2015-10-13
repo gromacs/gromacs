@@ -38,22 +38,23 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static void get_refx(output_env_t oenv, const char *trxfn, int nfitdim, int skip,
+static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int skip,
                      int gnx, int *index,
                      gmx_bool bMW, t_topology *top, int ePBC, rvec *x_ref)
 {
@@ -174,7 +175,7 @@ static void get_refx(output_env_t oenv, const char *trxfn, int nfitdim, int skip
 
 int gmx_rotmat(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] plots the rotation matrix required for least squares fitting",
         "a conformation onto the reference conformation provided with",
         "[TT]-s[tt]. Translation is removed before fitting.",
@@ -200,11 +201,11 @@ int gmx_rotmat(int argc, char *argv[])
         "Option [TT]-fitxy[tt] fits in the [IT]x-y[it] plane before determining",
         "the rotation matrix."
     };
-    const char     *reffit[] =
+    const char       *reffit[] =
     { NULL, "none", "xyz", "xy", NULL };
-    static int      skip   = 1;
-    static gmx_bool bFitXY = FALSE, bMW = TRUE;
-    t_pargs         pa[]   = {
+    static int        skip   = 1;
+    static gmx_bool   bFitXY = FALSE, bMW = TRUE;
+    t_pargs           pa[]   = {
         { "-ref", FALSE, etENUM, {reffit},
           "Determine the optimal reference structure" },
         { "-skip", FALSE, etINT, {&skip},
@@ -214,23 +215,23 @@ int gmx_rotmat(int argc, char *argv[])
         { "-mw", FALSE, etBOOL, {&bMW},
           "Use mass weighted fitting" }
     };
-    FILE           *out;
-    t_trxstatus    *status;
-    t_topology      top;
-    int             ePBC;
-    rvec           *x_ref, *x;
-    matrix          box, R;
-    real            t;
-    int             natoms, i;
-    char           *grpname, title[256];
-    int             gnx;
-    gmx_rmpbc_t     gpbc = NULL;
-    atom_id        *index;
-    output_env_t    oenv;
-    real           *w_rls;
-    const char     *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
+    FILE             *out;
+    t_trxstatus      *status;
+    t_topology        top;
+    int               ePBC;
+    rvec             *x_ref, *x;
+    matrix            box, R;
+    real              t;
+    int               natoms, i;
+    char             *grpname;
+    int               gnx;
+    gmx_rmpbc_t       gpbc = NULL;
+    atom_id          *index;
+    gmx_output_env_t *oenv;
+    real             *w_rls;
+    const char       *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
 #define NLEG asize(leg)
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTRX, "-f",   NULL,       ffREAD },
         { efTPS, NULL,   NULL,       ffREAD },
         { efNDX, NULL,   NULL,       ffOPTRD },
@@ -244,7 +245,7 @@ int gmx_rotmat(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x_ref, NULL, box, bMW);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x_ref, NULL, box, bMW);
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
 

@@ -38,7 +38,10 @@
 #ifndef _cmat_h
 #define _cmat_h
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_output_env_t;
 
 #ifdef __cplusplus
 extern "C"
@@ -85,9 +88,9 @@ extern real mat_energy(t_mat *mat);
 extern void swap_mat(t_mat *m);
 
 extern void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
-                          const output_env_t oenv);
+                          const gmx_output_env_t *oenv);
 
-extern void rmsd_distribution(const char *fn, t_mat *m, const output_env_t oenv);
+extern void rmsd_distribution(const char *fn, t_mat *m, const gmx_output_env_t *oenv);
 
 extern t_clustid *new_clustid(int n1);
 

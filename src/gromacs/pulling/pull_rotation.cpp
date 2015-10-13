@@ -51,19 +51,21 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_ga2la.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/txtdump.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
+#include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/sim_util.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"
@@ -849,7 +851,7 @@ static void add_to_string_aligned(char **str, char *buf)
 
 /* Open output file and print some general information about the rotation groups.
  * Call on master only */
-static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
+static FILE *open_rot_out(const char *fn, t_rot *rot, const gmx_output_env_t *oenv)
 {
     FILE           *fp;
     int             g, nsets;
@@ -3664,7 +3666,7 @@ static int calc_mpi_bufsize(t_rot *rot)
 
 
 extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-                     t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const output_env_t oenv,
+                     t_commrec *cr, rvec *x, matrix box, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
                      gmx_bool bVerbose, unsigned long Flags)
 {
     t_rot          *rot;

@@ -43,7 +43,6 @@
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
@@ -67,89 +66,6 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn)
     }
 
     return i;
-}
-
-void init_inputrec(t_inputrec *ir)
-{
-    std::memset(ir, 0, sizeof(*ir));
-    snew(ir->fepvals, 1);
-    snew(ir->expandedvals, 1);
-    snew(ir->simtempvals, 1);
-}
-
-static void done_pull_group(t_pull_group *pgrp)
-{
-    if (pgrp->nat > 0)
-    {
-        sfree(pgrp->ind);
-        sfree(pgrp->weight);
-    }
-}
-
-static void done_pull_params(pull_params_t *pull)
-{
-    int i;
-
-    for (i = 0; i < pull->ngroup+1; i++)
-    {
-        done_pull_group(pull->group);
-    }
-
-    sfree(pull->group);
-    sfree(pull->coord);
-}
-
-void done_inputrec(t_inputrec *ir)
-{
-    int m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        if (ir->ex[m].a)
-        {
-            sfree(ir->ex[m].a);
-        }
-        if (ir->ex[m].phi)
-        {
-            sfree(ir->ex[m].phi);
-        }
-        if (ir->et[m].a)
-        {
-            sfree(ir->et[m].a);
-        }
-        if (ir->et[m].phi)
-        {
-            sfree(ir->et[m].phi);
-        }
-    }
-
-    sfree(ir->opts.nrdf);
-    sfree(ir->opts.ref_t);
-    sfree(ir->opts.annealing);
-    sfree(ir->opts.anneal_npoints);
-    sfree(ir->opts.anneal_time);
-    sfree(ir->opts.anneal_temp);
-    sfree(ir->opts.tau_t);
-    sfree(ir->opts.acc);
-    sfree(ir->opts.nFreeze);
-    sfree(ir->opts.QMmethod);
-    sfree(ir->opts.QMbasis);
-    sfree(ir->opts.QMcharge);
-    sfree(ir->opts.QMmult);
-    sfree(ir->opts.bSH);
-    sfree(ir->opts.CASorbitals);
-    sfree(ir->opts.CASelectrons);
-    sfree(ir->opts.SAon);
-    sfree(ir->opts.SAoff);
-    sfree(ir->opts.SAsteps);
-    sfree(ir->opts.bOPT);
-    sfree(ir->opts.bTS);
-
-    if (ir->pull)
-    {
-        done_pull_params(ir->pull);
-        sfree(ir->pull);
-    }
 }
 
 static void zero_history(history_t *hist)

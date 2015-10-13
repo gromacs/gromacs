@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,11 +38,11 @@
 
 #include "pulldown.h"
 
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "popup.h"
@@ -63,7 +63,7 @@ static bool PDCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
             for (i = 0; (i < pd->nmenu); i++)
             {
                 XDrawString(x11->disp, pd->wd.self, x11->gc, pd->xpos[i], x11->font->ascent,
-                            pd->title[i], strlen(pd->title[i]));
+                            pd->title[i], std::strlen(pd->title[i]));
             }
             break;
         case ButtonPress:
@@ -105,11 +105,11 @@ t_pulldown *init_pd(t_x11 *x11, Window Parent, int width,
     for (i = 1; (i <= nmenu); i++)
     {
         pd->xpos[i] = 20+pd->xpos[i-1]+
-            XTextWidth(x11->font, title[i-1], strlen(title[i-1]));
+            XTextWidth(x11->font, title[i-1], std::strlen(title[i-1]));
     }
     if (pd->xpos[nmenu] > width)
     {
-        printf("Menu too wide\n");
+        std::printf("Menu too wide\n");
     }
 
     InitWin(&(pd->wd), 0, 0, width, XTextHeight(x11->font)+2, 0, "PullDown");

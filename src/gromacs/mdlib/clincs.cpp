@@ -46,14 +46,14 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc-simd.h"
 #include "gromacs/simd/simd.h"
@@ -63,12 +63,12 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-/* MSVC 2010 produces buggy SIMD PBC code, disable SIMD for MSVC <= 2010 */
-#if defined GMX_SIMD_HAVE_REAL && !(defined _MSC_VER && _MSC_VER < 1700) && !defined(__ICL)
+#if defined GMX_SIMD_HAVE_REAL
 #define LINCS_SIMD
 #endif
 
@@ -1458,8 +1458,12 @@ void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
 #pragma omp parallel for reduction(+: ntriangle, ncc_triangle) num_threads(li->ntask) schedule(static)
     for (th = 0; th < li->ntask; th++)
     {
-        set_lincs_matrix_task(li, &li->task[th], invmass, &ncc_triangle);
-        ntriangle = li->task[th].ntriangle;
+        try
+        {
+            set_lincs_matrix_task(li, &li->task[th], invmass, &ncc_triangle);
+            ntriangle = li->task[th].ntriangle;
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
     li->ntriangle    = ntriangle;
     li->ncc_triangle = ncc_triangle;
@@ -1478,7 +1482,8 @@ void set_lincs_matrix(struct gmx_lincsdata *li, real *invmass, real lambda)
     li->matlam = lambda;
 }
 
-static int count_triangle_constraints(t_ilist *ilist, t_blocka *at2con)
+static int count_triangle_constraints(const t_ilist  *ilist,
+                                      const t_blocka *at2con)
 {
     int      ncon1, ncon_tot;
     int      c0, a00, a01, n1, c1, a10, a11, ac1, n2, c2, a20, a21;
@@ -1576,8 +1581,8 @@ static int int_comp(const void *a, const void *b)
     return (*(int *)a) - (*(int *)b);
 }
 
-gmx_lincsdata_t init_lincs(FILE *fplog, gmx_mtop_t *mtop,
-                           int nflexcon_global, t_blocka *at2con,
+gmx_lincsdata_t init_lincs(FILE *fplog, const gmx_mtop_t *mtop,
+                           int nflexcon_global, const t_blocka *at2con,
                            gmx_bool bPLINCS, int nIter, int nProjOrder)
 {
     struct gmx_lincsdata *li;
@@ -1673,9 +1678,13 @@ gmx_lincsdata_t init_lincs(FILE *fplog, gmx_mtop_t *mtop,
 #pragma omp parallel for num_threads(li->ntask)
     for (th = 0; th < li->ntask; th++)
     {
-        /* Per thread SIMD load buffer for loading 2 simd_width rvecs */
-        snew_aligned(li->task[th].simd_buf, 2*simd_width*DIM,
-                     align_bytes);
+        try
+        {
+            /* Per thread SIMD load buffer for loading 2 simd_width rvecs */
+            snew_aligned(li->task[th].simd_buf, 2*simd_width*DIM,
+                         align_bytes);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     if (bPLINCS || li->ncg_triangle > 0)
@@ -1752,40 +1761,44 @@ static void lincs_thread_setup(struct gmx_lincsdata *li, int natoms)
 #pragma omp parallel for num_threads(li->ntask) schedule(static)
     for (th = 0; th < li->ntask; th++)
     {
-        lincs_task_t  *li_task;
-        gmx_bitmask_t  mask;
-        int            b;
-
-        li_task = &li->task[th];
-
-        if (li_task->b1 - li_task->b0 > li_task->ind_nalloc)
+        try
         {
-            li_task->ind_nalloc = over_alloc_large(li_task->b1-li_task->b0);
-            srenew(li_task->ind, li_task->ind_nalloc);
-            srenew(li_task->ind_r, li_task->ind_nalloc);
-        }
+            lincs_task_t  *li_task;
+            gmx_bitmask_t  mask;
+            int            b;
 
-        bitmask_init_low_bits(&mask, th);
+            li_task = &li->task[th];
 
-        li_task->nind   = 0;
-        li_task->nind_r = 0;
-        for (b = li_task->b0; b < li_task->b1; b++)
-        {
-            /* We let the constraint with the lowest thread index
-             * operate on atoms with constraints from multiple threads.
-             */
-            if (bitmask_is_disjoint(atf[li->bla[b*2]], mask) &&
-                bitmask_is_disjoint(atf[li->bla[b*2+1]], mask))
+            if (li_task->b1 - li_task->b0 > li_task->ind_nalloc)
             {
-                /* Add the constraint to the local atom update index */
-                li_task->ind[li_task->nind++] = b;
+                li_task->ind_nalloc = over_alloc_large(li_task->b1-li_task->b0);
+                srenew(li_task->ind, li_task->ind_nalloc);
+                srenew(li_task->ind_r, li_task->ind_nalloc);
             }
-            else
+
+            bitmask_init_low_bits(&mask, th);
+
+            li_task->nind   = 0;
+            li_task->nind_r = 0;
+            for (b = li_task->b0; b < li_task->b1; b++)
             {
-                /* Add the constraint to the rest block */
-                li_task->ind_r[li_task->nind_r++] = b;
+                /* We let the constraint with the lowest thread index
+                 * operate on atoms with constraints from multiple threads.
+                 */
+                if (bitmask_is_disjoint(atf[li->bla[b*2]], mask) &&
+                    bitmask_is_disjoint(atf[li->bla[b*2+1]], mask))
+                {
+                    /* Add the constraint to the local atom update index */
+                    li_task->ind[li_task->nind++] = b;
+                }
+                else
+                {
+                    /* Add the constraint to the rest block */
+                    li_task->ind_r[li_task->nind_r++] = b;
+                }
             }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     /* We need to copy all constraints which have not be assigned
@@ -2066,8 +2079,10 @@ static void set_matrix_indices(struct gmx_lincsdata *li,
     }
 }
 
-void set_lincs(t_idef *idef, t_mdatoms *md,
-               gmx_bool bDynamics, t_commrec *cr,
+void set_lincs(const t_idef         *idef,
+               const t_mdatoms      *md,
+               gmx_bool              bDynamics,
+               t_commrec            *cr,
                struct gmx_lincsdata *li)
 {
     int          natoms, nflexcon;
@@ -2306,20 +2321,24 @@ void set_lincs(t_idef *idef, t_mdatoms *md,
 #pragma omp parallel for num_threads(li->ntask) schedule(static)
     for (th = 0; th < li->ntask; th++)
     {
-        lincs_task_t *li_task;
-
-        li_task = &li->task[th];
-
-        if (li->ncg_triangle > 0 &&
-            li_task->b1 - li_task->b0 > li_task->tri_alloc)
+        try
         {
-            /* This is allocating too much, but it is difficult to improve */
-            li_task->tri_alloc = over_alloc_dd(li_task->b1 - li_task->b0);
-            srenew(li_task->triangle, li_task->tri_alloc);
-            srenew(li_task->tri_bits, li_task->tri_alloc);
-        }
+            lincs_task_t *li_task;
 
-        set_matrix_indices(li, li_task, &at2con, bSortMatrix);
+            li_task = &li->task[th];
+
+            if (li->ncg_triangle > 0 &&
+                li_task->b1 - li_task->b0 > li_task->tri_alloc)
+            {
+                /* This is allocating too much, but it is difficult to improve */
+                li_task->tri_alloc = over_alloc_dd(li_task->b1 - li_task->b0);
+                srenew(li_task->triangle, li_task->tri_alloc);
+                srenew(li_task->tri_bits, li_task->tri_alloc);
+            }
+
+            set_matrix_indices(li, li_task, &at2con, bSortMatrix);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     done_blocka(&at2con);
@@ -2601,16 +2620,20 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         /* The OpenMP parallel region of constrain_lincs for coords */
 #pragma omp parallel num_threads(lincsd->ntask)
         {
-            int th = gmx_omp_get_thread_num();
+            try
+            {
+                int th = gmx_omp_get_thread_num();
 
-            clear_mat(lincsd->task[th].vir_r_m_dr);
+                clear_mat(lincsd->task[th].vir_r_m_dr);
 
-            do_lincs(x, xprime, box, pbc, lincsd, th,
-                     md->invmass, cr,
-                     bCalcDHDL,
-                     ir->LincsWarnAngle, &bWarn,
-                     invdt, v, bCalcVir,
-                     th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
+                do_lincs(x, xprime, box, pbc, lincsd, th,
+                         md->invmass, cr,
+                         bCalcDHDL,
+                         ir->LincsWarnAngle, &bWarn,
+                         invdt, v, bCalcVir,
+                         th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 
         if (bLog && fplog && lincsd->nc > 0)
@@ -2702,11 +2725,15 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         /* The OpenMP parallel region of constrain_lincs for derivatives */
 #pragma omp parallel num_threads(lincsd->ntask)
         {
-            int th = gmx_omp_get_thread_num();
+            try
+            {
+                int th = gmx_omp_get_thread_num();
 
-            do_lincsp(x, xprime, min_proj, pbc, lincsd, th,
-                      md->invmass, econq, bCalcDHDL,
-                      bCalcVir, th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
+                do_lincsp(x, xprime, min_proj, pbc, lincsd, th,
+                          md->invmass, econq, bCalcDHDL,
+                          bCalcVir, th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
     }
 

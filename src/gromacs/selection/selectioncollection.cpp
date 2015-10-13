@@ -53,7 +53,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/fileio/trx.h"
-#include "gromacs/legacyheaders/oenv.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -496,28 +495,18 @@ SelectionCollection::~SelectionCollection()
 
 
 void
-SelectionCollection::initOptions(IOptionsContainer *options)
+SelectionCollection::initOptions(IOptionsContainer   *options,
+                                 SelectionTypeOption  selectionTypeOption)
 {
     const char * const debug_levels[]
         = { "no", "basic", "compile", "eval", "full" };
-
-    bool bAllowNonAtomOutput = false;
-    SelectionDataList::const_iterator iter;
-    for (iter = impl_->sc_.sel.begin(); iter != impl_->sc_.sel.end(); ++iter)
-    {
-        const internal::SelectionData &sel = **iter;
-        if (!sel.hasFlag(efSelection_OnlyAtoms))
-        {
-            bAllowNonAtomOutput = true;
-        }
-    }
 
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
     options->addOption(StringOption("selrpos")
                            .enumValueFromNullTerminatedArray(postypes)
                            .store(&impl_->rpost_).defaultValue(postypes[0])
                            .description("Selection reference positions"));
-    if (bAllowNonAtomOutput)
+    if (selectionTypeOption == IncludeSelectionTypeOption)
     {
         options->addOption(StringOption("seltype")
                                .enumValueFromNullTerminatedArray(postypes)
@@ -668,6 +657,23 @@ SelectionCollection::requiresTopology() const
     }
     return false;
 }
+
+
+bool
+SelectionCollection::requiresIndexGroups() const
+{
+    SelectionTreeElementPointer sel = impl_->sc_.root;
+    while (sel)
+    {
+        if (sel->requiresIndexGroups())
+        {
+            return true;
+        }
+        sel = sel->next;
+    }
+    return false;
+}
+
 
 SelectionList
 SelectionCollection::parseFromStdin(int count, bool bInteractive,
@@ -846,22 +852,19 @@ SelectionCollection::printTree(FILE *fp, bool bValues) const
 
 
 void
-SelectionCollection::printXvgrInfo(FILE *out, output_env_t oenv) const
+SelectionCollection::printXvgrInfo(FILE *out) const
 {
-    if (output_env_get_xvg_format(oenv) != exvgNONE)
+    const gmx_ana_selcollection_t &sc = impl_->sc_;
+    std::fprintf(out, "# Selections:\n");
+    for (int i = 0; i < sc.nvars; ++i)
     {
-        const gmx_ana_selcollection_t &sc = impl_->sc_;
-        std::fprintf(out, "# Selections:\n");
-        for (int i = 0; i < sc.nvars; ++i)
-        {
-            std::fprintf(out, "#   %s\n", sc.varstrs[i]);
-        }
-        for (size_t i = 0; i < sc.sel.size(); ++i)
-        {
-            std::fprintf(out, "#   %s\n", sc.sel[i]->selectionText());
-        }
-        std::fprintf(out, "#\n");
+        std::fprintf(out, "#   %s\n", sc.varstrs[i]);
     }
+    for (size_t i = 0; i < sc.sel.size(); ++i)
+    {
+        std::fprintf(out, "#   %s\n", sc.sel[i]->selectionText());
+    }
+    std::fprintf(out, "#\n");
 }
 
 } // namespace gmx

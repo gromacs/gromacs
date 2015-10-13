@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -51,15 +52,14 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -149,7 +149,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
                               const char *xlabel, const char **ylabel,
                               int n, real *x, real **y, real ***sy,
                               real scale_x, gmx_bool bZero, gmx_bool bSplit,
-                              const output_env_t oenv)
+                              const gmx_output_env_t *oenv)
 {
     FILE *out;
     int   g, s, i;
@@ -460,7 +460,7 @@ static void overlap(const char *outfile, int natoms,
                     rvec **eigvec1,
                     int nvec2, int *eignr2, rvec **eigvec2,
                     int noutvec, int *outvec,
-                    const output_env_t oenv)
+                    const gmx_output_env_t *oenv)
 {
     FILE *out;
     int   i, v, vec, x;
@@ -507,7 +507,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
                     real *sqrtm, rvec *xav,
                     int *eignr, rvec **eigvec,
                     int noutvec, int *outvec, gmx_bool bSplit,
-                    const output_env_t oenv)
+                    const gmx_output_env_t *oenv)
 {
     FILE        *xvgrout = NULL;
     int          nat, i, j, d, v, vec, nfr, nframes = 0, snew_size, frame;
@@ -783,7 +783,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
         {
             write_sto_conf(threedplotfile, str, &atoms, x, NULL, ePBC, box);
         }
-        free_t_atoms(&atoms, FALSE);
+        done_atom(&atoms);
     }
 
     if (extremefile)
@@ -873,7 +873,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
 static void components(const char *outfile, int natoms,
                        int *eignr, rvec **eigvec,
                        int noutvec, int *outvec,
-                       const output_env_t oenv)
+                       const gmx_output_env_t *oenv)
 {
     int   g, s, v, i;
     real *x, ***y;
@@ -918,7 +918,7 @@ static void rmsf(const char *outfile, int natoms, real *sqrtm,
                  int *eignr, rvec **eigvec,
                  int noutvec, int *outvec,
                  real *eigval, int neig,
-                 const output_env_t oenv)
+                 const gmx_output_env_t *oenv)
 {
     int    g, v, i;
     real  *x, **y;
@@ -1067,37 +1067,36 @@ int gmx_anaeig(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    t_topology     top;
-    int            ePBC  = -1;
-    t_atoms       *atoms = NULL;
-    rvec          *xtop, *xref1, *xref2, *xrefp = NULL;
-    gmx_bool       bDMR1, bDMA1, bDMR2, bDMA2;
-    int            nvec1, nvec2, *eignr1 = NULL, *eignr2 = NULL;
-    rvec          *xav1, *xav2, **eigvec1 = NULL, **eigvec2 = NULL;
-    matrix         topbox;
-    real           totmass, *sqrtm, *w_rls, t;
-    int            natoms;
-    char          *grpname;
-    const char    *indexfile;
-    char           title[STRLEN];
-    int            i, j, d;
-    int            nout, *iout, noutvec, *outvec, nfit;
-    atom_id       *index = NULL, *ifit = NULL;
-    const char    *VecFile, *Vec2File, *topfile;
-    const char    *EigFile, *Eig2File;
-    const char    *CompFile, *RmsfFile, *ProjOnVecFile;
-    const char    *TwoDPlotFile, *ThreeDPlotFile;
-    const char    *FilterFile, *ExtremeFile;
-    const char    *OverlapFile, *InpMatFile;
-    gmx_bool       bFit1, bFit2, bM, bIndex, bTPS, bTop, bVec2, bProj;
-    gmx_bool       bFirstToLast, bFirstLastSet, bTraj, bCompare, bPDB3D;
-    real          *eigval1 = NULL, *eigval2 = NULL;
-    int            neig1, neig2;
-    double       **xvgdata;
-    output_env_t   oenv;
-    gmx_rmpbc_t    gpbc;
+    t_topology        top;
+    int               ePBC  = -1;
+    t_atoms          *atoms = NULL;
+    rvec             *xtop, *xref1, *xref2, *xrefp = NULL;
+    gmx_bool          bDMR1, bDMA1, bDMR2, bDMA2;
+    int               nvec1, nvec2, *eignr1 = NULL, *eignr2 = NULL;
+    rvec             *xav1, *xav2, **eigvec1 = NULL, **eigvec2 = NULL;
+    matrix            topbox;
+    real              totmass, *sqrtm, *w_rls, t;
+    int               natoms;
+    char             *grpname;
+    const char       *indexfile;
+    int               i, j, d;
+    int               nout, *iout, noutvec, *outvec, nfit;
+    atom_id          *index = NULL, *ifit = NULL;
+    const char       *VecFile, *Vec2File, *topfile;
+    const char       *EigFile, *Eig2File;
+    const char       *CompFile, *RmsfFile, *ProjOnVecFile;
+    const char       *TwoDPlotFile, *ThreeDPlotFile;
+    const char       *FilterFile, *ExtremeFile;
+    const char       *OverlapFile, *InpMatFile;
+    gmx_bool          bFit1, bFit2, bM, bIndex, bTPS, bTop, bVec2, bProj;
+    gmx_bool          bFirstToLast, bFirstLastSet, bTraj, bCompare, bPDB3D;
+    real             *eigval1 = NULL, *eigval2 = NULL;
+    int               neig1, neig2;
+    double          **xvgdata;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc;
 
-    t_filenm       fnm[] = {
+    t_filenm          fnm[] = {
         { efTRN, "-v",    "eigenvec",    ffREAD  },
         { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
         { efTRX, "-f",    NULL,          ffOPTRD },
@@ -1259,7 +1258,7 @@ int gmx_anaeig(int argc, char *argv[])
     else
     {
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                             title, &top, &ePBC, &xtop, NULL, topbox, bM);
+                             &top, &ePBC, &xtop, NULL, topbox, bM);
         atoms = &top.atoms;
         gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
         gmx_rmpbc(gpbc, atoms->nr, topbox, xtop);

@@ -54,7 +54,6 @@
 #include "gromacs/gmxlib/ocl_tools/oclutils.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_pairlist.h"
@@ -469,6 +468,13 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 #else
             cl_error = clEnqueueMarker(stream, &(nb->misc_ops_and_local_H2D_done));
 #endif
+            assert(CL_SUCCESS == cl_error);
+
+            /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
+             * in the local stream in order to be able to sync with the above event
+             * from the non-local stream.
+             */
+            cl_error = clFlush(stream);
             assert(CL_SUCCESS == cl_error);
         }
         else
@@ -949,6 +955,10 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     ocl_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f, adat_begin*3*sizeof(float),
                        (adat_len)* adat->f_elem_size, stream, bDoTime ? &(t->nb_d2h_f[iloc]) : NULL);
 
+    /* kick off work */
+    cl_error = clFlush(stream);
+    assert(CL_SUCCESS == cl_error);
+
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
        placed after the non-local kernel because we first need the non-local
@@ -992,7 +1002,6 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
  * transfers to finish.
  */
 void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
-                            const nbnxn_atomdata_t gmx_unused *nbatom,
                             int flags, int aloc,
                             real *e_lj, real *e_el, rvec *fshift)
 {

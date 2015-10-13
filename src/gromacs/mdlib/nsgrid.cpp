@@ -48,7 +48,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
  * Copyright (c) 2011 Christoph Junghans, Sebastian Fritsch.
- * Copyright (c) 2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,8 +39,10 @@
 #define _nb_generic_adress_h_
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
+#include "gromacs/math/vectypes.h"
 
 void
 gmx_nb_generic_adress_kernel(t_nblist *                nlist,

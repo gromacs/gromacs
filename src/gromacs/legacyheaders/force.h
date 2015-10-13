@@ -38,21 +38,26 @@
 #ifndef _force_h
 #define _force_h
 
-
-#include "gromacs/legacyheaders/genborn.h"
-#include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/timing/wallcycle.h"
+
+struct t_commrec;
+struct t_fcdata;
+struct t_graph;
+struct t_grpopts;
+struct t_lambda;
+struct t_mdatoms;
+struct t_nrnb;
+struct t_pbc;
+struct gmx_edsam;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct t_graph;
-struct t_pbc;
 
 void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box);
@@ -63,7 +68,7 @@ void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
 /* Calculate virial taking periodicity into account */
 
 real RF_excl_correction(const t_forcerec *fr, struct t_graph *g,
-                        const t_mdatoms *mdatoms, const t_blocka *excl,
+                        const struct t_mdatoms *mdatoms, const t_blocka *excl,
                         rvec x[], rvec f[], rvec *fshift, const struct t_pbc *pbc,
                         real lambda, real *dvdlambda);
 /* Calculate the reaction-field energy correction for this node:
@@ -78,70 +83,45 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf,
 /* Determine the reaction-field constants */
 
 void init_generalized_rf(FILE *fplog,
-                         const gmx_mtop_t *mtop, const t_inputrec *ir,
+                         const gmx_mtop_t *mtop, const struct t_inputrec *ir,
                          t_forcerec *fr);
 /* Initialize the generalized reaction field parameters */
 
 
 /* In wall.c */
-void make_wall_tables(FILE *fplog, const output_env_t oenv,
-                      const t_inputrec *ir, const char *tabfn,
+void make_wall_tables(FILE *fplog,
+                      const struct t_inputrec *ir, const char *tabfn,
                       const gmx_groups_t *groups,
                       t_forcerec *fr);
 
-real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
-              rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
-
-t_forcerec *mk_forcerec(void);
+real do_walls(struct t_inputrec *ir, t_forcerec *fr, matrix box, struct t_mdatoms *md,
+              rvec x[], rvec f[], real lambda, real Vlj[], struct t_nrnb *nrnb);
 
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
-t_forcetable make_tables(FILE *fp, const output_env_t oenv,
-                         const t_forcerec *fr, gmx_bool bVerbose,
-                         const char *fn, real rtab, int flags);
-/* Return tables for inner loops. When bVerbose the tables are printed
- * to .xvg files
- */
-
-bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
-/* Return a table for bonded interactions,
- * angle should be: bonds 0, angles 1, dihedrals 2
- */
-
-/* Return a table for GB calculations */
-t_forcetable make_gb_table(const output_env_t oenv,
-                           const t_forcerec  *fr);
-
-/* Read a table for AdResS Thermo Force calculations */
-extern t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
-                                   const t_forcerec *fr,
-                                   const char *fn,
-                                   matrix box);
-
-void pr_forcerec(FILE *fplog, t_forcerec *fr);
-
-void
-forcerec_set_ranges(t_forcerec *fr,
-                    int ncg_home, int ncg_force,
-                    int natoms_force,
-                    int natoms_force_constr, int natoms_f_novirsum);
-/* Set the number of cg's and atoms for the force calculation */
-
-gmx_bool can_use_allvsall(const t_inputrec *ir,
-                          gmx_bool bPrintNote, t_commrec *cr, FILE *fp);
+gmx_bool can_use_allvsall(const struct t_inputrec *ir,
+                          gmx_bool bPrintNote, struct t_commrec *cr, FILE *fp);
 /* Returns if we can use all-vs-all loops.
  * If bPrintNote==TRUE, prints a note, if necessary, to stderr
  * and fp (if !=NULL) on the master node.
  */
 
 
-gmx_bool nbnxn_acceleration_supported(FILE             *fplog,
-                                      const t_commrec  *cr,
-                                      const t_inputrec *ir,
-                                      gmx_bool          bGPU);
-/* Return if GPU/CPU-SIMD acceleration is supported with the given inputrec
- * with bGPU TRUE/FALSE.
+gmx_bool nbnxn_gpu_acceleration_supported(FILE                    *fplog,
+                                          const struct t_commrec  *cr,
+                                          const struct t_inputrec *ir,
+                                          gmx_bool                 bRerunMD);
+/* Return if GPU acceleration is supported with the given settings.
+ *
+ * If the return value is FALSE and fplog/cr != NULL, prints a fallback
+ * message to fplog/stderr.
+ */
+
+gmx_bool nbnxn_simd_supported(FILE                    *fplog,
+                              const struct t_commrec  *cr,
+                              const struct t_inputrec *ir);
+/* Return if CPU SIMD support exists for the given inputrec
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
  * message to fplog/stderr.
  */
@@ -152,37 +132,6 @@ gmx_bool uses_simple_tables(int                        cutoff_scheme,
 /* Returns whether simple tables (i.e. not for use with GPUs) are used
  * with the type of kernel indicated.
  */
-
-void init_interaction_const_tables(FILE                *fp,
-                                   interaction_const_t *ic,
-                                   real                 rtab);
-/* Initializes the tables in the interaction constant data structure. */
-
-void init_forcerec(FILE              *fplog,
-                   const output_env_t oenv,
-                   t_forcerec        *fr,
-                   t_fcdata          *fcd,
-                   const t_inputrec  *ir,
-                   const gmx_mtop_t  *mtop,
-                   const t_commrec   *cr,
-                   matrix             box,
-                   const char        *tabfn,
-                   const char        *tabafn,
-                   const char        *tabpfn,
-                   const char        *tabbfn,
-                   const char        *nbpu_opt,
-                   gmx_bool           bNoSolvOpt,
-                   real               print_force);
-/* The Force rec struct must be created with mk_forcerec
- * The gmx_booleans have the following meaning:
- * bSetQ:    Copy the charges [ only necessary when they change ]
- * bMolEpot: Use the free energy stuff per molecule
- * print_force >= 0: print forces for atoms with force >= print_force
- */
-
-void forcerec_set_excl_load(t_forcerec           *fr,
-                            const gmx_localtop_t *top);
-/* Set the exclusion load for the local exclusions and possibly threads */
 
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
@@ -201,30 +150,27 @@ void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
 void sum_epot(gmx_grppairener_t *grpp, real *epot);
 /* Locally sum the non-bonded potential energy terms */
 
-void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals);
+void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, struct t_lambda *fepvals);
 /* Sum the free energy contributions */
-
-void update_forcerec(t_forcerec *fr, matrix box);
-/* Updates parameters in the forcerec that are time dependent */
 
 /* Compute the average C6 and C12 params for LJ corrections */
 void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
                       const gmx_mtop_t *mtop);
 
-extern void do_force(FILE *log, t_commrec *cr,
-                     t_inputrec *inputrec,
-                     gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+extern void do_force(FILE *log, struct t_commrec *cr,
+                     struct t_inputrec *inputrec,
+                     gmx_int64_t step, struct t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                      gmx_localtop_t *top,
                      gmx_groups_t *groups,
                      matrix box, rvec x[], history_t *hist,
                      rvec f[],
                      tensor vir_force,
-                     t_mdatoms *mdatoms,
-                     gmx_enerdata_t *enerd, t_fcdata *fcd,
+                     struct t_mdatoms *mdatoms,
+                     gmx_enerdata_t *enerd, struct t_fcdata *fcd,
                      real *lambda, struct t_graph *graph,
                      t_forcerec *fr,
                      gmx_vsite_t *vsite, rvec mu_tot,
-                     double t, FILE *field, gmx_edsam_t ed,
+                     double t, FILE *field, struct gmx_edsam *ed,
                      gmx_bool bBornRadii,
                      int flags);
 
@@ -237,36 +183,36 @@ extern void do_force(FILE *log, t_commrec *cr,
  * f is always required.
  */
 
-void ns(FILE              *fplog,
-        t_forcerec        *fr,
-        matrix             box,
-        gmx_groups_t      *groups,
-        gmx_localtop_t    *top,
-        t_mdatoms         *md,
-        t_commrec         *cr,
-        t_nrnb            *nrnb,
-        gmx_bool           bFillGrid,
-        gmx_bool           bDoLongRangeNS);
+void ns(FILE                     *fplog,
+        t_forcerec               *fr,
+        matrix                    box,
+        gmx_groups_t             *groups,
+        gmx_localtop_t           *top,
+        struct t_mdatoms         *md,
+        struct t_commrec         *cr,
+        struct t_nrnb            *nrnb,
+        gmx_bool                  bFillGrid,
+        gmx_bool                  bDoLongRangeNS);
 /* Call the neighborsearcher */
 
 extern void do_force_lowlevel(t_forcerec   *fr,
-                              t_inputrec   *ir,
+                              struct t_inputrec   *ir,
                               t_idef       *idef,
-                              t_commrec    *cr,
-                              t_nrnb       *nrnb,
+                              struct t_commrec    *cr,
+                              struct t_nrnb       *nrnb,
                               gmx_wallcycle_t wcycle,
-                              t_mdatoms    *md,
+                              struct t_mdatoms    *md,
                               rvec         x[],
                               history_t    *hist,
                               rvec         f_shortrange[],
                               rvec         f_longrange[],
                               gmx_enerdata_t *enerd,
-                              t_fcdata     *fcd,
+                              struct t_fcdata     *fcd,
                               gmx_localtop_t *top,
                               gmx_genborn_t *born,
                               gmx_bool         bBornRadii,
                               matrix       box,
-                              t_lambda     *fepvals,
+                              struct t_lambda     *fepvals,
                               real         *lambda,
                               struct t_graph      *graph,
                               t_blocka     *excl,
@@ -275,10 +221,10 @@ extern void do_force_lowlevel(t_forcerec   *fr,
                               float        *cycles_pme);
 /* Call all the force routines */
 
-void free_gpu_resources(const t_forcerec            *fr,
-                        const t_commrec             *cr,
-                        const struct gmx_gpu_info_t *gpu_info,
-                        const gmx_gpu_opt_t         *gpu_opt);
+void free_gpu_resources(const t_forcerec                   *fr,
+                        const struct t_commrec             *cr,
+                        const struct gmx_gpu_info_t        *gpu_info,
+                        const gmx_gpu_opt_t                *gpu_opt);
 
 #ifdef __cplusplus
 }

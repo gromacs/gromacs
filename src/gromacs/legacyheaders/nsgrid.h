@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,12 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_domdec_t;
+struct gmx_domdec_zones_t;
+struct gmx_ddbox_t;
+struct t_forcerec;
+struct t_grid;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,7 +74,7 @@ t_grid *init_grid(FILE *fplog, t_forcerec *fr);
 void done_grid(t_grid *grid);
 
 void get_nsgrid_boundaries(int nboundeddim, matrix box,
-                           gmx_domdec_t *dd,
+                           struct gmx_domdec_t *dd,
                            gmx_ddbox_t *ddbox,
                            rvec *gr0, rvec *gr1,
                            int ncg, rvec *cgcm,
@@ -85,10 +91,10 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
  */
 
 void grid_first(FILE *log, t_grid *grid,
-                gmx_domdec_t *dd, const gmx_ddbox_t *ddbox, matrix box, rvec izones_x0, rvec izones_x1,
+                struct gmx_domdec_t *dd, const gmx_ddbox_t *ddbox, matrix box, rvec izones_x0, rvec izones_x1,
                 real rlong, real grid_density);
 
-void fill_grid(gmx_domdec_zones_t *dd_zones,
+void fill_grid(struct gmx_domdec_zones_t *dd_zones,
                t_grid *grid, int ncg_tot,
                int cg0, int cg1, rvec cg_cm[]);
 /* Allocates space on the grid for ncg_tot cg's.

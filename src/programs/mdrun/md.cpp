@@ -36,6 +36,8 @@
  */
 #include "gmxpre.h"
 
+#include "md.h"
+
 #include "config.h"
 
 #include <math.h>
@@ -49,32 +51,18 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-load-balancing.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/mdoutf.h"
-#include "gromacs/fileio/trajectory_writing.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
+#include "gromacs/gmxlib/md_logging.h"
+#include "gromacs/gmxlib/sighandler.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/constr.h"
-#include "gromacs/legacyheaders/ebin.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/md_logging.h"
-#include "gromacs/legacyheaders/md_support.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/mdebin.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
-#include "gromacs/legacyheaders/shellfc.h"
-#include "gromacs/legacyheaders/sighandler.h"
-#include "gromacs/legacyheaders/sim_util.h"
-#include "gromacs/legacyheaders/tgroup.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/update.h"
-#include "gromacs/legacyheaders/vcm.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
-#include "gromacs/legacyheaders/types/constr.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
@@ -83,18 +71,30 @@
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
-#include "gromacs/legacyheaders/types/membedt.h"
 #include "gromacs/legacyheaders/types/nrnb.h"
-#include "gromacs/legacyheaders/types/oenv.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/compute_io.h"
+#include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/ebin.h"
+#include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/md_support.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdebin.h"
+#include "gromacs/mdlib/mdoutf.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/mdrun_signalling.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/tgroup.h"
+#include "gromacs/mdlib/trajectory_writing.h"
+#include "gromacs/mdlib/update.h"
+#include "gromacs/mdlib/vcm.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -152,22 +152,43 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
 }
 
-double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
-             int nstglobalcomm,
-             gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
-             int stepout, t_inputrec *ir,
-             gmx_mtop_t *top_global,
-             t_fcdata *fcd,
-             t_state *state_global,
-             t_mdatoms *mdatoms,
-             t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed, t_forcerec *fr,
-             int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t membed,
-             real cpt_period, real max_hours,
-             int imdport,
-             unsigned long Flags,
-             gmx_walltime_accounting_t walltime_accounting)
+/*! \libinternal
+    \copydoc integrator_t (FILE *fplog, t_commrec *cr,
+                           int nfile, const t_filenm fnm[],
+                           const gmx_output_env_t *oenv, gmx_bool bVerbose,
+                           gmx_bool bCompact, int nstglobalcomm,
+                           gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
+                           int stepout,
+                           t_inputrec *inputrec,
+                           gmx_mtop_t *top_global, t_fcdata *fcd,
+                           t_state *state_global,
+                           t_mdatoms *mdatoms,
+                           t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                           gmx_edsam_t ed,
+                           t_forcerec *fr,
+                           int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                           gmx_membed_t *membed,
+                           real cpt_period, real max_hours,
+                           int imdport,
+                           unsigned long Flags,
+                           gmx_walltime_accounting_t walltime_accounting)
+ */
+double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
+                  const gmx_output_env_t *oenv, gmx_bool bVerbose, gmx_bool bCompact,
+                  int nstglobalcomm,
+                  gmx_vsite_t *vsite, gmx_shellfc_t shellfc, gmx_constr_t constr,
+                  int stepout, t_inputrec *ir,
+                  gmx_mtop_t *top_global,
+                  t_fcdata *fcd,
+                  t_state *state_global,
+                  t_mdatoms *mdatoms,
+                  t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                  gmx_edsam_t ed, t_forcerec *fr,
+                  int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t *membed,
+                  real cpt_period, real max_hours,
+                  int imdport,
+                  unsigned long Flags,
+                  gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_mdoutf_t    outf = NULL;
     gmx_int64_t     step, step_rel;
@@ -228,7 +249,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                                                           simulation stops. If equal to zero, don't
                                                                           communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
-    pme_load_balancing_t *pme_loadbal;
+    pme_load_balancing_t *pme_loadbal      = NULL;
     gmx_bool              bPMETune         = FALSE;
     gmx_bool              bPMETunePrinting = FALSE;
 
@@ -319,11 +340,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         /* Currently virtual sites don't work with Normal Modes */
         gmx_fatal(FARGS, "Normal Mode analysis is not supported with virtual sites.\nIf you'd like to help with adding support, we have an open discussion at http://redmine.gromacs.org/issues/879\n");
-    }
-
-    if (bRerunMD && fr->cutoff_scheme == ecutsVERLET && ir->opts.ngener > 1 && usingGpu(fr->nbv))
-    {
-        gmx_fatal(FARGS, "The Verlet scheme on GPUs does not support energy groups, so your rerun should probably use a .tpr file without energy groups, or mdrun -nb auto");
     }
 
     if (DEFORM(*ir))
@@ -540,7 +556,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                   | (bStopCM ? CGLO_STOPCM : 0)
                   | (bVV ? CGLO_PRESSURE : 0)
                   | (bVV ? CGLO_CONSTRAINT : 0)
-                  | (bRerunMD ? CGLO_RERUNMD : 0)
                   | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN : 0));
 
     bSumEkinhOld = FALSE;
@@ -740,7 +755,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             pme_loadbal_do(pme_loadbal, cr,
                            (bVerbose && MASTER(cr)) ? stderr : NULL,
                            fplog,
-                           ir, fr, state, wcycle,
+                           ir, fr, state,
+                           wcycle,
                            step, step_rel,
                            &bPMETunePrinting);
         }
@@ -939,7 +955,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if (MASTER(cr) && do_log)
         {
-            print_ebin_header(fplog, step, t, state->lambda[efptFEP]); /* can we improve the information printed here? */
+            print_ebin_header(fplog, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != efepNO)
@@ -957,7 +973,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
                             top_global, &(top->idef), &bSumEkinhOld,
-                            CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
+                            CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
 
@@ -1008,11 +1024,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bCalcEner = TRUE;
             bGStat    = TRUE;
         }
-
-        /* these CGLO_ options remain the same throughout the iteration */
-        cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
-                      (bGStat ? CGLO_GSTAT : 0)
-                      );
 
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
@@ -1159,7 +1170,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, NULL, FALSE, state->box,
                                 top_global, &(top->idef), &bSumEkinhOld,
-                                cglo_flags
+                                (bGStat ? CGLO_GSTAT : 0)
                                 | CGLO_ENERGY
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
                                 | (bPres ? CGLO_PRESSURE : 0)
@@ -1195,7 +1206,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                         constr, NULL, FALSE, state->box,
                                         top_global, &(top->idef), &bSumEkinhOld,
-                                        CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
+                                        CGLO_GSTAT | CGLO_TEMPERATURE);
                         wallcycle_start(wcycle, ewcUPDATE);
                     }
                 }
@@ -1325,6 +1336,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bResetCountersHalfMaxH && MASTER(cr) &&
             elapsed_time > max_hours*60.0*60.0*0.495)
         {
+            /* Set flag that will communicate the signal to all ranks in the simulation */
             gs.sig[eglsRESETCOUNTERS] = 1;
         }
 
@@ -1450,7 +1462,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr, NULL, FALSE, lastbox,
                                 top_global, &(top->idef), &bSumEkinhOld,
-                                cglo_flags | CGLO_TEMPERATURE
+                                (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE
                                 );
                 wallcycle_start(wcycle, ewcUPDATE);
                 trotter_update(cr, ir, &top->idef, step, ekind, enerd, state, total_vir, mdatoms, vcm, &MassQ, trotter_seq, ettTSEQ4);
@@ -1541,7 +1553,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
                             lastbox,
                             top_global, &(top->idef), &bSumEkinhOld,
-                            cglo_flags
+                            (bGStat ? CGLO_GSTAT : 0)
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
                             | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
@@ -1749,10 +1761,28 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             step_rel++;
         }
 
+        /* TODO make a counter-reset module */
+        /* If it is time to reset counters, set a flag that remains
+           true until counters actually get reset */
         if (step_rel == wcycle_get_reset_counters(wcycle) ||
             gs.set[eglsRESETCOUNTERS] != 0)
         {
-            /* Reset all the counters related to performance over the run */
+            if (pme_loadbal_is_active(pme_loadbal))
+            {
+                /* Do not permit counter reset while PME load
+                 * balancing is active. The only purpose for resetting
+                 * counters is to measure reliable performance data,
+                 * and that can't be done before balancing
+                 * completes.
+                 *
+                 * TODO consider fixing this by delaying the reset
+                 * until after load balancing completes,
+                 * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
+                gmx_fatal(FARGS, "PME tuning was still active when attempting to "
+                          "reset mdrun counters at step " GMX_PRId64 ". Try "
+                          "resetting counters later in the run, e.g. with gmx "
+                          "mdrun -resetstep.", step);
+            }
             reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
                                use_GPU(fr->nbv) ? fr->nbv : NULL);
             wcycle_set_reset_counters(wcycle, -1);
@@ -1763,7 +1793,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
             /* Correct max_hours for the elapsed time */
             max_hours                -= elapsed_time/(60.0*60.0);
-            bResetCountersHalfMaxH    = FALSE;
+            /* If mdrun -maxh -resethway was active, it can only trigger once */
+            bResetCountersHalfMaxH    = FALSE; /* TODO move this to where gs.sig[eglsRESETCOUNTERS] is set */
+            /* Reset can only happen once, so clear the triggering flag. */
             gs.set[eglsRESETCOUNTERS] = 0;
         }
 

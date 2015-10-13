@@ -64,6 +64,11 @@ typedef struct {
                               .rtp/.tdb to .top and will be parsed by cpp
                               during grompp */
     gmx_bool match;        /* boolean to mark that the entry has been found */
+    char*   &ai() { return a[0]; }
+    char*   &aj() { return a[1]; }
+    char*   &ak() { return a[2]; }
+    char*   &al() { return a[3]; }
+    char*   &am() { return a[4]; }
 } t_rbonded;
 
 typedef struct {
@@ -110,6 +115,10 @@ typedef struct {
     gmx_bool    bXSet;
     rvec        newx; /* calculated new position    */
     atom_id     newi; /* new atom index number (after additions) */
+    char*      &ai() { return a[0]; }
+    char*      &aj() { return a[1]; }
+    char*      &ak() { return a[2]; }
+    char*      &al() { return a[3]; }
 } t_hack;
 
 typedef struct {
@@ -121,28 +130,6 @@ typedef struct {
     /* list of bonded interactions to add */
     t_rbondeds rb[ebtsNR];
 } t_hackblock;
-
-/* all libraries and other data to protonate a structure or trajectory */
-typedef struct {
-    gmx_bool        bInit; /* true after init; set false by init_t_protonate */
-    /* force field name: */
-    char            FF[10];
-    /* libarary data: */
-    int            *nab;
-    t_hack        **ab;
-    t_hackblock    *ah, *ntdb, *ctdb;
-    t_hackblock   **sel_ntdb, **sel_ctdb;
-    int             nah;
-    t_symtab        tab;
-    /* residue indices (not numbers!) of the N and C termini */
-    int            *rN, *rC;
-    gpp_atomtype_t  atype;
-    /* protonated topology: */
-    t_atoms        *patoms;
-    /* unprotonated topology: */
-    t_atoms        *upatoms;
-
-} t_protonate;
 
 typedef struct {
     char *res1, *res2;
@@ -188,8 +175,5 @@ void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
 
 void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
-
-void init_t_protonate(t_protonate *protonate);
-/* initialize t_protein struct */
 
 #endif

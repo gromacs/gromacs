@@ -116,7 +116,7 @@ fi
 
 # Switch to the root of the source tree and check the config file
 srcdir=`git rev-parse --show-toplevel`
-cd $srcdir
+pushd $srcdir >/dev/null
 admin_dir=$srcdir/admin
 cfg_file=$admin_dir/uncrustify.cfg
 if [ ! -f "$cfg_file" ]
@@ -275,12 +275,11 @@ elif [[ $action == update-workdir ]] ; then
     rsync --files-from=$tmpdir/changed $tmpdir/new/ $srcdir/
 fi
 
+# Get back to the original directory
+popd >/dev/null
+
 # Report what was done
-if [ "$warning_file" ]; then
-     sort $tmpdir/messages | tee $srcdir/$warning_file
-else
-     sort $tmpdir/messages
-fi
+sort $tmpdir/messages | tee $warning_file
 
 rm -rf $tmpdir
 exit $changes

@@ -41,8 +41,9 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -266,7 +267,7 @@ int gmx_mk_angndx(int argc, char *argv[])
           "Ignore angles with atoms with mass < 1.5 and magnitude of their charge less than this value" }
     };
 
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     FILE              *out;
     t_topology        *top;
     int                i, j, ntype;

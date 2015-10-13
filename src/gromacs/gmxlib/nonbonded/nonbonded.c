@@ -40,6 +40,7 @@
 
 #include "config.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -51,18 +52,23 @@
 #include "gromacs/gmxlib/nonbonded/nb_generic_cg.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/ns.h"
 #include "gromacs/legacyheaders/txtdump.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
+#include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/legacyheaders/types/nblist.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/tables/forcetable.h"
+#include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -373,6 +379,15 @@ void do_nonbonded(t_forcerec *fr,
     for (n = n0; (n < n1); n++)
     {
         nblists = &fr->nblists[n];
+
+        /* Tabulated kernels hard-code a lot of assumptions about the
+         * structure of these tables, but that's not worth fixing with
+         * the group scheme due for removal soon. As a token
+         * improvement, this assertion will stop code segfaulting if
+         * someone assumes that extending the group-scheme table-type
+         * enumeration is something that GROMACS supports. */
+        /* cppcheck-suppress duplicateExpression */
+        assert(etiNR == 3);
 
         kernel_data.table_elec              = &nblists->table_elec;
         kernel_data.table_vdw               = &nblists->table_vdw;

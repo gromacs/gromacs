@@ -40,12 +40,14 @@ set(TESTUTILS_SOURCES
     interactivetest.cpp
     mpi-printer.cpp
     refdata.cpp
+    refdata-xml.cpp
     stringtest.cpp
     testasserts.cpp
     testfilemanager.cpp
     testfileredirector.cpp
     testinit.cpp
     testoptions.cpp
+    textblockmatchers.cpp
     xvgtest.cpp)
 
 add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})

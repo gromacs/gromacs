@@ -73,10 +73,10 @@ TrajectoryAnalysisSettings::~TrajectoryAnalysisSettings()
 }
 
 
-const TimeUnitManager &
-TrajectoryAnalysisSettings::timeUnitManager() const
+TimeUnit
+TrajectoryAnalysisSettings::timeUnit() const
 {
-    return impl_->timeUnitManager;
+    return impl_->timeUnit;
 }
 
 
@@ -191,7 +191,6 @@ TopologyInformation::~TopologyInformation()
 {
     if (top_)
     {
-        free_t_atoms(&top_->atoms, TRUE);
         done_top(top_);
         sfree(top_);
     }

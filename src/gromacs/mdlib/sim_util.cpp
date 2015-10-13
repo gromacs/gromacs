@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/sim_util.h"
+#include "sim_util.h"
 
 #include "config.h"
 
@@ -48,36 +48,37 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gmxlib/chargegroup.h"
+#include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/orires.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/legacyheaders/calcmu.h"
-#include "gromacs/legacyheaders/chargegroup.h"
-#include "gromacs/legacyheaders/constr.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/disre.h"
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
-#include "gromacs/legacyheaders/orires.h"
-#include "gromacs/legacyheaders/qmmm.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/update.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/calcmu.h"
+#include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_atomdata.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
+#include "gromacs/mdlib/nbnxn_grid.h"
 #include "gromacs/mdlib/nbnxn_search.h"
+#include "gromacs/mdlib/qmmm.h"
+#include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.h"
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
@@ -91,6 +92,9 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
@@ -663,8 +667,12 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
 #pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
     for (th = 0; th < nbl_lists->nnbl; th++)
     {
-        gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
-                                  x, f, fr, mdatoms, &kernel_data, nrnb);
+        try
+        {
+            gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
+                                      x, f, fr, mdatoms, &kernel_data, nrnb);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     if (fepvals->sc_alpha != 0)
@@ -699,8 +707,12 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
 #pragma omp parallel for schedule(static) num_threads(nbl_lists->nnbl)
             for (th = 0; th < nbl_lists->nnbl; th++)
             {
-                gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
-                                          x, f, fr, mdatoms, &kernel_data, nrnb);
+                try
+                {
+                    gmx_nb_free_energy_kernel(nbl_lists->nbl_fep[th],
+                                              x, f, fr, mdatoms, &kernel_data, nrnb);
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
 
             sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
@@ -1285,7 +1297,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                       nbv->grp[eintNonlocal].nbat,
                                        flags, eatNonlocal,
                                        enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                        fr->fshift);
@@ -1349,7 +1360,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   nbv->grp[eintLocal].nbat,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
@@ -1387,7 +1397,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   nbv->grp[eintLocal].nbat,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
@@ -2225,6 +2234,11 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                           "for vdw-type = %s", evdw_names[fr->vdwtype]);
             }
 
+            /* TODO This code depends on the logic in tables.c that
+               constructs the table layout, which should be made
+               explicit in future cleanup. */
+            GMX_ASSERT(fr->nblists[0].table_vdw.interaction == GMX_TABLE_INTERACTION_VDWREP_VDWDISP,
+                       "Dispersion-correction code needs a table with both repulsion and dispersion terms");
             scale  = fr->nblists[0].table_vdw.scale;
             vdwtab = fr->nblists[0].table_vdw.data;
 
@@ -2507,7 +2521,7 @@ void do_pbc_first(FILE *fplog, matrix box, t_forcerec *fr,
 }
 
 static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
-                            gmx_mtop_t *mtop, rvec x[],
+                            const gmx_mtop_t *mtop, rvec x[],
                             gmx_bool bFirst)
 {
     t_graph        *graph;
@@ -2555,7 +2569,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
 }
 
 void do_pbc_first_mtop(FILE *fplog, int ePBC, matrix box,
-                       gmx_mtop_t *mtop, rvec x[])
+                       const gmx_mtop_t *mtop, rvec x[])
 {
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, TRUE);
 }
@@ -2734,7 +2748,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, real
 
 
 void init_md(FILE *fplog,
-             t_commrec *cr, t_inputrec *ir, const output_env_t oenv,
+             t_commrec *cr, t_inputrec *ir, const gmx_output_env_t *oenv,
              double *t, double *t0,
              real *lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,

@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
@@ -50,19 +51,17 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_ana.h"
 
 static gmx_bool bAllowed(real phi, real psi)
 {
@@ -224,7 +223,7 @@ int bin(real chi, int mult)
 static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
                        int nlist, t_dlist dlist[], real time[], int maxchi,
                        gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega,
-                       const output_env_t oenv)
+                       const gmx_output_env_t *oenv)
 {
     char name1[256], name2[256];
     int  i, j, Xi;
@@ -305,7 +304,7 @@ static void copy_dih_data(real in[], real out[], int nf, gmx_bool bLEAVE)
 static void dump_em_all(int nlist, t_dlist dlist[], int nf, real time[],
                         real **dih, int maxchi,
                         gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega, gmx_bool bRAD,
-                        const output_env_t oenv)
+                        const gmx_output_env_t *oenv)
 {
     char  name[256], titlestr[256], ystr[256];
     real *data;
@@ -452,7 +451,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
                           real bfac_max, t_atoms *atoms,
                           gmx_bool bDo_jc, const char *fn,
-                          const output_env_t oenv)
+                          const gmx_output_env_t *oenv)
 {
     /* also gets 3J couplings and order parameters S2 */
     t_karplus kkkphi[] = {
@@ -847,7 +846,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
 }
 
 static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
-                       const char *yaxis, const output_env_t oenv)
+                       const char *yaxis, const gmx_output_env_t *oenv)
 {
     FILE *fp;
 
@@ -885,7 +884,7 @@ static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
 }
 
 static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
-                    gmx_bool bViol, gmx_bool bRamOmega, const output_env_t oenv)
+                    gmx_bool bViol, gmx_bool bRamOmega, const gmx_output_env_t *oenv)
 {
     FILE    *fp, *gp = NULL;
     gmx_bool bOm;
@@ -1012,7 +1011,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
 
 static void print_transitions(const char *fn, int maxchi, int nlist,
                               t_dlist dlist[], real dt,
-                              const output_env_t oenv)
+                              const gmx_output_env_t *oenv)
 {
     /* based on order_params below */
     FILE *fp;
@@ -1062,7 +1061,7 @@ static void order_params(FILE *log,
                          const char *fn, int maxchi, int nlist, t_dlist dlist[],
                          const char *pdbfn, real bfac_init,
                          t_atoms *atoms, rvec x[], int ePBC, matrix box,
-                         gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, const output_env_t oenv)
+                         gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, const gmx_output_env_t *oenv)
 {
     FILE *fp;
     int   nh[edMax];
@@ -1351,17 +1350,16 @@ int gmx_chi(int argc, char *argv[])
     };
 
     FILE              *log;
-    int                natoms, nlist, idum, nbin;
-    t_atoms            atoms;
+    int                nlist, idum, nbin;
     rvec              *x;
     int                ePBC;
     matrix             box;
-    char               title[256], grpname[256];
+    char               grpname[256];
     t_dlist           *dlist;
     gmx_bool           bChi, bCorr, bSSHisto;
     gmx_bool           bDo_rt, bDo_oh, bDo_ot, bDo_jc;
     real               dt = 0, traj_t_ns;
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     gmx_residuetype_t *rt;
 
     atom_id            isize, *index;
@@ -1443,11 +1441,15 @@ int gmx_chi(int argc, char *argv[])
     nbin     = 360/ndeg;
 
     /* Find the chi angles using atoms struct and a list of amino acids */
-    get_stx_coordnum(ftp2fn(efSTX, NFILE, fnm), &natoms);
-    init_t_atoms(&atoms, natoms, TRUE);
-    snew(x, natoms);
-    read_stx_conf(ftp2fn(efSTX, NFILE, fnm), title, &atoms, x, NULL, &ePBC, box);
-    fprintf(log, "Title: %s\n", title);
+    t_topology *top;
+    snew(top, 1);
+    read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &ePBC, &x, NULL, box, FALSE);
+    t_atoms    &atoms = top->atoms;
+    if (atoms.pdbinfo == NULL)
+    {
+        snew(atoms.pdbinfo, atoms.nr);
+    }
+    fprintf(log, "Title: %s\n", *top->name);
 
     gmx_residuetype_init(&rt);
     dlist = mk_dlist(log, &atoms, &nlist, bPhi, bPsi, bChi, bHChi, maxchi, r0, rt);

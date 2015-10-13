@@ -40,13 +40,9 @@
 #define _adress_h_
 
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/types/simple.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
+struct t_forcerec;
+struct t_mdatoms;
 struct t_pbc;
 
 /** \brief calculates the AdResS weight of a particle
@@ -196,9 +192,5 @@ gmx_bool egp_explicit(t_forcerec *   fr, int egp_nr);
  * \return boolean if coarse-grained or not
  */
 gmx_bool egp_coarsegrained(t_forcerec *   fr, int egp_nr);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

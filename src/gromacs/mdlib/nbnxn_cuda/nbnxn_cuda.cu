@@ -39,8 +39,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <assert.h>
 #include <stdlib.h>
 
@@ -52,13 +50,8 @@
 
 #include <cuda.h>
 
-#ifdef TMPI_ATOMICS
-#include "thread_mpi/atomic.h"
-#endif
-
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/legacyheaders/types/force_flags.h"
-#include "gromacs/legacyheaders/types/simple.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
@@ -153,12 +146,6 @@ static bool always_ener  = (getenv("GMX_GPU_ALWAYS_ENER") != NULL);
 static bool never_ener   = (getenv("GMX_GPU_NEVER_ENER") != NULL);
 static bool always_prune = (getenv("GMX_GPU_ALWAYS_PRUNE") != NULL);
 
-
-/* Bit-pattern used for polling-based GPU synchronization. It is used as a float
- * and corresponds to having the exponent set to the maximum (127 -- single
- * precision) and the mantissa to 0.
- */
-static unsigned int poll_wait_pattern = (0x7FU << 23);
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
 static inline int calc_nb_kernel_nblock(int nwork_units, gmx_device_info_t *dinfo)
@@ -289,15 +276,12 @@ static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t
     shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
-    /* CUDA versions below 4.2 won't generate code for sm>=3.0 */
-#if GMX_CUDA_VERSION >= 4200
     if (dinfo->prop.major >= 3)
     {
         /* i-atom types in shared memory */
         shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
     }
     if (dinfo->prop.major < 3)
-#endif
     {
         /* force reduction buffers in shared memory */
         shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
@@ -473,7 +457,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
                               int                     aloc)
 {
     cudaError_t stat;
-    int         adat_begin, adat_len, adat_end; /* local/nonlocal offset and length used for xq and f */
+    int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     int         iloc = -1;
 
     /* determine interaction locality from atom locality */
@@ -512,13 +496,11 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     {
         adat_begin  = 0;
         adat_len    = adat->natoms_local;
-        adat_end    = nb->atdat->natoms_local;
     }
     else
     {
         adat_begin  = adat->natoms_local;
         adat_len    = adat->natoms - adat->natoms_local;
-        adat_end    = nb->atdat->natoms;
     }
 
     /* beginning of timed D2H section */
@@ -526,34 +508,6 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     {
         stat = cudaEventRecord(t->start_nb_d2h[iloc], stream);
         CU_RET_ERR(stat, "cudaEventRecord failed");
-    }
-
-    if (!nb->bUseStreamSync)
-    {
-        /* For safety reasons set a few (5%) forces to NaN. This way even if the
-           polling "hack" fails with some future NVIDIA driver we'll get a crash. */
-        for (int i = adat_begin; i < 3*adat_end + 2; i += adat_len/20)
-        {
-#ifdef NAN
-            nbatom->out[0].f[i] = NAN;
-#else
-#  ifdef _MSVC
-            if (numeric_limits<float>::has_quiet_NaN)
-            {
-                nbatom->out[0].f[i] = numeric_limits<float>::quiet_NaN();
-            }
-            else
-#  endif
-            {
-                nbatom->out[0].f[i] = GMX_REAL_MAX;
-            }
-#endif
-        }
-
-        /* Set the last four bytes of the force array to a bit pattern
-           which can't be the result of the force calculation:
-           max exponent (127) and zero mantissa. */
-        *(unsigned int*)&nbatom->out[0].f[adat_end*3 - 1] = poll_wait_pattern;
     }
 
     /* With DD the local D2H transfer can only start after the non-local
@@ -605,32 +559,13 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_cuda_t       *nb,
     }
 }
 
-/* Atomic compare-exchange operation on unsigned values. It is used in
- * polling wait for the GPU.
- */
-static inline bool atomic_cas(volatile unsigned int *ptr,
-                              unsigned int           oldval,
-                              unsigned int           newval)
-{
-    assert(ptr);
-
-#ifdef TMPI_ATOMICS
-    return tMPI_Atomic_cas((tMPI_Atomic_t *)ptr, oldval, newval);
-#else
-    gmx_incons("Atomic operations not available, atomic_cas() should not have been called!");
-    return true;
-#endif
-}
-
 void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
-                            const nbnxn_atomdata_t *nbatom,
                             int flags, int aloc,
                             real *e_lj, real *e_el, rvec *fshift)
 {
     /* NOTE:  only implemented for single-precision at this time */
-    cudaError_t            stat;
-    int                    i, adat_end, iloc = -1;
-    volatile unsigned int *poll_word;
+    cudaError_t stat;
+    int         iloc = -1;
 
     /* determine interaction locality from atom locality */
     if (LOCAL_A(aloc))
@@ -672,34 +607,8 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
         return;
     }
 
-    /* calculate the atom data index range based on locality */
-    if (LOCAL_A(aloc))
-    {
-        adat_end = nb->atdat->natoms_local;
-    }
-    else
-    {
-        adat_end = nb->atdat->natoms;
-    }
-
-    if (nb->bUseStreamSync)
-    {
-        stat = cudaStreamSynchronize(nb->stream[iloc]);
-        CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
-    }
-    else
-    {
-        /* Busy-wait until we get the signal pattern set in last byte
-         * of the l/nl float vector. This pattern corresponds to a floating
-         * point number which can't be the result of the force calculation
-         * (maximum, 127 exponent and 0 mantissa).
-         * The polling uses atomic compare-exchange.
-         */
-        poll_word = (volatile unsigned int*)&nbatom->out[0].f[adat_end*3 - 1];
-        while (atomic_cas(poll_word, poll_wait_pattern, poll_wait_pattern))
-        {
-        }
-    }
+    stat = cudaStreamSynchronize(nb->stream[iloc]);
+    CU_RET_ERR(stat, "cudaStreamSynchronize failed in cu_blockwait_nb");
 
     /* timing data accumulation */
     if (nb->bDoTime)
@@ -748,7 +657,7 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
 
         if (bCalcFshift)
         {
-            for (i = 0; i < SHIFTS; i++)
+            for (int i = 0; i < SHIFTS; i++)
             {
                 fshift[i][0] += nbst.fshift[i].x;
                 fshift[i][1] += nbst.fshift[i].y;
@@ -791,11 +700,11 @@ void nbnxn_cuda_set_cacheconfig(gmx_device_info_t *devinfo)
         {
             if (devinfo->prop.major >= 3)
             {
-                /* Default kernel on sm 3.x 48/16 kB Shared/L1 */
-                cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferShared);
-                cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferShared);
-                cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferShared);
-                stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferShared);
+                /* Default kernel on sm 3.x and later 32/32 kB Shared/L1 */
+                cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferEqual);
+                cudaFuncSetCacheConfig(nb_kfunc_ener_noprune_ptr[i][j], cudaFuncCachePreferEqual);
+                cudaFuncSetCacheConfig(nb_kfunc_noener_prune_ptr[i][j], cudaFuncCachePreferEqual);
+                stat = cudaFuncSetCacheConfig(nb_kfunc_noener_noprune_ptr[i][j], cudaFuncCachePreferEqual);
             }
             else
             {

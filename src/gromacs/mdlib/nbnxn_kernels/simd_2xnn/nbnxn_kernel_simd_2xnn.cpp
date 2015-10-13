@@ -42,6 +42,7 @@
 #include "config.h"
 
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/types/forcerec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_simd.h"
 
@@ -351,6 +352,8 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
 #pragma omp parallel for schedule(static) num_threads(nthreads)
     for (nb = 0; nb < nnbl; nb++)
     {
+        // Presently, the kernels do not call C++ code that can throw, so
+        // no need for a try/catch pair in this OpenMP region.
         nbnxn_atomdata_output_t *out;
         real                    *fshift_p;
 

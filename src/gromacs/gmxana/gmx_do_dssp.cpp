@@ -42,6 +42,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -50,11 +51,10 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/dir_separator.h"
 #include "gromacs/utility/fatalerror.h"
@@ -65,7 +65,7 @@ static int strip_dssp(char *dsspfile, int nres,
                       gmx_bool bPhobres[], real t,
                       real *acc, FILE *fTArea,
                       t_matrix *mat, int average_area[],
-                      const output_env_t oenv)
+                      const gmx_output_env_t *oenv)
 {
     static gmx_bool bFirst = TRUE;
     static char    *ssbuf;
@@ -342,7 +342,7 @@ void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *
 }
 
 void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
-                const output_env_t oenv)
+                const gmx_output_env_t *oenv)
 {
     FILE        *fp;
     t_mapping   *map;
@@ -506,10 +506,10 @@ int gmx_do_dssp(int argc, char *argv[])
     rvec              *xp, *x;
     int               *average_area;
     real             **accr, *accr_ptr = NULL, *av_area, *norm_av_area;
-    char               pdbfile[32], tmpfile[32], title[256];
+    char               pdbfile[32], tmpfile[32];
     char               dssp[256];
     const char        *dptr;
-    output_env_t       oenv;
+    gmx_output_env_t  *oenv;
     gmx_rmpbc_t        gpbc = NULL;
 
     t_filenm           fnm[] = {
@@ -538,7 +538,7 @@ int gmx_do_dssp(int argc, char *argv[])
     fnAArea    = opt2fn_null("-aa", NFILE, fnm);
     bDoAccSurf = (fnArea || fnTArea || fnAArea);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xp, NULL, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, NULL, box, FALSE);
     atoms = &(top.atoms);
     check_oo(atoms);
     bPhbres = bPhobics(atoms);

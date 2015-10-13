@@ -46,15 +46,15 @@
 
 #include <algorithm>
 
+#include "gromacs/gmxlib/chargegroup.h"
+#include "gromacs/gmxlib/readinp.h"
+#include "gromacs/gmxlib/warninp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/chargegroup.h"
 #include "gromacs/legacyheaders/inputrec.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/warninp.h"
+#include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
@@ -202,7 +202,7 @@ static void check_nst(const char *desc_nst, int nst,
 
 static gmx_bool ir_NVE(const t_inputrec *ir)
 {
-    return ((ir->eI == eiMD || EI_VV(ir->eI)) && ir->etc == etcNO);
+    return (EI_MD(ir->eI) && ir->etc == etcNO);
 }
 
 static int lcd(int n1, int n2)
@@ -464,8 +464,20 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
 
     /* GENERAL INTEGRATOR STUFF */
-    if (!(ir->eI == eiMD || EI_VV(ir->eI)))
+    if (!EI_MD(ir->eI))
     {
+        if (ir->etc != etcNO)
+        {
+            if (EI_RANDOM(ir->eI))
+            {
+                sprintf(warn_buf, "Setting tcoupl from '%s' to 'no'. %s handles temperature coupling implicitly. See the documentation for more information on which parameters affect temperature for %s.", etcoupl_names[ir->etc], ei_names[ir->eI], ei_names[ir->eI]);
+            }
+            else
+            {
+                sprintf(warn_buf, "Setting tcoupl from '%s' to 'no'. Temperature coupling does not apply to %s.", etcoupl_names[ir->etc], ei_names[ir->eI]);
+            }
+            warning_note(wi, warn_buf);
+        }
         ir->etc = etcNO;
     }
     if (ir->eI == eiVVAK)
@@ -475,6 +487,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
     if (!EI_DYNAMICS(ir->eI))
     {
+        if (ir->epc != epcNO)
+        {
+            sprintf(warn_buf, "Setting pcoupl from '%s' to 'no'. Pressure coupling does not apply to %s.", epcoupl_names[ir->epc], ei_names[ir->eI]);
+            warning_note(wi, warn_buf);
+        }
         ir->epc = epcNO;
     }
     if (EI_DYNAMICS(ir->eI))
@@ -1113,11 +1130,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         /* reaction field (at the cut-off) */
 
-        if (ir->coulombtype == eelRF_ZERO)
+        if (ir->coulombtype == eelRF_ZERO && ir->epsilon_rf != 0)
         {
             sprintf(warn_buf, "With coulombtype = %s, epsilon-rf must be 0, assuming you meant epsilon_rf=0",
                     eel_names[ir->coulombtype]);
-            CHECK(ir->epsilon_rf != 0);
+            warning(wi, warn_buf);
             ir->epsilon_rf = 0.0;
         }
 
@@ -1498,21 +1515,28 @@ int str_nelem(const char *str, int maxptr, char *ptr[])
    str = the input string
    n = the (pre-allocated) number of doubles read
    r = the output array of doubles. */
-static void parse_n_real(char *str, int *n, real **r)
+static void parse_n_real(char *str, int *n, real **r, warninp_t wi)
 {
     char *ptr[MAXPTR];
+    char *endptr;
     int   i;
+    char  warn_buf[STRLEN];
 
     *n = str_nelem(str, MAXPTR, ptr);
 
     snew(*r, *n);
     for (i = 0; i < *n; i++)
     {
-        (*r)[i] = strtod(ptr[i], NULL);
+        (*r)[i] = strtod(ptr[i], &endptr);
+        if (*endptr != 0)
+        {
+            sprintf(warn_buf, "Invalid value %s in string in mdp file. Expected a real number.", ptr[i]);
+            warning_error(wi, warn_buf);
+        }
     }
 }
 
-static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weights[STRLEN])
+static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weights[STRLEN], warninp_t wi)
 {
 
     int         i, j, max_n_lambda, nweights, nfep[efptNR];
@@ -1529,7 +1553,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
 
     for (i = 0; i < efptNR; i++)
     {
-        parse_n_real(fep_lambda[i], &(nfep[i]), &(count_fep_lambdas[i]));
+        parse_n_real(fep_lambda[i], &(nfep[i]), &(count_fep_lambdas[i]), wi);
     }
 
     /* now, determine the number of components.  All must be either zero, or equal. */
@@ -1654,7 +1678,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     }
 
     /* now read in the weights */
-    parse_n_real(weights, &nweights, &(expand->init_lambda_weights));
+    parse_n_real(weights, &nweights, &(expand->init_lambda_weights), wi);
     if (nweights == 0)
     {
         snew(expand->init_lambda_weights, fep->n_lambda); /* initialize to zero */
@@ -2237,6 +2261,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("E-z",     is->efield_z,   NULL);
     STYPE ("E-zt",    is->efield_zt,  NULL);
 
+    /* Ion/water position swapping ("computational electrophysiology") */
     CCTYPE("Ion/water position swapping for computational electrophysiology setups");
     CTYPE("Swap positions along direction: no, X, Y, Z");
     EETYPE("swapcoords", ir->eSwapCoords, eSwapTypes_names);
@@ -2275,6 +2300,19 @@ void get_ir(const char *mdparin, const char *mdparout,
         ITYPE("cationsA", ir->swap->ncations[0], -1);
         ITYPE("anionsB", ir->swap->nanions[1], -1);
         ITYPE("cationsB", ir->swap->ncations[1], -1);
+
+        CTYPE("By default (i.e. bulk offset = 0.0), ion/water exchanges happen between layers");
+        CTYPE("at maximum distance (= bulk concentration) to the split group layers. However,");
+        CTYPE("an offset b (-1.0 < b < +1.0) can be specified to offset the bulk layer from the middle at 0.0");
+        CTYPE("towards one of the compartment-partitioning layers (at +/- 1.0).");
+        RTYPE("bulk-offsetA", ir->swap->bulkOffset[0], 0.0);
+        RTYPE("bulk-offsetB", ir->swap->bulkOffset[1], 0.0);
+        if (!(ir->swap->bulkOffset[0] > -1.0 && ir->swap->bulkOffset[0] < 1.0)
+            || !(ir->swap->bulkOffset[1] > -1.0 && ir->swap->bulkOffset[1] < 1.0) )
+        {
+            warning_error(wi, "Bulk layer offsets must be > -1.0 and < 1.0 !");
+        }
+
         CTYPE("Start to swap ions if threshold difference to requested count is reached");
         RTYPE("threshold", ir->swap->threshold, 1.0);
     }
@@ -2461,7 +2499,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         {
             ir->bExpanded = TRUE;
         }
-        do_fep_params(ir, is->fep_lambda, is->lambda_weights);
+        do_fep_params(ir, is->fep_lambda, is->lambda_weights, wi);
         if (ir->bSimTemp) /* done after fep params */
         {
             do_simtemp_params(ir);
@@ -3249,6 +3287,7 @@ void do_index(const char* mdparin, const char *ndx,
     gmx_bool      bExcl, bTable, bSetTCpar, bAnneal, bRest;
     int           nQMmethod, nQMbasis, nQMg;
     char          warn_buf[STRLEN];
+    char*         endptr;
 
     if (bVerbose)
     {
@@ -3262,7 +3301,7 @@ void do_index(const char* mdparin, const char *ndx,
         snew(gnames, 1);
         atoms_all = gmx_mtop_global_atoms(mtop);
         analyse(&atoms_all, grps, &gnames, FALSE, TRUE);
-        free_t_atoms(&atoms_all, FALSE);
+        done_atom(&atoms_all);
     }
     else
     {
@@ -3319,7 +3358,11 @@ void do_index(const char* mdparin, const char *ndx,
         tau_min = 1e20;
         for (i = 0; (i < nr); i++)
         {
-            ir->opts.tau_t[i] = strtod(ptr1[i], NULL);
+            ir->opts.tau_t[i] = strtod(ptr1[i], &endptr);
+            if (*endptr != 0)
+            {
+                warning_error(wi, "Invalid value for mdp option tau-t. tau-t should only consist of real numbers separated by spaces.");
+            }
             if ((ir->eI == eiBD || ir->eI == eiSD2) && ir->opts.tau_t[i] <= 0)
             {
                 sprintf(warn_buf, "With integrator %s tau-t should be larger than 0", ei_names[ir->eI]);
@@ -3385,7 +3428,11 @@ void do_index(const char* mdparin, const char *ndx,
         }
         for (i = 0; (i < nr); i++)
         {
-            ir->opts.ref_t[i] = strtod(ptr2[i], NULL);
+            ir->opts.ref_t[i] = strtod(ptr2[i], &endptr);
+            if (*endptr != 0)
+            {
+                warning_error(wi, "Invalid value for mdp option ref-t. ref-t should only consist of real numbers separated by spaces.");
+            }
             if (ir->opts.ref_t[i] < 0)
             {
                 gmx_fatal(FARGS, "ref-t for group %d negative", i);
@@ -3452,7 +3499,11 @@ void do_index(const char* mdparin, const char *ndx,
                 }
                 for (k = 0, i = 0; i < nr; i++)
                 {
-                    ir->opts.anneal_npoints[i] = strtol(ptr1[i], NULL, 10);
+                    ir->opts.anneal_npoints[i] = strtol(ptr1[i], &endptr, 10);
+                    if (*endptr != 0)
+                    {
+                        warning_error(wi, "Invalid value for mdp option annealing-npoints. annealing should only consist of integers separated by spaces.");
+                    }
                     if (ir->opts.anneal_npoints[i] == 1)
                     {
                         gmx_fatal(FARGS, "Please specify at least a start and an end point for annealing\n");
@@ -3478,8 +3529,16 @@ void do_index(const char* mdparin, const char *ndx,
 
                     for (j = 0; j < ir->opts.anneal_npoints[i]; j++)
                     {
-                        ir->opts.anneal_time[i][j] = strtod(ptr1[k], NULL);
-                        ir->opts.anneal_temp[i][j] = strtod(ptr2[k], NULL);
+                        ir->opts.anneal_time[i][j] = strtod(ptr1[k], &endptr);
+                        if (*endptr != 0)
+                        {
+                            warning_error(wi, "Invalid value for mdp option anneal-time. anneal-time should only consist of real numbers separated by spaces.");
+                        }
+                        ir->opts.anneal_temp[i][j] = strtod(ptr2[k], &endptr);
+                        if (*endptr != 0)
+                        {
+                            warning_error(wi, "Invalid value for anneal-temp. anneal-temp should only consist of real numbers separated by spaces.");
+                        }
                         if (j == 0)
                         {
                             if (ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
@@ -3579,7 +3638,11 @@ void do_index(const char* mdparin, const char *ndx,
     {
         for (j = 0; (j < DIM); j++, k++)
         {
-            ir->opts.acc[i][j] = strtod(ptr1[k], NULL);
+            ir->opts.acc[i][j] = strtod(ptr1[k], &endptr);
+            if (*endptr != 0)
+            {
+                warning_error(wi, "Invalid value for mdp option accelerate. accelerate should only consist of real numbers separated by spaces.");
+            }
         }
     }
     for (; (i < nr); i++)
@@ -3700,8 +3763,16 @@ void do_index(const char* mdparin, const char *ndx,
 
     for (i = 0; i < nr; i++)
     {
-        ir->opts.QMmult[i]   = strtol(ptr1[i], NULL, 10);
-        ir->opts.QMcharge[i] = strtol(ptr2[i], NULL, 10);
+        ir->opts.QMmult[i]   = strtol(ptr1[i], &endptr, 10);
+        if (*endptr != 0)
+        {
+            warning_error(wi, "Invalid value for mdp option QMmult. QMmult should only consist of integers separated by spaces.");
+        }
+        ir->opts.QMcharge[i] = strtol(ptr2[i], &endptr, 10);
+        if (*endptr != 0)
+        {
+            warning_error(wi, "Invalid value for mdp option QMcharge. QMcharge should only consist of integers separated by spaces.");
+        }
         ir->opts.bSH[i]      = (gmx_strncasecmp(ptr3[i], "Y", 1) == 0);
     }
 
@@ -3711,8 +3782,16 @@ void do_index(const char* mdparin, const char *ndx,
     snew(ir->opts.CASorbitals, nr);
     for (i = 0; i < nr; i++)
     {
-        ir->opts.CASelectrons[i] = strtol(ptr1[i], NULL, 10);
-        ir->opts.CASorbitals[i]  = strtol(ptr2[i], NULL, 10);
+        ir->opts.CASelectrons[i] = strtol(ptr1[i], &endptr, 10);
+        if (*endptr != 0)
+        {
+            warning_error(wi, "Invalid value for mdp option CASelectrons. CASelectrons should only consist of integers separated by spaces.");
+        }
+        ir->opts.CASorbitals[i]  = strtol(ptr2[i], &endptr, 10);
+        if (*endptr != 0)
+        {
+            warning_error(wi, "Invalid value for mdp option CASorbitals. CASorbitals should only consist of integers separated by spaces.");
+        }
     }
     /* special optimization options */
 
@@ -3734,9 +3813,21 @@ void do_index(const char* mdparin, const char *ndx,
 
     for (i = 0; i < nr; i++)
     {
-        ir->opts.SAon[i]    = strtod(ptr1[i], NULL);
-        ir->opts.SAoff[i]   = strtod(ptr2[i], NULL);
-        ir->opts.SAsteps[i] = strtol(ptr3[i], NULL, 10);
+        ir->opts.SAon[i]    = strtod(ptr1[i], &endptr);
+        if (*endptr != 0)
+        {
+            warning_error(wi, "Invalid value for mdp option SAon. SAon should only consist of real numbers separated by spaces.");
+        }
+        ir->opts.SAoff[i]   = strtod(ptr2[i], &endptr);
+        if (*endptr != 0)
+        {
+            warning_error(wi, "Invalid value for mdp option SAoff. SAoff should only consist of real numbers separated by spaces.");
+        }
+        ir->opts.SAsteps[i] = strtol(ptr3[i], &endptr, 10);
+        if (*endptr != 0)
+        {
+            warning_error(wi, "Invalid value for mdp option SAsteps. SAsteps should only consist of integers separated by spaces.");
+        }
     }
     /* end of QMMM input */
 

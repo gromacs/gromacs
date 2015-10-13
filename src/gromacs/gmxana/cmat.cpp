@@ -42,7 +42,6 @@
 
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -208,7 +207,7 @@ void swap_mat(t_mat *m)
 }
 
 void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
-                   const output_env_t oenv)
+                   const gmx_output_env_t *oenv)
 {
     FILE   *fp;
     int     i, j, *histo, x;
@@ -237,7 +236,7 @@ void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
     sfree(histo);
 }
 
-void rmsd_distribution(const char *fn, t_mat *rms, const output_env_t oenv)
+void rmsd_distribution(const char *fn, t_mat *rms, const gmx_output_env_t *oenv)
 {
     low_rmsd_dist(fn, rms->maxrms, rms->nn, rms->mat, oenv);
 }

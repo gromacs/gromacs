@@ -42,18 +42,18 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -161,15 +161,15 @@ int gmx_g_angle(int argc, char *argv[])
     int                nframes, maxangstat, mult, *angstat;
     int                i, j, nangles, first, last;
     gmx_bool           bAver, bRb, bPeriodic,
-                       bFrac,          /* calculate fraction too?  */
-                       bTrans,         /* worry about transtions too? */
-                       bCorr;          /* correlation function ? */
-    real         aver, aver2, aversig; /* fraction trans dihedrals */
-    double       tfrac = 0;
-    char         title[256];
-    real       **dih = NULL;      /* mega array with all dih. angles at all times*/
-    real        *time, *trans_frac, *aver_angle;
-    t_filenm     fnm[] = {
+                       bFrac,               /* calculate fraction too?  */
+                       bTrans,              /* worry about transtions too? */
+                       bCorr;               /* correlation function ? */
+    real              aver, aver2, aversig; /* fraction trans dihedrals */
+    double            tfrac = 0;
+    char              title[256];
+    real            **dih = NULL; /* mega array with all dih. angles at all times*/
+    real             *time, *trans_frac, *aver_angle;
+    t_filenm          fnm[] = {
         { efTRX, "-f", NULL,  ffREAD  },
         { efNDX, NULL, "angle",  ffREAD  },
         { efXVG, "-od", "angdist",  ffWRITE },
@@ -181,9 +181,9 @@ int gmx_g_angle(int argc, char *argv[])
         { efTRR, "-or", NULL,       ffOPTWR }
     };
 #define NFILE asize(fnm)
-    int          npargs;
-    t_pargs     *ppa;
-    output_env_t oenv;
+    int               npargs;
+    t_pargs          *ppa;
+    gmx_output_env_t *oenv;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);

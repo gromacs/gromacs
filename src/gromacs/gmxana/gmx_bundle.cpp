@@ -41,15 +41,16 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -189,7 +190,7 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
 
 int gmx_bundle(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] analyzes bundles of axes. The axes can be for instance",
         "helix axes. The program reads two index groups and divides both",
         "of them in [TT]-na[tt] parts. The centers of mass of these parts",
@@ -212,35 +213,35 @@ int gmx_bundle(int argc, char *argv[])
         "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
         "display the reference axis."
     };
-    static int      n    = 0;
-    static gmx_bool bZ   = FALSE;
-    t_pargs         pa[] = {
+    static int        n    = 0;
+    static gmx_bool   bZ   = FALSE;
+    t_pargs           pa[] = {
         { "-na", FALSE, etINT, {&n},
           "Number of axes" },
         { "-z", FALSE, etBOOL, {&bZ},
           "Use the [IT]z[it]-axis as reference instead of the average axis" }
     };
-    FILE           *flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
-    FILE           *fkink = NULL, *fkinkr = NULL, *fkinkl = NULL;
-    t_trxstatus    *status;
-    t_trxstatus    *fpdb;
-    t_topology      top;
-    int             ePBC;
-    rvec           *xtop;
-    matrix          box;
-    t_trxframe      fr;
-    t_atoms         outatoms;
-    real            t, comp;
-    char           *grpname[MAX_ENDS], title[256];
+    FILE             *flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
+    FILE             *fkink = NULL, *fkinkr = NULL, *fkinkl = NULL;
+    t_trxstatus      *status;
+    t_trxstatus      *fpdb;
+    t_topology        top;
+    int               ePBC;
+    rvec             *xtop;
+    matrix            box;
+    t_trxframe        fr;
+    t_atoms           outatoms;
+    real              t, comp;
+    char             *grpname[MAX_ENDS];
     /* FIXME: The constness should not be cast away */
-    char           *anm = (char *)"CA", *rnm = (char *)"GLY";
-    int             i, gnx[MAX_ENDS];
-    atom_id        *index[MAX_ENDS];
-    t_bundle        bun;
-    gmx_bool        bKink;
-    rvec            va, vb, vc, vr, vl;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc = NULL;
+    char             *anm = (char *)"CA", *rnm = (char *)"GLY";
+    int               i, gnx[MAX_ENDS];
+    atom_id          *index[MAX_ENDS];
+    t_bundle          bun;
+    gmx_bool          bKink;
+    rvec              va, vb, vc, vr, vl;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
 #define NLEG asize(leg)
     t_filenm fnm[] = {
@@ -266,7 +267,7 @@ int gmx_bundle(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, TRUE);
 
     bKink = opt2bSet("-ok", NFILE, fnm) || opt2bSet("-okr", NFILE, fnm)
         || opt2bSet("-okl", NFILE, fnm);

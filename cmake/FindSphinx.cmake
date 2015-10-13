@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-find_program(SPHINX_EXECUTABLE NAMES sphinx-build
+find_program(SPHINX_EXECUTABLE NAMES sphinx-build sphinx-build2
     HINTS
     $ENV{SPHINX_DIR}
     PATH_SUFFIXES bin
@@ -49,7 +49,7 @@ if (SPHINX_EXECUTABLE AND NOT DEFINED SPHINX_EXECUTABLE_VERSION)
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-    string(REGEX REPLACE "Sphinx \\([^)]*\\) ([^ ]+)" "\\1" SPHINX_EXECUTABLE_VERSION ${SPHINX_VERSION_OUTPUT_VARIABLE})
+    string(REGEX REPLACE "Sphinx \\([^)]*\\) ([^ ]+)" "\\1" SPHINX_EXECUTABLE_VERSION "${SPHINX_VERSION_OUTPUT_VARIABLE}")
     set(SPHINX_EXECUTABLE_VERSION "${SPHINX_EXECUTABLE_VERSION}" CACHE INTERNAL "Version of ${SPHINX_EXECUTABLE}")
 endif()
 

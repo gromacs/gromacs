@@ -35,17 +35,17 @@
 #ifndef GMX_GMXPREPROCESS_INSERT_MOLECULES_H
 #define GMX_GMXPREPROCESS_INSERT_MOLECULES_H
 
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
+
 namespace gmx
 {
-
-class ICommandLineOptionsModule;
 
 class InsertMoleculesInfo
 {
     public:
         static const char name[];
         static const char shortDescription[];
-        static ICommandLineOptionsModule *create();
+        static ICommandLineOptionsModulePointer create();
 };
 
 } // namespace gmx

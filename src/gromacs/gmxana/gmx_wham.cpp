@@ -58,12 +58,14 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
@@ -171,7 +173,7 @@ typedef struct
     double *tau;         //!< intetrated autocorrelation time (IACT)
     double *tausmooth;   //!< smoothed IACT
 
-    double  dt;          //!< timestep in the input data. Can be adapted with g_wham option -dt
+    double  dt;          //!< timestep in the input data. Can be adapted with gmx wham option -dt
 
     /*! \brief TRUE, if any data point of the histogram is within min and max, otherwise FALSE */
     gmx_bool **bContrib;
@@ -231,15 +233,15 @@ typedef struct
     /*! \brief after wham, set prof to zero at this z-position.
      * When bootstrapping, set zProf0 to a "stable" reference position.
      */
-    real         zProf0;
-    gmx_bool     bProf0Set;              //!< setting profile to 0 at zProf0?
+    real              zProf0;
+    gmx_bool          bProf0Set;              //!< setting profile to 0 at zProf0?
 
-    gmx_bool     bBoundsOnly, bHistOnly; //!< determine min and max, or write histograms and exit
-    gmx_bool     bAuto;                  //!< determine min and max automatically but do not exit
+    gmx_bool          bBoundsOnly, bHistOnly; //!< determine min and max, or write histograms and exit
+    gmx_bool          bAuto;                  //!< determine min and max automatically but do not exit
 
-    gmx_bool     verbose;                //!< more noisy wham mode
-    int          stepchange;             //!< print maximum change in prof after how many interations
-    output_env_t oenv;                   //!< xvgr options
+    gmx_bool          verbose;                //!< more noisy wham mode
+    int               stepchange;             //!< print maximum change in prof after how many interations
+    gmx_output_env_t *oenv;                   //!< xvgr options
     /*!\}*/
     /*!
      * \name Autocorrelation stuff
@@ -645,7 +647,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
 
         sscanf(ptr, fmtlf, &time); /* printf("Time %f\n",time); */
         /* Round time to fs */
-        time = 1.0/1000*( static_cast<int> (time*1000+0.5) );
+        time = 1.0/1000*( static_cast<gmx_int64_t> (time*1000+0.5) );
 
         /* get time step of pdo file */
         if (count == 0)
@@ -869,8 +871,8 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
                     }
                 }
                 /* Note: there are two contributions to bin k in the wham equations:
-                   i)  N[j]*exp(- U/(8.314e-3*opt->Temperature) + window[i].z[j])
-                   ii) exp(- U/(8.314e-3*opt->Temperature))
+                   i)  N[j]*exp(- U/(BOLTZ*opt->Temperature) + window[i].z[j])
+                   ii) exp(- U/(BOLTZ*opt->Temperature))
                    where U is the umbrella potential
                    If any of these number is larger wham_contrib_lim, I set contrib=TRUE
                  */
@@ -883,8 +885,8 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
                 {
                     U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
                 }
-                contrib1                 = profile[k]*std::exp(-U/(8.314e-3*opt->Temperature));
-                contrib2                 = window[i].N[j]*std::exp(-U/(8.314e-3*opt->Temperature) + window[i].z[j]);
+                contrib1                 = profile[k]*std::exp(-U/(BOLTZ*opt->Temperature));
+                contrib2                 = window[i].N[j]*std::exp(-U/(BOLTZ*opt->Temperature) + window[i].z[j]);
                 window[i].bContrib[j][k] = (contrib1 > wham_contrib_lim || contrib2 > wham_contrib_lim);
                 bAnyContrib              = (bAnyContrib | window[i].bContrib[j][k]);
                 if (window[i].bContrib[j][k])
@@ -930,55 +932,59 @@ void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
 
 #pragma omp parallel
     {
-        int nthreads  = gmx_omp_get_max_threads();
-        int thread_id = gmx_omp_get_thread_num();
-        int i;
-        int i0        = thread_id*opt->bins/nthreads;
-        int i1        = std::min(opt->bins, ((thread_id+1)*opt->bins)/nthreads);
-
-        for (i = i0; i < i1; ++i)
+        try
         {
-            int    j, k;
-            double num, denom, invg, temp = 0, distance, U = 0;
-            num = denom = 0.;
-            for (j = 0; j < nWindows; ++j)
+            int nthreads  = gmx_omp_get_max_threads();
+            int thread_id = gmx_omp_get_thread_num();
+            int i;
+            int i0        = thread_id*opt->bins/nthreads;
+            int i1        = std::min(opt->bins, ((thread_id+1)*opt->bins)/nthreads);
+
+            for (i = i0; i < i1; ++i)
             {
-                for (k = 0; k < window[j].nPull; ++k)
+                int    j, k;
+                double num, denom, invg, temp = 0, distance, U = 0;
+                num = denom = 0.;
+                for (j = 0; j < nWindows; ++j)
                 {
-                    invg = 1.0/window[j].g[k] * window[j].bsWeight[k];
-                    temp = (1.0*i+0.5)*dz+min;
-                    num += invg*window[j].Histo[k][i];
+                    for (k = 0; k < window[j].nPull; ++k)
+                    {
+                        invg = 1.0/window[j].g[k] * window[j].bsWeight[k];
+                        temp = (1.0*i+0.5)*dz+min;
+                        num += invg*window[j].Histo[k][i];
 
-                    if (!(bExact || window[j].bContrib[k][i]))
-                    {
-                        continue;
-                    }
-                    distance = temp - window[j].pos[k];   /* distance to umbrella center */
-                    if (opt->bCycl)
-                    {                                     /* in cyclic wham:             */
-                        if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                        if (!(bExact || window[j].bContrib[k][i]))
                         {
-                            distance -= ztot;
+                            continue;
                         }
-                        else if (distance < -ztot_half)
-                        {
-                            distance += ztot;
+                        distance = temp - window[j].pos[k];   /* distance to umbrella center */
+                        if (opt->bCycl)
+                        {                                     /* in cyclic wham:             */
+                            if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                            {
+                                distance -= ztot;
+                            }
+                            else if (distance < -ztot_half)
+                            {
+                                distance += ztot;
+                            }
                         }
-                    }
 
-                    if (!opt->bTab)
-                    {
-                        U = 0.5*window[j].k[k]*sqr(distance);       /* harmonic potential assumed. */
+                        if (!opt->bTab)
+                        {
+                            U = 0.5*window[j].k[k]*sqr(distance);       /* harmonic potential assumed. */
+                        }
+                        else
+                        {
+                            U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
+                        }
+                        denom += invg*window[j].N[k]*std::exp(-U/(BOLTZ*opt->Temperature) + window[j].z[k]);
                     }
-                    else
-                    {
-                        U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
-                    }
-                    denom += invg*window[j].N[k]*std::exp(-U/(8.314e-3*opt->Temperature) + window[j].z[k]);
                 }
+                profile[i] = num/denom;
             }
-            profile[i] = num/denom;
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 }
 
@@ -994,79 +1000,83 @@ double calc_z(double * profile, t_UmbrellaWindow * window, int nWindows,
 
 #pragma omp parallel
     {
-        int    nthreads  = gmx_omp_get_max_threads();
-        int    thread_id = gmx_omp_get_thread_num();
-        int    i;
-        int    i0        = thread_id*nWindows/nthreads;
-        int    i1        = std::min(nWindows, ((thread_id+1)*nWindows)/nthreads);
-        double maxloc    = -1e20;
-
-        for (i = i0; i < i1; ++i)
+        try
         {
-            double total     = 0, temp, distance, U = 0;
-            int    j, k;
+            int    nthreads  = gmx_omp_get_max_threads();
+            int    thread_id = gmx_omp_get_thread_num();
+            int    i;
+            int    i0        = thread_id*nWindows/nthreads;
+            int    i1        = std::min(nWindows, ((thread_id+1)*nWindows)/nthreads);
+            double maxloc    = -1e20;
 
-            for (j = 0; j < window[i].nPull; ++j)
+            for (i = i0; i < i1; ++i)
             {
-                total = 0;
-                for (k = 0; k < window[i].nBin; ++k)
-                {
-                    if (!(bExact || window[i].bContrib[j][k]))
-                    {
-                        continue;
-                    }
-                    temp     = (1.0*k+0.5)*dz+min;
-                    distance = temp - window[i].pos[j];   /* distance to umbrella center */
-                    if (opt->bCycl)
-                    {                                     /* in cyclic wham:             */
-                        if (distance > ztot_half)         /*    |distance| < ztot_half   */
-                        {
-                            distance -= ztot;
-                        }
-                        else if (distance < -ztot_half)
-                        {
-                            distance += ztot;
-                        }
-                    }
+                double total     = 0, temp, distance, U = 0;
+                int    j, k;
 
-                    if (!opt->bTab)
+                for (j = 0; j < window[i].nPull; ++j)
+                {
+                    total = 0;
+                    for (k = 0; k < window[i].nBin; ++k)
                     {
-                        U = 0.5*window[i].k[j]*sqr(distance);       /* harmonic potential assumed. */
+                        if (!(bExact || window[i].bContrib[j][k]))
+                        {
+                            continue;
+                        }
+                        temp     = (1.0*k+0.5)*dz+min;
+                        distance = temp - window[i].pos[j];   /* distance to umbrella center */
+                        if (opt->bCycl)
+                        {                                     /* in cyclic wham:             */
+                            if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                            {
+                                distance -= ztot;
+                            }
+                            else if (distance < -ztot_half)
+                            {
+                                distance += ztot;
+                            }
+                        }
+
+                        if (!opt->bTab)
+                        {
+                            U = 0.5*window[i].k[j]*sqr(distance);       /* harmonic potential assumed. */
+                        }
+                        else
+                        {
+                            U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
+                        }
+                        total += profile[k]*std::exp(-U/(BOLTZ*opt->Temperature));
+                    }
+                    /* Avoid floating point exception if window is far outside min and max */
+                    if (total != 0.0)
+                    {
+                        total = -std::log(total);
                     }
                     else
                     {
-                        U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
+                        total = 1000.0;
                     }
-                    total += profile[k]*std::exp(-U/(8.314e-3*opt->Temperature));
+                    temp = std::abs(total - window[i].z[j]);
+                    if (temp > maxloc)
+                    {
+                        maxloc = temp;
+                    }
+                    window[i].z[j] = total;
                 }
-                /* Avoid floating point exception if window is far outside min and max */
-                if (total != 0.0)
-                {
-                    total = -std::log(total);
-                }
-                else
-                {
-                    total = 1000.0;
-                }
-                temp = std::abs(total - window[i].z[j]);
-                if (temp > maxloc)
-                {
-                    maxloc = temp;
-                }
-                window[i].z[j] = total;
             }
-        }
-        /* Now get maximum maxloc from the threads and put in maxglob */
-        if (maxloc > maxglob)
-        {
-#pragma omp critical
+            /* Now get maximum maxloc from the threads and put in maxglob */
+            if (maxloc > maxglob)
             {
-                if (maxloc > maxglob)
+#pragma omp critical
                 {
-                    maxglob = maxloc;
+                    if (maxloc > maxglob)
+                    {
+                        maxglob = maxloc;
+                    }
                 }
             }
         }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     return maxglob;
@@ -1116,9 +1126,8 @@ void symmetrizeProfile(double* profile, t_UmbrellaOptions *opt)
 void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
 {
     int    i, bins, imin;
-    double unit_factor = 1., R_MolarGasConst, diff;
+    double unit_factor = 1., diff;
 
-    R_MolarGasConst = 8.314472e-3; /* in kJ/(mol*K) */
     bins            = opt->bins;
 
     /* Not log? Nothing to do! */
@@ -1134,11 +1143,11 @@ void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
     }
     else if (opt->unit == en_kJ)
     {
-        unit_factor = R_MolarGasConst*opt->Temperature;
+        unit_factor = BOLTZ*opt->Temperature;
     }
     else if (opt->unit == en_kCal)
     {
-        unit_factor = R_MolarGasConst*opt->Temperature/4.1868;
+        unit_factor = (BOLTZ/CAL2JOULE)*opt->Temperature;
     }
     else
     {
@@ -1362,7 +1371,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
                 "When generating hypothetical trajctories from given umbrella histograms,\n"
                 "autocorrelation times (ACTs) are required. Otherwise the statistical error\n"
                 "cannot be predicted. You have 3 options:\n"
-                "1) Make g_wham estimate the ACTs (options -ac and -acsig).\n"
+                "1) Make gmx wham estimate the ACTs (options -ac and -acsig).\n"
                 "2) Calculate the ACTs by yourself (e.g. with g_analyze) and provide them\n");
         std::strcat(errstr,
                     "   with option -iiact for all umbrella windows.\n"
@@ -2036,7 +2045,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     static int  first = 1;
 
     /* printf("Reading %s \n",fn); */
-    read_tpx_state(fn, &ir, &state, NULL, NULL);
+    read_tpx_state(fn, &ir, &state, NULL);
 
     if (!ir.bPull)
     {
@@ -2230,7 +2239,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
         gmx_fatal(FARGS, "With pull geometries \"direction\" and \"direction_periodic\", only pull force "
                   "reading \n(option -if) is supported at present, "
                   "not pull position reading (options -ix).\nMake sure mdrun writes the pull "
-                  "forces (pullf.xvg files)\nand provide them to g_wham with option -if.",
+                  "forces (pullf.xvg files)\nand provide them to gmx wham with option -if.",
                   epullg_names[header->pull_geometry]);
     }
 
@@ -2365,7 +2374,7 @@ void read_pull_xf(const char *fn, const char *fntpr, t_UmbrellaHeader * header,
     for (i = 0; i < nt; i++)
     {
         /* Do you want that time frame? */
-        t = 1.0/1000*( static_cast<int> ((y[0][i]*1000) + 0.5)); /* round time to fs */
+        t = 1.0/1000*( static_cast<gmx_int64_t> ((y[0][i]*1000) + 0.5)); /* round time to fs */
 
         /* get time step of pdo file and get dstep from opt->dt */
         if (i == 0)
@@ -3097,7 +3106,7 @@ void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOpt
      */
     for (j = 0; j < opt->bins; ++j)
     {
-        pot[j] = std::exp(-pot[j]/(8.314e-3*opt->Temperature));
+        pot[j] = std::exp(-pot[j]/(BOLTZ*opt->Temperature));
     }
     calc_z(pot, window, nWindows, opt, TRUE);
 
@@ -3209,7 +3218,7 @@ void readPullGroupSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 //! Number of elements in fnm (used for command line parsing)
 #define NFILE asize(fnm)
 
-//! The main g_wham routine
+//! The main gmx wham routine
 int gmx_wham(int argc, char *argv[])
 {
     const char              *desc[] = {
@@ -3307,7 +3316,7 @@ int gmx_wham(int argc, char *argv[])
         "Parallelization",
         "^^^^^^^^^^^^^^^",
         "",
-        "If available, the number of OpenMP threads used by g_wham is controlled with [TT]-nt[tt].",
+        "If available, the number of OpenMP threads used by gmx wham is controlled with [TT]-nt[tt].",
         "",
         "Autocorrelations",
         "^^^^^^^^^^^^^^^^",
@@ -3384,7 +3393,7 @@ int gmx_wham(int argc, char *argv[])
     t_pargs                  pa[] = {
 #ifdef GMX_OPENMP
         { "-nt", FALSE, etINT, {&nthreads},
-          "Number of threads used by g_wham (if -1, all threads will be used or what is specified by the environment variable OMP_NUM_THREADS)"},
+          "Number of threads used by gmx wham (if -1, all threads will be used or what is specified by the environment variable OMP_NUM_THREADS)"},
 #endif
         { "-min", FALSE, etREAL, {&opt.min},
           "Minimum coordinate in profile"},
@@ -3538,8 +3547,8 @@ int gmx_wham(int argc, char *argv[])
     }
     if (!opt.bPdo && !(opt.bTpr || opt.bPullf || opt.bPullx))
     {
-        gmx_fatal(FARGS, "g_wham supports three input modes, pullx, pullf, or pdo file input."
-                  "\n\n Check g_wham -h !");
+        gmx_fatal(FARGS, "gmx wham supports three input modes, pullx, pullf, or pdo file input."
+                  "\n\n Check gmx wham -h !");
     }
 
     opt.fnPdo      = opt2fn("-ip", NFILE, fnm);
@@ -3772,7 +3781,7 @@ int gmx_wham(int argc, char *argv[])
     sfree(profile);
     freeUmbrellaWindows(window, nfiles);
 
-    printf("\nIn case you use results from g_wham for a publication, please cite:\n");
+    printf("\nIn case you use results from gmx wham for a publication, please cite:\n");
     please_cite(stdout, "Hub2010");
 
     return 0;

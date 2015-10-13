@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,17 @@
 
 #include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_genborn_t;
+struct gmx_enerdata_t;
+struct t_commrec;
+struct t_forcerec;
+struct t_graph;
+struct t_inputrec;
+struct t_mdatoms;
+struct t_nblist;
+struct t_nrnb;
+struct t_pbc;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -55,17 +66,15 @@ extern "C" {
 #define STILL_P5INV (1.0/STILL_P5)
 #define STILL_PIP5  (M_PI*STILL_P5)
 
-struct t_graph;
-struct t_pbc;
 
 /* Initialise GB stuff */
-int init_gb(gmx_genborn_t **p_born,
-            t_forcerec *fr, const t_inputrec *ir,
+int init_gb(struct gmx_genborn_t **p_born,
+            struct t_forcerec *fr, const struct t_inputrec *ir,
             const gmx_mtop_t *mtop, int gb_algorithm);
 
 
 /* Born radii calculations, both with and without SSE acceleration */
-int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
+int calc_gb_rad(struct t_commrec *cr, struct t_forcerec *fr, struct t_inputrec *ir, gmx_localtop_t *top, rvec x[], t_nblist *nl, struct gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
 
 
 
@@ -80,18 +89,18 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
 
 /* Functions for calculating adjustments due to ie chain rule terms */
 void
-calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top,
-               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
-               const struct t_pbc *pbc, const struct t_graph *graph, gmx_enerdata_t *enerd);
+calc_gb_forces(struct t_commrec *cr, t_mdatoms *md, struct gmx_genborn_t *born, gmx_localtop_t *top,
+               rvec x[], rvec f[], struct t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
+               const struct t_pbc *pbc, const struct t_graph *graph, struct gmx_enerdata_t *enerd);
 
 
 int
-make_gb_nblist(t_commrec *cr, int gb_algorithm,
+make_gb_nblist(struct t_commrec *cr, int gb_algorithm,
                rvec x[], matrix box,
-               t_forcerec *fr, t_idef *idef, struct t_graph *graph, gmx_genborn_t *born);
+               struct t_forcerec *fr, t_idef *idef, struct t_graph *graph, struct gmx_genborn_t *born);
 
 void
-make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
+make_local_gb(const struct t_commrec *cr, struct gmx_genborn_t *born, int gb_algorithm);
 
 #ifdef __cplusplus
 }

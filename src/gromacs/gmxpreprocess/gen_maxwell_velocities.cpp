@@ -45,6 +45,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/random/random.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 static void low_mspeed(real tempi,

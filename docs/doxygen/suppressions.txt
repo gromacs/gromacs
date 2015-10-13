@@ -5,8 +5,8 @@ src/gromacs/version.h: warning: includes local file as <gromacs/version.h>
 
 # These are OK
 src/gromacs/math/vec.h: warning: installed header includes non-installed "config.h"
-src/gromacs/linearalgebra/eigensolver.c: warning: should include "config.h"
-src/gromacs/linearalgebra/gmx_arpack.c: warning: should include "config.h"
+src/gromacs/linearalgebra/eigensolver.cpp: warning: should include "config.h"
+src/gromacs/linearalgebra/gmx_arpack.cpp: warning: should include "config.h"
 src/gromacs/linearalgebra/gmx_blas/*: warning: does not include "gmxpre.h" first
 src/gromacs/linearalgebra/gmx_blas/*: warning: should include "config.h"
 src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" first
@@ -41,7 +41,7 @@ src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_gpu_ref.c: warning: includes "confi
 src/gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_ref.c: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.cpp: warning: includes "config.h" unnecessarily
 src/gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_common.h: warning: should include "config.h"
-src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.c: warning: includes "config.h" unnecessarily
+src/gromacs/mdlib/nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.cpp: warning: includes "config.h" unnecessarily
 
 # These are specific to Folding@Home, and easiest to suppress here
 *: warning: includes non-local file as "corewrap.h"

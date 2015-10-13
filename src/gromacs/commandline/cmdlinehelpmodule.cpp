@@ -238,7 +238,7 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
             {
                 exportedTopics_.push_back(topic->name());
             }
-            addSubTopic(move(topic));
+            addSubTopic(std::move(topic));
         }
         //! Exports all the top-level topics with the given exporter.
         void exportHelp(IHelpExport *exporter);
@@ -812,7 +812,7 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
         {
             const std::string &newContents = contents_.toString();
             // TODO: Redirect these for unit tests.
-            if (File::exists(path_))
+            if (File::exists(path_, File::returnFalseOnError))
             {
                 const std::string originalContents_
                     = TextReader::readFileToString(path_);
@@ -885,7 +885,7 @@ HelpTopicPointer CommandLineHelpModule::createModuleHelpTopic(
 
 void CommandLineHelpModule::addTopic(HelpTopicPointer topic, bool bExported)
 {
-    impl_->rootTopic_->addTopic(move(topic), bExported);
+    impl_->rootTopic_->addTopic(std::move(topic), bExported);
 }
 
 void CommandLineHelpModule::setShowHidden(bool bHidden)

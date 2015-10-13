@@ -38,9 +38,16 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
+#include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/typedefs.h"
+
+struct gmx_output_env_t;
+struct pull_params_t;
+struct t_adress;
+struct t_drude;
+struct t_grpopts;
+struct t_rot;
 
 enum {
     eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
@@ -133,7 +140,7 @@ void make_pull_coords(pull_params_t *pull);
 /* Process the pull coordinates after reading the pull groups */
 
 void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
-                   const output_env_t oenv);
+                   const gmx_output_env_t *oenv);
 /* Prints the initial pull group distances in x.
  * If requested, adds the current distance to the initial reference location.
  */

@@ -42,6 +42,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/strdb.h"
@@ -50,16 +51,15 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -361,7 +361,7 @@ void visualize_images(const char *fn, int ePBC, matrix box)
 
     write_sto_conf(fn, "Images", &atoms, img, NULL, ePBC, box);
 
-    free_t_atoms(&atoms, FALSE);
+    done_atom(&atoms);
     sfree(img);
 }
 
@@ -696,28 +696,26 @@ int gmx_editconf(int argc, char *argv[])
     };
 #define NPA asize(pa)
 
-    FILE          *out;
-    const char    *infile, *outfile;
-    char           title[STRLEN];
-    int            outftp, inftp, natom, i, j, n_bfac, itype, ntype;
-    double        *bfac    = NULL, c6, c12;
-    int           *bfac_nr = NULL;
-    t_topology    *top     = NULL;
-    t_atoms        atoms;
-    char          *grpname, *sgrpname, *agrpname;
-    int            isize, ssize, asize;
-    atom_id       *index, *sindex, *aindex;
-    rvec          *x, *v, gc, rmin, rmax, size;
-    int            ePBC;
-    matrix         box, rotmatrix, trans;
-    rvec           princd, tmpvec;
-    gmx_bool       bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
-    gmx_bool       bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
-    real           diam = 0, mass = 0, d, vdw;
-    gmx_atomprop_t aps;
-    gmx_conect     conect;
-    output_env_t   oenv;
-    t_filenm       fnm[] =
+    FILE             *out;
+    const char       *infile, *outfile;
+    int               outftp, inftp, natom, i, j, n_bfac, itype, ntype;
+    double           *bfac    = NULL, c6, c12;
+    int              *bfac_nr = NULL;
+    t_topology       *top     = NULL;
+    char             *grpname, *sgrpname, *agrpname;
+    int               isize, ssize, asize;
+    atom_id          *index, *sindex, *aindex;
+    rvec             *x, *v, gc, rmin, rmax, size;
+    int               ePBC;
+    matrix            box, rotmatrix, trans;
+    rvec              princd, tmpvec;
+    gmx_bool          bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
+    gmx_bool          bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
+    real              diam = 0, mass = 0, d, vdw;
+    gmx_atomprop_t    aps;
+    gmx_conect        conect;
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] =
     {
         { efSTX, "-f", NULL, ffREAD },
         { efNDX, "-n", NULL, ffOPTRD },
@@ -790,11 +788,15 @@ int gmx_editconf(int argc, char *argv[])
                   " when using the -mead option\n");
     }
 
-    get_stx_coordnum(infile, &natom);
-    init_t_atoms(&atoms, natom, TRUE);
-    snew(x, natom);
-    snew(v, natom);
-    read_stx_conf(infile, title, &atoms, x, v, &ePBC, box);
+    t_topology *top_tmp;
+    snew(top_tmp, 1);
+    read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
+    t_atoms  &atoms = top_tmp->atoms;
+    natom = atoms.nr;
+    if (atoms.pdbinfo == NULL)
+    {
+        snew(atoms.pdbinfo, atoms.nr);
+    }
     if (fn2ftp(infile) == efPDB)
     {
         get_pdb_atomnumber(&atoms, aps);
@@ -1257,12 +1259,12 @@ int gmx_editconf(int argc, char *argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, title, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE);
+            write_pdbfile_indexed(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, TRUE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, title, &atoms, x, bHaveV ? v : NULL, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : NULL, ePBC, box, isize, index);
         }
     }
     else
@@ -1303,7 +1305,7 @@ int gmx_editconf(int argc, char *argv[])
                     atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
                 }
             }
-            write_pdbfile(out, title, &atoms, x, ePBC, box, ' ', -1, conect, TRUE);
+            write_pdbfile(out, *top_tmp->name, &atoms, x, ePBC, box, ' ', -1, conect, TRUE);
             if (bLegend)
             {
                 pdb_legend(out, atoms.nr, atoms.nres, &atoms, x);
@@ -1317,7 +1319,7 @@ int gmx_editconf(int argc, char *argv[])
         }
         else
         {
-            write_sto_conf(outfile, title, &atoms, x, bHaveV ? v : NULL, ePBC, box);
+            write_sto_conf(outfile, *top_tmp->name, &atoms, x, bHaveV ? v : NULL, ePBC, box);
         }
     }
     gmx_atomprop_destroy(aps);

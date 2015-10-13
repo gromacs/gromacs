@@ -40,27 +40,27 @@
 #include <cstring>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fft/fft.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gmx_ana.h"
 
 enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
@@ -271,13 +271,12 @@ int gmx_dos(int argc, char *argv[])
     t_trxframe          fr;
     matrix              box;
     int                 gnx;
-    char                title[256];
     real                t0, t1;
     t_trxstatus        *status;
     int                 nV, nframes, n_alloc, i, j, fftcode, Nmol, Natom;
     double              rho, dt, Vsum, V, tmass, dostot, dos2;
     real              **c1, **dos, mi, beta, bfac, *nu, *tt, stddev, c1j;
-    output_env_t        oenv;
+    gmx_output_env_t   *oenv;
     gmx_fft_t           fft;
     double              cP, DiffCoeff, Delta, f, y, z, sigHS, Shs, Sig, DoS0, recip_fac;
     double              wCdiff, wSdiff, wAdiff, wEdiff;
@@ -338,7 +337,7 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, NULL, NULL, box, TRUE);
 
     /* Handle index groups */
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
@@ -524,7 +523,7 @@ int gmx_dos(int argc, char *argv[])
     rho   = (tmass*AMU)/(V*NANO*NANO*NANO);
     sigHS = std::pow(6*y*V/(M_PI*Natom), 1.0/3.0);
 
-    fprintf(fplog, "System = \"%s\"\n", title);
+    fprintf(fplog, "System = \"%s\"\n", *top.name);
     fprintf(fplog, "Nmol = %d\n", Nmol);
     fprintf(fplog, "Natom = %d\n", Natom);
     fprintf(fplog, "dt = %g ps\n", dt);

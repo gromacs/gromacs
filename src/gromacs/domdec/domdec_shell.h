@@ -44,7 +44,8 @@
 #ifndef GMX_DOMDEC_DOMDEC_SHELL_H
 #define GMX_DOMDEC_DOMDEC_SHELL_H
 
-#include "gromacs/legacyheaders/types/commrec_fwd.h"
+#include "domdec.h"
+
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
 

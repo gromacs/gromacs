@@ -41,6 +41,7 @@
 
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/topology/residuetypes.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -220,6 +221,16 @@ t_dlist *mk_dlist(FILE *log,
                 nc[6]++;
             }
             dl[nl].index = gmx_residuetype_get_index(rt, thisres);
+
+            /* Prevent seg fault from unknown residues. If one adds a custom residue to
+             * residuetypes.dat but somehow loses it, changes it, or does analysis on
+             * another machine, the residue type will be unknown. */
+            if (dl[nl].index == -1)
+            {
+                gmx_fatal(FARGS, "Unknown residue %s when searching for residue type.\n"
+                          "Maybe you need to add a custom residue in residuetypes.dat.",
+                          thisres, __FILE__, __LINE__);
+            }
 
             sprintf(dl[nl].name, "%s%d", thisres, ires+r0);
             nl++;

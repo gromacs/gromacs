@@ -41,10 +41,10 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/macros.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -71,12 +71,12 @@ int gmx_dyecoupl(int argc, char *argv[])
         "The [TT]-norm[tt] option (area-) normalizes the histograms."
     };
 
-    static gmx_bool bPBCdist = FALSE, bNormHist = FALSE;
-    int             histbins = 50;
-    output_env_t    oenv;
-    real            R0 = -1;
+    static gmx_bool   bPBCdist = FALSE, bNormHist = FALSE;
+    int               histbins = 50;
+    gmx_output_env_t *oenv;
+    real              R0 = -1;
 
-    t_pargs         pa[] =
+    t_pargs           pa[] =
     {
         { "-pbcdist", FALSE, etBOOL, { &bPBCdist }, "Distance R based on PBC" },
         { "-norm", FALSE, etBOOL, { &bNormHist }, "Normalize histograms" },

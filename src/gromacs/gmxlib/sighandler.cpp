@@ -36,7 +36,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/legacyheaders/sighandler.h"
+#include "sighandler.h"
 
 #include "config.h"
 

@@ -153,8 +153,8 @@ void dump_ab(FILE *out, int natom, int nab[], t_hack *ab[], gmx_bool bHeader)
             fprintf(out, "%4d %2d %-4s %-4s %2d %-4s %-4s %-4s %-4s %s %g %g %g\n",
                     i+1, ab[i][j].nr, SS(ab[i][j].oname), SS(ab[i][j].nname),
                     ab[i][j].tp,
-                    SS(ab[i][j].AI), SS(ab[i][j].AJ),
-                    SS(ab[i][j].AK), SS(ab[i][j].AL),
+                    SS(ab[i][j].ai()), SS(ab[i][j].aj()),
+                    SS(ab[i][j].ak()), SS(ab[i][j].al()),
                     ab[i][j].atom ? "+" : "",
                     ab[i][j].newx[XX], ab[i][j].newx[YY], ab[i][j].newx[ZZ]);
         }
@@ -232,12 +232,12 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
            delete/replace from tdb (oname!=NULL) and oname matches this atom */
         if (debug)
         {
-            fprintf(debug, " %s", hbr->hack[j].oname ? hbr->hack[j].oname : hbr->hack[j].AI);
+            fprintf(debug, " %s", hbr->hack[j].oname ? hbr->hack[j].oname : hbr->hack[j].ai());
         }
 
         if (!bIgnore &&
             ( ( ( hbr->hack[j].tp > 0 || hbr->hack[j].oname == NULL ) &&
-                strcmp(atomname, hbr->hack[j].AI) == 0 ) ||
+                strcmp(atomname, hbr->hack[j].ai()) == 0 ) ||
               ( hbr->hack[j].oname != NULL &&
                 strcmp(atomname, hbr->hack[j].oname) == 0) ) )
         {
@@ -763,24 +763,6 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
     return newi;
 }
 
-void deprotonate(t_atoms *atoms, rvec *x)
-{
-    int  i, j;
-
-    j = 0;
-    for (i = 0; i < atoms->nr; i++)
-    {
-        if ( (*atoms->atomname[i])[0] != 'H')
-        {
-            atoms->atomname[j] = atoms->atomname[i];
-            atoms->atom[j]     = atoms->atom[i];
-            copy_rvec(x[i], x[j]);
-            j++;
-        }
-    }
-    atoms->nr = j;
-}
-
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
           int nah, t_hackblock ah[],
           int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
@@ -816,118 +798,6 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
     }
 
     return nnew;
-}
-
-int protonate(t_atoms **atomsptr, rvec **xptr, t_protonate *protdata)
-{
-#define NTERPAIRS 1
-    t_atoms    *atoms;
-    gmx_bool    bUpdate_pdba, bKeep_old_pdba;
-    int         nntdb, nctdb, nt, ct;
-    int         nadd;
-
-    atoms = NULL;
-    if (!protdata->bInit)
-    {
-        if (debug)
-        {
-            fprintf(debug, "protonate: Initializing protdata\n");
-        }
-
-        /* set forcefield to use: */
-        strcpy(protdata->FF, "oplsaa.ff");
-
-        /* get the databases: */
-        protdata->nah = read_h_db(protdata->FF, &protdata->ah);
-        open_symtab(&protdata->tab);
-        protdata->atype = read_atype(protdata->FF, &protdata->tab);
-        nntdb           = read_ter_db(protdata->FF, 'n', &protdata->ntdb, protdata->atype);
-        if (nntdb < 1)
-        {
-            gmx_fatal(FARGS, "no N-terminus database");
-        }
-        nctdb = read_ter_db(protdata->FF, 'c', &protdata->ctdb, protdata->atype);
-        if (nctdb < 1)
-        {
-            gmx_fatal(FARGS, "no C-terminus database");
-        }
-
-        /* set terminus types: -NH3+ (different for Proline) and -COO- */
-        atoms = *atomsptr;
-        snew(protdata->sel_ntdb, NTERPAIRS);
-        snew(protdata->sel_ctdb, NTERPAIRS);
-
-        if (nntdb >= 4 && nctdb >= 2)
-        {
-            /* Yuk, yuk, hardcoded default termini selections !!! */
-            if (strncmp(*atoms->resinfo[atoms->atom[atoms->nr-1].resind].name, "PRO", 3) == 0)
-            {
-                nt = 3;
-            }
-            else
-            {
-                nt = 1;
-            }
-            ct = 1;
-        }
-        else
-        {
-            nt = 0;
-            ct = 0;
-        }
-        protdata->sel_ntdb[0] = &(protdata->ntdb[nt]);
-        protdata->sel_ctdb[0] = &(protdata->ctdb[ct]);
-
-        /* set terminal residue numbers: */
-        snew(protdata->rN, NTERPAIRS);
-        snew(protdata->rC, NTERPAIRS);
-        protdata->rN[0] = 0;
-        protdata->rC[0] = atoms->atom[atoms->nr-1].resind;
-
-        /* keep unprotonated topology: */
-        protdata->upatoms = atoms;
-        /* we don't have these yet: */
-        protdata->patoms = NULL;
-        bUpdate_pdba     = TRUE;
-        bKeep_old_pdba   = TRUE;
-
-        /* clear hackblocks: */
-        protdata->nab = NULL;
-        protdata->ab  = NULL;
-
-        /* set flag to show we're initialized: */
-        protdata->bInit = TRUE;
-    }
-    else
-    {
-        if (debug)
-        {
-            fprintf(debug, "protonate: using available protdata\n");
-        }
-        /* add_h will need the unprotonated topology again: */
-        atoms          = protdata->upatoms;
-        bUpdate_pdba   = FALSE;
-        bKeep_old_pdba = FALSE;
-    }
-
-    /* now protonate */
-    nadd = add_h(&atoms, xptr, protdata->nah, protdata->ah,
-                 NTERPAIRS, protdata->sel_ntdb, protdata->sel_ctdb,
-                 protdata->rN, protdata->rC, TRUE,
-                 &protdata->nab, &protdata->ab, bUpdate_pdba, bKeep_old_pdba);
-    if (!protdata->patoms)
-    {
-        /* store protonated topology */
-        protdata->patoms = atoms;
-    }
-    *atomsptr = protdata->patoms;
-    if (debug)
-    {
-        fprintf(debug, "natoms: %d -> %d (nadd=%d)\n",
-                protdata->upatoms->nr, protdata->patoms->nr, nadd);
-    }
-    return nadd;
-#undef NTERPAIRS
 }
 
 /* Adding Drudes is a lot like adding H, so I put it here */
@@ -1229,7 +1099,6 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
     real       *params;             /* constructing constants for vsite */
     rvec       *xlp;                /* coordinates of added lone pair */
     rvec       *xn;                 /* new coordinate array */
-    char       *rname;              /* residue name */
     char       *lpname;             /* name of virtual site (LP) */
 
     /* lone pair construction constant strings */
@@ -1247,7 +1116,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
     const char *vsite3outfmt = "%d %f %f %f";   /* ftype a b c */
     const char *vsite4fdnfmt = "%d %f %f %f";   /* ftype a b c */
 
-    snew(lpname, 8);    /* another ugly hack */
+    snew(lpname, 8);
     snew(xlp, 1);
     snew(bvsite, 1);
     snew(params, 1);
@@ -1462,7 +1331,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
                 build_lonepair_coords(ebtsVSITE3, f, ai, params, xptr, xlp);
 
                 /* add it */
-                lpname = "LPSA";
+                lpname = strdup("LPSA");
                 copy_rvec((*xlp), lp[sg1].x[index]);        
                 snew(lp[sg1].names[index], 8);              
                 lp[sg1].names[index] = strdup(lpname); 
@@ -1512,7 +1381,7 @@ void add_drude_lonepairs(t_atoms **pdbaptr, rvec *xptr[], t_restp rtp[], int nss
                 build_lonepair_coords(ebtsVSITE3, f, ai, params, xptr, xlp);
 
                 /* add it */
-                lpname = "LPSB";
+                lpname = strdup("LPSB");
                 copy_rvec((*xlp), lp[sg1].x[index]);
                 snew(lp[sg1].names[index], 8);
                 lp[sg1].names[index] = strdup(lpname);

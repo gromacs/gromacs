@@ -43,6 +43,7 @@
 #include <algorithm>
 
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -51,24 +52,25 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
-#include "gromacs/legacyheaders/disre.h"
+#include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/main.h"
 #include "gromacs/legacyheaders/force.h"
-#include "gromacs/legacyheaders/macros.h"
-#include "gromacs/legacyheaders/main.h"
-#include "gromacs/legacyheaders/mdatoms.h"
-#include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/typedefs.h"
-#include "gromacs/legacyheaders/viewit.h"
+#include "gromacs/legacyheaders/types/fcdata.h"
+#include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -654,7 +656,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
 
 int gmx_disre(int argc, char *argv[])
 {
-    const char     *desc[] = {
+    const char       *desc[] = {
         "[THISMODULE] computes violations of distance restraints.",
         "The program always",
         "computes the instantaneous violations rather than time-averaged,",
@@ -671,11 +673,11 @@ int gmx_disre(int argc, char *argv[])
         "the program will compute average violations using the third power",
         "averaging algorithm and print them in the log file."
     };
-    static int      ntop      = 0;
-    static int      nlevels   = 20;
-    static real     max_dr    = 0;
-    static gmx_bool bThird    = TRUE;
-    t_pargs         pa[]      = {
+    static int        ntop      = 0;
+    static int        nlevels   = 20;
+    static real       max_dr    = 0;
+    static gmx_bool   bThird    = TRUE;
+    t_pargs           pa[]      = {
         { "-ntop", FALSE, etINT,  {&ntop},
           "Number of large violations that are stored in the log file every step" },
         { "-maxdr", FALSE, etREAL, {&max_dr},
@@ -686,37 +688,37 @@ int gmx_disre(int argc, char *argv[])
           "Use inverse third power averaging or linear for matrix output" }
     };
 
-    FILE           *out = NULL, *aver = NULL, *numv = NULL, *maxxv = NULL, *xvg = NULL;
-    t_tpxheader     header;
-    t_inputrec      ir;
-    gmx_mtop_t      mtop;
-    rvec           *xtop;
-    gmx_localtop_t *top;
-    t_atoms        *atoms = NULL;
-    t_fcdata        fcd;
-    t_nrnb          nrnb;
-    t_graph        *g;
-    int             ntopatoms, natoms, i, j, kkk;
-    t_trxstatus    *status;
-    real            t;
-    rvec           *x, *f, *xav = NULL;
-    matrix          box;
-    gmx_bool        bPDB;
-    int             isize;
-    atom_id        *index = NULL, *ind_fit = NULL;
-    char           *grpname;
-    t_cluster_ndx  *clust = NULL;
-    t_dr_result     dr, *dr_clust = NULL;
-    char          **leg;
-    real           *vvindex = NULL, *w_rls = NULL;
-    t_mdatoms      *mdatoms;
-    t_pbc           pbc, *pbc_null;
-    int             my_clust;
-    FILE           *fplog;
-    output_env_t    oenv;
-    gmx_rmpbc_t     gpbc = NULL;
+    FILE             *out = NULL, *aver = NULL, *numv = NULL, *maxxv = NULL, *xvg = NULL;
+    t_tpxheader       header;
+    t_inputrec        ir;
+    gmx_mtop_t        mtop;
+    rvec             *xtop;
+    gmx_localtop_t   *top;
+    t_atoms          *atoms = NULL;
+    t_fcdata          fcd;
+    t_nrnb            nrnb;
+    t_graph          *g;
+    int               ntopatoms, natoms, i, j, kkk;
+    t_trxstatus      *status;
+    real              t;
+    rvec             *x, *f, *xav = NULL;
+    matrix            box;
+    gmx_bool          bPDB;
+    int               isize;
+    atom_id          *index = NULL, *ind_fit = NULL;
+    char             *grpname;
+    t_cluster_ndx    *clust = NULL;
+    t_dr_result       dr, *dr_clust = NULL;
+    char            **leg;
+    real             *vvindex = NULL, *w_rls = NULL;
+    t_mdatoms        *mdatoms;
+    t_pbc             pbc, *pbc_null;
+    int               my_clust;
+    FILE             *fplog;
+    gmx_output_env_t *oenv;
+    gmx_rmpbc_t       gpbc = NULL;
 
-    t_filenm        fnm[] = {
+    t_filenm          fnm[] = {
         { efTPR, NULL, NULL, ffREAD },
         { efTRX, "-f", NULL, ffREAD },
         { efXVG, "-ds", "drsum",  ffWRITE },
@@ -747,7 +749,7 @@ int gmx_disre(int argc, char *argv[])
 
     read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE, NULL, NULL);
     snew(xtop, header.natoms);
-    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, NULL, &mtop);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, &mtop);
     bPDB = opt2bSet("-q", NFILE, fnm);
     if (bPDB)
     {

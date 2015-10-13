@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 #ifndef _mdatom_h
 #define _mdatom_h
 
-#include "gromacs/legacyheaders/types/simple.h"
+#include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,7 +48,7 @@ extern "C" {
 #define  NO_TF_TABLE 255
 #define  DEFAULT_TF_TABLE 0
 
-typedef struct {
+typedef struct t_mdatoms {
     real                   tmassA, tmassB, tmass;
     int                    nr;
     int                    nalloc;

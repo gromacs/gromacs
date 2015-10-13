@@ -51,7 +51,6 @@
 namespace gmx
 {
 
-class Options;
 class SelectionCollection;
 class SelectionOptionStorage;
 
@@ -134,6 +133,22 @@ class SelectionOptionManager : public IOptionManager
          * Strong exception safety.
          */
         void requestOptionDelayedParsing(SelectionOptionStorage *storage);
+
+        /*! \brief
+         * Returns whether there are requested selections that need input from
+         * parseRequestedFrom*().
+         */
+        bool hasRequestedSelections() const;
+
+        /*! \brief
+         * Initializes options for setting global selection properties.
+         *
+         * \param[in,out] options Options object to initialize.
+         * \throws        std::bad_alloc if out of memory.
+         *
+         * \see SelectionCollection::initOptions()
+         */
+        void initOptions(IOptionsContainer *options);
 
         /*! \brief
          * Parses selection(s) from standard input for options not yet

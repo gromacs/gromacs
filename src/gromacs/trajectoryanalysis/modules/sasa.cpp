@@ -270,7 +270,7 @@ void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *at
         aaa.nr = ndots;
         write_sto_conf(fn, title, &aaa, xnew, NULL, ePBC, const_cast<rvec *>(box));
         do_conect(fn, ndots, xnew);
-        free_t_atoms(&aaa, FALSE);
+        done_atom(&aaa);
     }
     sfree(xnew);
 }
@@ -607,7 +607,12 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
             }
             if (j == surfaceSel_.posCount() || outputIndices[i] != atomIndices[j])
             {
-                GMX_THROW(InconsistentInputError("Output selection is not a subset of the input selection"));
+                const std::string message
+                    = formatString("Output selection '%s' is not a subset of "
+                                   "the surface selection (atom %d is the first "
+                                   "atom not in the surface selection)",
+                                   outputSel_[g].name(), outputIndices[i] + 1);
+                GMX_THROW(InconsistentInputError(message));
             }
             outputSel_[g].setOriginalId(i, j);
         }
@@ -667,17 +672,18 @@ Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
         {
             AnalysisDataAverageModulePointer avem(new AnalysisDataAverageModule);
-            int prevResind = -1;
-            int row        = 0;
+            int nextRow = 0;
             for (int i = 0; i < surfaceSel_.posCount(); ++i)
             {
-                const int atomIndex     = surfaceSel_.position(i).atomIndices()[0];
-                const int residueIndex  = atoms.atom[atomIndex].resind;
-                if (residueIndex != prevResind)
+                const int residueGroup = surfaceSel_.position(i).mappedId();
+                if (residueGroup >= nextRow)
                 {
-                    avem->setXAxisValue(row, atoms.resinfo[residueIndex].nr);
-                    prevResind = residueIndex;
-                    ++row;
+                    GMX_ASSERT(residueGroup == nextRow,
+                               "Inconsistent (non-uniformly increasing) residue grouping");
+                    const int atomIndex    = surfaceSel_.position(i).atomIndices()[0];
+                    const int residueIndex = atoms.atom[atomIndex].resind;
+                    avem->setXAxisValue(nextRow, atoms.resinfo[residueIndex].nr);
+                    ++nextRow;
                 }
             }
             residueArea_.addModule(avem);
