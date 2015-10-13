@@ -93,6 +93,7 @@ add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(listed-forces)
 add_subdirectory(commandline)
+add_subdirectory(data_structures)
 add_subdirectory(domdec)
 add_subdirectory(ewald)
 add_subdirectory(fft)
@@ -141,6 +142,7 @@ configure_file(version.h.cmakein version.h)
 gmx_install_headers(
     analysisdata.h
     commandline.h
+    data_structures.h
     options.h
     selection.h
     trajectoryanalysis.h
