@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -412,10 +412,10 @@
 
 #ifdef CHECK_EXCLS
     /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = gmx_simd_add_r(rsq_S0, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S0));
-    rsq_S1      = gmx_simd_add_r(rsq_S1, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S1));
-    rsq_S2      = gmx_simd_add_r(rsq_S2, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S2));
-    rsq_S3      = gmx_simd_add_r(rsq_S3, gmx_simd_blendv_r(avoid_sing_S, gmx_simd_setzero_r(), interact_S3));
+    rsq_S0      = gmx_simd_add_r(rsq_S0, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S0));
+    rsq_S1      = gmx_simd_add_r(rsq_S1, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S1));
+    rsq_S2      = gmx_simd_add_r(rsq_S2, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S2));
+    rsq_S3      = gmx_simd_add_r(rsq_S3, gmx_simd_blendnotzero_r(avoid_sing_S, interact_S3));
 #endif
 
     /* Calculate 1/r */
