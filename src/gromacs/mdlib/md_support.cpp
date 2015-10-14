@@ -43,6 +43,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/fileio/trx.h"
+#include "gromacs/gmxlib/energyhistory.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
@@ -794,8 +795,8 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
     init_ekinstate(&state->ekinstate, ir);
-
-    init_energyhistory(&state->enerhist);
+    snew(state->enerhist, 1);
+    init_energyhistory(state->enerhist);
     init_df_history(&state->dfhist, ir->fepvals->n_lambda);
     state->swapstate.eSwapCoords = ir->eSwapCoords;
 }

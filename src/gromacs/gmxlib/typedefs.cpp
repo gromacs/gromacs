@@ -48,6 +48,8 @@
 #include "gromacs/random/random.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "energyhistory.h"
+
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
@@ -124,48 +126,6 @@ static void init_swapstate(swapstate_t *swapstate)
     swapstate->xc_old_whole[eChan1]   = NULL;
     swapstate->xc_old_whole_p[eChan0] = NULL;
     swapstate->xc_old_whole_p[eChan1] = NULL;
-}
-
-void init_energyhistory(energyhistory_t * enerhist)
-{
-    enerhist->nener = 0;
-
-    enerhist->ener_ave     = NULL;
-    enerhist->ener_sum     = NULL;
-    enerhist->ener_sum_sim = NULL;
-    enerhist->dht          = NULL;
-
-    enerhist->nsteps     = 0;
-    enerhist->nsum       = 0;
-    enerhist->nsteps_sim = 0;
-    enerhist->nsum_sim   = 0;
-
-    enerhist->dht = NULL;
-}
-
-static void done_delta_h_history(delta_h_history_t *dht)
-{
-    int i;
-
-    for (i = 0; i < dht->nndh; i++)
-    {
-        sfree(dht->dh[i]);
-    }
-    sfree(dht->dh);
-    sfree(dht->ndh);
-}
-
-void done_energyhistory(energyhistory_t * enerhist)
-{
-    sfree(enerhist->ener_ave);
-    sfree(enerhist->ener_sum);
-    sfree(enerhist->ener_sum_sim);
-
-    if (enerhist->dht != NULL)
-    {
-        done_delta_h_history(enerhist->dht);
-        sfree(enerhist->dht);
-    }
 }
 
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
@@ -257,7 +217,8 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     state->cg_p = NULL;
     zero_history(&state->hist);
     zero_ekinstate(&state->ekinstate);
-    init_energyhistory(&state->enerhist);
+    snew(state->enerhist, 1);
+    init_energyhistory(state->enerhist);
     init_df_history(&state->dfhist, nlambda);
     init_swapstate(&state->swapstate);
     state->ddp_count       = 0;

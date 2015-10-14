@@ -62,8 +62,6 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn);
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c
  */
-void init_energyhistory(energyhistory_t * enerhist);
-void done_energyhistory(energyhistory_t * enerhist);
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
 t_state *serial_init_local_state(t_state *state_global);

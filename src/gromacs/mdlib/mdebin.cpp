@@ -46,6 +46,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/disre.h"
+#include "gromacs/gmxlib/energyhistory.h"
 #include "gromacs/gmxlib/orires.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
