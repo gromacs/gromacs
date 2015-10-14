@@ -702,7 +702,10 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     t_atoms   atoms;
     t_symtab *symtab;
     matrix    boxpdb;
-    int       ePBC, model_nr, na;
+    // Initiate model_nr to -1 rather than NOTSET.
+    // It is not worthwhile introducing extra variables in the
+    // read_pdbfile call to verify that a model_nr was read.
+    int       ePBC, model_nr = -1, na;
     char      title[STRLEN], *time;
     double    dbl;
 
@@ -710,7 +713,6 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     atoms.atom    = NULL;
     atoms.pdbinfo = NULL;
     /* the other pointers in atoms should not be accessed if these are NULL */
-    model_nr = NOTSET;
     snew(symtab, 1);
     open_symtab(symtab);
     na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, NULL);
@@ -730,7 +732,7 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
         copy_mat(boxpdb, fr->box);
     }
 
-    if (model_nr != NOTSET)
+    if (model_nr != -1)
     {
         fr->bStep = TRUE;
         fr->step  = model_nr;
