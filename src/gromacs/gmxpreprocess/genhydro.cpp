@@ -44,6 +44,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/calch.h"
 #include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/ter_db.h"
