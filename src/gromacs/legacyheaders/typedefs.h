@@ -72,15 +72,6 @@ void done_df_history(df_history_t *dfhist);
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
 void done_state(t_state *state);
 
-void set_box_rel(struct t_inputrec *ir, t_state *state);
-/* Set state->box_rel used in mdrun to preserve the box shape */
-
-void preserve_box_shape(struct t_inputrec *ir, matrix box_rel, matrix b);
-/* Preserve the box shape, b can be box or boxv */
-
-real max_cutoff(real cutoff1, real cutoff2);
-/* Returns the maximum of the cut-off's, taking into account that 0=inf. */
-
 #ifdef __cplusplus
 }
 #endif
