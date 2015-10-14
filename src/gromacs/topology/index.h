@@ -109,7 +109,14 @@ void analyse(struct t_atoms *atoms, struct t_blocka *gb, char ***gn,
  * bASK=FALSE gives default groups.
  */
 
-int find_group(char s[], int ngrps, char **grpname);
+/*! \brief Look up a group in a list.
+ *
+ * \param[inout] s    The string to look up
+ * \param[in] ngrps   The number of groups
+ * \param[in] grpname The names of the groups
+ * \return the group number or -1 if not found.
+ */
+int find_group(const char *s, int ngrps, char **grpname);
 
 
 #ifdef __cplusplus

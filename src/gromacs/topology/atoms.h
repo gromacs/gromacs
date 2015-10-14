@@ -59,7 +59,7 @@ typedef struct t_atom
     unsigned short typeB;       /* Atom type for Free Energy calc       */
     int            ptype;       /* Particle type                        */
     int            resind;      /* Index into resinfo (in t_atoms)      */
-    int            atomnumber;  /* Atomic Number or NOTSET              */
+    int            atomnumber;  /* Atomic Number or 0                   */
     char           elem[4];     /* Element name                         */
 } t_atom;
 

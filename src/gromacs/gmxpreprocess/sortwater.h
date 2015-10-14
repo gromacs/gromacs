@@ -38,7 +38,7 @@
 #ifndef _sortwater_h
 #define _sortwater_h
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/random/random.h"
 
 void randwater(int astart, int nwater, int nwatom,

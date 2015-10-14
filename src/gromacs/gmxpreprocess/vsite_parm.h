@@ -40,7 +40,8 @@
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/typedefs.h"
+
+struct gmx_moltype_t;
 
 int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
                t_params plist[]);
