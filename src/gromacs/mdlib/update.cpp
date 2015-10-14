@@ -60,6 +60,7 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/tgroup.h"
+#include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
