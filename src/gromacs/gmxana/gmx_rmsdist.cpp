@@ -163,6 +163,7 @@ typedef struct {
 } t_noe_gr;
 
 typedef struct {
+    bool  set;
     int   rnr;
     char *nname;
     char *rname;
@@ -195,6 +196,7 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
             {
                 /* this is not efficient, but I'm lazy (again) */
                 srenew(equiv[neq], na+1);
+                equiv[neq][na].set   = true;
                 equiv[neq][na].rnr   = resnr-1;
                 equiv[neq][na].rname = gmx_strdup(resname);
                 equiv[neq][na].aname = gmx_strdup(atomname);
@@ -208,7 +210,8 @@ static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
         }
         /* make empty element as flag for end of array */
         srenew(equiv[neq], na+1);
-        equiv[neq][na].rnr   = NOTSET;
+        equiv[neq][na].set   = false;
+        equiv[neq][na].rnr   = 0;
         equiv[neq][na].rname = NULL;
         equiv[neq][na].aname = NULL;
 
@@ -230,7 +233,7 @@ static void dump_equiv(FILE *out, int neq, t_equiv **equiv)
     for (i = 0; i < neq; i++)
     {
         fprintf(out, "%s", equiv[i][0].nname);
-        for (j = 0; equiv[i][j].rnr != NOTSET; j++)
+        for (j = 0; equiv[i][j].set; j++)
         {
             fprintf(out, " %d %s %s",
                     equiv[i][j].rnr, equiv[i][j].rname, equiv[i][j].aname);
@@ -251,7 +254,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
     for (i = 0; i < neq && !bFound; i++)
     {
         /* find first atom */
-        for (j = 0; equiv[i][j].rnr != NOTSET && !bFound; j++)
+        for (j = 0; equiv[i][j].set && !bFound; j++)
         {
             bFound = ( equiv[i][j].rnr == rnr1 &&
                        std::strcmp(equiv[i][j].rname, rname1) == 0 &&
@@ -261,7 +264,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
         {
             /* find second atom */
             bFound = FALSE;
-            for (j = 0; equiv[i][j].rnr != NOTSET && !bFound; j++)
+            for (j = 0; equiv[i][j].set && !bFound; j++)
             {
                 bFound = ( equiv[i][j].rnr == rnr2 &&
                            std::strcmp(equiv[i][j].rname, rname2) == 0 &&

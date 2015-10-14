@@ -38,7 +38,12 @@
 #ifndef GMX_MAXWELL_VELOCITIES
 #define GMX_MAXWELL_VELOCITIES
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include <cstdio>
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_mtop_t;
 
 /*! \brief
  * Generate Maxwellian velocities.

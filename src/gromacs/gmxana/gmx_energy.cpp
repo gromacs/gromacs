@@ -67,6 +67,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static real       minthird = -1.0/3.0, minsixth = -1.0/6.0;
+static const int  NOTSET   = -23451;
 
 typedef struct {
     real sum;
