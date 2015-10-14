@@ -44,6 +44,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/notset.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
@@ -290,7 +291,7 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
         }
     }
 
-    return (*nr) != NOTSET;
+    return (*nr) != -1;
 }
 
 static int select_atomnumbers(char **string, t_atoms *atoms, atom_id n1,

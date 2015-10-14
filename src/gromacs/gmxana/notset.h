@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,22 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_TOPOLOGY_INVBLOCK_H
-#define GMX_TOPOLOGY_INVBLOCK_H
 
-#include "gromacs/topology/atom_id.h"
+#ifndef GMX_GMXANA_NOTSET_H
+#define GMX_GMXANA_NOTSET_H
 
-struct t_block;
-struct t_blocka;
-
-atom_id *make_invblock(const struct t_block *block, int nr);
-/* Inverse the block structure. nr is the maximum entry in the inversed
- * array, and therefore the dimension of the returned array
- */
-
-atom_id *make_invblocka(const struct t_blocka *block, int nr);
-/* Inverse the block structure. nr is the maximum entry in the inversed
- * array, and therefore the dimension of the returned array
- */
+// TODO: Remove this whole file and make a proper implementation of uninitialized vars.
+static const int NOTSET = -578201;
 
 #endif

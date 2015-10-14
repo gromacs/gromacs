@@ -49,6 +49,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/writeps.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/notset.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxlib/warninp.h"
 #include "gromacs/legacyheaders/typedefs.h"

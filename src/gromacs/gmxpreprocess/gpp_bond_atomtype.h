@@ -40,8 +40,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/legacyheaders/typedefs.h"
-
 typedef struct gpp_bondatomtype *t_bond_atomtype;
 
 int get_bond_atomtype_type(char *str, t_bond_atomtype at);

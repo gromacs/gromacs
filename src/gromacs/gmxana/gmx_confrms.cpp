@@ -48,6 +48,7 @@
 #include "gromacs/fileio/groio.h"
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/gmxana/notset.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/math/do_fit.h"
