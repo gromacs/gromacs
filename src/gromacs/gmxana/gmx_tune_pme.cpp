@@ -60,6 +60,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/baseversion.h"

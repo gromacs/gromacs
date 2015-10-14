@@ -54,6 +54,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
