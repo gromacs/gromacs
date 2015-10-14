@@ -39,7 +39,9 @@
 #define GMX_GMXPREPROCESS_CONVPARM_H
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/real.h"
+
+struct gmx_mtop_t;
 
 void convert_params(int atnr, t_params nbtypes[],
                     t_molinfo *mi,

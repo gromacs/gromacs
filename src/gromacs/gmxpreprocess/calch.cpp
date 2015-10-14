@@ -40,6 +40,7 @@
 
 #include <cmath>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"

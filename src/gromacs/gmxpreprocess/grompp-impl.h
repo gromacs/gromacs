@@ -38,7 +38,15 @@
 #ifndef GMX_GMXPREPROCESS_GROMPP_IMPL_H
 #define GMX_GMXPREPROCESS_GROMPP_IMPL_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/atom_id.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/idef.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct t_block;
+struct t_blocka;
 
 #define MAXSLEN 32
 
