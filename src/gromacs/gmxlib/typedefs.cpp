@@ -321,68 +321,6 @@ t_state *serial_init_local_state(t_state *state_global)
     return state_local;
 }
 
-static void do_box_rel(t_inputrec *ir, matrix box_rel, matrix b, gmx_bool bInit)
-{
-    int d, d2;
-
-    for (d = YY; d <= ZZ; d++)
-    {
-        for (d2 = XX; d2 <= (ir->epct == epctSEMIISOTROPIC ? YY : ZZ); d2++)
-        {
-            /* We need to check if this box component is deformed
-             * or if deformation of another component might cause
-             * changes in this component due to box corrections.
-             */
-            if (ir->deform[d][d2] == 0 &&
-                !(d == ZZ && d2 == XX && ir->deform[d][YY] != 0 &&
-                  (b[YY][d2] != 0 || ir->deform[YY][d2] != 0)))
-            {
-                if (bInit)
-                {
-                    box_rel[d][d2] = b[d][d2]/b[XX][XX];
-                }
-                else
-                {
-                    b[d][d2] = b[XX][XX]*box_rel[d][d2];
-                }
-            }
-        }
-    }
-}
-
-void set_box_rel(t_inputrec *ir, t_state *state)
-{
-    /* Make sure the box obeys the restrictions before we fix the ratios */
-    correct_box(NULL, 0, state->box, NULL);
-
-    clear_mat(state->box_rel);
-
-    if (PRESERVE_SHAPE(*ir))
-    {
-        do_box_rel(ir, state->box_rel, state->box, TRUE);
-    }
-}
-
-void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b)
-{
-    if (PRESERVE_SHAPE(*ir))
-    {
-        do_box_rel(ir, box_rel, b, FALSE);
-    }
-}
-
-real max_cutoff(real cutoff1, real cutoff2)
-{
-    if (cutoff1 == 0 || cutoff2 == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return std::max(cutoff1, cutoff2);
-    }
-}
-
 void init_df_history(df_history_t *dfhist, int nlambda)
 {
     int i;
