@@ -2472,7 +2472,7 @@ int gmx_tune_pme(int argc, char *argv[])
                 asize(pa), pa);
     /* Check any GPU IDs passed make sense, and fill the data structure for them */
     snew(gpu_ids, 1);
-    parse_digits_from_plain_string(eligible_gpu_ids, &gpu_ids->n, &gpu_ids->ids);
+    parse_digits_from_string(eligible_gpu_ids, &gpu_ids->n, &gpu_ids->ids);
 
     /* Determine the maximum and minimum number of PME nodes to test,
      * the actual list of settings is build in do_the_tests(). */
