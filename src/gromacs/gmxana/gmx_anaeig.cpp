@@ -81,7 +81,7 @@ static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip
             lambda = eigval[i]*AMU;
             w      = std::sqrt(BOLTZMANN*temp/lambda)/NANO;
             hwkT   = (hbar*w)/(BOLTZMANN*temp);
-            dS     = (hwkT/gmx_expm1(hwkT) - gmx_log1p(-std::exp(-hwkT)));
+            dS     = (hwkT/std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
             S     += dS;
             if (debug)
             {

@@ -594,11 +594,6 @@ if(GMX_USE_RDTSCP)
     set(HAVE_RDTSCP 1)
 endif()
 
-include(gmxTestFloatFormat)
-gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754
-                      GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER
-                      GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
-
 include(gmxTestLargeFiles)
 gmx_test_large_files(GMX_LARGEFILES)
 
@@ -607,11 +602,6 @@ gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
-
-include(gmxTestIsfinite)
-gmx_test_isfinite(HAVE_ISFINITE)
-gmx_test__isfinite(HAVE__ISFINITE)
-gmx_test__finite(HAVE__FINITE)
 
 include(gmxTestCXX11)
 gmx_test_cxx11(GMX_CXX11_SUPPORTED GMX_CXX11_FLAGS)

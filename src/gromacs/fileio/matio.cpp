@@ -39,6 +39,7 @@
 #include "matio.h"
 
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 
@@ -53,8 +54,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
-
-#define round(a) (int)(a+0.5)
 
 static const char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
 #define NMAP (long int)strlen(mapper)
@@ -895,7 +894,7 @@ static void write_xpm_data(FILE *out, int n_x, int n_y, real **mat,
         fprintf(out, "\"");
         for (i = 0; (i < n_x); i++)
         {
-            c = gmx_nint((mat[i][j]-lo)*invlevel);
+            c = std::round((mat[i][j]-lo)*invlevel);
             if (c < 0)
             {
                 c = 0;
@@ -945,11 +944,11 @@ static void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
         {
             if (mat[i][j] >= mid)
             {
-                c = nmid+gmx_nint((mat[i][j]-mid)*invlev_hi);
+                c = nmid+std::round((mat[i][j]-mid)*invlev_hi);
             }
             else if (mat[i][j] >= lo)
             {
-                c = gmx_nint((mat[i][j]-lo)*invlev_lo);
+                c = std::round((mat[i][j]-lo)*invlev_lo);
             }
             else
             {

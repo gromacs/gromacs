@@ -1,9 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
+ * Copyright (c) 2011 Christoph Junghans, Sebastian Fritsch.
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,9 +36,9 @@
  */
 #include "gmxpre.h"
 
-#include "nb_generic.h"
+#include "nb_generic_adress.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/nonbonded.h"
@@ -46,55 +46,68 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
+#define ALMOST_ZERO 1e-30
+#define ALMOST_ONE 1-(1e-30)
 void
-gmx_nb_generic_kernel(t_nblist *                nlist,
-                      rvec *                    xx,
-                      rvec *                    ff,
-                      t_forcerec *              fr,
-                      t_mdatoms *               mdatoms,
-                      nb_kernel_data_t *        kernel_data,
-                      t_nrnb *                  nrnb)
+gmx_nb_generic_adress_kernel(t_nblist *                nlist,
+                             rvec *                    xx,
+                             rvec *                    ff,
+                             t_forcerec *              fr,
+                             t_mdatoms *               mdatoms,
+                             nb_kernel_data_t *        kernel_data,
+                             t_nrnb *                  nrnb)
 {
-    int           nri, ntype, table_nelements, ielec, ivdw;
-    real          facel, gbtabscale;
-    int           n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid, nnn, n0;
-    real          shX, shY, shZ;
-    real          fscal, felec, fvdw, velec, vvdw, tx, ty, tz;
-    real          rinvsq;
-    real          iq;
-    real          qq, vctot;
-    int           nti, nvdwparam;
-    int           tj;
-    real          rt, r, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
-    real          rinvsix;
-    real          vvdwtot;
-    real          vvdw_rep, vvdw_disp;
-    real          ix, iy, iz, fix, fiy, fiz;
-    real          jx, jy, jz;
-    real          dx, dy, dz, rsq, rinv;
-    real          c6, c12, c6grid, cexp1, cexp2, br;
-    real *        charge;
-    real *        shiftvec;
-    real *        vdwparam, *vdwgridparam;
-    int *         shift;
-    int *         type;
-    real *        fshift;
-    real *        velecgrp;
-    real *        vvdwgrp;
-    real          tabscale;
-    real *        VFtab;
-    real *        x;
-    real *        f;
-    int           ewitab;
-    real          ewtabscale, eweps, sh_ewald, ewrt, ewtabhalfspace;
-    real *        ewtab;
-    real          rcoulomb2, rvdw, rvdw2, sh_dispersion, sh_repulsion;
-    real          rcutoff, rcutoff2;
-    real          rswitch_elec, rswitch_vdw, d, d2, sw, dsw, rinvcorr;
-    real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
-    real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
-    real          ewclj, ewclj2, ewclj6, ewcljrsq, poly, exponent, sh_lj_ewald;
-    gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
+    int            ntype, table_nelements, ielec, ivdw;
+    real           facel;
+    int            n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid, nnn, n0;
+    real           shX, shY, shZ;
+    real           fscal, felec, fvdw, velec, vvdw, tx, ty, tz;
+    real           rinvsq;
+    real           iq;
+    real           qq, vctot;
+    int            nti, nvdwparam;
+    int            tj;
+    real           rt, r, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
+    real           rinvsix;
+    real           vvdwtot;
+    real           vvdw_rep, vvdw_disp;
+    real           ix, iy, iz, fix, fiy, fiz;
+    real           jx, jy, jz;
+    real           dx, dy, dz, rsq, rinv;
+    real           c6, c12, cexp1, cexp2, br;
+    real  *        charge;
+    real  *        shiftvec;
+    real  *        vdwparam;
+    int  *         type;
+    real  *        fshift;
+    real  *        velecgrp;
+    real  *        vvdwgrp;
+    real           tabscale;
+    real  *        VFtab;
+    real  *        x;
+    real  *        f;
+    int            ewitab;
+    real           ewtabscale, eweps, ewrt, ewtabhalfspace;
+    real  *        ewtab;
+    real           rcoulomb2, rvdw, rvdw2, sh_dispersion, sh_repulsion;
+    real           rcutoff, rcutoff2;
+    real           d, d2, sw, dsw, rinvcorr;
+    real           elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
+    real           vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
+    gmx_bool       bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
+
+    real     *     wf;
+    real           weight_cg1;
+    real           weight_cg2;
+    real           weight_product;
+    real           hybscal; /* the multiplicator to the force for hybrid interactions*/
+    real           force_cap;
+    gmx_bool       bCG;
+    int            egp_nr;
+
+    wf                  = mdatoms->wf;
+
+    force_cap           = fr->adress_ex_forcecap;
 
     x                   = xx[0];
     f                   = ff[0];
@@ -107,7 +120,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     tabscale            = kernel_data->table_elec_vdw->scale;
     VFtab               = kernel_data->table_elec_vdw->data;
 
-    sh_ewald            = fr->ic->sh_ewald;
     ewtab               = fr->ic->tabq_coul_FDV0;
     ewtabscale          = fr->ic->tabq_scale;
     ewtabhalfspace      = 0.5/ewtabscale;
@@ -117,11 +129,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     rvdw2               = rvdw*rvdw;
     sh_dispersion       = fr->ic->dispersion_shift.cpot;
     sh_repulsion        = fr->ic->repulsion_shift.cpot;
-    sh_lj_ewald         = fr->ic->sh_lj_ewald;
-
-    ewclj               = fr->ewaldcoeff_lj;
-    ewclj2              = ewclj*ewclj;
-    ewclj6              = ewclj2*ewclj2*ewclj2;
 
     if (fr->coulomb_modifier == eintmodPOTSWITCH)
     {
@@ -156,7 +163,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
     bExactElecCutoff    = (fr->coulomb_modifier != eintmodNONE) || fr->eeltype == eelRF_ZERO;
     bExactVdwCutoff     = (fr->vdw_modifier != eintmodNONE);
-    bExactCutoff        = bExactElecCutoff && bExactVdwCutoff;
+    bExactCutoff        = bExactElecCutoff || bExactVdwCutoff;
 
     if (bExactCutoff)
     {
@@ -166,7 +173,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     else
     {
         /* Fix warnings for stupid compilers */
-        rcutoff = rcutoff2 = 1e30;
+        rcutoff2 = 1e30;
     }
 
     /* avoid compiler warnings for cases that cannot happen */
@@ -174,7 +181,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     eps                 = 0.0;
     eps2                = 0.0;
 
-    /* 3 VdW parameters for Buckingham, otherwise 2 */
+    /* 3 VdW parameters for buckingham, otherwise 2 */
     nvdwparam           = (ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM) ? 3 : 2;
     table_nelements     = 12;
 
@@ -184,7 +191,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     shiftvec            = fr->shift_vec[0];
     vdwparam            = fr->nbfp;
     ntype               = fr->ntype;
-    vdwgridparam        = fr->ljpme_c6grid;
 
     for (n = 0; (n < nlist->nri); n++)
     {
@@ -207,9 +213,60 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         fiy              = 0;
         fiz              = 0;
 
+        /* We need to find out if this i atom is part of an
+           all-atom or CG energy group  */
+        egp_nr = mdatoms->cENER[ii];
+        bCG    = !fr->adress_group_explicit[egp_nr];
+
+        weight_cg1       = wf[ii];
+
+        if ((!bCG) && weight_cg1 < ALMOST_ZERO)
+        {
+            continue;
+        }
+
         for (k = nj0; (k < nj1); k++)
         {
             jnr              = nlist->jjnr[k];
+            weight_cg2       = wf[jnr];
+            weight_product   = weight_cg1*weight_cg2;
+
+            if (weight_product < ALMOST_ZERO)
+            {
+                /* if it's a explicit loop, skip this atom */
+                if (!bCG)
+                {
+                    continue;
+                }
+                else /* if it's a coarse grained loop, include this atom */
+                {
+                    hybscal = 1.0;
+                }
+            }
+            else if (weight_product >= ALMOST_ONE)
+            {
+
+                /* if it's a explicit loop, include this atom */
+                if (!bCG)
+                {
+                    hybscal = 1.0;
+                }
+                else  /* if it's a coarse grained loop, skip this atom */
+                {
+                    continue;
+                }
+            }
+            /* both have double identity, get hybrid scaling factor */
+            else
+            {
+                hybscal = weight_product;
+
+                if (bCG)
+                {
+                    hybscal = 1.0 - hybscal;
+                }
+            }
+
             j3               = 3*jnr;
             jx               = x[j3+0];
             jy               = x[j3+1];
@@ -225,7 +282,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             velec            = 0;
             vvdw             = 0;
 
-            if (bExactCutoff && rsq >= rcutoff2)
+            if (bExactCutoff && rsq > rcutoff2)
             {
                 continue;
             }
@@ -254,10 +311,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         /* Vanilla cutoff coulomb */
                         velec            = qq*rinv;
                         felec            = velec*rinvsq;
-                        /* The shift for the Coulomb potential is stored in
-                         * the RF parameter c_rf, which is 0 without shift
-                         */
-                        velec           -= qq*fr->ic->c_rf;
                         break;
 
                     case GMX_NBKERNEL_ELEC_REACTIONFIELD:
@@ -316,8 +369,8 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 }
                 if (bExactElecCutoff)
                 {
-                    felec            = (rsq < rcoulomb2) ? felec : 0.0;
-                    velec            = (rsq < rcoulomb2) ? velec : 0.0;
+                    felec            = (rsq <= rcoulomb2) ? felec : 0.0;
+                    velec            = (rsq <= rcoulomb2) ? velec : 0.0;
                 }
                 vctot           += velec;
             } /* End of coulomb interactions */
@@ -360,11 +413,11 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         rinvsix          = rinvsq*rinvsq*rinvsq;
                         vvdw_disp        = c6*rinvsix;
                         br               = cexp2*rsq*rinv;
-                        vvdw_rep         = cexp1*exp(-br);
+                        vvdw_rep         = cexp1*std::exp(-br);
                         fvdw             = (br*vvdw_rep-vvdw_disp)*rinvsq;
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
-                            vvdw             = (vvdw_rep-cexp1*exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
+                            vvdw             = (vvdw_rep-cexp1*std::exp(-cexp2*rvdw)) - (vvdw_disp + c6*sh_dispersion)/6.0;
                         }
                         else
                         {
@@ -398,29 +451,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                         vvdw             = vvdw_disp + vvdw_rep;
                         break;
 
-
-                    case GMX_NBKERNEL_VDW_LJEWALD:
-                        /* LJ-PME */
-                        rinvsix          = rinvsq*rinvsq*rinvsq;
-                        ewcljrsq         = ewclj2*rsq;
-                        exponent         = exp(-ewcljrsq);
-                        poly             = exponent*(1.0 + ewcljrsq + ewcljrsq*ewcljrsq*0.5);
-                        c6               = vdwparam[tj];
-                        c12              = vdwparam[tj+1];
-                        c6grid           = vdwgridparam[tj];
-                        vvdw_disp        = (c6-c6grid*(1.0-poly))*rinvsix;
-                        vvdw_rep         = c12*rinvsix*rinvsix;
-                        fvdw             = (vvdw_rep - vvdw_disp - c6grid*(1.0/6.0)*exponent*ewclj6)*rinvsq;
-                        if (fr->vdw_modifier == eintmodPOTSHIFT)
-                        {
-                            vvdw             = (vvdw_rep + c12*sh_repulsion)/12.0 - (vvdw_disp + c6*sh_dispersion - c6grid*sh_lj_ewald)/6.0;
-                        }
-                        else
-                        {
-                            vvdw             = vvdw_rep/12.0-vvdw_disp/6.0;
-                        }
-                        break;
-
                     default:
                         gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
                         break;
@@ -438,13 +468,20 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                 }
                 if (bExactVdwCutoff)
                 {
-                    fvdw             = (rsq < rvdw2) ? fvdw : 0.0;
-                    vvdw             = (rsq < rvdw2) ? vvdw : 0.0;
+                    fvdw             = (rsq <= rvdw2) ? fvdw : 0.0;
+                    vvdw             = (rsq <= rvdw2) ? vvdw : 0.0;
                 }
                 vvdwtot         += vvdw;
             } /* end VdW interactions */
 
             fscal            = felec+fvdw;
+
+            if (!bCG && force_cap > 0 && (std::abs(fscal) > force_cap))
+            {
+                fscal = force_cap*fscal/std::abs(fscal);
+            }
+
+            fscal           *= hybscal;
 
             tx               = fscal*dx;
             ty               = fscal*dy;
@@ -467,9 +504,9 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         velecgrp[ggid]  += vctot;
         vvdwgrp[ggid]   += vvdwtot;
     }
-    /* Estimate flops, average for generic kernel:
-     * 12 flops per outer iteration
-     * 50 flops per inner iteration
+    /* Estimate flops, average for generic adress kernel:
+     * 14 flops per outer iteration
+     * 54 flops per inner iteration
      */
-    inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC, nlist->nri*12 + nlist->jindex[n]*50);
+    inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC_ADRESS, nlist->nri*14 + nlist->jindex[n]*54);
 }

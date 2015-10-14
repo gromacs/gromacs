@@ -38,7 +38,7 @@
 
 #include "config.h"
 
-#include <math.h>
+#include <cmath>
 
 #include "gromacs/legacyheaders/force.h"
 #include "gromacs/math/utilities.h"
@@ -96,10 +96,9 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     real                dx, dy, dz, rsq, rinv;
     int                 int_bit;
     real                fexcl;
-    real                c6, c12, cexp1, cexp2, br;
+    real                c6, c12;
     const real       *  shiftvec;
     real       *        vdwparam;
-    int       *         shift;
     int       *         type;
     const nbnxn_excl_t *excl[2];
 
@@ -260,7 +259,6 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
                                 rinv             = gmx_invsqrt(rsq);
                                 rinvsq           = rinv*rinv;
-                                fscal            = 0;
 
                                 qq               = iq*x[js+3];
                                 if (!bEwald)
@@ -286,7 +284,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
 
                                     if (bEner)
                                     {
-                                        vcoul = qq*((int_bit - gmx_erf(iconst->ewaldcoeff_q*r))*rinv - int_bit*iconst->sh_ewald);
+                                        vcoul = qq*((int_bit - std::erf(iconst->ewaldcoeff_q*r))*rinv - int_bit*iconst->sh_ewald);
                                     }
                                 }
 

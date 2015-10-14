@@ -43,6 +43,10 @@
 #include "gromacs/legacyheaders/types/nrnb.h"
 #include "gromacs/math/vectypes.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void
 nb_kernel_allvsallgb(t_nblist *                nlist,
                      rvec *                    x,
@@ -51,5 +55,9 @@ nb_kernel_allvsallgb(t_nblist *                nlist,
                      t_mdatoms *               mdatoms,
                      nb_kernel_data_t *        kernel_data,
                      t_nrnb *                  nrnb);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -138,7 +138,7 @@ gmx_bool is_int(double x)
     {
         x = -x;
     }
-    ix = gmx_nint(x);
+    ix = std::round(x);
 
     return (fabs(x-ix) < tol);
 }

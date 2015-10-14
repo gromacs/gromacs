@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,3 @@ set(GMX_MPI ON CACHE BOOL "MPI is required on BlueGene" FORCE)
 # warnings about harmless things in src/gromacs/utility/cstringutil.h.
 set(HAVE_PWD_H OFF)
 
-# The automatic testing for endianness does not work for the BlueGene cross-compiler
-set(GMX_FLOAT_FORMAT_IEEE754 1 CACHE INTERNAL "" FORCE)
-set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big-endian floating-point byte order (by default)" FORCE)
-set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big-endian floating-point word order (by default)" FORCE)

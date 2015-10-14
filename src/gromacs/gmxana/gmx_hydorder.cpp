@@ -232,9 +232,9 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
         *skmean += skmol[i];
 
         /* Compute sliced stuff in x y z*/
-        slindex_x = gmx_nint((1+x[i][XX]/box[XX][XX])*nslicex) % nslicex;
-        slindex_y = gmx_nint((1+x[i][YY]/box[YY][YY])*nslicey) % nslicey;
-        slindex_z = gmx_nint((1+x[i][ZZ]/box[ZZ][ZZ])*nslicez) % nslicez;
+        slindex_x = static_cast<int>(std::round((1+x[i][XX]/box[XX][XX])*nslicex)) % nslicex;
+        slindex_y = static_cast<int>(std::round((1+x[i][YY]/box[YY][YY])*nslicey)) % nslicey;
+        slindex_z = static_cast<int>(std::round((1+x[i][ZZ]/box[ZZ][ZZ])*nslicez)) % nslicez;
         sggrid[slindex_x][slindex_y][slindex_z] += sgmol[i];
         skgrid[slindex_x][slindex_y][slindex_z] += skmol[i];
         (sl_count[slindex_x][slindex_y][slindex_z])++;

@@ -528,14 +528,14 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
             anm_copy[2] = nc;
             if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
             {
-                atomnumber = gmx_nint(eval);
+                atomnumber = std::round(eval);
             }
             else
             {
                 anm_copy[1] = nc;
                 if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
                 {
-                    atomnumber = gmx_nint(eval);
+                    atomnumber = std::round(eval);
                 }
             }
         }
@@ -550,7 +550,7 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
             anm_copy[1] = nc;
             if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
             {
-                atomnumber = gmx_nint(eval);
+                atomnumber = std::round(eval);
             }
         }
         atoms->atom[i].atomnumber = atomnumber;

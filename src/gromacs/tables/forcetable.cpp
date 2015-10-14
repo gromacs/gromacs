@@ -136,7 +136,7 @@ double v_q_ewald_lr(double beta, double r)
     }
     else
     {
-        return gmx_erfd(beta*r)/r;
+        return std::erf(beta*r)/r;
     }
 }
 
@@ -353,7 +353,7 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
         real   sc_q;
 
         /* Energy tolerance: 0.1 times the cut-off jump */
-        etol  = 0.1*gmx_erfc(ic->ewaldcoeff_q*ic->rcoulomb);
+        etol  = 0.1*std::erfc(ic->ewaldcoeff_q*ic->rcoulomb);
 
         sc_q  = spline3_table_scale(erf_x_d3, ic->ewaldcoeff_q, etol);
 
@@ -925,11 +925,11 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 break;
             case etabEwald:
             case etabEwaldSwitch:
-                Vcut  = gmx_erfc(ewc*rc)/rc;
+                Vcut  = std::erfc(ewc*rc)/rc;
                 break;
             case etabEwaldUser:
                 /* Only calculate minus the reciprocal space contribution */
-                Vcut  = -gmx_erf(ewc*rc)/rc;
+                Vcut  = -std::erf(ewc*rc)/rc;
                 break;
             case etabRF:
             case etabRF_ZERO:
@@ -1068,14 +1068,14 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 break;
             case etabEwald:
             case etabEwaldSwitch:
-                Vtab  = gmx_erfc(ewc*r)/r;
-                Ftab  = gmx_erfc(ewc*r)/r2+exp(-(ewc*ewc*r2))*ewc*M_2_SQRTPI/r;
+                Vtab  = std::erfc(ewc*r)/r;
+                Ftab  = std::erfc(ewc*r)/r2+exp(-(ewc*ewc*r2))*ewc*M_2_SQRTPI/r;
                 break;
             case etabEwaldUser:
             case etabEwaldUserSwitch:
                 /* Only calculate the negative of the reciprocal space contribution */
-                Vtab  = -gmx_erf(ewc*r)/r;
-                Ftab  = -gmx_erf(ewc*r)/r2+exp(-(ewc*ewc*r2))*ewc*M_2_SQRTPI/r;
+                Vtab  = -std::erf(ewc*r)/r;
+                Ftab  = -std::erf(ewc*r)/r2+exp(-(ewc*ewc*r2))*ewc*M_2_SQRTPI/r;
                 break;
             case etabLJ6Ewald:
                 Vtab  = -r6*exp(-ewclj*ewclj*r2)*(1 + ewclj*ewclj*r2 + pow4(ewclj)*r2*r2/2);
