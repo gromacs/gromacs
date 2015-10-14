@@ -46,6 +46,7 @@
 #include <algorithm>
 
 #include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/names.h"
