@@ -214,7 +214,7 @@ typedef struct
 swapstate_t;
 
 
-typedef struct
+typedef struct t_state
 {
     int              natoms;
     int              ngtc;
