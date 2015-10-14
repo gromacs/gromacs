@@ -109,9 +109,6 @@ void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
 #define gmx_sum_sim   gmx_sumf_sim
 #endif
 
-gmx_bool gmx_fexist_master(const char *fname, struct t_commrec *cr);
-/* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
-
 void
 gmx_fatal_collective(int f_errno, const char *file, int line,
                      const struct t_commrec *cr, struct gmx_domdec_t *dd,
