@@ -38,8 +38,9 @@
 #ifndef GMX_GMXPREPROCESS_ADD_PAR_H
 #define GMX_GMXPREPROCESS_ADD_PAR_H
 
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/real.h"
 
 void add_param(t_params *ps, int ai, int aj, real *c, char *s);
 

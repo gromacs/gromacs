@@ -833,23 +833,22 @@ static void minstring(char *str)
     }
 }
 
-int find_group(char s[], int ngrps, char **grpname)
+int find_group(const char *s, int ngrps, char **grpname)
 {
     int      aa, i, n;
     char     string[STRLEN];
     gmx_bool bMultiple;
-
     bMultiple = FALSE;
     n         = strlen(s);
-    aa        = NOTSET;
+    aa        = -1;
     /* first look for whole name match */
-    if (aa == NOTSET)
+    if (aa == -1)
     {
         for (i = 0; i < ngrps; i++)
         {
             if (gmx_strcasecmp_min(s, grpname[i]) == 0)
             {
-                if (aa != NOTSET)
+                if (aa != -1)
                 {
                     bMultiple = TRUE;
                 }
@@ -858,13 +857,13 @@ int find_group(char s[], int ngrps, char **grpname)
         }
     }
     /* second look for first string match */
-    if (aa == NOTSET)
+    if (aa == -1)
     {
         for (i = 0; i < ngrps; i++)
         {
             if (gmx_strncasecmp_min(s, grpname[i], n) == 0)
             {
-                if (aa != NOTSET)
+                if (aa != -1)
                 {
                     bMultiple = TRUE;
                 }
@@ -873,18 +872,21 @@ int find_group(char s[], int ngrps, char **grpname)
         }
     }
     /* last look for arbitrary substring match */
-    if (aa == NOTSET)
+    if (aa == -1)
     {
-        upstring(s);
-        minstring(s);
+        char key[STRLEN];
+        strncpy(key, s, sizeof(key)-1);
+        key[STRLEN-1] = '\0';
+        upstring(key);
+        minstring(key);
         for (i = 0; i < ngrps; i++)
         {
             strcpy(string, grpname[i]);
             upstring(string);
             minstring(string);
-            if (strstr(string, s) != NULL)
+            if (strstr(string, key) != NULL)
             {
-                if (aa != NOTSET)
+                if (aa != -1)
                 {
                     bMultiple = TRUE;
                 }
@@ -895,7 +897,7 @@ int find_group(char s[], int ngrps, char **grpname)
     if (bMultiple)
     {
         printf("Error: Multiple groups '%s' selected\n", s);
-        aa = NOTSET;
+        aa = -1;
     }
     return aa;
 }
