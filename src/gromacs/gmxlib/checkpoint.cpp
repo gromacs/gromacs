@@ -58,6 +58,7 @@
 #include "gromacs/fileio/trx.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/fileio/xdrf.h"
+#include "gromacs/gmxlib/energyhistory.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/network.h"
@@ -1513,19 +1514,19 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     }
 
     flags_enh = 0;
-    if (state->enerhist.nsum > 0 || state->enerhist.nsum_sim > 0)
+    if (state->enerhist->nsum > 0 || state->enerhist->nsum_sim > 0)
     {
         flags_enh |= (1<<eenhENERGY_N) | (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSTEPS_SIM);
-        if (state->enerhist.nsum > 0)
+        if (state->enerhist->nsum > 0)
         {
             flags_enh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
                           (1<<eenhENERGY_NSUM));
         }
-        if (state->enerhist.nsum_sim > 0)
+        if (state->enerhist->nsum_sim > 0)
         {
             flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSUM_SIM));
         }
-        if (state->enerhist.dht)
+        if (state->enerhist->dht)
         {
             flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
                            (1<< eenhENERGY_DELTA_H_LIST) |
@@ -1585,7 +1586,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     if ((do_cpt_state(gmx_fio_getxdr(fp), FALSE, state->flags, state, NULL) < 0)        ||
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, NULL) < 0) ||
-        (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, &state->enerhist, NULL) < 0)  ||
+        (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, state->enerhist, NULL) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, &state->edsamstate, NULL) < 0)      ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, &state->swapstate, NULL) < 0) ||
@@ -2007,7 +2008,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   ((flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE))));
 
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
-                          flags_enh, &state->enerhist, NULL);
+                          flags_enh, state->enerhist, NULL);
     if (ret)
     {
         cp_error();
@@ -2022,8 +2023,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         {
             fprintf(fplog, "\nWARNING: %s\n\n", warn);
         }
-        state->enerhist.nsum     = *step;
-        state->enerhist.nsum_sim = *step;
+        state->enerhist->nsum     = *step;
+        state->enerhist->nsum_sim = *step;
     }
 
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL);
@@ -2314,7 +2315,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
         cp_error();
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
-                          flags_enh, &state->enerhist, NULL);
+                          flags_enh, state->enerhist, NULL);
     if (ret)
     {
         cp_error();
@@ -2462,7 +2463,7 @@ void list_checkpoint(const char *fn, FILE *out)
         cp_error();
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
-                          flags_enh, &state.enerhist, out);
+                          flags_enh, state.enerhist, out);
 
     if (ret == 0)
     {
