@@ -40,8 +40,10 @@
 
 #include <string.h>
 
+#include <climits>
 #include <cmath>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/txtdump.h"

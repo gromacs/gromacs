@@ -42,7 +42,6 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/gpp_bond_atomtype.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
 typedef struct {
     int       nr;   /* The number of entries in the list            */

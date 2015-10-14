@@ -41,6 +41,7 @@
 
 #include <string.h>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
