@@ -45,10 +45,37 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
+struct t_state;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*! \brief Return cut-off to use
+ *
+ * \param[in] cutoff1 The first cutoff (e.g. coulomb)
+ * \param[in] cutoff2 The second cutoff (e.g. vdw)
+ * \return 0 if either is 0, the normal max of the two otherwise.
+ */
+real max_cutoff(real cutoff1, real cutoff2);
+
+/*! \brief Make sure the box shape is within gromacs bounds
+ *
+ * Preserve the box shape, b can be box or boxv
+ * \param[in] ir      Input record
+ * \param[in] box_rel Relative box
+ * \param[out] b      The corrected box
+ */
+void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
+
+/*! \brief Determine relative box axes
+ *
+ * Set state->box_rel used in mdrun to preserve the box shape
+ * \param[in] ir       Input record
+ * \param[inout] state Structure containing the box
+ */
+void set_box_rel(struct t_inputrec *ir, t_state *state);
+
 
 /* Maximum number of combinations of single triclinic box vectors
  * required to shift atoms that are within a brick of the size of
