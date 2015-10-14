@@ -437,8 +437,8 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
     int i, heavy, other, nrb, nrH, nrhv;
 
     /* find heavy atom bound to this hydrogen */
-    heavy = NOTSET;
-    for (i = 0; (i < psb->nr) && (heavy == NOTSET); i++)
+    heavy = INT_MAX;
+    for (i = 0; (i < psb->nr) && (heavy == INT_MAX); i++)
     {
         if (psb->param[i].ai() == atom)
         {
@@ -449,12 +449,12 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
             heavy = psb->param[i].ai();
         }
     }
-    if (heavy == NOTSET)
+    if (heavy == INT_MAX)
     {
         gmx_fatal(FARGS, "unbound hydrogen atom %d", atom+1);
     }
     /* find all atoms bound to heavy atom */
-    other = NOTSET;
+    other = INT_MAX;
     nrb   = 0;
     nrH   = 0;
     nrhv  = 0;
@@ -468,7 +468,7 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
         {
             other = psb->param[i].ai();
         }
-        if (other != NOTSET)
+        if (other != INT_MAX)
         {
             nrb++;
             if (is_hydrogen(*(atomname[other])))
@@ -481,7 +481,7 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
                 heavies[nrhv] = other;
                 nrhv++;
             }
-            other = NOTSET;
+            other = INT_MAX;
         }
     }
     *Heavy     = heavy;
@@ -538,7 +538,7 @@ static int vsite_nm2type(const char *name, gpp_atomtype_t atype)
     int tp;
 
     tp = get_atomtype_type(name, atype);
-    if (tp == NOTSET)
+    if (tp == INT_MAX)
     {
         gmx_fatal(FARGS, "Dummy mass type (%s) not found in atom type database",
                   name);
@@ -574,7 +574,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
 static void my_add_param(t_params *plist, int ai, int aj, real b)
 {
     static real c[MAXFORCEPARAM] =
-    { NOTSET, NOTSET, NOTSET, NOTSET, NOTSET, NOTSET };
+    { INT_MAX, INT_MAX, INT_MAX, INT_MAX, INT_MAX, INT_MAX };
 
     c[0] = b;
     add_param(plist, ai, aj, c, NULL);
@@ -594,7 +594,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
          * because here it's not possible to print any useful error message.
          * But it's still better to print a message than to segfault.
          */
-        if (ftype == NOTSET)
+        if (ftype == INT_MAX)
         {
             gmx_incons("Undetected error in setting up virtual sites");
         }
@@ -607,7 +607,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
                 gmx_fatal(FARGS, "cannot make constraint in add_vsites for %d heavy "
                           "atoms and %d hydrogen atoms", nrheavies, nrHatoms);
             }
-            my_add_param(&(plist[F_CONSTRNC]), Hatoms[i], heavies[0], NOTSET);
+            my_add_param(&(plist[F_CONSTRNC]), Hatoms[i], heavies[0], INT_MAX);
         }
         else
         {
@@ -634,8 +634,8 @@ static void add_vsites(t_params plist[], int vsite_type[],
                     else
                     {
                         /* find more heavy atoms */
-                        other = moreheavy = NOTSET;
-                        for (j = 0; (j < plist[F_BONDS].nr) && (moreheavy == NOTSET); j++)
+                        other = moreheavy = INT_MAX;
+                        for (j = 0; (j < plist[F_BONDS].nr) && (moreheavy == INT_MAX); j++)
                         {
                             if (plist[F_BONDS].param[j].ai() == heavies[0])
                             {
@@ -645,12 +645,12 @@ static void add_vsites(t_params plist[], int vsite_type[],
                             {
                                 other = plist[F_BONDS].param[j].ai();
                             }
-                            if ( (other != NOTSET) && (other != Heavy) )
+                            if ( (other != INT_MAX) && (other != Heavy) )
                             {
                                 moreheavy = other;
                             }
                         }
-                        if (moreheavy == NOTSET)
+                        if (moreheavy == INT_MAX)
                         {
                             gmx_fatal(FARGS, "Unbound molecule part %d-%d", Heavy+1, Hatoms[0]+1);
                         }
@@ -1063,7 +1063,7 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
         (*newatom)      [atM[j]].resind  = at->atom[i0].resind;
         (*newatom)      [atM[j]].elem[0] = 'M';
         (*newatom)      [atM[j]].elem[1] = '\0';
-        (*newvsite_type)[atM[j]]         = NOTSET;
+        (*newvsite_type)[atM[j]]         = INT_MAX;
         (*newcgnr)      [atM[j]]         = (*cgnr)[i0];
     }
     /* renumber cgnr: */
@@ -1236,7 +1236,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     (*newatom)      [atM].resind  = at->atom[i0].resind;
     (*newatom)      [atM].elem[0] = 'M';
     (*newatom)      [atM].elem[1] = '\0';
-    (*newvsite_type)[atM]         = NOTSET;
+    (*newvsite_type)[atM]         = INT_MAX;
     (*newcgnr)      [atM]         = (*cgnr)[i0];
     /* renumber cgnr: */
     for (i = i0; i < at->nr; i++)
@@ -1292,9 +1292,9 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     b_ND1_HD1 = b_NE2_HE2 = b_CE1_HE1 = b_CD2_HD2 = a_NE2_CE1_HE1 =
                         a_NE2_CD2_HD2 = a_CE1_ND1_HD1 = a_CE1_NE2_HE2 = 0;
 
-    if (ats[atHD1] != NOTSET)
+    if (ats[atHD1] != INT_MAX)
     {
-        if (ats[atHE2] != NOTSET)
+        if (ats[atHE2] != INT_MAX)
         {
             sprintf(resname, "HISH");
         }
@@ -1319,22 +1319,22 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     a_ND1_CE1_NE2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "ND1", "CE1", "NE2");
     a_CE1_NE2_CD2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "CE1", "NE2", "CD2");
 
-    if (ats[atHD1] != NOTSET)
+    if (ats[atHD1] != INT_MAX)
     {
         b_ND1_HD1     = get_ddb_bond(vsitetop, nvsitetop, resname, "ND1", "HD1");
         a_CE1_ND1_HD1 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "CE1", "ND1", "HD1");
     }
-    if (ats[atHE2] != NOTSET)
+    if (ats[atHE2] != INT_MAX)
     {
         b_NE2_HE2     = get_ddb_bond(vsitetop, nvsitetop, resname, "NE2", "HE2");
         a_CE1_NE2_HE2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "CE1", "NE2", "HE2");
     }
-    if (ats[atHD2] != NOTSET)
+    if (ats[atHD2] != INT_MAX)
     {
         b_CD2_HD2     = get_ddb_bond(vsitetop, nvsitetop, resname, "CD2", "HD2");
         a_NE2_CD2_HD2 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "NE2", "CD2", "HD2");
     }
-    if (ats[atHE1] != NOTSET)
+    if (ats[atHE1] != INT_MAX)
     {
         b_CE1_HE1     = get_ddb_bond(vsitetop, nvsitetop, resname, "CE1", "HE1");
         a_NE2_CE1_HE1 = DEG2RAD*get_ddb_angle(vsitetop, nvsitetop, resname, "NE2", "CE1", "HE1");
@@ -1375,26 +1375,26 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     y[atCD2] = y[atNE2]+b_CD2_NE2*cos(a_CE1_NE2_CD2);
 
     /* And finally the hydrogen positions */
-    if (ats[atHE1] != NOTSET)
+    if (ats[atHE1] != INT_MAX)
     {
         x[atHE1] = x[atCE1] + b_CE1_HE1*sin(a_NE2_CE1_HE1);
         y[atHE1] = y[atCE1] - b_CE1_HE1*cos(a_NE2_CE1_HE1);
     }
     /* HD2 - first get (ccw) angle from (positive) y-axis */
-    if (ats[atHD2] != NOTSET)
+    if (ats[atHD2] != INT_MAX)
     {
         alpha    = a_CE1_NE2_CD2 + M_PI - a_NE2_CD2_HD2;
         x[atHD2] = x[atCD2] - b_CD2_HD2*sin(alpha);
         y[atHD2] = y[atCD2] + b_CD2_HD2*cos(alpha);
     }
-    if (ats[atHD1] != NOTSET)
+    if (ats[atHD1] != INT_MAX)
     {
         /* HD1 - first get (cw) angle from (positive) y-axis */
         alpha    = a_ND1_CE1_NE2 + M_PI - a_CE1_ND1_HD1;
         x[atHD1] = x[atND1] - b_ND1_HD1*sin(alpha);
         y[atHD1] = y[atND1] - b_ND1_HD1*cos(alpha);
     }
-    if (ats[atHE2] != NOTSET)
+    if (ats[atHE2] != INT_MAX)
     {
         x[atHE2] = x[atNE2] + b_NE2_HE2*sin(a_CE1_NE2_HE2);
         y[atHE2] = y[atNE2] + b_NE2_HE2*cos(a_CE1_NE2_HE2);
@@ -1408,7 +1408,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     nvsite = 0;
     for (i = 0; i < atNR; i++)
     {
-        if (ats[i] != NOTSET)
+        if (ats[i] != INT_MAX)
         {
             mtot += at->atom[ats[i]].m;
             xcom += x[i]*at->atom[ats[i]].m;
@@ -1440,7 +1440,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     at->atom[ats[atNE2]].m = at->atom[ats[atNE2]].mB = mNE2;
 
     /* HE1 */
-    if (ats[atHE1] != NOTSET)
+    if (ats[atHE1] != INT_MAX)
     {
         calc_vsite3_param(x[atHE1], y[atHE1], x[atCE1], y[atCE1], x[atNE2], y[atNE2],
                           x[atCG], y[atCG], &a, &b);
@@ -1448,7 +1448,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
                          ats[atHE1], ats[atCE1], ats[atNE2], ats[atCG], a, b);
     }
     /* HE2 */
-    if (ats[atHE2] != NOTSET)
+    if (ats[atHE2] != INT_MAX)
     {
         calc_vsite3_param(x[atHE2], y[atHE2], x[atNE2], y[atNE2], x[atCE1], y[atCE1],
                           x[atCG], y[atCG], &a, &b);
@@ -1469,7 +1469,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
                      ats[atCD2], ats[atCE1], ats[atNE2], ats[atCG], a, b);
 
     /* HD1 */
-    if (ats[atHD1] != NOTSET)
+    if (ats[atHD1] != INT_MAX)
     {
         calc_vsite3_param(x[atHD1], y[atHD1], x[atNE2], y[atNE2], x[atCE1], y[atCE1],
                           x[atCG], y[atCG], &a, &b);
@@ -1477,7 +1477,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
                          ats[atHD1], ats[atNE2], ats[atCE1], ats[atCG], a, b);
     }
     /* HD2 */
-    if (ats[atHD2] != NOTSET)
+    if (ats[atHD2] != INT_MAX)
     {
         calc_vsite3_param(x[atHD2], y[atHD2], x[atCE1], y[atCE1], x[atNE2], y[atNE2],
                           x[atCG], y[atCG], &a, &b);
@@ -1489,7 +1489,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
 
 static gmx_bool is_vsite(int vsite_type)
 {
-    if (vsite_type == NOTSET)
+    if (vsite_type == INT_MAX)
     {
         return FALSE;
     }
@@ -1651,8 +1651,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
             /* mark this residue */
             bResProcessed[resind] = TRUE;
             /* find out if this residue needs converting */
-            whatres = NOTSET;
-            for (j = 0; j < resNR && whatres == NOTSET; j++)
+            whatres = INT_MAX;
+            for (j = 0; j < resNR && whatres == INT_MAX; j++)
             {
 
                 cmplength = bPartial[j] ? strlen(resnm)-1 : strlen(resnm);
@@ -1668,8 +1668,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     nrfound = 0;
                     for (k = 0; atnms[j][k]; k++)
                     {
-                        ats[k] = NOTSET;
-                        for (m = i; m < at->nr && at->atom[m].resind == resind && ats[k] == NOTSET; m++)
+                        ats[k] = INT_MAX;
+                        for (m = i; m < at->nr && at->atom[m].resind == resind && ats[k] == INT_MAX; m++)
                         {
                             if (gmx_strcasecmp(*(at->atomname[m]), atnms[j][k]) == 0)
                             {
@@ -1734,7 +1734,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     }
                     nvsite += gen_vsites_his(at, vsite_type, plist, nrfound, ats, vsitetop, nvsitetop);
                     break;
-                case NOTSET:
+                case INT_MAX:
                     /* this means this residue won't be processed */
                     break;
                 default:
@@ -1750,7 +1750,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
         /* now process the rest of the hydrogens */
         /* only process hydrogen atoms which are not already set */
-        if ( ((*vsite_type)[i] == NOTSET) && is_hydrogen(*(at->atomname[i])))
+        if ( ((*vsite_type)[i] == INT_MAX) && is_hydrogen(*(at->atomname[i])))
         {
             /* find heavy atom, count #bonds from it and #H atoms bound to it
                and return H atom numbers (Hatoms) and heavy atom numbers (heavies) */
@@ -1966,17 +1966,17 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                         newatom[ni0+j].resind  = at->atom[i0].resind;
                         newatom[ni0+j].elem[0] = 'M';
                         newatom[ni0+j].elem[1] = '\0';
-                        newvsite_type[ni0+j]   = NOTSET;
+                        newvsite_type[ni0+j]   = INT_MAX;
                         newcgnr[ni0+j]         = (*cgnr)[i0];
                     }
                     /* add constraints between dummy masses and to heavies[0] */
                     /* 'add_shift' says which atoms won't be renumbered afterwards */
-                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift+ni0,  NOTSET);
-                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift+ni0+1, NOTSET);
-                    my_add_param(&(plist[F_CONSTRNC]), add_shift+ni0, add_shift+ni0+1, NOTSET);
+                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift+ni0,  INT_MAX);
+                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift+ni0+1, INT_MAX);
+                    my_add_param(&(plist[F_CONSTRNC]), add_shift+ni0, add_shift+ni0+1, INT_MAX);
 
                     /* generate Heavy, H1, H2 and H3 from M1, M2 and heavies[0] */
-                    /* note that vsite_type cannot be NOTSET, because we just set it */
+                    /* note that vsite_type cannot be INT_MAX, because we just set it */
                     add_vsite3_atoms  (&plist[(*vsite_type)[Heavy]],
                                        Heavy,     heavies[0], add_shift+ni0, add_shift+ni0+1,
                                        FALSE);
@@ -2025,7 +2025,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 fprintf(debug, "atom %d: ", o2n[i]+1);
                 print_bonds(debug, o2n, nrHatoms, Hatoms, Heavy, nrheavies, heavies);
             }
-        } /* if vsite NOTSET & is hydrogen */
+        } /* if vsite INT_MAX & is hydrogen */
 
     }     /* for i < at->nr */
 
@@ -2042,8 +2042,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     at->resinfo[at->atom[i].resind].name ?
                     *(at->resinfo[at->atom[i].resind].name) : "(NULL)",
                     (*cgnr)[i],
-                    ((*vsite_type)[i] == NOTSET) ?
-                    "NOTSET" : interaction_function[(*vsite_type)[i]].name);
+                    ((*vsite_type)[i] == INT_MAX) ?
+                    "INT_MAX" : interaction_function[(*vsite_type)[i]].name);
         }
         fprintf(debug, "new atoms to be inserted:\n");
         for (i = 0; i < at->nr+nadd; i++)
@@ -2053,8 +2053,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 fprintf(debug, "%4d %4s %4d %6d %-10s\n", i+1,
                         newatomname[i] ? *(newatomname[i]) : "(NULL)",
                         newatom[i].resind, newcgnr[i],
-                        (newvsite_type[i] == NOTSET) ?
-                        "NOTSET" : interaction_function[newvsite_type[i]].name);
+                        (newvsite_type[i] == INT_MAX) ?
+                        "INT_MAX" : interaction_function[newvsite_type[i]].name);
             }
         }
     }
@@ -2098,8 +2098,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     at->resinfo[at->atom[i].resind].name ?
                     *(at->resinfo[at->atom[i].resind].name) : "(NULL)",
                     (*cgnr)[i],
-                    ((*vsite_type)[i] == NOTSET) ?
-                    "NOTSET" : interaction_function[(*vsite_type)[i]].name);
+                    ((*vsite_type)[i] == INT_MAX) ?
+                    "INT_MAX" : interaction_function[(*vsite_type)[i]].name);
         }
     }
 
@@ -2174,8 +2174,8 @@ void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
         if (!is_vsite(vsite_type[i]) && is_hydrogen(*(at->atomname[i])) )
         {
             /* find bonded heavy atom */
-            a = NOTSET;
-            for (j = 0; (j < psb->nr) && (a == NOTSET); j++)
+            a = INT_MAX;
+            for (j = 0; (j < psb->nr) && (a == INT_MAX); j++)
             {
                 /* if other atom is not a virtual site, it is the one we want */
                 if ( (psb->param[j].ai() == i) &&
@@ -2189,7 +2189,7 @@ void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
                     a = psb->param[j].ai();
                 }
             }
-            if (a == NOTSET)
+            if (a == INT_MAX)
             {
                 gmx_fatal(FARGS, "Unbound hydrogen atom (%d) found while adjusting mass",
                           i+1);

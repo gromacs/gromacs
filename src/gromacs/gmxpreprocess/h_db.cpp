@@ -117,11 +117,11 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     hack->oname = NULL;
     hack->nname = gmx_strdup(hn);
     hack->atom  = NULL;
-    hack->cgnr  = NOTSET;
+    hack->cgnr  = INT_MAX;
     hack->bXSet = FALSE;
     for (i = 0; i < DIM; i++)
     {
-        hack->newx[i] = NOTSET;
+        hack->newx[i] = INT_MAX;
     }
 }
 

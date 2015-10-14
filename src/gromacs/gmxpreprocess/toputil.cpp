@@ -40,6 +40,7 @@
 
 #include <string.h>
 
+#include <climits>
 #include <cmath>
 
 #include <algorithm>
@@ -321,7 +322,7 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
     /* print bondtypes */
     for (i = 0; (i < bt->nr); i++)
     {
-        bSwapParity = (bt->param[i].c0() == NOTSET) && (bt->param[i].c1() == -1);
+        bSwapParity = (bt->param[i].c0() == INT_MAX) && (bt->param[i].c1() == -1);
         if (!bDih)
         {
             for (j = 0; (j < nral); j++)
@@ -344,7 +345,7 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
         }
         else
         {
-            for (j = 0; (j < nrfp && (bt->param[i].c[j] != NOTSET)); j++)
+            for (j = 0; (j < nrfp && (bt->param[i].c[j] != INT_MAX)); j++)
             {
                 fprintf (out, "%13.6e ", bt->param[i].c[j]);
             }

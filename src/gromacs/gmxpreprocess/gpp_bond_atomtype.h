@@ -46,7 +46,7 @@ typedef struct gpp_bondatomtype *t_bond_atomtype;
 
 int get_bond_atomtype_type(char *str, t_bond_atomtype at);
 /* Return atomtype corresponding to case-insensitive str
-   or NOTSET if not found */
+   or INT_MAX if not found */
 
 char *get_bond_atomtype_name(int nt, t_bond_atomtype at);
 /* Return name corresponding to atomtype nt, or NULL if not found */
