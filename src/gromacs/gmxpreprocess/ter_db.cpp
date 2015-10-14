@@ -81,7 +81,7 @@ int find_kw(char *keyw)
         }
     }
 
-    return NOTSET;
+    return INT_MAX;
 }
 
 #define FATAL() gmx_fatal(FARGS, "Reading Termini Database: not enough items on line\n%s", line)
@@ -136,7 +136,7 @@ static void read_atom(char *line, gmx_bool bAdd,
     }
     else
     {
-        *cgnr = NOTSET;
+        *cgnr = INT_MAX;
     }
 }
 
@@ -269,7 +269,7 @@ static void read_ter_db_file(char *fn,
     tb    = *tbptr;
     nb    = *ntbptr - 1;
     maxnb = 0;
-    kwnr  = NOTSET;
+    kwnr  = INT_MAX;
     get_a_line(in, line, STRLEN);
     while (!feof(in))
     {
@@ -278,7 +278,7 @@ static void read_ter_db_file(char *fn,
             /* this is a new block, or a new keyword */
             kwnr = find_kw(header);
 
-            if (kwnr == NOTSET)
+            if (kwnr == INT_MAX)
             {
                 nb++;
                 /* here starts a new block */

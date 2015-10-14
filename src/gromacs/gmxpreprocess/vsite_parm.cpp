@@ -328,8 +328,8 @@ static void print_bad(FILE *fp,
 static void print_param(FILE *fp, int ftype, int i, t_param *param)
 {
     static int pass       = 0;
-    static int prev_ftype = NOTSET;
-    static int prev_i     = NOTSET;
+    static int prev_ftype = INT_MAX;
+    static int prev_i     = INT_MAX;
     int        j;
 
     if ( (ftype != prev_ftype) || (i != prev_i) )
@@ -354,14 +354,14 @@ static real get_bond_length(int nrbond, t_mybonded bonds[],
     int  i;
     real bondlen;
 
-    bondlen = NOTSET;
-    for (i = 0; i < nrbond && (bondlen == NOTSET); i++)
+    bondlen = INT_MAX;
+    for (i = 0; i < nrbond && (bondlen == INT_MAX); i++)
     {
         /* check both ways */
         if ( ( (ai == bonds[i].ai()) && (aj == bonds[i].aj()) ) ||
              ( (ai == bonds[i].aj()) && (aj == bonds[i].ai()) ) )
         {
-            bondlen = bonds[i].c; /* note: bonds[i].c might be NOTSET */
+            bondlen = bonds[i].c; /* note: bonds[i].c might be INT_MAX */
         }
     }
     return bondlen;
@@ -373,8 +373,8 @@ static real get_angle(int nrang, t_mybonded angles[],
     int  i;
     real angle;
 
-    angle = NOTSET;
-    for (i = 0; i < nrang && (angle == NOTSET); i++)
+    angle = INT_MAX;
+    for (i = 0; i < nrang && (angle == INT_MAX); i++)
     {
         /* check both ways */
         if ( ( (ai == angles[i].ai()) && (aj == angles[i].aj()) && (ak == angles[i].ak()) ) ||
@@ -443,7 +443,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
 
     bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
-    bError = (bjk == NOTSET) || (bjl == NOTSET);
+    bError = (bjk == INT_MAX) || (bjl == INT_MAX);
     if (bXH3)
     {
         /* now we get some XH2/XH3 group specific construction */
@@ -461,7 +461,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
         bMM    = get_bond_length(nrbond, bonds, param->ak(), param->al());
         bCM    = bjk;
         bCN    = get_bond_length(nrbond, bonds, param->aj(), aN);
-        bError = bError || (bMM == NOTSET) || (bCN == NOTSET);
+        bError = bError || (bMM == INT_MAX) || (bCN == INT_MAX);
 
         /* calculate common things */
         rM  = 0.5*bMM;
@@ -479,7 +479,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
             /* get other bondlengths and angles: */
             bNH    = get_bond_length(nrbond, bonds, aN, param->ai());
             aCNH   = get_angle      (nrang, angles, param->aj(), aN, param->ai());
-            bError = bError || (bNH == NOTSET) || (aCNH == NOTSET);
+            bError = bError || (bNH == INT_MAX) || (aCNH == INT_MAX);
 
             /* calculate */
             dH  = bCN - bNH * cos(aCNH);
@@ -524,8 +524,8 @@ static gmx_bool calc_vsite3fd_param(t_param *param,
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
     aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
     aijl   = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
-    bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) ||
-        (aijk == NOTSET) || (aijl == NOTSET);
+    bError = (bij == INT_MAX) || (bjk == INT_MAX) || (bjl == INT_MAX) ||
+        (aijk == INT_MAX) || (aijl == INT_MAX);
 
     rk          = bjk * sin(aijk);
     rl          = bjl * sin(aijl);
@@ -557,7 +557,7 @@ static gmx_bool calc_vsite3fad_param(t_param *param,
 
     bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
     aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-    bError = (bij == NOTSET) || (aijk == NOTSET);
+    bError = (bij == INT_MAX) || (aijk == INT_MAX);
 
     param->c1() = bij;          /* 'bond'-length for fixed distance vsite */
     param->c0() = RAD2DEG*aijk; /* 'bond'-angle for fixed angle vsite */
@@ -612,7 +612,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
 
     bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
-    bError = (bjk == NOTSET) || (bjl == NOTSET);
+    bError = (bjk == INT_MAX) || (bjl == INT_MAX);
     if (bXH3)
     {
         /* now we get some XH3 group specific construction */
@@ -633,7 +633,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         bNH    = get_bond_length(nrbond, bonds, aN, param->ai());
         aCNH   = get_angle      (nrang, angles, param->aj(), aN, param->ai());
         bError = bError ||
-            (bMM == NOTSET) || (bCN == NOTSET) || (bNH == NOTSET) || (aCNH == NOTSET);
+            (bMM == INT_MAX) || (bCN == INT_MAX) || (bNH == INT_MAX) || (aCNH == INT_MAX);
 
         /* calculate */
         dH  = bCN - bNH * cos(aCNH);
@@ -657,7 +657,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         aijl   = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
         akjl   = get_angle      (nrang, angles, param->ak(), param->aj(), param->al());
         bError = bError ||
-            (bij == NOTSET) || (aijk == NOTSET) || (aijl == NOTSET) || (akjl == NOTSET);
+            (bij == INT_MAX) || (aijk == INT_MAX) || (aijl == INT_MAX) || (akjl == INT_MAX);
 
         pijk = cos(aijk)*bij;
         pijl = cos(aijl)*bij;
@@ -709,9 +709,9 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
     aijm   = get_angle      (nrang, angles, param->ai(), param->aj(), param->am());
     akjm   = get_angle      (nrang, angles, param->ak(), param->aj(), param->am());
     akjl   = get_angle      (nrang, angles, param->ak(), param->aj(), param->al());
-    bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) || (bjm == NOTSET) ||
-        (aijk == NOTSET) || (aijl == NOTSET) || (aijm == NOTSET) || (akjm == NOTSET) ||
-        (akjl == NOTSET);
+    bError = (bij == INT_MAX) || (bjk == INT_MAX) || (bjl == INT_MAX) || (bjm == INT_MAX) ||
+        (aijk == INT_MAX) || (aijl == INT_MAX) || (aijm == INT_MAX) || (akjm == INT_MAX) ||
+        (akjl == INT_MAX);
 
     if (!bError)
     {
@@ -770,8 +770,8 @@ calc_vsite4fdn_param(t_param *param,
     aijl = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
     aijm = get_angle      (nrang, angles, param->ai(), param->aj(), param->am());
 
-    bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) || (bjm == NOTSET) ||
-        (aijk == NOTSET) || (aijl == NOTSET) || (aijm == NOTSET);
+    bError = (bij == INT_MAX) || (bjk == INT_MAX) || (bjl == INT_MAX) || (bjm == INT_MAX) ||
+        (aijk == INT_MAX) || (aijl == INT_MAX) || (aijm == INT_MAX);
 
     if (!bError)
     {
@@ -852,7 +852,7 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                 bSet = TRUE;
                 for (j = 0; j < NRFP(ftype) && bSet; j++)
                 {
-                    bSet = plist[ftype].param[i].c[j] != NOTSET;
+                    bSet = plist[ftype].param[i].c[j] != INT_MAX;
                 }
 
                 if (debug)
@@ -1010,7 +1010,7 @@ static void check_vsite_constraints(t_params *plist,
         for (k = 0; k < 2; k++)
         {
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] != NOTSET)
+            if (vsite_type[atom] != INT_MAX)
             {
                 fprintf(stderr, "ERROR: Cannot have constraint (%d-%d) with virtual site (%d)\n",
                         ps->param[i].ai()+1, ps->param[i].aj()+1, atom+1);
@@ -1061,7 +1061,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
         {
             /* for all atoms in the bond */
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] != NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] != INT_MAX && vsite_type[atom] != F_VSITEN)
             {
                 nvsite++;
                 bThisFD = ( (pindex[atom].ftype == F_VSITE3FD ) ||
@@ -1078,7 +1078,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                         fprintf(debug, " %s", bThisOUT ? "out" : "fd");
                     }
                     oatom = ps->param[i].a[1-k]; /* the other atom */
-                    if (vsite_type[oatom] == NOTSET &&
+                    if (vsite_type[oatom] == INT_MAX &&
                         vsite_type[oatom] != F_VSITEN &&
                         oatom == plist[pindex[atom].ftype].param[pindex[atom].parnr].aj())
                     {
@@ -1177,7 +1177,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
             for (k = 0; (k < 2) && !bKeep; k++) /* for all atoms in the bond */
             {
                 atom = ps->param[i].a[k];
-                if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+                if (vsite_type[atom] == INT_MAX && vsite_type[atom] != F_VSITEN)
                 {
                     bUsed = FALSE;
                     for (m = 0; (m < vsnral) && !bUsed; m++)
@@ -1312,7 +1312,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
         for (k = 0; (k < 3) && !bKeep; k++) /* for all atoms in the angle */
         {
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] != NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] != INT_MAX && vsite_type[atom] != F_VSITEN)
             {
                 nvsite++;
                 bAll3FAD = bAll3FAD && (pindex[atom].ftype == F_VSITE3FAD);
@@ -1368,7 +1368,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
         for (k = 0; (k < 3) && !bKeep; k++) /* for all atoms in the angle */
         {
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] == INT_MAX && vsite_type[atom] != F_VSITEN)
             {
                 bUsed = FALSE;
                 for (m = 0; (m < vsnral) && !bUsed; m++)
@@ -1450,7 +1450,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
         for (k = 0; (k < 4) && !bKeep; k++) /* for all atoms in the dihedral */
         {
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] != NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] != INT_MAX && vsite_type[atom] != F_VSITEN)
             {
                 if (nvsite == 0)
                 {
@@ -1513,7 +1513,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
             GMX_ASSERT(vsnral != 0, "If we've seen a vsite before, we know how many constructing atoms it had");
             GMX_ASSERT(first_atoms != NULL, "If we've seen a vsite before, we know what its first atom index was");
             atom = ps->param[i].a[k];
-            if (vsite_type[atom] == NOTSET && vsite_type[atom] != F_VSITEN)
+            if (vsite_type[atom] == INT_MAX && vsite_type[atom] != F_VSITEN)
             {
                 /* vsnral will be set here, we don't get here with nvsite==0 */
                 bUsed = FALSE;
@@ -1562,7 +1562,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
     snew(vsite_type, natoms);
     for (i = 0; i < natoms; i++)
     {
-        vsite_type[i] = NOTSET;
+        vsite_type[i] = INT_MAX;
     }
     nvsite = 0;
     for (ftype = 0; ftype < F_NRE; ftype++)
@@ -1574,7 +1574,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
             while (i < plist[ftype].nr)
             {
                 vsite = plist[ftype].param[i].ai();
-                if (vsite_type[vsite] == NOTSET)
+                if (vsite_type[vsite] == INT_MAX)
                 {
                     vsite_type[vsite] = ftype;
                 }
@@ -1637,7 +1637,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
             for (i = 0; i < natoms; i++)
             {
                 fprintf(debug, "atom %d vsite_type %s\n", i,
-                        vsite_type[i] == NOTSET ? "NOTSET" :
+                        vsite_type[i] == INT_MAX ? "INT_MAX" :
                         interaction_function[vsite_type[i]].name);
             }
         }

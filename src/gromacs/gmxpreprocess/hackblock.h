@@ -106,7 +106,7 @@ typedef struct {
      * if oname!=NULL && nname!=NULL we're replacing
      */
     t_atom     *atom; /* New atom data              */
-    int         cgnr; /* chargegroup number. if not read will be NOTSET */
+    int         cgnr; /* chargegroup number. if not read will be INT_MAX */
     int         tp;   /* Type of attachment (1..11) */
     int         nctl; /* How many control atoms there are */
     char       *a[4]; /* Control atoms i,j,k,l	  */

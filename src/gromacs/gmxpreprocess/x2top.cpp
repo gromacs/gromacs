@@ -237,7 +237,7 @@ void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
         {
             for (j = 0; j < nrfp; j++)
             {
-                c[j] = NOTSET;
+                c[j] = INT_MAX;
             }
         }
         else
@@ -365,7 +365,7 @@ static void print_pl(FILE *fp, t_params plist[], int ftp, const char *name,
             }
             for (j = 0; (j < nrfp); j++)
             {
-                if (plist[ftp].param[i].c[j] != NOTSET)
+                if (plist[ftp].param[i].c[j] != INT_MAX)
                 {
                     fprintf(fp, "  %10.3e", plist[ftp].param[i].c[j]);
                 }

@@ -39,6 +39,8 @@
 
 #include <string.h>
 
+#include <climits>
+
 #include <algorithm>
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
@@ -65,7 +67,7 @@ static void clear_force_param(int i0, real c[])
 
     for (i = i0; i < MAXFORCEPARAM; i++)
     {
-        c[i] = NOTSET;
+        c[i] = INT_MAX;
     }
 }
 

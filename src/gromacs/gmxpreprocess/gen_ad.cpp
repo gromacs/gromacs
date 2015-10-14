@@ -291,7 +291,7 @@ static void set_p(t_param *p, atom_id ai[4], real *c, char *s)
         }
         else
         {
-            p->c[j] = NOTSET;
+            p->c[j] = INT_MAX;
         }
     }
 
@@ -853,8 +853,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                         ang[nang].ai() = i;
                         ang[nang].aj() = j1;
                         ang[nang].ak() = k1;
-                        ang[nang].c0() = NOTSET;
-                        ang[nang].c1() = NOTSET;
+                        ang[nang].c0() = INT_MAX;
+                        ang[nang].c1() = INT_MAX;
                         set_p_string(&(ang[nang]), "");
                         if (hb)
                         {
@@ -916,7 +916,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                 dih[ndih].al() = l1;
                                 for (m = 0; m < MAXFORCEPARAM; m++)
                                 {
-                                    dih[ndih].c[m] = NOTSET;
+                                    dih[ndih].c[m] = INT_MAX;
                                 }
                                 set_p_string(&(dih[ndih]), "");
                                 nFound = 0;
@@ -972,7 +972,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                 dih[ndih].al() = l1;
                                                 for (m = 0; m < MAXFORCEPARAM; m++)
                                                 {
-                                                    dih[ndih].c[m] = NOTSET;
+                                                    dih[ndih].c[m] = INT_MAX;
                                                 }
                                             }
                                         }
@@ -992,7 +992,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                     dih[ndih].al() = l1;
                                     for (m = 0; m < MAXFORCEPARAM; m++)
                                     {
-                                        dih[ndih].c[m] = NOTSET;
+                                        dih[ndih].c[m] = INT_MAX;
                                     }
                                     set_p_string(&(dih[ndih]), "");
                                     ndih++;
@@ -1024,8 +1024,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                             }
                                             pai[npai].ai() = i1;
                                             pai[npai].aj() = i2;
-                                            pai[npai].c0() = NOTSET;
-                                            pai[npai].c1() = NOTSET;
+                                            pai[npai].c0() = INT_MAX;
+                                            pai[npai].c1() = INT_MAX;
                                             set_p_string(&(pai[npai]), "");
                                             npai++;
                                         }
@@ -1081,8 +1081,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                     ang[nang].a[k] = search_res_atom(p, res, atoms, "angle", TRUE);
                     bFound         = (ang[nang].a[k] != NO_ATID);
                 }
-                ang[nang].c0() = NOTSET;
-                ang[nang].c1() = NOTSET;
+                ang[nang].c0() = INT_MAX;
+                ang[nang].c1() = INT_MAX;
 
                 if (bFound)
                 {
@@ -1128,7 +1128,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                 }
                 for (m = 0; m < MAXFORCEPARAM; m++)
                 {
-                    dih[ndih].c[m] = NOTSET;
+                    dih[ndih].c[m] = INT_MAX;
                 }
 
                 if (bFound)

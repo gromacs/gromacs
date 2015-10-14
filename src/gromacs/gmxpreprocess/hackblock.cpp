@@ -155,7 +155,7 @@ void clear_t_hack(t_hack *hack)
     hack->oname = NULL;
     hack->nname = NULL;
     hack->atom  = NULL;
-    hack->cgnr  = NOTSET;
+    hack->cgnr  = INT_MAX;
     hack->tp    = 0;
     hack->nctl  = 0;
     for (i = 0; i < 4; i++)
@@ -164,7 +164,7 @@ void clear_t_hack(t_hack *hack)
     }
     for (i = 0; i < DIM; i++)
     {
-        hack->newx[i] = NOTSET;
+        hack->newx[i] = INT_MAX;
     }
 }
 
