@@ -841,15 +841,15 @@ int find_group(char s[], int ngrps, char **grpname)
 
     bMultiple = FALSE;
     n         = strlen(s);
-    aa        = NOTSET;
+    aa        = INT_MAX;
     /* first look for whole name match */
-    if (aa == NOTSET)
+    if (aa == INT_MAX)
     {
         for (i = 0; i < ngrps; i++)
         {
             if (gmx_strcasecmp_min(s, grpname[i]) == 0)
             {
-                if (aa != NOTSET)
+                if (aa != INT_MAX)
                 {
                     bMultiple = TRUE;
                 }
@@ -858,13 +858,13 @@ int find_group(char s[], int ngrps, char **grpname)
         }
     }
     /* second look for first string match */
-    if (aa == NOTSET)
+    if (aa == INT_MAX)
     {
         for (i = 0; i < ngrps; i++)
         {
             if (gmx_strncasecmp_min(s, grpname[i], n) == 0)
             {
-                if (aa != NOTSET)
+                if (aa != INT_MAX)
                 {
                     bMultiple = TRUE;
                 }
@@ -873,7 +873,7 @@ int find_group(char s[], int ngrps, char **grpname)
         }
     }
     /* last look for arbitrary substring match */
-    if (aa == NOTSET)
+    if (aa == INT_MAX)
     {
         upstring(s);
         minstring(s);
@@ -884,7 +884,7 @@ int find_group(char s[], int ngrps, char **grpname)
             minstring(string);
             if (strstr(string, s) != NULL)
             {
-                if (aa != NOTSET)
+                if (aa != INT_MAX)
                 {
                     bMultiple = TRUE;
                 }
@@ -895,7 +895,7 @@ int find_group(char s[], int ngrps, char **grpname)
     if (bMultiple)
     {
         printf("Error: Multiple groups '%s' selected\n", s);
-        aa = NOTSET;
+        aa = INT_MAX;
     }
     return aa;
 }

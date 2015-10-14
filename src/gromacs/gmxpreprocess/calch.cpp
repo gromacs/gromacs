@@ -206,7 +206,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
                            - distH*sin(alfaH)*0.5*sb[d]
                            + distH*sin(alfaH)*s6*sa[d]
                            - distH*cos(alfaH)*sij[d] );
-                if (xH3[XX] != NOTSET && xH3[YY] != NOTSET && xH3[ZZ] != NOTSET)
+                if (xH3[XX] != INT_MAX && xH3[YY] != INT_MAX && xH3[ZZ] != INT_MAX)
                 {
                     xH3[d] = ( xAI[d]
                                - distH*sin(alfaH)*0.5*sb[d]

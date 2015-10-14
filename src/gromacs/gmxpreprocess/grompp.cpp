@@ -1010,7 +1010,7 @@ static void set_wall_atomtype(gpp_atomtype_t at, t_gromppopts *opts,
     for (i = 0; i < ir->nwall; i++)
     {
         ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i], at);
-        if (ir->wall_atomtype[i] == NOTSET)
+        if (ir->wall_atomtype[i] == INT_MAX)
         {
             sprintf(warn_buf, "Specified wall atom type %s is not defined", opts->wall_atomtype[i]);
             warning_error(wi, warn_buf);

@@ -159,7 +159,7 @@ static gmx_bool read_atoms(FILE *in, char *line,
         r0->atom[i].q   = q;
         r0->cgnr[i]     = cg;
         j               = get_atomtype_type(buf1, atype);
-        if (j == NOTSET)
+        if (j == INT_MAX)
         {
             gmx_fatal(FARGS, "Atom type %s (residue %s) not found in atomtype "
                       "database", buf1, r0->resname);
@@ -279,7 +279,7 @@ int get_bt(char* header)
             return i;
         }
     }
-    return NOTSET;
+    return INT_MAX;
 }
 
 void clear_t_restp(t_restp *rrtp)
@@ -466,7 +466,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
             else
             {
                 bt = get_bt(header);
-                if (bt != NOTSET)
+                if (bt != INT_MAX)
                 {
                     /* header is an bonded directive */
                     bError = !read_bondeds(bt, in, line, &rrtp[nrtp]);

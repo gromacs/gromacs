@@ -40,6 +40,8 @@
 
 #include <string.h>
 
+#include <climits>
+
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
@@ -64,7 +66,7 @@ int get_bond_atomtype_type(char *str, t_bond_atomtype at)
         }
     }
 
-    return NOTSET;
+    return INT_MAX;
 }
 
 char *get_bond_atomtype_name(int nt, t_bond_atomtype at)

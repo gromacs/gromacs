@@ -454,10 +454,10 @@ static int name2type(t_atoms *at, int **cgnr,
     i0     = 0;
     snew(*cgnr, at->nr);
     qt     = 0;
-    prevcg = NOTSET;
+    prevcg = INT_MAX;
     curcg  = 0;
     cg     = -1;
-    j      = NOTSET;
+    j      = INT_MAX;
 
     for (i = 0; (i < at->nr); i++)
     {
@@ -480,7 +480,7 @@ static int name2type(t_atoms *at, int **cgnr,
             {
                 fprintf(debug, "atom %d%s: curcg=%d, prevcg=%d, cg=%d\n",
                         i+1, *(at->atomname[i]), curcg, prevcg,
-                        j == NOTSET ? NOTSET : restp[resind].cgnr[j]);
+                        j == INT_MAX ? INT_MAX : restp[resind].cgnr[j]);
             }
             qt               = 0;
             prevcg           = cg;
@@ -1000,7 +1000,7 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
         snew( restp->atomname[at_start+1+k], 1);
         restp->atom     [at_start+1+k] = *hack->atom;
         *restp->atomname[at_start+1+k] = gmx_strdup(buf);
-        if (hack->cgnr != NOTSET)
+        if (hack->cgnr != INT_MAX)
         {
             restp->cgnr   [at_start+1+k] = hack->cgnr;
         }
@@ -1174,7 +1174,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                             snew( (*restp)[i].atomname[l], 1);
                             (*restp)[i].atom[l]      =       *(*hb)[i].hack[j].atom;
                             *(*restp)[i].atomname[l] = gmx_strdup((*hb)[i].hack[j].nname);
-                            if ( (*hb)[i].hack[j].cgnr != NOTSET)
+                            if ( (*hb)[i].hack[j].cgnr != INT_MAX)
                             {
                                 (*restp)[i].cgnr   [l] = (*hb)[i].hack[j].cgnr;
                             }
@@ -1591,7 +1591,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     snew(vsite_type, atoms->nr);
     for (i = 0; i < atoms->nr; i++)
     {
-        vsite_type[i] = NOTSET;
+        vsite_type[i] = INT_MAX;
     }
     if (bVsites)
     {

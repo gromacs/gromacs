@@ -47,7 +47,7 @@ typedef struct gpp_atomtype *gpp_atomtype_t;
 
 int get_atomtype_type(const char *str, gpp_atomtype_t at);
 /* Return atomtype corresponding to case-insensitive str
-   or NOTSET if not found */
+   or INT_MAX if not found */
 
 int get_atomtype_ntypes(gpp_atomtype_t at);
 /* Return number of atomtypes */
@@ -68,10 +68,10 @@ int get_atomtype_ptype(int nt, gpp_atomtype_t at);
 int get_atomtype_batype(int nt, gpp_atomtype_t at);
 int get_atomtype_atomnumber(int nt, gpp_atomtype_t at);
 
-/* Return the above variable for atomtype nt, or NOTSET if not found */
+/* Return the above variable for atomtype nt, or INT_MAX if not found */
 
 real get_atomtype_nbparam(int nt, int param, gpp_atomtype_t at);
-/* Similar to the previous but returns the paramth parameter or NOTSET */
+/* Similar to the previous but returns the paramth parameter or INT_MAX */
 
 gpp_atomtype_t init_atomtype(void);
 /* Return a new atomtype structure */
@@ -85,7 +85,7 @@ int set_atomtype(int nt, gpp_atomtype_t at, struct t_symtab *tab,
                  real radius, real vol, real surftens, int atomnumber,
                  real gb_radius, real S_hct);
 /* Set the values of an existing atom type nt. Returns nt on success or
-   NOTSET on error. */
+   INT_MAX on error. */
 
 int
 set_atomtype_gbparam(gpp_atomtype_t at, int i,

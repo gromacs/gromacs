@@ -339,7 +339,7 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
             mm   = nm2t[best].m;
             type = nm2t[best].type;
 
-            if ((k = get_atomtype_type(type, atype)) == NOTSET)
+            if ((k = get_atomtype_type(type, atype)) == INT_MAX)
             {
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m  = atoms->atom[i].mB = mm;

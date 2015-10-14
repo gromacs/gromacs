@@ -41,6 +41,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+#include <climits>
 #include <cmath>
 
 #include <algorithm>
@@ -503,25 +504,25 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         param->c[i] = c[i];
     }
 
-    if ((batype_nr = get_bond_atomtype_type(btype, bat)) == NOTSET)
+    if ((batype_nr = get_bond_atomtype_type(btype, bat)) == INT_MAX)
     {
         add_bond_atomtype(bat, symtab, btype);
     }
     batype_nr = get_bond_atomtype_type(btype, bat);
 
-    if ((nr = get_atomtype_type(type, at)) != NOTSET)
+    if ((nr = get_atomtype_type(type, at)) != INT_MAX)
     {
         sprintf(errbuf, "Overriding atomtype %s", type);
         warning(wi, errbuf);
         if ((nr = set_atomtype(nr, at, symtab, atom, type, param, batype_nr,
-                               radius, vol, surftens, atomnr, gb_radius, S_hct)) == NOTSET)
+                               radius, vol, surftens, atomnr, gb_radius, S_hct)) == INT_MAX)
         {
             gmx_fatal(FARGS, "Replacing atomtype %s failed", type);
         }
     }
     else if ((add_atomtype(at, symtab, atom, type, param,
                            batype_nr, radius, vol,
-                           surftens, atomnr, gb_radius, S_hct)) == NOTSET)
+                           surftens, atomnr, gb_radius, S_hct)) == INT_MAX)
     {
         gmx_fatal(FARGS, "Adding atomtype %s failed", type);
     }
@@ -735,11 +736,11 @@ void push_bt(directive d, t_params bt[], int nral,
     }
     for (i = 0; (i < nral); i++)
     {
-        if (at && ((p.a[i] = get_atomtype_type(alc[i], at)) == NOTSET))
+        if (at && ((p.a[i] = get_atomtype_type(alc[i], at)) == INT_MAX))
         {
             gmx_fatal(FARGS, "Unknown atomtype %s\n", alc[i]);
         }
-        else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
+        else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == INT_MAX))
         {
             gmx_fatal(FARGS, "Unknown bond_atomtype %s\n", alc[i]);
         }
@@ -904,7 +905,7 @@ void push_dihedraltype(directive d, t_params bt[],
         }
         else
         {
-            if ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET)
+            if ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == INT_MAX)
             {
                 gmx_fatal(FARGS, "Unknown bond_atomtype %s", alc[i]);
             }
@@ -1010,11 +1011,11 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     }
 
     /* Put the parameters in the matrix */
-    if ((ai = get_atomtype_type (a0, atype)) == NOTSET)
+    if ((ai = get_atomtype_type (a0, atype)) == INT_MAX)
     {
         gmx_fatal(FARGS, "Atomtype %s not found", a0);
     }
-    if ((aj = get_atomtype_type (a1, atype)) == NOTSET)
+    if ((aj = get_atomtype_type (a1, atype)) == INT_MAX)
     {
         gmx_fatal(FARGS, "Atomtype %s not found", a1);
     }
@@ -1064,7 +1065,7 @@ push_gb_params (gpp_atomtype_t at, char *line,
     /* Search for atomtype */
     atype = get_atomtype_type(atypename, at);
 
-    if (atype == NOTSET)
+    if (atype == INT_MAX)
     {
         printf("Couldn't find topology match for atomtype %s\n", atypename);
         abort();
@@ -1190,11 +1191,11 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 
     for (i = 0; (i < nral); i++)
     {
-        if (at && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
+        if (at && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == INT_MAX))
         {
             gmx_fatal(FARGS, "Unknown atomtype %s\n", alc[i]);
         }
-        else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
+        else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == INT_MAX))
         {
             gmx_fatal(FARGS, "Unknown bond_atomtype %s\n", alc[i]);
         }
@@ -1215,7 +1216,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     /* Is this correct?? */
     for (i = 0; i < MAXFORCEPARAM; i++)
     {
-        p.c[i] = NOTSET;
+        p.c[i] = INT_MAX;
     }
 
     /* Push the bond to the bondlist */
@@ -1346,7 +1347,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
         return;
     }
     sscanf(id, "%d", &atomnr);
-    if ((type  = get_atomtype_type(ctype, atype)) == NOTSET)
+    if ((type  = get_atomtype_type(ctype, atype)) == INT_MAX)
     {
         gmx_fatal(FARGS, "Atomtype %s not found", ctype);
     }
@@ -1372,7 +1373,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
             m0 = mB = m;
             if (nscan > 2)
             {
-                if ((typeB = get_atomtype_type(ctypeB, atype)) == NOTSET)
+                if ((typeB = get_atomtype_type(ctypeB, atype)) == INT_MAX)
                 {
                     gmx_fatal(FARGS, "Atomtype %s not found", ctypeB);
                 }
@@ -1741,7 +1742,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     nral  = NRAL(ftype);
     for (j = 0; j < MAXATOMLIST; j++)
     {
-        aa[j] = NOTSET;
+        aa[j] = INT_MAX;
     }
     bDef = (NRFP(ftype) > 0);
 
@@ -1978,10 +1979,10 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
             {
                 if (interaction_function[ftype].flags & IF_VSITE)
                 {
-                    /* set them to NOTSET, will be calculated later */
+                    /* set them to INT_MAX, will be calculated later */
                     for (j = 0; (j < MAXFORCEPARAM); j++)
                     {
-                        param.c[j] = NOTSET;
+                        param.c[j] = INT_MAX;
                     }
 
                     if (bSwapParity)
@@ -2203,7 +2204,7 @@ void push_vsitesn(directive d, t_params bond[],
     /* default force parameters  */
     for (j = 0; (j < MAXATOMLIST); j++)
     {
-        param.a[j] = NOTSET;
+        param.a[j] = INT_MAX;
     }
     for (j = 0; (j < MAXFORCEPARAM); j++)
     {
@@ -2609,11 +2610,11 @@ static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp)
 
     for (i = 0; i < MAXATOMLIST; i++)
     {
-        param.a[i] = NOTSET;
+        param.a[i] = INT_MAX;
     }
     for (i = 0; i < MAXFORCEPARAM; i++)
     {
-        param.c[i] = NOTSET;
+        param.c[i] = INT_MAX;
     }
 
     /* Add a pair interaction for all non-excluded atom pairs */

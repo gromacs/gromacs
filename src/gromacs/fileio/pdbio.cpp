@@ -521,25 +521,27 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
     {
         std::strcpy(anm, atoms->pdbinfo[i].atomnm);
         std::strcpy(anm_copy, atoms->pdbinfo[i].atomnm);
+        bool atomNumberSet = false;
         len        = strlen(anm);
-        atomnumber = NOTSET;
         if ((anm[0] != ' ') && ((len <= 2) || ((len > 2) && !std::isdigit(anm[2]))))
         {
             anm_copy[2] = nc;
             if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
             {
-                atomnumber = std::round(eval);
+                atomnumber    = std::round(eval);
+                atomNumberSet = true;
             }
             else
             {
                 anm_copy[1] = nc;
                 if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
                 {
-                    atomnumber = std::round(eval);
+                    atomnumber    = std::round(eval);
+                    atomNumberSet = true;
                 }
             }
         }
-        if (atomnumber == NOTSET)
+        if (!atomNumberSet)
         {
             k = 0;
             while ((k < std::strlen(anm)) && (std::isspace(anm[k]) || std::isdigit(anm[k])))
@@ -550,13 +552,14 @@ void get_pdb_atomnumber(t_atoms *atoms, gmx_atomprop_t aps)
             anm_copy[1] = nc;
             if (gmx_atomprop_query(aps, epropElement, "???", anm_copy, &eval))
             {
-                atomnumber = std::round(eval);
+                atomnumber    = std::round(eval);
+                atomNumberSet = true;
             }
         }
         atoms->atom[i].atomnumber = atomnumber;
         ptr = gmx_atomprop_element(aps, atomnumber);
         std::strncpy(atoms->atom[i].elem, ptr == NULL ? "" : ptr, 4);
-        if (debug)
+        if (debug && atomNumberSet)
         {
             fprintf(debug, "Atomnumber for atom '%s' is %d\n", anm, atomnumber);
         }

@@ -431,7 +431,7 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
                             }
                             else
                             {
-                                xh[m][d] = NOTSET;
+                                xh[m][d] = INT_MAX;
                             }
                         }
                     }

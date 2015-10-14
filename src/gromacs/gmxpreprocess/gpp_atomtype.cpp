@@ -40,6 +40,7 @@
 
 #include <string.h>
 
+#include <climits>
 #include <cmath>
 
 #include "gromacs/gmxpreprocess/topdirs.h"
@@ -77,7 +78,7 @@ int get_atomtype_type(const char *str, gpp_atomtype_t ga)
         }
     }
 
-    return NOTSET;
+    return INT_MAX;
 }
 
 int get_atomtype_ntypes(gpp_atomtype_t ga)
@@ -99,7 +100,7 @@ real get_atomtype_massA(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->atom[nt].m;
@@ -109,7 +110,7 @@ real get_atomtype_massB(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->atom[nt].mB;
@@ -119,7 +120,7 @@ real get_atomtype_qA(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->atom[nt].q;
@@ -129,7 +130,7 @@ real get_atomtype_qB(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->atom[nt].qB;
@@ -139,7 +140,7 @@ int get_atomtype_ptype(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->atom[nt].ptype;
@@ -149,7 +150,7 @@ int get_atomtype_batype(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->bondatomtype[nt];
@@ -159,7 +160,7 @@ int get_atomtype_atomnumber(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->atomnumber[nt];
@@ -169,7 +170,7 @@ real get_atomtype_radius(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->radius[nt];
@@ -179,7 +180,7 @@ real get_atomtype_vol(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->vol[nt];
@@ -189,7 +190,7 @@ real get_atomtype_surftens(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->surftens[nt];
@@ -199,7 +200,7 @@ real get_atomtype_gb_radius(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->gb_radius[nt];
@@ -209,7 +210,7 @@ real get_atomtype_S_hct(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     return ga->S_hct[nt];
@@ -219,11 +220,11 @@ real get_atomtype_nbparam(int nt, int param, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
     if ((param < 0) || (param >= MAXFORCEPARAM))
     {
-        return NOTSET;
+        return INT_MAX;
     }
     return ga->nb[nt].c[param];
 }
@@ -256,7 +257,7 @@ set_atomtype_gbparam(gpp_atomtype_t ga, int i,
 {
     if ( (i < 0) || (i >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     ga->radius[i]    = radius;
@@ -277,7 +278,7 @@ int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NOTSET;
+        return INT_MAX;
     }
 
     ga->atom[nt]         = *a;
