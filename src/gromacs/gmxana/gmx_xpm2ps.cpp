@@ -148,8 +148,8 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     RTYPE("ticklinewidth",  psr->ticklinewidth,  psr->linewidth);
     RTYPE("zerolinewidth",  psr->zerolinewidth,  psr->ticklinewidth);
     ETYPE("x-lineat0value", psr->X.lineatzero,   colors);
-    RTYPE("x-major",        psr->X.major,        NOTSET);
-    RTYPE("x-minor",        psr->X.minor,        NOTSET);
+    RTYPE("x-major",        psr->X.major,        1);
+    RTYPE("x-minor",        psr->X.minor,        1);
     RTYPE("x-firstmajor",   psr->X.offset,       0.0);
     ETYPE("x-majorat0",     psr->X.first,        gmx_bools);
     RTYPE("x-majorticklen", psr->X.majorticklen, 8.0);

@@ -598,20 +598,21 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
 int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
 {
     int  i;
-    int  nres = 0, resnr, presnr;
+    int  nres      = 0, resnr, presnr = 0;
+    bool presFound = false;
     int *residx;
 
     /* build index of first atom numbers for each residue */
-    presnr = NOTSET;
     snew(residx, atoms->nres+1);
     for (i = 0; i < n; i++)
     {
         resnr = atoms->atom[index[i]].resind;
-        if (resnr != presnr)
+        if (!presFound || resnr != presnr)
         {
             residx[nres] = i;
             nres++;
-            presnr = resnr;
+            presnr    = resnr;
+            presFound = true;
         }
     }
     if (debug)

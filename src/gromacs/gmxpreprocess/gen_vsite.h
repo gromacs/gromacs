@@ -41,7 +41,7 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/hackblock.h"
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/utility/real.h"
 
 /* stuff for pdb2gmx */
 

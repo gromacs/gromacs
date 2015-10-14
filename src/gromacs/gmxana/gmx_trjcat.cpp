@@ -483,7 +483,8 @@ int gmx_trjcat(int argc, char *argv[])
     gmx_bool          bNewFile, bIndex, bWrite;
     int               nfile_in, nfile_out, *cont_type;
     real             *readtime, *timest, *settime;
-    real              first_time = 0, lasttime = NOTSET, last_ok_t = -1, timestep;
+    real              first_time  = 0, lasttime, last_ok_t = -1, timestep;
+    gmx_bool          lastTimeSet = FALSE;
     real              last_frame_time, searchtime;
     int               isize = 0, j;
     atom_id          *index = NULL, imax;
@@ -701,6 +702,7 @@ int gmx_trjcat(int argc, char *argv[])
                     }
                     lasttime = fr.time;
                 }
+                lastTimeSet     = TRUE;
                 bKeepLastAppend = TRUE;
                 close_trj(status);
                 trxout = open_trx(out_file, "a");
@@ -735,8 +737,9 @@ int gmx_trjcat(int argc, char *argv[])
                     gmx_fatal(FARGS, "Error seeking: attempted to seek to %f but got %f.",
                               searchtime, fr.time);
                 }
-                lasttime = fr.time;
-                fpos     = gmx_fio_ftell(stfio);
+                lasttime    = fr.time;
+                lastTimeSet = TRUE;
+                fpos        = gmx_fio_ftell(stfio);
                 close_trj(status);
                 trxout = open_trx(out_file, "r+");
                 if (gmx_fio_seek(trx_get_fileio(trxout), fpos))
@@ -744,7 +747,10 @@ int gmx_trjcat(int argc, char *argv[])
                     gmx_fatal(FARGS, "Error seeking to append position.");
                 }
             }
-            printf("\n Will append after %f \n", lasttime);
+            if (lastTimeSet)
+            {
+                printf("\n Will append after %f \n", lasttime);
+            }
             frout = fr;
         }
         /* Lets stitch up some files */
@@ -827,11 +833,13 @@ int gmx_trjcat(int argc, char *argv[])
 
             bNewFile = TRUE;
 
-            printf("\n");
-            if (lasttime != NOTSET)
+            if (!lastTimeSet)
             {
-                printf("lasttime %g\n", lasttime);
+                lasttime    = 0;
+                lastTimeSet = true;
             }
+            printf("\n");
+            printf("lasttime %g\n", lasttime);
 
             do
             {
@@ -873,7 +881,8 @@ int gmx_trjcat(int argc, char *argv[])
                     {
                         first_time = frout.time;
                     }
-                    lasttime = frout.time;
+                    lasttime    = frout.time;
+                    lastTimeSet = TRUE;
                     if (dt == 0 || bRmod(frout.time, first_time, dt))
                     {
                         frame_out++;
