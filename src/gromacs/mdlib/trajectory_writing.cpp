@@ -37,6 +37,7 @@
 #include "trajectory_writing.h"
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxlib/energyhistory.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/math/vec.h"
@@ -136,7 +137,7 @@ do_md_trajectory_writing(FILE           *fplog,
                     update_ekinstate(&state_global->ekinstate, ekind);
                     state_global->ekinstate.bUpToDate = TRUE;
                 }
-                update_energyhistory(&state_global->enerhist, mdebin);
+                update_energyhistory(state_global->enerhist, mdebin);
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
