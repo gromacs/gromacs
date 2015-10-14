@@ -38,7 +38,12 @@
 #ifndef GMX_GMXPREPROCESS_PGUTIL_H
 #define GMX_GMXPREPROCESS_PGUTIL_H
 
-#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/topology/atom_id.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
+
+struct t_atom;
+struct t_atoms;
 
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.

@@ -60,6 +60,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
+static const int NOTSET = -9368163;
+
 void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
     int  i, d;

@@ -41,7 +41,8 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/legacyheaders/typedefs.h"
+
+struct gmx_molblock_t;
 
 double check_mol(gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */

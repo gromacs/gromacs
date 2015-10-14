@@ -88,12 +88,12 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     double     x1, y1, z1, x2, y2, z2;
     rvec       xmin, xmax;
     int        natoms, i, m, resnr, newres, oldres, ddist, c;
-    gmx_bool   bFirst, bVel;
+    gmx_bool   bFirst, bVel, oldResFirst;
     char      *p1, *p2, *p3;
 
-    newres  = -1;
-    oldres  = -12345; /* Unlikely number for the first residue! */
-    ddist   = 0;
+    newres      = -1;
+    oldResFirst = FALSE;
+    ddist       = 0;
 
     /* Read the title and number of atoms */
     get_coordnum_fp(in, title, &natoms);
@@ -165,9 +165,10 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         sscanf(name, "%d", &resnr);
         sscanf(line+5, "%5s", resname);
 
-        if (resnr != oldres || strncmp(resname, oldresname, sizeof(resname)))
+        if (!oldResFirst || oldres != resnr || strncmp(resname, oldresname, sizeof(resname)))
         {
-            oldres = resnr;
+            oldres      = resnr;
+            oldResFirst = TRUE;
             newres++;
             if (newres >= natoms)
             {
