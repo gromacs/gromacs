@@ -1190,12 +1190,11 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
     /* parse GPU IDs if the user passed any */
     if (env != NULL)
     {
-        /* Parse a "plain" GPU ID string which contains a sequence of
-         * digits corresponding to GPU IDs; the order will indicate
-         * the process/tMPI thread - GPU assignment. */
-        parse_digits_from_plain_string(env,
-                                       &gpu_opt->n_dev_use,
-                                       &gpu_opt->dev_use);
+        /* Parse a "plain" or comma-separated GPU ID string which contains a
+         * sequence of digits corresponding to GPU IDs; the order will
+         * indicate the process/tMPI thread - GPU assignment. */
+        parse_digits_from_string(env, &gpu_opt->n_dev_use, &gpu_opt->dev_use);
+
         if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt->n_dev_use)
         {
             gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", gpu_implementation);
