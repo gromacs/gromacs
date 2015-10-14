@@ -111,28 +111,4 @@ TEST_F(GenconfTest, nbox_rot_Works)
     runTest(CommandLine(cmdline));
 }
 
-TEST_F(GenconfTest, nbox_shuffle_Works)
-{
-    const char *const cmdline[] = {
-        "genconf", "-nbox", "2", "2", "3", "-shuffle"
-    };
-    runTest(CommandLine(cmdline));
-}
-
-TEST_F(GenconfTest, nbox_sort_Works)
-{
-    const char *const cmdline[] = {
-        "genconf", "-nbox", "2", "2", "3", "-sort"
-    };
-    runTest(CommandLine(cmdline));
-}
-
-TEST_F(GenconfTest, nbox_block_Works)
-{
-    const char *const cmdline[] = {
-        "genconf", "-nbox", "2", "2", "3", "-block", "3"
-    };
-    runTest(CommandLine(cmdline));
-}
-
 } // namespace

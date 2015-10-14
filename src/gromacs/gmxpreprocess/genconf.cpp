@@ -42,7 +42,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/readinp.h"
-#include "gromacs/gmxpreprocess/sortwater.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/math/3dtransforms.h"
@@ -141,11 +140,7 @@ int gmx_genconf(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
     static rvec       nrbox    = {1, 1, 1};
-    static int        seed     = 0;  /* seed for random number generator */
-    static int        nmolat   = 3;
-    static int        nblock   = 1;
-    static gmx_bool   bShuffle = FALSE;
-    static gmx_bool   bSort    = FALSE;
+    static int        seed     = 0;               /* seed for random number generator */
     static gmx_bool   bRandom  = FALSE;           /* False: no random rotations */
     static gmx_bool   bRenum   = TRUE;            /* renumber residues */
     static rvec       dist     = {0, 0, 0};       /* space added between molecules ? */
@@ -156,13 +151,6 @@ int gmx_genconf(int argc, char *argv[])
         { "-seed",   FALSE, etINT,  {&seed},
           "Random generator seed, if 0 generated from the time" },
         { "-rot",    FALSE, etBOOL, {&bRandom}, "Randomly rotate conformations" },
-        { "-shuffle", FALSE, etBOOL, {&bShuffle}, "Random shuffling of molecules" },
-        { "-sort",   FALSE, etBOOL, {&bSort},   "Sort molecules on X coord" },
-        { "-block",  FALSE, etINT,  {&nblock},
-          "Divide the box in blocks on this number of cpus" },
-        { "-nmolat", FALSE, etINT,  {&nmolat},
-          "Number of atoms per molecule, assumed to start from 0. "
-          "If you set this wrong, it will screw up your system!" },
         { "-maxrot", FALSE, etRVEC, {max_rot}, "Maximum random rotation" },
         { "-renumber", FALSE, etBOOL, {&bRenum},  "Renumber residues" }
     };
@@ -190,11 +178,6 @@ int gmx_genconf(int argc, char *argv[])
     if ((nx <= 0) || (ny <= 0) || (nz <= 0))
     {
         gmx_fatal(FARGS, "Number of boxes (-nbox) should be larger than zero");
-    }
-    if ((nmolat <= 0) && bShuffle)
-    {
-        gmx_fatal(FARGS, "Can not shuffle if the molecules only have %d atoms",
-                  nmolat);
     }
 
     vol = nx*ny*nz; /* calculate volume in grid points (= nr. molecules) */
@@ -329,18 +312,6 @@ int gmx_genconf(int argc, char *argv[])
         }
     }
 
-    if (bShuffle)
-    {
-        randwater(0, atoms->nr/nmolat, nmolat, x, v, rng);
-    }
-    else if (bSort)
-    {
-        sortwater(0, atoms->nr/nmolat, nmolat, x, v);
-    }
-    else if (opt2parg_bSet("-block", asize(pa), pa))
-    {
-        mkcompact(0, atoms->nr/nmolat, nmolat, x, v, nblock, box);
-    }
     gmx_rng_destroy(rng);
 
     write_sto_conf(opt2fn("-o", NFILE, fnm), *top->name, atoms, x, v, ePBC, box);

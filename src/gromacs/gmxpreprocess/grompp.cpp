@@ -63,7 +63,6 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/gmxpreprocess/sortwater.h"
 #include "gromacs/gmxpreprocess/tomorse.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
