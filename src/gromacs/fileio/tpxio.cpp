@@ -48,6 +48,7 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio-xdr.h"
+#include "gromacs/gmxlib/boxutilities.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/inputrec.h"
 #include "gromacs/legacyheaders/names.h"

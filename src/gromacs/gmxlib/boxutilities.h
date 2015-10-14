@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,47 +32,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_GMXLIB_BOXUTILITIES_H
+#define GMX_GMXLIB_BOXUTILITIES_H
 
-#ifndef _typedefs_h
-#define _typedefs_h
+#include <stdio.h>
 
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-/* DEPRECATED! value for signaling unitialized variables */
-#define NOTSET -12345
+struct t_state;
 
-#include "gromacs/legacyheaders/types/state.h"
-#include "gromacs/topology/topology.h"
-
-struct t_inputrec;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int gmx_int64_to_int(gmx_int64_t step, const char *warn);
-/* Convert a gmx_int64_t value to int.
- * If warn!=NULL a warning message will be written
- * to stderr when step does not fit in an int,
- * the first line is:
- * "WARNING during %s:", where warn is printed in %s.
+/*! \brief Make sure the box shape is within gromacs bounds
+ *
+ * Preserve the box shape, b can be box or boxv
+ * \param[in] ir      Input record
+ * \param[in] box_rel Relative box
+ * \param[out] b      The corrected box
  */
+void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
 
-/* Functions to initiate and delete structures *
- * These functions are defined in gmxlib/typedefs.c
+/*! \brief Determine relative box axes
+ *
+ * Set state->box_rel used in mdrun to preserve the box shape
+ * \param[in] ir       Input record
+ * \param[inout] state Structure containing the box
  */
-void init_energyhistory(energyhistory_t * enerhist);
-void done_energyhistory(energyhistory_t * enerhist);
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
-t_state *serial_init_local_state(t_state *state_global);
-void init_df_history(df_history_t *dfhist, int nlambda);
-void done_df_history(df_history_t *dfhist);
-void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
-void done_state(t_state *state);
+void set_box_rel(struct t_inputrec *ir, t_state *state);
 
-#ifdef __cplusplus
-}
 #endif
-
-
-#endif  /* _typedefs_h */
