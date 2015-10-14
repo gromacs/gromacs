@@ -41,7 +41,8 @@
 #include <stdio.h>
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/typedefs.h"
+
+struct gmx_mtop_t;
 
 typedef struct gpp_atomtype *gpp_atomtype_t;
 
