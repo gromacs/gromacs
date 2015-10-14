@@ -44,9 +44,11 @@
 
 #include <cmath>
 
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/add_par.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/names.h"
@@ -55,9 +57,11 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/residuetypes.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #define MAXNAME 32
@@ -573,8 +577,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
 
 static void my_add_param(t_params *plist, int ai, int aj, real b)
 {
-    static real c[MAXFORCEPARAM] =
-    { NOTSET, NOTSET, NOTSET, NOTSET, NOTSET, NOTSET };
+    static real c[MAXFORCEPARAM] = { 0, 0, 0, 0, 0, 0 };
 
     c[0] = b;
     add_param(plist, ai, aj, c, NULL);
@@ -607,7 +610,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
                 gmx_fatal(FARGS, "cannot make constraint in add_vsites for %d heavy "
                           "atoms and %d hydrogen atoms", nrheavies, nrHatoms);
             }
-            my_add_param(&(plist[F_CONSTRNC]), Hatoms[i], heavies[0], NOTSET);
+            my_add_param(&(plist[F_CONSTRNC]), Hatoms[i], heavies[0], 0);
         }
         else
         {
@@ -1971,9 +1974,9 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     }
                     /* add constraints between dummy masses and to heavies[0] */
                     /* 'add_shift' says which atoms won't be renumbered afterwards */
-                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift+ni0,  NOTSET);
-                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift+ni0+1, NOTSET);
-                    my_add_param(&(plist[F_CONSTRNC]), add_shift+ni0, add_shift+ni0+1, NOTSET);
+                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift+ni0,  0);
+                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift+ni0+1, 0);
+                    my_add_param(&(plist[F_CONSTRNC]), add_shift+ni0, add_shift+ni0+1, 0);
 
                     /* generate Heavy, H1, H2 and H3 from M1, M2 and heavies[0] */
                     /* note that vsite_type cannot be NOTSET, because we just set it */
