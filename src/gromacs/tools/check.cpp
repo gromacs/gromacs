@@ -649,6 +649,7 @@ void chk_enx(const char *fn)
     gmx_enxnm_t   *enm = NULL;
     t_enxframe    *fr;
     gmx_bool       bShowTStep;
+    gmx_bool       timeSet;
     real           t0, old_t1, old_t2;
     char           buf[22];
 
@@ -661,7 +662,8 @@ void chk_enx(const char *fn)
     old_t2     = -2.0;
     old_t1     = -1.0;
     fnr        = 0;
-    t0         = NOTSET;
+    t0         = 0;
+    timeSet    = FALSE;
     bShowTStep = TRUE;
 
     while (do_enx(in, fr))
@@ -678,9 +680,10 @@ void chk_enx(const char *fn)
         }
         old_t2 = old_t1;
         old_t1 = fr->t;
-        if (t0 == NOTSET)
+        if (!timeSet)
         {
-            t0 = fr->t;
+            t0      = fr->t;
+            timeSet = TRUE;
         }
         if (fnr == 0)
         {

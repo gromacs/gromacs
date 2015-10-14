@@ -42,6 +42,7 @@
 
 #include <string.h>
 
+#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/snprintf.h"

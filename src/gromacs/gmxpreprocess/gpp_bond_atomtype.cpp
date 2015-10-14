@@ -40,6 +40,7 @@
 
 #include <string.h>
 
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"

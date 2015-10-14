@@ -45,6 +45,7 @@
 #include "gromacs/fileio/strdb.h"
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/h_db.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/resall.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/typedefs.h"

@@ -79,6 +79,8 @@ const char *hxtypenames[NRHXTYPES] =
 {"n-n", "n-n+1", "n-n+2", "n-n+3", "n-n+4", "n-n+5", "n-n>6"};
 #define MAXHH 4
 
+static const int NOTSET = -49297;
+
 #ifdef GMX_OPENMP
 #define MASTER_THREAD_ONLY(threadNr) ((threadNr) == 0)
 #else
