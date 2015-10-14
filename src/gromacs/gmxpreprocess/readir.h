@@ -40,12 +40,14 @@
 
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/legacyheaders/typedefs.h"
 
+struct gmx_groups_t;
+struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_params_t;
 struct t_adress;
 struct t_grpopts;
+struct t_inputrec;
 struct t_rot;
 
 enum {
