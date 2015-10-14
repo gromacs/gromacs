@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,36 +33,11 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_MAXWELL_VELOCITIES
-#define GMX_MAXWELL_VELOCITIES
+#ifndef GMX_GMXPREPROCESS_NOTSET_H
+#define GMX_GMXPREPROCESS_NOTSET_H
 
-#include <cstdio>
+#include <climits>
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/real.h"
-
-struct gmx_mtop_t;
-
-/*! \brief
- * Generate Maxwellian velocities.
- *
- * \param[in] tempi Temperature to generate around
- * \param[in] seed  Random number generator seed
- * \param[in] mtop  Molecular Topology
- * \param[out] v    Velocities
- */
-void maxwell_speed(real tempi, unsigned int seed,
-                   gmx_mtop_t *mtop, rvec v[]);
-
-/*! \brief
- * Remove the center of mass motion in a set of coordinates.
- *
- * \param[out] log  File for printing debug information
- * \param[in]  natoms Number of atoms
- * \param[in]  mass   Atomic masses
- * \param[in]  x      Coordinates
- * \param[out] v      Velocities
- */
-void stop_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[]);
+static const int NOTSET = -12345;
 
 #endif

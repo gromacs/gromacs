@@ -2405,7 +2405,7 @@ static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
     }
     else if (bRead)
     {
-        atom->atomnumber = NOTSET;
+        atom->atomnumber = 0;
     }
     if (file_version < 23)
     {
