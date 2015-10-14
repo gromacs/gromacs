@@ -42,6 +42,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct energyhistory_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -103,20 +105,6 @@ typedef struct
     real         mvcos;
 } ekinstate_t;
 
-/* energy history for delta_h histograms */
-typedef struct
-{
-    int      nndh;             /* the number of energy difference lists */
-    int     *ndh;              /* the number in each energy difference list */
-    real   **dh;               /* the energy difference lists */
-
-    double   start_time;       /* the start time of these energy diff blocks */
-    double   start_lambda;     /* lambda at start time */
-
-    gmx_bool start_lambda_set; /* whether the lambda value is set. Here
-                                  For backward-compatibility. */
-} delta_h_history_t;
-
 typedef struct
 {
     int      nlambda;        /* total number of lambda states - for history*/
@@ -140,21 +128,6 @@ typedef struct
     real   **Tij_empirical;  /* Empirical transition matrix */
 
 } df_history_t;
-
-typedef struct
-{
-    gmx_int64_t        nsteps;       /* The number of steps in the history            */
-    gmx_int64_t        nsum;         /* The nr. of steps in the ener_ave and ener_sum */
-    double         *   ener_ave;     /* Energy term history sum to get fluctuations   */
-    double         *   ener_sum;     /* Energy term history sum to get fluctuations   */
-    int                nener;        /* Number of energy terms in two previous arrays */
-    gmx_int64_t        nsteps_sim;   /* The number of steps in ener_sum_sim      */
-    gmx_int64_t        nsum_sim;     /* The number of frames in ener_sum_sim     */
-    double         *   ener_sum_sim; /* Energy term history sum of the whole sim      */
-
-    delta_h_history_t *dht;          /* The BAR energy differences */
-}
-energyhistory_t;
 
 typedef struct
 {
@@ -216,46 +189,46 @@ swapstate_t;
 
 typedef struct
 {
-    int              natoms;
-    int              ngtc;
-    int              nnhpres;
-    int              nhchainlength;   /* number of nose-hoover chains               */
-    int              flags;           /* Flags telling which entries are present      */
-    int              fep_state;       /* indicates which of the alchemical states we are in                 */
-    real            *lambda;          /* lambda vector                               */
-    matrix           box;             /* box vector coordinates                         */
-    matrix           box_rel;         /* Relitaive box vectors to preserve shape        */
-    matrix           boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
-    matrix           pres_prev;       /* Pressure of the previous step for pcoupl  */
-    matrix           svir_prev;       /* Shake virial for previous step for pcoupl */
-    matrix           fvir_prev;       /* Force virial of the previous step for pcoupl  */
-    double          *nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
-    double          *nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
-    double          *nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
-    double          *nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
-    double          *therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
-    real             veta;            /* trotter based isotropic P-coupling             */
-    real             vol0;            /* initial volume,required for computing NPT conserverd quantity */
-    int              nalloc;          /* Allocation size for x, v and sd_x when !=NULL*/
-    rvec            *x;               /* the coordinates (natoms)                     */
-    rvec            *v;               /* the velocities (natoms)                      */
-    rvec            *sd_X;            /* random part of the x update for stoch. dyn.  */
-    rvec            *cg_p;            /* p vector for conjugate gradient minimization */
+    int                     natoms;
+    int                     ngtc;
+    int                     nnhpres;
+    int                     nhchainlength;   /* number of nose-hoover chains               */
+    int                     flags;           /* Flags telling which entries are present      */
+    int                     fep_state;       /* indicates which of the alchemical states we are in                 */
+    real                   *lambda;          /* lambda vector                               */
+    matrix                  box;             /* box vector coordinates                         */
+    matrix                  box_rel;         /* Relitaive box vectors to preserve shape        */
+    matrix                  boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
+    matrix                  pres_prev;       /* Pressure of the previous step for pcoupl  */
+    matrix                  svir_prev;       /* Shake virial for previous step for pcoupl */
+    matrix                  fvir_prev;       /* Force virial of the previous step for pcoupl  */
+    double                 *nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
+    double                 *nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
+    double                 *nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
+    double                 *nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
+    double                 *therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
+    real                    veta;            /* trotter based isotropic P-coupling             */
+    real                    vol0;            /* initial volume,required for computing NPT conserverd quantity */
+    int                     nalloc;          /* Allocation size for x, v and sd_x when !=NULL*/
+    rvec                   *x;               /* the coordinates (natoms)                     */
+    rvec                   *v;               /* the velocities (natoms)                      */
+    rvec                   *sd_X;            /* random part of the x update for stoch. dyn.  */
+    rvec                   *cg_p;            /* p vector for conjugate gradient minimization */
 
-    history_t        hist;            /* Time history for restraints                  */
+    history_t               hist;            /* Time history for restraints                  */
 
-    ekinstate_t      ekinstate;       /* The state of the kinetic energy data      */
+    ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
 
-    energyhistory_t  enerhist;        /* Energy history for statistics           */
-    swapstate_t      swapstate;       /* Position swapping                       */
-    df_history_t     dfhist;          /*Free energy history for free energy analysis  */
-    edsamstate_t     edsamstate;      /* Essential dynamics / flooding history */
+    struct energyhistory_t *enerhist;        /* Energy history for statistics           */
+    swapstate_t             swapstate;       /* Position swapping                       */
+    df_history_t            dfhist;          /*Free energy history for free energy analysis  */
+    edsamstate_t            edsamstate;      /* Essential dynamics / flooding history */
 
-    int              ddp_count;       /* The DD partitioning count for this state  */
-    int              ddp_count_cg_gl; /* The DD part. count for index_gl     */
-    int              ncg_gl;          /* The number of local charge groups            */
-    int             *cg_gl;           /* The global cg number of the local cgs        */
-    int              cg_gl_nalloc;    /* Allocation size of cg_gl;              */
+    int                     ddp_count;       /* The DD partitioning count for this state  */
+    int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */
+    int                     ncg_gl;          /* The number of local charge groups            */
+    int                    *cg_gl;           /* The global cg number of the local cgs        */
+    int                     cg_gl_nalloc;    /* Allocation size of cg_gl;              */
 } t_state;
 
 typedef struct
