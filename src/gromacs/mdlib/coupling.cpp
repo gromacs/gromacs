@@ -40,6 +40,7 @@
 
 #include <algorithm>
 
+#include "gromacs/gmxlib/boxutilities.h"
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/nrnb.h"
@@ -54,6 +55,7 @@
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"

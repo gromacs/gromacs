@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/gmxlib/boxutilities.h"
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/gmxlib/orires.h"
 #include "gromacs/legacyheaders/force.h"

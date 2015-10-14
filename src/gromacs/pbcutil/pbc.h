@@ -45,6 +45,7 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
+struct t_state;
 
 #ifdef __cplusplus
 extern "C" {
