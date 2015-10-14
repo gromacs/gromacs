@@ -530,6 +530,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 gmx_fatal(FARGS, "nstexpanded should be divisible by nstcalclr");
             }
+            nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded, nstfep);
         }
         if (repl_ex_nst > 0)
         {
@@ -1167,6 +1168,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | (bTemp ? CGLO_TEMPERATURE : 0)
                                 | (bPres ? CGLO_PRESSURE : 0)
                                 | (bPres ? CGLO_CONSTRAINT : 0)
+                                | (bStopCM ? CGLO_STOPCM : 0)
                                 | CGLO_SCALEEKIN
                                 );
                 /* explanation of above:
