@@ -44,6 +44,9 @@
 #include <limits.h>
 
 #include <cmath>
+
+#include <algorithm>
+
 #ifdef GMX_NATIVE_WINDOWS
 // for _BitScanReverse()
 #include <intrin.h>
@@ -189,4 +192,16 @@ int gmx_feenableexcept()
 #else
     return -1;
 #endif
+}
+
+real max_cutoff(real cutoff1, real cutoff2)
+{
+    if (cutoff1 == 0 || cutoff2 == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return std::max(cutoff1, cutoff2);
+    }
 }
