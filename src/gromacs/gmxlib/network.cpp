@@ -701,21 +701,6 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
 #endif
 }
 
-gmx_bool gmx_fexist_master(const char *fname, t_commrec *cr)
-{
-    gmx_bool bExist;
-
-    if (SIMMASTER(cr))
-    {
-        bExist = gmx_fexist(fname);
-    }
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(bExist), &bExist, cr);
-    }
-    return bExist;
-}
-
 void gmx_fatal_collective(int f_errno, const char *file, int line,
                           const t_commrec *cr, gmx_domdec_t *dd,
                           const char *fmt, ...)
