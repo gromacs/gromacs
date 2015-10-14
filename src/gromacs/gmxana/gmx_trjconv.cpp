@@ -334,12 +334,12 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
                                    int natoms, t_atom atom[],
                                    int ePBC, matrix box, rvec x[])
 {
-    atom_id i, j, res_start, res_end;
-    int     d, presnr;
-    real    m;
-    double  mtot;
-    rvec    box_center, com, new_com, shift;
-
+    atom_id          i, j, res_start, res_end;
+    int              d, presnr;
+    real             m;
+    double           mtot;
+    rvec             box_center, com, new_com, shift;
+    static const int NOTSET = -12347;
     calc_box_center(ecenter, box, box_center);
 
     presnr    = NOTSET;

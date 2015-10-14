@@ -40,11 +40,13 @@
 
 #include <string.h>
 
+#include <climits>
 #include <cmath>
 
 #include <algorithm>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
+#include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
 #include "gromacs/topology/block.h"
