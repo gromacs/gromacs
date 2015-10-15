@@ -674,12 +674,10 @@ int lsq_y_ax(int n, real x[], real y[], real *a)
     real        da, chi2, Rfit;
 
     gmx_stats_add_points(lsq, n, x, y, 0, 0);
-    if ((ok = gmx_stats_get_a(lsq, elsqWEIGHT_NONE, a, &da, &chi2, &Rfit)) != estatsOK)
-    {
-        return ok;
-    }
+    ok = gmx_stats_get_a(lsq, elsqWEIGHT_NONE, a, &da, &chi2, &Rfit);
+    gmx_stats_free(lsq);
 
-    return estatsOK;
+    return ok;
 }
 
 static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
@@ -707,15 +705,14 @@ static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
 
         if ((ok = gmx_stats_add_point(lsq, pt, yr[i], 0, 0)) != estatsOK)
         {
+            gmx_stats_free(lsq);
             return ok;
         }
     }
-    if ((ok = gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, NULL, NULL, chi2, r)) != estatsOK)
-    {
-        return ok;
-    }
+    ok = gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, NULL, NULL, chi2, r);
+    gmx_stats_free(lsq);
 
-    return estatsOK;
+    return ok;
 }
 
 int lsq_y_ax_b(int n, real x[], real y[], real *a, real *b, real *r, real *chi2)
@@ -738,16 +735,15 @@ int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
 
     for (int i = 0; (i < n); i++)
     {
-        if ((ok = gmx_stats_add_point(lsq, x[i], y[i], 0, dy[i])) != estatsOK)
+        ok = gmx_stats_add_point(lsq, x[i], y[i], 0, dy[i]);
+        if (ok != estatsOK)
         {
+            gmx_stats_free(lsq);
             return ok;
         }
     }
-    if ((ok = gmx_stats_get_ab(lsq, elsqWEIGHT_Y, a, b, da, db, chi2, r)) != estatsOK)
-    {
-        return ok;
-    }
+    ok = gmx_stats_get_ab(lsq, elsqWEIGHT_Y, a, b, da, db, chi2, r);
     gmx_stats_free(lsq);
 
-    return estatsOK;
+    return ok;
 }
