@@ -1761,7 +1761,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                  * until after load balancing completes,
                  * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
                 gmx_fatal(FARGS, "PME tuning was still active when attempting to "
-                          "reset mdrun counters at step " GMX_PRId64 ". Try "
+                          "reset mdrun counters at step %" GMX_PRId64 ". Try "
                           "resetting counters later in the run, e.g. with gmx "
                           "mdrun -resetstep.", step);
             }
