@@ -79,6 +79,7 @@ enum {
     etabCOULEncad,
     etabEXPMIN,
     etabUSER,
+    etabNONE,
     etabNR
 };
 
@@ -86,7 +87,8 @@ enum {
 #define ETAB_USER(e)  ((e) == etabUSER || \
                        (e) == etabEwaldUser || (e) == etabEwaldUserSwitch)
 
-typedef struct {
+typedef struct
+{
     const char *name;
     gmx_bool    bCoulomb;
 } t_tab_props;
@@ -114,7 +116,8 @@ static const t_tab_props tprops[etabNR] = {
     { "LJ12-Encad shift", FALSE },
     { "COUL-Encad shift",  TRUE },
     { "EXPMIN", FALSE },
-    { "USER", FALSE },
+    { "USER", FALSE},
+    { "NONE", TRUE },
 };
 
 typedef struct {
@@ -154,6 +157,7 @@ double v_lj_ewald_lr(double beta, double r)
         br4    = br2*br2;
         r6     = pow(r, 6.0);
         factor = (1.0 - exp(-br2)*(1 + br2 + 0.5*br4))/r6;
+
         return factor;
     }
 }
@@ -306,6 +310,240 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
     }
 }
 
+/* This function generates input for quadratic spline table interpolation.
+ * The force table table_f is always generated. The potential and combined
+ * tables table_v and table_fdv0 are not generated when NULL is passed.
+ * ntab entries with spacing dx are generated.
+ * Input can be generated using either an analytical function, passed
+ * as function pointer v_ana with parameters params or using table input.
+ * Table input can be passed as a potential alone, using table_in_v or
+ * combined with a force table table_in_f. A stride is used (which can be 1):
+ * V(i*dx) = table_in_v(i*stride*dx). When no force table input is passed,
+ * the stride has to be a multiple of 2.
+ * Note that the table input should be smooth, e.g. not containing noise
+ * from an (iterative) Boltzmann inversion procedure.
+ */
+static void table_spline3_fill(real                           *table_f,
+                               real                           *table_v,
+                               real                           *table_fdv0,
+                               int                             ntab,
+                               double                          dx,
+                               interaction_potential_function  v_ana,
+                               const double                   *params,
+                               const double                   *table_in_f,
+                               const double                   *table_in_v,
+                               int                             table_in_size,
+                               int                             stride)
+{
+    real     tab_max;
+    int      i, i_inrange;
+    double   dc, dc_new;
+    gmx_bool bOutOfRange;
+    double   v_r0, v_r1, v_inrange, vi, a0, a1, a2dx;
+    double   x_r0;
+
+    if (v_ana != NULL && table_in_v != NULL)
+    {
+        gmx_incons("Both analytical function and table input passed");
+    }
+
+    if (table_in_v != NULL)
+    {
+        if (stride <= 0)
+        {
+            gmx_fatal(FARGS, "The stride for the table input should be positive");
+        }
+        if (table_in_f == NULL && stride % 2 != 0)
+        {
+            gmx_fatal(FARGS, "For filling a quadratic spline table with tabulated potential input only (i.e. no force input), the stride has to be a mulitple of 2, not odd (%d)", stride);
+        }
+        if (table_in_size < ntab*stride)
+        {
+            gmx_fatal(FARGS, "The table input size (%d) is smaller than the requested output table size (%d) times the stride (%d)",
+                      table_in_size, ntab, stride);
+        }
+    }
+
+    if (ntab < 2)
+    {
+        gmx_fatal(FARGS, "Can not make a spline table with less than 2 points");
+    }
+
+    /* We need some margin to be able to divide table values by r
+     * in the kernel and also to do the integration arithmetics
+     * without going out of range. Furthemore, we divide by dx below.
+     */
+    tab_max = GMX_REAL_MAX*0.0001;
+
+    /* This function produces a table with:
+     * maximum energy error: V'''/(6*12*sqrt(3))*dx^3
+     * maximum force error:  V'''/(6*4)*dx^2
+     * The rms force error is the max error times 1/sqrt(5)=0.45.
+     */
+
+    bOutOfRange = FALSE;
+    i_inrange   = ntab;
+    v_inrange   = 0;
+    dc          = 0;
+    for (i = ntab-1; i >= 0; i--)
+    {
+        x_r0 = i*dx;
+
+        if (v_ana != NULL)
+        {
+            v_r0 = (*v_ana)(params, x_r0);
+        }
+        else
+        {
+            v_r0 = table_in_v[i*stride];
+        }
+
+        if (!bOutOfRange)
+        {
+            i_inrange = i;
+            v_inrange = v_r0;
+
+            vi = v_r0;
+        }
+        else
+        {
+            /* Linear continuation for the last point in range */
+            vi = v_inrange - dc*(i - i_inrange)*dx;
+        }
+
+        if (table_v != NULL)
+        {
+            table_v[i] = vi;
+        }
+
+        if (i == 0)
+        {
+            continue;
+        }
+
+        /* Get the potential at table point i-1 */
+        if (v_ana != NULL)
+        {
+            v_r1 = (*v_ana)(params, (i-1)*dx);
+        }
+        else
+        {
+            v_r1 = table_in_v[(i - 1)*stride];
+        }
+
+        if (v_r1 != v_r1 || v_r1 < -tab_max || v_r1 > tab_max)
+        {
+            bOutOfRange = TRUE;
+        }
+
+        if (!bOutOfRange)
+        {
+            /* Calculate the average second derivative times dx over interval i-1 to i */
+            if (v_ana != NULL || table_in_f == NULL)
+            {
+                /* Use the function values at the end points and the middle */
+                double v_mid;
+
+                if (v_ana != NULL)
+                {
+                    v_mid = (*v_ana)(params, x_r0 - 0.5*dx);
+                }
+                else
+                {
+                    v_mid = table_in_v[i*stride - stride/2];
+                }
+                a2dx = (v_r0 + v_r1 - 2*v_mid)/(0.25*dx);
+            }
+            else
+            {
+                /* Use the forces at the end points */
+                a2dx = -table_in_f[i*stride] + table_in_f[(i - 1)*stride];
+            }
+            /* Set the derivative of the spline to match the difference in potential
+             * over the interval plus the average effect of the quadratic term.
+             * This is the essential step for minimizing the error in the force.
+             */
+            dc = (v_r0 - v_r1)/dx + 0.5*a2dx;
+        }
+
+        if (i == ntab - 1)
+        {
+            /* Fill the table with the force, minus the derivative of the spline */
+            table_f[i] = -dc;
+        }
+        else
+        {
+            /* tab[i] will contain the average of the splines over the two intervals */
+            table_f[i] += -0.5*dc;
+        }
+
+        if (!bOutOfRange)
+        {
+            /* Make spline s(x) = a0 + a1*(x - xr) + 0.5*a2*(x - xr)^2
+             * matching the potential at the two end points
+             * and the derivative dc at the end point xr.
+             */
+            a0   = v_r0;
+            a1   = dc;
+            a2dx = (a1*dx + v_r1 - a0)*2/dx;
+
+            /* Set dc to the derivative at the next point */
+            dc_new = a1 - a2dx;
+
+            if (dc_new != dc_new || dc_new < -tab_max || dc_new > tab_max)
+            {
+                bOutOfRange = TRUE;
+            }
+            else
+            {
+                dc = dc_new;
+            }
+        }
+
+        table_f[(i-1)] = -0.5*dc;
+    }
+    /* Currently the last value only contains half the force: double it */
+    table_f[0] *= 2;
+
+    if (table_v != NULL && table_fdv0 != NULL)
+    {
+        /* Copy to FDV0 table too. Allocation occurs in forcerec.c,
+         * init_ewald_f_table().
+         */
+        for (i = 0; i < ntab-1; i++)
+        {
+            table_fdv0[4*i]     = table_f[i];
+            table_fdv0[4*i+1]   = table_f[i+1]-table_f[i];
+            table_fdv0[4*i+2]   = table_v[i];
+            table_fdv0[4*i+3]   = 0.0;
+        }
+        table_fdv0[4*(ntab-1)]    = table_f[(ntab-1)];
+        table_fdv0[4*(ntab-1)+1]  = -table_f[(ntab-1)];
+        table_fdv0[4*(ntab-1)+2]  = table_v[(ntab-1)];
+        table_fdv0[4*(ntab-1)+3]  = 0.0;
+    }
+}
+
+/* This function is called using either v_ewald_lr or v_lj_ewald_lr as
+ * a function argument depending on wether we should create electrostatic
+ * or Lennard-Jones Ewald tables.
+ */
+void table_spline3_fill_ewald_lr(real                           *table_f,
+                                 real                           *table_v,
+                                 real                           *table_fdv0,
+                                 int                             ntab,
+                                 double                          dx,
+                                 real                            beta,
+                                 interaction_potential_function  v_lr)
+{
+    double beta_d;
+
+    beta_d = beta;
+    table_spline3_fill(table_f, table_v, table_fdv0,
+                       ntab, dx, v_lr, &beta_d,
+                       NULL, NULL, 0, 0);
+}
+
 /* Returns the spacing for a function using the maximum of
  * the third derivative, x_scale (unit 1/length)
  * and function tolerance.
@@ -387,6 +625,7 @@ real ewald_spline3_table_scale(const interaction_const_t *ic)
 
     return sc;
 }
+
 
 /* Calculate the potential and force for an r value
  * in exactly the same way it is done in the inner loop.
@@ -694,8 +933,26 @@ static void read_tables(FILE *fp, const char *fn,
                 if (yy[1+k*2][i] >  0.01*GMX_REAL_MAX ||
                     yy[1+k*2][i] < -0.01*GMX_REAL_MAX)
                 {
-                    gmx_fatal(FARGS, "Out of range potential value %g in file '%s'",
-                              yy[1+k*2][i], fn);
+                    printf("Out of range POTENTIAL value %g in file '%s'. Changing it to ",
+                           yy[1+k*2][i], fn);
+
+                    if (yy[1+k*2][i] > 0.01*GMX_REAL_MAX)
+                    {
+                        yy[1+k*2][i] = 0.01*GMX_REAL_MAX - pow(10, 9)/GMX_REAL_MAX;
+                    }
+                    else if (yy[1+k*2][i] < -0.01*GMX_REAL_MAX)
+                    {
+                        yy[1+k*2][i] = -0.01*GMX_REAL_MAX + pow(10, 9)/GMX_REAL_MAX;
+                    }
+
+                    printf ("%g \n", yy[1+k*2][i]);
+                    /*
+                       else
+                       {
+                            gmx_fatal(FARGS, "Out of range potential value %g in file '%s'",
+                       yy[1+k*2][i], fn);
+                       }
+                     */
                 }
             }
             if (yy[1+k*2+1][i] != 0)
@@ -709,8 +966,25 @@ static void read_tables(FILE *fp, const char *fn,
                 if (yy[1+k*2+1][i] >  0.01*GMX_REAL_MAX ||
                     yy[1+k*2+1][i] < -0.01*GMX_REAL_MAX)
                 {
-                    gmx_fatal(FARGS, "Out of range force value %g in file '%s'",
-                              yy[1+k*2+1][i], fn);
+                    printf("Out of range FORCE value %g in file '%s'. Changing it to ",
+                           yy[1+k*2+1][i], fn);
+
+                    if (yy[1+k*2+1][i] > 0.01*GMX_REAL_MAX)
+                    {
+                        yy[1+k*2+1][i] = 0.01*GMX_REAL_MAX - pow(10, 9)/GMX_REAL_MAX;
+                    }
+                    else if (yy[1+k*2+1][i] < -0.01*GMX_REAL_MAX)
+                    {
+                        yy[1+k*2+1][i] = -0.01*GMX_REAL_MAX + pow(10, 9)/GMX_REAL_MAX;
+                    }
+
+                    printf ("%g \n", yy[1+k*2+1][i]);
+
+
+                    /*
+                       gmx_fatal(FARGS, "Out of range force value %g in file '%s'",
+                       yy[1+k*2+1][i], fn);
+                     */
                 }
             }
         }
@@ -1108,6 +1382,12 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                     Ftab  = 0;
                 }
                 break;
+            case etabUSER:
+                printf("etabUSER Switch selected. Tables.c - %10.4f\n", r);
+                break;
+            case etabNONE:
+                printf("etabNONE Switch selected. Tables.c - %10.4f\n", r);
+                break;
             default:
                 gmx_fatal(FARGS, "Table type %d not implemented yet. (%s,%d)",
                           tp, __FILE__, __LINE__);
@@ -1262,6 +1542,9 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
         case eelENCADSHIFT:
             tabsel[etiCOUL] = etabCOULEncad;
             break;
+        case eelNONE:
+            tabsel[etiCOUL] = etabNONE;
+            break;
         default:
             gmx_fatal(FARGS, "Invalid eeltype %d", eltype);
     }
@@ -1350,7 +1633,125 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     }
 }
 
-t_forcetable make_tables(FILE *out,
+t_genericTable make_tables_Verlet(FILE *out,
+// const output_env_t oenv,
+                                  const t_forcerec *fr,
+                                  gmx_bool bVerbose,
+                                  const char *fn,
+                                  real rtab, int flags)
+{
+    t_tabledata    *td;
+    gmx_bool        b14only;
+    int             i, j;
+    double          scalefactor = 1.0;
+
+    int             i_type = etiNR_Verlet; // Interaction type
+
+    t_genericTable  table;
+
+    b14only = (flags & GMX_MAKETABLES_14ONLY);
+
+    if (b14only)
+    {
+        gmx_fatal(FARGS, "The bonded tables are not yet implemented in GROMACS.");
+    }
+
+    if (fr->bBHAM)
+    {
+        gmx_fatal (FARGS, "The Buckingham model is not yet implemented with tabulated potentials in this version of GROMACS.");
+    }
+
+    snew(td, etiNR_Verlet);
+    table.maxr      = rtab;
+    table.scale     = 0;
+    table.size      = 1000;
+    table.n         = 0;
+
+    table.interaction   = GMX_TABLE_INTERACTION_USER;
+    table.format        = GMX_TABLE_FORMAT_LINEAR_VERLET;
+
+    read_tables(out, fn, etiNR_Verlet, 0, td);
+
+    if (td[0].x[td[0].nx-1] < rtab)
+    {
+        gmx_fatal(FARGS, "Tables in file %s not long enough for cut-off:\n"
+                  "\tshould be at least %f nm\n", fn, rtab);
+    }
+    table.size  = (int)(rtab*td[0].tabscale + 0.5);
+    table.scale = td[0].tabscale;
+
+    if (table.size != 1000 * rtab)
+    {
+        gmx_fatal(FARGS, "Only tables of 1000 points per unit are currently implemented with CUDA Verlet cut-off scheme.\n");
+    }
+
+    snew_aligned(table.F, (table.scale+1)*sizeof(double), 32);
+    snew_aligned(table.V, (table.scale+1)*sizeof(double), 32);
+
+    if (debug)
+    {
+        FILE *table_out;
+        char  fname[20];
+        for (i = 0; i < etiNR_Verlet; i++)
+        {
+            sprintf (fname, "table_%d_out.csv", i);
+
+            printf("Filename: %s\n", fname);
+            table_out = fopen(fname, "w");
+
+            for (j = 0; j < table.size; j++)
+            {
+                fprintf(table_out, "i: %d, %12.10e, %12.10e\n", i, td[i].v[j], td[i].f[j]);
+            }
+            fclose(table_out);
+        }
+    }
+
+    if (flags & GMX_MAKETABLES_USER_ELEC)
+    {
+        scalefactor = 1.0;
+        i_type      = etiCOUL_Verlet;
+    }
+    if (flags & GMX_MAKETABLES_USER_VDW_LJ6)
+    {
+        scalefactor = 1.0/6.0;
+        i_type      = etiLJ6_Verlet;
+    }
+    if (flags & GMX_MAKETABLES_USER_VDW_LJ12)
+    {
+        scalefactor = 1.0/12.0;
+        i_type      = etiLJ12_Verlet;
+    }
+    if (flags & GMX_MAKETABLES_USER)
+    {
+        scalefactor = 1.0;
+        i_type      = etiUSER_Verlet;
+    }
+
+    if (bVerbose && debug)
+    {
+        fprintf (debug, "Copying read table values to table data structure\n");
+    }
+    if (i_type >= etiCOUL_Verlet && i_type < etiNR_Verlet)
+    {
+        for (i = 0; i < table.size; i++)
+        {
+            table.V[i] =  td[i_type].v[i] * scalefactor;
+            table.F[i] =  td[i_type].f[i] * scalefactor;
+        }
+    }
+    else
+    {
+        gmx_fatal(FARGS, "Something super nasty is going on. Table type %d should never be called", i_type);
+    }
+
+    done_tabledata(&(td[i_type]));
+    sfree(td);
+
+    return table;
+}
+
+t_forcetable make_tables(FILE *out, // const output_env_t oenv,
                          const t_forcerec *fr,
                          const char *fn,
                          real rtab, int flags)
