@@ -332,14 +332,14 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
                                         int                   *n_nonlin_vsite)
 {
     verletbuf_atomtype_t          *att;
-    int                            natt;
-    int                            mb, nmol, ft, i, a1, a2, a3, a;
+    int natt;
+    int mb, nmol, ft, i, a1, a2, a3, a;
     const t_atoms                 *atoms;
     const t_ilist                 *il;
     const t_iparams               *ip;
     atom_nonbonded_kinetic_prop_t *prop;
     real                          *vsite_m;
-    int                            n_nonlin_vsite_mol;
+    int n_nonlin_vsite_mol;
 
     att  = NULL;
     natt = 0;
@@ -814,7 +814,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     double                reppow;
     real                  md1_ljd, d2_ljd, md3_ljd;
     real                  md1_ljr, d2_ljr, md3_ljr;
-    real                  md1_el,  d2_el;
+    real                  md1_el,  d2_el = 0.0;
     real                  elfac;
     real                  kT_fac, mass_min;
     int                   ib0, ib1, ib;
@@ -930,6 +930,20 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                 gmx_incons("Unimplemented VdW modifier");
         }
     }
+    else if (ir->vdwtype == evdwUSER)
+    {
+        /* Here there will be likely some more stuff regarding multiple tables support?
+         * This else if condition is needed. However, I'm not sure the whole else if structure
+         * is the best way to go. TODO: reformat the whole else if structure to something more elegant (switch)
+         */
+    }
+    else if (ir->vdwtype == evdwGENERIC)
+    {
+        /* Here there will be likely some more stuff regarding multiple tables support?
+         * This else if condition is needed. However, I'm not sure the whole else if structure
+         * is the best way to go. TODO: reformat the whole else if structure to something more elegant (switch)
+         */
+    }
     else if (EVDW_PME(ir->vdwtype))
     {
         real b, r, br, br2, br4, br6;
@@ -991,6 +1005,21 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         br     = b*rc;
         md1_el = elfac*(b*exp(-br*br)*M_2_SQRTPI/rc + std::erfc(br)/(rc*rc));
         d2_el  = elfac/(rc*rc)*(2*b*(1 + br*br)*exp(-br*br)*M_2_SQRTPI + 2*std::erfc(br)/rc);
+    }
+    else if (ir->coulombtype == eelNONE)
+    {
+
+        /* In case no Coulomb interactions will be calculated
+         * This else if condition is needed. However, I'm not sure the whole else if structure
+         * is the best way to go. TODO: reformat the whole else if structure to something more elegant (switch)
+         */
+    }
+    else if (ir->coulombtype == eelUSER)
+    {
+        /* Something to do with multiple tables for Coulomb interactions?
+         * This else if condition is needed. However, I'm not sure the whole else if structure
+         * is the best way to go. TODO: reformat the whole else if structure to something more elegant (switch)
+         */
     }
     else
     {
