@@ -430,7 +430,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 {
     wallcc_t *wcc;
     double    cycles[ewcNR+ewcsNR];
-    double    cycles_n[ewcNR+ewcsNR+1], buf[ewcNR+ewcsNR], *cyc_all, *buf_all;
+    double    cycles_n[ewcNR+ewcsNR+1], buf[ewcNR+ewcsNR+1], *cyc_all, *buf_all;
     int       i, j;
     int       nsum;
 
