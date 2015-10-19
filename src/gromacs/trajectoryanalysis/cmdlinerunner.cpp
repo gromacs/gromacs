@@ -103,7 +103,9 @@ void RunnerModule::initOptions(
     IOptionsContainer &commonOptions = options->addGroup();
     IOptionsContainer &moduleOptions = options->addGroup();
 
+    settings_.setOptionsModuleSettings(settings);
     module_->initOptions(&moduleOptions, &settings_);
+    settings_.setOptionsModuleSettings(nullptr);
     common_.initOptions(&commonOptions, timeUnitBehavior.get());
     selectionOptionBehavior->initOptions(&commonOptions);
 }
