@@ -202,12 +202,13 @@ ICommandLineOptionsModule::~ICommandLineOptionsModule()
 }
 
 // static
-ICommandLineModule *
+std::unique_ptr<ICommandLineModule>
 ICommandLineOptionsModule::createModule(
         const char *name, const char *description,
         ICommandLineOptionsModulePointer module)
 {
-    return new CommandLineOptionsModule(name, description, std::move(module));
+    return std::unique_ptr<ICommandLineModule>(
+            new CommandLineOptionsModule(name, description, std::move(module)));
 }
 
 // static
