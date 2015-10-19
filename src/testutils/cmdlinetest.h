@@ -422,6 +422,10 @@ class CommandLineTestBase : public ::testing::Test
         TestReferenceChecker rootChecker();
 
         /*! \brief
+         * Checks the output of writeHelp() against reference data.
+         */
+        void testWriteHelp(ICommandLineModule *module);
+        /*! \brief
          * Checks output files added with setOutputFile() against reference
          * data.
          *

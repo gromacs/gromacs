@@ -162,10 +162,9 @@ class ICommandLineOptionsModule
          * \param[in] description Short description for the module.
          * \param[in] module      Module to run.
          * \returns ICommandLineModule object that runs \p module module.
-         *     Caller must `delete` the object.
          * \throws  std::bad_alloc if out of memory.
          */
-        static ICommandLineModule *
+        static std::unique_ptr<ICommandLineModule>
         createModule(const char *name, const char *description,
                      ICommandLineOptionsModulePointer module);
         /*! \brief

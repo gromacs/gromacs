@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="HelpOutput"><![CDATA[
+SYNOPSIS
+
+test mod [-f [<.xtc/.trr/...>]] [-s [<.tpr/.gro/...>]] [-n [<.ndx>]]
+         [-b <time>] [-e <time>] [-dt <time>] [-tu <enum>] [-xvg <enum>]
+         [-[no]rmpbc] [-[no]pbc] [-sf <file>] [-selrpos <enum>] [-[no]test]
+
+DESCRIPTION
+
+Sample description for testing test mod.
+
+OPTIONS
+
+Options to specify input files:
+
+ -f      [<.xtc/.trr/...>]  (traj.xtc)       (Opt.)
+           Input trajectory or single configuration: xtc trr cpt gro g96 pdb
+           tng
+ -s      [<.tpr/.gro/...>]  (topol.tpr)      (Opt.)
+           Input structure: tpr gro g96 pdb brk ent
+ -n      [<.ndx>]           (index.ndx)      (Opt.)
+           Extra index groups
+
+Other options:
+
+ -b      <time>             (0)
+           First frame (ps) to read from trajectory
+ -e      <time>             (0)
+           Last frame (ps) to read from trajectory
+ -dt     <time>             (0)
+           Only use frame if t MOD dt == first time (ps)
+ -tu     <enum>             (ps)
+           Unit for time values: fs, ps, ns, us, ms, s
+ -xvg    <enum>             (xmgrace)
+           Plot formatting: none, xmgrace, xmgr
+ -[no]rmpbc                 (yes)
+           Make molecules whole for each frame
+ -[no]pbc                   (yes)
+           Use periodic boundary conditions for distance calculation
+ -sf     <file>
+           Provide selections from files
+ -selrpos <enum>            (atom)
+           Selection reference positions: atom, res_com, res_cog, mol_com,
+           mol_cog, whole_res_com, whole_res_cog, whole_mol_com,
+           whole_mol_cog, part_res_com, part_res_cog, part_mol_com,
+           part_mol_cog, dyn_res_com, dyn_res_cog, dyn_mol_com, dyn_mol_cog
+ -[no]test
+           Test option
+
+]]></String>
+</ReferenceData>

@@ -46,17 +46,18 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <memory>
 #include <new>
 #include <sstream>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/commandline/cmdlineprogramcontext.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
@@ -285,7 +286,7 @@ int CommandLineTestHelper::runModuleDirect(
         std::unique_ptr<ICommandLineOptionsModule> module, CommandLine *commandLine)
 {
     // The name and description are not used in the tests, so they can be NULL.
-    boost::scoped_ptr<ICommandLineModule> wrapperModule(
+    std::unique_ptr<ICommandLineModule> wrapperModule(
             ICommandLineOptionsModule::createModule(NULL, NULL, std::move(module)));
     return runModuleDirect(wrapperModule.get(), commandLine);
 }
@@ -442,6 +443,16 @@ TestFileManager &CommandLineTestBase::fileManager()
 TestReferenceChecker CommandLineTestBase::rootChecker()
 {
     return impl_->data_.rootChecker();
+}
+
+void CommandLineTestBase::testWriteHelp(ICommandLineModule *module)
+{
+    StringOutputStream     stream;
+    CommandLineHelpContext context(&stream, eHelpOutputFormat_Console, nullptr, "test");
+    context.setModuleDisplayName(formatString("%s %s", "test", module->name()));
+    module->writeHelp(context);
+    TestReferenceChecker   checker(rootChecker());
+    checker.checkTextBlock(stream.toString(), "HelpOutput");
 }
 
 void CommandLineTestBase::checkOutputFiles()

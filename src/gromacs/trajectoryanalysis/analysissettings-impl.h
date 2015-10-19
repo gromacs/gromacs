@@ -51,6 +51,8 @@
 namespace gmx
 {
 
+class ICommandLineOptionsModuleSettings;
+
 /*! \internal \brief
  * Private implementation class for TrajectoryAnalysisSettings.
  *
@@ -62,7 +64,7 @@ class TrajectoryAnalysisSettings::Impl
         //! Initializes the default values for the settings object.
         Impl()
             : timeUnit(TimeUnit_Default), flags(0), frflags(0),
-              bRmPBC(true), bPBC(true)
+              bRmPBC(true), bPBC(true), optionsModuleSettings_(nullptr)
         {
         }
 
@@ -80,8 +82,8 @@ class TrajectoryAnalysisSettings::Impl
         //! Whether to pass PBC information to the analysis module.
         bool                 bPBC;
 
-        //! Help text for the module.
-        std::string          helpText_;
+        //! Lower-level settings object wrapped by these settings.
+        ICommandLineOptionsModuleSettings  *optionsModuleSettings_;
 };
 
 } // namespace gmx
