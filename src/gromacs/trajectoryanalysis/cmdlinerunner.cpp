@@ -106,6 +106,9 @@ void RunnerModule::initOptions(
     module_->initOptions(&moduleOptions, &settings_);
     common_.initOptions(&commonOptions, timeUnitBehavior.get());
     selectionOptionBehavior->initOptions(&commonOptions);
+
+    const char *helpText = settings_.helpText().c_str();
+    settings->setHelpText(constArrayRefFromArray(&helpText, 1));
 }
 
 void RunnerModule::optionsFinished()
