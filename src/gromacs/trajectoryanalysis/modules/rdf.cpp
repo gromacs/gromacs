@@ -88,6 +88,15 @@ namespace
  * Actual analysis module
  */
 
+//! Normalization for the computed distribution.
+enum Normalization
+{
+    Normalization_Rdf,
+    Normalization_NumberDensity,
+    Normalization_None
+};
+//! String values corresponding to Normalization.
+const char *const c_NormalizationEnum[] = { "rdf", "number_density", "none" };
 //! Whether to compute RDF wrt. surface of the reference group.
 enum SurfaceType
 {
@@ -96,7 +105,7 @@ enum SurfaceType
     SurfaceType_Residue
 };
 //! String values corresponding to SurfaceType.
-const char *const cSurfaceEnum[] = { "no", "mol", "res" };
+const char *const c_SurfaceEnum[] = { "no", "mol", "res" };
 
 /*! \brief
  * Implements `gmx rdf` trajectory analysis module.
@@ -179,7 +188,7 @@ class Rdf : public TrajectoryAnalysisModule
         double                                    binwidth_;
         double                                    cutoff_;
         double                                    rmax_;
-        bool                                      bNormalize_;
+        int                                       normalization_;
         bool                                      bNormalizationSet_;
         bool                                      bXY_;
         bool                                      bExclusions_;
@@ -198,7 +207,7 @@ Rdf::Rdf()
       pairCounts_(new AnalysisDataSimpleHistogramModule()),
       normAve_(new AnalysisDataAverageModule()),
       binwidth_(0.002), cutoff_(0.0), rmax_(0.0),
-      bNormalize_(true), bNormalizationSet_(false), bXY_(false),
+      normalization_(Normalization_Rdf), bNormalizationSet_(false), bXY_(false),
       bExclusions_(false),
       cut2_(0.0), rmax2_(0.0), surfaceGroupCount_(0)
 {
@@ -214,7 +223,7 @@ Rdf::Rdf()
 void
 Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
 {
-    static const char *const desc[] = {
+    const char *const desc[] = {
         "[THISMODULE] calculates radial distribution functions from one",
         "refernce set of position (set with [TT]-ref[tt]) to one or more",
         "sets of positions (set with [TT]-sel[tt]).  To compute the RDF with",
@@ -223,33 +232,46 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
         "based on the value of [TT]-surf[tt], and the closest position in each",
         "set is used. To compute the RDF around axes parallel to the",
         "[IT]z[it]-axis, i.e., only in the [IT]x[it]-[IT]y[it] plane, use",
-        "[TT]-xy[tt].[PAR]",
+        "[TT]-xy[tt].",
+        "",
         "To set the bin width and maximum distance to use in the RDF, use",
         "[TT]-bin[tt] and [TT]-rmax[tt], respectively. The latter can be",
         "used to limit the computational cost if the RDF is not of interest",
         "up to the default (half of the box size with PBC, three times the",
-        "box size without PBC).[PAR]",
+        "box size without PBC).",
+        "",
         "To use exclusions from the topology ([TT]-s[tt]), set [TT]-excl[tt]",
         "and ensure that both [TT]-ref[tt] and [TT]-sel[tt] only select atoms.",
         "A rougher alternative to exclude intra-molecular peaks is to set",
         "[TT]-cut[tt] to a non-zero value to clear the RDF at small",
-        "distances.[PAR]",
+        "distances.",
+        "",
         "The RDFs are normalized by 1) average number of positions in",
         "[TT]-ref[tt] (the number of groups with [TT]-surf[tt]), 2) volume",
         "of the bin, and 3) average particle density of [TT]-sel[tt] positions",
-        "for that selection. To only use the first factor for normalization,",
-        "set [TT]-nonorm[tt]. In this case, the RDF is only scaled with the",
-        "bin width to make the integral of the curve represent the number of",
-        "pairs within a range. Note that exclusions do not affect the",
-        "normalization: even if [TT]-excl[tt] is set, or [TT]-ref[tt] and",
+        "for that selection. To change the normalization, use [TT]-norm[tt]:",
+        "",
+        "* [TT]rdf[tt]: Use all factors for normalization.",
+        "  This produces a normal RDF.",
+        "* [TT]number_density[tt]: Use the first two factors.",
+        "  This produces a number density as a function of distance.",
+        "* [TT]none[tt]: Use only the first factor.",
+        "  In this case, the RDF is only scaled with the bin width to make",
+        "  the integral of the curve represent the number of pairs within a",
+        "  range.",
+        "",
+        "Note that exclusions do not affect the normalization: even if",
+        "[TT]-excl[tt] is set, or [TT]-ref[tt] and",
         "[TT]-sel[tt] contain the same selection, the normalization factor",
-        "is still N*M, not N*(M-excluded).[PAR]",
+        "is still N*M, not N*(M-excluded).",
+        "",
         "For [TT]-surf[tt], the selection provided to [TT]-ref[tt] must",
         "select atoms, i.e., centers of mass are not supported. Further,",
         "[TT]-nonorm[tt] is implied, as the bins have irregular shapes and",
-        "the volume of a bin is not easily computable.[PAR]",
+        "the volume of a bin is not easily computable.",
+        "",
         "Option [TT]-cn[tt] produces the cumulative number RDF,",
-        "i.e. the average number of particles within a distance r.[PAR]"
+        "i.e. the average number of particles within a distance r."
     };
 
     settings->setHelpText(desc);
@@ -263,9 +285,10 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
 
     options->addOption(DoubleOption("bin").store(&binwidth_)
                            .description("Bin width (nm)"));
-    options->addOption(BooleanOption("norm").store(&bNormalize_)
+    options->addOption(EnumIntOption("norm").enumValue(c_NormalizationEnum)
+                           .store(&normalization_)
                            .storeIsSet(&bNormalizationSet_)
-                           .description("Normalize for bin volume and density"));
+                           .description("Normalization"));
     options->addOption(BooleanOption("xy").store(&bXY_)
                            .description("Use only the x and y components of the distance"));
     options->addOption(BooleanOption("excl").store(&bExclusions_)
@@ -275,7 +298,7 @@ Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *setting
     options->addOption(DoubleOption("rmax").store(&rmax_)
                            .description("Largest distance (nm) to calculate"));
 
-    options->addOption(EnumIntOption("surf").enumValue(cSurfaceEnum)
+    options->addOption(EnumIntOption("surf").enumValue(c_SurfaceEnum)
                            .store(&surface_)
                            .description("RDF with respect to the surface of the reference"));
 
@@ -293,11 +316,11 @@ Rdf::optionsFinished(TrajectoryAnalysisSettings *settings)
     {
         settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 
-        if (bNormalizationSet_ && bNormalize_)
+        if (bNormalizationSet_ && normalization_ != Normalization_None)
         {
             GMX_THROW(InconsistentInputError("-surf cannot be combined with -norm"));
         }
-        bNormalize_ = false;
+        normalization_ = Normalization_None;
         if (bExclusions_)
         {
             GMX_THROW(InconsistentInputError("-surf cannot be combined with -excl"));
@@ -574,7 +597,7 @@ Rdf::finishAnalysis(int /*nframes*/)
     AverageHistogramPointer finalRdf
         = pairCounts_->averager().resampleDoubleBinWidth(true);
 
-    if (bNormalize_)
+    if (normalization_ != Normalization_None)
     {
         // Normalize by the volume of the bins (volume of sphere segments or
         // length of circle segments).
@@ -600,16 +623,20 @@ Rdf::finishAnalysis(int /*nframes*/)
         }
         finalRdf->scaleAllByVector(&invBinVolume[0]);
 
-        // Normalize by particle density.
-        for (size_t g = 0; g < sel_.size(); ++g)
+        if (normalization_ == Normalization_Rdf)
         {
-            finalRdf->scaleSingle(g, 1.0 / normAve_->average(0, g + 1));
+            // Normalize by particle density.
+            for (size_t g = 0; g < sel_.size(); ++g)
+            {
+                finalRdf->scaleSingle(g, 1.0 / normAve_->average(0, g + 1));
+            }
         }
     }
     else
     {
-        // With -nonorm, just scale with bin width to make the integral of the
-        // curve (instead of raw bin sum) represent the pair count.
+        // With no normalization, just scale with bin width to make the
+        // integral of the curve (instead of raw bin sum) represent the pair
+        // count.
         finalRdf->scaleAll(1.0 / binwidth_);
     }
     finalRdf->done();
