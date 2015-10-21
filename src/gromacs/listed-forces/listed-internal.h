@@ -48,12 +48,23 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/bitmask.h"
 
+/* We reduce the force array in blocks of 32 atoms. This is large enough
+ * to not cause overhead and 32*sizeof(rvec) is a multiple of the cache-line
+ * size on all systems.
+ */
+static const int reduction_block_size = 32; /**< Force buffer block size in atoms*/
+static const int reduction_block_bits =  5; /**< log2(reduction_block_size) */
+
 /*! \internal \brief struct with output for bonded forces, used per thread */
 typedef struct
 {
     rvec             *f;            /**< Force array */
     int               f_nalloc;     /**< Allocation size of f */
-    gmx_bitmask_t     red_mask;     /**< Mask for marking which parts of f are filled */
+    gmx_bitmask_t    *mask;         /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
+    int               nblock_used;  /**< Number of blocks touched by our thread */
+    int              *block_index;  /**< Index to touched blocks, size nblock_used */
+    int               block_nalloc; /**< Allocation size of f (*reduction_block_size), mask_index, mask */
+
     rvec             *fshift;       /**< Shift force array, size SHIFTS */
     real              ener[F_NRE];  /**< Energy array */
     gmx_grppairener_t grpp;         /**< Group pair energy data for pairs */
@@ -65,10 +76,12 @@ f_thread_t;
 struct bonded_threading_t
 {
     /* Thread local force and energy data */
-    int         nthreads;   /**< Number of threads to be used for bondeds */
-    int         red_ashift; /**< Size of force reduction blocks in bits */
-    int         red_nblock; /**< The number of force blocks to reduce */
-    f_thread_t *f_t;        /**< Force/enegry data per thread, size nthreads */
+    int            nthreads;     /**< Number of threads to be used for bondeds */
+    f_thread_t    *f_t;          /**< Force/enegry data per thread, size nthreads */
+    int            nblock_used;  /**< The number of force blocks to reduce */
+    int           *block_index;  /**< Index of size nblock_used into mask */
+    gmx_bitmask_t *mask;         /**< Mask array, one element corresponds to a block of reduction_block_size atoms of the force array, bit corresponding to thread indices set if a thread writes to that block */
+    int            block_nalloc; /**< Allocation size of block_index and mask */
 
     /* There are two different ways to distribute the bonded force calculation
      * over the threads. We dedice which to use based on the number of threads.
