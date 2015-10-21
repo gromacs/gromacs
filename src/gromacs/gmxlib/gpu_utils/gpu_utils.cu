@@ -329,11 +329,12 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     int cuda_runtime = 0;
     cudaDriverGetVersion(&cuda_driver);
     cudaRuntimeGetVersion(&cuda_runtime);
-    md_print_warn( fplog, "Note: NVML support was not found (CUDA runtime %d.%d, driver %d.%d), so your\n"
-                   "      %s GPU cannot use application clock support to improve performance.\n",
+    md_print_warn( fplog, "Note: mdrun was configured without NVML support hence it can not exploit the\n"
+                   "      application clock feature of the detected %s GPU to improve performance.\n"
+                   "      Recompile with the NVML library (compatible with runtime %d.%d, driver %d.%d) or set application clocks manually.\n",
+                   prop->name,
                    cuda_runtime/1000, cuda_runtime%100,
-                   cuda_driver/1000, cuda_driver%100,
-                   prop->name );
+                   cuda_driver/1000, cuda_driver%100);
     return true;
 #else
     if (!bCompiledWithApplicationClockSupport)
@@ -397,20 +398,18 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     nvml_stat = nvmlDeviceGetAPIRestriction ( gpu_info->gpu_dev[gpuid].nvml_device_id, NVML_RESTRICTED_API_SET_APPLICATION_CLOCKS, &(gpu_info->gpu_dev[gpuid].nvml_is_restricted) );
     HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetAPIRestriction failed" );
 
-    //TODO: Need to distinguish between different type of GPUs might be necessary in the future, e.g. if max application clocks should not be used
-    //      for certain GPUs.
+    /* Note: Distinguishing between different types of GPUs here might be necessary in the future,
+       e.g. if max application clocks should not be used for certain GPUs. */
     if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock && gpu_info->gpu_dev[gpuid].nvml_is_restricted == NVML_FEATURE_DISABLED)
     {
-        //TODO: Maybe need to think about something more user friendly here.
-        md_print_info( fplog, "Changing GPU clock rates by setting application clocks for %s to (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
+        md_print_info( fplog, "Changing GPU application clocks for %s to (%d,%d)\n", gpu_info->gpu_dev[gpuid].prop.name, max_mem_clock, max_sm_clock);
         nvml_stat = nvmlDeviceSetApplicationsClocks ( gpu_info->gpu_dev[gpuid].nvml_device_id, max_mem_clock, max_sm_clock );
         HANDLE_NVML_RET_ERR( nvml_stat, "nvmlDeviceGetApplicationsClock failed" );
         gpu_info->gpu_dev[gpuid].nvml_ap_clocks_changed = true;
     }
     else if (nvml_stat == NVML_SUCCESS && app_sm_clock < max_sm_clock)
     {
-        //TODO: Maybe need to think about something more user friendly here.
-        md_print_warn( fplog, "Not possible to change GPU clocks to optimal value because of insufficient permissions to set application clocks for %s. Current values are (%d,%d). Max values are (%d,%d)\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clock permissions.\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
+        md_print_warn( fplog, "Can not change application clocks for %s to optimal values due to insufficient permissions. Current values are (%d,%d), max values are (%d,%d).\nUse sudo nvidia-smi -acp UNRESTRICTED or contact your admin to change application clocks.\n", gpu_info->gpu_dev[gpuid].prop.name, app_mem_clock, app_sm_clock, max_mem_clock, max_sm_clock);
     }
     else if (nvml_stat == NVML_SUCCESS && app_sm_clock == max_sm_clock)
     {
@@ -420,7 +419,7 @@ static gmx_bool init_gpu_application_clocks(FILE gmx_unused *fplog, int gmx_unus
     else
     {
         //TODO: Maybe need to think about something more user friendly here.
-        md_print_warn( fplog,  "Not possible to change GPU clocks to optimal value because application clocks handling failed with NVML error (%d): %s.\n", nvml_stat, nvmlErrorString(nvml_stat));
+        md_print_warn( fplog,  "Can not change GPU application clocks to optimal values due to NVML error (%d): %s.\n", nvml_stat, nvmlErrorString(nvml_stat));
     }
     return (nvml_stat == NVML_SUCCESS);
 #endif /* HAVE_NVML */
