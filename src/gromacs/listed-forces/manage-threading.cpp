@@ -301,56 +301,72 @@ static void divide_bondeds_over_threads(t_idef *idef,
     }
 }
 
-//! Construct a reduction mask for which interaction was computed on which thread
+//! Construct a reduction mask for which parts (blocks) of the force array are touched on which thread task
 static void
-calc_bonded_reduction_mask(gmx_bitmask_t *mask,
+calc_bonded_reduction_mask(int natoms,
+                           f_thread_t *f_thread,
                            const t_idef *idef,
-                           int shift,
-                           int t, int nt)
+                           int thread, int nthread)
 {
-    int           ftype, nb, nat1, nb0, nb1, i, a;
-    bitmask_clear(mask);
+    assert(nthread <= BITMASK_SIZE);
 
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    int nblock = (natoms + reduction_block_size - 1) >> reduction_block_bits;
+
+    if (nblock > f_thread->block_nalloc)
+    {
+        f_thread->block_nalloc = over_alloc_large(nblock);
+        srenew(f_thread->mask,        f_thread->block_nalloc);
+        srenew(f_thread->block_index, f_thread->block_nalloc);
+        srenew(f_thread->f,           f_thread->block_nalloc*reduction_block_size);
+    }
+
+    gmx_bitmask_t *mask = f_thread->mask;
+
+    for (int b = 0; b < nblock; b++)
+    {
+        bitmask_clear(&mask[b]);
+    }
+
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if (ftype_is_bonded_potential(ftype))
         {
-            nb = idef->il[ftype].nr;
+            int nb = idef->il[ftype].nr;
             if (nb > 0)
             {
-                nat1 = interaction_function[ftype].nratoms + 1;
+                int nat1 = interaction_function[ftype].nratoms + 1;
 
-                /* Divide this interaction equally over the threads.
-                 * This is not stored: should match division in calc_bonds.
-                 */
-                nb0 = idef->il_thread_division[ftype*(nt+1)+t];
-                nb1 = idef->il_thread_division[ftype*(nt+1)+t+1];
+                int nb0 = idef->il_thread_division[ftype*(nthread + 1) + thread];
+                int nb1 = idef->il_thread_division[ftype*(nthread + 1) + thread + 1];
 
-                for (i = nb0; i < nb1; i += nat1)
+                for (int i = nb0; i < nb1; i += nat1)
                 {
-                    for (a = 1; a < nat1; a++)
+                    for (int a = 1; a < nat1; a++)
                     {
-                        bitmask_set_bit(mask, idef->il[ftype].iatoms[i+a]>>shift);
+                        bitmask_set_bit(&mask[idef->il[ftype].iatoms[i+a] >> reduction_block_bits], thread);
                     }
                 }
             }
         }
     }
+
+    /* Make an index of the blocks our thread touches, so we can do fast
+     * force buffer clearing.
+     */
+    f_thread->nblock_used = 0;
+    for (int b = 0; b < nblock; b++)
+    {
+        if (bitmask_is_set(mask[b], thread))
+        {
+            f_thread->block_index[f_thread->nblock_used++] = b;
+        }
+    }
 }
-
-
-/*! \brief We divide the force array in a maximum of BITMASK_SIZE (default 32) blocks.
- * Minimum force block reduction size is thus 2^6=64.
- */
-const int maxBlockBits = BITMASK_SIZE;
 
 void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
 {
-    bonded_threading_t *bt;
-    int                 t;
-    int                 ctot, c, b;
-
-    bt = fr->bonded_threading;
+    bonded_threading_t *bt   = fr->bonded_threading;
+    int                 ctot = 0;
 
     assert(bt->nthreads >= 1);
 
@@ -361,71 +377,87 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
 
     if (bt->nthreads == 1)
     {
-        bt->red_nblock = 0;
+        bt->nblock_used = 0;
 
         return;
     }
 
-    bt->red_ashift = 6;
-    while (fr->natoms_force > (int)(maxBlockBits*(1U<<bt->red_ashift)))
-    {
-        bt->red_ashift++;
-    }
-    if (debug)
-    {
-        fprintf(debug, "bonded force buffer block atom shift %d bits\n",
-                bt->red_ashift);
-    }
-
     /* Determine to which blocks each thread's bonded force calculation
-     * contributes. Store this is a mask for each thread.
+     * contributes. Store this as a mask for each thread.
      */
 #pragma omp parallel for num_threads(bt->nthreads) schedule(static)
-    for (t = 1; t < bt->nthreads; t++)
+    for (int t = 0; t < bt->nthreads; t++)
     {
         try
         {
-            calc_bonded_reduction_mask(&bt->f_t[t].red_mask,
-                                       idef, bt->red_ashift, t, bt->nthreads);
+            if (t > 0)
+            {
+                calc_bonded_reduction_mask(fr->natoms_force, &bt->f_t[t],
+                                           idef, t, bt->nthreads);
+            }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
-    /* Determine the maximum number of blocks we need to reduce over */
-    bt->red_nblock = 0;
-    ctot           = 0;
-    for (t = 0; t < bt->nthreads; t++)
+    /* Reduce the masks over the threads and determine which blocks
+     * we need to reduce over.
+     */
+    int nblock_tot = (fr->natoms_force + reduction_block_size - 1) >> reduction_block_bits;
+    if (nblock_tot > bt->block_nalloc)
     {
-        c = 0;
-        for (b = 0; b < maxBlockBits; b++)
+        bt->block_nalloc = over_alloc_large(nblock_tot);
+        srenew(bt->block_index, bt->block_nalloc);
+        srenew(bt->mask,        bt->block_nalloc);
+    }
+    bt->nblock_used = 0;
+    for (int b = 0; b < nblock_tot; b++)
+    {
+        gmx_bitmask_t *mask = &bt->mask[b];
+
+        /* Generate the union over the threads of the bitmask */
+        bitmask_clear(mask);
+        for (int t = 1; t < bt->nthreads; t++)
         {
-            if (bitmask_is_set(bt->f_t[t].red_mask, b))
-            {
-                bt->red_nblock = std::max(bt->red_nblock, b+1);
-                c++;
-            }
+            bitmask_union(mask, bt->f_t[t].mask[b]);
         }
+        if (!bitmask_is_zero(*mask))
+        {
+            bt->block_index[bt->nblock_used++] = b;
+        }
+
         if (debug)
         {
+            int c = 0;
+            for (int t = 0; t < bt->nthreads; t++)
+            {
+                if (bitmask_is_set(*mask, t))
+                {
+                    c++;
+                }
+            }
+            ctot += c;
+
+            if (gmx_debug_at)
+            {
 #if BITMASK_SIZE <= 64 //move into bitmask when it is C++
-            std::string flags = gmx::formatString("%x", bt->f_t[t].red_mask);
+                std::string flags = gmx::formatString("%x", *mask);
 #else
-            std::string flags = gmx::formatAndJoin(bt->f_t[t].red_mask,
-                                                   bt->f_t[t].red_mask+BITMASK_ALEN,
-                                                   "", gmx::StringFormatter("%x"));
+                std::string flags = gmx::formatAndJoin(*mask,
+                                                       *mask+BITMASK_ALEN,
+                                                       "", gmx::StringFormatter("%x"));
 #endif
-            fprintf(debug, "thread %d flags %s count %d\n",
-                    t, flags.c_str(), c);
+                fprintf(debug, "block %d flags %s count %d\n",
+                        b, flags.c_str(), c);
+            }
         }
-        ctot += c;
     }
     if (debug)
     {
-        fprintf(debug, "Number of blocks to reduce: %d of size %d\n",
-                bt->red_nblock, 1<<bt->red_ashift);
-        fprintf(debug, "Reduction density %.2f density/#thread %.2f\n",
-                ctot*(1<<bt->red_ashift)/(double)fr->natoms_force,
-                ctot*(1<<bt->red_ashift)/(double)(fr->natoms_force*bt->nthreads));
+        fprintf(debug, "Number of %d atom blocks to reduce: %d\n",
+                reduction_block_size, bt->nblock_used);
+        fprintf(debug, "Reduction density %.2f for touched blocks only %.2f\n",
+                ctot*reduction_block_size/(double)fr->natoms_force,
+                ctot/(double)bt->nblock_used);
     }
 }
 
@@ -466,6 +498,11 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
+
+        bt->nblock_used  = 0;
+        bt->block_index  = NULL;
+        bt->mask         = NULL;
+        bt->block_nalloc = 0;
 
         /* The optimal value after which to switch from uniform to localized
          * bonded interaction distribution is 3, 4 or 5 depending on the system
