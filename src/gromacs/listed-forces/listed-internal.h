@@ -48,12 +48,20 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/bitmask.h"
 
+/* We reduce the force array in blocks of 32 atoms. This is large enough
+ * to not cause overhead and 32*sizeof(rvec) is a multiple of the cache-line
+ * size on all systems.
+ */
+static const int reduction_block_size = 32;
+static const int reduction_block_bits =  5;
+
 /*! \internal \brief struct with output for bonded forces, used per thread */
 typedef struct
 {
     rvec             *f;            /**< Force array */
     int               f_nalloc;     /**< Allocation size of f */
-    gmx_bitmask_t     red_mask;     /**< Mask for marking which parts of f are filled */
+    gmx_bitmask_t    *mask;         /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
+    int               mask_nalloc;  /**< Allocation size of mask */
     rvec             *fshift;       /**< Shift force array, size SHIFTS */
     real              ener[F_NRE];  /**< Energy array */
     gmx_grppairener_t grpp;         /**< Group pair energy data for pairs */
@@ -65,10 +73,12 @@ f_thread_t;
 struct bonded_threading_t
 {
     /* Thread local force and energy data */
-    int         nthreads;   /**< Number of threads to be used for bondeds */
-    int         red_ashift; /**< Size of force reduction blocks in bits */
-    int         red_nblock; /**< The number of force blocks to reduce */
-    f_thread_t *f_t;        /**< Force/enegry data per thread, size nthreads */
+    int            nthreads;    /**< Number of threads to be used for bondeds */
+    f_thread_t    *f_t;         /**< Force/enegry data per thread, size nthreads */
+    int            nblock;      /**< The number of force blocks to reduce */
+    gmx_bitmask_t *mask_index;  /**< Index of size nblock into mask */
+    gmx_bitmask_t *mask;        /**< Mask for marking which parts of f are touched by which threads */
+    int            block_nalloc; /**< Allocation size of mask_index and mask */
 
     /* There are two different ways to distribute the bonded force calculation
      * over the threads. We dedice which to use based on the number of threads.
