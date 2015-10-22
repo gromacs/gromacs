@@ -47,27 +47,17 @@ struct t_commrec;
 struct t_mdatoms;
 struct t_nrnb;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct {
-    t_ilist ilist[F_NRE];     /* vsite ilists for this thread            */
-    rvec    fshift[SHIFTS];   /* fshift accumulation buffer              */
-    matrix  dxdf;             /* virial dx*df accumulation buffer        */
-} gmx_vsite_thread_t;
-
-typedef struct {
-    gmx_bool            bHaveChargeGroups;    /* Do we have charge groups?               */
-    int                 n_intercg_vsite;      /* The number of inter charge group vsites */
-    int                 nvsite_pbc_molt;      /* The array size of vsite_pbc_molt        */
-    int              ***vsite_pbc_molt;       /* The pbc atoms for intercg vsites        */
-    int               **vsite_pbc_loc;        /* The local pbc atoms                     */
-    int                *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
-    int                 nthreads;             /* Number of threads used for vsites       */
-    gmx_vsite_thread_t *tdata;                /* Thread local vsites and work structs    */
-    int                *th_ind;               /* Work array                              */
-    int                 th_ind_nalloc;        /* Size of th_ind                          */
+    gmx_bool                bHaveChargeGroups;    /* Do we have charge groups?               */
+    int                     n_intercg_vsite;      /* The number of inter charge group vsites */
+    int                     nvsite_pbc_molt;      /* The array size of vsite_pbc_molt        */
+    int                  ***vsite_pbc_molt;       /* The pbc atoms for intercg vsites        */
+    int                   **vsite_pbc_loc;        /* The local pbc atoms                     */
+    int                    *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
+    int                     nthreads;             /* Number of threads used for vsites       */
+    struct vsite_thread_t **tdata;                /* Thread local vsites and work structs    */
+    int                    *task_ind;             /* Work array                              */
+    int                     task_ind_nalloc;      /* Size of task_ind                        */
 } gmx_vsite_t;
 
 struct t_graph;
@@ -96,10 +86,12 @@ void construct_vsites_mtop(gmx_vsite_t *vsite,
  */
 
 void spread_vsite_f(gmx_vsite_t *vsite,
-                    rvec x[], rvec f[], rvec *fshift,
+                    const rvec x[],
+                    rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
                     struct t_nrnb *nrnb, t_idef *idef,
-                    int ePBC, gmx_bool bMolPBC, struct t_graph *g, matrix box,
+                    int ePBC, gmx_bool bMolPBC,
+                    const struct t_graph *g, matrix box,
                     struct t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
@@ -132,9 +124,5 @@ void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, struct t_mdatoms *md
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.
  */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
