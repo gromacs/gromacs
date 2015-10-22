@@ -40,6 +40,7 @@ gmx_install_headers(
     arraysize.h
     basedefinitions.h
     classhelpers.h
+    cstdio_ostream.h
     cstringutil.h
     datafilefinder.h
     errorcodes.h
@@ -53,6 +54,7 @@ gmx_install_headers(
     real.h
     smalloc.h
     stringutil.h
+    verbosity_management.h
     )
 
 if (BUILD_TESTING)
