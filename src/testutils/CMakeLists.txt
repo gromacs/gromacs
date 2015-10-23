@@ -36,6 +36,7 @@ include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
 include_directories(${LIBXML2_INCLUDE_DIR})
 set(TESTUTILS_SOURCES
     cmdlinetest.cpp
+    cstdio_ostream.cpp
     integrationtests.cpp
     interactivetest.cpp
     mpi-printer.cpp

@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(TestUtilsUnitTests testutils-test
+                  cstdio_ostream.cpp
                   interactivetest.cpp
                   refdata_tests.cpp
                   testasserts_tests.cpp
