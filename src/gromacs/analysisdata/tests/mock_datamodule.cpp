@@ -116,14 +116,14 @@ class MockAnalysisDataModule::Impl
          *
          * Must be non-NULL if startReferenceFrame() is called.
          */
-        boost::scoped_ptr<TestReferenceChecker>  rootChecker_;
+        std::unique_ptr<TestReferenceChecker>  rootChecker_;
         /*! \brief
          * Reference data checker to use to check the current frame.
          *
          * Non-NULL between startReferenceFrame() and finishReferenceFrame()
          * calls.
          */
-        boost::scoped_ptr<TestReferenceChecker>  frameChecker_;
+        std::unique_ptr<TestReferenceChecker>    frameChecker_;
         //! Source data.
         const AbstractAnalysisData              *source_;
         //! Flags that will be returned by the mock module.

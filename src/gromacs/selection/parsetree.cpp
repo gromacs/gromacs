@@ -227,8 +227,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <memory>
+
 #include <boost/exception_ptr.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/cstringutil.h"

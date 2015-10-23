@@ -530,7 +530,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         gmx::TimeUnit  timeUnit = gmx::TimeUnit_Default;
         if (FF(PCA_TIME_UNIT))
         {
-            boost::shared_ptr<gmx::TimeUnitBehavior> timeUnitBehavior(
+            std::shared_ptr<gmx::TimeUnitBehavior> timeUnitBehavior(
                     new gmx::TimeUnitBehavior());
             timeUnitBehavior->setTimeUnitStore(&timeUnit);
             timeUnitBehavior->setTimeUnitFromEnvironment();

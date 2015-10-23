@@ -51,10 +51,9 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/scoped_ptr.hpp>
 
 #include "buildinfo.h"
 #include "gromacs/utility/exceptions.h"

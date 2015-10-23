@@ -45,11 +45,11 @@
 
 #include <cstring>
 
+#include <memory>
 #include <new>
 #include <stdexcept>
 #include <typeinfo>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/exception/get_error_info.hpp>
 
 #include "thread_mpi/system_error.h"
@@ -120,7 +120,7 @@ class ErrorMessage
 
     private:
         std::string                     text_;
-        boost::shared_ptr<ErrorMessage> child_;
+        std::shared_ptr<ErrorMessage>   child_;
 };
 
 /*! \internal \brief

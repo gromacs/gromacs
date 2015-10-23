@@ -46,9 +46,8 @@
 #define GMX_TESTUTILS_REFDATA_H
 
 #include <iterator>
+#include <memory>
 #include <string>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
@@ -207,7 +206,7 @@ class TestReferenceData
         TestReferenceChecker rootChecker();
 
     private:
-        boost::shared_ptr<internal::TestReferenceDataImpl> impl_;
+        std::shared_ptr<internal::TestReferenceDataImpl> impl_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(TestReferenceData);
 };

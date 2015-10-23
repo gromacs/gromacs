@@ -528,13 +528,13 @@ class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
 };
 
 //! Smart pointer to manage an AnalysisDataSimpleHistogramModule object.
-typedef boost::shared_ptr<AnalysisDataSimpleHistogramModule>
+typedef std::shared_ptr<AnalysisDataSimpleHistogramModule>
     AnalysisDataSimpleHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataWeightedHistogramModule object.
-typedef boost::shared_ptr<AnalysisDataWeightedHistogramModule>
+typedef std::shared_ptr<AnalysisDataWeightedHistogramModule>
     AnalysisDataWeightedHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataBinAverageModule object.
-typedef boost::shared_ptr<AnalysisDataBinAverageModule>
+typedef std::shared_ptr<AnalysisDataBinAverageModule>
     AnalysisDataBinAverageModulePointer;
 
 } // namespace gmx

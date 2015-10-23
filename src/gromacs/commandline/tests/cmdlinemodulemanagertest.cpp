@@ -46,7 +46,6 @@
 #include <memory>
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
 #include <gmock/gmock.h>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
@@ -133,8 +132,8 @@ class CommandLineModuleManagerTestBase::Impl
 {
     public:
         TestFileOutputRedirector                     redirector_;
-        boost::scoped_ptr<CommandLineProgramContext> programContext_;
-        boost::scoped_ptr<CommandLineModuleManager>  manager_;
+        std::unique_ptr<CommandLineProgramContext>   programContext_;
+        std::unique_ptr<CommandLineModuleManager>    manager_;
 };
 
 CommandLineModuleManagerTestBase::CommandLineModuleManagerTestBase()

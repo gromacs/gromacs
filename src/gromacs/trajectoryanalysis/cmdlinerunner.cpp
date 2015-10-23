@@ -93,9 +93,9 @@ class RunnerModule : public ICommandLineOptionsModule
 void RunnerModule::initOptions(
         IOptionsContainer *options, ICommandLineOptionsModuleSettings *settings)
 {
-    boost::shared_ptr<TimeUnitBehavior>        timeUnitBehavior(
+    std::shared_ptr<TimeUnitBehavior>        timeUnitBehavior(
             new TimeUnitBehavior());
-    boost::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
+    std::shared_ptr<SelectionOptionBehavior> selectionOptionBehavior(
             new SelectionOptionBehavior(&selections_,
                                         common_.topologyProvider()));
     settings->addOptionsBehavior(timeUnitBehavior);
