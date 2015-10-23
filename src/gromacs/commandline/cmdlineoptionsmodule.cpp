@@ -43,6 +43,8 @@
 
 #include "cmdlineoptionsmodule.h"
 
+#include <memory>
+
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"

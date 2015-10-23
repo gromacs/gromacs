@@ -46,10 +46,9 @@
 #include <cctype>
 #include <cstdio>
 
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/fileio/trx.h"
 #include "gromacs/onlinehelp/helpmanager.h"
@@ -328,13 +327,13 @@ void printHelp(TextWriter *writer, gmx_ana_selcollection_t *sc,
 SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
                         bool bInteractive, int maxnr, const std::string &context)
 {
-    boost::shared_ptr<void>  scannerGuard(scanner, &_gmx_sel_free_lexer);
+    std::shared_ptr<void>    scannerGuard(scanner, &_gmx_sel_free_lexer);
     gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
     gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
 
     size_t                   oldCount = sc->sel.size();
     {
-        boost::shared_ptr<_gmx_sel_yypstate> parserState(
+        std::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
         if (bInteractive)
         {

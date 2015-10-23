@@ -120,7 +120,7 @@ class TextWriter
          *
          * This constructor is provided for convenience for cases where the
          * stream is not allocated with `new` and/or not managed by a
-         * boost::shared_ptr (e.g., if the stream is an object on the stack).
+         * std::shared_ptr (e.g., if the stream is an object on the stack).
          */
         explicit TextWriter(TextOutputStream *stream);
         /*! \brief
