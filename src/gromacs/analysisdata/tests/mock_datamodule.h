@@ -45,7 +45,8 @@
 #ifndef GMX_ANALYSISDATA_TESTS_MOCK_DATAMODULE_H
 #define GMX_ANALYSISDATA_TESTS_MOCK_DATAMODULE_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
+
 #include <gmock/gmock.h>
 
 #include "gromacs/analysisdata/dataframe.h"
@@ -98,7 +99,7 @@ class MockAnalysisDataModule : public IAnalysisDataModule
 };
 
 //! Smart pointer to manage an MockAnalysisDataModule object.
-typedef boost::shared_ptr<MockAnalysisDataModule>
+typedef std::shared_ptr<MockAnalysisDataModule>
     MockAnalysisDataModulePointer;
 
 } // namespace test

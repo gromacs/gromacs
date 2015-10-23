@@ -34,7 +34,7 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares no_delete deleter for boost::shared_ptr.
+ * Declares no_delete deleter for std::shared_ptr.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -47,13 +47,13 @@ namespace gmx
 {
 
 /*! \libinternal \brief
- * Deleter for boost::shared_ptr that does nothing.
+ * Deleter for std::shared_ptr that does nothing.
  *
  * This is useful for cases where a class needs to keep a reference to another
  * class, and optionally also manage the lifetime of that other class.
  * The simplest construct (that does not force all callers to use heap
- * allocation and boost::shared_ptr for the referenced class) is to use a
- * single boost::shared_ptr to hold that reference, and use no_delete as the
+ * allocation and std::shared_ptr for the referenced class) is to use a
+ * single std::shared_ptr to hold that reference, and use no_delete as the
  * deleter if the lifetime is managed externally.
  *
  * \inlibraryapi

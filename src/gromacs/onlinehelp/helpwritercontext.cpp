@@ -50,8 +50,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
-
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -492,7 +490,7 @@ class HelpWriterContext::Impl
         };
 
         //! Smart pointer type for managing the shared state.
-        typedef boost::shared_ptr<const SharedState> StatePointer;
+        typedef std::shared_ptr<const SharedState> StatePointer;
         //! Shorthand for a list of markup/other replacements.
         typedef std::vector<ReplaceItem> ReplaceList;
 

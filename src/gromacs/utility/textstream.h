@@ -43,7 +43,7 @@
 #ifndef GMX_UTILITY_TEXTSTREAM_H
 #define GMX_UTILITY_TEXTSTREAM_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace gmx
 {
@@ -139,9 +139,9 @@ class TextOutputStream
 };
 
 //! Shorthand for a smart pointer to a TextInputStream.
-typedef boost::shared_ptr<TextInputStream> TextInputStreamPointer;
+typedef std::shared_ptr<TextInputStream> TextInputStreamPointer;
 //! Shorthand for a smart pointer to a TextOutputStream.
-typedef boost::shared_ptr<TextOutputStream> TextOutputStreamPointer;
+typedef std::shared_ptr<TextOutputStream> TextOutputStreamPointer;
 
 } // namespace gmx
 
