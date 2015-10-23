@@ -20,7 +20,7 @@ between each group, and headers within each group sorted alphabetically.
    enforced.
 5. This is followed by other system headers: platform-specific headers such as
    ``<unistd.h>``, as well as external libraries such as
-   ``<boost/scoped_ptr.hpp>``.
+   ``<boost/exception_ptr.hpp>``.
 6. |Gromacs|-specific libraries from ``src/external/``, such as
    ``"thread_mpi/threads.h"``.
 7. |Gromacs|-specific headers that are not internal to the including module,

@@ -45,10 +45,10 @@
 
 #include "config.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
 #include <gtest/gtest.h>
 
 #include "buildinfo.h"
@@ -97,7 +97,7 @@ class TestExecutableEnvironment : public gmx::IExecutableEnvironment
 };
 
 //! Shorthand for a smart pointer to TestExecutableEnvironment.
-typedef boost::shared_ptr<TestExecutableEnvironment>
+typedef std::shared_ptr<TestExecutableEnvironment>
     TestExecutableEnvironmentPointer;
 
 class CommandLineProgramContextTest : public ::testing::Test

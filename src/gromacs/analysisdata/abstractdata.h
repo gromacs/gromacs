@@ -43,7 +43,7 @@
 #ifndef GMX_ANALYSISDATA_ABSTRACTDATA_H
 #define GMX_ANALYSISDATA_ABSTRACTDATA_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/utility/classhelpers.h"
 
@@ -57,7 +57,7 @@ class AnalysisDataPointSetRef;
 class IAnalysisDataModule;
 
 //! Smart pointer for managing a generic analysis data module.
-typedef boost::shared_ptr<IAnalysisDataModule> AnalysisDataModulePointer;
+typedef std::shared_ptr<IAnalysisDataModule> AnalysisDataModulePointer;
 
 /*! \brief
  * Abstract base class for all objects that provide data.

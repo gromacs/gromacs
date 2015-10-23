@@ -44,10 +44,9 @@
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISMODULE_H
 
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/selection/selection.h" // For gmx::SelectionList
 #include "gromacs/utility/classhelpers.h"
@@ -179,7 +178,7 @@ class TrajectoryAnalysisModuleData
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
-typedef boost::shared_ptr<TrajectoryAnalysisModuleData>
+typedef std::shared_ptr<TrajectoryAnalysisModuleData>
     TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
@@ -511,7 +510,7 @@ class TrajectoryAnalysisModule
 };
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
-typedef boost::shared_ptr<TrajectoryAnalysisModule>
+typedef std::shared_ptr<TrajectoryAnalysisModule>
     TrajectoryAnalysisModulePointer;
 
 } // namespace gmx

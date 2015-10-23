@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,7 +142,7 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
 };
 
 //! Smart pointer to manage an AnalysisDataAverageModule object.
-typedef boost::shared_ptr<AnalysisDataAverageModule>
+typedef std::shared_ptr<AnalysisDataAverageModule>
     AnalysisDataAverageModulePointer;
 
 /*! \brief
@@ -188,7 +188,7 @@ class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
 };
 
 //! Smart pointer to manage an AnalysisDataFrameAverageModule object.
-typedef boost::shared_ptr<AnalysisDataFrameAverageModule>
+typedef std::shared_ptr<AnalysisDataFrameAverageModule>
     AnalysisDataFrameAverageModulePointer;
 
 } // namespace gmx

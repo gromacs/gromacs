@@ -137,7 +137,7 @@ namespace
 {
 
 //! Convenience typedef for a smart pointer to TestReferenceDataImpl.
-typedef boost::shared_ptr<internal::TestReferenceDataImpl>
+typedef std::shared_ptr<internal::TestReferenceDataImpl>
     TestReferenceDataImplPointer;
 
 /*! \brief
