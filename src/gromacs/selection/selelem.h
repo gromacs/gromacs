@@ -51,7 +51,7 @@
 
 #include <string>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/classhelpers.h"
@@ -73,7 +73,7 @@ namespace gmx
 class SelectionTreeElement;
 
 //! Smart pointer type for selection tree element pointers.
-typedef boost::shared_ptr<SelectionTreeElement> SelectionTreeElementPointer;
+typedef std::shared_ptr<SelectionTreeElement> SelectionTreeElementPointer;
 } // namespace gmx
 
 /********************************************************************/

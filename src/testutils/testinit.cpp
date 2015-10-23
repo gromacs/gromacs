@@ -46,7 +46,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 #include <gmock/gmock.h>
 
 #include "buildinfo.h"
@@ -148,7 +148,7 @@ void printHelp(const Options &options)
 }
 
 //! Global program context instance for test binaries.
-boost::scoped_ptr<TestProgramContext> g_testContext;
+std::unique_ptr<TestProgramContext> g_testContext;
 
 }       // namespace
 

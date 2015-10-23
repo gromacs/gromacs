@@ -45,7 +45,7 @@
 
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
@@ -86,7 +86,7 @@ class StringTestBase::Impl
 {
     public:
         TestReferenceData                           data_;
-        boost::scoped_ptr<TestReferenceChecker>     checker_;
+        std::unique_ptr<TestReferenceChecker>       checker_;
 };
 
 /********************************************************************

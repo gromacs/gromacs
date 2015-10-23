@@ -49,7 +49,7 @@
 #include <exception>
 
 #include <boost/exception_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -170,7 +170,7 @@ template <typename ValueType> static
 ValueType get(ValueType *src)
 {
     GMX_RELEASE_ASSERT(src != NULL, "Semantic value pointers should be non-NULL");
-    boost::scoped_ptr<ValueType> srcGuard(src);
+    std::unique_ptr<ValueType> srcGuard(src);
     return ValueType(std::move(*src));
 }
 /*! \brief

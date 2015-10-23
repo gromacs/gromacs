@@ -48,7 +48,7 @@
 #include <algorithm>
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"

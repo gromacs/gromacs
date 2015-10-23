@@ -46,7 +46,7 @@
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
@@ -95,7 +95,7 @@ class CommandLineHelpModuleImpl
 
         void exportHelp(IHelpExport *exporter);
 
-        boost::scoped_ptr<RootHelpTopic>  rootTopic_;
+        std::unique_ptr<RootHelpTopic>    rootTopic_;
         const IProgramContext            &programContext_;
         std::string                       binaryName_;
         const CommandLineModuleMap       &modules_;
@@ -278,7 +278,7 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
     {
         CommandLineCommonOptionsHolder            optionsHolder;
-        boost::scoped_ptr<CommandLineHelpContext> cmdlineContext;
+        std::unique_ptr<CommandLineHelpContext>   cmdlineContext;
         if (helpModule_.context_ != NULL)
         {
             cmdlineContext.reset(new CommandLineHelpContext(*helpModule_.context_));
@@ -520,8 +520,8 @@ class HelpExportReStructuredText : public IHelpExport
         IFileOutputRedirector          *outputRedirector_;
         const std::string              &binaryName_;
         HelpLinks                       links_;
-        boost::scoped_ptr<TextWriter>   indexFile_;
-        boost::scoped_ptr<TextWriter>   manPagesFile_;
+        std::unique_ptr<TextWriter>     indexFile_;
+        std::unique_ptr<TextWriter>     manPagesFile_;
 };
 
 HelpExportReStructuredText::HelpExportReStructuredText(
@@ -919,7 +919,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (!exportFormat.empty())
     {
         ModificationCheckingFileOutputRedirector redirector(impl_->outputRedirector_);
-        boost::scoped_ptr<IHelpExport>           exporter;
+        std::unique_ptr<IHelpExport>             exporter;
         if (exportFormat == "rst")
         {
             exporter.reset(new HelpExportReStructuredText(*impl_, &redirector));

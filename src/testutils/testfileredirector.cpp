@@ -48,7 +48,7 @@
 #include <utility>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/utility/stringstream.h"
 
@@ -95,7 +95,7 @@ bool TestFileInputRedirector::fileExists(const char            *filename,
 class TestFileOutputRedirector::Impl
 {
     public:
-        typedef boost::shared_ptr<StringOutputStream> StringStreamPointer;
+        typedef std::shared_ptr<StringOutputStream> StringStreamPointer;
         typedef std::pair<std::string, StringStreamPointer> FileListEntry;
 
         StringStreamPointer         stdoutStream_;

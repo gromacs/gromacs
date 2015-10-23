@@ -51,7 +51,7 @@
 #include <string>
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/programcontext.h"
@@ -91,7 +91,7 @@ class IExecutableEnvironment
 };
 
 //! Shorthand for a smart pointer to IExecutableEnvironment.
-typedef boost::shared_ptr<IExecutableEnvironment>
+typedef std::shared_ptr<IExecutableEnvironment>
     ExecutableEnvironmentPointer;
 
 /*! \libinternal \brief

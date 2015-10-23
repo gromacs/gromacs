@@ -45,7 +45,7 @@
 
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/utility/classhelpers.h"
 
@@ -56,7 +56,7 @@ class IOptionsBehavior;
 class Options;
 
 //! Smart pointer for behaviors stored in OptionsBehaviorCollection.
-typedef boost::shared_ptr<IOptionsBehavior> OptionsBehaviorPointer;
+typedef std::shared_ptr<IOptionsBehavior> OptionsBehaviorPointer;
 
 /*! \libinternal \brief
  * Container for IOptionsBehavior objects.

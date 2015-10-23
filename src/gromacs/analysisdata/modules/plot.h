@@ -45,7 +45,7 @@
 
 #include <string>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/analysisdata/datamodule.h"
 #include "gromacs/options/timeunitmanager.h"
@@ -327,10 +327,10 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
 };
 
 //! Smart pointer to manage an AnalysisDataPlotModule object.
-typedef boost::shared_ptr<AnalysisDataPlotModule>
+typedef std::shared_ptr<AnalysisDataPlotModule>
     AnalysisDataPlotModulePointer;
 //! Smart pointer to manage an AnalysisDataVectorPlotModule object.
-typedef boost::shared_ptr<AnalysisDataVectorPlotModule>
+typedef std::shared_ptr<AnalysisDataVectorPlotModule>
     AnalysisDataVectorPlotModulePointer;
 
 } // namespace gmx

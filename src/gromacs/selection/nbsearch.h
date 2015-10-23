@@ -50,7 +50,7 @@
 
 #include <vector>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -433,7 +433,7 @@ class AnalysisNeighborhoodSearch
          * AnalysisNeighborhood object.  Ownership currently always stays with
          * AnalysisNeighborhood; it always keeps one instance of the pointer.
          */
-        typedef boost::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
+        typedef std::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
             ImplPointer;
 
         /*! \brief
@@ -557,7 +557,7 @@ class AnalysisNeighborhoodPairSearch
          * See AnalysisNeighborhoodSearch::ImplPointer for rationale of using
          * shared_ptr and ownership semantics.
          */
-        typedef boost::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
+        typedef std::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
             ImplPointer;
 
         /*! \brief

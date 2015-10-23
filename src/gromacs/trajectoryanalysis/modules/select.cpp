@@ -528,7 +528,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!fnNdx_.empty())
     {
-        boost::shared_ptr<IndexFileWriterModule> writer(new IndexFileWriterModule());
+        std::shared_ptr<IndexFileWriterModule> writer(new IndexFileWriterModule());
         writer->setFileName(fnNdx_);
         for (size_t g = 0; g < sel_.size(); ++g)
         {
