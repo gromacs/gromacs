@@ -41,7 +41,7 @@
 #ifndef SELECTION_SCANNER_INTERNAL_H
 #define SELECTION_SCANNER_INTERNAL_H
 
-#include <boost/exception_ptr.hpp>
+#include <exception>
 
 #include "parser.h"
 
@@ -74,7 +74,7 @@ typedef struct gmx_sel_lexer_t
     //! Selection collection to put parsed selections in.
     struct gmx_ana_selcollection_t  *sc;
     //! Stores an exception that occurred during parsing.
-    boost::exception_ptr             exception;
+    std::exception_ptr               exception;
     //! Whether external index groups have been set.
     bool                             bGroups;
     //! External index groups for resolving \c group keywords.

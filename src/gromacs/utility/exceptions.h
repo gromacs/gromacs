@@ -50,7 +50,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/exception_ptr.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/exception/errinfo_api_function.hpp>
 #include <boost/exception/errinfo_errno.hpp>
@@ -67,7 +66,7 @@ class TextWriter;
 namespace internal
 {
 //! Internal container type for storing a list of nested exceptions.
-typedef std::vector<boost::exception_ptr> NestedExceptionList;
+typedef std::vector<std::exception_ptr> NestedExceptionList;
 }   // namespace internal
 
 //! \addtogroup module_utility
@@ -137,7 +136,7 @@ class ExceptionInitializer
          */
         void addCurrentExceptionAsNested()
         {
-            nested_.push_back(boost::current_exception());
+            nested_.push_back(std::current_exception());
         }
         /*! \brief
          * Adds the specified exception as a nested exception.
@@ -152,7 +151,7 @@ class ExceptionInitializer
         template <class Exception>
         void addNested(const Exception &ex)
         {
-            nested_.push_back(boost::copy_exception(ex));
+            nested_.push_back(std::make_exception_ptr(ex));
         }
 
     private:
