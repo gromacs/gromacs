@@ -74,7 +74,7 @@ class RunnerModule : public ICommandLineOptionsModule
 {
     public:
         explicit RunnerModule(TrajectoryAnalysisModulePointer module)
-            : module_(module), common_(&settings_)
+            : module_(std::move(module)), common_(&settings_)
         {
         }
 
@@ -210,7 +210,7 @@ std::unique_ptr<ICommandLineOptionsModule>
 TrajectoryAnalysisCommandLineRunner::createModule(
         TrajectoryAnalysisModulePointer module)
 {
-    return ICommandLineOptionsModulePointer(new RunnerModule(module));
+    return ICommandLineOptionsModulePointer(new RunnerModule(std::move(module)));
 }
 
 } // namespace gmx

@@ -330,7 +330,7 @@ CommandLineProgramContext::Impl::Impl()
 
 CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
                                       ExecutableEnvironmentPointer env)
-    : executableEnv_(env), bSourceLayout_(false)
+    : executableEnv_(std::move(env)), bSourceLayout_(false)
 {
     invokedName_ = (argc != 0 ? argv[0] : "");
     programName_ = Path::getFilename(invokedName_);
@@ -379,7 +379,7 @@ CommandLineProgramContext::CommandLineProgramContext(
 
 CommandLineProgramContext::CommandLineProgramContext(
         int argc, const char *const argv[], ExecutableEnvironmentPointer env)
-    : impl_(new Impl(argc, argv, env))
+    : impl_(new Impl(argc, argv, move(env)))
 {
 }
 

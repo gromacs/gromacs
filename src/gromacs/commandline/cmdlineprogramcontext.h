@@ -48,10 +48,9 @@
 #ifndef GMX_COMMANDLINE_CMDLINEPROGRAMCONTEXT_H
 #define GMX_COMMANDLINE_CMDLINEPROGRAMCONTEXT_H
 
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/shared_ptr.hpp>
 
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/programcontext.h"
@@ -91,8 +90,7 @@ class IExecutableEnvironment
 };
 
 //! Shorthand for a smart pointer to IExecutableEnvironment.
-typedef boost::shared_ptr<IExecutableEnvironment>
-    ExecutableEnvironmentPointer;
+typedef std::unique_ptr<IExecutableEnvironment> ExecutableEnvironmentPointer;
 
 /*! \libinternal \brief
  * Program context implementation for command line programs.
