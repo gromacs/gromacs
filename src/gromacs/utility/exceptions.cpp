@@ -449,8 +449,6 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
             bAnythingWritten = true;
         }
 
-        // TODO: Treat also boost::nested_exception (not currently used, though)
-
         const internal::NestedExceptionList *nested
             = boost::get_error_info<errinfo_nested_exceptions>(*boostEx);
         if (nested != NULL)
@@ -460,7 +458,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
             {
                 try
                 {
-                    rethrow_exception(*ni);
+                    std::rethrow_exception(*ni);
                 }
                 catch (const std::exception &nestedEx)
                 {

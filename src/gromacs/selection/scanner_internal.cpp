@@ -442,8 +442,8 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 }
 
 void
-_gmx_sel_lexer_set_exception(yyscan_t                    scanner,
-                             const boost::exception_ptr &ex)
+_gmx_sel_lexer_set_exception(yyscan_t                  scanner,
+                             const std::exception_ptr &ex)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     state->exception = ex;
@@ -455,9 +455,9 @@ _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     if (state->exception)
     {
-        boost::exception_ptr ex = state->exception;
-        state->exception = boost::exception_ptr();
-        rethrow_exception(ex);
+        std::exception_ptr ex = state->exception;
+        state->exception = std::exception_ptr();
+        std::rethrow_exception(ex);
     }
 }
 
