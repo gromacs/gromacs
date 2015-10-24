@@ -49,8 +49,6 @@
 #include <exception>
 #include <memory>
 
-#include <boost/exception_ptr.hpp>
-
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
@@ -73,11 +71,11 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
             context = gmx::formatString("Near '%s'", context.c_str());
             ex.prependContext(context);
         }
-        _gmx_sel_lexer_set_exception(scanner, boost::copy_exception(ex));
+        _gmx_sel_lexer_set_exception(scanner, std::make_exception_ptr(ex));
     }
     catch (const std::exception &)
     {
-        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+        _gmx_sel_lexer_set_exception(scanner, std::current_exception());
     }
 }
 
@@ -144,7 +142,7 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
     }                                                           \
     catch (const std::exception &)                              \
     {                                                           \
-        _gmx_sel_lexer_set_exception(scanner, boost::current_exception()); \
+        _gmx_sel_lexer_set_exception(scanner, std::current_exception()); \
         YYABORT;                                                \
     }
 //!\}

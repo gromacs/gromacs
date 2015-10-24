@@ -45,9 +45,8 @@
 #ifndef SELECTION_SCANNER_H
 #define SELECTION_SCANNER_H
 
+#include <exception>
 #include <string>
-
-#include <boost/exception_ptr.hpp>
 
 #include "parser.h"
 
@@ -74,8 +73,8 @@ void
 _gmx_sel_free_lexer(yyscan_t scanner);
 /** Stores an exception that is caught during parsing. */
 void
-_gmx_sel_lexer_set_exception(yyscan_t                    scanner,
-                             const boost::exception_ptr &ex);
+_gmx_sel_lexer_set_exception(yyscan_t                  scanner,
+                             const std::exception_ptr &ex);
 /** Rethrows and clears the stored exception if one is present. */
 // TODO: The semantics is a bit confusing, need to be thought more,
 // but easier to do as part of larger refactoring of the parsing.
