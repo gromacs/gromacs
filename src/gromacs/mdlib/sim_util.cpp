@@ -89,9 +89,11 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -753,6 +755,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     gmx_bool            bDiffKernels = FALSE;
     rvec                vzero, box_diag;
     float               cycles_pme, cycles_force, cycles_wait_gpu;
+    /* TODO To avoid loss of precision, float can't be used for a
+     * cycle count. Build an object that can do this right and perhaps
+     * also be used by gmx_wallcycle_t */
+    gmx_cycles_t        cycleCountBeforeLocalWorkCompletes = 0;
     nonbonded_verlet_t *nbv;
 
     cycles_force    = 0;
@@ -1333,9 +1339,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
              * We start a counter here, so we can, hopefully, time the rest
              * of the GPU kernel execution and data transfer.
              */
-            // TODO This counter has very little to do with the rest
-            // of wcycle, so should be a separate object
-            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L_EST);
+            cycleCountBeforeLocalWorkCompletes = gmx_cycles_read();
         }
 
         /* Communicate the forces */
@@ -1369,7 +1373,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
             if (bDoForces && DOMAINDECOMP(cr))
             {
-                cycles_wait_est = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L_EST);
+                cycles_wait_est = gmx_cycles_read() - cycleCountBeforeLocalWorkCompletes;
 
                 if (cycles_tmp < cuda_api_overhead_margin)
                 {
@@ -1395,7 +1399,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             cycles_force    += cycles_wait_est;
             cycles_wait_gpu += cycles_wait_est;
 
-#elif defined(GMX_GPU) && defined(GMX_USE_OPENCL)
+#else
+            GMX_UNUSED_VALUE(cycleCountBeforeLocalWorkCompletes);
+#  if defined(GMX_GPU) && defined(GMX_USE_OPENCL)
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
@@ -1403,6 +1409,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
             cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+#  endif
 #endif
 
             /* now clear the GPU outputs while we finish the step on the CPU */
