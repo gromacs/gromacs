@@ -694,7 +694,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_int64_t               reset_counters;
     gmx_edsam_t               ed           = NULL;
     int                       nthreads_pme = 1;
-    int                       nthreads_pp  = 1;
     gmx_membed_t             *membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
     /* The master rank decides early on bUseGPU and broadcasts this later */
@@ -1136,13 +1135,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
      */
-    /* TODO nthreads_pp is only used for pinning threads.
-     * This is a temporary solution until we have a hw topology library.
-     */
-    nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
     nthreads_pme = gmx_omp_nthreads_get(emntPME);
 
-    wcycle = wallcycle_init(fplog, resetstep, cr, nthreads_pp, nthreads_pme);
+    wcycle = wallcycle_init(fplog, resetstep, cr);
 
     if (PAR(cr))
     {

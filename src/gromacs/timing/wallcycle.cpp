@@ -69,7 +69,6 @@ typedef struct
     int          n;
     gmx_cycles_t c;
     gmx_cycles_t start;
-    gmx_cycles_t last;
 } wallcc_t;
 
 typedef struct gmx_wallcycle
@@ -92,10 +91,7 @@ typedef struct gmx_wallcycle
 #ifdef GMX_MPI
     MPI_Comm          mpi_comm_mygroup;
 #endif
-    int               nthreads_pp;
-    int               nthreads_pme;
     wallcc_t         *wcsc;
-    double           *cycles_sum;
 } gmx_wallcycle_t_t;
 
 /* Each name should not exceed 19 printing characters
@@ -132,8 +128,7 @@ gmx_bool wallcycle_have_counter(void)
     return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused *cr,
-                               int nthreads_pp, int nthreads_pme)
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused *cr)
 {
     gmx_wallcycle_t wc;
 
@@ -151,9 +146,6 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
     wc->wc_depth            = 0;
     wc->ewc_prev            = -1;
     wc->reset_counters      = resetstep;
-    wc->nthreads_pp         = nthreads_pp;
-    wc->nthreads_pme        = nthreads_pme;
-    wc->cycles_sum          = NULL;
 
 #ifdef GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
@@ -426,58 +418,82 @@ static void subtract_cycles(wallcc_t *wcc, int ewc_main, int ewc_sub)
     }
 }
 
-void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
+void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthreads_pp, int nthreads_pme)
 {
-    wallcc_t *wcc;
-    double    cycles[ewcNR+ewcsNR];
-#ifdef GMX_MPI
-    double    cycles_n[ewcNR+ewcsNR+1];
-#endif
-    int       i, j;
-    int       nsum;
-
-    if (wc == NULL)
+    for (int i = 0; i < ewcNR; i++)
     {
-        return;
-    }
-
-    snew(wc->cycles_sum, ewcNR+ewcsNR);
-
-    wcc = wc->wcc;
-
-    /* The GPU wait estimate counter is used for load balancing only
-     * and will mess up the total due to double counting: clear it.
-     */
-    wcc[ewcWAIT_GPU_NB_L_EST].n = 0;
-    wcc[ewcWAIT_GPU_NB_L_EST].c = 0;
-
-    for (i = 0; i < ewcNR; i++)
-    {
-        if (is_pme_counter(i) || (i == ewcRUN && cr->duty == DUTY_PME))
+        if (is_pme_counter(i) || (i == ewcRUN && isPmeRank))
         {
-            wcc[i].c *= wc->nthreads_pme;
+            wc->wcc[i].c *= nthreads_pme;
 
             if (wc->wcc_all)
             {
-                for (j = 0; j < ewcNR; j++)
+                for (int j = 0; j < ewcNR; j++)
                 {
-                    wc->wcc_all[i*ewcNR+j].c *= wc->nthreads_pme;
+                    wc->wcc_all[i*ewcNR+j].c *= nthreads_pme;
                 }
             }
         }
         else
         {
-            wcc[i].c *= wc->nthreads_pp;
+            wc->wcc[i].c *= nthreads_pp;
 
             if (wc->wcc_all)
             {
-                for (j = 0; j < ewcNR; j++)
+                for (int j = 0; j < ewcNR; j++)
                 {
-                    wc->wcc_all[i*ewcNR+j].c *= wc->nthreads_pp;
+                    wc->wcc_all[i*ewcNR+j].c *= nthreads_pp;
                 }
             }
         }
     }
+    if (useCycleSubcounters && wc->wcsc && !isPmeRank)
+    {
+        for (int i = 0; i < ewcNR; i++)
+        {
+            wc->wcsc[i].c *= nthreads_pp;
+        }
+    }
+}
+
+/* TODO Make an object for this function to return, containing some
+ * vectors of something like wallcc_t for the summed wcc, wcc_all and
+ * wcsc, AND the original wcc for rank 0.
+ *
+ * The GPU timing is reported only for rank 0, so we want to preserve
+ * the original wcycle on that rank. Rank 0 also reports the global
+ * counts before that, so needs something to contain the global data
+ * without over-writing the rank-0 data. The current implementation
+ * uses cycles_sum to manage this, which works OK now because wcsc and
+ * wcc_all are unused by the GPU reporting, but it is not satisfactory
+ * for the future. Also, there's no need for MPI_Allreduce, since
+ * only MASTERRANK uses any of the results. */
+double *wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
+{
+    double   *cycles_sum = NULL;
+    wallcc_t *wcc;
+    double    cycles[ewcNR+ewcsNR];
+#ifdef GMX_MPI
+    double    cycles_n[ewcNR+ewcsNR+1];
+#endif
+    int       i;
+    int       nsum;
+
+    if (wc == NULL)
+    {
+        return cycles_sum;
+    }
+
+    snew(cycles_sum, ewcNR+ewcsNR);
+
+    wcc = wc->wcc;
+
+    // TODO Remove this
+    /* The GPU wait estimate counter is used for load balancing only
+     * and will mess up the total due to double counting: clear it.
+     */
+    wcc[ewcWAIT_GPU_NB_L_EST].n = 0;
+    wcc[ewcWAIT_GPU_NB_L_EST].c = 0;
 
     subtract_cycles(wcc, ewcDOMDEC, ewcDDCOMMLOAD);
     subtract_cycles(wcc, ewcDOMDEC, ewcDDCOMMBOUND);
@@ -513,7 +529,6 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     {
         for (i = 0; i < ewcsNR; i++)
         {
-            wc->wcsc[i].c    *= wc->nthreads_pp;
 #ifdef GMX_MPI
             cycles_n[ewcNR+i] = static_cast<double>(wc->wcsc[i].n);
 #endif
@@ -527,7 +542,11 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     {
         double buf[ewcNR+ewcsNR+1];
 
+        // TODO this code is used only at the end of the run, so we
+        // can just do a simple reduce of haveInvalidCount in
+        // wallcycle_print, and avoid bugs
         cycles_n[nsum] = (wc->haveInvalidCount > 0 ? 1 : 0);
+        // TODO Use MPI_Reduce
         MPI_Allreduce(cycles_n, buf, nsum + 1, MPI_DOUBLE, MPI_MAX,
                       cr->mpi_comm_mysim);
         for (i = 0; i < ewcNR; i++)
@@ -543,7 +562,8 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
             }
         }
 
-        MPI_Allreduce(cycles, wc->cycles_sum, nsum, MPI_DOUBLE, MPI_SUM,
+        // TODO Use MPI_Reduce
+        MPI_Allreduce(cycles, cycles_sum, nsum, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
 
         if (wc->wcc_all != NULL)
@@ -556,6 +576,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
             {
                 cyc_all[i] = wc->wcc_all[i].c;
             }
+            // TODO Use MPI_Reduce
             MPI_Allreduce(cyc_all, buf_all, ewcNR*ewcNR, MPI_DOUBLE, MPI_SUM,
                           cr->mpi_comm_mysim);
             for (i = 0; i < ewcNR*ewcNR; i++)
@@ -571,9 +592,11 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     {
         for (i = 0; i < nsum; i++)
         {
-            wc->cycles_sum[i] = cycles[i];
+            cycles_sum[i] = cycles[i];
         }
     }
+
+    return cycles_sum;
 }
 
 static void print_cycles(FILE *fplog, double c2t, const char *name,
@@ -683,13 +706,14 @@ static void print_header(FILE *fplog, int nrank_pp, int nth_pp, int nrank_pme, i
     fprintf(fplog, "                     Ranks Threads  Count      (s)         total sum    %%\n");
 }
 
-void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-                     gmx_wallcycle_t wc, struct gmx_wallclock_gpu_t *gpu_t)
+
+void wallcycle_print(FILE *fplog, int nnodes, int npme,
+                     int nth_pp, int nth_pme, double realtime,
+                     gmx_wallcycle_t wc, double *cyc_sum, struct gmx_wallclock_gpu_t *gpu_t)
 {
-    double     *cyc_sum;
     double      tot, tot_for_pp, tot_for_rest, tot_gpu, tot_cpu_overlap, gpu_cpu_ratio, tot_k;
     double      c2t, c2t_pp, c2t_pme = 0;
-    int         i, j, npp, nth_pp, nth_pme, nth_tot;
+    int         i, j, npp, nth_tot;
     char        buf[STRLEN];
     const char *hline = "-----------------------------------------------------------------------------";
 
@@ -698,14 +722,8 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         return;
     }
 
-    nth_pp  = wc->nthreads_pp;
     GMX_ASSERT(nth_pp > 0, "Number of particle-particle threads must be >0");
-
-    nth_pme = wc->nthreads_pme;
     GMX_ASSERT(nth_pme > 0, "Number of PME threads must be >0");
-
-    cyc_sum = wc->cycles_sum;
-
     GMX_ASSERT(nnodes > 0, "Number of nodes must be >0");
     GMX_ASSERT(npme >= 0, "Number of PME nodes cannot be negative");
     npp     = nnodes - npme;

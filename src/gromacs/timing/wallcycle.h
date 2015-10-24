@@ -83,8 +83,7 @@ enum {
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr,
-                               int nthreads_pp, int nthreads_pme);
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */
@@ -104,11 +103,17 @@ void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c);
 void wallcycle_reset_all(gmx_wallcycle_t wc);
 /* Resets all cycle counters to zero */
 
-void wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);
-/* Sum the cycles over the nodes in cr->mpi_comm_mysim */
+void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthreads_pp, int nthreads_pme);
+/* Scale the cycle counts to reflect how many threads run for that number of cycles */
 
-void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-                     gmx_wallcycle_t wc, gmx_wallclock_gpu_t *gpu_t);
+double *wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);
+/* Return a vector of the sum of cycle counts over the nodes in
+   cr->mpi_comm_mysim. Caller is responsible for deallocating the
+   memory. */
+
+void wallcycle_print(FILE *fplog, int nnodes, int npme,
+                     int nth_pp, int nth_pme, double realtime,
+                     gmx_wallcycle_t wc, double *cyc_sum, gmx_wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc);

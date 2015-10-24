@@ -96,6 +96,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
@@ -1333,6 +1334,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
              * We start a counter here, so we can, hopefully, time the rest
              * of the GPU kernel execution and data transfer.
              */
+            // TODO This counter has very little to do with the rest
+            // of wcycle, so should be a separate object
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L_EST);
         }
 
@@ -2580,6 +2583,7 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, FALSE);
 }
 
+// TODO This can be cleaned up a lot, and move back to runner.cpp
 void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
@@ -2594,7 +2598,6 @@ void finish_run(FILE *fplog, t_commrec *cr,
             elapsed_time_over_all_ranks,
             elapsed_time_over_all_threads,
             elapsed_time_over_all_threads_over_all_ranks;
-    wallcycle_sum(cr, wcycle);
 
     if (cr->nnodes > 1)
     {
@@ -2645,13 +2648,18 @@ void finish_run(FILE *fplog, t_commrec *cr,
         print_dd_statistics(cr, inputrec, fplog);
     }
 
+    int nthreads_pp  = gmx_omp_nthreads_get(emntNonbonded);
+    int nthreads_pme = gmx_omp_nthreads_get(emntPME);
+    wallcycle_scale_by_num_threads(wcycle, cr->duty == DUTY_PME, nthreads_pp, nthreads_pme);
+    gmx::scoped_cptr<double> cycle_sum(wallcycle_sum(cr, wcycle));
+
     if (SIMMASTER(cr))
     {
         struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : NULL;
 
-        wallcycle_print(fplog, cr->nnodes, cr->npmenodes,
+        wallcycle_print(fplog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
                         elapsed_time_over_all_ranks,
-                        wcycle, gputimes);
+                        wcycle, cycle_sum.get(), gputimes);
 
         if (EI_DYNAMICS(inputrec->eI))
         {
