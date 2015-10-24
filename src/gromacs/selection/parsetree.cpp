@@ -227,9 +227,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <exception>
 #include <memory>
-
-#include <boost/exception_ptr.hpp>
 
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/cstringutil.h"
@@ -289,12 +288,12 @@ _gmx_selparser_handle_exception(yyscan_t scanner, std::exception *ex)
             gromacsException->prependContext(formatCurrentErrorContext(scanner));
             canContinue = (dynamic_cast<gmx::UserInputError *>(ex) != NULL);
         }
-        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+        _gmx_sel_lexer_set_exception(scanner, std::current_exception());
         return canContinue;
     }
     catch (const std::exception &)
     {
-        _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
+        _gmx_sel_lexer_set_exception(scanner, std::current_exception());
         return false;
     }
 }
