@@ -49,6 +49,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "gromacs/onlinehelp/helpformat.h"
