@@ -49,7 +49,7 @@
 #define GMX_GMXLIB_GPU_UTILS_OCL_COMPILER_H
 
 #include "gromacs/gmxlib/ocl_tools/oclutils.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/gpu_hw_info.h"
 
 /*! \brief Vendor specific kernel sources
  *

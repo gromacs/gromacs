@@ -64,6 +64,7 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/gpu_hw_info.h"
 #include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/simd/support.h"
 #include "gromacs/utility/arrayref.h"
@@ -934,14 +935,11 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
     {
         snew(hwinfo_g, 1);
 
-        hwinfo_g->pCpuInfo                  = reinterpret_cast<struct CxxObject *>(new gmx::CpuInfo);
-
-        gmx::HardwareTopology * hwTop       = new gmx::HardwareTopology;
-        hwinfo_g->pHardwareTopology         = reinterpret_cast<struct CxxObject *>(hwTop);
-
+        hwinfo_g->cpuInfo             = new gmx::CpuInfo;
+        hwinfo_g->hardwareTopology    = new gmx::HardwareTopology;
 
         /* get the number of cores, will be 0 when not detected */
-        hwinfo_g->ncore             = get_ncores(*hwTop);
+        hwinfo_g->ncore             = get_ncores(*hwinfo_g->hardwareTopology);
 
         /* detect number of hardware threads */
         hwinfo_g->nthreads_hw_avail = get_nthreads_hw_avail(fplog, cr);
@@ -971,7 +969,7 @@ gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
         gmx_fatal(FARGS, "Error unlocking hwinfo mutex: %s", strerror(errno));
     }
 
-    gmx_collect_hardware_mpi(*reinterpret_cast<gmx::CpuInfo *>(hwinfo_g->pCpuInfo));
+    gmx_collect_hardware_mpi(*hwinfo_g->cpuInfo);
 
     return hwinfo_g;
 }
@@ -981,7 +979,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 {
     std::string         s;
 
-    const gmx::CpuInfo &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo_g->pCpuInfo);
+    const gmx::CpuInfo &cpuInfo = *hwinfo_g->cpuInfo;
 
     s  = gmx::formatString("\n");
     s += gmx::formatString("Running on %d node%s with total",
@@ -1111,7 +1109,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
                                  const gmx_hw_info_t *hwinfo)
 {
-    const gmx::CpuInfo &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo_g->pCpuInfo);
+    const gmx::CpuInfo &cpuInfo = *hwinfo_g->cpuInfo;
 
     if (fplog != NULL)
     {
@@ -1361,11 +1359,8 @@ void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
 
     if (n_hwinfo == 0)
     {
-        gmx::CpuInfo *          pCpuInfo = reinterpret_cast<gmx::CpuInfo *>(hwinfo_g->pCpuInfo);
-        gmx::HardwareTopology * pHwTop   = reinterpret_cast<gmx::HardwareTopology *>(hwinfo_g->pHardwareTopology);
-
-        delete pCpuInfo;
-        delete pHwTop;
+        delete hwinfo_g->cpuInfo;
+        delete hwinfo_g->hardwareTopology;
         free_gpu_info(&hwinfo_g->gpu_info);
         sfree(hwinfo_g);
     }

@@ -51,6 +51,8 @@
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/legacyheaders/types/gpu_hw_info.h"
+#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/inputrec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -185,8 +187,8 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
                                         int                  nthreads_tot,
                                         int                  ngpu)
 {
-    int           nrank;
-    gmx::CpuInfo &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo->pCpuInfo);
+    int                 nrank;
+    const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
 
     GMX_RELEASE_ASSERT(nthreads_tot > 0, "There must be at least one thread per rank");
 
@@ -304,11 +306,11 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      FILE                *fplog,
                      gmx_bool             bUseGpu)
 {
-    int                    nthreads_hw, nthreads_tot_max, nrank, ngpu;
-    int                    min_atoms_per_mpi_rank;
+    int                          nthreads_hw, nthreads_tot_max, nrank, ngpu;
+    int                          min_atoms_per_mpi_rank;
 
-    gmx::CpuInfo          &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo->pCpuInfo);
-    gmx::HardwareTopology &hwTop   = *reinterpret_cast<gmx::HardwareTopology *>(hwinfo->pHardwareTopology);
+    const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
+    const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
     /* Check if an algorithm does not support parallel simulation.  */
     if (inputrec->eI == eiLBFGS ||
@@ -552,7 +554,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     }
     else
     {
-        gmx::CpuInfo &cpuInfo = *reinterpret_cast<gmx::CpuInfo *>(hwinfo->pCpuInfo);
+        const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
 
         /* No domain decomposition (or only one domain) */
         if (!(ngpu > 0 && !gmx_gpu_sharing_supported()) &&

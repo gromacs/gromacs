@@ -40,7 +40,6 @@
 
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/genborn.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/legacyheaders/types/nblist.h"
 #include "gromacs/legacyheaders/types/ns.h"
@@ -62,6 +61,8 @@ struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
 struct t_nblist;
+struct gmx_hw_info_t;
+struct gmx_gpu_opt_t;
 
 /* Structure describing the data in a single table */
 typedef struct
@@ -195,15 +196,15 @@ typedef struct t_forcerec {
     gmx_bool bDomDec;
 
     /* PBC stuff */
-    int                  ePBC;
-    gmx_bool             bMolPBC;
-    int                  rc_scaling;
-    rvec                 posres_com;
-    rvec                 posres_comB;
+    int                         ePBC;
+    gmx_bool                    bMolPBC;
+    int                         rc_scaling;
+    rvec                        posres_com;
+    rvec                        posres_comB;
 
-    const gmx_hw_info_t *hwinfo;
-    const gmx_gpu_opt_t *gpu_opt;
-    gmx_bool             use_simd_kernels;
+    const struct gmx_hw_info_t *hwinfo;
+    const struct gmx_gpu_opt_t *gpu_opt;
+    gmx_bool                    use_simd_kernels;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
      * the electrostatics settings in the inputrecord, but the difference is that

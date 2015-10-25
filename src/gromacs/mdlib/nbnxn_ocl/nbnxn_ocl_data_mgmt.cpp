@@ -54,6 +54,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/enums.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/types/gpu_hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
