@@ -54,8 +54,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
-
 #include "buildinfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"

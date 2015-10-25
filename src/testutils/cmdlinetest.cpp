@@ -286,7 +286,7 @@ int CommandLineTestHelper::runModuleDirect(
         std::unique_ptr<ICommandLineOptionsModule> module, CommandLine *commandLine)
 {
     // The name and description are not used in the tests, so they can be NULL.
-    std::unique_ptr<ICommandLineModule> wrapperModule(
+    const std::unique_ptr<ICommandLineModule> wrapperModule(
             ICommandLineOptionsModule::createModule(NULL, NULL, std::move(module)));
     return runModuleDirect(wrapperModule.get(), commandLine);
 }

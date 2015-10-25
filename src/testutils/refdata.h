@@ -237,13 +237,31 @@ class TestReferenceChecker
 {
     public:
         /*! \brief
-         * Creates a deep copy of the other checker.
+         * Creates a checker that cannot be used for checking.
+         *
+         * Attempting to call the check methods generates an assert.
+         * It is possible to check whether the checker is initialized by
+         * calling isValid().
+         * This constructor exists to allow declaring checker variables that
+         * will receive their value later without resorting to dynamic
+         * allocation.
          */
-        TestReferenceChecker(const TestReferenceChecker &other);
+        TestReferenceChecker();
+        //! Creates a deep copy of the other checker.
+        explicit TestReferenceChecker(const TestReferenceChecker &other);
+        //! Moves the checker.
+        TestReferenceChecker(TestReferenceChecker &&other);
         ~TestReferenceChecker();
 
+        //! Prevents implicit copying during assignment.
+        TestReferenceChecker &operator=(const TestReferenceChecker &) = delete;
         //! Assigns a test reference checker.
-        TestReferenceChecker &operator=(const TestReferenceChecker &other);
+        TestReferenceChecker &operator=(TestReferenceChecker &&other);
+
+        //! Returns whether the checker is initialized.
+        bool isValid() const;
+        //! Allows testing whether the checker is initialized directly with if.
+        explicit operator bool() const { return isValid(); }
 
         /*! \brief
          * Sets the tolerance for floating-point comparisons.
