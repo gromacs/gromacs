@@ -77,7 +77,7 @@ class scoped_cptr
 {
     public:
         /*! \brief
-         * Initializes a scoped_ptr that frees \p ptr on scope exit.
+         * Initializes a scoped_cptr that frees \p ptr on scope exit.
          *
          * \param[in] ptr  Pointer to use for initialization.
          */

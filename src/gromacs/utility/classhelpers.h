@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 #ifndef GMX_UTILITY_CLASSHELPERS_H
 #define GMX_UTILITY_CLASSHELPERS_H
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 namespace gmx
 {
@@ -78,7 +78,7 @@ namespace gmx
  * Helper class to manage a pointer to a private implementation class.
  *
  * This helper provides the following benefits (all but the last could also be
- * achieved with boost::scoped_ptr):
+ * achieved with std::unique_ptr):
  *  - Automatic memory management: the implementation pointer is freed in
  *    the destructor automatically.  If the destructor is not declared or is
  *    defined inline in the header file, a compilation error occurs instead
@@ -90,6 +90,9 @@ namespace gmx
  *    constructor and/or assignment operator is not provided.
  *  - Compiler helps to manage const-correctness: in const methods, it is not
  *    possible to change the implementation class.
+ *
+ * Move construction and assignment are also disallowed, but can be enabled by
+ * providing explicit move constructor and/or assignment.
  *
  * Intended use:
  * \code
@@ -131,7 +134,6 @@ class PrivateImplPointer
     public:
         //! Initialize with the given implementation class.
         explicit PrivateImplPointer(Impl *ptr) : ptr_(ptr) {}
-        ~PrivateImplPointer() {}
 
         /*! \brief
          * Sets a new implementation class and destructs the previous one.
@@ -153,9 +155,9 @@ class PrivateImplPointer
         const Impl &operator*() const { return *ptr_; }
 
     private:
-        boost::scoped_ptr<Impl> ptr_;
+        std::unique_ptr<Impl> ptr_;
 
-        // Copy and assign disabled by the scoped_ptr member.
+        // Copy construction and assignment disabled by the unique_ptr member.
 };
 
 } // namespace gmx
