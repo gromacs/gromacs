@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,10 +42,10 @@
 
 #ifdef GMX_LIB_MPI
 
+#include <memory>
 #include <sstream>
 #include <vector>
 
-#include <boost/scoped_ptr.hpp>
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/classhelpers.h"
@@ -93,9 +93,9 @@ class MPIEventForward : public ::testing::TestEventListener
         FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramEnd, ::testing::UnitTest);
 
     private:
-        boost::scoped_ptr<TestEventListener> defaultPrinter_;
-        int                                  rank_;
-        int                                  size_;
+        const std::unique_ptr<TestEventListener> defaultPrinter_;
+        int                                      rank_;
+        int                                      size_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(MPIEventForward);
 };

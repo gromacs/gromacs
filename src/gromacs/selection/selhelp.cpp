@@ -43,12 +43,11 @@
 
 #include "selhelp.h"
 
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <boost/scoped_ptr.hpp>
 
 #include "gromacs/onlinehelp/helptopic.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
@@ -620,7 +619,7 @@ KeywordsHelpTopic::KeywordsHelpTopic()
     // TODO: This is not a very elegant way of getting the list of selection
     // methods, but this needs to be rewritten in any case if/when #652 is
     // implemented.
-    boost::scoped_ptr<SelectionParserSymbolTable> symtab(
+    const std::unique_ptr<SelectionParserSymbolTable> symtab(
             new SelectionParserSymbolTable);
     gmx_ana_selmethod_register_defaults(symtab.get());
 

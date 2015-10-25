@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -294,13 +294,14 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
 
 
 void
-AnalysisDataTestFixture::addReferenceCheckerModule(TestReferenceChecker          checker,
+AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker   &checker,
                                                    const char                   *id,
                                                    AbstractAnalysisData         *source,
                                                    const FloatingPointTolerance &tolerance)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
-    TestReferenceChecker          compoundChecker(checker.checkCompound("AnalysisData", id));
+    TestReferenceChecker          tmpChecker(checker);
+    TestReferenceChecker          compoundChecker(tmpChecker.checkCompound("AnalysisData", id));
     compoundChecker.setDefaultTolerance(tolerance);
     module->setupReferenceCheck(compoundChecker, source);
     source->addModule(module);

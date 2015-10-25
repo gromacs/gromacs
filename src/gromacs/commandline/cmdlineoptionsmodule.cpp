@@ -43,8 +43,6 @@
 
 #include "cmdlineoptionsmodule.h"
 
-#include <boost/scoped_ptr.hpp>
-
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"

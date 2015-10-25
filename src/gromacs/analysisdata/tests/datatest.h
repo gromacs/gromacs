@@ -435,7 +435,7 @@ class AnalysisDataTestFixture : public ::testing::Test
          *
          * \see TestReferenceData
          */
-        static void addReferenceCheckerModule(TestReferenceChecker          checker,
+        static void addReferenceCheckerModule(const TestReferenceChecker   &checker,
                                               const char                   *id,
                                               AbstractAnalysisData         *source,
                                               const FloatingPointTolerance &tolerance);
