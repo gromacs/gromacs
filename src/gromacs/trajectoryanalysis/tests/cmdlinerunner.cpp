@@ -94,16 +94,16 @@ typedef gmx::test::CommandLineTestBase TrajectoryAnalysisCommandLineRunnerTest;
 
 TEST_F(TrajectoryAnalysisCommandLineRunnerTest, WritesHelp)
 {
-    boost::shared_ptr<MockModule>            mockModule(new MockModule());
-    gmx::ICommandLineOptionsModulePointer    runner(
-            gmx::TrajectoryAnalysisCommandLineRunner::createModule(mockModule));
-    std::unique_ptr<gmx::ICommandLineModule> module(
-            gmx::ICommandLineOptionsModule::createModule("mod", "Description",
-                                                         std::move(runner)));
-
+    std::unique_ptr<MockModule>                    mockModule(new MockModule());
     using ::testing::_;
     using ::testing::Invoke;
     EXPECT_CALL(*mockModule, initOptions(_, _)).WillOnce(Invoke(&initOptions));
+
+    gmx::ICommandLineOptionsModulePointer          runner(
+            gmx::TrajectoryAnalysisCommandLineRunner::createModule(std::move(mockModule)));
+    const std::unique_ptr<gmx::ICommandLineModule> module(
+            gmx::ICommandLineOptionsModule::createModule("mod", "Description",
+                                                         std::move(runner)));
     testWriteHelp(module.get());
 }
 
