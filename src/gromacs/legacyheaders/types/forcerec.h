@@ -38,7 +38,6 @@
 #ifndef GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 #define GMX_LEGACYHEADERS_TYPES_FORCEREC_H
 
-#include "gromacs/legacyheaders/types/hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -63,6 +62,8 @@ struct t_forcetable;
 struct t_nblist;
 struct t_nblists;
 struct t_QMMMrec;
+struct gmx_hw_info_t;
+struct gmx_gpu_opt_t;
 
 /* macros for the cginfo data in forcerec
  *
@@ -163,15 +164,15 @@ typedef struct t_forcerec {
     gmx_bool bDomDec;
 
     /* PBC stuff */
-    int                  ePBC;
-    gmx_bool             bMolPBC;
-    int                  rc_scaling;
-    rvec                 posres_com;
-    rvec                 posres_comB;
+    int                         ePBC;
+    gmx_bool                    bMolPBC;
+    int                         rc_scaling;
+    rvec                        posres_com;
+    rvec                        posres_comB;
 
-    const gmx_hw_info_t *hwinfo;
-    const gmx_gpu_opt_t *gpu_opt;
-    gmx_bool             use_simd_kernels;
+    const struct gmx_hw_info_t *hwinfo;
+    const struct gmx_gpu_opt_t *gpu_opt;
+    gmx_bool                    use_simd_kernels;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
      * the electrostatics settings in the inputrecord, but the difference is that

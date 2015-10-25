@@ -52,6 +52,7 @@
 #include "gromacs/gmxlib/gpu_utils/gpu_utils.h"
 #include "gromacs/gmxlib/ocl_tools/oclutils.h"
 #include "gromacs/legacyheaders/types/force_flags.h"
+#include "gromacs/legacyheaders/types/gpu_hw_info.h"
 #include "gromacs/legacyheaders/types/interaction_const.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/nb_verlet.h"

@@ -36,39 +36,14 @@
 #ifndef HWINFO_H
 #define HWINFO_H
 
+#include "gromacs/legacyheaders/types/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-} /* fixes auto-indentation problems */
-#endif
-
-struct gmx_device_info_t;
-
-/* Possible results of the GPU detection/check.
- *
- * The egpuInsane value means that during the sanity checks an error
- * occurred that indicates malfunctioning of the device, driver, or
- * incompatible driver/runtime. */
-typedef enum
+namespace gmx
 {
-    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuInsane, egpuNR
-} e_gpu_detect_res_t;
-
-/* Names of the GPU detection/check results */
-extern const char * const gpu_detect_res_str[egpuNR];
-
-/* GPU device information -- includes either CUDA or OpenCL devices.
- * The gmx_hardware_detect module initializes it. */
-struct gmx_gpu_info_t
-{
-    gmx_bool                  bDetectGPUs;      /* Did we try to detect GPUs? */
-    int                       n_dev;            /* total number of GPU devices detected */
-    struct gmx_device_info_t *gpu_dev;          /* GPU devices detected in the system (per node) */
-    int                       n_dev_compatible; /* number of compatible GPUs */
-};
+class CpuInfo;
+class HardwareTopology;
+} // namespace
 
 /* Hardware information structure with CPU and GPU information.
  * It is initialized by gmx_detect_hardware().
@@ -77,16 +52,15 @@ struct gmx_gpu_info_t
 typedef struct gmx_hw_info_t
 {
     /* Data for our local physical node */
-    struct gmx_gpu_info_t gpu_info;          /* Information about GPUs detected in the system */
+    struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
 
-    int                   ncore;             /* Number of cores, will be 0 when not detected */
-    int                   nthreads_hw_avail; /* Number of hardware threads available; this number
-                                                is based on the number of CPUs reported as available
-                                                by the OS at the time of detection. */
+    int                   ncore;                   /* Number of cores, will be 0 when not detected */
+    int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
+                                                      is based on the number of CPUs reported as available
+                                                      by the OS at the time of detection. */
 
-    // TODO: Change these to proper C++ objects when this file is no longer included in any C sources
-    struct CxxObject *  pCpuInfo;            /* Opaque pointer to C++ object (CxxObject does not exist) */
-    struct CxxObject *  pHardwareTopology;   /* Opaque pointer to C++ object (CxxObject does not exist) */
+    const gmx::CpuInfo *         cpuInfo;          /* Information about CPU capabilities */
+    const gmx::HardwareTopology *hardwareTopology; /* Information about hardware topology */
 
     /* Data reduced through MPI over all physical nodes */
     int                 nphysicalnode;       /* Number of physical nodes */
@@ -112,18 +86,6 @@ enum {
     threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
 };
 
-/* GPU device selection information -- includes either CUDA or OpenCL devices */
-typedef struct gmx_gpu_opt_t
-{
-    char     *gpu_id;           /* GPU id's to use, each specified as chars */
-    gmx_bool  bUserSet;         /* true if the GPUs in dev_use are manually provided by the user */
-
-    int       n_dev_compatible; /* number of compatible GPU devices that could be used */
-    int      *dev_compatible;   /* array of compatible GPU device IDs, from which automatic selection occurs */
-    int       n_dev_use;        /* number of GPU devices selected to be used, either by the user or automatically */
-    int      *dev_use;          /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
-} gmx_gpu_opt_t;
-
 /* Threading and GPU options, can be set automatically or by the user */
 typedef struct gmx_hw_opt_t {
     int           nthreads_tot;        /* Total number of threads requested (TMPI) */
@@ -136,9 +98,5 @@ typedef struct gmx_hw_opt_t {
 
     gmx_gpu_opt_t gpu_opt;             /* The GPU options                          */
 } gmx_hw_opt_t;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* HWINFO_H */

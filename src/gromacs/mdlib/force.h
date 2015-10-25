@@ -44,6 +44,7 @@
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_edsam;
+struct gmx_gpu_info_t;
 struct gmx_groups_t;
 struct gmx_vsite_t;
 struct history_t;

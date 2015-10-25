@@ -78,7 +78,7 @@ get_thread_affinity_layout(FILE *fplog,
     bool                         bPickPinStride;
     bool                         haveTopology;
 
-    const gmx::HardwareTopology &hwTop = *reinterpret_cast<gmx::HardwareTopology *>(hwinfo->pHardwareTopology);
+    const gmx::HardwareTopology &hwTop = *hwinfo->hardwareTopology;
 
     haveTopology = (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic);
 

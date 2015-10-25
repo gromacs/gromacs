@@ -49,13 +49,14 @@
 #include <cstdio>
 
 #include "gromacs/gmxlib/gpu_utils/gpu_macros.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct gmx_gpu_info_t;
+struct gmx_gpu_opt_t;
 
 /*! \brief Detect all GPUs in the system.
  *
@@ -189,7 +190,7 @@ int get_gpu_device_id(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
  * \returns                 A string with the name of the requested OpenCL GPU
  */
 OPENCL_FUNC_QUALIFIER
-char* get_ocl_gpu_device_name(const gmx_gpu_info_t *OPENCL_FUNC_ARGUMENT(gpu_info),
+char* get_ocl_gpu_device_name(const struct gmx_gpu_info_t *OPENCL_FUNC_ARGUMENT(gpu_info),
                               const gmx_gpu_opt_t  *OPENCL_FUNC_ARGUMENT(gpu_opt),
                               int                  OPENCL_FUNC_ARGUMENT(idx)) OPENCL_FUNC_TERM_WITH_RETURN(NULL)
 

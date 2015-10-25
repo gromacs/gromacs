@@ -50,7 +50,7 @@
 
 #include "gromacs/gmxlib/cuda_tools/cudautils.cuh"
 #include "gromacs/gmxlib/cuda_tools/pmalloc_cuda.h"
-#include "gromacs/legacyheaders/types/hw_info.h"
+#include "gromacs/legacyheaders/types/gpu_hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
@@ -446,8 +446,8 @@ static gmx_bool reset_gpu_application_clocks(const gmx_device_info_t gmx_unused 
 }
 
 gmx_bool init_gpu(FILE gmx_unused *fplog, int mygpu, char *result_str,
-                  const gmx_gpu_info_t *gpu_info,
-                  const gmx_gpu_opt_t *gpu_opt)
+                  const struct gmx_gpu_info_t *gpu_info,
+                  const struct gmx_gpu_opt_t *gpu_opt)
 {
     cudaError_t stat;
     char        sbuf[STRLEN];
