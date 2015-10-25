@@ -45,8 +45,6 @@
 
 #include <string>
 
-#include <boost/scoped_ptr.hpp>
-
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/textreader.h"
@@ -85,8 +83,8 @@ GMX_TEST_OPTIONS(StringTestOptions, options)
 class StringTestBase::Impl
 {
     public:
-        TestReferenceData                           data_;
-        boost::scoped_ptr<TestReferenceChecker>     checker_;
+        TestReferenceData        data_;
+        TestReferenceChecker     checker_;
 };
 
 /********************************************************************
@@ -122,9 +120,9 @@ StringTestBase::checker()
 {
     if (!impl_->checker_)
     {
-        impl_->checker_.reset(new TestReferenceChecker(impl_->data_.rootChecker()));
+        impl_->checker_ = impl_->data_.rootChecker();
     }
-    return *impl_->checker_;
+    return impl_->checker_;
 }
 
 void
