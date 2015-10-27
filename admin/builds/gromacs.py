@@ -66,7 +66,18 @@ def do_build(context):
         cmake_opts['GMX_SIMD'] = context.params.simd
     if context.params.gpu:
         cmake_opts['GMX_GPU'] = 'ON'
-        cmake_opts.update(context.get_cuda_cmake_options())
+        if context.params.opencl:
+            cmake_opts['GMX_USE_OPENCL'] = 'ON'
+            # TODO How should we raise an error if the configuration
+            # specifies neither or both of amdappsdk and cuda?
+            if context.params.amdappsdk:
+                cmake_opts.update(context.get_amdappsdk_cmake_options)
+            if context.params.cuda:
+                cmake_opts.update(context.get_cuda_cmake_options())
+        elif context.params.cuda:
+            cmake_opts.update(context.get_cuda_cmake_options())
+        # TODO How should we raise an error if the configuration
+        # specifies neither opencl nor cuda?
     else:
         cmake_opts['GMX_GPU'] = 'OFF'
     if context.params.thread_mpi is False:
