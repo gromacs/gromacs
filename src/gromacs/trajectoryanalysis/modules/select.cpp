@@ -321,9 +321,7 @@ class Select : public TrajectoryAnalysisModule
 };
 
 Select::Select()
-    : TrajectoryAnalysisModule(SelectInfo::name, SelectInfo::shortDescription),
-      selOpt_(NULL),
-      bTotNorm_(false), bFracNorm_(false), bResInd_(false),
+    : selOpt_(NULL), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       bCumulativeLifetimes_(true), resNumberType_(ResidueNumbering_ByNumber),
       pdbAtoms_(PdbAtomsSelection_All), top_(NULL),
       occupancyModule_(new AnalysisDataAverageModule()),

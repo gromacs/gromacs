@@ -109,8 +109,7 @@ class Distance : public TrajectoryAnalysisModule
 };
 
 Distance::Distance()
-    : TrajectoryAnalysisModule(DistanceInfo::name, DistanceInfo::shortDescription),
-      meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001)
+    : meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001)
 {
     summaryStatsModule_.reset(new AnalysisDataAverageModule());
     summaryStatsModule_->setAverageDataSets(true);

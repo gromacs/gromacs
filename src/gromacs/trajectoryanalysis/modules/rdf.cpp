@@ -202,8 +202,7 @@ class Rdf : public TrajectoryAnalysisModule
 };
 
 Rdf::Rdf()
-    : TrajectoryAnalysisModule(RdfInfo::name, RdfInfo::shortDescription),
-      surface_(SurfaceType_None),
+    : surface_(SurfaceType_None),
       pairCounts_(new AnalysisDataSimpleHistogramModule()),
       normAve_(new AnalysisDataAverageModule()),
       binwidth_(0.002), cutoff_(0.0), rmax_(0.0),
@@ -355,7 +354,7 @@ Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
     {
         if (!refSel_.hasOnlyAtoms())
         {
-            GMX_THROW(InconsistentInputError("-surf only works with -refsel that consists of atoms"));
+            GMX_THROW(InconsistentInputError("-surf only works with -ref that consists of atoms"));
         }
         const e_index_t type = (surface_ == SurfaceType_Molecule ? INDEX_MOL : INDEX_RES);
         surfaceGroupCount_ = refSel_.initOriginalIdsToGroup(top.topology(), type);
