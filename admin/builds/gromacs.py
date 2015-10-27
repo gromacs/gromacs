@@ -64,11 +64,21 @@ def do_build(context):
         cmake_opts['GMX_SIMD'] = 'None'
     else:
         cmake_opts['GMX_SIMD'] = context.params.simd
-    if context.params.gpu:
+    if context.params.gpu is None:
+        cmake_opts['GMX_GPU'] = 'OFF'
+    elif context.params.gpu == Gpu.NONE:
+        cmake_opts['GMX_GPU'] = 'OFF'
+    elif context.params.gpu == Gpu.NATIVE:
         cmake_opts['GMX_GPU'] = 'ON'
         cmake_opts.update(context.get_cuda_cmake_options())
-    else:
-        cmake_opts['GMX_GPU'] = 'OFF'
+    elif context.params.gpu == Gpu.OPENCL:
+        cmake_opts['GMX_GPU'] = 'ON'
+        cmake_opts['GMX_USE_OPENCL'] = 'ON'
+        # TODO How should we raise an error if the configuration
+        # specifies neither or both of amdappsdk and cuda?
+        context.env.add_env_var('AMDAPPSDKROOT',
+                                context.get_amdappsdkroot_path())
+        cmake_opts.update(context.get_cuda_cmake_options())
     if context.params.thread_mpi is False:
         cmake_opts['GMX_THREAD_MPI'] = 'OFF'
     if context.params.mpi:
@@ -125,7 +135,7 @@ def do_build(context):
             # not explicitly set
             cmd += ' -ntomp 2'
 
-        if context.params.gpu:
+        if context.params.gpu and context.params.gpu == Gpu.native:
             if context.params.mpi or use_tmpi:
                 gpu_id = '01' # for (T)MPI use the two GT 640-s
             else:
