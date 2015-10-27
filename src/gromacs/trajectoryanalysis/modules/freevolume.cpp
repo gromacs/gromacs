@@ -121,8 +121,7 @@ class FreeVolume : public TrajectoryAnalysisModule
 // one. The type of this depends on what kind of tool you need.
 // Here we only have simple value/time kind of data.
 FreeVolume::FreeVolume()
-    : TrajectoryAnalysisModule(FreeVolumeInfo::name, FreeVolumeInfo::shortDescription),
-      adata_(new AnalysisDataAverageModule())
+    : adata_(new AnalysisDataAverageModule())
 {
     // We only compute two numbers per frame
     data_.setColumnCount(0, 2);

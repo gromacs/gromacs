@@ -69,9 +69,6 @@ we have no attributes in our class that need to be explicitly freed, so we
 declare only a constructor:
 \skip  AnalysisTemplate
 \until }
-In addition to initializing local variables that don't have default
-constructors, we also provide a title and one-line description of our module
-to the \p options_ object.  These values will only affect the help output.
 
 
 Input options
@@ -96,7 +93,7 @@ topology information.  This is done for demonstration purposes only; the
 code in the template works even without a topology.
 
 For additional documentation on how to define different kinds of options, see
-gmx::Options, basicoptions.h, and gmx::SelectionOption.  You only need to
+gmx::IOptionsContainer, basicoptions.h, and gmx::SelectionOption.  You only need to
 define options that are specific to the analysis; common options, e.g., for
 specifying input topology and trajectories are added by the framework.
 
@@ -265,14 +262,8 @@ the \Gromacs library.  To do this, follow these steps:
         return TrajectoryAnalysisModulePointer(new AnalysisTemplate);
     }
 ~~~~
- 5. Change the constructor of your tool to refer to the strings in the new
-    class:
-~~~~{.cpp}
-    AnalysisTemplate::AnalysisTemplate()
-        : TrajectoryAnalysisModule(TemplateInfo::name, TemplateInfo::shortDescription),
-~~~~
- 6. Register your module in `src/gromacs/trajectoryanalysis/modules.cpp`.
- 7. Done.  Your tool can now be invoked as `gmx template`, using the string you
+ 5. Register your module in `src/gromacs/trajectoryanalysis/modules.cpp`.
+ 6. Done.  Your tool can now be invoked as `gmx template`, using the string you
     specified as the name.
 
 See existing tools within the `src/gromacs/trajectoryanalysis/modules/` for

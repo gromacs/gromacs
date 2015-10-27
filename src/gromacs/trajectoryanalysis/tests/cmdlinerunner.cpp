@@ -62,8 +62,6 @@ namespace
 class MockModule : public gmx::TrajectoryAnalysisModule
 {
     public:
-        MockModule() : TrajectoryAnalysisModule("mod", "desc") {}
-
         MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer          *options,
                                        gmx::TrajectoryAnalysisSettings *settings));
         MOCK_METHOD2(initAnalysis, void(const gmx::TrajectoryAnalysisSettings &settings,
