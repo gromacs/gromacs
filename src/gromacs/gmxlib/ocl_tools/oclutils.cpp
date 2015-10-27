@@ -174,10 +174,10 @@ void ocl_pmalloc(void **h_ptr, size_t nbytes)
 
     /* 16-byte alignment is required by the neighbour-searching code,
      * because it uses four-wide SIMD for bounding-box calculation.
-     * However, when we use page-locked memory, it will probably need
-     * to be aligned to a 4kb page, like CUDA does, so we'll do that
-     * now. */
-    snew_aligned(*temporary, nbytes, 4*1024);
+     * However, when we organize using page-locked memory for
+     * device-host transfers, it will probably need to be aligned to a
+     * 4kb page, like CUDA does. */
+    snew_aligned(*temporary, nbytes, 16);
 }
 
 /*! \brief Frees memory allocated with ocl_pmalloc.
