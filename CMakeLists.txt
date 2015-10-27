@@ -858,6 +858,14 @@ else()
     endif()
 endif()
 
+#Rapid JSON
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/rapidjson)
+# Installation of the code commented out for now.
+#list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${INCL_INSTALL_DIR}/gromacs/external/rapidjson)
+#install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/rapidjson/include
+#          DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/rapidjson
+#          COMPONENT development)
+
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
     # as by design most of the false branches are impossible to trigger in
