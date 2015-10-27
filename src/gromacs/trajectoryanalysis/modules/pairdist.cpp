@@ -167,8 +167,7 @@ class PairDistance : public TrajectoryAnalysisModule
 };
 
 PairDistance::PairDistance()
-    : TrajectoryAnalysisModule(PairDistanceInfo::name, PairDistanceInfo::shortDescription),
-      cutoff_(0.0), distanceType_(eDistanceType_Min),
+    : cutoff_(0.0), distanceType_(eDistanceType_Min),
       refGroupType_(eGroupType_All), selGroupType_(eGroupType_All),
       refGroupCount_(0), maxGroupCount_(0), initialDist2_(0.0), cutoff2_(0.0)
 {

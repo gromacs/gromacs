@@ -394,8 +394,7 @@ class Sasa : public TrajectoryAnalysisModule
 };
 
 Sasa::Sasa()
-    : TrajectoryAnalysisModule(SasaInfo::name, SasaInfo::shortDescription),
-      solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(NULL)
+    : solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(NULL)
 {
     //minarea_ = 0.5;
     registerAnalysisDataset(&area_, "area");

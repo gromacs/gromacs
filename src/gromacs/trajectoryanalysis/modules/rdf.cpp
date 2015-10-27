@@ -202,8 +202,7 @@ class Rdf : public TrajectoryAnalysisModule
 };
 
 Rdf::Rdf()
-    : TrajectoryAnalysisModule(RdfInfo::name, RdfInfo::shortDescription),
-      surface_(SurfaceType_None),
+    : surface_(SurfaceType_None),
       pairCounts_(new AnalysisDataSimpleHistogramModule()),
       normAve_(new AnalysisDataAverageModule()),
       binwidth_(0.002), cutoff_(0.0), rmax_(0.0),
