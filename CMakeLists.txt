@@ -843,6 +843,9 @@ endif()
 #Simpler to always install.
 install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
 
+#Rapid JSON
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/rapidjson)
+
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
     # as by design most of the false branches are impossible to trigger in
