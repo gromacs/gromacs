@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 
 #include <math.h>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -78,7 +79,7 @@ void compute_factors_restangles(int type, const t_iparams forceparams[],
     c_cros = iprod(delta_ante, delta_post);
     c_post = iprod(delta_post, delta_post);
 
-    norm          = gmx_invsqrt(c_ante * c_post);
+    norm          = gmx::invsqrt(c_ante * c_post);
     cosine_theta  = c_cros * norm;
     sine_theta_sq = 1 - cosine_theta * cosine_theta;
 
@@ -146,7 +147,7 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
     }
 
     /* Computes the square of the sinus of phi  in sine_phi_sq */
-    norm_phi    = gmx_invsqrt(d_ante * d_post);
+    norm_phi    = gmx::invsqrt(d_ante * d_post);
     cosine_phi  = c_prod * norm_phi;
     sine_phi_sq = 1.0 - cosine_phi * cosine_phi;
 
@@ -272,9 +273,9 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
     }
 
     /* Computations of cosines */
-    norm_phi           = gmx_invsqrt(d_ante * d_post);
-    norm_theta_ante    = gmx_invsqrt(c_self_ante * c_self_crnt);
-    norm_theta_post    = gmx_invsqrt(c_self_crnt * c_self_post);
+    norm_phi           = gmx::invsqrt(d_ante * d_post);
+    norm_theta_ante    = gmx::invsqrt(c_self_ante * c_self_crnt);
+    norm_theta_post    = gmx::invsqrt(c_self_crnt * c_self_post);
     cosine_phi         = c_prod * norm_phi;
     cosine_theta_ante  = c_cros_ante * norm_theta_ante;
     cosine_theta_post  = c_cros_post * norm_theta_post;
@@ -291,8 +292,8 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
         sine_theta_post_sq = 0.0;
     }
 
-    sine_theta_ante = sqrt(sine_theta_ante_sq);
-    sine_theta_post = sqrt(sine_theta_post_sq);
+    sine_theta_ante = std::sqrt(sine_theta_ante_sq);
+    sine_theta_post = std::sqrt(sine_theta_post_sq);
 
     /* PART 2 - COMPUTES FORCE COMPONENTS DUE TO DERIVATIVES TO DIHEDRAL ANGLE PHI */
 

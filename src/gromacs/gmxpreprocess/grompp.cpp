@@ -72,6 +72,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
@@ -248,9 +249,9 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     ip = mtop->ffparams.iparams;
 
-    twopi2 = sqr(2*M_PI);
+    twopi2 = gmx::square(2*M_PI);
 
-    limit2 = sqr(min_steps_note*dt);
+    limit2 = gmx::square(min_steps_note*dt);
 
     w_a1      = w_a2 = -1;
     w_period2 = -1.0;
@@ -331,7 +332,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     if (w_moltype != NULL)
     {
-        bWarn = (w_period2 < sqr(min_steps_warn*dt));
+        bWarn = (w_period2 < gmx::square(min_steps_warn*dt));
         /* A check that would recognize most water models */
         bWater = ((*w_moltype->atoms.atomname[0])[0] == 'O' &&
                   w_moltype->atoms.nr <= 5);
@@ -1398,7 +1399,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
 
     printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
-    if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
+    if (gmx::square(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
     {
         gmx_fatal(FARGS, "The pair-list cut-off (%g nm) is longer than half the shortest box vector or longer than the smallest box diagonal element (%g nm). Increase the box size or decrease nstlist or increase verlet-buffer-tolerance.", ir->rlistlong, std::sqrt(max_cutoff2(ir->ePBC, box)));
     }

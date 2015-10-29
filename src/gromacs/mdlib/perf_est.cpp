@@ -42,6 +42,7 @@
 
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
 #include "gromacs/mdlib/nbnxn_search.h"
@@ -406,7 +407,7 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
     {
         f            = ((ir->efep != efepNO && bChargePerturbed) ? 2 : 1);
         cost_redist +=   C_PME_REDIST*nq_tot;
-        cost_spread += f*C_PME_SPREAD*nq_tot*std::pow(static_cast<real>(ir->pme_order), static_cast<real>(3.0));
+        cost_spread += f*C_PME_SPREAD*nq_tot*gmx::power3(ir->pme_order);
         cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*std::log(static_cast<real>(ir->nkx*ir->nky*ir->nkz));
         cost_solve  += f*C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
     }
@@ -420,7 +421,7 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
             f       *= 7;
         }
         cost_redist +=   C_PME_REDIST*nlj_tot;
-        cost_spread += f*C_PME_SPREAD*nlj_tot*std::pow(static_cast<real>(ir->pme_order), static_cast<real>(3.0));
+        cost_spread += f*C_PME_SPREAD*nlj_tot*gmx::power3(ir->pme_order);
         cost_fft    += f*C_PME_FFT*ir->nkx*ir->nky*ir->nkz*std::log(static_cast<real>(ir->nkx*ir->nky*ir->nkz));
         cost_solve  += f*C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
     }
