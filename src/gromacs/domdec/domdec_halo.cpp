@@ -455,6 +455,34 @@ void dd_halo_move_f(gmx_domdec_t *dd, rvec f[], rvec fshift[])
     dd_halo_complete_send_f(dd);
 }
 
+void dd_halo_move_int(gmx_domdec_t *dd, int *buf)
+{
+    const gmx_domdec_zones_t *zones = &dd->comm->zones;
+
+    for (int zone = 1; zone < zones->n; zone++)
+    {
+        domain_comm_t *send = &dd->comm->domain_backward[zone];
+        domain_comm_t *recv = &dd->comm->domain_forward[zone];
+
+        int            j = 0;
+        for (int c = 0; c < send->ncolumn; c++)
+        {
+            int start = send->column_atom_range[2*c];
+            int end   = send->column_atom_range[2*c+1];
+
+            for (int i = start; i < end; i++)
+            {
+                send->atominfo[j++] = buf[i];
+            }
+        }
+
+        /* Communicate the atom info flags, cheaper than extracting from mtop */
+        dd_sendrecv_zone<int>(dd, zone, dddirBackward,
+                              send->atominfo, send->dims.natoms,
+                              buf + zones->at_range[zone], recv->dims.natoms);
+    }
+}
+
 static gmx_inline real
 corner_bb_distance2_rect(const ivec        zone_shift,
                          const real        corner[DIM],
