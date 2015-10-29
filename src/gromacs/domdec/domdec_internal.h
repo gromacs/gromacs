@@ -361,6 +361,10 @@ struct gmx_domdec_comm_t
     int  *moved;
     int   moved_nalloc;                /**< Allocation size for \p moved */
 
+    /** Array for signalling if atoms have locally unassigned bondeds */
+    int  *missingInteractions;
+    int   missingInteractions_nalloc;
+
     /** Communication int buffer for general use */
     int  *buf_int;
     int   nalloc_int;                  /**< Allocation size for \p buf_int */

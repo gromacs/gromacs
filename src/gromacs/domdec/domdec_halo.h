@@ -56,6 +56,13 @@
 
 struct gmx_ddbox_t;
 
+/*! \brief Move one integer per atom backward for the halo.
+ *
+ * \param[in]     dd  Pointer to the domain decomposition setup.
+ * \param[in,out] buf Pointer an array of integers.
+ */
+void dd_halo_move_int(gmx_domdec_t *dd, int *buf);
+
 /*! \brief Set up the eighth-shell halo coordinate/force communcation
  *
  * Set up the eighth-shell halo communcation for non-bonded + bonded
