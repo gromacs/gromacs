@@ -52,6 +52,7 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -169,7 +170,7 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
         /* Computing the square magnitude of a complex number, since this is a power
          * spectrum.
          */
-        fprintf(fp, "%10g  %10g\n", omega, sqr(data[i])+sqr(data[i+1]));
+        fprintf(fp, "%10g  %10g\n", omega, gmx::square(data[i])+gmx::square(data[i+1]));
     }
     xvgrclose(fp);
     gmx_fft_destroy(fft);

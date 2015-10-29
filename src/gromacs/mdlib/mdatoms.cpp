@@ -42,6 +42,7 @@
 
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
@@ -119,7 +120,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
     const t_grpopts      *opts;
     const gmx_groups_t   *groups;
     int                   nthreads gmx_unused;
-    const real            oneOverSix = 1.0 / 6.0;
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
@@ -332,7 +332,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 }
                 else
                 {
-                    md->sigmaA[i] = pow(c12/c6, oneOverSix);
+                    md->sigmaA[i] = gmx::sixthroot(c12/c6);
                 }
                 md->sigma3A[i]    = 1/(md->sigmaA[i]*md->sigmaA[i]*md->sigmaA[i]);
             }
@@ -352,7 +352,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     }
                     else
                     {
-                        md->sigmaB[i] = pow(c12/c6, oneOverSix);
+                        md->sigmaB[i] = gmx::sixthroot(c12/c6);
                     }
                     md->sigma3B[i]    = 1/(md->sigmaB[i]*md->sigmaB[i]*md->sigmaB[i]);
                 }

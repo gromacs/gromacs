@@ -52,6 +52,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vsite.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
@@ -451,7 +452,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                 {
                                     gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS+1, mb+1);
                                 }
-                                shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
+                                shell[nsi].k    += gmx::square(qS)*ONE_4PI_EPS0/
                                     ffparams->iparams[type].polarize.alpha;
                                 break;
                             case F_WATER_POL:
@@ -462,7 +463,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                 alpha          = (ffparams->iparams[type].wpol.al_x+
                                                   ffparams->iparams[type].wpol.al_y+
                                                   ffparams->iparams[type].wpol.al_z)/3.0;
-                                shell[nsi].k  += sqr(qS)*ONE_4PI_EPS0/alpha;
+                                shell[nsi].k  += gmx::square(qS)*ONE_4PI_EPS0/alpha;
                                 break;
                             default:
                                 gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
@@ -767,7 +768,7 @@ static void print_epot(FILE *fp, gmx_int64_t mdstep, int count, real epot, real 
             gmx_step_str(mdstep, buf), count, epot, df);
     if (ndir)
     {
-        fprintf(fp, ", dir. rmsF: %6.2e\n", sqrt(sf_dir/ndir));
+        fprintf(fp, ", dir. rmsF: %6.2e\n", std::sqrt(sf_dir/ndir));
     }
     else
     {
@@ -802,7 +803,7 @@ static real rms_force(t_commrec *cr, rvec f[], int ns, t_shell s[],
     }
     ntot += ndir;
 
-    return (ntot ? sqrt(buf[0]/ntot) : 0);
+    return (ntot ? std::sqrt(buf[0]/ntot) : 0);
 }
 
 static void check_pbc(FILE *fp, rvec x[], int shell)
@@ -825,7 +826,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
     int  i, shell;
     real ft2, ff2;
 
-    ft2 = sqr(ftol);
+    ft2 = gmx::square(ftol);
 
     for (i = 0; (i < ns); i++)
     {
@@ -834,7 +835,7 @@ static void dump_shells(FILE *fp, rvec x[], rvec f[], real ftol, int ns, t_shell
         if (ff2 > ft2)
         {
             fprintf(fp, "SHELL %5d, force %10.5f  %10.5f  %10.5f, |f| %10.5f\n",
-                    shell, f[shell][XX], f[shell][YY], f[shell][ZZ], sqrt(ff2));
+                    shell, f[shell][XX], f[shell][YY], f[shell][ZZ], std::sqrt(ff2));
         }
         check_pbc(fp, x, shell);
     }
@@ -908,7 +909,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
         for (d = 0; d < DIM; d++)
         {
             xnew[n-start][d] =
-                -(2*x[n][d]-xnold[n-start][d]-xnew[n-start][d])/sqr(dt)
+                -(2*x[n][d]-xnold[n-start][d]-xnew[n-start][d])/gmx::square(dt)
                 - f[n][d]*md->invmass[n];
         }
         clear_rvec(acc_dir[n]);

@@ -58,6 +58,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/mdatom.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -837,16 +838,16 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
                         c_a = diprod(r_ij[c], r_ij[c]);
                         c_b = diprod(unc_ij, r_ij[c])*2;
-                        c_c = diprod(unc_ij, unc_ij) - dsqr(pcrd->value_ref);
+                        c_c = diprod(unc_ij, unc_ij) - gmx::square(pcrd->value_ref);
 
                         if (c_b < 0)
                         {
-                            q      = -0.5*(c_b - sqrt(c_b*c_b - 4*c_a*c_c));
+                            q      = -0.5*(c_b - std::sqrt(c_b*c_b - 4*c_a*c_c));
                             lambda = -q/c_a;
                         }
                         else
                         {
-                            q      = -0.5*(c_b + sqrt(c_b*c_b - 4*c_a*c_c));
+                            q      = -0.5*(c_b + std::sqrt(c_b*c_b - 4*c_a*c_c));
                             lambda = -c_c/q;
                         }
 
@@ -1115,8 +1116,8 @@ static void calc_pull_coord_force(pull_coord_work_t *pcrd,
             }
 
             pcrd->f_scal  =       -k*dev;
-            *V           += 0.5*   k*dsqr(dev);
-            *dVdl        += 0.5*dkdl*dsqr(dev);
+            *V           += 0.5*   k*gmx::square(dev);
+            *dVdl        += 0.5*dkdl*gmx::square(dev);
             break;
         case epullCONST_F:
             pcrd->f_scal  =   -k;

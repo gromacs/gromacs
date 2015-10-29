@@ -50,6 +50,7 @@
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/fileio/trx.h"
 #include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -406,7 +407,7 @@ FreeVolume::writeOutput()
 
     printf("Number of molecules %d total mass %.2f Dalton\n", nmol_, mtot_);
     double RhoAver  = mtot_ / (Vaver * 1e-24 * AVOGADRO);
-    double RhoError = sqr(RhoAver / Vaver)*Verror;
+    double RhoError = gmx::square(RhoAver / Vaver)*Verror;
     printf("Average molar mass: %.2f Dalton\n", mtot_/nmol_);
 
     double VmAver  = Vaver/nmol_;
