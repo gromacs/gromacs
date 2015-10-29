@@ -48,6 +48,7 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/commrec.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nsgrid.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -121,7 +122,7 @@ static void calc_cgcm_av_stddev(t_block *cgs, int n, rvec *x, rvec av, rvec stdd
     for (d = 0; d < DIM; d++)
     {
         av[d]     = s1[d];
-        stddev[d] = sqrt(s2[d] - s1[d]*s1[d]);
+        stddev[d] = std::sqrt(s2[d] - s1[d]*s1[d]);
     }
 }
 
@@ -169,7 +170,7 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
                 {
                     v[d+1][i] = 0;
                 }
-                inv_skew_fac2 += sqr(v[d+1][d]);
+                inv_skew_fac2 += gmx::square(v[d+1][d]);
                 if (d == XX)
                 {
                     /* Normalize such that the "diagonal" is 1 */
@@ -186,7 +187,7 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
                     {
                         v[d+2][i] -= dep*v[d+1][i];
                     }
-                    inv_skew_fac2 += sqr(v[d+2][d]);
+                    inv_skew_fac2 += gmx::square(v[d+2][d]);
 
                     cprod(v[d+1], v[d+2], normal[d]);
                 }
@@ -208,7 +209,7 @@ static void set_tric_dir(ivec *dd_nc, gmx_ddbox_t *ddbox, matrix box)
                     }
                 }
             }
-            ddbox->skew_fac[d] = 1.0/sqrt(inv_skew_fac2);
+            ddbox->skew_fac[d] = 1.0/std::sqrt(inv_skew_fac2);
             /* Set the normal vector length to skew_fac */
             dep = ddbox->skew_fac[d]/norm(normal[d]);
             svmul(dep, normal[d], normal[d]);

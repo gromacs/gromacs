@@ -50,6 +50,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxlib/readinp.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
@@ -561,7 +562,7 @@ static void do_sham(const char *fn, const char *ndx,
                 }
                 else if (idim[i] == 3)
                 {
-                    efac /= sqr(eig[i][j]);
+                    efac /= gmx::square(eig[i][j]);
                 }
                 else if (idim[i] == -1)
                 {

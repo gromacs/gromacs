@@ -52,6 +52,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -857,7 +858,7 @@ int gmx_editconf(int argc, char *argv[])
                     {
                         sig6 = c12/c6;
                     }
-                    vdw   = 0.5*std::pow(sig6, static_cast<real>(1.0/6.0));
+                    vdw   = 0.5*gmx::sixthroot(sig6);
                 }
                 else
                 {
@@ -984,7 +985,7 @@ int gmx_editconf(int argc, char *argv[])
                           "zero mass (%g) or volume (%g)\n", mass, vol);
             }
 
-            scale[XX] = scale[YY] = scale[ZZ] = std::pow(dens/rho, static_cast<real>(1.0/3.0));
+            scale[XX] = scale[YY] = scale[ZZ] = std::cbrt(dens/rho);
             fprintf(stderr, "Scaling all box vectors by %g\n", scale[XX]);
         }
         scale_conf(atoms.nr, x, box, scale);
