@@ -33,5 +33,6 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(MathUnitTests math-test
+                  functions.cpp
                   vectypes.cpp
                   )

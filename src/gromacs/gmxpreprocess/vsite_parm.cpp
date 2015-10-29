@@ -50,6 +50,7 @@
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/cstringutil.h"
@@ -465,7 +466,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
 
         /* calculate common things */
         rM  = 0.5*bMM;
-        dM  = std::sqrt( sqr(bCM) - sqr(rM) );
+        dM  = std::sqrt( gmx::square(bCM) - gmx::square(rM) );
 
         /* are we dealing with the X atom? */
         if (param->ai() == aN)
@@ -482,8 +483,8 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
             bError = bError || (bNH == NOTSET) || (aCNH == NOTSET);
 
             /* calculate */
-            dH  = bCN - bNH * cos(aCNH);
-            rH  = bNH * sin(aCNH);
+            dH  = bCN - bNH * std::cos(aCNH);
+            rH  = bNH * std::sin(aCNH);
 
             a = 0.5 * ( dH/dM + rH/rM );
             b = 0.5 * ( dH/dM - rH/rM );
@@ -527,8 +528,8 @@ static gmx_bool calc_vsite3fd_param(t_param *param,
     bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) ||
         (aijk == NOTSET) || (aijl == NOTSET);
 
-    rk          = bjk * sin(aijk);
-    rl          = bjl * sin(aijl);
+    rk          = bjk * std::sin(aijk);
+    rl          = bjl * std::sin(aijl);
     param->c0() = rk / (rk + rl);
     param->c1() = -bij; /* 'bond'-length for fixed distance vsite */
 
@@ -636,13 +637,13 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
             (bMM == NOTSET) || (bCN == NOTSET) || (bNH == NOTSET) || (aCNH == NOTSET);
 
         /* calculate */
-        dH  = bCN - bNH * cos(aCNH);
-        rH  = bNH * sin(aCNH);
+        dH  = bCN - bNH * std::cos(aCNH);
+        rH  = bNH * std::sin(aCNH);
         /* we assume the H's are symmetrically distributed */
-        rHx = rH*cos(DEG2RAD*30);
-        rHy = rH*sin(DEG2RAD*30);
+        rHx = rH*std::cos(DEG2RAD*30);
+        rHy = rH*std::sin(DEG2RAD*30);
         rM  = 0.5*bMM;
-        dM  = std::sqrt( sqr(bCM) - sqr(rM) );
+        dM  = std::sqrt( gmx::square(bCM) - gmx::square(rM) );
         a   = 0.5*( (dH/dM) - (rHy/rM) );
         b   = 0.5*( (dH/dM) + (rHy/rM) );
         c   = rHx / (2*dM*rM);
@@ -659,14 +660,14 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         bError = bError ||
             (bij == NOTSET) || (aijk == NOTSET) || (aijl == NOTSET) || (akjl == NOTSET);
 
-        pijk = cos(aijk)*bij;
-        pijl = cos(aijl)*bij;
-        a    = ( pijk + (pijk*cos(akjl)-pijl) * cos(akjl) / sqr(sin(akjl)) ) / bjk;
-        b    = ( pijl + (pijl*cos(akjl)-pijk) * cos(akjl) / sqr(sin(akjl)) ) / bjl;
-        c    = -std::sqrt( sqr(bij) -
-                           ( sqr(pijk) - 2*pijk*pijl*cos(akjl) + sqr(pijl) )
-                           / sqr(sin(akjl)) )
-            / ( bjk*bjl*sin(akjl) );
+        pijk = std::cos(aijk)*bij;
+        pijl = std::cos(aijl)*bij;
+        a    = ( pijk + (pijk*std::cos(akjl)-pijl) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjk;
+        b    = ( pijl + (pijl*std::cos(akjl)-pijk) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjl;
+        c    = -std::sqrt( gmx::square(bij) -
+                          ( gmx::square(pijk) - 2*pijk*pijl*std::cos(akjl) + gmx::square(pijl) )
+                          / gmx::square(std::sin(akjl)) )
+        / ( bjk*bjl*std::sin(akjl) );
     }
 
     param->c0() = a;
@@ -715,11 +716,11 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
 
     if (!bError)
     {
-        pk     = bjk*sin(aijk);
-        pl     = bjl*sin(aijl);
-        pm     = bjm*sin(aijm);
-        cosakl = (cos(akjl) - cos(aijk)*cos(aijl)) / (sin(aijk)*sin(aijl));
-        cosakm = (cos(akjm) - cos(aijk)*cos(aijm)) / (sin(aijk)*sin(aijm));
+        pk     = bjk*std::sin(aijk);
+        pl     = bjl*std::sin(aijl);
+        pm     = bjm*std::sin(aijm);
+        cosakl = (std::cos(akjl) - std::cos(aijk)*std::cos(aijl)) / (std::sin(aijk)*std::sin(aijl));
+        cosakm = (std::cos(akjm) - std::cos(aijk)*std::cos(aijm)) / (std::sin(aijk)*std::sin(aijm));
         if (cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1)
         {
             fprintf(stderr, "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
@@ -727,8 +728,8 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
             gmx_fatal(FARGS, "invalid construction in calc_vsite4fd for atom %d: "
                       "cosakl=%f, cosakm=%f\n", param->ai()+1, cosakl, cosakm);
         }
-        sinakl = std::sqrt(1-sqr(cosakl));
-        sinakm = std::sqrt(1-sqr(cosakm));
+        sinakl = std::sqrt(1-gmx::square(cosakl));
+        sinakm = std::sqrt(1-gmx::square(cosakm));
 
         /* note: there is a '+' because of the way the sines are calculated */
         cl = -pk / ( pl*cosakl - pk + pl*sinakl*(pm*cosakm-pk)/(pm*sinakm) );
@@ -777,13 +778,13 @@ calc_vsite4fdn_param(t_param *param,
     {
 
         /* Calculate component of bond j-k along the direction i-j */
-        pk = -bjk*cos(aijk);
+        pk = -bjk*std::cos(aijk);
 
         /* Calculate component of bond j-l along the direction i-j */
-        pl = -bjl*cos(aijl);
+        pl = -bjl*std::cos(aijl);
 
         /* Calculate component of bond j-m along the direction i-j */
-        pm = -bjm*cos(aijm);
+        pm = -bjm*std::cos(aijm);
 
         if (fabs(pl) < 1000*GMX_REAL_MIN || fabs(pm) < 1000*GMX_REAL_MIN)
         {

@@ -49,6 +49,7 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
@@ -222,7 +223,7 @@ int gmx_enemat(int argc, char *argv[])
     fprintf(stderr, "Will read groupnames from inputfile\n");
     ngroups = get_lines(opt2fn("-groups", NFILE, fnm), &groups);
     fprintf(stderr, "Read %d groups\n", ngroups);
-    snew(set, static_cast<size_t>(sqr(ngroups)*egNR/2));
+    snew(set, static_cast<size_t>(gmx::square(ngroups)*egNR/2));
     n     = 0;
     prevk = 0;
     for (i = 0; (i < ngroups); i++)

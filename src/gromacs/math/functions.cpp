@@ -34,13 +34,144 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* This file is completely threadsafe - keep it that way! */
+/*! \internal \file
+ * \brief
+ * Implements simple math functions
+ *
+ * \author Erik Lindahl <erik.lindahl@gmail.com>
+ * \ingroup module_math
+ */
+
 #include "gmxpre.h"
 
-#include "gromacs/math/vec.h"
+#include "functions.h"
 
-/** Exponential lookup table - 256 floats */
-const unsigned int gmx_invsqrt_exptab[256] = {
+#include "config.h"
+
+#include <cstdint>
+
+#include <array>
+
+#if GMX_NATIVE_WINDOWS
+#    include <intrin.h> // _BitScanReverse, _BitScanReverse64
+#endif
+
+namespace gmx
+{
+    
+namespace
+{
+
+std::uint32_t
+log2I32Bits(std::uint32_t n)
+{
+#if HAVE___BUILTIN_CLZ
+    // gcc, clang. xor with sign bit should be optimized out
+    return __builtin_clz(n) ^ 31U;
+#elif HAVE__BITSCANREVERSE
+    // icc, MSVC
+    {
+        unsigned long res;
+        _BitScanReverse(&res,static_cast<unsigned long>(n));
+        return res;
+    }
+#elif HAVE___CNTLZ4
+    return 31 - __cntlz4(n);
+#else
+    // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogLookup
+    
+    static const std::array<char,256>
+    log2TableByte =
+    {{
+        0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
+    }};
+
+    unsigned int result;
+    unsigned int tmp1, tmp2;
+
+    if ((tmp1 = n >> 16) != 0)
+    {
+        result = ((tmp2 = tmp1 >> 8) != 0) ? 24 + log2TableByte[tmp2] : 16 + log2TableByte[tmp1];
+    }
+    else
+    {
+        result = ((tmp2 = n >> 8) != 0) ? 8 + log2TableByte[tmp2] : log2TableByte[n];
+    }
+    return result;
+#endif
+}
+    
+} // namespace anonymous
+    
+
+unsigned int
+log2I(std::size_t n)
+{
+    GMX_ASSERT(n > 0, "The behavior of log(0) is undefined");
+#if HAVE___BUILTIN_CLZLL
+    // gcc, icc, clang. xor with sign bit should be optimized out
+    return __builtin_clzll(n) ^ 63U;
+#elif HAVE__BITSCANREVERSE64
+    unsigned long res;
+    _BitScanReverse64(&res,static_cast<unsigned __int64>(n));
+    return static_cast<std::size_t>(res);
+#elif HAVE___CNTLZ8
+    return 63 - __cntlz8(n);
+#else
+    
+    // No 64-bit log2 instrinsic available. Solve it by calling our internal
+    // 32-bit version (which in turn might defer to a software solution)
+    
+    std::uint32_t high32Bits = static_cast<std::uint32_t>(n>>32);
+    std::uint32_t result;
+    
+    if(high32Bits)
+    {
+        result = log2I32Bits(high32Bits) + 32;
+    }
+    else
+    {
+        result = log2I32Bits(static_cast<std::uint32_t>(high32Bits));
+    }
+    
+    return result;
+#endif
+}
+
+
+std::size_t
+greatestCommonDivisor(std::size_t   p,
+                      std::size_t   q)
+{
+    while (q != 0)
+    {
+        std::size_t tmp = q;
+        q               = p % q;
+        p               = tmp;
+    }
+    return p;
+}
+
+
+/*! \brief Definition of 8-bit table for 1.0/sqrt(x) exponent lookup */
+const std::array<uint32_t,256>
+invsqrtExponentTable =
+{{
     0x5f000000, 0x5e800000, 0x5e800000, 0x5e000000,
     0x5e000000, 0x5d800000, 0x5d800000, 0x5d000000,
     0x5d000000, 0x5c800000, 0x5c800000, 0x5c000000,
@@ -105,10 +236,13 @@ const unsigned int gmx_invsqrt_exptab[256] = {
     0x22000000, 0x21800000, 0x21800000, 0x21000000,
     0x21000000, 0x20800000, 0x20800000, 0x20000000,
     0x20000000, 0x1f800000, 0x1f800000, 0x1f000000
-};
+}};
 
-/** Mantissa lookup table - 4096 floats */
-const unsigned int gmx_invsqrt_fracttab[4096] = {
+
+/*! \brief Definition of 12-bit table for 1.0/sqrt(x) fraction lookup */
+const std::array<uint32_t,4096>
+invsqrtFractionTable =
+{{
     0x3504f3, 0x34f9a4, 0x34ee57, 0x34e30c, 0x34d7c3, 0x34cc7c, 0x34c137, 0x34b5f5,
     0x34aab4, 0x349f76, 0x34943a, 0x348900, 0x347dc7, 0x347291, 0x34675e, 0x345c2c,
     0x3450fc, 0x3445ce, 0x343aa3, 0x342f79, 0x342452, 0x34192c, 0x340e09, 0x3402e8,
@@ -621,4 +755,6 @@ const unsigned int gmx_invsqrt_fracttab[4096] = {
     0x358d50, 0x35879c, 0x3581e8, 0x357c34, 0x357681, 0x3570ce, 0x356b1c, 0x35656b,
     0x355fba, 0x355a09, 0x355459, 0x354eaa, 0x3548fb, 0x35434d, 0x353d9f, 0x3537f2,
     0x353245, 0x352c99, 0x3526ee, 0x352143, 0x351b98, 0x3515ee, 0x351045, 0x350a9c
-};
+}};
+
+} // namespace gmx

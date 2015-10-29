@@ -128,14 +128,14 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
             na_c = std::max(grid->na_c, grid->na_cj);
 
             /* Approximately cubic cells */
-            tlen   = std::pow(static_cast<real>(na_c/atom_density), static_cast<real>(1.0/3.0));
+            tlen   = std::cbrt(na_c/atom_density);
             tlen_x = tlen;
             tlen_y = tlen;
         }
         else
         {
             /* Approximately cubic sub cells */
-            tlen   = std::pow(static_cast<real>(grid->na_c/atom_density), static_cast<real>(1.0/3.0));
+            tlen   = std::cbrt(grid->na_c/atom_density);
             tlen_x = tlen*GPU_NSUBCELL_X;
             tlen_y = tlen*GPU_NSUBCELL_Y;
         }

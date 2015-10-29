@@ -43,6 +43,7 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
 #include "gromacs/legacyheaders/nonbonded.h"
 #include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -216,7 +217,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             dy               = iy - jy;
             dz               = iz - jz;
             rsq              = dx*dx+dy*dy+dz*dz;
-            rinv             = gmx_invsqrt(rsq);
+            rinv             = gmx::invsqrt(rsq);
             rinvsq           = rinv*rinv;
             felec            = 0;
             fvdw             = 0;

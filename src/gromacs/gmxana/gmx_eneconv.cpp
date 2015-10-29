@@ -49,6 +49,7 @@
 #include "gromacs/gmxlib/disre.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -457,7 +458,7 @@ static void update_ee_sum(int nre,
             for (i = 0; i < nre; i++)
             {
                 ee_sum[i].eav  +=
-                    dsqr(ee_sum[i].esum/nsum
+                gmx::square(ee_sum[i].esum/nsum
                          - (ee_sum[i].esum + fr->ener[i].e)/(nsum + 1))*nsum*(nsum + 1);
                 ee_sum[i].esum += fr->ener[i].e;
             }
@@ -468,7 +469,7 @@ static void update_ee_sum(int nre,
             {
                 ee_sum[i].eav  +=
                     fr->ener[i].eav +
-                    dsqr(ee_sum[i].esum/nsum
+                    gmx::square(ee_sum[i].esum/nsum
                          - (ee_sum[i].esum + fr->ener[i].esum)/(nsum + fr->nsum))*
                     nsum*(nsum + fr->nsum)/static_cast<double>(fr->nsum);
                 ee_sum[i].esum += fr->ener[i].esum;
