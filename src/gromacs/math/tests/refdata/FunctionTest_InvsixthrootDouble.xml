@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="InvsixthrootDouble">
+    <Int Name="Length">9</Int>
+    <Real>1</Real>
+    <Real>1.122462048309373</Real>
+    <Real>1.2009369551760027</Real>
+    <Real>1.2599210498948732</Real>
+    <Real>1.3076604860118306</Real>
+    <Real>1.3480061545972777</Real>
+    <Real>1.3830875542684886</Real>
+    <Real>1.4142135623730951</Real>
+    <Real>1.4422495703074083</Real>
+  </Sequence>
+</ReferenceData>

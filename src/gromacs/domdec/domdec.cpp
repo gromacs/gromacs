@@ -71,6 +71,7 @@
 #include "gromacs/legacyheaders/types/ns.h"
 #include "gromacs/legacyheaders/types/state.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
@@ -921,7 +922,7 @@ static void dd_move_cellx(gmx_domdec_t *dd, gmx_ddbox_t *ddbox,
                     det = (1 + c*c)*comm->cutoff*comm->cutoff - dist_d*dist_d;
                     if (det > 0)
                     {
-                        dh[d1] = comm->cutoff - (c*dist_d + sqrt(det))/(1 + c*c);
+                        dh[d1] = comm->cutoff - (c*dist_d + std::sqrt(det))/(1 + c*c);
                     }
                     else
                     {
@@ -3753,7 +3754,8 @@ static void distribute_cg(FILE *fplog,
 
     if (fplog)
     {
-        /* Here we avoid int overflows due to #atoms^2: use double, dsqr */
+        // Use double for the sums to avoid natoms^2 overflowing
+        // (65537^2 > 2^32)
         int    nat_sum, nat_min, nat_max;
         double nat2_sum;
 
@@ -3764,7 +3766,8 @@ static void distribute_cg(FILE *fplog,
         for (i = 0; i < dd->nnodes; i++)
         {
             nat_sum  += ma->nat[i];
-            nat2_sum += dsqr(ma->nat[i]);
+            // cast to double to avoid integer overflows when squaring
+            nat2_sum += gmx::square(static_cast<double>(ma->nat[i]));
             nat_min   = std::min(nat_min, ma->nat[i]);
             nat_max   = std::max(nat_max, ma->nat[i]);
         }
@@ -3774,7 +3777,7 @@ static void distribute_cg(FILE *fplog,
         fprintf(fplog, "Atom distribution over %d domains: av %d stddev %d min %d max %d\n",
                 dd->nnodes,
                 nat_sum,
-                static_cast<int>(sqrt(nat2_sum - dsqr(nat_sum) + 0.5)),
+                static_cast<int>(std::sqrt(nat2_sum - gmx::square(static_cast<double>(nat_sum)) + 0.5)),
                 nat_min, nat_max);
     }
 }
@@ -7983,12 +7986,12 @@ static void setup_dd_communication(gmx_domdec_t *dd,
     /* Do we need to determine extra distances for only two-body bondeds? */
     bDist2B = (bBondComm && !bDistMB);
 
-    r_comm2  = sqr(comm->cutoff);
-    r_bcomm2 = sqr(comm->cutoff_mbody);
+    r_comm2  = gmx::square(comm->cutoff);
+    r_bcomm2 = gmx::square(comm->cutoff_mbody);
 
     if (debug)
     {
-        fprintf(debug, "bBondComm %d, r_bc %f\n", bBondComm, sqrt(r_bcomm2));
+        fprintf(debug, "bBondComm %d, r_bc %f\n", bBondComm, std::sqrt(r_bcomm2));
     }
 
     zones = &comm->zones;
@@ -8052,7 +8055,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
         }
 
         v_d         = ddbox->v[dim];
-        skew_fac2_d = sqr(ddbox->skew_fac[dim]);
+        skew_fac2_d = gmx::square(ddbox->skew_fac[dim]);
 
         cd->bInPlace = TRUE;
         for (p = 0; p < cd->np; p++)
@@ -8089,7 +8092,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
                                       ddbox->v[dimd][i][dimd] >= 0))
                                 {
                                     sf2_round[dimd] +=
-                                        sqr(ddbox->v[dimd][i][dimd]);
+                                        gmx::square(ddbox->v[dimd][i][dimd]);
                                 }
                             }
                             sf2_round[dimd] = 1/sf2_round[dimd];

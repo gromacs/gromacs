@@ -40,6 +40,7 @@
 
 #include "gromacs/fileio/txtdump.h"
 #include "gromacs/legacyheaders/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/utility/smalloc.h"
@@ -265,7 +266,7 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         {
             constraint_distance = ip[type].constr.dA;
         }
-        constraint_distance_squared[ll]  = sqr(constraint_distance);
+        constraint_distance_squared[ll]  = gmx::square(constraint_distance);
         distance_squared_tolerance[ll]   = 0.5/(constraint_distance_squared[ll]*tol);
     }
 
@@ -461,7 +462,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
         {
             real bondA, bondB;
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */
-            dt_2 = 1/sqr(ir->delta_t);
+            dt_2 = 1/gmx::square(ir->delta_t);
             dvdl = 0;
             for (ll = 0; ll < ncon; ll++)
             {
