@@ -57,6 +57,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/random/random.h"
@@ -65,6 +66,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"
+
 
 namespace
 {
@@ -279,7 +281,7 @@ void NeighborhoodSearchTestData::computeReferencesInternal(t_pbc *pbc, bool bXY)
             // vector not parallel to the Z axis, but neither does the actual
             // neighborhood search.
             const real dist =
-                !bXY ? norm(dx) : sqrt(sqr(dx[XX]) + sqr(dx[YY]));
+                !bXY ? norm(dx) : std::hypot(dx[XX], dx[YY]);
             if (dist < i->refMinDist)
             {
                 i->refMinDist      = dist;
@@ -460,7 +462,7 @@ void NeighborhoodSearchTest::testNearestPoint(
         {
             EXPECT_EQ(i->refNearestPoint, pair.refIndex());
             EXPECT_EQ(0, pair.testIndex());
-            EXPECT_REAL_EQ_TOL(i->refMinDist, sqrt(pair.distance2()),
+            EXPECT_REAL_EQ_TOL(i->refMinDist, std::sqrt(pair.distance2()),
                                gmx::test::ulpTolerance(64));
         }
         else
@@ -614,7 +616,7 @@ void NeighborhoodSearchTest::testPairSearchFull(
         }
 
         NeighborhoodSearchTestData::RefPair searchPair(refIndex,
-                                                       sqrt(pair.distance2()));
+                                                       std::sqrt(pair.distance2()));
         RefPairList::iterator               foundRefPair
             = std::lower_bound(refPairs.begin(), refPairs.end(), searchPair);
         if (foundRefPair == refPairs.end() || foundRefPair->refIndex != refIndex)
@@ -782,10 +784,10 @@ class RandomTriclinicFullPBCData
         {
             data_.box_[XX][XX] = 5.0;
             data_.box_[YY][XX] = 2.5;
-            data_.box_[YY][YY] = 2.5*sqrt(3.0);
+            data_.box_[YY][YY] = 2.5*std::sqrt(3.0);
             data_.box_[ZZ][XX] = 2.5;
-            data_.box_[ZZ][YY] = 2.5*sqrt(1.0/3.0);
-            data_.box_[ZZ][ZZ] = 5.0*sqrt(2.0/3.0);
+            data_.box_[ZZ][YY] = 2.5*std::sqrt(1.0/3.0);
+            data_.box_[ZZ][ZZ] = 5.0*std::sqrt(2.0/3.0);
             // TODO: Consider whether manually picking some positions would give better
             // test coverage.
             data_.generateRandomRefPositions(1000);
@@ -990,7 +992,7 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
     << "Test data did not contain any pairs for position 0 (problem in the test).";
     EXPECT_EQ(0, pair.testIndex());
     {
-        NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), sqrt(pair.distance2()));
+        NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), std::sqrt(pair.distance2()));
         EXPECT_TRUE(data.containsPair(0, searchPair));
     }
 
@@ -998,7 +1000,7 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
     << "Test data did not contain any pairs for position 1 (problem in the test).";
     EXPECT_EQ(1, pair.testIndex());
     {
-        NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), sqrt(pair.distance2()));
+        NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), std::sqrt(pair.distance2()));
         EXPECT_TRUE(data.containsPair(1, searchPair));
     }
 }
@@ -1055,7 +1057,7 @@ TEST_F(NeighborhoodSearchTest, HandlesSkippingPairs)
             ++currentIndex;
         }
         EXPECT_EQ(currentIndex, pair.testIndex());
-        NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), sqrt(pair.distance2()));
+        NeighborhoodSearchTestData::RefPair searchPair(pair.refIndex(), std::sqrt(pair.distance2()));
         EXPECT_TRUE(data.containsPair(currentIndex, searchPair));
         pairSearch.skipRemainingPairsForTestPosition();
         ++currentIndex;
