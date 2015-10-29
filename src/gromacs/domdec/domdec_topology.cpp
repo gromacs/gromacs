@@ -52,6 +52,7 @@
 #include <algorithm>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_halo.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/legacyheaders/force.h"
@@ -1346,11 +1347,20 @@ check_assign_interactions_atom(int i, int i_gl,
                                int **vsite_pbc, int *vsite_pbc_nalloc,
                                int iz,
                                gmx_bool bBCheck,
-                               int *nbonded_local)
+                               int *nbonded_local,
+                               int *missingInteractions)
 {
-    int j;
+    if (iz > 0 && *missingInteractions == 0)
+    {
+        /* All interactions linked to this non-local atom were assigned
+         * on it's local domain, returning here saves a lot of time.
+         */
+        return;
+    }
 
-    j = ind_start;
+    *missingInteractions = 0;
+
+    int j = ind_start;
     while (j < ind_end)
     {
         int            ftype;
@@ -1571,6 +1581,11 @@ check_assign_interactions_atom(int i, int i_gl,
                     (*nbonded_local)++;
                 }
             }
+            else
+            {
+                /* This interaction was not assigned, flag we are missing one */
+                *missingInteractions = 1;
+            }
             j += 1 + nral;
         }
     }
@@ -1592,7 +1607,8 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              int **vsite_pbc,
                              int *vsite_pbc_nalloc,
                              int izone,
-                             int at_start, int at_end)
+                             int at_start, int at_end,
+                             int *missingInteractions)
 {
     int                i, i_gl, mb, mt, mol, i_mol;
     int               *index, *rtil;
@@ -1628,7 +1644,8 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                                        idef, vsite_pbc, vsite_pbc_nalloc,
                                        izone,
                                        bBCheck,
-                                       &nbonded_local);
+                                       &nbonded_local,
+                                       &missingInteractions[i]);
 
 
         if (rt->bIntermolecularInteractions)
@@ -1650,7 +1667,8 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                                            idef, vsite_pbc, vsite_pbc_nalloc,
                                            izone,
                                            bBCheck,
-                                           &nbonded_local);
+                                           &nbonded_local,
+                                           &missingInteractions[i]);
         }
     }
 
@@ -2015,6 +2033,14 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
     lexcls->nra   = 0;
     *excl_count   = 0;
 
+    gmx_domdec_comm_t *comm = dd->comm;
+
+    if (dd->nat_tot > comm->missingInteractions_nalloc)
+    {
+        comm->missingInteractions_nalloc = over_alloc_large(dd->nat_tot);
+        srenew(comm->missingInteractions, comm->missingInteractions_nalloc);
+    }
+
     for (izone = 0; izone < nzone_bondeds; izone++)
     {
         cg0 = zones->cg_range[izone];
@@ -2035,7 +2061,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                 cg0t = cg0 + ((cg1 - cg0)* thread   )/rt->nthread;
                 cg1t = cg0 + ((cg1 - cg0)*(thread+1))/rt->nthread;
 
-                if (!dd->comm->bCGs)
+                if (!comm->bCGs)
                 {
                     at0t = cg0t;
                     at1t = cg1t;
@@ -2086,7 +2112,8 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                       idef_t,
                                       vsite_pbc, vsite_pbc_nalloc,
                                       izone,
-                                      at0t, at1t);
+                                      at0t, at1t,
+                                      comm->missingInteractions);
 
                 if (izone < nzone_excl)
                 {
@@ -2101,7 +2128,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                         excl_t->nra = 0;
                     }
 
-                    if (!dd->comm->bCGs && !rt->bExclRequired)
+                    if (!comm->bCGs && !rt->bExclRequired)
                     {
                         /* No charge groups and no distance check required */
                         make_exclusions_zone(dd, zones,
@@ -2146,6 +2173,16 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
             {
                 *excl_count += rt->th_work[thread].excl_count;
             }
+        }
+
+        /* After assigning interactions for the local atoms, send around
+         * the halo if we are missing interactions (interactions that could
+         * not be found between local atoms only). This is used to speed up
+         * the check for assigning interactions for non-local atoms.
+         */
+        if (izone == 0 && nzone_bondeds > 1)
+        {
+            dd_halo_move_int(dd, comm->missingInteractions);
         }
     }
 
