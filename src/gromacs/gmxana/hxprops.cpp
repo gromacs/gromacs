@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
@@ -84,7 +85,7 @@ real ellipticity(int nres, t_bb bb[])
         psi = bb[i].psi;
         for (j = 0; (j < NPPW); j++)
         {
-            pp2 = sqr(phi-ppw[j].phi)+sqr(psi-ppw[j].psi);
+            pp2 = gmx::square(phi-ppw[j].phi)+gmx::square(psi-ppw[j].psi);
             if (pp2 < 64)
             {
                 bb[i].nhx++;
@@ -116,7 +117,7 @@ real radius(FILE *fp, int nca, int ca_index[], rvec x[])
     for (i = 0; (i < nca); i++)
     {
         ai  = ca_index[i];
-        dl2 = sqr(x[ai][XX])+sqr(x[ai][YY]);
+        dl2 = gmx::square(x[ai][XX])+gmx::square(x[ai][YY]);
 
         if (fp)
         {
@@ -311,7 +312,7 @@ static void set_ahcity(int nbb, t_bb bb[])
 
     for (n = 0; (n < nbb); n++)
     {
-        pp2 = sqr(bb[n].phi-PHI_AHX)+sqr(bb[n].psi-PSI_AHX);
+        pp2 = gmx::square(bb[n].phi-PHI_AHX)+gmx::square(bb[n].psi-PSI_AHX);
 
         bb[n].bHelix = FALSE;
         if (pp2 < 2500)
@@ -471,7 +472,7 @@ real pprms(FILE *fp, int nbb, t_bb bb[])
         }
     }
     fprintf(fp, "\n");
-    rms = std::sqrt(rms2/n-sqr(rmst/n));
+    rms = std::sqrt(rms2/n-gmx::square(rmst/n));
 
     return rms;
 }
@@ -513,7 +514,7 @@ void calc_hxprops(int nres, t_bb bb[], rvec x[])
             dih_angle(x[bb[i].N], x[bb[i].CA], x[bb[i].C], x[bb[i].Nnext], NULL,
                       r_ij, r_kj, r_kl, m, n,
                       &sign, &t1, &t2, &t3);
-        bb[i].pprms2 = sqr(bb[i].phi-PHI_AHX)+sqr(bb[i].psi-PSI_AHX);
+        bb[i].pprms2 = gmx::square(bb[i].phi-PHI_AHX)+gmx::square(bb[i].psi-PSI_AHX);
 
         bb[i].jcaha +=
             1.4*std::sin((bb[i].psi+138.0)*DEG2RAD) -
