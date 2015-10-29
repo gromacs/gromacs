@@ -50,6 +50,7 @@
 #include "gromacs/legacyheaders/types/mdatom.h"
 #include "gromacs/linearalgebra/nrjac.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -303,7 +304,7 @@ void diagonalize_orires_tensors(t_oriresdata *od)
         {
             for (j = i+1; j < DIM; j++)
             {
-                if (sqr(od->eig_diag[ord[j]]) > sqr(od->eig_diag[ord[i]]))
+                if (gmx::square(od->eig_diag[ord[j]]) > gmx::square(od->eig_diag[ord[i]]))
                 {
                     t      = ord[i];
                     ord[i] = ord[j];
@@ -451,7 +452,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         }
         mvmul(R, r_unrot, r);
         r2   = norm2(r);
-        invr = gmx_invsqrt(r2);
+        invr = gmx::invsqrt(r2);
         /* Calculate the prefactor for the D tensor, this includes the factor 3! */
         pfac = ip[type].orires.c*invr*invr*3;
         for (i = 0; i < ip[type].orires.power; i++)
@@ -528,10 +529,10 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         for (i = 0; i < 5; i++)
         {
             rhs[ex][i]  *= corrfac;
-            T[ex][i][i] *= sqr(corrfac);
+            T[ex][i][i] *= gmx::square(corrfac);
             for (j = 0; j < i; j++)
             {
-                T[ex][i][j] *= sqr(corrfac);
+                T[ex][i][j] *= gmx::square(corrfac);
                 T[ex][j][i]  = T[ex][i][j];
             }
         }
@@ -588,7 +589,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 
         dev = od->otav[d] - ip[type].orires.obs;
 
-        wsv2 += ip[type].orires.kfac*sqr(dev);
+        wsv2 += ip[type].orires.kfac*gmx::square(dev);
         sw   += ip[type].orires.kfac;
 
         d++;
@@ -652,7 +653,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 rvec_sub(x[ai], x[aj], r);
             }
             r2    = norm2(r);
-            invr  = gmx_invsqrt(r2);
+            invr  = gmx::invsqrt(r2);
             invr2 = invr*invr;
             ex    = ip[type].orires.ex;
             power = ip[type].orires.power;
@@ -662,7 +663,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             /* NOTE:
              * there is no real potential when time averaging is applied
              */
-            vtot += 0.5*fc*sqr(dev);
+            vtot += 0.5*fc*gmx::square(dev);
 
             if (bTAV)
             {

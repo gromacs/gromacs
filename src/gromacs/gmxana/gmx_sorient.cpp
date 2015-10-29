@@ -45,6 +45,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -244,14 +245,14 @@ int gmx_sorient(int argc, char *argv[])
     /* initialize reading trajectory:                         */
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    rmin2 = sqr(rmin);
-    rmax2 = sqr(rmax);
+    rmin2 = gmx::square(rmin);
+    rmax2 = gmx::square(rmax);
     rcut  = 0.99*std::sqrt(max_cutoff2(guess_ePBC(box), box));
     if (rcut == 0)
     {
         rcut = 10*rmax;
     }
-    rcut2 = sqr(rcut);
+    rcut2 = gmx::square(rcut);
 
     invbw = 1/binwidth;
     nbin1 = 1+static_cast<int>(2*invbw + 0.5);
@@ -340,7 +341,7 @@ int gmx_sorient(int argc, char *argv[])
                         int ii = static_cast<int>(invrbw*r);
                         range_check(ii, 0, nrbin);
                         histi1[ii] += inp;
-                        histi2[ii] += 3*sqr(outp) - 1;
+                        histi2[ii] += 3*gmx::square(outp) - 1;
                         histn[ii]++;
                     }
                     if ((r2 >= rmin2) && (r2 < rmax2))

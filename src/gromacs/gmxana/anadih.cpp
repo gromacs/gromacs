@@ -49,6 +49,7 @@
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -663,13 +664,13 @@ void calc_distribution_props(int nh, int histo[], real start,
             c2            = c1*c1;
             Jc            = (kkk[i].A*c2 + kkk[i].B*c1 + kkk[i].C);
             kkk[i].Jc    += histo[j]*Jc;
-            kkk[i].Jcsig += histo[j]*sqr(Jc);
+            kkk[i].Jcsig += histo[j]*gmx::square(Jc);
         }
     }
     for (i = 0; (i < nkkk); i++)
     {
         kkk[i].Jc    /= th;
-        kkk[i].Jcsig  = std::sqrt(kkk[i].Jcsig/th-sqr(kkk[i].Jc));
+        kkk[i].Jcsig  = std::sqrt(kkk[i].Jcsig/th-gmx::square(kkk[i].Jc));
     }
     *S2 = tdc*tdc+tds*tds;
 }

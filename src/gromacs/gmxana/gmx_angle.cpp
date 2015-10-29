@@ -50,6 +50,7 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
@@ -414,11 +415,11 @@ int gmx_g_angle(int argc, char *argv[])
     for (i = 0; (i < nframes); i++)
     {
         aver  += RAD2DEG*aver_angle[i];
-        aver2 += sqr(RAD2DEG*aver_angle[i]);
+        aver2 += gmx::square(RAD2DEG*aver_angle[i]);
     }
     aver   /= nframes;
     aver2  /= nframes;
-    aversig = std::sqrt(aver2-sqr(aver));
+    aversig = std::sqrt(aver2-gmx::square(aver));
     printf("Found points in the range from %d to %d (max %d)\n",
            first, last, maxangstat);
     printf(" < angle >  = %g\n", aver);

@@ -179,9 +179,6 @@
 /* Use ORCA for QM-MM calculations */
 #cmakedefine01 GMX_QMMM_ORCA
 
-/* Use the GROMACS software 1/sqrt(x) */
-#cmakedefine GMX_SOFTWARE_INVSQRT
-
 /* Use sub-counters */
 #cmakedefine01 GMX_CYCLE_SUBCOUNTERS
 
@@ -266,15 +263,6 @@
 /* Define to 1 if you have the rdtscp instruction. */
 #cmakedefine HAVE_RDTSCP
 
-/* Define to 1 if you have the isfinite() function. */
-#cmakedefine HAVE_ISFINITE
-
-/* Define to 1 if you have the _isfinite() function. */
-#cmakedefine HAVE__ISFINITE
-
-/* Define to 1 if you have the _finite() function. */
-#cmakedefine HAVE__FINITE
-
 /* Define to 1 if you have the fsync() function. */
 #cmakedefine HAVE_FSYNC
 
@@ -290,14 +278,23 @@
 /* Define to 1 if you have the sigaction() function. */
 #cmakedefine HAVE_SIGACTION
 
-/* Define to 1 if you have the rsqrt() function. */
-#cmakedefine HAVE_RSQRT
+/* Define for the GNU __builtin_clz() function. */
+#cmakedefine01 HAVE___BUILTIN_CLZ
 
-/* Define to 1 if you have the rsqrtf() function. */
-#cmakedefine HAVE_RSQRTF
+/* Define for the GNU __builtin_clzll() function. */
+#cmakedefine01 HAVE___BUILTIN_CLZLL
 
-/* Define to 1 if you have the sqrtf() function. */
-#cmakedefine HAVE_SQRTF
+/* Define for the MSVC _BitScanReverse() function. */
+#cmakedefine01 HAVE__BITSCANREVERSE
+
+/* Define for the MSVC _BitScanReverse64() function. */
+#cmakedefine01 HAVE__BITSCANREVERSE64
+
+/* Define for the IBM xlc++ __cntlz4() function. */
+#cmakedefine01 HAVE___CNTLZ4
+
+/* Define for the IBM xlc++ __cntlz8() function. */
+#cmakedefine01 HAVE___CNTLZ8
 
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H

@@ -50,6 +50,7 @@
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/legacyheaders/txtdump.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
@@ -151,8 +152,8 @@ void calc_gyro_z(rvec x[], matrix box,
                 zi = 0;
             }
             w               = atom[ii].m*(1 + std::cos(M_PI*(zf - zi)));
-            inertia[zi][0] += w*sqr(x[ii][YY]);
-            inertia[zi][1] += w*sqr(x[ii][XX]);
+            inertia[zi][0] += w*gmx::square(x[ii][YY]);
+            inertia[zi][1] += w*gmx::square(x[ii][XX]);
             inertia[zi][2] -= w*x[ii][XX]*x[ii][YY];
             tm[zi]         += w;
         }
@@ -164,7 +165,7 @@ void calc_gyro_z(rvec x[], matrix box,
         {
             inertia[j][i] /= tm[j];
         }
-        sdet = std::sqrt(sqr(inertia[j][0] - inertia[j][1]) + 4*sqr(inertia[j][2]));
+        sdet = std::sqrt(gmx::square(inertia[j][0] - inertia[j][1]) + 4*gmx::square(inertia[j][2]));
         e1   = std::sqrt(0.5*(inertia[j][0] + inertia[j][1] + sdet));
         e2   = std::sqrt(0.5*(inertia[j][0] + inertia[j][1] - sdet));
         fprintf(out, " %5.3f %5.3f", e1, e2);

@@ -55,6 +55,7 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/types/ifunc.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
@@ -4037,11 +4038,11 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
             {
                 if (!gmx_numzero(c12i) && !gmx_numzero(c12j))
                 {
-                    sigmai   = std::pow(c12i / c6i, 1.0/6.0);
-                    sigmaj   = std::pow(c12j / c6j, 1.0/6.0);
+                    sigmai   = gmx::sixthroot(c12i / c6i);
+                    sigmaj   = gmx::sixthroot(c12j / c6j);
                     epsi     = c6i * c6i /(4.0 * c12i);
                     epsj     = c6j * c6j /(4.0 * c12j);
-                    c6_LB    = 4.0 * std::pow(epsi * epsj, 1.0/2.0) * std::pow(0.5 * (sigmai + sigmaj), 6);
+                    c6_LB    = 4.0 * std::sqrt(epsi * epsj) * gmx::power6(0.5 * (sigmai + sigmaj));
                 }
                 else
                 {
@@ -4463,7 +4464,7 @@ void double_check(t_inputrec *ir, matrix box,
         bTWIN = (ir->rlistlong > ir->rlist);
         if (ir->ns_type == ensGRID)
         {
-            if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
+            if (gmx::square(ir->rlistlong) >= max_cutoff2(ir->ePBC, box))
             {
                 sprintf(warn_buf, "ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease %s.\n",
                         bTWIN ? (ir->rcoulomb == ir->rlistlong ? "rcoulomb" : "rvdw") : "rlist");

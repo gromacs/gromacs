@@ -49,6 +49,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/index.h"
@@ -252,7 +253,7 @@ int gmx_vanhove(int argc, char *argv[])
         {
             snew(mat[f], nbin);
         }
-        rmax2 = sqr(nbin*rbin);
+        rmax2 = gmx::square(nbin*rbin);
         /* Initialize time zero */
         mat[0][0]  = nfr*isize;
         mcount[0] += nfr;

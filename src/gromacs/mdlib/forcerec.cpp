@@ -69,6 +69,7 @@
 #include "gromacs/legacyheaders/types/group.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -168,7 +169,6 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
     int        i, j, k, atnr;
     real       c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
     real      *grid;
-    const real oneOverSix = 1.0 / 6.0;
 
     /* For LJ-PME simulations, we correct the energies with the reciprocal space
      * inside of the cut-off. To do this the non-bonded kernels needs to have
@@ -185,15 +185,15 @@ static real *make_ljpme_c6grid(const gmx_ffparams_t *idef, t_forcerec *fr)
             c12i = idef->iparams[i*(atnr+1)].lj.c12;
             c6j  = idef->iparams[j*(atnr+1)].lj.c6;
             c12j = idef->iparams[j*(atnr+1)].lj.c12;
-            c6   = sqrt(c6i * c6j);
+            c6   = std::sqrt(c6i * c6j);
             if (fr->ljpme_combination_rule == eljpmeLB
                 && !gmx_numzero(c6) && !gmx_numzero(c12i) && !gmx_numzero(c12j))
             {
-                sigmai = pow(c12i / c6i, oneOverSix);
-                sigmaj = pow(c12j / c6j, oneOverSix);
+                sigmai = gmx::sixthroot(c12i / c6i);
+                sigmaj = gmx::sixthroot(c12j / c6j);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
+                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
             }
             /* Store the elements at the same relative positions as C6 in nbfp in order
              * to simplify access in the kernels
@@ -210,7 +210,6 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
     int        i, j, atnr;
     real       c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
     real       c6, c12;
-    const real oneOverSix = 1.0 / 6.0;
 
     atnr = idef->atnr;
     snew(nbfp, 2*atnr*atnr);
@@ -222,17 +221,17 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
             c12i = idef->iparams[i*(atnr+1)].lj.c12;
             c6j  = idef->iparams[j*(atnr+1)].lj.c6;
             c12j = idef->iparams[j*(atnr+1)].lj.c12;
-            c6   = sqrt(c6i  * c6j);
-            c12  = sqrt(c12i * c12j);
+            c6   = std::sqrt(c6i  * c6j);
+            c12  = std::sqrt(c12i * c12j);
             if (comb_rule == eCOMB_ARITHMETIC
                 && !gmx_numzero(c6) && !gmx_numzero(c12))
             {
-                sigmai = pow(c12i / c6i, oneOverSix);
-                sigmaj = pow(c12j / c6j, oneOverSix);
+                sigmai = gmx::sixthroot(c12i / c6i);
+                sigmaj = gmx::sixthroot(c12j / c6j);
                 epsi   = c6i * c6i / c12i;
                 epsj   = c6j * c6j / c12j;
-                c6     = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 6);
-                c12    = sqrt(epsi * epsj) * pow(0.5*(sigmai+sigmaj), 12);
+                c6     = std::sqrt(epsi * epsj) * gmx::power6(0.5*(sigmai+sigmaj));
+                c12    = std::sqrt(epsi * epsj) * gmx::power12(0.5*(sigmai+sigmaj));
             }
             C6(nbfp, atnr, i, j)   = c6*6.0;
             C12(nbfp, atnr, i, j)  = c12*12.0;
@@ -1948,9 +1947,9 @@ static void force_switch_constants(real p,
      * force/p   = r^-(p+1) + c2*r^2 + c3*r^3
      * potential = r^-p + c2/3*r^3 + c3/4*r^4 + cpot
      */
-    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 2));
-    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*pow(rc - rsw, 3));
-    sc->cpot = -pow(rc, -p) + p*sc->c2/3*pow(rc - rsw, 3) + p*sc->c3/4*pow(rc - rsw, 4);
+    sc->c2   =  ((p + 1)*rsw - (p + 4)*rc)/(pow(rc, p + 2)*gmx::square(rc - rsw));
+    sc->c3   = -((p + 1)*rsw - (p + 3)*rc)/(pow(rc, p + 2)*gmx::power3(rc - rsw));
+    sc->cpot = -pow(rc, -p) + p*sc->c2/3*gmx::power3(rc - rsw) + p*sc->c3/4*gmx::power4(rc - rsw);
 }
 
 static void potential_switch_constants(real rsw, real rc,
@@ -1964,9 +1963,9 @@ static void potential_switch_constants(real rsw, real rc,
      * force      = force*dsw - potential*sw
      * potential *= sw
      */
-    sc->c3 = -10*pow(rc - rsw, -3);
-    sc->c4 =  15*pow(rc - rsw, -4);
-    sc->c5 =  -6*pow(rc - rsw, -5);
+    sc->c3 = -10/gmx::power3(rc - rsw);
+    sc->c4 =  15/gmx::power4(rc - rsw);
+    sc->c5 =  -6/gmx::power5(rc - rsw);
 }
 
 /*! \brief Construct interaction constants
@@ -1981,8 +1980,6 @@ init_interaction_const(FILE                       *fp,
                        const t_forcerec           *fr)
 {
     interaction_const_t *ic;
-    const real           minusSix          = -6.0;
-    const real           minusTwelve       = -12.0;
 
     snew(ic, 1);
 
@@ -2011,14 +2008,14 @@ init_interaction_const(FILE                       *fp,
     {
         case eintmodPOTSHIFT:
             /* Only shift the potential, don't touch the force */
-            ic->dispersion_shift.cpot = -pow(ic->rvdw, minusSix);
-            ic->repulsion_shift.cpot  = -pow(ic->rvdw, minusTwelve);
+            ic->dispersion_shift.cpot = -1.0/gmx::power6(ic->rvdw);
+            ic->repulsion_shift.cpot  = -1.0/gmx::power12(ic->rvdw);
             if (EVDW_PME(ic->vdwtype))
             {
                 real crc2;
 
-                crc2            = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-                ic->sh_lj_ewald = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*pow(ic->rvdw, minusSix);
+                crc2            = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
+                ic->sh_lj_ewald = (std::exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)/gmx::power6(ic->rvdw);
             }
             break;
         case eintmodFORCESWITCH:
@@ -2420,7 +2417,7 @@ void init_forcerec(FILE              *fp,
     if (ir->fepvals->bScCoul)
     {
         fr->sc_alphacoul  = ir->fepvals->sc_alpha;
-        fr->sc_sigma6_min = pow(ir->fepvals->sc_sigma_min, 6);
+        fr->sc_sigma6_min = gmx::power6(ir->fepvals->sc_sigma_min);
     }
     else
     {
@@ -2429,14 +2426,14 @@ void init_forcerec(FILE              *fp,
     }
     fr->sc_power      = ir->fepvals->sc_power;
     fr->sc_r_power    = ir->fepvals->sc_r_power;
-    fr->sc_sigma6_def = pow(ir->fepvals->sc_sigma, 6);
+    fr->sc_sigma6_def = gmx::power6(ir->fepvals->sc_sigma);
 
     env = getenv("GMX_SCSIGMA_MIN");
     if (env != NULL)
     {
         dbl = 0;
         sscanf(env, "%20lf", &dbl);
-        fr->sc_sigma6_min = pow(dbl, 6);
+        fr->sc_sigma6_min = gmx::power6(dbl);
         if (fp)
         {
             fprintf(fp, "Setting the minimum soft core sigma to %g nm\n", dbl);
