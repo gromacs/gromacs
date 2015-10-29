@@ -56,6 +56,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -211,10 +212,10 @@ static void check_viol(FILE *log,
             gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, fcd->disres.Rt_6[0]);
         }
 
-        rt = std::pow(fcd->disres.Rt_6[0], static_cast<real>(-1.0/6.0));
+        rt = gmx::invsixthroot(fcd->disres.Rt_6[0]);
         dr[clust_id].aver1[ndr]  += rt;
-        dr[clust_id].aver2[ndr]  += sqr(rt);
-        drt = std::pow(rt, static_cast<real>(-3.0));
+        dr[clust_id].aver2[ndr]  += gmx::square(rt);
+        drt = 1.0/gmx::power3(rt);
         dr[clust_id].aver_3[ndr] += drt;
         dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[0];
 
@@ -241,7 +242,7 @@ static void check_viol(FILE *log,
             {
                 if (index[j] == forceparams[type].disres.label)
                 {
-                    vvindex[j] = std::pow(fcd->disres.Rt_6[0], static_cast<real>(-1.0/6.0));
+                    vvindex[j] = gmx::invsixthroot(fcd->disres.Rt_6[0]);
                 }
             }
         }
@@ -411,8 +412,8 @@ static void dump_stats(FILE *log, int nsteps, int ndr, t_ilist *disres,
         drs[i].bCore  = is_core(i, isize, index);
         drs[i].up1    = ip[disres->iatoms[j]].disres.up1;
         drs[i].r      = dr->aver1[i]/nsteps;
-        drs[i].rT3    = std::pow(dr->aver_3[i]/nsteps, static_cast<real>(-1.0/3.0));
-        drs[i].rT6    = std::pow(dr->aver_6[i]/nsteps, static_cast<real>(-1.0/6.0));
+        drs[i].rT3    = gmx::invcbrt(dr->aver_3[i]/nsteps);
+        drs[i].rT6    = gmx::invsixthroot(dr->aver_6[i]/nsteps);
         drs[i].viol   = std::max(0.0, static_cast<double>(drs[i].r-drs[i].up1));
         drs[i].violT3 = std::max(0.0, static_cast<double>(drs[i].rT3-drs[i].up1));
         drs[i].violT6 = std::max(0.0, static_cast<double>(drs[i].rT6-drs[i].up1));
@@ -487,8 +488,8 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
             {
                 gmx_fatal(FARGS, "dr[%d].aver_3[%d] = %f", k, i, dr[k].aver_3[i]);
             }
-            drs[i].rT3    = std::pow(dr[k].aver_3[i]/dr[k].nframes, static_cast<real>(-1.0/3.0));
-            drs[i].rT6    = std::pow(dr[k].aver_6[i]/dr[k].nframes, static_cast<real>(-1.0/6.0));
+            drs[i].rT3    = gmx::invcbrt(dr[k].aver_3[i]/dr[k].nframes);
+            drs[i].rT6    = gmx::invsixthroot(dr[k].aver_6[i]/dr[k].nframes);
             drs[i].viol   = std::max(0.0, static_cast<double>(drs[i].r-drs[i].up1));
             drs[i].violT3 = std::max(0.0, static_cast<double>(drs[i].rT3-drs[i].up1));
             drs[i].violT6 = std::max(0.0, static_cast<double>(drs[i].rT6-drs[i].up1));
@@ -618,7 +619,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
             rj = resnr[aj];
             if (bThird)
             {
-                rav = std::pow(dr->aver_3[i]/nsteps, static_cast<real>(-1.0/3.0));
+                rav = gmx::invcbrt(dr->aver_3[i]/nsteps);
             }
             else
             {

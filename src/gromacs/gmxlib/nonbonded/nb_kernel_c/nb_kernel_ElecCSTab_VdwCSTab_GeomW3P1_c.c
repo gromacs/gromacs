@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -189,9 +188,9 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_VF_c
             rsq10            = dx10*dx10+dy10*dy10+dz10*dz10;
             rsq20            = dx20*dx20+dy20*dy20+dz20*dz20;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv20           = gmx_invsqrt(rsq20);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv10           = 1.0/sqrt(rsq10);
+            rinv20           = 1.0/sqrt(rsq20);
 
             /* Load parameters for j particles */
             jq0              = charge[jnr+0];
@@ -539,9 +538,9 @@ nb_kernel_ElecCSTab_VdwCSTab_GeomW3P1_F_c
             rsq10            = dx10*dx10+dy10*dy10+dz10*dz10;
             rsq20            = dx20*dx20+dy20*dy20+dz20*dz20;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv20           = gmx_invsqrt(rsq20);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv10           = 1.0/sqrt(rsq10);
+            rinv20           = 1.0/sqrt(rsq20);
 
             /* Load parameters for j particles */
             jq0              = charge[jnr+0];

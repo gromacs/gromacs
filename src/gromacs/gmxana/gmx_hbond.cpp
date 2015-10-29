@@ -56,6 +56,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -936,7 +937,7 @@ static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
     int         dum = -1;
 
     bDoRshell = (rshell > 0);
-    rshell2   = sqr(rshell);
+    rshell2   = gmx::square(rshell);
     bInShell  = TRUE;
 
 #define DBB(x) if (debug && bDebug) fprintf(debug, "build_grid, line %d, %s = %d\n", __LINE__,#x, x)
@@ -1753,12 +1754,12 @@ static real compute_weighted_rates(int n, real t[], real ct[], real nt[],
     {
         kkk += tl.kkk[0];
         kkp += tl.kkk[1];
-        kk2 += sqr(tl.kkk[0]);
-        kp2 += sqr(tl.kkk[1]);
+        kk2 += gmx::square(tl.kkk[0]);
+        kp2 += gmx::square(tl.kkk[1]);
         tl.n0++;
     }
-    *sigma_k  = std::sqrt(kk2/NK - sqr(kkk/NK));
-    *sigma_kp = std::sqrt(kp2/NK - sqr(kkp/NK));
+    *sigma_k  = std::sqrt(kk2/NK - gmx::square(kkk/NK));
+    *sigma_kp = std::sqrt(kp2/NK - gmx::square(kkp/NK));
 
     return chi2;
 }
@@ -1781,15 +1782,15 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
     {
         for (i = i0; (i < n); i++)
         {
-            sc2 += sqr(ct[i]);
-            sn2 += sqr(nt[i]);
-            sk2 += sqr(kt[i]);
+            sc2 += gmx::square(ct[i]);
+            sn2 += gmx::square(nt[i]);
+            sk2 += gmx::square(kt[i]);
             sck += ct[i]*kt[i];
             snk += nt[i]*kt[i];
             scn += ct[i]*nt[i];
         }
         printf("Hydrogen bond thermodynamics at T = %g K\n", temp);
-        tmp = (sn2*sc2-sqr(scn));
+        tmp = (sn2*sc2-gmx::square(scn));
         if ((tmp > 0) && (sn2 > 0))
         {
             k    = (sn2*sck-scn*snk)/tmp;
@@ -1799,7 +1800,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                 chi2 = 0;
                 for (i = i0; (i < n); i++)
                 {
-                    chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
+                    chi2 += gmx::square(k*ct[i]-kp*nt[i]-kt[i]);
                 }
                 compute_weighted_rates(n, t, ct, nt, kt, sigma_ct, sigma_nt,
                                        sigma_kt, &k, &kp,
@@ -1822,7 +1823,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                 chi2 = 0;
                 for (i = i0; (i < n); i++)
                 {
-                    chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
+                    chi2 += gmx::square(k*ct[i]-kp*nt[i]-kt[i]);
                 }
                 printf("Fitting parameters chi^2 = %10g\nQ = %10g\n",
                        chi2, Q);

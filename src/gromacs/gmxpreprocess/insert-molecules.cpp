@@ -48,6 +48,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/conformation-utilities.h"
 #include "gromacs/gmxpreprocess/read-conformation.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -132,7 +133,7 @@ static bool is_insertion_allowed(gmx::AnalysisNeighborhoodSearch *search,
     {
         const real r1 = exclusionDistances[pair.refIndex()];
         const real r2 = exclusionDistances_insrt[pair.testIndex()];
-        if (pair.distance2() < sqr(r1 + r2))
+        if (pair.distance2() < gmx::square(r1 + r2))
         {
             return false;
         }

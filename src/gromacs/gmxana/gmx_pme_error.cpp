@@ -49,6 +49,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/readinp.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -184,7 +185,7 @@ static real estimate_direct(
     beta      = info->ewald_beta[0];
     r_coulomb = info->rcoulomb[0];
 
-    e_dir  = 2.0 * info->q2all * gmx_invsqrt( info->q2allnr  *  r_coulomb * info->volume );
+    e_dir  = 2.0 * info->q2all * gmx::invsqrt( info->q2allnr  *  r_coulomb * info->volume );
     e_dir *= exp (-beta*beta*r_coulomb*r_coulomb);
 
     return ONE_4PI_EPS0*e_dir;

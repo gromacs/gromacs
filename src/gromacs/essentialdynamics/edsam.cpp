@@ -49,6 +49,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/linearalgebra/nrjac.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/groupcoord.h"
@@ -309,7 +310,7 @@ static void rad_project(t_edpar *edi, rvec *x, t_eigvec *vec)
     for (i = 0; i < vec->neig; i++)
     {
         vec->refproj[i] = projectx(edi, x, vec->vec[i]);
-        rad            += pow((vec->refproj[i]-vec->xproj[i]), 2);
+        rad            += gmx::square((vec->refproj[i]-vec->xproj[i]));
     }
     vec->radius = sqrt(rad);
 
@@ -378,7 +379,7 @@ static real calc_radius(t_eigvec *vec)
 
     for (i = 0; i < vec->neig; i++)
     {
-        rad += pow((vec->refproj[i]-vec->xproj[i]), 2);
+        rad += gmx::square((vec->refproj[i]-vec->xproj[i]));
     }
 
     return rad = sqrt(rad);
@@ -2052,7 +2053,7 @@ static void do_radfix(rvec *xcoll, t_edpar *edi)
     {
         /* calculate the projections, radius */
         proj[i] = projectx(edi, xcoll, edi->vecs.radfix.vec[i]);
-        rad    += pow(proj[i] - edi->vecs.radfix.refproj[i], 2);
+        rad    += gmx::square(proj[i] - edi->vecs.radfix.refproj[i]);
     }
 
     rad                      = sqrt(rad);
@@ -2097,7 +2098,7 @@ static void do_radacc(rvec *xcoll, t_edpar *edi)
     {
         /* calculate the projections, radius */
         proj[i] = projectx(edi, xcoll, edi->vecs.radacc.vec[i]);
-        rad    += pow(proj[i] - edi->vecs.radacc.refproj[i], 2);
+        rad    += gmx::square(proj[i] - edi->vecs.radacc.refproj[i]);
     }
     rad = sqrt(rad);
 
@@ -2168,7 +2169,7 @@ static void do_radcon(rvec *xcoll, t_edpar *edi)
     {
         /* calculate the projections, radius */
         loc->proj[i] = projectx(edi, xcoll, edi->vecs.radcon.vec[i]);
-        rad         += pow(loc->proj[i] - edi->vecs.radcon.refproj[i], 2);
+        rad         += gmx::square(loc->proj[i] - edi->vecs.radcon.refproj[i]);
     }
     rad = sqrt(rad);
     /* only correct when radius increased */

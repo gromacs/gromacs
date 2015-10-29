@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -249,15 +248,15 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW3W3_VF_c
             rsq21            = dx21*dx21+dy21*dy21+dz21*dz21;
             rsq22            = dx22*dx22+dy22*dy22+dz22*dz22;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv01           = gmx_invsqrt(rsq01);
-            rinv02           = gmx_invsqrt(rsq02);
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv11           = gmx_invsqrt(rsq11);
-            rinv12           = gmx_invsqrt(rsq12);
-            rinv20           = gmx_invsqrt(rsq20);
-            rinv21           = gmx_invsqrt(rsq21);
-            rinv22           = gmx_invsqrt(rsq22);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv01           = 1.0/sqrt(rsq01);
+            rinv02           = 1.0/sqrt(rsq02);
+            rinv10           = 1.0/sqrt(rsq10);
+            rinv11           = 1.0/sqrt(rsq11);
+            rinv12           = 1.0/sqrt(rsq12);
+            rinv20           = 1.0/sqrt(rsq20);
+            rinv21           = 1.0/sqrt(rsq21);
+            rinv22           = 1.0/sqrt(rsq22);
 
             rinvsq00         = rinv00*rinv00;
             rinvsq01         = rinv01*rinv01;
@@ -802,15 +801,15 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW3W3_F_c
             rsq21            = dx21*dx21+dy21*dy21+dz21*dz21;
             rsq22            = dx22*dx22+dy22*dy22+dz22*dz22;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv01           = gmx_invsqrt(rsq01);
-            rinv02           = gmx_invsqrt(rsq02);
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv11           = gmx_invsqrt(rsq11);
-            rinv12           = gmx_invsqrt(rsq12);
-            rinv20           = gmx_invsqrt(rsq20);
-            rinv21           = gmx_invsqrt(rsq21);
-            rinv22           = gmx_invsqrt(rsq22);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv01           = 1.0/sqrt(rsq01);
+            rinv02           = 1.0/sqrt(rsq02);
+            rinv10           = 1.0/sqrt(rsq10);
+            rinv11           = 1.0/sqrt(rsq11);
+            rinv12           = 1.0/sqrt(rsq12);
+            rinv20           = 1.0/sqrt(rsq20);
+            rinv21           = 1.0/sqrt(rsq21);
+            rinv22           = 1.0/sqrt(rsq22);
 
             rinvsq00         = rinv00*rinv00;
             rinvsq01         = rinv01*rinv01;

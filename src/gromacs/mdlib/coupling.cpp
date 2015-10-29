@@ -43,6 +43,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -137,7 +138,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
             iQinv = &(MassQ->QPinv[i*nh]);
             nd    = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
             reft  = std::max<real>(0, opts->ref_t[0]);
-            Ekin  = sqr(*veta)/MassQ->Winv;
+            Ekin  = gmx::square(*veta)/MassQ->Winv;
         }
         else
         {
@@ -172,7 +173,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                     {
                         /* we actually don't need to update here if we save the
                            state of the GQ, but it's easier to just recompute*/
-                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);
+                        GQ[j+1] = iQinv[j+1]*((gmx::square(ivxi[j])/iQinv[j])-kT);
                     }
                     else
                     {
@@ -216,7 +217,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
                     ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
                     if (iQinv[j+1] > 0)
                     {
-                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);
+                        GQ[j+1] = iQinv[j+1]*((gmx::square(ivxi[j])/iQinv[j])-kT);
                     }
                     else
                     {
@@ -728,7 +729,7 @@ void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
         if ((opts->tau_t[i] > 0) && (T > 0.0))
         {
             reft                    = std::max<real>(0, opts->ref_t[i]);
-            lll                     = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
+            lll                     = std::sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
             ekind->tcstat[i].lambda = std::max<real>(std::min<real>(lll, 1.25), 0.8);
         }
         else
@@ -782,7 +783,7 @@ void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
                 real scal, gauss[3];
                 int  d;
 
-                scal = sqrt(boltzfac[gc]*md->invmass[i]);
+                scal = std::sqrt(boltzfac[gc]*md->invmass[i]);
                 gmx_rng_cycle_3gaussian_table(step*2+1, ng, ir->andersen_seed, RND_SEED_ANDERSEN, gauss);
                 for (d = 0; d < DIM; d++)
                 {
@@ -990,7 +991,7 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
         {
             if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
             {
-                MassQ->Qinv[i] = 1.0/(sqr(opts->tau_t[i]/M_2PI)*opts->ref_t[i]);
+                MassQ->Qinv[i] = 1.0/(gmx::square(opts->tau_t[i]/M_2PI)*opts->ref_t[i]);
             }
             else
             {
@@ -1015,14 +1016,14 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
 
         /* units are nm^3 * ns^2 / (nm^3 * bar / kJ/mol) = kJ/mol  */
         /* Consider evaluating eventually if this the right mass to use.  All are correct, some might be more stable  */
-        MassQ->Winv = (PRESFAC*trace(ir->compress)*BOLTZ*opts->ref_t[0])/(DIM*state->vol0*sqr(ir->tau_p/M_2PI));
+        MassQ->Winv = (PRESFAC*trace(ir->compress)*BOLTZ*opts->ref_t[0])/(DIM*state->vol0*gmx::square(ir->tau_p/M_2PI));
         /* An alternate mass definition, from Tuckerman et al. */
-        /* MassQ->Winv = 1.0/(sqr(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*BOLTZ*opts->ref_t[0]); */
+        /* MassQ->Winv = 1.0/(gmx::square(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*BOLTZ*opts->ref_t[0]); */
         for (d = 0; d < DIM; d++)
         {
             for (n = 0; n < DIM; n++)
             {
-                MassQ->Winvm[d][n] = PRESFAC*ir->compress[d][n]/(state->vol0*sqr(ir->tau_p/M_2PI));
+                MassQ->Winvm[d][n] = PRESFAC*ir->compress[d][n]/(state->vol0*gmx::square(ir->tau_p/M_2PI));
                 /* not clear this is correct yet for the anisotropic case. Will need to reevaluate
                    before using MTTK for anisotropic states.*/
             }
@@ -1051,7 +1052,7 @@ extern void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gm
                     {
                         ndj = 1;
                     }
-                    MassQ->Qinv[i*nh+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
+                    MassQ->Qinv[i*nh+j]   = 1.0/(gmx::square(opts->tau_t[i]/M_2PI)*ndj*kT);
                 }
             }
             else
@@ -1231,7 +1232,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
                 {
                     qmass = 1;
                 }
-                MassQ->QPinv[i*opts->nhchainlength+j]   = 1.0/(sqr(opts->tau_t[0]/M_2PI)*qmass*kT);
+                MassQ->QPinv[i*opts->nhchainlength+j]   = 1.0/(gmx::square(opts->tau_t[0]/M_2PI)*qmass*kT);
             }
         }
     }
@@ -1271,7 +1272,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 
             case epctISOTROPIC:
                 /* contribution from the pressure momenenta */
-                ener_npt += 0.5*sqr(state->veta)/MassQ->Winv;
+                ener_npt += 0.5*gmx::square(state->veta)/MassQ->Winv;
 
                 /* contribution from the PV term */
                 vol       = det(state->box);
@@ -1310,7 +1311,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
             {
                 if (iQinv[j] > 0)
                 {
-                    ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
+                    ener_npt += 0.5*gmx::square(ivxi[j])/iQinv[j];
                     /* contribution from the thermal variable of the NH chain */
                     ener_npt += ixi[j]*kT;
                 }
@@ -1343,7 +1344,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
                     {
                         if (iQinv[j] > 0)
                         {
-                            ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
+                            ener_npt += 0.5*gmx::square(ivxi[j])/iQinv[j];
                             /* contribution from the thermal variable of the NH chain */
                             if (j == 0)
                             {
@@ -1359,7 +1360,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
                 }
                 else  /* Other non Trotter temperature NH control  -- no chains yet. */
                 {
-                    ener_npt += 0.5*BOLTZ*nd*sqr(ivxi[0])/iQinv[0];
+                    ener_npt += 0.5*BOLTZ*nd*gmx::square(ivxi[0])/iQinv[0];
                     ener_npt += nd*ixi[0]*kT;
                 }
             }
@@ -1395,7 +1396,7 @@ static real vrescale_gamdev(real ia,
              */
             y  = v2/v1;
             am = ia - 1;
-            s  = sqrt(2.0*am + 1.0);
+            s  = std::sqrt(2.0*am + 1.0);
             x  = s*y + am;
         }
         while (x <= 0.0);
@@ -1423,7 +1424,7 @@ static real gaussian_count(gmx_int64_t step, gmx_int64_t *count,
     }
     while (r > 1.0 || r == 0.0);
 
-    r = sqrt(-2.0*log(r)/r);
+    r = std::sqrt(-2.0*log(r)/r);
 
     return x*r;
 }
@@ -1500,7 +1501,7 @@ static real vrescale_resamplekin(real kk, real sigma, real ndeg, real taut,
     ekin_new =
         kk +
         (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1, step, &rnd_count, seed, RND_SEED_VRESCALE) + rr*rr)/ndeg - kk) +
-        2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
+        2.0*rr*std::sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
 
     return ekin_new;
 }
@@ -1542,7 +1543,7 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
             }
             else
             {
-                ekind->tcstat[i].lambda = sqrt(Ek_new/Ek);
+                ekind->tcstat[i].lambda = std::sqrt(Ek_new/Ek);
             }
 
             therm_integral[i] -= Ek_new - Ek;
