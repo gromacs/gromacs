@@ -44,6 +44,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -380,10 +381,10 @@ int gmx_bundle(int argc, char *argv[])
             fprintf(ftilt, " %6g", RAD2DEG*acos(bun.dir[i][ZZ]));
             comp = bun.mid[i][XX]*bun.dir[i][XX]+bun.mid[i][YY]*bun.dir[i][YY];
             fprintf(ftiltr, " %6g", RAD2DEG*
-                    std::asin(comp/std::sqrt(sqr(comp)+sqr(bun.dir[i][ZZ]))));
+                    std::asin(comp/std::hypot(comp, bun.dir[i][ZZ])));
             comp = bun.mid[i][YY]*bun.dir[i][XX]-bun.mid[i][XX]*bun.dir[i][YY];
             fprintf(ftiltl, " %6g", RAD2DEG*
-                    std::asin(comp/std::sqrt(sqr(comp)+sqr(bun.dir[i][ZZ]))));
+                    std::asin(comp/std::hypot(comp, bun.dir[i][ZZ])));
             if (bKink)
             {
                 rvec_sub(bun.end[0][i], bun.end[2][i], va);

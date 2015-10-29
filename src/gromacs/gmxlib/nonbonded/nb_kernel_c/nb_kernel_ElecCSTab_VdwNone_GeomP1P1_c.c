@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -151,7 +150,7 @@ nb_kernel_ElecCSTab_VdwNone_GeomP1P1_VF_c
             /* Calculate squared distance and things based on it */
             rsq00            = dx00*dx00+dy00*dy00+dz00*dz00;
 
-            rinv00           = gmx_invsqrt(rsq00);
+            rinv00           = 1.0/sqrt(rsq00);
 
             /* Load parameters for j particles */
             jq0              = charge[jnr+0];
@@ -334,7 +333,7 @@ nb_kernel_ElecCSTab_VdwNone_GeomP1P1_F_c
             /* Calculate squared distance and things based on it */
             rsq00            = dx00*dx00+dy00*dy00+dz00*dz00;
 
-            rinv00           = gmx_invsqrt(rsq00);
+            rinv00           = 1.0/sqrt(rsq00);
 
             /* Load parameters for j particles */
             jq0              = charge[jnr+0];

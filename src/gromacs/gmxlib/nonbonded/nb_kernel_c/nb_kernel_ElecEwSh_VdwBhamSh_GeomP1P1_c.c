@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -169,7 +168,7 @@ nb_kernel_ElecEwSh_VdwBhamSh_GeomP1P1_VF_c
             /* Calculate squared distance and things based on it */
             rsq00            = dx00*dx00+dy00*dy00+dz00*dz00;
 
-            rinv00           = gmx_invsqrt(rsq00);
+            rinv00           = 1.0/sqrt(rsq00);
 
             rinvsq00         = rinv00*rinv00;
 
@@ -384,7 +383,7 @@ nb_kernel_ElecEwSh_VdwBhamSh_GeomP1P1_F_c
             /* Calculate squared distance and things based on it */
             rsq00            = dx00*dx00+dy00*dy00+dz00*dz00;
 
-            rinv00           = gmx_invsqrt(rsq00);
+            rinv00           = 1.0/sqrt(rsq00);
 
             rinvsq00         = rinv00*rinv00;
 

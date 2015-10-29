@@ -150,7 +150,7 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
     sfree(div);
     sfree(mdiv);
 
-    npp_root3  = static_cast<int>(std::pow(ntot - npme, 1.0/3.0) + 0.5);
+    npp_root3  = static_cast<int>(std::cbrt(ntot - npme) + 0.5);
     npme_root2 = static_cast<int>(std::sqrt(static_cast<double>(npme)) + 0.5);
 
     /* The check below gives a reasonable division:

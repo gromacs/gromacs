@@ -42,7 +42,6 @@
 #include <math.h>
 
 #include "../nb_kernel.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/gmxlib/nrnb.h"
 
 /*
@@ -206,10 +205,10 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
             rsq20            = dx20*dx20+dy20*dy20+dz20*dz20;
             rsq30            = dx30*dx30+dy30*dy30+dz30*dz30;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv20           = gmx_invsqrt(rsq20);
-            rinv30           = gmx_invsqrt(rsq30);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv10           = 1.0/sqrt(rsq10);
+            rinv20           = 1.0/sqrt(rsq20);
+            rinv30           = 1.0/sqrt(rsq30);
 
             rinvsq00         = rinv00*rinv00;
             rinvsq10         = rinv10*rinv10;
@@ -568,10 +567,10 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
             rsq20            = dx20*dx20+dy20*dy20+dz20*dz20;
             rsq30            = dx30*dx30+dy30*dy30+dz30*dz30;
 
-            rinv00           = gmx_invsqrt(rsq00);
-            rinv10           = gmx_invsqrt(rsq10);
-            rinv20           = gmx_invsqrt(rsq20);
-            rinv30           = gmx_invsqrt(rsq30);
+            rinv00           = 1.0/sqrt(rsq00);
+            rinv10           = 1.0/sqrt(rsq10);
+            rinv20           = 1.0/sqrt(rsq20);
+            rinv30           = 1.0/sqrt(rsq30);
 
             rinvsq00         = rinv00*rinv00;
             rinvsq10         = rinv10*rinv10;
