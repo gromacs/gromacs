@@ -50,6 +50,7 @@
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -324,13 +325,13 @@ static void get_cell_range(real b0, real b1,
 {
     *cf = std::max(static_cast<int>((b0 - c0)*invs), 0);
 
-    while (*cf > 0 && d2 + sqr((b0 - c0) - (*cf-1+1)*s) < r2)
+    while (*cf > 0 && d2 + gmx::square((b0 - c0) - (*cf-1+1)*s) < r2)
     {
         (*cf)--;
     }
 
     *cl = std::min(static_cast<int>((b1 - c0)*invs), nc-1);
-    while (*cl < nc-1 && d2 + sqr((*cl+1)*s - (b1 - c0)) < r2)
+    while (*cl < nc-1 && d2 + gmx::square((*cl+1)*s - (b1 - c0)) < r2)
     {
         (*cl)++;
     }
@@ -525,7 +526,7 @@ static gmx_bool subc_in_range_x(int na_c,
         {
             int  j0 = (csj*na_c + j)*stride;
 
-            real d2 = sqr(x_i[i0  ] - x_j[j0  ]) + sqr(x_i[i0+1] - x_j[j0+1]) + sqr(x_i[i0+2] - x_j[j0+2]);
+            real d2 = gmx::square(x_i[i0  ] - x_j[j0  ]) + gmx::square(x_i[i0+1] - x_j[j0+1]) + gmx::square(x_i[i0+2] - x_j[j0+2]);
 
             if (d2 < rl2)
             {
@@ -1137,9 +1138,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for (int j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (gmx::square(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -1177,9 +1178,9 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
                 for (int j = 0; j < NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                        (gmx::square(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
+                         gmx::square(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -2521,7 +2522,7 @@ real nbnxn_get_rlist_effective_inc(int cluster_size_j, real atom_density)
     vol_inc_i = (cluster_size_i - 1)/atom_density;
     vol_inc_j = (cluster_size_j - 1)/atom_density;
 
-    return nbnxn_rlist_inc_outside_fac*std::pow(static_cast<real>(vol_inc_i + vol_inc_j), static_cast<real>(1.0/3.0));
+    return nbnxn_rlist_inc_outside_fac*std::cbrt(vol_inc_i + vol_inc_j);
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
@@ -2606,7 +2607,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     xy_diag2 = ls[XX]*ls[XX] + ls[YY]*ls[YY] + ls[ZZ]*ls[ZZ];
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
-    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*sqr((grid->na_c - 1.0)/grid->na_c)*std::sqrt(xy_diag2/3);
+    r_eff_sup = rlist + nbnxn_rlist_inc_outside_fac*gmx::square((grid->na_c - 1.0)/grid->na_c)*std::sqrt(xy_diag2/3);
 
     if (!nbs->DomDec || nbs->zones->n == 1)
     {
@@ -2615,7 +2616,7 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
     else
     {
         nsp_est_nl =
-            sqr(grid->atom_density/grid->na_c)*
+            gmx::square(grid->atom_density/grid->na_c)*
             nonlocal_vol2(nbs->zones, ls, r_eff_sup);
     }
 
@@ -2626,9 +2627,9 @@ static void get_nsubpair_target(const nbnxn_search_t  nbs,
         /* 6/2 rectangular volume on the faces */
         vol_est += (ls[XX]*ls[YY] + ls[XX]*ls[ZZ] + ls[YY]*ls[ZZ])*r_eff_sup;
         /* 12/2 quarter pie slices on the edges */
-        vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*sqr(r_eff_sup);
+        vol_est += 2*(ls[XX] + ls[YY] + ls[ZZ])*0.25*M_PI*gmx::square(r_eff_sup);
         /* 4 octants of a sphere */
-        vol_est += 0.5*4.0/3.0*M_PI*std::pow(r_eff_sup, static_cast<real>(3));
+        vol_est += 0.5*4.0/3.0*M_PI*gmx::power3(r_eff_sup);
 
         /* Estimate the number of cluster pairs as the local number of
          * clusters times the volume they interact with times the density.
@@ -3281,7 +3282,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             }
             if (bx1 < gridj->c0[XX])
             {
-                d2cx = sqr(gridj->c0[XX] - bx1);
+                d2cx = gmx::square(gridj->c0[XX] - bx1);
 
                 if (d2cx >= rl2)
                 {
@@ -3306,11 +3307,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
             }
             else if (tz < 0)
             {
-                d2z = sqr(bz1);
+                d2z = gmx::square(bz1);
             }
             else
             {
-                d2z = sqr(bz0 - box[ZZ][ZZ]);
+                d2z = gmx::square(bz0 - box[ZZ][ZZ]);
             }
 
             d2z_cx = d2z + d2cx;
@@ -3355,11 +3356,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                 d2z_cy = d2z;
                 if (by1 < gridj->c0[YY])
                 {
-                    d2z_cy += sqr(gridj->c0[YY] - by1);
+                    d2z_cy += gmx::square(gridj->c0[YY] - by1);
                 }
                 else if (by0 > gridj->c1[YY])
                 {
-                    d2z_cy += sqr(by0 - gridj->c1[YY]);
+                    d2z_cy += gmx::square(by0 - gridj->c1[YY]);
                 }
 
                 for (int tx = -shp[XX]; tx <= shp[XX]; tx++)
@@ -3443,11 +3444,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                         d2zx = d2z;
                         if (gridj->c0[XX] + cx*gridj->sx > bx1)
                         {
-                            d2zx += sqr(gridj->c0[XX] + cx*gridj->sx - bx1);
+                            d2zx += gmx::square(gridj->c0[XX] + cx*gridj->sx - bx1);
                         }
                         else if (gridj->c0[XX] + (cx+1)*gridj->sx < bx0)
                         {
-                            d2zx += sqr(gridj->c0[XX] + (cx+1)*gridj->sx - bx0);
+                            d2zx += gmx::square(gridj->c0[XX] + (cx+1)*gridj->sx - bx0);
                         }
 
 #ifndef NBNXN_SHIFT_BACKWARD
@@ -3483,11 +3484,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                             d2zxy = d2zx;
                             if (gridj->c0[YY] + cy*gridj->sy > by1)
                             {
-                                d2zxy += sqr(gridj->c0[YY] + cy*gridj->sy - by1);
+                                d2zxy += gmx::square(gridj->c0[YY] + cy*gridj->sy - by1);
                             }
                             else if (gridj->c0[YY] + (cy+1)*gridj->sy < by0)
                             {
-                                d2zxy += sqr(gridj->c0[YY] + (cy+1)*gridj->sy - by0);
+                                d2zxy += gmx::square(gridj->c0[YY] + (cy+1)*gridj->sy - by0);
                             }
                             if (c1 > c0 && d2zxy < rl2)
                             {
@@ -3505,7 +3506,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                 cf = cs;
                                 while (cf > c0 &&
                                        (bbcz_j[cf*NNBSBB_D+1] >= bz0 ||
-                                        d2xy + sqr(bbcz_j[cf*NNBSBB_D+1] - bz0) < rl2))
+                                        d2xy + gmx::square(bbcz_j[cf*NNBSBB_D+1] - bz0) < rl2))
                                 {
                                     cf--;
                                 }
@@ -3516,7 +3517,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                 cl = cs;
                                 while (cl < c1-1 &&
                                        (bbcz_j[cl*NNBSBB_D] <= bz1 ||
-                                        d2xy + sqr(bbcz_j[cl*NNBSBB_D] - bz1) < rl2))
+                                        d2xy + gmx::square(bbcz_j[cl*NNBSBB_D] - bz1) < rl2))
                                 {
                                     cl++;
                                 }

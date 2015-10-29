@@ -65,6 +65,7 @@
 #include "gromacs/legacyheaders/nrnb.h"
 #include "gromacs/legacyheaders/types/commrec.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calcmu.h"
@@ -247,11 +248,11 @@ static void calc_f_el(FILE *fp, int  start, int homenr,
             if (Et[m].n == 3)
             {
                 t0     = Et[m].a[1];
-                Ext[m] = cos(Et[m].a[0]*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(Et[m].a[2])));
+                Ext[m] = std::cos(Et[m].a[0]*(t-t0))*std::exp(-gmx::square(t-t0)/(2.0*gmx::square(Et[m].a[2])));
             }
             else
             {
-                Ext[m] = cos(Et[m].a[0]*t);
+                Ext[m] = std::cos(Et[m].a[0]*t);
             }
         }
         else
@@ -382,7 +383,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
     real pf2, fn2;
     char buf[STEPSTRSIZE];
 
-    pf2 = sqr(pforce);
+    pf2 = gmx::square(pforce);
     for (i = 0; i < md->homenr; i++)
     {
         fn2 = norm2(f[i]);
@@ -391,7 +392,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
         {
             fprintf(fp, "step %s  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
                     gmx_step_str(step, buf),
-                    ddglatnr(cr->dd, i), x[i][XX], x[i][YY], x[i][ZZ], sqrt(fn2));
+                    ddglatnr(cr->dd, i), x[i][XX], x[i][YY], x[i][ZZ], std::sqrt(fn2));
         }
     }
 }
@@ -2367,10 +2368,10 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * the reciprocal-space contribution is constant in the
              * region that contributes to the self-interaction).
              */
-            fr->enershiftsix = pow(fr->ewaldcoeff_lj, 6) / 6.0;
+            fr->enershiftsix = gmx::power6(fr->ewaldcoeff_lj) / 6.0;
 
-            eners[0] += -pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3)/3.0;
-            virs[0]  +=  pow(sqrt(M_PI)*fr->ewaldcoeff_lj, 3);
+            eners[0] += -gmx::power3(std::sqrt(M_PI)*fr->ewaldcoeff_lj)/3.0;
+            virs[0]  +=  gmx::power3(std::sqrt(M_PI)*fr->ewaldcoeff_lj);
         }
 
         fr->enerdiffsix    = eners[0];

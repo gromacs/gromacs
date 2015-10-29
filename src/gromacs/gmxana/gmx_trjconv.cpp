@@ -60,6 +60,7 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/legacyheaders/names.h"
 #include "gromacs/math/do_fit.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -144,7 +145,7 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     /* Double check whether all atoms in all molecules that are marked are part
      * of the cluster. Simultaneously compute the center of geometry.
      */
-    min_dist2   = 10*sqr(trace(box));
+    min_dist2   = 10*gmx::square(trace(box));
     imol_center = -1;
     ncluster    = 0;
     for (i = 0; i < nmol; i++)
@@ -211,7 +212,7 @@ static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
     while (nadded < ncluster)
     {
         /* Find min distance between cluster molecules and those remaining to be added */
-        min_dist2   = 10*sqr(trace(box));
+        min_dist2   = 10*gmx::square(trace(box));
         imin        = -1;
         jmin        = -1;
         /* Loop over added mols */

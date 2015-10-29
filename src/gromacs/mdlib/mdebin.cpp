@@ -51,6 +51,7 @@
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/types/fcdata.h"
 #include "gromacs/legacyheaders/types/group.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
@@ -1094,7 +1095,7 @@ void upd_mdebin(t_mdebin       *md,
         add_ebin(md->ebin, md->ivcos, 1, &(ekind->cosacc.vcos), bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
         tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
-                 *dens*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+                 *dens*gmx::square(box[ZZ][ZZ]*NANO/(2*M_PI)));
         add_ebin(md->ebin, md->ivisc, 1, &tmp, bSum);
     }
     if (md->nE > 1)
