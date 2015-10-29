@@ -40,11 +40,6 @@
 /*
    collection of in-line ready operations:
 
-   lookup-table optimized scalar operations:
-   real gmx_invsqrt(real x)
-   real sqr(real x)
-   double dsqr(double x)
-
    vector operations:
    void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
    void dvec_add(const dvec a,const dvec b,dvec c)  c = a + b
@@ -106,15 +101,9 @@
    real trace(matrix m)                             = trace(m)
  */
 
-/* The file only depends on config.h for GMX_SOFTWARE_INVSQRT and
-   HAVE_*SQRT*. This is no problem with public headers because
-   it is OK if user code uses a different rsqrt implementation */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <math.h>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vectypes.h"
@@ -126,93 +115,6 @@ extern "C" {
 #elif 0
 } /* avoid screwing up indentation */
 #endif
-
-#ifdef GMX_SOFTWARE_INVSQRT
-#define EXP_LSB         0x00800000
-#define EXP_MASK        0x7f800000
-#define EXP_SHIFT       23
-#define FRACT_MASK      0x007fffff
-#define FRACT_SIZE      11              /* significant part of fraction */
-#define FRACT_SHIFT     (EXP_SHIFT-FRACT_SIZE)
-#define EXP_ADDR(val)   (((val)&EXP_MASK)>>EXP_SHIFT)
-#define FRACT_ADDR(val) (((val)&(FRACT_MASK|EXP_LSB))>>FRACT_SHIFT)
-
-extern const unsigned int gmx_invsqrt_exptab[];
-extern const unsigned int gmx_invsqrt_fracttab[];
-
-typedef union
-{
-    unsigned int bval;
-    float        fval;
-} t_convert;
-
-static gmx_inline real gmx_software_invsqrt(real x)
-{
-    const real   half  = 0.5;
-    const real   three = 3.0;
-    t_convert    result, bit_pattern;
-    unsigned int exp, fract;
-    real         lu;
-    real         y;
-#ifdef GMX_DOUBLE
-    real         y2;
-#endif
-
-    bit_pattern.fval = x;
-    exp              = EXP_ADDR(bit_pattern.bval);
-    fract            = FRACT_ADDR(bit_pattern.bval);
-    result.bval      = gmx_invsqrt_exptab[exp] | gmx_invsqrt_fracttab[fract];
-    lu               = result.fval;
-
-    y = (half*lu*(three-((x*lu)*lu)));
-#ifdef GMX_DOUBLE
-    y2 = (half*y*(three-((x*y)*y)));
-
-    return y2;                  /* 10 Flops */
-#else
-    return y;                   /* 5  Flops */
-#endif
-}
-
-#define gmx_invsqrt_impl(x) gmx_software_invsqrt(x)
-#define INVSQRT_DONE
-#endif /* gmx_invsqrt */
-
-#ifndef INVSQRT_DONE
-#    ifdef GMX_DOUBLE
-#        ifdef HAVE_RSQRT
-#            define gmx_invsqrt_impl(x)     rsqrt(x)
-#        else
-#            define gmx_invsqrt_impl(x)     (1.0/sqrt(x))
-#        endif
-#    else /* single */
-#        ifdef HAVE_RSQRTF
-#            define gmx_invsqrt_impl(x)     rsqrtf(x)
-#        elif defined HAVE_RSQRT
-#            define gmx_invsqrt_impl(x)     rsqrt(x)
-#        elif defined HAVE_SQRTF
-#            define gmx_invsqrt_impl(x)     (1.0/sqrtf(x))
-#        else
-#            define gmx_invsqrt_impl(x)     (1.0/sqrt(x))
-#        endif
-#    endif
-#endif
-
-#ifdef NDEBUG
-#    define gmx_invsqrt(x) gmx_invsqrt_impl(x)
-#else
-#    define gmx_invsqrt(x) ( (x > 0) ? gmx_invsqrt_impl(x) : 0.0 )
-#endif
-
-static gmx_inline real sqr(real x)
-{
-    return (x*x);
-}
-
-static gmx_inline double dsqr(double x)
-{
-    return (x*x);
-}
 
 /* Maclaurin series for sinh(x)/x, useful for NH chains and MTTK pressure control
    Here, we compute it to 10th order, which might be overkill, 8th is probably enough,
@@ -396,7 +298,7 @@ static gmx_inline void dsvmul(double a, const dvec v1, dvec v2)
 
 static gmx_inline real distance2(const rvec v1, const rvec v2)
 {
-    return sqr(v2[XX]-v1[XX]) + sqr(v2[YY]-v1[YY]) + sqr(v2[ZZ]-v1[ZZ]);
+    return gmx::square(v2[XX]-v1[XX]) + gmx::square(v2[YY]-v1[YY]) + gmx::square(v2[ZZ]-v1[ZZ]);
 }
 
 static gmx_inline void clear_rvec(rvec a)
@@ -479,29 +381,21 @@ static gmx_inline double dnorm(const dvec a)
 }
 
 /* WARNING:
- * As norm() uses sqrtf() (which is slow) _only_ use it if you are sure you
+ * As norm() uses sqrt() (which is slow) _only_ use it if you are sure you
  * don't need 1/norm(), otherwise use norm2()*invnorm(). */
 static gmx_inline real norm(const rvec a)
 {
-    /* This is ugly, but we deliberately do not define gmx_sqrt() and handle the
-     * float/double case here instead to avoid gmx_sqrt() being accidentally used. */
-#ifdef GMX_DOUBLE
-    return dnorm(a);
-#elif defined HAVE_SQRTF
-    return sqrtf(iprod(a, a));
-#else
     return sqrt(iprod(a, a));
-#endif
 }
 
 static gmx_inline real invnorm(const rvec a)
 {
-    return gmx_invsqrt(norm2(a));
+    return gmx::invsqrt(norm2(a));
 }
 
 static gmx_inline real dinvnorm(const dvec a)
 {
-    return gmx_invsqrt(dnorm2(a));
+    return gmx::invsqrt(dnorm2(a));
 }
 
 /* WARNING:
@@ -534,7 +428,7 @@ cos_angle(const rvec a, const rvec b)
     ipab = ipa*ipb;
     if (ipab > 0)
     {
-        cosval = ip*gmx_invsqrt(ipab);  /*  7 */
+        cosval = ip*gmx::invsqrt(ipab);  /*  7 */
     }
     else
     {
@@ -767,7 +661,7 @@ static gmx_inline void unitv(const rvec src, rvec dest)
 {
     real linv;
 
-    linv     = gmx_invsqrt(norm2(src));
+    linv     = gmx::invsqrt(norm2(src));
     dest[XX] = linv*src[XX];
     dest[YY] = linv*src[YY];
     dest[ZZ] = linv*src[ZZ];
@@ -817,7 +711,7 @@ static gmx_inline void matrix_convert(matrix box, const rvec vec, rvec angle)
     box[ZZ][XX] = vec[ZZ]*cos(angle[YY]);
     box[ZZ][YY] = vec[ZZ]
         *(cos(angle[XX])-cos(angle[YY])*cos(angle[ZZ]))/sin(angle[ZZ]);
-    box[ZZ][ZZ] = sqrt(sqr(vec[ZZ])
+    box[ZZ][ZZ] = sqrt(gmx::square(vec[ZZ])
                        -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
 }
 

@@ -69,6 +69,7 @@
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
@@ -337,7 +338,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     const char            *box_err  = "Can not increase nstlist because the box is too small";
     const char            *dd_err   = "Can not increase nstlist because of domain decomposition limitations";
     char                   buf[STRLEN];
-    const float            oneThird = 1.0f / 3.0f;
 
     if (nstlist_cmdline <= 0)
     {
@@ -434,8 +434,8 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     /* Determine the pair list size increase due to zero interactions */
     rlist_inc = nbnxn_get_rlist_effective_inc(ls.cluster_size_j,
                                               mtop->natoms/det(box));
-    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*pow(listfac_ok, oneThird) - rlist_inc;
-    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*pow(listfac_max, oneThird) - rlist_inc;
+    rlist_ok  = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_ok) - rlist_inc;
+    rlist_max = (rlistWithReferenceNstlist + rlist_inc)*std::cbrt(listfac_max) - rlist_inc;
     if (debug)
     {
         fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n",
@@ -455,7 +455,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
         calc_verlet_buffer_size(mtop, det(box), ir, -1, &ls, NULL, &rlist_new);
 
         /* Does rlist fit in the box? */
-        bBox = (sqr(rlist_new) < max_cutoff2(ir->ePBC, box));
+        bBox = (gmx::square(rlist_new) < max_cutoff2(ir->ePBC, box));
         bDD  = TRUE;
         if (bBox && DOMAINDECOMP(cr))
         {

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="StaticLog2">
+    <Int Name="Length">11</Int>
+    <Int>0</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+    <Int>2</Int>
+    <Int>2</Int>
+    <Int>2</Int>
+    <Int>3</Int>
+    <Int>31</Int>
+    <Int>33</Int>
+    <Int>63</Int>
+  </Sequence>
+</ReferenceData>

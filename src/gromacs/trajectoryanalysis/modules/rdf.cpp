@@ -56,6 +56,7 @@
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/analysisdata/modules/plot.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
@@ -408,8 +409,8 @@ Rdf::initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
             rmax_ = 3*std::max(box[XX][XX], std::max(box[YY][YY], box[ZZ][ZZ]));
         }
     }
-    cut2_  = sqr(cutoff_);
-    rmax2_ = sqr(rmax_);
+    cut2_  = gmx::square(cutoff_);
+    rmax2_ = gmx::square(rmax_);
     nb_.setCutoff(rmax_);
     // We use the double amount of bins, so we can correctly
     // write the rdf and rdf_cn output at i*binwidth values.

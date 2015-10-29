@@ -49,6 +49,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed-forces/disre.h"
 #include "gromacs/listed-forces/orires.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -600,7 +601,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
     {
         kT = BOLTZ*ref_t[n];
         /* The mass is encounted for later, since this differs per atom */
-        sig[n].V  = sqrt(kT*(1 - sdc[n].em*sdc[n].em));
+        sig[n].V  = std::sqrt(kT*(1 - sdc[n].em*sdc[n].em));
     }
 
     if (!bDoConstr)
@@ -610,7 +611,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
             real rnd[3];
             int  ng = gatindex ? gatindex[n] : n;
 
-            ism = sqrt(invmass[n]);
+            ism = std::sqrt(invmass[n]);
             if (cFREEZE)
             {
                 gf  = cFREEZE[n];
@@ -692,7 +693,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
                 real rnd[3];
                 int  ng = gatindex ? gatindex[n] : n;
 
-                ism = sqrt(invmass[n]);
+                ism = std::sqrt(invmass[n]);
                 if (cFREEZE)
                 {
                     gf  = cFREEZE[n];
@@ -749,10 +750,10 @@ static void do_update_sd2_Tconsts(gmx_stochd_t *sd,
     {
         kT = BOLTZ*ref_t[gt];
         /* The mass is encounted for later, since this differs per atom */
-        sig[gt].V  = sqrt(kT*(1-sdc[gt].em));
-        sig[gt].X  = sqrt(kT*sqr(tau_t[gt])*sdc[gt].c);
-        sig[gt].Yv = sqrt(kT*sdc[gt].b/sdc[gt].c);
-        sig[gt].Yx = sqrt(kT*sqr(tau_t[gt])*sdc[gt].b/(1-sdc[gt].em));
+        sig[gt].V  = std::sqrt(kT*(1-sdc[gt].em));
+        sig[gt].X  = std::sqrt(kT*gmx::square(tau_t[gt])*sdc[gt].c);
+        sig[gt].Yv = std::sqrt(kT*sdc[gt].b/sdc[gt].c);
+        sig[gt].Yx = std::sqrt(kT*gmx::square(tau_t[gt])*sdc[gt].b/(1-sdc[gt].em));
     }
 }
 
@@ -788,7 +789,7 @@ static void do_update_sd2(gmx_stochd_t *sd,
     {
         real rnd[6], rndi[3];
         ng  = gatindex ? gatindex[n] : n;
-        ism = sqrt(invmass[n]);
+        ism = std::sqrt(invmass[n]);
         if (cFREEZE)
         {
             gf  = cFREEZE[n];
@@ -871,14 +872,14 @@ static void do_update_bd_Tconsts(double dt, real friction_coefficient,
     {
         for (gt = 0; gt < ngtc; gt++)
         {
-            rf[gt] = sqrt(2.0*BOLTZ*ref_t[gt]/(friction_coefficient*dt));
+            rf[gt] = std::sqrt(2.0*BOLTZ*ref_t[gt]/(friction_coefficient*dt));
         }
     }
     else
     {
         for (gt = 0; gt < ngtc; gt++)
         {
-            rf[gt] = sqrt(2.0*BOLTZ*ref_t[gt]);
+            rf[gt] = std::sqrt(2.0*BOLTZ*ref_t[gt]);
         }
     }
 }
@@ -929,7 +930,7 @@ static void do_update_bd(int start, int nrend, double dt,
                 {
                     /* NOTE: invmass = 2/(mass*friction_constant*dt) */
                     vn = 0.5*invmass[n]*f[n][d]*dt
-                        + sqrt(0.5*invmass[n])*rf[gt]*rnd[d];
+                        + std::sqrt(0.5*invmass[n])*rf[gt]*rnd[d];
                 }
 
                 v[n][d]      = vn;

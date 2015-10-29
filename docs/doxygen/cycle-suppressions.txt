@@ -17,4 +17,3 @@ gpu_utils -> hardware
 topology -> listed-forces
 pbcutil -> mdtypes
 listed-forces -> mdlib
-utility -> math

@@ -47,6 +47,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xtcio.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -263,8 +264,8 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
                 {
                     pbc_dx(&pbc, x[ai], x[aj], dx);
                     blen      = norm(dx);
-                    deviation = sqr(blen-b0);
-                    if (std::sqrt(deviation/sqr(b0)) > tol)
+                    deviation = gmx::square(blen-b0);
+                    if (std::sqrt(deviation/gmx::square(b0)) > tol)
                     {
                         fprintf(stderr, "Distance between atoms %d and %d is %.3f, should be %.3f\n", ai+1, aj+1, blen, b0);
                     }
@@ -479,9 +480,9 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
     /* check coordinates */
     if (bX)
     {
-        vdwfac2 = sqr(vdw_fac);
-        bonlo2  = sqr(bon_lo);
-        bonhi2  = sqr(bon_hi);
+        vdwfac2 = gmx::square(vdw_fac);
+        bonlo2  = gmx::square(bon_lo);
+        bonhi2  = gmx::square(bon_hi);
 
         fprintf(stderr,
                 "Checking for atoms closer than %g and not between %g and %g,\n"
@@ -526,7 +527,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                     rvec_sub(x[i], x[j], dx);
                 }
                 r2    = iprod(dx, dx);
-                dist2 = sqr(atom_vdw[i]+atom_vdw[j]);
+                dist2 = gmx::square(atom_vdw[i]+atom_vdw[j]);
                 if ( (r2 <= dist2*bonlo2) ||
                      ( (r2 >= dist2*bonhi2) && (r2 <= dist2*vdwfac2) ) )
                 {

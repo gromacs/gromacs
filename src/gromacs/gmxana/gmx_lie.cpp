@@ -48,6 +48,7 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arraysize.h"
@@ -211,7 +212,7 @@ int gmx_lie(int argc, char *argv[])
     if (nframes > 0)
     {
         printf("DGbind = %.3f (%.3f)\n", lieaver/nframes,
-               std::sqrt(lieav2/nframes-sqr(lieaver/nframes)));
+               std::sqrt(lieav2/nframes-gmx::square(lieaver/nframes)));
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");

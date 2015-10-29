@@ -48,6 +48,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -115,7 +116,7 @@ static void calc_mat(int nres, int natoms, int rndx[],
     rvec  ddx;
 
     set_pbc(&pbc, ePBC, box);
-    trunc2 = sqr(trunc);
+    trunc2 = gmx::square(trunc);
     for (resi = 0; (resi < nres); resi++)
     {
         for (resj = 0; (resj < nres); resj++)
