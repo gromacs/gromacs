@@ -15,4 +15,3 @@ mdlib -> pulling
 topology -> listed-forces
 pbcutil -> mdtypes
 listed-forces -> mdlib
-utility -> math

@@ -42,6 +42,7 @@
 
 #include "gromacs/fileio/matio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -153,7 +154,7 @@ real mat_energy(t_mat *m)
 
     for (j = 0; (j < m->nn-1); j++)
     {
-        emat += sqr(m->mat[j][j+1]);
+        emat += gmx::square(m->mat[j][j+1]);
     }
     return emat;
 }

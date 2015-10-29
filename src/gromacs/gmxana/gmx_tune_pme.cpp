@@ -488,7 +488,7 @@ static gmx_bool analyze_data(
                     s = 0.0;
                     for (j = 0; j < nrepeats; j++)
                     {
-                        s += std::pow( pd->Gcycles[j] - pd->Gcycles_Av, 2 );
+                        s += gmx::square( pd->Gcycles[j] - pd->Gcycles_Av );
                     }
                     s /= (nrepeats - 1);
                     s  = std::sqrt(s);
@@ -1326,7 +1326,7 @@ static void make_npme_list(
             case eNpmeSubset:
                 /* For 2d PME we want a common largest factor of at least the cube
                  * root of the number of PP nodes */
-                min_factor = static_cast<int>(std::pow(npp, 1.0/3.0));
+                min_factor = static_cast<int>(std::cbrt(npp));
                 break;
             default:
                 gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");

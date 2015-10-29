@@ -47,6 +47,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/eigio.h"
 #include "gromacs/gmxana/gmx_ana.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
@@ -227,7 +228,7 @@ int gmx_nmtraj(int argc, char *argv[])
     {
         for (i = 0; (i < natoms); i++)
         {
-            invsqrtm[i] = gmx_invsqrt(atoms->atom[i].m);
+            invsqrtm[i] = gmx::invsqrt(atoms->atom[i].m);
         }
     }
     else
