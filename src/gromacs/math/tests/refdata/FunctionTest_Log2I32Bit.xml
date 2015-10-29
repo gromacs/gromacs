@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Log2I32Bit">
+    <Int Name="Length">31</Int>
+    <Int>0</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>2</Int>
+    <Int>2</Int>
+    <Int>2</Int>
+    <Int>2</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+    <Int>31</Int>
+  </Sequence>
+</ReferenceData>

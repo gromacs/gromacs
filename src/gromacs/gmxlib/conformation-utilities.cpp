@@ -43,6 +43,7 @@
 
 #include <algorithm>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 

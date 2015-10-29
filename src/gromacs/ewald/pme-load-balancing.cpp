@@ -59,6 +59,7 @@
 #include "gromacs/gmxlib/calcgrid.h"
 #include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
@@ -626,7 +627,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
             if (OK && ir->ePBC != epbcNONE)
             {
-                OK = (sqr(pme_lb->setup[pme_lb->cur+1].rlist)
+                OK = (gmx::square(pme_lb->setup[pme_lb->cur+1].rlist)
                       <= max_cutoff2(ir->ePBC, state->box));
                 if (!OK)
                 {
@@ -761,11 +762,11 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
         {
             real       crc2;
 
-            ic->dispersion_shift.cpot = -std::pow(static_cast<double>(ic->rvdw), -6.0);
-            ic->repulsion_shift.cpot  = -std::pow(static_cast<double>(ic->rvdw), -12.0);
+            ic->dispersion_shift.cpot = -1.0/gmx::power6(static_cast<double>(ic->rvdw));
+            ic->repulsion_shift.cpot  = -1.0/gmx::power12(static_cast<double>(ic->rvdw));
             ic->sh_invrc6             = -ic->dispersion_shift.cpot;
-            crc2                      = sqr(ic->ewaldcoeff_lj*ic->rvdw);
-            ic->sh_lj_ewald           = (exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)*std::pow(static_cast<double>(ic->rvdw), -6.0);
+            crc2                      = gmx::square(ic->ewaldcoeff_lj*ic->rvdw);
+            ic->sh_lj_ewald           = (std::exp(-crc2)*(1 + crc2 + 0.5*crc2*crc2) - 1)/gmx::power6(ic->rvdw);
         }
     }
 
@@ -1029,7 +1030,7 @@ static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
     real       pp_ratio_temporary;
 
     pp_ratio_temporary = pme_lb->setup[pme_lb->cur].rlist / pme_lb->setup[0].rlist;
-    pp_ratio           = std::pow(static_cast<double>(pp_ratio_temporary), 3.0);
+    pp_ratio           = gmx::power3(pp_ratio_temporary);
     grid_ratio         = pme_grid_points(&pme_lb->setup[pme_lb->cur])/
         (double)pme_grid_points(&pme_lb->setup[0]);
 

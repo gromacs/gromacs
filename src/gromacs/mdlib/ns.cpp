@@ -51,6 +51,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
@@ -1461,7 +1462,7 @@ static int ns_simple_core(t_forcerec *fr,
     gmx_bool     bBox, bTriclinic;
     int         *i_egp_flags;
 
-    rlist2 = sqr(fr->rlist);
+    rlist2 = gmx::square(fr->rlist);
 
     bBox = (fr->ePBC != epbcNONE);
     if (bBox)
@@ -1626,9 +1627,8 @@ static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
 }
 
 
-#define sqr(x) ((x)*(x))
-#define calc_dx2(XI, YI, ZI, y) (sqr(XI-y[XX]) + sqr(YI-y[YY]) + sqr(ZI-y[ZZ]))
-#define calc_cyl_dx2(XI, YI, y) (sqr(XI-y[XX]) + sqr(YI-y[YY]))
+#define calc_dx2(XI, YI, ZI, y) (gmx::square(XI-y[XX]) + gmx::square(YI-y[YY]) + gmx::square(ZI-y[ZZ]))
+#define calc_cyl_dx2(XI, YI, y) (gmx::square(XI-y[XX]) + gmx::square(YI-y[YY]))
 /****************************************************
  *
  *    F A S T   N E I G H B O R  S E A R C H I N G
@@ -1641,7 +1641,7 @@ static gmx_inline void get_dx_dd(int Nx, real gridx, real rc2, int xgi, real x,
 
 static void get_cutoff2(t_forcerec *fr, real *rs2)
 {
-    *rs2 = sqr(fr->rlist);
+    *rs2 = gmx::square(fr->rlist);
 }
 
 static void init_nsgrid_lists(t_forcerec *fr, int ngid, gmx_ns_t *ns)
@@ -1782,7 +1782,7 @@ static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
         else
         {
             if (d == XX &&
-                box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < std::sqrt(rs2))
+                box[XX][XX] - std::abs(box[YY][XX]) - std::abs(box[ZZ][XX]) < std::sqrt(rs2))
             {
                 shp[d] = 2;
             }
@@ -2191,7 +2191,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
 
     if (fr->ePBC != epbcNONE)
     {
-        if (sqr(fr->rlist) >= max_cutoff2(fr->ePBC, box))
+        if (gmx::square(fr->rlist) >= max_cutoff2(fr->ePBC, box))
         {
             gmx_fatal(FARGS, "One of the box vectors has become shorter than twice the cut-off length or box_yy-|box_zy| or box_zz has become smaller than the cut-off.");
         }

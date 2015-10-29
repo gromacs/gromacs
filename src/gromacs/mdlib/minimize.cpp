@@ -67,6 +67,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/listed-forces/manage-threading.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
@@ -251,7 +252,7 @@ static void get_f_norm_max(t_commrec *cr,
             {
                 if (!opts->nFreeze[gf][m])
                 {
-                    fam += sqr(f[i][m]);
+                    fam += gmx::square(f[i][m]);
                 }
             }
             fnorm2 += fam;
@@ -977,7 +978,7 @@ static real pr_beta(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
         gmx_sumd(1, &sum, cr);
     }
 
-    return sum/sqr(s_min->fnorm);
+    return sum/gmx::square(s_min->fnorm);
 }
 
 namespace gmx

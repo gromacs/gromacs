@@ -49,6 +49,7 @@
 
 #include "gromacs/gmxlib/main.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -332,7 +333,7 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 rvec_sub(x[ai], x[aj], dx);
             }
             rt2  = iprod(dx, dx);
-            rt_1 = gmx_invsqrt(rt2);
+            rt_1 = gmx::invsqrt(rt2);
             rt_3 = rt_1*rt_1*rt_1;
 
             rt[pair]         = std::sqrt(rt2);
@@ -375,7 +376,6 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                const t_mdatoms gmx_unused *md, t_fcdata *fcd,
                int gmx_unused *global_atom_index)
 {
-    const real      sixth       = 1.0/6.0;
     const real      seven_three = 7.0/3.0;
 
     int             ai, aj;
@@ -433,15 +433,15 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
         {
             bConservative = (dr_weighting == edrwConservative) && (npair > 1);
             bMixed        = dr_bMixed;
-            Rt            = std::pow(Rt_6[res], -sixth);
-            Rtav          = std::pow(Rtav_6[res], -sixth);
+            Rt            = gmx::invsixthroot(Rt_6[res]);
+            Rtav          = gmx::invsixthroot(Rtav_6[res]);
         }
         else
         {
             /* When rtype=2 use instantaneous not ensemble avereged distance */
             bConservative = (npair > 1);
             bMixed        = FALSE;
-            Rt            = std::pow(Rtl_6[res], -sixth);
+            Rt            = gmx::invsixthroot(Rtl_6[res]);
             Rtav          = Rt;
         }
 
@@ -465,7 +465,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             /* NOTE:
              * there is no real potential when time averaging is applied
              */
-            vtot += 0.5*k0*sqr(tav_viol);
+            vtot += 0.5*k0*gmx::square(tav_viol);
             if (1/vtot == 0)
             {
                 printf("vtot is inf: %f\n", vtot);
@@ -555,7 +555,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 }
                 rt2 = iprod(dx, dx);
 
-                weight_rt_1 = gmx_invsqrt(rt2);
+                weight_rt_1 = gmx::invsqrt(rt2);
 
                 if (bConservative)
                 {
@@ -566,7 +566,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                     else
                     {
                         weight_rt_1 *= tav_viol_Rtav7*std::pow(dd->rm3tav[pair], seven_three)+
-                            instant_viol_Rtav7*std::pow(dd->rt[pair], static_cast<real>(-7));
+                            instant_viol_Rtav7/(dd->rt[pair]*gmx::power6(dd->rt[pair]));
                     }
                 }
 

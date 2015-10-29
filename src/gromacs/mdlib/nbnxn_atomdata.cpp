@@ -50,6 +50,7 @@
 #include "thread_mpi/atomic.h"
 
 #include "gromacs/gmxlib/gmx_omp_nthreads.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_consts.h"
@@ -428,7 +429,7 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
                     /* We store 0.5*2^1/6*sigma and sqrt(4*3*eps),
                      * so we get 6*C6 and 12*C12 after combining.
                      */
-                    nbat->nbfp_comb[i*2  ] = 0.5*std::pow(static_cast<real>(c12/c6), static_cast<real>(1.0/6.0));
+                    nbat->nbfp_comb[i*2  ] = 0.5*gmx::sixthroot(c12/c6);
                     nbat->nbfp_comb[i*2+1] = std::sqrt(c6*c6/c12);
                 }
                 else
@@ -598,7 +599,7 @@ void nbnxn_atomdata_init(FILE *fp,
         c12 = nbfp[(i*ntype+i)*2+1]/12.0;
         if (c6 > 0 && c12 > 0)
         {
-            nbat->nbfp_comb[i*2  ] = std::pow(static_cast<real>(c12/c6), static_cast<real>(1.0/6.0));
+            nbat->nbfp_comb[i*2  ] = gmx::sixthroot(c12/c6);
             nbat->nbfp_comb[i*2+1] = 0.25*c6*c6/c12;
         }
         else if (c6 == 0 && c12 == 0)
@@ -639,7 +640,7 @@ void nbnxn_atomdata_init(FILE *fp,
                     ((c6 == 0 && c12 == 0 &&
                       (nbat->nbfp_comb[i*2+1] == 0 || nbat->nbfp_comb[j*2+1] == 0)) ||
                      (c6 > 0 && c12 > 0 &&
-                      gmx_within_tol(std::pow(static_cast<real>(c12/c6), static_cast<real>(1.0/6.0)),
+                      gmx_within_tol(gmx::sixthroot(c12/c6),
                                      0.5*(nbat->nbfp_comb[i*2]+nbat->nbfp_comb[j*2]), tol) &&
                       gmx_within_tol(0.25*c6*c6/c12, std::sqrt(nbat->nbfp_comb[i*2+1]*nbat->nbfp_comb[j*2+1]), tol)));
             }
@@ -1417,7 +1418,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 {
     const nbnxn_buffer_flags_t *flags = &nbat->buffer_flags;
 
-    int next_pow2 = 1<<(gmx_log2i(nth-1)+1);
+    int next_pow2 = 1<<(gmx::log2I(nth-1)+1);
 
     assert(nbat->nout == nth); /* tree-reduce currently only works for nout==nth */
 

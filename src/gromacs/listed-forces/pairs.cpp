@@ -47,6 +47,7 @@
 
 #include <cmath>
 
+#include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -98,7 +99,7 @@ evaluate_single(real r2, real tabscale, real *vftab, real tableStride,
     int        ntab;
 
     /* Do the tabulated interactions - first table lookup */
-    rinv             = gmx_invsqrt(r2);
+    rinv             = gmx::invsqrt(r2);
     r                = r2*rinv;
     rtab             = r*tabscale;
     ntab             = static_cast<int>(rtab);
@@ -158,7 +159,6 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
     int        i, ntab;
     const real half        = 0.5;
     const real minusOne    = -1.0;
-    const real oneThird    = 1.0 / 3.0;
     const real one         = 1.0;
     const real two         = 2.0;
     const real six         = 6.0;
@@ -199,7 +199,7 @@ free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
              * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
              */
             sigma6[i]       = half*c12[i]/c6[i];
-            sigma2[i]       = std::pow(half*c12[i]/c6[i], oneThird);
+            sigma2[i]       = std::cbrt(half*c12[i]/c6[i]);
             /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                what data to store externally.  Can't be fixed without larger scale changes, so not 5.0 */
             if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
@@ -359,7 +359,6 @@ do_pairs(int ftype, int nbonds,
     gmx_bool         bFreeEnergy;
     real             LFC[2], LFV[2], DLF[2], lfac_coul[2], lfac_vdw[2], dlfac_coul[2], dlfac_vdw[2];
     real             qqB, c6B, c12B, sigma2_def, sigma2_min;
-    const real       oneThird = 1.0 / 3.0;
 
     switch (ftype)
     {
@@ -392,8 +391,8 @@ do_pairs(int ftype, int nbonds,
         DLF[1] = 1;
 
         /* precalculate */
-        sigma2_def = pow(fr->sc_sigma6_def, oneThird);
-        sigma2_min = pow(fr->sc_sigma6_min, oneThird);
+        sigma2_def = std::cbrt(fr->sc_sigma6_def);
+        sigma2_min = std::cbrt(fr->sc_sigma6_min);
 
         for (i = 0; i < 2; i++)
         {
